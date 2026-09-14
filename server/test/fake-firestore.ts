@@ -126,7 +126,7 @@ export const createFakeFirestore = () => {
       throw new Error(`Cannot use "undefined" as a Firestore value (found at ${path})`)
     }
     if (Array.isArray(value)) {
-      value.forEach((entry, index) => rejectUndefined(entry, `${path}[${index}]`))
+      for (const [index, entry] of value.entries()) rejectUndefined(entry, `${path}[${index}]`)
       return
     }
     if (value === null || typeof value !== 'object' || value instanceof Date) return
