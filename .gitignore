@@ -1,0 +1,93 @@
+node_modules
+dist
+.data
+.data-test
+.nitro
+.cache
+.output
+.env
+.env.local
+.derivedData
+data
+output
+
+# Terraform backup files (can appear at any nesting level)
+*.tfstate.backup
+
+# iOS / Xcode
+.DS_Store
+*.xcworkspace
+xcuserdata/
+build/
+*.xcarchive
+*.ipa
+
+# iOS secrets (contains API tokens)
+ios/Shiori/Shared/Secrets.swift
+ios/ShioriUITests/Support/TestSecrets.swift
+
+doc/
+# Version the architecture guides; the App Store privacy policy (index.html)
+# stays local (it is served from the gh-pages branch).
+docs/*
+!docs/*.md
+!docs/superpowers/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+.emulators/
+
+# iOS Firebase + Apollo
+ios/Shiori/GoogleService-Info.plist
+# Apollo code is regenerated per build EXCEPT the hand-edited custom scalar mappings
+# (Year=Int, StarRating=Int, …). Codegen never overwrites those files, so they must be
+# committed — otherwise CI's fresh checkout regenerates them as the default String and
+# the app fails to compile.
+ios/Shiori/Generated/GraphQL/*
+!ios/Shiori/Generated/GraphQL/Schema/
+ios/Shiori/Generated/GraphQL/Schema/*
+!ios/Shiori/Generated/GraphQL/Schema/CustomScalars/
+ios/shared/
+
+# Note: shared/schema.graphql IS committed — it's the source of truth for
+# the iOS Apollo codegen. Run `bun run generate:graphql` after any change
+# to the Pothos schema and commit the diff.
+
+# fastlane (CI-only, used by release-ios.yml `submit` job) — generated artifacts
+infra/fastlane/report.xml
+infra/fastlane/README.md
+# The listing itself is versioned (description, keywords, promotional text); only
+# the "What's New" notes are generated, by release-ios.yml from the changelogs.
+infra/fastlane/metadata/*/release_notes.txt
+infra/fastlane/screenshots/
+infra/fastlane/test_output/
+
+# Claude Code
+.claude/
+
+# Terraform auto-installed binary (pinned version, managed by scripts/install-terraform.sh)
+infra/.bin/
+
+# Terraform
+infra/.terraform/
+infra/.terraform.lock.hcl
+infra/terraform.tfstate
+infra/terraform.tfstate.backup
+infra/crash.log
+infra/crash.*.log
+infra/terraform.tfvars
+infra/*.auto.tfvars
+infra/*.auto.tfvars.json
+infra/AuthKey_*.p8
+infra/apple.p8
+
+# Build artifact uploaded to GCS by Terraform
+.output/server-source.zip
+
+# Generated server assets
+server/system/changelog-content.ts
+
+# App Store captures. The raw per-language captures are an intermediate step,
+# re-taken in minutes by scripts/screenshots.sh; the French ones at
+# screenshots/*.png stay tracked because the README embeds them.
+screenshots/en/
