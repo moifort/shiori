@@ -1,0 +1,22 @@
+project_id         = "shiori-prod"
+project_name       = "Shiori"
+org_id             = "123456789012"          # OR set folder_id instead
+billing_account_id = "AAAA-BBBB-CCCC-DDDD"
+region             = "europe-west3"
+firestore_location = "eur3"
+ios_bundle_id      = "com.polyforms.shiori.app"
+
+# Apple Sign-In (download .p8 + IDs from https://developer.apple.com/account)
+apple_team_id          = "ABCD123456"
+apple_services_id      = "com.polyforms.shiori.signin"
+apple_key_id           = "KEY1234567"
+apple_private_key_path = "./AuthKey_KEY1234567.p8"
+
+# In-app purchase (App Store Connect -> App Information -> Apple ID)
+apple_app_id     = ""                          # optional; blank pins signature verification to Sandbox
+premium_user_ids = ""                          # optional; comma-separated Firebase uids comped to Premium
+
+# Backend secrets
+google_api_key = "..."
+sentry_dsn     = ""                            # optional
+# admin_token     = "..."                      # optional, auto-generated if omitted
