@@ -1,0 +1,394 @@
+"""
+An author name as printed, 1 to 200 characters. Example: "Patrick Rothfuss".
+"""
+scalar AuthorName
+
+"""
+A book as one reader holds it.
+
+Private and owned by exactly one reader: two people who scan the same novel keep two independent records. Public facts (title, synopsis, series) and personal judgment (status, rating, note) sit side by side, because the record belongs to the reader rather than to the world.
+"""
+type Book {
+  addedAt: DateTime!
+
+  """Empty when nothing legible was found, never null."""
+  authors: [AuthorName!]!
+
+  """
+  The reader own photo of the cover, behind a URL that expires after an hour. Null for a book added by hand or from a series catalogue: those have no photo, and the app draws a typographic placeholder instead.
+  """
+  coverUrl: SignedUrl
+  finishedAt: DateTime
+
+  """Year the work first appeared, not the year of this edition."""
+  firstPublishedIn: Year
+  genres: [Genre!]!
+
+  """Excluded from any shared view. Sharing itself is not built yet."""
+  hidden: Boolean!
+  id: BookId!
+  isbn13: Isbn13
+  note: ReadingNote
+  pageCount: PageCount
+  publisher: Publisher
+
+  """One to five whole stars. Null until the reader rates it."""
+  rating: StarRating
+
+  """Null for a standalone book."""
+  series: SeriesMembership
+  startedAt: DateTime
+  status: ReadingStatus!
+  synopsis: Synopsis
+  title: BookTitle!
+}
+
+"""Corrections to a book record. Omitted fields are left as they are."""
+input BookEditInput {
+  authors: [AuthorName!]
+  firstPublishedIn: Year
+  genres: [Genre!]
+  isbn13: Isbn13
+  pageCount: PageCount
+  publisher: Publisher
+  synopsis: Synopsis
+  title: BookTitle
+}
+
+"""
+Identifier of one book in one reader library, as a UUID v4.
+
+Scoped to its owner: the same novel catalogued by two readers has two unrelated ids. Example: "f9b1c2d0-4e3a-4c21-9f77-1a2b3c4d5e6f".
+"""
+scalar BookId
+
+"""
+The title of a book, 1 to 300 characters.
+
+Bounded because it often comes from a model reading a cover: a 500-character "title" is a misread blurb. Example: "The Name of the Wind".
+"""
+scalar BookTitle
+
+"""A non-negative whole number of things. Example: 12."""
+scalar Count
+
+"""
+A date and time serialized as an ISO 8601 string in UTC.
+
+On output a JavaScript `Date` is rendered as an ISO string; on input an ISO string is parsed back into a `Date`. Used for record timestamps (`addedAt`, `startedAt`, `finishedAt`). Example: "2026-09-14T09:30:00.000Z".
+"""
+scalar DateTime
+
+"""An amount in euros, never negative. Example: 2.99."""
+scalar Eur
+
+"""A saga the reader owns at least one volume of."""
+type FollowedSeries {
+  """How many volumes of the saga are in the library."""
+  ownedCount: Count!
+  series: Series!
+
+  """
+  Derived, never stored. COMPLETE once every published volume has been read.
+  """
+  state: SeriesState!
+}
+
+"""One genre label, 1 to 100 characters. Example: "Epic fantasy"."""
+scalar Genre
+
+"""
+A 13-digit ISBN, hyphens and spaces removed, validated on its check digit.
+
+The check digit is enforced rather than assumed: models invent ISBNs that look right, and a wrong one silently poisons every later lookup. Example: "9780756404741".
+"""
+scalar Isbn13
+
+"""
+One heading of the library list.
+
+A section holds only books the reader owns: the catalogue never adds a row here. A saga gets its own section from the first volume owned, so a book never migrates between sections when an unrelated one is added.
+"""
+type LibrarySection {
+  """Ordered along the spine, then related works; by title on the shelf."""
+  books: [Book!]!
+
+  """Null on the trailing shelf, which gathers the standalone books."""
+  series: SeriesName
+  seriesId: SeriesId
+}
+
+type Mutation {
+  """
+  Catalogue a book without scanning it — typed by hand, or taken from a series catalogue. Consumes no scan credit.
+  """
+  addBook(input: NewBookInput!): Book!
+
+  """
+  Remove a book from the library for good. Returns true when it was there.
+  """
+  deleteBook(id: BookId!): Boolean!
+
+  """
+  Give a book one to five stars. Rating marks it as read: the reader is saying they finished it, and leaving it on the pile would make every filter lie.
+  """
+  rateBook(id: BookId!, rating: StarRating!): Book!
+
+  """
+  Mark a book as excluded from any shared view. Sharing is not built yet; the flag exists now so adding it later costs no migration.
+  """
+  setBookHidden(hidden: Boolean!, id: BookId!): Book!
+
+  """Write or replace the reader note. Passing null deletes it."""
+  setBookNote(id: BookId!, note: ReadingNote): Book!
+
+  """
+  Move a book along the pile. The reading dates follow from the move and are never typed: going back to TO_READ clears them.
+  """
+  setReadingStatus(id: BookId!, status: ReadingStatus!): Book!
+
+  """Correct a record the scan got wrong. Omitted fields are left alone."""
+  updateBook(id: BookId!, input: BookEditInput!): Book!
+}
+
+"""
+A book catalogued without a scan — typed by hand, or taken from a series catalogue. Consumes no scan credit.
+"""
+input NewBookInput {
+  authors: [AuthorName!]
+  firstPublishedIn: Year
+  genres: [Genre!]
+
+  """Defaults to false."""
+  hidden: Boolean
+  isbn13: Isbn13
+  pageCount: PageCount
+  publisher: Publisher
+
+  """
+  Defaults to TO_READ, the only status true of every freshly catalogued book.
+  """
+  status: ReadingStatus
+  synopsis: Synopsis
+  title: BookTitle!
+}
+
+"""
+Page count of this edition, 1 to 20000. Absent when unknown — never zero, which would read as a real count of nothing. Example: 662.
+"""
+scalar PageCount
+
+"""A percentage from 0 to 100. Example: 42.5."""
+scalar Percentage
+
+"""
+The publisher of this edition, 1 to 200 characters. Example: "DAW Books".
+"""
+scalar Publisher
+
+type Query {
+  """One book of the reader library. Null when they do not own it."""
+  book(id: BookId!): Book
+
+  """
+  What the reader has open right now, most recently started first. The home screen is built on this.
+  """
+  currentlyReading: [Book!]!
+
+  """
+  The reader whole library, grouped into series sections.
+  
+  Filtering by status happens before grouping, so a filter empties a saga section rather than leaving an empty heading behind. Sections are sorted by series name, and the standalone shelf trails them.
+  """
+  library(
+    """Keep only books in this status. Omit for the whole library."""
+    status: ReadingStatus
+  ): [LibrarySection!]!
+
+  """
+  Every saga the reader owns a volume of, alphabetically.
+  
+  Resolved in one getAll over the catalogue rather than a lookup per saga.
+  """
+  mySeries: [FollowedSeries!]!
+
+  """
+  The full catalogue of one saga, owned volumes and unowned alike.
+  
+  Everything the reader does not own is a proposal: nothing enters a library until they add it. Null when the saga has never been catalogued.
+  """
+  series(id: SeriesId!): Series
+}
+
+"""
+The reader own note on a book, 1 to 10000 characters. Clearing it deletes it rather than storing an empty string.
+"""
+scalar ReadingNote
+
+"""
+Where a book stands for its reader.
+
+`TO_READ` is where every book lands when catalogued, `READING` is where it spends most of its life, `READ` is the end. Moving between them stamps the reading dates: those follow from the move and are never typed by the reader.
+"""
+enum ReadingStatus {
+  """
+  Finished. Stamps `finishedAt`, and `startedAt` too if it was never set.
+  """
+  READ
+
+  """Started. Stamps `startedAt` the first time, and clears `finishedAt`."""
+  READING
+
+  """On the pile. Clears any reading date it had."""
+  TO_READ
+}
+
+"""
+The shared catalogue of a saga.
+
+A public fact with no reference to any reader: one document serves everyone, which is what lets a single AI call pay for the whole saga. It is never exposed through library sharing, which shows books only.
+
+Volumes are stored in publication order, which is verifiable. Reading order differs on many sagas and is an opinion.
+"""
+type Series {
+  author: AuthorName!
+  catalogedAt: DateTime!
+  description: SeriesDescription
+  id: SeriesId!
+  name: SeriesName!
+
+  """
+  Prequels, spin-offs, novellas and companions — everything off the spine.
+  """
+  relatedWorks: [Volume!]!
+
+  """The numbered main volumes only, ascending."""
+  spine: [Volume!]!
+
+  """
+  Every volume, in catalogue order: the numbered spine, then related works.
+  """
+  volumes: [Volume!]!
+}
+
+"""
+A short description of the saga, 1 to 2000 characters, in the caller language.
+"""
+scalar SeriesDescription
+
+"""
+Identifier of a series in the shared catalogue, derived from its name and author rather than random.
+
+Deterministic on purpose: two readers scanning volumes of the same saga must reach the same catalogue document, so it is paid for once. Diacritics are folded and a leading article dropped. Example: "wheel-of-time--robert-jordan".
+"""
+scalar SeriesId
+
+"""
+A book place in a saga, carried on the book itself.
+
+The series name is denormalized here on purpose: grouping a 300-book library into sections must not read one catalogue document per row.
+"""
+type SeriesMembership {
+  id: SeriesId!
+  kind: VolumeKind!
+  name: SeriesName!
+
+  """Null for a spin-off or companion, which sit outside the numbering."""
+  volume: VolumeNumber
+}
+
+"""
+The name of a series, 1 to 200 characters. Example: "The Wheel of Time".
+"""
+scalar SeriesName
+
+"""
+Whether the reader is still working through a saga.
+
+Derived per request from what they own, never stored. `COMPLETE` means every published volume has been read; an announced but unpublished volume does not hold a saga open, because a reader who is up to date has finished it.
+"""
+enum SeriesState {
+  """Every published volume has been read."""
+  COMPLETE
+
+  """Published volumes remain unread."""
+  IN_PROGRESS
+}
+
+"""
+A time-limited URL to read one private object, signed by the server.
+
+Cover images are never public: the URL expires after an hour and must be refetched, so it is not a durable link to store client-side.
+"""
+scalar SignedUrl
+
+"""
+A reader rating, 1 to 5 whole stars.
+
+Whole stars only: half stars double the value space without adding discernment. Setting a rating also marks the book as read. Example: 4.
+"""
+scalar StarRating
+
+"""The book summary, 1 to 4000 characters, in the caller language."""
+scalar Synopsis
+
+"""
+A Firebase Auth user identifier, carried as an opaque non-empty string.
+
+Every book is owned by a `UserId`; the viewer identity is derived from the request Bearer token, so this is rarely passed as an input. Example: "KyTjMU39NBhfakGxExfqLmC5OYU2".
+"""
+scalar UserId
+
+"""
+One entry of a saga catalogue, owned or not.
+
+The catalogue lists what exists in the world, so most volumes here are books the reader does not own: those are proposals, and nothing enters a library until the reader adds it.
+"""
+type Volume {
+  kind: VolumeKind!
+
+  """Position along the spine. Null for anything that is not a main volume."""
+  number: VolumeNumber
+
+  """
+  Publication year. A year in the future marks a volume that has been announced but has not shipped.
+  """
+  publishedIn: Year
+  title: BookTitle!
+}
+
+"""
+Where a volume sits in a saga.
+
+Only `MAIN` belongs to the numbered spine; everything else orbits it and usually carries no number, which is why `volume` is nullable. The series screen renders the spine first and the rest under "Related works".
+"""
+enum VolumeKind {
+  """A guide, atlas, or artbook rather than a story."""
+  COMPANION
+
+  """A numbered volume of the main story."""
+  MAIN
+
+  """A short work tied to the saga."""
+  NOVELLA
+
+  """Set before the main story, often published later."""
+  PREQUEL
+
+  """A side story in the same world, outside the numbering."""
+  SPIN_OFF
+}
+
+"""
+Position of a volume along the spine of its series, 1 to 200.
+
+Absent on anything that is not a numbered main volume: a spin-off or a companion has no place in the numbering. Example: 3.
+"""
+scalar VolumeNumber
+
+"""
+A four-digit publication year, from 1450 to ten years out.
+
+The upper bound leaves room for an announced but unpublished volume, which the series catalogue keeps on purpose. Example: 2007.
+"""
+scalar Year

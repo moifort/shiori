@@ -1,0 +1,65 @@
+import type { WriteBatch } from 'firebase-admin/firestore'
+import type { Book, BookId } from '~/domain/book/types'
+import type { SeriesId } from '~/domain/series/types'
+import type { UserId } from '~/domain/shared/types'
+import { db } from '~/system/firebase'
+import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
+import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
+
+// Books live under their owner rather than in a global collection keyed by user:
+// the library is read whole far more often than one book is, and a subcollection
+// makes that a single query instead of a filtered scan of everyone's books.
+const books = (userId: UserId) =>
+  db()
+    .collection('users')
+    .doc(userId)
+    .collection('books')
+    .withConverter(genericDataConverter<Book>())
+
+const allCacheKey = (userId: UserId) => `books:all:${userId}`
+
+// The library list, the series sections and the home screen all want the same
+// rows in one request. Memoizing the scan means they cost one query between
+// them rather than one each.
+export const findAllByUser = (userId: UserId): Promise<Book[]> =>
+  memoizedPerRequest(allCacheKey(userId), async () => {
+    const snapshot = await books(userId).get()
+    return snapshot.docs.map((doc) => doc.data())
+  })
+
+export const findById = async (userId: UserId, bookId: BookId): Promise<Book | null> => {
+  const doc = await books(userId).doc(bookId).get()
+  return doc.data() ?? null
+}
+
+// Resolved from the memoized scan rather than a `where` query. A reader owns a
+// handful of volumes per saga out of a library already loaded in this request,
+// so filtering in memory costs nothing where a second query costs reads.
+export const findBySeries = async (userId: UserId, seriesId: SeriesId): Promise<Book[]> =>
+  (await findAllByUser(userId)).filter((book) => book.series?.id === seriesId)
+
+// Writes drop the memoized scan so a read later in the same request sees them —
+// a mutation that saves and then returns the refreshed library does exactly that.
+export const save = async (book: Book, batch?: WriteBatch): Promise<Book> => {
+  const ref = books(book.userId).doc(book.id)
+  const document = withoutAbsentFields(book)
+  if (batch) batch.set(ref, document)
+  else await ref.set(document)
+  evictFromRequestCache(allCacheKey(book.userId))
+  return book
+}
+
+export const remove = async (userId: UserId, bookId: BookId, batch?: WriteBatch): Promise<void> => {
+  const ref = books(userId).doc(bookId)
+  if (batch) batch.delete(ref)
+  else await ref.delete()
+  evictFromRequestCache(allCacheKey(userId))
+}
+
+export const removeAllByUser = async (userId: UserId): Promise<void> => {
+  const snapshot = await books(userId).get()
+  const batch = db().batch()
+  for (const doc of snapshot.docs) batch.delete(doc.ref)
+  await batch.commit()
+  evictFromRequestCache(allCacheKey(userId))
+}

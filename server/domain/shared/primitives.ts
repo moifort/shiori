@@ -1,6 +1,8 @@
 import { make } from 'ts-brand'
 import { z } from 'zod'
 import type {
+  AuthorName as AuthorNameType,
+  BookTitle as BookTitleType,
   Count as CountType,
   Eur as EurType,
   Month as MonthType,
@@ -53,4 +55,16 @@ export const Percentage = (value: unknown) => {
     .preprocess((v) => (typeof v === 'string' ? Number(v) : v), z.number().min(0).max(100))
     .parse(value)
   return make<PercentageType>()(v)
+}
+
+// Titles and author names come from an AI reading a cover, so they are bounded
+// rather than trusted: a 500-character "title" is a misread blurb, not a title.
+export const BookTitle = (value: unknown) => {
+  const v = z.string().trim().min(1).max(300).parse(value)
+  return make<BookTitleType>()(v)
+}
+
+export const AuthorName = (value: unknown) => {
+  const v = z.string().trim().min(1).max(200).parse(value)
+  return make<AuthorNameType>()(v)
 }

@@ -9,3 +9,8 @@ export type Year = Brand<number, 'Year'>
 export type Month = Brand<string, 'Month'>
 export type Count = Brand<number, 'Count'>
 export type Percentage = Brand<number, 'Percentage'>
+/** A title and an author name are spoken by both `book` and `series`: a catalogue
+ *  lists volume titles, a book carries its own. They live here so neither domain
+ *  has to import the other's vocabulary. */
+export type BookTitle = Brand<string, 'BookTitle'>
+export type AuthorName = Brand<string, 'AuthorName'>

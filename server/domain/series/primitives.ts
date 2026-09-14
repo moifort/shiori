@@ -1,0 +1,65 @@
+import { make } from 'ts-brand'
+import { z } from 'zod'
+import type {
+  SeriesDescription as SeriesDescriptionType,
+  SeriesId as SeriesIdType,
+  SeriesName as SeriesNameType,
+  VolumeKind,
+  VolumeNumber as VolumeNumberType,
+} from '~/domain/series/types'
+import { VOLUME_KINDS } from '~/domain/series/types'
+
+export { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
+
+export const SeriesId = (value: unknown) => {
+  const v = z.string().min(1).max(200).parse(value)
+  return make<SeriesIdType>()(v)
+}
+
+export const SeriesName = (value: unknown) => {
+  const v = z.string().trim().min(1).max(200).parse(value)
+  return make<SeriesNameType>()(v)
+}
+
+export const SeriesDescription = (value: unknown) => {
+  const v = z.string().trim().min(1).max(2000).parse(value)
+  return make<SeriesDescriptionType>()(v)
+}
+
+// Volume numbers are small positive integers. A saga past 200 volumes is a
+// grounding error, not a saga, and a zero or negative number is a misparse of
+// "Book 0" prequel notation that belongs in `kind: 'prequel'` instead.
+export const VolumeNumber = (value: unknown) => {
+  const v = z
+    .preprocess((v) => (typeof v === 'string' ? Number(v) : v), z.number().int().min(1).max(200))
+    .parse(value)
+  return make<VolumeNumberType>()(v)
+}
+
+export const VolumeKindValue = (value: unknown): VolumeKind => z.enum(VOLUME_KINDS).parse(value)
+
+// The catalogue is global and keyed by identity, not by a random id: two readers
+// who scan volumes of the same saga must land on the same document, otherwise the
+// catalogue is paid for twice and the sharing rule ("books, never series") gets a
+// second, divergent copy to reason about.
+//
+// Diacritics are folded, punctuation dropped, whitespace collapsed, and a leading
+// article removed, so "L'Assassin royal" and "Assassin Royal" converge. The author
+// is part of the key: series names collide across authors far more often than
+// titles do ("Chronicles", "The Saga").
+export const seriesKeyOf = (name: string, author: string): SeriesIdType =>
+  SeriesId(`${slugify(name)}--${slugify(author)}`)
+
+const LEADING_ARTICLES = /^(the|a|an|le|la|les|l|un|une|des|du|de)[\s-]+/
+
+const slugify = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/['’]/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(LEADING_ARTICLES, '')
+    .trim()
+    .replace(/\s+/g, '-')

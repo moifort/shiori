@@ -1,0 +1,37 @@
+import { builder } from '~/domain/shared/graphql/builder'
+
+export const VolumeKindEnum = builder.enumType('VolumeKind', {
+  description:
+    'Where a volume sits in a saga.\n\n' +
+    'Only `MAIN` belongs to the numbered spine; everything else orbits it and ' +
+    'usually carries no number, which is why `volume` is nullable. The series ' +
+    'screen renders the spine first and the rest under "Related works".',
+  values: {
+    MAIN: { value: 'main', description: 'A numbered volume of the main story.' },
+    PREQUEL: {
+      value: 'prequel',
+      description: 'Set before the main story, often published later.',
+    },
+    SPIN_OFF: {
+      value: 'spin-off',
+      description: 'A side story in the same world, outside the numbering.',
+    },
+    NOVELLA: { value: 'novella', description: 'A short work tied to the saga.' },
+    COMPANION: {
+      value: 'companion',
+      description: 'A guide, atlas, or artbook rather than a story.',
+    },
+  } as const,
+})
+
+export const SeriesStateEnum = builder.enumType('SeriesState', {
+  description:
+    'Whether the reader is still working through a saga.\n\n' +
+    'Derived per request from what they own, never stored. `COMPLETE` means every ' +
+    'published volume has been read; an announced but unpublished volume does not ' +
+    'hold a saga open, because a reader who is up to date has finished it.',
+  values: {
+    IN_PROGRESS: { value: 'in-progress', description: 'Published volumes remain unread.' },
+    COMPLETE: { value: 'complete', description: 'Every published volume has been read.' },
+  } as const,
+})

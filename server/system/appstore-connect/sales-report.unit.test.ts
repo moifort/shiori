@@ -93,10 +93,9 @@ describe('summing the month s premium revenue', () => {
   })
 
   test('converts foreign currencies with the fixed table', () => {
-    const tsv = [
-      HEADER,
-      row('com.polyforms.shiori.app.premium.monthly', 1, 2.1, 2.99, 'USD'),
-    ].join('\n')
+    const tsv = [HEADER, row('com.polyforms.shiori.app.premium.monthly', 1, 2.1, 2.99, 'USD')].join(
+      '\n',
+    )
 
     const totals = premiumTotals(parseSalesReport(tsv))
 

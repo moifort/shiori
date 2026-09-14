@@ -1,0 +1,69 @@
+import { splitBySpine } from '~/domain/series/business-rules'
+import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
+import type { Series, Volume } from '~/domain/series/types'
+import { builder } from '~/domain/shared/graphql/builder'
+
+export const VolumeType = builder.objectRef<Volume>('Volume').implement({
+  description:
+    'One entry of a saga catalogue, owned or not.\n\n' +
+    'The catalogue lists what exists in the world, so most volumes here are books ' +
+    'the reader does not own: those are proposals, and nothing enters a library ' +
+    'until the reader adds it.',
+  fields: (t) => ({
+    number: t.field({
+      type: 'VolumeNumber',
+      nullable: true,
+      description: 'Position along the spine. Null for anything that is not a main volume.',
+      resolve: (volume) => volume.number ?? null,
+    }),
+    title: t.field({ type: 'BookTitle', resolve: (volume) => volume.title }),
+    publishedIn: t.field({
+      type: 'Year',
+      nullable: true,
+      description:
+        'Publication year. A year in the future marks a volume that has been ' +
+        'announced but has not shipped.',
+      resolve: (volume) => volume.publishedIn ?? null,
+    }),
+    kind: t.field({ type: VolumeKindEnum, resolve: (volume) => volume.kind }),
+  }),
+})
+
+export const SeriesType = builder.objectRef<Series>('Series').implement({
+  description:
+    'The shared catalogue of a saga.\n\n' +
+    'A public fact with no reference to any reader: one document serves everyone, ' +
+    'which is what lets a single AI call pay for the whole saga. It is never ' +
+    'exposed through library sharing, which shows books only.\n\n' +
+    'Volumes are stored in publication order, which is verifiable. Reading order ' +
+    'differs on many sagas and is an opinion.',
+  fields: (t) => ({
+    id: t.field({ type: 'SeriesId', resolve: (series) => series.id }),
+    name: t.field({ type: 'SeriesName', resolve: (series) => series.name }),
+    author: t.field({ type: 'AuthorName', resolve: (series) => series.author }),
+    description: t.field({
+      type: 'SeriesDescription',
+      nullable: true,
+      resolve: (series) => series.description ?? null,
+    }),
+    volumes: t.field({
+      type: [VolumeType],
+      description: 'Every volume, in catalogue order: the numbered spine, then related works.',
+      resolve: (series) => {
+        const { spine, relatedWorks } = splitBySpine(series)
+        return [...spine, ...relatedWorks]
+      },
+    }),
+    spine: t.field({
+      type: [VolumeType],
+      description: 'The numbered main volumes only, ascending.',
+      resolve: (series) => splitBySpine(series).spine,
+    }),
+    relatedWorks: t.field({
+      type: [VolumeType],
+      description: 'Prequels, spin-offs, novellas and companions — everything off the spine.',
+      resolve: (series) => splitBySpine(series).relatedWorks,
+    }),
+    catalogedAt: t.field({ type: 'DateTime', resolve: (series) => series.catalogedAt }),
+  }),
+})

@@ -7,10 +7,7 @@ import type {
   WriteBatch,
 } from 'firebase-admin/firestore'
 import { chunk } from 'lodash-es'
-import type { BeverageId } from '~/domain/beverage/types'
-import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
-import { evictFromRequestCache, isInRequestCache, memoizedPerRequest } from '~/system/request-cache'
 
 // Generic Firestore converter that preserves type information when reading
 // documents and recursively turns Timestamp instances back into JS Date.
@@ -54,68 +51,6 @@ export const deleteInBatches = async (refs: DocumentReference[]): Promise<void> 
     const batch = db().batch()
     for (const ref of slice) batch.delete(ref)
     await batch.commit()
-  }
-}
-
-// Repository for collections holding one record per (user, beverage) pair, stored
-// under the deterministic doc id `${userId}_${beverageId}` — the shared shape of
-// the tasting/gift/recommendation satellite collections.
-export const userBeverageRecordRepository = <T extends { userId: UserId; beverageId: BeverageId }>(
-  collectionName: string,
-) => {
-  const records = () => db().collection(collectionName).withConverter(genericDataConverter<T>())
-  const docId = (userId: UserId, beverageId: BeverageId) => `${userId}_${beverageId}`
-  const allCacheKey = (userId: UserId) => `${collectionName}:all:${userId}`
-
-  const findAllByUser = (userId: UserId): Promise<T[]> =>
-    memoizedPerRequest(allCacheKey(userId), async () => {
-      const snap = await records().where('userId', '==', userId).get()
-      return snap.docs.map((doc) => doc.data())
-    })
-
-  return {
-    findAllByUser,
-    findBy: async (userId: UserId, beverageId: BeverageId): Promise<T | null> => {
-      const doc = await records().doc(docId(userId, beverageId)).get()
-      return doc.data() ?? null
-    },
-    // Batch-load the records for a page of beverages with a single getAll — one
-    // read per id, no full-collection scan. Missing docs come back undefined. When
-    // the full scan already ran in this request, reuse it: zero extra reads. The
-    // read-then-write flow that would make this stale (a mutation writing here and
-    // reindexing the wine in the same request) is covered: every write below drops
-    // the memoized scan.
-    findManyByBeverageIds: async (userId: UserId, beverageIds: BeverageId[]): Promise<T[]> => {
-      if (beverageIds.length === 0) return []
-      if (isInRequestCache(allCacheKey(userId))) {
-        const wanted = new Set(beverageIds)
-        return (await findAllByUser(userId)).filter((record) => wanted.has(record.beverageId))
-      }
-      const refs = beverageIds.map((beverageId) => records().doc(docId(userId, beverageId)))
-      const snaps = await db().getAll(...refs)
-      return snaps.map((snap) => snap.data()).filter((data): data is T => data !== undefined)
-    },
-    // Writes drop the memoized scan so a read later in the same request sees them.
-    // Search reindexing does exactly that: it rewrites the wine's terms right
-    // after a satellite changed, and a stale scan would index the previous state.
-    save: async (record: T, batch?: WriteBatch): Promise<T> => {
-      const ref = records().doc(docId(record.userId, record.beverageId))
-      if (batch) batch.set(ref, record)
-      else await ref.set(record)
-      evictFromRequestCache(allCacheKey(record.userId))
-      return record
-    },
-    remove: async (userId: UserId, beverageId: BeverageId, batch?: WriteBatch): Promise<void> => {
-      const ref = records().doc(docId(userId, beverageId))
-      if (batch) batch.delete(ref)
-      else await ref.delete()
-      evictFromRequestCache(allCacheKey(userId))
-    },
-    removeAllByUser: async (userId: UserId): Promise<void> => {
-      const snap = await records().where('userId', '==', userId).get()
-      await deleteInBatches(snap.docs.map((doc) => doc.ref))
-      evictFromRequestCache(allCacheKey(userId))
-    },
   }
 }
 
