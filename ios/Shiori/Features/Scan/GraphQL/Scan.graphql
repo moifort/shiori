@@ -1,0 +1,20 @@
+# Reads a cover and returns a record for the reader to review. Nothing is saved:
+# `addBook` persists what they approve.
+mutation ScanBook($imageBase64: String!) {
+  scanBook(imageBase64: $imageBase64) {
+    recognized
+    title
+    authors
+    publisher
+    firstPublishedIn
+    synopsis
+    genres
+    pageCount
+    isbn13
+    series {
+      name
+      volume
+      kind
+    }
+  }
+}
