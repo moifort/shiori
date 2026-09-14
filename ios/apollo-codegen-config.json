@@ -1,9 +1,7 @@
 {
   "schemaNamespace": "ShioriGraphQL",
   "input": {
-    "schemaSearchPaths": [
-      "../shared/schema.graphql"
-    ],
+    "schemaSearchPaths": ["../shared/schema.graphql"],
     "operationSearchPaths": [
       "Shiori/Features/Library/GraphQL/*.graphql",
       "Shiori/Features/Book/GraphQL/*.graphql",

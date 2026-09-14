@@ -1,0 +1,61 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Guards the one thing the other three workflows cannot see: whether the app
+  # still compiles. The generated Apollo code is regenerated here from the
+  # committed schema, so a backend change that the iOS operations no longer match
+  # fails here rather than at release time. Builds without signing or uploading.
+  # macos-26 is a standard runner, so this costs nothing on a public repository.
+  ios:
+    name: 📱 iOS
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Select the latest final Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Materialize gitignored build files
+        run: |
+          set -euo pipefail
+          printf '%s' "${{ secrets.IOS_GOOGLE_SERVICE_INFO_PLIST }}" \
+            | openssl base64 -d -A > ios/Shiori/GoogleService-Info.plist
+          cp ios/Shiori/Shared/Secrets.swift.example ios/Shiori/Shared/Secrets.swift
+          mkdir -p ios/ShioriUITests/Support
+          cp ios/Shiori/Shared/Secrets.swift.example ios/ShioriUITests/Support/TestSecrets.swift
+
+      - name: Generate Apollo GraphQL code (gitignored, regenerated per build)
+        run: |
+          set -euo pipefail
+          # Resolve SPM so the apollo-ios checkout (and its bundled CLI) exists.
+          xcodebuild -resolvePackageDependencies \
+            -project ios/Shiori.xcodeproj -scheme Shiori
+          # Apollo 2.x ships the CLI as a tarball inside the checkout — extract it.
+          CLI_DIR=$(find "$HOME/Library/Developer/Xcode/DerivedData" -type d \
+            -path "*/SourcePackages/checkouts/apollo-ios/CLI" | head -1)
+          tar -xzf "$CLI_DIR/apollo-ios-cli.tar.gz" -C "$CLI_DIR"
+          chmod +x "$CLI_DIR/apollo-ios-cli"
+          (cd ios && "$CLI_DIR/apollo-ios-cli" generate)
+
+      - name: Build the app
+        run: |
+          set -euo pipefail
+          # A generic simulator destination: the check is that the app compiles, so it
+          # needs no booted device and no signing identity (the release job owns those).
+          xcodebuild -project ios/Shiori.xcodeproj -scheme Shiori \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
