@@ -39,7 +39,7 @@ final class BookViewModel {
             book = try await BookAPI.book(id: bookId)
             await loadSeries()
         } catch {
-            errorMessage = ErrorPresenter.message(for: error)
+            errorMessage = reportError(error)
         }
         isLoading = false
     }
@@ -77,7 +77,7 @@ final class BookViewModel {
             try await BookAPI.delete(id: bookId)
             return true
         } catch {
-            errorMessage = ErrorPresenter.message(for: error)
+            errorMessage = reportError(error)
             return false
         }
     }
@@ -95,7 +95,7 @@ final class BookViewModel {
             track(.bookAdded(source: .series))
             return added
         } catch {
-            errorMessage = ErrorPresenter.message(for: error)
+            errorMessage = reportError(error)
             return nil
         }
     }
@@ -106,7 +106,7 @@ final class BookViewModel {
         do {
             book = try await operation()
         } catch {
-            errorMessage = ErrorPresenter.message(for: error)
+            errorMessage = reportError(error)
         }
     }
 

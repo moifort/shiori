@@ -1,5 +1,4 @@
 import Foundation
-import ShioriGraphQL
 
 /// Mapping from the generated GraphQL types to the domain model.
 ///
@@ -95,7 +94,7 @@ extension ShioriGraphQL.BookDetail {
             rating: rating,
             note: note,
             hidden: hidden,
-            addedAt: addedAt.flatMap(GraphQLHelpers.parseISO8601),
+            addedAt: GraphQLHelpers.parseISO8601(addedAt),
             startedAt: startedAt.flatMap(GraphQLHelpers.parseISO8601),
             finishedAt: finishedAt.flatMap(GraphQLHelpers.parseISO8601)
         )

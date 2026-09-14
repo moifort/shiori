@@ -66,7 +66,7 @@ struct SeriesListView: View {
         do {
             followed = try await SeriesAPI.mySeries()
         } catch {
-            errorMessage = ErrorPresenter.message(for: error)
+            errorMessage = reportError(error)
         }
         isLoading = false
     }

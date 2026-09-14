@@ -85,7 +85,7 @@ struct ManualAddView: View {
             onAdded(book)
             dismiss()
         } catch {
-            errorMessage = ErrorPresenter.message(for: error)
+            errorMessage = reportError(error)
         }
     }
 }

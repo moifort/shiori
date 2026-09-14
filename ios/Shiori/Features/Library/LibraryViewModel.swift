@@ -31,7 +31,7 @@ final class LibraryViewModel {
         } catch {
             // The list keeps whatever it was showing: replacing a good library
             // with an empty one because a refresh failed reads as data loss.
-            errorMessage = ErrorPresenter.message(for: error)
+            errorMessage = reportError(error)
         }
         isLoading = false
     }

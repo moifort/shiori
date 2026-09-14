@@ -1,0 +1,11 @@
+query Changelog {
+  changelog {
+    version
+    date
+    notes
+  }
+}
+
+mutation DeleteAccount {
+  deleteAccount
+}

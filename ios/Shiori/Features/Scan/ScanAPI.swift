@@ -1,5 +1,4 @@
 import Foundation
-import ShioriGraphQL
 
 /// What a scan proposes, before the reader has approved anything.
 struct ScannedBook {
@@ -39,7 +38,7 @@ enum ScanAPI {
     static func scan(jpeg: Data) async throws -> ScannedBook {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ScanBookMutation(imageBase64: jpeg.base64EncodedString())
+            mutation: ShioriGraphQL.ScanBookMutation(imageBase64: jpeg.base64EncodedString())
         )
         let result = data.scanBook
         return ScannedBook(

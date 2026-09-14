@@ -46,7 +46,7 @@ final class ScanViewModel {
             step = .camera
             paywallShown = true
         } catch {
-            error = ErrorPresenter.message(for: error)
+            self.error = reportError(error)
             step = .camera
         }
     }
@@ -61,7 +61,7 @@ final class ScanViewModel {
             track(.bookAdded(source: .scan))
             return book
         } catch {
-            self.error = ErrorPresenter.message(for: error)
+            self.error = reportError(error)
             return nil
         }
     }

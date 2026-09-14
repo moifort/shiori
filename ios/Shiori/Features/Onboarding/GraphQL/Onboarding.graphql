@@ -1,0 +1,18 @@
+# Read at launch to decide routing: the wizard, or the app. `isAdmin` rides the
+# same query so the admin surfaces cost no extra call.
+query Me {
+  me {
+    userId
+    firstName
+    onboardingCompleted
+    isAdmin
+  }
+}
+
+mutation CompleteOnboarding($input: CompleteOnboardingInput!) {
+  completeOnboarding(input: $input) {
+    userId
+    firstName
+    onboardingCompleted
+  }
+}

@@ -1,11 +1,10 @@
 import Foundation
-import ShioriGraphQL
 
 /// The library, as the app talks to it. One place maps the generated GraphQL
 /// types onto the domain model, so no screen ever touches a generated type.
 enum LibraryAPI {
     static func library(status: ReadingStatus? = nil) async throws -> [LibrarySection] {
-        let query = LibraryQuery(
+        let query = ShioriGraphQL.LibraryQuery(
             status: GraphQLHelpers.graphQLNullable(status.map(Self.graphQLStatus))
         )
         let data = try await GraphQLHelpers.fetch(GraphQLClient.shared.apollo, query: query)
@@ -21,7 +20,7 @@ enum LibraryAPI {
     static func currentlyReading() async throws -> [Book] {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
-            query: CurrentlyReadingQuery()
+            query: ShioriGraphQL.CurrentlyReadingQuery()
         )
         return data.currentlyReading.map { $0.fragments.bookSummary.asBook }
     }

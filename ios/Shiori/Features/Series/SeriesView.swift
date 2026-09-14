@@ -152,7 +152,7 @@ struct SeriesView: View {
                 uniquingKeysWith: { first, _ in first }
             )
         } catch {
-            errorMessage = ErrorPresenter.message(for: error)
+            errorMessage = reportError(error)
         }
         isLoading = false
     }
@@ -165,7 +165,7 @@ struct SeriesView: View {
             track(.bookAdded(source: .series))
             await load()
         } catch {
-            errorMessage = ErrorPresenter.message(for: error)
+            errorMessage = reportError(error)
         }
     }
 }

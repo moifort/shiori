@@ -86,8 +86,17 @@ struct BookPage: View {
 
     private var ratingSection: some View {
         Section("Note") {
-            InteractiveStarRating(rating: book.rating ?? 0, onRate: onRate)
-                .accessibilityIdentifier("book-rating")
+            // allowsUnset is off on purpose: the component's own note says the
+            // API merges what it receives and cannot express "erase this one",
+            // so tapping the current star to clear would silently do nothing.
+            InteractiveStarRating(
+                rating: Binding(
+                    get: { book.rating ?? 0 },
+                    set: { stars in if stars > 0 { onRate(stars) } }
+                ),
+                allowsUnset: false
+            )
+            .accessibilityIdentifier("book-rating")
             if book.rating == nil {
                 Text("Noter un livre le marque comme lu.")
                     .font(.caption)

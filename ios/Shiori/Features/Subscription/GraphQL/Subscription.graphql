@@ -1,0 +1,34 @@
+query Entitlement {
+  entitlement {
+    plan
+    productId
+    expiresOn
+    appAccountToken
+  }
+}
+
+# The scan allowance. `totalRemaining` is what the app gates on: it folds the
+# month's allowance and the welcome credits into the one number that answers
+# "can I scan right now".
+query Quota {
+  quota {
+    plan
+    limit
+    used
+    remaining
+    welcomeRemaining
+    totalRemaining
+    renewsOn
+  }
+}
+
+# Hands App Store's signed transaction to the server, which verifies it against
+# Apple's root certificates before granting anything.
+mutation SyncEntitlement($signedTransaction: String!) {
+  syncEntitlement(signedTransaction: $signedTransaction) {
+    plan
+    productId
+    expiresOn
+    appAccountToken
+  }
+}

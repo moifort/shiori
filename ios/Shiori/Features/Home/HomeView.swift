@@ -67,7 +67,7 @@ struct HomeView: View {
         do {
             reading = try await LibraryAPI.currentlyReading()
         } catch {
-            errorMessage = ErrorPresenter.message(for: error)
+            errorMessage = reportError(error)
         }
         isLoading = false
     }

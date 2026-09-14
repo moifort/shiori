@@ -1,5 +1,4 @@
 import Foundation
-import ShioriGraphQL
 
 enum SeriesAPI {
     /// The full catalogue of one saga — owned volumes and unowned alike. Nil
@@ -25,7 +24,7 @@ enum SeriesAPI {
     static func mySeries() async throws -> [FollowedSeries] {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
-            query: MySeriesQuery()
+            query: ShioriGraphQL.MySeriesQuery()
         )
         return data.mySeries.map { followed in
             FollowedSeries(

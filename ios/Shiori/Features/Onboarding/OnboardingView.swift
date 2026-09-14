@@ -58,7 +58,7 @@ struct OnboardingView: View {
             // Stays on the step rather than dropping the reader into an empty
             // app: the welcome scans are granted by this call, and letting it
             // fail silently would cost them 50 scans they never learn about.
-            errorMessage = ErrorPresenter.message(for: error)
+            errorMessage = reportError(error)
         }
     }
 }

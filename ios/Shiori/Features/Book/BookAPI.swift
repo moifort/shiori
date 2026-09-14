@@ -1,5 +1,4 @@
 import Foundation
-import ShioriGraphQL
 
 /// Everything the app does to one book. Each call returns the whole record, so
 /// a screen never has to guess what the server changed alongside what it asked
@@ -8,7 +7,7 @@ enum BookAPI {
     static func book(id: String) async throws -> Book? {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
-            query: BookQuery(id: id)
+            query: ShioriGraphQL.BookQuery(id: id)
         )
         return data.book?.fragments.bookDetail.asBook
     }
@@ -16,7 +15,7 @@ enum BookAPI {
     static func add(_ draft: BookDraft) async throws -> Book {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: AddBookMutation(input: draft.asInput)
+            mutation: ShioriGraphQL.AddBookMutation(input: draft.asInput)
         )
         return data.addBook.fragments.bookDetail.asBook
     }
@@ -24,7 +23,7 @@ enum BookAPI {
     static func setStatus(id: String, status: ReadingStatus) async throws -> Book {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: SetReadingStatusMutation(id: id, status: LibraryAPI.graphQLStatus(status))
+            mutation: ShioriGraphQL.SetReadingStatusMutation(id: id, status: LibraryAPI.graphQLStatus(status))
         )
         return data.setReadingStatus.fragments.bookDetail.asBook
     }
@@ -32,7 +31,7 @@ enum BookAPI {
     static func rate(id: String, stars: Int) async throws -> Book {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: RateBookMutation(id: id, rating: stars)
+            mutation: ShioriGraphQL.RateBookMutation(id: id, rating: stars)
         )
         track(.bookRated(stars: stars))
         return data.rateBook.fragments.bookDetail.asBook
@@ -44,7 +43,7 @@ enum BookAPI {
         let value = (trimmed?.isEmpty ?? true) ? nil : trimmed
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: SetBookNoteMutation(id: id, note: GraphQLHelpers.graphQLNullable(value))
+            mutation: ShioriGraphQL.SetBookNoteMutation(id: id, note: GraphQLHelpers.graphQLNullable(value))
         )
         return data.setBookNote.fragments.bookDetail.asBook
     }
@@ -52,7 +51,7 @@ enum BookAPI {
     static func setHidden(id: String, hidden: Bool) async throws -> Book {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: SetBookHiddenMutation(id: id, hidden: hidden)
+            mutation: ShioriGraphQL.SetBookHiddenMutation(id: id, hidden: hidden)
         )
         return data.setBookHidden.fragments.bookDetail.asBook
     }
@@ -60,7 +59,7 @@ enum BookAPI {
     static func delete(id: String) async throws {
         _ = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: DeleteBookMutation(id: id)
+            mutation: ShioriGraphQL.DeleteBookMutation(id: id)
         )
     }
 }
@@ -79,18 +78,18 @@ struct BookDraft {
     var status: ReadingStatus = .toRead
     var hidden = false
 
-    var asInput: NewBookInput {
-        NewBookInput(
-            title: title,
+    var asInput: ShioriGraphQL.NewBookInput {
+        ShioriGraphQL.NewBookInput(
             authors: GraphQLHelpers.graphQLNullable(authors.isEmpty ? nil : authors),
-            publisher: GraphQLHelpers.graphQLNullable(publisher),
             firstPublishedIn: GraphQLHelpers.graphQLNullable(firstPublishedIn),
-            synopsis: GraphQLHelpers.graphQLNullable(synopsis),
             genres: GraphQLHelpers.graphQLNullable(genres.isEmpty ? nil : genres),
-            pageCount: GraphQLHelpers.graphQLNullable(pageCount),
+            hidden: .some(hidden),
             isbn13: GraphQLHelpers.graphQLNullable(isbn13),
+            pageCount: GraphQLHelpers.graphQLNullable(pageCount),
+            publisher: GraphQLHelpers.graphQLNullable(publisher),
             status: .some(LibraryAPI.graphQLStatus(status)),
-            hidden: .some(hidden)
+            synopsis: GraphQLHelpers.graphQLNullable(synopsis),
+            title: title
         )
     }
 }

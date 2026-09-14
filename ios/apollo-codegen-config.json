@@ -1,7 +1,9 @@
 {
   "schemaNamespace": "ShioriGraphQL",
   "input": {
-    "schemaSearchPaths": ["../shared/schema.graphql"],
+    "schemaSearchPaths": [
+      "../shared/schema.graphql"
+    ],
     "operationSearchPaths": [
       "Shiori/Features/Library/GraphQL/*.graphql",
       "Shiori/Features/Book/GraphQL/*.graphql",
@@ -10,8 +12,7 @@
       "Shiori/Features/Scan/GraphQL/*.graphql",
       "Shiori/Features/Onboarding/GraphQL/*.graphql",
       "Shiori/Features/Settings/GraphQL/*.graphql",
-      "Shiori/Features/Subscription/GraphQL/*.graphql",
-      "Shiori/Features/Admin/GraphQL/*.graphql"
+      "Shiori/Features/Subscription/GraphQL/*.graphql"
     ]
   },
   "output": {

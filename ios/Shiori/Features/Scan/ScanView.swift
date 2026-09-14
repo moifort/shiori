@@ -72,9 +72,10 @@ struct ScanView: View {
 
     private var cameraScreen: some View {
         ZStack {
-            CameraView(shouldCapture: $shouldCapture) { jpeg in
-                Task { await viewModel.capture(jpeg) }
-            }
+            CameraView(
+                onCapture: { jpeg in Task { await viewModel.capture(jpeg) } },
+                shouldCapture: $shouldCapture
+            )
             .ignoresSafeArea()
 
             ViewfinderOverlay()
