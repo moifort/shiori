@@ -29,7 +29,7 @@ enum PremiumTrigger {
             // and this is shown once nothing is left anywhere.
             return String(localized: "Tous vos scans ont été utilisés. Passez en Premium pour scanner sans limite.")
         case .discover:
-            return String(localized: "Le scan d’étiquette reconnaît vos bouteilles et enrichit leur fiche. Passez en Premium pour scanner sans limite.")
+            return String(localized: "Photographiez une couverture : le livre rejoint votre bibliothèque avec son résumé et sa série. Passez en Premium pour scanner sans limite.")
         }
     }
 }
@@ -119,8 +119,8 @@ struct PremiumSheet: View {
         VStack(alignment: .leading, spacing: 14) {
             BenefitRow(icon: "camera.viewfinder", text: "Scans illimités")
             BenefitRow(
-                icon: "eurosign.circle",
-                text: "Données supplémentaires sur la bouteille : estimation du prix, période de garde, région"
+                icon: "square.stack",
+                text: "Le catalogue complet de vos séries, tomes à paraître compris"
             )
             BenefitRow(icon: "heart", text: "Soutenez l’application pour qu’elle puisse s’autofinancer")
         }
@@ -308,7 +308,7 @@ private struct OfferButton: View {
     VStack(alignment: .leading, spacing: 14) {
         BenefitRow(icon: "infinity", text: "Scans illimités")
         BenefitRow(icon: "sparkles", text: "Fiches enrichies par l'IA")
-        BenefitRow(icon: "person.2", text: "Cave partagée avec le foyer")
+        BenefitRow(icon: "square.stack", text: "Catalogue complet des séries")
     }
     .padding()
 }

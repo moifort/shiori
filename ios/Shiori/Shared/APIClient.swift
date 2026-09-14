@@ -6,7 +6,10 @@ struct APIClient: Sendable {
     static let shared = APIClient()
 
     private static let serverURLKey = "serverURL"
-    private static let defaultServerURL = "https://shiori-server-placeholder.a.run.app"
+    // The deployed Cloud Function. A wrong value here does not fail loudly: any
+    // *.a.run.app host resolves, so the app reaches Google and gets a 404 that
+    // reads like a broken API rather than a wrong address.
+    private static let defaultServerURL = "https://shiori-server-hvrhl6ox5q-ey.a.run.app"
 
     var baseURL: URL {
         let stored = UserDefaults.standard.string(forKey: Self.serverURLKey)

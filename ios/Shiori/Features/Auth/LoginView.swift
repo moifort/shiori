@@ -15,7 +15,7 @@ struct LoginView: View {
                     .padding(.bottom, 4)
                 Text("Shiori")
                     .font(.largeTitle.bold())
-                Text("Connecte-toi pour accéder à ta cave.")
+                Text("Connecte-toi pour retrouver ta bibliothèque.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
