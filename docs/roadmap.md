@@ -49,37 +49,48 @@ section on a book screen, listing the other volumes of its series.
 Two things outside this repository stop the app from working end to end. Both need
 a payment, so neither can be resolved from here.
 
-### The Apple Developer Program membership is lapsed
+### Resolved: Sign in with Apple
 
-On the team that owns Vinarium and the `com.polyforms.*` bundle prefix. While it
-is expired the Developer portal refuses to mint an App ID, a Sign in with Apple
-Services ID, or a `.p8` key, and App Store Connect redirects away from
-Integrations — which is where an API key would come from.
+Registered on team `46C337T7YN`, the one that owns Vinarium:
 
-Consequences, in order of how much they block:
+- App ID `com.polyforms.shiori.app`, with Sign in with Apple and In-App Purchase
+- Services ID `com.polyforms.shiori.signin`
+- key `shiori-signin`, id `8SQ32NG589`, bound to the Shiori App ID as its primary
 
-- no Sign in with Apple, so the app cannot authenticate at all
-- no App Store Connect app record, so no TestFlight and no release
-- no in-app purchase products, so no paywall
+The key is bound to Shiori's own App ID rather than grouped under Vinarium's, so
+it signs for this app alone. Identity Platform is live with it:
+`apple.com`, `enabled = true`.
 
-Terraform is written to survive this: the Apple credentials default to blank and
-the Identity Platform provider is skipped while they are. Filling
-`apple_team_id`, `apple_services_id`, `apple_key_id` and `apple_private_key_path`
-in `infra/terraform.tfvars` and re-applying attaches it, with no other change.
+The earlier "membership expired" reading was a session on the wrong Apple ID —
+`thibaut.mottet@gmail.com`, an Admin on App Store Connect carrying its own lapsed
+personal membership, rather than `thibaut@polyforms.co`, the Account Holder. The
+symptom is worth remembering: the Developer portal does not say "wrong account",
+it silently redirects every Certificates, Identifiers & Profiles URL back to
+`/account`.
 
-The browser session also has to be on the Apple ID that holds the membership.
-`thibaut@polyforms.co` is the App Store Connect Account Holder;
-`thibaut.mottet@gmail.com`, which the browser was signed into, is only an Admin
-there and carries its own lapsed personal membership.
+Still to do on the Apple side: the App Store Connect app record, its API key for
+the release workflow (issuer `58ccb3ea-10df-4d1e-ae5c-02fba75ab425`, alongside
+`vinarium-ci`), and the subscription products.
 
-### The Gemini API has no prepaid credits
+### Resolved: the Gemini model and its credits
 
-`gemini-3.6-flash` answers `RESOURCE_EXHAUSTED` on this project: the Gemini API
-now requires prepayment, set up per project in AI Studio. Until that is done
-every scan fails, though nothing else does — the library, the ratings, the notes
-and the series screens all work without it, and a book can be added by hand.
+`gemini-2.5-flash`, which Vinarium runs on, is no longer served to new projects
+at all: a fresh key gets a 404 on that model path pointing at 3.6. The model is a
+named constant in `server/domain/scan/gemini.ts` for that reason — the next
+retirement will land as a 404, not as a deprecation warning.
 
-Worth knowing: `gemini-2.5-flash`, which Vinarium runs on, is no longer served to
-new projects at all. A fresh key gets a 404 on that model path pointing at 3.6.
-The model is a named constant in `server/domain/scan/gemini.ts` for that reason —
-the next retirement will land as a 404, not as a warning.
+The pipeline has since been run end to end against the real API on a real cover.
+It works, and two things came out of that run that no amount of reading the code
+would have given:
+
+- **A cold scan takes ~55 seconds.** Three grounded calls with thinking enabled.
+  Vinarium's 60-second function ceiling left five seconds of margin, so the
+  timeout is now 180. A request that tips over does not degrade gracefully: it
+  504s after the models have already been paid for.
+- **The title and the catalogue can disagree on language.** Scanning an English
+  edition in French returns the printed title ("The Name of the Wind") while the
+  catalogue lists the French canon ("Le Nom du vent"). This is deliberate rather
+  than a bug — the book is the edition on the reader's shelf, the catalogue is
+  the work — but the two sit side by side on the series screen, so it needs a
+  decision before that screen ships. Matching is by volume number, not title, so
+  nothing breaks either way.

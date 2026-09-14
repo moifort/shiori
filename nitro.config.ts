@@ -12,7 +12,12 @@ export default defineNitroConfig({
     httpsOptions: {
       region: 'europe-west3',
       memory: '512MiB',
-      timeoutSeconds: 60,
+      // A scan is three grounded Gemini calls with thinking enabled, and a cold
+      // one was measured at 55s end to end against the real API — under
+      // Vinarium's 60s ceiling by five seconds, which is no margin at all. The
+      // request that tips over does not degrade, it 504s after the models have
+      // already been paid for.
+      timeoutSeconds: 180,
       concurrency: 80,
     },
   },
