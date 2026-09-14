@@ -44,6 +44,21 @@ Suggestions drawn from followed series and highly rated books. Depends on accumu
 so it comes last. Batch 2 already delivers the zero-cost half of it: the recommendations
 section on a book screen, listing the other volumes of its series.
 
+## Deferred on purpose
+
+### Cover images are not stored
+
+The photo taken for a scan is sent for analysis and then dropped. `scanBook`
+does not write it to the bucket, and `addBook` has no field to claim it, so
+`coverUrl` is always null and every book shows the typographic placeholder.
+
+Everything underneath exists — the object store, the private bucket, the signed
+download URLs, and `coverPathOf` keyed by owner so an account deletion sweeps
+them in one prefix delete. What is missing is the wiring: the scan must persist
+the bytes it already holds and return a handle, and `addBook` must accept it.
+
+Deferred by decision, not by oversight.
+
 ## Known blockers
 
 Two things outside this repository stop the app from working end to end. Both need
