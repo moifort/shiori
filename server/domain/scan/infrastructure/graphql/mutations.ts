@@ -1,0 +1,66 @@
+import { EntitlementQuery } from '~/domain/entitlement/query'
+import { exhausted } from '~/domain/quota/business-rules'
+import { QuotaCommand } from '~/domain/quota/command'
+import { QuotaQuery } from '~/domain/quota/query'
+import { Scan } from '~/domain/scan'
+import { imageWithinSizeLimit } from '~/domain/scan/limits'
+import { builder } from '~/domain/shared/graphql/builder'
+import { domainError } from '~/domain/shared/graphql/errors'
+import { languageFrom } from '~/domain/shared/language'
+import { ScanResultType } from './types'
+
+builder.mutationField('scanBook', (t) =>
+  t.field({
+    type: ScanResultType,
+    description:
+      'Read a book cover with AI and return a record for the reader to review.\n\n' +
+      'Nothing is saved: the answer is a proposal. The app shows it, the reader ' +
+      'corrects what the model got wrong, and `addBook` persists the result. That ' +
+      'review step is the safety net against a misread cover.\n\n' +
+      'Three model calls at most — the cover, a web-grounded enrichment, and a ' +
+      'series catalogue only when the saga is not already known. Results are ' +
+      'cached by SHA-256 and language, so scanning the same cover twice calls ' +
+      'nothing.\n\n' +
+      'Spends one scan of the allowance (see the `quota` query): the month first, ' +
+      'then the scans granted at onboarding. Only a real model call is charged — ' +
+      'a cached cover is free, and so is a failure. Fails with `QUOTA_EXHAUSTED` ' +
+      'once nothing is left, `IMAGE_TOO_LARGE` above the 10 MB limit, or ' +
+      '`SCAN_FAILED` when the model call errors.',
+    args: {
+      imageBase64: t.arg.string({
+        required: true,
+        description: 'Cover photo as a base64-encoded JPEG (no data URL prefix), up to 10 MB',
+      }),
+    },
+    resolve: async (_root, { imageBase64 }, { userId, event }) => {
+      if (!imageWithinSizeLimit(imageBase64.length))
+        return domainError('IMAGE_TOO_LARGE', 'Image exceeds the 10 MB size limit')
+
+      const [plan, quota, credit] = await Promise.all([
+        EntitlementQuery.planOf(userId),
+        QuotaQuery.ofCurrentMonth(userId),
+        QuotaQuery.creditOf(userId),
+      ])
+      if (exhausted(plan, quota, credit))
+        return domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up')
+
+      // The model writes its free text in the caller's language, and the header
+      // also partitions the cache so two languages never cross-contaminate.
+      const language = languageFrom(event && getHeader(event, 'accept-language'))
+
+      try {
+        const { result, cacheHit } = await Scan.scanWithCache(
+          Buffer.from(imageBase64, 'base64'),
+          language,
+        )
+        // Metered after the fact, and only on a real model call: a Gemini failure
+        // must not cost the reader a scan, and a cache hit costs us nothing.
+        if (!cacheHit) await QuotaCommand.record(userId, plan)
+        return result
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Scan failed'
+        return domainError('SCAN_FAILED', message)
+      }
+    },
+  }),
+)

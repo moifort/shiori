@@ -18,12 +18,17 @@ export const FREE_MONTHLY_SCANS: CountType = Count(5)
 export const PREMIUM_MONTHLY_SCANS: CountType = Count(100)
 
 // What a new account is handed when it finishes onboarding, once and for good.
-// Stocking a whole cellar is ~30 scans, so five a month turns the first session
-// into a wall before the app has shown what it does. Twenty covers a real
-// stocking session without covering a whole cellar: the wall still arrives, but
-// after the value rather than before it. Costs ~0.20 EUR per account created,
-// once — see docs/freemium-economics.md.
-export const WELCOME_SCANS: CountType = Count(20)
+// Books are catalogued in bursts: a new reader empties a shelf in one evening,
+// where a cellar is stocked a bottle at a time. Five a month would put the wall
+// in the middle of that first session, which is the worst possible moment — the
+// app has taken effort and returned nothing yet. Fifty covers a real shelf
+// without covering a whole library: the wall still arrives, but after the value
+// rather than before it.
+//
+// Provisional, like the rest of the numbers here: they are sized on an estimate
+// of what a scan costs and will be recalibrated against the usageMetadata the
+// pipeline captures on every call.
+export const WELCOME_SCANS: CountType = Count(50)
 
 // The month a moment belongs to, `"2026-07"`. UTC on purpose: the window must not
 // move with the caller's timezone, and someone scanning near midnight on the 1st

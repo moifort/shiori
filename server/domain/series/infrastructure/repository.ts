@@ -1,6 +1,6 @@
 import type { Series, SeriesId } from '~/domain/series/types'
 import { db } from '~/system/firebase'
-import { memoizedPerRequest } from '~/system/request-cache'
+import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
 import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 
 // A single global collection, deliberately outside `users/`. A catalogue entry is
@@ -9,8 +9,10 @@ import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 // reader. It is never exposed through library sharing.
 const series = () => db().collection('series').withConverter(genericDataConverter<Series>())
 
+const cacheKey = (seriesId: SeriesId) => `series:${seriesId}`
+
 export const findById = (seriesId: SeriesId): Promise<Series | null> =>
-  memoizedPerRequest(`series:${seriesId}`, async () => {
+  memoizedPerRequest(cacheKey(seriesId), async () => {
     const doc = await series().doc(seriesId).get()
     return doc.data() ?? null
   })
@@ -26,7 +28,12 @@ export const findManyByIds = async (seriesIds: readonly SeriesId[]): Promise<Ser
     .filter((data): data is Series => data !== undefined)
 }
 
+// Drops the memoized absence before returning. A scan looks the saga up, finds
+// nothing, catalogues it, and the resolver that renders the book reads it back
+// in the same request — without this it would read the `null` from before the
+// write and show a freshly catalogued saga as uncatalogued.
 export const save = async (entry: Series): Promise<Series> => {
   await series().doc(entry.id).set(withoutAbsentFields(entry))
+  evictFromRequestCache(cacheKey(entry.id))
   return entry
 }

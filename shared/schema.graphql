@@ -237,6 +237,20 @@ type Mutation {
   rateBook(id: BookId!, rating: StarRating!): Book!
 
   """
+  Read a book cover with AI and return a record for the reader to review.
+  
+  Nothing is saved: the answer is a proposal. The app shows it, the reader corrects what the model got wrong, and `addBook` persists the result. That review step is the safety net against a misread cover.
+  
+  Three model calls at most — the cover, a web-grounded enrichment, and a series catalogue only when the saga is not already known. Results are cached by SHA-256 and language, so scanning the same cover twice calls nothing.
+  
+  Spends one scan of the allowance (see the `quota` query): the month first, then the scans granted at onboarding. Only a real model call is charged — a cached cover is free, and so is a failure. Fails with `QUOTA_EXHAUSTED` once nothing is left, `IMAGE_TOO_LARGE` above the 10 MB limit, or `SCAN_FAILED` when the model call errors.
+  """
+  scanBook(
+    """Cover photo as a base64-encoded JPEG (no data URL prefix), up to 10 MB"""
+    imageBase64: String!
+  ): ScanResult!
+
+  """
   Mark a book as excluded from any shared view. Sharing is not built yet; the flag exists now so adding it later costs no migration.
   """
   setBookHidden(hidden: Boolean!, id: BookId!): Book!
@@ -473,6 +487,41 @@ enum ReadingStatus {
 
   """On the pile. Clears any reading date it had."""
   TO_READ
+}
+
+"""
+What the model read on a cover, after enrichment. Nothing is saved yet: the reader reviews this and decides.
+
+Check `recognized` first. False means no book was identified — a photo of something that is not a cover — and every other field is empty. It is an ordinary outcome, not an error, and it costs no scan.
+
+Optional fields are absent rather than guessed. A field the model was unsure of is dropped on the way through: an invented ISBN or a page count of zero is worse than nothing, because it would be trusted later.
+"""
+type ScanResult {
+  authors: [AuthorName!]!
+
+  """Year the work first appeared, not the year of this edition."""
+  firstPublishedIn: Year
+  genres: [Genre!]!
+  isbn13: Isbn13
+  pageCount: PageCount
+  publisher: Publisher
+  recognized: Boolean!
+  series: ScannedSeries
+  synopsis: Synopsis
+
+  """Null when nothing was recognized."""
+  title: BookTitle
+}
+
+"""
+The saga the scanned book belongs to, as the enrichment step resolved it.
+
+Absent for a standalone book, which is most of them. Found by the web search rather than read off the cover: a great many novels belong to a cycle the cover never mentions.
+"""
+type ScannedSeries {
+  kind: VolumeKind!
+  name: SeriesName!
+  volume: VolumeNumber
 }
 
 """

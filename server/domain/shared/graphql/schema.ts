@@ -39,6 +39,11 @@ import '~/domain/entitlement/infrastructure/graphql/mutations'
 import '~/domain/quota/infrastructure/graphql/types'
 import '~/domain/quota/infrastructure/graphql/queries'
 
+// Scan (cover reading via Gemini). After book and series: its result type
+// borrows their scalars and the VolumeKind enum.
+import '~/domain/scan/infrastructure/graphql/types'
+import '~/domain/scan/infrastructure/graphql/mutations'
+
 // Changelog (application release notes)
 import '~/domain/changelog/infrastructure/graphql/types'
 import '~/domain/changelog/infrastructure/graphql/queries'
