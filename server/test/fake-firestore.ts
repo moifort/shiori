@@ -15,8 +15,13 @@ type Doc = Record<string, unknown>
 export type FakeSnapshot = { exists: boolean; id: string; data: () => Doc | undefined }
 
 export type FakeRef = {
-  collection: string
+  /** Full path of the collection holding this document. A subcollection reads as
+   *  `users/reader-1/books`, which is how Firestore addresses one — the store
+   *  stays a flat map and every query keeps working unchanged. */
+  collectionPath: string
   id: string
+  /** Documents nested under this one, exactly as `DocumentReference.collection`. */
+  collection: (name: string) => FakeCollection
   get: () => Promise<FakeSnapshot>
   set: (data: Doc, options?: { merge?: boolean }) => Promise<void>
   update: (data: Doc) => Promise<void>
@@ -113,8 +118,9 @@ export const createFakeFirestore = () => {
   }
 
   const makeRef = (collection: string, id: string): FakeRef => ({
-    collection,
+    collectionPath: collection,
     id,
+    collection: (name: string) => makeCollection(`${collection}/${id}/${name}`),
     get: async () => {
       docReads += 1
       const doc = docsOf(collection).get(id)
@@ -254,16 +260,16 @@ export const createFakeFirestore = () => {
       commit: async () => {
         if (commitError) throw commitError
         for (const op of ops) {
-          if (op.type === 'set') docsOf(op.ref.collection).set(op.ref.id, op.data)
+          if (op.type === 'set') docsOf(op.ref.collectionPath).set(op.ref.id, op.data)
           else if (op.type === 'update') {
-            const existing = docsOf(op.ref.collection).get(op.ref.id)
+            const existing = docsOf(op.ref.collectionPath).get(op.ref.id)
             if (existing === undefined) {
               throw new Error(
-                `NOT_FOUND: no document to update at ${op.ref.collection}/${op.ref.id}`,
+                `NOT_FOUND: no document to update at ${op.ref.collectionPath}/${op.ref.id}`,
               )
             }
-            docsOf(op.ref.collection).set(op.ref.id, resolveWrite(existing, op.data, true))
-          } else docsOf(op.ref.collection).delete(op.ref.id)
+            docsOf(op.ref.collectionPath).set(op.ref.id, resolveWrite(existing, op.data, true))
+          } else docsOf(op.ref.collectionPath).delete(op.ref.id)
         }
         batch.commits += 1
       },
@@ -284,7 +290,7 @@ export const createFakeFirestore = () => {
       const tx: FakeTransaction = {
         get: async (ref) => {
           docReads += 1
-          const doc = docsOf(ref.collection).get(ref.id)
+          const doc = docsOf(ref.collectionPath).get(ref.id)
           return { exists: doc !== undefined, id: ref.id, data: () => doc }
         },
         set: (ref, data) => {
@@ -299,8 +305,8 @@ export const createFakeFirestore = () => {
       const value = await run(tx)
       // Applied only once the body succeeded — a throw leaves the store untouched.
       for (const op of writes) {
-        if (op.type === 'set') docsOf(op.ref.collection).set(op.ref.id, op.data)
-        else docsOf(op.ref.collection).delete(op.ref.id)
+        if (op.type === 'set') docsOf(op.ref.collectionPath).set(op.ref.id, op.data)
+        else docsOf(op.ref.collectionPath).delete(op.ref.id)
       }
       transactions.push(writes)
       return value
@@ -314,7 +320,7 @@ export const createFakeFirestore = () => {
   const getAll = async (...refs: FakeRef[]) => {
     docReads += refs.length
     return refs.map((ref) => {
-      const doc = docsOf(ref.collection).get(ref.id)
+      const doc = docsOf(ref.collectionPath).get(ref.id)
       return { exists: doc !== undefined, id: ref.id, data: () => doc }
     })
   }
@@ -330,6 +336,9 @@ export const createFakeFirestore = () => {
       docsOf(collection).set(id, { ...data })
     },
     snapshot: (collection: string) => new Map(docsOf(collection)),
+    /** One stored document, or null. Subcollections are addressed by their full
+     *  path, e.g. `users/reader-1/books`. */
+    data: (collection: string, id: string) => docsOf(collection).get(id) ?? null,
     batches,
     directWrites,
     transactions,
