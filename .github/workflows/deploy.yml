@@ -1,10 +1,11 @@
 name: Deploy
 
-# Manual until the shiori-prod GCP project exists. Vinarium deploys on every push
-# to main and this workflow will too, the moment `terraform apply` has run once
-# and the GCP_* secrets are set — until then a push trigger would report a red
-# pipeline for infrastructure that was never provisioned, which is noise, not a
-# signal. Flip this back to `push: branches: [main]` at that point.
+# Manual until the GitHub secrets below are set. shiori-polyforms is provisioned
+# and the backend is live, deployed from a local `terraform apply`; what is still
+# missing is the CI's own path in — the Workload Identity provider, the deploy
+# service account and the Apple/Gemini values this job materializes into
+# terraform.tfvars. Flip this to `push: branches: [main]` once they exist, and
+# every push redeploys as it does on Vinarium.
 on:
   workflow_dispatch:
 

@@ -42,7 +42,7 @@ already in production would cost a migration.
 | App name | Shiori |
 | Bundle ID | `com.polyforms.shiori.app` |
 | UI tests bundle ID | `com.shiori.app.uitests` |
-| GCP project | `shiori-prod` |
+| GCP project | `shiori-polyforms` |
 | Xcode project | `ios/Shiori.xcodeproj` |
 | Apollo namespace | `ShioriGraphQL` |
 | Release tag | `ios-v<version>` |
@@ -339,7 +339,6 @@ rest is built, and it validates the data model before a paid pipeline is wired t
 Two steps cannot be automated from here because they commit real money and a real Apple
 account:
 
-- `terraform apply` against a fresh `shiori-prod` GCP project, with billing attached
 - Creating the Shiori app record in App Store Connect, its API key, and its subscription
   products
 

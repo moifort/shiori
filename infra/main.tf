@@ -1,18 +1,20 @@
 provider "google" {
   project               = var.project_id
   region                = var.region
-  billing_project       = var.project_id
+  billing_project       = local.quota_project
   user_project_override = true
 }
 
 provider "google-beta" {
   project               = var.project_id
   region                = var.region
-  billing_project       = var.project_id
+  billing_project       = local.quota_project
   user_project_override = true
 }
 
 locals {
+  quota_project = var.quota_project_id != "" ? var.quota_project_id : var.project_id
+
   # Cloud Storage multi-region IDs are uppercase ("EU", "US", "ASIA"),
   # while Firestore uses lowercase ("eur3", "nam5"). Map between the two
   # so buckets can be co-located with Firestore without a separate var.

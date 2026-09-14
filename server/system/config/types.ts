@@ -16,7 +16,7 @@ export type AscPrivateKey = Brand<string, 'AscPrivateKey'>
 export type AscVendorNumber = Brand<string, 'AscVendorNumber'>
 /** Fully qualified BigQuery billing export table, `project.dataset.table`. */
 export type GcpBillingTable = Brand<string, 'GcpBillingTable'>
-/** The private bucket holding book cover attachments, e.g. `shiori-prod-attachments`. */
+/** The private bucket holding book cover attachments, e.g. `shiori-polyforms-attachments`. */
 export type AttachmentsBucket = Brand<string, 'AttachmentsBucket'>
 /** Development only: the origin this server is reachable at, used to address the
  *  local object store from the simulator. */

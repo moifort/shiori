@@ -19,7 +19,7 @@ describe('the App Store vendor number config value', () => {
 
 describe('the GCP billing table config value', () => {
   test('accepts a fully qualified project.dataset.table', () => {
-    const table = 'shiori-prod.billing_export.gcp_billing_export_v1_01B9B2_D51D23_1EF14D'
+    const table = 'shiori-polyforms.billing_export.gcp_billing_export_v1_01B9B2_D51D23_1EF14D'
     expect(GcpBillingTable(table) as string).toBe(table)
   })
 

@@ -1,5 +1,5 @@
 variable "project_id" {
-  description = "Globally unique GCP project id (e.g. shiori-prod)"
+  description = "Globally unique GCP project id (e.g. shiori-polyforms)"
   type        = string
 }
 
@@ -53,23 +53,27 @@ variable "premium_user_ids" {
 
 # Apple Sign-In — all required, comes from Apple Developer
 variable "apple_team_id" {
-  description = "Apple Developer Team ID (10-char alphanum)"
+  description = "Apple Developer Team ID (10-char alphanum). Blank leaves Sign in with Apple unconfigured."
   type        = string
+  default     = ""
 }
 
 variable "apple_services_id" {
-  description = "Apple Sign-In Services ID (acts as OAuth client_id)"
+  description = "Apple Sign-In Services ID (acts as OAuth client_id). Blank leaves Sign in with Apple unconfigured."
   type        = string
+  default     = ""
 }
 
 variable "apple_key_id" {
-  description = "Apple private key ID (10-char alphanum, matches the .p8 filename)"
+  description = "Apple private key ID (10-char alphanum, matches the .p8 filename). Blank leaves Sign in with Apple unconfigured."
   type        = string
+  default     = ""
 }
 
 variable "apple_private_key_path" {
-  description = "Path to the AuthKey_XXXXXXXXXX.p8 file from Apple Developer"
+  description = "Path to the AuthKey_XXXXXXXXXX.p8 file from Apple Developer. Blank leaves Sign in with Apple unconfigured."
   type        = string
+  default     = ""
 }
 
 # Backend secrets
@@ -129,4 +133,18 @@ variable "github_repo" {
   description = "GitHub repository (owner/name) allowed to deploy via Workload Identity Federation"
   type        = string
   default     = "moifort/shiori"
+}
+
+variable "quota_project_id" {
+  description = <<-EOT
+    Project the provider attributes API quota to (user_project_override).
+
+    Defaults to the project being created, which is right in steady state and
+    impossible on the very first apply: the billing pre-flight calls
+    cloudbilling.googleapis.com against a project that does not exist yet and
+    comes back USER_PROJECT_DENIED. Point this at an existing project you can
+    use for the bootstrap run, then drop it.
+  EOT
+  type        = string
+  default     = ""
 }

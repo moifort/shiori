@@ -123,6 +123,6 @@ The Firestore emulator needs a JDK and the Firebase CLI, neither of which is req
 | | Value |
 |---|---|
 | Bundle ID | `com.polyforms.shiori.app` |
-| GCP project | `shiori-prod` |
+| GCP project | `shiori-polyforms` |
 | Repository | https://github.com/moifort/shiori |
 | Region | `europe-west3`, Firestore `eur3` |
