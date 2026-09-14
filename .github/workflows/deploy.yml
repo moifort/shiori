@@ -1,0 +1,125 @@
+name: Deploy
+
+# Manual until the shiori-prod GCP project exists. Vinarium deploys on every push
+# to main and this workflow will too, the moment `terraform apply` has run once
+# and the GCP_* secrets are set — until then a push trigger would report a red
+# pipeline for infrastructure that was never provisioned, which is noise, not a
+# signal. Flip this back to `push: branches: [main]` at that point.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write   # required for Workload Identity Federation
+
+jobs:
+  deploy:
+    name: 🚀 Backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # sentry-cli reads the commit history to attach it to the release
+      - uses: oven-sh/setup-bun@v2
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.10.0
+
+      - name: Authenticate to Google Cloud (workload identity)
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SA }}
+
+      # No changelog date-stamping: entries are versioned by hand at each iOS release
+      # with a "## <version> (YYYY.MM.DD)" heading in CHANGELOG.md / CHANGELOG.fr.md.
+
+      - name: Build the Nitro bundle (firebase preset)
+        env:
+          # Baked into the bundle, so every error Sentry receives says which
+          # deploy produced it and which source maps decode it.
+          SENTRY_RELEASE: shiori-node@${{ github.sha }}
+        run: |
+          bun install --frozen-lockfile
+          bun run generate:assets
+          bunx nitro prepare
+          bun run generate:graphql
+          bun run build
+
+      - name: Upload the source maps to Sentry
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: polyforms
+          SENTRY_PROJECT: shiori-node
+          SENTRY_RELEASE: shiori-node@${{ github.sha }}
+        run: |
+          set -euo pipefail
+          # Rollup bundles the backend into one minified file, so without these a
+          # stack trace reads "index.mjs:1:84210". Runs before the deploy because
+          # `sourcemaps inject` stamps debug ids into the very files being shipped.
+          if [ -n "$SENTRY_AUTH_TOKEN" ]; then
+            curl -sL https://sentry.io/get-cli/ | bash
+            sentry-cli releases new "$SENTRY_RELEASE"
+            sentry-cli sourcemaps inject .output/server
+            sentry-cli sourcemaps upload --release "$SENTRY_RELEASE" .output/server
+            # Attaches the commits this deploy carries, which is what turns an
+            # issue into "introduced by <commit>". --local reads the git history
+            # rather than requiring the Sentry-GitHub integration.
+            sentry-cli releases set-commits "$SENTRY_RELEASE" --local --ignore-missing
+            sentry-cli releases finalize "$SENTRY_RELEASE"
+          else
+            echo "::warning::SENTRY_AUTH_TOKEN is unset — deploying without source maps"
+          fi
+          # The maps themselves never ship: Terraform zips this directory as-is.
+          find .output/server -name '*.map' -delete
+
+      - name: Materialize terraform.tfvars from GitHub secrets
+        run: |
+          set -euo pipefail
+          mkdir -p infra
+          # Apple .p8 — multiline, must be quoted properly
+          printf '%s' "${{ secrets.APPLE_PRIVATE_KEY_P8 }}" > infra/apple.p8
+          chmod 600 infra/apple.p8
+
+          # App Store Connect API .p8 (same key the iOS release workflow uses),
+          # for the admin metrics' sales reports. An empty file simply leaves
+          # the revenue figure unavailable.
+          printf '%s' "${{ secrets.ASC_KEY_P8 }}" > infra/asc.p8
+          chmod 600 infra/asc.p8
+
+          cat > infra/terraform.tfvars <<EOF
+          project_id             = "${{ vars.GCP_PROJECT_ID }}"
+          billing_account_id     = "${{ secrets.GCP_BILLING_ACCOUNT }}"
+          org_id                 = "${{ vars.GCP_ORG_ID }}"
+          region                 = "europe-west3"
+          firestore_location     = "eur3"
+          ios_bundle_id          = "${{ vars.IOS_BUNDLE_ID }}"
+          apple_team_id          = "${{ secrets.APPLE_TEAM_ID }}"
+          apple_services_id      = "${{ secrets.APPLE_SERVICES_ID }}"
+          apple_key_id           = "${{ secrets.APPLE_KEY_ID }}"
+          apple_private_key_path = "./apple.p8"
+          google_api_key         = "${{ secrets.GEMINI_API_KEY }}"
+          sentry_dsn             = "${{ secrets.SENTRY_DSN }}"
+          admin_token            = "${{ secrets.ADMIN_TOKEN }}"
+          premium_user_ids       = "${{ vars.PREMIUM_USER_IDS }}"
+          asc_issuer_id          = "${{ secrets.ASC_ISSUER_ID }}"
+          asc_key_id             = "${{ secrets.ASC_KEY_ID }}"
+          asc_private_key_path   = "./asc.p8"
+          asc_vendor_number      = "${{ vars.ASC_VENDOR_NUMBER }}"
+          gcp_billing_table      = "${{ vars.GCP_BILLING_TABLE }}"
+          EOF
+
+      - name: Terraform init + apply
+        working-directory: infra
+        run: |
+          terraform init -input=false
+          terraform apply -auto-approve -input=false
+
+      - name: Run Firestore migrations
+        working-directory: infra
+        run: |
+          URL=$(terraform output -raw function_url)
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_TOKEN }}" \
+            "${URL}/admin/migrate"

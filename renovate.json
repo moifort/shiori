@@ -1,0 +1,48 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "pinDigests": false,
+  "gitAuthor": "Renovate Bot <moifort@users.noreply.github.com>",
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "description": "Automerge non-major updates in a single grouped PR",
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "groupName": "non-major dependencies",
+      "commitMessageTopic": "dependencies",
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
+    },
+    {
+      "description": "Major updates: separate PRs, automerge individually",
+      "matchUpdateTypes": ["major"],
+      "labels": ["dependencies", "major"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
+    },
+    {
+      "description": "Pin graphql to 16.x: @apollo/server 5 requires peer graphql ^16.11.0 and npm (Cloud Function build) rejects 17",
+      "matchPackageNames": ["graphql"],
+      "allowedVersions": "<17"
+    },
+    {
+      "description": "Pin firebase-admin to 13.x: the Nitro firebase preset injects firebase-functions@latest whose peer is firebase-admin ^11||^12||^13, so 14 breaks the Cloud Function build under npm",
+      "matchPackageNames": ["firebase-admin"],
+      "allowedVersions": "<14"
+    },
+    {
+      "description": "Pin ruby to 3.x: the release-ios submit job runs fastlane, which supports Ruby 3.0+ (3.3+ recommended) and has announced no Ruby 4 support; it also caps bundler at <3.0.0, which Ruby 4's bundled version breaks. infra/ has no Gemfile.lock, so gems resolve on the runner and a bad bump would only surface while submitting a build to the App Store — no CI job runs fastlane. Revisit once fastlane declares Ruby 4 support.",
+      "matchPackageNames": ["ruby"],
+      "allowedVersions": "<4"
+    }
+  ],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 5am on monday"],
+    "automerge": true,
+    "automergeType": "pr",
+    "automergeStrategy": "squash"
+  }
+}

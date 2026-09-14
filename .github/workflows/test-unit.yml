@@ -1,0 +1,45 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    name: 🧪 Unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bunx nitro prepare
+      - run: bun tsc --noEmit
+      - run: bunx biome check
+      - run: bun test .unit.test
+
+  # Guard: the Cloud Function build on GCP runs `npm install` (strict peer deps)
+  # on the package.json Nitro generates in .output/server. bun is lenient about
+  # peer deps, so an incompatible bump passes locally and only fails at
+  # `terraform apply`. This reproduces that resolution here so it fails fast.
+  deploy-deps:
+    name: 📦 Prod deps (npm strict)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - name: Validate generated function deps under npm (strict peer deps)
+        working-directory: .output/server
+        # --dry-run builds the full dependency tree (so ERESOLVE peer-dep
+        # conflicts still surface) without the reify/write step, which avoids an
+        # unrelated npm arborist crash ("fsTop") on the runner.
+        run: npm install --dry-run --ignore-scripts
