@@ -13,6 +13,5 @@
  */
 export const MINIMUM_SUPPORTED_IOS_BUILD = 1
 
-/** Direct App Store link, opened by the update screen. Filled in once the app
- *  record exists in App Store Connect and Apple has assigned its id. */
-export const APP_STORE_URL = 'https://apps.apple.com/app/id0000000000'
+/** Direct App Store link, opened by the update screen. */
+export const APP_STORE_URL = 'https://apps.apple.com/app/id6811938144'

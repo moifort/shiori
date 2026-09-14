@@ -12,9 +12,8 @@ apple_services_id      = "com.polyforms.shiori.signin"
 apple_key_id           = "KEY1234567"
 apple_private_key_path = "./AuthKey_KEY1234567.p8"
 
-# In-app purchase (App Store Connect -> App Information -> Apple ID)
-apple_app_id     = ""                          # optional; blank pins signature verification to Sandbox
-premium_user_ids = ""                          # optional; comma-separated Firebase uids comped to Premium
+# Optional; comma-separated Firebase uids comped to Premium
+premium_user_ids = ""
 
 # Backend secrets
 google_api_key = "..."
