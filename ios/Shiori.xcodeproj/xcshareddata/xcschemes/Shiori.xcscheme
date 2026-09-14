@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "E10000060000000000000001"
-               BuildableName = "Vinarium.app"
-               BlueprintName = "Vinarium"
-               ReferencedContainer = "container:Vinarium.xcodeproj">
+               BuildableName = "Shiori.app"
+               BlueprintName = "Shiori"
+               ReferencedContainer = "container:Shiori.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,14 +33,14 @@
             ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
             <ActionContent
                title = "Add test photo to simulator"
-               scriptText = "xcrun simctl boot &quot;iPhone 17&quot; 2>/dev/null || true&#10;sleep 3&#10;xcrun simctl addmedia booted &quot;$SRCROOT/VinariumUITests/Resources/etiquette.jpg&quot; 2>/dev/null || true">
+               scriptText = "xcrun simctl boot &quot;iPhone 17&quot; 2>/dev/null || true&#10;sleep 3&#10;xcrun simctl addmedia booted &quot;$SRCROOT/ShioriUITests/Resources/etiquette.jpg&quot; 2>/dev/null || true">
                <EnvironmentBuildable>
                   <BuildableReference
                      BuildableIdentifier = "primary"
                      BlueprintIdentifier = "E10000060000000000000001"
-                     BuildableName = "Vinarium.app"
-                     BlueprintName = "Vinarium"
-                     ReferencedContainer = "container:Vinarium.xcodeproj">
+                     BuildableName = "Shiori.app"
+                     BlueprintName = "Shiori"
+                     ReferencedContainer = "container:Shiori.xcodeproj">
                   </BuildableReference>
                </EnvironmentBuildable>
             </ActionContent>
@@ -48,7 +48,7 @@
       </PreActions>
       <TestPlans>
          <TestPlanReference
-            reference = "container:Vinarium.xctestplan"
+            reference = "container:Shiori.xctestplan"
             default = "YES">
          </TestPlanReference>
       </TestPlans>
@@ -59,9 +59,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "E20000060000000000000001"
-               BuildableName = "VinariumUITests.xctest"
-               BlueprintName = "VinariumUITests"
-               ReferencedContainer = "container:Vinarium.xcodeproj">
+               BuildableName = "ShioriUITests.xctest"
+               BlueprintName = "ShioriUITests"
+               ReferencedContainer = "container:Shiori.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -81,9 +81,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "E10000060000000000000001"
-            BuildableName = "Vinarium.app"
-            BlueprintName = "Vinarium"
-            ReferencedContainer = "container:Vinarium.xcodeproj">
+            BuildableName = "Shiori.app"
+            BlueprintName = "Shiori"
+            ReferencedContainer = "container:Shiori.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>
@@ -93,7 +93,7 @@
          </CommandLineArgument>
       </CommandLineArguments>
       <StoreKitConfigurationFileReference
-         identifier = "../../Vinarium/Vinarium.storekit">
+         identifier = "../../Shiori/Shiori.storekit">
       </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction
@@ -107,9 +107,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "E10000060000000000000001"
-            BuildableName = "Vinarium.app"
-            BlueprintName = "Vinarium"
-            ReferencedContainer = "container:Vinarium.xcodeproj">
+            BuildableName = "Shiori.app"
+            BlueprintName = "Shiori"
+            ReferencedContainer = "container:Shiori.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

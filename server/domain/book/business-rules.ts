@@ -1,5 +1,8 @@
-import type { Book, BookView, LibrarySection, ReadingStatus } from '~/domain/book/types'
+import type { Book, BookId, BookView, LibrarySection, ReadingStatus } from '~/domain/book/types'
 import { compareWithinSeries } from '~/domain/series/business-rules'
+import type { UserId } from '~/domain/shared/types'
+import { ObjectPath } from '~/system/object-store/primitives'
+import type { ObjectPath as ObjectPathValue } from '~/system/object-store/types'
 
 /** Arrange a library into the sections the list renders. A book that belongs to a
  *  saga sits under that saga's heading, ordered along the spine; everything else
@@ -94,3 +97,14 @@ export const datesAfterStatusChange = (
  *  and silently leaving such a book in `to-read` would be a lie the library then
  *  repeats in every filter. */
 export const statusAfterRating = (): ReadingStatus => 'read'
+
+/** Where a reader's cover images live in the bucket. Derived from the owner and
+ *  the book, never chosen by a caller: a caller-supplied path is a traversal.
+ *
+ *  Keyed by owner first so an account deletion can erase every cover with one
+ *  prefix sweep, rather than one delete per book it would have to enumerate
+ *  after the Firestore records are already gone. */
+export const coverPrefixOf = (userId: UserId): ObjectPathValue => ObjectPath(`covers/${userId}/`)
+
+export const coverPathOf = (userId: UserId, bookId: BookId): ObjectPathValue =>
+  ObjectPath(`${coverPrefixOf(userId)}${bookId}`)

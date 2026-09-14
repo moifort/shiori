@@ -18,6 +18,7 @@ import type {
   Count,
   Eur,
   Percentage,
+  PersonName,
   UserId,
   Year,
 } from '~/domain/shared/types'
@@ -52,6 +53,7 @@ export const builder = new SchemaBuilder<{
     BookId: { Input: BookId; Output: BookId }
     BookTitle: { Input: BookTitle; Output: BookTitle }
     AuthorName: { Input: AuthorName; Output: AuthorName }
+    PersonName: { Input: PersonName; Output: PersonName }
     Publisher: { Input: Publisher; Output: Publisher }
     Isbn13: { Input: Isbn13; Output: Isbn13 }
     Genre: { Input: Genre; Output: Genre }

@@ -17,6 +17,7 @@ import {
   Count,
   Eur,
   Percentage,
+  PersonName,
   UserId,
   Year,
 } from '~/domain/shared/primitives'
@@ -74,6 +75,15 @@ builder.scalarType('AuthorName', {
   description: 'An author name as printed, 1 to 200 characters. Example: "Patrick Rothfuss".',
   serialize: (value) => value as string,
   parseValue: validatedParse('AuthorName', AuthorName),
+})
+
+builder.scalarType('PersonName', {
+  description:
+    "The reader's own first name, 1 to 200 characters, collected once during " +
+    'onboarding so the app can address them. Distinct from `AuthorName`, which ' +
+    'names someone who wrote a book. Example: "Thibaut".',
+  serialize: (value) => value as string,
+  parseValue: validatedParse('PersonName', PersonName),
 })
 
 builder.scalarType('Publisher', {

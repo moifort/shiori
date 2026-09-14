@@ -14,3 +14,6 @@ export type Percentage = Brand<number, 'Percentage'>
  *  has to import the other's vocabulary. */
 export type BookTitle = Brand<string, 'BookTitle'>
 export type AuthorName = Brand<string, 'AuthorName'>
+/** The reader's own first name, asked for once during onboarding so the app can
+ *  address them. Distinct from AuthorName, which names someone who wrote a book. */
+export type PersonName = Brand<string, 'PersonName'>

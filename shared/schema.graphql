@@ -69,6 +69,32 @@ Bounded because it often comes from a model reading a cover: a 500-character "ti
 """
 scalar BookTitle
 
+"""
+One version section of the application release notes.
+
+Parsed from the served changelog document: a version heading, its release date, and the flat list of note lines under it. The app renders it as a row titled by `version` with the formatted `date` on the right and `notes` as bullet points.
+"""
+type ChangelogEntry {
+  """Release date of the version; null for a pending (unreleased) section"""
+  date: DateTime
+
+  """Release note lines for this version, shown as a flat bullet list"""
+  notes: [String!]!
+
+  """App Store version this section documents (e.g. "1.3")"""
+  version: String!
+}
+
+"""
+What the onboarding wizard collects.
+
+Only a first name, so the app can address the reader. Vinarium also sizes a cellar grid here; a library has no shape to declare up front.
+"""
+input CompleteOnboardingInput {
+  """The reader's first name."""
+  firstName: PersonName!
+}
+
 """A non-negative whole number of things. Example: 12."""
 scalar Count
 
@@ -78,6 +104,31 @@ A date and time serialized as an ISO 8601 string in UTC.
 On output a JavaScript `Date` is rendered as an ISO string; on input an ISO string is parsed back into a `Date`. Used for record timestamps (`addedAt`, `startedAt`, `finishedAt`). Example: "2026-09-14T09:30:00.000Z".
 """
 scalar DateTime
+
+"""
+What the account is entitled to, and what the App Store sold to get there.
+
+Read it before starting a purchase: `appAccountToken` is what ties the payment back to this account, and a purchase made without it cannot be matched to anyone.
+"""
+type Entitlement {
+  """
+  The UUID to pass to StoreKit as the purchase’s account token, e.g. `"20099a54-f027-5426-b2f0-79d90a5050f1"`. Without it a purchase cannot be matched to this account, and syncing it will be refused.
+  """
+  appAccountToken: String!
+
+  """
+  When the paid period ends, e.g. `"2027-07-21T09:12:00.000Z"` — null when there is no subscription. A cancelled subscription keeps its Premium until this date.
+  """
+  expiresOn: DateTime
+
+  """The plan in force right now, e.g. `PREMIUM`"""
+  plan: Plan!
+
+  """
+  The subscription bought, e.g. `"com.polyforms.vinarium.app.premium.yearly"` — null when there is none
+  """
+  productId: String
+}
 
 """An amount in euros, never negative. Example: 2.99."""
 scalar Eur
@@ -118,11 +169,62 @@ type LibrarySection {
   seriesId: SeriesId
 }
 
+"""
+The signed-in user: their identity and onboarding state.
+
+Always resolvable from the auth token, so `userId` is always present. Every other field is null until the onboarding wizard completes, which lets the app route a fresh account into onboarding.
+
+```graphql
+query {
+  me {
+    userId
+    firstName
+    onboardingCompleted
+  }
+}
+```
+"""
+type Me {
+  """The user's first name, set during onboarding; null before it is done."""
+  firstName: PersonName
+
+  """
+  Whether this account may open the in-app admin screen (`adminMetrics`). Set by hand on the profile document, false for everyone else.
+  """
+  isAdmin: Boolean!
+
+  """Convenience flag the app routes on: true once onboarding is done."""
+  onboardingCompleted: Boolean!
+
+  """When onboarding finished, or null if it never has."""
+  onboardingCompletedAt: DateTime
+
+  """The Firebase Auth user id, also the id of the profile document."""
+  userId: UserId!
+}
+
 type Mutation {
   """
   Catalogue a book without scanning it — typed by hand, or taken from a series catalogue. Consumes no scan credit.
   """
   addBook(input: NewBookInput!): Book!
+
+  """
+  Finish onboarding: save the profile and grant the welcome scans.
+  
+  Returns the updated `Me`, with `onboardingCompleted` now true. The welcome scans are granted only on the first call for an account: the mutation stays reachable afterwards so a reader can change the name they are addressed by, and re-granting there would make a one-off gift renewable.
+  """
+  completeOnboarding(
+    """The first name to persist."""
+    input: CompleteOnboardingInput!
+  ): Me!
+
+  """
+  Permanently delete the signed-in account and all of its data.
+  
+  Irreversible. Erases the library, the cover images, the scan allowance and the stored entitlement, drops the profile, and deletes the Firebase Auth user. Does NOT cancel an active App Store subscription: Apple owns that lifecycle, so a subscriber must cancel separately in the App Store. The shared series catalogue is untouched — it belongs to no one and serves every other reader. Always returns `true`.
+  """
+  deleteAccount: Boolean!
 
   """
   Remove a book from the library for good. Returns true when it was there.
@@ -146,6 +248,29 @@ type Mutation {
   Move a book along the pile. The reading dates follow from the move and are never typed: going back to TO_READ clears them.
   """
   setReadingStatus(id: BookId!, status: ReadingStatus!): Book!
+
+  """
+  Hand over a transaction the App Store signed: after a purchase, after a restore, and on every launch while a subscription is running.
+  
+  The signature is verified against Apple’s root certificates and the purchase must carry this account’s `appAccountToken`, so this is what grants Premium: nothing else does.
+  
+  Fails with `INVALID_TRANSACTION` when the signature does not check out, and `TRANSACTION_NOT_YOURS` when the purchase belongs to another account.
+  
+  ```graphql
+  mutation {
+    syncEntitlement(signedTransaction: "eyJhbGciOi...") {
+      plan
+      expiresOn
+    }
+  }
+  ```
+  """
+  syncEntitlement(
+    """
+    The JWS representation of the StoreKit transaction, e.g. the `jwsRepresentation` of a verified entitlement
+    """
+    signedTransaction: String!
+  ): Entitlement!
 
   """Correct a record the scan got wrong. Omitted fields are left alone."""
   updateBook(id: BookId!, input: BookEditInput!): Book!
@@ -182,6 +307,28 @@ scalar PageCount
 scalar Percentage
 
 """
+The reader's own first name, 1 to 200 characters, collected once during onboarding so the app can address them. Distinct from `AuthorName`, which names someone who wrote a book. Example: "Thibaut".
+"""
+scalar PersonName
+
+"""
+What an account is entitled to.
+
+Everyone starts on `FREE`, and `PREMIUM` is only ever the result of a purchase the App Store signed: an expired, refunded or cancelled-and-elapsed subscription reads back as `FREE`.
+"""
+enum Plan {
+  """
+  The plan every account starts on. The app is fully usable; only the AI scan is metered against a monthly allowance.
+  """
+  FREE
+
+  """
+  A running subscription. Scanning is unlimited, within a fair-use ceiling.
+  """
+  PREMIUM
+}
+
+"""
 The publisher of this edition, 1 to 200 characters. Example: "DAW Books".
 """
 scalar Publisher
@@ -191,9 +338,32 @@ type Query {
   book(id: BookId!): Book
 
   """
+  Application release notes, one entry per version, most recent first.
+  
+  Served from the published changelog asset in the caller's language (from `Accept-Language`, English fallback). Global (not user-scoped); the app uses it to show what changed in each release.
+  """
+  changelog: [ChangelogEntry!]!
+
+  """
   What the reader has open right now, most recently started first. The home screen is built on this.
   """
   currentlyReading: [Book!]!
+
+  """
+  What the account is entitled to today, and the account token to start a purchase with. The app reads this before showing the subscription sheet.
+  
+  ```graphql
+  query {
+    entitlement {
+      plan
+      appAccountToken
+      productId
+      expiresOn
+    }
+  }
+  ```
+  """
+  entitlement: Entitlement!
 
   """
   The reader whole library, grouped into series sections.
@@ -206,6 +376,13 @@ type Query {
   ): [LibrarySection!]!
 
   """
+  The signed-in user, resolved from the auth token.
+  
+  Always returns a `Me`, even before onboarding: a fresh account comes back with only `userId` set, which the app uses to route into the onboarding wizard.
+  """
+  me: Me!
+
+  """
   Every saga the reader owns a volume of, alphabetically.
   
   Resolved in one getAll over the catalogue rather than a lookup per saga.
@@ -213,11 +390,66 @@ type Query {
   mySeries: [FollowedSeries!]!
 
   """
+  This month’s scan allowance for the signed-in account. The scan screen reads it to show what is left, and the paywall to explain what a subscription lifts.
+  
+  ```graphql
+  query {
+    quota {
+      plan
+      used
+      limit
+      remaining
+      welcomeRemaining
+      totalRemaining
+      renewsOn
+    }
+  }
+  ```
+  """
+  quota: Quota!
+
+  """
   The full catalogue of one saga, owned volumes and unowned alike.
   
   Everything the reader does not own is a proposal: nothing enters a library until they add it. Null when the saga has never been catalogued.
   """
   series(id: SeriesId!): Series
+}
+
+"""
+The scan allowance: what the month holds, what was granted on top, what has been spent and when the month renews.
+
+Only the AI scan is metered. Adding a bottle by hand, the cellar, tastings and sharing are unlimited on every plan, so a spent allowance never stops the app being used.
+"""
+type Quota {
+  """How many the plan allows in a month, e.g. `5`"""
+  limit: Int!
+
+  """The plan the allowance is read for, e.g. `FREE`"""
+  plan: Plan!
+
+  """
+  How many are left of the month, e.g. `3`. Never negative: an allowance already overspent reads as `0`. Ignores the granted scans — read `totalRemaining` for what can really be scanned.
+  """
+  remaining: Int!
+
+  """
+  When the counter goes back to zero: midnight UTC on the 1st of the next month, e.g. `"2026-08-01T00:00:00.000Z"`
+  """
+  renewsOn: DateTime!
+
+  """
+  Everything the account can still scan: the month plus what it was granted, e.g. `17`. This is the number a screen should show — the one the scan gate refuses at `0`.
+  """
+  totalRemaining: Int!
+
+  """How many scans were spent this month, e.g. `2`"""
+  used: Int!
+
+  """
+  How many granted scans are left, e.g. `14`. Handed once when onboarding completes, drawn down only after the month is spent, and never refilled by the calendar.
+  """
+  welcomeRemaining: Int!
 }
 
 """

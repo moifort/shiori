@@ -7,6 +7,7 @@ import type {
   Eur as EurType,
   Month as MonthType,
   Percentage as PercentageType,
+  PersonName as PersonNameType,
   UserId as UserIdType,
   Year as YearType,
 } from '~/domain/shared/types'
@@ -67,4 +68,9 @@ export const BookTitle = (value: unknown) => {
 export const AuthorName = (value: unknown) => {
   const v = z.string().trim().min(1).max(200).parse(value)
   return make<AuthorNameType>()(v)
+}
+
+export const PersonName = (value: unknown) => {
+  const v = z.string().trim().min(1).max(200).parse(value)
+  return make<PersonNameType>()(v)
 }

@@ -19,8 +19,28 @@ import '~/domain/book/infrastructure/graphql/inputs'
 import '~/domain/book/infrastructure/graphql/queries'
 import '~/domain/book/infrastructure/graphql/mutations'
 
-// Series queries come last: mySeries reads the library, so it depends on the
-// book domain being registered.
+// Series queries come last among the core domains: mySeries reads the library,
+// so it depends on the book domain being registered.
 import '~/domain/series/infrastructure/graphql/queries'
+
+// User domain (profile and onboarding state)
+import '~/domain/user/infrastructure/graphql/types'
+import '~/domain/user/infrastructure/graphql/inputs'
+import '~/domain/user/infrastructure/graphql/queries'
+import '~/domain/user/infrastructure/graphql/mutations'
+
+// Entitlement domain (what the App Store sold, and the plan it grants)
+import '~/domain/entitlement/infrastructure/graphql/enums'
+import '~/domain/entitlement/infrastructure/graphql/types'
+import '~/domain/entitlement/infrastructure/graphql/queries'
+import '~/domain/entitlement/infrastructure/graphql/mutations'
+
+// Quota domain (the monthly scan allowance, read against the plan)
+import '~/domain/quota/infrastructure/graphql/types'
+import '~/domain/quota/infrastructure/graphql/queries'
+
+// Changelog (application release notes)
+import '~/domain/changelog/infrastructure/graphql/types'
+import '~/domain/changelog/infrastructure/graphql/queries'
 
 export const schema = builder.toSchema()
