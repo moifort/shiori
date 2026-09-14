@@ -2,8 +2,16 @@ import type { AiStepUsage } from '~/domain/scan/types'
 import { config } from '~/system/config'
 import { createLogger } from '~/system/logger'
 
-const GEMINI_API_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+/** The model every scan step calls.
+ *
+ *  Not 2.5-flash, which Vinarium still uses: Google stopped serving it to new
+ *  projects, and a fresh API key gets a 404 pointing here. Kept as a named
+ *  constant because the next retirement will land the same way — the failure is
+ *  a 404 on the model path, not a deprecation warning.
+ */
+const GEMINI_MODEL = 'gemini-3.6-flash'
+
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
 
 const logger = createLogger('scan')
 
