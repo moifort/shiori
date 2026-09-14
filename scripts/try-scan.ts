@@ -5,8 +5,9 @@
  *
  * Usage: NITRO_GOOGLE_API_KEY=... bun scripts/try-scan.ts <path-to-cover.jpg> [fr|en]
  */
-import { readFileSync } from 'node:fs'
+
 import { mock } from 'bun:test'
+import { readFileSync } from 'node:fs'
 import { fakeDb, resetFakeFirestore } from '../server/test/fake-firestore'
 
 const [, , imagePath = 'cover.jpg', language = 'fr'] = process.argv
