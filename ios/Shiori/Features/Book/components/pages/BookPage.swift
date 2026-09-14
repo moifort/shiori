@@ -6,6 +6,10 @@ import SwiftUI
 /// The order is deliberate. Judgment sits above the synopsis because a reader
 /// opening a book they have read came to rate or annotate it, not to re-read
 /// the blurb.
+///
+/// Removing the book is not here: it lives in the sheet's toolbar menu, where a
+/// destructive action is one deliberate step away rather than at the foot of a
+/// scroll.
 struct BookPage: View {
     let book: Book
     let otherVolumes: [Volume]
@@ -17,7 +21,6 @@ struct BookPage: View {
     let onToggleHidden: () -> Void
     let onOpenSeries: () -> Void
     let onAddVolume: (Volume) -> Void
-    let onDelete: () -> Void
 
     private var currentYear: Int { Calendar.current.component(.year, from: .now) }
 
@@ -30,11 +33,8 @@ struct BookPage: View {
             if !otherVolumes.isEmpty { recommendationsSection }
             detailsSection
             sharingSection
-            deleteSection
         }
         .listStyle(.insetGrouped)
-        .navigationTitle(book.title)
-        .navigationBarTitleDisplayMode(.inline)
         .disabled(isSaving)
     }
 
@@ -192,17 +192,7 @@ struct BookPage: View {
         } footer: {
             Text("Un livre masqué n'apparaîtra jamais dans une bibliothèque partagée.")
         }
-    }
-
-    private var deleteSection: some View {
-        Section {
-            Button(role: .destructive, action: onDelete) {
-                Label("Retirer de ma bibliothèque", systemImage: "trash")
-            }
-            .accessibilityIdentifier("book-delete")
-        }
-    }
-}
+    }}
 
 #Preview {
     NavigationStack {
@@ -236,8 +226,7 @@ struct BookPage: View {
             onEditNote: {},
             onToggleHidden: {},
             onOpenSeries: {},
-            onAddVolume: { _ in },
-            onDelete: {}
+            onAddVolume: { _ in }
         )
     }
 }

@@ -13,6 +13,7 @@ struct LibraryPage: View {
     @Binding var filter: ReadingStatus?
     let onRetry: () -> Void
     let onAddManually: () -> Void
+    let onBookTapped: (Book) -> Void
 
     var body: some View {
         Group {
@@ -72,11 +73,12 @@ struct LibraryPage: View {
     }
 
     private func rows(of section: LibrarySection) -> some View {
-        // NavigationLink(value:) rather than a Button that appends to the path:
-        // it is the form NavigationStack(path:) is built for, and it leaves the
-        // row's hit testing to the list instead of to a plain-styled button.
+        // A Button rather than a NavigationLink: the book opens as a sheet over
+        // the list, so the row carries no disclosure chevron promising a push.
         ForEach(section.books) { book in
-            NavigationLink(value: book) {
+            Button {
+                onBookTapped(book)
+            } label: {
                 BookRow(
                     title: book.title,
                     authorLine: book.authorLine,
@@ -89,6 +91,7 @@ struct LibraryPage: View {
                     isHidden: book.hidden
                 )
             }
+            .tint(.primary)
         }
     }
 
@@ -142,7 +145,8 @@ struct LibraryPage: View {
             errorMessage: nil,
             filter: $filter,
             onRetry: {},
-            onAddManually: {}
+            onAddManually: {},
+            onBookTapped: { _ in }
         )
     }
 }
@@ -156,7 +160,8 @@ struct LibraryPage: View {
             errorMessage: nil,
             filter: $filter,
             onRetry: {},
-            onAddManually: {}
+            onAddManually: {},
+            onBookTapped: { _ in }
         )
     }
 }
