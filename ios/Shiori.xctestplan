@@ -1,0 +1,30 @@
+{
+  "configurations" : [
+    {
+      "id" : "98964143-42F8-4C95-A6A5-49FFFD1E1166",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:Shiori.xcodeproj",
+      "identifier" : "E10000060000000000000001",
+      "name" : "Shiori"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:Shiori.xcodeproj",
+        "identifier" : "E20000060000000000000001",
+        "name" : "ShioriUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

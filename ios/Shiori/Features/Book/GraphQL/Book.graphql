@@ -1,0 +1,71 @@
+query Book($id: BookId!) {
+  book(id: $id) {
+    ...BookDetail
+  }
+}
+
+mutation AddBook($input: NewBookInput!) {
+  addBook(input: $input) {
+    ...BookDetail
+  }
+}
+
+mutation UpdateBook($id: BookId!, $input: BookEditInput!) {
+  updateBook(id: $id, input: $input) {
+    ...BookDetail
+  }
+}
+
+mutation SetReadingStatus($id: BookId!, $status: ReadingStatus!) {
+  setReadingStatus(id: $id, status: $status) {
+    ...BookDetail
+  }
+}
+
+mutation RateBook($id: BookId!, $rating: StarRating!) {
+  rateBook(id: $id, rating: $rating) {
+    ...BookDetail
+  }
+}
+
+mutation SetBookNote($id: BookId!, $note: ReadingNote) {
+  setBookNote(id: $id, note: $note) {
+    ...BookDetail
+  }
+}
+
+mutation SetBookHidden($id: BookId!, $hidden: Boolean!) {
+  setBookHidden(id: $id, hidden: $hidden) {
+    ...BookDetail
+  }
+}
+
+mutation DeleteBook($id: BookId!) {
+  deleteBook(id: $id)
+}
+
+fragment BookDetail on Book {
+  id
+  title
+  authors
+  publisher
+  firstPublishedIn
+  synopsis
+  genres
+  pageCount
+  isbn13
+  coverUrl
+  status
+  rating
+  note
+  hidden
+  addedAt
+  startedAt
+  finishedAt
+  series {
+    id
+    name
+    volume
+    kind
+  }
+}

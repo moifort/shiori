@@ -1,0 +1,28 @@
+# The library list: every book the reader owns, grouped into series sections.
+# `status` narrows it to one shelf of the pile; omitting it returns everything.
+query Library($status: ReadingStatus) {
+  library(status: $status) {
+    seriesId
+    series
+    books {
+      ...BookSummary
+    }
+  }
+}
+
+# What a row needs, and nothing more: the detail screen asks for the rest. A
+# library of 300 books pays for every field listed here, 300 times over.
+fragment BookSummary on Book {
+  id
+  title
+  authors
+  coverUrl
+  status
+  rating
+  series {
+    id
+    name
+    volume
+    kind
+  }
+}

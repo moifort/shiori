@@ -1,0 +1,36 @@
+# The full catalogue of one saga. Everything the reader does not own comes back
+# here as a proposal: the library query never returns these rows.
+query Series($id: SeriesId!) {
+  series(id: $id) {
+    id
+    name
+    author
+    description
+    spine {
+      ...VolumeEntry
+    }
+    relatedWorks {
+      ...VolumeEntry
+    }
+  }
+}
+
+# The sagas the reader follows, with the state derived from what they own.
+query MySeries {
+  mySeries {
+    state
+    ownedCount
+    series {
+      id
+      name
+      author
+    }
+  }
+}
+
+fragment VolumeEntry on Volume {
+  number
+  title
+  publishedIn
+  kind
+}

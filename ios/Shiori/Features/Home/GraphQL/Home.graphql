@@ -1,0 +1,6 @@
+# What the reader has open right now, most recently started first.
+query CurrentlyReading {
+  currentlyReading {
+    ...BookSummary
+  }
+}
