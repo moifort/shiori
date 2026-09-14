@@ -11,12 +11,14 @@ struct ScannedBook {
     var genres: [String] = []
     var pageCount: Int?
     var isbn13: String?
-    var seriesName: String?
-    var volumeNumber: Int?
+    var series: SeriesMembership?
 
-    /// The draft the review screen edits and `addBook` persists. The series is
-    /// deliberately not carried over: membership is resolved server-side on a
-    /// scan, and a manually added book has none to claim.
+    /// The draft the review screen edits and `addBook` persists.
+    ///
+    /// The series rides along untouched. It is resolved server-side and keyed to
+    /// the shared catalogue, so handing it straight back is what makes a scanned
+    /// book join the very catalogue the scan built — and the review screen shows
+    /// it read-only for the same reason.
     var asDraft: BookDraft {
         BookDraft(
             title: title ?? "",
@@ -26,7 +28,8 @@ struct ScannedBook {
             synopsis: synopsis,
             genres: genres,
             pageCount: pageCount,
-            isbn13: isbn13
+            isbn13: isbn13,
+            series: series
         )
     }
 }
@@ -51,8 +54,14 @@ enum ScanAPI {
             genres: result.genres,
             pageCount: result.pageCount,
             isbn13: result.isbn13,
-            seriesName: result.series?.name,
-            volumeNumber: result.series?.volume
+            series: result.series.map { series in
+                SeriesMembership(
+                    id: series.id,
+                    name: series.name,
+                    volume: series.volume,
+                    kind: series.kind.asDomain
+                )
+            }
         )
     }
 }

@@ -37,8 +37,8 @@ final class ScanViewModel {
             }
             track(.scanSucceeded)
             draft = scanned.asDraft
-            seriesLabel = scanned.seriesName.map { name in
-                scanned.volumeNumber.map { "\(name) · Tome \($0)" } ?? name
+            seriesLabel = scanned.series.map { series in
+                series.volume.map { "\(series.name) · Tome \($0)" } ?? series.name
             }
             step = .review
         } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {

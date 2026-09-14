@@ -34,6 +34,14 @@ builder.mutationFields((t) => ({
         genres: args.input.genres ?? undefined,
         pageCount: args.input.pageCount ?? undefined,
         isbn13: args.input.isbn13 ?? undefined,
+        series: args.input.series
+          ? {
+              id: args.input.series.id,
+              name: args.input.series.name,
+              volume: args.input.series.volume ?? undefined,
+              kind: args.input.series.kind,
+            }
+          : undefined,
         status: args.input.status ?? undefined,
         hidden: args.input.hidden ?? undefined,
       })

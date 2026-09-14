@@ -32,4 +32,15 @@ enum LibraryAPI {
         case .read: .case(.read)
         }
     }
+
+    /// Only ever used to hand a scanned membership straight back to `addBook`.
+    static func graphQLVolumeKind(_ kind: VolumeKind) -> ShioriGraphQL.VolumeKind {
+        switch kind {
+        case .main: .main
+        case .prequel: .prequel
+        case .spinOff: .spinOff
+        case .novella: .novella
+        case .companion: .companion
+        }
+    }
 }

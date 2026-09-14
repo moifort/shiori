@@ -14,7 +14,6 @@ struct LibraryView: View {
                 isLoading: viewModel.isLoading,
                 errorMessage: viewModel.errorMessage,
                 filter: $viewModel.filter,
-                onSelect: { path.append($0) },
                 onRetry: { Task { await viewModel.load() } },
                 onAddManually: { showManualAdd = true }
             )

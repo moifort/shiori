@@ -1,6 +1,6 @@
 import { Genre, Isbn13, PageCount, Publisher, Synopsis } from '~/domain/book/primitives'
 import type { ScanResult } from '~/domain/scan/types'
-import { SeriesName, VolumeNumber } from '~/domain/series/primitives'
+import { SeriesName, seriesKeyOf, VolumeNumber } from '~/domain/series/primitives'
 import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
 
 /** What a stubbed scan answers. A complete book on purpose: the review screen
@@ -26,6 +26,7 @@ export const STUBBED_SCAN: ScanResult = {
   pageCount: PageCount(662),
   isbn13: Isbn13('9782352943556'),
   series: {
+    id: seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss'),
     name: SeriesName('Chronique du tueur de roi'),
     volume: VolumeNumber(1),
     kind: 'main',

@@ -1,0 +1,78 @@
+{
+  "identifier" : "C4F1D827",
+  "nonRenewingSubscriptions" : [],
+  "products" : [],
+  "settings" : {
+    "_applicationInternalID" : "6811938144",
+    "_developerTeamID" : "46C337T7YN",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 0,
+    "_locale" : "fr_FR",
+    "_storefront" : "FRA",
+    "_storeKitErrors" : []
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21470001",
+      "localizations" : [
+        {
+          "description" : "Scanner ses livres sans compter.",
+          "displayName" : "Shiori Premium",
+          "locale" : "fr_FR"
+        }
+      ],
+      "name" : "Shiori Premium",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "24.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6760001",
+          "introductoryOffer" : {
+            "internalID" : "6760003",
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P1W"
+          },
+          "localizations" : [
+            {
+              "description" : "Scans illimités et le catalogue complet de vos séries.",
+              "displayName" : "Premium annuel",
+              "locale" : "fr_FR"
+            }
+          ],
+          "productID" : "com.polyforms.shiori.app.premium.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Premium annuel",
+          "subscriptionGroupID" : "21470001",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "2.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6760002",
+          "localizations" : [
+            {
+              "description" : "Scans illimités et le catalogue complet de vos séries.",
+              "displayName" : "Premium mensuel",
+              "locale" : "fr_FR"
+            }
+          ],
+          "productID" : "com.polyforms.shiori.app.premium.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Premium mensuel",
+          "subscriptionGroupID" : "21470001",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

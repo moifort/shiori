@@ -34,8 +34,25 @@ const toDate = (value: unknown): unknown => {
 // Firestore rejects `undefined` field values outright. An absent domain field is
 // meant to disappear from the document, which is exactly what dropping the key
 // does on a full `set`.
-export const withoutAbsentFields = <T extends DocumentData>(data: T): T =>
-  Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T
+//
+// Recursive, because the shallow version was not enough: a series catalogue is
+// an array of volumes, and a volume with no number (a novella) or no year (one
+// not out yet) carries `undefined` INSIDE the array. Firestore then rejects the
+// whole document, so one unnumbered volume silently cost an entire saga its
+// catalogue.
+export const withoutAbsentFields = <T extends DocumentData>(data: T): T => pruneUndefined(data) as T
+
+const pruneUndefined = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(pruneUndefined)
+  // Dates and other class instances are values, not maps: recursing into them
+  // would flatten a Timestamp into a plain object.
+  if (value === null || typeof value !== 'object' || value instanceof Date) return value
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([, entry]) => entry !== undefined)
+      .map(([key, entry]) => [key, pruneUndefined(entry)]),
+  )
+}
 
 // Firestore batches accept at most 500 operations.
 const BATCH_LIMIT = 400

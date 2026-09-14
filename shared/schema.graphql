@@ -305,6 +305,11 @@ input NewBookInput {
   publisher: Publisher
 
   """
+  The saga this book belongs to, taken from a scan result. Omitted for a book typed by hand.
+  """
+  series: SeriesMembershipInput
+
+  """
   Defaults to TO_READ, the only status true of every freshly catalogued book.
   """
   status: ReadingStatus
@@ -519,6 +524,10 @@ The saga the scanned book belongs to, as the enrichment step resolved it.
 Absent for a standalone book, which is most of them. Found by the web search rather than read off the cover: a great many novels belong to a cycle the cover never mentions.
 """
 type ScannedSeries {
+  """
+  Hand this back to `addBook` unchanged so the book joins the very catalogue this scan built.
+  """
+  id: SeriesId!
   kind: VolumeKind!
   name: SeriesName!
   volume: VolumeNumber
@@ -575,6 +584,16 @@ type SeriesMembership {
   name: SeriesName!
 
   """Null for a spin-off or companion, which sit outside the numbering."""
+  volume: VolumeNumber
+}
+
+"""
+A book place in a saga, as `scanBook` resolved it. Pass it back unchanged.
+"""
+input SeriesMembershipInput {
+  id: SeriesId!
+  kind: VolumeKind!
+  name: SeriesName!
   volume: VolumeNumber
 }
 

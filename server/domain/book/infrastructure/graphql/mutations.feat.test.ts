@@ -120,6 +120,38 @@ describe('reading the library through the API', () => {
   })
 })
 
+describe('a book that came from a scan', () => {
+  // The scan resolves the saga server-side and hands it to the app; addBook is
+  // the only way it comes back. Without this field a scanned book never joined
+  // its series, and the library never grouped it.
+  test('keeps the series it was scanned with, and groups under it', async () => {
+    const result = await execute(`
+      mutation {
+        addBook(input: {
+          title: "Le Nom du vent"
+          authors: ["Patrick Rothfuss"]
+          series: {
+            id: "chronique-du-tueur-de-roi--patrick-rothfuss"
+            name: "Chronique du tueur de roi"
+            volume: 1
+            kind: MAIN
+          }
+        }) { series { name volume kind } }
+      }
+    `)
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.addBook).toEqual({
+      series: { name: 'Chronique du tueur de roi', volume: 1, kind: 'MAIN' },
+    })
+
+    const library = await execute('{ library { series books { title } } }')
+    expect(library.data?.library).toEqual([
+      { series: 'Chronique du tueur de roi', books: [{ title: 'Le Nom du vent' }] },
+    ])
+  })
+})
+
 describe('keeping a book to oneself', () => {
   test('flips the hidden flag', async () => {
     const book = await addBook('Le Nom du vent')

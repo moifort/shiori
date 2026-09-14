@@ -9,7 +9,6 @@ struct HomeView: View {
     @State private var reading: [Book] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
-    @State private var selected: Book?
 
     var body: some View {
         NavigationStack {
@@ -35,16 +34,13 @@ struct HomeView: View {
                 }
             }
             .navigationTitle("En cours")
-            .navigationDestination(item: $selected) { book in
-                BookView(bookId: book.id, onChanged: { _ in Task { await load() } })
-            }
         }
         .task { await load() }
     }
 
     private var list: some View {
         List(reading) { book in
-            Button { selected = book } label: {
+            NavigationLink(value: book) {
                 BookRow(
                     title: book.title,
                     authorLine: book.authorLine,
@@ -55,10 +51,12 @@ struct HomeView: View {
                     isHidden: book.hidden
                 )
             }
-            .buttonStyle(.plain)
         }
         .listStyle(.insetGrouped)
         .refreshable { await load() }
+        .navigationDestination(for: Book.self) { book in
+            BookView(bookId: book.id, onChanged: { _ in Task { await load() } })
+        }
     }
 
     private func load() async {

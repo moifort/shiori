@@ -75,6 +75,9 @@ struct BookDraft {
     var genres: [String] = []
     var pageCount: Int?
     var isbn13: String?
+    /// Only ever filled from a scan: membership is keyed to the shared catalogue,
+    /// and a hand-typed saga would be one no catalogue knows.
+    var series: SeriesMembership?
     var status: ReadingStatus = .toRead
     var hidden = false
 
@@ -87,6 +90,16 @@ struct BookDraft {
             isbn13: GraphQLHelpers.graphQLNullable(isbn13),
             pageCount: GraphQLHelpers.graphQLNullable(pageCount),
             publisher: GraphQLHelpers.graphQLNullable(publisher),
+            series: GraphQLHelpers.graphQLNullable(
+                series.map { membership in
+                    ShioriGraphQL.SeriesMembershipInput(
+                        id: membership.id,
+                        kind: .case(LibraryAPI.graphQLVolumeKind(membership.kind)),
+                        name: membership.name,
+                        volume: GraphQLHelpers.graphQLNullable(membership.volume)
+                    )
+                }
+            ),
             status: .some(LibraryAPI.graphQLStatus(status)),
             synopsis: GraphQLHelpers.graphQLNullable(synopsis),
             title: title

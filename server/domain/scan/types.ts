@@ -1,6 +1,6 @@
 import type { Brand } from 'ts-brand'
 import type { Genre, Isbn13, PageCount, Publisher, Synopsis } from '~/domain/book/types'
-import type { SeriesName, VolumeKind, VolumeNumber } from '~/domain/series/types'
+import type { SeriesId, SeriesName, VolumeKind, VolumeNumber } from '~/domain/series/types'
 import type { Language } from '~/domain/shared/language'
 import type { AuthorName, BookTitle, Year } from '~/domain/shared/types'
 
@@ -31,8 +31,14 @@ export type ScanResult = {
 }
 
 /** The saga the scanned book belongs to, as the enrichment step resolved it.
- *  Absent for a standalone book, which is most of them. */
+ *  Absent for a standalone book, which is most of them.
+ *
+ *  The id is carried here rather than recomputed by the caller: it is derived
+ *  from the saga name AND the author, and only the scan holds both at once. The
+ *  app hands it straight back to `addBook`, so a scanned book joins the very
+ *  catalogue the scan built. */
 export type ScannedSeries = {
+  id: SeriesId
   name: SeriesName
   volume?: VolumeNumber
   kind: VolumeKind

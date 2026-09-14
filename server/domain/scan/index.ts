@@ -142,7 +142,7 @@ export namespace Scan {
         genres: value.genres.map((genre) => optional(genre, Genre)).filter(isPresent),
         pageCount: optional(value.pageCount, PageCount),
         isbn13: optional(value.isbn13, Isbn13),
-        series: parsedSeries(value),
+        series: parsedSeries(value, authors.length > 0 ? authors : seen.authors),
       } satisfies ScanResult,
       usage,
     }
@@ -204,10 +204,16 @@ export namespace Scan {
     }
   }
 
-  const parsedSeries = (value: EnrichmentOutput): ScanResult['series'] => {
+  const parsedSeries = (
+    value: EnrichmentOutput,
+    authors: ScanResult['authors'],
+  ): ScanResult['series'] => {
     const name = optional(value.seriesName, SeriesName)
-    if (!name) return undefined
+    // Without an author there is no stable key, so the saga cannot be catalogued
+    // or rejoined later. Dropping it beats inventing an id nothing else shares.
+    if (!name || authors.length === 0) return undefined
     return {
+      id: seriesKeyOf(name, authors[0]),
       name,
       volume: optional(value.volumeNumber, VolumeNumber),
       // A series the model found but could not classify is a main volume: it is

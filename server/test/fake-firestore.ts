@@ -117,6 +117,25 @@ export const createFakeFirestore = () => {
     return result
   }
 
+  // Firestore rejects `undefined` anywhere in a document, including inside an
+  // array. The fake used to accept it, which let a real bug pass a green test:
+  // a series catalogue with one unnumbered volume wrote fine here and was
+  // refused in production. Rejecting it makes the fake honest.
+  const rejectUndefined = (value: unknown, path: string): void => {
+    if (value === undefined) {
+      throw new Error(`Cannot use "undefined" as a Firestore value (found at ${path})`)
+    }
+    if (Array.isArray(value)) {
+      value.forEach((entry, index) => rejectUndefined(entry, `${path}[${index}]`))
+      return
+    }
+    if (value === null || typeof value !== 'object' || value instanceof Date) return
+    if (value instanceof FieldValue) return
+    for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+      rejectUndefined(entry, path ? `${path}.${key}` : key)
+    }
+  }
+
   const makeRef = (collection: string, id: string): FakeRef => ({
     collectionPath: collection,
     id,
@@ -127,6 +146,7 @@ export const createFakeFirestore = () => {
       return { exists: doc !== undefined, id, data: () => doc }
     },
     set: async (data, options) => {
+      rejectUndefined(data, `${collection}/${id}`)
       directWrites.push({ type: 'set', collection, id })
       docsOf(collection).set(
         id,

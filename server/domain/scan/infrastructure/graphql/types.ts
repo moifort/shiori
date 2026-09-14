@@ -9,6 +9,13 @@ const ScannedSeriesType = builder.objectRef<ScannedSeries>('ScannedSeries').impl
     'rather than read off the cover: a great many novels belong to a cycle the ' +
     'cover never mentions.',
   fields: (t) => ({
+    id: t.field({
+      type: 'SeriesId',
+      description:
+        'Hand this back to `addBook` unchanged so the book joins the very ' +
+        'catalogue this scan built.',
+      resolve: (series) => series.id,
+    }),
     name: t.field({ type: 'SeriesName', resolve: (series) => series.name }),
     volume: t.field({
       type: 'VolumeNumber',

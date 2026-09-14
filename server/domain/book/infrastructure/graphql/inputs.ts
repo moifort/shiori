@@ -1,5 +1,21 @@
 import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
+import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { builder } from '~/domain/shared/graphql/builder'
+
+/** The saga a scanned book belongs to, carried back from `scanBook` unchanged.
+ *
+ *  Only ever filled from a scan result. The app does not let a reader type this:
+ *  membership is keyed to the shared catalogue, and a hand-typed saga would be
+ *  one no catalogue knows, which would then never gather its other volumes. */
+export const SeriesMembershipInput = builder.inputType('SeriesMembershipInput', {
+  description: 'A book place in a saga, as `scanBook` resolved it. Pass it back unchanged.',
+  fields: (t) => ({
+    id: t.field({ type: 'SeriesId', required: true }),
+    name: t.field({ type: 'SeriesName', required: true }),
+    volume: t.field({ type: 'VolumeNumber', required: false }),
+    kind: t.field({ type: VolumeKindEnum, required: true }),
+  }),
+})
 
 /** What a book can be created with by hand, with no photo and no AI call. Only a
  *  title is required: a book added from a half-remembered recommendation is still
@@ -17,6 +33,13 @@ export const NewBookInput = builder.inputType('NewBookInput', {
     genres: t.field({ type: ['Genre'], required: false }),
     pageCount: t.field({ type: 'PageCount', required: false }),
     isbn13: t.field({ type: 'Isbn13', required: false }),
+    series: t.field({
+      type: SeriesMembershipInput,
+      required: false,
+      description:
+        'The saga this book belongs to, taken from a scan result. Omitted for a ' +
+        'book typed by hand.',
+    }),
     status: t.field({
       type: ReadingStatusEnum,
       required: false,

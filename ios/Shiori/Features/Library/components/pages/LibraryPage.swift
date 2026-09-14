@@ -11,7 +11,6 @@ struct LibraryPage: View {
     let isLoading: Bool
     let errorMessage: String?
     @Binding var filter: ReadingStatus?
-    let onSelect: (Book) -> Void
     let onRetry: () -> Void
     let onAddManually: () -> Void
 
@@ -73,8 +72,11 @@ struct LibraryPage: View {
     }
 
     private func rows(of section: LibrarySection) -> some View {
+        // NavigationLink(value:) rather than a Button that appends to the path:
+        // it is the form NavigationStack(path:) is built for, and it leaves the
+        // row's hit testing to the list instead of to a plain-styled button.
         ForEach(section.books) { book in
-            Button { onSelect(book) } label: {
+            NavigationLink(value: book) {
                 BookRow(
                     title: book.title,
                     authorLine: book.authorLine,
@@ -87,7 +89,6 @@ struct LibraryPage: View {
                     isHidden: book.hidden
                 )
             }
-            .buttonStyle(.plain)
         }
     }
 
@@ -140,7 +141,6 @@ struct LibraryPage: View {
             isLoading: false,
             errorMessage: nil,
             filter: $filter,
-            onSelect: { _ in },
             onRetry: {},
             onAddManually: {}
         )
@@ -155,7 +155,6 @@ struct LibraryPage: View {
             isLoading: false,
             errorMessage: nil,
             filter: $filter,
-            onSelect: { _ in },
             onRetry: {},
             onAddManually: {}
         )
