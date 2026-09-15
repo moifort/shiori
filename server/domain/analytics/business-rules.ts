@@ -197,9 +197,10 @@ export const dashboardOf = (view: AnalyticsView, today: LocalDateValue): Dashboa
 }
 
 /** Books finished per year, from the first finished book to this year, empty
- *  years included so the bars keep their spacing; the last six at most. */
+ *  years included so the bars keep their spacing; the last six at most. Before
+ *  any book is finished, this year alone at zero: the chart is drawn from the
+ *  first book on, and a chart needs a bar to draw. */
 export const booksPerYearOf = (finishes: readonly Finish[], currentYear: number): YearCount[] => {
-  if (finishes.length === 0) return []
   const counts = new Map<number, number>()
   for (const finish of finishes) {
     const year = yearOf(finish.finishedOn)

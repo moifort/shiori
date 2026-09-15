@@ -70,8 +70,8 @@ describe('books read per year', () => {
     expect(years.map(({ year }) => year)).toEqual([2021, 2022, 2023, 2024, 2025, 2026])
   })
 
-  test('is empty before any book is finished', () => {
-    expect(booksPerYearOf([], 2026)).toEqual([])
+  test('shows the current year at zero before any book is finished', () => {
+    expect(booksPerYearOf([], 2026)).toEqual([{ year: 2026, count: 0 }])
   })
 })
 
