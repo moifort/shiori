@@ -15,13 +15,9 @@ type Doc = Record<string, unknown>
 export type FakeSnapshot = { exists: boolean; id: string; data: () => Doc | undefined }
 
 export type FakeRef = {
-  /** Full path of the collection holding this document. A subcollection reads as
-   *  `users/reader-1/books`, which is how Firestore addresses one — the store
-   *  stays a flat map and every query keeps working unchanged. */
+  /** The collection holding this document. Collections are flat, never nested. */
   collectionPath: string
   id: string
-  /** Documents nested under this one, exactly as `DocumentReference.collection`. */
-  collection: (name: string) => FakeCollection
   get: () => Promise<FakeSnapshot>
   set: (data: Doc, options?: { merge?: boolean }) => Promise<void>
   update: (data: Doc) => Promise<void>
@@ -139,7 +135,6 @@ export const createFakeFirestore = () => {
   const makeRef = (collection: string, id: string): FakeRef => ({
     collectionPath: collection,
     id,
-    collection: (name: string) => makeCollection(`${collection}/${id}/${name}`),
     get: async () => {
       docReads += 1
       const doc = docsOf(collection).get(id)

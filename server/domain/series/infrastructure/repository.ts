@@ -3,7 +3,7 @@ import { db } from '~/system/firebase'
 import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
 import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 
-// A single global collection, deliberately outside `users/`. A catalogue entry is
+// A single global collection, separate from `books`. A catalogue entry is
 // a fact about the world with no reference to any reader, so one document serves
 // everyone and the AI call that produced it is paid once rather than once per
 // reader. It is never exposed through library sharing.

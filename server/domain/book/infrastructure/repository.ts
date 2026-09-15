@@ -6,15 +6,12 @@ import { db } from '~/system/firebase'
 import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
 import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 
-// Books live under their owner rather than in a global collection keyed by user:
-// the library is read whole far more often than one book is, and a subcollection
-// makes that a single query instead of a filtered scan of everyone's books.
-const books = (userId: UserId) =>
-  db()
-    .collection('users')
-    .doc(userId)
-    .collection('books')
-    .withConverter(genericDataConverter<Book>())
+// One flat collection for every reader, never a subcollection: a book carries its
+// owner in `userId`, and a library is an equality query on that field, which the
+// automatic single-field index answers without a composite one.
+const books = () => db().collection('books').withConverter(genericDataConverter<Book>())
+
+const ownedBy = (userId: UserId) => books().where('userId', '==', userId)
 
 const allCacheKey = (userId: UserId) => `books:all:${userId}`
 
@@ -23,13 +20,15 @@ const allCacheKey = (userId: UserId) => `books:all:${userId}`
 // them rather than one each.
 export const findAllByUser = (userId: UserId): Promise<Book[]> =>
   memoizedPerRequest(allCacheKey(userId), async () => {
-    const snapshot = await books(userId).get()
+    const snapshot = await ownedBy(userId).get()
     return snapshot.docs.map((doc) => doc.data())
   })
 
+// The id alone reaches any reader's book now that the collection is shared, so
+// a book owned by someone else answers exactly like one that does not exist.
 export const findById = async (userId: UserId, bookId: BookId): Promise<Book | null> => {
-  const doc = await books(userId).doc(bookId).get()
-  return doc.data() ?? null
+  const book = (await books().doc(bookId).get()).data()
+  return book?.userId === userId ? book : null
 }
 
 // Resolved from the memoized scan rather than a `where` query. A reader owns a
@@ -41,7 +40,7 @@ export const findBySeries = async (userId: UserId, seriesId: SeriesId): Promise<
 // Writes drop the memoized scan so a read later in the same request sees them —
 // a mutation that saves and then returns the refreshed library does exactly that.
 export const save = async (book: Book, batch?: WriteBatch): Promise<Book> => {
-  const ref = books(book.userId).doc(book.id)
+  const ref = books().doc(book.id)
   const document = withoutAbsentFields(book)
   if (batch) batch.set(ref, document)
   else await ref.set(document)
@@ -50,14 +49,14 @@ export const save = async (book: Book, batch?: WriteBatch): Promise<Book> => {
 }
 
 export const remove = async (userId: UserId, bookId: BookId, batch?: WriteBatch): Promise<void> => {
-  const ref = books(userId).doc(bookId)
+  const ref = books().doc(bookId)
   if (batch) batch.delete(ref)
   else await ref.delete()
   evictFromRequestCache(allCacheKey(userId))
 }
 
 export const removeAllByUser = async (userId: UserId): Promise<void> => {
-  const snapshot = await books(userId).get()
+  const snapshot = await ownedBy(userId).get()
   const batch = db().batch()
   for (const doc of snapshot.docs) batch.delete(doc.ref)
   await batch.commit()

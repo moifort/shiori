@@ -29,7 +29,7 @@ describe('UserQuery.me', () => {
       firstName: 'Thibaut' as PersonName,
       onboardingCompletedAt: new Date('2026-01-01'),
     }
-    fake.seed('user-profiles', 'u1', profile)
+    fake.seed('users', 'u1', profile)
 
     const me = await UserQuery.me(user('u1'))
     expect(me.firstName as string).toBe('Thibaut')

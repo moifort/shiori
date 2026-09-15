@@ -79,7 +79,8 @@ library shows books, never series.
 ### 3.3 Firestore layout
 
 ```
-users/{userId}/books/{bookId}     private — the book record, including status, rating, note
+users/{userId}                    private — the account profile
+books/{bookId}                    private — the book record, owned via `userId`, including status, rating, note
 series/{seriesKey}                global — public catalogue, no user reference
 scan-cache/{imageHash}_{lang}     global — transposed from Vinarium
 ```

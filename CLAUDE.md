@@ -66,8 +66,10 @@ Domains live in `server/domain/{domain}/` with `types.ts`, `primitives.ts`, `com
 
 This is the rule the data model turns on, and getting it backwards is expensive:
 
-- **A book is private.** It lives at `users/{userId}/books/{bookId}`, owned by exactly one
-  reader, never merged with anyone else's. Two readers who scan the same novel keep two
+- **Collections are flat.** Never a subcollection: every document sits in a top-level
+  collection and names its owner in a `userId` field. Accounts live in `users/{userId}`.
+- **A book is private.** It lives at `books/{bookId}` with its owner's `userId`, owned by
+  exactly one reader, never merged with anyone else's. Two readers who scan the same novel keep two
   independent records. Status, rating and note sit on the record itself — there is no separate
   "library entry" entity.
 - **A series catalogue is shared.** It lives at `series/{seriesKey}`, holds no reference to any
@@ -95,8 +97,8 @@ Three suffixes, three CI workflows:
 
 Mock storage with `mock.module('~/system/firebase', () => ({ db: fakeDb }))`.
 
-The fake Firestore supports subcollections: a document reference exposes `collection(name)`,
-and `collectionPath` is the full path the document lives under.
+The fake Firestore has no subcollections, matching the flat layout: `collectionPath` is the
+top-level collection a document lives in.
 
 ## Database migrations
 

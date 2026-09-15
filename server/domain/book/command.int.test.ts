@@ -34,7 +34,7 @@ describe('cataloguing a book', () => {
     const book = await add('Le Nom du vent')
 
     expect(book.format).toBe('book')
-    expect(fake.data('users/reader-1/books', book.id)?.format).toBe('book')
+    expect(fake.data('books', book.id)?.format).toBe('book')
   })
 
   test('lets the reader correct the format afterwards', async () => {
@@ -57,7 +57,7 @@ describe('cataloguing a book', () => {
   test('writes no key for a field the reader left empty', async () => {
     const book = await add('Le Nom du vent')
 
-    const stored = fake.data('users/reader-1/books', book.id)
+    const stored = fake.data('books', book.id)
     expect(stored).not.toBeNull()
     expect(Object.hasOwn(stored as object, 'synopsis')).toBe(false)
   })
@@ -92,6 +92,16 @@ describe('rating a book', () => {
 
     expect(result).toBe('not-found')
   })
+
+  // Every reader's books share one collection, so the id alone would reach them.
+  test('answers not-found for a book another reader owns', async () => {
+    const theirs = await BookCommand.add('reader-2' as UserId, { title: BookTitle('Dune') }, NOW)
+
+    const result = await BookCommand.rate(reader, theirs.id, StarRating(1), NOW)
+
+    expect(result).toBe('not-found')
+    expect(fake.data('books', theirs.id)?.rating).toBeUndefined()
+  })
 })
 
 describe('annotating a book', () => {
@@ -109,7 +119,7 @@ describe('annotating a book', () => {
 
     // An emptied note is a deletion, not an empty string the app later renders
     // as a blank block.
-    const stored = fake.data('users/reader-1/books', book.id)
+    const stored = fake.data('books', book.id)
     expect(Object.hasOwn(stored as object, 'note')).toBe(false)
   })
 })

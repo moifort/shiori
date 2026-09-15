@@ -6,8 +6,7 @@ import { deleteAuthUser } from '~/system/identity'
 import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
 import { genericDataConverter } from '~/utils/firestore'
 
-const profiles = () =>
-  db().collection('user-profiles').withConverter(genericDataConverter<UserProfile>())
+const profiles = () => db().collection('users').withConverter(genericDataConverter<UserProfile>())
 
 const cacheKey = (userId: UserId) => `user:profile:${userId}`
 
