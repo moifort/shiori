@@ -50,7 +50,6 @@ struct HomeView: View {
                     cover: book,
                     status: book.status,
                     rating: book.rating,
-                    format: book.format,
                     volumeLabel: book.series?.label,
                     isHidden: book.hidden
                 )

@@ -9,22 +9,16 @@ struct BookRow: View {
     let cover: Book
     let status: ReadingStatus
     let rating: Int?
-    /// Named on the row only when it is not a plain book, which is nearly every
-    /// row: a label repeated down the whole list would say nothing.
-    var format: BookFormat = .book
     /// The volume label ("Tome 3") shown inside a series section, where the
     /// title alone does not say which volume this is. Absent elsewhere: on the
     /// standalone shelf there is no numbering to explain.
     var volumeLabel: String?
     var isHidden: Bool = false
 
-    private var caption: String? {
-        let parts = [format == .book ? nil : format.label, volumeLabel].compactMap { $0 }
-        return parts.isEmpty ? nil : parts.joined(separator: " · ")
-    }
-
     var body: some View {
-        HStack(spacing: 12) {
+        // Top-aligned so the first line of text starts level with the cover,
+        // whether that line is a volume label or the title itself.
+        HStack(alignment: .top, spacing: 12) {
             BookCover(book: cover)
                 .overlay(alignment: .topTrailing) {
                     ReadingStatusBadge(status: status)
@@ -32,8 +26,8 @@ struct BookRow: View {
                 }
 
             VStack(alignment: .leading, spacing: 3) {
-                if let caption {
-                    Text(caption)
+                if let volumeLabel {
+                    Text(volumeLabel)
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.secondary)
                 }
@@ -45,27 +39,23 @@ struct BookRow: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
 
-                if rating != nil || isHidden {
-                    HStack(spacing: 8) {
-                        if let rating {
-                            StarRatingView(rating: rating)
-                        }
-
-                        if isHidden {
-                            // Says the book is excluded from sharing. Only ever an
-                            // icon: spelling it out on every row would shout a
-                            // private choice at anyone glancing over a shoulder.
-                            Image(systemName: "eye.slash")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .accessibilityLabel(Text("Non partagé"))
-                        }
-                    }
-                    .padding(.top, 1)
+                if let rating {
+                    StarRatingView(rating: rating)
+                        .padding(.top, 1)
                 }
             }
 
             Spacer(minLength: 0)
+
+            if isHidden {
+                // Says the book is excluded from sharing. Only ever an icon,
+                // tucked in the corner: spelling it out on every row would
+                // shout a private choice at anyone glancing over a shoulder.
+                Image(systemName: "eye.slash")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(Text("Non partagé"))
+            }
         }
         // Room for the badge, which overhangs the cover's top edge.
         .padding(.vertical, 6)
@@ -127,7 +117,6 @@ private struct ReadingStatusBadge: View {
             cover: Book(id: "2", title: "La Peur du sage", authors: ["Patrick Rothfuss"], status: .read),
             status: .read,
             rating: 5,
-            format: .audiobook,
             volumeLabel: "Tome 2",
             isHidden: true
         )

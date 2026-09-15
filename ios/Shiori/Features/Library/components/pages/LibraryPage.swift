@@ -3,9 +3,9 @@ import SwiftUI
 /// The library list. Pure and previewable: it takes what to draw and what to
 /// call, and knows nothing about the network.
 ///
-/// Sections are sagas. The standalone shelf trails them with no heading, because
-/// it is the leftovers rather than a category — giving it a title like "Autres"
-/// would make it look like a shelf the reader chose.
+/// Sections are sagas, trailed by a titled shelf of standalone books. The title
+/// says what they share — no series — so the shelf does not read as leftovers
+/// tacked onto the last saga.
 struct LibraryPage: View {
     let sections: [LibrarySection]
     let isLoading: Bool
@@ -61,10 +61,8 @@ struct LibraryPage: View {
     private var list: some View {
         List {
             ForEach(sections) { section in
-                if let name = section.seriesName {
-                    Section(name) { rows(of: section) }
-                } else {
-                    Section { rows(of: section) }
+                Section(section.seriesName ?? String(localized: "Livres indépendants")) {
+                    rows(of: section)
                 }
             }
         }
@@ -85,7 +83,6 @@ struct LibraryPage: View {
                     cover: book,
                     status: book.status,
                     rating: book.rating,
-                    format: book.format,
                     // Only inside a saga: on the standalone shelf there is no
                     // numbering for a label to explain.
                     volumeLabel: section.seriesName != nil ? book.series?.label : nil,
