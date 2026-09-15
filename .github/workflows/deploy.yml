@@ -1,12 +1,10 @@
 name: Deploy
 
-# Manual until the GitHub secrets below are set. shiori-polyforms is provisioned
-# and the backend is live, deployed from a local `terraform apply`; what is still
-# missing is the CI's own path in — the Workload Identity provider, the deploy
-# service account and the Apple/Gemini values this job materializes into
-# terraform.tfvars. Flip this to `push: branches: [main]` once they exist, and
-# every push redeploys as it does on Vinarium.
+# Every push to main redeploys, as on Vinarium. The backend is never applied from
+# a workstation: the Terraform state lives in GCS and this job is its only writer.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -22,6 +20,37 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0   # sentry-cli reads the commit history to attach it to the release
+
+      # A missing secret reaches Terraform as an empty string, not as null: an unset
+      # ADMIN_TOKEN would replace the generated admin token with "" and leave /admin/*
+      # unguarded, an unset billing account would detach the project from billing.
+      # Fail before anything is applied.
+      - name: Check the deploy secrets are set
+        env:
+          GCP_WIF_PROVIDER: ${{ secrets.GCP_WIF_PROVIDER }}
+          GCP_DEPLOY_SA: ${{ secrets.GCP_DEPLOY_SA }}
+          GCP_BILLING_ACCOUNT: ${{ secrets.GCP_BILLING_ACCOUNT }}
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_SERVICES_ID: ${{ secrets.APPLE_SERVICES_ID }}
+          APPLE_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
+          APPLE_PRIVATE_KEY_P8: ${{ secrets.APPLE_PRIVATE_KEY_P8 }}
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          GCP_ORG_ID: ${{ vars.GCP_ORG_ID }}
+          IOS_BUNDLE_ID: ${{ vars.IOS_BUNDLE_ID }}
+        run: |
+          missing=0
+          for name in GCP_WIF_PROVIDER GCP_DEPLOY_SA GCP_BILLING_ACCOUNT ADMIN_TOKEN GEMINI_API_KEY \
+            APPLE_TEAM_ID APPLE_SERVICES_ID APPLE_KEY_ID APPLE_PRIVATE_KEY_P8 \
+            GCP_PROJECT_ID GCP_ORG_ID IOS_BUNDLE_ID; do
+            if [ -z "${!name}" ]; then
+              echo "::error::$name is not set"
+              missing=1
+            fi
+          done
+          exit "$missing"
+
       - uses: oven-sh/setup-bun@v2
       - uses: hashicorp/setup-terraform@v4
         with:
