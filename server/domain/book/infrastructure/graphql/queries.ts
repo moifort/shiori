@@ -28,12 +28,4 @@ builder.queryFields((t) => ({
     args: { id: t.arg({ type: 'BookId', required: true }) },
     resolve: (_root, args, context) => BookQuery.byId(context.userId, args.id),
   }),
-
-  currentlyReading: t.field({
-    type: [BookType],
-    description:
-      'What the reader has open right now, most recently started first. The home ' +
-      'screen is built on this.',
-    resolve: (_root, _args, context) => BookQuery.currentlyReading(context.userId),
-  }),
 }))

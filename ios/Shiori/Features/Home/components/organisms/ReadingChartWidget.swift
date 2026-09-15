@@ -1,0 +1,111 @@
+import Charts
+import SwiftUI
+
+/// Books read per year, or pages read per month of this year. The period still
+/// running is drawn paler: it is not over, and a short bar there is not a slump.
+struct ReadingChartWidget: View {
+    enum Metric: String, CaseIterable, Identifiable {
+        case books, pages
+        var id: String { rawValue }
+
+        var label: LocalizedStringKey {
+            switch self {
+            case .books: "Livres"
+            case .pages: "Pages"
+            }
+        }
+    }
+
+    let currentYear: Int
+    let booksPerYear: [Dashboard.YearCount]
+    let pagesPerMonth: [Dashboard.MonthPages]
+    @State private var metric: Metric = .books
+
+    private var currentMonth: Int { Calendar.current.component(.month, from: .now) }
+
+    var body: some View {
+        WidgetCard(title: metric == .books ? "Livres lus" : "Pages lues") {
+            Picker("Mesure", selection: $metric.animation(.snappy)) {
+                ForEach(Metric.allCases) { Text($0.label).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .frame(width: 150)
+            .accessibilityIdentifier("home-chart-metric")
+        } content: {
+            VStack(alignment: .leading, spacing: 8) {
+                total
+                chart.frame(height: 150)
+            }
+        }
+        .accessibilityIdentifier("home-chart")
+    }
+
+    private var total: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            switch metric {
+            case .books:
+                Text(booksThisYear, format: .number)
+                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                    .foregroundStyle(DashboardPalette.books)
+                Text("livres en \(String(currentYear))")
+            case .pages:
+                Text(pagesThisYear, format: .number)
+                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                    .foregroundStyle(DashboardPalette.pages)
+                Text("pages en \(String(currentYear))")
+            }
+        }
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+        .contentTransition(.numericText())
+    }
+
+    @ViewBuilder
+    private var chart: some View {
+        switch metric {
+        case .books:
+            Chart(booksPerYear) { entry in
+                BarMark(x: .value("Année", String(entry.year)), y: .value("Livres", entry.count))
+                    .foregroundStyle(DashboardPalette.books.opacity(entry.year == currentYear ? 0.45 : 1))
+                    .cornerRadius(4)
+            }
+            .chartYAxis { AxisMarks(position: .leading) }
+        case .pages:
+            // Numeric months rather than month letters: J, J and M, M would collide
+            // as category labels.
+            Chart(pagesPerMonth) { entry in
+                BarMark(
+                    x: .value("Mois", entry.month),
+                    y: .value("Pages", entry.pages),
+                    width: .fixed(14)
+                )
+                .foregroundStyle(DashboardPalette.pages.opacity(entry.month == currentMonth ? 0.45 : 1))
+                .cornerRadius(3)
+            }
+            .chartXScale(domain: 0.5...12.5)
+            .chartXAxis {
+                AxisMarks(values: Array(1...12)) { value in
+                    AxisValueLabel {
+                        if let month = value.as(Int.self) {
+                            Text(Calendar.current.veryShortStandaloneMonthSymbols[month - 1])
+                        }
+                    }
+                }
+            }
+            .chartYAxis { AxisMarks(position: .leading) }
+        }
+    }
+
+    private var booksThisYear: Int { booksPerYear.first { $0.year == currentYear }?.count ?? 0 }
+    private var pagesThisYear: Int { pagesPerMonth.reduce(0) { $0 + $1.pages } }
+}
+
+#Preview {
+    ReadingChartWidget(
+        currentYear: 2026,
+        booksPerYear: [.init(year: 2023, count: 9), .init(year: 2024, count: 21), .init(year: 2025, count: 16), .init(year: 2026, count: 18)],
+        pagesPerMonth: (1...12).map { .init(month: $0, pages: $0 < 10 ? $0 * 90 : 0) }
+    )
+    .padding()
+    .background(Color(.systemGroupedBackground))
+}

@@ -17,14 +17,6 @@ enum LibraryAPI {
         }
     }
 
-    static func currentlyReading() async throws -> [Book] {
-        let data = try await GraphQLHelpers.fetch(
-            GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.CurrentlyReadingQuery()
-        )
-        return data.currentlyReading.map { $0.fragments.bookSummary.asBook }
-    }
-
     static func graphQLStatus(_ status: ReadingStatus) -> GraphQLEnum<ShioriGraphQL.ReadingStatus> {
         switch status {
         case .toRead: .case(.toRead)

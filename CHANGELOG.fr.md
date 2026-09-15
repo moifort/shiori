@@ -4,6 +4,12 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- L’accueil devient un tableau de bord de lecture : livres lus par année et pages par mois,
+  lectures en cours, quelques idées tirées de la pile à lire, dernier livre terminé, tendances
+  par rapport à l’an dernier, pile à lire et note moyenne, genres lus dans l’année et séries
+  en cours.
+- Chaque livre est rangé dans un genre choisi dans une liste fixe, accompagné d’au plus trois
+  sous-genres libres. Les deux se corrigent depuis la fiche du livre.
 - Les livres scannés affichent désormais leur couverture d’éditeur, retrouvée grâce à l’ISBN.
   Un livre dont la couverture est introuvable garde ses initiales.
 - Toutes les informations d’un livre se corrigent désormais depuis sa fiche avec « Modifier » :

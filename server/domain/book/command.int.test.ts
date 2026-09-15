@@ -162,7 +162,7 @@ describe('annotating a book', () => {
 })
 
 describe('reading the library', () => {
-  // The list, the sections and the home screen all want the same rows in one
+  // The list, the sections and the series tab all want the same rows in one
   // request. Without the per-request memoization each would pay its own query.
   test('reads the library once however many times it is asked for', async () => {
     await add('Un')
@@ -170,7 +170,6 @@ describe('reading the library', () => {
     const before = fake.queryReads
 
     await BookQuery.library(reader)
-    await BookQuery.currentlyReading(reader)
     await BookQuery.all(reader)
 
     expect(fake.queryReads - before).toBe(1)

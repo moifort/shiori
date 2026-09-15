@@ -30,6 +30,8 @@ struct ContentView: View {
     /// The last real content tab, restored when the scan cover is dismissed.
     @State private var lastContentTab: TabSelection = .home
     @State private var showScanner = false
+    /// A shelf the Home tab asked the Library to open on, consumed once applied.
+    @State private var libraryFilterRequest: ReadingStatus?
 
     /// The trailing "Scanner" entry must stay detached from the content tabs.
     /// iOS 26 separates the `.search` role; iOS 27 folded `.search` back into the
@@ -66,14 +68,21 @@ struct ContentView: View {
     private var tabs: some View {
         TabView(selection: $selectedTab) {
             Tab(TabSelection.home.label, systemImage: TabSelection.home.symbol, value: .home) {
-                HomeView()
+                HomeView(
+                    onShowReading: {
+                        libraryFilterRequest = .reading
+                        selectedTab = .library
+                    },
+                    onShowSeries: { selectedTab = .series },
+                    onScan: { showScanner = true }
+                )
             }
             Tab(
                 TabSelection.library.label,
                 systemImage: TabSelection.library.symbol,
                 value: .library
             ) {
-                LibraryView()
+                LibraryView(filterRequest: $libraryFilterRequest)
             }
             Tab(TabSelection.series.label, systemImage: TabSelection.series.symbol, value: .series) {
                 SeriesListView()

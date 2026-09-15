@@ -4,6 +4,10 @@ import SwiftUI
 /// the sheets, and maps between the domain and the pure page below it. A book
 /// opens as a sheet over the list, as a wine does in Vinarium.
 struct LibraryView: View {
+    /// A shelf another tab wants shown. Applied as the filter, then cleared so the
+    /// reader's own filter changes are not overridden later.
+    @Binding var filterRequest: ReadingStatus?
+
     @State private var viewModel = LibraryViewModel()
     @State private var selectedBook: Book?
     @State private var showManualAdd = false
@@ -35,5 +39,10 @@ struct LibraryView: View {
             })
         }
         .task { await viewModel.load() }
+        .onChange(of: filterRequest, initial: true) { _, request in
+            guard let request else { return }
+            viewModel.filter = request
+            filterRequest = nil
+        }
     }
 }

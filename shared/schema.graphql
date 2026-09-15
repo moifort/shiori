@@ -541,11 +541,6 @@ type Query {
   changelog: [ChangelogEntry!]!
 
   """
-  What the reader has open right now, most recently started first. The home screen is built on this.
-  """
-  currentlyReading: [Book!]!
-
-  """
   The home dashboard of the signed-in reader.
   
   Pass the device time zone: every day, month and year is counted in it.

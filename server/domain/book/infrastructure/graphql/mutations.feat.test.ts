@@ -235,16 +235,6 @@ describe('reading the library through the API', () => {
     expect(result.data?.library).toEqual([{ books: [{ title: 'En cours' }] }])
   })
 
-  test('surfaces what is open right now', async () => {
-    await addBook('En cours', 'READING')
-    await addBook('Sur la pile')
-
-    const result = await execute('{ currentlyReading { title } }')
-
-    expect(result.errors).toBeUndefined()
-    expect(result.data?.currentlyReading).toEqual([{ title: 'En cours' }])
-  })
-
   test('has no saga to show before any book carries one', async () => {
     await addBook('Le Nom du vent')
 

@@ -23,22 +23,11 @@ export namespace BookQuery {
     return groupedBySeries(await withCovers(kept))
   }
 
-  /** What the reader is reading right now, newest first — the home screen. */
-  export const currentlyReading = async (userId: UserId): Promise<BookView[]> => {
-    const books = await repository.findAllByUser(userId)
-    const reading = books
-      .filter((book) => book.status === 'reading')
-      .sort((left, right) => startedAtOf(right) - startedAtOf(left))
-    return withCovers(reading)
-  }
-
   export const bySeries = async (userId: UserId, seriesId: SeriesId): Promise<Book[]> =>
     repository.findBySeries(userId, seriesId)
 
   export const all = async (userId: UserId): Promise<Book[]> => repository.findAllByUser(userId)
 }
-
-const startedAtOf = (book: Book) => (book.startedAt ?? book.addedAt).getTime()
 
 // Cover URLs are signed one by one because each signature is a separate call, but
 // a page of them is signed concurrently rather than in sequence: a 40-row library

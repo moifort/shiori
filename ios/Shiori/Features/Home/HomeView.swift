@@ -1,76 +1,77 @@
 import SwiftUI
 
-/// The Home tab: what the reader has open right now, and nothing else above it.
+/// The Home tab: a dashboard of reading statistics and the shelves worth a glance.
 ///
-/// No progress bar and no percentage — reading progress is not tracked, because
-/// keeping it truthful would mean asking the reader to type a page number every
-/// evening. What is shown instead is the shelf they are actually in.
+/// Reading progress is still not tracked — keeping it truthful would mean asking
+/// the reader for a page number every evening. The page figures spread each
+/// finished book over the days it was open instead.
 struct HomeView: View {
-    @State private var reading: [Book] = []
-    @State private var isLoading = true
-    @State private var errorMessage: String?
+    enum Destination: Hashable {
+        case series(String)
+    }
+
+    /// Opens the Library tab on the books being read.
+    let onShowReading: () -> Void
+    let onShowSeries: () -> Void
+    let onScan: () -> Void
+
+    @State private var viewModel = HomeViewModel()
     @State private var selectedBook: Book?
 
     var body: some View {
         NavigationStack {
-            Group {
-                if isLoading && reading.isEmpty {
-                    LoadingStateView()
-                } else if let errorMessage, reading.isEmpty {
-                    ContentUnavailableView {
-                        Label("Accueil indisponible", systemImage: "wifi.exclamationmark")
-                    } description: {
-                        Text(errorMessage)
-                    } actions: {
-                        Button("Réessayer") { Task { await load() } }
+            content
+                .navigationTitle("Accueil")
+                .navigationDestination(for: Destination.self) { destination in
+                    switch destination {
+                    case let .series(id): SeriesView(seriesId: id)
                     }
-                } else if reading.isEmpty {
-                    ContentUnavailableView {
-                        Label("Aucune lecture en cours", systemImage: "book")
-                    } description: {
-                        Text("Passez un livre en « En cours » et il apparaîtra ici.")
-                    }
-                } else {
-                    list
                 }
-            }
-            .navigationTitle("En cours")
         }
-        .task { await load() }
-    }
-
-    private var list: some View {
-        List(reading) { book in
-            Button {
-                selectedBook = book
-            } label: {
-                BookRow(
-                    title: book.title,
-                    authorLine: book.authorLine,
-                    cover: book,
-                    status: book.status,
-                    rating: book.rating,
-                    volumeLabel: book.series?.label,
-                    isHidden: book.hidden
-                )
-            }
-            .tint(.primary)
-        }
-        .listStyle(.insetGrouped)
-        .refreshable { await load() }
+        // Every time the tab comes back: a scan or an edit made in another tab
+        // changes the figures, and the view behind them is one document read.
+        .onAppear { Task { await viewModel.load() } }
         .sheet(item: $selectedBook) { book in
-            BookView(bookId: book.id, onChanged: { _ in Task { await load() } })
+            BookView(
+                bookId: book.id,
+                onChanged: { _ in Task { await viewModel.load() } },
+                onDeleted: { _ in Task { await viewModel.load() } }
+            )
         }
     }
 
-    private func load() async {
-        isLoading = true
-        errorMessage = nil
-        do {
-            reading = try await LibraryAPI.currentlyReading()
-        } catch {
-            errorMessage = reportError(error)
+    @ViewBuilder
+    private var content: some View {
+        if let dashboard = viewModel.dashboard {
+            if dashboard.libraryIsEmpty {
+                ContentUnavailableView {
+                    Label("Votre bibliothèque est vide", systemImage: "books.vertical")
+                } description: {
+                    Text("Scannez la couverture d'un livre pour commencer. Vos statistiques de lecture apparaîtront ici.")
+                } actions: {
+                    Button("Scanner un livre", action: onScan)
+                        .buttonStyle(.borderedProminent)
+                        .accessibilityIdentifier("home-scan")
+                }
+            } else {
+                HomePage(
+                    dashboard: dashboard,
+                    onReadingTapped: onShowReading,
+                    onSeriesTapped: onShowSeries,
+                    onBookTapped: { selectedBook = $0 }
+                )
+                .refreshable { await viewModel.load() }
+            }
+        } else if let errorMessage = viewModel.errorMessage {
+            ContentUnavailableView {
+                Label("Accueil indisponible", systemImage: "wifi.exclamationmark")
+            } description: {
+                Text(errorMessage)
+            } actions: {
+                Button("Réessayer") { Task { await viewModel.load() } }
+            }
+        } else {
+            LoadingStateView()
         }
-        isLoading = false
     }
 }

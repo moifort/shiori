@@ -1,0 +1,136 @@
+import SwiftUI
+
+/// The dashboard laid out top to bottom. Stateless: the coordinator hands it the
+/// figures and receives the taps. A widget with nothing to show is left out
+/// rather than drawn empty.
+struct HomePage: View {
+    let dashboard: Dashboard
+    let onReadingTapped: () -> Void
+    let onSeriesTapped: () -> Void
+    let onBookTapped: (Book) -> Void
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                if dashboard.hasChart {
+                    ReadingChartWidget(
+                        currentYear: dashboard.currentYear,
+                        booksPerYear: dashboard.booksPerYear,
+                        pagesPerMonth: dashboard.pagesPerMonth
+                    )
+                }
+
+                if !dashboard.reading.isEmpty {
+                    BookShelfSection(
+                        title: "En cours",
+                        books: dashboard.reading,
+                        caption: Self.startedCaption,
+                        onHeaderTapped: onReadingTapped,
+                        onBookTapped: onBookTapped
+                    )
+                    .accessibilityIdentifier("home-reading")
+                }
+
+                if !dashboard.suggestions.isEmpty {
+                    BookShelfSection(
+                        title: "Vous aimerez peut-être lire",
+                        books: dashboard.suggestions,
+                        caption: { $0.authorLine },
+                        onBookTapped: onBookTapped
+                    )
+                    .accessibilityIdentifier("home-suggestions")
+                }
+
+                if let lastFinished = dashboard.lastFinished {
+                    LastFinishedCard(book: lastFinished) { onBookTapped(lastFinished) }
+                }
+
+                if dashboard.hasTrends {
+                    TrendsWidget(pagesPerDay: dashboard.pagesPerDay, daysToFinish: dashboard.daysToFinish)
+                }
+
+                if dashboard.toReadCount > 0 || dashboard.averageRating != nil {
+                    StatTilesRow(
+                        toReadCount: dashboard.toReadCount,
+                        monthsToClearPile: dashboard.monthsToClearPile,
+                        averageRating: dashboard.averageRating,
+                        ratedCount: dashboard.ratedCount
+                    )
+                }
+
+                if !dashboard.genres.isEmpty {
+                    GenresWidget(currentYear: dashboard.currentYear, genres: dashboard.genres)
+                }
+
+                if !dashboard.series.isEmpty {
+                    SeriesProgressWidget(series: dashboard.series, onHeaderTapped: onSeriesTapped)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 24)
+        }
+        .background(Color(.systemGroupedBackground))
+    }
+
+    private static func startedCaption(_ book: Book) -> String {
+        guard let startedAt = book.startedAt else { return book.authorLine }
+        let days = startedAt.daysAgo()
+        return days == 0
+            ? String(localized: "commencé aujourd'hui")
+            : String(localized: "depuis \(days) j")
+    }
+}
+
+extension Dashboard {
+    static let preview = Dashboard(
+        currentYear: 2026,
+        booksPerYear: [
+            .init(year: 2022, count: 9), .init(year: 2023, count: 14), .init(year: 2024, count: 21),
+            .init(year: 2025, count: 16), .init(year: 2026, count: 18),
+        ],
+        pagesPerMonth: [410, 720, 380, 910, 760, 600, 1180, 1100, 260, 0, 0, 0].enumerated()
+            .map { .init(month: $0.offset + 1, pages: $0.element) },
+        reading: [
+            Book(id: "1", title: "La Peur du sage", authors: ["Patrick Rothfuss"], status: .reading,
+                 startedAt: .now.addingTimeInterval(-12 * 86400)),
+            Book(id: "2", title: "One Piece", authors: ["Eiichirō Oda"], status: .reading,
+                 startedAt: .now.addingTimeInterval(-2 * 86400)),
+            Book(id: "3", title: "Dune", authors: ["Frank Herbert"], status: .reading,
+                 startedAt: .now.addingTimeInterval(-41 * 86400)),
+            Book(id: "4", title: "Blacksad", authors: ["Juan Díaz Canales"], status: .reading,
+                 startedAt: .now.addingTimeInterval(-5 * 86400)),
+        ],
+        suggestions: [
+            Book(id: "5", title: "Hypérion", authors: ["Dan Simmons"], status: .toRead),
+            Book(id: "6", title: "Les Furtifs", authors: ["Alain Damasio"], status: .toRead),
+            Book(id: "7", title: "Vagabond", authors: ["Takehiko Inoue"], status: .toRead),
+            Book(id: "8", title: "Le Problème à trois corps", authors: ["Liu Cixin"], status: .toRead),
+        ],
+        lastFinished: Book(
+            id: "9", title: "Le Nom du vent", authors: ["Patrick Rothfuss"], status: .read, rating: 5,
+            startedAt: .now.addingTimeInterval(-13 * 86400), finishedAt: .now.addingTimeInterval(-4 * 86400)
+        ),
+        pagesPerDay: .init(current: 24, previous: 18),
+        daysToFinish: .init(current: 11, previous: 14),
+        toReadCount: 27,
+        monthsToClearPile: 9,
+        averageRating: 4.2,
+        ratedCount: 18,
+        genres: [
+            .init(genre: .fantasy, count: 7), .init(genre: .scienceFiction, count: 4),
+            .init(genre: .adventure, count: 3), .init(genre: .crime, count: 2), .init(genre: nil, count: 2),
+        ],
+        series: [
+            .init(id: "a", name: "One Piece", readCount: 107, totalCount: 110),
+            .init(id: "b", name: "Chronique du tueur de roi", readCount: 1, totalCount: 2),
+        ],
+        libraryIsEmpty: false
+    )
+}
+
+#Preview("With data") {
+    NavigationStack {
+        HomePage(dashboard: .preview, onReadingTapped: {}, onSeriesTapped: {}, onBookTapped: { _ in })
+            .navigationTitle("Accueil")
+    }
+}

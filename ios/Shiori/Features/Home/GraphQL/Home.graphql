@@ -1,6 +1,57 @@
-# What the reader has open right now, most recently started first.
-query CurrentlyReading {
-  currentlyReading {
-    ...BookSummary
+# The home dashboard: reading statistics and the shelves worth a glance, counted
+# in the device time zone.
+query Dashboard($timeZone: TimeZone!) {
+  dashboard(timeZone: $timeZone) {
+    currentYear
+    booksPerYear {
+      year
+      count
+    }
+    pagesPerMonth {
+      month
+      pages
+    }
+    reading {
+      ...DashboardBookCard
+    }
+    suggestions {
+      ...DashboardBookCard
+    }
+    lastFinished {
+      ...DashboardBookCard
+    }
+    pagesPerDay {
+      current
+      previous
+    }
+    daysToFinish {
+      current
+      previous
+    }
+    toReadCount
+    monthsToClearPile
+    averageRating
+    ratedCount
+    genres {
+      genre
+      count
+    }
+    series {
+      id
+      name
+      readCount
+      totalCount
+    }
+    libraryIsEmpty
   }
+}
+
+fragment DashboardBookCard on DashboardBook {
+  id
+  title
+  authors
+  coverUrl
+  rating
+  startedAt
+  finishedAt
 }
