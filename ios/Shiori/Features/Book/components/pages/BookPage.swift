@@ -34,10 +34,14 @@ struct BookPage: View {
         .disabled(isSaving)
     }
 
+    /// Sits straight on the sheet rather than in a card: it is the control the
+    /// reader comes back for, not one row among the book's facts.
     private var statusSection: some View {
         Section {
             ReadingStatusPicker(status: Binding(get: { book.status }, set: onSetStatus))
                 .accessibilityIdentifier("book-status")
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets())
         }
     }
 
