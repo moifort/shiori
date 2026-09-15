@@ -54,7 +54,7 @@ jobs:
         run: |
           set -euo pipefail
           # A generic simulator destination: the check is that the app compiles, so it
-          # needs no booted device and no signing identity (the release job owns those).
+          # needs no booted device and no signing identity (release-ios.yml owns those).
           xcodebuild -project ios/Shiori.xcodeproj -scheme Shiori \
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \

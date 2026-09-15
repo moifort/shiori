@@ -112,7 +112,7 @@ jobs:
           printf '%s' "${{ secrets.APPLE_PRIVATE_KEY_P8 }}" > infra/apple.p8
           chmod 600 infra/apple.p8
 
-          # App Store Connect API .p8 (same key the iOS release workflow uses),
+          # App Store Connect API .p8 (the same key release-ios.yml uploads with),
           # for the admin metrics' sales reports. An empty file simply leaves
           # the revenue figure unavailable.
           printf '%s' "${{ secrets.ASC_KEY_P8 }}" > infra/asc.p8

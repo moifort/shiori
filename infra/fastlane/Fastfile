@@ -1,0 +1,56 @@
+default_platform(:ios)
+
+platform :ios do
+  # Screenshots are not uploaded from here: `deliver` put every panel on a Vinarium
+  # version twice on 2026-08-07, on a run it reported as successful. Vinarium now pushes
+  # them with a script against the App Store Connect API; Shiori sets them by hand until
+  # it has the same.
+
+  # Attach the already-uploaded build to its App Store version, set the "What's New"
+  # notes from CHANGELOG.md, and submit for review with automatic release on approval.
+  # The binary is uploaded by the `release` job (altool); this lane never uploads it.
+  desc "Attach the uploaded build to its version and submit it for review (auto-release)."
+  lane :submit do
+    api_key = app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_filepath: ENV.fetch("ASC_KEY_PATH")
+    )
+
+    app_id  = "com.polyforms.shiori.app"
+    version = ENV.fetch("MARKETING")
+    build   = ENV.fetch("BUILD")
+
+    # App Store Connect needs several minutes to finish processing an uploaded build before
+    # it can be attached to a version — until then deliver raises "Build number: N does not
+    # exist". Retry the whole submit (metadata upload is idempotent) until the build is
+    # attachable, giving up after ~30 min.
+    attempts = 0
+    begin
+      deliver(
+        api_key: api_key,
+        app_identifier: app_id,
+        app_version: version,
+        build_number: build,
+        submit_for_review: true,
+        automatic_release: true,
+        force: true,                 # no interactive HTML preview
+        skip_binary_upload: true,    # the binary was already uploaded by the release job
+        skip_screenshots: true,      # screenshots are managed manually, once
+        run_precheck_before_submit: false,
+        submission_information: {
+          export_compliance_uses_encryption: false,
+          add_id_info_uses_idfa: false
+        }
+      )
+    rescue => e
+      attempts += 1
+      if attempts <= 30 && e.message.to_s.match?(/does not exist|still.*process|not.*process/i)
+        UI.message("Build #{build} not processed yet (attempt #{attempts}/30) — waiting 60s…")
+        sleep(60)
+        retry
+      end
+      raise
+    end
+  end
+end

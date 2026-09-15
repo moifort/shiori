@@ -1,0 +1,305 @@
+name: Release
+
+on:
+  push:
+    tags: ['ios-v*']
+  workflow_dispatch:
+    inputs:
+      marketing_version:
+        description: 'Marketing version (CFBundleShortVersionString), e.g. 1.1'
+        required: false
+        default: '1.0'
+      skip_upload:
+        description: 'Archive and push the symbols to Sentry, but stop before App Store Connect'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-ios
+  cancel-in-progress: false
+
+jobs:
+  # Vinarium gates this job behind an end-to-end scenario (Firebase emulators, the real
+  # Nitro backend, the app on a simulator). Shiori's four journeys are specified in the
+  # design but scripts/e2e.sh does not exist yet, so there is no gate to run: add the
+  # `e2e` job back, with `needs: e2e` here, once it does.
+  release:
+    name: 📱 iOS build & upload
+    runs-on: macos-26
+    timeout-minutes: 40
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # git rev-list --count HEAD must see the full history
+
+      - name: Select the latest final Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Materialize gitignored build files
+        env:
+          IOS_SENTRY_DSN: ${{ secrets.IOS_SENTRY_DSN }}
+        run: |
+          set -euo pipefail
+          printf '%s' "${{ secrets.IOS_GOOGLE_SERVICE_INFO_PLIST }}" \
+            | openssl base64 -d -A > ios/Shiori/GoogleService-Info.plist
+          # The archived build is the only one that reports to Sentry, and it reads the
+          # DSN from this gitignored file. Copying the example here would ship a build
+          # that reports nothing at all — no crash, no error, no user feedback — and
+          # nothing on the way would say so. Refuse to archive that build.
+          if [ -z "$IOS_SENTRY_DSN" ]; then
+            echo "::error::IOS_SENTRY_DSN is unset — this build could not report anything to Sentry"
+            exit 1
+          fi
+          cat > ios/Shiori/Shared/Secrets.swift <<SWIFT
+          import Foundation
+
+          enum Secrets {
+              static let apiToken = ""
+              static let sentryDsn = "$IOS_SENTRY_DSN"
+          }
+          SWIFT
+
+      - name: Install the App Store Connect API key
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.appstoreconnect/private_keys"
+          printf '%s' "${{ secrets.ASC_KEY_P8 }}" \
+            > "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+
+      - name: Import the distribution signing certificate
+        env:
+          IOS_DIST_CERT_P12: ${{ secrets.IOS_DIST_CERT_P12 }}
+          IOS_DIST_CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+        run: |
+          set -euo pipefail
+          # A dedicated (non-managed) Apple Distribution cert + private key, so signing
+          # never depends on Xcode cloud-managed certificates (unusable from a fresh CI
+          # machine). The .p12 is base64-encoded in the secret; import it into a throwaway
+          # keychain that codesign/xcodebuild search during archive and export.
+          KEYCHAIN="$RUNNER_TEMP/shiori-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          CERT_PATH="$RUNNER_TEMP/dist-cert.p12"
+          printf '%s' "$IOS_DIST_CERT_P12" | base64 -d > "$CERT_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$CERT_PATH" -P "$IOS_DIST_CERT_PASSWORD" \
+            -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: \
+            -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" >/dev/null
+          # Prepend our keychain to the user search list so xcodebuild finds the identity.
+          security list-keychains -d user -s "$KEYCHAIN" \
+            $(security list-keychains -d user | sed 's/["[:space:]]//g')
+          rm -f "$CERT_PATH"
+          security find-identity -v -p codesigning "$KEYCHAIN"
+
+      - name: Compute version numbers
+        run: |
+          set -euo pipefail
+          BUILD=$(git rev-list --count HEAD)
+          if [ "$GITHUB_REF_TYPE" = "tag" ] && [ "${GITHUB_REF_NAME#ios-v}" != "$GITHUB_REF_NAME" ]; then
+            MARKETING="${GITHUB_REF_NAME#ios-v}"
+          else
+            MARKETING="${{ github.event.inputs.marketing_version }}"
+          fi
+          echo "BUILD=$BUILD" >> "$GITHUB_ENV"
+          echo "MARKETING=$MARKETING" >> "$GITHUB_ENV"
+          echo "Releasing Shiori $MARKETING ($BUILD)"
+
+      - name: Generate Apollo GraphQL code (gitignored, regenerated per build)
+        run: |
+          set -euo pipefail
+          # Resolve SPM so the apollo-ios checkout (and its bundled CLI) exists.
+          xcodebuild -resolvePackageDependencies \
+            -project ios/Shiori.xcodeproj -scheme Shiori
+          # Apollo 2.x ships the CLI as a tarball inside the checkout — extract it.
+          CLI_DIR=$(find "$HOME/Library/Developer/Xcode/DerivedData" -type d \
+            -path "*/SourcePackages/checkouts/apollo-ios/CLI" | head -1)
+          tar -xzf "$CLI_DIR/apollo-ios-cli.tar.gz" -C "$CLI_DIR"
+          chmod +x "$CLI_DIR/apollo-ios-cli"
+          (cd ios && "$CLI_DIR/apollo-ios-cli" generate)
+
+      - name: Install the App Store provisioning profile
+        env:
+          IOS_PROVISION_PROFILE: ${{ secrets.IOS_PROVISION_PROFILE }}
+        run: |
+          set -euo pipefail
+          # Xcode looks a profile up by the UUID in its file name. Vinarium hardcodes its
+          # own; reading it from the profile means a renewed "Shiori App Store" profile
+          # only needs the secret replaced, not this step edited.
+          PROFILE_PATH="$RUNNER_TEMP/shiori.mobileprovision"
+          printf '%s' "$IOS_PROVISION_PROFILE" | base64 -d > "$PROFILE_PATH"
+          security cms -D -i "$PROFILE_PATH" > "$RUNNER_TEMP/profile.plist"
+          UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$RUNNER_TEMP/profile.plist")
+          PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$PROFILES_DIR"
+          mv "$PROFILE_PATH" "$PROFILES_DIR/$UUID.mobileprovision"
+          echo "Installed provisioning profile $UUID"
+
+      - name: Archive (Release, manual signing with the installed cert and profile)
+        run: |
+          set -euo pipefail
+          # The Release configuration signs manually with the imported distribution
+          # certificate and the installed App Store profile, so the archive never talks
+          # to App Store Connect (its provisioning endpoint intermittently answers 401).
+          xcodebuild -project ios/Shiori.xcodeproj -scheme Shiori \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/Shiori.xcarchive \
+            MARKETING_VERSION="$MARKETING" \
+            CURRENT_PROJECT_VERSION="$BUILD" \
+            archive
+
+      - name: Upload the debug symbols to Sentry
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: polyforms
+          SENTRY_PROJECT: shiori-node
+        run: |
+          set -euo pipefail
+          # A crash report only names functions and lines if the dSYMs of that exact
+          # build reached Sentry. They live in the archive and nowhere else, so this
+          # has to happen here — an unsymbolicated crash cannot be fixed afterwards.
+          if [ -z "$SENTRY_AUTH_TOKEN" ]; then
+            echo "::warning::SENTRY_AUTH_TOKEN is unset — shipping a build Sentry cannot symbolicate"
+            exit 0
+          fi
+          curl -sL https://sentry.io/get-cli/ | bash
+          # --include-sources bundles the Swift sources alongside the symbols, so
+          # an issue shows the code around the crashing line instead of just its
+          # number.
+          sentry-cli debug-files upload --include-sources build/Shiori.xcarchive/dSYMs
+          # The Cocoa SDK stamps this exact release on every event it sends, so
+          # declaring it here with its commits is what lets an issue name the
+          # change that introduced it. --local reads the git history directly:
+          # no Sentry-GitHub integration to configure.
+          RELEASE="com.polyforms.shiori.app@$MARKETING+$BUILD"
+          sentry-cli releases new "$RELEASE"
+          sentry-cli releases set-commits "$RELEASE" --local --ignore-missing
+          sentry-cli releases finalize "$RELEASE"
+
+      - name: Export a signed .ipa (manual signing)
+        run: |
+          set -euo pipefail
+          xcodebuild -exportArchive \
+            -archivePath build/Shiori.xcarchive \
+            -exportOptionsPlist ios/ExportOptions.plist \
+            -exportPath build/export
+
+      # Lets a manual run prove the archive and the Sentry symbol upload without
+      # spending a build number on App Store Connect. A tag push never sets this.
+      - name: Upload to App Store Connect
+        if: ${{ inputs.skip_upload != true }}
+        run: |
+          set -euo pipefail
+          xcrun altool --upload-app --type ios \
+            --file build/export/Shiori.ipa \
+            --apiKey "$ASC_KEY_ID" \
+            --apiIssuer "$ASC_ISSUER_ID"
+
+      - name: Archive the .ipa as a run artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: Shiori-ipa
+          path: |
+            build/export/*.ipa
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # After the binary is uploaded, wait for App Store Connect to finish processing it,
+  # then attach it to its version, set the "What's New" from CHANGELOG, and submit for
+  # review (auto-release on approval). No Xcode needed — runs on Linux. Tag pushes only;
+  # a manual workflow_dispatch stops after upload so it can be submitted by hand.
+  #
+  # Vinarium pushes its App Store screenshots between the upload and this job. Shiori
+  # has no screenshots workflow yet, so a version's screenshots are set by hand in App
+  # Store Connect before the tag is pushed — a submission without them is refused.
+  submit:
+    name: 🍎 iOS submit
+    needs: release
+    if: startsWith(github.ref, 'refs/tags/ios-v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write   # create/update the GitHub release for the tag
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # git rev-list --count HEAD must see the full history
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.10'
+          bundler-cache: true
+          working-directory: infra
+
+      - name: Install the App Store Connect API key
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/asc"
+          printf '%s' "${{ secrets.ASC_KEY_P8 }}" > "$RUNNER_TEMP/asc/AuthKey.p8"
+          echo "ASC_KEY_PATH=$RUNNER_TEMP/asc/AuthKey.p8" >> "$GITHUB_ENV"
+
+      - name: Compute version numbers
+        run: |
+          set -euo pipefail
+          echo "BUILD=$(git rev-list --count HEAD)" >> "$GITHUB_ENV"
+          echo "MARKETING=${GITHUB_REF_NAME#ios-v}" >> "$GITHUB_ENV"
+
+      - name: Publish the GitHub release with the full changelog
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Full (untruncated) bullets of the first "## " section — GitHub has no length cap.
+          NOTES="$RUNNER_TEMP/gh-release-notes.md"
+          awk '/^## /{n++; if (n==2) exit} n==1 && /^- /{print}' CHANGELOG.md > "$NOTES"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --title "iOS $MARKETING" --notes-file "$NOTES"
+          else
+            gh release create "$GITHUB_REF_NAME" --title "iOS $MARKETING" --notes-file "$NOTES"
+          fi
+
+      - name: Build the "What's New" notes for every App Store locale
+        run: |
+          set -euo pipefail
+          # One release_notes.txt per declared App Store locale. App Store Connect asks for
+          # "What's New" in each of them, and a locale deliver does not write keeps whatever
+          # it had — which on a new version is nothing. Shiori ships in French and English,
+          # so the two changelogs map onto the two store locales.
+          #
+          # Bullets under the first "## " section become the notes. App Store caps them at
+          # 4000 chars, so keep whole bullets until ~3900 and drop the rest.
+          for pair in \
+            "fr-FR:CHANGELOG.fr.md" \
+            "en-US:CHANGELOG.md"
+          do
+            locale="${pair%%:*}"
+            source="${pair#*:}"
+            mkdir -p "infra/fastlane/metadata/$locale"
+            awk '/^## /{n++; if (n==2) exit} n==1 && /^- /{print}' "$source" \
+              | awk 'BEGIN{max=3900; total=0} {len=length($0)+1; if (total+len>max) exit; total+=len; print}' \
+              > "infra/fastlane/metadata/$locale/release_notes.txt"
+            if [ ! -s "infra/fastlane/metadata/$locale/release_notes.txt" ]; then
+              echo "::error::No release notes for $locale — $source has no bullet under its first ## heading"
+              exit 1
+            fi
+            echo "---- What's New ($locale from $source), $(wc -c < "infra/fastlane/metadata/$locale/release_notes.txt") chars ----"
+            cat "infra/fastlane/metadata/$locale/release_notes.txt"
+          done
+
+      - name: Attach build and submit for review
+        working-directory: infra
+        run: bundle exec fastlane ios submit
