@@ -50,7 +50,7 @@ struct ScanView: View {
         case .camera:
             cameraScreen
         case .analyzing:
-            ScanAnalyzingPage()
+            ScanAnalyzingPage(coverData: viewModel.capturedCover)
         case .review:
             if let draft = viewModel.draft {
                 ScanReviewPage(

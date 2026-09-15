@@ -16,6 +16,9 @@ final class ScanViewModel {
     }
 
     private(set) var step: Step = .camera
+    /// The shot being analysed, kept so the waiting screen can show the reader
+    /// their own cover under the scan rather than a generic loader.
+    private(set) var capturedCover: Data?
     private(set) var draft: BookDraft?
     /// The saga the scan resolved, shown on the review screen but not editable:
     /// membership is the server's answer, and letting the reader retype it here
@@ -26,6 +29,7 @@ final class ScanViewModel {
     private(set) var isSaving = false
 
     func capture(_ jpeg: Data) async {
+        capturedCover = jpeg
         step = .analyzing
         track(.scanStarted)
         do {
@@ -67,6 +71,7 @@ final class ScanViewModel {
     }
 
     func retake() {
+        capturedCover = nil
         draft = nil
         seriesLabel = nil
         step = .camera

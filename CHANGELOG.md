@@ -10,6 +10,8 @@ the release tag is pushed.
 
 ## Unreleased
 
+- While a scan runs, the waiting screen shows the photo just taken framed as a book cover,
+  swept top to bottom by a beam of light, instead of a generic loader.
 - The home screen is now a reading dashboard: books read per year and pages per month, the
   books in progress, a few picks from the to-read pile, the last book finished, trends against
   last year, the pile and the average rating, the genres read this year, and the sagas in
