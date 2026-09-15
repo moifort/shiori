@@ -18,6 +18,9 @@ enum AnalyticsEvent {
     case scanStarted
     case scanSucceeded
     case scanNoResult
+    /// The analysis did not come back at all: a timeout or a model error, not a
+    /// cover nobody recognized. What the retry offer exists for.
+    case scanFailed
     /// A scan was refused for want of allowance: where the wall is met.
     case scanBlockedByQuota
     /// The library crossed the bar of a shelf worth opening the app for. Fired
@@ -97,6 +100,7 @@ extension AnalyticsEvent {
         case .scanStarted: "scan_started"
         case .scanSucceeded: "scan_succeeded"
         case .scanNoResult: "scan_no_result"
+        case .scanFailed: "scan_failed"
         case .scanBlockedByQuota: "scan_blocked_quota"
         case .libraryStocked: "library_stocked"
         case .bookRated: "book_rated"

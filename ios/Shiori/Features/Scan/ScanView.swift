@@ -67,6 +67,12 @@ struct ScanView: View {
             }
         case .noResult:
             ScanNoResultPage(onRetake: viewModel.retake, onDismiss: onDismiss)
+        case .failed:
+            ScanFailedPage(
+                reason: viewModel.failure,
+                onRetry: { Task { await viewModel.retry() } },
+                onRetake: viewModel.retake
+            )
         }
     }
 

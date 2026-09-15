@@ -13,17 +13,24 @@ final class ScanViewModel {
         case analyzing
         case review
         case noResult
+        /// The analysis itself did not come back — a timeout, a dropped
+        /// connection, a model error — as opposed to answering that no book was
+        /// there. The photo is kept, so the reader can run it again.
+        case failed
     }
 
     private(set) var step: Step = .camera
-    /// The shot being analysed, kept so the waiting screen can show the reader
-    /// their own cover under the scan rather than a generic loader.
+    /// The shot being analysed, kept so a failed analysis can be run again on
+    /// it, and so the waiting screen can show the reader their own cover under
+    /// the scan rather than a generic loader.
     private(set) var capturedCover: Data?
     private(set) var draft: BookDraft?
     /// The saga the scan resolved, shown on the review screen but not editable:
     /// membership is the server's answer, and letting the reader retype it here
     /// would create a saga that no catalogue knows.
     private(set) var seriesLabel: String?
+    /// Why the step is `.failed`, in the reader's words.
+    private(set) var failure: String?
     var error: String?
     var paywallShown = false
     private(set) var isSaving = false
@@ -50,9 +57,22 @@ final class ScanViewModel {
             step = .camera
             paywallShown = true
         } catch {
-            self.error = reportError(error)
-            step = .camera
+            track(.scanFailed)
+            failure = reportError(error)
+            step = .failed
         }
+    }
+
+    /// Runs the analysis again on the shot that failed. It spends nothing extra:
+    /// a failed scan is not counted, and one that completed server-side after the
+    /// app stopped waiting is answered from the cache.
+    func retry() async {
+        guard let jpeg = capturedCover else {
+            step = .camera
+            return
+        }
+        failure = nil
+        await capture(jpeg)
     }
 
     /// Saves what the reader approved. The review screen is the safety net
@@ -72,6 +92,7 @@ final class ScanViewModel {
 
     func retake() {
         capturedCover = nil
+        failure = nil
         draft = nil
         seriesLabel = nil
         step = .camera

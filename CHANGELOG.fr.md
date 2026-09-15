@@ -7,6 +7,8 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 - Pendant un scan, l’écran d’attente montre la photo qui vient d’être prise, cadrée comme une
   couverture et balayée de haut en bas par un faisceau lumineux, à la place d’un chargement
   générique.
+- Un scan n’échoue plus au bout d’une minute quand les modèles tardent à répondre, et une
+  analyse qui échoue peut être relancée sur la même photo sans dépenser de scan supplémentaire.
 - L’accueil devient un tableau de bord de lecture : livres lus par année et pages par mois,
   lectures en cours, quelques idées tirées de la pile à lire, dernier livre terminé, tendances
   par rapport à l’an dernier, pile à lire et note moyenne, genres lus dans l’année et séries

@@ -12,6 +12,8 @@ the release tag is pushed.
 
 - While a scan runs, the waiting screen shows the photo just taken framed as a book cover,
   swept top to bottom by a beam of light, instead of a generic loader.
+- A scan no longer fails after a minute when the models are slow to answer, and an analysis
+  that does fail can be run again on the same photo without spending another scan.
 - The home screen is now a reading dashboard: books read per year and pages per month, the
   books in progress, a few picks from the to-read pile, the last book finished, trends against
   last year, the pile and the average rating, the genres read this year, and the sagas in
