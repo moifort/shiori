@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import type { WriteBatch } from 'firebase-admin/firestore'
 import { datesAfterStatusChange, statusAfterRating } from '~/domain/book/business-rules'
 import * as repository from '~/domain/book/infrastructure/repository'
 import { BookId as BookIdOf } from '~/domain/book/primitives'
@@ -65,7 +66,12 @@ export type BookEdit = Partial<
 >
 
 export namespace BookCommand {
-  export const add = async (userId: UserId, input: NewBook, now = new Date()): Promise<Book> => {
+  export const add = async (
+    userId: UserId,
+    input: NewBook,
+    now = new Date(),
+    batch?: WriteBatch,
+  ): Promise<Book> => {
     const book: Book = {
       id: BookIdOf(randomUUID()),
       userId,
@@ -94,17 +100,18 @@ export namespace BookCommand {
         now,
       ),
     }
-    return repository.save(book)
+    return repository.save(book, batch)
   }
 
   export const edit = async (
     userId: UserId,
     bookId: BookId,
     edit: BookEdit,
+    batch?: WriteBatch,
   ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
-    return repository.save({ ...book, ...edit })
+    return repository.save({ ...book, ...edit }, batch)
   }
 
   export const setStatus = async (
@@ -112,10 +119,11 @@ export namespace BookCommand {
     bookId: BookId,
     status: ReadingStatus,
     now = new Date(),
+    batch?: WriteBatch,
   ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
-    return repository.save({ ...book, status, ...datesAfterStatusChange(book, status, now) })
+    return repository.save({ ...book, status, ...datesAfterStatusChange(book, status, now) }, batch)
   }
 
   /** Rating a book marks it read: the reader is telling us they finished it, and
@@ -125,24 +133,32 @@ export namespace BookCommand {
     bookId: BookId,
     rating: StarRating,
     now = new Date(),
+    batch?: WriteBatch,
   ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
     const status = statusAfterRating()
-    return repository.save({
-      ...book,
-      rating,
-      status,
-      ...datesAfterStatusChange(book, status, now),
-    })
+    return repository.save(
+      {
+        ...book,
+        rating,
+        status,
+        ...datesAfterStatusChange(book, status, now),
+      },
+      batch,
+    )
   }
 
   /** Taking the stars back leaves the book read, with its dates: the reader is
    *  withdrawing a judgment, not saying the reading never happened. */
-  export const unrate = async (userId: UserId, bookId: BookId): Promise<Book | 'not-found'> => {
+  export const unrate = async (
+    userId: UserId,
+    bookId: BookId,
+    batch?: WriteBatch,
+  ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
-    return repository.save({ ...book, rating: undefined })
+    return repository.save({ ...book, rating: undefined }, batch)
   }
 
   /** Passing no note clears it. An emptied note is a deletion, not an empty
@@ -151,29 +167,32 @@ export namespace BookCommand {
     userId: UserId,
     bookId: BookId,
     note: ReadingNote | undefined,
+    batch?: WriteBatch,
   ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
-    return repository.save({ ...book, note })
+    return repository.save({ ...book, note }, batch)
   }
 
   export const setHidden = async (
     userId: UserId,
     bookId: BookId,
     hidden: boolean,
+    batch?: WriteBatch,
   ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
-    return repository.save({ ...book, hidden })
+    return repository.save({ ...book, hidden }, batch)
   }
 
   export const remove = async (
     userId: UserId,
     bookId: BookId,
+    batch?: WriteBatch,
   ): Promise<'removed' | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
-    await repository.remove(userId, bookId)
+    await repository.remove(userId, bookId, batch)
     return 'removed'
   }
 

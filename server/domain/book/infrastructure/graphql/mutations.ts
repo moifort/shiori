@@ -1,11 +1,12 @@
 import { match } from 'ts-pattern'
-import { BookCommand, type BookEdit } from '~/domain/book/command'
+import type { BookEdit } from '~/domain/book/command'
 import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { BookEditInput, NewBookInput } from '~/domain/book/infrastructure/graphql/inputs'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import { MAX_SUBGENRES } from '~/domain/book/primitives'
 import { BookQuery } from '~/domain/book/query'
 import type { BookId } from '~/domain/book/types'
+import { BookUseCase } from '~/domain/book/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
 import { notFound } from '~/domain/shared/graphql/errors'
 import type { UserId } from '~/domain/shared/types'
@@ -34,7 +35,7 @@ builder.mutationFields((t) => ({
       'series catalogue. Consumes no scan credit.',
     args: { input: t.arg({ type: NewBookInput, required: true }) },
     resolve: async (_root, args, context) => {
-      const book = await BookCommand.add(context.userId, {
+      const book = await BookUseCase.add(context.userId, {
         title: args.input.title,
         authors: args.input.authors ?? undefined,
         format: args.input.format ?? undefined,
@@ -72,7 +73,7 @@ builder.mutationFields((t) => ({
     },
     resolve: async (_root, args, context) => {
       const { input } = args
-      const result = await BookCommand.edit(context.userId, args.id, {
+      const result = await BookUseCase.edit(context.userId, args.id, {
         // Title and format have no absent state, so a null for them is ignored.
         ...(input.title != null ? { title: input.title } : {}),
         ...(input.format != null ? { format: input.format } : {}),
@@ -104,7 +105,7 @@ builder.mutationFields((t) => ({
       status: t.arg({ type: ReadingStatusEnum, required: true }),
     },
     resolve: async (_root, args, context) => {
-      const result = await BookCommand.setStatus(context.userId, args.id, args.status)
+      const result = await BookUseCase.setStatus(context.userId, args.id, args.status)
       return match(result)
         .with('not-found', () => notFound('Book not found'))
         .otherwise((book) => readBack(context.userId, book.id))
@@ -122,7 +123,7 @@ builder.mutationFields((t) => ({
       rating: t.arg({ type: 'StarRating', required: true }),
     },
     resolve: async (_root, args, context) => {
-      const result = await BookCommand.rate(context.userId, args.id, args.rating)
+      const result = await BookUseCase.rate(context.userId, args.id, args.rating)
       return match(result)
         .with('not-found', () => notFound('Book not found'))
         .otherwise((book) => readBack(context.userId, book.id))
@@ -136,7 +137,7 @@ builder.mutationFields((t) => ({
       'a judgment is not saying the reading never happened.',
     args: { id: t.arg({ type: 'BookId', required: true }) },
     resolve: async (_root, args, context) => {
-      const result = await BookCommand.unrate(context.userId, args.id)
+      const result = await BookUseCase.unrate(context.userId, args.id)
       return match(result)
         .with('not-found', () => notFound('Book not found'))
         .otherwise((book) => readBack(context.userId, book.id))
@@ -151,7 +152,7 @@ builder.mutationFields((t) => ({
       note: t.arg({ type: 'ReadingNote', required: false }),
     },
     resolve: async (_root, args, context) => {
-      const result = await BookCommand.annotate(context.userId, args.id, args.note ?? undefined)
+      const result = await BookUseCase.annotate(context.userId, args.id, args.note ?? undefined)
       return match(result)
         .with('not-found', () => notFound('Book not found'))
         .otherwise((book) => readBack(context.userId, book.id))
@@ -168,7 +169,7 @@ builder.mutationFields((t) => ({
       hidden: t.arg.boolean({ required: true }),
     },
     resolve: async (_root, args, context) => {
-      const result = await BookCommand.setHidden(context.userId, args.id, args.hidden)
+      const result = await BookUseCase.setHidden(context.userId, args.id, args.hidden)
       return match(result)
         .with('not-found', () => notFound('Book not found'))
         .otherwise((book) => readBack(context.userId, book.id))
@@ -179,7 +180,7 @@ builder.mutationFields((t) => ({
     description: 'Remove a book from the library for good. Returns true when it was there.',
     args: { id: t.arg({ type: 'BookId', required: true }) },
     resolve: async (_root, args, context) => {
-      const result = await BookCommand.remove(context.userId, args.id)
+      const result = await BookUseCase.remove(context.userId, args.id)
       return match(result)
         .with('removed', () => true)
         .with('not-found', () => notFound('Book not found'))

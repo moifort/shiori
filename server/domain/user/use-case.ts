@@ -1,3 +1,4 @@
+import { AnalyticsCommand } from '~/domain/analytics/command'
 import { coverPrefixOf } from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
 import { EntitlementCommand } from '~/domain/entitlement/command'
@@ -30,7 +31,8 @@ export namespace UserUseCase {
   // its public Command surface, never a repository — the domains own their
   // storage. The whole thing is idempotent, so a retry after a partial failure is
   // safe, and the order matters:
-  //  1. Wipe every per-user collection in parallel; they are independent. This
+  //  1. Wipe every per-user collection in parallel, the analytics view
+  //     included; they are independent. This
   //     forgets our entitlement record but does NOT cancel the App Store
   //     subscription — Apple owns that lifecycle, and the app says so.
   //  2. Delete the cover images, which live in the bucket rather than Firestore
@@ -46,6 +48,7 @@ export namespace UserUseCase {
   export const deleteAccount = async (userId: UserId) => {
     await Promise.all([
       BookCommand.deleteAllForUser(userId),
+      AnalyticsCommand.deleteForUser(userId),
       EntitlementCommand.deleteForUser(userId),
       QuotaCommand.deleteAllForUser(userId),
     ])

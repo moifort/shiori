@@ -27,12 +27,13 @@ export type FakeRef = {
 export type BatchOp =
   | { type: 'set'; ref: FakeRef; data: Doc }
   | { type: 'update'; ref: FakeRef; data: Doc }
+  | { type: 'merge'; ref: FakeRef; data: Doc }
   | { type: 'delete'; ref: FakeRef }
 
 export type FakeBatch = {
   ops: BatchOp[]
   commits: number
-  set: (ref: FakeRef, data: Doc) => FakeBatch
+  set: (ref: FakeRef, data: Doc, options?: { merge?: boolean }) => FakeBatch
   update: (ref: FakeRef, data: Doc) => FakeBatch
   delete: (ref: FakeRef) => FakeBatch
   commit: () => Promise<void>
@@ -260,8 +261,10 @@ export const createFakeFirestore = () => {
     const batch: FakeBatch = {
       ops,
       commits: 0,
-      set: (ref, data) => {
-        ops.push({ type: 'set', ref, data })
+      // A merge set is recorded as an update that may create the document, which is
+      // what Firestore does with `{ merge: true }`.
+      set: (ref, data, options) => {
+        ops.push(options?.merge ? { type: 'merge', ref, data } : { type: 'set', ref, data })
         return batch
       },
       update: (ref, data) => {
@@ -276,7 +279,10 @@ export const createFakeFirestore = () => {
         if (commitError) throw commitError
         for (const op of ops) {
           if (op.type === 'set') docsOf(op.ref.collectionPath).set(op.ref.id, op.data)
-          else if (op.type === 'update') {
+          else if (op.type === 'merge') {
+            const existing = docsOf(op.ref.collectionPath).get(op.ref.id)
+            docsOf(op.ref.collectionPath).set(op.ref.id, resolveWrite(existing, op.data, true))
+          } else if (op.type === 'update') {
             const existing = docsOf(op.ref.collectionPath).get(op.ref.id)
             if (existing === undefined) {
               throw new Error(

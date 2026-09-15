@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql'
 import { ZodError } from 'zod'
+import { TimeZone } from '~/domain/analytics/primitives'
 import {
   BookId,
   CoverUrl,
@@ -209,4 +210,12 @@ builder.scalarType('CoverUrl', {
     'the URL client-side.',
   serialize: (value) => value as string,
   parseValue: validatedParse('CoverUrl', CoverUrl),
+})
+
+builder.scalarType('TimeZone', {
+  description:
+    'An IANA time zone identifier known to the server, such as "Europe/Paris". ' +
+    'Reading statistics count days, months and years in it.',
+  serialize: (value) => value as string,
+  parseValue: validatedParse('TimeZone', TimeZone),
 })

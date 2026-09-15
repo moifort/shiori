@@ -23,6 +23,11 @@ import '~/domain/book/infrastructure/graphql/mutations'
 // so it depends on the book domain being registered.
 import '~/domain/series/infrastructure/graphql/queries'
 
+// Analytics (the home dashboard, read from a view the book writes keep fresh).
+// After book and series: it borrows their scalars and the Genre enum.
+import '~/domain/analytics/infrastructure/graphql/types'
+import '~/domain/analytics/infrastructure/graphql/queries'
+
 // User domain (profile and onboarding state)
 import '~/domain/user/infrastructure/graphql/types'
 import '~/domain/user/infrastructure/graphql/inputs'

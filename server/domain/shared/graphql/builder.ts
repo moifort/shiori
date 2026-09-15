@@ -1,6 +1,7 @@
 import SchemaBuilder from '@pothos/core'
 import { GraphQLScalarType } from 'graphql'
 import type { H3Event } from 'h3'
+import type { TimeZone } from '~/domain/analytics/types'
 import type {
   BookId,
   CoverUrl,
@@ -71,6 +72,7 @@ export const builder = new SchemaBuilder<{
     Eur: { Input: Eur; Output: Eur }
     Percentage: { Input: Percentage; Output: Percentage }
     CoverUrl: { Input: CoverUrl; Output: CoverUrl | SignedUrl }
+    TimeZone: { Input: TimeZone; Output: TimeZone }
   }
 }>({
   defaultFieldNullability: false,

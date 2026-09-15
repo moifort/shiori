@@ -143,6 +143,63 @@ Either the reader own photo, signed and expiring after an hour, or the publisher
 scalar CoverUrl
 
 """
+The home dashboard: reading statistics and the shelves worth a glance.
+
+Read from a view rebuilt on every book write, then set against today, so it costs one document read. A section with nothing to show comes back empty or null, and the app leaves it out rather than drawing zeros.
+"""
+type Dashboard {
+  """One decimal. Null when no finished book is rated."""
+  averageRating: Float
+
+  """From the first finished book to this year, six years at most."""
+  booksPerYear: [YearCount!]!
+  currentYear: Int!
+
+  """Median days from start to finish, both days included."""
+  daysToFinish: Trend!
+
+  """Books finished this year: four genres, then one "others" segment."""
+  genres: [GenreCount!]!
+  lastFinished: DashboardBook
+
+  """True when the reader has not catalogued a single book yet."""
+  libraryIsEmpty: Boolean!
+
+  """At the pace of the last twelve months. Null with no pile or no pace."""
+  monthsToClearPile: Int
+  pagesPerDay: Trend!
+
+  """The twelve months of the current year."""
+  pagesPerMonth: [MonthPages!]!
+  ratedCount: Int!
+
+  """Most recently started first, ten at most."""
+  reading: [DashboardBook!]!
+
+  """Sagas in progress, most recent activity first, three at most."""
+  series: [SeriesProgress!]!
+
+  """Six books of the pile, drawn at random once a day."""
+  suggestions: [DashboardBook!]!
+  toReadCount: Int!
+}
+
+"""
+A book as a dashboard tile draws it: a cover and two lines, nothing more.
+"""
+type DashboardBook {
+  authors: [AuthorName!]!
+
+  """Null without a photo or a published cover; draw the placeholder."""
+  coverUrl: CoverUrl
+  finishedAt: DateTime
+  id: BookId!
+  rating: StarRating
+  startedAt: DateTime
+  title: BookTitle!
+}
+
+"""
 A date and time serialized as an ISO 8601 string in UTC.
 
 On output a JavaScript `Date` is rendered as an ISO string; on input an ISO string is parsed back into a `Date`. Used for record timestamps (`addedAt`, `startedAt`, `finishedAt`). Example: "2026-09-14T09:30:00.000Z".
@@ -233,6 +290,14 @@ enum Genre {
   TRAVEL
 }
 
+"""One segment of the genre bar."""
+type GenreCount {
+  count: Int!
+
+  """Null on the trailing "others" segment."""
+  genre: Genre
+}
+
 """
 A 13-digit ISBN, hyphens and spaces removed, validated on its check digit.
 
@@ -286,6 +351,15 @@ type Me {
 
   """The Firebase Auth user id, also the id of the profile document."""
   userId: UserId!
+}
+
+"""
+Pages read in one month of the current year. Each finished book spreads its page count evenly over the days it was open: progress itself is never tracked.
+"""
+type MonthPages {
+  """1 for January, 12 for December."""
+  month: Int!
+  pages: Int!
 }
 
 type Mutation {
@@ -470,6 +544,23 @@ type Query {
   What the reader has open right now, most recently started first. The home screen is built on this.
   """
   currentlyReading: [Book!]!
+
+  """
+  The home dashboard of the signed-in reader.
+  
+  Pass the device time zone: every day, month and year is counted in it.
+  
+  ```graphql
+  query {
+    dashboard(timeZone: "Europe/Paris") {
+      booksPerYear { year count }
+      reading { id title coverUrl startedAt }
+      pagesPerDay { current previous }
+    }
+  }
+  ```
+  """
+  dashboard(timeZone: TimeZone!): Dashboard!
 
   """
   What the account is entitled to today, and the account token to start a purchase with. The app reads this before showing the subscription sheet.
@@ -717,6 +808,16 @@ The name of a series, 1 to 200 characters. Example: "The Wheel of Time".
 scalar SeriesName
 
 """
+How far the reader is through a saga in progress, on the numbered volumes already published.
+"""
+type SeriesProgress {
+  id: SeriesId!
+  name: SeriesName!
+  readCount: Int!
+  totalCount: Int!
+}
+
+"""
 Whether the reader is still working through a saga.
 
 Derived per request from what they own, never stored. `COMPLETE` means every published volume has been read; an announced but unpublished volume does not hold a saga open, because a reader who is up to date has finished it.
@@ -743,6 +844,20 @@ scalar Subgenre
 
 """The book summary, 1 to 4000 characters, in the caller language."""
 scalar Synopsis
+
+"""
+An IANA time zone identifier known to the server, such as "Europe/Paris". Reading statistics count days, months and years in it.
+"""
+scalar TimeZone
+
+"""A figure for this year to date, beside the same span of last year."""
+type Trend {
+  """Null when this year has nothing to measure yet."""
+  current: Int
+
+  """Null when last year has nothing to compare against: draw no arrow."""
+  previous: Int
+}
 
 """
 A Firebase Auth user identifier, carried as an opaque non-empty string.
@@ -804,3 +919,9 @@ A four-digit publication year, from 1450 to ten years out.
 The upper bound leaves room for an announced but unpublished volume, which the series catalogue keeps on purpose. Example: 2007.
 """
 scalar Year
+
+"""Books finished in one calendar year."""
+type YearCount {
+  count: Int!
+  year: Int!
+}
