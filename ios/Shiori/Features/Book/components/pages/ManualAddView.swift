@@ -38,10 +38,7 @@ struct ManualAddView: View {
                     .accessibilityIdentifier("manual-format")
                 }
                 Section("Lecture") {
-                    Picker("Statut", selection: $status) {
-                        ForEach(ReadingStatus.allCases) { Text($0.label).tag($0) }
-                    }
-                    .pickerStyle(.segmented)
+                    ReadingStatusPicker(status: $status)
                 }
                 Section {
                     Text("Le résumé, la série et les autres informations ne sont renseignés que par un scan.")

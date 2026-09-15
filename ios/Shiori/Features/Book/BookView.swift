@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// One book's coordinator, presented as a sheet over the list that opened it:
-/// owns the view model, the toolbar actions, the note sheet, the delete
-/// confirmation, and the hop to the series screen.
+/// owns the view model, the toolbar menu, the edit form, the rating prompt, the
+/// delete confirmation, and the hop to the series screen.
 ///
 /// The sheet carries its own NavigationStack, so the series screen pushes inside
 /// it and closing the sheet always lands back on the row the reader tapped.
@@ -12,7 +12,8 @@ struct BookView: View {
     var onDeleted: (String) -> Void = { _ in }
 
     @State private var viewModel: BookViewModel
-    @State private var showNoteEditor = false
+    @State private var showEditor = false
+    @State private var showRatingPrompt = false
     @State private var confirmDelete = false
     @State private var openSeriesId: String?
     @Environment(\.dismiss) private var dismiss
@@ -34,9 +35,7 @@ struct BookView: View {
                         seriesName: book.series?.name,
                         isSaving: viewModel.isSaving,
                         onSetStatus: { status in run { await viewModel.setStatus(status) } },
-                        onSetFormat: { format in run { await viewModel.setFormat(format) } },
-                        onRate: { stars in run { await viewModel.rate(stars) } },
-                        onEditNote: { showNoteEditor = true },
+                        onRate: { showRatingPrompt = true },
                         onToggleHidden: { run { await viewModel.setHidden(!book.hidden) } },
                         onOpenSeries: { openSeriesId = book.series?.id },
                         onAddVolume: { volume in
@@ -68,15 +67,24 @@ struct BookView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showNoteEditor) {
-                NoteEditorView(
-                    note: viewModel.book?.note ?? "",
-                    onSave: { note in
-                        showNoteEditor = false
-                        run { await viewModel.setNote(note) }
-                    },
-                    onCancel: { showNoteEditor = false }
-                )
+            .sheet(isPresented: $showEditor) {
+                if let book = viewModel.book {
+                    BookEditView(book: book) { correction, rating in
+                        let saved = await viewModel.save(correction, rating: rating)
+                        if let book = viewModel.book { onChanged(book) }
+                        guard !saved else { return nil }
+                        // The form shows the failure itself: an alert hung on this
+                        // screen would stay hidden behind the form's sheet.
+                        defer { viewModel.dismissError() }
+                        return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
+                    }
+                }
+            }
+            .sheet(isPresented: $showRatingPrompt) {
+                RatingPromptView { stars in
+                    showRatingPrompt = false
+                    run { await viewModel.rate(stars) }
+                }
             }
             .navigationDestination(item: $openSeriesId) { id in
                 SeriesView(seriesId: id)
@@ -104,24 +112,7 @@ struct BookView: View {
             ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
         }
         if let book = viewModel.book {
-            ToolbarItemGroup {
-                // The one step that moves a book forward, one tap from the top. A
-                // read book has no next step: rating it is done from the page.
-                switch book.status {
-                case .toRead:
-                    ToolbarIconButton(title: "Commencer la lecture", systemImage: "book") {
-                        run { await viewModel.setStatus(.reading) }
-                    }
-                    .accessibilityIdentifier("book-start-reading")
-                case .reading:
-                    ToolbarIconButton(title: "Marquer comme lu", systemImage: "checkmark") {
-                        run { await viewModel.setStatus(.read) }
-                    }
-                    .accessibilityIdentifier("book-mark-read")
-                case .read:
-                    EmptyView()
-                }
-
+            ToolbarItem(placement: .primaryAction) {
                 menu(for: book)
             }
         }
@@ -129,28 +120,12 @@ struct BookView: View {
 
     private func menu(for book: Book) -> some View {
         Menu {
-            Button(
-                book.note?.isEmpty == false ? "Modifier le commentaire" : "Écrire un commentaire",
-                systemImage: "square.and.pencil"
-            ) {
-                showNoteEditor = true
+            // Status and sharing are switched on the page itself, and the series
+            // opens from its row: the menu only holds what the page cannot do.
+            Button("Modifier", systemImage: "pencil") {
+                showEditor = true
             }
-
-            Section {
-                if book.series != nil {
-                    Button("Voir la série", systemImage: "square.stack") {
-                        openSeriesId = book.series?.id
-                    }
-                    .accessibilityIdentifier("menu-series-button")
-                }
-                Button(
-                    book.hidden ? "Partager ce livre" : "Ne pas partager",
-                    systemImage: book.hidden ? "eye" : "eye.slash"
-                ) {
-                    run { await viewModel.setHidden(!book.hidden) }
-                }
-                .accessibilityIdentifier("menu-hidden-button")
-            }
+            .accessibilityIdentifier("book-edit")
 
             Button("Retirer de ma bibliothèque", systemImage: "trash", role: .destructive) {
                 confirmDelete = true
@@ -179,7 +154,7 @@ struct BookView: View {
             .accessibilityIdentifier("choice-delete")
             Button("Annuler", role: .cancel) {}
         } message: {
-            Text("Votre note et votre commentaire seront perdus. Cette action est définitive.")
+            Text("Votre note sera perdue. Cette action est définitive.")
         }
     }
 

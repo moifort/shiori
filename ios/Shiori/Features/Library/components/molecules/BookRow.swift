@@ -72,14 +72,6 @@ struct BookRow: View {
 private struct ReadingStatusBadge: View {
     let status: ReadingStatus
 
-    private var symbol: String {
-        switch status {
-        case .toRead: "bookmark.fill"
-        case .reading: "book.fill"
-        case .read: "checkmark"
-        }
-    }
-
     private var tint: Color {
         switch status {
         case .toRead: .gray
@@ -89,7 +81,7 @@ private struct ReadingStatusBadge: View {
     }
 
     var body: some View {
-        Image(systemName: symbol)
+        Image(systemName: status.symbol)
             .font(.system(size: 9, weight: .bold))
             .foregroundStyle(.white)
             .frame(width: 20, height: 20)

@@ -28,13 +28,12 @@ enum BookAPI {
         return data.setReadingStatus.fragments.bookDetail.asBook
     }
 
-    static func setFormat(id: String, format: BookFormat) async throws -> Book {
+    /// Sends only what the reader changed: an untouched field is left out, and a
+    /// field they emptied is sent as null, which the server clears.
+    static func update(id: String, correction: BookCorrection) async throws -> Book {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.UpdateBookMutation(
-                id: id,
-                input: ShioriGraphQL.BookEditInput(format: .some(LibraryAPI.graphQLFormat(format)))
-            )
+            mutation: ShioriGraphQL.UpdateBookMutation(id: id, input: correction.asInput)
         )
         return data.updateBook.fragments.bookDetail.asBook
     }
@@ -48,15 +47,14 @@ enum BookAPI {
         return data.rateBook.fragments.bookDetail.asBook
     }
 
-    /// Passing nil deletes the note rather than storing an empty string.
-    static func setNote(id: String, note: String?) async throws -> Book {
-        let trimmed = note?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let value = (trimmed?.isEmpty ?? true) ? nil : trimmed
+    /// Takes the stars back. The book stays read: the server keeps its status
+    /// and its reading dates.
+    static func removeRating(id: String) async throws -> Book {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.SetBookNoteMutation(id: id, note: GraphQLHelpers.graphQLNullable(value))
+            mutation: ShioriGraphQL.RemoveBookRatingMutation(id: id)
         )
-        return data.setBookNote.fragments.bookDetail.asBook
+        return data.removeBookRating.fragments.bookDetail.asBook
     }
 
     static func setHidden(id: String, hidden: Bool) async throws -> Book {
@@ -121,5 +119,52 @@ struct BookDraft {
             synopsis: GraphQLHelpers.graphQLNullable(synopsis),
             title: title
         )
+    }
+}
+
+/// What the reader changed on a book in the edit form. A nil property was not
+/// touched and is not sent; `.clear` empties a field the reader deleted.
+struct BookCorrection: Equatable, Sendable {
+    enum Change<Value: Equatable & Sendable>: Equatable, Sendable {
+        case set(Value)
+        case clear
+    }
+
+    var title: String?
+    var authors: [String]?
+    var format: BookFormat?
+    var publisher: Change<String>?
+    var firstPublishedIn: Change<Int>?
+    var synopsis: Change<String>?
+    var genres: [String]?
+    var pageCount: Change<Int>?
+    var isbn13: Change<String>?
+
+    var isEmpty: Bool { self == BookCorrection() }
+
+    var asInput: ShioriGraphQL.BookEditInput {
+        ShioriGraphQL.BookEditInput(
+            authors: Self.nullable(authors),
+            firstPublishedIn: Self.nullable(firstPublishedIn),
+            format: format.map { .some(LibraryAPI.graphQLFormat($0)) } ?? .none,
+            genres: Self.nullable(genres),
+            isbn13: Self.nullable(isbn13),
+            pageCount: Self.nullable(pageCount),
+            publisher: Self.nullable(publisher),
+            synopsis: Self.nullable(synopsis),
+            title: Self.nullable(title)
+        )
+    }
+
+    private static func nullable<Value>(_ value: Value?) -> GraphQLNullable<Value> {
+        value.map { .some($0) } ?? .none
+    }
+
+    private static func nullable<Value>(_ change: Change<Value>?) -> GraphQLNullable<Value> {
+        switch change {
+        case nil: .none
+        case let .set(value): .some(value)
+        case .clear: .null
+        }
     }
 }

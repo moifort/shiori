@@ -58,16 +58,34 @@ final class BookViewModel {
         await mutate { try await BookAPI.setStatus(id: self.bookId, status: status) }
     }
 
-    func setFormat(_ format: BookFormat) async {
-        await mutate { try await BookAPI.setFormat(id: self.bookId, format: format) }
-    }
-
     func rate(_ stars: Int) async {
         await mutate { try await BookAPI.rate(id: self.bookId, stars: stars) }
     }
 
-    func setNote(_ note: String?) async {
-        await mutate { try await BookAPI.setNote(id: self.bookId, note: note) }
+    /// Saves the edit form: the corrected facts first, then the rating when it
+    /// moved. Two calls, because rating is its own mutation with its own rule —
+    /// it marks the book read — and the record the second one returns carries
+    /// both changes. Returns false when a call failed, so the form stays open.
+    func save(_ correction: BookCorrection, rating: Int?) async -> Bool {
+        guard let book else { return false }
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            if !correction.isEmpty {
+                self.book = try await BookAPI.update(id: bookId, correction: correction)
+            }
+            if rating != book.rating {
+                self.book = if let rating {
+                    try await BookAPI.rate(id: bookId, stars: rating)
+                } else {
+                    try await BookAPI.removeRating(id: bookId)
+                }
+            }
+            return true
+        } catch {
+            errorMessage = reportError(error)
+            return false
+        }
     }
 
     func setHidden(_ hidden: Bool) async {

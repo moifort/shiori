@@ -12,3 +12,6 @@ the release tag is pushed.
 
 - Scanned books now show their published cover, found from the ISBN. A book with no known
   cover keeps its initials.
+- Every fact on a book can now be corrected from its sheet with "Edit": title, authors,
+  format, rating, synopsis, publisher, year, pages, genres and ISBN. A field can be emptied,
+  and a rating taken back.

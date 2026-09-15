@@ -28,8 +28,8 @@ mutation RateBook($id: BookId!, $rating: StarRating!) {
   }
 }
 
-mutation SetBookNote($id: BookId!, $note: ReadingNote) {
-  setBookNote(id: $id, note: $note) {
+mutation RemoveBookRating($id: BookId!) {
+  removeBookRating(id: $id) {
     ...BookDetail
   }
 }

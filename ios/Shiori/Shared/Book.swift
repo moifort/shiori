@@ -17,13 +17,14 @@ enum ReadingStatus: String, Codable, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// The filled symbol reads as a state rather than an action, which matters
-    /// on a row where it sits next to the rating.
+    /// One symbol per status, used everywhere the status is drawn — the cover
+    /// badge, the status picker, the library filter — so a reader learns it once.
+    /// Filled, because it names a state rather than an action.
     var symbol: String {
         switch self {
-        case .toRead: "bookmark"
-        case .reading: "book"
-        case .read: "checkmark.circle.fill"
+        case .toRead: "bookmark.fill"
+        case .reading: "book.fill"
+        case .read: "checkmark"
         }
     }
 }
@@ -48,6 +49,17 @@ enum BookFormat: String, Codable, CaseIterable, Identifiable, Sendable {
         case .bandeDessinee: String(localized: "BD")
         case .comic: String(localized: "Comics")
         case .manga: String(localized: "Manga")
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .book: "book.closed"
+        case .ebook: "ipad"
+        case .audiobook: "headphones"
+        case .bandeDessinee: "text.bubble"
+        case .comic: "bolt"
+        case .manga: "character.book.closed.ja"
         }
     }
 }
