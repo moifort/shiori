@@ -7,7 +7,7 @@ mock.module('~/system/firebase', () => ({ db: fakeDb }))
 const { BookCommand } = await import('~/domain/book/command')
 const { BookQuery } = await import('~/domain/book/query')
 const { BookTitle } = await import('~/domain/shared/primitives')
-const { StarRating, ReadingNote } = await import('~/domain/book/primitives')
+const { StarRating, ReadingNote, Publisher, PageCount } = await import('~/domain/book/primitives')
 
 const reader = 'reader-1' as UserId
 const NOW = new Date('2026-09-14T10:00:00.000Z')
@@ -43,6 +43,22 @@ describe('cataloguing a book', () => {
     const edited = await BookCommand.edit(reader, book.id, { format: 'bande-dessinee' })
 
     expect(edited).toMatchObject({ format: 'bande-dessinee' })
+  })
+
+  // A correction can remove a fact the scan invented, not only replace it.
+  test('drops a field the reader cleared, and keeps the rest', async () => {
+    const book = await BookCommand.add(
+      reader,
+      { title: BookTitle('Blacksad'), publisher: Publisher('Dargaud'), pageCount: PageCount(56) },
+      NOW,
+    )
+
+    const edited = await BookCommand.edit(reader, book.id, { publisher: undefined })
+
+    if (edited === 'not-found') throw new Error('unreachable')
+    expect(edited.publisher).toBeUndefined()
+    expect(Number(edited.pageCount)).toBe(56)
+    expect(Object.hasOwn(fake.data('books', book.id) as object, 'publisher')).toBe(false)
   })
 
   test('stamps a start when it is catalogued as already being read', async () => {
@@ -101,6 +117,27 @@ describe('rating a book', () => {
 
     expect(result).toBe('not-found')
     expect(fake.data('books', theirs.id)?.rating).toBeUndefined()
+  })
+
+  // Taking the stars back is not un-reading the book: the status and its dates
+  // stay where rating put them.
+  test('removes the rating and leaves the book read', async () => {
+    const book = await add('Le Nom du vent')
+    await BookCommand.rate(reader, book.id, StarRating(4), NOW)
+
+    const unrated = await BookCommand.unrate(reader, book.id)
+
+    if (unrated === 'not-found') throw new Error('unreachable')
+    expect(unrated.rating).toBeUndefined()
+    expect(unrated.status).toBe('read')
+    expect(unrated.finishedAt).toEqual(NOW)
+    expect(Object.hasOwn(fake.data('books', book.id) as object, 'rating')).toBe(false)
+  })
+
+  test('answers not-found when removing the rating of a book the reader does not own', async () => {
+    const result = await BookCommand.unrate(reader, 'nope' as never)
+
+    expect(result).toBe('not-found')
   })
 })
 

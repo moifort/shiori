@@ -58,9 +58,12 @@ export const NewBookInput = builder.inputType('NewBookInput', {
 })
 
 /** The fields a reader may correct after a scan got something wrong. Every field
- *  is optional and an omitted one is left untouched. */
+ *  is optional and an omitted one is left untouched. Passing null clears an
+ *  optional field; title and format cannot be cleared, and ignore a null. */
 export const BookEditInput = builder.inputType('BookEditInput', {
-  description: 'Corrections to a book record. Omitted fields are left as they are.',
+  description:
+    'Corrections to a book record. Omitted fields are left as they are; null clears ' +
+    'a field (an empty list for authors and genres). Title and format ignore null.',
   fields: (t) => ({
     title: t.field({ type: 'BookTitle', required: false }),
     authors: t.field({ type: ['AuthorName'], required: false }),

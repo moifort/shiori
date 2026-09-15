@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern'
-import { BookCommand } from '~/domain/book/command'
+import { BookCommand, type BookEdit } from '~/domain/book/command'
 import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { BookEditInput, NewBookInput } from '~/domain/book/infrastructure/graphql/inputs'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
@@ -16,6 +16,14 @@ const readBack = async (userId: UserId, bookId: BookId) => {
   const view = await BookQuery.byId(userId, bookId)
   return view ?? notFound('Book not found')
 }
+
+// GraphQL tells an omitted field (undefined) from an explicit null. Omitted is
+// left alone; null clears, which the command expresses as an undefined value
+// the repository then drops from the document.
+const clearable = <Key extends keyof BookEdit>(
+  key: Key,
+  value: BookEdit[Key] | null | undefined,
+) => (value === undefined ? {} : { [key]: value ?? undefined })
 
 builder.mutationFields((t) => ({
   addBook: t.field({
@@ -53,24 +61,27 @@ builder.mutationFields((t) => ({
 
   updateBook: t.field({
     type: BookType,
-    description: 'Correct a record the scan got wrong. Omitted fields are left alone.',
+    description:
+      'Correct a record the scan got wrong. Omitted fields are left alone; an ' +
+      'optional field passed as null is cleared.',
     args: {
       id: t.arg({ type: 'BookId', required: true }),
       input: t.arg({ type: BookEditInput, required: true }),
     },
     resolve: async (_root, args, context) => {
+      const { input } = args
       const result = await BookCommand.edit(context.userId, args.id, {
-        ...(args.input.title !== null && args.input.title !== undefined
-          ? { title: args.input.title }
-          : {}),
-        ...(args.input.authors ? { authors: args.input.authors } : {}),
-        ...(args.input.format ? { format: args.input.format } : {}),
-        ...(args.input.publisher ? { publisher: args.input.publisher } : {}),
-        ...(args.input.firstPublishedIn ? { firstPublishedIn: args.input.firstPublishedIn } : {}),
-        ...(args.input.synopsis ? { synopsis: args.input.synopsis } : {}),
-        ...(args.input.genres ? { genres: args.input.genres } : {}),
-        ...(args.input.pageCount ? { pageCount: args.input.pageCount } : {}),
-        ...(args.input.isbn13 ? { isbn13: args.input.isbn13 } : {}),
+        // Title and format have no absent state, so a null for them is ignored.
+        ...(input.title != null ? { title: input.title } : {}),
+        ...(input.format != null ? { format: input.format } : {}),
+        // Lists clear to empty rather than to absent: the record always has them.
+        ...(input.authors !== undefined ? { authors: input.authors ?? [] } : {}),
+        ...(input.genres !== undefined ? { genres: input.genres ?? [] } : {}),
+        ...clearable('publisher', input.publisher),
+        ...clearable('firstPublishedIn', input.firstPublishedIn),
+        ...clearable('synopsis', input.synopsis),
+        ...clearable('pageCount', input.pageCount),
+        ...clearable('isbn13', input.isbn13),
       })
       return match(result)
         .with('not-found', () => notFound('Book not found'))
@@ -107,6 +118,20 @@ builder.mutationFields((t) => ({
     },
     resolve: async (_root, args, context) => {
       const result = await BookCommand.rate(context.userId, args.id, args.rating)
+      return match(result)
+        .with('not-found', () => notFound('Book not found'))
+        .otherwise((book) => readBack(context.userId, book.id))
+    },
+  }),
+
+  removeBookRating: t.field({
+    type: BookType,
+    description:
+      'Take a rating back. The book stays read, with its reading dates: withdrawing ' +
+      'a judgment is not saying the reading never happened.',
+    args: { id: t.arg({ type: 'BookId', required: true }) },
+    resolve: async (_root, args, context) => {
+      const result = await BookCommand.unrate(context.userId, args.id)
       return match(result)
         .with('not-found', () => notFound('Book not found'))
         .otherwise((book) => readBack(context.userId, book.id))

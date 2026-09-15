@@ -126,6 +126,75 @@ describe('rating through the API', () => {
     expect(rated.startedAt).not.toBeNull()
     expect(rated.finishedAt).not.toBeNull()
   })
+
+  test('takes the rating back without moving the book off the read pile', async () => {
+    const book = await addBook('Le Nom du vent')
+    await execute(`mutation { rateBook(id: "${book.id}", rating: 5) { id } }`)
+
+    const result = await execute(
+      `mutation { removeBookRating(id: "${book.id}") { rating status } }`,
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.removeBookRating).toEqual({ rating: null, status: 'READ' })
+  })
+})
+
+describe('correcting a book through the API', () => {
+  const addDetailedBook = async () => {
+    const result = await execute(
+      'mutation { addBook(input: { title: "Blacksad", authors: ["Juan Díaz Canales"], ' +
+        'publisher: "Dargaud", firstPublishedIn: 2000, synopsis: "Un chat détective.", ' +
+        'genres: ["Polar"], pageCount: 56, isbn13: "9782205049824" }) { id } }',
+    )
+    expect(result.errors).toBeUndefined()
+    return (result.data as { addBook: { id: string } }).addBook
+  }
+
+  test('clears every optional field passed as null, and leaves omitted ones alone', async () => {
+    const book = await addDetailedBook()
+
+    const result = await execute(
+      `mutation { updateBook(id: "${book.id}", input: { publisher: null, firstPublishedIn: null, ` +
+        'synopsis: null, pageCount: null, isbn13: null, genres: null }) ' +
+        '{ title authors publisher firstPublishedIn synopsis pageCount isbn13 genres } }',
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.updateBook).toEqual({
+      title: 'Blacksad',
+      authors: ['Juan Díaz Canales'],
+      publisher: null,
+      firstPublishedIn: null,
+      synopsis: null,
+      pageCount: null,
+      isbn13: null,
+      genres: [],
+    })
+  })
+
+  test('replaces the authors with none when an empty list is passed', async () => {
+    const book = await addDetailedBook()
+
+    const result = await execute(
+      `mutation { updateBook(id: "${book.id}", input: { authors: [] }) { authors } }`,
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.updateBook).toEqual({ authors: [] })
+  })
+
+  // A title is what makes a record a book: it can be corrected, never removed.
+  test('ignores a null title rather than erasing it', async () => {
+    const book = await addDetailedBook()
+
+    const result = await execute(
+      `mutation { updateBook(id: "${book.id}", input: { title: null }) { title } }`,
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.updateBook).toEqual({ title: 'Blacksad' })
+  })
 })
 
 describe('reading the library through the API', () => {

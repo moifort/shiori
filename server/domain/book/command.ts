@@ -133,6 +133,14 @@ export namespace BookCommand {
     })
   }
 
+  /** Taking the stars back leaves the book read, with its dates: the reader is
+   *  withdrawing a judgment, not saying the reading never happened. */
+  export const unrate = async (userId: UserId, bookId: BookId): Promise<Book | 'not-found'> => {
+    const book = await repository.findById(userId, bookId)
+    if (!book) return 'not-found'
+    return repository.save({ ...book, rating: undefined })
+  }
+
   /** Passing no note clears it. An emptied note is a deletion, not an empty
    *  string to store and later render as a blank block. */
   export const annotate = async (

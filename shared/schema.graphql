@@ -44,7 +44,9 @@ type Book {
   title: BookTitle!
 }
 
-"""Corrections to a book record. Omitted fields are left as they are."""
+"""
+Corrections to a book record. Omitted fields are left as they are; null clears a field (an empty list for authors and genres). Title and format ignore null.
+"""
 input BookEditInput {
   authors: [AuthorName!]
   firstPublishedIn: Year
@@ -271,6 +273,11 @@ type Mutation {
   rateBook(id: BookId!, rating: StarRating!): Book!
 
   """
+  Take a rating back. The book stays read, with its reading dates: withdrawing a judgment is not saying the reading never happened.
+  """
+  removeBookRating(id: BookId!): Book!
+
+  """
   Read a book cover with AI and return a record for the reader to review.
   
   Nothing is saved: the answer is a proposal. The app shows it, the reader corrects what the model got wrong, and `addBook` persists the result. That review step is the safety net against a misread cover.
@@ -320,7 +327,9 @@ type Mutation {
     signedTransaction: String!
   ): Entitlement!
 
-  """Correct a record the scan got wrong. Omitted fields are left alone."""
+  """
+  Correct a record the scan got wrong. Omitted fields are left alone; an optional field passed as null is cleared.
+  """
   updateBook(id: BookId!, input: BookEditInput!): Book!
 }
 
