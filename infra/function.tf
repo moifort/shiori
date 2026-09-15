@@ -90,8 +90,13 @@ resource "google_cloudfunctions2_function" "server" {
   }
 
   service_config {
-    available_memory      = "512M"
-    timeout_seconds       = 60
+    available_memory = "512M"
+    # A cold scan was measured at 55s end to end; the 60s Vinarium inherited
+    # 504s the request after the models have already been paid for. Mirrors
+    # `timeoutSeconds` in nitro.config.ts, which Terraform does not read, and
+    # the app waits this long plus a margin (ScanAPI.swift): raise all three
+    # together.
+    timeout_seconds       = 180
     max_instance_count    = 100
     min_instance_count    = 0
     service_account_email = google_service_account.function.email

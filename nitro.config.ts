@@ -17,6 +17,10 @@ export default defineNitroConfig({
       // Vinarium's 60s ceiling by five seconds, which is no margin at all. The
       // request that tips over does not degrade, it 504s after the models have
       // already been paid for.
+      //
+      // Only `firebase deploy` reads this block. The deploy goes through
+      // Terraform, so the ceiling that actually applies is `timeout_seconds` in
+      // infra/function.tf; the two are kept equal so that neither misleads.
       timeoutSeconds: 180,
       concurrency: 80,
     },

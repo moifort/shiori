@@ -43,13 +43,21 @@ struct ScannedBook {
 }
 
 enum ScanAPI {
+    /// How long the app waits for a scan: the function's own ceiling
+    /// (`timeout_seconds` in infra/function.tf) plus a margin, so a request that
+    /// runs over receives the server's 504 instead of both sides giving up at the
+    /// same instant. The session default of 60 s is what a cold scan, measured
+    /// at 55 s, kept running into.
+    private static let requestTimeout: TimeInterval = 190
+
     /// Spends one scan of the allowance, unless the cover was already scanned.
     /// Throws `APIError.domain(code: "QUOTA_EXHAUSTED")` once nothing is left,
     /// which the view model turns into the paywall rather than an error alert.
     static func scan(jpeg: Data) async throws -> ScannedBook {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.ScanBookMutation(imageBase64: jpeg.base64EncodedString())
+            mutation: ShioriGraphQL.ScanBookMutation(imageBase64: jpeg.base64EncodedString()),
+            requestTimeout: requestTimeout
         )
         let result = data.scanBook
         return ScannedBook(

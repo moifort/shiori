@@ -11,9 +11,18 @@ enum GraphQLHelpers {
         return try unwrap(response)
     }
 
-    static func perform<M: GraphQLMutation>(_ client: ApolloClient, mutation: M) async throws -> M.Data
+    /// `requestTimeout` overrides the session's 60 s idle limit for the one
+    /// mutation that legitimately keeps the server silent for longer: a scan.
+    static func perform<M: GraphQLMutation>(
+        _ client: ApolloClient,
+        mutation: M,
+        requestTimeout: TimeInterval? = nil
+    ) async throws -> M.Data
     where M.ResponseFormat == SingleResponseFormat {
-        let response = try await client.perform(mutation: mutation)
+        let response = try await client.perform(
+            mutation: mutation,
+            requestConfiguration: requestTimeout.map { RequestConfiguration(requestTimeout: $0) }
+        )
         return try unwrap(response)
     }
 
