@@ -3,12 +3,12 @@ import { ZodError } from 'zod'
 import {
   BookId,
   CoverUrl,
-  Genre,
   Isbn13,
   PageCount,
   Publisher,
   ReadingNote,
   StarRating,
+  Subgenre,
   Synopsis,
 } from '~/domain/book/primitives'
 import { SeriesDescription, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
@@ -102,10 +102,12 @@ builder.scalarType('Isbn13', {
   parseValue: validatedParse('Isbn13', Isbn13),
 })
 
-builder.scalarType('Genre', {
-  description: 'One genre label, 1 to 100 characters. Example: "Epic fantasy".',
+builder.scalarType('Subgenre', {
+  description:
+    'One free label refining the genre, 1 to 100 characters, in the caller language. ' +
+    'Example: "Dark fantasy".',
   serialize: (value) => value as string,
-  parseValue: validatedParse('Genre', Genre),
+  parseValue: validatedParse('Subgenre', Subgenre),
 })
 
 builder.scalarType('Synopsis', {

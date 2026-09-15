@@ -7,7 +7,9 @@ import type { ObjectPath, SignedUrl } from '~/system/object-store/types'
 export type BookId = Brand<string, 'BookId'>
 export type Publisher = Brand<string, 'Publisher'>
 export type Isbn13 = Brand<string, 'Isbn13'>
-export type Genre = Brand<string, 'Genre'>
+/** One free label refining the genre: "dark fantasy", "space opera", "shōnen".
+ *  Written by the model in the scan language, or typed by the reader. */
+export type Subgenre = Brand<string, 'Subgenre'>
 export type Synopsis = Brand<string, 'Synopsis'>
 export type PageCount = Brand<number, 'PageCount'>
 /** One to five whole stars. Half stars double the value space without adding
@@ -23,6 +25,36 @@ export type CoverUrl = Brand<string, 'CoverUrl'>
  *  its life, and the only state in which a note actually gets written. */
 export const READING_STATUSES = ['to-read', 'reading', 'read'] as const
 export type ReadingStatus = (typeof READING_STATUSES)[number]
+
+/** What the book is about, from a closed list. Closed on purpose: free labels
+ *  come back as "Fantasy" on one scan and "Fantasy épique" on the next, and no
+ *  statistic survives that. Nuance lives in subgenres. Audience ("jeunesse") is
+ *  not a genre, and the object (manga, comic) is the format. */
+export const GENRES = [
+  'fantasy',
+  'science-fiction',
+  'horror',
+  'crime',
+  'thriller',
+  'romance',
+  'historical-fiction',
+  'adventure',
+  'literary-fiction',
+  'humor',
+  'poetry',
+  'drama',
+  'biography',
+  'history',
+  'essay',
+  'science',
+  'self-help',
+  'business',
+  'art',
+  'cooking',
+  'travel',
+  'other',
+] as const
+export type Genre = (typeof GENRES)[number]
 
 /** What kind of object the reader holds. Prose in print or on a screen, sound, or
  *  a drawn story — and among drawn stories, the three traditions a reader shelves
@@ -61,7 +93,9 @@ export type Book = {
   publisher?: Publisher
   firstPublishedIn?: Year
   synopsis?: Synopsis
-  genres: Genre[]
+  /** Absent for a book added by hand, which had no model to classify it. */
+  genre?: Genre
+  subgenres: Subgenre[]
   pageCount?: PageCount
   isbn13?: Isbn13
   /** The language of the edition on the shelf, not the app's language. */

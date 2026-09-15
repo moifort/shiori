@@ -1,9 +1,11 @@
 import {
   BookFormatValue,
-  Genre,
+  GenreValue,
   Isbn13,
+  MAX_SUBGENRES,
   PageCount,
   Publisher,
+  Subgenre,
   Synopsis,
 } from '~/domain/book/primitives'
 import { generate } from '~/domain/scan/gemini'
@@ -47,7 +49,8 @@ type EnrichmentOutput = {
   volumeNumber?: number | null
   volumeKind?: string | null
   firstPublishedIn?: number | null
-  genres: string[]
+  genre?: string | null
+  subgenres: string[]
   pageCount?: number | null
   isbn13?: string | null
   synopsis?: string | null
@@ -117,7 +120,10 @@ export namespace Scan {
     })
 
     if (!value.recognized || !value.title.trim()) {
-      return { result: { recognized: false, title: '' as const, authors: [], genres: [] }, usage }
+      return {
+        result: { recognized: false, title: '' as const, authors: [], subgenres: [] },
+        usage,
+      }
     }
 
     return {
@@ -127,7 +133,7 @@ export namespace Scan {
         authors: parsedAuthors(value.authors),
         format: optional(value.format, BookFormatValue),
         publisher: optional(value.publisher, Publisher),
-        genres: [],
+        subgenres: [],
       } satisfies ScanResult,
       usage,
     }
@@ -153,7 +159,11 @@ export namespace Scan {
         publisher: seen.publisher,
         firstPublishedIn: optional(value.firstPublishedIn, Year),
         synopsis: optional(value.synopsis, Synopsis),
-        genres: value.genres.map((genre) => optional(genre, Genre)).filter(isPresent),
+        genre: optional(value.genre, GenreValue),
+        subgenres: (value.subgenres ?? [])
+          .map((subgenre) => optional(subgenre, Subgenre))
+          .filter(isPresent)
+          .slice(0, MAX_SUBGENRES),
         pageCount: optional(value.pageCount, PageCount),
         isbn13: optional(value.isbn13, Isbn13),
         series: parsedSeries(value, authors.length > 0 ? authors : seen.authors),

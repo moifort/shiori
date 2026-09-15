@@ -33,6 +33,33 @@ enum LibraryAPI {
         }
     }
 
+    static func graphQLGenre(_ genre: BookGenre) -> GraphQLEnum<ShioriGraphQL.Genre> {
+        switch genre {
+        case .fantasy: .case(.fantasy)
+        case .scienceFiction: .case(.scienceFiction)
+        case .horror: .case(.horror)
+        case .crime: .case(.crime)
+        case .thriller: .case(.thriller)
+        case .romance: .case(.romance)
+        case .historicalFiction: .case(.historicalFiction)
+        case .adventure: .case(.adventure)
+        case .literaryFiction: .case(.literaryFiction)
+        case .humor: .case(.humor)
+        case .poetry: .case(.poetry)
+        case .drama: .case(.drama)
+        case .biography: .case(.biography)
+        case .history: .case(.history)
+        case .essay: .case(.essay)
+        case .science: .case(.science)
+        case .selfHelp: .case(.selfHelp)
+        case .business: .case(.business)
+        case .art: .case(.art)
+        case .cooking: .case(.cooking)
+        case .travel: .case(.travel)
+        case .other: .case(.other)
+        }
+    }
+
     static func graphQLFormat(_ format: BookFormat) -> GraphQLEnum<ShioriGraphQL.BookFormat> {
         switch format {
         case .book: .case(.book)

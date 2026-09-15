@@ -1,4 +1,4 @@
-import { BOOK_FORMATS } from '~/domain/book/types'
+import { BOOK_FORMATS, GENRES } from '~/domain/book/types'
 import { VOLUME_KINDS } from '~/domain/series/types'
 
 /** The response schemas handed to Gemini's `responseSchema`, which constrains
@@ -63,7 +63,17 @@ export const ENRICHMENT_SCHEMA = {
       nullable: true,
       description: "Année de première publication de l'œuvre, pas de cette édition",
     },
-    genres: { type: 'array', items: { type: 'string' } },
+    genre: {
+      type: 'string',
+      enum: [...GENRES],
+      nullable: true,
+      description: 'Un seul genre, le plus précis de la liste ; other si aucun ne convient',
+    },
+    subgenres: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'De 0 à 3 sous-genres libres qui précisent le genre',
+    },
     pageCount: { type: 'integer', nullable: true },
     isbn13: {
       type: 'string',
@@ -72,7 +82,7 @@ export const ENRICHMENT_SCHEMA = {
     },
     synopsis: { type: 'string', nullable: true, description: 'Résumé sans le dénouement' },
   },
-  required: ['title', 'authors', 'genres'],
+  required: ['title', 'authors', 'subgenres'],
   propertyOrdering: [
     'title',
     'authors',
@@ -80,7 +90,8 @@ export const ENRICHMENT_SCHEMA = {
     'volumeNumber',
     'volumeKind',
     'firstPublishedIn',
-    'genres',
+    'genre',
+    'subgenres',
     'pageCount',
     'isbn13',
     'synopsis',

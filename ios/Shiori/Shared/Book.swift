@@ -64,6 +64,62 @@ enum BookFormat: String, Codable, CaseIterable, Identifiable, Sendable {
     }
 }
 
+/// What a book is about, from the closed list the server holds. Nuance lives in
+/// the free subgenres beside it; the object (manga, BD) is the format.
+enum BookGenre: String, Codable, CaseIterable, Identifiable, Sendable {
+    case fantasy
+    case scienceFiction
+    case horror
+    case crime
+    case thriller
+    case romance
+    case historicalFiction
+    case adventure
+    case literaryFiction
+    case humor
+    case poetry
+    case drama
+    case biography
+    case history
+    case essay
+    case science
+    case selfHelp
+    case business
+    case art
+    case cooking
+    case travel
+    case other
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .fantasy: String(localized: "Fantasy")
+        case .scienceFiction: String(localized: "Science-fiction")
+        case .horror: String(localized: "Horreur")
+        case .crime: String(localized: "Polar")
+        case .thriller: String(localized: "Thriller")
+        case .romance: String(localized: "Romance")
+        case .historicalFiction: String(localized: "Roman historique")
+        case .adventure: String(localized: "Aventure")
+        case .literaryFiction: String(localized: "Littérature")
+        case .humor: String(localized: "Humour")
+        case .poetry: String(localized: "Poésie")
+        case .drama: String(localized: "Théâtre")
+        case .biography: String(localized: "Biographie")
+        case .history: String(localized: "Histoire")
+        case .essay: String(localized: "Essai")
+        case .science: String(localized: "Sciences")
+        case .selfHelp: String(localized: "Développement personnel")
+        case .business: String(localized: "Économie")
+        case .art: String(localized: "Art")
+        case .cooking: String(localized: "Cuisine")
+        case .travel: String(localized: "Voyage")
+        case .other: String(localized: "Autre")
+        }
+    }
+}
+
 /// Where a volume sits in a saga. Only `main` belongs to the numbered spine;
 /// everything else orbits it and usually carries no number.
 enum VolumeKind: String, Codable, CaseIterable, Identifiable, Sendable {
@@ -126,7 +182,8 @@ struct Book: Identifiable, Hashable, Sendable {
     var publisher: String?
     var firstPublishedIn: Int?
     var synopsis: String?
-    var genres: [String] = []
+    var genre: BookGenre?
+    var subgenres: [String] = []
     var pageCount: Int?
     var isbn13: String?
     var series: SeriesMembership?

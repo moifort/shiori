@@ -19,6 +19,38 @@ export const ReadingStatusEnum = builder.enumType('ReadingStatus', {
   } as const,
 })
 
+export const GenreEnum = builder.enumType('Genre', {
+  description:
+    'What a book is about, from a closed list.\n\n' +
+    'Closed so that statistics can count against it; nuance goes to subgenres. ' +
+    'Audience (young adult, children) is not a genre, and the object (manga, comic) ' +
+    'is the format. `OTHER` when nothing fits.',
+  values: {
+    FANTASY: { value: 'fantasy' },
+    SCIENCE_FICTION: { value: 'science-fiction' },
+    HORROR: { value: 'horror' },
+    CRIME: { value: 'crime', description: 'Detective and police fiction.' },
+    THRILLER: { value: 'thriller' },
+    ROMANCE: { value: 'romance' },
+    HISTORICAL_FICTION: { value: 'historical-fiction' },
+    ADVENTURE: { value: 'adventure' },
+    LITERARY_FICTION: { value: 'literary-fiction', description: 'General literature.' },
+    HUMOR: { value: 'humor' },
+    POETRY: { value: 'poetry' },
+    DRAMA: { value: 'drama', description: 'Plays.' },
+    BIOGRAPHY: { value: 'biography', description: 'Biographies and memoirs.' },
+    HISTORY: { value: 'history', description: 'Non-fiction history.' },
+    ESSAY: { value: 'essay' },
+    SCIENCE: { value: 'science' },
+    SELF_HELP: { value: 'self-help' },
+    BUSINESS: { value: 'business', description: 'Economics and business.' },
+    ART: { value: 'art' },
+    COOKING: { value: 'cooking' },
+    TRAVEL: { value: 'travel' },
+    OTHER: { value: 'other', description: 'Nothing in the list fits.' },
+  } as const,
+})
+
 export const BookFormatEnum = builder.enumType('BookFormat', {
   description:
     'What kind of object the reader holds.\n\n' +

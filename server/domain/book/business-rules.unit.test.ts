@@ -25,7 +25,7 @@ const book = (spec: BookSpec): BookView => ({
   title: BookTitle(spec.title),
   authors: [],
   format: 'book',
-  genres: [],
+  subgenres: [],
   status: spec.status ?? 'to-read',
   hidden: false,
   addedAt: NOW,

@@ -9,7 +9,8 @@ mutation ScanBook($imageBase64: String!) {
     publisher
     firstPublishedIn
     synopsis
-    genres
+    genre
+    subgenres
     pageCount
     isbn13
     coverUrl

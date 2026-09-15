@@ -10,7 +10,8 @@ struct ScannedBook {
     var publisher: String?
     var firstPublishedIn: Int?
     var synopsis: String?
-    var genres: [String] = []
+    var genre: BookGenre?
+    var subgenres: [String] = []
     var pageCount: Int?
     var isbn13: String?
     /// The publisher's cover, found by ISBN server-side and already checked to exist.
@@ -31,7 +32,8 @@ struct ScannedBook {
             publisher: publisher,
             firstPublishedIn: firstPublishedIn,
             synopsis: synopsis,
-            genres: genres,
+            genre: genre,
+            subgenres: subgenres,
             pageCount: pageCount,
             isbn13: isbn13,
             coverURL: coverURL,
@@ -58,7 +60,8 @@ enum ScanAPI {
             publisher: result.publisher,
             firstPublishedIn: result.firstPublishedIn,
             synopsis: result.synopsis,
-            genres: result.genres,
+            genre: result.genre?.asDomain,
+            subgenres: result.subgenres,
             pageCount: result.pageCount,
             isbn13: result.isbn13,
             coverURL: result.coverUrl.flatMap(URL.init(string:)),

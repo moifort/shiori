@@ -82,8 +82,11 @@ struct ScanReviewPage: View {
                 if let pages = draft.pageCount {
                     LabeledContent("Pages", value: String(pages))
                 }
-                if !draft.genres.isEmpty {
-                    LabeledContent("Genres", value: draft.genres.joined(separator: ", "))
+                if let genre = draft.genre {
+                    LabeledContent("Genre", value: genre.label)
+                }
+                if !draft.subgenres.isEmpty {
+                    LabeledContent("Sous-genres", value: draft.subgenres.joined(separator: ", "))
                 }
                 if let isbn = draft.isbn13 {
                     LabeledContent("ISBN", value: isbn).font(.caption.monospaced())
@@ -123,7 +126,8 @@ struct ScanReviewPage: View {
                 publisher: "Bragelonne",
                 firstPublishedIn: 2007,
                 synopsis: "Kvothe raconte sa propre légende.",
-                genres: ["Fantasy"],
+                genre: .fantasy,
+                subgenres: ["Roman initiatique"],
                 pageCount: 662,
                 isbn13: "9782352943556"
             ),

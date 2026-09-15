@@ -145,7 +145,7 @@ describe('correcting a book through the API', () => {
     const result = await execute(
       'mutation { addBook(input: { title: "Blacksad", authors: ["Juan Díaz Canales"], ' +
         'publisher: "Dargaud", firstPublishedIn: 2000, synopsis: "Un chat détective.", ' +
-        'genres: ["Polar"], pageCount: 56, isbn13: "9782205049824" }) { id } }',
+        'genre: CRIME, subgenres: ["Noir"], pageCount: 56, isbn13: "9782205049824" }) { id } }',
     )
     expect(result.errors).toBeUndefined()
     return (result.data as { addBook: { id: string } }).addBook
@@ -156,8 +156,8 @@ describe('correcting a book through the API', () => {
 
     const result = await execute(
       `mutation { updateBook(id: "${book.id}", input: { publisher: null, firstPublishedIn: null, ` +
-        'synopsis: null, pageCount: null, isbn13: null, genres: null }) ' +
-        '{ title authors publisher firstPublishedIn synopsis pageCount isbn13 genres } }',
+        'synopsis: null, pageCount: null, isbn13: null, genre: null, subgenres: null }) ' +
+        '{ title authors publisher firstPublishedIn synopsis pageCount isbn13 genre subgenres } }',
     )
 
     expect(result.errors).toBeUndefined()
@@ -169,8 +169,26 @@ describe('correcting a book through the API', () => {
       synopsis: null,
       pageCount: null,
       isbn13: null,
-      genres: [],
+      genre: null,
+      subgenres: [],
     })
+  })
+
+  test('reads back the genre and subgenres it was created with', async () => {
+    const book = await addDetailedBook()
+
+    const result = await execute(`{ book(id: "${book.id}") { genre subgenres } }`)
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.book).toEqual({ genre: 'CRIME', subgenres: ['Noir'] })
+  })
+
+  test('refuses a genre outside the list', async () => {
+    const result = await execute(
+      'mutation { addBook(input: { title: "Blacksad", genre: NOIR }) { id } }',
+    )
+
+    expect(result.errors).toBeDefined()
   })
 
   test('replaces the authors with none when an empty list is passed', async () => {

@@ -3,6 +3,7 @@ import { BookCommand, type BookEdit } from '~/domain/book/command'
 import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { BookEditInput, NewBookInput } from '~/domain/book/infrastructure/graphql/inputs'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
+import { MAX_SUBGENRES } from '~/domain/book/primitives'
 import { BookQuery } from '~/domain/book/query'
 import type { BookId } from '~/domain/book/types'
 import { builder } from '~/domain/shared/graphql/builder'
@@ -40,7 +41,8 @@ builder.mutationFields((t) => ({
         publisher: args.input.publisher ?? undefined,
         firstPublishedIn: args.input.firstPublishedIn ?? undefined,
         synopsis: args.input.synopsis ?? undefined,
-        genres: args.input.genres ?? undefined,
+        genre: args.input.genre ?? undefined,
+        subgenres: args.input.subgenres?.slice(0, MAX_SUBGENRES) ?? undefined,
         pageCount: args.input.pageCount ?? undefined,
         isbn13: args.input.isbn13 ?? undefined,
         series: args.input.series
@@ -76,7 +78,10 @@ builder.mutationFields((t) => ({
         ...(input.format != null ? { format: input.format } : {}),
         // Lists clear to empty rather than to absent: the record always has them.
         ...(input.authors !== undefined ? { authors: input.authors ?? [] } : {}),
-        ...(input.genres !== undefined ? { genres: input.genres ?? [] } : {}),
+        ...(input.subgenres !== undefined
+          ? { subgenres: (input.subgenres ?? []).slice(0, MAX_SUBGENRES) }
+          : {}),
+        ...clearable('genre', input.genre),
         ...clearable('publisher', input.publisher),
         ...clearable('firstPublishedIn', input.firstPublishedIn),
         ...clearable('synopsis', input.synopsis),

@@ -137,7 +137,7 @@ struct BookPage: View {
     @ViewBuilder
     private var publicationSection: some View {
         let hasFacts = book.publisher != nil || book.firstPublishedIn != nil || book.pageCount != nil
-            || !book.genres.isEmpty || book.isbn13 != nil
+            || book.genre != nil || !book.subgenres.isEmpty || book.isbn13 != nil
         if hasFacts {
             Section("Publication") {
                 if let publisher = book.publisher {
@@ -149,11 +149,14 @@ struct BookPage: View {
                 if let pages = book.pageCount {
                     LabeledInfoRow(title: "Pages", value: String(pages), icon: "doc.plaintext")
                 }
-                if !book.genres.isEmpty {
+                if let genre = book.genre {
+                    LabeledInfoRow(title: "Genre", value: genre.label, icon: "theatermasks")
+                }
+                if !book.subgenres.isEmpty {
                     Label {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Genres")
-                            TagList(tags: book.genres)
+                            Text("Sous-genres")
+                            TagList(tags: book.subgenres)
                         }
                     } icon: {
                         Image(systemName: "tag").foregroundStyle(.secondary)
@@ -225,7 +228,8 @@ struct BookPage: View {
                 publisher: "Bragelonne",
                 firstPublishedIn: 2007,
                 synopsis: "Kvothe raconte sa propre légende : l'enfance sur les routes, la misère à Tarbean, l'Université et la magie qu'on y apprend.",
-                genres: ["Fantasy", "Roman initiatique", "Aventure"],
+                genre: .fantasy,
+                subgenres: ["Roman initiatique", "Aventure"],
                 pageCount: 662,
                 isbn13: "9782352943556",
                 series: SeriesMembership(id: "s1", name: "Chronique du tueur de roi", volume: 1, kind: .main),

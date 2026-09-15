@@ -51,7 +51,8 @@ const anEnrichment = {
   volumeNumber: 1,
   volumeKind: 'main',
   firstPublishedIn: 2007,
-  genres: ['Fantasy'],
+  genre: 'fantasy',
+  subgenres: ['Roman initiatique'],
   pageCount: 662,
   isbn13: '9782352943556',
   synopsis: 'Kvothe raconte sa propre légende.',
@@ -131,6 +132,35 @@ describe('reading the format', () => {
 
     expect(result.format).toBeUndefined()
     expect(String(result.title)).toBe('Le Nom du vent')
+  })
+})
+
+describe('classifying the genre', () => {
+  test('keeps the genre chosen from the list and the subgenres beside it', async () => {
+    answers = [aCover, anEnrichment, aCatalogue]
+
+    const { result } = await Scan.scanWithCache(image, 'fr')
+
+    expect(result.genre).toBe('fantasy')
+    expect((result.subgenres ?? []).map(String)).toEqual(['Roman initiatique'])
+  })
+
+  test('drops a genre outside the list without losing the book', async () => {
+    answers = [aCover, { ...anEnrichment, genre: 'epic-fantasy' }, aCatalogue]
+
+    const { result } = await Scan.scanWithCache(image, 'fr')
+
+    expect(result.genre).toBeUndefined()
+    expect(String(result.title)).toBe('Le Nom du vent')
+  })
+
+  test('keeps three subgenres at most', async () => {
+    const subgenres = ['Dark fantasy', 'Roman initiatique', 'Musique', 'Magie']
+    answers = [aCover, { ...anEnrichment, subgenres }, aCatalogue]
+
+    const { result } = await Scan.scanWithCache(image, 'fr')
+
+    expect((result.subgenres ?? []).map(String)).toEqual(subgenres.slice(0, 3))
   })
 })
 

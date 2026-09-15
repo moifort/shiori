@@ -6,6 +6,7 @@ import type {
   Isbn13,
   PageCount,
   Publisher,
+  Subgenre,
   Synopsis,
 } from '~/domain/book/types'
 import type { SeriesId, SeriesName, VolumeKind, VolumeNumber } from '~/domain/series/types'
@@ -35,7 +36,9 @@ export type ScanResult = {
   publisher?: Publisher
   firstPublishedIn?: Year
   synopsis?: Synopsis
-  genres: Genre[]
+  genre?: Genre
+  /** Absent on a scan cached before subgenres existed; read it as empty. */
+  subgenres?: Subgenre[]
   pageCount?: PageCount
   isbn13?: Isbn13
   /** The publisher's cover, looked up by ISBN rather than asked of the model — a

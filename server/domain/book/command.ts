@@ -15,6 +15,7 @@ import type {
   ReadingStatus,
   SeriesMembership,
   StarRating,
+  Subgenre,
   Synopsis,
 } from '~/domain/book/types'
 import type { Language } from '~/domain/shared/language'
@@ -31,7 +32,8 @@ export type NewBook = {
   publisher?: Publisher
   firstPublishedIn?: Year
   synopsis?: Synopsis
-  genres?: Genre[]
+  genre?: Genre
+  subgenres?: Subgenre[]
   pageCount?: PageCount
   isbn13?: Isbn13
   language?: Language
@@ -54,7 +56,8 @@ export type BookEdit = Partial<
     | 'publisher'
     | 'firstPublishedIn'
     | 'synopsis'
-    | 'genres'
+    | 'genre'
+    | 'subgenres'
     | 'pageCount'
     | 'isbn13'
     | 'series'
@@ -72,7 +75,8 @@ export namespace BookCommand {
       publisher: input.publisher,
       firstPublishedIn: input.firstPublishedIn,
       synopsis: input.synopsis,
-      genres: input.genres ?? [],
+      genre: input.genre,
+      subgenres: input.subgenres ?? [],
       pageCount: input.pageCount,
       isbn13: input.isbn13,
       language: input.language,

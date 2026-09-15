@@ -1,4 +1,11 @@
-import { CoverUrl, Genre, Isbn13, PageCount, Publisher, Synopsis } from '~/domain/book/primitives'
+import {
+  CoverUrl,
+  Isbn13,
+  PageCount,
+  Publisher,
+  Subgenre,
+  Synopsis,
+} from '~/domain/book/primitives'
 import type { ScanResult } from '~/domain/scan/types'
 import { SeriesName, seriesKeyOf, VolumeNumber } from '~/domain/series/primitives'
 import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
@@ -23,7 +30,8 @@ export const STUBBED_SCAN: ScanResult = {
       "l'Université et la magie qu'on y apprend. Le récit d'un homme qui fut un héros et " +
       "tient aujourd'hui une auberge sous un faux nom.",
   ),
-  genres: [Genre('Fantasy'), Genre('Roman initiatique')],
+  genre: 'fantasy',
+  subgenres: [Subgenre('Roman initiatique')],
   pageCount: PageCount(662),
   isbn13: Isbn13('9782352943556'),
   coverUrl: CoverUrl('https://covers.openlibrary.org/b/isbn/9782352943556-M.jpg?default=false'),

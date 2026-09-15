@@ -23,7 +23,8 @@ struct BookEditView: View {
     @State private var publisher: String
     @State private var year: String
     @State private var pages: String
-    @State private var genres: String
+    @State private var genre: BookGenre?
+    @State private var subgenres: String
     @State private var isbn: String
     @State private var isSaving = false
     @State private var errorMessage: String?
@@ -39,7 +40,8 @@ struct BookEditView: View {
         _publisher = State(initialValue: book.publisher ?? "")
         _year = State(initialValue: book.firstPublishedIn.map(String.init) ?? "")
         _pages = State(initialValue: book.pageCount.map(String.init) ?? "")
-        _genres = State(initialValue: book.genres.joined(separator: ", "))
+        _genre = State(initialValue: book.genre)
+        _subgenres = State(initialValue: book.subgenres.joined(separator: ", "))
         _isbn = State(initialValue: book.isbn13 ?? "")
     }
 
@@ -104,8 +106,22 @@ struct BookEditView: View {
                     LabeledField(title: "Pages", icon: "doc.plaintext") {
                         TextField("Pages", text: $pages).keyboardType(.numberPad)
                     }
-                    LabeledField(title: "Genres", icon: "tag") {
-                        TextField("Fantasy, Aventure", text: $genres)
+                    Picker(selection: $genre) {
+                        Text("Non renseigné").tag(BookGenre?.none)
+                        ForEach(BookGenre.allCases) { genre in
+                            Text(genre.label).tag(BookGenre?.some(genre))
+                        }
+                    } label: {
+                        Label {
+                            Text("Genre")
+                        } icon: {
+                            Image(systemName: "theatermasks").foregroundStyle(.secondary)
+                        }
+                    }
+                    .accessibilityIdentifier("edit-genre")
+                    LabeledField(title: "Sous-genres", icon: "tag") {
+                        TextField("Dark fantasy, Jeunesse", text: $subgenres)
+                            .accessibilityIdentifier("edit-subgenres")
                     }
                     LabeledField(title: "ISBN", icon: "barcode") {
                         TextField("978…", text: $isbn).keyboardType(.numberPad)
@@ -116,7 +132,7 @@ struct BookEditView: View {
                     if let problem = publicationProblem {
                         Text(problem).foregroundStyle(.red)
                     } else {
-                        Text("Séparez les genres par des virgules. Un champ vidé est effacé.")
+                        Text("Séparez les sous-genres par des virgules, trois au plus. Un champ vidé est effacé.")
                     }
                 }
             }
@@ -189,8 +205,9 @@ struct BookEditView: View {
         correction.publisher = change(from: book.publisher, to: optional(publisher))
         correction.firstPublishedIn = change(from: book.firstPublishedIn, to: Int(trimmed(year)))
         correction.synopsis = change(from: book.synopsis, to: optional(synopsis))
-        let genreList = list(genres)
-        if genreList != book.genres { correction.genres = genreList }
+        correction.genre = change(from: book.genre, to: genre)
+        let subgenreList = Array(list(subgenres).prefix(3))
+        if subgenreList != book.subgenres { correction.subgenres = subgenreList }
         correction.pageCount = change(from: book.pageCount, to: Int(trimmed(pages)))
         correction.isbn13 = change(from: book.isbn13, to: isbnDigits.isEmpty ? nil : isbnDigits)
         return correction
@@ -251,7 +268,8 @@ private struct LabeledField<Field: View>: View {
             publisher: "Bragelonne",
             firstPublishedIn: 2007,
             synopsis: "Kvothe raconte sa propre légende.",
-            genres: ["Fantasy", "Aventure"],
+            genre: .fantasy,
+            subgenres: ["Roman initiatique"],
             pageCount: 662,
             isbn13: "9782352943556",
             status: .read,

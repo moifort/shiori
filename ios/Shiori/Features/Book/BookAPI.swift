@@ -82,7 +82,8 @@ struct BookDraft {
     var publisher: String?
     var firstPublishedIn: Int?
     var synopsis: String?
-    var genres: [String] = []
+    var genre: BookGenre?
+    var subgenres: [String] = []
     var pageCount: Int?
     var isbn13: String?
     /// Only ever filled from a scan, like the series: it was found for the scanned
@@ -100,7 +101,7 @@ struct BookDraft {
             coverUrl: GraphQLHelpers.graphQLNullable(coverURL?.absoluteString),
             firstPublishedIn: GraphQLHelpers.graphQLNullable(firstPublishedIn),
             format: .some(LibraryAPI.graphQLFormat(format)),
-            genres: GraphQLHelpers.graphQLNullable(genres.isEmpty ? nil : genres),
+            genre: GraphQLHelpers.graphQLNullable(genre.map(LibraryAPI.graphQLGenre)),
             hidden: .some(hidden),
             isbn13: GraphQLHelpers.graphQLNullable(isbn13),
             pageCount: GraphQLHelpers.graphQLNullable(pageCount),
@@ -116,6 +117,7 @@ struct BookDraft {
                 }
             ),
             status: .some(LibraryAPI.graphQLStatus(status)),
+            subgenres: GraphQLHelpers.graphQLNullable(subgenres.isEmpty ? nil : subgenres),
             synopsis: GraphQLHelpers.graphQLNullable(synopsis),
             title: title
         )
@@ -136,7 +138,8 @@ struct BookCorrection: Equatable, Sendable {
     var publisher: Change<String>?
     var firstPublishedIn: Change<Int>?
     var synopsis: Change<String>?
-    var genres: [String]?
+    var genre: Change<BookGenre>?
+    var subgenres: [String]?
     var pageCount: Change<Int>?
     var isbn13: Change<String>?
 
@@ -147,10 +150,11 @@ struct BookCorrection: Equatable, Sendable {
             authors: Self.nullable(authors),
             firstPublishedIn: Self.nullable(firstPublishedIn),
             format: format.map { .some(LibraryAPI.graphQLFormat($0)) } ?? .none,
-            genres: Self.nullable(genres),
+            genre: Self.nullableGenre(genre),
             isbn13: Self.nullable(isbn13),
             pageCount: Self.nullable(pageCount),
             publisher: Self.nullable(publisher),
+            subgenres: Self.nullable(subgenres),
             synopsis: Self.nullable(synopsis),
             title: Self.nullable(title)
         )
@@ -158,6 +162,14 @@ struct BookCorrection: Equatable, Sendable {
 
     private static func nullable<Value>(_ value: Value?) -> GraphQLNullable<Value> {
         value.map { .some($0) } ?? .none
+    }
+
+    private static func nullableGenre(_ change: Change<BookGenre>?) -> GraphQLNullable<GraphQLEnum<ShioriGraphQL.Genre>> {
+        switch change {
+        case nil: .none
+        case let .set(genre): .some(LibraryAPI.graphQLGenre(genre))
+        case .clear: .null
+        }
     }
 
     private static func nullable<Value>(_ change: Change<Value>?) -> GraphQLNullable<Value> {

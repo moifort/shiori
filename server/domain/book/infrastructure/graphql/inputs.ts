@@ -1,4 +1,8 @@
-import { BookFormatEnum, ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
+import {
+  BookFormatEnum,
+  GenreEnum,
+  ReadingStatusEnum,
+} from '~/domain/book/infrastructure/graphql/enums'
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { builder } from '~/domain/shared/graphql/builder'
 
@@ -31,7 +35,8 @@ export const NewBookInput = builder.inputType('NewBookInput', {
     publisher: t.field({ type: 'Publisher', required: false }),
     firstPublishedIn: t.field({ type: 'Year', required: false }),
     synopsis: t.field({ type: 'Synopsis', required: false }),
-    genres: t.field({ type: ['Genre'], required: false }),
+    genre: t.field({ type: GenreEnum, required: false }),
+    subgenres: t.field({ type: ['Subgenre'], required: false, description: 'At most three.' }),
     pageCount: t.field({ type: 'PageCount', required: false }),
     isbn13: t.field({ type: 'Isbn13', required: false }),
     series: t.field({
@@ -63,7 +68,7 @@ export const NewBookInput = builder.inputType('NewBookInput', {
 export const BookEditInput = builder.inputType('BookEditInput', {
   description:
     'Corrections to a book record. Omitted fields are left as they are; null clears ' +
-    'a field (an empty list for authors and genres). Title and format ignore null.',
+    'a field (an empty list for authors and subgenres). Title and format ignore null.',
   fields: (t) => ({
     title: t.field({ type: 'BookTitle', required: false }),
     authors: t.field({ type: ['AuthorName'], required: false }),
@@ -71,7 +76,8 @@ export const BookEditInput = builder.inputType('BookEditInput', {
     publisher: t.field({ type: 'Publisher', required: false }),
     firstPublishedIn: t.field({ type: 'Year', required: false }),
     synopsis: t.field({ type: 'Synopsis', required: false }),
-    genres: t.field({ type: ['Genre'], required: false }),
+    genre: t.field({ type: GenreEnum, required: false }),
+    subgenres: t.field({ type: ['Subgenre'], required: false, description: 'At most three.' }),
     pageCount: t.field({ type: 'PageCount', required: false }),
     isbn13: t.field({ type: 'Isbn13', required: false }),
   }),

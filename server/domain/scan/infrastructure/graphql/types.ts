@@ -1,4 +1,4 @@
-import { BookFormatEnum } from '~/domain/book/infrastructure/graphql/enums'
+import { BookFormatEnum, GenreEnum } from '~/domain/book/infrastructure/graphql/enums'
 import type { ScannedSeries, ScanResult } from '~/domain/scan/types'
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { builder } from '~/domain/shared/graphql/builder'
@@ -68,7 +68,13 @@ export const ScanResultType = builder.objectRef<ScanResult>('ScanResult').implem
       nullable: true,
       resolve: (result) => result.synopsis ?? null,
     }),
-    genres: t.field({ type: ['Genre'], resolve: (result) => result.genres }),
+    genre: t.field({
+      type: GenreEnum,
+      nullable: true,
+      description: 'Null when the model could not classify the book.',
+      resolve: (result) => result.genre ?? null,
+    }),
+    subgenres: t.field({ type: ['Subgenre'], resolve: (result) => result.subgenres ?? [] }),
     pageCount: t.field({
       type: 'PageCount',
       nullable: true,

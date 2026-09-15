@@ -29,6 +29,35 @@ extension ShioriGraphQL.BookFormat {
     }
 }
 
+extension ShioriGraphQL.Genre {
+    var asDomain: BookGenre {
+        switch self {
+        case .fantasy: .fantasy
+        case .scienceFiction: .scienceFiction
+        case .horror: .horror
+        case .crime: .crime
+        case .thriller: .thriller
+        case .romance: .romance
+        case .historicalFiction: .historicalFiction
+        case .adventure: .adventure
+        case .literaryFiction: .literaryFiction
+        case .humor: .humor
+        case .poetry: .poetry
+        case .drama: .drama
+        case .biography: .biography
+        case .history: .history
+        case .essay: .essay
+        case .science: .science
+        case .selfHelp: .selfHelp
+        case .business: .business
+        case .art: .art
+        case .cooking: .cooking
+        case .travel: .travel
+        case .other: .other
+        }
+    }
+}
+
 extension ShioriGraphQL.VolumeKind {
     var asDomain: VolumeKind {
         switch self {
@@ -65,6 +94,15 @@ extension GraphQLEnum where T == ShioriGraphQL.BookFormat {
     var asDomain: BookFormat {
         if case let .case(value) = self { return value.asDomain }
         return .book
+    }
+}
+
+extension GraphQLEnum where T == ShioriGraphQL.Genre {
+    /// An unrecognized genre reads as "other": it is the one value that claims
+    /// nothing about the book.
+    var asDomain: BookGenre {
+        if case let .case(value) = self { return value.asDomain }
+        return .other
     }
 }
 
@@ -109,7 +147,8 @@ extension ShioriGraphQL.BookDetail {
             publisher: publisher,
             firstPublishedIn: firstPublishedIn,
             synopsis: synopsis,
-            genres: genres,
+            genre: genre?.asDomain,
+            subgenres: subgenres,
             pageCount: pageCount,
             isbn13: isbn13,
             series: series?.asMembership,

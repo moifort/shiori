@@ -1,5 +1,13 @@
 import { describe, expect, test } from 'bun:test'
-import { BookFormatValue, CoverUrl, Isbn13, PageCount, StarRating } from '~/domain/book/primitives'
+import {
+  BookFormatValue,
+  CoverUrl,
+  GenreValue,
+  Isbn13,
+  PageCount,
+  StarRating,
+  Subgenre,
+} from '~/domain/book/primitives'
 
 describe('Isbn13', () => {
   test('accepts a valid ISBN-13 and strips its separators', () => {
@@ -68,5 +76,27 @@ describe('BookFormatValue', () => {
   // the app has no label to draw for it.
   test('refuses a format it does not know', () => {
     expect(() => BookFormatValue('novel')).toThrow()
+  })
+})
+
+describe('GenreValue', () => {
+  test('accepts a genre of the closed list', () => {
+    expect(GenreValue('science-fiction')).toBe('science-fiction')
+  })
+
+  test('refuses a free label, even a plausible one', () => {
+    expect(() => GenreValue('Fantasy')).toThrow()
+    expect(() => GenreValue('epic-fantasy')).toThrow()
+  })
+})
+
+describe('Subgenre', () => {
+  test('trims a free label', () => {
+    expect(String(Subgenre('  Dark fantasy '))).toBe('Dark fantasy')
+  })
+
+  test('refuses an empty label and one past 100 characters', () => {
+    expect(() => Subgenre('   ')).toThrow()
+    expect(() => Subgenre('x'.repeat(101))).toThrow()
   })
 })

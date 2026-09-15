@@ -23,7 +23,9 @@ type Book {
   """Year the work first appeared, not the year of this edition."""
   firstPublishedIn: Year
   format: BookFormat!
-  genres: [Genre!]!
+
+  """Null for a book added by hand, or when the reader cleared it."""
+  genre: Genre
 
   """Excluded from any shared view. Sharing itself is not built yet."""
   hidden: Boolean!
@@ -40,21 +42,27 @@ type Book {
   series: SeriesMembership
   startedAt: DateTime
   status: ReadingStatus!
+
+  """Zero to three free labels refining the genre. Empty, never null."""
+  subgenres: [Subgenre!]!
   synopsis: Synopsis
   title: BookTitle!
 }
 
 """
-Corrections to a book record. Omitted fields are left as they are; null clears a field (an empty list for authors and genres). Title and format ignore null.
+Corrections to a book record. Omitted fields are left as they are; null clears a field (an empty list for authors and subgenres). Title and format ignore null.
 """
 input BookEditInput {
   authors: [AuthorName!]
   firstPublishedIn: Year
   format: BookFormat
-  genres: [Genre!]
+  genre: Genre
   isbn13: Isbn13
   pageCount: PageCount
   publisher: Publisher
+
+  """At most three."""
+  subgenres: [Subgenre!]
   synopsis: Synopsis
   title: BookTitle
 }
@@ -181,8 +189,49 @@ type FollowedSeries {
   state: SeriesState!
 }
 
-"""One genre label, 1 to 100 characters. Example: "Epic fantasy"."""
-scalar Genre
+"""
+What a book is about, from a closed list.
+
+Closed so that statistics can count against it; nuance goes to subgenres. Audience (young adult, children) is not a genre, and the object (manga, comic) is the format. `OTHER` when nothing fits.
+"""
+enum Genre {
+  ADVENTURE
+  ART
+
+  """Biographies and memoirs."""
+  BIOGRAPHY
+
+  """Economics and business."""
+  BUSINESS
+  COOKING
+
+  """Detective and police fiction."""
+  CRIME
+
+  """Plays."""
+  DRAMA
+  ESSAY
+  FANTASY
+  HISTORICAL_FICTION
+
+  """Non-fiction history."""
+  HISTORY
+  HORROR
+  HUMOR
+
+  """General literature."""
+  LITERARY_FICTION
+
+  """Nothing in the list fits."""
+  OTHER
+  POETRY
+  ROMANCE
+  SCIENCE
+  SCIENCE_FICTION
+  SELF_HELP
+  THRILLER
+  TRAVEL
+}
 
 """
 A 13-digit ISBN, hyphens and spaces removed, validated on its check digit.
@@ -347,7 +396,7 @@ input NewBookInput {
 
   """Defaults to BOOK."""
   format: BookFormat
-  genres: [Genre!]
+  genre: Genre
 
   """Defaults to false."""
   hidden: Boolean
@@ -364,6 +413,9 @@ input NewBookInput {
   Defaults to TO_READ, the only status true of every freshly catalogued book.
   """
   status: ReadingStatus
+
+  """At most three."""
+  subgenres: [Subgenre!]
   synopsis: Synopsis
   title: BookTitle!
 }
@@ -565,12 +617,15 @@ type ScanResult {
 
   """Null when the cover did not say. The app then proposes BOOK."""
   format: BookFormat
-  genres: [Genre!]!
+
+  """Null when the model could not classify the book."""
+  genre: Genre
   isbn13: Isbn13
   pageCount: PageCount
   publisher: Publisher
   recognized: Boolean!
   series: ScannedSeries
+  subgenres: [Subgenre!]!
   synopsis: Synopsis
 
   """Null when nothing was recognized."""
@@ -680,6 +735,11 @@ A reader rating, 1 to 5 whole stars.
 Whole stars only: half stars double the value space without adding discernment. Setting a rating also marks the book as read. Example: 4.
 """
 scalar StarRating
+
+"""
+One free label refining the genre, 1 to 100 characters, in the caller language. Example: "Dark fantasy".
+"""
+scalar Subgenre
 
 """The book summary, 1 to 4000 characters, in the caller language."""
 scalar Synopsis

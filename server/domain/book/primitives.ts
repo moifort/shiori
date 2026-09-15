@@ -4,16 +4,17 @@ import type {
   BookFormat,
   BookId as BookIdType,
   CoverUrl as CoverUrlType,
-  Genre as GenreType,
+  Genre,
   Isbn13 as Isbn13Type,
   PageCount as PageCountType,
   Publisher as PublisherType,
   ReadingNote as ReadingNoteType,
   ReadingStatus,
   StarRating as StarRatingType,
+  Subgenre as SubgenreType,
   Synopsis as SynopsisType,
 } from '~/domain/book/types'
-import { BOOK_FORMATS, READING_STATUSES } from '~/domain/book/types'
+import { BOOK_FORMATS, GENRES, READING_STATUSES } from '~/domain/book/types'
 
 export { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
 
@@ -27,10 +28,14 @@ export const Publisher = (value: unknown) => {
   return make<PublisherType>()(v)
 }
 
-export const Genre = (value: unknown) => {
+export const Subgenre = (value: unknown) => {
   const v = z.string().trim().min(1).max(100).parse(value)
-  return make<GenreType>()(v)
+  return make<SubgenreType>()(v)
 }
+
+/** A book carries at most three subgenres: past that they stop refining the
+ *  genre and start restating the synopsis. */
+export const MAX_SUBGENRES = 3
 
 export const Synopsis = (value: unknown) => {
   const v = z.string().trim().min(1).max(4000).parse(value)
@@ -91,5 +96,7 @@ export const ReadingNote = (value: unknown) => {
 
 export const ReadingStatusValue = (value: unknown): ReadingStatus =>
   z.enum(READING_STATUSES).parse(value)
+
+export const GenreValue = (value: unknown): Genre => z.enum(GENRES).parse(value)
 
 export const BookFormatValue = (value: unknown): BookFormat => z.enum(BOOK_FORMATS).parse(value)

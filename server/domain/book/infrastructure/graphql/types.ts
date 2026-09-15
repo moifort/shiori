@@ -1,4 +1,8 @@
-import { BookFormatEnum, ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
+import {
+  BookFormatEnum,
+  GenreEnum,
+  ReadingStatusEnum,
+} from '~/domain/book/infrastructure/graphql/enums'
 import type { BookView, LibrarySection, SeriesMembership } from '~/domain/book/types'
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { builder } from '~/domain/shared/graphql/builder'
@@ -53,7 +57,17 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
       nullable: true,
       resolve: (book) => book.synopsis ?? null,
     }),
-    genres: t.field({ type: ['Genre'], resolve: (book) => book.genres }),
+    genre: t.field({
+      type: GenreEnum,
+      nullable: true,
+      description: 'Null for a book added by hand, or when the reader cleared it.',
+      resolve: (book) => book.genre ?? null,
+    }),
+    subgenres: t.field({
+      type: ['Subgenre'],
+      description: 'Zero to three free labels refining the genre. Empty, never null.',
+      resolve: (book) => book.subgenres,
+    }),
     pageCount: t.field({
       type: 'PageCount',
       nullable: true,

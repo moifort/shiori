@@ -4,12 +4,12 @@ import type { H3Event } from 'h3'
 import type {
   BookId,
   CoverUrl,
-  Genre,
   Isbn13,
   PageCount,
   Publisher,
   ReadingNote,
   StarRating,
+  Subgenre,
   Synopsis,
 } from '~/domain/book/types'
 import type { SeriesDescription, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
@@ -57,7 +57,7 @@ export const builder = new SchemaBuilder<{
     PersonName: { Input: PersonName; Output: PersonName }
     Publisher: { Input: Publisher; Output: Publisher }
     Isbn13: { Input: Isbn13; Output: Isbn13 }
-    Genre: { Input: Genre; Output: Genre }
+    Subgenre: { Input: Subgenre; Output: Subgenre }
     Synopsis: { Input: Synopsis; Output: Synopsis }
     PageCount: { Input: PageCount; Output: PageCount }
     StarRating: { Input: StarRating; Output: StarRating }

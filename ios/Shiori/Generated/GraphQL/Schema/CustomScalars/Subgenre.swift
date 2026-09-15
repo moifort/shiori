@@ -8,7 +8,7 @@
 @_spi(Internal) @_spi(Execution) import ApolloAPI
 
 extension ShioriGraphQL {
-  /// One genre label, 1 to 100 characters. Example: "Epic fantasy".
-  typealias Genre = String
+  /// One free label refining the genre, 1 to 100 characters, in the caller language. Example: "Dark fantasy".
+  typealias Subgenre = String
 
 }
