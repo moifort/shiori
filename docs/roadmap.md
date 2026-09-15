@@ -46,15 +46,19 @@ section on a book screen, listing the other volumes of its series.
 
 ## Deferred on purpose
 
-### Cover images are not stored
+### The reader's cover photo is not stored
 
-The photo taken for a scan is sent for analysis and then dropped. `scanBook`
-does not write it to the bucket, and `addBook` has no field to claim it, so
-`coverUrl` is always null and every book shows the typographic placeholder.
+A scanned book shows the publisher's cover when its ISBN finds one on Open
+Library: `scanBook` checks it exists, and `addBook` keeps the URL as
+`publishedCoverUrl`. A book without a known ISBN or cover shows the typographic
+placeholder.
 
-Everything underneath exists — the object store, the private bucket, the signed
-download URLs, and `coverPathOf` keyed by owner so an account deletion sweeps
-them in one prefix delete. What is missing is the wiring: the scan must persist
+The photo taken for the scan is still sent for analysis and then dropped. It
+would be the fallback for exactly those books, and the edition actually on the
+shelf. Everything underneath exists — the object store, the private bucket, the
+signed download URLs, and `coverPathOf` keyed by owner so an account deletion
+sweeps them in one prefix delete — and `coverUrl` already prefers a stored photo
+over the published cover. What is missing is the wiring: the scan must persist
 the bytes it already holds and return a handle, and `addBook` must accept it.
 
 Deferred by decision, not by oversight.

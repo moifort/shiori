@@ -41,6 +41,13 @@ export const NewBookInput = builder.inputType('NewBookInput', {
         'The saga this book belongs to, taken from a scan result. Omitted for a ' +
         'book typed by hand.',
     }),
+    coverUrl: t.field({
+      type: 'CoverUrl',
+      required: false,
+      description:
+        'The publisher cover `scanBook` found by ISBN. Pass it back unchanged; ' +
+        'omitted for a book typed by hand.',
+    }),
     status: t.field({
       type: ReadingStatusEnum,
       required: false,

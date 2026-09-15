@@ -1,4 +1,4 @@
-import { Genre, Isbn13, PageCount, Publisher, Synopsis } from '~/domain/book/primitives'
+import { CoverUrl, Genre, Isbn13, PageCount, Publisher, Synopsis } from '~/domain/book/primitives'
 import type { ScanResult } from '~/domain/scan/types'
 import { SeriesName, seriesKeyOf, VolumeNumber } from '~/domain/series/primitives'
 import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
@@ -26,6 +26,7 @@ export const STUBBED_SCAN: ScanResult = {
   genres: [Genre('Fantasy'), Genre('Roman initiatique')],
   pageCount: PageCount(662),
   isbn13: Isbn13('9782352943556'),
+  coverUrl: CoverUrl('https://covers.openlibrary.org/b/isbn/9782352943556-M.jpg?default=false'),
   series: {
     id: seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss'),
     name: SeriesName('Chronique du tueur de roi'),

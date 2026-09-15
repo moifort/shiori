@@ -75,6 +75,14 @@ export const ScanResultType = builder.objectRef<ScanResult>('ScanResult').implem
       resolve: (result) => result.pageCount ?? null,
     }),
     isbn13: t.field({ type: 'Isbn13', nullable: true, resolve: (result) => result.isbn13 ?? null }),
+    coverUrl: t.field({
+      type: 'CoverUrl',
+      nullable: true,
+      description:
+        'The publisher cover, found by ISBN and checked to exist. Null without an ' +
+        'ISBN or when none was found. Hand it back to `addBook` unchanged.',
+      resolve: (result) => result.coverUrl ?? null,
+    }),
     series: t.field({
       type: ScannedSeriesType,
       nullable: true,

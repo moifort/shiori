@@ -9,3 +9,6 @@ A plain `## Unreleased`, with no date, is allowed for pending work and must be v
 the release tag is pushed.
 
 ## Unreleased
+
+- Scanned books now show their published cover, found from the ISBN. A book with no known
+  cover keeps its initials.

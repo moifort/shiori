@@ -43,6 +43,7 @@ builder.mutationFields((t) => ({
               kind: args.input.series.kind,
             }
           : undefined,
+        publishedCoverUrl: args.input.coverUrl ?? undefined,
         status: args.input.status ?? undefined,
         hidden: args.input.hidden ?? undefined,
       })

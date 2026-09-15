@@ -60,6 +60,38 @@ describe('cataloguing through the API', () => {
     expect(corrected.data?.updateBook).toEqual({ title: 'One Piece', format: 'BANDE_DESSINEE' })
   })
 
+  // The cover `scanBook` found rides back through `addBook`, and is what every
+  // later read of the book draws.
+  test('keeps the publisher cover a scan found and reads it back', async () => {
+    const cover = 'https://covers.openlibrary.org/b/isbn/9782352943556-M.jpg?default=false'
+    const created = await execute(
+      `mutation { addBook(input: { title: "Le Nom du vent", coverUrl: "${cover}" }) { id coverUrl } }`,
+    )
+    expect(created.errors).toBeUndefined()
+    const book = (created.data as { addBook: { id: string; coverUrl: string } }).addBook
+    expect(book.coverUrl).toBe(cover)
+
+    const read = await execute(`query { book(id: "${book.id}") { coverUrl } }`)
+
+    expect(read.errors).toBeUndefined()
+    expect(read.data?.book).toEqual({ coverUrl: cover })
+  })
+
+  test('draws no cover for a book typed by hand', async () => {
+    const result = await execute('mutation { addBook(input: { title: "Sans ISBN" }) { coverUrl } }')
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.addBook).toEqual({ coverUrl: null })
+  })
+
+  test('refuses a cover served over plain HTTP, as bad input', async () => {
+    const result = await execute(
+      'mutation { addBook(input: { title: "Le Nom du vent", coverUrl: "http://example.com/c.jpg" }) { id } }',
+    )
+
+    expect(result.errors?.[0]?.extensions?.code).toBe('BAD_USER_INPUT')
+  })
+
   // The scalar reuses the brand's Zod constructor, so a bad value must come back
   // as something the client can show, not as a 500.
   test('refuses an ISBN whose check digit does not match, as bad input', async () => {

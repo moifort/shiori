@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql'
 import { ZodError } from 'zod'
 import {
   BookId,
+  CoverUrl,
   Genre,
   Isbn13,
   PageCount,
@@ -21,7 +22,6 @@ import {
   UserId,
   Year,
 } from '~/domain/shared/primitives'
-import { SignedUrl } from '~/system/object-store/primitives'
 import { builder } from './builder'
 
 // A brand's Zod constructor is the single definition of what the value may be, so
@@ -198,11 +198,13 @@ builder.scalarType('Percentage', {
   parseValue: validatedParse('Percentage', Percentage),
 })
 
-builder.scalarType('SignedUrl', {
+builder.scalarType('CoverUrl', {
   description:
-    'A time-limited URL to read one private object, signed by the server.\n\n' +
-    'Cover images are never public: the URL expires after an hour and must be ' +
-    'refetched, so it is not a durable link to store client-side.',
+    'An HTTPS URL to draw a book cover from.\n\n' +
+    'Either the reader own photo, signed and expiring after an hour, or the ' +
+    'publisher cover found by ISBN. Neither is guaranteed to load: draw the ' +
+    'placeholder when the image fails, and refetch the book rather than storing ' +
+    'the URL client-side.',
   serialize: (value) => value as string,
-  parseValue: validatedParse('SignedUrl', SignedUrl),
+  parseValue: validatedParse('CoverUrl', CoverUrl),
 })

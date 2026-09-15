@@ -14,6 +14,10 @@ export type PageCount = Brand<number, 'PageCount'>
  *  discernment, and shrink the touch target. */
 export type StarRating = Brand<number, 'StarRating'>
 export type ReadingNote = Brand<string, 'ReadingNote'>
+/** Where the app loads a cover image from: the reader's own photo behind a signed
+ *  URL, or the publisher's cover found by ISBN. Always HTTPS — iOS refuses to load
+ *  anything else. */
+export type CoverUrl = Brand<string, 'CoverUrl'>
 
 /** Where a book stands for its reader. `reading` is where a book spends most of
  *  its life, and the only state in which a note actually gets written. */
@@ -66,6 +70,10 @@ export type Book = {
   /** Absent for a book added by hand or from a series catalogue: those have no
    *  photo, and the app draws a typographic placeholder instead. */
   coverPath?: ObjectPath
+  /** The publisher's cover, found by ISBN when the book was scanned. Only drawn
+   *  when there is no photo; absent when no cover was found, and the app then
+   *  draws the placeholder. */
+  publishedCoverUrl?: CoverUrl
   status: ReadingStatus
   rating?: StarRating
   note?: ReadingNote
@@ -77,8 +85,11 @@ export type Book = {
   finishedAt?: Date
 }
 
-/** A book as it is read back: the record plus the short-lived URL for its cover. */
-export type BookView = Book & { coverUrl?: SignedUrl }
+/** A book as it is read back: the record plus the one URL its cover is drawn
+ *  from, whichever source that turned out to be. The signed photo URL is not
+ *  re-branded: in local development the object store signs plain-HTTP URLs, which
+ *  `CoverUrl` rightly refuses as input but the dev app still has to draw. */
+export type BookView = Book & { coverUrl?: SignedUrl | CoverUrl }
 
 /** One section of the library: either a saga the reader owns several volumes of,
  *  or the standalone shelf. Derived per request, never stored. */

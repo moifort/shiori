@@ -3,6 +3,7 @@ import { GraphQLScalarType } from 'graphql'
 import type { H3Event } from 'h3'
 import type {
   BookId,
+  CoverUrl,
   Genre,
   Isbn13,
   PageCount,
@@ -69,7 +70,7 @@ export const builder = new SchemaBuilder<{
     Count: { Input: Count; Output: Count }
     Eur: { Input: Eur; Output: Eur }
     Percentage: { Input: Percentage; Output: Percentage }
-    SignedUrl: { Input: SignedUrl; Output: SignedUrl }
+    CoverUrl: { Input: CoverUrl; Output: CoverUrl | SignedUrl }
   }
 }>({
   defaultFieldNullability: false,

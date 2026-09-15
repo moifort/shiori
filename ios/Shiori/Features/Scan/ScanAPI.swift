@@ -13,6 +13,8 @@ struct ScannedBook {
     var genres: [String] = []
     var pageCount: Int?
     var isbn13: String?
+    /// The publisher's cover, found by ISBN server-side and already checked to exist.
+    var coverURL: URL?
     var series: SeriesMembership?
 
     /// The draft the review screen edits and `addBook` persists.
@@ -32,6 +34,7 @@ struct ScannedBook {
             genres: genres,
             pageCount: pageCount,
             isbn13: isbn13,
+            coverURL: coverURL,
             series: series
         )
     }
@@ -58,6 +61,7 @@ enum ScanAPI {
             genres: result.genres,
             pageCount: result.pageCount,
             isbn13: result.isbn13,
+            coverURL: result.coverUrl.flatMap(URL.init(string:)),
             series: result.series.map { series in
                 SeriesMembership(
                     id: series.id,

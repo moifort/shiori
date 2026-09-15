@@ -46,7 +46,10 @@ const startedAtOf = (book: Book) => (book.startedAt ?? book.addedAt).getTime()
 const withCovers = (books: readonly Book[]): Promise<BookView[]> =>
   Promise.all(books.map(withCover))
 
+// The reader's own photo wins over the publisher's cover: it is the edition on
+// their shelf. Neither is a guarantee the image loads, so the app keeps its
+// placeholder for a URL that fails.
 const withCover = async (book: Book): Promise<BookView> => {
-  if (!book.coverPath) return book
-  return { ...book, coverUrl: await objectStore().downloadUrl(book.coverPath) }
+  if (book.coverPath) return { ...book, coverUrl: await objectStore().downloadUrl(book.coverPath) }
+  return book.publishedCoverUrl ? { ...book, coverUrl: book.publishedCoverUrl } : book
 }

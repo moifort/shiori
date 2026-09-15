@@ -1,5 +1,13 @@
 import type { Brand } from 'ts-brand'
-import type { BookFormat, Genre, Isbn13, PageCount, Publisher, Synopsis } from '~/domain/book/types'
+import type {
+  BookFormat,
+  CoverUrl,
+  Genre,
+  Isbn13,
+  PageCount,
+  Publisher,
+  Synopsis,
+} from '~/domain/book/types'
 import type { SeriesId, SeriesName, VolumeKind, VolumeNumber } from '~/domain/series/types'
 import type { Language } from '~/domain/shared/language'
 import type { AuthorName, BookTitle, Year } from '~/domain/shared/types'
@@ -30,6 +38,10 @@ export type ScanResult = {
   genres: Genre[]
   pageCount?: PageCount
   isbn13?: Isbn13
+  /** The publisher's cover, looked up by ISBN rather than asked of the model — a
+   *  model asked for an image URL invents one. Absent without an ISBN, or when
+   *  no cover was found. */
+  coverUrl?: CoverUrl
   series?: ScannedSeries
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { BookFormatValue, Isbn13, PageCount, StarRating } from '~/domain/book/primitives'
+import { BookFormatValue, CoverUrl, Isbn13, PageCount, StarRating } from '~/domain/book/primitives'
 
 describe('Isbn13', () => {
   test('accepts a valid ISBN-13 and strips its separators', () => {
@@ -17,6 +17,19 @@ describe('Isbn13', () => {
   test('refuses anything that is not thirteen digits', () => {
     expect(() => Isbn13('0756404746')).toThrow()
     expect(() => Isbn13('not-an-isbn')).toThrow()
+  })
+})
+
+describe('CoverUrl', () => {
+  test('accepts an HTTPS image URL', () => {
+    const url = 'https://covers.openlibrary.org/b/isbn/9780756404741-M.jpg?default=false'
+    expect(String(CoverUrl(url))).toBe(url)
+  })
+
+  // App Transport Security blocks plain HTTP: stored, such a cover would never draw.
+  test('refuses a plain HTTP URL and anything that is not a URL', () => {
+    expect(() => CoverUrl('http://covers.openlibrary.org/b/isbn/9780756404741-M.jpg')).toThrow()
+    expect(() => CoverUrl('not a url')).toThrow()
   })
 })
 

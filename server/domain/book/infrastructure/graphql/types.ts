@@ -67,12 +67,13 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
       resolve: (book) => book.series ?? null,
     }),
     coverUrl: t.field({
-      type: 'SignedUrl',
+      type: 'CoverUrl',
       nullable: true,
       description:
-        'The reader own photo of the cover, behind a URL that expires after an ' +
-        'hour. Null for a book added by hand or from a series catalogue: those ' +
-        'have no photo, and the app draws a typographic placeholder instead.',
+        'The cover to draw: the reader own photo when there is one, otherwise the ' +
+        'publisher cover found by ISBN at scan time. Null when neither exists, and ' +
+        'the app draws a typographic placeholder — as it must when the URL fails to ' +
+        'load, since a published cover can disappear from its source.',
       resolve: (book) => book.coverUrl ?? null,
     }),
     status: t.field({ type: ReadingStatusEnum, resolve: (book) => book.status }),

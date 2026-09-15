@@ -87,6 +87,9 @@ struct BookDraft {
     var genres: [String] = []
     var pageCount: Int?
     var isbn13: String?
+    /// Only ever filled from a scan, like the series: it was found for the scanned
+    /// ISBN, and the server is what vouches it exists.
+    var coverURL: URL?
     /// Only ever filled from a scan: membership is keyed to the shared catalogue,
     /// and a hand-typed saga would be one no catalogue knows.
     var series: SeriesMembership?
@@ -96,6 +99,7 @@ struct BookDraft {
     var asInput: ShioriGraphQL.NewBookInput {
         ShioriGraphQL.NewBookInput(
             authors: GraphQLHelpers.graphQLNullable(authors.isEmpty ? nil : authors),
+            coverUrl: GraphQLHelpers.graphQLNullable(coverURL?.absoluteString),
             firstPublishedIn: GraphQLHelpers.graphQLNullable(firstPublishedIn),
             format: .some(LibraryAPI.graphQLFormat(format)),
             genres: GraphQLHelpers.graphQLNullable(genres.isEmpty ? nil : genres),

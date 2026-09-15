@@ -15,9 +15,9 @@ type Book {
   authors: [AuthorName!]!
 
   """
-  The reader own photo of the cover, behind a URL that expires after an hour. Null for a book added by hand or from a series catalogue: those have no photo, and the app draws a typographic placeholder instead.
+  The cover to draw: the reader own photo when there is one, otherwise the publisher cover found by ISBN at scan time. Null when neither exists, and the app draws a typographic placeholder — as it must when the URL fails to load, since a published cover can disappear from its source.
   """
-  coverUrl: SignedUrl
+  coverUrl: CoverUrl
   finishedAt: DateTime
 
   """Year the work first appeared, not the year of this edition."""
@@ -124,6 +124,13 @@ input CompleteOnboardingInput {
 
 """A non-negative whole number of things. Example: 12."""
 scalar Count
+
+"""
+An HTTPS URL to draw a book cover from.
+
+Either the reader own photo, signed and expiring after an hour, or the publisher cover found by ISBN. Neither is guaranteed to load: draw the placeholder when the image fails, and refetch the book rather than storing the URL client-side.
+"""
+scalar CoverUrl
 
 """
 A date and time serialized as an ISO 8601 string in UTC.
@@ -322,6 +329,11 @@ A book catalogued without a scan — typed by hand, or taken from a series catal
 """
 input NewBookInput {
   authors: [AuthorName!]
+
+  """
+  The publisher cover `scanBook` found by ISBN. Pass it back unchanged; omitted for a book typed by hand.
+  """
+  coverUrl: CoverUrl
   firstPublishedIn: Year
 
   """Defaults to BOOK."""
@@ -534,6 +546,11 @@ Optional fields are absent rather than guessed. A field the model was unsure of 
 type ScanResult {
   authors: [AuthorName!]!
 
+  """
+  The publisher cover, found by ISBN and checked to exist. Null without an ISBN or when none was found. Hand it back to `addBook` unchanged.
+  """
+  coverUrl: CoverUrl
+
   """Year the work first appeared, not the year of this edition."""
   firstPublishedIn: Year
 
@@ -647,13 +664,6 @@ enum SeriesState {
   """Published volumes remain unread."""
   IN_PROGRESS
 }
-
-"""
-A time-limited URL to read one private object, signed by the server.
-
-Cover images are never public: the URL expires after an hour and must be refetched, so it is not a durable link to store client-side.
-"""
-scalar SignedUrl
 
 """
 A reader rating, 1 to 5 whole stars.

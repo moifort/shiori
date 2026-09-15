@@ -23,9 +23,9 @@ struct BookCover: View {
                     case let .success(image):
                         image.resizable().scaledToFill()
                     case .failure:
-                        // A cover URL expires after an hour, so a failed load is
-                        // far more likely to be an expired link than a missing
-                        // book. Falling back beats showing a broken-image glyph.
+                        // An expired signed photo, or a publisher cover that has
+                        // since vanished from Open Library (it answers 404, not a
+                        // blank image). Falling back beats a broken-image glyph.
                         placeholder
                     case .empty:
                         Rectangle().fill(.quaternary)

@@ -118,9 +118,9 @@ struct Book: Identifiable, Hashable, Sendable {
     var pageCount: Int?
     var isbn13: String?
     var series: SeriesMembership?
-    /// The reader's own photo of the cover, behind a URL that expires after an
-    /// hour. Absent for a book added by hand or from a catalogue — those get a
-    /// typographic placeholder instead.
+    /// The cover to draw: the reader's own photo, or the publisher's cover found by
+    /// ISBN at scan time. Absent for a book added by hand or from a catalogue, and
+    /// either may fail to load — both cases get the typographic placeholder.
     var coverURL: URL?
     var status: ReadingStatus
     var rating: Int?

@@ -6,6 +6,7 @@ import type {
   Book,
   BookFormat,
   BookId,
+  CoverUrl,
   Genre,
   Isbn13,
   PageCount,
@@ -36,6 +37,7 @@ export type NewBook = {
   language?: Language
   series?: SeriesMembership
   coverPath?: ObjectPath
+  publishedCoverUrl?: CoverUrl
   status?: ReadingStatus
   hidden?: boolean
 }
@@ -76,6 +78,7 @@ export namespace BookCommand {
       language: input.language,
       series: input.series,
       coverPath: input.coverPath,
+      publishedCoverUrl: input.publishedCoverUrl,
       // A book lands on the "to read" pile unless the reader says otherwise. It is
       // the only status that is true of every book the moment it is catalogued.
       status: input.status ?? 'to-read',

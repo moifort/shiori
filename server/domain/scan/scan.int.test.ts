@@ -20,6 +20,17 @@ mock.module('~/domain/scan/gemini', () => ({
   },
 }))
 
+/** Covers found by ISBN, standing in for Open Library. Undefined means none. */
+let covers: Record<string, string> = {}
+const coverLookups: string[] = []
+
+mock.module('~/domain/scan/open-library', () => ({
+  publishedCoverOf: async (isbn13: string) => {
+    coverLookups.push(isbn13)
+    return covers[isbn13]
+  },
+}))
+
 const { Scan } = await import('~/domain/scan')
 const { SeriesQuery } = await import('~/domain/series/query')
 const { seriesKeyOf } = await import('~/domain/series/primitives')
@@ -61,6 +72,8 @@ beforeEach(() => {
   resetFakeFirestore()
   answers = []
   calls.length = 0
+  covers = {}
+  coverLookups.length = 0
 })
 
 describe('scanning a cover', () => {
@@ -118,6 +131,53 @@ describe('reading the format', () => {
 
     expect(result.format).toBeUndefined()
     expect(String(result.title)).toBe('Le Nom du vent')
+  })
+})
+
+describe('finding the cover', () => {
+  const nameOfTheWindCover =
+    'https://covers.openlibrary.org/b/isbn/9782352943556-M.jpg?default=false'
+
+  test('carries the publisher cover found by ISBN', async () => {
+    covers = { '9782352943556': nameOfTheWindCover }
+    answers = [aCover, anEnrichment, aCatalogue]
+
+    const { result } = await Scan.scanWithCache(image, 'fr')
+
+    expect(String(result.coverUrl)).toBe(nameOfTheWindCover)
+  })
+
+  // The app draws its placeholder for an absent cover, so none found is simply
+  // a book without one — never a failed scan.
+  test('leaves the cover absent when none is found', async () => {
+    answers = [aCover, anEnrichment, aCatalogue]
+
+    const { result } = await Scan.scanWithCache(image, 'fr')
+
+    expect(result.coverUrl).toBeUndefined()
+    expect(String(result.title)).toBe('Le Nom du vent')
+  })
+
+  // Without an ISBN there is nothing to look up, and a model-invented ISBN has
+  // already been dropped by its check digit — so it never reaches the lookup.
+  test('does not look anything up without a valid ISBN', async () => {
+    answers = [aCover, { ...anEnrichment, isbn13: '9780000000001' }, aCatalogue]
+
+    await Scan.scanWithCache(image, 'fr')
+
+    expect(coverLookups).toEqual([])
+  })
+
+  test('serves the cover from the cache without looking it up again', async () => {
+    covers = { '9782352943556': nameOfTheWindCover }
+    answers = [aCover, anEnrichment, aCatalogue]
+    await Scan.scanWithCache(image, 'fr')
+    coverLookups.length = 0
+
+    const { result } = await Scan.scanWithCache(image, 'fr')
+
+    expect(String(result.coverUrl)).toBe(nameOfTheWindCover)
+    expect(coverLookups).toEqual([])
   })
 })
 

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type {
   BookFormat,
   BookId as BookIdType,
+  CoverUrl as CoverUrlType,
   Genre as GenreType,
   Isbn13 as Isbn13Type,
   PageCount as PageCountType,
@@ -63,6 +64,17 @@ const hasValidIsbn13CheckDigit = (digits: string): boolean => {
     .slice(0, 12)
     .reduce((total, digit, index) => total + Number(digit) * (index % 2 === 0 ? 1 : 3), 0)
   return (10 - (sum % 10)) % 10 === Number(digits[12])
+}
+
+// HTTPS only: App Transport Security blocks a plain HTTP image, so an `http://`
+// cover would be stored and then silently never drawn.
+export const CoverUrl = (value: unknown) => {
+  const v = z
+    .string()
+    .url()
+    .refine((url) => url.startsWith('https://'), 'cover URL must be HTTPS')
+    .parse(value)
+  return make<CoverUrlType>()(v)
 }
 
 export const StarRating = (value: unknown) => {

@@ -8,6 +8,7 @@ import {
 } from '~/domain/book/primitives'
 import { generate } from '~/domain/scan/gemini'
 import * as repository from '~/domain/scan/infrastructure/repository'
+import { publishedCoverOf } from '~/domain/scan/open-library'
 import { hashImage } from '~/domain/scan/primitives'
 import { cataloguePrompt, enrichmentPrompt, visionPrompt } from '~/domain/scan/prompts'
 import { CATALOGUE_SCHEMA, ENRICHMENT_SCHEMA, VISION_SCHEMA } from '~/domain/scan/schemas'
@@ -89,7 +90,10 @@ export namespace Scan {
     // fresh attempt on a better photo starts over rather than reusing a miss.
     if (!seen.recognized) return { result: seen, cacheHit: false, usage: { vision } }
 
-    const { result, usage: enrichment } = await enrich(seen, language)
+    const { result: enriched, usage: enrichment } = await enrich(seen, language)
+    // Cached with the rest, so the same cover scanned again probes nothing.
+    const coverUrl = enriched.isbn13 ? await publishedCoverOf(enriched.isbn13) : undefined
+    const result = { ...enriched, coverUrl }
 
     // Best-effort cache: a failed write only costs a re-scan on the next hit.
     repository
