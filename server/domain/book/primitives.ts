@@ -1,6 +1,7 @@
 import { make } from 'ts-brand'
 import { z } from 'zod'
 import type {
+  BookFormat,
   BookId as BookIdType,
   Genre as GenreType,
   Isbn13 as Isbn13Type,
@@ -11,7 +12,7 @@ import type {
   StarRating as StarRatingType,
   Synopsis as SynopsisType,
 } from '~/domain/book/types'
-import { READING_STATUSES } from '~/domain/book/types'
+import { BOOK_FORMATS, READING_STATUSES } from '~/domain/book/types'
 
 export { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
 
@@ -78,3 +79,5 @@ export const ReadingNote = (value: unknown) => {
 
 export const ReadingStatusValue = (value: unknown): ReadingStatus =>
   z.enum(READING_STATUSES).parse(value)
+
+export const BookFormatValue = (value: unknown): BookFormat => z.enum(BOOK_FORMATS).parse(value)

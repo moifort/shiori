@@ -15,6 +15,7 @@ export const STUBBED_SCAN: ScanResult = {
   recognized: true,
   title: BookTitle('Le Nom du vent'),
   authors: [AuthorName('Patrick Rothfuss')],
+  format: 'book',
   publisher: Publisher('Bragelonne'),
   firstPublishedIn: Year(2007),
   synopsis: Synopsis(

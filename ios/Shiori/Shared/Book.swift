@@ -28,6 +28,30 @@ enum ReadingStatus: String, Codable, CaseIterable, Identifiable, Sendable {
     }
 }
 
+/// What kind of object the reader holds. Drawn stories are split into the three
+/// traditions readers shelve apart; `book` covers everything in prose.
+enum BookFormat: String, Codable, CaseIterable, Identifiable, Sendable {
+    case book
+    case ebook
+    case audiobook
+    case bandeDessinee
+    case comic
+    case manga
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .book: String(localized: "Livre")
+        case .ebook: String(localized: "Livre numérique")
+        case .audiobook: String(localized: "Livre audio")
+        case .bandeDessinee: String(localized: "BD")
+        case .comic: String(localized: "Comics")
+        case .manga: String(localized: "Manga")
+        }
+    }
+}
+
 /// Where a volume sits in a saga. Only `main` belongs to the numbered spine;
 /// everything else orbits it and usually carries no number.
 enum VolumeKind: String, Codable, CaseIterable, Identifiable, Sendable {
@@ -86,6 +110,7 @@ struct Book: Identifiable, Hashable, Sendable {
     let id: String
     let title: String
     let authors: [String]
+    var format: BookFormat = .book
     var publisher: String?
     var firstPublishedIn: Int?
     var synopsis: String?

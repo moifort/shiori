@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { Isbn13, PageCount, StarRating } from '~/domain/book/primitives'
+import { BookFormatValue, Isbn13, PageCount, StarRating } from '~/domain/book/primitives'
 
 describe('Isbn13', () => {
   test('accepts a valid ISBN-13 and strips its separators', () => {
@@ -42,5 +42,18 @@ describe('PageCount', () => {
 
   test('accepts a real page count', () => {
     expect(Number(PageCount(662))).toBe(662)
+  })
+})
+
+describe('BookFormatValue', () => {
+  test('accepts every known format', () => {
+    expect(BookFormatValue('manga')).toBe('manga')
+    expect(BookFormatValue('bande-dessinee')).toBe('bande-dessinee')
+  })
+
+  // The model is handed the enum, but a format outside it must never be stored:
+  // the app has no label to draw for it.
+  test('refuses a format it does not know', () => {
+    expect(() => BookFormatValue('novel')).toThrow()
   })
 })

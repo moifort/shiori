@@ -16,6 +16,7 @@ struct BookPage: View {
     let seriesName: String?
     let isSaving: Bool
     let onSetStatus: (ReadingStatus) -> Void
+    let onSetFormat: (BookFormat) -> Void
     let onRate: (Int) -> Void
     let onEditNote: () -> Void
     let onToggleHidden: () -> Void
@@ -165,6 +166,12 @@ struct BookPage: View {
             if let synopsis = book.synopsis {
                 Text(synopsis).font(.callout)
             }
+            // Editable because the scan guesses it from the cover, and a guess can
+            // take a graphic novel for a comic.
+            Picker("Format", selection: Binding(get: { book.format }, set: onSetFormat)) {
+                ForEach(BookFormat.allCases) { Text($0.label).tag($0) }
+            }
+            .accessibilityIdentifier("book-format")
             if let publisher = book.publisher {
                 LabeledContent("Éditeur", value: publisher)
             }
@@ -222,6 +229,7 @@ struct BookPage: View {
             seriesName: "Chronique du tueur de roi",
             isSaving: false,
             onSetStatus: { _ in },
+            onSetFormat: { _ in },
             onRate: { _ in },
             onEditNote: {},
             onToggleHidden: {},

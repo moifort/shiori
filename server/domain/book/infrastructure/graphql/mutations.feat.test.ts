@@ -44,6 +44,22 @@ describe('cataloguing through the API', () => {
     })
   })
 
+  test('catalogues a manga as a manga, and a correction changes only the format', async () => {
+    const created = await execute(
+      'mutation { addBook(input: { title: "One Piece", format: MANGA }) { id format } }',
+    )
+    expect(created.errors).toBeUndefined()
+    const book = (created.data as { addBook: { id: string; format: string } }).addBook
+    expect(book.format).toBe('MANGA')
+
+    const corrected = await execute(
+      `mutation { updateBook(id: "${book.id}", input: { format: BANDE_DESSINEE }) { title format } }`,
+    )
+
+    expect(corrected.errors).toBeUndefined()
+    expect(corrected.data?.updateBook).toEqual({ title: 'One Piece', format: 'BANDE_DESSINEE' })
+  })
+
   // The scalar reuses the brand's Zod constructor, so a bad value must come back
   // as something the client can show, not as a 500.
   test('refuses an ISBN whose check digit does not match, as bad input', async () => {

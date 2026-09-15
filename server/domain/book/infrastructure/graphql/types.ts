@@ -1,4 +1,4 @@
-import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
+import { BookFormatEnum, ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
 import type { BookView, LibrarySection, SeriesMembership } from '~/domain/book/types'
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { builder } from '~/domain/shared/graphql/builder'
@@ -36,6 +36,7 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
       description: 'Empty when nothing legible was found, never null.',
       resolve: (book) => book.authors,
     }),
+    format: t.field({ type: BookFormatEnum, resolve: (book) => book.format }),
     publisher: t.field({
       type: 'Publisher',
       nullable: true,

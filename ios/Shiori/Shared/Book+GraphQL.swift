@@ -16,6 +16,19 @@ extension ShioriGraphQL.ReadingStatus {
     }
 }
 
+extension ShioriGraphQL.BookFormat {
+    var asDomain: BookFormat {
+        switch self {
+        case .book: .book
+        case .ebook: .ebook
+        case .audiobook: .audiobook
+        case .bandeDessinee: .bandeDessinee
+        case .comic: .comic
+        case .manga: .manga
+        }
+    }
+}
+
 extension ShioriGraphQL.VolumeKind {
     var asDomain: VolumeKind {
         switch self {
@@ -46,6 +59,15 @@ extension GraphQLEnum where T == ShioriGraphQL.ReadingStatus {
     }
 }
 
+extension GraphQLEnum where T == ShioriGraphQL.BookFormat {
+    /// An unrecognized format reads as a plain book, the format of nearly every
+    /// title and the one that draws no label on a row.
+    var asDomain: BookFormat {
+        if case let .case(value) = self { return value.asDomain }
+        return .book
+    }
+}
+
 extension GraphQLEnum where T == ShioriGraphQL.VolumeKind {
     /// An unrecognized kind lands in the related works rather than the spine:
     /// showing an unknown volume as part of the main story would misnumber it.
@@ -68,6 +90,7 @@ extension ShioriGraphQL.BookSummary {
             id: id,
             title: title,
             authors: authors,
+            format: format.asDomain,
             series: series?.asMembership,
             coverURL: coverUrl.flatMap(URL.init(string:)),
             status: status.asDomain,
@@ -82,6 +105,7 @@ extension ShioriGraphQL.BookDetail {
             id: id,
             title: title,
             authors: authors,
+            format: format.asDomain,
             publisher: publisher,
             firstPublishedIn: firstPublishedIn,
             synopsis: synopsis,

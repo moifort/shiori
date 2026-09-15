@@ -30,6 +30,21 @@ describe('cataloguing a book', () => {
     expect(book.startedAt).toBeUndefined()
   })
 
+  test('catalogues it as a book when no format is given', async () => {
+    const book = await add('Le Nom du vent')
+
+    expect(book.format).toBe('book')
+    expect(fake.data('users/reader-1/books', book.id)?.format).toBe('book')
+  })
+
+  test('lets the reader correct the format afterwards', async () => {
+    const book = await BookCommand.add(reader, { title: BookTitle('Blacksad') }, NOW)
+
+    const edited = await BookCommand.edit(reader, book.id, { format: 'bande-dessinee' })
+
+    expect(edited).toMatchObject({ format: 'bande-dessinee' })
+  })
+
   test('stamps a start when it is catalogued as already being read', async () => {
     const book = await add('Le Nom du vent', 'reading')
 

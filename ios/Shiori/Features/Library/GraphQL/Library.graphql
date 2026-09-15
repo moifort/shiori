@@ -16,6 +16,7 @@ fragment BookSummary on Book {
   id
   title
   authors
+  format
   coverUrl
   status
   rating

@@ -18,6 +18,8 @@ export const visionPrompt = (language: ScanLanguage) =>
 
 ÉTAPE 0 — Détermine recognized : mets recognized=false et title="" si l'image n'est PAS une couverture de livre identifiable (aucun texte lisible, objet quelconque, photo floue). Ne mets recognized=false que si tu ne peux vraiment rien lire.
 
+ÉTAPE 0 bis — Détermine format, la nature de l'objet, d'après ce que montre la couverture : 'manga' pour un manga (sens de lecture japonais, dessin manga, éditeur comme Glénat Manga, Kana, Pika), 'bande-dessinee' pour un album de bande dessinée franco-belge, 'comic' pour un comic américain ou un roman graphique de cette tradition, 'audiobook' pour un livre audio (boîtier de CD, mention « livre audio »), 'ebook' pour une couverture affichée sur une liseuse ou un écran, 'book' pour tout autre livre. Mets null si tu hésites entre plusieurs.
+
 ÉTAPE 1 — Relève le titre tel qu'il apparaît, sans le compléter ni le corriger. Un sous-titre sur une ligne distincte ne fait pas partie du titre.
 
 ÉTAPE 2 — Relève le ou les auteurs. Ignore les mentions de traducteur, de préfacier et d'illustrateur : ce ne sont pas des auteurs.

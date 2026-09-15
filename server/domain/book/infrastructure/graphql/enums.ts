@@ -18,3 +18,21 @@ export const ReadingStatusEnum = builder.enumType('ReadingStatus', {
     },
   } as const,
 })
+
+export const BookFormatEnum = builder.enumType('BookFormat', {
+  description:
+    'What kind of object the reader holds.\n\n' +
+    'Prose, sound, or a drawn story. Drawn stories are split into the three ' +
+    'traditions readers shelve apart. Defaults to `BOOK` when nothing says otherwise.',
+  values: {
+    BOOK: { value: 'book', description: 'A printed book: novel, essay, anything in prose.' },
+    EBOOK: { value: 'ebook', description: 'A book read on a screen.' },
+    AUDIOBOOK: { value: 'audiobook', description: 'A book listened to.' },
+    BANDE_DESSINEE: {
+      value: 'bande-dessinee',
+      description: 'A Franco-Belgian comic album, such as Astérix or Blacksad.',
+    },
+    COMIC: { value: 'comic', description: 'An American comic book or graphic novel.' },
+    MANGA: { value: 'manga', description: 'A Japanese comic, or one drawn in that tradition.' },
+  } as const,
+})

@@ -34,6 +34,7 @@ struct BookView: View {
                         seriesName: book.series?.name,
                         isSaving: viewModel.isSaving,
                         onSetStatus: { status in run { await viewModel.setStatus(status) } },
+                        onSetFormat: { format in run { await viewModel.setFormat(format) } },
                         onRate: { stars in run { await viewModel.rate(stars) } },
                         onEditNote: { showNoteEditor = true },
                         onToggleHidden: { run { await viewModel.setHidden(!book.hidden) } },

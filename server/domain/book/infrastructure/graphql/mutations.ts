@@ -28,6 +28,7 @@ builder.mutationFields((t) => ({
       const book = await BookCommand.add(context.userId, {
         title: args.input.title,
         authors: args.input.authors ?? undefined,
+        format: args.input.format ?? undefined,
         publisher: args.input.publisher ?? undefined,
         firstPublishedIn: args.input.firstPublishedIn ?? undefined,
         synopsis: args.input.synopsis ?? undefined,
@@ -62,6 +63,7 @@ builder.mutationFields((t) => ({
           ? { title: args.input.title }
           : {}),
         ...(args.input.authors ? { authors: args.input.authors } : {}),
+        ...(args.input.format ? { format: args.input.format } : {}),
         ...(args.input.publisher ? { publisher: args.input.publisher } : {}),
         ...(args.input.firstPublishedIn ? { firstPublishedIn: args.input.firstPublishedIn } : {}),
         ...(args.input.synopsis ? { synopsis: args.input.synopsis } : {}),

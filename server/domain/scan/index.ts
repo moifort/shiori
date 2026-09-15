@@ -1,4 +1,11 @@
-import { Genre, Isbn13, PageCount, Publisher, Synopsis } from '~/domain/book/primitives'
+import {
+  BookFormatValue,
+  Genre,
+  Isbn13,
+  PageCount,
+  Publisher,
+  Synopsis,
+} from '~/domain/book/primitives'
 import { generate } from '~/domain/scan/gemini'
 import * as repository from '~/domain/scan/infrastructure/repository'
 import { hashImage } from '~/domain/scan/primitives'
@@ -24,6 +31,7 @@ const logger = createLogger('scan')
 
 type VisionOutput = {
   recognized: boolean
+  format?: string | null
   title: string
   authors: string[]
   publisher?: string | null
@@ -113,6 +121,7 @@ export namespace Scan {
         recognized: true,
         title: BookTitle(value.title),
         authors: parsedAuthors(value.authors),
+        format: optional(value.format, BookFormatValue),
         publisher: optional(value.publisher, Publisher),
         genres: [],
       } satisfies ScanResult,
@@ -136,6 +145,7 @@ export namespace Scan {
         recognized: true,
         title: optional(value.title, BookTitle) ?? seen.title,
         authors: authors.length > 0 ? authors : seen.authors,
+        format: seen.format,
         publisher: seen.publisher,
         firstPublishedIn: optional(value.firstPublishedIn, Year),
         synopsis: optional(value.synopsis, Synopsis),

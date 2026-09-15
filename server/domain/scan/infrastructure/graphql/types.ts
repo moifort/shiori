@@ -1,3 +1,4 @@
+import { BookFormatEnum } from '~/domain/book/infrastructure/graphql/enums'
 import type { ScannedSeries, ScanResult } from '~/domain/scan/types'
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { builder } from '~/domain/shared/graphql/builder'
@@ -45,6 +46,12 @@ export const ScanResultType = builder.objectRef<ScanResult>('ScanResult').implem
       resolve: (result) => (result.title === '' ? null : result.title),
     }),
     authors: t.field({ type: ['AuthorName'], resolve: (result) => result.authors }),
+    format: t.field({
+      type: BookFormatEnum,
+      nullable: true,
+      description: 'Null when the cover did not say. The app then proposes BOOK.',
+      resolve: (result) => result.format ?? null,
+    }),
     publisher: t.field({
       type: 'Publisher',
       nullable: true,

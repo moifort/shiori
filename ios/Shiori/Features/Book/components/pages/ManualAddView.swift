@@ -12,6 +12,7 @@ struct ManualAddView: View {
 
     @State private var title = ""
     @State private var author = ""
+    @State private var format: BookFormat = .book
     @State private var status: ReadingStatus = .toRead
     @State private var isSaving = false
     @State private var errorMessage: String?
@@ -31,6 +32,10 @@ struct ManualAddView: View {
                     TextField("Auteur (facultatif)", text: $author)
                         .textInputAutocapitalization(.words)
                         .accessibilityIdentifier("manual-author")
+                    Picker("Format", selection: $format) {
+                        ForEach(BookFormat.allCases) { Text($0.label).tag($0) }
+                    }
+                    .accessibilityIdentifier("manual-format")
                 }
                 Section("Lecture") {
                     Picker("Statut", selection: $status) {
@@ -78,6 +83,7 @@ struct ManualAddView: View {
                 BookDraft(
                     title: trimmedTitle,
                     authors: trimmedAuthor.isEmpty ? [] : [trimmedAuthor],
+                    format: format,
                     status: status
                 )
             )

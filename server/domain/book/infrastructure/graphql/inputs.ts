@@ -1,4 +1,4 @@
-import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
+import { BookFormatEnum, ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { builder } from '~/domain/shared/graphql/builder'
 
@@ -27,6 +27,7 @@ export const NewBookInput = builder.inputType('NewBookInput', {
   fields: (t) => ({
     title: t.field({ type: 'BookTitle', required: true }),
     authors: t.field({ type: ['AuthorName'], required: false }),
+    format: t.field({ type: BookFormatEnum, required: false, description: 'Defaults to BOOK.' }),
     publisher: t.field({ type: 'Publisher', required: false }),
     firstPublishedIn: t.field({ type: 'Year', required: false }),
     synopsis: t.field({ type: 'Synopsis', required: false }),
@@ -56,6 +57,7 @@ export const BookEditInput = builder.inputType('BookEditInput', {
   fields: (t) => ({
     title: t.field({ type: 'BookTitle', required: false }),
     authors: t.field({ type: ['AuthorName'], required: false }),
+    format: t.field({ type: BookFormatEnum, required: false }),
     publisher: t.field({ type: 'Publisher', required: false }),
     firstPublishedIn: t.field({ type: 'Year', required: false }),
     synopsis: t.field({ type: 'Synopsis', required: false }),

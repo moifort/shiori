@@ -161,7 +161,9 @@ struct SeriesView: View {
         addingTitle = volume.title
         defer { addingTitle = nil }
         do {
-            _ = try await BookAPI.add(BookDraft(title: volume.title, authors: [author]))
+            // Another volume of a manga is a manga: the saga shares its format.
+            let format = ownedByNumber.values.first?.format ?? .book
+            _ = try await BookAPI.add(BookDraft(title: volume.title, authors: [author], format: format))
             track(.bookAdded(source: .series))
             await load()
         } catch {

@@ -100,6 +100,27 @@ describe('scanning a cover', () => {
   })
 })
 
+describe('reading the format', () => {
+  // Enrichment rebuilds the result from a web search that knows nothing of the
+  // photo, so the format read off the cover has to survive it.
+  test('carries the format seen on the cover through enrichment', async () => {
+    answers = [{ ...aCover, format: 'manga' }, anEnrichment, aCatalogue]
+
+    const { result } = await Scan.scanWithCache(image, 'fr')
+
+    expect(result.format).toBe('manga')
+  })
+
+  test('leaves the format absent when the model answers outside the list', async () => {
+    answers = [{ ...aCover, format: 'novel' }, anEnrichment, aCatalogue]
+
+    const { result } = await Scan.scanWithCache(image, 'fr')
+
+    expect(result.format).toBeUndefined()
+    expect(String(result.title)).toBe('Le Nom du vent')
+  })
+})
+
 describe('the cache', () => {
   test('serves a second scan of the same cover without calling the model', async () => {
     answers = [aCover, anEnrichment, aCatalogue]

@@ -1,3 +1,4 @@
+import { BOOK_FORMATS } from '~/domain/book/types'
 import { VOLUME_KINDS } from '~/domain/series/types'
 
 /** The response schemas handed to Gemini's `responseSchema`, which constrains
@@ -17,6 +18,12 @@ export const VISION_SCHEMA = {
       type: 'boolean',
       description: "false si l'image n'est pas une couverture de livre lisible, true sinon",
     },
+    format: {
+      type: 'string',
+      enum: [...BOOK_FORMATS],
+      nullable: true,
+      description: 'Nature de l’objet photographié, déduite de la couverture',
+    },
     title: { type: 'string', description: 'Titre tel qu’imprimé sur la couverture' },
     authors: {
       type: 'array',
@@ -32,7 +39,15 @@ export const VISION_SCHEMA = {
     volumeNumber: { type: 'integer', nullable: true, description: 'Numéro de tome imprimé' },
   },
   required: ['recognized', 'title', 'authors'],
-  propertyOrdering: ['recognized', 'title', 'authors', 'publisher', 'seriesName', 'volumeNumber'],
+  propertyOrdering: [
+    'recognized',
+    'format',
+    'title',
+    'authors',
+    'publisher',
+    'seriesName',
+    'volumeNumber',
+  ],
 } as const
 
 export const ENRICHMENT_SCHEMA = {

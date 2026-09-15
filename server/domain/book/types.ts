@@ -20,6 +20,20 @@ export type ReadingNote = Brand<string, 'ReadingNote'>
 export const READING_STATUSES = ['to-read', 'reading', 'read'] as const
 export type ReadingStatus = (typeof READING_STATUSES)[number]
 
+/** What kind of object the reader holds. Prose in print or on a screen, sound, or
+ *  a drawn story — and among drawn stories, the three traditions a reader shelves
+ *  apart: the Franco-Belgian album, the American comic, the manga. `book` is the
+ *  default because it is what nearly every catalogued title is. */
+export const BOOK_FORMATS = [
+  'book',
+  'ebook',
+  'audiobook',
+  'bande-dessinee',
+  'comic',
+  'manga',
+] as const
+export type BookFormat = (typeof BOOK_FORMATS)[number]
+
 /** The book's place in a saga, denormalized onto the record. The name is copied
  *  here on purpose: grouping a 300-book library into sections must not read one
  *  catalogue document per row. */
@@ -39,6 +53,7 @@ export type Book = {
   userId: UserId
   title: BookTitle
   authors: AuthorName[]
+  format: BookFormat
   publisher?: Publisher
   firstPublishedIn?: Year
   synopsis?: Synopsis

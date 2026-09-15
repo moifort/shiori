@@ -9,19 +9,27 @@ struct BookRow: View {
     let cover: Book
     let status: ReadingStatus
     let rating: Int?
+    /// Named on the row only when it is not a plain book, which is nearly every
+    /// row: a label repeated down the whole list would say nothing.
+    var format: BookFormat = .book
     /// The volume label ("Tome 3") shown inside a series section, where the
     /// title alone does not say which volume this is. Absent elsewhere: on the
     /// standalone shelf there is no numbering to explain.
     var volumeLabel: String?
     var isHidden: Bool = false
 
+    private var caption: String? {
+        let parts = [format == .book ? nil : format.label, volumeLabel].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
     var body: some View {
         HStack(spacing: 12) {
             BookCover(book: cover)
 
             VStack(alignment: .leading, spacing: 3) {
-                if let volumeLabel {
-                    Text(volumeLabel)
+                if let caption {
+                    Text(caption)
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.secondary)
                 }
@@ -79,6 +87,7 @@ struct BookRow: View {
             cover: Book(id: "2", title: "La Peur du sage", authors: ["Patrick Rothfuss"], status: .read),
             status: .read,
             rating: 5,
+            format: .audiobook,
             volumeLabel: "Tome 2",
             isHidden: true
         )

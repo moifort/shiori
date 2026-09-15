@@ -4,6 +4,7 @@ import * as repository from '~/domain/book/infrastructure/repository'
 import { BookId as BookIdOf } from '~/domain/book/primitives'
 import type {
   Book,
+  BookFormat,
   BookId,
   Genre,
   Isbn13,
@@ -25,6 +26,7 @@ import type { ObjectPath } from '~/system/object-store/types'
 export type NewBook = {
   title: BookTitle
   authors?: AuthorName[]
+  format?: BookFormat
   publisher?: Publisher
   firstPublishedIn?: Year
   synopsis?: Synopsis
@@ -46,6 +48,7 @@ export type BookEdit = Partial<
     Book,
     | 'title'
     | 'authors'
+    | 'format'
     | 'publisher'
     | 'firstPublishedIn'
     | 'synopsis'
@@ -63,6 +66,7 @@ export namespace BookCommand {
       userId,
       title: input.title,
       authors: input.authors ?? [],
+      format: input.format ?? 'book',
       publisher: input.publisher,
       firstPublishedIn: input.firstPublishedIn,
       synopsis: input.synopsis,

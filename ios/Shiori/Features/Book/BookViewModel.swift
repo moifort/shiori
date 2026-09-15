@@ -58,6 +58,10 @@ final class BookViewModel {
         await mutate { try await BookAPI.setStatus(id: self.bookId, status: status) }
     }
 
+    func setFormat(_ format: BookFormat) async {
+        await mutate { try await BookAPI.setFormat(id: self.bookId, format: format) }
+    }
+
     func rate(_ stars: Int) async {
         await mutate { try await BookAPI.rate(id: self.bookId, stars: stars) }
     }
@@ -90,7 +94,8 @@ final class BookViewModel {
         defer { isSaving = false }
         do {
             let added = try await BookAPI.add(
-                BookDraft(title: volume.title, authors: [series.author])
+                // Another volume of a manga is a manga: the saga shares its format.
+                BookDraft(title: volume.title, authors: [series.author], format: book?.format ?? .book)
             )
             track(.bookAdded(source: .series))
             return added

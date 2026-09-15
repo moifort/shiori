@@ -1,5 +1,5 @@
 import type { Brand } from 'ts-brand'
-import type { Genre, Isbn13, PageCount, Publisher, Synopsis } from '~/domain/book/types'
+import type { BookFormat, Genre, Isbn13, PageCount, Publisher, Synopsis } from '~/domain/book/types'
 import type { SeriesId, SeriesName, VolumeKind, VolumeNumber } from '~/domain/series/types'
 import type { Language } from '~/domain/shared/language'
 import type { AuthorName, BookTitle, Year } from '~/domain/shared/types'
@@ -21,6 +21,9 @@ export type ScanResult = {
   recognized: boolean
   title: BookTitle | ''
   authors: AuthorName[]
+  /** Absent when the model could not tell, and on scans cached before the format
+   *  was read — the reader picks it on the review screen either way. */
+  format?: BookFormat
   publisher?: Publisher
   firstPublishedIn?: Year
   synopsis?: Synopsis

@@ -5,6 +5,8 @@ struct ScannedBook {
     let recognized: Bool
     var title: String?
     var authors: [String] = []
+    /// Absent when the cover did not say; the draft then proposes a plain book.
+    var format: BookFormat?
     var publisher: String?
     var firstPublishedIn: Int?
     var synopsis: String?
@@ -23,6 +25,7 @@ struct ScannedBook {
         BookDraft(
             title: title ?? "",
             authors: authors,
+            format: format ?? .book,
             publisher: publisher,
             firstPublishedIn: firstPublishedIn,
             synopsis: synopsis,
@@ -48,6 +51,7 @@ enum ScanAPI {
             recognized: result.recognized,
             title: result.title,
             authors: result.authors,
+            format: result.format?.asDomain,
             publisher: result.publisher,
             firstPublishedIn: result.firstPublishedIn,
             synopsis: result.synopsis,

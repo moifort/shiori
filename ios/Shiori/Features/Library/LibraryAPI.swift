@@ -33,6 +33,17 @@ enum LibraryAPI {
         }
     }
 
+    static func graphQLFormat(_ format: BookFormat) -> GraphQLEnum<ShioriGraphQL.BookFormat> {
+        switch format {
+        case .book: .case(.book)
+        case .ebook: .case(.ebook)
+        case .audiobook: .case(.audiobook)
+        case .bandeDessinee: .case(.bandeDessinee)
+        case .comic: .case(.comic)
+        case .manga: .case(.manga)
+        }
+    }
+
     /// Only ever used to hand a scanned membership straight back to `addBook`.
     static func graphQLVolumeKind(_ kind: VolumeKind) -> ShioriGraphQL.VolumeKind {
         switch kind {

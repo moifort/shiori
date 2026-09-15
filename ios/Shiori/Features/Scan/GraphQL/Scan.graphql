@@ -5,6 +5,7 @@ mutation ScanBook($imageBase64: String!) {
     recognized
     title
     authors
+    format
     publisher
     firstPublishedIn
     synopsis

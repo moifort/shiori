@@ -42,6 +42,10 @@ struct ScanReviewPage: View {
                 TextField("Auteur", text: $authorLine)
                     .textInputAutocapitalization(.words)
                     .accessibilityIdentifier("review-author")
+                Picker("Format", selection: $draft.format) {
+                    ForEach(BookFormat.allCases) { Text($0.label).tag($0) }
+                }
+                .accessibilityIdentifier("review-format")
             } header: {
                 Text("À vérifier")
             } footer: {

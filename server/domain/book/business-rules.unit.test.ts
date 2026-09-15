@@ -24,6 +24,7 @@ const book = (spec: BookSpec): BookView => ({
   userId: UserId('reader'),
   title: BookTitle(spec.title),
   authors: [],
+  format: 'book',
   genres: [],
   status: spec.status ?? 'to-read',
   hidden: false,

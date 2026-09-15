@@ -22,6 +22,7 @@ type Book {
 
   """Year the work first appeared, not the year of this edition."""
   firstPublishedIn: Year
+  format: BookFormat!
   genres: [Genre!]!
 
   """Excluded from any shared view. Sharing itself is not built yet."""
@@ -47,12 +48,38 @@ type Book {
 input BookEditInput {
   authors: [AuthorName!]
   firstPublishedIn: Year
+  format: BookFormat
   genres: [Genre!]
   isbn13: Isbn13
   pageCount: PageCount
   publisher: Publisher
   synopsis: Synopsis
   title: BookTitle
+}
+
+"""
+What kind of object the reader holds.
+
+Prose, sound, or a drawn story. Drawn stories are split into the three traditions readers shelve apart. Defaults to `BOOK` when nothing says otherwise.
+"""
+enum BookFormat {
+  """A book listened to."""
+  AUDIOBOOK
+
+  """A Franco-Belgian comic album, such as Astérix or Blacksad."""
+  BANDE_DESSINEE
+
+  """A printed book: novel, essay, anything in prose."""
+  BOOK
+
+  """An American comic book or graphic novel."""
+  COMIC
+
+  """A book read on a screen."""
+  EBOOK
+
+  """A Japanese comic, or one drawn in that tradition."""
+  MANGA
 }
 
 """
@@ -296,6 +323,9 @@ A book catalogued without a scan — typed by hand, or taken from a series catal
 input NewBookInput {
   authors: [AuthorName!]
   firstPublishedIn: Year
+
+  """Defaults to BOOK."""
+  format: BookFormat
   genres: [Genre!]
 
   """Defaults to false."""
@@ -506,6 +536,9 @@ type ScanResult {
 
   """Year the work first appeared, not the year of this edition."""
   firstPublishedIn: Year
+
+  """Null when the cover did not say. The app then proposes BOOK."""
+  format: BookFormat
   genres: [Genre!]!
   isbn13: Isbn13
   pageCount: PageCount

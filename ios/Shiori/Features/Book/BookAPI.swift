@@ -28,6 +28,17 @@ enum BookAPI {
         return data.setReadingStatus.fragments.bookDetail.asBook
     }
 
+    static func setFormat(id: String, format: BookFormat) async throws -> Book {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.UpdateBookMutation(
+                id: id,
+                input: ShioriGraphQL.BookEditInput(format: .some(LibraryAPI.graphQLFormat(format)))
+            )
+        )
+        return data.updateBook.fragments.bookDetail.asBook
+    }
+
     static func rate(id: String, stars: Int) async throws -> Book {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
@@ -69,6 +80,7 @@ enum BookAPI {
 struct BookDraft {
     var title: String
     var authors: [String] = []
+    var format: BookFormat = .book
     var publisher: String?
     var firstPublishedIn: Int?
     var synopsis: String?
@@ -85,6 +97,7 @@ struct BookDraft {
         ShioriGraphQL.NewBookInput(
             authors: GraphQLHelpers.graphQLNullable(authors.isEmpty ? nil : authors),
             firstPublishedIn: GraphQLHelpers.graphQLNullable(firstPublishedIn),
+            format: .some(LibraryAPI.graphQLFormat(format)),
             genres: GraphQLHelpers.graphQLNullable(genres.isEmpty ? nil : genres),
             hidden: .some(hidden),
             isbn13: GraphQLHelpers.graphQLNullable(isbn13),
