@@ -1,17 +1,30 @@
 import SwiftUI
 
+/// The last book finished, or a word on what will take its place. The card is
+/// drawn either way so the reader learns what the dashboard keeps here.
 struct LastFinishedCard: View {
-    let book: Book
-    let onTapped: () -> Void
+    let book: Book?
+    let onTapped: (Book) -> Void
 
     var body: some View {
-        Button(action: onTapped) {
+        if let book {
+            filled(book)
+        } else {
+            WidgetCard(title: "Dernier livre terminé") {
+                WidgetEmptyMessage(text: "Terminez un livre pour le retrouver ici.")
+            }
+            .accessibilityIdentifier("home-last-finished")
+        }
+    }
+
+    private func filled(_ book: Book) -> some View {
+        Button { onTapped(book) } label: {
             HStack(spacing: 14) {
                 BookCover(book: book, width: 56)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(finishedLine).font(.caption).foregroundStyle(.secondary)
+                    Text(finishedLine(of: book)).font(.caption).foregroundStyle(.secondary)
                     Text(book.title).font(.headline).lineLimit(2)
-                    Text(detailLine).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
+                    Text(detailLine(of: book)).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
                     if let rating = book.rating {
                         StarRatingView(rating: rating)
                     }
@@ -30,7 +43,7 @@ struct LastFinishedCard: View {
         .accessibilityIdentifier("home-last-finished")
     }
 
-    private var finishedLine: String {
+    private func finishedLine(of book: Book) -> String {
         guard let finishedAt = book.finishedAt else { return String(localized: "Dernier livre terminé") }
         let days = finishedAt.daysAgo()
         switch days {
@@ -40,7 +53,7 @@ struct LastFinishedCard: View {
         }
     }
 
-    private var detailLine: String {
+    private func detailLine(of book: Book) -> String {
         guard let started = book.startedAt, let finished = book.finishedAt else { return book.authorLine }
         let days = started.daysAgo(from: finished) + 1
         return "\(book.authorLine) · " + String(localized: "lu en \(days) jours")

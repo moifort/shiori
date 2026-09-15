@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The to-read pile and the average rating, side by side. A tile with nothing to
-/// say is left out and the other takes the row.
+/// The to-read pile and the average rating, side by side. Both tiles are always
+/// drawn: an empty pile reads 0, and a rating with nothing behind it reads a dash.
 struct StatTilesRow: View {
     let toReadCount: Int
     let monthsToClearPile: Int?
@@ -10,28 +10,32 @@ struct StatTilesRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            if toReadCount > 0 {
-                tile(
-                    title: "Pile à lire",
-                    value: Text(toReadCount, format: .number),
-                    caption: monthsToClearPile.map { String(localized: "≈ \($0) mois au rythme actuel") }
-                        ?? String(localized: "\(toReadCount) livres à lire"),
-                    color: DashboardPalette.pile
-                )
-                .accessibilityIdentifier("home-pile")
-            }
-            if let averageRating {
-                tile(
-                    title: "Note moyenne",
-                    value: Text(averageRating, format: .number.precision(.fractionLength(1))),
-                    caption: String(localized: "sur \(ratedCount) livres notés"),
-                    color: DashboardPalette.rating
-                )
-                .accessibilityIdentifier("home-rating")
-            }
+            tile(
+                title: "Pile à lire",
+                value: Text(toReadCount, format: .number),
+                caption: pileCaption,
+                color: DashboardPalette.pile
+            )
+            .accessibilityIdentifier("home-pile")
+            tile(
+                title: "Note moyenne",
+                value: averageRating.map { Text($0, format: .number.precision(.fractionLength(1))) }
+                    ?? Text("–"),
+                caption: averageRating == nil
+                    ? String(localized: "Notez un livre terminé pour la voir.")
+                    : String(localized: "sur \(ratedCount) livres notés"),
+                color: DashboardPalette.rating
+            )
+            .accessibilityIdentifier("home-rating")
         }
         // Both tiles take the height of the taller one, as the Fitness app's do.
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var pileCaption: String {
+        if toReadCount == 0 { return String(localized: "Aucun livre en attente.") }
+        if let monthsToClearPile { return String(localized: "≈ \(monthsToClearPile) mois au rythme actuel") }
+        return String(localized: "\(toReadCount) livres à lire")
     }
 
     private func tile(title: LocalizedStringKey, value: Text, caption: String, color: Color) -> some View {
@@ -49,7 +53,10 @@ struct StatTilesRow: View {
 }
 
 #Preview {
-    StatTilesRow(toReadCount: 27, monthsToClearPile: 9, averageRating: 4.2, ratedCount: 18)
-        .padding()
-        .background(Color(.systemGroupedBackground))
+    VStack {
+        StatTilesRow(toReadCount: 27, monthsToClearPile: 9, averageRating: 4.2, ratedCount: 18)
+        StatTilesRow(toReadCount: 0, monthsToClearPile: nil, averageRating: nil, ratedCount: 0)
+    }
+    .padding()
+    .background(Color(.systemGroupedBackground))
 }

@@ -60,6 +60,8 @@ struct ReadingChartWidget: View {
         .contentTransition(.numericText())
     }
 
+    /// A chart of zeros gets a floor of one on its axis, so the first book of the
+    /// year has somewhere to grow rather than a flat line with no scale.
     @ViewBuilder
     private var chart: some View {
         switch metric {
@@ -69,6 +71,7 @@ struct ReadingChartWidget: View {
                     .foregroundStyle(DashboardPalette.books.opacity(entry.year == currentYear ? 0.45 : 1))
                     .cornerRadius(4)
             }
+            .chartYScale(domain: 0...max(1, booksPerYear.map(\.count).max() ?? 0))
             .chartYAxis { AxisMarks(position: .leading) }
         case .pages:
             // Numeric months rather than month letters: J, J and M, M would collide
@@ -83,6 +86,7 @@ struct ReadingChartWidget: View {
                 .cornerRadius(3)
             }
             .chartXScale(domain: 0.5...12.5)
+            .chartYScale(domain: 0...max(1, pagesPerMonth.map(\.pages).max() ?? 0))
             .chartXAxis {
                 AxisMarks(values: Array(1...12)) { value in
                     AxisValueLabel {
@@ -105,6 +109,16 @@ struct ReadingChartWidget: View {
         currentYear: 2026,
         booksPerYear: [.init(year: 2023, count: 9), .init(year: 2024, count: 21), .init(year: 2025, count: 16), .init(year: 2026, count: 18)],
         pagesPerMonth: (1...12).map { .init(month: $0, pages: $0 < 10 ? $0 * 90 : 0) }
+    )
+    .padding()
+    .background(Color(.systemGroupedBackground))
+}
+
+#Preview("First book") {
+    ReadingChartWidget(
+        currentYear: 2026,
+        booksPerYear: [.init(year: 2026, count: 0)],
+        pagesPerMonth: (1...12).map { .init(month: $0, pages: 0) }
     )
     .padding()
     .background(Color(.systemGroupedBackground))

@@ -59,12 +59,6 @@ struct Dashboard: Sendable {
     let genres: [GenreSlice]
     let series: [SeriesProgress]
     let libraryIsEmpty: Bool
-
-    var hasChart: Bool {
-        !booksPerYear.isEmpty || pagesPerMonth.contains { $0.pages > 0 }
-    }
-
-    var hasTrends: Bool { pagesPerDay.current != nil || daysToFinish.current != nil }
 }
 
 extension Date {

@@ -6,16 +6,20 @@ struct GenresWidget: View {
 
     var body: some View {
         WidgetCard(title: "Genres lus en \(String(currentYear))") {
-            SegmentedBar(segments: genres.enumerated().map { index, slice in
-                SegmentedBar.Segment(
-                    id: slice.id,
-                    label: slice.genre?.label ?? String(localized: "Autres"),
-                    value: slice.count,
-                    color: slice.genre == nil
-                        ? DashboardPalette.others
-                        : DashboardPalette.genres[index % DashboardPalette.genres.count]
-                )
-            })
+            if genres.isEmpty {
+                WidgetEmptyMessage(text: "Terminez un livre cette année pour voir vos genres.")
+            } else {
+                SegmentedBar(segments: genres.enumerated().map { index, slice in
+                    SegmentedBar.Segment(
+                        id: slice.id,
+                        label: slice.genre?.label ?? String(localized: "Autres"),
+                        value: slice.count,
+                        color: slice.genre == nil
+                            ? DashboardPalette.others
+                            : DashboardPalette.genres[index % DashboardPalette.genres.count]
+                    )
+                })
+            }
         }
         .accessibilityIdentifier("home-genres")
     }

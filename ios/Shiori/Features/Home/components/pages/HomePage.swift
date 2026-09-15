@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// The dashboard laid out top to bottom. Stateless: the coordinator hands it the
-/// figures and receives the taps. A widget with nothing to show is left out
-/// rather than drawn empty.
+/// figures and receives the taps. Every widget is drawn from the first book on;
+/// one with nothing to show yet says what will fill it.
 struct HomePage: View {
     let dashboard: Dashboard
     let onReadingTapped: () -> Void
@@ -12,59 +12,45 @@ struct HomePage: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                if dashboard.hasChart {
-                    ReadingChartWidget(
-                        currentYear: dashboard.currentYear,
-                        booksPerYear: dashboard.booksPerYear,
-                        pagesPerMonth: dashboard.pagesPerMonth
-                    )
-                }
+                ReadingChartWidget(
+                    currentYear: dashboard.currentYear,
+                    booksPerYear: dashboard.booksPerYear,
+                    pagesPerMonth: dashboard.pagesPerMonth
+                )
 
-                if !dashboard.reading.isEmpty {
-                    BookShelfSection(
-                        title: "En cours",
-                        books: dashboard.reading,
-                        caption: Self.startedCaption,
-                        onHeaderTapped: onReadingTapped,
-                        onBookTapped: onBookTapped
-                    )
-                    .accessibilityIdentifier("home-reading")
-                }
+                BookShelfSection(
+                    title: "En cours",
+                    books: dashboard.reading,
+                    caption: Self.startedCaption,
+                    emptyMessage: "Aucun livre en cours de lecture.",
+                    onHeaderTapped: onReadingTapped,
+                    onBookTapped: onBookTapped
+                )
+                .accessibilityIdentifier("home-reading")
 
-                if !dashboard.suggestions.isEmpty {
-                    BookShelfSection(
-                        title: "Vous aimerez peut-être lire",
-                        books: dashboard.suggestions,
-                        caption: { $0.authorLine },
-                        onBookTapped: onBookTapped
-                    )
-                    .accessibilityIdentifier("home-suggestions")
-                }
+                BookShelfSection(
+                    title: "Vous aimerez peut-être lire",
+                    books: dashboard.suggestions,
+                    caption: { $0.authorLine },
+                    emptyMessage: "Ajoutez des livres à votre pile à lire pour en tirer quelques idées.",
+                    onBookTapped: onBookTapped
+                )
+                .accessibilityIdentifier("home-suggestions")
 
-                if let lastFinished = dashboard.lastFinished {
-                    LastFinishedCard(book: lastFinished) { onBookTapped(lastFinished) }
-                }
+                LastFinishedCard(book: dashboard.lastFinished, onTapped: onBookTapped)
 
-                if dashboard.hasTrends {
-                    TrendsWidget(pagesPerDay: dashboard.pagesPerDay, daysToFinish: dashboard.daysToFinish)
-                }
+                TrendsWidget(pagesPerDay: dashboard.pagesPerDay, daysToFinish: dashboard.daysToFinish)
 
-                if dashboard.toReadCount > 0 || dashboard.averageRating != nil {
-                    StatTilesRow(
-                        toReadCount: dashboard.toReadCount,
-                        monthsToClearPile: dashboard.monthsToClearPile,
-                        averageRating: dashboard.averageRating,
-                        ratedCount: dashboard.ratedCount
-                    )
-                }
+                StatTilesRow(
+                    toReadCount: dashboard.toReadCount,
+                    monthsToClearPile: dashboard.monthsToClearPile,
+                    averageRating: dashboard.averageRating,
+                    ratedCount: dashboard.ratedCount
+                )
 
-                if !dashboard.genres.isEmpty {
-                    GenresWidget(currentYear: dashboard.currentYear, genres: dashboard.genres)
-                }
+                GenresWidget(currentYear: dashboard.currentYear, genres: dashboard.genres)
 
-                if !dashboard.series.isEmpty {
-                    SeriesProgressWidget(series: dashboard.series, onHeaderTapped: onSeriesTapped)
-                }
+                SeriesProgressWidget(series: dashboard.series, onHeaderTapped: onSeriesTapped)
             }
             .padding(.horizontal)
             .padding(.bottom, 24)
@@ -128,9 +114,38 @@ extension Dashboard {
     )
 }
 
+extension Dashboard {
+    /// A library with one book just added: every widget drawn, most of them
+    /// saying what will fill them.
+    static let firstBook = Dashboard(
+        currentYear: 2026,
+        booksPerYear: [.init(year: 2026, count: 0)],
+        pagesPerMonth: (1...12).map { .init(month: $0, pages: 0) },
+        reading: [],
+        suggestions: [Book(id: "1", title: "Dune", authors: ["Frank Herbert"], status: .toRead)],
+        lastFinished: nil,
+        pagesPerDay: .init(current: nil, previous: nil),
+        daysToFinish: .init(current: nil, previous: nil),
+        toReadCount: 1,
+        monthsToClearPile: nil,
+        averageRating: nil,
+        ratedCount: 0,
+        genres: [],
+        series: [],
+        libraryIsEmpty: false
+    )
+}
+
 #Preview("With data") {
     NavigationStack {
         HomePage(dashboard: .preview, onReadingTapped: {}, onSeriesTapped: {}, onBookTapped: { _ in })
+            .navigationTitle("Accueil")
+    }
+}
+
+#Preview("First book") {
+    NavigationStack {
+        HomePage(dashboard: .firstBook, onReadingTapped: {}, onSeriesTapped: {}, onBookTapped: { _ in })
             .navigationTitle("Accueil")
     }
 }

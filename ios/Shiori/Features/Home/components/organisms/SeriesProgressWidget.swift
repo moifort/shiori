@@ -6,6 +6,9 @@ struct SeriesProgressWidget: View {
 
     var body: some View {
         WidgetCard(title: "Séries en cours", action: onHeaderTapped) {
+            if series.isEmpty {
+                WidgetEmptyMessage(text: "Aucune série en cours.")
+            }
             VStack(spacing: 14) {
                 ForEach(series) { entry in
                     NavigationLink(value: HomeView.Destination.series(entry.id)) {
