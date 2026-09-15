@@ -26,6 +26,10 @@ struct BookRow: View {
     var body: some View {
         HStack(spacing: 12) {
             BookCover(book: cover)
+                .overlay(alignment: .topTrailing) {
+                    ReadingStatusBadge(status: status)
+                        .offset(x: 5, y: -5)
+                }
 
             VStack(alignment: .leading, spacing: 3) {
                 if let caption {
@@ -41,33 +45,69 @@ struct BookRow: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
 
-                HStack(spacing: 8) {
-                    Label(status.label, systemImage: status.symbol)
-                        .font(.caption)
-                        .foregroundStyle(status == .read ? Color.green : .secondary)
-                        .labelStyle(.titleAndIcon)
+                if rating != nil || isHidden {
+                    HStack(spacing: 8) {
+                        if let rating {
+                            StarRatingView(rating: rating)
+                        }
 
-                    if let rating {
-                        StarRatingView(rating: rating)
+                        if isHidden {
+                            // Says the book is excluded from sharing. Only ever an
+                            // icon: spelling it out on every row would shout a
+                            // private choice at anyone glancing over a shoulder.
+                            Image(systemName: "eye.slash")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .accessibilityLabel(Text("Non partagé"))
+                        }
                     }
-
-                    if isHidden {
-                        // Says the book is excluded from sharing. Only ever an
-                        // icon: spelling it out on every row would shout a
-                        // private choice at anyone glancing over a shoulder.
-                        Image(systemName: "eye.slash")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .accessibilityLabel(Text("Non partagé"))
-                    }
+                    .padding(.top, 1)
                 }
-                .padding(.top, 1)
             }
 
             Spacer(minLength: 0)
         }
-        .padding(.vertical, 4)
+        // Room for the badge, which overhangs the cover's top edge.
+        .padding(.vertical, 6)
         .accessibilityElement(children: .combine)
+        // The badge is icon-only, so the status is spoken here rather than
+        // read off a glyph.
+        .accessibilityValue(Text(status.label))
+    }
+}
+
+/// The reading status pinned to a cover's corner. Icon-only, because a 56-point
+/// cover leaves no room for a word; the colour carries the state at a glance and
+/// the symbol keeps it distinguishable without colour.
+private struct ReadingStatusBadge: View {
+    let status: ReadingStatus
+
+    private var symbol: String {
+        switch status {
+        case .toRead: "bookmark.fill"
+        case .reading: "book.fill"
+        case .read: "checkmark"
+        }
+    }
+
+    private var tint: Color {
+        switch status {
+        case .toRead: .gray
+        case .reading: .blue
+        case .read: .green
+        }
+    }
+
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.system(size: 9, weight: .bold))
+            .foregroundStyle(.white)
+            .frame(width: 20, height: 20)
+            .background(tint, in: Circle())
+            // A ring in the row's own background lifts the badge off whatever
+            // colour the cover happens to be under it.
+            .overlay(Circle().strokeBorder(Color(.secondarySystemGroupedBackground), lineWidth: 2))
+            .accessibilityHidden(true)
     }
 }
 
