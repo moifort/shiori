@@ -1,8 +1,9 @@
 import Charts
 import SwiftUI
 
-/// Books read per year, or pages read per month of this year. The period still
-/// running is drawn paler: it is not over, and a short bar there is not a slump.
+/// Books read per year, or pages read per month of this year. Every bar carries
+/// the same colour, the period still running included: a paler bar there read as
+/// a defect rather than as a period not over yet.
 struct ReadingChartWidget: View {
     enum Metric: String, CaseIterable, Identifiable {
         case books, pages
@@ -20,8 +21,6 @@ struct ReadingChartWidget: View {
     let booksPerYear: [Dashboard.YearCount]
     let pagesPerMonth: [Dashboard.MonthPages]
     @State private var metric: Metric = .books
-
-    private var currentMonth: Int { Calendar.current.component(.month, from: .now) }
 
     var body: some View {
         WidgetCard(title: metric == .books ? "Livres lus" : "Pages lues") {
@@ -68,7 +67,7 @@ struct ReadingChartWidget: View {
         case .books:
             Chart(booksPerYear) { entry in
                 BarMark(x: .value("Année", String(entry.year)), y: .value("Livres", entry.count))
-                    .foregroundStyle(DashboardPalette.books.opacity(entry.year == currentYear ? 0.45 : 1))
+                    .foregroundStyle(DashboardPalette.books)
                     .cornerRadius(4)
             }
             .chartYScale(domain: 0...max(1, booksPerYear.map(\.count).max() ?? 0))
@@ -85,7 +84,7 @@ struct ReadingChartWidget: View {
                     y: .value("Pages", entry.pages),
                     width: .fixed(14)
                 )
-                .foregroundStyle(DashboardPalette.pages.opacity(entry.month == currentMonth ? 0.45 : 1))
+                .foregroundStyle(DashboardPalette.pages)
                 .cornerRadius(3)
             }
             .chartXScale(domain: 0.5...12.5)
