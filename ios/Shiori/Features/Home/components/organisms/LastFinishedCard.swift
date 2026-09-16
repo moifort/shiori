@@ -19,7 +19,9 @@ struct LastFinishedCard: View {
 
     private func filled(_ book: Book) -> some View {
         Button { onTapped(book) } label: {
-            HStack(spacing: 14) {
+            // Top-aligned like the library rows: the title starts level with the
+            // top of the cover; only the chevron stays centred on the row.
+            HStack(alignment: .top, spacing: 14) {
                 BookCover(book: book, width: 56)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(finishedLine(of: book)).font(.caption).foregroundStyle(.secondary)
@@ -33,7 +35,9 @@ struct LastFinishedCard: View {
                 Image(systemName: "chevron.right")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.tertiary)
+                    .frame(maxHeight: .infinity)
             }
+            .fixedSize(horizontal: false, vertical: true)
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 20))
