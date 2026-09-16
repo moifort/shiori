@@ -162,7 +162,7 @@ jobs:
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: polyforms
-          SENTRY_PROJECT: shiori-node
+          SENTRY_PROJECT: shiori-ios
         run: |
           set -euo pipefail
           # A crash report only names functions and lines if the dSYMs of that exact
