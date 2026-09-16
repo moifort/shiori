@@ -1,10 +1,12 @@
 import SwiftUI
 
-/// A horizontal bar split into proportional segments, with a legend under it.
+/// A horizontal bar split into proportional segments, each carrying its count
+/// when it is wide enough to hold it, with an iconed legend under it.
 struct SegmentedBar: View {
     struct Segment: Identifiable {
         let id: String
         let label: String
+        var icon: Image?
         let value: Int
         let color: Color
     }
@@ -13,6 +15,9 @@ struct SegmentedBar: View {
 
     private var total: Int { max(1, segments.reduce(0) { $0 + $1.value }) }
 
+    /// Narrower than this and a two-digit count would spill over the edges.
+    private static let minimumLabelledWidth: CGFloat = 26
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             GeometryReader { geometry in
@@ -20,12 +25,20 @@ struct SegmentedBar: View {
                 let available = geometry.size.width - spacing * CGFloat(max(0, segments.count - 1))
                 HStack(spacing: spacing) {
                     ForEach(segments) { segment in
+                        let width = available * CGFloat(segment.value) / CGFloat(total)
                         segment.color
-                            .frame(width: available * CGFloat(segment.value) / CGFloat(total))
+                            .frame(width: width)
+                            .overlay {
+                                if width >= Self.minimumLabelledWidth {
+                                    Text(segment.value, format: .number)
+                                        .font(.caption.weight(.semibold).monospacedDigit())
+                                        .foregroundStyle(.white)
+                                }
+                            }
                     }
                 }
             }
-            .frame(height: 12)
+            .frame(height: 22)
             .clipShape(.capsule)
 
             FlowLegend(segments: segments)
@@ -43,9 +56,15 @@ private struct FlowLegend: View {
         FlowLayout(spacing: 12, lineSpacing: 6) {
             ForEach(segments) { segment in
                 HStack(spacing: 4) {
-                    Circle().fill(segment.color).frame(width: 8, height: 8)
+                    if let icon = segment.icon {
+                        icon
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(segment.color)
+                            .frame(width: 16)
+                    } else {
+                        Circle().fill(segment.color).frame(width: 8, height: 8)
+                    }
                     Text(segment.label).foregroundStyle(.secondary)
-                    Text(segment.value, format: .number).fontWeight(.semibold)
                 }
                 .font(.caption)
             }
@@ -101,10 +120,10 @@ private struct FlowLayout: Layout {
 
 #Preview {
     SegmentedBar(segments: [
-        .init(id: "a", label: "Fantasy", value: 7, color: .purple),
-        .init(id: "b", label: "Science-fiction", value: 4, color: .cyan),
-        .init(id: "c", label: "Aventure", value: 3, color: .orange),
-        .init(id: "d", label: "Autres", value: 2, color: .gray),
+        .init(id: "a", label: "Fantasy", icon: Image(systemName: "wand.and.sparkles"), value: 7, color: .blue),
+        .init(id: "b", label: "Science-fiction", icon: Image("rocket"), value: 4, color: .orange),
+        .init(id: "c", label: "Aventure", icon: Image(systemName: "map"), value: 3, color: .teal),
+        .init(id: "d", label: "Autres", value: 1, color: .gray),
     ])
     .padding()
 }
