@@ -10,6 +10,8 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   livres audio, ceux terminés gardant la date à laquelle ils l’ont été. Les titres déjà
   présents sont signalés comme tels, et un second import ne crée aucun doublon. Un import ne
   coûte aucun scan.
+- Les écrans de chargement montrent désormais un gros grimoire que l’on marque : un ruban
+  tombe dans la reliure et le livre se referme dessus, à la place de la page tournante.
 - Pendant un scan, l’écran d’attente montre la photo qui vient d’être prise, cadrée comme une
   couverture et balayée de haut en bas par un faisceau lumineux, à la place d’un chargement
   générique.

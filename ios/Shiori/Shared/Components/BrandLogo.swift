@@ -92,11 +92,17 @@ private struct BookSpine: View {
     /// bookmark left in the book rather than a stripe printed on it.
     private var ribbon: some View {
         Rectangle()
-            .fill(Color(red: 0.78, green: 0.24, blue: 0.27))
+            .fill(Color.bookmarkRibbon)
             .frame(width: width * 0.26, height: height * 1.12)
             .clipShape(RibbonTail())
             .offset(y: height * 0.04)
     }
+}
+
+extension Color {
+    /// The one saturated colour of the brand: the bookmark ribbon, shared by
+    /// the logo and the loading state so they read as the same object.
+    static let bookmarkRibbon = Color(red: 0.78, green: 0.24, blue: 0.27)
 }
 
 /// A rectangle with a notch cut out of its bottom edge — the swallowtail end of
