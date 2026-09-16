@@ -1,12 +1,11 @@
 import SwiftUI
 
 /// A horizontal bar split into proportional segments, each carrying its count
-/// when it is wide enough to hold it, with an iconed legend under it.
+/// when it is wide enough to hold it, with a legend of coloured dots under it.
 struct SegmentedBar: View {
     struct Segment: Identifiable {
         let id: String
         let label: String
-        var icon: Image?
         let value: Int
         let color: Color
     }
@@ -56,14 +55,7 @@ private struct FlowLegend: View {
         FlowLayout(spacing: 12, lineSpacing: 6) {
             ForEach(segments) { segment in
                 HStack(spacing: 4) {
-                    if let icon = segment.icon {
-                        icon
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(segment.color)
-                            .frame(width: 16)
-                    } else {
-                        Circle().fill(segment.color).frame(width: 8, height: 8)
-                    }
+                    Circle().fill(segment.color).frame(width: 8, height: 8)
                     Text(segment.label).foregroundStyle(.secondary)
                 }
                 .font(.caption)
@@ -120,9 +112,9 @@ private struct FlowLayout: Layout {
 
 #Preview {
     SegmentedBar(segments: [
-        .init(id: "a", label: "Fantasy", icon: Image(systemName: "wand.and.sparkles"), value: 7, color: .blue),
-        .init(id: "b", label: "Science-fiction", icon: Image("rocket"), value: 4, color: .orange),
-        .init(id: "c", label: "Aventure", icon: Image(systemName: "map"), value: 3, color: .teal),
+        .init(id: "a", label: "Fantasy", value: 7, color: .blue),
+        .init(id: "b", label: "Science-fiction", value: 4, color: .orange),
+        .init(id: "c", label: "Aventure", value: 3, color: .teal),
         .init(id: "d", label: "Autres", value: 1, color: .gray),
     ])
     .padding()

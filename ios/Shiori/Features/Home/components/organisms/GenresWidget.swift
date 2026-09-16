@@ -13,7 +13,6 @@ struct GenresWidget: View {
                     SegmentedBar.Segment(
                         id: slice.id,
                         label: slice.genre?.label ?? String(localized: "Autres"),
-                        icon: slice.genre?.image ?? Image(systemName: "ellipsis"),
                         value: slice.count,
                         color: slice.genre == nil
                             ? DashboardPalette.others
