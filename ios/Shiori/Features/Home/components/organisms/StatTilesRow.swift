@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The to-read pile and the average rating, side by side. Both tiles are always
-/// drawn: an empty pile reads 0, and a rating with nothing behind it reads a dash.
+/// drawn: one with nothing behind it reads a dash, with no caption to explain.
 struct StatTilesRow: View {
     let toReadCount: Int
     let monthsToClearPile: Int?
@@ -12,7 +12,7 @@ struct StatTilesRow: View {
         HStack(spacing: 12) {
             tile(
                 title: "Pile à lire",
-                value: Text(toReadCount, format: .number),
+                value: toReadCount > 0 ? Text(toReadCount, format: .number) : Text("–"),
                 caption: pileCaption,
                 color: DashboardPalette.pile
             )
@@ -21,9 +21,7 @@ struct StatTilesRow: View {
                 title: "Note moyenne",
                 value: averageRating.map { Text($0, format: .number.precision(.fractionLength(1))) }
                     ?? Text("–"),
-                caption: averageRating == nil
-                    ? String(localized: "Notez un livre terminé pour la voir.")
-                    : String(localized: "sur \(ratedCount) livres notés"),
+                caption: averageRating == nil ? nil : String(localized: "sur \(ratedCount) livres notés"),
                 color: DashboardPalette.rating
             )
             .accessibilityIdentifier("home-rating")
@@ -32,19 +30,21 @@ struct StatTilesRow: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
-    private var pileCaption: String {
-        if toReadCount == 0 { return String(localized: "Aucun livre en attente.") }
+    private var pileCaption: String? {
+        if toReadCount == 0 { return nil }
         if let monthsToClearPile { return String(localized: "≈ \(monthsToClearPile) mois au rythme actuel") }
         return String(localized: "\(toReadCount) livres à lire")
     }
 
-    private func tile(title: LocalizedStringKey, value: Text, caption: String, color: Color) -> some View {
+    private func tile(title: LocalizedStringKey, value: Text, caption: String?, color: Color) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title).font(.subheadline.weight(.semibold))
             value
                 .font(.system(.largeTitle, design: .rounded, weight: .bold))
                 .foregroundStyle(color)
-            Text(caption).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+            if let caption {
+                Text(caption).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+            }
         }
         .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
