@@ -72,6 +72,9 @@ struct ReadingChartWidget: View {
                     .cornerRadius(4)
             }
             .chartYScale(domain: 0...max(1, booksPerYear.map(\.count).max() ?? 0))
+            // Years keep their labels and lose their gridlines: six dashed
+            // verticals between six bars is more furniture than reading.
+            .chartXAxis { AxisMarks { AxisValueLabel() } }
             .chartYAxis { AxisMarks(position: .leading) }
         case .pages:
             // Numeric months rather than month letters: J, J and M, M would collide
@@ -89,7 +92,9 @@ struct ReadingChartWidget: View {
             .chartYScale(domain: 0...max(1, pagesPerMonth.map(\.pages).max() ?? 0))
             .chartXAxis {
                 AxisMarks(values: Array(1...12)) { value in
-                    AxisValueLabel {
+                    // An explicit anchor: left to its default, a label built from
+                    // a closure sits a few points right of its own column.
+                    AxisValueLabel(anchor: .top) {
                         if let month = value.as(Int.self) {
                             Text(Calendar.current.veryShortStandaloneMonthSymbols[month - 1])
                         }
