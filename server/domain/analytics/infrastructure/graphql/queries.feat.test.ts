@@ -51,7 +51,14 @@ describe('the dashboard through the API', () => {
     expect(result.errors).toBeUndefined()
     const year = new Date().getFullYear()
     expect(result.data?.dashboard).toEqual({
-      booksPerYear: [{ year, count: 1 }],
+      booksPerYear: [
+        { year: year - 5, count: 0 },
+        { year: year - 4, count: 0 },
+        { year: year - 3, count: 0 },
+        { year: year - 2, count: 0 },
+        { year: year - 1, count: 0 },
+        { year, count: 1 },
+      ],
       reading: [{ title: 'La Peur du sage' }],
       suggestions: [{ title: 'Hypérion' }],
       lastFinished: { title: 'Le Nom du vent', rating: 5 },

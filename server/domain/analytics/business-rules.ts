@@ -19,8 +19,8 @@ import { Year } from '~/domain/shared/primitives'
 import type { UserId } from '~/domain/shared/types'
 import type { LocalDate as LocalDateValue } from './types'
 
-/** How many years the books chart reaches back. Past six bars they stop being
- *  readable on a phone, and a reader's first year of use says little anyway. */
+/** How many years the books chart shows, always: past six bars they stop being
+ *  readable on a phone, and fewer leaves one wide bar for a reader's first year. */
 const YEARS_SHOWN = 6
 const READING_SHOWN = 10
 const SUGGESTIONS_SHOWN = 6
@@ -196,22 +196,19 @@ export const dashboardOf = (view: AnalyticsView, today: LocalDateValue): Dashboa
   }
 }
 
-/** Books finished per year, from the first finished book to this year, empty
- *  years included so the bars keep their spacing; the last six at most. Before
- *  any book is finished, this year alone at zero: the chart is drawn from the
- *  first book on, and a chart needs a bar to draw. */
+/** Books finished per year over the last six years, this one included, empty
+ *  years at zero. Always six bars: a reader's first year alone would be one wide
+ *  bar, and the empty years beside it show where the chart is going. */
 export const booksPerYearOf = (finishes: readonly Finish[], currentYear: number): YearCount[] => {
   const counts = new Map<number, number>()
   for (const finish of finishes) {
     const year = yearOf(finish.finishedOn)
     counts.set(year, (counts.get(year) ?? 0) + 1)
   }
-  const firstYear = Math.min(currentYear, ...counts.keys())
-  const years: YearCount[] = []
-  for (let year = firstYear; year <= currentYear; year += 1) {
-    years.push({ year, count: counts.get(year) ?? 0 })
-  }
-  return years.slice(-YEARS_SHOWN)
+  return Array.from({ length: YEARS_SHOWN }, (_, index) => {
+    const year = currentYear - YEARS_SHOWN + 1 + index
+    return { year, count: counts.get(year) ?? 0 }
+  })
 }
 
 /** Pages a set of finished books puts on the days from `from` to `to` inclusive.

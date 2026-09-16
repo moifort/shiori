@@ -53,10 +53,12 @@ describe('the calendar day of an instant', () => {
 })
 
 describe('books read per year', () => {
-  test('counts every year from the first finished book, empty years included', () => {
+  test('counts the last six years, empty years included', () => {
     const finishes = [finish('2023-02-01', '2023-02-10'), finish('2026-03-01', '2026-03-05')]
 
     expect(booksPerYearOf(finishes, 2026)).toEqual([
+      { year: 2021, count: 0 },
+      { year: 2022, count: 0 },
       { year: 2023, count: 1 },
       { year: 2024, count: 0 },
       { year: 2025, count: 0 },
@@ -64,14 +66,16 @@ describe('books read per year', () => {
     ])
   })
 
-  test('keeps the last six years', () => {
+  test('leaves out a book finished before the last six years', () => {
     const years = booksPerYearOf([finish('2015-01-01', '2015-01-02')], 2026)
 
-    expect(years.map(({ year }) => year)).toEqual([2021, 2022, 2023, 2024, 2025, 2026])
+    expect(years).toEqual([2021, 2022, 2023, 2024, 2025, 2026].map((year) => ({ year, count: 0 })))
   })
 
-  test('shows the current year at zero before any book is finished', () => {
-    expect(booksPerYearOf([], 2026)).toEqual([{ year: 2026, count: 0 }])
+  test('shows six empty years before any book is finished', () => {
+    expect(booksPerYearOf([], 2026).map(({ year }) => year)).toEqual([
+      2021, 2022, 2023, 2024, 2025, 2026,
+    ])
   })
 })
 

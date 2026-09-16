@@ -8,9 +8,8 @@
 
 Top to bottom, in one scroll view. Every widget is drawn from the first book on, so the reader
 sees what the dashboard will hold; a widget with nothing to show yet says in place what will
-fill it ("Terminez un livre pour le retrouver ici."). The chart starts at zero: the current year
-alone on the books chart, twelve empty months on the pages chart. The two tiles read 0 and a
-dash.
+fill it ("Terminez un livre pour le retrouver ici."). The chart starts at zero: six empty years
+on the books chart, twelve empty months on the pages chart. The two tiles read a dash.
 
 | Widget | Content |
 |---|---|
@@ -29,9 +28,9 @@ A library with no book at all shows an invitation to scan a first book instead.
 
 All are pure functions in `server/domain/analytics/business-rules.ts`.
 
-- **Books read per year** — `read` books grouped by the year of `finishedAt`. Every year from
-  the first finished book to the current year, empty years included; the last six at most.
-  Before any book is finished, the current year alone at zero.
+- **Books read per year** — `read` books grouped by the year of `finishedAt`. Always the last
+  six years, the current one included, empty years at zero: a first year alone would be one
+  wide bar.
 - **Pages per month** — each `read` book with a `pageCount` spreads its pages evenly over the
   calendar days from `startedAt` to `finishedAt` inclusive; days are summed by month. A book
   started in December and finished in January counts on both years. Books without a page

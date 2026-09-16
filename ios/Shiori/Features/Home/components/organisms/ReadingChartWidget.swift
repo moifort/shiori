@@ -117,7 +117,7 @@ struct ReadingChartWidget: View {
 #Preview("First book") {
     ReadingChartWidget(
         currentYear: 2026,
-        booksPerYear: [.init(year: 2026, count: 0)],
+        booksPerYear: (2021...2026).map { .init(year: $0, count: 0) },
         pagesPerMonth: (1...12).map { .init(month: $0, pages: 0) }
     )
     .padding()
