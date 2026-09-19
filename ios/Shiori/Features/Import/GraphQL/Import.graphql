@@ -1,0 +1,65 @@
+# Importing an Audible library.
+#
+# The sign-in is a three-step dance: the server opens it, the app drives Amazon's
+# own page in a web view, and the server trades the code it catches for device
+# credentials it keeps. The app never holds a credential.
+
+query AudibleAccount {
+  audibleAccount {
+    ...AudibleAccountSummary
+  }
+}
+
+fragment AudibleAccountSummary on AudibleAccount {
+  marketplace
+  connectedAt
+  lastImportedAt
+}
+
+# The page to load, the cookies to plant first — they are what makes the request
+# look like the Audible iOS app — and the redirect carrying the code back.
+mutation StartAudibleLogin($marketplace: AudibleMarketplace!) {
+  startAudibleLogin(marketplace: $marketplace) {
+    url
+    redirectUrl
+    cookies {
+      name
+      value
+      domain
+    }
+  }
+}
+
+mutation CompleteAudibleLogin($authorizationCode: String!) {
+  completeAudibleLogin(authorizationCode: $authorizationCode) {
+    ...AudibleAccountSummary
+  }
+}
+
+# A proposal, not a record: nothing is catalogued until `ImportAudibleBooks` is
+# called with the ASINs the reader ticked.
+query AudibleLibrary {
+  audibleLibrary {
+    asin
+    title
+    authors
+    narrators
+    durationMinutes
+    coverUrl
+    seriesName
+    volume
+    status
+    finishedAt
+    alreadyInLibrary
+  }
+}
+
+mutation ImportAudibleBooks($asins: [AudibleAsin!]!) {
+  importAudibleBooks(asins: $asins) {
+    ...BookSummary
+  }
+}
+
+mutation DisconnectAudible {
+  disconnectAudible
+}

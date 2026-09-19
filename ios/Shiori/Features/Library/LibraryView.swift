@@ -11,6 +11,7 @@ struct LibraryView: View {
     @State private var viewModel = LibraryViewModel()
     @State private var selectedBook: Book?
     @State private var showManualAdd = false
+    @State private var showAudibleImport = false
 
     var body: some View {
         NavigationStack {
@@ -21,6 +22,7 @@ struct LibraryView: View {
                 filter: $viewModel.filter,
                 onRetry: { Task { await viewModel.load() } },
                 onAddManually: { showManualAdd = true },
+                onImportFromAudible: { showAudibleImport = true },
                 onBookTapped: { selectedBook = $0 }
             )
             .sheet(item: $selectedBook) { book in
@@ -35,6 +37,15 @@ struct LibraryView: View {
         .sheet(isPresented: $showManualAdd) {
             ManualAddView(onAdded: { _ in
                 showManualAdd = false
+                Task { await viewModel.load() }
+            })
+        }
+        .sheet(isPresented: $showAudibleImport) {
+            // An import can add a hundred books across a dozen sagas, so the
+            // list is refetched rather than patched row by row as a single
+            // edit is.
+            AudibleImportView(onImported: { _ in
+                showAudibleImport = false
                 Task { await viewModel.load() }
             })
         }

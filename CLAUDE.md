@@ -117,6 +117,10 @@ query logic.
 token, and `NITRO_SCAN_STUB=1` to answer scans with a fixed book instead of calling Gemini.
 Both are `import.meta.dev` gated and tree-shaken out of a production bundle.
 
+`NITRO_AUDIBLE_KEY` (`openssl rand -base64 32`) seals the Audible device credentials at rest.
+Without it the Audible mutations fail with a clear error and nothing else breaks; changing it
+makes every stored connection unreadable, so readers would have to connect again.
+
 The Firestore emulator needs a JDK and the Firebase CLI, neither of which is required for
 `bun test` — the integration tests run against the in-memory fake.
 
