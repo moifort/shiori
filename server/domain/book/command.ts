@@ -43,6 +43,11 @@ export type NewBook = {
   publishedCoverUrl?: CoverUrl
   status?: ReadingStatus
   hidden?: boolean
+  /** When the reading ended, for a book catalogued as already read. An import
+   *  knows it and a scan does not: without it, a decade of Audible listening
+   *  would land on today's date and rewrite every reading statistic. Ignored
+   *  unless the status says the book is read. */
+  finishedAt?: Date
 }
 
 /** The fields a reader may correct after the fact. Absent means untouched; the
@@ -94,8 +99,11 @@ export namespace BookCommand {
       status: input.status ?? 'to-read',
       hidden: input.hidden ?? false,
       addedAt: now,
+      // A known finishing date stands in for the start as well. The reader never
+      // told us when they began, and stamping today would put the start after the
+      // end — which every statistic reads as a book finished before it was opened.
       ...datesAfterStatusChange(
-        { status: 'to-read', startedAt: undefined, finishedAt: undefined },
+        { status: 'to-read', startedAt: input.finishedAt, finishedAt: input.finishedAt },
         input.status ?? 'to-read',
         now,
       ),

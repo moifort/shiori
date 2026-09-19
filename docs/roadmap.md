@@ -11,8 +11,9 @@ are recorded here so their constraints are not forgotten while the foundation is
 | 2 | Series: shared catalogue, library grouping, series screen, related works | **specified** |
 | 3 | Sharing a library with other people, `hidden` books excluded | planned |
 | 4 | Release alerts for forthcoming volumes | planned |
-| 5 | Kindle import | planned |
-| 6 | AI reading suggestions | planned |
+| 5 | Audible import | **built** |
+| 6 | Kindle import | planned |
+| 7 | AI reading suggestions | planned |
 
 ## Batch 3 — Sharing
 
@@ -31,14 +32,38 @@ quality — publication dates are unreliable outside Google Books and Open Libra
 It depends on batch 2: a forthcoming volume is already an identified row in the series
 catalogue, which is what an alert attaches to.
 
-## Batch 5 — Kindle import
+## Batch 5 — Audible import
+
+Built. Audible, unlike Kindle, does have an API — the one its own iOS app talks to — and
+[audible-api-ts](https://github.com/moifort/audible-api-ts) speaks it. The reader signs in to
+Amazon once in a web view, the device is registered over PKCE, and the whole library comes back
+with covers, sagas, listening progress and summaries. No model is called, so an import costs no
+scan.
+
+Three decisions worth keeping:
+
+- **The credentials are sealed at rest.** A refresh token plus a device private key is a
+  standing grant on somebody's Amazon account — the one secret Shiori holds that is dangerous
+  away from Shiori. They are encrypted with a key kept in Secret Manager, so a Firestore export
+  on its own is inert, and they go with the account on deletion.
+- **The import proposes, the reader disposes.** `audibleLibrary` saves nothing, exactly as
+  `scanBook` saves nothing. The app lists the titles, the reader ticks them, and
+  `importAudibleBooks` re-reads the library from Amazon rather than trusting the client: the
+  client sends identifiers, every stored field comes from the source.
+- **A duplicate is caught on the text, not on an identifier.** The match is title plus first
+  author, folded the way series keys are folded, so a book scanned from the printed edition is
+  recognized too — which an ASIN stored on the record would never have caught.
+
+## Batch 6 — Kindle import
 
 **This is an import, not a live sync.** Amazon publishes no Kindle library API, and the
 Goodreads API has been closed since 2020. The realistic paths are the Amazon GDPR data export
 ("Request my data", a CSV) or manual entry. Scraping `read.amazon.com` would require the
-user's Amazon credentials and is not an option.
+user's Amazon credentials and is not an option. Note that the Audible connection of batch 5
+does NOT help here: it authenticates against Audible's own API, which knows nothing about
+Kindle.
 
-## Batch 6 — AI reading suggestions
+## Batch 7 — AI reading suggestions
 
 Suggestions drawn from followed series and highly rated books. Depends on accumulated signal,
 so it comes last. Batch 2 already delivers the zero-cost half of it: the recommendations

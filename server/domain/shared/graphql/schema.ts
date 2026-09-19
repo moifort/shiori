@@ -49,6 +49,13 @@ import '~/domain/quota/infrastructure/graphql/queries'
 import '~/domain/scan/infrastructure/graphql/types'
 import '~/domain/scan/infrastructure/graphql/mutations'
 
+// Audible (importing the reader's audiobook library). After book and series:
+// its importable book borrows their scalars and the ReadingStatus enum.
+import '~/domain/audible/infrastructure/graphql/enums'
+import '~/domain/audible/infrastructure/graphql/types'
+import '~/domain/audible/infrastructure/graphql/queries'
+import '~/domain/audible/infrastructure/graphql/mutations'
+
 // Changelog (application release notes)
 import '~/domain/changelog/infrastructure/graphql/types'
 import '~/domain/changelog/infrastructure/graphql/queries'

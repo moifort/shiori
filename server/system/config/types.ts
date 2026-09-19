@@ -18,6 +18,9 @@ export type AscVendorNumber = Brand<string, 'AscVendorNumber'>
 export type GcpBillingTable = Brand<string, 'GcpBillingTable'>
 /** The private bucket holding book cover attachments, e.g. `shiori-polyforms-attachments`. */
 export type AttachmentsBucket = Brand<string, 'AttachmentsBucket'>
+/** The 256-bit key, base64-encoded, the Audible device credentials are sealed
+ *  with before they reach Firestore. */
+export type AudibleKey = Brand<string, 'AudibleKey'>
 /** Development only: the origin this server is reachable at, used to address the
  *  local object store from the simulator. */
 export type PublicBaseUrl = Brand<string, 'PublicBaseUrl'>

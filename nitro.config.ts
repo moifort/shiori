@@ -54,6 +54,9 @@ export default defineNitroConfig({
     ascVendorNumber: '',
     gcpBillingTable: '',
     attachmentsBucket: '',
+    // Seals the Amazon device credentials an Audible connection is made of, so a
+    // Firestore export does not hand out standing access to readers' accounts.
+    audibleKey: '',
     // Dev only: the origin the local object store points its URLs at, so the
     // simulator downloads an attachment from the same server it queried.
     publicBaseUrl: 'http://127.0.0.1:3000',

@@ -2,6 +2,7 @@ import SchemaBuilder from '@pothos/core'
 import { GraphQLScalarType } from 'graphql'
 import type { H3Event } from 'h3'
 import type { TimeZone } from '~/domain/analytics/types'
+import type { AudibleAsin } from '~/domain/audible/types'
 import type {
   BookId,
   CoverUrl,
@@ -73,6 +74,7 @@ export const builder = new SchemaBuilder<{
     Percentage: { Input: Percentage; Output: Percentage }
     CoverUrl: { Input: CoverUrl; Output: CoverUrl | SignedUrl }
     TimeZone: { Input: TimeZone; Output: TimeZone }
+    AudibleAsin: { Input: AudibleAsin; Output: AudibleAsin }
   }
 }>({
   defaultFieldNullability: false,

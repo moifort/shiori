@@ -29,6 +29,7 @@ import type { Series, Volume } from '~/domain/series/types'
 import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
 import { config } from '~/system/config'
 import { createLogger } from '~/system/logger'
+import { isPresent, optionally as optional } from '~/utils/input'
 
 const logger = createLogger('scan')
 
@@ -249,19 +250,4 @@ export namespace Scan {
 
   const parsedAuthors = (raw: string[] | undefined): ScanResult['authors'] =>
     (raw ?? []).map((author) => optional(author, AuthorName)).filter(isPresent)
-
-  /** Runs a branded constructor over a value the model may have made up, and
-   *  drops it if it does not validate. The whole point of the brands is that a
-   *  hallucinated ISBN or a page count of 0 never reaches the database — and a
-   *  single bad field must not sink an otherwise good scan. */
-  const optional = <T>(value: unknown, construct: (value: unknown) => T): T | undefined => {
-    if (value === null || value === undefined || value === '') return undefined
-    try {
-      return construct(value)
-    } catch {
-      return undefined
-    }
-  }
-
-  const isPresent = <T>(value: T | undefined): value is T => value !== undefined
 }

@@ -10,6 +10,11 @@ the release tag is pushed.
 
 ## Unreleased
 
+- An Audible library can be imported into Shiori. Connect the Amazon account once from
+  Settings, pick the marketplace, and the whole library is listed with its covers, sagas and
+  listening progress; tick the titles to catalogue and they land as audiobooks, finished ones
+  keeping the date they were actually finished. Titles already in the library are shown
+  already ticked off, so importing twice creates no duplicates. An import costs no scan.
 - While a scan runs, the waiting screen shows the photo just taken framed as a book cover,
   swept top to bottom by a beam of light, instead of a generic loader.
 - A scan no longer fails after a minute when the models are slow to answer, and an analysis

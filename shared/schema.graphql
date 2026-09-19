@@ -1,4 +1,87 @@
 """
+The reader's live link to Audible.
+
+The credentials themselves never leave the server. Disconnecting forgets our copy of them; the device stays registered on the Amazon side until the reader removes it there.
+"""
+type AudibleAccount {
+  connectedAt: DateTime!
+
+  """Null until the first import."""
+  lastImportedAt: DateTime
+  marketplace: AudibleMarketplace!
+}
+
+"""
+Amazon's identifier for one audiobook: ten upper-case alphanumeric characters.
+
+Handed out by `audibleLibrary` and passed straight back to `importAudibleBooks` to say which titles to catalogue. Example: "B002V1OF70".
+"""
+scalar AudibleAsin
+
+"""
+A cookie to plant in the web view before loading the sign-in page.
+
+They are what makes the request look like the Audible iOS app. Without them Amazon challenges the sign-in far more often, so they are not optional garnish.
+"""
+type AudibleCookie {
+  domain: String!
+  name: String!
+  value: String!
+}
+
+"""
+Everything needed to run the Amazon sign-in in a web view.
+
+Plant the cookies, load `url`, and watch navigation for `redirectUrl`: it carries the authorization code as the `openid.oa2.authorization_code` query parameter. Hand that code to `completeAudibleLogin` and close the view. The sign-in is good for thirty minutes.
+"""
+type AudibleLogin {
+  cookies: [AudibleCookie!]!
+
+  """The landing URL whose query string carries the authorization code."""
+  redirectUrl: String!
+
+  """The Amazon sign-in page to load."""
+  url: String!
+}
+
+"""
+The Amazon store an Audible account was opened on.
+
+It decides which domain the sign-in page and the API live on, so a connection made on the wrong one simply finds an empty library. The reader picks it once, when connecting.
+"""
+enum AudibleMarketplace {
+  """audible.ca"""
+  CA
+
+  """audible.com (United States)"""
+  COM
+
+  """audible.com.au"""
+  COM_AU
+
+  """audible.co.jp"""
+  CO_JP
+
+  """audible.co.uk"""
+  CO_UK
+
+  """audible.de"""
+  DE
+
+  """audible.es"""
+  ES
+
+  """audible.fr"""
+  FR
+
+  """audible.in"""
+  IN
+
+  """audible.it"""
+  IT
+}
+
+"""
 An author name as printed, 1 to 200 characters. Example: "Patrick Rothfuss".
 """
 scalar AuthorName
@@ -299,6 +382,48 @@ type GenreCount {
 }
 
 """
+One audiobook of the Audible library, as it would be catalogued.
+
+A proposal, not a record — the same contract `scanBook` has. Nothing is saved until `importAudibleBooks` is called with the ASINs the reader ticked. Every imported book is catalogued as an `AUDIOBOOK`.
+"""
+type ImportableBook {
+  """
+  True when a book with the same title and author is already catalogued — whether it was imported before or scanned from the printed edition. Leave these unticked: `importAudibleBooks` skips them anyway.
+  """
+  alreadyInLibrary: Boolean!
+
+  """Pass this back to `importAudibleBooks` to catalogue the title."""
+  asin: AudibleAsin!
+  authors: [AuthorName!]!
+  coverUrl: CoverUrl
+
+  """Audible's running time. Not kept on the book, which counts pages."""
+  durationMinutes: Int
+
+  """
+  When the listening ended, kept on the imported book so a decade of listening does not land on today and rewrite the reading statistics.
+  """
+  finishedAt: DateTime
+
+  """
+  Who reads it. Shown in the picker to tell two recordings apart; not kept on the book, which has no narrator.
+  """
+  narrators: [String!]!
+
+  """Null for a standalone title."""
+  seriesName: SeriesName
+
+  """
+  Where Audible says the reader stands: finished is `READ`, started is `READING`, an untouched purchase lands on the pile.
+  """
+  status: ReadingStatus!
+  title: BookTitle!
+
+  """Null outside a numbered spine — Audible numbers side stories 4.5."""
+  volume: VolumeNumber
+}
+
+"""
 A 13-digit ISBN, hyphens and spaces removed, validated on its check digit.
 
 The check digit is enforced rather than assumed: models invent ISBNs that look right, and a wrong one silently poisons every later lookup. Example: "9780756404741".
@@ -369,6 +494,18 @@ type Mutation {
   addBook(input: NewBookInput!): Book!
 
   """
+  Register the device with the authorization code the web view caught, and link the account.
+  
+  The credentials are sealed before they reach storage and never leave the server. Fails with `AUDIBLE_NO_PENDING_LOGIN` when no sign-in was started, `AUDIBLE_LOGIN_EXPIRED` past the thirty-minute window — start over in both cases — and `AUDIBLE_UNAVAILABLE` when Amazon refuses the registration.
+  """
+  completeAudibleLogin(
+    """
+    The `openid.oa2.authorization_code` query parameter of the landing URL.
+    """
+    authorizationCode: String!
+  ): AudibleAccount!
+
+  """
   Finish onboarding: save the profile and grant the welcome scans.
   
   Returns the updated `Me`, with `onboardingCompleted` now true. The welcome scans are granted only on the first call for an account: the mutation stays reachable afterwards so a reader can change the name they are addressed by, and re-granting there would make a one-off gift renewable.
@@ -389,6 +526,25 @@ type Mutation {
   Remove a book from the library for good. Returns true when it was there.
   """
   deleteBook(id: BookId!): Boolean!
+
+  """
+  Forget the Audible connection. Books already imported stay in the library.
+  
+  Only our copy of the credentials goes: the device stays registered on the Amazon side until the reader removes it from their account there. Returns false when there was nothing to disconnect.
+  """
+  disconnectAudible: Boolean!
+
+  """
+  Catalogue the Audible titles the reader ticked, and return the books created.
+  
+  The library is read again from Amazon rather than trusted from the app: the client sends identifiers, every stored field comes from the source. An ASIN the library does not hold matches nothing, and a title already catalogued is skipped — so calling this twice with the same list creates no duplicates.
+  
+  Consumes no scan credit: an import calls no model. Fails with `AUDIBLE_NOT_CONNECTED` and `AUDIBLE_UNAVAILABLE` like `audibleLibrary`.
+  """
+  importAudibleBooks(
+    """The ASINs to catalogue, from `audibleLibrary`."""
+    asins: [AudibleAsin!]!
+  ): [Book!]!
 
   """
   Give a book one to five stars. Rating marks it as read: the reader is saying they finished it, and leaving it on the pile would make every filter lie.
@@ -426,6 +582,18 @@ type Mutation {
   Move a book along the pile. The reading dates follow from the move and are never typed: going back to TO_READ clears them.
   """
   setReadingStatus(id: BookId!, status: ReadingStatus!): Book!
+
+  """
+  Open an Amazon sign-in for the given marketplace.
+  
+  The exchange is PKCE and its secret half stays on the server: the app gets the page to show, the cookies to plant first and the redirect to watch for. Hand the authorization code that redirect carries to `completeAudibleLogin` within thirty minutes.
+  
+  An existing connection is left working until the new sign-in completes, so a reader who changes their mind is not disconnected.
+  """
+  startAudibleLogin(
+    """The Amazon store the reader buys audiobooks on."""
+    marketplace: AudibleMarketplace!
+  ): AudibleLogin!
 
   """
   Hand over a transaction the App Store signed: after a purchase, after a restore, and on every launch while a subscription is running.
@@ -530,6 +698,22 @@ The publisher of this edition, 1 to 200 characters. Example: "DAW Books".
 scalar Publisher
 
 type Query {
+  """
+  The reader's Audible connection, or null when there is none.
+  
+  A sign-in left half-finished reads as null: the settings screen must offer to connect, not claim an account no credentials back.
+  """
+  audibleAccount: AudibleAccount
+
+  """
+  The whole Audible library, as books the reader could catalogue.
+  
+  Nothing is saved and no AI runs, so this costs no scan credit. Every title is returned, including those already catalogued — they come back with `alreadyInLibrary` set so the picker can leave them unticked rather than hide them.
+  
+  Fails with `AUDIBLE_NOT_CONNECTED` when no account is linked, and `AUDIBLE_UNAVAILABLE` when Amazon refuses the call — a revoked device or a changed password lands here, and the fix is to connect again.
+  """
+  audibleLibrary: [ImportableBook!]!
+
   """One book of the reader library. Null when they do not own it."""
   book(id: BookId!): Book
 

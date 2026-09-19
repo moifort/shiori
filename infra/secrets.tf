@@ -4,6 +4,13 @@ resource "random_password" "admin_token" {
   special = false
 }
 
+# The key the Audible device credentials are sealed with before they reach
+# Firestore. Generated once and kept in state: rotating it makes every stored
+# connection unreadable, so readers would have to reconnect their account.
+resource "random_id" "audible_key" {
+  byte_length = 32
+}
+
 locals {
   admin_token_value = var.admin_token != null ? var.admin_token : random_password.admin_token[0].result
 
@@ -15,6 +22,7 @@ locals {
     admin-token     = local.admin_token_value
     sentry-dsn      = var.sentry_dsn
     asc-private-key = local.asc_private_key_value
+    audible-key     = random_id.audible_key.b64_std
   }
 
   # Secret Manager rejects empty payloads, so we drive iteration off a
@@ -25,6 +33,7 @@ locals {
   secret_ids = toset(compact([
     "google-api-key",
     "admin-token",
+    "audible-key",
     nonsensitive(var.sentry_dsn) != "" ? "sentry-dsn" : "",
     local.asc_private_key_value != "" ? "asc-private-key" : "",
   ]))

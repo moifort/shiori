@@ -7,6 +7,7 @@ import {
   AscPrivateKey,
   AscVendorNumber,
   AttachmentsBucket,
+  AudibleKey,
   GcpBillingTable,
   GoogleApiKey,
   PremiumUserIds,
@@ -45,6 +46,7 @@ export const config = () => {
     attachmentsBucket: runtimeConfig.attachmentsBucket
       ? AttachmentsBucket(runtimeConfig.attachmentsBucket)
       : undefined,
+    audibleKey: runtimeConfig.audibleKey ? AudibleKey(runtimeConfig.audibleKey) : undefined,
     publicBaseUrl: PublicBaseUrl(runtimeConfig.publicBaseUrl),
   }
 }

@@ -11,6 +11,7 @@ import type {
   AscPrivateKey as AscPrivateKeyType,
   AscVendorNumber as AscVendorNumberType,
   AttachmentsBucket as AttachmentsBucketType,
+  AudibleKey as AudibleKeyType,
   GcpBillingTable as GcpBillingTableType,
   GoogleApiKey as GoogleApiKeyType,
   PublicBaseUrl as PublicBaseUrlType,
@@ -103,6 +104,20 @@ export const PremiumUserIds = (value: unknown): UserIdType[] =>
 export const AttachmentsBucket = (value: unknown) => {
   const v = z.string().min(1).parse(value)
   return make<AttachmentsBucketType>()(v)
+}
+
+// The key the Audible device credentials are sealed with. Checked for length
+// here rather than at the first decryption: a truncated key set by hand must
+// fail at boot, not the first time a reader connects their account.
+export const AudibleKey = (value: unknown) => {
+  const v = z
+    .string()
+    .refine(
+      (key) => Buffer.from(key, 'base64').length === 32,
+      'audible key must be 32 bytes, base64-encoded',
+    )
+    .parse(value)
+  return make<AudibleKeyType>()(v)
 }
 
 export const PublicBaseUrl = (value: unknown) => {

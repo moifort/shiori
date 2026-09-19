@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql'
 import { ZodError } from 'zod'
 import { TimeZone } from '~/domain/analytics/primitives'
+import { AudibleAsin } from '~/domain/audible/primitives'
 import {
   BookId,
   CoverUrl,
@@ -218,4 +219,14 @@ builder.scalarType('TimeZone', {
     'Reading statistics count days, months and years in it.',
   serialize: (value) => value as string,
   parseValue: validatedParse('TimeZone', TimeZone),
+})
+
+builder.scalarType('AudibleAsin', {
+  description:
+    "Amazon's identifier for one audiobook: ten upper-case alphanumeric " +
+    'characters.\n\n' +
+    'Handed out by `audibleLibrary` and passed straight back to ' +
+    '`importAudibleBooks` to say which titles to catalogue. Example: "B002V1OF70".',
+  serialize: (value) => value as string,
+  parseValue: validatedParse('AudibleAsin', AudibleAsin),
 })

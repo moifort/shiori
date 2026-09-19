@@ -1,0 +1,272 @@
+import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { randomBytes } from 'node:crypto'
+import type { AudibleItem } from 'audible-api-ts'
+import type { AudibleAsin } from '~/domain/audible/types'
+import type { UserId } from '~/domain/shared/types'
+import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
+
+mock.module('~/system/firebase', () => ({ db: fakeDb }))
+// One key for the whole file: config() is read on every seal and every open, and
+// a fresh key per call would make a sealed value unreadable a line later.
+const audibleKey = randomBytes(32).toString('base64')
+mock.module('~/system/config', () => ({ config: () => ({ audibleKey }) }))
+
+/** What Amazon would answer, and what it was handed. `libraryCalls` is how the
+ *  read budget against a third party is asserted: an import must make one trip,
+ *  not one per title. */
+let items: AudibleItem[] = []
+const libraryCalls: unknown[] = []
+
+mock.module('~/domain/audible/infrastructure/audible-api', () => ({
+  login: async (marketplace: string) => ({
+    loginUrl: `https://www.amazon.${marketplace}/ap/signin`,
+    session: { codeVerifier: 'verifier-1', serial: 'SERIAL1', marketplace, createdAt: NOW },
+    cookies: [],
+  }),
+  register: async () => ({
+    accessToken: 'access-1',
+    refreshToken: 'Atnr|the-refresh-token',
+    adpToken: '{enc:token}',
+    devicePrivateKey: 'key',
+    serial: 'SERIAL1',
+    locale: 'fr',
+    expiresAt: new Date('2026-09-19T11:00:00.000Z'),
+  }),
+  // Answers with a rotated access token, as the real client does once it has
+  // refreshed an expired one.
+  library: async (credentials: unknown) => {
+    libraryCalls.push(credentials)
+    return {
+      items,
+      credentials: {
+        accessToken: 'access-2',
+        refreshToken: 'Atnr|the-refresh-token',
+        adpToken: '{enc:token}',
+        devicePrivateKey: 'key',
+        serial: 'SERIAL1',
+        locale: 'fr',
+        expiresAt: new Date('2026-09-19T12:00:00.000Z'),
+      },
+    }
+  },
+  landingUrlOf: (marketplace: string) => `https://www.amazon.${marketplace}/ap/maplanding`,
+}))
+
+const { AudibleCommand } = await import('~/domain/audible/command')
+const { AudibleUseCase } = await import('~/domain/audible/use-case')
+const { AudibleQuery } = await import('~/domain/audible/query')
+const { BookQuery } = await import('~/domain/book/query')
+const { BookCommand } = await import('~/domain/book/command')
+const { BookTitle, AuthorName } = await import('~/domain/shared/primitives')
+
+const reader = 'reader-1' as UserId
+const NOW = new Date('2026-09-19T10:00:00.000Z')
+
+const anItem = (overrides: Partial<AudibleItem> = {}): AudibleItem =>
+  ({
+    asin: 'B002V1OF70',
+    title: 'Le Nom du vent',
+    authors: ['Patrick Rothfuss'],
+    narrators: ['Bernard Gabay'],
+    durationMinutes: 1770,
+    categories: [],
+    keywords: [],
+    relationships: [],
+    isAdultProduct: false,
+    productImages: {},
+    socialMediaImages: {},
+    ...overrides,
+  }) as AudibleItem
+
+const asin = (value: string) => value as AudibleAsin
+
+let fake = resetFakeFirestore()
+
+beforeEach(() => {
+  fake = resetFakeFirestore()
+  items = []
+  libraryCalls.length = 0
+})
+
+const connect = async () => {
+  await AudibleCommand.startLogin(reader, 'fr', NOW)
+  await AudibleCommand.completeLogin(reader, 'the-code', NOW)
+}
+
+describe('listing what could be imported', () => {
+  test('says so when no account is connected', async () => {
+    expect(await AudibleUseCase.importableBooks(reader)).toBe('not-connected')
+    expect(libraryCalls).toHaveLength(0)
+  })
+
+  test('proposes the library without saving anything', async () => {
+    await connect()
+    items = [anItem(), anItem({ asin: 'B00X57B4KE', title: 'La Peur du sage' })]
+
+    const importable = await AudibleUseCase.importableBooks(reader)
+
+    expect(importable).toHaveLength(2)
+    expect(await BookQuery.all(reader)).toHaveLength(0)
+  })
+
+  // A title the reader already has is returned rather than hidden: the picker
+  // shows it ticked off, which reads as "we know" instead of "we lost one".
+  test('marks a title the reader already has', async () => {
+    await connect()
+    await BookCommand.add(reader, {
+      title: BookTitle('Le Nom du vent'),
+      authors: [AuthorName('Patrick Rothfuss')],
+    })
+    items = [anItem(), anItem({ asin: 'B00X57B4KE', title: 'La Peur du sage' })]
+
+    const importable = await AudibleUseCase.importableBooks(reader)
+
+    if (importable === 'not-connected') throw new Error('unreachable')
+    expect(importable.map((book) => [String(book.title), book.alreadyInLibrary])).toEqual([
+      ['Le Nom du vent', true],
+      ['La Peur du sage', false],
+    ])
+  })
+
+  test('skips a row with nothing to catalogue rather than failing the list', async () => {
+    await connect()
+    items = [anItem({ title: '' }), anItem({ asin: 'B00X57B4KE', title: 'La Peur du sage' })]
+
+    const importable = await AudibleUseCase.importableBooks(reader)
+
+    expect(importable).toHaveLength(1)
+  })
+})
+
+describe('importing the ticked titles', () => {
+  test('catalogues only what was ticked', async () => {
+    await connect()
+    items = [anItem(), anItem({ asin: 'B00X57B4KE', title: 'La Peur du sage' })]
+
+    const imported = await AudibleUseCase.importBooks(reader, [asin('B00X57B4KE')])
+
+    expect(imported).toHaveLength(1)
+    expect((await BookQuery.all(reader)).map((book) => String(book.title))).toEqual([
+      'La Peur du sage',
+    ])
+  })
+
+  test('catalogues them as audiobooks, with what Audible knows', async () => {
+    await connect()
+    items = [
+      anItem({
+        publisher: 'Audiolib',
+        series: { name: 'Chronique du tueur de roi', position: 1 },
+        listeningStatus: { isFinished: true, finishedAt: new Date('2022-04-01T00:00:00.000Z') },
+      }),
+    ]
+
+    await AudibleUseCase.importBooks(reader, [asin('B002V1OF70')])
+
+    const [book] = await BookQuery.all(reader)
+    expect(book).toMatchObject({
+      title: 'Le Nom du vent',
+      format: 'audiobook',
+      publisher: 'Audiolib',
+      status: 'read',
+      finishedAt: new Date('2022-04-01T00:00:00.000Z'),
+      series: { id: 'chronique-du-tueur-de-roi--patrick-rothfuss', volume: 1, kind: 'main' },
+    })
+  })
+
+  // Importing a decade of listening must not date every title today: the
+  // dashboard counts what was finished this month, and it would count all of it.
+  test('never stamps a start later than the finish it was given', async () => {
+    await connect()
+    items = [
+      anItem({
+        listeningStatus: { isFinished: true, finishedAt: new Date('2022-04-01T00:00:00.000Z') },
+      }),
+    ]
+
+    await AudibleUseCase.importBooks(reader, [asin('B002V1OF70')])
+
+    const [book] = await BookQuery.all(reader)
+    expect(book?.startedAt).toEqual(new Date('2022-04-01T00:00:00.000Z'))
+  })
+
+  // The client sends identifiers, every stored field comes from the source. An
+  // identifier the reader's library does not hold must simply match nothing.
+  test('ignores an identifier the library does not hold', async () => {
+    await connect()
+    items = [anItem()]
+
+    const imported = await AudibleUseCase.importBooks(reader, [asin('B0000000ZZ')])
+
+    expect(imported).toHaveLength(0)
+    expect(await BookQuery.all(reader)).toHaveLength(0)
+  })
+
+  test('creates no duplicate when the same import is run twice', async () => {
+    await connect()
+    items = [anItem()]
+
+    await AudibleUseCase.importBooks(reader, [asin('B002V1OF70')])
+    const second = await AudibleUseCase.importBooks(reader, [asin('B002V1OF70')])
+
+    expect(second).toHaveLength(0)
+    expect(await BookQuery.all(reader)).toHaveLength(1)
+  })
+
+  test('says so when no account is connected, and writes nothing', async () => {
+    expect(await AudibleUseCase.importBooks(reader, [asin('B002V1OF70')])).toBe('not-connected')
+    expect(await BookQuery.all(reader)).toHaveLength(0)
+  })
+
+  test('reads the Audible library once, whatever the number of titles', async () => {
+    await connect()
+    items = Array.from({ length: 30 }, (_, index) =>
+      anItem({ asin: `B00000${String(index).padStart(4, '0')}`, title: `Title ${index}` }),
+    )
+
+    await AudibleUseCase.importBooks(
+      reader,
+      items.map((item) => asin(item.asin)),
+    )
+
+    expect(libraryCalls).toHaveLength(1)
+    expect(await BookQuery.all(reader)).toHaveLength(30)
+  })
+
+  test('notes when the library was last imported', async () => {
+    await connect()
+    items = [anItem()]
+
+    await AudibleUseCase.importBooks(reader, [asin('B002V1OF70')])
+
+    expect((await AudibleQuery.accountOf(reader))?.lastImportedAt).toBeInstanceOf(Date)
+  })
+
+  // The access token is short-lived and the client refreshes it on its own. Not
+  // keeping what came back means paying for that refresh on every import.
+  test('keeps the credentials the client rotated, still sealed', async () => {
+    await connect()
+    items = [anItem()]
+
+    await AudibleUseCase.importBooks(reader, [asin('B002V1OF70')])
+    await AudibleUseCase.importableBooks(reader)
+
+    expect(libraryCalls[1]).toMatchObject({ accessToken: 'access-2' })
+    expect(JSON.stringify(fake.data('audible-connections', reader))).not.toContain('access-2')
+  })
+
+  // The dashboard is derived data. It must never look fresh over books it does
+  // not count, so it is marked stale before the first one lands.
+  test('leaves the dashboard counting the imported books', async () => {
+    await connect()
+    items = [
+      anItem({
+        listeningStatus: { isFinished: true, finishedAt: new Date('2026-09-01T00:00:00.000Z') },
+      }),
+    ]
+
+    await AudibleUseCase.importBooks(reader, [asin('B002V1OF70')])
+
+    expect(fake.data('analytics', reader)).toMatchObject({ stale: false })
+  })
+})

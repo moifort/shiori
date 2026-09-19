@@ -1,4 +1,5 @@
 import { AnalyticsCommand } from '~/domain/analytics/command'
+import { AudibleCommand } from '~/domain/audible/command'
 import { coverPrefixOf } from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
 import { EntitlementCommand } from '~/domain/entitlement/command'
@@ -34,7 +35,10 @@ export namespace UserUseCase {
   //  1. Wipe every per-user collection in parallel, the analytics view
   //     included; they are independent. This
   //     forgets our entitlement record but does NOT cancel the App Store
-  //     subscription — Apple owns that lifecycle, and the app says so.
+  //     subscription — Apple owns that lifecycle, and the app says so. The
+  //     Audible connection goes the same way: the sealed device credentials are
+  //     dropped here, and the device stays registered on the Amazon side until
+  //     the reader removes it from their Amazon account.
   //  2. Delete the cover images, which live in the bucket rather than Firestore
   //     and would otherwise survive the account that paid to scan them.
   //  3. Drop the profile.
@@ -51,6 +55,7 @@ export namespace UserUseCase {
       AnalyticsCommand.deleteForUser(userId),
       EntitlementCommand.deleteForUser(userId),
       QuotaCommand.deleteAllForUser(userId),
+      AudibleCommand.deleteForUser(userId),
     ])
     await objectStore().removeByPrefix(coverPrefixOf(userId))
     await UserCommand.deleteProfile(userId)

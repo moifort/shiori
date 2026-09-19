@@ -4,6 +4,12 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- La bibliothèque Audible peut être importée dans Shiori. On connecte le compte Amazon une
+  fois depuis les réglages, on choisit la boutique, et toute la bibliothèque s’affiche avec ses
+  couvertures, ses séries et l’avancement d’écoute ; les titres cochés sont catalogués comme
+  livres audio, ceux terminés gardant la date à laquelle ils l’ont été. Les titres déjà
+  présents sont signalés comme tels, et un second import ne crée aucun doublon. Un import ne
+  coûte aucun scan.
 - Pendant un scan, l’écran d’attente montre la photo qui vient d’être prise, cadrée comme une
   couverture et balayée de haut en bas par un faisceau lumineux, à la place d’un chargement
   générique.

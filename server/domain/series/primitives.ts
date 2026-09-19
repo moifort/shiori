@@ -8,6 +8,7 @@ import type {
   VolumeNumber as VolumeNumberType,
 } from '~/domain/series/types'
 import { VOLUME_KINDS } from '~/domain/series/types'
+import { slugify } from '~/utils/slug'
 
 export { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
 
@@ -49,17 +50,3 @@ export const VolumeKindValue = (value: unknown): VolumeKind => z.enum(VOLUME_KIN
 // titles do ("Chronicles", "The Saga").
 export const seriesKeyOf = (name: string, author: string): SeriesIdType =>
   SeriesId(`${slugify(name)}--${slugify(author)}`)
-
-const LEADING_ARTICLES = /^(the|a|an|le|la|les|l|un|une|des|du|de)[\s-]+/
-
-const slugify = (value: string) =>
-  value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/['’]/g, ' ')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim()
-    .replace(LEADING_ARTICLES, '')
-    .trim()
-    .replace(/\s+/g, '-')
