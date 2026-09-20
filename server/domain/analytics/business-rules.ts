@@ -21,7 +21,7 @@ import type { LocalDate as LocalDateValue } from './types'
 
 /** How many years the books chart shows, always: past six bars they stop being
  *  readable on a phone, and fewer leaves one wide bar for a reader's first year. */
-const YEARS_SHOWN = 6
+const YEARS_SHOWN = 9
 const READING_SHOWN = 10
 const SUGGESTIONS_SHOWN = 6
 const SERIES_SHOWN = 3
@@ -196,9 +196,11 @@ export const dashboardOf = (view: AnalyticsView, today: LocalDateValue): Dashboa
   }
 }
 
-/** Books finished per year over the last six years, this one included, empty
- *  years at zero. Always six bars: a reader's first year alone would be one wide
- *  bar, and the empty years beside it show where the chart is going. */
+/** Books finished per year over the last nine years, this one included, empty
+ *  years at zero. Always nine bars: a reader's first year alone would be one wide
+ *  bar, and the empty years beside it show where the chart is going. Nine rather
+ *  than a handful because the card is as wide either way, and six bars left it
+ *  looking half empty. */
 export const booksPerYearOf = (finishes: readonly Finish[], currentYear: number): YearCount[] => {
   const counts = new Map<number, number>()
   for (const finish of finishes) {

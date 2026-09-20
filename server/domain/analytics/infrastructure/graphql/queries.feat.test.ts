@@ -52,6 +52,9 @@ describe('the dashboard through the API', () => {
     const year = new Date().getFullYear()
     expect(result.data?.dashboard).toEqual({
       booksPerYear: [
+        { year: year - 8, count: 0 },
+        { year: year - 7, count: 0 },
+        { year: year - 6, count: 0 },
         { year: year - 5, count: 0 },
         { year: year - 4, count: 0 },
         { year: year - 3, count: 0 },
