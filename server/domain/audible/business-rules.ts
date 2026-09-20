@@ -1,4 +1,5 @@
 import type { AudibleItem } from 'audible-api-ts'
+import { genreFrom } from '~/domain/audible/genre-mapping'
 import { AudibleAsin } from '~/domain/audible/primitives'
 import type {
   AudibleAsin as AudibleAsinValue,
@@ -61,6 +62,7 @@ export const importableFrom = (
     // guess here would split a saga's shelves on a value nothing established.
     language: optionally(languageCodeOf(item.language), BookLanguageValue),
     coverUrl: optionally(largestCoverOf(item), CoverUrl),
+    genre: genreFrom(item),
     series: seriesMembershipOf(item, authors),
     status,
     // Only a finished book has a finishing date to keep. A part-listened title
@@ -77,10 +79,10 @@ export const importableFrom = (
  *  out, and the field means the year the work first appeared — filling one with
  *  the other would date "Dune" to 2018 and say so on the book screen.
  *
- *  No `genre` either. Audible's category ladders are localized per marketplace,
- *  so mapping them onto the closed genre list would need ten translations of it
- *  and would still drift; the reader picks a genre on the book screen, as they do
- *  for a book typed by hand.
+ *  The genre is Audible's own shelf, read off the category ladder by id rather
+ *  than by name — see `genre-mapping.ts` for why that distinction is the whole
+ *  trick. It is absent for a marketplace whose ids are unknown, and the reader
+ *  then picks one on the book screen as they do for a book typed by hand.
  *
  *  The running time is kept, though: it is the only source there is for it, and
  *  the dashboard counts hours listened the way it counts pages read. So are the
@@ -93,6 +95,7 @@ export const bookFrom = (importable: ImportableBook): NewBook => ({
   synopsis: importable.synopsis,
   isbn13: importable.isbn13,
   publishedCoverUrl: importable.coverUrl,
+  genre: importable.genre,
   series: importable.series,
   status: importable.status,
   language: importable.language,

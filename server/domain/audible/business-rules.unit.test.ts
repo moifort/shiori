@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { AudibleItem } from 'audible-api-ts'
+import { resolveGenreId } from 'audible-api-ts'
 import {
   audibleLinksFor,
   bookFrom,
@@ -176,6 +177,34 @@ describe('who a title is credited to', () => {
     )
 
     expect(importable?.alreadyInLibrary).toBe(true)
+  })
+})
+
+describe('the shelf a title is filed under', () => {
+  test("carries Audible's shelf onto the book as a Shiori genre", () => {
+    const importable = importableFrom(
+      anItem({
+        categories: [
+          {
+            root: 'Genres',
+            categories: [{ id: resolveGenreId('fantasy', 'fr'), name: 'Fantasy' }],
+          },
+        ],
+      }),
+      noneOwned,
+    )
+
+    if (!importable) throw new Error('unreachable')
+    expect(bookFrom(importable).genre).toBe('fantasy')
+  })
+
+  // The reader then picks one on the book screen, as they do for a book typed in
+  // by hand. Better no genre than a wrong one.
+  test('leaves the genre empty when the shelf means nothing here', () => {
+    const importable = importableFrom(anItem(), noneOwned)
+
+    if (!importable) throw new Error('unreachable')
+    expect(bookFrom(importable).genre).toBeUndefined()
   })
 })
 

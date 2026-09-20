@@ -2,6 +2,7 @@ import type { Brand } from 'ts-brand'
 import type {
   BookLanguage,
   CoverUrl,
+  Genre,
   Isbn13,
   ListeningMinutes,
   NarratorName,
@@ -134,6 +135,10 @@ export type ImportableBook = {
    *  a language the closed list does not carry. */
   language?: BookLanguage
   coverUrl?: CoverUrl
+  /** The shelf Audible files it under, mapped onto Shiori's closed list. Absent
+   *  on a marketplace whose category ids are unknown, and for a shelf Shiori has
+   *  no word for — an audience or a theme is not a genre. */
+  genre?: Genre
   series?: SeriesMembership
   status: ReadingStatus
   /** When Audible says the listening ended. Carried onto the book so importing a
