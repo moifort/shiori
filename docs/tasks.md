@@ -11,6 +11,8 @@ schema, a domain command, or several screens at once; **large** brings in a new 
 
 ## Small
 
+- [ ] **Every CTA that runs an async call or a network request shows a loader** after the
+      tap, until the call settles.
 - [ ] **Library list, heart or stars, never both.** If the book or series is a favourite, show
       the heart only; otherwise show the star rating.
 - [ ] **Library list, series section header:** the rating or the heart is right-aligned, on
@@ -30,9 +32,6 @@ schema, a domain command, or several screens at once; **large** brings in a new 
 
 ## Medium
 
-- [ ] **Every CTA that runs an async call or a network request shows a loader** after the
-      tap, until the call settles. Small per button, medium because it is an audit of every
-      screen.
 - [ ] **Adding a series updates the analytics**, including when the series is set from the
       book screen (tap on the record) rather than at scan time.
 - [ ] **Lists and the dashboard analytics refresh** after a record is edited or a new book is
