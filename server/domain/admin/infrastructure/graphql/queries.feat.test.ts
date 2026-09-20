@@ -28,6 +28,8 @@ const seedProfile = (admin: boolean) => {
 
 const metricsQuery = `query {
   adminMetrics {
+    tokenCostEur
+    searchCostEur
     aiCostEur
     infraEur
     totalCostEur
@@ -39,9 +41,10 @@ const metricsQuery = `query {
     revenueGrossEur
     scans
     cacheHits
-    vision { promptTokens outputTokens thinkingTokens }
-    enrichment { promptTokens }
-    catalogue { promptTokens }
+    searches
+    vision { promptTokens outputTokens thinkingTokens searches }
+    enrichment { promptTokens searches }
+    catalogue { promptTokens searches }
     refreshedAt
   }
 }`
@@ -69,6 +72,8 @@ describe('who may read the admin metrics', () => {
 
     expect(result.errors).toBeUndefined()
     expect(result.data?.adminMetrics).toMatchObject({
+      tokenCostEur: 0,
+      searchCostEur: 0,
       aiCostEur: 0,
       infraEur: null,
       totalCostEur: 0,
@@ -77,7 +82,9 @@ describe('who may read the admin metrics', () => {
       revenueProceedsEur: null,
       scans: 0,
       cacheHits: 0,
-      catalogue: { promptTokens: 0 },
+      searches: 0,
+      vision: { promptTokens: 0, searches: 0 },
+      catalogue: { promptTokens: 0, searches: 0 },
       refreshedAt: null,
     })
   })

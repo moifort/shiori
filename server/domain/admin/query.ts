@@ -1,4 +1,10 @@
-import { aiCostEur, monthOf } from '~/domain/admin/business-rules'
+import {
+  aiCostEur,
+  monthOf,
+  searchCostEur,
+  searchesOf,
+  tokenCostEur,
+} from '~/domain/admin/business-rules'
 import * as repository from '~/domain/admin/infrastructure/repository'
 import type { AdminMetricsView } from '~/domain/admin/types'
 import { Count, Eur } from '~/domain/shared/primitives'
@@ -19,6 +25,8 @@ export namespace AdminQuery {
     // projects, so it is not this app's cost to show).
     const infra = projection?.infra?.gcpCostEur
     return {
+      tokenCostEur: tokenCostEur(usage),
+      searchCostEur: searchCostEur(usage),
       aiCostEur: ai,
       infraEur: infra,
       totalCostEur: Eur(ai + (infra ?? 0)),
@@ -27,6 +35,7 @@ export namespace AdminQuery {
       revenue: projection?.revenue,
       scans: usage.scans,
       cacheHits: usage.cacheHits,
+      searches: searchesOf(usage),
       vision: usage.vision,
       enrichment: usage.enrichment,
       catalogue: usage.catalogue,

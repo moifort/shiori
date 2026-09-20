@@ -16,7 +16,7 @@ mock.module('~/domain/scan/gemini', () => ({
     const value = answers.shift()
     if (value === undefined) throw new Error(`no queued answer for step "${step}"`)
     if (value instanceof Error) throw value
-    return { value, usage: { promptTokens: 10, outputTokens: 5, thinkingTokens: 20 } }
+    return { value, usage: { promptTokens: 10, outputTokens: 5, thinkingTokens: 20, searches: 0 } }
   },
 }))
 

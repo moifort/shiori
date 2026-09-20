@@ -1,15 +1,29 @@
 import { describe, expect, test } from 'bun:test'
-import { aiCostEur, freshUsage, monthOf, premiumBreakdown } from '~/domain/admin/business-rules'
+import {
+  aiCostEur,
+  freshUsage,
+  monthOf,
+  premiumBreakdown,
+  searchCostEur,
+  searchesOf,
+  tokenCostEur,
+} from '~/domain/admin/business-rules'
 import type { AiStepUsage, AiUsage } from '~/domain/admin/types'
 import type { Entitlement, ProductId } from '~/domain/entitlement/types'
 import type { Count, Month, UserId } from '~/domain/shared/types'
 
 const month = '2026-09' as Month
 
-const step = (promptTokens: number, outputTokens: number, thinkingTokens: number): AiStepUsage => ({
+const step = (
+  promptTokens: number,
+  outputTokens: number,
+  thinkingTokens: number,
+  searches = 0,
+): AiStepUsage => ({
   promptTokens: promptTokens as Count,
   outputTokens: outputTokens as Count,
   thinkingTokens: thinkingTokens as Count,
+  searches: searches as Count,
 })
 
 const none = step(0, 0, 0)
@@ -30,39 +44,27 @@ const usage = (
 describe('pricing the month s AI consumption', () => {
   test('a month without a single scan costs nothing', () => {
     expect(aiCostEur(freshUsage(month)) as number).toBe(0)
+    expect(tokenCostEur(freshUsage(month)) as number).toBe(0)
+    expect(searchCostEur(freshUsage(month)) as number).toBe(0)
   })
 
   test('input tokens bill at the input rate', () => {
-    // 1M input tokens at $0.75/M and a 0.91 USD→EUR conversion.
-    expect(aiCostEur(usage(step(1_000_000, 0, 0))) as number).toBeCloseTo(0.75 * 0.91, 10)
+    // 1M input tokens at $0.30/M and a 0.91 USD→EUR conversion.
+    expect(tokenCostEur(usage(step(1_000_000, 0, 0))) as number).toBeCloseTo(0.3 * 0.91, 10)
   })
 
   test('thinking tokens bill at the output rate, the point of tracking them apart', () => {
-    const thinking = aiCostEur(usage(step(0, 0, 1_000_000)))
-    const output = aiCostEur(usage(step(0, 1_000_000, 0)))
+    const thinking = tokenCostEur(usage(step(0, 0, 1_000_000)))
+    const output = tokenCostEur(usage(step(0, 1_000_000, 0)))
     expect(thinking as number).toBe(output as number)
-    expect(thinking as number).toBeCloseTo(3.75 * 0.91, 10)
-  })
-
-  test('a month from 2027 bills at the standard rate, twice the introductory one', () => {
-    const december = aiCostEur({
-      ...usage(step(1_000_000, 0, 1_000_000)),
-      month: '2026-12' as Month,
-    })
-    const january = aiCostEur({
-      ...usage(step(1_000_000, 0, 1_000_000)),
-      month: '2027-01' as Month,
-    })
-
-    expect(december as number).toBeCloseTo((0.75 + 3.75) * 0.91, 10)
-    expect(january as number).toBeCloseTo(2 * (december as number), 10)
+    expect(thinking as number).toBeCloseTo(2.5 * 0.91, 10)
   })
 
   test('the three steps add up', () => {
-    const visionOnly = aiCostEur(usage(step(2600, 250, 1500)))
-    const enrichmentOnly = aiCostEur(usage(none, step(5000, 200, 1500)))
-    const catalogueOnly = aiCostEur(usage(none, none, step(3000, 400, 2000)))
-    const all = aiCostEur(
+    const visionOnly = tokenCostEur(usage(step(2600, 250, 1500)))
+    const enrichmentOnly = tokenCostEur(usage(none, step(5000, 200, 1500)))
+    const catalogueOnly = tokenCostEur(usage(none, none, step(3000, 400, 2000)))
+    const all = tokenCostEur(
       usage(step(2600, 250, 1500), step(5000, 200, 1500), step(3000, 400, 2000)),
     )
     expect(all as number).toBeCloseTo(
@@ -71,14 +73,62 @@ describe('pricing the month s AI consumption', () => {
     )
   })
 
-  test('a scan of an already-catalogued saga costs on the order of two cents', () => {
+  test('a scan of an already-catalogued saga costs about a cent in tokens', () => {
     // The two steps a routine scan runs: ~2.6K in, ~250 out, ~1.5K thinking for
     // the cover; ~5K in, ~200 out, ~1.5K thinking for the enrichment. The saga
     // catalogue does not run, which is what makes the routine scan the cheap one.
     // This is the number the scan allowances in the quota domain are sized on.
-    const cost = aiCostEur(usage(step(2600, 250, 1500), step(5000, 200, 1500)))
-    expect(cost as number).toBeGreaterThan(0.01)
-    expect(cost as number).toBeLessThan(0.025)
+    const cost = tokenCostEur(usage(step(2600, 250, 1500), step(5000, 200, 1500)))
+    expect(cost as number).toBeGreaterThan(0.005)
+    expect(cost as number).toBeLessThan(0.015)
+  })
+})
+
+describe('pricing the month s grounded searches', () => {
+  const withSearches = (count: number) => ({
+    ...usage(none, step(0, 0, 0, count)),
+  })
+
+  test('the free allowance of the month costs nothing, right up to the last one', () => {
+    expect(searchCostEur(withSearches(1)) as number).toBe(0)
+    expect(searchCostEur(withSearches(4999)) as number).toBe(0)
+    expect(searchCostEur(withSearches(5000)) as number).toBe(0)
+  })
+
+  test('past the allowance only the searches beyond it are billed', () => {
+    // 1000 billable searches at $14 per thousand, converted at 0.91.
+    expect(searchCostEur(withSearches(6000)) as number).toBeCloseTo(14 * 0.91, 10)
+  })
+
+  test('one billed search costs more than the tokens of the scan that ran it', () => {
+    const scan = tokenCostEur(usage(step(2600, 250, 1500), step(5000, 200, 1500)))
+    const oneSearch = (searchCostEur(withSearches(5001)) as number) - 0
+
+    expect(oneSearch).toBeGreaterThan(scan as number)
+  })
+
+  test('the searches of every step add up, wherever they were run', () => {
+    const spread = {
+      ...usage(step(0, 0, 0, 1), step(0, 0, 0, 2), step(0, 0, 0, 3)),
+    }
+    // Six searches, all inside the allowance, so what is asserted is the sum
+    // reaching the pricing at all rather than a figure.
+    expect(searchCostEur(spread) as number).toBe(0)
+    expect(searchesOf(spread) as number).toBe(6)
+  })
+})
+
+describe('what the whole Gemini bill adds up to', () => {
+  test('is the tokens plus the searches', () => {
+    const month = {
+      ...usage(step(2600, 250, 1500), step(5000, 200, 1500, 6000)),
+    }
+
+    expect(aiCostEur(month) as number).toBeCloseTo(
+      (tokenCostEur(month) as number) + (searchCostEur(month) as number),
+      10,
+    )
+    expect(searchCostEur(month) as number).toBeGreaterThan(0)
   })
 })
 

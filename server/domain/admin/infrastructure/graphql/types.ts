@@ -19,6 +19,12 @@ const AiTokenUsageType = builder.objectRef<AiStepUsage>('AiTokenUsage').implemen
       description: 'Reasoning tokens, billed at the output rate, e.g. `1500`',
       resolve: (usage) => usage.thinkingTokens,
     }),
+    searches: t.int({
+      description:
+        'Google searches this step ran, billed one by one on top of the tokens, e.g. `2`. ' +
+        'Always `0` for the cover step, which is deliberately not grounded.',
+      resolve: (usage) => usage.searches,
+    }),
   }),
 })
 
@@ -27,13 +33,26 @@ export const AdminMetricsType = builder.objectRef<AdminMetricsView>('AdminMetric
     "The app's monthly economics, for the admin screen: what the month costs (measured AI " +
     'tokens, measured GCP billing) against what it brings in (App Store sales) and who is here ' +
     '(accounts, subscribers).\n\n' +
-    'AI figures are live, incremented at each scan. Users, subscribers, revenue and the GCP ' +
-    'bill come from a projection a scheduler refreshes daily — `refreshedAt` says when, and is ' +
-    'null until it has run once.',
+    'AI figures are live, incremented at each scan, and split into what the tokens cost and ' +
+    'what the grounded searches cost — two different levers, and past a few thousand searches ' +
+    'a month the second is the larger. Users, subscribers, revenue and the GCP bill come from ' +
+    'a projection a scheduler refreshes daily — `refreshedAt` says when, and is null until it ' +
+    'has run once.',
   fields: (t) => ({
+    tokenCostEur: t.expose('tokenCostEur', {
+      type: 'Eur',
+      description: "This month's Gemini tokens, priced from what the API reported, e.g. `0.30`",
+    }),
+    searchCostEur: t.expose('searchCostEur', {
+      type: 'Eur',
+      description:
+        "This month's grounded searches, e.g. `0.12`. Reads `0` until the 5,000 free searches " +
+        'of the month are spent, which is a real zero and not a missing figure — past that, ' +
+        'one search costs more than all the tokens of the scan that ran it.',
+    }),
     aiCostEur: t.expose('aiCostEur', {
       type: 'Eur',
-      description: "This month's Gemini bill, priced from the measured tokens, e.g. `0.42`",
+      description: "This month's whole Gemini bill: tokens and searches together, e.g. `0.42`",
     }),
     infraEur: t.expose('infraEur', {
       type: 'Eur',
@@ -84,6 +103,14 @@ export const AdminMetricsType = builder.objectRef<AdminMetricsView>('AdminMetric
     cacheHits: t.int({
       description: 'Scan requests served from the cover cache this month, at no cost, e.g. `4`',
       resolve: (metrics) => metrics.cacheHits,
+    }),
+    searches: t.int({
+      description:
+        'Google searches run this month, free allowance included, e.g. `812`. Watch it against ' +
+        'the 5,000 free ones: the cost stays at zero right up to the last of them.\n\n' +
+        'An estimate rather than the invoice — Gemini does not always report the searches it ' +
+        'ran while thinking, and a grounded call that reports none is counted as one.',
+      resolve: (metrics) => metrics.searches,
     }),
     vision: t.field({
       type: AiTokenUsageType,

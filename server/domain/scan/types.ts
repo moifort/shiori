@@ -78,11 +78,16 @@ export type CachedScan = {
 
 /** What one Gemini step consumed. Thinking tokens bill at the output rate and
  *  are the largest line on a scan, so they are kept apart rather than folded
- *  into the output count: the allowance and the price are sized on them. */
+ *  into the output count: the allowance and the price are sized on them.
+ *
+ *  `searches` is the Google searches a grounded step ran, billed per search on
+ *  top of the tokens and past a few thousand a month the larger of the two. An
+ *  ungrounded step is always zero. */
 export type AiStepUsage = {
   promptTokens: number
   outputTokens: number
   thinkingTokens: number
+  searches: number
 }
 
 /** What the calls of one scan consumed. A step that never ran — a cache hit, an

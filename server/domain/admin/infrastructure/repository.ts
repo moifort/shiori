@@ -16,7 +16,12 @@ const PROJECTION_DOC = 'current'
 
 /** What one step of one scan consumed, before it is a counter — plain numbers,
  *  the currency the Gemini client answers in. */
-type StepDelta = { promptTokens: number; outputTokens: number; thinkingTokens: number }
+type StepDelta = {
+  promptTokens: number
+  outputTokens: number
+  thinkingTokens: number
+  searches: number
+}
 
 // Fold one scan into the month's counters, atomically and without a read: a
 // merge of increments is one write whatever lands concurrently, and it creates
@@ -55,6 +60,7 @@ const stepIncrements = (step: StepDelta | undefined) => ({
   promptTokens: FieldValue.increment(step?.promptTokens ?? 0),
   outputTokens: FieldValue.increment(step?.outputTokens ?? 0),
   thinkingTokens: FieldValue.increment(step?.thinkingTokens ?? 0),
+  searches: FieldValue.increment(step?.searches ?? 0),
 })
 
 // An absent document is a month nobody has scanned in — the storage boundary

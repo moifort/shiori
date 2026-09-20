@@ -8,8 +8,16 @@ import { createLogger } from '~/system/logger'
  *  projects, and a fresh API key gets a 404 pointing here. Kept as a named
  *  constant because the next retirement will land the same way — the failure is
  *  a 404 on the model path, not a deprecation warning.
+ *
+ *  Lite rather than 3.6-flash, which this called until the real price list was
+ *  read: 3.6-flash bills $0.75/$3.75 per million against $0.30/$2.50 here, and
+ *  doubles on January 1st 2027 where this one holds. Same capabilities on all
+ *  three things a scan needs — image input, a JSON schema, Google Search
+ *  grounding — and there is no Lite at the 3.6 generation to compare against.
+ *  What it costs is priced in `server/domain/admin/business-rules.ts`; changing
+ *  the model here means changing the rates there.
  */
-const GEMINI_MODEL = 'gemini-3.6-flash'
+const GEMINI_MODEL = 'gemini-3.5-flash-lite'
 
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
 
@@ -17,15 +25,23 @@ const logger = createLogger('scan')
 
 /** What Gemini reports a call cost. Thinking tokens bill at the output rate and
  *  are the largest line on a scan, which is why they are read separately rather
- *  than trusted to be inside `candidatesTokenCount`. */
+ *  than trusted to be inside `candidatesTokenCount`.
+ *
+ *  `billedToolCalls` is what the invoice counts for a grounded call — each search
+ *  the model chose to run is billed on its own. */
 type GeminiUsage = {
   promptTokenCount?: number
   candidatesTokenCount?: number
   thoughtsTokenCount?: number
+  billedToolCalls?: { tool?: string; successfulToolCallCount?: number }[]
 }
 
-type GeminiResponse = {
-  candidates?: { content?: { parts?: { text?: string }[] } }[]
+export type GeminiResponse = {
+  candidates?: {
+    content?: { parts?: { text?: string }[] }
+    /** The searches the model ran, when it says so. */
+    groundingMetadata?: { webSearchQueries?: string[] }
+  }[]
   usageMetadata?: GeminiUsage
 }
 
@@ -65,18 +81,48 @@ export const generate = async <T>(options: {
 
   return {
     value: JSON.parse(text) as T,
-    usage: capturedUsage(options.step, response.usageMetadata),
+    usage: capturedUsage(options.step, response, options.grounded === true),
   }
 }
 
-const capturedUsage = (step: string, usage: GeminiUsage | undefined): AiStepUsage | undefined => {
+const capturedUsage = (
+  step: string,
+  response: GeminiResponse,
+  grounded: boolean,
+): AiStepUsage | undefined => {
+  const usage = response.usageMetadata
   if (!usage) return undefined
+  const searches = billedSearches(response, grounded)
   logger.info(
-    `${step}: ${usage.promptTokenCount ?? 0} in, ${usage.candidatesTokenCount ?? 0} out, ${usage.thoughtsTokenCount ?? 0} thinking`,
+    `${step}: ${usage.promptTokenCount ?? 0} in, ${usage.candidatesTokenCount ?? 0} out, ${usage.thoughtsTokenCount ?? 0} thinking, ${searches} searches`,
   )
   return {
     promptTokens: usage.promptTokenCount ?? 0,
     outputTokens: usage.candidatesTokenCount ?? 0,
     thinkingTokens: usage.thoughtsTokenCount ?? 0,
+    searches,
   }
+}
+
+/** How many Google searches this call is billed for.
+ *
+ *  Two fields can answer, and both go missing when the model searched while
+ *  thinking rather than while answering — Google has confirmed the gap and says
+ *  `billedToolCalls` may disappear entirely, so neither can be the only source.
+ *  A grounded call that reports nothing is therefore counted as one search
+ *  rather than none: the whole point of the figure is to say what the month
+ *  costs, and a zero there is the one answer that is certainly wrong.
+ *
+ *  So this is an estimate, not the invoice. It is exact whenever Gemini answers,
+ *  and errs towards spending rather than towards a comfortable number. An
+ *  ungrounded step never searches and is not guessed at.
+ */
+export const billedSearches = (response: GeminiResponse, grounded: boolean): number => {
+  if (!grounded) return 0
+  const billed = response.usageMetadata?.billedToolCalls?.reduce(
+    (sum, call) => sum + (call.successfulToolCallCount ?? 0),
+    0,
+  )
+  if (billed) return billed
+  return response.candidates?.[0]?.groundingMetadata?.webSearchQueries?.length || 1
 }

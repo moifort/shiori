@@ -2,11 +2,17 @@ import type { Count, Eur, Month } from '~/domain/shared/types'
 
 /** What one Gemini call consumed, as `usageMetadata` reported it. Thinking
  *  tokens are kept apart from plain output because they bill at the output rate
- *  and are the largest line on a scan. */
+ *  and are the largest line on a scan.
+ *
+ *  `searches` counts the Google searches a grounded step ran. They are billed
+ *  per search rather than per token, which makes them a separate line with a
+ *  separate lever — and the bigger one once the monthly free allowance runs
+ *  out. Only enrichment and catalogue can have any. */
 export type AiStepUsage = {
   promptTokens: Count
   outputTokens: Count
   thinkingTokens: Count
+  searches: Count
 }
 
 /** One month's measured AI consumption — a single document per month whose id
@@ -68,6 +74,8 @@ export type AdminMetricsProjection = {
  *  several projects, so imputing it here would overstate this app's cost).
  *  `refreshedAt` is absent until the daily refresh has run once. */
 export type AdminMetricsView = {
+  tokenCostEur: Eur
+  searchCostEur: Eur
   aiCostEur: Eur
   infraEur?: Eur
   totalCostEur: Eur
@@ -76,6 +84,10 @@ export type AdminMetricsView = {
   revenue?: Revenue
   scans: Count
   cacheHits: Count
+  /** Every grounded search of the month, allowance included — what says how
+   *  close the free 5,000 are to running out while `searchCostEur` still
+   *  reads zero. */
+  searches: Count
   vision: AiStepUsage
   enrichment: AiStepUsage
   catalogue: AiStepUsage

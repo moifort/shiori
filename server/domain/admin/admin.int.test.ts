@@ -35,10 +35,16 @@ const { monthOf } = await import('~/domain/admin/business-rules')
 
 const month = monthOf(new Date()) as string
 
-const step = (promptTokens: number, outputTokens: number, thinkingTokens: number) => ({
+const step = (
+  promptTokens: number,
+  outputTokens: number,
+  thinkingTokens: number,
+  searches = 0,
+) => ({
   promptTokens,
   outputTokens,
   thinkingTokens,
+  searches,
 })
 
 const scanned = (usage: ScanUsage) => AdminCommand.recordAiUsage({ cacheHit: false, usage })
@@ -81,8 +87,8 @@ describe('recording a scan s AI usage', () => {
       month,
       scans: 2,
       cacheHits: 0,
-      vision: { promptTokens: 3000, outputTokens: 300, thinkingTokens: 1600 },
-      enrichment: { promptTokens: 5000, outputTokens: 200, thinkingTokens: 1400 },
+      vision: { promptTokens: 3000, outputTokens: 300, thinkingTokens: 1600, searches: 0 },
+      enrichment: { promptTokens: 5000, outputTokens: 200, thinkingTokens: 1400, searches: 0 },
     })
   })
 
@@ -106,8 +112,19 @@ describe('recording a scan s AI usage', () => {
     expect(fake.snapshot('ai-usage').get(month)).toMatchObject({
       scans: 0,
       cacheHits: 1,
-      vision: { promptTokens: 0, outputTokens: 0, thinkingTokens: 0 },
-      catalogue: { promptTokens: 0, outputTokens: 0, thinkingTokens: 0 },
+      vision: { promptTokens: 0, outputTokens: 0, thinkingTokens: 0, searches: 0 },
+      catalogue: { promptTokens: 0, outputTokens: 0, thinkingTokens: 0, searches: 0 },
+    })
+  })
+
+  test('the searches of the grounded steps accumulate like the tokens do', async () => {
+    await scanned({ vision: step(2600, 250, 1500), enrichment: step(5000, 200, 1400, 2) })
+    await scanned({ enrichment: step(5000, 200, 1400, 1), catalogue: step(3000, 400, 2000, 3) })
+
+    expect(fake.snapshot('ai-usage').get(month)).toMatchObject({
+      vision: { searches: 0 },
+      enrichment: { searches: 3 },
+      catalogue: { searches: 3 },
     })
   })
 
@@ -195,6 +212,7 @@ describe('reading the metrics view', () => {
     const view = await AdminQuery.metrics()
 
     expect(view.scans as number).toBe(1)
+    expect(view.searches as number).toBe(0)
     // What a token costs is the unit test's business, and it changes with the
     // calendar — asserting a figure here would turn this into a test that fails
     // on a date. What matters is that the live month reached the view at all.
@@ -212,6 +230,9 @@ describe('reading the metrics view', () => {
     expect(view.premium).toMatchObject({ total: 0, monthly: 0, yearly: 0 })
     expect(view.revenue).toBeUndefined()
     expect(view.refreshedAt).toBeUndefined()
+    expect(view.searches as number).toBe(0)
+    expect(view.searchCostEur as number).toBe(0)
+    expect(view.tokenCostEur as number).toBe(0)
     // No billing export yet: infra is unavailable and the total is AI only.
     expect(view.infraEur).toBeUndefined()
     expect(view.totalCostEur as number).toBe(0)
