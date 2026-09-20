@@ -5,6 +5,10 @@ import SwiftUI
 /// No counter. "2 sur 14" reads as a scoreboard on a list whose purpose is to
 /// let the reader pick a saga and get back into it — the state is what tells
 /// them whether there is anything left to read.
+///
+/// A saga nobody has catalogued has no state to show: what it has instead is
+/// how many volumes are on the shelf. That is a fact about the library, not a
+/// score out of a total nobody knows.
 struct SeriesListView: View {
     @State private var followed: [FollowedSeries] = []
     @State private var isLoading = true
@@ -40,17 +44,29 @@ struct SeriesListView: View {
 
     private var list: some View {
         List(followed) { entry in
-            NavigationLink(value: entry.series.id) {
+            NavigationLink(value: entry.id) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(entry.series.name).font(.body.weight(.medium))
-                    Text(entry.series.author).font(.subheadline).foregroundStyle(.secondary)
-                    Label(
-                        entry.state.label,
-                        systemImage: entry.state == .complete ? "checkmark.circle.fill" : "book"
-                    )
-                    .font(.caption)
-                    .foregroundStyle(entry.state == .complete ? Color.green : .secondary)
-                    .padding(.top, 1)
+                    Text(entry.name).font(.body.weight(.medium))
+                    if let author = entry.author {
+                        Text(author).font(.subheadline).foregroundStyle(.secondary)
+                    }
+                    if let state = entry.state {
+                        Label(
+                            state.label,
+                            systemImage: state == .complete ? "checkmark.circle.fill" : "book"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(state == .complete ? Color.green : .secondary)
+                        .padding(.top, 1)
+                    } else {
+                        Label(
+                            "\(entry.ownedCount) tome(s)",
+                            systemImage: "books.vertical"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 1)
+                    }
                 }
                 .padding(.vertical, 2)
             }

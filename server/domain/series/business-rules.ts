@@ -1,5 +1,12 @@
-import type { Series, SeriesState, Volume, VolumeKind } from '~/domain/series/types'
-import type { Year } from '~/domain/shared/types'
+import type {
+  Series,
+  SeriesId,
+  SeriesName,
+  SeriesState,
+  Volume,
+  VolumeKind,
+} from '~/domain/series/types'
+import type { AuthorName, Year } from '~/domain/shared/types'
 
 /** A volume the reader could still be waiting for. Announced volumes are kept in
  *  the catalogue on purpose: they are what a release alert will attach to. */
@@ -70,4 +77,52 @@ export const splitBySpine = (series: Series): { spine: Volume[]; relatedWorks: V
     spine: ordered.filter((volume) => volume.kind === 'main'),
     relatedWorks: ordered.filter((volume) => volume.kind !== 'main'),
   }
+}
+
+/** A saga the reader owns volumes of, taken from the books themselves.
+ *
+ *  Generic over the book so the caller keeps whatever it passed in: the state of
+ *  a saga is read off the very records that named it, and re-fetching them to
+ *  count would be a second pass over a list already in hand. */
+export type FollowedSaga<Book> = {
+  id: SeriesId
+  name: SeriesName
+  /** The first author of a volume the reader owns. The catalogue carries an
+   *  author of its own; this one is what answers for a saga that has none. */
+  author?: AuthorName
+  books: Book[]
+}
+
+/** Which sagas a library follows, in alphabetical order.
+ *
+ *  Read off the denormalized membership rather than off the catalogue, which is
+ *  the whole point of denormalizing it: an Audible import and a book added by
+ *  hand both name their saga and neither calls the model, so a catalogue-first
+ *  reading lost every saga those two ever produced.
+ *
+ *  A saga the catalogue has never heard of is still a saga the reader is
+ *  reading. What is missing then is the list of volumes that exist, not the
+ *  saga. */
+export const followedSagasOf = <
+  Book extends { series?: { id: SeriesId; name: SeriesName }; authors: AuthorName[] },
+>(
+  books: readonly Book[],
+): FollowedSaga<Book>[] => {
+  const sagas = new Map<SeriesId, FollowedSaga<Book>>()
+  for (const book of books) {
+    const membership = book.series
+    if (!membership) continue
+    const known = sagas.get(membership.id)
+    if (known) {
+      known.books.push(book)
+      known.author ??= book.authors[0]
+    } else
+      sagas.set(membership.id, {
+        id: membership.id,
+        name: membership.name,
+        author: book.authors[0],
+        books: [book],
+      })
+  }
+  return [...sagas.values()].sort((left, right) => left.name.localeCompare(right.name))
 }

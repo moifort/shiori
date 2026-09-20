@@ -322,14 +322,27 @@ scalar Eur
 
 """A saga the reader owns at least one volume of."""
 type FollowedSeries {
+  """
+  The author of a volume the reader owns, which is what answers for a saga the catalogue has never described.
+  """
+  author: AuthorName
+
+  """
+  What the world knows of the saga. Null until somebody scans a volume of it: an import and a manual entry both name a saga without describing it.
+  """
+  catalogue: Series
+  id: SeriesId!
+  name: SeriesName!
+
   """How many volumes of the saga are in the library."""
   ownedCount: Count!
-  series: Series!
 
   """
   Derived, never stored. COMPLETE once every published volume has been read.
+  
+  Null without a catalogue: which volumes exist is exactly what is unknown then, and IN_PROGRESS would be a guess dressed as a fact.
   """
-  state: SeriesState!
+  state: SeriesState
 }
 
 """
@@ -790,7 +803,7 @@ type Query {
   """
   Every saga the reader owns a volume of, alphabetically.
   
-  Resolved in one getAll over the catalogue rather than a lookup per saga.
+  Taken from the books, then matched against the catalogue in one getAll rather than a lookup per saga. A saga nobody has catalogued still answers here, with a null catalogue and a null state.
   """
   mySeries: [FollowedSeries!]!
 

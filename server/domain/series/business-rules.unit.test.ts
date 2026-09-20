@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'bun:test'
-import { inCatalogueOrder, splitBySpine, stateOf } from '~/domain/series/business-rules'
+import {
+  followedSagasOf,
+  inCatalogueOrder,
+  splitBySpine,
+  stateOf,
+} from '~/domain/series/business-rules'
 import { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import type { Series, Volume } from '~/domain/series/types'
 import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
@@ -94,5 +99,46 @@ describe('splitBySpine', () => {
     )
     expect(spine.map((entry) => String(entry.title))).toEqual(['One'])
     expect(relatedWorks.map((entry) => String(entry.title))).toEqual(['Side story', 'Atlas'])
+  })
+})
+
+describe('followedSagasOf', () => {
+  const volumeOf = (title: string, series?: { id: string; name: string }) => ({
+    title,
+    authors: [AuthorName('Frank Herbert')],
+    series: series && { id: SeriesId(series.id), name: SeriesName(series.name) },
+  })
+
+  const DUNE = { id: 'dune--frank-herbert', name: 'Dune' }
+
+  test('gathers the volumes of one saga under it', () => {
+    const sagas = followedSagasOf([volumeOf('Dune', DUNE), volumeOf('Le Messie de Dune', DUNE)])
+    expect(sagas).toHaveLength(1)
+    expect(sagas[0]?.books.map((book) => book.title)).toEqual(['Dune', 'Le Messie de Dune'])
+  })
+
+  // The defect this rule exists to fix: an Audible import and a book added by
+  // hand write a membership without ever calling the model, so a reading that
+  // started from the catalogue found nothing and the Series tab stayed empty.
+  test('follows a saga the catalogue has never heard of', () => {
+    expect(followedSagasOf([volumeOf('Dune', DUNE)])[0]?.id).toBe(SeriesId(DUNE.id))
+  })
+
+  test('ignores a book that belongs to no saga', () => {
+    expect(followedSagasOf([volumeOf('Piranesi')])).toEqual([])
+  })
+
+  test('answers alphabetically', () => {
+    const sagas = followedSagasOf([
+      volumeOf('Dune', { id: 'z', name: 'Zorro' }),
+      volumeOf('Dune', DUNE),
+    ])
+    expect(sagas.map((saga) => saga.name)).toEqual([SeriesName('Dune'), SeriesName('Zorro')])
+  })
+
+  // The catalogue carries an author; a saga that has no catalogue has to get one
+  // from somewhere, and the volumes the reader owns are the only source there is.
+  test('takes the author from the first volume that names one', () => {
+    expect(followedSagasOf([volumeOf('Dune', DUNE)])[0]?.author).toBe(AuthorName('Frank Herbert'))
   })
 })

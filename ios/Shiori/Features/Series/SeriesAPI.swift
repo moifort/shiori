@@ -28,12 +28,10 @@ enum SeriesAPI {
         )
         return data.mySeries.map { followed in
             FollowedSeries(
-                series: BookSeries(
-                    id: followed.series.id,
-                    name: followed.series.name,
-                    author: followed.series.author
-                ),
-                state: followed.state.asDomain,
+                id: followed.id,
+                name: followed.name,
+                author: followed.author,
+                state: followed.state?.asDomain,
                 ownedCount: followed.ownedCount
             )
         }

@@ -15,16 +15,16 @@ query Series($id: SeriesId!) {
   }
 }
 
-# The sagas the reader follows, with the state derived from what they own.
+# The sagas the reader follows, taken from their own books rather than from the
+# catalogue: a saga an import named and nobody described is still one they read.
+# `state` is null exactly when there is no catalogue to derive it from.
 query MySeries {
   mySeries {
+    id
+    name
+    author
     state
     ownedCount
-    series {
-      id
-      name
-      author
-    }
   }
 }
 

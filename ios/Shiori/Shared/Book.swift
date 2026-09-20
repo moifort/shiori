@@ -256,10 +256,17 @@ struct BookSeries: Identifiable, Sendable {
     var relatedWorks: [Volume] = []
 }
 
-/// A saga the reader follows, paired with the state derived from what they own.
+/// A saga the reader follows. Its identity comes from their own books, not from
+/// the catalogue: an Audible import and a book typed by hand both name a saga
+/// without describing it, and reading the catalogue first lost every one of them.
 struct FollowedSeries: Identifiable, Sendable {
-    var id: String { series.id }
-    let series: BookSeries
-    let state: SeriesState
+    let id: String
+    let name: String
+    /// Taken from a volume the reader owns, which is what answers for a saga the
+    /// catalogue has never described.
+    let author: String?
+    /// Nil when no catalogue exists to derive it from: which volumes the saga has
+    /// is precisely what is unknown then.
+    let state: SeriesState?
     let ownedCount: Int
 }
