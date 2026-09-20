@@ -4,6 +4,11 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Une saga importée depuis Audible a désormais son écran de série. Jusqu’ici, seul un scan
+  constituait le catalogue d’une saga, si bien que toute saga nommée par un import s’ouvrait
+  pour de bon sur « non cataloguée ». Le catalogue se constitue maintenant à la première
+  ouverture de la saga, à partir du tome déjà dans la bibliothèque ; cette première ouverture
+  prend quelques secondes, les suivantes sont immédiates.
 - Shiori a une icône : un signet rouge qui pend sur une page crème. Le même signet est
   l’animation d’ouverture de l’app, qui tombe en place pendant que la bibliothèque se charge,
   et la marque des écrans de connexion et de bienvenue.

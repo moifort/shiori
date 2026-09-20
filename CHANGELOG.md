@@ -10,6 +10,10 @@ the release tag is pushed.
 
 ## Unreleased
 
+- A saga imported from Audible now has a series screen. Until now only a scan built a saga's
+  catalogue, so every saga an import named opened on "not catalogued" for good. The catalogue
+  is now built the first time the saga is opened, from the volume already in the library; that
+  first opening takes a few seconds, and every later one is immediate.
 - Shiori has an icon: a red bookmark ribbon hanging on a cream page. The same ribbon is the
   app's opening animation, dropping into place while the library loads, and the mark on the
   sign-in and welcome screens.
