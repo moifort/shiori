@@ -16,6 +16,10 @@ struct BookRow: View {
     /// What the book is about. Absent on a book added by hand and on every
     /// Audible import, which draw no genre line at all rather than "Autre".
     var genre: BookGenre?
+    /// The one subgenre worth the space: the head of the book's list, which the
+    /// scan orders most representative first. The rest stay on the detail screen,
+    /// where three pills fit and a row has space for one.
+    var subgenre: String?
     /// What kind of object this is. Only an audiobook draws anything: the others
     /// are read, which is what a library is assumed to hold.
     var format: BookFormat = .book
@@ -56,14 +60,26 @@ struct BookRow: View {
 
                 // Under the stars, where it answers "what is this?" for a title
                 // that does not say. Icon and word together: the glyph alone
-                // would be a riddle on a list of twenty different genres.
-                if let genre {
-                    // `image` rather than `Image(systemName:)`: three genres have
-                    // no SF Symbol and are drawn from the asset catalog instead.
-                    Label { Text(genre.label) } icon: { genre.image }
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 1)
+                // would be a riddle on a list of twenty different genres, and
+                // the subgenre beside it is what tells two space operas apart.
+                if genre != nil || subgenre != nil {
+                    HStack(spacing: 6) {
+                        if let genre {
+                            // `image` rather than `Image(systemName:)`: three genres
+                            // have no SF Symbol and come from the asset catalog.
+                            Label { Text(genre.label) } icon: { genre.image }
+                        }
+                        if let subgenre {
+                            Text(subgenre)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 1)
+                                .background(.quaternary, in: Capsule())
+                        }
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .padding(.top, 1)
                 }
             }
 
@@ -164,7 +180,8 @@ private struct ReadingStatusBadge: View {
             cover: Book(id: "3", title: "Piranesi", authors: ["Susanna Clarke"], status: .toRead),
             status: .toRead,
             rating: nil,
-            genre: .literaryFiction
+            genre: .literaryFiction,
+            subgenre: "Réalisme magique"
         )
         BookRow(
             title: "Dune",
@@ -173,6 +190,7 @@ private struct ReadingStatusBadge: View {
             status: .reading,
             rating: nil,
             genre: .scienceFiction,
+            subgenre: "Space opera",
             format: .audiobook,
             language: .en
         )

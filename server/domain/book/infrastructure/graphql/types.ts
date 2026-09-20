@@ -66,7 +66,9 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
     }),
     subgenres: t.field({
       type: ['Subgenre'],
-      description: 'Zero to three free labels refining the genre. Empty, never null.',
+      description:
+        'Zero to three free labels refining the genre, most representative first — a ' +
+        'list shows only that one. Empty, never null.',
       resolve: (book) => book.subgenres,
     }),
     language: t.field({

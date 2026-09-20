@@ -37,7 +37,11 @@ export const NewBookInput = builder.inputType('NewBookInput', {
     firstPublishedIn: t.field({ type: 'Year', required: false }),
     synopsis: t.field({ type: 'Synopsis', required: false }),
     genre: t.field({ type: GenreEnum, required: false }),
-    subgenres: t.field({ type: ['Subgenre'], required: false, description: 'At most three.' }),
+    subgenres: t.field({
+      type: ['Subgenre'],
+      required: false,
+      description: 'At most three, most representative first.',
+    }),
     pageCount: t.field({ type: 'PageCount', required: false }),
     narrators: t.field({
       type: ['NarratorName'],
@@ -89,7 +93,11 @@ export const BookEditInput = builder.inputType('BookEditInput', {
     firstPublishedIn: t.field({ type: 'Year', required: false }),
     synopsis: t.field({ type: 'Synopsis', required: false }),
     genre: t.field({ type: GenreEnum, required: false }),
-    subgenres: t.field({ type: ['Subgenre'], required: false, description: 'At most three.' }),
+    subgenres: t.field({
+      type: ['Subgenre'],
+      required: false,
+      description: 'At most three, most representative first.',
+    }),
     pageCount: t.field({ type: 'PageCount', required: false }),
     narrators: t.field({ type: ['NarratorName'], required: false, description: 'At most five.' }),
     language: t.field({ type: BookLanguageEnum, required: false }),

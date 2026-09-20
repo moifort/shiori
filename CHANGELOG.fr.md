@@ -22,7 +22,9 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   Les livres catalogués avant n’affichent aucun drapeau tant que la langue n’est pas renseignée
   à la main depuis la fiche.
 - Une ligne de la bibliothèque indique maintenant de quoi parle le livre, avec le genre et son
-  icône sous les étoiles, et signale un livre audio par un symbole de casque.
+  icône sous les étoiles et, à côté, le sous-genre le plus parlant du livre — un scan classe
+  désormais les sous-genres qu’il trouve pour que le premier soit celui qui le décrit le mieux.
+  La ligne signale aussi un livre audio par un symbole de casque.
 - Un livre audio crédite ses narrateurs et affiche sa durée sur sa fiche, l’un et l’autre repris
   d’Audible à l’import.
 - Les séries importées depuis Audible, et celles des livres ajoutés à la main, apparaissent

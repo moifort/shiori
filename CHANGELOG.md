@@ -25,8 +25,10 @@ the release tag is pushed.
   is now shelved once per language — "Dune" in French and "Dune" in English are two sections
   and two rows in the Series tab, each with its flag. Books catalogued before this show no
   flag until the language is set by hand from the book screen.
-- A library row now says what the book is about, with the genre and its icon under the stars,
-  and marks an audiobook with a headphones symbol.
+- A library row now says what the book is about, with the genre and its icon under the stars
+  and, beside it, the book's most telling subgenre — a scan now orders the subgenres it finds
+  so that the first one is the one that describes the book best. The row also marks an
+  audiobook with a headphones symbol.
 - An audiobook credits its narrators and shows its running time on the book screen, both taken
   from Audible on import.
 - Sagas imported from Audible, and sagas of books added by hand, now appear in the Series tab.

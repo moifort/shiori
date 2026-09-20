@@ -79,7 +79,8 @@ export const ENRICHMENT_SCHEMA = {
     subgenres: {
       type: 'array',
       items: { type: 'string' },
-      description: 'De 0 à 3 sous-genres libres qui précisent le genre',
+      description:
+        'De 0 à 3 sous-genres libres qui précisent le genre, du plus représentatif au moins représentatif',
     },
     pageCount: { type: 'integer', nullable: true },
     isbn13: {

@@ -19,6 +19,7 @@ fragment BookSummary on Book {
   authors
   format
   genre
+  subgenres
   language
   coverUrl
   status

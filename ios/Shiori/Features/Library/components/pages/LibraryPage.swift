@@ -113,6 +113,7 @@ struct LibraryPage: View {
                     // numbering for a label to explain.
                     volumeLabel: section.seriesName != nil ? book.series?.label : nil,
                     genre: book.genre,
+                    subgenre: book.subgenres.first,
                     format: book.format,
                     language: book.language,
                     isFavorite: book.favorite,

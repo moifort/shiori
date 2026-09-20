@@ -147,7 +147,7 @@ struct BookEditView: View {
                     if let problem = publicationProblem {
                         Text(problem).foregroundStyle(.red)
                     } else {
-                        Text("Séparez les sous-genres par des virgules, trois au plus. Un champ vidé est effacé.")
+                        Text("Séparez les sous-genres par des virgules, trois au plus ; le premier est celui qui s'affiche dans la liste. Un champ vidé est effacé.")
                     }
                 }
             }

@@ -152,7 +152,9 @@ type Book {
   startedAt: DateTime
   status: ReadingStatus!
 
-  """Zero to three free labels refining the genre. Empty, never null."""
+  """
+  Zero to three free labels refining the genre, most representative first — a list shows only that one. Empty, never null.
+  """
   subgenres: [Subgenre!]!
   synopsis: Synopsis
   title: BookTitle!
@@ -174,7 +176,7 @@ input BookEditInput {
   pageCount: PageCount
   publisher: Publisher
 
-  """At most three."""
+  """At most three, most representative first."""
   subgenres: [Subgenre!]
   synopsis: Synopsis
   title: BookTitle
@@ -797,7 +799,7 @@ input NewBookInput {
   """
   status: ReadingStatus
 
-  """At most three."""
+  """At most three, most representative first."""
   subgenres: [Subgenre!]
   synopsis: Synopsis
   title: BookTitle!

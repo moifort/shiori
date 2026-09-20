@@ -18,7 +18,8 @@ A book carries:
   call to fill it, and the reader may leave it unset.
 - `subgenres: Subgenre[]` — zero to three free labels, 1 to 100 characters each, written in
   the scan language like every other free-text field. "Dark fantasy", "space opera",
-  "shōnen", "jeunesse" live here.
+  "shōnen", "jeunesse" live here. The order is data: the enrichment prompt asks for the most
+  representative first, because a library row has space for exactly one of them.
 
 The format (book, manga, comic…) stays a separate field: genre classifies the content, not
 the object. Audience ("young adult", "jeunesse") is not a genre either and goes to subgenres.
@@ -66,6 +67,7 @@ changes shape in place.
 - `Book.swift`: a `Genre` enum with French labels in `Localizable.xcstrings`, and
   `genre: Genre?` + `subgenres: [String]` on `Book`.
 - Book screen: the genre shows as a row, the subgenres as the existing `TagList`.
+- Library row: the genre and, beside it, the first subgenre as a single pill.
 - Edit form: a `Picker` for the genre, built like the format picker, with a "Non renseigné"
   entry; a text field for subgenres, comma-separated, the way genres are typed today.
 - Scan review: shows the genre and the subgenres, and passes them back to `addBook`.

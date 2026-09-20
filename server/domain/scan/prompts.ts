@@ -45,7 +45,7 @@ Renseigne :
 - synopsis : un résumé de 3 à 5 phrases, SANS révéler le dénouement.
 - firstPublishedIn : l'année de première publication de l'ŒUVRE, pas de cette édition.
 - genre : UN SEUL genre, choisi dans la liste imposée par le schéma : le plus précis qui convienne au contenu. Le format de l'objet (manga, BD) et le public visé (jeunesse, young adult) ne sont pas des genres. Mets other si aucun ne convient.
-- subgenres : de 0 à 3 sous-genres libres qui précisent le genre (« dark fantasy », « space opera », « shōnen », « jeunesse »). Ne répète pas le genre.
+- subgenres : de 0 à 3 sous-genres libres qui précisent le genre (« dark fantasy », « space opera », « shōnen », « jeunesse »). Classe-les du plus représentatif au moins représentatif : le premier doit être celui qui décrit le mieux ce livre, car c'est le seul que le lecteur verra dans sa liste. Ne répète pas le genre.
 - pageCount : le nombre de pages d'une édition courante, ou null.
 - isbn13 : l'ISBN-13 d'une édition courante. Mets null si tu n'en connais pas un avec certitude — un ISBN inventé est pire qu'un ISBN absent, car il sera utilisé pour des recherches ultérieures.
 - seriesName, volumeNumber, volumeKind : la série à laquelle ce livre appartient. C'est l'information la plus importante de cette fiche. Cherche-la activement : beaucoup de romans appartiennent à un cycle sans que la couverture le dise. volumeKind vaut 'main' pour un tome numéroté de l'histoire principale, 'prequel' pour une préquelle, 'spin-off' pour un récit dérivé, 'novella' pour un texte court rattaché, 'companion' pour un guide ou un artbook. Si le livre est indépendant, mets les trois à null.

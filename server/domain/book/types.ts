@@ -130,6 +130,8 @@ export type Book = {
   synopsis?: Synopsis
   /** Absent for a book added by hand, which had no model to classify it. */
   genre?: Genre
+  /** Ordered, most representative first: a library row has space for one
+   *  subgenre and takes the head of this list, so the order is data. */
   subgenres: Subgenre[]
   pageCount?: PageCount
   /** An audiobook's running time. Absent on anything else, and absent on an
