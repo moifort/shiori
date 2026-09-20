@@ -62,6 +62,10 @@ struct AudibleAccount: Sendable {
     let marketplace: AudibleMarketplace
     let connectedAt: Date?
     let lastImportedAt: Date?
+    /// Whether the nightly pass runs for this reader: it catalogues what was
+    /// bought since the last one and follows the listening on books already
+    /// imported, without asking.
+    let autoSync: Bool
 }
 
 /// Everything the web view needs to run Amazon's sign-in.

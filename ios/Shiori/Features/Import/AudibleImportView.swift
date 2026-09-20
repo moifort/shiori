@@ -63,6 +63,8 @@ struct AudibleImportView: View {
                         dismiss()
                     }
                 },
+                isAutoSyncOn: viewModel.isAutoSyncOn,
+                onAutoSyncChange: { enabled in Task { await viewModel.setAutoSync(enabled) } },
                 onDisconnect: { Task { await viewModel.disconnect() } }
             )
         } else {

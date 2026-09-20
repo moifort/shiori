@@ -120,6 +120,23 @@ final class AudibleImportViewModel {
         }
     }
 
+    /// Whether the nightly pass runs. Off for a reader with no account: there is
+    /// no library to sync, so the switch has nothing to govern.
+    var isAutoSyncOn: Bool { account?.autoSync ?? false }
+
+    /// Flips the nightly sync and keeps what the server stored, not what was
+    /// asked for. A refused call leaves the switch where it was rather than
+    /// showing a setting nothing backs.
+    func setAutoSync(_ enabled: Bool) async {
+        guard account != nil else { return }
+        errorMessage = nil
+        do {
+            account = try await ImportAPI.setAutoSync(enabled)
+        } catch {
+            errorMessage = reportError(error)
+        }
+    }
+
     func disconnect() async {
         errorMessage = nil
         do {

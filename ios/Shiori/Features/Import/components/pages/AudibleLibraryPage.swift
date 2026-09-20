@@ -17,6 +17,8 @@ struct AudibleLibraryPage: View {
     let onSelectAll: () -> Void
     let onDeselectAll: () -> Void
     let onImport: () -> Void
+    let isAutoSyncOn: Bool
+    let onAutoSyncChange: (Bool) -> Void
     let onDisconnect: () -> Void
 
     var body: some View {
@@ -56,8 +58,28 @@ struct AudibleLibraryPage: View {
         .safeAreaInset(edge: .bottom) { importBar }
     }
 
+    /// The one setting on this screen, above the list rather than buried in the
+    /// options menu: it writes books into the library without asking again, so it
+    /// is stated where the reader can read what it does.
+    private var syncSection: some View {
+        Section {
+            Toggle(
+                "Synchroniser chaque nuit",
+                isOn: Binding(get: { isAutoSyncOn }, set: onAutoSyncChange)
+            )
+            .accessibilityIdentifier("audible-auto-sync")
+        } footer: {
+            Text(
+                "Chaque nuit, les livres audio achetés depuis la veille rejoignent votre "
+                    + "bibliothèque, et ceux que vous avez terminés sur Audible sont marqués "
+                    + "comme lus. Vos notes et vos commentaires ne sont jamais modifiés."
+            )
+        }
+    }
+
     private var list: some View {
         List {
+            syncSection
             ForEach(books) { book in
                 Button {
                     onToggle(book)
@@ -191,6 +213,8 @@ struct AudibleLibraryPage: View {
             onSelectAll: {},
             onDeselectAll: {},
             onImport: {},
+            isAutoSyncOn: true,
+            onAutoSyncChange: { _ in },
             onDisconnect: {}
         )
     }

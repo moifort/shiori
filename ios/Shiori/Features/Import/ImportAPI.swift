@@ -90,6 +90,16 @@ enum ImportAPI {
         return data.importAudibleBooks.map { $0.fragments.bookSummary.asBook }
     }
 
+    /// Turns the nightly sync on or off. Answers with the stored account, so the
+    /// screen draws what was kept rather than what it flipped.
+    static func setAutoSync(_ enabled: Bool) async throws -> AudibleAccount {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.SetAudibleAutoSyncMutation(enabled: enabled)
+        )
+        return data.setAudibleAutoSync.fragments.audibleAccountSummary.asDomain
+    }
+
     /// Forgets our copy of the credentials. The device stays registered on the
     /// Amazon side until the reader removes it there, which the screen says.
     static func disconnect() async throws {
@@ -107,7 +117,8 @@ extension ShioriGraphQL.AudibleAccountSummary {
         AudibleAccount(
             marketplace: AudibleMarketplace(rawValue: marketplace.rawValue) ?? .com,
             connectedAt: GraphQLHelpers.parseISO8601(connectedAt),
-            lastImportedAt: lastImportedAt.flatMap(GraphQLHelpers.parseISO8601)
+            lastImportedAt: lastImportedAt.flatMap(GraphQLHelpers.parseISO8601),
+            autoSync: autoSync
         )
     }
 }
