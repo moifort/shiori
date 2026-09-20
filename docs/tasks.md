@@ -55,6 +55,11 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       Propose options that make it more readable.
 - [ ] **Dashboard, show the total number of favourites.** Tapping it opens the list of every
       favourite, series included. Needs a new analytics figure and a new list screen.
+- [ ] **Settings screen as in Vinarium, reached from the dashboard.** Replace the "Imports"
+      menu in the dashboard toolbar with a settings entry, and move the Audible connection
+      into that screen. Copy every Vinarium settings menu, including the Sentry user feedback
+      form (the `sendFeedback` helper exists without a screen today), except the admin
+      section with the platform statistics.
 - [ ] **Paywall as in Vinarium, and revisit the subscription prices.** Rebuild the premium
       sheet on the Vinarium paywall (layout, copy, trial and plan presentation). Prices are
       2.99 a month and 24.99 a year with a one-week trial today, in the StoreKit configuration
