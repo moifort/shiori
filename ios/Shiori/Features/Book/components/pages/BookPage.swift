@@ -56,17 +56,23 @@ struct BookPage: View {
                     // reason to pick it as who wrote it — so they sit with the
                     // author rather than down among the details. Only a recording
                     // has either.
-                    if let narratorLine = book.narratorLine {
-                        Label("Lu par \(narratorLine)", systemImage: "waveform")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .padding(.top, 1)
+                    // The list's own label style would give each icon the wide,
+                    // centred column a row gets, which next to a cover leaves the
+                    // glyph adrift and a size too big for a caption. These two
+                    // are captions: a small glyph in a narrow, fixed column, so
+                    // the words line up beneath each other.
+                    Group {
+                        if let narratorLine = book.narratorLine {
+                            Label("Lu par \(narratorLine)", systemImage: "waveform")
+                                .padding(.top, 1)
+                        }
+                        if let durationLabel = book.durationLabel {
+                            Label(durationLabel, systemImage: "clock")
+                        }
                     }
-                    if let durationLabel = book.durationLabel {
-                        Label(durationLabel, systemImage: "clock")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                    .labelStyle(.caption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
             }
