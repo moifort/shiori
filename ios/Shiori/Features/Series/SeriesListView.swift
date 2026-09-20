@@ -51,8 +51,8 @@ struct SeriesListView: View {
                         Text(entry.name).font(.body.weight(.medium))
                         // Which of the saga's two shelves this row is. Trailing
                         // the name, as in the library headings: the name is what
-                        // the reader scans for.
-                        if let language = entry.language {
+                        // the reader scans for, and only foreign, as there too.
+                        if let language = entry.language, language.isForeign {
                             Text(language.flag).accessibilityLabel(Text(language.label))
                         }
                         Spacer(minLength: 0)

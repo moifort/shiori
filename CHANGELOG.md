@@ -79,3 +79,6 @@ the release tag is pushed.
 - Every fact on a book can now be corrected from its sheet with "Edit": title, authors,
   format, rating, synopsis, publisher, year, pages, genres and ISBN. A field can be emptied,
   and a rating taken back.
+- A flag now marks only the editions in a language other than the phone's. A reader whose
+  iPhone is in French owns a French library by default, and a 🇫🇷 on every row said nothing;
+  the flag is kept for the exception, the English or Japanese edition among them.

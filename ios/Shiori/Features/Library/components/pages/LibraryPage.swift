@@ -75,8 +75,10 @@ struct LibraryPage: View {
                         // The flag says which of a saga's two shelves this is.
                         // Trailing the name rather than leading it: the name is
                         // what the reader scans for, the language only tells two
-                        // headings with that name apart.
-                        if let language = section.language {
+                        // headings with that name apart. And only the foreign
+                        // shelf gets one: the reader's own language is the default
+                        // and drawing it would flag every heading.
+                        if let language = section.language, language.isForeign {
                             Text(language.flag).accessibilityLabel(Text(language.label))
                         }
                     }

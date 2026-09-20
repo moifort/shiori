@@ -80,3 +80,7 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 - Toutes les informations d’un livre se corrigent désormais depuis sa fiche avec « Modifier » :
   titre, auteurs, format, note, résumé, éditeur, année, pages, genres et ISBN. Un champ peut
   être vidé, et une note retirée.
+- Un drapeau ne marque plus que les éditions dans une autre langue que celle de l’iPhone. Un
+  lecteur dont le téléphone est en français a une bibliothèque française par défaut, et un 🇫🇷
+  sur chaque ligne ne disait rien ; le drapeau reste pour l’exception, l’édition anglaise ou
+  japonaise parmi les autres.

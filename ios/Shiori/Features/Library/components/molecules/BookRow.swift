@@ -94,7 +94,7 @@ struct BookRow: View {
                         .foregroundStyle(.pink)
                         .accessibilityLabel(Text("Favori"))
                 }
-                if let language {
+                if let language, language.isForeign {
                     Text(language.flag)
                         .font(.caption)
                         .accessibilityLabel(Text(language.label))

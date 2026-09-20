@@ -33,6 +33,20 @@ enum BookLanguage: String, Codable, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// The language the phone is set to, when it is one this list draws. Nil
+    /// when the phone speaks something the list does not: every edition is then
+    /// foreign and every flag shows.
+    static var device: BookLanguage? {
+        Locale.current.language.languageCode.flatMap { BookLanguage(rawValue: $0.identifier) }
+    }
+
+    /// Whether a flag is worth drawing. A reader whose phone is in French owns a
+    /// French library by default, and a 🇫🇷 on every row says nothing; the flag
+    /// marks the exception, the edition in another language. Which is why this
+    /// compares to the phone, not to the reader's most common language: the
+    /// phone is known before the library is loaded and never shifts as it grows.
+    var isForeign: Bool { self != Self.device }
+
     /// The flag a reader reads as "this one is the French edition". A language is
     /// not a country and several of these are spoken in many: the flag is a
     /// convenience for telling two shelves apart at a glance, not a claim about
