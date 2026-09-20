@@ -39,7 +39,7 @@ struct HomeView: View {
                                 }
                             }
                         } label: {
-                            Label("Imports", systemImage: "square.and.arrow.down")
+                            Label("Imports", systemImage: "arrow.triangle.2.circlepath")
                         }
                         .accessibilityIdentifier("home-imports")
                     }
