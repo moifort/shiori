@@ -129,6 +129,56 @@ describe('reading one Audible title', () => {
   })
 })
 
+describe('who a title is credited to', () => {
+  // Audible files every contributor under `authors` and tags the role inside the
+  // name. Left alone, a translated novel shows "Danusia Stok - translator" on the
+  // book screen as if she had written it.
+  test('drops the translator, who did not write it', () => {
+    const importable = importableFrom(
+      anItem({ authors: ['Andrzej Sapkowski', 'Danusia Stok - translator'] }),
+      noneOwned,
+    )
+
+    expect(importable?.authors.map(String)).toEqual(['Andrzej Sapkowski'])
+  })
+
+  test('drops the role in whichever language the store tags it', () => {
+    const importable = importableFrom(
+      anItem({ authors: ['Andrzej Sapkowski', 'Lea Voinson - traduction'] }),
+      noneOwned,
+    )
+
+    expect(importable?.authors.map(String)).toEqual(['Andrzej Sapkowski'])
+  })
+
+  // A title Audible credits to its translator alone would otherwise lose its
+  // author line AND its place in a saga, which is keyed on the first author.
+  test('keeps the translator, stripped, when nobody else is credited', () => {
+    const importable = importableFrom(anItem({ authors: ['Danusia Stok - translator'] }), noneOwned)
+
+    expect(importable?.authors.map(String)).toEqual(['Danusia Stok'])
+  })
+
+  test('leaves an author whose name merely ends in a word about translation', () => {
+    const importable = importableFrom(anItem({ authors: ['Jean Traducteur'] }), noneOwned)
+
+    expect(importable?.authors.map(String)).toEqual(['Jean Traducteur'])
+  })
+
+  test('keys the shelf on the author, never on the translator', () => {
+    const owned = new Set([shelfKeyOf('Le Dernier Vœu', 'Andrzej Sapkowski')])
+    const importable = importableFrom(
+      anItem({
+        title: 'Le Dernier Vœu',
+        authors: ['Andrzej Sapkowski', 'Lea Voinson - translator'],
+      }),
+      owned,
+    )
+
+    expect(importable?.alreadyInLibrary).toBe(true)
+  })
+})
+
 describe('where the reader stands in a title', () => {
   test('reads a finished listen as read', () => {
     expect(statusOf(anItem({ listeningStatus: { isFinished: true } }))).toBe('read')

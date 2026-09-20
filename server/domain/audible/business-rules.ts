@@ -39,9 +39,7 @@ export const importableFrom = (
   const title = optionally(item.title, BookTitle)
   if (!asin || !title) return undefined
 
-  const authors = (item.authors ?? [])
-    .map((author) => optionally(author, AuthorName))
-    .filter(isPresent)
+  const authors = authorsOf(item)
   const status = statusOf(item)
 
   return {
@@ -103,6 +101,36 @@ export const bookFrom = (importable: ImportableBook): NewBook => ({
   narrators: importable.narrators,
   audibleAsin: importable.asin,
 })
+
+/** The roles Audible tags inside a contributor's own name, as they reach us.
+ *
+ *  English on most marketplaces, the local language on some — which is why this
+ *  is a short list and not one suffix. */
+const TRANSLATOR_ROLE =
+  /\s*[-\u2013\u2014]\s*(translator|traducteur|traduction|\u00fcbersetzer|traduttore|traductor|tradutor)\.?\s*$/i
+
+/** Who actually wrote it.
+ *
+ *  Audible files every contributor under `authors` and tags the role in the name
+ *  itself — "Danusia Stok - translator" — so a translated novel arrives with a
+ *  second author who never wrote a word of it, the word "translator" showing on
+ *  the book screen. Shiori has nowhere to record a translator, so the credit is
+ *  dropped rather than shelved as an author.
+ *
+ *  When every credit is a translator, the stripped names are kept instead: a
+ *  title Audible credits to its translator alone would otherwise lose its author
+ *  line and, with it, its place in a saga — `seriesMembershipOf` keys on the
+ *  first author, and no author means no key. */
+const authorsOf = (item: AudibleItem): AuthorNameValue[] => {
+  const credits = (item.authors ?? []).map((author) => ({
+    name: author.replace(TRANSLATOR_ROLE, '').trim(),
+    translated: TRANSLATOR_ROLE.test(author),
+  }))
+  const wrote = credits.filter((credit) => !credit.translated)
+  return (wrote.length > 0 ? wrote : credits)
+    .map((credit) => optionally(credit.name, AuthorName))
+    .filter(isPresent)
+}
 
 /** Where the reader stands in a title, as Audible knows it. Anything started is
  *  "reading", anything finished is "read", and an untouched purchase lands on the
