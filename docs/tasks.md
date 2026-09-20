@@ -62,6 +62,9 @@ not reinvented.
 
 ## Dashboard
 
+- [ ] **Remember the reading chart metric across launches.** The segmented picker of the
+      reading chart widget is a plain `@State` today, so it resets to pages on every start.
+      Persist the choice (`@AppStorage`) and restore it on launch.
 - [ ] **Show the total number of favourites.** Tapping it opens the list of every favourite,
       series included.
 
