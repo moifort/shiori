@@ -4,6 +4,25 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Une série se note désormais pour elle-même, de une à cinq étoiles, et se garde en favorite —
+  un livre aussi. La note de la série juge le cycle et n’est pas la moyenne de ses tomes, et le
+  cœur est indépendant des étoiles des deux côtés : un livre cinq étoiles qu’on ne rouvrira
+  jamais et un livre trois étoiles gardé pour ce qu’il a représenté existent tous les deux.
+- La langue d’une édition est lue sur la couverture pendant un scan, et reprise d’Audible lors
+  d’un import. Chaque livre porte son drapeau dans la bibliothèque, et une série détenue en
+  plusieurs langues est désormais rangée une fois par langue — « Dune » en français et « Dune »
+  en anglais font deux sections et deux lignes dans l’onglet Séries, chacune avec son drapeau.
+  Les livres catalogués avant n’affichent aucun drapeau tant que la langue n’est pas renseignée
+  à la main depuis la fiche.
+- Une ligne de la bibliothèque indique maintenant de quoi parle le livre, avec le genre et son
+  icône sous les étoiles, et signale un livre audio par un symbole de casque.
+- Un livre audio crédite ses narrateurs et affiche sa durée sur sa fiche, l’un et l’autre repris
+  d’Audible à l’import.
+- Les séries importées depuis Audible, et celles des livres ajoutés à la main, apparaissent
+  enfin dans l’onglet Séries. Elles en étaient purement absentes : l’onglet ne listait que les
+  séries décrites par un scan, or ni un import ni une saisie manuelle n’en demande la
+  description.
+
 - Le graphique de lecture de l’accueil compte aussi les heures écoutées : un troisième onglet
   trace les heures de livre audio de chaque mois, d’après la durée qu’Audible indique pour
   chaque titre importé. Chaque barre porte désormais son propre chiffre, et la vue par année
