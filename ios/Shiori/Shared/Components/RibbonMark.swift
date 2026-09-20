@@ -1,7 +1,9 @@
 import SwiftUI
 
-/// The brand mark drawn on screen: `ShioriMark`'s ribbon, hanging bare on
-/// whatever is behind it, with the motion the moment calls for.
+/// The brand mark drawn on screen: the app icon itself, `ShioriMark`'s
+/// ribbon hanging in its cream rounded square, with the motion the moment
+/// calls for. Drawn at icon proportions so it reads as the icon at any size;
+/// bare, the ribbon is too thin to be anything but a red stroke.
 ///
 /// - `.loop` is the app opening, spent on the launch gate alone: the ribbon
 ///   drops in from above the frame, settles with a little overshoot, swings
@@ -19,9 +21,8 @@ struct RibbonMark: View {
     }
 
     var motion: Motion = .still
-    /// Height in points; the width follows the design proportions, with room
-    /// on each side for the swing.
-    var height: CGFloat = 120
+    /// Side of the square, in points.
+    var size: CGFloat = 120
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Anchor for elapsed time, so the ribbon starts above the frame on appear.
@@ -35,10 +36,8 @@ struct RibbonMark: View {
     /// Radians at the first swing; each pass loses some.
     private static let swingAmplitude = 0.06
 
-    /// The view's design box on the mark's canvas: the ribbon plus headroom
-    /// on each side for the swing.
-    private static let designWidth: CGFloat = ShioriMark.ribbonWidth + 2 * 70
-    private static let designHeight: CGFloat = ShioriMark.ribbonLength
+    /// The corner of an iOS icon, as a fraction of its side.
+    private static let cornerRatio: CGFloat = 0.2237
 
     var body: some View {
         TimelineView(.animation(paused: paused)) { context in
@@ -52,7 +51,8 @@ struct RibbonMark: View {
                 Self.draw(&ctx, canvasSize: size, pose: pose)
             }
         }
-        .frame(width: height * Self.designWidth / Self.designHeight, height: height)
+        .frame(width: size, height: size)
+        .shadow(color: .black.opacity(0.14), radius: size * 0.06, y: size * 0.03)
         .task(id: motion) {
             guard motion == .once else { return }
             try? await Task.sleep(for: .seconds(Self.period * Self.entranceEnd))
@@ -113,18 +113,27 @@ struct RibbonMark: View {
 
     /// Draws one frame. Internal so previews can lay out fixed poses side by side.
     static func draw(_ ctx: inout GraphicsContext, canvasSize: CGSize, pose: Pose) {
-        let scale = min(canvasSize.width / designWidth, canvasSize.height / designHeight)
+        let side = ShioriMark.canvas
+        let scale = min(canvasSize.width, canvasSize.height) / side
         ctx.translateBy(
-            x: (canvasSize.width - designWidth * scale) / 2,
-            y: (canvasSize.height - designHeight * scale) / 2
+            x: (canvasSize.width - side * scale) / 2,
+            y: (canvasSize.height - side * scale) / 2
         )
         ctx.scaleBy(x: scale, y: scale)
-        // The design box is the middle of the mark's canvas.
-        ctx.translateBy(x: designWidth / 2 - ShioriMark.pivot.x, y: 0)
 
-        // Above the frame by however much of the fall is left, then swung
+        let field = Path(
+            roundedRect: CGRect(x: 0, y: 0, width: side, height: side),
+            cornerRadius: side * cornerRatio,
+            style: .continuous
+        )
+        ctx.fill(field, with: .color(Color(ShioriMark.fieldColor)))
+        // The ribbon slides in over the top edge of the field, so it is
+        // clipped to it rather than appearing out of nowhere above.
+        ctx.clip(to: field)
+
+        // Above the field by however much of the fall is left, then swung
         // about the point where the ribbon is held.
-        ctx.translateBy(x: 0, y: -(1 - pose.drop) * (designHeight + 20))
+        ctx.translateBy(x: 0, y: -(1 - pose.drop) * (ShioriMark.ribbonLength + 20))
         ctx.translateBy(x: ShioriMark.pivot.x, y: ShioriMark.pivot.y)
         ctx.rotate(by: .radians(pose.swing))
         ctx.translateBy(x: -ShioriMark.pivot.x, y: -ShioriMark.pivot.y)
@@ -144,7 +153,7 @@ extension Color {
 }
 
 #Preview("Loop") {
-    RibbonMark(motion: .loop, height: 150)
+    RibbonMark(motion: .loop, size: 140)
 }
 
 #Preview("Once") {
@@ -164,7 +173,7 @@ extension Color {
             Canvas { ctx, size in
                 RibbonMark.draw(&ctx, canvasSize: size, pose: pose)
             }
-            .frame(width: 50, height: 150)
+            .frame(width: 100, height: 100)
         }
     }
     .padding()

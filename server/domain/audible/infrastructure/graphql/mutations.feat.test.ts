@@ -301,3 +301,71 @@ describe('governing the nightly sync through the API', () => {
     expect(codeOf(result)).toBe('AUDIBLE_NOT_CONNECTED')
   })
 })
+
+describe('asking for a pass right now', () => {
+  test('catalogues what was bought and says how much it brought back', async () => {
+    await connect()
+    items = [anItem(), anItem({ asin: 'B00X57B4KE', title: 'La Peur du sage' })]
+
+    const result = await execute(
+      'mutation { syncAudibleNow { imported updated account { lastImportedAt } } }',
+    )
+
+    expect(result.errors).toBeUndefined()
+    // The account comes back with the pass, so the screen that asked redraws its
+    // date without a second round trip.
+    expect(result.data?.syncAudibleNow).toMatchObject({
+      imported: 2,
+      updated: 0,
+      account: { lastImportedAt: expect.any(String) },
+    })
+  })
+
+  // The switch governs what happens unasked. A reader who turned the nightly
+  // pass off and then pressed the button meant it.
+  test('runs even with the nightly sync turned off', async () => {
+    await connect()
+    await execute('mutation { setAudibleAutoSync(enabled: false) { autoSync } }')
+    items = [anItem()]
+
+    const result = await execute('mutation { syncAudibleNow { imported } }')
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.syncAudibleNow).toMatchObject({ imported: 1 })
+  })
+
+  test('moves a book already catalogued to the status Audible reports', async () => {
+    await connect()
+    items = [anItem()]
+    await execute('mutation { importAudibleBooks(asins: ["B002V1OF70"]) { id } }')
+    items = [
+      anItem({
+        listeningStatus: {
+          isFinished: true,
+          percentComplete: 100,
+          finishedAt: new Date('2026-04-02T10:00:00.000Z'),
+        },
+      } as Partial<AudibleItem>),
+    ]
+
+    const result = await execute('mutation { syncAudibleNow { imported updated } }')
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.syncAudibleNow).toMatchObject({ imported: 0, updated: 1 })
+  })
+
+  test('refuses when no account is connected', async () => {
+    const result = await execute('mutation { syncAudibleNow { imported } }')
+
+    expect(codeOf(result)).toBe('AUDIBLE_NOT_CONNECTED')
+  })
+
+  test('reports one error when Amazon refuses the call', async () => {
+    await connect()
+    libraryFails = new Error('device revoked')
+
+    const result = await execute('mutation { syncAudibleNow { imported } }')
+
+    expect(codeOf(result)).toBe('AUDIBLE_UNAVAILABLE')
+  })
+})

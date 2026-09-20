@@ -1,10 +1,12 @@
 """
 The app's monthly economics, for the admin screen: what the month costs (measured AI tokens, measured GCP billing) against what it brings in (App Store sales) and who is here (accounts, subscribers).
 
-AI figures are live, incremented at each scan. Users, subscribers, revenue and the GCP bill come from a projection a scheduler refreshes daily — `refreshedAt` says when, and is null until it has run once.
+AI figures are live, incremented at each scan, and split into what the tokens cost and what the grounded searches cost — two different levers, and past a few thousand searches a month the second is the larger. Users, subscribers, revenue and the GCP bill come from a projection a scheduler refreshes daily — `refreshedAt` says when, and is null until it has run once.
 """
 type AdminMetrics {
-  """This month's Gemini bill, priced from the measured tokens, e.g. `0.42`"""
+  """
+  This month's whole Gemini bill: tokens and searches together, e.g. `0.42`
+  """
   aiCostEur: Eur!
 
   """
@@ -52,6 +54,23 @@ type AdminMetrics {
   """Scans that really reached Gemini this month, e.g. `37`"""
   scans: Int!
 
+  """
+  This month's grounded searches, e.g. `0.12`. Reads `0` until the 5,000 free searches of the month are spent, which is a real zero and not a missing figure — past that, one search costs more than all the tokens of the scan that ran it.
+  """
+  searchCostEur: Eur!
+
+  """
+  Google searches run this month, free allowance included, e.g. `812`. Watch it against the 5,000 free ones: the cost stays at zero right up to the last of them.
+  
+  An estimate rather than the invoice — Gemini does not always report the searches it ran while thinking, and a grounded call that reports none is counted as one.
+  """
+  searches: Int!
+
+  """
+  This month's Gemini tokens, priced from what the API reported, e.g. `0.30`
+  """
+  tokenCostEur: Eur!
+
   """AI plus the measured infrastructure bill, e.g. `0.61`"""
   totalCostEur: Eur!
 
@@ -75,6 +94,11 @@ type AiTokenUsage {
 
   """Input tokens (the cover photo, the prompt), e.g. `2600`"""
   promptTokens: Int!
+
+  """
+  Google searches this step ran, billed one by one on top of the tokens, e.g. `2`. Always `0` for the cover step, which is deliberately not grounded.
+  """
+  searches: Int!
 
   """Reasoning tokens, billed at the output rate, e.g. `1500`"""
   thinkingTokens: Int!
@@ -167,6 +191,20 @@ enum AudibleMarketplace {
 
   """audible.it"""
   IT
+}
+
+"""What one pass over the Audible library changed."""
+type AudibleSync {
+  """The connection after the pass, its `lastImportedAt` moved."""
+  account: AudibleAccount!
+
+  """Titles bought since the last pass, now catalogued."""
+  imported: Int!
+
+  """
+  Books already catalogued whose status was moved to follow the listening. Ratings, notes and hidden books are never touched.
+  """
+  updated: Int!
 }
 
 """
@@ -806,6 +844,17 @@ type Mutation {
     """The Amazon store the reader buys audiobooks on."""
     marketplace: AudibleMarketplace!
   ): AudibleLogin!
+
+  """
+  Run a pass over the Audible library right now, without waiting for the night.
+  
+  The same pass the nightly job runs: titles bought since the last one are catalogued, and books already catalogued follow the listening — finished on Audible becomes `READ` here, with the date Audible reports rather than today's. Ratings, notes and hidden books are never touched.
+  
+  Runs whether or not the nightly sync is on. `setAudibleAutoSync` governs what happens unasked; this is the reader asking.
+  
+  Consumes no scan credit. Fails with `AUDIBLE_NOT_CONNECTED` and `AUDIBLE_UNAVAILABLE` like `audibleLibrary`.
+  """
+  syncAudibleNow: AudibleSync!
 
   """
   Hand over a transaction the App Store signed: after a purchase, after a restore, and on every launch while a subscription is running.

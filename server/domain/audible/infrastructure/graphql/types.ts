@@ -1,5 +1,10 @@
 import { AudibleMarketplaceEnum } from '~/domain/audible/infrastructure/graphql/enums'
-import type { AudibleLogin, ConnectedAccount, ImportableBook } from '~/domain/audible/types'
+import type {
+  AudibleLogin,
+  ConnectedAccount,
+  ImportableBook,
+  LibrarySync,
+} from '~/domain/audible/types'
 import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { builder } from '~/domain/shared/graphql/builder'
 
@@ -63,6 +68,37 @@ export const AudibleAccountType = builder.objectRef<ConnectedAccount>('AudibleAc
     }),
   }),
 })
+
+/** What a pass over the library did, and the account as it stands after it.
+ *
+ *  Both in one answer so the screen that asked can redraw itself whole — the
+ *  counts it reports and the date it now shows — without a second round trip.
+ *
+ *  `linked` is deliberately not here. It counts books imported before the ASIN
+ *  was kept being matched to their Audible title, which happens once and means
+ *  nothing to a reader. */
+export const AudibleSyncType = builder
+  .objectRef<{ sync: LibrarySync; account: ConnectedAccount }>('AudibleSync')
+  .implement({
+    description: 'What one pass over the Audible library changed.',
+    fields: (t) => ({
+      imported: t.int({
+        description: 'Titles bought since the last pass, now catalogued.',
+        resolve: ({ sync }) => sync.imported,
+      }),
+      updated: t.int({
+        description:
+          'Books already catalogued whose status was moved to follow the ' +
+          'listening. Ratings, notes and hidden books are never touched.',
+        resolve: ({ sync }) => sync.moved,
+      }),
+      account: t.field({
+        type: AudibleAccountType,
+        description: 'The connection after the pass, its `lastImportedAt` moved.',
+        resolve: ({ account }) => account,
+      }),
+    }),
+  })
 
 export const ImportableBookType = builder.objectRef<ImportableBook>('ImportableBook').implement({
   description:

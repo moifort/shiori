@@ -95,16 +95,22 @@ export namespace AudibleUseCase {
    *
    *  Unlike `importBooks`, this writes books nobody ticked. That is what the
    *  reader asked for by leaving the sync on, and `autoSync` is how they take it
-   *  back. */
+   *  back — except when they asked for this pass themselves, which is what
+   *  `onDemand` says. */
   export const syncLibrary = async (
     userId: UserId,
     now = new Date(),
+    onDemand = false,
   ): Promise<LibrarySync | 'not-connected' | 'sync-disabled'> => {
     const account = await AudibleQuery.accountOf(userId)
     if (!account) return 'not-connected'
     // Checked before the trip to Amazon: a reader who turned the sync off should
     // cost neither an API call nor a rotated token.
-    if (account.autoSync === false) return 'sync-disabled'
+    //
+    // `autoSync` governs the nightly pass, not a button. A reader who left it off
+    // and then asked for a pass themselves means it, so `onDemand` walks past the
+    // switch rather than reporting a setting back at them.
+    if (!onDemand && account.autoSync === false) return 'sync-disabled'
 
     const fetched = await fetchLibrary(userId)
     if (fetched === 'not-connected') return fetched

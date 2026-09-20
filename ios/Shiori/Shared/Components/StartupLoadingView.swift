@@ -11,7 +11,7 @@ struct StartupLoadingView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            RibbonMark(motion: .loop, height: 150)
+            RibbonMark(motion: .loop, size: 140)
             Text(label)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
