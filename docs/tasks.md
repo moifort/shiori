@@ -30,6 +30,8 @@ not reinvented.
 - [ ] **Series section header:** the rating or the heart is right-aligned, on the same line as
       the series title.
 - [ ] **Book row:** the rating or the heart is right-aligned on the row.
+- [ ] **No language flag on a book row inside a series section.** The section header already
+      carries it; the flag stays on standalone rows only.
 - [ ] **Uniform rows.** Rework the row layout so every list shows the same data in the same
       places.
 - [ ] **Replace the `+` CTA** with the import entry point styled like the "add a file" flow of
@@ -51,6 +53,12 @@ not reinvented.
 - [ ] **Share sheet import.** Register Shiori as a share target so that a page shared from
       Safari or the Amazon app on iPhone offers the Shiori icon, and the app catalogues a book
       from the shared content.
+
+- [ ] **Kindle sync, on the model of the Audible connection.** Constraint recorded in
+      [roadmap.md](roadmap.md#batch-6--kindle-import): Amazon publishes no Kindle library API
+      and the Audible credentials do not reach Kindle, so the Audible design (sign-in, nightly
+      sync, ASIN matching) cannot be transposed as is. Settle the source first: the Amazon data
+      export, the Kindle Cloud Reader session, or a paid third party.
 
 ## Dashboard
 
