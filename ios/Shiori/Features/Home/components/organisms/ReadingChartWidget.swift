@@ -25,7 +25,10 @@ struct ReadingChartWidget: View {
     let currentYear: Int
     let booksPerYear: [Dashboard.YearCount]
     let pagesPerMonth: [Dashboard.MonthPages]
-    @State private var metric: Metric = .books
+    /// Pages open the card rather than books: twelve monthly bars fill its
+    /// width where six yearly ones leave it mostly empty, and the running
+    /// year is the figure a reader comes to the dashboard for.
+    @State private var metric: Metric = .pages
 
     var body: some View {
         WidgetCard(title: metric == .books ? "Livres lus" : "Pages lues") {
