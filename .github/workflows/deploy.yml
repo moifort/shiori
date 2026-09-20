@@ -11,6 +11,14 @@ permissions:
   contents: read
   id-token: write   # required for Workload Identity Federation
 
+# The Terraform state takes a lock, so two applies at once do not interleave: the
+# second one fails on the lock and its push never reaches production. Queue the
+# runs instead of racing them, and never cancel one mid-apply — an interrupted
+# apply leaves the state behind the infrastructure.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
     name: 🚀 Backend
