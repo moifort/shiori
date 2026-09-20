@@ -13,6 +13,9 @@ struct BookRow: View {
     /// title alone does not say which volume this is. Absent elsewhere: on the
     /// standalone shelf there is no numbering to explain.
     var volumeLabel: String?
+    /// What kind of object this is. Only an audiobook draws anything: the others
+    /// are read, which is what a library is assumed to hold.
+    var format: BookFormat = .book
     var isHidden: Bool = false
 
     var body: some View {
@@ -47,14 +50,26 @@ struct BookRow: View {
 
             Spacer(minLength: 0)
 
-            if isHidden {
-                // Says the book is excluded from sharing. Only ever an icon,
-                // tucked in the corner: spelling it out on every row would
-                // shout a private choice at anyone glancing over a shoulder.
-                Image(systemName: "eye.slash")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel(Text("Non partagé"))
+            // The corner markers, in the order a glance wants them: what the
+            // object is, then what the reader chose about it.
+            HStack(spacing: 6) {
+                if format == .audiobook {
+                    // A recording sits in the same list as the printed books and
+                    // reads nothing like one — the cover alone never says so.
+                    Image(systemName: "headphones")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel(Text("Livre audio"))
+                }
+                if isHidden {
+                    // Says the book is excluded from sharing. Only ever an icon,
+                    // tucked in the corner: spelling it out on every row would
+                    // shout a private choice at anyone glancing over a shoulder.
+                    Image(systemName: "eye.slash")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel(Text("Non partagé"))
+                }
             }
         }
         // Room for the badge, which overhangs the cover's top edge.
@@ -118,6 +133,14 @@ private struct ReadingStatusBadge: View {
             cover: Book(id: "3", title: "Piranesi", authors: ["Susanna Clarke"], status: .toRead),
             status: .toRead,
             rating: nil
+        )
+        BookRow(
+            title: "Dune",
+            authorLine: "Frank Herbert",
+            cover: Book(id: "4", title: "Dune", authors: ["Frank Herbert"], status: .reading),
+            status: .reading,
+            rating: nil,
+            format: .audiobook
         )
     }
 }

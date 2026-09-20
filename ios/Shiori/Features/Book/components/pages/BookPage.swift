@@ -52,6 +52,21 @@ struct BookPage: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(book.title).font(.headline)
                     Text(book.authorLine).font(.subheadline).foregroundStyle(.secondary)
+                    // Who reads a recording, and how long it runs, are as much a
+                    // reason to pick it as who wrote it — so they sit with the
+                    // author rather than down among the details. Only a recording
+                    // has either.
+                    if let narratorLine = book.narratorLine {
+                        Label("Lu par \(narratorLine)", systemImage: "waveform")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 1)
+                    }
+                    if let durationLabel = book.durationLabel {
+                        Label(durationLabel, systemImage: "clock")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 Spacer(minLength: 0)
             }

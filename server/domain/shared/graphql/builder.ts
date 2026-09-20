@@ -7,6 +7,7 @@ import type {
   BookId,
   CoverUrl,
   Isbn13,
+  NarratorName,
   PageCount,
   Publisher,
   ReadingNote,
@@ -59,6 +60,7 @@ export const builder = new SchemaBuilder<{
     PersonName: { Input: PersonName; Output: PersonName }
     Publisher: { Input: Publisher; Output: Publisher }
     Isbn13: { Input: Isbn13; Output: Isbn13 }
+    NarratorName: { Input: NarratorName; Output: NarratorName }
     Subgenre: { Input: Subgenre; Output: Subgenre }
     Synopsis: { Input: Synopsis; Output: Synopsis }
     PageCount: { Input: PageCount; Output: PageCount }

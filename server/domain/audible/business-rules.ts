@@ -2,7 +2,15 @@ import type { AudibleItem } from 'audible-api-ts'
 import { AudibleAsin } from '~/domain/audible/primitives'
 import type { ImportableBook } from '~/domain/audible/types'
 import type { NewBook } from '~/domain/book/command'
-import { CoverUrl, Isbn13, ListeningMinutes, Publisher, Synopsis } from '~/domain/book/primitives'
+import {
+  CoverUrl,
+  Isbn13,
+  ListeningMinutes,
+  MAX_NARRATORS,
+  NarratorName,
+  Publisher,
+  Synopsis,
+} from '~/domain/book/primitives'
 import type { Book, ReadingStatus } from '~/domain/book/types'
 import { SeriesName, seriesKeyOf, VolumeNumber } from '~/domain/series/primitives'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
@@ -35,7 +43,10 @@ export const importableFrom = (
     asin,
     title,
     authors,
-    narrators: item.narrators ?? [],
+    narrators: (item.narrators ?? [])
+      .map((narrator) => optionally(narrator, NarratorName))
+      .filter(isPresent)
+      .slice(0, MAX_NARRATORS),
     durationMinutes: optionally(item.durationMinutes, ListeningMinutes),
     publisher: optionally(item.publisher, Publisher),
     synopsis: optionally(plainTextOf(item.summary ?? item.merchandisingSummary), Synopsis),
@@ -65,7 +76,8 @@ export const importableFrom = (
  *  for a book typed by hand.
  *
  *  The running time is kept, though: it is the only source there is for it, and
- *  the dashboard counts hours listened the way it counts pages read. */
+ *  the dashboard counts hours listened the way it counts pages read. So are the
+ *  narrators, for the same reason — nothing else in Shiori ever learns them. */
 export const bookFrom = (importable: ImportableBook): NewBook => ({
   title: importable.title,
   authors: importable.authors,
@@ -78,6 +90,7 @@ export const bookFrom = (importable: ImportableBook): NewBook => ({
   status: importable.status,
   finishedAt: importable.finishedAt,
   durationMinutes: importable.durationMinutes,
+  narrators: importable.narrators,
 })
 
 /** Where the reader stands in a title, as Audible knows it. Anything started is

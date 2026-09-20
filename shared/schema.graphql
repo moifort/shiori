@@ -101,6 +101,11 @@ type Book {
   The cover to draw: the reader own photo when there is one, otherwise the publisher cover found by ISBN at scan time. Null when neither exists, and the app draws a typographic placeholder — as it must when the URL fails to load, since a published cover can disappear from its source.
   """
   coverUrl: CoverUrl
+
+  """
+  An audiobook's running time in whole minutes. Null on anything else, and null on an audiobook no import ever timed — a scanned cover does not say how long the recording is.
+  """
+  durationMinutes: Int
   finishedAt: DateTime
 
   """Year the work first appeared, not the year of this edition."""
@@ -114,6 +119,11 @@ type Book {
   hidden: Boolean!
   id: BookId!
   isbn13: Isbn13
+
+  """
+  Who reads the recording, at most five. Empty on anything but an audiobook, and empty on an audiobook no import ever named.
+  """
+  narrators: [NarratorName!]!
   note: ReadingNote
   pageCount: PageCount
   publisher: Publisher
@@ -133,7 +143,7 @@ type Book {
 }
 
 """
-Corrections to a book record. Omitted fields are left as they are; null clears a field (an empty list for authors and subgenres). Title and format ignore null.
+Corrections to a book record. Omitted fields are left as they are; null clears a field (an empty list for authors, subgenres and narrators). Title and format ignore null.
 """
 input BookEditInput {
   authors: [AuthorName!]
@@ -141,6 +151,9 @@ input BookEditInput {
   format: BookFormat
   genre: Genre
   isbn13: Isbn13
+
+  """At most five."""
+  narrators: [NarratorName!]
   pageCount: PageCount
   publisher: Publisher
 
@@ -413,7 +426,9 @@ type ImportableBook {
   authors: [AuthorName!]!
   coverUrl: CoverUrl
 
-  """Audible's running time. Not kept on the book, which counts pages."""
+  """
+  Audible's running time, kept on the book: it is what the listening statistics count, the way pages are what the reading statistics count.
+  """
   durationMinutes: Int
 
   """
@@ -422,9 +437,9 @@ type ImportableBook {
   finishedAt: DateTime
 
   """
-  Who reads it. Shown in the picker to tell two recordings apart; not kept on the book, which has no narrator.
+  Who reads it. Shown in the picker to tell two recordings apart, and kept on the book: Audible is the only source that names them.
   """
-  narrators: [String!]!
+  narrators: [NarratorName!]!
 
   """Null for a standalone title."""
   seriesName: SeriesName
@@ -651,6 +666,11 @@ type Mutation {
 }
 
 """
+Who reads an audiobook aloud, 1 to 200 characters. Not an AuthorName: a narrator is not the author of what they read. Example: "Bernard Gabay".
+"""
+scalar NarratorName
+
+"""
 A book catalogued without a scan — typed by hand, or taken from a series catalogue. Consumes no scan credit.
 """
 input NewBookInput {
@@ -669,6 +689,11 @@ input NewBookInput {
   """Defaults to false."""
   hidden: Boolean
   isbn13: Isbn13
+
+  """
+  Who reads the recording, at most five. Only meaningful on an AUDIOBOOK.
+  """
+  narrators: [NarratorName!]
   pageCount: PageCount
   publisher: Publisher
 

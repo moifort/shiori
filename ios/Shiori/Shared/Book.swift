@@ -185,6 +185,12 @@ struct Book: Identifiable, Hashable, Sendable {
     var genre: BookGenre?
     var subgenres: [String] = []
     var pageCount: Int?
+    /// An audiobook's running time, in whole minutes. Only Audible knows it: a
+    /// scanned cover does not say how long the recording is.
+    var durationMinutes: Int?
+    /// Who reads the recording. Empty on anything but an audiobook, and empty on
+    /// an audiobook no Audible import ever named.
+    var narrators: [String] = []
     var isbn13: String?
     var series: SeriesMembership?
     /// The cover to draw: the reader's own photo, or the publisher's cover found by
@@ -198,6 +204,25 @@ struct Book: Identifiable, Hashable, Sendable {
     var addedAt: Date?
     var startedAt: Date?
     var finishedAt: Date?
+
+    /// Who reads the recording, as one line. Nil rather than a placeholder: a
+    /// book with no narrator draws no line at all, where an author is always
+    /// credited to somebody even when nobody knows who.
+    var narratorLine: String? {
+        narrators.isEmpty ? nil : narrators.joined(separator: ", ")
+    }
+
+    /// The running time as a reader says it out loud — "8 h 12", "47 min". Hours
+    /// and minutes rather than a bare minute count: nobody hears "492 minutes"
+    /// as a length.
+    var durationLabel: String? {
+        guard let durationMinutes else { return nil }
+        let hours = durationMinutes / 60
+        let minutes = durationMinutes % 60
+        if hours == 0 { return String(localized: "\(minutes) min") }
+        if minutes == 0 { return String(localized: "\(hours) h") }
+        return String(localized: "\(hours) h \(minutes)")
+    }
 
     /// Authors as one line. Falls back to a placeholder rather than an empty
     /// string so a row never collapses to a bare title with a gap under it.

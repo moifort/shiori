@@ -3,7 +3,7 @@ import type { BookEdit } from '~/domain/book/command'
 import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { BookEditInput, NewBookInput } from '~/domain/book/infrastructure/graphql/inputs'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
-import { MAX_SUBGENRES } from '~/domain/book/primitives'
+import { MAX_NARRATORS, MAX_SUBGENRES } from '~/domain/book/primitives'
 import { BookQuery } from '~/domain/book/query'
 import type { BookId } from '~/domain/book/types'
 import { BookUseCase } from '~/domain/book/use-case'
@@ -45,6 +45,7 @@ builder.mutationFields((t) => ({
         genre: args.input.genre ?? undefined,
         subgenres: args.input.subgenres?.slice(0, MAX_SUBGENRES) ?? undefined,
         pageCount: args.input.pageCount ?? undefined,
+        narrators: args.input.narrators?.slice(0, MAX_NARRATORS) ?? undefined,
         isbn13: args.input.isbn13 ?? undefined,
         series: args.input.series
           ? {
@@ -81,6 +82,9 @@ builder.mutationFields((t) => ({
         ...(input.authors !== undefined ? { authors: input.authors ?? [] } : {}),
         ...(input.subgenres !== undefined
           ? { subgenres: (input.subgenres ?? []).slice(0, MAX_SUBGENRES) }
+          : {}),
+        ...(input.narrators !== undefined
+          ? { narrators: (input.narrators ?? []).slice(0, MAX_NARRATORS) }
           : {}),
         ...clearable('genre', input.genre),
         ...clearable('publisher', input.publisher),

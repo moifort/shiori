@@ -150,6 +150,8 @@ extension ShioriGraphQL.BookDetail {
             genre: genre?.asDomain,
             subgenres: subgenres,
             pageCount: pageCount,
+            durationMinutes: durationMinutes,
+            narrators: narrators,
             isbn13: isbn13,
             series: series?.asMembership,
             coverURL: coverUrl.flatMap(URL.init(string:)),

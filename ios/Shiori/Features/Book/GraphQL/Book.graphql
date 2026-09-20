@@ -55,6 +55,8 @@ fragment BookDetail on Book {
   genre
   subgenres
   pageCount
+  durationMinutes
+  narrators
   isbn13
   coverUrl
   status

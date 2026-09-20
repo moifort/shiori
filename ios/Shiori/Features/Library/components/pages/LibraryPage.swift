@@ -101,6 +101,7 @@ struct LibraryPage: View {
                     // Only inside a saga: on the standalone shelf there is no
                     // numbering for a label to explain.
                     volumeLabel: section.seriesName != nil ? book.series?.label : nil,
+                    format: book.format,
                     isHidden: book.hidden
                 )
             }

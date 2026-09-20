@@ -11,6 +11,7 @@ import type {
   Genre,
   Isbn13,
   ListeningMinutes,
+  NarratorName,
   PageCount,
   Publisher,
   ReadingNote,
@@ -39,6 +40,9 @@ export type NewBook = {
   pageCount?: PageCount
   /** An audiobook's running time, which only an Audible import knows. */
   durationMinutes?: ListeningMinutes
+  /** Who reads the recording. An import knows them; a scan reads a cover, which
+   *  does not name its narrator. */
+  narrators?: NarratorName[]
   isbn13?: Isbn13
   language?: Language
   series?: SeriesMembership
@@ -68,6 +72,7 @@ export type BookEdit = Partial<
     | 'genre'
     | 'subgenres'
     | 'pageCount'
+    | 'narrators'
     | 'isbn13'
     | 'series'
   >
@@ -93,6 +98,7 @@ export namespace BookCommand {
       subgenres: input.subgenres ?? [],
       pageCount: input.pageCount,
       durationMinutes: input.durationMinutes,
+      narrators: input.narrators ?? [],
       isbn13: input.isbn13,
       language: input.language,
       series: input.series,

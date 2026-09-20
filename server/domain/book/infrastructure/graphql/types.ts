@@ -68,6 +68,21 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
       description: 'Zero to three free labels refining the genre. Empty, never null.',
       resolve: (book) => book.subgenres,
     }),
+    durationMinutes: t.int({
+      nullable: true,
+      description:
+        "An audiobook's running time in whole minutes. Null on anything else, " +
+        'and null on an audiobook no import ever timed — a scanned cover does ' +
+        'not say how long the recording is.',
+      resolve: (book) => book.durationMinutes ?? null,
+    }),
+    narrators: t.field({
+      type: ['NarratorName'],
+      description:
+        'Who reads the recording, at most five. Empty on anything but an ' +
+        'audiobook, and empty on an audiobook no import ever named.',
+      resolve: (book) => book.narrators ?? [],
+    }),
     pageCount: t.field({
       type: 'PageCount',
       nullable: true,

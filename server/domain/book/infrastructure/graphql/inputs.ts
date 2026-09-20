@@ -38,6 +38,11 @@ export const NewBookInput = builder.inputType('NewBookInput', {
     genre: t.field({ type: GenreEnum, required: false }),
     subgenres: t.field({ type: ['Subgenre'], required: false, description: 'At most three.' }),
     pageCount: t.field({ type: 'PageCount', required: false }),
+    narrators: t.field({
+      type: ['NarratorName'],
+      required: false,
+      description: 'Who reads the recording, at most five. Only meaningful on an AUDIOBOOK.',
+    }),
     isbn13: t.field({ type: 'Isbn13', required: false }),
     series: t.field({
       type: SeriesMembershipInput,
@@ -68,7 +73,8 @@ export const NewBookInput = builder.inputType('NewBookInput', {
 export const BookEditInput = builder.inputType('BookEditInput', {
   description:
     'Corrections to a book record. Omitted fields are left as they are; null clears ' +
-    'a field (an empty list for authors and subgenres). Title and format ignore null.',
+    'a field (an empty list for authors, subgenres and narrators). Title and format ' +
+    'ignore null.',
   fields: (t) => ({
     title: t.field({ type: 'BookTitle', required: false }),
     authors: t.field({ type: ['AuthorName'], required: false }),
@@ -79,6 +85,7 @@ export const BookEditInput = builder.inputType('BookEditInput', {
     genre: t.field({ type: GenreEnum, required: false }),
     subgenres: t.field({ type: ['Subgenre'], required: false, description: 'At most three.' }),
     pageCount: t.field({ type: 'PageCount', required: false }),
+    narrators: t.field({ type: ['NarratorName'], required: false, description: 'At most five.' }),
     isbn13: t.field({ type: 'Isbn13', required: false }),
   }),
 })

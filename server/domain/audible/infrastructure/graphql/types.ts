@@ -70,15 +70,17 @@ export const ImportableBookType = builder.objectRef<ImportableBook>('ImportableB
     title: t.field({ type: 'BookTitle', resolve: (importable) => importable.title }),
     authors: t.field({ type: ['AuthorName'], resolve: (importable) => importable.authors }),
     narrators: t.field({
-      type: ['String'],
+      type: ['NarratorName'],
       description:
-        'Who reads it. Shown in the picker to tell two recordings apart; not ' +
-        'kept on the book, which has no narrator.',
+        'Who reads it. Shown in the picker to tell two recordings apart, and ' +
+        'kept on the book: Audible is the only source that names them.',
       resolve: (importable) => importable.narrators,
     }),
     durationMinutes: t.int({
       nullable: true,
-      description: "Audible's running time. Not kept on the book, which counts pages.",
+      description:
+        "Audible's running time, kept on the book: it is what the listening " +
+        'statistics count, the way pages are what the reading statistics count.',
       resolve: (importable) => importable.durationMinutes ?? null,
     }),
     coverUrl: t.field({

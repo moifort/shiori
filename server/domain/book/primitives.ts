@@ -7,6 +7,7 @@ import type {
   Genre,
   Isbn13 as Isbn13Type,
   ListeningMinutes as ListeningMinutesType,
+  NarratorName as NarratorNameType,
   PageCount as PageCountType,
   Publisher as PublisherType,
   ReadingNote as ReadingNoteType,
@@ -37,6 +38,16 @@ export const Subgenre = (value: unknown) => {
 /** A book carries at most three subgenres: past that they stop refining the
  *  genre and start restating the synopsis. */
 export const MAX_SUBGENRES = 3
+
+export const NarratorName = (value: unknown) => {
+  const v = z.string().trim().min(1).max(200).parse(value)
+  return make<NarratorNameType>()(v)
+}
+
+/** A full-cast recording can credit dozens of voices; the ones a reader wants
+ *  named are the leads. Past five the line stops identifying the recording and
+ *  starts being a cast list. */
+export const MAX_NARRATORS = 5
 
 export const Synopsis = (value: unknown) => {
   const v = z.string().trim().min(1).max(4000).parse(value)

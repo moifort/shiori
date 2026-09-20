@@ -17,6 +17,10 @@ export type PageCount = Brand<number, 'PageCount'>
  *  reading statistics count. Only Audible fills it — a scanned cover does not say
  *  how long the recording is. */
 export type ListeningMinutes = Brand<number, 'ListeningMinutes'>
+/** Who reads an audiobook aloud. Its own type rather than an `AuthorName`: a
+ *  narrator is not an author, and a library that conflated the two would credit
+ *  the wrong person on every recording. */
+export type NarratorName = Brand<string, 'NarratorName'>
 /** One to five whole stars. Half stars double the value space without adding
  *  discernment, and shrink the touch target. */
 export type StarRating = Brand<number, 'StarRating'>
@@ -105,6 +109,9 @@ export type Book = {
   /** An audiobook's running time. Absent on anything else, and absent on an
    *  audiobook catalogued by hand or by scan, which had no source for it. */
   durationMinutes?: ListeningMinutes
+  /** Who reads the recording. Empty on anything but an audiobook, and empty on
+   *  an audiobook whose source never said — a cover does not name its narrator. */
+  narrators: NarratorName[]
   isbn13?: Isbn13
   /** The language of the edition on the shelf, not the app's language. */
   language?: Language

@@ -3,6 +3,7 @@ import type {
   CoverUrl,
   Isbn13,
   ListeningMinutes,
+  NarratorName,
   Publisher,
   ReadingStatus,
   SeriesMembership,
@@ -86,7 +87,9 @@ export type ImportableBook = {
   asin: AudibleAsin
   title: BookTitle
   authors: AuthorName[]
-  narrators: string[]
+  /** Who reads the recording. Shown in the picker and carried onto the book:
+   *  Audible is the only source that names them, and a cover never does. */
+  narrators: NarratorName[]
   /** Audible's own running time, shown in the picker and carried onto the book:
    *  a library counts pages, and what an audiobook has instead is hours. */
   durationMinutes?: ListeningMinutes

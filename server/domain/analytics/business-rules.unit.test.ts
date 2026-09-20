@@ -299,6 +299,7 @@ describe('building the view', () => {
     authors: [],
     format: 'book',
     subgenres: [],
+    narrators: [],
     status: 'to-read',
     hidden: false,
     addedAt: new Date('2026-01-01T10:00:00.000Z'),

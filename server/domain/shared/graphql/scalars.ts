@@ -6,6 +6,7 @@ import {
   BookId,
   CoverUrl,
   Isbn13,
+  NarratorName,
   PageCount,
   Publisher,
   ReadingNote,
@@ -102,6 +103,14 @@ builder.scalarType('Isbn13', {
     'Example: "9780756404741".',
   serialize: (value) => value as string,
   parseValue: validatedParse('Isbn13', Isbn13),
+})
+
+builder.scalarType('NarratorName', {
+  description:
+    'Who reads an audiobook aloud, 1 to 200 characters. Not an AuthorName: a ' +
+    'narrator is not the author of what they read. Example: "Bernard Gabay".',
+  serialize: (value) => value as string,
+  parseValue: validatedParse('NarratorName', NarratorName),
 })
 
 builder.scalarType('Subgenre', {

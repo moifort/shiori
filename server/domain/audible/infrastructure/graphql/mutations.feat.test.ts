@@ -202,6 +202,22 @@ describe('importing through the API', () => {
     ])
   })
 
+  // Audible is the only source that ever names a narrator: a cover does not say
+  // who reads the recording, so an import that dropped them lost them for good.
+  test('keeps the narrators of an imported recording on the book', async () => {
+    await connect()
+    items = [anItem({ narrators: ['Bernard Gabay', 'Marie Bouvier'] })]
+
+    const result = await execute(
+      'mutation { importAudibleBooks(asins: ["B002V1OF70"]) { narrators } }',
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.importAudibleBooks).toEqual([
+      { narrators: ['Bernard Gabay', 'Marie Bouvier'] },
+    ])
+  })
+
   test('puts the imported book in the library it was imported into', async () => {
     await connect()
     items = [anItem()]
