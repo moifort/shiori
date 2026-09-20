@@ -8,7 +8,8 @@ import SwiftUI
 /// The chart is kept to its bars: no value axis, no gridlines, no frame. The
 /// figure that matters is spelled out above it, so an axis would only repeat a
 /// number already written in full; what the bars are for is the shape of the
-/// years, which reads better small and unfurnished.
+/// years, which reads better small and unfurnished. Monthly bars carry their own
+/// count on top, which reads a single month off without a scale to measure against.
 struct ReadingChartWidget: View {
     enum Metric: String, CaseIterable, Identifiable {
         case books, pages
@@ -96,9 +97,10 @@ struct ReadingChartWidget: View {
                 )
                 .foregroundStyle(DashboardPalette.pages)
                 .cornerRadius(3)
+                .annotation(position: .top, spacing: 2) { pagesLabel(entry.pages) }
             }
             .chartXScale(domain: 0.5...12.5)
-            .chartYScale(domain: 0...max(1, pagesPerMonth.map(\.pages).max() ?? 0))
+            .chartYScale(domain: 0...pagesScaleMax)
             .chartXAxis {
                 AxisMarks(values: Array(1...12)) { value in
                     periodLabel(Text(monthLabel(for: value)))
@@ -106,6 +108,24 @@ struct ReadingChartWidget: View {
             }
             .chartYAxis(.hidden)
         }
+    }
+
+    /// Its count above each monthly bar, an empty month left bare rather than
+    /// labelled zero. Nine points and no larger: twelve columns share the width of
+    /// the card, and a four-figure month has to fit between its neighbours.
+    @ViewBuilder
+    private func pagesLabel(_ pages: Int) -> some View {
+        if pages > 0 {
+            Text(pages, format: .number)
+                .font(.system(size: 9, design: .rounded))
+                .foregroundStyle(.tertiary)
+        }
+    }
+
+    /// Headroom above the tallest bar for the label it now carries, which the
+    /// chart would otherwise clip against its top edge.
+    private var pagesScaleMax: Int {
+        max(1, Int(Double(pagesPerMonth.map(\.pages).max() ?? 0) * 1.2))
     }
 
     /// An explicit anchor: left to its default, a label built from a closure sits
