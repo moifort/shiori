@@ -26,6 +26,9 @@ schema, a domain command, or several screens at once; **large** brings in a new 
 - [ ] **Book screen, show the book type as an icon** at the top right of the main section.
 - [ ] **Series list, remove the small chevrons** and put the status icon at the top right of
       each row.
+- [ ] **Dashboard, hide the listening hours when the library holds no audiobook.** The
+      "Heures" segment of the reading chart widget disappears, and a persisted choice of that
+      metric falls back to pages.
 - [ ] **Dashboard, remember the reading chart metric across launches.** The segmented picker
       of the reading chart widget is a plain `@State` today, so it resets to pages on every
       start. Persist the choice (`@AppStorage`) and restore it on launch.
@@ -67,6 +70,12 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       Safari or the Amazon app on iPhone offers the Shiori icon, and the app catalogues a book
       from the shared content. An app extension, a shared container, and a scan from text or
       URL rather than from a photo.
+- [ ] **Share a profile with friends.** A new screen lists the reader's friends; opening one
+      shows their books in progress and series in progress, their favourites, and their
+      reading pile. This is batch 3 of [roadmap.md](roadmap.md#batch-3--sharing) with a
+      friend list on top: it needs an invitation and acceptance flow, a friendship record, a
+      query that reads another reader's books under the `hidden` rule, and it exposes books
+      only, never the series catalogue.
 - [ ] **Kindle sync, on the model of the Audible connection.** Constraint recorded in
       [roadmap.md](roadmap.md#batch-6--kindle-import): Amazon publishes no Kindle library API
       and the Audible credentials do not reach Kindle, so the Audible design (sign-in, nightly
