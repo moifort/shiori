@@ -4,6 +4,11 @@ import SwiftUI
 /// Books read per year, or pages read per month of this year. Every bar carries
 /// the same colour, the period still running included: a paler bar there read as
 /// a defect rather than as a period not over yet.
+///
+/// The chart is kept to its bars: no value axis, no gridlines, no frame. The
+/// figure that matters is spelled out above it, so an axis would only repeat a
+/// number already written in full; what the bars are for is the shape of the
+/// years, which reads better small and unfurnished.
 struct ReadingChartWidget: View {
     enum Metric: String, CaseIterable, Identifiable {
         case books, pages
@@ -31,9 +36,9 @@ struct ReadingChartWidget: View {
             .frame(width: 150)
             .accessibilityIdentifier("home-chart-metric")
         } content: {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 total
-                chart.frame(height: 150)
+                chart.frame(height: 84)
             }
         }
         .accessibilityIdentifier("home-chart")
@@ -44,12 +49,12 @@ struct ReadingChartWidget: View {
             switch metric {
             case .books:
                 Text(booksThisYear, format: .number)
-                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                    .font(.system(.title, design: .rounded, weight: .bold))
                     .foregroundStyle(DashboardPalette.books)
                 Text("livres en \(String(currentYear))")
             case .pages:
                 Text(pagesThisYear, format: .number)
-                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                    .font(.system(.title, design: .rounded, weight: .bold))
                     .foregroundStyle(DashboardPalette.pages)
                 Text("pages en \(String(currentYear))")
             }
@@ -66,15 +71,17 @@ struct ReadingChartWidget: View {
         switch metric {
         case .books:
             Chart(booksPerYear) { entry in
-                BarMark(x: .value("Année", String(entry.year)), y: .value("Livres", entry.count))
-                    .foregroundStyle(DashboardPalette.books)
-                    .cornerRadius(4)
+                BarMark(
+                    x: .value("Année", String(entry.year)),
+                    y: .value("Livres", entry.count),
+                    width: .fixed(14)
+                )
+                .foregroundStyle(DashboardPalette.books)
+                .cornerRadius(3)
             }
             .chartYScale(domain: 0...max(1, booksPerYear.map(\.count).max() ?? 0))
-            // Years keep their labels and lose their gridlines: six dashed
-            // verticals between six bars is more furniture than reading.
-            .chartXAxis { AxisMarks { AxisValueLabel() } }
-            .chartYAxis { AxisMarks(position: .leading) }
+            .chartXAxis { AxisMarks { periodLabel(Text(yearLabel(for: $0))) } }
+            .chartYAxis(.hidden)
         case .pages:
             // Numeric months rather than month letters: J, J and M, M would collide
             // as category labels.
@@ -91,17 +98,26 @@ struct ReadingChartWidget: View {
             .chartYScale(domain: 0...max(1, pagesPerMonth.map(\.pages).max() ?? 0))
             .chartXAxis {
                 AxisMarks(values: Array(1...12)) { value in
-                    // An explicit anchor: left to its default, a label built from
-                    // a closure sits a few points right of its own column.
-                    AxisValueLabel(anchor: .top) {
-                        if let month = value.as(Int.self) {
-                            Text(Calendar.current.veryShortStandaloneMonthSymbols[month - 1])
-                        }
-                    }
+                    periodLabel(Text(monthLabel(for: value)))
                 }
             }
-            .chartYAxis { AxisMarks(position: .leading) }
+            .chartYAxis(.hidden)
         }
+    }
+
+    /// An explicit anchor: left to its default, a label built from a closure sits
+    /// a few points right of its own column.
+    private func periodLabel(_ text: Text) -> some AxisMark {
+        AxisValueLabel(anchor: .top) {
+            text.font(.caption2).foregroundStyle(.tertiary)
+        }
+    }
+
+    private func yearLabel(for value: AxisValue) -> String { value.as(String.self) ?? "" }
+
+    private func monthLabel(for value: AxisValue) -> String {
+        guard let month = value.as(Int.self) else { return "" }
+        return Calendar.current.veryShortStandaloneMonthSymbols[month - 1]
     }
 
     private var booksThisYear: Int { booksPerYear.first { $0.year == currentYear }?.count ?? 0 }
