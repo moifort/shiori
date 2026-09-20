@@ -17,6 +17,7 @@ fragment BookSummary on Book {
   title
   authors
   format
+  genre
   coverUrl
   status
   rating

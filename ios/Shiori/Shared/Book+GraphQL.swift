@@ -129,6 +129,7 @@ extension ShioriGraphQL.BookSummary {
             title: title,
             authors: authors,
             format: format.asDomain,
+            genre: genre?.asDomain,
             series: series?.asMembership,
             coverURL: coverUrl.flatMap(URL.init(string:)),
             status: status.asDomain,

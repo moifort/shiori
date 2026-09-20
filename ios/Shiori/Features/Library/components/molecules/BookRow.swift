@@ -13,6 +13,9 @@ struct BookRow: View {
     /// title alone does not say which volume this is. Absent elsewhere: on the
     /// standalone shelf there is no numbering to explain.
     var volumeLabel: String?
+    /// What the book is about. Absent on a book added by hand and on every
+    /// Audible import, which draw no genre line at all rather than "Autre".
+    var genre: BookGenre?
     /// What kind of object this is. Only an audiobook draws anything: the others
     /// are read, which is what a library is assumed to hold.
     var format: BookFormat = .book
@@ -44,6 +47,18 @@ struct BookRow: View {
 
                 if let rating {
                     StarRatingView(rating: rating)
+                        .padding(.top, 1)
+                }
+
+                // Under the stars, where it answers "what is this?" for a title
+                // that does not say. Icon and word together: the glyph alone
+                // would be a riddle on a list of twenty different genres.
+                if let genre {
+                    // `image` rather than `Image(systemName:)`: three genres have
+                    // no SF Symbol and are drawn from the asset catalog instead.
+                    Label { Text(genre.label) } icon: { genre.image }
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                         .padding(.top, 1)
                 }
             }
@@ -132,7 +147,8 @@ private struct ReadingStatusBadge: View {
             authorLine: "Susanna Clarke",
             cover: Book(id: "3", title: "Piranesi", authors: ["Susanna Clarke"], status: .toRead),
             status: .toRead,
-            rating: nil
+            rating: nil,
+            genre: .literaryFiction
         )
         BookRow(
             title: "Dune",
@@ -140,6 +156,7 @@ private struct ReadingStatusBadge: View {
             cover: Book(id: "4", title: "Dune", authors: ["Frank Herbert"], status: .reading),
             status: .reading,
             rating: nil,
+            genre: .scienceFiction,
             format: .audiobook
         )
     }
