@@ -69,6 +69,18 @@ mutation SetAudibleAutoSync($enabled: Boolean!) {
   }
 }
 
+# The same pass the nightly job runs, asked for now. Answers with the account so
+# the screen redraws its date and its counts in one round trip.
+mutation SyncAudibleNow {
+  syncAudibleNow {
+    imported
+    updated
+    account {
+      ...AudibleAccountSummary
+    }
+  }
+}
+
 mutation DisconnectAudible {
   disconnectAudible
 }

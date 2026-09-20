@@ -100,6 +100,25 @@ enum ImportAPI {
         return data.setAudibleAutoSync.fragments.audibleAccountSummary.asDomain
     }
 
+    /// Runs the nightly pass now, whatever the switch says, and reports what it
+    /// changed alongside the account it left behind — so the card redraws its
+    /// date and its counts in one round trip.
+    ///
+    /// Reads the whole Audible library and can write a whole shelf, so it is
+    /// given the import's timeout rather than the session's own.
+    static func syncNow() async throws -> (outcome: AudibleSyncOutcome, account: AudibleAccount) {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.SyncAudibleNowMutation(),
+            requestTimeout: importTimeout
+        )
+        let sync = data.syncAudibleNow
+        return (
+            AudibleSyncOutcome(imported: sync.imported, updated: sync.updated),
+            sync.account.fragments.audibleAccountSummary.asDomain
+        )
+    }
+
     /// Forgets our copy of the credentials. The device stays registered on the
     /// Amazon side until the reader removes it there, which the screen says.
     static func disconnect() async throws {

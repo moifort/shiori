@@ -133,3 +133,44 @@ struct ImportableBook: Identifiable, Sendable {
         Book(id: asin, title: title, authors: authors, coverURL: coverURL, status: status)
     }
 }
+
+/// Where a library can be imported from. One source today; the menu exists so
+/// the next one is an entry rather than a redesign.
+enum ImportSource: String, CaseIterable, Identifiable, Sendable {
+    case audible
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .audible: "Audible"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .audible: "headphones"
+        }
+    }
+}
+
+/// What one pass over the Audible library changed. Shown on the source card
+/// right after the reader asks for it, so the button reports rather than just
+/// stopping its spinner.
+struct AudibleSyncOutcome: Sendable {
+    let imported: Int
+    let updated: Int
+
+    var summary: String {
+        switch (imported, updated) {
+        case (0, 0):
+            String(localized: "Rien de nouveau depuis la dernière fois.")
+        case (let added, 0):
+            String(localized: "\(added) livre(s) ajouté(s).")
+        case (0, let moved):
+            String(localized: "\(moved) livre(s) mis à jour.")
+        case (let added, let moved):
+            String(localized: "\(added) livre(s) ajouté(s), \(moved) mis à jour.")
+        }
+    }
+}

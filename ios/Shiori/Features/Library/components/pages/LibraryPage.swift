@@ -52,22 +52,12 @@ struct LibraryPage: View {
                 .accessibilityIdentifier("library-filter")
             }
             ToolbarItem(placement: .topBarTrailing) {
-                // A menu rather than a button: a book now arrives three ways —
-                // scanned from the tab bar, typed in, or imported from Audible —
-                // and only the scan deserves a permanent place of its own.
-                Menu {
-                    Button {
-                        onAddManually()
-                    } label: {
-                        Label("Ajouter à la main", systemImage: "square.and.pencil")
-                    }
-                    Button {
-                        onImportFromAudible()
-                    } label: {
-                        Label("Importer depuis Audible", systemImage: "headphones")
-                    }
-                } label: {
-                    Label("Ajouter un livre", systemImage: "plus")
+                // A book arrives scanned from the tab bar or typed in here.
+                // Importing a whole library is not adding a book: it is managing a
+                // connected account, and it lives in the Accueil tab's imports menu
+                // alongside the sync it governs.
+                Button(action: onAddManually) {
+                    Label("Ajouter à la main", systemImage: "plus")
                 }
                 .accessibilityIdentifier("library-add")
             }

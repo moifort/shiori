@@ -17,11 +17,33 @@ struct HomeView: View {
 
     @State private var viewModel = HomeViewModel()
     @State private var selectedBook: Book?
+    /// The import source whose card is open. One source today; the menu is here so
+    /// the next one is an entry rather than a redesign.
+    @State private var openSource: ImportSource?
 
     var body: some View {
         NavigationStack {
             content
                 .navigationTitle("Accueil")
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        // A menu rather than a button, because managing a
+                        // connected library is not the same act as importing from
+                        // it, and the next source lands here too.
+                        Menu {
+                            ForEach(ImportSource.allCases) { source in
+                                Button {
+                                    openSource = source
+                                } label: {
+                                    Label(source.label, systemImage: source.symbol)
+                                }
+                            }
+                        } label: {
+                            Label("Imports", systemImage: "square.and.arrow.down")
+                        }
+                        .accessibilityIdentifier("home-imports")
+                    }
+                }
                 .navigationDestination(for: Destination.self) { destination in
                     switch destination {
                     case let .series(id): SeriesView(seriesId: id)
@@ -37,6 +59,17 @@ struct HomeView: View {
                 onChanged: { _ in Task { await viewModel.load() } },
                 onDeleted: { _ in Task { await viewModel.load() } }
             )
+        }
+        // Reloaded on dismissal rather than on the import's callback: a pass asked
+        // for on the card catalogues books without ever importing anything through
+        // the picker, and the figures behind this sheet have moved either way.
+        // An import can add a hundred books across a dozen sagas, so the dashboard
+        // is rebuilt rather than patched figure by figure.
+        .sheet(item: $openSource, onDismiss: { Task { await viewModel.load() } }) { source in
+            switch source {
+            case .audible:
+                AudibleImportView(onImported: { _ in openSource = nil })
+            }
         }
     }
 

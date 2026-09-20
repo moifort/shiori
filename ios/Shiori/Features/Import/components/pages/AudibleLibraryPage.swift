@@ -17,9 +17,6 @@ struct AudibleLibraryPage: View {
     let onSelectAll: () -> Void
     let onDeselectAll: () -> Void
     let onImport: () -> Void
-    let isAutoSyncOn: Bool
-    let onAutoSyncChange: (Bool) -> Void
-    let onDisconnect: () -> Void
 
     var body: some View {
         Group {
@@ -27,29 +24,25 @@ struct AudibleLibraryPage: View {
                 ProgressView("Lecture de votre bibliothèque Audible...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if books.isEmpty {
+                // Reachable only from a card that already said the library was
+                // empty, so this states the fact without offering the fix again:
+                // changing account lives one screen back.
                 ContentUnavailableView {
                     Label("Bibliothèque vide", systemImage: "headphones")
                 } description: {
-                    Text(
-                        "Aucun livre audio sur ce compte. Vérifiez la boutique choisie : une "
-                            + "bibliothèque française ne s'ouvre pas depuis audible.com."
-                    )
-                } actions: {
-                    Button("Changer de compte", action: onDisconnect)
+                    Text("Aucun livre audio sur ce compte.")
                 }
             } else {
                 list
             }
         }
-        .navigationTitle("Audible")
+        .navigationTitle("Choisir des livres")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button("Tout sélectionner", action: onSelectAll)
                     Button("Tout désélectionner", action: onDeselectAll)
-                    Divider()
-                    Button("Déconnecter Audible", role: .destructive, action: onDisconnect)
                 } label: {
                     Label("Options", systemImage: "ellipsis.circle")
                 }
@@ -59,28 +52,8 @@ struct AudibleLibraryPage: View {
         .safeAreaInset(edge: .bottom) { importBar }
     }
 
-    /// The one setting on this screen, above the list rather than buried in the
-    /// options menu: it writes books into the library without asking again, so it
-    /// is stated where the reader can read what it does.
-    private var syncSection: some View {
-        Section {
-            Toggle(
-                "Synchroniser chaque nuit",
-                isOn: Binding(get: { isAutoSyncOn }, set: onAutoSyncChange)
-            )
-            .accessibilityIdentifier("audible-auto-sync")
-        } footer: {
-            Text(
-                "Chaque nuit, les livres audio achetés depuis la veille rejoignent votre "
-                    + "bibliothèque, et ceux que vous avez terminés sur Audible sont marqués "
-                    + "comme lus. Vos notes et vos commentaires ne sont jamais modifiés."
-            )
-        }
-    }
-
     private var list: some View {
         List {
-            syncSection
             ForEach(books) { book in
                 Button {
                     onToggle(book)
@@ -213,10 +186,7 @@ struct AudibleLibraryPage: View {
             onToggle: { _ in },
             onSelectAll: {},
             onDeselectAll: {},
-            onImport: {},
-            isAutoSyncOn: true,
-            onAutoSyncChange: { _ in },
-            onDisconnect: {}
+            onImport: {}
         )
     }
 }

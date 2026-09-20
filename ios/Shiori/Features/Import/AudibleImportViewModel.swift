@@ -10,7 +10,16 @@ final class AudibleImportViewModel {
     private(set) var books: [ImportableBook] = []
     private(set) var isLoading = false
     private(set) var isImporting = false
+    private(set) var isSyncing = false
     private(set) var importedCount = 0
+    /// What the pass the reader asked for changed. Nil until they ask, and reset
+    /// the next time the library is read so the card never reports an old figure
+    /// under a fresh date.
+    private(set) var lastSyncOutcome: AudibleSyncOutcome?
+    /// Whether Amazon has actually answered with a library. Distinct from an
+    /// empty `books`, which is also what a failed read and a first paint look
+    /// like.
+    private(set) var hasReadLibrary = false
     var errorMessage: String?
 
     /// The store to sign in on. Only read before the first connection: afterwards
@@ -32,6 +41,15 @@ final class AudibleImportViewModel {
 
     var canImport: Bool { !selected.isEmpty && !isImporting }
 
+    /// How many titles Audible holds, and how many are already on the shelf. Both
+    /// nil until the library has actually been read, which is not the same thing
+    /// as holding nothing: a card that read "0 livres" while still loading would
+    /// send a reader off to check the wrong store.
+    var totalCount: Int? { hasReadLibrary ? books.count : nil }
+    var catalogedCount: Int? {
+        hasReadLibrary ? books.count(where: { $0.alreadyInLibrary }) : nil
+    }
+
     func isSelected(_ book: ImportableBook) -> Bool { selected.contains(book.asin) }
 
     /// The connection, and the library behind it when there is one. Safe to call
@@ -39,9 +57,11 @@ final class AudibleImportViewModel {
     func load() async {
         isLoading = true
         errorMessage = nil
+        lastSyncOutcome = nil
         do {
             account = try await ImportAPI.account()
             books = account == nil ? [] : try await ImportAPI.library()
+            hasReadLibrary = account != nil
             // Everything not already catalogued starts ticked: a reader who
             // opens this wants their library, and unticking a handful beats
             // ticking three hundred.
@@ -53,6 +73,7 @@ final class AudibleImportViewModel {
                 account = nil
                 books = []
             }
+            hasReadLibrary = false
             errorMessage = reportError(error)
         }
         isLoading = false
@@ -137,6 +158,27 @@ final class AudibleImportViewModel {
         }
     }
 
+    /// Runs the nightly pass now. Reloads the library afterwards rather than
+    /// patching it: a pass can catalogue a dozen titles, and every row's
+    /// "already there" mark has just changed.
+    func syncNow() async {
+        guard account != nil, !isSyncing else { return }
+        isSyncing = true
+        errorMessage = nil
+        defer { isSyncing = false }
+        do {
+            let (outcome, synced) = try await ImportAPI.syncNow()
+            account = synced
+            books = try await ImportAPI.library()
+            selected = Set(importable.map(\.asin))
+            // Set last: `load()` clears it, and the library read above goes
+            // through the same API, not through it.
+            lastSyncOutcome = outcome
+        } catch {
+            errorMessage = reportError(error)
+        }
+    }
+
     func disconnect() async {
         errorMessage = nil
         do {
@@ -144,6 +186,8 @@ final class AudibleImportViewModel {
             account = nil
             books = []
             selected = []
+            lastSyncOutcome = nil
+            hasReadLibrary = false
         } catch {
             errorMessage = reportError(error)
         }
