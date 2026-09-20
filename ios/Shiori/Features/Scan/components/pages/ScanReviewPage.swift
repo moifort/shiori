@@ -99,10 +99,15 @@ struct ScanReviewPage: View {
         .disabled(isSaving)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button("Reprendre", action: onRetake)
+                ToolbarIconButton(
+                    title: "Reprendre",
+                    systemImage: "arrow.counterclockwise",
+                    role: .cancel,
+                    action: onRetake
+                )
             }
             ToolbarItem(placement: .confirmationAction) {
-                Button("Ajouter") {
+                ToolbarIconButton(title: "Ajouter", systemImage: "checkmark") {
                     var approved = draft
                     approved.authors = authorLine
                         .split(separator: ",")

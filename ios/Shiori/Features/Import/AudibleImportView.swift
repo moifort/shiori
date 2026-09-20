@@ -16,7 +16,7 @@ struct AudibleImportView: View {
             content
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("Fermer") { dismiss() }
+                        ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
                     }
                 }
         }
@@ -86,7 +86,7 @@ struct AudibleImportView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuler") { viewModel.cancelSignIn() }
+                    ToolbarIconButton(title: "Annuler", systemImage: "xmark", role: .cancel) { viewModel.cancelSignIn() }
                 }
             }
         }

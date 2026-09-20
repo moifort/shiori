@@ -19,7 +19,7 @@ struct ScanView: View {
             content
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("Fermer", action: onDismiss)
+                        ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel, action: onDismiss)
                     }
                 }
         }

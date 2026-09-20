@@ -158,7 +158,7 @@ struct BookEditView: View {
                     ToolbarIconButton(title: "Annuler", systemImage: "xmark", role: .cancel) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Enregistrer", systemImage: "checkmark") { Task { await save() } }
+                    ToolbarIconButton(title: "Enregistrer", systemImage: "checkmark") { Task { await save() } }
                         .disabled(!isValid || isSaving)
                         .accessibilityIdentifier("edit-save")
                 }

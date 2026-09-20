@@ -50,10 +50,10 @@ struct ManualAddView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuler") { dismiss() }
+                    ToolbarIconButton(title: "Annuler", systemImage: "xmark", role: .cancel) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Ajouter") { Task { await add() } }
+                    ToolbarIconButton(title: "Ajouter", systemImage: "checkmark") { Task { await add() } }
                         .disabled(trimmedTitle.isEmpty || isSaving)
                         .accessibilityIdentifier("manual-save")
                 }
