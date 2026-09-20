@@ -234,7 +234,7 @@ type Dashboard {
   """One decimal. Null when no finished book is rated."""
   averageRating: Float
 
-  """From the first finished book to this year, six years at most."""
+  """From the first finished book to this year, nine years at most."""
   booksPerYear: [YearCount!]!
   currentYear: Int!
 
@@ -243,6 +243,9 @@ type Dashboard {
 
   """Books finished this year: four genres, then one "others" segment."""
   genres: [GenreCount!]!
+
+  """The twelve months of the current year."""
+  hoursPerMonth: [MonthHours!]!
   lastFinished: DashboardBook
 
   """True when the reader has not catalogued a single book yet."""
@@ -476,6 +479,16 @@ type Me {
 
   """The Firebase Auth user id, also the id of the profile document."""
   userId: UserId!
+}
+
+"""
+Hours listened in one month of the current year, rounded to the hour. Each finished audiobook spreads its running time evenly over the days it was open, the way pages are spread; a book with no running time counts for nothing, which leaves printed books out on their own.
+"""
+type MonthHours {
+  hours: Int!
+
+  """1 for January, 12 for December."""
+  month: Int!
 }
 
 """

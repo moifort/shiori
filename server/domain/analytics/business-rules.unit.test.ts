@@ -5,6 +5,7 @@ import {
   booksPerYearOf,
   daysToFinishTrendOf,
   genresOf,
+  hoursPerMonthOf,
   localDateOf,
   medianOf,
   monthsToClearPileOf,
@@ -15,7 +16,7 @@ import {
 } from '~/domain/analytics/business-rules'
 import { LocalDate, TimeZone } from '~/domain/analytics/primitives'
 import type { Finish } from '~/domain/analytics/types'
-import { BookId, PageCount, StarRating } from '~/domain/book/primitives'
+import { BookId, ListeningMinutes, PageCount, StarRating } from '~/domain/book/primitives'
 import type { Book, Genre } from '~/domain/book/types'
 import { SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import type { Series, SeriesId } from '~/domain/series/types'
@@ -28,12 +29,13 @@ const day = (value: string) => LocalDate(value)
 const finish = (
   startedOn: string,
   finishedOn: string,
-  extra: { pages?: number; genre?: Genre; rating?: number } = {},
+  extra: { pages?: number; minutes?: number; genre?: Genre; rating?: number } = {},
 ): Finish => ({
   bookId: BookId(`${startedOn}-${finishedOn}`),
   startedOn: day(startedOn),
   finishedOn: day(finishedOn),
   pageCount: extra.pages === undefined ? undefined : PageCount(extra.pages),
+  durationMinutes: extra.minutes === undefined ? undefined : ListeningMinutes(extra.minutes),
   genre: extra.genre,
   rating: extra.rating === undefined ? undefined : StarRating(extra.rating),
 })
@@ -105,6 +107,35 @@ describe('pages read per month', () => {
     const pages = pagesPerMonthOf([finish('2026-03-01', '2026-03-02')], 2026)
 
     expect(pages.every(({ pages }) => pages === 0)).toBe(true)
+  })
+})
+
+describe('hours listened per month', () => {
+  test('spreads an audiobook evenly over the days it was open', () => {
+    // 20 hours over 40 days: 10 in March, 10 in April.
+    const hours = hoursPerMonthOf([finish('2026-03-12', '2026-04-20', { minutes: 1200 })], 2026)
+
+    expect(hours.find(({ month }) => month === 3)?.hours).toBe(10)
+    expect(hours.find(({ month }) => month === 4)?.hours).toBe(10)
+  })
+
+  test('counts an audiobook finished across New Year on both years', () => {
+    const acrossNewYear = [finish('2025-12-22', '2026-01-10', { minutes: 1200 })]
+
+    expect(hoursPerMonthOf(acrossNewYear, 2025)[11].hours).toBe(10)
+    expect(hoursPerMonthOf(acrossNewYear, 2026)[0].hours).toBe(10)
+  })
+
+  test('ignores a book with no running time, which is every printed book', () => {
+    const hours = hoursPerMonthOf([finish('2026-03-01', '2026-03-02', { pages: 400 })], 2026)
+
+    expect(hours.every(({ hours }) => hours === 0)).toBe(true)
+  })
+
+  test('rounds a month of a few minutes down to nothing', () => {
+    const hours = hoursPerMonthOf([finish('2026-03-01', '2026-03-01', { minutes: 20 })], 2026)
+
+    expect(hours[2].hours).toBe(0)
   })
 })
 

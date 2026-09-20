@@ -12,6 +12,11 @@ export type Isbn13 = Brand<string, 'Isbn13'>
 export type Subgenre = Brand<string, 'Subgenre'>
 export type Synopsis = Brand<string, 'Synopsis'>
 export type PageCount = Brand<number, 'PageCount'>
+/** How long an audiobook runs, in whole minutes. Kept on the record rather than
+ *  derived: it is what the listening statistics count, the way pages are what the
+ *  reading statistics count. Only Audible fills it — a scanned cover does not say
+ *  how long the recording is. */
+export type ListeningMinutes = Brand<number, 'ListeningMinutes'>
 /** One to five whole stars. Half stars double the value space without adding
  *  discernment, and shrink the touch target. */
 export type StarRating = Brand<number, 'StarRating'>
@@ -97,6 +102,9 @@ export type Book = {
   genre?: Genre
   subgenres: Subgenre[]
   pageCount?: PageCount
+  /** An audiobook's running time. Absent on anything else, and absent on an
+   *  audiobook catalogued by hand or by scan, which had no source for it. */
+  durationMinutes?: ListeningMinutes
   isbn13?: Isbn13
   /** The language of the edition on the shelf, not the app's language. */
   language?: Language

@@ -6,6 +6,7 @@ import type {
   CoverUrl as CoverUrlType,
   Genre,
   Isbn13 as Isbn13Type,
+  ListeningMinutes as ListeningMinutesType,
   PageCount as PageCountType,
   Publisher as PublisherType,
   ReadingNote as ReadingNoteType,
@@ -49,6 +50,15 @@ export const PageCount = (value: unknown) => {
     .preprocess((v) => (typeof v === 'string' ? Number(v) : v), z.number().int().min(1).max(20000))
     .parse(value)
   return make<PageCountType>()(v)
+}
+
+// A recording past a thousand hours is a parsing accident, not an audiobook.
+// Zero is refused rather than stored: an unknown running time is an absent field.
+export const ListeningMinutes = (value: unknown) => {
+  const v = z
+    .preprocess((v) => (typeof v === 'string' ? Number(v) : v), z.number().int().min(1).max(60000))
+    .parse(value)
+  return make<ListeningMinutesType>()(v)
 }
 
 // Validated on its check digit, not just its shape. The model invents ISBNs that

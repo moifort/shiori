@@ -2,6 +2,7 @@ import type {
   Dashboard,
   DashboardBook,
   GenreCount,
+  MonthHours,
   MonthPages,
   SeriesProgress,
   Trend,
@@ -58,6 +59,18 @@ const MonthPagesType = builder.objectRef<MonthPages>('MonthPages').implement({
   }),
 })
 
+const MonthHoursType = builder.objectRef<MonthHours>('MonthHours').implement({
+  description:
+    'Hours listened in one month of the current year, rounded to the hour. Each ' +
+    'finished audiobook spreads its running time evenly over the days it was open, ' +
+    'the way pages are spread; a book with no running time counts for nothing, ' +
+    'which leaves printed books out on their own.',
+  fields: (t) => ({
+    month: t.exposeInt('month', { description: '1 for January, 12 for December.' }),
+    hours: t.exposeInt('hours'),
+  }),
+})
+
 const TrendType = builder.objectRef<Trend>('Trend').implement({
   description: 'A figure for this year to date, beside the same span of last year.',
   fields: (t) => ({
@@ -109,13 +122,18 @@ export const DashboardType = builder.objectRef<Dashboard>('Dashboard').implement
     currentYear: t.exposeInt('currentYear'),
     booksPerYear: t.field({
       type: [YearCountType],
-      description: 'From the first finished book to this year, six years at most.',
+      description: 'From the first finished book to this year, nine years at most.',
       resolve: (dashboard) => dashboard.booksPerYear,
     }),
     pagesPerMonth: t.field({
       type: [MonthPagesType],
       description: 'The twelve months of the current year.',
       resolve: (dashboard) => dashboard.pagesPerMonth,
+    }),
+    hoursPerMonth: t.field({
+      type: [MonthHoursType],
+      description: 'The twelve months of the current year.',
+      resolve: (dashboard) => dashboard.hoursPerMonth,
     }),
     reading: t.field({
       type: [DashboardBookType],

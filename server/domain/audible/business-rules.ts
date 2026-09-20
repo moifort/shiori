@@ -2,7 +2,7 @@ import type { AudibleItem } from 'audible-api-ts'
 import { AudibleAsin } from '~/domain/audible/primitives'
 import type { ImportableBook } from '~/domain/audible/types'
 import type { NewBook } from '~/domain/book/command'
-import { CoverUrl, Isbn13, Publisher, Synopsis } from '~/domain/book/primitives'
+import { CoverUrl, Isbn13, ListeningMinutes, Publisher, Synopsis } from '~/domain/book/primitives'
 import type { Book, ReadingStatus } from '~/domain/book/types'
 import { SeriesName, seriesKeyOf, VolumeNumber } from '~/domain/series/primitives'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
@@ -36,7 +36,7 @@ export const importableFrom = (
     title,
     authors,
     narrators: item.narrators ?? [],
-    durationMinutes: item.durationMinutes > 0 ? item.durationMinutes : undefined,
+    durationMinutes: optionally(item.durationMinutes, ListeningMinutes),
     publisher: optionally(item.publisher, Publisher),
     synopsis: optionally(plainTextOf(item.summary ?? item.merchandisingSummary), Synopsis),
     // Audible carries the ISBN of the printed edition when it has one at all, so
@@ -62,7 +62,10 @@ export const importableFrom = (
  *  No `genre` either. Audible's category ladders are localized per marketplace,
  *  so mapping them onto the closed genre list would need ten translations of it
  *  and would still drift; the reader picks a genre on the book screen, as they do
- *  for a book typed by hand. */
+ *  for a book typed by hand.
+ *
+ *  The running time is kept, though: it is the only source there is for it, and
+ *  the dashboard counts hours listened the way it counts pages read. */
 export const bookFrom = (importable: ImportableBook): NewBook => ({
   title: importable.title,
   authors: importable.authors,
@@ -74,6 +77,7 @@ export const bookFrom = (importable: ImportableBook): NewBook => ({
   series: importable.series,
   status: importable.status,
   finishedAt: importable.finishedAt,
+  durationMinutes: importable.durationMinutes,
 })
 
 /** Where the reader stands in a title, as Audible knows it. Anything started is

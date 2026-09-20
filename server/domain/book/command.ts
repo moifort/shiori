@@ -10,6 +10,7 @@ import type {
   CoverUrl,
   Genre,
   Isbn13,
+  ListeningMinutes,
   PageCount,
   Publisher,
   ReadingNote,
@@ -36,6 +37,8 @@ export type NewBook = {
   genre?: Genre
   subgenres?: Subgenre[]
   pageCount?: PageCount
+  /** An audiobook's running time, which only an Audible import knows. */
+  durationMinutes?: ListeningMinutes
   isbn13?: Isbn13
   language?: Language
   series?: SeriesMembership
@@ -89,6 +92,7 @@ export namespace BookCommand {
       genre: input.genre,
       subgenres: input.subgenres ?? [],
       pageCount: input.pageCount,
+      durationMinutes: input.durationMinutes,
       isbn13: input.isbn13,
       language: input.language,
       series: input.series,

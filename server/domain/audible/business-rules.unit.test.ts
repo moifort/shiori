@@ -8,6 +8,7 @@ import {
   shelfKeysOf,
   statusOf,
 } from '~/domain/audible/business-rules'
+import { ListeningMinutes } from '~/domain/book/primitives'
 import type { Book } from '~/domain/book/types'
 
 const anItem = (overrides: Partial<AudibleItem> = {}): AudibleItem =>
@@ -45,6 +46,22 @@ describe('reading one Audible title', () => {
       isbn13: '9780756404741',
       alreadyInLibrary: false,
     })
+  })
+
+  // The only source there is for it: a scanned cover does not say how long the
+  // recording runs, and the dashboard counts hours listened from this field.
+  test('carries the running time onto the book', () => {
+    const importable = importableFrom(anItem(), noneOwned)
+
+    if (!importable) throw new Error('unreachable')
+    expect(bookFrom(importable).durationMinutes).toBe(ListeningMinutes(1770))
+  })
+
+  test('leaves the running time empty when Audible reports none', () => {
+    const importable = importableFrom(anItem({ durationMinutes: 0 }), noneOwned)
+
+    if (!importable) throw new Error('unreachable')
+    expect(bookFrom(importable).durationMinutes).toBeUndefined()
   })
 
   test('always catalogues it as an audiobook', () => {

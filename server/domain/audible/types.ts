@@ -2,6 +2,7 @@ import type { Brand } from 'ts-brand'
 import type {
   CoverUrl,
   Isbn13,
+  ListeningMinutes,
   Publisher,
   ReadingStatus,
   SeriesMembership,
@@ -86,9 +87,9 @@ export type ImportableBook = {
   title: BookTitle
   authors: AuthorName[]
   narrators: string[]
-  /** Audible's own running time, shown in the picker. Not kept on the book: a
-   *  library counts pages, and an audiobook has none. */
-  durationMinutes?: number
+  /** Audible's own running time, shown in the picker and carried onto the book:
+   *  a library counts pages, and what an audiobook has instead is hours. */
+  durationMinutes?: ListeningMinutes
   publisher?: Publisher
   synopsis?: Synopsis
   isbn13?: Isbn13

@@ -73,6 +73,21 @@ describe('the dashboard through the API', () => {
     })
   })
 
+  // A printed library listens to nothing, and the chart draws twelve empty bars
+  // rather than disappearing.
+  test('serves twelve months of listening hours, empty without an audiobook', async () => {
+    await addBook('title: "Le Nom du vent", status: READ, pageCount: 662')
+
+    const result = await execute(
+      '{ dashboard(timeZone: "Europe/Paris") { hoursPerMonth { month hours } } }',
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.dashboard).toEqual({
+      hoursPerMonth: Array.from({ length: 12 }, (_, index) => ({ month: index + 1, hours: 0 })),
+    })
+  })
+
   test('refuses a time zone the server does not know', async () => {
     const result = await execute('{ dashboard(timeZone: "Mars/Olympus") { libraryIsEmpty } }')
 

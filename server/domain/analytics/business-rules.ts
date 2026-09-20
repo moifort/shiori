@@ -5,6 +5,7 @@ import type {
   Dashboard,
   Finish,
   GenreCount,
+  MonthHours,
   MonthPages,
   SeriesProgress,
   TimeZone,
@@ -86,6 +87,7 @@ export const analyticsViewOf = (input: {
       startedOn: startedOn > finishedOn ? finishedOn : startedOn,
       finishedOn,
       pageCount: book.pageCount,
+      durationMinutes: book.durationMinutes,
       genre: book.genre,
       rating: book.rating,
     }
@@ -179,6 +181,7 @@ export const dashboardOf = (view: AnalyticsView, today: LocalDateValue): Dashboa
     currentYear,
     booksPerYear: booksPerYearOf(finishes, currentYear),
     pagesPerMonth: pagesPerMonthOf(finishes, currentYear),
+    hoursPerMonth: hoursPerMonthOf(finishes, currentYear),
     reading: view.reading.slice(0, READING_SHOWN),
     suggestions: shuffled(view.toRead, `${view.userId}:${today}`).slice(0, SUGGESTIONS_SHOWN),
     lastFinished: view.lastFinished,
@@ -237,6 +240,38 @@ export const pagesPerMonthOf = (finishes: readonly Finish[], year: number): Mont
     const from = dayNumberFrom(year, month, 1)
     const to = dayNumberFrom(year, month + 1, 1) - 1
     return { month, pages: Math.round(pagesBetween(finishes, from, to)) }
+  })
+
+/** Minutes a set of finished audiobooks puts on the days from `from` to `to`
+ *  inclusive, spread evenly over the days each one was open — the same honest
+ *  guess `pagesBetween` makes, for the same reason: listening progress is never
+ *  tracked either. A book with no running time puts nothing anywhere, which
+ *  leaves every printed book out of the count on its own. */
+export const minutesListenedBetween = (
+  finishes: readonly Finish[],
+  from: number,
+  to: number,
+): number => {
+  let minutes = 0
+  for (const finish of finishes) {
+    if (finish.durationMinutes === undefined) continue
+    const start = dayNumberOf(finish.startedOn)
+    const end = dayNumberOf(finish.finishedOn)
+    const overlap = Math.min(end, to) - Math.max(start, from) + 1
+    if (overlap > 0) minutes += (Number(finish.durationMinutes) * overlap) / (end - start + 1)
+  }
+  return minutes
+}
+
+/** Hours listened per month of the given year, rounded to the hour. Rounded on
+ *  purpose: a bar labelled "12" reads at a glance where "12,4" reads as noise,
+ *  and a month under half an hour is closer to nothing than to an hour. */
+export const hoursPerMonthOf = (finishes: readonly Finish[], year: number): MonthHours[] =>
+  Array.from({ length: 12 }, (_, index) => {
+    const month = index + 1
+    const from = dayNumberFrom(year, month, 1)
+    const to = dayNumberFrom(year, month + 1, 1) - 1
+    return { month, hours: Math.round(minutesListenedBetween(finishes, from, to) / 60) }
   })
 
 /** The same span of last year: January 1st to today's date one year earlier. A

@@ -1,5 +1,12 @@
 import type { Brand } from 'ts-brand'
-import type { BookId, CoverUrl, Genre, PageCount, StarRating } from '~/domain/book/types'
+import type {
+  BookId,
+  CoverUrl,
+  Genre,
+  ListeningMinutes,
+  PageCount,
+  StarRating,
+} from '~/domain/book/types'
 import type { SeriesId, SeriesName } from '~/domain/series/types'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 import type { ObjectPath, SignedUrl } from '~/system/object-store/types'
@@ -34,6 +41,9 @@ export type Finish = {
   startedOn: LocalDate
   finishedOn: LocalDate
   pageCount?: PageCount
+  /** An audiobook's running time. What the listening hours count, the way the
+   *  page count is what the reading pages count. */
+  durationMinutes?: ListeningMinutes
   genre?: Genre
   rating?: StarRating
 }
@@ -70,6 +80,7 @@ export type AnalyticsView = {
 
 export type YearCount = { year: number; count: number }
 export type MonthPages = { month: number; pages: number }
+export type MonthHours = { month: number; hours: number }
 
 /** A figure for this year to date, beside the same span of last year. `previous`
  *  is absent when last year has nothing to compare against. */
@@ -88,6 +99,7 @@ export type Dashboard<Card = DashboardBook> = {
   currentYear: number
   booksPerYear: YearCount[]
   pagesPerMonth: MonthPages[]
+  hoursPerMonth: MonthHours[]
   reading: Card[]
   suggestions: Card[]
   lastFinished?: Card
