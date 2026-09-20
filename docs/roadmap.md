@@ -49,10 +49,23 @@ Three decisions worth keeping:
 - **The import proposes, the reader disposes.** `audibleLibrary` saves nothing, exactly as
   `scanBook` saves nothing. The app lists the titles, the reader ticks them, and
   `importAudibleBooks` re-reads the library from Amazon rather than trusting the client: the
-  client sends identifiers, every stored field comes from the source.
+  client sends identifiers, every stored field comes from the source. The nightly sync is the
+  one exception, and it is one the reader switches on.
 - **A duplicate is caught on the text, not on an identifier.** The match is title plus first
   author, folded the way series keys are folded, so a book scanned from the printed edition is
-  recognized too — which an ASIN stored on the record would never have caught.
+  recognized too — which the ASIN now kept on imported records would never have caught. The two
+  coexist and answer different questions: the shelf key asks whether the reader already owns
+  this story, loosely and across editions; the ASIN asks which record is this exact Audible
+  title, and only it is precise enough for the sync to write a status into.
+
+A fourth, added when the library learned to keep itself up to date:
+
+- **The sync follows Audible, and only where it was invited.** A nightly Cloud Scheduler pass
+  catalogues the titles bought since the previous one — dated by purchase, so a title the reader
+  declined at import time is never forced on them — and moves the status of books carrying an
+  ASIN in both directions. Ratings, notes and hidden books are never touched, and a book
+  catalogued from the printed edition is never moved. `autoSync` on the connection is how a
+  reader takes the whole thing back.
 
 ## Batch 6 — Kindle import
 
