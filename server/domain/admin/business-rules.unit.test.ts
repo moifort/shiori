@@ -33,15 +33,29 @@ describe('pricing the month s AI consumption', () => {
   })
 
   test('input tokens bill at the input rate', () => {
-    // 1M input tokens at $0.30/M and a 0.91 USD→EUR conversion.
-    expect(aiCostEur(usage(step(1_000_000, 0, 0))) as number).toBeCloseTo(0.3 * 0.91, 10)
+    // 1M input tokens at $0.75/M and a 0.91 USD→EUR conversion.
+    expect(aiCostEur(usage(step(1_000_000, 0, 0))) as number).toBeCloseTo(0.75 * 0.91, 10)
   })
 
   test('thinking tokens bill at the output rate, the point of tracking them apart', () => {
     const thinking = aiCostEur(usage(step(0, 0, 1_000_000)))
     const output = aiCostEur(usage(step(0, 1_000_000, 0)))
     expect(thinking as number).toBe(output as number)
-    expect(thinking as number).toBeCloseTo(2.5 * 0.91, 10)
+    expect(thinking as number).toBeCloseTo(3.75 * 0.91, 10)
+  })
+
+  test('a month from 2027 bills at the standard rate, twice the introductory one', () => {
+    const december = aiCostEur({
+      ...usage(step(1_000_000, 0, 1_000_000)),
+      month: '2026-12' as Month,
+    })
+    const january = aiCostEur({
+      ...usage(step(1_000_000, 0, 1_000_000)),
+      month: '2027-01' as Month,
+    })
+
+    expect(december as number).toBeCloseTo((0.75 + 3.75) * 0.91, 10)
+    expect(january as number).toBeCloseTo(2 * (december as number), 10)
   })
 
   test('the three steps add up', () => {
@@ -57,13 +71,14 @@ describe('pricing the month s AI consumption', () => {
     )
   })
 
-  test('a scan of an already-catalogued saga lands within a cent or two', () => {
+  test('a scan of an already-catalogued saga costs on the order of two cents', () => {
     // The two steps a routine scan runs: ~2.6K in, ~250 out, ~1.5K thinking for
     // the cover; ~5K in, ~200 out, ~1.5K thinking for the enrichment. The saga
     // catalogue does not run, which is what makes the routine scan the cheap one.
+    // This is the number the scan allowances in the quota domain are sized on.
     const cost = aiCostEur(usage(step(2600, 250, 1500), step(5000, 200, 1500)))
-    expect(cost as number).toBeGreaterThan(0.005)
-    expect(cost as number).toBeLessThan(0.02)
+    expect(cost as number).toBeGreaterThan(0.01)
+    expect(cost as number).toBeLessThan(0.025)
   })
 })
 

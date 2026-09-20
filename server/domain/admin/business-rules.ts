@@ -4,14 +4,22 @@ import type { Entitlement } from '~/domain/entitlement/types'
 import { Count, Eur, Month } from '~/domain/shared/primitives'
 import type { Eur as EurType, Month as MonthType } from '~/domain/shared/types'
 
-// The Gemini Flash list prices the scan is costed against: $0.30 per million
-// input tokens, $2.50 per million output tokens — and thinking tokens bill at
-// the output rate, which is why they are tracked apart. Carried over from the
-// tier's published rates rather than measured here: confirm them against the
-// current price list for the model `server/domain/scan/gemini.ts` calls, and
-// revise here, which is the only place they are written down.
-const INPUT_USD_PER_TOKEN = 0.3 / 1_000_000
-const OUTPUT_USD_PER_TOKEN = 2.5 / 1_000_000
+// What `gemini-3.6-flash` costs per million tokens, the model every scan step
+// calls (server/domain/scan/gemini.ts). Thinking tokens bill at the output rate,
+// which is why they are counted apart from plain output.
+//
+// The introductory rate runs to the end of 2026 and doubles on January 1st 2027.
+// Published and dated, so the month being priced picks its own rate rather than
+// one constant going quietly wrong overnight — and a month already spent keeps
+// the price it was really billed at, however late it is read back.
+// https://ai.google.dev/gemini-api/docs/pricing
+const INTRODUCTORY_RATE = { inputUsd: 0.75, outputUsd: 3.75 }
+const STANDARD_RATE = { inputUsd: 1.5, outputUsd: 7.5 }
+const STANDARD_RATE_FROM = Month('2027-01')
+
+// Month keys are `YYYY-MM`, so comparing them as strings orders them by date.
+const rateFor = (month: MonthType) =>
+  month >= STANDARD_RATE_FROM ? STANDARD_RATE : INTRODUCTORY_RATE
 
 // A fixed conversion, not a live rate: the cost figure steers decisions, it does
 // not close books. Revised by hand when the rate drifts far enough to matter.
@@ -39,15 +47,17 @@ const freshStep = (): AiStepUsage => ({
   thinkingTokens: Count(0),
 })
 
-// What the month's measured tokens cost in euros, every Gemini call combined.
+// What the month's measured tokens cost in euros, every Gemini call combined,
+// at the rate that month was billed at.
 export const aiCostEur = (usage: AiUsage): EurType => {
+  const { inputUsd, outputUsd } = rateFor(usage.month)
   const steps = [usage.vision, usage.enrichment, usage.catalogue]
   const promptTokens = steps.reduce((sum, step) => sum + step.promptTokens, 0)
   const billedAsOutput = steps.reduce(
     (sum, step) => sum + step.outputTokens + step.thinkingTokens,
     0,
   )
-  const usd = promptTokens * INPUT_USD_PER_TOKEN + billedAsOutput * OUTPUT_USD_PER_TOKEN
+  const usd = (promptTokens * inputUsd + billedAsOutput * outputUsd) / 1_000_000
   return Eur(usd * USD_TO_EUR)
 }
 
