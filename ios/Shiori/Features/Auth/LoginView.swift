@@ -11,7 +11,7 @@ struct LoginView: View {
         VStack(spacing: 32) {
             Spacer()
             VStack(spacing: 12) {
-                BrandLogo()
+                RibbonMark(motion: .once)
                     .padding(.bottom, 4)
                 Text("Shiori")
                     .font(.largeTitle.bold())

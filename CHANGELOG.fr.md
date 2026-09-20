@@ -4,6 +4,9 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Shiori a une icône : un signet rouge qui pend sur une page crème. Le même signet est
+  l’animation d’ouverture de l’app, qui tombe en place pendant que la bibliothèque se charge,
+  et la marque des écrans de connexion et de bienvenue.
 - Une bibliothèque Audible se tient désormais à jour toute seule. Chaque nuit, Shiori
   catalogue les titres achetés depuis le dernier passage et met un livre importé au statut
   qu’Audible indique — un titre terminé là-bas est marqué lu ici, à la date à laquelle il l’a

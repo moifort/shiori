@@ -10,6 +10,9 @@ the release tag is pushed.
 
 ## Unreleased
 
+- Shiori has an icon: a red bookmark ribbon hanging on a cream page. The same ribbon is the
+  app's opening animation, dropping into place while the library loads, and the mark on the
+  sign-in and welcome screens.
 - An Audible library now keeps itself up to date. Each night Shiori catalogues the titles
   bought since the last pass, and moves an imported book to the status Audible reports — a
   title finished there is marked read here, on the date it was actually finished, and one it

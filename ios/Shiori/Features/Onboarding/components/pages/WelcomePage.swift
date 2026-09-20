@@ -6,7 +6,7 @@ struct WelcomePage: View {
     var body: some View {
         VStack(spacing: 24) {
             Spacer()
-            BrandLogo()
+            RibbonMark(motion: .once)
             VStack(spacing: 12) {
                 Text("Bienvenue dans Shiori")
                     .font(.largeTitle.bold())

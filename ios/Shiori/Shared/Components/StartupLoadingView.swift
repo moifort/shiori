@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The launch wait: the bookmark slipping into its book above a short caption,
-/// centered in all available space.
+/// The launch wait: the bookmark ribbon dropping into place above a short
+/// caption, centered in all available space.
 ///
 /// The animation is the app opening, and it is spent here only. Every other
 /// wait — a screen loading its content, a list refreshing, a button working —
@@ -11,7 +11,7 @@ struct StartupLoadingView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            BookmarkLoader()
+            RibbonMark(motion: .loop, height: 150)
             Text(label)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
