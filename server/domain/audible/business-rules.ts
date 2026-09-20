@@ -1,5 +1,5 @@
 import type { AudibleItem } from 'audible-api-ts'
-import { genreFrom } from '~/domain/audible/genre-mapping'
+import { genreFrom, subgenresFrom } from '~/domain/audible/genre-mapping'
 import { AudibleAsin } from '~/domain/audible/primitives'
 import type {
   AudibleAsin as AudibleAsinValue,
@@ -63,6 +63,7 @@ export const importableFrom = (
     language: optionally(languageCodeOf(item.language), BookLanguageValue),
     coverUrl: optionally(largestCoverOf(item), CoverUrl),
     genre: genreFrom(item),
+    subgenres: subgenresFrom(item),
     series: seriesMembershipOf(item, authors),
     status,
     // Only a finished book has a finishing date to keep. A part-listened title
@@ -84,6 +85,10 @@ export const importableFrom = (
  *  trick. It is absent for a marketplace whose ids are unknown, and the reader
  *  then picks one on the book screen as they do for a book typed by hand.
  *
+ *  Subgenres carry what no genre could hold: a shelf that names an audience or a
+ *  theme rather than a kind of story. They come alongside the genre rather than
+ *  instead of it — a young-adult thriller is a thriller filed under "Young adult".
+ *
  *  The running time is kept, though: it is the only source there is for it, and
  *  the dashboard counts hours listened the way it counts pages read. So are the
  *  narrators, for the same reason — nothing else in Shiori ever learns them. */
@@ -96,6 +101,7 @@ export const bookFrom = (importable: ImportableBook): NewBook => ({
   isbn13: importable.isbn13,
   publishedCoverUrl: importable.coverUrl,
   genre: importable.genre,
+  subgenres: importable.subgenres,
   series: importable.series,
   status: importable.status,
   language: importable.language,

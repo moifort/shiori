@@ -9,6 +9,7 @@ import type {
   Publisher,
   ReadingStatus,
   SeriesMembership,
+  Subgenre,
   Synopsis,
 } from '~/domain/book/types'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
@@ -139,6 +140,9 @@ export type ImportableBook = {
    *  on a marketplace whose category ids are unknown, and for a shelf Shiori has
    *  no word for — an audience or a theme is not a genre. */
   genre?: Genre
+  /** What the title's shelves say that no genre can hold — an audience
+   *  ("Jeunesse") or a theme ("LGBTQ+"). Empty far more often than not. */
+  subgenres: Subgenre[]
   series?: SeriesMembership
   status: ReadingStatus
   /** When Audible says the listening ended. Carried onto the book so importing a

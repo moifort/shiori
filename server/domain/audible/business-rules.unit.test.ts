@@ -205,6 +205,32 @@ describe('the shelf a title is filed under', () => {
 
     if (!importable) throw new Error('unreachable')
     expect(bookFrom(importable).genre).toBeUndefined()
+    expect(bookFrom(importable).subgenres).toEqual([])
+  })
+
+  // An audience is not a genre, but it is exactly what a subgenre is for — so it
+  // reaches the book rather than being dropped, alongside the genre the rung
+  // below it named.
+  test('carries an audience onto the book as a subgenre, beside its genre', () => {
+    const importable = importableFrom(
+      anItem({
+        categories: [
+          {
+            root: 'Genres',
+            categories: [
+              { id: resolveGenreId('young-adult', 'fr'), name: 'Jeunes adultes' },
+              { id: resolveGenreId('young-adult/thriller', 'fr'), name: 'Thriller' },
+            ],
+          },
+        ],
+      }),
+      noneOwned,
+    )
+
+    if (!importable) throw new Error('unreachable')
+    const book = bookFrom(importable)
+    expect(book.genre).toBe('thriller')
+    expect((book.subgenres ?? []).map(String)).toEqual(['Young adult'])
   })
 })
 

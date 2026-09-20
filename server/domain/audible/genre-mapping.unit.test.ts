@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { AudibleGenre, AudibleItem, CategoryLadder } from 'audible-api-ts'
 import { resolveGenreId } from 'audible-api-ts'
-import { genreFrom } from '~/domain/audible/genre-mapping'
+import { genreFrom, subgenresFrom } from '~/domain/audible/genre-mapping'
 
 /** A ladder built from the shelves Audible would file a title under, root first.
  *
@@ -56,23 +56,54 @@ describe('reading the shelf an Audible title sits on', () => {
   })
 })
 
-describe('what is not a genre', () => {
-  // `GENRES` says so outright: an audience is not a genre, and neither is the
-  // object. A young-adult shelf must not become one.
-  test('refuses an audience', () => {
+describe('a shelf that is not a genre', () => {
+  // `GENRES` says so outright: an audience is not a genre. But "Jeunesse" is
+  // exactly what a subgenre is for — the scan names it as one of its own
+  // examples — so the shelf is kept there rather than dropped.
+  test('records an audience as a subgenre instead', () => {
     expect(genreFrom(shelvedIn(ladderOf(['children'])))).toBeUndefined()
-    expect(genreFrom(shelvedIn(ladderOf(['young-adult'])))).toBeUndefined()
+    expect(subgenresFrom(shelvedIn(ladderOf(['children']))).map(String)).toEqual(['Jeunesse'])
   })
 
-  test('still reads the genre under an audience', () => {
-    expect(genreFrom(shelvedIn(ladderOf(['young-adult', 'young-adult/thriller'])))).toBe('thriller')
-  })
-
-  // Left empty rather than swept into `other`, which has to stay something the
-  // reader chose for themselves.
-  test('refuses a theme', () => {
+  test('records a theme as a subgenre instead', () => {
     expect(genreFrom(shelvedIn(ladderOf(['lgbtq'])))).toBeUndefined()
-    expect(genreFrom(shelvedIn(ladderOf(['sports'])))).toBeUndefined()
+    expect(subgenresFrom(shelvedIn(ladderOf(['lgbtq']))).map(String)).toEqual(['LGBTQ+'])
+    expect(subgenresFrom(shelvedIn(ladderOf(['sports']))).map(String)).toEqual(['Sport'])
+  })
+
+  // The two answer different questions, so the subgenre is kept even when a rung
+  // below the audience supplied the genre.
+  test('keeps both when the rung below the audience names the genre', () => {
+    const item = shelvedIn(ladderOf(['young-adult', 'young-adult/thriller']))
+
+    expect(genreFrom(item)).toBe('thriller')
+    expect(subgenresFrom(item).map(String)).toEqual(['Young adult'])
+  })
+
+  test('says nothing extra for a title whose every shelf is a genre', () => {
+    expect(subgenresFrom(shelvedIn(ladderOf(['fantasy', 'fantasy/epic'])))).toEqual([])
+  })
+
+  // A title sits on several ladders and they overlap, so the same audience comes
+  // back twice.
+  test('records a shelf once however many ladders name it', () => {
+    const item = shelvedIn(
+      ladderOf(['children']),
+      ladderOf(['children', 'children/action-adventure']),
+    )
+
+    expect(subgenresFrom(item).map(String)).toEqual(['Jeunesse'])
+  })
+
+  test('keeps at most three, the first being the one the library list shows', () => {
+    const item = shelvedIn(
+      ladderOf(['children']),
+      ladderOf(['young-adult']),
+      ladderOf(['lgbtq']),
+      ladderOf(['sports']),
+    )
+
+    expect(subgenresFrom(item).map(String)).toEqual(['Jeunesse', 'Young adult', 'LGBTQ+'])
   })
 })
 
@@ -92,6 +123,7 @@ describe('across marketplaces', () => {
     }
 
     expect(genreFrom(shelvedIn(shelfOnSomeOtherStore))).toBeUndefined()
+    expect(subgenresFrom(shelvedIn(shelfOnSomeOtherStore))).toEqual([])
   })
 })
 
