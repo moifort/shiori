@@ -12,8 +12,25 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   qu’Audible indique — un titre terminé là-bas est marqué lu ici, à la date à laquelle il l’a
   réellement été, et un titre qu’Audible dit jamais ouvert retourne dans la pile. Les notes,
   les commentaires et les livres masqués ne sont jamais touchés, et un livre catalogué depuis
-  l’édition papier n’est jamais déplacé. On désactive la synchronisation depuis les réglages
-  pour revenir à l’import manuel.
+  l’édition papier n’est jamais déplacé. On désactive la synchronisation depuis la fiche
+  Audible pour revenir à l’import manuel, ou on y demande un passage sur-le-champ sans
+  attendre la nuit.
+- Les imports ont leur propre menu sur l’onglet Accueil, qui ouvre une fiche par source. La
+  fiche Audible rassemble ce qui était éparpillé : la boutique sur laquelle pointe le compte,
+  la date de connexion, si la synchronisation tourne chaque nuit et quand elle l’a fait pour la
+  dernière fois, la part de la bibliothèque déjà cataloguée, et le bouton qui demande un
+  passage immédiat. Choisir les titres à la main est un cran plus loin, puisqu’une bibliothèque
+  connectée se tient à jour toute seule. L’entrée du menu d’ajout de l’onglet Bibliothèque
+  disparaît : importer une bibliothèque entière, c’est gérer un compte, pas ajouter un livre.
+- Un livre audio importé depuis Audible arrive avec son genre, lu sur le rayon où Amazon le
+  range plutôt que laissé à renseigner titre par titre. Un rayon qui désigne un public ou un
+  thème plutôt qu’un type d’histoire — « Jeunesse », « LGBTQ+ » — est conservé en sous-genre, et
+  à côté du genre et non à sa place : un thriller young adult est un thriller rangé sous
+  « Young adult ». Les livres importés avant gardent le genre qu’on leur a donné à la main.
+- Un livre audio traduit n’est plus crédité à son traducteur. Audible range tous les
+  contributeurs parmi les auteurs et signale le rôle dans le nom lui-même, si bien que les
+  livres affichaient « Danusia Stok - translator » sur leur fiche comme si elle les avait
+  écrits.
 - Une série se note désormais pour elle-même, de une à cinq étoiles, et se garde en favorite —
   un livre aussi. La note de la série juge le cycle et n’est pas la moyenne de ses tomes, et le
   cœur est indépendant des étoiles des deux côtés : un livre cinq étoiles qu’on ne rouvrira

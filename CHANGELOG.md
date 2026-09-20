@@ -18,7 +18,22 @@ the release tag is pushed.
   title finished there is marked read here, on the date it was actually finished, and one it
   says was never opened goes back to the pile. Ratings, notes and hidden books are never
   touched, and a book catalogued from the printed edition is never moved. Turn the sync off
-  from Settings to go back to importing by hand.
+  from the Audible card to go back to importing by hand, or ask for a pass there and then
+  instead of waiting for the night.
+- Imports have their own menu on the Home tab, opening a card for each source. The Audible card
+  gathers what used to be scattered: which store the account points at, when it was linked,
+  whether it syncs each night and when it last did, how much of the library is already
+  catalogued, and the button that asks for a pass now. Picking titles by hand is one tap
+  further in, because a connected library keeps itself up to date. The entry in the Library
+  tab's add menu is gone; importing a whole library is managing an account, not adding a book.
+- An audiobook imported from Audible arrives with its genre, read off the shelf Amazon files it
+  on rather than left for the reader to set title by title. A shelf that names an audience or a
+  theme rather than a kind of story — "Jeunesse", "LGBTQ+" — is kept as a subgenre instead, and
+  alongside the genre rather than in its place: a young-adult thriller is a thriller filed under
+  "Young adult". Books imported before this keep whatever genre they were given by hand.
+- A translated audiobook is no longer credited to its translator. Audible files every
+  contributor as an author and tags the role inside the name, so books arrived showing
+  "Danusia Stok - translator" on the book screen as if she had written them.
 - A saga can now be rated on its own, from one to five stars, and kept as a favourite — as can
   a book. The saga rating is a judgement of the cycle rather than the average of its volumes,
   and the heart is independent of the stars on both: a five-star book one never wants to open
