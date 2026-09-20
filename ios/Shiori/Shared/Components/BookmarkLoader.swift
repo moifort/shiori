@@ -16,7 +16,8 @@ import SwiftUI
 /// the right half turn as one solid piece, stack correctly on the left, and
 /// show its spine once it is over.
 ///
-/// The branded replacement for a bare spinner on long cold-start loads.
+/// Kept for the app's own start, where the wait is long enough to be worth a
+/// gesture; every later wait takes the system spinner.
 /// Respects Reduce Motion by holding one static frame, the book open with
 /// the ribbon in place. Purely presentational.
 struct BookmarkLoader: View {

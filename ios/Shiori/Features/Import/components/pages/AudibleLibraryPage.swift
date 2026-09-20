@@ -24,7 +24,8 @@ struct AudibleLibraryPage: View {
     var body: some View {
         Group {
             if isLoading && books.isEmpty {
-                LoadingStateView(label: "Lecture de votre bibliothèque Audible...")
+                ProgressView("Lecture de votre bibliothèque Audible...")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if books.isEmpty {
                 ContentUnavailableView {
                     Label("Bibliothèque vide", systemImage: "headphones")

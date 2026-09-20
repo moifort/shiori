@@ -51,7 +51,7 @@ struct AuthRoot: View {
     private var signedIn: some View {
         switch gate.state {
         case .loading:
-            LoadingStateView()
+            StartupLoadingView()
         case .required:
             OnboardingView(onCompleted: { gate.markCompleted() })
         case .ready:

@@ -18,7 +18,8 @@ struct SeriesListView: View {
         NavigationStack {
             Group {
                 if isLoading && followed.isEmpty {
-                    LoadingStateView(label: "Chargement de vos séries...")
+                    ProgressView("Chargement de vos séries...")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if let errorMessage, followed.isEmpty {
                     ContentUnavailableView {
                         Label("Séries indisponibles", systemImage: "wifi.exclamationmark")

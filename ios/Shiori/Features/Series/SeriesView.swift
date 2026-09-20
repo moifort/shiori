@@ -21,7 +21,8 @@ struct SeriesView: View {
     var body: some View {
         Group {
             if isLoading {
-                LoadingStateView()
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let series {
                 catalogue(series)
             } else {

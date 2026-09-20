@@ -19,7 +19,8 @@ struct LibraryPage: View {
     var body: some View {
         Group {
             if isLoading && sections.isEmpty {
-                LoadingStateView(label: "Chargement de votre bibliothèque...")
+                ProgressView("Chargement de votre bibliothèque...")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let errorMessage, sections.isEmpty {
                 ContentUnavailableView {
                     Label("Bibliothèque indisponible", systemImage: "wifi.exclamationmark")

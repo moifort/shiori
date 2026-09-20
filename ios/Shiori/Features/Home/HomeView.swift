@@ -71,7 +71,8 @@ struct HomeView: View {
                 Button("Réessayer") { Task { await viewModel.load() } }
             }
         } else {
-            LoadingStateView()
+            ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 }

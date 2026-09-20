@@ -46,7 +46,8 @@ struct BookView: View {
                         }
                     )
                 } else if viewModel.isLoading {
-                    LoadingStateView()
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     ContentUnavailableView {
                         Label("Livre introuvable", systemImage: "book.closed")
