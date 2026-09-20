@@ -4,9 +4,15 @@ The reader's live link to Audible.
 The credentials themselves never leave the server. Disconnecting forgets our copy of them; the device stays registered on the Amazon side until the reader removes it there.
 """
 type AudibleAccount {
+  """
+  Whether the nightly sync runs for this reader.
+  
+  When on, a pass each night catalogues the titles bought since the last one and moves the status of imported books to follow the listening — without asking. Ratings, notes and hidden books are never touched. Turn it off with `setAudibleAutoSync` to go back to importing by hand.
+  """
+  autoSync: Boolean!
   connectedAt: DateTime!
 
-  """Null until the first import."""
+  """Null until the first import, then moved by every nightly sync."""
   lastImportedAt: DateTime
   marketplace: AudibleMarketplace!
 }
@@ -676,6 +682,15 @@ type Mutation {
     """Cover photo as a base64-encoded JPEG (no data URL prefix), up to 10 MB"""
     imageBase64: String!
   ): ScanResult!
+
+  """
+  Turn the nightly Audible sync on or off.
+  
+  On, a nightly pass catalogues what the reader bought since the last one and moves imported books to the status Audible reports — a title finished there becomes `READ` here, one it says was never opened goes back to the pile. Off, nothing happens until the reader imports by hand again; books already catalogued stay exactly as they are.
+  
+  Fails with `AUDIBLE_NOT_CONNECTED` when no account is linked: there is no library to sync, so there is no setting to keep.
+  """
+  setAudibleAutoSync(enabled: Boolean!): AudibleAccount!
 
   """Keep a book close, or stop. Leaves the star rating alone."""
   setBookFavorite(favorite: Boolean!, id: BookId!): Book!

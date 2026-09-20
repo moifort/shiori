@@ -67,6 +67,10 @@ export namespace AudibleCommand {
       marketplace: pending.marketplace,
       credentials: sealCredentials(credentials),
       connectedAt: now,
+      // A reader who links their Audible account is asking for it to follow them.
+      // Written rather than left absent so the setting the app draws is the one
+      // that is stored, not one inferred from a missing field.
+      autoSync: true,
     }
     await repository.save({ userId, account })
     return account
@@ -82,6 +86,22 @@ export namespace AudibleCommand {
 
   export const recordImport = async (userId: UserId, now = new Date()): Promise<void> =>
     patchAccount(userId, { lastImportedAt: now })
+
+  /** Turn the nightly sync on or off for this reader.
+   *
+   *  Answers `not-connected` rather than writing a setting onto nothing: there is
+   *  no library to sync without an account, and silently accepting the call would
+   *  let the app draw a switch that governs nothing. */
+  export const setAutoSync = async (
+    userId: UserId,
+    enabled: boolean,
+  ): Promise<ConnectedAccount | 'not-connected'> => {
+    const connection = await repository.findByUser(userId)
+    if (!connection?.account) return 'not-connected'
+    const account: ConnectedAccount = { ...connection.account, autoSync: enabled }
+    await repository.save({ ...connection, account })
+    return account
+  }
 
   /** Forget the connection. Only our copy of the credentials goes: the device
    *  stays registered on the Amazon side until the reader removes it there, which

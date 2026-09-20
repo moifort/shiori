@@ -55,7 +55,40 @@ export type ConnectedAccount = {
   marketplace: AudibleMarketplace
   credentials: SealedCredentials
   connectedAt: Date
+  /** The last time Amazon was read for this reader, by hand or by the nightly
+   *  sync. It doubles as the cutoff the sync buys from: a title whose purchase
+   *  predates it was on offer when the reader last chose, and their choice not to
+   *  catalogue it stands. */
   lastImportedAt?: Date
+  /** Whether the nightly sync runs for this reader. Absent reads as enabled —
+   *  connections made before the setting existed are the ones it was built for,
+   *  and a reader who links their account wants it to follow them. */
+  autoSync?: boolean
+}
+
+/** What one night's pass over a reader's library changed.
+ *
+ *  Counts rather than records: nothing reads this but a log line and the admin
+ *  endpoint's answer, and naming the books would put a reader's library into an
+ *  operations log. */
+export type LibrarySync = {
+  /** Books imported before the ASIN was kept, matched to their Audible title by
+   *  shelf key and linked for good. Only ever non-zero on the first pass. */
+  linked: number
+  /** Statuses moved to follow the listening. */
+  moved: number
+  /** Titles bought since the last pass, catalogued. */
+  imported: number
+}
+
+/** What one run of the nightly job did, across every reader it reached. */
+export type SyncRun = {
+  synced: number
+  /** Readers whose pass threw — one bad Amazon call must not cost the others
+   *  their night. */
+  failed: number
+  /** Readers left for the next run because the time budget ran out. */
+  deferred: number
 }
 
 /** A half-finished sign-in. PKCE hands the code verifier out before the

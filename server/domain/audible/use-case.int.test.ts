@@ -16,6 +16,10 @@ mock.module('~/system/config', () => ({ config: () => ({ audibleKey }) }))
  *  not one per title. */
 let items: AudibleItem[] = []
 const libraryCalls: unknown[] = []
+/** Refusals to hand out, one per call, oldest first. Empty means Amazon
+ *  answers — which is how one reader's revoked device is staged without
+ *  disturbing the other's. */
+const libraryRefusals: (Error | undefined)[] = []
 
 mock.module('~/domain/audible/infrastructure/audible-api', () => ({
   login: async (marketplace: string) => ({
@@ -36,6 +40,8 @@ mock.module('~/domain/audible/infrastructure/audible-api', () => ({
   // refreshed an expired one.
   library: async (credentials: unknown) => {
     libraryCalls.push(credentials)
+    const refusal = libraryRefusals.shift()
+    if (refusal) throw refusal
     return {
       items,
       credentials: {
@@ -86,11 +92,12 @@ beforeEach(() => {
   fake = resetFakeFirestore()
   items = []
   libraryCalls.length = 0
+  libraryRefusals.length = 0
 })
 
-const connect = async () => {
-  await AudibleCommand.startLogin(reader, 'fr', NOW)
-  await AudibleCommand.completeLogin(reader, 'the-code', NOW)
+const connect = async (who: UserId = reader) => {
+  await AudibleCommand.startLogin(who, 'fr', NOW)
+  await AudibleCommand.completeLogin(who, 'the-code', NOW)
 }
 
 describe('listing what could be imported', () => {
@@ -288,5 +295,142 @@ describe('importing the ticked titles', () => {
     await AudibleUseCase.importBooks(reader, [asin('B002V1OF70')])
 
     expect(fake.data('analytics', reader)).toMatchObject({ stale: false })
+  })
+})
+
+describe('the nightly sync', () => {
+  const LATER = new Date('2026-09-26T04:00:00.000Z')
+
+  test('says so when no account is connected', async () => {
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toBe('not-connected')
+    expect(libraryCalls).toHaveLength(0)
+  })
+
+  // Turning it off must cost nothing at all — not a trip to Amazon, not a
+  // rotated token. The check comes before the call for that reason.
+  test('does not even call Amazon for a reader who turned it off', async () => {
+    await connect()
+    await AudibleCommand.setAutoSync(reader, false)
+
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toBe('sync-disabled')
+    expect(libraryCalls).toHaveLength(0)
+  })
+
+  test('catalogues a title bought since the last pass and leaves an older one alone', async () => {
+    await connect()
+    await AudibleCommand.recordImport(reader, NOW)
+    items = [
+      anItem({ purchaseDate: new Date('2026-09-22T00:00:00.000Z') }),
+      anItem({
+        asin: 'B00X57B4KE',
+        title: 'La Peur du sage',
+        purchaseDate: new Date('2026-08-01T00:00:00.000Z'),
+      }),
+    ]
+
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toEqual({
+      linked: 0,
+      moved: 0,
+      imported: 1,
+    })
+    expect((await BookQuery.all(reader)).map((book) => String(book.title))).toEqual([
+      'Le Nom du vent',
+    ])
+  })
+
+  // The first pass has to adopt the library the reader imported by hand, or
+  // those books sit outside the sync forever. It links and acts in one go.
+  test('links an import made before the ASIN was kept, and follows it the same night', async () => {
+    await connect()
+    await AudibleCommand.recordImport(reader, NOW)
+    const finishedAt = new Date('2026-09-24T00:00:00.000Z')
+    await BookCommand.add(reader, {
+      title: BookTitle('Le Nom du vent'),
+      authors: [AuthorName('Patrick Rothfuss')],
+      format: 'audiobook',
+    })
+    items = [anItem({ listeningStatus: { isFinished: true, finishedAt } })]
+
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toEqual({
+      linked: 1,
+      moved: 1,
+      imported: 0,
+    })
+    const [book] = await BookQuery.all(reader)
+    expect(book?.audibleAsin).toBe(asin('B002V1OF70'))
+    expect(book?.status).toBe('read')
+    // Audible's own date, not tonight's: a title finished last week must not
+    // land on the night the sync heard about it.
+    expect(book?.finishedAt).toEqual(finishedAt)
+  })
+
+  test('leaves a book catalogued from the printed edition untouched', async () => {
+    await connect()
+    await AudibleCommand.recordImport(reader, NOW)
+    await BookCommand.add(reader, {
+      title: BookTitle('Le Nom du vent'),
+      authors: [AuthorName('Patrick Rothfuss')],
+    })
+    items = [anItem({ listeningStatus: { isFinished: true } })]
+
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toEqual({
+      linked: 0,
+      moved: 0,
+      imported: 0,
+    })
+    const [book] = await BookQuery.all(reader)
+    expect(book?.status).toBe('to-read')
+  })
+
+  test('moves the cutoff forward, so the next pass finds nothing to redo', async () => {
+    await connect()
+    await AudibleCommand.recordImport(reader, NOW)
+    items = [anItem({ purchaseDate: new Date('2026-09-22T00:00:00.000Z') })]
+
+    await AudibleUseCase.syncLibrary(reader, LATER)
+    expect((await AudibleQuery.accountOf(reader))?.lastImportedAt).toEqual(LATER)
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toEqual({
+      linked: 0,
+      moved: 0,
+      imported: 0,
+    })
+    expect(await BookQuery.all(reader)).toHaveLength(1)
+  })
+})
+
+describe('running the nightly job over every reader', () => {
+  const other = 'reader-2' as UserId
+
+  test('steps over a reader Amazon refuses and finishes the others', async () => {
+    await connect()
+    await connect(other)
+    // The refused reader is whichever is reached first; both were connected in
+    // the same instant, so only the counts are asserted.
+    libraryRefusals.push(new Error('device revoked'))
+    items = [anItem()]
+
+    expect(await AudibleUseCase.syncEveryReader()).toEqual({ synced: 1, failed: 1, deferred: 0 })
+  })
+
+  test('counts a reader who turned the sync off as nobody to sync', async () => {
+    await connect()
+    await AudibleCommand.setAutoSync(reader, false)
+
+    expect(await AudibleUseCase.syncEveryReader()).toEqual({ synced: 0, failed: 0, deferred: 0 })
+    expect(libraryCalls).toHaveLength(0)
+  })
+
+  // The budget is what keeps a long run from being killed mid-library. Whoever
+  // it cuts off is first in line the next night, which the ordering guarantees.
+  test('leaves the readers it cannot reach in time for the next run', async () => {
+    await connect()
+    await connect(other)
+
+    expect(await AudibleUseCase.syncEveryReader(-1)).toEqual({
+      synced: 0,
+      failed: 0,
+      deferred: 2,
+    })
+    expect(libraryCalls).toHaveLength(0)
   })
 })

@@ -1,15 +1,21 @@
 import { describe, expect, test } from 'bun:test'
 import type { AudibleItem } from 'audible-api-ts'
 import {
+  audibleLinksFor,
   bookFrom,
+  boughtSince,
   importableFrom,
+  listeningChangesFor,
   plainTextOf,
+  readersDueForSync,
   shelfKeyOf,
   shelfKeysOf,
   statusOf,
 } from '~/domain/audible/business-rules'
+import type { AudibleConnection } from '~/domain/audible/types'
 import { ListeningMinutes } from '~/domain/book/primitives'
 import type { Book } from '~/domain/book/types'
+import type { UserId } from '~/domain/shared/types'
 
 const anItem = (overrides: Partial<AudibleItem> = {}): AudibleItem =>
   ({
@@ -262,5 +268,154 @@ describe('telling what the reader already has', () => {
     )
 
     expect(importable?.alreadyInLibrary).toBe(false)
+  })
+})
+
+const aBook = (overrides: Partial<Book> = {}): Book =>
+  ({
+    id: 'book-1',
+    userId: 'reader-1',
+    title: 'Le Nom du vent',
+    authors: ['Patrick Rothfuss'],
+    format: 'audiobook',
+    narrators: [],
+    subgenres: [],
+    status: 'to-read',
+    hidden: false,
+    addedAt: new Date('2026-01-01T00:00:00.000Z'),
+    ...overrides,
+  }) as Book
+
+describe('linking a catalogued book to its Audible title', () => {
+  test('matches an import made before the ASIN was kept', () => {
+    expect(audibleLinksFor([aBook()], [anItem()])).toEqual([
+      { bookId: 'book-1', audibleAsin: 'B002V1OF70' },
+    ])
+  })
+
+  test('leaves a book that already carries one alone', () => {
+    const linked = aBook({ audibleAsin: 'B002V1OF70' } as Partial<Book>)
+    expect(audibleLinksFor([linked], [anItem()])).toEqual([])
+  })
+
+  // The whole point of the link: a novel the reader scanned from the printed
+  // edition must never start taking orders from Audible because a recording of
+  // it exists under the same title.
+  test('never links anything but an audiobook', () => {
+    expect(audibleLinksFor([aBook({ format: 'book' })], [anItem()])).toEqual([])
+  })
+
+  test('does not hand one ASIN to two records of the same story', () => {
+    const books = [aBook(), aBook({ id: 'book-2' } as Partial<Book>)]
+    expect(audibleLinksFor(books, [anItem()])).toEqual([
+      { bookId: 'book-1', audibleAsin: 'B002V1OF70' },
+    ])
+  })
+
+  test('leaves a book Audible does not carry unlinked', () => {
+    expect(audibleLinksFor([aBook({ title: 'Dune' })], [anItem()])).toEqual([])
+  })
+})
+
+describe('following the listening', () => {
+  const linked = (overrides: Partial<Book> = {}) =>
+    aBook({ audibleAsin: 'B002V1OF70', ...overrides } as Partial<Book>)
+
+  test('marks a book read on the date Audible finished it', () => {
+    const finishedAt = new Date('2026-04-01T00:00:00.000Z')
+    const items = [anItem({ listeningStatus: { isFinished: true, finishedAt } })]
+
+    expect(listeningChangesFor([linked()], items)).toEqual([
+      { bookId: 'book-1', status: 'read', at: finishedAt },
+    ])
+  })
+
+  test('writes nothing when the status already agrees', () => {
+    const items = [anItem({ listeningStatus: { isFinished: true } })]
+    expect(listeningChangesFor([linked({ status: 'read' })], items)).toEqual([])
+  })
+
+  // Audible is authoritative in both directions, which is what was asked for: a
+  // title it says was never opened sends the book back to the pile.
+  test('sends a book Audible reports untouched back to the pile', () => {
+    expect(listeningChangesFor([linked({ status: 'read' })], [anItem()])).toEqual([
+      { bookId: 'book-1', status: 'to-read', at: undefined },
+    ])
+  })
+
+  test('ignores a book with no ASIN on it', () => {
+    const items = [anItem({ listeningStatus: { isFinished: true } })]
+    expect(listeningChangesFor([aBook()], items)).toEqual([])
+  })
+
+  test('leaves a book whose title has left the library alone', () => {
+    expect(listeningChangesFor([linked({ status: 'read' })], [])).toEqual([])
+  })
+})
+
+describe('what counts as bought since the last pass', () => {
+  const lastPass = new Date('2026-09-01T00:00:00.000Z')
+
+  test('keeps a purchase made since', () => {
+    const fresh = anItem({ purchaseDate: new Date('2026-09-15T00:00:00.000Z') })
+    expect(boughtSince([fresh], lastPass)).toHaveLength(1)
+  })
+
+  // A title on offer when the reader last picked was declined by not being
+  // ticked. Importing it tonight would overrule them.
+  test('leaves behind what the reader already declined', () => {
+    const old = anItem({ purchaseDate: new Date('2026-08-01T00:00:00.000Z') })
+    expect(boughtSince([old], lastPass)).toEqual([])
+  })
+
+  test('falls back on the date it was added to the library', () => {
+    const added = anItem({ dateAdded: new Date('2026-09-15T00:00:00.000Z') })
+    expect(boughtSince([added], lastPass)).toHaveLength(1)
+  })
+
+  test('leaves out a title Amazon dates neither way', () => {
+    expect(boughtSince([anItem()], lastPass)).toEqual([])
+  })
+
+  test('takes the whole library for a reader who never imported', () => {
+    expect(boughtSince([anItem()], undefined)).toHaveLength(1)
+  })
+})
+
+describe('choosing whose library to sync', () => {
+  const aConnection = (userId: string, account?: Partial<AudibleConnection['account']>) =>
+    ({
+      userId,
+      account: account && {
+        marketplace: 'fr',
+        credentials: 'sealed',
+        connectedAt: new Date(),
+        ...account,
+      },
+    }) as AudibleConnection
+
+  test('skips a reader who turned the sync off', () => {
+    expect(readersDueForSync([aConnection('reader-1', { autoSync: false })])).toEqual([])
+  })
+
+  // The setting did not exist when these connections were made, and they are
+  // precisely the ones the sync was built for.
+  test('takes a connection made before the setting existed', () => {
+    expect(readersDueForSync([aConnection('reader-1', {})])).toEqual(['reader-1' as UserId])
+  })
+
+  test('skips a sign-in still in flight', () => {
+    expect(readersDueForSync([aConnection('reader-1')])).toEqual([])
+  })
+
+  // What makes the time budget safe to hit: whoever was cut off is first in line
+  // the next night.
+  test('puts the staleest reader first, and the never-synced ahead of all', () => {
+    const order = readersDueForSync([
+      aConnection('recent', { lastImportedAt: new Date('2026-09-19T00:00:00.000Z') }),
+      aConnection('stale', { lastImportedAt: new Date('2026-09-01T00:00:00.000Z') }),
+      aConnection('never', {}),
+    ])
+    expect(order).toEqual(['never', 'stale', 'recent'] as UserId[])
   })
 })

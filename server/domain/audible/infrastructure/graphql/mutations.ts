@@ -97,6 +97,28 @@ builder.mutationFields((t) => ({
     },
   }),
 
+  setAudibleAutoSync: t.field({
+    type: AudibleAccountType,
+    description:
+      'Turn the nightly Audible sync on or off.\n\n' +
+      'On, a nightly pass catalogues what the reader bought since the last one ' +
+      'and moves imported books to the status Audible reports — a title finished ' +
+      'there becomes `READ` here, one it says was never opened goes back to the ' +
+      'pile. Off, nothing happens until the reader imports by hand again; books ' +
+      'already catalogued stay exactly as they are.\n\n' +
+      'Fails with `AUDIBLE_NOT_CONNECTED` when no account is linked: there is no ' +
+      'library to sync, so there is no setting to keep.',
+    args: {
+      enabled: t.arg.boolean({ required: true }),
+    },
+    resolve: async (_root, args, context) => {
+      const result = await AudibleCommand.setAutoSync(context.userId, args.enabled)
+      return match(result)
+        .with('not-connected', notConnected)
+        .otherwise((account) => account)
+    },
+  }),
+
   disconnectAudible: t.boolean({
     description:
       'Forget the Audible connection. Books already imported stay in the library.' +

@@ -1,4 +1,5 @@
 import type { Brand } from 'ts-brand'
+import type { AudibleAsin } from '~/domain/audible/types'
 import type { SeriesId, SeriesName, VolumeKind, VolumeNumber } from '~/domain/series/types'
 import type { AuthorName, BookTitle, UserId, Year } from '~/domain/shared/types'
 import type { ObjectPath, SignedUrl } from '~/system/object-store/types'
@@ -142,6 +143,17 @@ export type Book = {
    *  every book catalogued before the scan started reading it, and on any edition
    *  in a language the closed list does not carry. */
   language?: BookLanguage
+  /** The Audible title this record stands for, when it has one.
+   *
+   *  What the nightly sync moves a status on, and the reason it can: a shelf key
+   *  says "the reader already owns this story", which is all a duplicate check
+   *  needs, but it is far too loose to write into somebody's reading record night
+   *  after night. Only a book carrying an ASIN is ever touched by Audible, so a
+   *  printed edition scanned from a photo stays the reader's alone.
+   *
+   *  Absent on everything but an imported audiobook, and on imports that predate
+   *  the field — the first sync matches those by shelf key and fills it in once. */
+  audibleAsin?: AudibleAsin
   series?: SeriesMembership
   /** Absent for a book added by hand or from a series catalogue: those have no
    *  photo, and the app draws a typographic placeholder instead. */

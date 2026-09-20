@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { WriteBatch } from 'firebase-admin/firestore'
+import type { AudibleAsin } from '~/domain/audible/types'
 import { datesAfterStatusChange, statusAfterRating } from '~/domain/book/business-rules'
 import * as repository from '~/domain/book/infrastructure/repository'
 import { BookId as BookIdOf } from '~/domain/book/primitives'
@@ -46,6 +47,9 @@ export type NewBook = {
   isbn13?: Isbn13
   /** The language of the edition, which the scan reads off the cover. */
   language?: BookLanguage
+  /** The Audible title the record stands for. Only an import supplies it, and it
+   *  is what lets the nightly sync find this very book again. */
+  audibleAsin?: AudibleAsin
   series?: SeriesMembership
   coverPath?: ObjectPath
   publishedCoverUrl?: CoverUrl
@@ -103,6 +107,7 @@ export namespace BookCommand {
       narrators: input.narrators ?? [],
       isbn13: input.isbn13,
       language: input.language,
+      audibleAsin: input.audibleAsin,
       series: input.series,
       coverPath: input.coverPath,
       publishedCoverUrl: input.publishedCoverUrl,
@@ -132,6 +137,22 @@ export namespace BookCommand {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
     return repository.save({ ...book, ...edit }, batch)
+  }
+
+  /** Record which Audible title a book stands for.
+   *
+   *  Its own command rather than a field of `BookEdit`: the reader never types an
+   *  ASIN, and the only thing that fills it is a machine recognizing a book it
+   *  imported before the link existed. */
+  export const linkToAudible = async (
+    userId: UserId,
+    bookId: BookId,
+    audibleAsin: AudibleAsin,
+    batch?: WriteBatch,
+  ): Promise<Book | 'not-found'> => {
+    const book = await repository.findById(userId, bookId)
+    if (!book) return 'not-found'
+    return repository.save({ ...book, audibleAsin }, batch)
   }
 
   export const setStatus = async (

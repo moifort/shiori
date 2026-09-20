@@ -10,6 +10,12 @@ the release tag is pushed.
 
 ## Unreleased
 
+- An Audible library now keeps itself up to date. Each night Shiori catalogues the titles
+  bought since the last pass, and moves an imported book to the status Audible reports — a
+  title finished there is marked read here, on the date it was actually finished, and one it
+  says was never opened goes back to the pile. Ratings, notes and hidden books are never
+  touched, and a book catalogued from the printed edition is never moved. Turn the sync off
+  from Settings to go back to importing by hand.
 - A saga can now be rated on its own, from one to five stars, and kept as a favourite — as can
   a book. The saga rating is a judgement of the cycle rather than the average of its volumes,
   and the heart is independent of the stars on both: a five-star book one never wants to open

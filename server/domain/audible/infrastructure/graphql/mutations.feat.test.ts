@@ -271,3 +271,33 @@ describe('importing through the API', () => {
     expect(codeOf(result)).toBe('AUDIBLE_NOT_CONNECTED')
   })
 })
+
+describe('governing the nightly sync through the API', () => {
+  // The switch a reader flips must read back as the setting the app draws, and
+  // a fresh connection is already following them — that is what linking asked
+  // for.
+  test('a new connection syncs nightly', async () => {
+    await connect()
+
+    const result = await execute('query { audibleAccount { autoSync } }')
+
+    expect(result.data?.audibleAccount).toEqual({ autoSync: true })
+  })
+
+  test('turning it off is what the account reads back', async () => {
+    await connect()
+
+    const turnedOff = await execute('mutation { setAudibleAutoSync(enabled: false) { autoSync } }')
+
+    expect(turnedOff.errors).toBeUndefined()
+    expect(turnedOff.data?.setAudibleAutoSync).toEqual({ autoSync: false })
+    const account = await execute('query { audibleAccount { autoSync } }')
+    expect(account.data?.audibleAccount).toEqual({ autoSync: false })
+  })
+
+  test('refuses to keep a setting no library backs', async () => {
+    const result = await execute('mutation { setAudibleAutoSync(enabled: false) { autoSync } }')
+
+    expect(codeOf(result)).toBe('AUDIBLE_NOT_CONNECTED')
+  })
+})

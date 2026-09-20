@@ -4,6 +4,13 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Une bibliothèque Audible se tient désormais à jour toute seule. Chaque nuit, Shiori
+  catalogue les titres achetés depuis le dernier passage et met un livre importé au statut
+  qu’Audible indique — un titre terminé là-bas est marqué lu ici, à la date à laquelle il l’a
+  réellement été, et un titre qu’Audible dit jamais ouvert retourne dans la pile. Les notes,
+  les commentaires et les livres masqués ne sont jamais touchés, et un livre catalogué depuis
+  l’édition papier n’est jamais déplacé. On désactive la synchronisation depuis les réglages
+  pour revenir à l’import manuel.
 - Une série se note désormais pour elle-même, de une à cinq étoiles, et se garde en favorite —
   un livre aussi. La note de la série juge le cycle et n’est pas la moyenne de ses tomes, et le
   cœur est indépendant des étoiles des deux côtés : un livre cinq étoiles qu’on ne rouvrira

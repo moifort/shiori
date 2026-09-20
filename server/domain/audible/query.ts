@@ -1,3 +1,4 @@
+import { readersDueForSync } from '~/domain/audible/business-rules'
 import * as repository from '~/domain/audible/infrastructure/repository'
 import type { ConnectedAccount } from '~/domain/audible/types'
 import type { UserId } from '~/domain/shared/types'
@@ -10,4 +11,9 @@ export namespace AudibleQuery {
    *  credentials back. */
   export const accountOf = async (userId: UserId): Promise<ConnectedAccount | undefined> =>
     (await repository.findByUser(userId))?.account
+
+  /** Who the nightly job should pass over, the reader least recently synced
+   *  first. Readers who turned the sync off are not in it. */
+  export const readersToSync = async (): Promise<UserId[]> =>
+    readersDueForSync(await repository.findAll())
 }

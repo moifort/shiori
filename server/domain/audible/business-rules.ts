@@ -1,6 +1,10 @@
 import type { AudibleItem } from 'audible-api-ts'
 import { AudibleAsin } from '~/domain/audible/primitives'
-import type { ImportableBook } from '~/domain/audible/types'
+import type {
+  AudibleAsin as AudibleAsinValue,
+  AudibleConnection,
+  ImportableBook,
+} from '~/domain/audible/types'
 import type { NewBook } from '~/domain/book/command'
 import {
   BookLanguageValue,
@@ -12,10 +16,10 @@ import {
   Publisher,
   Synopsis,
 } from '~/domain/book/primitives'
-import type { Book, ReadingStatus } from '~/domain/book/types'
+import type { Book, BookId, ReadingStatus } from '~/domain/book/types'
 import { SeriesName, seriesKeyOf, VolumeNumber } from '~/domain/series/primitives'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
-import type { AuthorName as AuthorNameValue } from '~/domain/shared/types'
+import type { AuthorName as AuthorNameValue, UserId } from '~/domain/shared/types'
 import { isPresent, optionally } from '~/utils/input'
 import { slugify } from '~/utils/slug'
 
@@ -97,6 +101,7 @@ export const bookFrom = (importable: ImportableBook): NewBook => ({
   finishedAt: importable.finishedAt,
   durationMinutes: importable.durationMinutes,
   narrators: importable.narrators,
+  audibleAsin: importable.asin,
 })
 
 /** Where the reader stands in a title, as Audible knows it. Anything started is
@@ -193,11 +198,118 @@ export const plainTextOf = (html: string | undefined): string | undefined => {
 /** What counts as "the reader already has this one".
  *
  *  Title and first author, folded the way series keys are folded, rather than an
- *  identifier stored on the book: an import writes an ordinary book, and matching
- *  on the text means a title the reader scanned from the printed edition is
- *  recognized too — which an ASIN kept on the record would never have caught. */
+ *  identifier: matching on the text means a title the reader scanned from the
+ *  printed edition is recognized too, which the ASIN now kept on imported records
+ *  would never have caught.
+ *
+ *  The two answer different questions and both are needed. The shelf key asks
+ *  "does the reader already own this story", loosely and across editions, which
+ *  is what a duplicate check wants. The ASIN asks "which record is this exact
+ *  Audible title", and only it is precise enough to write a status into. */
 export const shelfKeyOf = (title: string, author: string | undefined): string =>
   `${slugify(title)}--${slugify(author ?? '')}`
 
 export const shelfKeysOf = (books: readonly Book[]): Set<string> =>
   new Set(books.map((book) => shelfKeyOf(book.title, book.authors[0])))
+
+/** The Audible title each catalogued book stands for, for the books that have no
+ *  ASIN on them yet.
+ *
+ *  Imports made before the link was kept would otherwise sit outside the sync
+ *  forever, so they are matched once on the shelf key and pinned for good. Only
+ *  audiobooks are eligible: a printed edition sharing a title with a recording
+ *  must never inherit its ASIN, because that is what would let Audible start
+ *  moving a book the reader catalogued from a photo.
+ *
+ *  An ASIN already worn by another book is not handed out twice — two records of
+ *  the same story would otherwise fight over one title's listening status. */
+export const audibleLinksFor = (
+  books: readonly Book[],
+  items: readonly AudibleItem[],
+): { bookId: BookId; audibleAsin: AudibleAsinValue }[] => {
+  const byShelfKey = new Map<string, AudibleAsinValue>()
+  for (const item of items) {
+    const asin = optionally(item.asin, AudibleAsin)
+    if (asin && item.title) byShelfKey.set(shelfKeyOf(item.title, item.authors?.[0]), asin)
+  }
+  const taken = new Set<string>(
+    books.flatMap((book) => (book.audibleAsin ? [book.audibleAsin] : [])),
+  )
+
+  return books.flatMap((book) => {
+    if (book.audibleAsin || book.format !== 'audiobook') return []
+    const audibleAsin = byShelfKey.get(shelfKeyOf(book.title, book.authors[0]))
+    if (!audibleAsin || taken.has(audibleAsin)) return []
+    taken.add(audibleAsin)
+    return [{ bookId: book.id, audibleAsin }]
+  })
+}
+
+/** The status moves that follow the listening, for books linked to a title the
+ *  library still holds.
+ *
+ *  Audible is authoritative here, in both directions: a title it reports as
+ *  finished marks the book read, and one it reports as untouched sends it back to
+ *  the pile. A book whose status already agrees produces nothing, so a night that
+ *  changed nothing writes nothing.
+ *
+ *  `at` is Audible's own finishing date when it has one. Without it the caller
+ *  stamps the moment of the sync, which is the best it can honestly say. */
+export const listeningChangesFor = (
+  books: readonly Book[],
+  items: readonly AudibleItem[],
+): { bookId: BookId; status: ReadingStatus; at?: Date }[] => {
+  const byAsin = new Map(items.map((item) => [item.asin, item]))
+
+  return books.flatMap((book) => {
+    if (!book.audibleAsin) return []
+    const item = byAsin.get(book.audibleAsin)
+    if (!item) return []
+    const status = statusOf(item)
+    if (status === book.status) return []
+    return [
+      {
+        bookId: book.id,
+        status,
+        at: status === 'read' ? item.listeningStatus?.finishedAt : undefined,
+      },
+    ]
+  })
+}
+
+/** The titles bought since the reader last looked.
+ *
+ *  The cutoff is what keeps the sync from undoing a choice: everything on offer
+ *  when the reader last picked was already declined by not being ticked, and
+ *  importing it tonight would overrule them. A title Amazon dates neither by
+ *  purchase nor by addition is left out for the same reason — it cannot be shown
+ *  to be new.
+ *
+ *  Without a cutoff the whole library is new, which is the case of a reader who
+ *  connected their account and never imported. */
+export const boughtSince = (
+  items: readonly AudibleItem[],
+  since: Date | undefined,
+): AudibleItem[] => {
+  if (!since) return [...items]
+  return items.filter((item) => {
+    const at = item.purchaseDate ?? item.dateAdded
+    return at !== undefined && at.getTime() > since.getTime()
+  })
+}
+
+/** The readers a nightly run should pass over, staleest first.
+ *
+ *  A half-finished sign-in is not an account and has nothing to sync. The order
+ *  is what makes the job's time budget safe to hit: whoever is cut off tonight
+ *  sorts to the front tomorrow, so no reader can be starved by a library that
+ *  always runs long. A reader never synced has no date and goes first of all. */
+export const readersDueForSync = (connections: readonly AudibleConnection[]): UserId[] =>
+  connections
+    .filter((connection) => connection.account && connection.account.autoSync !== false)
+    .sort(
+      (left, right) =>
+        (left.account?.lastImportedAt?.getTime() ?? 0) -
+        (right.account?.lastImportedAt?.getTime() ?? 0),
+    )
+    .map((connection) => connection.userId)

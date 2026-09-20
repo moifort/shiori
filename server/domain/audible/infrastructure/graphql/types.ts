@@ -49,8 +49,17 @@ export const AudibleAccountType = builder.objectRef<ConnectedAccount>('AudibleAc
     lastImportedAt: t.field({
       type: 'DateTime',
       nullable: true,
-      description: 'Null until the first import.',
+      description: 'Null until the first import, then moved by every nightly sync.',
       resolve: (account) => account.lastImportedAt ?? null,
+    }),
+    autoSync: t.boolean({
+      description:
+        'Whether the nightly sync runs for this reader.\n\n' +
+        'When on, a pass each night catalogues the titles bought since the last ' +
+        'one and moves the status of imported books to follow the listening — ' +
+        'without asking. Ratings, notes and hidden books are never touched. Turn ' +
+        'it off with `setAudibleAutoSync` to go back to importing by hand.',
+      resolve: (account) => account.autoSync !== false,
     }),
   }),
 })
