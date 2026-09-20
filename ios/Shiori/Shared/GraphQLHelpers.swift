@@ -5,14 +5,27 @@ import Foundation
 enum GraphQLHelpers {
     // Cache fully disabled: `.networkOnly` never reads the normalized store, and
     // nothing in the app watches or reads it — avoids a class of stale/normalization bugs.
-    static func fetch<Q: GraphQLQuery>(_ client: ApolloClient, query: Q) async throws -> Q.Data
+    //
+    // `requestTimeout` overrides the session's 60 s idle limit for a query that
+    // may legitimately keep the server silent for longer: a saga catalogued on
+    // its first opening.
+    static func fetch<Q: GraphQLQuery>(
+        _ client: ApolloClient,
+        query: Q,
+        requestTimeout: TimeInterval? = nil
+    ) async throws -> Q.Data
     where Q.ResponseFormat == SingleResponseFormat {
-        let response = try await client.fetch(query: query, cachePolicy: .networkOnly)
+        let response = try await client.fetch(
+            query: query,
+            cachePolicy: .networkOnly,
+            requestConfiguration: requestTimeout.map { RequestConfiguration(requestTimeout: $0) }
+        )
         return try unwrap(response)
     }
 
-    /// `requestTimeout` overrides the session's 60 s idle limit for the one
-    /// mutation that legitimately keeps the server silent for longer: a scan.
+    /// `requestTimeout` overrides the session's 60 s idle limit for the
+    /// mutations that legitimately keep the server silent for longer: a scan,
+    /// an import.
     static func perform<M: GraphQLMutation>(
         _ client: ApolloClient,
         mutation: M,

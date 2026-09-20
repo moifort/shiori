@@ -21,7 +21,9 @@ struct SeriesView: View {
     var body: some View {
         Group {
             if isLoading {
-                ProgressView()
+                // Labelled because the first opening of a saga an import named
+                // is where the server builds its catalogue, which takes a while.
+                ProgressView("Chargement du catalogue…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let series {
                 catalogue(series)
@@ -29,7 +31,7 @@ struct SeriesView: View {
                 ContentUnavailableView {
                     Label("Série non cataloguée", systemImage: "square.stack.3d.up.slash")
                 } description: {
-                    Text(errorMessage ?? "Cette série n'a pas encore de catalogue. Il est constitué au premier scan d'un de ses tomes.")
+                    Text(errorMessage ?? "Shiori n'a pas réussi à constituer le catalogue de cette série. Réessayez plus tard, ou scannez la couverture d'un de ses tomes.")
                 }
             }
         }

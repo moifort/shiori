@@ -1,13 +1,21 @@
 import Foundation
 
 enum SeriesAPI {
+    /// How long the app waits for a saga's catalogue. A saga nobody has
+    /// described yet — one an Audible import named — is catalogued by the server
+    /// on this first opening, with one web-grounded model call that a cold
+    /// function can stretch well past the session's 60 s; every later opening
+    /// reads the stored catalogue and answers at once.
+    private static let firstOpeningTimeout: TimeInterval = 120
+
     /// The full catalogue of one saga — owned volumes and unowned alike. Nil
-    /// when nobody has catalogued it yet, which happens for a book added by hand
-    /// or when the catalogue call failed on the scan that first met the saga.
+    /// only when the server could not build it: the catalogue call failed, or
+    /// the model found no volumes. The next opening tries again.
     static func series(id: String) async throws -> BookSeries? {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.SeriesQuery(id: id)
+            query: ShioriGraphQL.SeriesQuery(id: id),
+            requestTimeout: firstOpeningTimeout
         )
         guard let series = data.series else { return nil }
         return BookSeries(
