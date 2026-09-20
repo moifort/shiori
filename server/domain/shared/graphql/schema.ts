@@ -67,4 +67,9 @@ import '~/domain/audible/infrastructure/graphql/mutations'
 import '~/domain/changelog/infrastructure/graphql/types'
 import '~/domain/changelog/infrastructure/graphql/queries'
 
+// Admin (the app's own economics, for the in-app admin screen). Last: it reads
+// the user domain to gate itself on the admin flag.
+import '~/domain/admin/infrastructure/graphql/types'
+import '~/domain/admin/infrastructure/graphql/queries'
+
 export const schema = builder.toSchema()

@@ -1,4 +1,86 @@
 """
+The app's monthly economics, for the admin screen: what the month costs (measured AI tokens, measured GCP billing) against what it brings in (App Store sales) and who is here (accounts, subscribers).
+
+AI figures are live, incremented at each scan. Users, subscribers, revenue and the GCP bill come from a projection a scheduler refreshes daily — `refreshedAt` says when, and is null until it has run once.
+"""
+type AdminMetrics {
+  """This month's Gemini bill, priced from the measured tokens, e.g. `0.42`"""
+  aiCostEur: Eur!
+
+  """
+  Scan requests served from the cover cache this month, at no cost, e.g. `4`
+  """
+  cacheHits: Int!
+
+  """
+  The series-catalogue step's token consumption this month. Runs only for a saga no reader has catalogued yet, so it is the line that spikes on a new author.
+  """
+  catalogue: AiTokenUsage!
+
+  """
+  The web-grounded enrichment step's token consumption this month. Skipped when the cover was not recognized.
+  """
+  enrichment: AiTokenUsage!
+
+  """
+  This month's measured GCP bill for the project, from the billing export, e.g. `0.19`; null while the export is not configured or has never answered. Carries no fixed line: the Apple Developer fee is shared across projects and deliberately left out.
+  """
+  infraEur: Eur
+
+  """Of them, on the monthly plan, e.g. `2`"""
+  premiumMonthly: Int!
+
+  """Active Premium subscribers right now, e.g. `5`"""
+  premiumTotal: Int!
+
+  """Of them, on the yearly plan, e.g. `3`"""
+  premiumYearly: Int!
+
+  """
+  When the daily projection last ran, e.g. `"2026-09-20T04:00:00.000Z"`; null before its first run.
+  """
+  refreshedAt: DateTime
+
+  """This month's App Store gross (what customers paid), e.g. `17.9`"""
+  revenueGrossEur: Eur
+
+  """
+  This month's App Store net proceeds (what Apple pays out), e.g. `12.4`; null while the App Store Connect key is not configured or has never answered.
+  """
+  revenueProceedsEur: Eur
+
+  """Scans that really reached Gemini this month, e.g. `37`"""
+  scans: Int!
+
+  """AI plus the measured infrastructure bill, e.g. `0.61`"""
+  totalCostEur: Eur!
+
+  """How many accounts completed onboarding, e.g. `42`"""
+  totalUsers: Int!
+
+  """
+  The cover-reading step's token consumption this month. Runs on every scan.
+  """
+  vision: AiTokenUsage!
+}
+
+"""
+What one Gemini step consumed this month, in tokens as the API reported them.
+
+Thinking tokens are listed apart from plain output because they bill at the output rate and are the largest line on a scan.
+"""
+type AiTokenUsage {
+  """Visible output tokens (the structured answer), e.g. `250`"""
+  outputTokens: Int!
+
+  """Input tokens (the cover photo, the prompt), e.g. `2600`"""
+  promptTokens: Int!
+
+  """Reasoning tokens, billed at the output rate, e.g. `1500`"""
+  thinkingTokens: Int!
+}
+
+"""
 The reader's live link to Audible.
 
 The credentials themselves never leave the server. Disconnecting forgets our copy of them; the device stays registered on the Amazon side until the reader removes it there.
@@ -841,6 +923,13 @@ The publisher of this edition, 1 to 200 characters. Example: "DAW Books".
 scalar Publisher
 
 type Query {
+  """
+  The app's monthly economics: costs, revenue, users and subscribers.
+  
+  Reserved for administrator accounts (see `me.isAdmin`); anyone else is refused with `FORBIDDEN`.
+  """
+  adminMetrics: AdminMetrics!
+
   """
   The reader's Audible connection, or null when there is none.
   

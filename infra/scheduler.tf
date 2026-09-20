@@ -10,7 +10,7 @@ resource "google_cloud_scheduler_job" "refresh_admin_metrics" {
   time_zone = "Europe/Paris"
 
   # The refresh calls App Store Connect (~30 daily reports) and BigQuery; give
-  # it the function's full 60s rather than the scheduler's shorter default.
+  # it the function's full 180s rather than the scheduler's shorter default.
   attempt_deadline = "180s"
 
   retry_config {

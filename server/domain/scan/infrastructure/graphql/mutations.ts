@@ -1,3 +1,4 @@
+import { AdminCommand } from '~/domain/admin/command'
 import { EntitlementQuery } from '~/domain/entitlement/query'
 import { exhausted } from '~/domain/quota/business-rules'
 import { QuotaCommand } from '~/domain/quota/command'
@@ -7,7 +8,10 @@ import { imageWithinSizeLimit } from '~/domain/scan/limits'
 import { builder } from '~/domain/shared/graphql/builder'
 import { domainError } from '~/domain/shared/graphql/errors'
 import { languageFrom } from '~/domain/shared/language'
+import { createLogger } from '~/system/logger'
 import { ScanResultType } from './types'
+
+const logger = createLogger('scan')
 
 builder.mutationField('scanBook', (t) =>
   t.field({
@@ -49,13 +53,19 @@ builder.mutationField('scanBook', (t) =>
       const language = languageFrom(event && getHeader(event, 'accept-language'))
 
       try {
-        const { result, cacheHit } = await Scan.scanWithCache(
+        const { result, cacheHit, usage } = await Scan.scanWithCache(
           Buffer.from(imageBase64, 'base64'),
           language,
         )
         // Metered after the fact, and only on a real model call: a Gemini failure
         // must not cost the reader a scan, and a cache hit costs us nothing.
         if (!cacheHit) await QuotaCommand.record(userId, plan)
+        // What the call cost us, for the admin screen. Pure telemetry: the scan
+        // already succeeded, so a failed counter write is logged and swallowed
+        // rather than turned into an error the reader has to read.
+        await AdminCommand.recordAiUsage({ cacheHit, usage }).catch((error) =>
+          logger.warn(`AI usage not recorded: ${error}`),
+        )
         return result
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Scan failed'
