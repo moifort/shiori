@@ -39,6 +39,11 @@ Consequences:
   scan quota like any other. That keeps the cost attached to a reader who asked to see the
   saga.
 
+  **Not built.** The tab lists the saga and the heart works on its screen, but the screen
+  still says "Série non cataloguée" and offers no way to describe it. Cataloguing on demand
+  needs a public entry point on `Scan`, which today only exposes `scanWithCache`, and a quota
+  debit outside the scan mutation. Deferred rather than rushed.
+
 This is a breaking GraphQL change; the iOS `Series.graphql` operations and the generated
 Apollo code follow.
 
@@ -70,12 +75,16 @@ mostly from Audible shows this rarely until those books are classified by hand.
 is localized into. Reusing it for the language of a printed edition was wrong, and nothing
 ever wrote the field, so it is replaced rather than migrated.
 
-New brand `BookLanguage` over a **closed list**: `fr en es de it pt nl ja zh ko ru ar sv pl`,
-plus `other`. Closed for the reason `GENRES` is closed, plus one of its own: a flag is drawn
-from a list that is known, and an arbitrary ISO code has no glyph to draw.
+New brand `BookLanguage` over a **closed list** of sixteen: `fr en es de it pt nl sv pl ru uk
+tr ar ja zh ko`. Closed for the reason `GENRES` is closed, plus one of its own: a flag is
+drawn from a list that is known, and an arbitrary ISO code has no glyph to draw.
+
+No `other`. It was in the first draft and taken out during the build: it draws no flag and
+groups with the unrecorded books, so it would be a second way of saying "unknown" — an
+edition in a language off the list simply keeps none.
 
 A language is not a country and the flags are a convenience, not a claim: `en` shows the
-Union Jack, `pt` the Portuguese flag. `other` shows no flag.
+Union Jack, `pt` the Portuguese flag, `ar` the Saudi one.
 
 ### Where it comes from
 
@@ -133,8 +142,9 @@ replaced while no document holds it.
 
 ## Build order
 
-1. The Audible series defect
-2. The narrator
-3. The genre on the row
-4. The language, its flag, and the saga split
-5. Book favourite, then saga opinion
+1. The Audible series defect — done, minus the on-demand cataloguing noted above
+2. The narrator — done, and the running time joined it on the book screen, along with a
+   headphones marker on the library row
+3. The genre on the row — done, reusing the `BookGenre.symbol` table that already existed
+4. The language, its flag, and the saga split — done
+5. Book favourite, then saga opinion — done
