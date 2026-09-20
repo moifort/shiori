@@ -7,10 +7,12 @@ import { SeriesStateEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { SeriesType } from '~/domain/series/infrastructure/graphql/types'
 import { SeriesQuery } from '~/domain/series/query'
 import type { Series, SeriesId, SeriesName, SeriesState } from '~/domain/series/types'
+import { SeriesUseCase } from '~/domain/series/use-case'
 import { SeriesOpinionType } from '~/domain/series-opinion/infrastructure/graphql/types'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import { builder } from '~/domain/shared/graphql/builder'
+import { languageOf } from '~/domain/shared/language'
 import { Count, Year } from '~/domain/shared/primitives'
 import type { AuthorName, Count as CountValue } from '~/domain/shared/types'
 
@@ -60,7 +62,8 @@ const FollowedSeriesType = builder.objectRef<FollowedSeries>('FollowedSeries').i
       nullable: true,
       description:
         'What the world knows of the saga. Null until somebody scans a volume of ' +
-        'it: an import and a manual entry both name a saga without describing it.',
+        'it or opens it with `series`: an import and a manual entry both name a ' +
+        'saga without describing it.',
       resolve: (followed) => followed.catalogue,
     }),
     opinion: t.field({
@@ -97,9 +100,16 @@ builder.queryFields((t) => ({
     description:
       'The full catalogue of one saga, owned volumes and unowned alike.\n\n' +
       'Everything the reader does not own is a proposal: nothing enters a library ' +
-      'until they add it. Null when the saga has never been catalogued.',
+      'until they add it.\n\n' +
+      'Built on first sight when nobody has catalogued the saga yet — an Audible ' +
+      'import names sagas without describing them — from the name and author of ' +
+      'a volume the reader holds, with one web-grounded model call in the ' +
+      'language of `Accept-Language`. That first opening takes a few seconds; ' +
+      'every later one, by anyone, reads the stored catalogue. Null when the ' +
+      'reader holds no volume of the saga, or when the model found nothing to say.',
     args: { id: t.arg({ type: 'SeriesId', required: true }) },
-    resolve: (_root, args) => SeriesQuery.byId(args.id),
+    resolve: (_root, args, { userId, event }) =>
+      SeriesUseCase.describe(userId, args.id, languageOf(event)),
   }),
 
   mySeries: t.field({

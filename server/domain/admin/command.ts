@@ -2,7 +2,7 @@ import { monthOf, premiumBreakdown } from '~/domain/admin/business-rules'
 import * as repository from '~/domain/admin/infrastructure/repository'
 import type { AdminMetricsProjection, InfraUsage, Revenue } from '~/domain/admin/types'
 import { EntitlementQuery } from '~/domain/entitlement/query'
-import type { ScanUsage } from '~/domain/scan/types'
+import type { AiStepUsage, ScanUsage } from '~/domain/scan/types'
 import { Eur } from '~/domain/shared/primitives'
 import type { Month } from '~/domain/shared/types'
 import { UserQuery } from '~/domain/user/query'
@@ -26,6 +26,13 @@ export namespace AdminCommand {
       enrichment: scan.usage.enrichment,
       catalogue: scan.usage.catalogue,
     })
+  }
+
+  // A catalogue built on its own — the series screen opening a saga an Audible
+  // import named. No scan ran, so only the third step's line moves. Telemetry
+  // like the above: the caller logs and swallows a failure.
+  export const recordCatalogueUsage = async (catalogue: AiStepUsage) => {
+    await repository.recordUsage(monthOf(new Date()), { scans: 0, cacheHits: 0, catalogue })
   }
 
   // The daily job behind the admin screen: count the accounts, work out who is

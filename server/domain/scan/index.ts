@@ -16,7 +16,7 @@ import { hashImage } from '~/domain/scan/primitives'
 import { cataloguePrompt, enrichmentPrompt, visionPrompt } from '~/domain/scan/prompts'
 import { CATALOGUE_SCHEMA, ENRICHMENT_SCHEMA, VISION_SCHEMA } from '~/domain/scan/schemas'
 import { STUBBED_SCAN } from '~/domain/scan/stub'
-import type { ScanLanguage, ScanResult, ScanUsage } from '~/domain/scan/types'
+import type { AiStepUsage, ScanLanguage, ScanResult, ScanUsage } from '~/domain/scan/types'
 import { SeriesCommand } from '~/domain/series/command'
 import {
   SeriesDescription,
@@ -26,8 +26,9 @@ import {
   VolumeNumber,
 } from '~/domain/series/primitives'
 import { SeriesQuery } from '~/domain/series/query'
-import type { Series, Volume } from '~/domain/series/types'
+import type { Series, SeriesId, SeriesName as SeriesNameValue, Volume } from '~/domain/series/types'
 import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
+import type { AuthorName as AuthorNameValue } from '~/domain/shared/types'
 import { config } from '~/system/config'
 import { createLogger } from '~/system/logger'
 import { isPresent, optionally as optional } from '~/utils/input'
@@ -190,20 +191,38 @@ export namespace Scan {
     const seriesId = seriesKeyOf(series.name, result.authors[0])
     if (await SeriesQuery.byId(seriesId)) return undefined
 
+    const { usage } = await catalogueSeries(seriesId, series.name, result.authors[0], language)
+    return usage
+  }
+
+  /** The catalogue call on its own, for a saga named but never described. The
+   *  scan runs it as its third step; the series screen runs it for a saga an
+   *  Audible import named, since an import describes nothing.
+   *
+   *  Never throws: a failed catalogue must not fail the scan that asked for it.
+   *  The reader still gets their book, and the saga is catalogued by the next
+   *  scan or opening that touches it. An empty catalogue is not stored either:
+   *  it would mask the saga as known and stop any later attempt with better
+   *  grounding. `usage` says what the call cost whenever it answered, stored or
+   *  not. */
+  export const catalogueSeries = async (
+    seriesId: SeriesId,
+    name: SeriesNameValue,
+    author: AuthorNameValue,
+    language: ScanLanguage,
+  ): Promise<{ series?: Series; usage?: AiStepUsage }> => {
     try {
       const { value, usage } = await generate<CatalogueOutput>({
         step: 'catalogue',
-        parts: [{ text: cataloguePrompt(series.name, result.authors[0], language) }],
+        parts: [{ text: cataloguePrompt(name, author, language) }],
         responseSchema: CATALOGUE_SCHEMA,
         grounded: true,
       })
 
       const volumes = value.volumes.map(parsedVolume).filter(isPresent)
-      // An empty catalogue is not worth storing: it would mask the saga as
-      // "known" and stop any later scan from trying again with better grounding.
-      if (volumes.length === 0) return usage
+      if (volumes.length === 0) return { usage }
 
-      await SeriesCommand.catalogue({
+      const series = await SeriesCommand.catalogue({
         id: seriesId,
         name: SeriesName(value.name),
         author: AuthorName(value.author),
@@ -211,12 +230,10 @@ export namespace Scan {
         volumes,
         catalogedAt: new Date(),
       } satisfies Series)
-      return usage
+      return { series, usage }
     } catch (error) {
-      // A failed catalogue must not fail the scan. The reader still gets their
-      // book; the saga is simply catalogued on the next scan that touches it.
-      logger.warn(`catalogue failed for "${series.name}": ${error}`)
-      return undefined
+      logger.warn(`catalogue failed for "${name}": ${error}`)
+      return {}
     }
   }
 

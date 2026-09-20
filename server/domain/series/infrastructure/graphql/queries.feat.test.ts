@@ -9,12 +9,30 @@ mock.module('~/system/object-store', () => ({
   objectStore: () => ({ downloadUrl: async () => 'https://fake.store/cover' }),
 }))
 
+/** Queued Gemini answers, consumed in call order. Nobody pays Google in a test:
+ *  what is asserted is what a screen does with an answer. */
+let answers: unknown[] = []
+const calls: string[] = []
+
+mock.module('~/domain/scan/gemini', () => ({
+  generate: async ({ step }: { step: string }) => {
+    calls.push(step)
+    const value = answers.shift()
+    if (value === undefined) throw new Error(`no queued answer for step "${step}"`)
+    if (value instanceof Error) throw value
+    return { value, usage: { promptTokens: 10, outputTokens: 5, thinkingTokens: 20, searches: 1 } }
+  },
+}))
+
 const { schema } = await import('~/domain/shared/graphql/schema')
 
 const userId = 'reader-1' as UserId
+let fake: ReturnType<typeof resetFakeFirestore>
 
 beforeEach(() => {
-  resetFakeFirestore()
+  fake = resetFakeFirestore()
+  answers = []
+  calls.length = 0
 })
 
 const execute = (source: string) => graphql({ schema, source, contextValue: { event: {}, userId } })
@@ -126,5 +144,90 @@ describe('a saga held in more than one language', () => {
       { seriesId: 'dune--frank-herbert', language: 'EN', books: [{ title: 'Dune' }] },
       { seriesId: 'dune--frank-herbert', language: 'FR', books: [{ title: 'Dune' }] },
     ])
+  })
+})
+
+describe('opening a saga nobody has catalogued', () => {
+  const aCatalogue = {
+    name: 'Dune',
+    author: 'Frank Herbert',
+    description: 'Un désert, une épice, et le fils d’un duc trahi.',
+    volumes: [
+      { kind: 'main', number: 1, title: 'Dune', publishedIn: 1965 },
+      { kind: 'main', number: 2, title: 'Le Messie de Dune', publishedIn: 1969 },
+    ],
+  }
+
+  const openSeries = async () => {
+    const result = await execute(
+      '{ series(id: "dune--frank-herbert") { name author spine { number title } } }',
+    )
+    expect(result.errors).toBeUndefined()
+    return result.data?.series
+  }
+
+  const described = {
+    name: 'Dune',
+    author: 'Frank Herbert',
+    spine: [
+      { number: 1, title: 'Dune' },
+      { number: 2, title: 'Le Messie de Dune' },
+    ],
+  }
+
+  // The defect: a saga an Audible import named had no catalogue, and its screen
+  // said so for good — only a scan of one of its volumes built one. Now the
+  // screen builds it from the volume the reader already holds, the first time.
+  test('catalogues it from the volume the reader holds, and only once', async () => {
+    await addVolume('Le Messie de Dune', 2)
+    answers = [aCatalogue]
+
+    expect(await openSeries()).toEqual(described)
+    expect(calls).toEqual(['catalogue'])
+
+    expect(await openSeries()).toEqual(described)
+    expect(calls).toEqual(['catalogue'])
+  })
+
+  // Paid for like the third step of a scan, without a scan: the month's counters
+  // must say what the catalogue cost, and must not count a scan that never ran.
+  test('records what the catalogue call cost, as a catalogue and not a scan', async () => {
+    await addVolume('Dune', 1)
+    answers = [aCatalogue]
+
+    await openSeries()
+
+    const [usage] = [...fake.snapshot('ai-usage').values()]
+    expect(usage).toMatchObject({
+      scans: 0,
+      cacheHits: 0,
+      catalogue: { promptTokens: 10, outputTokens: 5, thinkingTokens: 20, searches: 1 },
+    })
+  })
+
+  // A reader can only have the world described for sagas they read: nothing in
+  // the library names it, so there is no name and no author to ask about.
+  test('describes nothing for a saga the reader holds no volume of', async () => {
+    expect(await openSeries()).toBeNull()
+    expect(calls).toEqual([])
+  })
+
+  // The screen says the catalogue is missing rather than failing: the saga is
+  // catalogued the next time it is opened, or by the next scan that touches it.
+  test('answers with no catalogue, and no error, when the model call fails', async () => {
+    await addVolume('Dune', 1)
+    answers = [new Error('grounding is down')]
+
+    expect(await openSeries()).toBeNull()
+  })
+
+  // Storing an empty catalogue would mark the saga as known and stop any later
+  // opening from trying again with better grounding.
+  test('stores nothing when the model finds no volumes', async () => {
+    await addVolume('Dune', 1)
+    answers = [{ ...aCatalogue, volumes: [] }]
+
+    expect(await openSeries()).toBeNull()
+    expect(fake.snapshot('series').size).toBe(0)
   })
 })

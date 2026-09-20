@@ -14,3 +14,13 @@ export const languageFrom = (acceptLanguage: string | undefined): Language => {
   const primary = acceptLanguage?.split(',')[0]?.trim().split('-')[0]?.toLowerCase()
   return SUPPORTED_LANGUAGES.includes(primary as Language) ? (primary as Language) : 'en'
 }
+
+/** The language of a request, read straight off the event.
+ *
+ *  Reads the header itself rather than through `getHeader`, a Nitro auto-import
+ *  that the schema executed outside a server — the feature tests — does not
+ *  have. An event with no request, which is what those tests pass, answers
+ *  English like a request with no header. */
+export const languageOf = (
+  event: { node?: { req?: { headers?: { 'accept-language'?: string } } } } | undefined,
+): Language => languageFrom(event?.node?.req?.headers?.['accept-language'])
