@@ -58,6 +58,29 @@ extension ShioriGraphQL.Genre {
     }
 }
 
+extension ShioriGraphQL.BookLanguage {
+    var asDomain: BookLanguage {
+        switch self {
+        case .fr: .fr
+        case .en: .en
+        case .es: .es
+        case .de: .de
+        case .it: .it
+        case .pt: .pt
+        case .nl: .nl
+        case .sv: .sv
+        case .pl: .pl
+        case .ru: .ru
+        case .uk: .uk
+        case .tr: .tr
+        case .ar: .ar
+        case .ja: .ja
+        case .zh: .zh
+        case .ko: .ko
+        }
+    }
+}
+
 extension ShioriGraphQL.VolumeKind {
     var asDomain: VolumeKind {
         switch self {
@@ -106,6 +129,16 @@ extension GraphQLEnum where T == ShioriGraphQL.Genre {
     }
 }
 
+extension GraphQLEnum where T == ShioriGraphQL.BookLanguage {
+    /// An unrecognized language reads as none at all. It is a language this
+    /// client cannot name or draw a flag for, and guessing would shelve the book
+    /// under a language nobody established.
+    var asDomain: BookLanguage? {
+        if case let .case(value) = self { return value.asDomain }
+        return nil
+    }
+}
+
 extension GraphQLEnum where T == ShioriGraphQL.VolumeKind {
     /// An unrecognized kind lands in the related works rather than the spine:
     /// showing an unknown volume as part of the main story would misnumber it.
@@ -130,6 +163,7 @@ extension ShioriGraphQL.BookSummary {
             authors: authors,
             format: format.asDomain,
             genre: genre?.asDomain,
+            language: language?.asDomain,
             series: series?.asMembership,
             coverURL: coverUrl.flatMap(URL.init(string:)),
             status: status.asDomain,
@@ -154,6 +188,7 @@ extension ShioriGraphQL.BookDetail {
             durationMinutes: durationMinutes,
             narrators: narrators,
             isbn13: isbn13,
+            language: language?.asDomain,
             series: series?.asMembership,
             coverURL: coverUrl.flatMap(URL.init(string:)),
             status: status.asDomain,

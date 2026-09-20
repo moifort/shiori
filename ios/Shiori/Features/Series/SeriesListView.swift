@@ -44,9 +44,17 @@ struct SeriesListView: View {
 
     private var list: some View {
         List(followed) { entry in
-            NavigationLink(value: entry.id) {
+            NavigationLink(value: entry.seriesId) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(entry.name).font(.body.weight(.medium))
+                    HStack(spacing: 6) {
+                        Text(entry.name).font(.body.weight(.medium))
+                        // Which of the saga's two shelves this row is. Trailing
+                        // the name, as in the library headings: the name is what
+                        // the reader scans for.
+                        if let language = entry.language {
+                            Text(language.flag).accessibilityLabel(Text(language.label))
+                        }
+                    }
                     if let author = entry.author {
                         Text(author).font(.subheadline).foregroundStyle(.secondary)
                     }

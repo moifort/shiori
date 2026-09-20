@@ -26,6 +26,8 @@ export const visionPrompt = (language: ScanLanguage) =>
 
 ÉTAPE 3 — Relève l'éditeur si son nom ou son logo est lisible, sinon null.
 
+ÉTAPE 3 bis — Détermine language, la langue de CETTE édition, d'après la langue du titre et des textes imprimés sur la couverture. C'est la langue de l'objet photographié, pas celle de l'œuvre d'origine : une traduction française de Dune a language='fr'. Mets null si la couverture ne permet pas de trancher, ou si la langue ne figure pas dans la liste proposée.
+
 ÉTAPE 4 — Relève la série si la couverture la mentionne. Les couvertures de livres l'affichent souvent explicitement (« Tome 3 », « Livre II », « Volume 2 », « Cycle de… »). Renseigne seriesName avec le nom de la série SEUL, sans le numéro, et volumeNumber avec le chiffre. Si rien n'indique une série, mets les deux à null — ne déduis pas une série d'un titre qui y ressemble.
 
 N'INVENTE RIEN. Si une information n'est pas visible sur l'image, mets null. Toutes les valeurs textuelles doivent être en ${LANGUAGE_NAMES[language]}.`

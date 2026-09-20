@@ -57,6 +57,7 @@ fragment BookDetail on Book {
   pageCount
   durationMinutes
   narrators
+  language
   isbn13
   coverUrl
   status

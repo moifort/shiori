@@ -12,6 +12,7 @@ enum LibraryAPI {
             LibrarySection(
                 seriesId: section.seriesId,
                 seriesName: section.series,
+                language: section.language?.asDomain,
                 books: section.books.map { $0.fragments.bookSummary.asBook }
             )
         }
@@ -22,6 +23,27 @@ enum LibraryAPI {
         case .toRead: .case(.toRead)
         case .reading: .case(.reading)
         case .read: .case(.read)
+        }
+    }
+
+    static func graphQLLanguage(_ language: BookLanguage) -> GraphQLEnum<ShioriGraphQL.BookLanguage> {
+        switch language {
+        case .fr: .case(.fr)
+        case .en: .case(.en)
+        case .es: .case(.es)
+        case .de: .case(.de)
+        case .it: .case(.it)
+        case .pt: .case(.pt)
+        case .nl: .case(.nl)
+        case .sv: .case(.sv)
+        case .pl: .case(.pl)
+        case .ru: .case(.ru)
+        case .uk: .case(.uk)
+        case .tr: .case(.tr)
+        case .ar: .case(.ar)
+        case .ja: .case(.ja)
+        case .zh: .case(.zh)
+        case .ko: .case(.ko)
         }
     }
 

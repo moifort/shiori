@@ -1,5 +1,6 @@
 import {
   BookFormatEnum,
+  BookLanguageEnum,
   GenreEnum,
   ReadingStatusEnum,
 } from '~/domain/book/infrastructure/graphql/enums'
@@ -42,6 +43,11 @@ export const NewBookInput = builder.inputType('NewBookInput', {
       type: ['NarratorName'],
       required: false,
       description: 'Who reads the recording, at most five. Only meaningful on an AUDIOBOOK.',
+    }),
+    language: t.field({
+      type: BookLanguageEnum,
+      required: false,
+      description: 'The language of this edition, taken from a scan result.',
     }),
     isbn13: t.field({ type: 'Isbn13', required: false }),
     series: t.field({
@@ -86,6 +92,7 @@ export const BookEditInput = builder.inputType('BookEditInput', {
     subgenres: t.field({ type: ['Subgenre'], required: false, description: 'At most three.' }),
     pageCount: t.field({ type: 'PageCount', required: false }),
     narrators: t.field({ type: ['NarratorName'], required: false, description: 'At most five.' }),
+    language: t.field({ type: BookLanguageEnum, required: false }),
     isbn13: t.field({ type: 'Isbn13', required: false }),
   }),
 })

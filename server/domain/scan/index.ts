@@ -1,5 +1,6 @@
 import {
   BookFormatValue,
+  BookLanguageValue,
   GenreValue,
   Isbn13,
   MAX_SUBGENRES,
@@ -39,6 +40,7 @@ type VisionOutput = {
   title: string
   authors: string[]
   publisher?: string | null
+  language?: string | null
   seriesName?: string | null
   volumeNumber?: number | null
 }
@@ -134,6 +136,7 @@ export namespace Scan {
         authors: parsedAuthors(value.authors),
         format: optional(value.format, BookFormatValue),
         publisher: optional(value.publisher, Publisher),
+        language: optional(value.language, BookLanguageValue),
         subgenres: [],
       } satisfies ScanResult,
       usage,
@@ -158,6 +161,10 @@ export namespace Scan {
         authors: authors.length > 0 ? authors : seen.authors,
         format: seen.format,
         publisher: seen.publisher,
+        // Kept from step 1 rather than asked again: the language of the edition
+        // is a fact about the object photographed, and the grounded step answers
+        // about the work — which is a different question with a different answer.
+        language: seen.language,
         firstPublishedIn: optional(value.firstPublishedIn, Year),
         synopsis: optional(value.synopsis, Synopsis),
         genre: optional(value.genre, GenreValue),

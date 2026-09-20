@@ -1,6 +1,7 @@
 import type { Brand } from 'ts-brand'
 import type {
   BookFormat,
+  BookLanguage,
   CoverUrl,
   Genre,
   Isbn13,
@@ -40,6 +41,10 @@ export type ScanResult = {
   /** Absent on a scan cached before subgenres existed; read it as empty. */
   subgenres?: Subgenre[]
   pageCount?: PageCount
+  /** The language of the photographed edition, read off the cover in step 1 —
+   *  the object on the shelf, not the language the work was written in. Absent
+   *  when the cover does not settle it, and on scans cached before it was read. */
+  language?: BookLanguage
   isbn13?: Isbn13
   /** The publisher's cover, looked up by ISBN rather than asked of the model — a
    *  model asked for an image URL invents one. Absent without an ISBN, or when

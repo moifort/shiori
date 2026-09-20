@@ -1,4 +1,8 @@
-import { BookFormatEnum, GenreEnum } from '~/domain/book/infrastructure/graphql/enums'
+import {
+  BookFormatEnum,
+  BookLanguageEnum,
+  GenreEnum,
+} from '~/domain/book/infrastructure/graphql/enums'
 import type { ScannedSeries, ScanResult } from '~/domain/scan/types'
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { builder } from '~/domain/shared/graphql/builder'
@@ -79,6 +83,15 @@ export const ScanResultType = builder.objectRef<ScanResult>('ScanResult').implem
       type: 'PageCount',
       nullable: true,
       resolve: (result) => result.pageCount ?? null,
+    }),
+    language: t.field({
+      type: BookLanguageEnum,
+      nullable: true,
+      description:
+        'The language of the photographed edition, read off the cover — the object ' +
+        'on the shelf, not the language the work was written in. Null when the ' +
+        'cover does not settle it. Hand it back to `addBook` unchanged.',
+      resolve: (result) => result.language ?? null,
     }),
     isbn13: t.field({ type: 'Isbn13', nullable: true, resolve: (result) => result.isbn13 ?? null }),
     coverUrl: t.field({

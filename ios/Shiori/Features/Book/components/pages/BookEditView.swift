@@ -24,6 +24,7 @@ struct BookEditView: View {
     @State private var year: String
     @State private var pages: String
     @State private var genre: BookGenre?
+    @State private var language: BookLanguage?
     @State private var subgenres: String
     @State private var isbn: String
     @State private var isSaving = false
@@ -41,6 +42,7 @@ struct BookEditView: View {
         _year = State(initialValue: book.firstPublishedIn.map(String.init) ?? "")
         _pages = State(initialValue: book.pageCount.map(String.init) ?? "")
         _genre = State(initialValue: book.genre)
+        _language = State(initialValue: book.language)
         _subgenres = State(initialValue: book.subgenres.joined(separator: ", "))
         _isbn = State(initialValue: book.isbn13 ?? "")
     }
@@ -123,6 +125,19 @@ struct BookEditView: View {
                         TextField("Dark fantasy, Jeunesse", text: $subgenres)
                             .accessibilityIdentifier("edit-subgenres")
                     }
+                    Picker(selection: $language) {
+                        Text("Non renseignée").tag(BookLanguage?.none)
+                        ForEach(BookLanguage.allCases) { language in
+                            Text("\(language.flag)  \(language.label)").tag(BookLanguage?.some(language))
+                        }
+                    } label: {
+                        Label {
+                            Text("Langue")
+                        } icon: {
+                            Image(systemName: "globe").foregroundStyle(.secondary)
+                        }
+                    }
+                    .accessibilityIdentifier("edit-language")
                     LabeledField(title: "ISBN", icon: "barcode") {
                         TextField("978…", text: $isbn).keyboardType(.numberPad)
                     }
@@ -210,6 +225,7 @@ struct BookEditView: View {
         if subgenreList != book.subgenres { correction.subgenres = subgenreList }
         correction.pageCount = change(from: book.pageCount, to: Int(trimmed(pages)))
         correction.isbn13 = change(from: book.isbn13, to: isbnDigits.isEmpty ? nil : isbnDigits)
+        correction.language = change(from: book.language, to: language)
         return correction
     }
 

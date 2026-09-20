@@ -1,3 +1,4 @@
+import type { BookLanguage } from '~/domain/book/types'
 import type {
   Series,
   SeriesId,
@@ -90,6 +91,9 @@ export type FollowedSaga<Book> = {
   /** The first author of a volume the reader owns. The catalogue carries an
    *  author of its own; this one is what answers for a saga that has none. */
   author?: AuthorName
+  /** The language these volumes are in. A saga held in two languages answers
+   *  twice, once per language, because that is how the library shelves it. */
+  language?: BookLanguage
   books: Book[]
 }
 
@@ -102,27 +106,43 @@ export type FollowedSaga<Book> = {
  *
  *  A saga the catalogue has never heard of is still a saga the reader is
  *  reading. What is missing then is the list of volumes that exist, not the
- *  saga. */
+ *  saga.
+ *
+ *  Keyed by language as well as by saga, the same way the library shelves are:
+ *  a reader who holds Dune in French and in English follows two rows, because
+ *  those are two sets of books. An unrecorded language is its own group and
+ *  sorts last — unknown is not French. */
 export const followedSagasOf = <
-  Book extends { series?: { id: SeriesId; name: SeriesName }; authors: AuthorName[] },
+  Book extends {
+    series?: { id: SeriesId; name: SeriesName }
+    authors: AuthorName[]
+    language?: BookLanguage
+  },
 >(
   books: readonly Book[],
 ): FollowedSaga<Book>[] => {
-  const sagas = new Map<SeriesId, FollowedSaga<Book>>()
+  const sagas = new Map<string, FollowedSaga<Book>>()
   for (const book of books) {
     const membership = book.series
     if (!membership) continue
-    const known = sagas.get(membership.id)
+    const key = `${membership.id}\u0000${book.language ?? ''}`
+    const known = sagas.get(key)
     if (known) {
       known.books.push(book)
       known.author ??= book.authors[0]
     } else
-      sagas.set(membership.id, {
+      sagas.set(key, {
         id: membership.id,
         name: membership.name,
         author: book.authors[0],
+        language: book.language,
         books: [book],
       })
   }
-  return [...sagas.values()].sort((left, right) => left.name.localeCompare(right.name))
+  return [...sagas.values()].sort((left, right) => {
+    const byName = left.name.localeCompare(right.name)
+    return byName !== 0
+      ? byName
+      : (left.language ?? '\uffff').localeCompare(right.language ?? '\uffff')
+  })
 }

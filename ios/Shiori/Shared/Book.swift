@@ -192,6 +192,10 @@ struct Book: Identifiable, Hashable, Sendable {
     /// an audiobook no Audible import ever named.
     var narrators: [String] = []
     var isbn13: String?
+    /// The language of this edition. Nil on every book catalogued before the scan
+    /// started reading it off the cover, and on any edition in a language the
+    /// closed list does not carry.
+    var language: BookLanguage?
     var series: SeriesMembership?
     /// The cover to draw: the reader's own photo, or the publisher's cover found by
     /// ISBN at scan time. Absent for a book added by hand or from a catalogue, and
@@ -242,11 +246,16 @@ struct Book: Identifiable, Hashable, Sendable {
 /// One heading of the library list: a saga the reader owns volumes of, or the
 /// trailing shelf of standalone books.
 struct LibrarySection: Identifiable, Sendable {
-    /// The saga id, or a fixed key for the standalone shelf — a section needs a
-    /// stable identity for SwiftUI, and the shelf has no series to borrow one from.
-    var id: String { seriesId ?? "standalone" }
+    /// The saga and the language together, or a fixed key for the standalone
+    /// shelf. The saga alone is not an identity any more: a saga held in two
+    /// languages makes two sections, and SwiftUI would take them for one row
+    /// redrawn twice.
+    var id: String { seriesId.map { "\($0)|\(language?.rawValue ?? "")" } ?? "standalone" }
     let seriesId: String?
     let seriesName: String?
+    /// The language its volumes are in. Nil on the standalone shelf, and nil on
+    /// a saga whose volumes carry no recorded language.
+    var language: BookLanguage?
     let books: [Book]
 }
 
@@ -285,11 +294,18 @@ struct BookSeries: Identifiable, Sendable {
 /// the catalogue: an Audible import and a book typed by hand both name a saga
 /// without describing it, and reading the catalogue first lost every one of them.
 struct FollowedSeries: Identifiable, Sendable {
-    let id: String
+    /// The saga and the language together. The saga alone is not an identity:
+    /// held in two languages it follows as two rows, and SwiftUI would take them
+    /// for one row redrawn twice.
+    var id: String { "\(seriesId)|\(language?.rawValue ?? "")" }
+    let seriesId: String
     let name: String
     /// Taken from a volume the reader owns, which is what answers for a saga the
     /// catalogue has never described.
     let author: String?
+    /// The language the reader holds these volumes in. Nil on a saga whose
+    /// volumes carry no recorded language.
+    let language: BookLanguage?
     /// Nil when no catalogue exists to derive it from: which volumes the saga has
     /// is precisely what is unknown then.
     let state: SeriesState?

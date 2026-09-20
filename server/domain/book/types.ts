@@ -1,6 +1,5 @@
 import type { Brand } from 'ts-brand'
 import type { SeriesId, SeriesName, VolumeKind, VolumeNumber } from '~/domain/series/types'
-import type { Language } from '~/domain/shared/language'
 import type { AuthorName, BookTitle, UserId, Year } from '~/domain/shared/types'
 import type { ObjectPath, SignedUrl } from '~/system/object-store/types'
 
@@ -65,6 +64,32 @@ export const GENRES = [
 ] as const
 export type Genre = (typeof GENRES)[number]
 
+/** The language an edition is printed or recorded in, from a closed list.
+ *  Closed for the reason genres are closed, plus one of its own: the app draws a
+ *  flag for each, and an arbitrary ISO code has no flag to draw.
+ *
+ *  A language whose edition is not on this list keeps no language at all, rather
+ *  than an `other` that would be a second way of saying "unknown". */
+export const BOOK_LANGUAGES = [
+  'fr',
+  'en',
+  'es',
+  'de',
+  'it',
+  'pt',
+  'nl',
+  'sv',
+  'pl',
+  'ru',
+  'uk',
+  'tr',
+  'ar',
+  'ja',
+  'zh',
+  'ko',
+] as const
+export type BookLanguage = (typeof BOOK_LANGUAGES)[number]
+
 /** What kind of object the reader holds. Prose in print or on a screen, sound, or
  *  a drawn story — and among drawn stories, the three traditions a reader shelves
  *  apart: the Franco-Belgian album, the American comic, the manga. `book` is the
@@ -113,8 +138,10 @@ export type Book = {
    *  an audiobook whose source never said — a cover does not name its narrator. */
   narrators: NarratorName[]
   isbn13?: Isbn13
-  /** The language of the edition on the shelf, not the app's language. */
-  language?: Language
+  /** The language of the edition on the shelf, not the app's language. Absent on
+   *  every book catalogued before the scan started reading it, and on any edition
+   *  in a language the closed list does not carry. */
+  language?: BookLanguage
   series?: SeriesMembership
   /** Absent for a book added by hand or from a series catalogue: those have no
    *  photo, and the app draws a typographic placeholder instead. */
@@ -141,8 +168,12 @@ export type Book = {
 export type BookView = Book & { coverUrl?: SignedUrl | CoverUrl }
 
 /** One section of the library: either a saga the reader owns several volumes of,
- *  or the standalone shelf. Derived per request, never stored. */
+ *  or the standalone shelf. Derived per request, never stored.
+ *
+ *  A saga held in two languages makes two sections. The editions on a shelf are
+ *  different objects — different translations, different covers, read at
+ *  different times — and stacking them under one heading hid that. */
 export type LibrarySection = {
-  series?: { id: SeriesId; name: SeriesName }
+  series?: { id: SeriesId; name: SeriesName; language?: BookLanguage }
   books: BookView[]
 }

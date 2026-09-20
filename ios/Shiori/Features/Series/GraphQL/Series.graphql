@@ -23,6 +23,7 @@ query MySeries {
     id
     name
     author
+    language
     state
     ownedCount
   }

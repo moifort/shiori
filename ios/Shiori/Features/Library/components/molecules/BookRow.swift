@@ -19,6 +19,9 @@ struct BookRow: View {
     /// What kind of object this is. Only an audiobook draws anything: the others
     /// are read, which is what a library is assumed to hold.
     var format: BookFormat = .book
+    /// The language of this edition. Absent on every book catalogued before the
+    /// scan started reading it off the cover.
+    var language: BookLanguage?
     var isHidden: Bool = false
 
     var body: some View {
@@ -68,6 +71,11 @@ struct BookRow: View {
             // The corner markers, in the order a glance wants them: what the
             // object is, then what the reader chose about it.
             HStack(spacing: 6) {
+                if let language {
+                    Text(language.flag)
+                        .font(.caption)
+                        .accessibilityLabel(Text(language.label))
+                }
                 if format == .audiobook {
                     // A recording sits in the same list as the printed books and
                     // reads nothing like one — the cover alone never says so.
@@ -157,7 +165,8 @@ private struct ReadingStatusBadge: View {
             status: .reading,
             rating: nil,
             genre: .scienceFiction,
-            format: .audiobook
+            format: .audiobook,
+            language: .en
         )
     }
 }

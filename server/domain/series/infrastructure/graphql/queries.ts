@@ -1,5 +1,7 @@
 import { readVolumeNumbersOf } from '~/domain/book/business-rules'
+import { BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { BookQuery } from '~/domain/book/query'
+import type { BookLanguage } from '~/domain/book/types'
 import { followedSagasOf, stateOf } from '~/domain/series/business-rules'
 import { SeriesStateEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { SeriesType } from '~/domain/series/infrastructure/graphql/types'
@@ -21,6 +23,7 @@ type FollowedSeries = {
   id: SeriesId
   name: SeriesName
   author?: AuthorName
+  language?: BookLanguage
   catalogue: Series | null
   state: SeriesState | null
   ownedCount: CountValue
@@ -38,6 +41,15 @@ const FollowedSeriesType = builder.objectRef<FollowedSeries>('FollowedSeries').i
         'The author of a volume the reader owns, which is what answers for a saga ' +
         'the catalogue has never described.',
       resolve: (followed) => followed.author ?? null,
+    }),
+    language: t.field({
+      type: BookLanguageEnum,
+      nullable: true,
+      description:
+        'The language the reader holds these volumes in. A saga held in two ' +
+        'languages answers twice, once per language, sharing one `id` — so a ' +
+        'client keying rows on the id alone must key on the pair instead.',
+      resolve: (followed) => followed.language ?? null,
     }),
     catalogue: t.field({
       type: SeriesType,
@@ -82,7 +94,9 @@ builder.queryFields((t) => ({
       'Every saga the reader owns a volume of, alphabetically.\n\n' +
       'Taken from the books, then matched against the catalogue in one getAll ' +
       'rather than a lookup per saga. A saga nobody has catalogued still answers ' +
-      'here, with a null catalogue and a null state.',
+      'here, with a null catalogue and a null state.\n\n' +
+      'One row per saga and language: a reader who holds Dune in French and in ' +
+      'English follows two rows, because those are two sets of books.',
     resolve: async (_root, _args, context) => {
       const sagas = followedSagasOf(await BookQuery.all(context.userId))
       const catalogued = new Map(
@@ -98,6 +112,7 @@ builder.queryFields((t) => ({
           id: saga.id,
           name: saga.name,
           author: saga.author,
+          language: saga.language,
           catalogue,
           state: catalogue
             ? stateOf(catalogue, readVolumeNumbersOf(saga.books), currentYear)

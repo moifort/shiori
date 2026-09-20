@@ -1,4 +1,4 @@
-import { BOOK_FORMATS, GENRES } from '~/domain/book/types'
+import { BOOK_FORMATS, BOOK_LANGUAGES, GENRES } from '~/domain/book/types'
 import { VOLUME_KINDS } from '~/domain/series/types'
 
 /** The response schemas handed to Gemini's `responseSchema`, which constrains
@@ -31,6 +31,12 @@ export const VISION_SCHEMA = {
       description: 'Auteurs, hors traducteur, préfacier et illustrateur',
     },
     publisher: { type: 'string', nullable: true, description: 'Éditeur si lisible' },
+    language: {
+      type: 'string',
+      enum: [...BOOK_LANGUAGES],
+      nullable: true,
+      description: 'Langue dans laquelle cette édition est écrite',
+    },
     seriesName: {
       type: 'string',
       nullable: true,
@@ -45,6 +51,7 @@ export const VISION_SCHEMA = {
     'title',
     'authors',
     'publisher',
+    'language',
     'seriesName',
     'volumeNumber',
   ],

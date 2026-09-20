@@ -5,7 +5,7 @@ import {
   readVolumeNumbersOf,
 } from '~/domain/book/business-rules'
 import { BookId } from '~/domain/book/primitives'
-import type { Book, BookView } from '~/domain/book/types'
+import type { Book, BookLanguage, BookView } from '~/domain/book/types'
 import { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import type { VolumeKind } from '~/domain/series/types'
 import { BookTitle, UserId } from '~/domain/shared/primitives'
@@ -17,6 +17,7 @@ type BookSpec = {
   title: string
   series?: { name: string; volume?: number; kind?: VolumeKind }
   status?: Book['status']
+  language?: BookLanguage
 }
 
 const book = (spec: BookSpec): BookView => ({
@@ -28,6 +29,7 @@ const book = (spec: BookSpec): BookView => ({
   subgenres: [],
   narrators: [],
   status: spec.status ?? 'to-read',
+  language: spec.language,
   hidden: false,
   addedAt: NOW,
   series: spec.series
@@ -159,5 +161,45 @@ describe('datesAfterStatusChange', () => {
     )
     expect(dates.startedAt).toBe(EARLIER)
     expect(dates.finishedAt).toBeUndefined()
+  })
+})
+
+describe('groupedBySeries, across languages', () => {
+  // The editions of a translation are different objects from the editions of
+  // the original — other covers, other titles, read at other times — and one
+  // heading over both hid that.
+  test('splits a saga held in two languages into two sections', () => {
+    const sections = groupedBySeries([
+      book({ title: 'Dune', series: { name: 'Dune', volume: 1 }, language: 'fr' }),
+      book({ title: 'Dune Messiah', series: { name: 'Dune', volume: 2 }, language: 'en' }),
+    ])
+
+    expect(sections.map((section) => section.series?.language)).toEqual(['en', 'fr'])
+    expect(sections.map((section) => section.books.map((entry) => entry.title))).toEqual([
+      [BookTitle('Dune Messiah')],
+      [BookTitle('Dune')],
+    ])
+  })
+
+  test('keeps one section for a saga read in a single language', () => {
+    const sections = groupedBySeries([
+      book({ title: 'Dune', series: { name: 'Dune', volume: 1 }, language: 'fr' }),
+      book({ title: 'Le Messie de Dune', series: { name: 'Dune', volume: 2 }, language: 'fr' }),
+    ])
+
+    expect(sections).toHaveLength(1)
+    expect(sections[0]?.books).toHaveLength(2)
+  })
+
+  // Unknown is not French. Every book catalogued before the scan started reading
+  // the cover has no language, and folding those into whichever language happens
+  // to sort first would state something nobody established.
+  test('gathers books with no recorded language in their own trailing section', () => {
+    const sections = groupedBySeries([
+      book({ title: 'Dune', series: { name: 'Dune', volume: 1 } }),
+      book({ title: 'Le Messie de Dune', series: { name: 'Dune', volume: 2 }, language: 'fr' }),
+    ])
+
+    expect(sections.map((section) => section.series?.language)).toEqual(['fr', undefined])
   })
 })

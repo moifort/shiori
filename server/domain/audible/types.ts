@@ -1,5 +1,6 @@
 import type { Brand } from 'ts-brand'
 import type {
+  BookLanguage,
   CoverUrl,
   Isbn13,
   ListeningMinutes,
@@ -96,6 +97,9 @@ export type ImportableBook = {
   publisher?: Publisher
   synopsis?: Synopsis
   isbn13?: Isbn13
+  /** The language of the recording, as Audible files it. Dropped when it names
+   *  a language the closed list does not carry. */
+  language?: BookLanguage
   coverUrl?: CoverUrl
   series?: SeriesMembership
   status: ReadingStatus

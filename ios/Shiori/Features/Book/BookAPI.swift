@@ -142,6 +142,7 @@ struct BookCorrection: Equatable, Sendable {
     var subgenres: [String]?
     var pageCount: Change<Int>?
     var isbn13: Change<String>?
+    var language: Change<BookLanguage>?
 
     var isEmpty: Bool { self == BookCorrection() }
 
@@ -152,6 +153,7 @@ struct BookCorrection: Equatable, Sendable {
             format: format.map { .some(LibraryAPI.graphQLFormat($0)) } ?? .none,
             genre: Self.nullableGenre(genre),
             isbn13: Self.nullable(isbn13),
+            language: Self.nullableLanguage(language),
             pageCount: Self.nullable(pageCount),
             publisher: Self.nullable(publisher),
             subgenres: Self.nullable(subgenres),
@@ -168,6 +170,16 @@ struct BookCorrection: Equatable, Sendable {
         switch change {
         case nil: .none
         case let .set(genre): .some(LibraryAPI.graphQLGenre(genre))
+        case .clear: .null
+        }
+    }
+
+    private static func nullableLanguage(
+        _ change: Change<BookLanguage>?
+    ) -> GraphQLNullable<GraphQLEnum<ShioriGraphQL.BookLanguage>> {
+        switch change {
+        case nil: .none
+        case let .set(language): .some(LibraryAPI.graphQLLanguage(language))
         case .clear: .null
         }
     }

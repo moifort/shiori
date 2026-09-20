@@ -46,6 +46,7 @@ builder.mutationFields((t) => ({
         subgenres: args.input.subgenres?.slice(0, MAX_SUBGENRES) ?? undefined,
         pageCount: args.input.pageCount ?? undefined,
         narrators: args.input.narrators?.slice(0, MAX_NARRATORS) ?? undefined,
+        language: args.input.language ?? undefined,
         isbn13: args.input.isbn13 ?? undefined,
         series: args.input.series
           ? {
@@ -92,6 +93,7 @@ builder.mutationFields((t) => ({
         ...clearable('synopsis', input.synopsis),
         ...clearable('pageCount', input.pageCount),
         ...clearable('isbn13', input.isbn13),
+        ...clearable('language', input.language),
       })
       return match(result)
         .with('not-found', () => notFound('Book not found'))

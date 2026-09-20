@@ -1,5 +1,6 @@
 import {
   BookFormatEnum,
+  BookLanguageEnum,
   GenreEnum,
   ReadingStatusEnum,
 } from '~/domain/book/infrastructure/graphql/enums'
@@ -67,6 +68,15 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
       type: ['Subgenre'],
       description: 'Zero to three free labels refining the genre. Empty, never null.',
       resolve: (book) => book.subgenres,
+    }),
+    language: t.field({
+      type: BookLanguageEnum,
+      nullable: true,
+      description:
+        'The language of this edition, read off the cover at scan time. Null on ' +
+        'a book catalogued before the scan started reading it, and on any edition ' +
+        'in a language the closed list does not carry.',
+      resolve: (book) => book.language ?? null,
     }),
     durationMinutes: t.int({
       nullable: true,
@@ -140,7 +150,10 @@ export const LibrarySectionType = builder.objectRef<LibrarySection>('LibrarySect
     'One heading of the library list.\n\n' +
     'A section holds only books the reader owns: the catalogue never adds a row ' +
     'here. A saga gets its own section from the first volume owned, so a book ' +
-    'never migrates between sections when an unrelated one is added.',
+    'never migrates between sections when an unrelated one is added.\n\n' +
+    'A saga held in two languages makes two sections, one per language. They ' +
+    'share a `seriesId` and differ by `language`, so a client keying rows on the ' +
+    'saga alone must key on the pair instead.',
   fields: (t) => ({
     series: t.field({
       type: 'SeriesName',
@@ -152,6 +165,14 @@ export const LibrarySectionType = builder.objectRef<LibrarySection>('LibrarySect
       type: 'SeriesId',
       nullable: true,
       resolve: (section) => section.series?.id ?? null,
+    }),
+    language: t.field({
+      type: BookLanguageEnum,
+      nullable: true,
+      description:
+        'The language its volumes are in. Null on the standalone shelf, and null ' +
+        'on a saga whose volumes carry no recorded language.',
+      resolve: (section) => section.series?.language ?? null,
     }),
     books: t.field({
       type: [BookType],

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type {
   BookFormat,
   BookId as BookIdType,
+  BookLanguage,
   CoverUrl as CoverUrlType,
   Genre,
   Isbn13 as Isbn13Type,
@@ -16,7 +17,7 @@ import type {
   Subgenre as SubgenreType,
   Synopsis as SynopsisType,
 } from '~/domain/book/types'
-import { BOOK_FORMATS, GENRES, READING_STATUSES } from '~/domain/book/types'
+import { BOOK_FORMATS, BOOK_LANGUAGES, GENRES, READING_STATUSES } from '~/domain/book/types'
 
 export { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
 
@@ -121,3 +122,6 @@ export const ReadingStatusValue = (value: unknown): ReadingStatus =>
 export const GenreValue = (value: unknown): Genre => z.enum(GENRES).parse(value)
 
 export const BookFormatValue = (value: unknown): BookFormat => z.enum(BOOK_FORMATS).parse(value)
+
+export const BookLanguageValue = (value: unknown): BookLanguage =>
+  z.enum(BOOK_LANGUAGES).parse(value)

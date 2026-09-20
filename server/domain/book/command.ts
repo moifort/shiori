@@ -7,6 +7,7 @@ import type {
   Book,
   BookFormat,
   BookId,
+  BookLanguage,
   CoverUrl,
   Genre,
   Isbn13,
@@ -21,7 +22,6 @@ import type {
   Subgenre,
   Synopsis,
 } from '~/domain/book/types'
-import type { Language } from '~/domain/shared/language'
 import type { AuthorName, BookTitle, UserId, Year } from '~/domain/shared/types'
 import type { ObjectPath } from '~/system/object-store/types'
 
@@ -44,7 +44,8 @@ export type NewBook = {
    *  does not name its narrator. */
   narrators?: NarratorName[]
   isbn13?: Isbn13
-  language?: Language
+  /** The language of the edition, which the scan reads off the cover. */
+  language?: BookLanguage
   series?: SeriesMembership
   coverPath?: ObjectPath
   publishedCoverUrl?: CoverUrl
@@ -74,6 +75,7 @@ export type BookEdit = Partial<
     | 'pageCount'
     | 'narrators'
     | 'isbn13'
+    | 'language'
     | 'series'
   >
 >

@@ -14,7 +14,13 @@ import type { ObjectPath as ObjectPathValue } from '~/system/object-store/types'
  *
  *  Only the reader's own books appear. The catalogue never adds a row here: a
  *  volume the reader does not own is a proposal, and proposals live on the book
- *  and series screens, not in the library. */
+ *  and series screens, not in the library.
+ *
+ *  A saga held in two languages makes two sections, which is what the language
+ *  is doing in the key. The volumes of a translation are different objects from
+ *  the volumes of the original — other covers, other titles, read at other
+ *  times — and one heading over both hid that. Books with no language recorded
+ *  gather in a section of their own, which is honest: unknown is not French. */
 export const groupedBySeries = (books: readonly BookView[]): LibrarySection[] => {
   const bySeries = new Map<string, { section: LibrarySection['series']; books: SeriesBook[] }>()
   const standalone: BookView[] = []
@@ -25,11 +31,12 @@ export const groupedBySeries = (books: readonly BookView[]): LibrarySection[] =>
       standalone.push(book)
       continue
     }
-    const bucket = bySeries.get(membership.id)
+    const key = `${membership.id}\u0000${book.language ?? ''}`
+    const bucket = bySeries.get(key)
     if (bucket) bucket.books.push({ book, membership })
     else
-      bySeries.set(membership.id, {
-        section: { id: membership.id, name: membership.name },
+      bySeries.set(key, {
+        section: { id: membership.id, name: membership.name, language: book.language },
         books: [{ book, membership }],
       })
   }
@@ -39,7 +46,7 @@ export const groupedBySeries = (books: readonly BookView[]): LibrarySection[] =>
       series: section,
       books: [...entries].sort(compareEntries).map((entry) => entry.book),
     }))
-    .sort((left, right) => nameOf(left).localeCompare(nameOf(right)))
+    .sort(compareSections)
 
   // The standalone shelf trails the sagas: it is the leftovers, and putting it
   // first would bury the structure the reader came for.
@@ -56,7 +63,18 @@ const compareEntries = (left: SeriesBook, right: SeriesBook): number =>
     { kind: right.membership.kind, number: right.membership.volume, title: right.book.title },
   )
 
+// Sagas by name, then the languages of one saga in a stable order so its
+// sections never trade places between two reads of the same library.
+const compareSections = (left: LibrarySection, right: LibrarySection): number => {
+  const byName = nameOf(left).localeCompare(nameOf(right))
+  return byName !== 0 ? byName : languageOf(left).localeCompare(languageOf(right))
+}
+
 const nameOf = (section: LibrarySection): string => section.series?.name ?? ''
+
+// An unrecorded language sorts last rather than first: a section that says
+// nothing about its editions belongs under the ones that do.
+const languageOf = (section: LibrarySection): string => section.series?.language ?? '\uffff'
 
 const sortedByTitle = (books: readonly BookView[]): BookView[] =>
   [...books].sort((left, right) => left.title.localeCompare(right.title))

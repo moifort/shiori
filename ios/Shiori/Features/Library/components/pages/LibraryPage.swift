@@ -76,8 +76,19 @@ struct LibraryPage: View {
     private var list: some View {
         List {
             ForEach(sections) { section in
-                Section(section.seriesName ?? String(localized: "Livres indépendants")) {
+                Section {
                     rows(of: section)
+                } header: {
+                    HStack(spacing: 6) {
+                        Text(section.seriesName ?? String(localized: "Livres indépendants"))
+                        // The flag says which of a saga's two shelves this is.
+                        // Trailing the name rather than leading it: the name is
+                        // what the reader scans for, the language only tells two
+                        // headings with that name apart.
+                        if let language = section.language {
+                            Text(language.flag).accessibilityLabel(Text(language.label))
+                        }
+                    }
                 }
             }
         }
@@ -103,6 +114,7 @@ struct LibraryPage: View {
                     volumeLabel: section.seriesName != nil ? book.series?.label : nil,
                     genre: book.genre,
                     format: book.format,
+                    language: book.language,
                     isHidden: book.hidden
                 )
             }

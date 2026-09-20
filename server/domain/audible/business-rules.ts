@@ -3,6 +3,7 @@ import { AudibleAsin } from '~/domain/audible/primitives'
 import type { ImportableBook } from '~/domain/audible/types'
 import type { NewBook } from '~/domain/book/command'
 import {
+  BookLanguageValue,
   CoverUrl,
   Isbn13,
   ListeningMinutes,
@@ -53,6 +54,10 @@ export const importableFrom = (
     // Audible carries the ISBN of the printed edition when it has one at all, so
     // this is the one field that can reach Open Library later.
     isbn13: optionally(item.isbn, Isbn13),
+    // Audible spells the language out ("french", "english"), and files a handful
+    // of titles under a language nobody expected. Unknown ones are dropped: a
+    // guess here would split a saga's shelves on a value nothing established.
+    language: optionally(languageCodeOf(item.language), BookLanguageValue),
     coverUrl: optionally(largestCoverOf(item), CoverUrl),
     series: seriesMembershipOf(item, authors),
     status,
@@ -88,6 +93,7 @@ export const bookFrom = (importable: ImportableBook): NewBook => ({
   publishedCoverUrl: importable.coverUrl,
   series: importable.series,
   status: importable.status,
+  language: importable.language,
   finishedAt: importable.finishedAt,
   durationMinutes: importable.durationMinutes,
   narrators: importable.narrators,
@@ -122,6 +128,32 @@ const seriesMembershipOf = (
     kind: 'main',
   }
 }
+
+/** Audible names a language rather than coding it, and does so in English on
+ *  every marketplace. Anything unrecognized comes back undefined and the book
+ *  simply keeps no language, which is what an unknown language is. */
+const AUDIBLE_LANGUAGES: Record<string, string> = {
+  french: 'fr',
+  english: 'en',
+  spanish: 'es',
+  german: 'de',
+  italian: 'it',
+  portuguese: 'pt',
+  dutch: 'nl',
+  swedish: 'sv',
+  polish: 'pl',
+  russian: 'ru',
+  ukrainian: 'uk',
+  turkish: 'tr',
+  arabic: 'ar',
+  japanese: 'ja',
+  chinese: 'zh',
+  mandarin_chinese: 'zh',
+  korean: 'ko',
+}
+
+const languageCodeOf = (language: string | undefined): string | undefined =>
+  language ? AUDIBLE_LANGUAGES[language.trim().toLowerCase().replace(/\s+/g, '_')] : undefined
 
 /** The biggest cover Audible offers, which is what a Retina book screen wants.
  *  `productImages` is keyed by pixel width as a string. */

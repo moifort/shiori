@@ -68,3 +68,31 @@ export const BookFormatEnum = builder.enumType('BookFormat', {
     MANGA: { value: 'manga', description: 'A Japanese comic, or one drawn in that tradition.' },
   } as const,
 })
+
+export const BookLanguageEnum = builder.enumType('BookLanguage', {
+  description:
+    'The language an edition is printed or recorded in — the object on the shelf, ' +
+    'never the language the app is being used in.\n\n' +
+    'A closed list, for the reason `Genre` is closed and one of its own: the app ' +
+    'draws a flag per language, and an arbitrary ISO code has no flag to draw. An ' +
+    'edition in a language the list does not carry keeps no language at all, rather ' +
+    'than an `OTHER` that would be a second way of saying "unknown".',
+  values: {
+    FR: { value: 'fr' },
+    EN: { value: 'en' },
+    ES: { value: 'es' },
+    DE: { value: 'de' },
+    IT: { value: 'it' },
+    PT: { value: 'pt' },
+    NL: { value: 'nl' },
+    SV: { value: 'sv' },
+    PL: { value: 'pl' },
+    RU: { value: 'ru' },
+    UK: { value: 'uk', description: 'Ukrainian.' },
+    TR: { value: 'tr' },
+    AR: { value: 'ar' },
+    JA: { value: 'ja' },
+    ZH: { value: 'zh' },
+    KO: { value: 'ko' },
+  } as const,
+})
