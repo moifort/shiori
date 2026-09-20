@@ -59,21 +59,17 @@ struct BookRow: View {
                 }
 
                 // Under the stars, where it answers "what is this?" for a title
-                // that does not say. Icon and word together: the glyph alone
-                // would be a riddle on a list of twenty different genres, and
-                // the subgenre beside it is what tells two space operas apart.
+                // that does not say. Two chips of the same cut, genre then
+                // subgenre, and no glyph: the genre's icon was a second thing to
+                // decode on a list of twenty different genres, and the word
+                // alone is what the eye reads anyway.
                 if genre != nil || subgenre != nil {
                     HStack(spacing: 6) {
                         if let genre {
-                            // `image` rather than `Image(systemName:)`: three genres
-                            // have no SF Symbol and come from the asset catalog.
-                            Label { Text(genre.label) } icon: { genre.image }
+                            chip(genre.label)
                         }
                         if let subgenre {
-                            Text(subgenre)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 1)
-                                .background(.quaternary, in: Capsule())
+                            chip(subgenre)
                         }
                     }
                     .font(.caption2)
@@ -124,6 +120,15 @@ struct BookRow: View {
         // The badge is icon-only, so the status is spoken here rather than
         // read off a glyph.
         .accessibilityValue(Text(status.label))
+    }
+
+    /// A word in a capsule, sized for a row: the detail screen's pills would eat
+    /// the line.
+    private func chip(_ text: String) -> some View {
+        Text(text)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 1)
+            .background(.quaternary, in: Capsule())
     }
 }
 
