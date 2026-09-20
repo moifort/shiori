@@ -88,6 +88,10 @@ final class BookViewModel {
         }
     }
 
+    func setFavorite(_ favorite: Bool) async {
+        await mutate { try await BookAPI.setFavorite(id: self.bookId, favorite: favorite) }
+    }
+
     func setHidden(_ hidden: Bool) async {
         await mutate { try await BookAPI.setHidden(id: self.bookId, hidden: hidden) }
     }

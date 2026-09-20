@@ -7,6 +7,9 @@ import { SeriesStateEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { SeriesType } from '~/domain/series/infrastructure/graphql/types'
 import { SeriesQuery } from '~/domain/series/query'
 import type { Series, SeriesId, SeriesName, SeriesState } from '~/domain/series/types'
+import { SeriesOpinionType } from '~/domain/series-opinion/infrastructure/graphql/types'
+import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
+import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import { builder } from '~/domain/shared/graphql/builder'
 import { Count, Year } from '~/domain/shared/primitives'
 import type { AuthorName, Count as CountValue } from '~/domain/shared/types'
@@ -25,6 +28,7 @@ type FollowedSeries = {
   author?: AuthorName
   language?: BookLanguage
   catalogue: Series | null
+  opinion: SeriesOpinion | null
   state: SeriesState | null
   ownedCount: CountValue
 }
@@ -58,6 +62,16 @@ const FollowedSeriesType = builder.objectRef<FollowedSeries>('FollowedSeries').i
         'What the world knows of the saga. Null until somebody scans a volume of ' +
         'it: an import and a manual entry both name a saga without describing it.',
       resolve: (followed) => followed.catalogue,
+    }),
+    opinion: t.field({
+      type: SeriesOpinionType,
+      nullable: true,
+      description:
+        'What the reader makes of the saga. Null until they say something about ' +
+        'it.\n\n' +
+        'Held per saga, so the two rows of a saga held in two languages answer ' +
+        'with the same opinion: the split is about editions, this is about the work.',
+      resolve: (followed) => followed.opinion,
     }),
     state: t.field({
       type: SeriesStateEnum,
@@ -99,6 +113,14 @@ builder.queryFields((t) => ({
       'English follows two rows, because those are two sets of books.',
     resolve: async (_root, _args, context) => {
       const sagas = followedSagasOf(await BookQuery.all(context.userId))
+      // One scan of the reader's opinions for the whole tab, rather than a
+      // lookup per row: a reader with forty sagas would otherwise pay forty.
+      const opinions = new Map(
+        (await SeriesOpinionQuery.all(context.userId)).map((opinion) => [
+          opinion.seriesId,
+          opinion,
+        ]),
+      )
       const catalogued = new Map(
         (await SeriesQuery.byIds(sagas.map((saga) => saga.id))).map((series) => [
           series.id,
@@ -114,6 +136,7 @@ builder.queryFields((t) => ({
           author: saga.author,
           language: saga.language,
           catalogue,
+          opinion: opinions.get(saga.id) ?? null,
           state: catalogue
             ? stateOf(catalogue, readVolumeNumbersOf(saga.books), currentYear)
             : null,

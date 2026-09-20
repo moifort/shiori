@@ -26,6 +26,9 @@ query MySeries {
     language
     state
     ownedCount
+    opinion {
+      ...SeriesOpinionFields
+    }
   }
 }
 
@@ -34,4 +37,36 @@ fragment VolumeEntry on Volume {
   title
   publishedIn
   kind
+}
+
+# What the reader makes of one saga. A root query rather than a field on Series:
+# the shared catalogue holds no reference to any reader and must stay that way.
+query SeriesOpinion($seriesId: SeriesId!) {
+  seriesOpinion(seriesId: $seriesId) {
+    ...SeriesOpinionFields
+  }
+}
+
+mutation RateSeries($seriesId: SeriesId!, $rating: StarRating!) {
+  rateSeries(seriesId: $seriesId, rating: $rating) {
+    ...SeriesOpinionFields
+  }
+}
+
+mutation RemoveSeriesRating($seriesId: SeriesId!) {
+  removeSeriesRating(seriesId: $seriesId) {
+    ...SeriesOpinionFields
+  }
+}
+
+mutation SetSeriesFavorite($seriesId: SeriesId!, $favorite: Boolean!) {
+  setSeriesFavorite(seriesId: $seriesId, favorite: $favorite) {
+    ...SeriesOpinionFields
+  }
+}
+
+fragment SeriesOpinionFields on SeriesOpinion {
+  seriesId
+  rating
+  favorite
 }

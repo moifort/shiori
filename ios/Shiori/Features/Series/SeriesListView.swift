@@ -54,6 +54,16 @@ struct SeriesListView: View {
                         if let language = entry.language {
                             Text(language.flag).accessibilityLabel(Text(language.label))
                         }
+                        Spacer(minLength: 0)
+                        if entry.opinion?.favorite == true {
+                            Image(systemName: "heart.fill")
+                                .font(.caption)
+                                .foregroundStyle(.pink)
+                                .accessibilityLabel(Text("Favori"))
+                        }
+                    }
+                    if let rating = entry.opinion?.rating {
+                        StarRatingView(rating: rating)
                     }
                     if let author = entry.author {
                         Text(author).font(.subheadline).foregroundStyle(.secondary)

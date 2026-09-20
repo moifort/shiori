@@ -40,6 +40,12 @@ mutation SetBookHidden($id: BookId!, $hidden: Boolean!) {
   }
 }
 
+mutation SetBookFavorite($id: BookId!, $favorite: Boolean!) {
+  setBookFavorite(id: $id, favorite: $favorite) {
+    ...BookDetail
+  }
+}
+
 mutation DeleteBook($id: BookId!) {
   deleteBook(id: $id)
 }
@@ -62,6 +68,7 @@ fragment BookDetail on Book {
   coverUrl
   status
   rating
+  favorite
   note
   hidden
   addedAt

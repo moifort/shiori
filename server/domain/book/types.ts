@@ -152,6 +152,10 @@ export type Book = {
   publishedCoverUrl?: CoverUrl
   status: ReadingStatus
   rating?: StarRating
+  /** A book the reader keeps close, decoupled from the rating on purpose: a
+   *  five-star novel one never wants to open again and a three-star one kept for
+   *  what it meant at the time are both real, and one field cannot say both. */
+  favorite?: boolean
   note?: ReadingNote
   /** Excluded from any shared view. Built now, used when sharing ships, because
    *  adding a boolean to records already in production costs a migration. */

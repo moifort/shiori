@@ -127,6 +127,13 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
       nullable: true,
       resolve: (book) => book.note ?? null,
     }),
+    favorite: t.boolean({
+      description:
+        'A book the reader keeps close. Decoupled from the rating: a five-star ' +
+        'novel one never wants to open again and a three-star one kept for what ' +
+        'it meant are both real, and one field cannot say both.',
+      resolve: (book) => book.favorite ?? false,
+    }),
     hidden: t.boolean({
       description: 'Excluded from any shared view. Sharing itself is not built yet.',
       resolve: (book) => book.hidden,

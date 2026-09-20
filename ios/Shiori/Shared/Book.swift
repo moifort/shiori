@@ -203,6 +203,10 @@ struct Book: Identifiable, Hashable, Sendable {
     var coverURL: URL?
     var status: ReadingStatus
     var rating: Int?
+    /// A book the reader keeps close, independent of the rating: a five-star
+    /// novel one never wants to open again and a three-star one kept for what it
+    /// meant are both real, and one field cannot say both.
+    var favorite: Bool = false
     var note: String?
     var hidden: Bool = false
     var addedAt: Date?
@@ -290,6 +294,22 @@ struct BookSeries: Identifiable, Sendable {
     var relatedWorks: [Volume] = []
 }
 
+/// What one reader makes of one saga — never part of the shared catalogue, which
+/// is a fact about the world with no reader in it.
+///
+/// The rating is a judgement of the saga itself and deliberately not the average
+/// of the volume ratings: a cycle can be worth more than its books, the shape
+/// only showing at the end, or rather less when three good volumes are followed
+/// by four that should not exist.
+///
+/// Held per saga, never per saga and language: the split the library draws by
+/// language is about editions on a shelf, and this is about the work.
+struct SeriesOpinion: Sendable, Equatable {
+    let seriesId: String
+    var rating: Int?
+    var favorite: Bool = false
+}
+
 /// A saga the reader follows. Its identity comes from their own books, not from
 /// the catalogue: an Audible import and a book typed by hand both name a saga
 /// without describing it, and reading the catalogue first lost every one of them.
@@ -310,4 +330,7 @@ struct FollowedSeries: Identifiable, Sendable {
     /// is precisely what is unknown then.
     let state: SeriesState?
     let ownedCount: Int
+    /// Nil until the reader says something about the saga. The two rows of a
+    /// saga held in two languages carry the same one.
+    var opinion: SeriesOpinion?
 }

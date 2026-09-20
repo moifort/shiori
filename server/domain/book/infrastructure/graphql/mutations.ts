@@ -165,6 +165,21 @@ builder.mutationFields((t) => ({
     },
   }),
 
+  setBookFavorite: t.field({
+    type: BookType,
+    description: 'Keep a book close, or stop. Leaves the star rating alone.',
+    args: {
+      id: t.arg({ type: 'BookId', required: true }),
+      favorite: t.arg.boolean({ required: true }),
+    },
+    resolve: async (_root, args, context) => {
+      const result = await BookUseCase.setFavorite(context.userId, args.id, args.favorite)
+      return match(result)
+        .with('not-found', () => notFound('Book not found'))
+        .otherwise((book) => readBack(context.userId, book.id))
+    },
+  }),
+
   setBookHidden: t.field({
     type: BookType,
     description:

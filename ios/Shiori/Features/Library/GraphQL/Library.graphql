@@ -23,6 +23,7 @@ fragment BookSummary on Book {
   coverUrl
   status
   rating
+  favorite
   series {
     id
     name

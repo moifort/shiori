@@ -112,6 +112,19 @@ struct BookView: View {
             ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
         }
         if let book = viewModel.book {
+            // The heart gets the corner to itself rather than a line in the menu:
+            // it is the one action a reader takes over and over, and burying a
+            // one-tap gesture two taps deep is what the menu is for avoiding.
+            ToolbarItem(placement: .primaryAction) {
+                ToolbarIconButton(
+                    title: book.favorite ? "Retirer des favoris" : "Ajouter aux favoris",
+                    systemImage: book.favorite ? "heart.fill" : "heart"
+                ) {
+                    run { await viewModel.setFavorite(!book.favorite) }
+                }
+                .tint(book.favorite ? .pink : nil)
+                .accessibilityIdentifier("book-favorite")
+            }
             ToolbarItem(placement: .primaryAction) {
                 menu(for: book)
             }

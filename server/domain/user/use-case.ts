@@ -4,6 +4,7 @@ import { coverPrefixOf } from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
 import { EntitlementCommand } from '~/domain/entitlement/command'
 import { QuotaCommand } from '~/domain/quota/command'
+import { SeriesOpinionCommand } from '~/domain/series-opinion/command'
 import type { PersonName, UserId } from '~/domain/shared/types'
 import { UserCommand } from '~/domain/user/command'
 import { UserQuery } from '~/domain/user/query'
@@ -48,7 +49,8 @@ export namespace UserUseCase {
   //
   // The series catalogue is deliberately untouched. It holds no reference to any
   // reader and serves everyone, so erasing one account's books must not erase a
-  // saga that other readers are following.
+  // saga that other readers are following. What this reader thought of those
+  // sagas does go, though: an opinion names its reader and belongs to them.
   export const deleteAccount = async (userId: UserId) => {
     await Promise.all([
       BookCommand.deleteAllForUser(userId),
@@ -56,6 +58,7 @@ export namespace UserUseCase {
       EntitlementCommand.deleteForUser(userId),
       QuotaCommand.deleteAllForUser(userId),
       AudibleCommand.deleteForUser(userId),
+      SeriesOpinionCommand.deleteAllForUser(userId),
     ])
     await objectStore().removeByPrefix(coverPrefixOf(userId))
     await UserCommand.deleteProfile(userId)

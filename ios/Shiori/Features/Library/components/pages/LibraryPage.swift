@@ -115,6 +115,7 @@ struct LibraryPage: View {
                     genre: book.genre,
                     format: book.format,
                     language: book.language,
+                    isFavorite: book.favorite,
                     isHidden: book.hidden
                 )
             }

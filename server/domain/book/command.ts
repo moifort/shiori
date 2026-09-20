@@ -194,6 +194,20 @@ export namespace BookCommand {
     return repository.save({ ...book, note }, batch)
   }
 
+  /** Stored only when true. A book that is not a favourite has nothing to say
+   *  about it, and a `false` on every record would be a field that means
+   *  "the reader once looked at this and moved on". */
+  export const setFavorite = async (
+    userId: UserId,
+    bookId: BookId,
+    favorite: boolean,
+    batch?: WriteBatch,
+  ): Promise<Book | 'not-found'> => {
+    const book = await repository.findById(userId, bookId)
+    if (!book) return 'not-found'
+    return repository.save({ ...book, favorite: favorite || undefined }, batch)
+  }
+
   export const setHidden = async (
     userId: UserId,
     bookId: BookId,

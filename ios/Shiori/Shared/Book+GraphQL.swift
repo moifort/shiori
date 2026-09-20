@@ -167,7 +167,8 @@ extension ShioriGraphQL.BookSummary {
             series: series?.asMembership,
             coverURL: coverUrl.flatMap(URL.init(string:)),
             status: status.asDomain,
-            rating: rating
+            rating: rating,
+            favorite: favorite
         )
     }
 }
@@ -193,6 +194,7 @@ extension ShioriGraphQL.BookDetail {
             coverURL: coverUrl.flatMap(URL.init(string:)),
             status: status.asDomain,
             rating: rating,
+            favorite: favorite,
             note: note,
             hidden: hidden,
             addedAt: GraphQLHelpers.parseISO8601(addedAt),
@@ -217,5 +219,11 @@ extension ShioriGraphQL.BookDetail.Series {
 extension ShioriGraphQL.VolumeEntry {
     var asVolume: Volume {
         Volume(number: number, title: title, publishedIn: publishedIn, kind: kind.asDomain)
+    }
+}
+
+extension ShioriGraphQL.SeriesOpinionFields {
+    var asOpinion: SeriesOpinion {
+        SeriesOpinion(seriesId: seriesId, rating: rating, favorite: favorite)
     }
 }

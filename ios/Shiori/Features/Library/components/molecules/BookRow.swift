@@ -22,6 +22,7 @@ struct BookRow: View {
     /// The language of this edition. Absent on every book catalogued before the
     /// scan started reading it off the cover.
     var language: BookLanguage?
+    var isFavorite: Bool = false
     var isHidden: Bool = false
 
     var body: some View {
@@ -71,6 +72,12 @@ struct BookRow: View {
             // The corner markers, in the order a glance wants them: what the
             // object is, then what the reader chose about it.
             HStack(spacing: 6) {
+                if isFavorite {
+                    Image(systemName: "heart.fill")
+                        .font(.caption)
+                        .foregroundStyle(.pink)
+                        .accessibilityLabel(Text("Favori"))
+                }
                 if let language {
                     Text(language.flag)
                         .font(.caption)
@@ -148,6 +155,7 @@ private struct ReadingStatusBadge: View {
             status: .read,
             rating: 5,
             volumeLabel: "Tome 2",
+            isFavorite: true,
             isHidden: true
         )
         BookRow(

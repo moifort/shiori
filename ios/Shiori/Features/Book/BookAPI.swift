@@ -65,6 +65,16 @@ enum BookAPI {
         return data.setBookHidden.fragments.bookDetail.asBook
     }
 
+    /// Toggle the heart without touching the star rating: the two say different
+    /// things and a reader may hold either without the other.
+    static func setFavorite(id: String, favorite: Bool) async throws -> Book {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.SetBookFavoriteMutation(id: id, favorite: favorite)
+        )
+        return data.setBookFavorite.fragments.bookDetail.asBook
+    }
+
     static func delete(id: String) async throws {
         _ = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,

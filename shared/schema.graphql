@@ -106,6 +106,11 @@ type Book {
   An audiobook's running time in whole minutes. Null on anything else, and null on an audiobook no import ever timed — a scanned cover does not say how long the recording is.
   """
   durationMinutes: Int
+
+  """
+  A book the reader keeps close. Decoupled from the rating: a five-star novel one never wants to open again and a three-star one kept for what it meant are both real, and one field cannot say both.
+  """
+  favorite: Boolean!
   finishedAt: DateTime
 
   """Year the work first appeared, not the year of this edition."""
@@ -384,6 +389,13 @@ type FollowedSeries {
   language: BookLanguage
   name: SeriesName!
 
+  """
+  What the reader makes of the saga. Null until they say something about it.
+  
+  Held per saga, so the two rows of a saga held in two languages answer with the same opinion: the split is about editions, this is about the work.
+  """
+  opinion: SeriesOpinion
+
   """How many volumes of the saga are in the library."""
   ownedCount: Count!
 
@@ -637,9 +649,19 @@ type Mutation {
   rateBook(id: BookId!, rating: StarRating!): Book!
 
   """
+  Rate a saga, one to five stars. Its own judgement, not the average of the volumes, and it leaves every volume rating alone.
+  
+  The saga is not checked to exist: a reader reaches it from a volume they own, and a saga the catalogue has never described is still theirs to rate.
+  """
+  rateSeries(rating: StarRating!, seriesId: SeriesId!): SeriesOpinion!
+
+  """
   Take a rating back. The book stays read, with its reading dates: withdrawing a judgment is not saying the reading never happened.
   """
   removeBookRating(id: BookId!): Book!
+
+  """Take a saga rating back. Leaves the heart alone."""
+  removeSeriesRating(seriesId: SeriesId!): SeriesOpinion!
 
   """
   Read a book cover with AI and return a record for the reader to review.
@@ -655,6 +677,9 @@ type Mutation {
     imageBase64: String!
   ): ScanResult!
 
+  """Keep a book close, or stop. Leaves the star rating alone."""
+  setBookFavorite(favorite: Boolean!, id: BookId!): Book!
+
   """
   Mark a book as excluded from any shared view. Sharing is not built yet; the flag exists now so adding it later costs no migration.
   """
@@ -667,6 +692,9 @@ type Mutation {
   Move a book along the pile. The reading dates follow from the move and are never typed: going back to TO_READ clears them.
   """
   setReadingStatus(id: BookId!, status: ReadingStatus!): Book!
+
+  """Keep a saga close, or stop. Leaves the rating alone."""
+  setSeriesFavorite(favorite: Boolean!, seriesId: SeriesId!): SeriesOpinion!
 
   """
   Open an Amazon sign-in for the given marketplace.
@@ -906,6 +934,13 @@ type Query {
   Everything the reader does not own is a proposal: nothing enters a library until they add it. Null when the saga has never been catalogued.
   """
   series(id: SeriesId!): Series
+
+  """
+  What the reader makes of one saga. Null until they say something about it — an opinion with neither a rating nor a heart is not stored.
+  
+  A root query rather than a field on `Series`: the catalogue holds no reference to any reader, and it must stay that way.
+  """
+  seriesOpinion(seriesId: SeriesId!): SeriesOpinion
 }
 
 """
@@ -1090,6 +1125,22 @@ input SeriesMembershipInput {
 The name of a series, 1 to 200 characters. Example: "The Wheel of Time".
 """
 scalar SeriesName
+
+"""
+What one reader makes of one saga — never part of the saga's shared catalogue, which is a fact about the world with no reader in it.
+
+Held per saga, never per saga and language: the split the library draws by language is about editions on a shelf, and an opinion is about the work.
+"""
+type SeriesOpinion {
+  """A saga the reader keeps close. Independent of the rating."""
+  favorite: Boolean!
+
+  """
+  The reader's judgement of the saga itself, and deliberately not the average of their volume ratings: a cycle can be worth more than its books, or rather less. Null until they rate it.
+  """
+  rating: StarRating
+  seriesId: SeriesId!
+}
 
 """
 How far the reader is through a saga in progress, on the numbered volumes already published.

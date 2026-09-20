@@ -11,6 +11,7 @@ struct SeriesView: View {
 
     @State private var series: BookSeries?
     @State private var ownedByNumber: [Int: Book] = [:]
+    @State private var opinion: SeriesOpinion?
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var addingTitle: String?
@@ -33,6 +34,20 @@ struct SeriesView: View {
         }
         .navigationTitle(series?.name ?? "Série")
         .navigationBarTitleDisplayMode(.inline)
+        // In the corner even when the catalogue is missing: what a reader thinks
+        // of a saga does not wait on the world having described it.
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                ToolbarIconButton(
+                    title: isFavorite ? "Retirer des favoris" : "Ajouter aux favoris",
+                    systemImage: isFavorite ? "heart.fill" : "heart"
+                ) {
+                    Task { await setFavorite(!isFavorite) }
+                }
+                .tint(isFavorite ? .pink : nil)
+                .accessibilityIdentifier("series-favorite")
+            }
+        }
         .task { await load() }
     }
 
@@ -47,6 +62,25 @@ struct SeriesView: View {
                     stateBadge
                 }
                 .padding(.vertical, 4)
+            }
+
+            Section {
+                // The saga's own rating, not the average of its volumes: a cycle
+                // can be worth more than its books — the shape only shows at the
+                // end — or rather less, when three good ones are followed by four
+                // that should not exist.
+                InteractiveStarRating(
+                    rating: Binding(
+                        get: { opinion?.rating ?? 0 },
+                        set: { stars in Task { await rate(stars) } }
+                    ),
+                    allowsUnset: true
+                )
+                .accessibilityIdentifier("series-rating")
+            } header: {
+                Text("Votre note de la série")
+            } footer: {
+                Text("Indépendante des notes que vous donnez à chaque tome.")
             }
 
             Section("Tomes") {
@@ -144,6 +178,7 @@ struct SeriesView: View {
         isLoading = true
         do {
             series = try await SeriesAPI.series(id: seriesId)
+            opinion = try await SeriesAPI.opinion(seriesId: seriesId)
             let mine = try await LibraryAPI.library()
             ownedByNumber = Dictionary(
                 mine.filter { $0.seriesId == seriesId }
@@ -155,6 +190,30 @@ struct SeriesView: View {
             errorMessage = reportError(error)
         }
         isLoading = false
+    }
+
+    private var isFavorite: Bool { opinion?.favorite == true }
+
+    // The server answers with the opinion as it now stands, so the screen takes
+    // that rather than guessing: a rating taken back may leave a heart behind,
+    // and an opinion emptied of both is erased server-side.
+    private func rate(_ stars: Int) async {
+        do {
+            opinion =
+                stars == 0
+                ? try await SeriesAPI.removeRating(seriesId: seriesId)
+                : try await SeriesAPI.rate(seriesId: seriesId, stars: stars)
+        } catch {
+            errorMessage = reportError(error)
+        }
+    }
+
+    private func setFavorite(_ favorite: Bool) async {
+        do {
+            opinion = try await SeriesAPI.setFavorite(seriesId: seriesId, favorite: favorite)
+        } catch {
+            errorMessage = reportError(error)
+        }
     }
 
     private func add(_ volume: Volume, author: String) async {

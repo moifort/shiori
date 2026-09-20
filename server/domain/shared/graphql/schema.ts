@@ -23,6 +23,13 @@ import '~/domain/book/infrastructure/graphql/mutations'
 // so it depends on the book domain being registered.
 import '~/domain/series/infrastructure/graphql/queries'
 
+// What a reader makes of a saga, kept out of the catalogue on purpose: `series`
+// is a fact about the world with no reader in it. After series, whose SeriesId
+// scalar it borrows.
+import '~/domain/series-opinion/infrastructure/graphql/types'
+import '~/domain/series-opinion/infrastructure/graphql/queries'
+import '~/domain/series-opinion/infrastructure/graphql/mutations'
+
 // Analytics (the home dashboard, read from a view the book writes keep fresh).
 // After book and series: it borrows their scalars and the Genre enum.
 import '~/domain/analytics/infrastructure/graphql/types'

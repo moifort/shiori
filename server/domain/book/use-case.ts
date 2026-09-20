@@ -34,6 +34,9 @@ export namespace BookUseCase {
   export const annotate = (userId: UserId, bookId: BookId, note: ReadingNote | undefined) =>
     withAnalytics(userId, (batch) => BookCommand.annotate(userId, bookId, note, batch))
 
+  export const setFavorite = (userId: UserId, bookId: BookId, favorite: boolean) =>
+    withAnalytics(userId, (batch) => BookCommand.setFavorite(userId, bookId, favorite, batch))
+
   export const setHidden = (userId: UserId, bookId: BookId, hidden: boolean) =>
     withAnalytics(userId, (batch) => BookCommand.setHidden(userId, bookId, hidden, batch))
 
