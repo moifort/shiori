@@ -12,10 +12,10 @@ import {
   shelfKeysOf,
   statusOf,
 } from '~/domain/audible/business-rules'
-import type { AudibleConnection } from '~/domain/audible/types'
+import type { AudibleAsin as AudibleAsinValue, AudibleConnection } from '~/domain/audible/types'
 import { ListeningMinutes } from '~/domain/book/primitives'
-import type { Book } from '~/domain/book/types'
-import type { UserId } from '~/domain/shared/types'
+import type { Book, BookId } from '~/domain/book/types'
+import type { BookTitle, UserId } from '~/domain/shared/types'
 
 const anItem = (overrides: Partial<AudibleItem> = {}): AudibleItem =>
   ({
@@ -286,15 +286,21 @@ const aBook = (overrides: Partial<Book> = {}): Book =>
     ...overrides,
   }) as Book
 
+// The brands these rules speak in. Cast at the edge of the test rather than run
+// through the constructors: what is under test is the matching, not the parsing.
+const bookId = (value: string) => value as BookId
+const asin = (value: string) => value as AudibleAsinValue
+const title = (value: string) => value as BookTitle
+
 describe('linking a catalogued book to its Audible title', () => {
   test('matches an import made before the ASIN was kept', () => {
     expect(audibleLinksFor([aBook()], [anItem()])).toEqual([
-      { bookId: 'book-1', audibleAsin: 'B002V1OF70' },
+      { bookId: bookId('book-1'), audibleAsin: asin('B002V1OF70') },
     ])
   })
 
   test('leaves a book that already carries one alone', () => {
-    const linked = aBook({ audibleAsin: 'B002V1OF70' } as Partial<Book>)
+    const linked = aBook({ audibleAsin: asin('B002V1OF70') })
     expect(audibleLinksFor([linked], [anItem()])).toEqual([])
   })
 
@@ -306,27 +312,27 @@ describe('linking a catalogued book to its Audible title', () => {
   })
 
   test('does not hand one ASIN to two records of the same story', () => {
-    const books = [aBook(), aBook({ id: 'book-2' } as Partial<Book>)]
+    const books = [aBook(), aBook({ id: bookId('book-2') })]
     expect(audibleLinksFor(books, [anItem()])).toEqual([
-      { bookId: 'book-1', audibleAsin: 'B002V1OF70' },
+      { bookId: bookId('book-1'), audibleAsin: asin('B002V1OF70') },
     ])
   })
 
   test('leaves a book Audible does not carry unlinked', () => {
-    expect(audibleLinksFor([aBook({ title: 'Dune' })], [anItem()])).toEqual([])
+    expect(audibleLinksFor([aBook({ title: title('Dune') })], [anItem()])).toEqual([])
   })
 })
 
 describe('following the listening', () => {
   const linked = (overrides: Partial<Book> = {}) =>
-    aBook({ audibleAsin: 'B002V1OF70', ...overrides } as Partial<Book>)
+    aBook({ audibleAsin: asin('B002V1OF70'), ...overrides })
 
   test('marks a book read on the date Audible finished it', () => {
     const finishedAt = new Date('2026-04-01T00:00:00.000Z')
     const items = [anItem({ listeningStatus: { isFinished: true, finishedAt } })]
 
     expect(listeningChangesFor([linked()], items)).toEqual([
-      { bookId: 'book-1', status: 'read', at: finishedAt },
+      { bookId: bookId('book-1'), status: 'read', at: finishedAt },
     ])
   })
 
@@ -339,7 +345,7 @@ describe('following the listening', () => {
   // title it says was never opened sends the book back to the pile.
   test('sends a book Audible reports untouched back to the pile', () => {
     expect(listeningChangesFor([linked({ status: 'read' })], [anItem()])).toEqual([
-      { bookId: 'book-1', status: 'to-read', at: undefined },
+      { bookId: bookId('book-1'), status: 'to-read', at: undefined },
     ])
   })
 
