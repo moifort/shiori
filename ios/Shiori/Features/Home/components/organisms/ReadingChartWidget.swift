@@ -8,8 +8,8 @@ import SwiftUI
 /// The chart is kept to its bars: no value axis, no gridlines, no frame. The
 /// figure that matters is spelled out above it, so an axis would only repeat a
 /// number already written in full; what the bars are for is the shape of the
-/// years, which reads better small and unfurnished. Monthly bars carry their own
-/// count on top, which reads a single month off without a scale to measure against.
+/// years, which reads better small and unfurnished. Every bar carries its own
+/// count on top, which reads a single period off without a scale to measure against.
 struct ReadingChartWidget: View {
     enum Metric: String, CaseIterable, Identifiable {
         case books, pages
@@ -82,8 +82,9 @@ struct ReadingChartWidget: View {
                 )
                 .foregroundStyle(DashboardPalette.books)
                 .cornerRadius(3)
+                .annotation(position: .top, spacing: 2) { countLabel(entry.count) }
             }
-            .chartYScale(domain: 0...max(1, booksPerYear.map(\.count).max() ?? 0))
+            .chartYScale(domain: 0...scaleMax(booksPerYear.map(\.count)))
             .chartXAxis { AxisMarks { periodLabel(Text(yearLabel(for: $0))) } }
             .chartYAxis(.hidden)
         case .pages:
@@ -97,10 +98,10 @@ struct ReadingChartWidget: View {
                 )
                 .foregroundStyle(DashboardPalette.pages)
                 .cornerRadius(3)
-                .annotation(position: .top, spacing: 2) { pagesLabel(entry.pages) }
+                .annotation(position: .top, spacing: 2) { countLabel(entry.pages) }
             }
             .chartXScale(domain: 0.5...12.5)
-            .chartYScale(domain: 0...pagesScaleMax)
+            .chartYScale(domain: 0...scaleMax(pagesPerMonth.map(\.pages)))
             .chartXAxis {
                 AxisMarks(values: Array(1...12)) { value in
                     periodLabel(Text(monthLabel(for: value)))
@@ -110,22 +111,23 @@ struct ReadingChartWidget: View {
         }
     }
 
-    /// Its count above each monthly bar, an empty month left bare rather than
-    /// labelled zero. Nine points and no larger: twelve columns share the width of
+    /// Its count above each bar, an empty period left bare rather than labelled
+    /// zero. Nine points and no larger: twelve monthly columns share the width of
     /// the card, and a four-figure month has to fit between its neighbours.
     @ViewBuilder
-    private func pagesLabel(_ pages: Int) -> some View {
-        if pages > 0 {
-            Text(pages, format: .number)
+    private func countLabel(_ count: Int) -> some View {
+        if count > 0 {
+            Text(count, format: .number)
                 .font(.system(size: 9, design: .rounded))
                 .foregroundStyle(.tertiary)
         }
     }
 
     /// Headroom above the tallest bar for the label it now carries, which the
-    /// chart would otherwise clip against its top edge.
-    private var pagesScaleMax: Int {
-        max(1, Int(Double(pagesPerMonth.map(\.pages).max() ?? 0) * 1.2))
+    /// chart would otherwise clip against its top edge. Rounded up, so a year
+    /// peaking at one book gains a whole unit rather than a fifth of one.
+    private func scaleMax(_ values: [Int]) -> Int {
+        max(1, Int((Double(values.max() ?? 0) * 1.2).rounded(.up)))
     }
 
     /// An explicit anchor: left to its default, a label built from a closure sits
