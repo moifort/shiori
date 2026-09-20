@@ -12,13 +12,22 @@ import SwiftUI
 /// count on top, which reads a single period off without a scale to measure against.
 struct ReadingChartWidget: View {
     enum Metric: String, CaseIterable, Identifiable {
-        case books, pages
+        case books, pages, hours
         var id: String { rawValue }
 
         var label: LocalizedStringKey {
             switch self {
             case .books: "Livres"
             case .pages: "Pages"
+            case .hours: "Heures"
+            }
+        }
+
+        var title: LocalizedStringKey {
+            switch self {
+            case .books: "Livres lus"
+            case .pages: "Pages lues"
+            case .hours: "Heures écoutées"
             }
         }
     }
@@ -26,18 +35,21 @@ struct ReadingChartWidget: View {
     let currentYear: Int
     let booksPerYear: [Dashboard.YearCount]
     let pagesPerMonth: [Dashboard.MonthPages]
+    let hoursPerMonth: [Dashboard.MonthHours]
     /// Pages open the card rather than books: twelve monthly bars fill its
     /// width where six yearly ones leave it mostly empty, and the running
     /// year is the figure a reader comes to the dashboard for.
     @State private var metric: Metric = .pages
 
     var body: some View {
-        WidgetCard(title: metric == .books ? "Livres lus" : "Pages lues") {
+        WidgetCard(title: metric.title) {
             Picker("Mesure", selection: $metric.animation(.snappy)) {
                 ForEach(Metric.allCases) { Text($0.label).tag($0) }
             }
             .pickerStyle(.segmented)
-            .frame(width: 150)
+            // Three segments of six letters fit in sixty points each; wider than
+            // that and "Heures écoutées" wraps onto a second line beside them.
+            .frame(width: 180)
             .accessibilityIdentifier("home-chart-metric")
         } content: {
             VStack(alignment: .leading, spacing: 10) {
@@ -61,6 +73,11 @@ struct ReadingChartWidget: View {
                     .font(.system(.title, design: .rounded, weight: .bold))
                     .foregroundStyle(DashboardPalette.pages)
                 Text("pages en \(String(currentYear))")
+            case .hours:
+                Text(hoursThisYear, format: .number)
+                    .font(.system(.title, design: .rounded, weight: .bold))
+                    .foregroundStyle(DashboardPalette.duration)
+                Text("heures d'écoute en \(String(currentYear))")
             }
         }
         .font(.subheadline)
@@ -108,6 +125,25 @@ struct ReadingChartWidget: View {
                 }
             }
             .chartYAxis(.hidden)
+        case .hours:
+            Chart(hoursPerMonth) { entry in
+                BarMark(
+                    x: .value("Mois", entry.month),
+                    y: .value("Heures", entry.hours),
+                    width: .fixed(14)
+                )
+                .foregroundStyle(DashboardPalette.duration)
+                .cornerRadius(3)
+                .annotation(position: .top, spacing: 2) { countLabel(entry.hours) }
+            }
+            .chartXScale(domain: 0.5...12.5)
+            .chartYScale(domain: 0...scaleMax(hoursPerMonth.map(\.hours)))
+            .chartXAxis {
+                AxisMarks(values: Array(1...12)) { value in
+                    periodLabel(Text(monthLabel(for: value)))
+                }
+            }
+            .chartYAxis(.hidden)
         }
     }
 
@@ -147,13 +183,15 @@ struct ReadingChartWidget: View {
 
     private var booksThisYear: Int { booksPerYear.first { $0.year == currentYear }?.count ?? 0 }
     private var pagesThisYear: Int { pagesPerMonth.reduce(0) { $0 + $1.pages } }
+    private var hoursThisYear: Int { hoursPerMonth.reduce(0) { $0 + $1.hours } }
 }
 
 #Preview {
     ReadingChartWidget(
         currentYear: 2026,
-        booksPerYear: [.init(year: 2023, count: 9), .init(year: 2024, count: 21), .init(year: 2025, count: 16), .init(year: 2026, count: 18)],
-        pagesPerMonth: (1...12).map { .init(month: $0, pages: $0 < 10 ? $0 * 90 : 0) }
+        booksPerYear: [0, 0, 0, 4, 12, 9, 21, 16, 18].enumerated().map { .init(year: 2018 + $0.offset, count: $0.element) },
+        pagesPerMonth: (1...12).map { .init(month: $0, pages: $0 < 10 ? $0 * 90 : 0) },
+        hoursPerMonth: (1...12).map { .init(month: $0, hours: $0 < 10 ? $0 * 2 : 0) }
     )
     .padding()
     .background(Color(.systemGroupedBackground))
@@ -162,8 +200,9 @@ struct ReadingChartWidget: View {
 #Preview("First book") {
     ReadingChartWidget(
         currentYear: 2026,
-        booksPerYear: (2021...2026).map { .init(year: $0, count: 0) },
-        pagesPerMonth: (1...12).map { .init(month: $0, pages: 0) }
+        booksPerYear: (2018...2026).map { .init(year: $0, count: 0) },
+        pagesPerMonth: (1...12).map { .init(month: $0, pages: 0) },
+        hoursPerMonth: (1...12).map { .init(month: $0, hours: 0) }
     )
     .padding()
     .background(Color(.systemGroupedBackground))

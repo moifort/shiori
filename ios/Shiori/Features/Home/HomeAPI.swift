@@ -13,6 +13,7 @@ enum HomeAPI {
             currentYear: dashboard.currentYear,
             booksPerYear: dashboard.booksPerYear.map { .init(year: $0.year, count: $0.count) },
             pagesPerMonth: dashboard.pagesPerMonth.map { .init(month: $0.month, pages: $0.pages) },
+            hoursPerMonth: dashboard.hoursPerMonth.map { .init(month: $0.month, hours: $0.hours) },
             reading: dashboard.reading.map { $0.fragments.dashboardBookCard.asBook(status: .reading) },
             suggestions: dashboard.suggestions.map { $0.fragments.dashboardBookCard.asBook(status: .toRead) },
             lastFinished: dashboard.lastFinished?.fragments.dashboardBookCard.asBook(status: .read),

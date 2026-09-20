@@ -10,6 +10,10 @@ the release tag is pushed.
 
 ## Unreleased
 
+- The reading chart on the home screen counts hours listened as well as books and pages: a
+  third tab draws the audiobook hours of each month, taken from the running time Audible
+  reports for every title imported. Each bar now carries its own figure, and the yearly view
+  covers nine years instead of six.
 - An Audible library can be imported into Shiori. Connect the Amazon account once from
   Settings, pick the marketplace, and the whole library is listed with its covers, sagas and
   listening progress; tick the titles to catalogue and they land as audiobooks, finished ones

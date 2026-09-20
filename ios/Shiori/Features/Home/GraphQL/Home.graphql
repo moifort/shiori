@@ -11,6 +11,10 @@ query Dashboard($timeZone: TimeZone!) {
       month
       pages
     }
+    hoursPerMonth {
+      month
+      hours
+    }
     reading {
       ...DashboardBookCard
     }

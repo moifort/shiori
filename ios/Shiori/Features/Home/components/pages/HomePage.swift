@@ -15,7 +15,8 @@ struct HomePage: View {
                 ReadingChartWidget(
                     currentYear: dashboard.currentYear,
                     booksPerYear: dashboard.booksPerYear,
-                    pagesPerMonth: dashboard.pagesPerMonth
+                    pagesPerMonth: dashboard.pagesPerMonth,
+                    hoursPerMonth: dashboard.hoursPerMonth
                 )
 
                 BookShelfSection(
@@ -76,6 +77,8 @@ extension Dashboard {
         ],
         pagesPerMonth: [410, 720, 380, 910, 760, 600, 1180, 1100, 260, 0, 0, 0].enumerated()
             .map { .init(month: $0.offset + 1, pages: $0.element) },
+        hoursPerMonth: [6, 11, 4, 0, 9, 14, 7, 12, 3, 0, 0, 0].enumerated()
+            .map { .init(month: $0.offset + 1, hours: $0.element) },
         reading: [
             Book(id: "1", title: "La Peur du sage", authors: ["Patrick Rothfuss"], status: .reading,
                  startedAt: .now.addingTimeInterval(-12 * 86400)),
@@ -119,8 +122,9 @@ extension Dashboard {
     /// saying what will fill them.
     static let firstBook = Dashboard(
         currentYear: 2026,
-        booksPerYear: (2021...2026).map { .init(year: $0, count: 0) },
+        booksPerYear: (2018...2026).map { .init(year: $0, count: 0) },
         pagesPerMonth: (1...12).map { .init(month: $0, pages: 0) },
+        hoursPerMonth: (1...12).map { .init(month: $0, hours: 0) },
         reading: [],
         suggestions: [Book(id: "1", title: "Dune", authors: ["Frank Herbert"], status: .toRead)],
         lastFinished: nil,

@@ -4,6 +4,10 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Le graphique de lecture de l’accueil compte aussi les heures écoutées : un troisième onglet
+  trace les heures de livre audio de chaque mois, d’après la durée qu’Audible indique pour
+  chaque titre importé. Chaque barre porte désormais son propre chiffre, et la vue par année
+  couvre neuf ans au lieu de six.
 - La bibliothèque Audible peut être importée dans Shiori. On connecte le compte Amazon une
   fois depuis les réglages, on choisit la boutique, et toute la bibliothèque s’affiche avec ses
   couvertures, ses séries et l’avancement d’écoute ; les titres cochés sont catalogués comme

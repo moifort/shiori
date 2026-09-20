@@ -16,6 +16,16 @@ struct Dashboard: Sendable {
         let pages: Int
     }
 
+    /// Hours listened, rounded to the hour by the server. Only audiobooks
+    /// imported from Audible carry a running time, so a printed library reads
+    /// twelve zeros here.
+    struct MonthHours: Identifiable, Hashable, Sendable {
+        var id: Int { month }
+        /// 1 for January.
+        let month: Int
+        let hours: Int
+    }
+
     /// This year to date against the same span of last year. No `previous`, no
     /// arrow: a comparison with nothing is not a trend.
     struct Trend: Hashable, Sendable {
@@ -47,6 +57,7 @@ struct Dashboard: Sendable {
     let currentYear: Int
     let booksPerYear: [YearCount]
     let pagesPerMonth: [MonthPages]
+    let hoursPerMonth: [MonthHours]
     let reading: [Book]
     let suggestions: [Book]
     let lastFinished: Book?
