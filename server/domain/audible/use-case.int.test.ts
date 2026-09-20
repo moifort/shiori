@@ -99,6 +99,26 @@ describe('listing what could be imported', () => {
     expect(libraryCalls).toHaveLength(0)
   })
 
+  // The sealing key can be rotated — it was, once, because the first one leaked
+  // into a public build log. Credentials sealed with a key that is gone cannot
+  // be opened again and never will be, so the connection is dropped rather than
+  // left as something the reader can retry forever.
+  test('drops a connection it can no longer decrypt, and asks to connect again', async () => {
+    await connect()
+    fake.seed('audible-connections', reader, {
+      userId: reader,
+      account: {
+        marketplace: 'fr',
+        credentials: 'v1.aaaa.bbbb.cccc',
+        connectedAt: NOW,
+      },
+    })
+
+    expect(await AudibleUseCase.importableBooks(reader)).toBe('not-connected')
+    expect(libraryCalls).toHaveLength(0)
+    expect(fake.data('audible-connections', reader)).toBeNull()
+  })
+
   test('proposes the library without saving anything', async () => {
     await connect()
     items = [anItem(), anItem({ asin: 'B00X57B4KE', title: 'La Peur du sage' })]

@@ -7,8 +7,14 @@ resource "random_password" "admin_token" {
 # The key the Audible device credentials are sealed with before they reach
 # Firestore. Generated once and kept in state: rotating it makes every stored
 # connection unreadable, so readers would have to reconnect their account.
-resource "random_id" "audible_key" {
-  byte_length = 32
+#
+# `random_bytes` rather than `random_id`, and the difference is not cosmetic.
+# Terraform prints the id of every resource it creates, and `random_id` makes the
+# random material itself its id — so the first apply wrote this key, in full, into
+# a build log of a public repository. `random_bytes` marks `base64` and `hex`
+# sensitive and keeps the value out of its id, so nothing of it reaches a log.
+resource "random_bytes" "audible_key" {
+  length = 32
 }
 
 locals {
@@ -22,7 +28,7 @@ locals {
     admin-token     = local.admin_token_value
     sentry-dsn      = var.sentry_dsn
     asc-private-key = local.asc_private_key_value
-    audible-key     = random_id.audible_key.b64_std
+    audible-key     = random_bytes.audible_key.base64
   }
 
   # Secret Manager rejects empty payloads, so we drive iteration off a

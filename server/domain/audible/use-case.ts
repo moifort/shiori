@@ -4,7 +4,7 @@ import { AudibleCommand } from '~/domain/audible/command'
 import * as api from '~/domain/audible/infrastructure/audible-api'
 import { openCredentials } from '~/domain/audible/infrastructure/credentials-vault'
 import { AudibleQuery } from '~/domain/audible/query'
-import type { AudibleAsin, ImportableBook } from '~/domain/audible/types'
+import type { AudibleAsin, ConnectedAccount, ImportableBook } from '~/domain/audible/types'
 import { BookCommand } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
 import type { Book } from '~/domain/book/types'
@@ -82,9 +82,28 @@ const fetchLibrary = async (userId: UserId) => {
   const account = await AudibleQuery.accountOf(userId)
   if (!account) return 'not-connected' as const
 
-  const { items, credentials } = await api.library(openCredentials(account.credentials))
-  await AudibleCommand.rememberRotatedCredentials(userId, credentials)
+  // Credentials sealed with a key that no longer exists cannot be opened again,
+  // and never will be. That is a connection in name only, so it is dropped here
+  // rather than reported as an Amazon failure the reader could retry forever:
+  // the app then offers to connect again, which is the one thing that works.
+  const credentials = opened(account.credentials)
+  if (!credentials) {
+    logger.warn(`unreadable Audible credentials for ${userId}, connection dropped`)
+    await AudibleCommand.disconnect(userId)
+    return 'not-connected' as const
+  }
+
+  const { items, credentials: rotated } = await api.library(credentials)
+  await AudibleCommand.rememberRotatedCredentials(userId, rotated)
   return { items, account }
+}
+
+const opened = (sealed: ConnectedAccount['credentials']) => {
+  try {
+    return openCredentials(sealed)
+  } catch {
+    return undefined
+  }
 }
 
 const toImportable = (
