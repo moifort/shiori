@@ -194,6 +194,14 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       grey text. The scan call to action stays visible at the top, since that is the one
       thing the reader can do from here. `libraryIsEmpty` stops choosing between two pages.
 
+- [ ] **Series tab, every volume's cover in the strip, as on the series screen.** The strip
+      shows the missing volumes only when the saga has a catalogue, and even then leaves out
+      the announced volumes and the related works. It should show every volume the series
+      screen lists — the spine, announced volumes included, then the prequels, novellas and
+      companions — each missing one as the same dimmed placeholder. A saga never opened has
+      no catalogue yet, since the screen is what builds it: decide whether the tab triggers
+      that build, or keeps showing only the owned volumes until then.
+
 ## Large
 
 - [x] **Pagination** on every list, as in Vinarium. Cursor arguments on every list query,
