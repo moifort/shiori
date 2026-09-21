@@ -160,6 +160,12 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       the typographic placeholder the series screen uses for them. That reads the catalogue
       for every row of the page, which the denormalized layout was built to avoid: add a
       per-request loader for `series/{seriesKey}` before shipping, and a read-budget test.
+- [ ] **Series catalogue, no volume listed twice.** The Blood Song screen shows Tome 1 and
+      Tome 2 twice each, with the same book behind both rows. The grounded catalogue call can
+      return one volume per edition it finds, and `catalogueSeries` stores the list as the
+      model answered it, with no deduplication between there and the screen. Deduplicate while
+      parsing: one main volume per number, one unnumbered entry per kind and slugified title.
+      No migration: the stored catalogues are cleaned by hand in the database.
 
 ## Large
 
