@@ -91,6 +91,23 @@ schema, a domain command, or several screens at once; **large** brings in a new 
 - [x] **Library, replace the `+` CTA** with the import entry point styled like the "add a file"
       flow of the Vinarium wine record. That flow also offers to type only a title and let the
       AI do the search. The title-only path is a new scan mutation.
+- [ ] **Audible import, pick the right genre.** Checked against the public catalogue API
+      (`api.audible.fr/1.0/catalog/categories/{id}`) and forty real titles, the genre an import
+      lands in is wrong for three reasons. **The ladder order decides:** `genreFrom` takes the
+      first ladder Amazon returns, and that is often the catch-all "Littérature, romans et
+      fiction", so Dune, Fondation, Le problème à trois corps and Le Dernier vœu all come out
+      `literary-fiction`. Have every ladder vote instead, with the generic racks (literary
+      fiction, classics, contemporary, the joint SF-fantasy rack) answering only when nothing
+      else does. **Whole subtrees are unmapped:** Harry Potter gets no genre at all, since
+      "Jeunesse > Science-fiction et fantasy > Fantasy et magie" only resolves its root; also
+      missing are "Fiction criminelle", "Policier > Polars / Cozy", "Sorcellerie et épées",
+      and the SF and fantasy racks under "Adolescents". **The `com` ids in `audible-api-ts`
+      are nearly all wrong:** they are shifted, so `thriller` points at Classics and
+      `horror` at Computers & Technology. Only the `fr` ids are correct. The new ids and the
+      `com` fix belong in `../audible-api-ts`, with a test that checks the table against the
+      live API. The unit tests could not catch any of this because they build their ladders
+      from `resolveGenreId`. Books already imported keep their wrong genre, so they need
+      re-mapping through a migration or a fresh import.
 
 ## Large
 
