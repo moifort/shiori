@@ -45,6 +45,42 @@ extension BookGenre {
     var image: Image {
         hasCustomSymbol ? Image(symbol) : Image(systemName: symbol)
     }
+
+    /// The colour the genre is drawn in where a list has room for a touch of
+    /// it — the chips under a library row. Picked for the genre rather than
+    /// derived from its name: fantasy is purple and romance is pink in every
+    /// bookshop, and a hash would put horror in mint.
+    ///
+    /// Yellow is left out on purpose: it is the colour of the stars, and it
+    /// has no contrast against a pale chip. Twenty-two genres are more than
+    /// the palette holds, so distant ones share a colour — no reader reads a
+    /// chip's hue as its genre, they read the word.
+    var tint: Color {
+        switch self {
+        case .fantasy: .purple
+        case .scienceFiction: .indigo
+        case .horror: .red
+        case .crime: .brown
+        case .thriller: .orange
+        case .romance: .pink
+        case .historicalFiction: .brown
+        case .adventure: .green
+        case .literaryFiction: .teal
+        case .humor: .orange
+        case .poetry: .mint
+        case .drama: .purple
+        case .biography: .blue
+        case .history: .brown
+        case .essay: .cyan
+        case .science: .blue
+        case .selfHelp: .mint
+        case .business: .green
+        case .art: .pink
+        case .cooking: .orange
+        case .travel: .teal
+        case .other: .gray
+        }
+    }
 }
 
 #Preview("Genres") {

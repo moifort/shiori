@@ -30,6 +30,10 @@ struct BookRow: View {
     var isFavorite: Bool = false
     var isHidden: Bool = false
 
+    /// Between the card's edges and the row's content — the list's own inset
+    /// on an iPhone, stated here so the separator can span it.
+    private static let horizontalInset: CGFloat = 16
+
     var body: some View {
         // Top-aligned so the first line of text starts level with the cover,
         // whether that line is a volume label or the title itself.
@@ -37,7 +41,7 @@ struct BookRow: View {
             BookCover(book: cover)
                 .overlay(alignment: .topTrailing) {
                     ReadingStatusBadge(status: status)
-                        .offset(x: 5, y: -5)
+                        .offset(x: 6, y: -4)
                 }
 
             VStack(alignment: .leading, spacing: 3) {
@@ -62,14 +66,16 @@ struct BookRow: View {
                 if genre != nil || subgenre != nil {
                     HStack(spacing: 6) {
                         if let genre {
-                            chip(genre.label)
+                            chip(genre.label, tint: genre.tint)
                         }
                         if let subgenre {
-                            chip(subgenre)
+                            // The same hue as the genre it refines, because it
+                            // refines it: two colours on one line would read as
+                            // two unrelated facts.
+                            chip(subgenre, tint: genre?.tint ?? .secondary)
                         }
                     }
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .padding(.top, 1)
                 }
@@ -77,43 +83,47 @@ struct BookRow: View {
 
             Spacer(minLength: 8)
 
-            // The right column, the same on every row so the eye finds things
-            // where it left them: the reader's own judgement on the title's
-            // line, then the markers of what the object is.
-            VStack(alignment: .trailing, spacing: 6) {
-                OpinionMark(rating: rating, isFavorite: isFavorite, font: .caption)
-                HStack(spacing: 6) {
-                    if let language, language.isForeign {
-                        Text(language.flag)
-                            .font(.caption)
-                            .accessibilityLabel(Text(language.label))
-                    }
-                    if format == .audiobook {
-                        // A recording sits in the same list as the printed books
-                        // and reads nothing like one — the cover alone never
-                        // says so.
-                        Image(systemName: "headphones")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .accessibilityLabel(Text("Livre audio"))
-                    }
-                    if isHidden {
-                        // Says the book is excluded from sharing. Only ever an
-                        // icon, tucked in the corner: spelling it out on every
-                        // row would shout a private choice at anyone glancing
-                        // over a shoulder.
-                        Image(systemName: "eye.slash")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .accessibilityLabel(Text("Non partagé"))
-                    }
+            // Everything the row says about the object and about the reader's
+            // judgement, on one line level with the top of the cover — the
+            // same line on every row, so the eye finds it where it left it
+            // whether or not a volume label sits above the title.
+            HStack(spacing: 6) {
+                if let language, language.isForeign {
+                    Text(language.flag)
+                        .accessibilityLabel(Text(language.label))
                 }
+                if format == .audiobook {
+                    // A recording sits in the same list as the printed books
+                    // and reads nothing like one — the cover alone never
+                    // says so.
+                    Image(systemName: "headphones")
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel(Text("Livre audio"))
+                }
+                if isHidden {
+                    // Says the book is excluded from sharing. Only ever an
+                    // icon, tucked in the corner: spelling it out on every
+                    // row would shout a private choice at anyone glancing
+                    // over a shoulder.
+                    Image(systemName: "eye.slash")
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel(Text("Non partagé"))
+                }
+                OpinionMark(rating: rating, isFavorite: isFavorite, font: .caption)
             }
-            // Level with the title, whether or not a volume label sits above it.
-            .padding(.top, volumeLabel == nil ? 2 : 18)
+            .font(.caption)
         }
-        // Room for the badge, which overhangs the cover's top edge.
-        .padding(.vertical, 6)
+        // Tight, because a library is read by scanning many rows at once. The
+        // badge overhangs the cover by exactly this much, so it stays inside
+        // the row rather than crowding the one above.
+        .padding(.vertical, 4)
+        // The separator runs from one edge of the card to the other: a rule
+        // starting under the title cuts the cover column off from the list it
+        // belongs to. The inset is pinned rather than left to the list, so the
+        // guides below know exactly how far the card's edges are.
+        .listRowInsets(.horizontal, Self.horizontalInset)
+        .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] - Self.horizontalInset }
+        .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] + Self.horizontalInset }
         .accessibilityElement(children: .combine)
         // The badge is icon-only, so the status is spoken here rather than
         // read off a glyph.
@@ -121,12 +131,15 @@ struct BookRow: View {
     }
 
     /// A word in a capsule, sized for a row: the detail screen's pills would eat
-    /// the line.
-    private func chip(_ text: String) -> some View {
+    /// the line. Tinted rather than grey — a shelf of identical grey chips is a
+    /// texture, and the colour is what lets the eye find the fantasy among the
+    /// essays without reading a word.
+    private func chip(_ text: String, tint: Color) -> some View {
         Text(text)
             .padding(.horizontal, 6)
             .padding(.vertical, 1)
-            .background(.quaternary, in: Capsule())
+            .foregroundStyle(tint)
+            .background(tint.opacity(0.15), in: Capsule())
     }
 }
 
@@ -146,9 +159,11 @@ private struct ReadingStatusBadge: View {
 
     var body: some View {
         Image(systemName: status.symbol)
-            .font(.system(size: 9, weight: .bold))
+            .font(.system(size: 10, weight: .bold))
             .foregroundStyle(.white)
-            .frame(width: 20, height: 20)
+            // Wider than the glyph needs, so the symbol sits in the disc with
+            // air around it rather than filling it to the rim.
+            .frame(width: 24, height: 24)
             .background(tint, in: Circle())
             // A ring in the row's own background lifts the badge off whatever
             // colour the cover happens to be under it.
