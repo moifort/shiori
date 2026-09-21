@@ -27,7 +27,7 @@ final class SeriesListViewModel {
 
     /// The followed sagas on disk. Bump the version whenever `FollowedSeries`
     /// changes shape.
-    private let cache = SnapshotCache<[FollowedSeries]>("series", version: 1)
+    private let cache = SnapshotCache<[FollowedSeries]>("series", version: 2)
 
     /// More rows follow the ones on screen.
     private(set) var hasMore = false

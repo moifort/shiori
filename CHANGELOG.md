@@ -10,6 +10,12 @@ the release tag is pushed.
 
 ## Unreleased
 
+- The Series tab is sectioned by genre and every saga shows how far the reader is into it,
+  as a bar and a count of the published volumes read. Its marks sit on one line in the top
+  corner, and the saga's state is drawn in grey. The series screen opens on an activity ring
+  beside the saga's name, author and size, lists its volumes one per row, says where the
+  reader stands with a volume only by the badge on its cover, and edits the genre and
+  subgenres of every volume at once.
 - A scanned book whose cover Open Library does not have now looks for it on Amazon, by the
   ISBN, before falling back to the typographic placeholder. Books already in the library get
   the same second chance once.

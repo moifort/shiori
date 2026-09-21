@@ -39,7 +39,12 @@ fragment FollowedSeriesRow on FollowedSeries {
   name
   author
   language
+  genre
   state
+  progress {
+    readCount
+    totalCount
+  }
   ownedCount
   opinion {
     ...SeriesOpinionFields

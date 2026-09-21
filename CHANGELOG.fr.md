@@ -4,6 +4,12 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- L’onglet Séries est découpé par genre et chaque saga montre où en est le lecteur, par une
+  barre et le compte des tomes parus déjà lus. Ses marques tiennent sur une ligne dans le
+  coin supérieur, et l’état de la saga est dessiné en gris. L’écran d’une série s’ouvre sur
+  un anneau d’activité à côté du nom, de l’auteur et du nombre de tomes, liste les tomes un
+  par ligne, ne dit où en est le lecteur d’un tome que par le badge sur sa couverture, et
+  modifie d’un coup le genre et les sous-genres de tous les tomes.
 - Un livre scanné dont Open Library n’a pas la couverture la cherche désormais sur Amazon,
   par l’ISBN, avant de se replier sur la couverture typographique. Les livres déjà dans la
   bibliothèque ont droit une fois à la même seconde chance.

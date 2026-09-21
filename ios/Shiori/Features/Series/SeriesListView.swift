@@ -1,14 +1,14 @@
 import SwiftUI
 
-/// The Series tab: the sagas the reader follows, each in progress or complete.
+/// The Series tab: the sagas the reader follows, in one section per genre, each
+/// row saying how far along the reader is.
 ///
-/// No counter. "2 sur 14" reads as a scoreboard on a list whose purpose is to
-/// let the reader pick a saga and get back into it — the state is what tells
-/// them whether there is anything left to read.
+/// The sections come from the server's order — the list is paginated, and a
+/// section grouped on the phone would grow again every time a page landed.
 ///
-/// A saga nobody has catalogued has no state to show: what it has instead is
-/// how many volumes are on the shelf. That is a fact about the library, not a
-/// score out of a total nobody knows.
+/// A saga nobody has catalogued has no spine to measure against: what it has
+/// instead is how many volumes are on the shelf. That is a fact about the
+/// library, not a score out of a total nobody knows.
 struct SeriesListView: View {
     @State private var viewModel = SeriesListViewModel()
     /// The saga being opened. A button and a destination rather than a
@@ -62,15 +62,25 @@ struct SeriesListView: View {
                     onRetry: { await viewModel.refresh() }
                 )
             }
-            ForEach(viewModel.followed) { entry in
-                Button {
-                    openSeriesId = entry.seriesId
-                } label: {
-                    row(entry)
+            ForEach(sections, id: \.id) { section in
+                Section {
+                    ForEach(section.entries) { entry in
+                        Button {
+                            openSeriesId = entry.seriesId
+                        } label: {
+                            row(entry)
+                        }
+                        .tint(.primary)
+                        .accessibilityIdentifier("series-row")
+                        .onAppear { viewModel.prefetchIfNeeded(for: entry.id) }
+                    }
+                } header: {
+                    if let genre = section.genre {
+                        Label { Text(genre.label) } icon: { genre.image }
+                    } else {
+                        Text("Sans genre")
+                    }
                 }
-                .tint(.primary)
-                .accessibilityIdentifier("series-row")
-                .onAppear { viewModel.prefetchIfNeeded(for: entry.id) }
             }
             if viewModel.hasMore {
                 LoadMoreRow(
@@ -85,35 +95,39 @@ struct SeriesListView: View {
         .navigationDestination(item: $openSeriesId) { SeriesView(seriesId: $0) }
     }
 
-    /// The same shape as a library row: the words on the left, and on the
-    /// right, level with the name, what the reader should know at a glance —
-    /// the saga's state as one glyph, then their own heart or stars beneath.
+    /// Consecutive rows of one genre, as the server ordered them. Grouped on
+    /// runs rather than on the genre itself, so a page that lands never moves a
+    /// row the reader has already scrolled past.
+    private var sections: [(id: Int, genre: BookGenre?, entries: [FollowedSeries])] {
+        var sections: [(id: Int, genre: BookGenre?, entries: [FollowedSeries])] = []
+        for entry in viewModel.followed {
+            if let last = sections.last, last.genre == entry.genre {
+                sections[sections.count - 1].entries.append(entry)
+            } else {
+                sections.append((id: sections.count, genre: entry.genre, entries: [entry]))
+            }
+        }
+        return sections
+    }
+
+    /// The same shape as a library row: the words on the left, and every mark
+    /// on one line in the top corner — the edition's language, the saga's
+    /// state, the reader's heart or stars — so the eye finds them in the same
+    /// place on every row.
     private func row(_ entry: FollowedSeries) -> some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Text(entry.name).font(.body.weight(.medium))
-                    // Which of the saga's two shelves this row is. Trailing
-                    // the name, as in the library headings: the name is what
-                    // the reader scans for, and only foreign, as there too.
-                    if let language = entry.language, language.isForeign {
-                        LanguageTag(language: language)
-                    }
-                }
+                Text(entry.name).font(.body.weight(.medium))
                 if let author = entry.author {
                     Text(author).font(.subheadline).foregroundStyle(.secondary)
                 }
-                // How much of the saga is on the shelf. A saga with a state
-                // says it in the corner; one nobody has catalogued has only
-                // this count to show.
-                Label("\(entry.ownedCount) tome(s)", systemImage: "books.vertical")
-                    .labelStyle(.caption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 1)
+                standing(entry).padding(.top, 2)
             }
             Spacer(minLength: 8)
-            VStack(alignment: .trailing, spacing: 6) {
+            HStack(spacing: 6) {
+                if let language = entry.language, language.isForeign {
+                    LanguageTag(language: language)
+                }
                 if let state = entry.state {
                     SeriesStateBadge(state: state)
                 }
@@ -123,23 +137,47 @@ struct SeriesListView: View {
                     font: .caption
                 )
             }
-            .padding(.top, 2)
+            .font(.caption)
+            .padding(.top, 3)
         }
         .padding(.vertical, 2)
     }
 
+    /// Where the reader is in the saga: a bar and "3 / 14" when the catalogue
+    /// says how many volumes are out, how many sit on the shelf otherwise.
+    @ViewBuilder
+    private func standing(_ entry: FollowedSeries) -> some View {
+        if let progress = entry.progress {
+            HStack(spacing: 8) {
+                ProgressView(value: Double(progress.read), total: Double(progress.total))
+                    .tint(progress.read == progress.total ? .green : .accentColor)
+                Text(verbatim: "\(progress.read) / \(progress.total)")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("\(progress.read) tomes lus sur \(progress.total) parus"))
+        } else {
+            Label("\(entry.ownedCount) tome(s)", systemImage: "books.vertical")
+                .labelStyle(.caption)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
 }
 
-/// Whether a saga is still going or done, as one glyph in a row's corner: the
-/// tick in green once every published volume is read, an open book until then.
-/// Icon-only, because the corner has no room for a word; the state is spoken.
+/// Whether a saga is still going or done, as one glyph in a row's corner: a
+/// tick once every published volume is read, an open book until then. In the
+/// row's secondary grey rather than in colour — the glyph is a fact to read,
+/// and next to the stars and the heart a green and a blue would compete with
+/// the reader's own judgement. Icon-only, so the state is spoken.
 struct SeriesStateBadge: View {
     let state: SeriesState
 
     var body: some View {
         Image(systemName: state == .complete ? "checkmark.circle.fill" : "book.fill")
             .font(.caption)
-            .foregroundStyle(state == .complete ? Color.green : Color.blue)
+            .foregroundStyle(.secondary)
             .accessibilityLabel(Text(state.label))
     }
 }

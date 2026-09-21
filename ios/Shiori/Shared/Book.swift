@@ -316,6 +316,12 @@ struct SeriesOpinion: Sendable, Equatable, Codable {
 /// A saga the reader follows. Its identity comes from their own books, not from
 /// the catalogue: an Audible import and a book typed by hand both name a saga
 /// without describing it, and reading the catalogue first lost every one of them.
+/// Where the reader stands on a saga's published spine.
+struct SeriesProgressCount: Codable, Sendable, Equatable {
+    let read: Int
+    let total: Int
+}
+
 struct FollowedSeries: Identifiable, Codable, Sendable {
     /// The saga and the language together. The saga alone is not an identity:
     /// held in two languages it follows as two rows, and SwiftUI would take them
@@ -332,6 +338,12 @@ struct FollowedSeries: Identifiable, Codable, Sendable {
     /// Nil when no catalogue exists to derive it from: which volumes the saga has
     /// is precisely what is unknown then.
     let state: SeriesState?
+    /// The genre most of the owned volumes carry: what the Series tab is
+    /// sectioned on. Nil when none of them has one.
+    let genre: BookGenre?
+    /// How many of the published spine volumes are read, out of how many. Nil
+    /// without a catalogue, like the state, and for the same reason.
+    let progress: SeriesProgressCount?
     let ownedCount: Int
     /// Nil until the reader says something about the saga. The two rows of a
     /// saga held in two languages carry the same one.

@@ -94,6 +94,8 @@ private extension FollowedSeries {
             author: followed.author,
             language: followed.language?.asDomain,
             state: followed.state?.asDomain,
+            genre: followed.genre?.asDomain,
+            progress: followed.progress.map { SeriesProgressCount(read: $0.readCount, total: $0.totalCount) },
             ownedCount: followed.ownedCount,
             opinion: followed.opinion?.fragments.seriesOpinionFields.asOpinion
         )
