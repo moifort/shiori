@@ -64,15 +64,16 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       into that screen. Copy every Vinarium settings menu, including the Sentry user feedback
       form (the `sendFeedback` helper exists without a screen today), except the admin
       section with the platform statistics.
-- [ ] **Paywall as in Vinarium, at 1.99 a month and 17.99 a year.** Decided: an entry price
-      for the first year, the one-week trial kept on the yearly plan. Rebuild the premium
-      sheet on the Vinarium paywall — the allowance gauge argued from the account's own
-      figures, the benefits, the two offers with the saving computed from the store's own
-      prices, restore, terms and privacy. The App Store Connect app record does not exist yet
-      (see [roadmap.md](roadmap.md#resolved-sign-in-with-apple)): declare the subscription
-      group and both products with those prices when it is created, and keep the StoreKit
-      file in lockstep. A low price is hard to raise — Apple never migrates existing
-      subscribers — so this is the floor, not a trial balloon.
+- [x] **Paywall as in Vinarium, at 1.99 a month and 17.99 a year.** The sheet itself was
+      already the Vinarium paywall, transposed with Shiori's own copy: the allowance gauge
+      argued from the account's own figures, the benefits, the two offers with the saving
+      computed from the store's prices, restore, terms and privacy. Only the prices moved.
+      The yearly keeps the one-week trial and now saves 25 % against twelve months, which the
+      badge computes on its own. **Still to do outside this repository:** declare the
+      subscription group and both products at those prices on the App Store Connect record,
+      which does not exist yet (see
+      [roadmap.md](roadmap.md#resolved-sign-in-with-apple)). A low price is hard to raise —
+      Apple never migrates existing subscribers — so this is the floor, not a trial balloon.
 - [x] **Library, replace the `+` CTA** with the import entry point styled like the "add a file"
       flow of the Vinarium wine record. That flow also offers to type only a title and let the
       AI do the search. The title-only path is a new scan mutation.
