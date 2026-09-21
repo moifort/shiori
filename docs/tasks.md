@@ -144,6 +144,11 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       the analytics (pile, finishes) and every `match().exhaustive()` over the status must
       decide what a dropped book counts as.
 
+- [ ] **Series tab, the library's filters.** The same toolbar as the Library tab: switch
+      between everything, by genre and the favourites, and narrow any of them to one reading
+      status. The tab is sectioned by genre today with no way to change it, so the series
+      query needs the arrangement, favourite and status arguments `libraryPage` already has.
+
 ## Large
 
 - [x] **Pagination** on every list, as in Vinarium. Cursor arguments on every list query,
