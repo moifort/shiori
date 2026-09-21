@@ -3,7 +3,6 @@ import {
   audibleLinksFor,
   bookFrom,
   boughtSince,
-  genreCorrectionsFor,
   importableFrom,
   listeningChangesFor,
   shelfKeysOf,
@@ -151,41 +150,6 @@ export namespace AudibleUseCase {
       }
     }
     return { linked: links.length, moved: moves.length, imported: bought.length }
-  }
-
-  /** Corrects the genres an older mapping got wrong on the reader's imports,
-   *  once, against what their Audible library says today.
-   *
-   *  Imports made before the ASIN was kept are matched on the shelf key here
-   *  as the sync does, but the link is left for the sync to write: this pass
-   *  only moves genres. The genre goes through `BookCommand.edit`, so a saga
-   *  follows its volume as it does when the reader corrects one. */
-  export const correctImportedGenres = async (
-    userId: UserId,
-    now = new Date(),
-  ): Promise<number | 'not-connected'> => {
-    const fetched = await fetchLibrary(userId)
-    if (fetched === 'not-connected') return fetched
-    const { items } = fetched
-
-    const owned = await BookQuery.all(userId)
-    const links = audibleLinksFor(owned, items)
-    const linked = owned.map((book) => {
-      const link = links.find((candidate) => candidate.bookId === book.id)
-      return link ? { ...book, audibleAsin: link.audibleAsin } : book
-    })
-    const corrections = genreCorrectionsFor(linked, items)
-    if (corrections.length === 0) return 0
-
-    await atomically(async (batch) => AnalyticsCommand.markStale(userId, batch))
-    for (const { bookId, genre } of corrections)
-      await BookCommand.edit(userId, bookId, { genre }, now)
-    try {
-      await AnalyticsCommand.refresh(userId)
-    } catch (error) {
-      logger.warn(`dashboard rebuild failed after genre correction for ${userId}: ${error}`)
-    }
-    return corrections.length
   }
 
   /** The nightly job: every reader who left the sync on, staleest first.

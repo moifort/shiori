@@ -17,7 +17,7 @@ import {
   Publisher,
   Synopsis,
 } from '~/domain/book/primitives'
-import type { Book, BookId, Genre, ReadingStatus } from '~/domain/book/types'
+import type { Book, BookId, ReadingStatus } from '~/domain/book/types'
 import { SeriesName, seriesKeyOf, VolumeNumber } from '~/domain/series/primitives'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import type { AuthorName as AuthorNameValue, UserId } from '~/domain/shared/types'
@@ -350,32 +350,3 @@ export const readersDueForSync = (connections: readonly AudibleConnection[]): Us
         (right.account?.lastImportedAt?.getTime() ?? 0),
     )
     .map((connection) => connection.userId)
-
-/** The genres an older mapping got wrong, on books linked to an Audible title.
- *
- *  Only the two outcomes that mapping could produce by mistake are corrected: no
- *  genre at all, where a whole subtree was unmapped (Harry Potter), and
- *  literary fiction, where the catch-all rack decided because Amazon listed it
- *  first (Fondation). A book on any other genre was either mapped right or
- *  moved by the reader, and either way is left alone. So is a book whose title
- *  still votes for no genre, or for the one it already has. */
-export const genreCorrectionsFor = (
-  books: readonly Book[],
-  items: readonly AudibleItem[],
-): { bookId: BookId; genre: Genre }[] => {
-  const byAsin = new Map(items.map((item) => [item.asin, item]))
-
-  return books.flatMap((book) => {
-    if (!book.audibleAsin) return []
-    if (book.genre !== undefined && book.genre !== 'literary-fiction') return []
-    const item = byAsin.get(book.audibleAsin)
-    const genre = item && genreFrom(item)
-    if (!genre || genre === book.genre) return []
-    return [{ bookId: book.id, genre }]
-  })
-}
-
-/** Every reader with a live Audible account, whether or not the nightly sync
- *  is on: a correction owed to their books does not depend on that switch. */
-export const connectedReadersOf = (connections: readonly AudibleConnection[]): UserId[] =>
-  connections.flatMap((connection) => (connection.account ? [connection.userId] : []))

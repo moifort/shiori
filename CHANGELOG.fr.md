@@ -20,7 +20,7 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   narrateurs pour un livre audio à la place du nombre de pages, et l’écran du livre indique
   quand il a été ajouté.
 - Les sous-genres prennent une majuscule à chaque mot, en gardant celles qu’ils ont déjà
-  (« LitRPG ») ; ceux déjà enregistrés sont réécrits une fois.
+  (« LitRPG »).
 - Chaque vue de la bibliothèque, et de l’onglet Séries, affiche aussitôt ses dernières lignes
   quand on y revient, avec le petit indicateur de mise à jour en haut.
 - Un import Audible arrive dans le bon genre. Chaque rayon où Amazon range un titre a
@@ -28,8 +28,7 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   de la littérature : Fondation redevient de la science-fiction, Le Dernier vœu de la
   fantasy. Harry Potter et les rayons fantasy jeunesse et adolescents, la fiction criminelle,
   les cosy mysteries et la sorcellerie et épées sont reconnus, et les titres d’audible.com ne
-  tombent plus dans des rayons sans rapport. Les livres déjà importés sans genre, ou rangés
-  par erreur en littérature, sont corrigés une fois.
+  tombent plus dans des rayons sans rapport.
 - L’onglet Séries est découpé par genre et, dans un genre, place les sagas en cours
   d’abord, puis les terminées, puis celles pas encore commencées, le dernier changement
   d’état de lecture en tête de chacune. Chaque saga dit en toutes lettres où en est le

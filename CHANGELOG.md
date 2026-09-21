@@ -24,15 +24,14 @@ the release tag is pushed.
   status in the corner. The edit form offers a running time ("14h30") and the narrators for an
   audiobook instead of the page count, and the book screen shows when it was added.
 - Subgenres are written with a capital on every word, keeping the capitals they already have
-  ("LitRPG"); the existing ones are rewritten once.
+  ("LitRPG").
 - Every view of the library, and of the Series tab, shows its last rows at once when switched
   to, with the small refresh spinner on top.
 - An Audible import lands in the right genre. Every shelf Amazon files a title on now has
   its say, rather than the first one listed, which was often the catch-all literary rack:
   Fondation is science fiction again, Le Dernier vœu fantasy. Harry Potter and the
   children's and teenage fantasy racks, crime fiction, cozy mysteries and sword and sorcery
-  are recognized, and audible.com titles no longer land on unrelated shelves. Books already
-  imported with no genre, or filed under literary fiction by mistake, are corrected once.
+  are recognized, and audible.com titles no longer land on unrelated shelves.
 - The Series tab is sectioned by genre, and within a genre puts the sagas in progress
   first, then the finished ones, then those not started, the latest change of reading
   status leading each. Every saga is labelled in words with where the reader stands — in
