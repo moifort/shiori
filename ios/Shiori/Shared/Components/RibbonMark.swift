@@ -38,6 +38,13 @@ struct RibbonMark: View {
 
     /// The corner of an iOS icon, as a fraction of its side.
     private static let cornerRatio: CGFloat = 0.2237
+    /// How far the ribbon runs on above the field, in canvas units. The icon's
+    /// ribbon ends exactly on the top edge, which holds only while it hangs
+    /// still: the landing overshoot pulls it down (about 16 units) and the
+    /// swing dips a top corner under the edge, and either would show its cut
+    /// end as a sliver of cream. Carried on past the clip, it always reads as
+    /// coming out from behind the page.
+    private static let overhang: CGFloat = 80
 
     var body: some View {
         TimelineView(.animation(paused: paused)) { context in
@@ -139,7 +146,15 @@ struct RibbonMark: View {
         ctx.translateBy(x: -ShioriMark.pivot.x, y: -ShioriMark.pivot.y)
 
         ctx.fill(Path(ShioriMark.ribbon()), with: .color(.bookmarkRibbon))
-        ctx.fill(Path(ShioriMark.fold()), with: .color(Color(ShioriMark.foldColor)))
+        // The fold band, carried on above the edge by the overhang.
+        let fold = ShioriMark.fold().boundingBox
+        ctx.fill(
+            Path(CGRect(
+                x: fold.minX, y: fold.minY - overhang,
+                width: fold.width, height: fold.height + overhang
+            )),
+            with: .color(Color(ShioriMark.foldColor))
+        )
     }
 }
 
