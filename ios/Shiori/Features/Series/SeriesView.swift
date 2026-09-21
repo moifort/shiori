@@ -1,45 +1,42 @@
 import SwiftUI
 
-/// One saga's full catalogue: where the reader stands as a ring, what the saga
-/// is about, then every volume in the order of the cycle — the ones the reader
-/// owns, the ones they are missing and the ones not out yet.
+/// One saga, laid out like the book screen: a main section with where the
+/// reader stands as a ring, what the saga is, its genre and subgenres, the
+/// reader's rating of it and the dates of their reading; then every volume in
+/// the order of the cycle, drawn as the library draws its rows.
 ///
-/// A list rather than a shelf scrolling sideways: every volume is on screen at
-/// once, its title whole, and the reader finds the next one to read without
-/// swiping for it.
+/// The owned volumes are the reader's own books and open as they do from the
+/// library; the missing ones are proposals, dimmed, with a button to add them.
+/// Nothing enters the library until the reader adds it.
 ///
-/// Where the reader stands with a volume is said once, by the badge on its
-/// cover — the same badge as in the library. A second word under the title
-/// said it again and, read off a different field, sometimes said otherwise.
-///
-/// Everything unowned here is a proposal. Nothing enters the library until the
-/// reader adds it, which is what keeps their list theirs.
+/// Removing the saga removes every volume of it the reader holds, which the
+/// confirmation says in so many words.
 struct SeriesView: View {
     let seriesId: String
+
+    @Environment(\.dismiss) private var dismiss
 
     @State private var series: BookSeries?
     @State private var ownedByNumber: [Int: Book] = [:]
     /// Every volume of the saga the reader holds, numbered or not: what the
-    /// genre is read off and corrected through.
+    /// genre and the dates are read off, and what the genre is corrected on.
     @State private var owned: [Book] = []
     @State private var isEditingGenre = false
     @State private var opinion: SeriesOpinion?
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var addingTitle: String?
-    /// A rating or a heart is on its way to the server.
+    /// A rating, a heart or the removal is on its way to the server.
     @State private var isSaving = false
-    /// The owned volume the reader tapped, opened over the shelf.
+    @State private var confirmDelete = false
+    /// The owned volume the reader tapped, opened over the list.
     @State private var selectedBook: Book?
 
     private var currentYear: Int { Calendar.current.component(.year, from: .now) }
 
-    /// The library row's cover, so a volume looks the same in both lists.
-    private let coverWidth: CGFloat = 44
-
     var body: some View {
         Group {
-            if isLoading {
+            if isLoading && series == nil && owned.isEmpty {
                 // Labelled because the first opening of a saga an import named
                 // is where the server builds its catalogue, which takes a while.
                 ProgressView("Chargement du catalogue…")
@@ -69,6 +66,30 @@ struct SeriesView: View {
                 .tint(isFavorite ? .pink : nil)
                 .accessibilityIdentifier("series-favorite")
             }
+            if !owned.isEmpty {
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        Button("Supprimer la série", systemImage: "trash", role: .destructive) {
+                            confirmDelete = true
+                        }
+                        .accessibilityIdentifier("series-delete")
+                    } label: {
+                        Image(systemName: "ellipsis")
+                    }
+                    .accessibilityLabel(Text("Plus d'actions"))
+                    .accessibilityIdentifier("series-menu")
+                }
+            }
+        }
+        .alert(
+            "Supprimer la série ?",
+            isPresented: $confirmDelete
+        ) {
+            Button("Supprimer", role: .destructive) { Task { await deleteSeries() } }
+                .accessibilityIdentifier("choice-delete-series")
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            Text("Les \(owned.count) livres de cette série dans votre bibliothèque seront supprimés avec elle, ainsi que votre note. Cette action est définitive.")
         }
         // The stars commit on the tap and the control cannot show the call
         // itself, so the wait is made visible by a scrim, as on the book sheet.
@@ -108,8 +129,7 @@ struct SeriesView: View {
 
     private func catalogue(_ series: BookSeries) -> some View {
         List {
-            header(series)
-            if !owned.isEmpty { genreSection }
+            mainSection(series)
             volumes("Tomes", volumes: series.spine, author: series.author, footer: nil)
             if !series.relatedWorks.isEmpty {
                 volumes(
@@ -119,15 +139,15 @@ struct SeriesView: View {
                     footer: "Préquelles, nouvelles et hors-séries, en dehors de la numérotation."
                 )
             }
-            ratingSection
         }
         .listStyle(.insetGrouped)
+        .labelStyle(.row)
     }
 
-    /// Where the reader stands, as a ring they can read without reading, and
-    /// beside it what the saga is: its name, its author, its size. The summary
-    /// runs underneath, the full width of the card.
-    private func header(_ series: BookSeries) -> some View {
+    /// What the saga is and where the reader stands with it, in one section as
+    /// on the book screen: the ring and the name, the summary, the genre, the
+    /// rating and the dates.
+    private func mainSection(_ series: BookSeries) -> some View {
         let standing = progress(series)
         return Section {
             VStack(alignment: .leading, spacing: 12) {
@@ -155,42 +175,83 @@ struct SeriesView: View {
                 }
             }
             .padding(.vertical, 6)
+
+            if !owned.isEmpty { genreRow }
+
+            // The saga's own rating, not the average of its volumes: a cycle
+            // can be worth more than its books — the shape only shows at the
+            // end — or rather less, when three good ones are followed by four
+            // that should not exist.
+            Label {
+                LabeledContent("Note") {
+                    InteractiveStarRating(
+                        rating: Binding(
+                            get: { opinion?.rating ?? 0 },
+                            set: { stars in Task { await rate(stars) } }
+                        ),
+                        allowsUnset: true
+                    )
+                    .accessibilityIdentifier("series-rating")
+                }
+            } icon: {
+                Image(systemName: "star").foregroundStyle(.secondary)
+            }
+
+            if let started = startedAt {
+                LabeledInfoRow(
+                    title: "Commencée le",
+                    value: started.formatted(date: .abbreviated, time: .omitted),
+                    icon: "calendar.badge.plus"
+                )
+            }
+            if let added = addedAt {
+                LabeledInfoRow(
+                    title: "Ajoutée le",
+                    value: added.formatted(date: .abbreviated, time: .omitted),
+                    icon: "tray.and.arrow.down"
+                )
+            }
+            if let finished = finishedAt {
+                LabeledInfoRow(
+                    title: "Terminée le",
+                    value: finished.formatted(date: .abbreviated, time: .omitted),
+                    icon: "calendar.badge.checkmark"
+                )
+            }
+        } footer: {
+            if !owned.isEmpty {
+                Text("Le genre et les sous-genres s'appliquent à tous les tomes de la série dans votre bibliothèque.")
+            }
         }
     }
 
-    /// The saga's genre and subgenres, corrected here for every volume at once
-    /// rather than book by book.
-    private var genreSection: some View {
+    /// The genre and its subgenres on one tappable row, as on the book screen.
+    private var genreRow: some View {
         let volume = owned.first
-        return Section {
-            Button { isEditingGenre = true } label: {
-                HStack(spacing: 12) {
-                    if let genre = volume?.genre {
-                        genre.image.foregroundStyle(genre.tint).frame(width: 24)
-                    } else {
-                        Image(systemName: "theatermasks").foregroundStyle(.secondary).frame(width: 24)
-                    }
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(volume?.genre?.label ?? String(localized: "Genre non renseigné"))
-                            .foregroundStyle(.primary)
-                        if let subgenres = volume?.subgenres, !subgenres.isEmpty {
-                            Text(subgenres.joined(separator: ", "))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+        return Button { isEditingGenre = true } label: {
+            Label {
+                VStack(alignment: .leading, spacing: 8) {
+                    LabeledContent("Genre") {
+                        HStack(spacing: 4) {
+                            if let genre = volume?.genre {
+                                genre.image.imageScale(.small)
+                            }
+                            Text(volume?.genre?.label ?? String(localized: "Non renseigné"))
+                                .multilineTextAlignment(.trailing)
+                            Image(systemName: "chevron.right").font(.caption.weight(.semibold))
                         }
+                        .foregroundStyle(.tint)
                     }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.tertiary)
+                    if let subgenres = volume?.subgenres, !subgenres.isEmpty {
+                        TagList(tags: subgenres, systemImage: "tag")
+                    }
                 }
+            } icon: {
+                Image(systemName: "books.vertical").foregroundStyle(.secondary)
             }
-            .accessibilityIdentifier("series-genre")
-        } header: {
-            Text("Genre")
-        } footer: {
-            Text("Appliqué à tous les tomes de la série dans votre bibliothèque.")
         }
+        .tint(.primary)
+        .accessibilityIdentifier("series-genre")
     }
 
     /// One block of volumes, a row each, in catalogue order.
@@ -211,45 +272,49 @@ struct SeriesView: View {
         }
     }
 
-    /// One volume. Owned, it opens and its cover carries the reader's status;
-    /// missing, it is dimmed and offers to be added; not out yet, it says when.
+    /// One volume. Owned, it is the reader's own book, drawn as the library
+    /// draws it and opened as the library opens it; missing, it is dimmed and
+    /// offers to be added; not out yet, it says when.
     @ViewBuilder
     private func volumeRow(_ volume: Volume, author: String) -> some View {
-        let owned = volume.number.flatMap { ownedByNumber[$0] }
-        if let owned {
-            Button { selectedBook = owned } label: { volumeBody(volume, owned: owned, author: author) }
-                .tint(.primary)
-                .accessibilityIdentifier("series-volume-owned")
+        let label = volume.number.map { "\(volume.kind.label) \($0)" } ?? volume.kind.label
+        if let book = volume.number.flatMap({ ownedByNumber[$0] }) {
+            Button { selectedBook = book } label: {
+                BookRow(
+                    title: book.title,
+                    authorLine: book.authorLine,
+                    cover: book,
+                    status: book.status,
+                    rating: book.rating,
+                    volumeLabel: label,
+                    statusTag: book.status,
+                    subgenre: nil,
+                    isFavorite: book.favorite,
+                    isHidden: book.hidden
+                )
+            }
+            .tint(.primary)
+            .accessibilityIdentifier("series-volume-owned")
         } else {
-            volumeBody(volume, owned: nil, author: author)
+            missingRow(volume, label: label, author: author)
         }
     }
 
-    private func volumeBody(_ volume: Volume, owned: Book?, author: String) -> some View {
-        // A volume the reader does not own is still drawn as a book: the
-        // library's stand-in, initials on a hue derived from the title, dimmed
-        // so the list says at a glance what is theirs and what is not.
-        let drawn = owned
-            ?? Book(id: volume.id, title: volume.title, authors: [author], status: .toRead)
-        return HStack(alignment: .center, spacing: 12) {
-            BookCover(book: drawn, width: coverWidth)
-                .opacity(owned == nil ? 0.5 : 1)
-                .overlay(alignment: .topTrailing) {
-                    if let owned {
-                        ReadingStatusBadge(status: owned.status)
-                            .scaleEffect(0.85)
-                            .offset(x: 6, y: -4)
-                    }
-                }
-                .padding(.vertical, 4)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(volume.number.map { "\(volume.kind.label) \($0)" } ?? volume.kind.label)
-                    .font(.caption.weight(.semibold))
+    /// A volume the reader does not hold, in the library row's layout: the
+    /// placeholder cover dimmed, the number and title, when it came out, and
+    /// what can be done about it.
+    private func missingRow(_ volume: Volume, label: String, author: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            BookCover(book: Book(id: volume.id, title: volume.title, authors: [author], status: .toRead))
+                .opacity(0.45)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(label)
+                    .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
                 Text(volume.title)
                     .font(.body.weight(.medium))
-                    .foregroundStyle(owned == nil ? Color.secondary : Color.primary)
-                    .multilineTextAlignment(.leading)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
                 Group {
                     if volume.isForthcoming(asOf: currentYear), let year = volume.publishedIn {
                         Text("à paraître en \(String(year))")
@@ -257,15 +322,15 @@ struct SeriesView: View {
                         Text(verbatim: String(year))
                     }
                 }
-                .font(.caption)
+                .font(.subheadline)
                 .foregroundStyle(.tertiary)
             }
             .accessibilityElement(children: .combine)
-            // The badge is icon-only, so the status is spoken here.
-            .accessibilityValue(Text(owned?.status.label ?? ""))
             Spacer(minLength: 8)
-            if owned == nil { action(volume, author: author) }
+            action(volume, author: author)
+                .padding(.top, 2)
         }
+        .padding(.vertical, 4)
     }
 
     /// What can be done with a volume the reader does not hold: add it, or
@@ -273,8 +338,6 @@ struct SeriesView: View {
     @ViewBuilder
     private func action(_ volume: Volume, author: String) -> some View {
         if volume.isForthcoming(asOf: currentYear) {
-            // Nothing to add: the volume does not exist yet. Batch 4 will
-            // attach an alert here rather than an action.
             Image(systemName: "clock")
                 .foregroundStyle(.tertiary)
                 .accessibilityLabel(Text("Pas encore paru"))
@@ -291,25 +354,17 @@ struct SeriesView: View {
         }
     }
 
-    private var ratingSection: some View {
-        Section {
-            // The saga's own rating, not the average of its volumes: a cycle
-            // can be worth more than its books — the shape only shows at the
-            // end — or rather less, when three good ones are followed by four
-            // that should not exist.
-            InteractiveStarRating(
-                rating: Binding(
-                    get: { opinion?.rating ?? 0 },
-                    set: { stars in Task { await rate(stars) } }
-                ),
-                allowsUnset: true
-            )
-            .accessibilityIdentifier("series-rating")
-        } header: {
-            Text("Votre note de la série")
-        } footer: {
-            Text("Indépendante des notes que vous donnez à chaque tome.")
-        }
+    // MARK: - Dates
+
+    /// When the reader opened the first of their volumes.
+    private var startedAt: Date? { owned.compactMap(\.startedAt).min() }
+    /// When the first of their volumes entered the library.
+    private var addedAt: Date? { owned.compactMap(\.addedAt).min() }
+    /// When they finished the last of their volumes — only once every volume
+    /// they hold is read: a saga with one volume still open is not finished.
+    private var finishedAt: Date? {
+        guard !owned.isEmpty, owned.allSatisfy({ $0.status == .read }) else { return nil }
+        return owned.compactMap(\.finishedAt).max()
     }
 
     /// How far the reader is along the published spine. Announced volumes are
@@ -368,6 +423,17 @@ struct SeriesView: View {
         }
     }
 
+    private func deleteSeries() async {
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            try await SeriesAPI.delete(seriesId: seriesId)
+            dismiss()
+        } catch {
+            errorMessage = reportError(error)
+        }
+    }
+
     private func add(_ volume: Volume, author: String) async {
         addingTitle = volume.title
         defer { addingTitle = nil }
@@ -412,13 +478,12 @@ struct SeriesRing: View {
                         style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
-                VStack(spacing: 0) {
-                    Text(verbatim: "\(read)")
-                        .font(.title3.weight(.bold).monospacedDigit())
-                    Text(verbatim: "/ \(total)")
-                        .font(.caption2.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                }
+                // One line, no spaces, in the weight of the count: "3/7".
+                Text(verbatim: "\(read)/\(total)")
+                    .font(.title3.weight(.bold).monospacedDigit())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .padding(.horizontal, lineWidth)
             }
             .padding(lineWidth / 2)
         }
