@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, mock, setSystemTime, test } from 'bun:test'
 import { graphql } from 'graphql'
 import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
@@ -17,6 +17,11 @@ const userId = 'reader-1' as UserId
 
 beforeEach(() => {
   resetFakeFirestore()
+})
+
+// A test that freezes the clock hands the real one back to the next.
+afterEach(() => {
+  setSystemTime()
 })
 
 const execute = (source: string) => graphql({ schema, source, contextValue: { event: {}, userId } })
@@ -317,8 +322,13 @@ describe('reading the library through the API', () => {
   })
 
   test('serves the library a page at a time, the last book as the cursor', async () => {
+    // One minute apart on a frozen clock: three books added in the same
+    // millisecond tie, and the tie falls back on the alphabet.
+    setSystemTime(new Date('2026-09-14T10:00:00.000Z'))
     await addBook('Trois')
+    setSystemTime(new Date('2026-09-14T10:01:00.000Z'))
     await addBook('Deux')
+    setSystemTime(new Date('2026-09-14T10:02:00.000Z'))
     const last = await addBook('Un')
 
     const first = await execute(

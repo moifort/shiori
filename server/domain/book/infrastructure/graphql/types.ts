@@ -1,3 +1,4 @@
+import { statusChangedAtOf } from '~/domain/book/business-rules'
 import {
   BookFormatEnum,
   BookLanguageEnum,
@@ -146,9 +147,17 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
     updatedAt: t.field({
       type: 'DateTime',
       description:
-        'When the record was last written, by the reader or by a sync. What the ' +
-        'library is ordered on. Falls back to `addedAt` on a record never touched since.',
+        'When the record was last written, by the reader or by a sync. Falls back to ' +
+        '`addedAt` on a record never touched since.',
       resolve: (book) => book.updatedAt ?? book.addedAt,
+    }),
+    statusChangedAt: t.field({
+      type: 'DateTime',
+      description:
+        'When the book last moved between the pile, the reading and the read. What the ' +
+        'library is ordered on. On a record from before the stamp existed, the date its ' +
+        'status implies: finished, started, or added.',
+      resolve: (book) => statusChangedAtOf(book),
     }),
     startedAt: t.field({
       type: 'DateTime',

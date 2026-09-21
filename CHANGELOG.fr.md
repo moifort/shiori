@@ -4,9 +4,10 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
-- La bibliothèque est triée sur ce qui a été touché en dernier : la saga dont un tome vient
-  d’être noté, déplacé ou corrigé est en tête, entière, et l’étagère des livres hors série
-  suit les sagas sans titre de section. L’en-tête d’une saga porte désormais le cœur ou les
+- La bibliothèque est triée sur le dernier changement d’état de lecture : la saga dont un
+  tome vient d’être commencé, terminé ou remis sur la pile est en tête, entière, et
+  l’étagère des livres hors série suit les sagas sans titre de section. Corriger un livre
+  ou écrire une note ne déplace rien. L’en-tête d’une saga porte désormais le cœur ou les
   étoiles que le lecteur lui a donnés, à droite, et chaque ligne garde les siens au même
   endroit : le cœur si le livre est un favori, les étoiles sinon, jamais les deux.
 - La fiche du livre fond les informations de publication dans la section principale, nomme

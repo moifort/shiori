@@ -4,6 +4,8 @@ import {
   groupedBySeries,
   libraryPageOf,
   readVolumeNumbersOf,
+  statusChangedAtOf,
+  statusStampAfterChange,
   subgenresOf,
 } from '~/domain/book/business-rules'
 import { BookId, Subgenre } from '~/domain/book/primitives'
@@ -21,7 +23,9 @@ type BookSpec = {
   series?: { name: string; volume?: number; kind?: VolumeKind }
   status?: Book['status']
   language?: BookLanguage
-  updatedAt?: Date
+  statusChangedAt?: Date
+  startedAt?: Date
+  finishedAt?: Date
 }
 
 const book = (spec: BookSpec): BookView => ({
@@ -36,7 +40,9 @@ const book = (spec: BookSpec): BookView => ({
   language: spec.language,
   hidden: false,
   addedAt: NOW,
-  updatedAt: spec.updatedAt,
+  statusChangedAt: spec.statusChangedAt,
+  startedAt: spec.startedAt,
+  finishedAt: spec.finishedAt,
   series: spec.series
     ? {
         id: SeriesId(spec.series.name.toLowerCase()),
@@ -104,20 +110,21 @@ describe('groupedBySeries', () => {
     expect(sections[1].books.map((entry) => String(entry.title))).toEqual(['Standalone'])
   })
 
-  // The saga the reader touched last is the one they are most likely to come
-  // back for. One recent volume lifts its whole saga: the section moves as one.
-  test('puts the most recently modified saga first, whole', () => {
+  // The saga the reader last picked up or put down is the one they are most
+  // likely to come back for. One recent move lifts its whole saga: the section
+  // moves as one.
+  test('puts the saga whose status last changed first, whole', () => {
     const sections = groupedBySeries([
-      book({ title: 'A1', series: { name: 'Alpha', volume: 1 }, updatedAt: EARLIER }),
-      book({ title: 'A2', series: { name: 'Alpha', volume: 2 }, updatedAt: NOW }),
-      book({ title: 'Z1', series: { name: 'Zeta', volume: 1 }, updatedAt: LATER }),
-      book({ title: 'Z2', series: { name: 'Zeta', volume: 2 }, updatedAt: EARLIER }),
+      book({ title: 'A1', series: { name: 'Alpha', volume: 1 }, statusChangedAt: EARLIER }),
+      book({ title: 'A2', series: { name: 'Alpha', volume: 2 }, statusChangedAt: NOW }),
+      book({ title: 'Z1', series: { name: 'Zeta', volume: 1 }, statusChangedAt: LATER }),
+      book({ title: 'Z2', series: { name: 'Zeta', volume: 2 }, statusChangedAt: EARLIER }),
     ])
     expect(sections.map((section) => String(section.series?.name))).toEqual(['Zeta', 'Alpha'])
     expect(sections[1].books.map((entry) => String(entry.title))).toEqual(['A1', 'A2'])
   })
 
-  test('breaks a tie on modification by name', () => {
+  test('breaks a tie on status change by name', () => {
     const sections = groupedBySeries([
       book({ title: 'Z1', series: { name: 'Zeta', volume: 1 } }),
       book({ title: 'A1', series: { name: 'Alpha', volume: 1 } }),
@@ -126,10 +133,10 @@ describe('groupedBySeries', () => {
   })
 
   // A record from before the stamp existed is not older than everything: it
-  // ranks on the day it was added, which is the last thing known about it.
+  // ranks on the day it was added, which is when it landed on the pile.
   test('ranks a record never stamped on the day it was added', () => {
     const sections = groupedBySeries([
-      book({ title: 'Old', updatedAt: EARLIER }),
+      book({ title: 'Old', statusChangedAt: EARLIER }),
       book({ title: 'Unstamped' }),
     ])
     expect(sections[0].books.map((entry) => String(entry.title))).toEqual(['Unstamped', 'Old'])
@@ -137,10 +144,40 @@ describe('groupedBySeries', () => {
 
   test('keeps the shelf behind the sagas however recent its books are', () => {
     const sections = groupedBySeries([
-      book({ title: 'Fresh standalone', updatedAt: LATER }),
-      book({ title: 'V1', series: { name: 'Saga', volume: 1 }, updatedAt: EARLIER }),
+      book({ title: 'Fresh standalone', statusChangedAt: LATER }),
+      book({ title: 'V1', series: { name: 'Saga', volume: 1 }, statusChangedAt: EARLIER }),
     ])
     expect(sections.map((section) => section.series?.name)).toEqual([SeriesName('Saga'), undefined])
+  })
+})
+
+// A record from before the stamp existed still says when its status was set:
+// the reading dates are written by the very move the stamp would have recorded.
+describe('statusChangedAtOf', () => {
+  test('prefers the stamp when there is one', () => {
+    const at = statusChangedAtOf(
+      book({ title: 'T', status: 'read', statusChangedAt: LATER, finishedAt: EARLIER }),
+    )
+    expect(at).toBe(LATER)
+  })
+
+  test('falls back on the date the status implies', () => {
+    expect(statusChangedAtOf(book({ title: 'T', status: 'read', finishedAt: EARLIER }))).toBe(
+      EARLIER,
+    )
+    expect(statusChangedAtOf(book({ title: 'T', status: 'reading', startedAt: EARLIER }))).toBe(
+      EARLIER,
+    )
+    expect(statusChangedAtOf(book({ title: 'T', status: 'to-read', startedAt: EARLIER }))).toBe(NOW)
+  })
+})
+
+describe('statusStampAfterChange', () => {
+  test('stamps a move and not a status chosen again', () => {
+    expect(statusStampAfterChange({ status: 'to-read' }, 'reading', NOW)).toEqual({
+      statusChangedAt: NOW,
+    })
+    expect(statusStampAfterChange({ status: 'reading' }, 'reading', NOW)).toEqual({})
   })
 })
 

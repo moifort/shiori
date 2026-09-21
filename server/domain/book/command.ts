@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import type { WriteBatch } from 'firebase-admin/firestore'
 import type { AudibleAsin } from '~/domain/audible/types'
-import { datesAfterStatusChange, statusAfterRating } from '~/domain/book/business-rules'
+import {
+  datesAfterStatusChange,
+  statusAfterRating,
+  statusStampAfterChange,
+} from '~/domain/book/business-rules'
 import * as repository from '~/domain/book/infrastructure/repository'
 import { BookId as BookIdOf } from '~/domain/book/primitives'
 import type {
@@ -117,6 +121,7 @@ export namespace BookCommand {
       hidden: input.hidden ?? false,
       addedAt: now,
       updatedAt: now,
+      statusChangedAt: now,
       // A known finishing date stands in for the start as well. The reader never
       // told us when they began, and stamping today would put the start after the
       // end — which every statistic reads as a book finished before it was opened.
@@ -183,7 +188,13 @@ export namespace BookCommand {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
     return repository.save(
-      { ...book, status, ...datesAfterStatusChange(book, status, now), updatedAt: now },
+      {
+        ...book,
+        status,
+        ...datesAfterStatusChange(book, status, now),
+        ...statusStampAfterChange(book, status, now),
+        updatedAt: now,
+      },
       batch,
     )
   }
@@ -206,6 +217,7 @@ export namespace BookCommand {
         rating,
         status,
         ...datesAfterStatusChange(book, status, now),
+        ...statusStampAfterChange(book, status, now),
         updatedAt: now,
       },
       batch,

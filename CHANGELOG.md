@@ -10,9 +10,10 @@ the release tag is pushed.
 
 ## Unreleased
 
-- The library is ordered by what was touched last: the saga whose volume was just rated,
-  moved or corrected sits on top, whole, and the shelf of books outside any series trails
-  the sagas without a heading of its own. A saga heading now carries the heart or the stars
+- The library is ordered by the last change of reading status: the saga whose volume was
+  just started, finished or put back on the pile sits on top, whole, and the shelf of books
+  outside any series trails the sagas without a heading of its own. Correcting a book or
+  writing a note moves nothing. A saga heading now carries the heart or the stars
   the reader gave the saga, on the right, and every row keeps its own in the same place:
   the heart when the book is a favourite, the stars otherwise, never both.
 - The book sheet folds its publication facts into the main section, names the volume beside

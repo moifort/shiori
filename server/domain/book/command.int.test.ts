@@ -68,6 +68,28 @@ describe('cataloguing a book', () => {
     expect(book.finishedAt).toBeUndefined()
   })
 
+  // The library is ordered on the last status change, so cataloguing counts as
+  // one and housekeeping does not: a corrected publisher must not lift a book
+  // over one the reader just finished.
+  test('stamps the status on arrival, on a move, and never on an edit', async () => {
+    const LATER = new Date('2026-09-15T10:00:00.000Z')
+    const book = await add('Le Nom du vent')
+    expect(book.statusChangedAt).toEqual(NOW)
+
+    const edited = await BookCommand.edit(reader, book.id, { publisher: Publisher('X') }, LATER)
+    if (edited === 'not-found') throw new Error('unreachable')
+    expect(edited.statusChangedAt).toEqual(NOW)
+
+    const same = await BookCommand.setStatus(reader, book.id, 'to-read', LATER)
+    if (same === 'not-found') throw new Error('unreachable')
+    expect(same.statusChangedAt).toEqual(NOW)
+
+    const moved = await BookCommand.setStatus(reader, book.id, 'reading', LATER)
+    if (moved === 'not-found') throw new Error('unreachable')
+    expect(moved.statusChangedAt).toEqual(LATER)
+    expect(fake.data('books', book.id)?.statusChangedAt).toEqual(LATER)
+  })
+
   // Firestore rejects undefined outright, so an absent domain field has to
   // disappear from the document rather than be written as undefined.
   test('writes no key for a field the reader left empty', async () => {
@@ -101,6 +123,7 @@ describe('rating a book', () => {
     expect(rated.status).toBe('read')
     expect(rated.finishedAt).toEqual(NOW)
     expect(rated.startedAt).toEqual(NOW)
+    expect(rated.statusChangedAt).toEqual(NOW)
   })
 
   test('answers not-found for a book the reader does not own', async () => {

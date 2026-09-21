@@ -175,11 +175,15 @@ export type Book = {
    *  adding a boolean to records already in production costs a migration. */
   hidden: boolean
   addedAt: Date
-  /** Stamped by every write the reader or a sync makes to the record. What the
-   *  library is ordered on: the shelf the reader touched last comes first.
-   *  Absent on records written before the field existed, which then rank on
-   *  the day they were added. */
+  /** Stamped by every write the reader or a sync makes to the record. Absent on
+   *  records written before the field existed. */
   updatedAt?: Date
+  /** When the book last moved between the pile, the reading and the read. What
+   *  the library is ordered on: the shelf whose book was last picked up or put
+   *  down comes first, and correcting a publisher or writing a note moves
+   *  nothing. Absent on records from before the field existed, which then rank
+   *  on the date their current status implies. */
+  statusChangedAt?: Date
   startedAt?: Date
   finishedAt?: Date
 }

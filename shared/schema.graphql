@@ -273,6 +273,11 @@ type Book {
   status: ReadingStatus!
 
   """
+  When the book last moved between the pile, the reading and the read. What the library is ordered on. On a record from before the stamp existed, the date its status implies: finished, started, or added.
+  """
+  statusChangedAt: DateTime!
+
+  """
   Zero to three free labels refining the genre, most representative first — a list shows only that one. Empty, never null.
   """
   subgenres: [Subgenre!]!
@@ -280,7 +285,7 @@ type Book {
   title: BookTitle!
 
   """
-  When the record was last written, by the reader or by a sync. What the library is ordered on. Falls back to `addedAt` on a record never touched since.
+  When the record was last written, by the reader or by a sync. Falls back to `addedAt` on a record never touched since.
   """
   updatedAt: DateTime!
 }
