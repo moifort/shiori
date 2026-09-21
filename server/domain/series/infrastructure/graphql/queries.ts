@@ -14,7 +14,7 @@ import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import { builder } from '~/domain/shared/graphql/builder'
 import { languageOf } from '~/domain/shared/language'
 import { Count, Year } from '~/domain/shared/primitives'
-import type { AuthorName, Count as CountValue } from '~/domain/shared/types'
+import type { AuthorName, Count as CountValue, UserId } from '~/domain/shared/types'
 
 /** A saga the reader follows.
  *
@@ -34,6 +34,16 @@ type FollowedSeries = {
   state: SeriesState | null
   ownedCount: CountValue
 }
+
+const FollowedSeriesPageType = builder
+  .objectRef<{ items: FollowedSeries[]; hasMore: boolean }>('FollowedSeriesPage')
+  .implement({
+    description: 'One page of the sagas the reader follows, plus whether more follow it.',
+    fields: (t) => ({
+      items: t.field({ type: [FollowedSeriesType], resolve: (page) => page.items }),
+      hasMore: t.exposeBoolean('hasMore', { description: 'Whether more sagas follow this page' }),
+    }),
+  })
 
 const FollowedSeriesType = builder.objectRef<FollowedSeries>('FollowedSeries').implement({
   description: 'A saga the reader owns at least one volume of.',
@@ -112,6 +122,23 @@ builder.queryFields((t) => ({
       SeriesUseCase.describe(userId, args.id, languageOf(event)),
   }),
 
+  mySeriesPage: t.field({
+    type: FollowedSeriesPageType,
+    description:
+      'One page of `mySeries`, in the same order, for a list that draws as it ' +
+      'scrolls. Offset-paginated: pass the number of rows already shown.',
+    args: {
+      limit: t.arg.int({ defaultValue: 40, description: 'Maximum sagas in the page' }),
+      offset: t.arg.int({ defaultValue: 0, description: 'Rows to skip' }),
+    },
+    resolve: async (_root, args, context) => {
+      const rows = await followedSeriesOf(context.userId)
+      const limit = Math.max(1, Math.min(args.limit ?? 40, 200))
+      const offset = Math.max(0, args.offset ?? 0)
+      return { items: rows.slice(offset, offset + limit), hasMore: offset + limit < rows.length }
+    },
+  }),
+
   mySeries: t.field({
     type: [FollowedSeriesType],
     description:
@@ -121,38 +148,34 @@ builder.queryFields((t) => ({
       'here, with a null catalogue and a null state.\n\n' +
       'One row per saga and language: a reader who holds Dune in French and in ' +
       'English follows two rows, because those are two sets of books.',
-    resolve: async (_root, _args, context) => {
-      const sagas = followedSagasOf(await BookQuery.all(context.userId))
-      // One scan of the reader's opinions for the whole tab, rather than a
-      // lookup per row: a reader with forty sagas would otherwise pay forty.
-      const opinions = new Map(
-        (await SeriesOpinionQuery.all(context.userId)).map((opinion) => [
-          opinion.seriesId,
-          opinion,
-        ]),
-      )
-      const catalogued = new Map(
-        (await SeriesQuery.byIds(sagas.map((saga) => saga.id))).map((series) => [
-          series.id,
-          series,
-        ]),
-      )
-      const currentYear = Year(new Date().getUTCFullYear())
-      return sagas.map((saga) => {
-        const catalogue = catalogued.get(saga.id) ?? null
-        return {
-          id: saga.id,
-          name: saga.name,
-          author: saga.author,
-          language: saga.language,
-          catalogue,
-          opinion: opinions.get(saga.id) ?? null,
-          state: catalogue
-            ? stateOf(catalogue, readVolumeNumbersOf(saga.books), currentYear)
-            : null,
-          ownedCount: Count(saga.books.length),
-        }
-      })
-    },
+    resolve: (_root, _args, context) => followedSeriesOf(context.userId),
   }),
 }))
+
+/** Every saga the reader follows, one row per saga and language: what both
+ *  the whole list and a page of it are cut from. */
+const followedSeriesOf = async (userId: UserId): Promise<FollowedSeries[]> => {
+  const sagas = followedSagasOf(await BookQuery.all(userId))
+  // One scan of the reader's opinions for the whole tab, rather than a
+  // lookup per row: a reader with forty sagas would otherwise pay forty.
+  const opinions = new Map(
+    (await SeriesOpinionQuery.all(userId)).map((opinion) => [opinion.seriesId, opinion]),
+  )
+  const catalogued = new Map(
+    (await SeriesQuery.byIds(sagas.map((saga) => saga.id))).map((series) => [series.id, series]),
+  )
+  const currentYear = Year(new Date().getUTCFullYear())
+  return sagas.map((saga) => {
+    const catalogue = catalogued.get(saga.id) ?? null
+    return {
+      id: saga.id,
+      name: saga.name,
+      author: saga.author,
+      language: saga.language,
+      catalogue,
+      opinion: opinions.get(saga.id) ?? null,
+      state: catalogue ? stateOf(catalogue, readVolumeNumbersOf(saga.books), currentYear) : null,
+      ownedCount: Count(saga.books.length),
+    }
+  })
+}

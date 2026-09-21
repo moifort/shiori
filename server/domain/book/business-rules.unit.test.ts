@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import {
   datesAfterStatusChange,
   groupedBySeries,
+  libraryPageOf,
   readVolumeNumbersOf,
   subgenresOf,
 } from '~/domain/book/business-rules'
@@ -255,5 +256,35 @@ describe('subgenresOf', () => {
   test('folds case, keeping the first spelling seen', () => {
     const proposed = subgenresOf([tagged('Dark fantasy'), tagged('dark fantasy')])
     expect(proposed.map(String)).toEqual(['Dark fantasy'])
+  })
+})
+
+describe('libraryPageOf', () => {
+  const sections = groupedBySeries([
+    book({ title: 'V1', series: { name: 'Saga', volume: 1 } }),
+    book({ title: 'V2', series: { name: 'Saga', volume: 2 } }),
+    book({ title: 'V3', series: { name: 'Saga', volume: 3 } }),
+    book({ title: 'Alone' }),
+  ])
+  const titles = (page: { sections: { books: { title: string }[] }[] }) =>
+    page.sections.map((section) => section.books.map((entry) => String(entry.title)))
+
+  // A saga longer than a page is cut through, not held back whole: the heading
+  // comes back on both pages and the client stitches them.
+  test('cuts through a saga and says whether more follows', () => {
+    const first = libraryPageOf(sections, 2)
+    expect(titles(first)).toEqual([['V1', 'V2']])
+    expect(first.hasMore).toBe(true)
+
+    const second = libraryPageOf(sections, 2, BookId('V2'))
+    expect(titles(second)).toEqual([['V3'], ['Alone']])
+    expect(String(second.sections[0].series?.name)).toBe('Saga')
+    expect(second.hasMore).toBe(false)
+  })
+
+  test('restarts from the top when the cursor names a book no longer there', () => {
+    const page = libraryPageOf(sections, 10, BookId('gone'))
+    expect(titles(page)).toEqual([['V1', 'V2', 'V3'], ['Alone']])
+    expect(page.hasMore).toBe(false)
   })
 })

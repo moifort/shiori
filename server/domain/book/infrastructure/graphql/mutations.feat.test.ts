@@ -316,6 +316,33 @@ describe('reading the library through the API', () => {
     expect(result.data?.library).toEqual([{ books: [{ title: 'Premier' }, { title: 'Second' }] }])
   })
 
+  test('serves the library a page at a time, the last book as the cursor', async () => {
+    await addBook('Trois')
+    await addBook('Deux')
+    const last = await addBook('Un')
+
+    const first = await execute(
+      '{ libraryPage(limit: 2) { hasMore sections { books { id title } } } }',
+    )
+    expect(first.errors).toBeUndefined()
+    const page = first.data?.libraryPage as {
+      hasMore: boolean
+      sections: { books: { id: string; title: string }[] }[]
+    }
+    expect(page.hasMore).toBe(true)
+    expect(page.sections[0].books.map((book) => book.title)).toEqual(['Un', 'Deux'])
+    expect(page.sections[0].books[0].id).toBe(last.id)
+
+    const cursor = page.sections[0].books[1].id
+    const second = await execute(
+      `{ libraryPage(limit: 2, after: "${cursor}") { hasMore sections { books { title } } } }`,
+    )
+    expect(second.data?.libraryPage).toEqual({
+      hasMore: false,
+      sections: [{ books: [{ title: 'Trois' }] }],
+    })
+  })
+
   test('has no saga to show before any book carries one', async () => {
     await addBook('Le Nom du vent')
 

@@ -70,6 +70,14 @@ type FollowedRow = {
   catalogue?: { name: string } | null
 }
 
+const mySeriesPage = async (limit: number, offset: number) => {
+  const result = await execute(
+    `{ mySeriesPage(limit: ${limit}, offset: ${offset}) { hasMore items { name } } }`,
+  )
+  expect(result.errors).toBeUndefined()
+  return result.data?.mySeriesPage as { hasMore: boolean; items: { name: string }[] }
+}
+
 const mySeries = async () => {
   const result = await execute(
     '{ mySeries { id name author state ownedCount catalogue { name } } }',
@@ -229,5 +237,23 @@ describe('opening a saga nobody has catalogued', () => {
 
     expect(await openSeries()).toBeNull()
     expect(fake.snapshot('series').size).toBe(0)
+  })
+})
+
+describe('the sagas a reader follows, a page at a time', () => {
+  test('serves them in the same order as the whole list, with what follows', async () => {
+    for (const name of ['Dune', 'Fondation', 'Hypérion']) {
+      const result = await execute(
+        `mutation { addBook(input: { title: "${name} 1", authors: ["Auteur"], ` +
+          `series: { id: "${name.toLowerCase()}--auteur", name: "${name}", volume: 1, kind: MAIN } }) { id } }`,
+      )
+      expect(result.errors).toBeUndefined()
+    }
+
+    const first = await mySeriesPage(2, 0)
+    expect(first).toEqual({ hasMore: true, items: [{ name: 'Dune' }, { name: 'Fondation' }] })
+
+    const second = await mySeriesPage(2, 2)
+    expect(second).toEqual({ hasMore: false, items: [{ name: 'Hypérion' }] })
   })
 })

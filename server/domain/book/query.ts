@@ -1,4 +1,4 @@
-import { groupedBySeries, subgenresOf } from '~/domain/book/business-rules'
+import { groupedBySeries, libraryPageOf, subgenresOf } from '~/domain/book/business-rules'
 import * as repository from '~/domain/book/infrastructure/repository'
 import type {
   Book,
@@ -41,6 +41,14 @@ export namespace BookQuery {
         : section
     })
   }
+
+  /** One page of the library, for a list that draws as it scrolls. */
+  export const libraryPage = async (
+    userId: UserId,
+    page: { limit: number; after?: BookId },
+    status?: ReadingStatus,
+  ): Promise<{ sections: LibrarySection[]; hasMore: boolean }> =>
+    libraryPageOf(await library(userId, status), page.limit, page.after)
 
   export const bySeries = async (userId: UserId, seriesId: SeriesId): Promise<Book[]> =>
     repository.findBySeries(userId, seriesId)

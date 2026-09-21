@@ -172,3 +172,35 @@ export const subgenresOf = (books: readonly Pick<Book, 'subgenres'>[]): Subgenre
     .sort((left, right) => right.count - left.count || left.subgenre.localeCompare(right.subgenre))
     .map((entry) => entry.subgenre)
 }
+
+/** One page of the library, cut through the rows rather than between the
+ *  sections: a saga of forty volumes must not be the one row a page cannot
+ *  hold. The cursor is the last book of the previous page; a section split
+ *  across two pages comes back on both with the same heading, and the client
+ *  stitches it, which is what a heading keyed on the saga is for.
+ *
+ *  Cursor-less on the wire and in memory here: the sections are derived from
+ *  one memoized scan, so the page bounds the payload the app decodes and draws,
+ *  not what Firestore reads. A cursor that names a book no longer there — it
+ *  was deleted between two pages — restarts from the top, as Vinarium's does. */
+export const libraryPageOf = (
+  sections: readonly LibrarySection[],
+  limit: number,
+  after?: BookId,
+): { sections: LibrarySection[]; hasMore: boolean } => {
+  const rows = sections.flatMap((section) => section.books.map((book) => ({ section, book })))
+  const start = after ? rows.findIndex((row) => row.book.id === after) + 1 : 0
+  const page = rows.slice(start, start + limit)
+  const grouped: LibrarySection[] = []
+  for (const row of page) {
+    const last = grouped.at(-1)
+    if (
+      last &&
+      last.series?.id === row.section.series?.id &&
+      last.series?.language === row.section.series?.language
+    )
+      last.books.push(row.book)
+    else grouped.push({ ...row.section, books: [row.book] })
+  }
+  return { sections: grouped, hasMore: start + limit < rows.length }
+}

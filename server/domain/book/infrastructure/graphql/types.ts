@@ -224,3 +224,17 @@ const LibrarySectionOpinionType = builder
       favorite: t.boolean({ resolve: (opinion) => opinion.favorite }),
     }),
   })
+
+export const LibraryPageType = builder
+  .objectRef<{ sections: LibrarySection[]; hasMore: boolean }>('LibraryPage')
+  .implement({
+    description:
+      'One page of the library. Cursor-less: the page carries its sections plus a ' +
+      '`hasMore` signal, and the id of its last book is the cursor for the next one.',
+    fields: (t) => ({
+      sections: t.field({ type: [LibrarySectionType], resolve: (page) => page.sections }),
+      hasMore: t.exposeBoolean('hasMore', {
+        description: 'Whether more books follow this page',
+      }),
+    }),
+  })

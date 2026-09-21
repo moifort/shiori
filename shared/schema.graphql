@@ -548,6 +548,13 @@ type FollowedSeries {
   state: SeriesState
 }
 
+"""One page of the sagas the reader follows, plus whether more follow it."""
+type FollowedSeriesPage {
+  """Whether more sagas follow this page"""
+  hasMore: Boolean!
+  items: [FollowedSeries!]!
+}
+
 """
 What a book is about, from a closed list.
 
@@ -650,6 +657,15 @@ A 13-digit ISBN, hyphens and spaces removed, validated on its check digit.
 The check digit is enforced rather than assumed: models invent ISBNs that look right, and a wrong one silently poisons every later lookup. Example: "9780756404741".
 """
 scalar Isbn13
+
+"""
+One page of the library. Cursor-less: the page carries its sections plus a `hasMore` signal, and the id of its last book is the cursor for the next one.
+"""
+type LibraryPage {
+  """Whether more books follow this page"""
+  hasMore: Boolean!
+  sections: [LibrarySection!]!
+}
 
 """
 One heading of the library list.
@@ -1091,6 +1107,22 @@ type Query {
   ): [LibrarySection!]!
 
   """
+  One page of the library, for a list that draws as it scrolls.
+  
+  The same sections as `library`, cut through the rows: a saga longer than a page comes back on two pages under the same heading, and the app stitches them by `seriesId` and `language`. Read `hasMore`, then pass the id of the last book as `after` for the next page. A cursor naming a book no longer there restarts from the top.
+  """
+  libraryPage(
+    """Cursor: the last book of the previous page"""
+    after: BookId
+
+    """Maximum books in the page"""
+    limit: Int = 60
+
+    """Keep only books in this status. Omit for the whole library."""
+    status: ReadingStatus
+  ): LibraryPage!
+
+  """
   The signed-in user, resolved from the auth token.
   
   Always returns a `Me`, even before onboarding: a fresh account comes back with only `userId` set, which the app uses to route into the onboarding wizard.
@@ -1105,6 +1137,17 @@ type Query {
   One row per saga and language: a reader who holds Dune in French and in English follows two rows, because those are two sets of books.
   """
   mySeries: [FollowedSeries!]!
+
+  """
+  One page of `mySeries`, in the same order, for a list that draws as it scrolls. Offset-paginated: pass the number of rows already shown.
+  """
+  mySeriesPage(
+    """Maximum sagas in the page"""
+    limit: Int = 40
+
+    """Rows to skip"""
+    offset: Int = 0
+  ): FollowedSeriesPage!
 
   """
   This month’s scan allowance for the signed-in account. The scan screen reads it to show what is left, and the paywall to explain what a subscription lifts.

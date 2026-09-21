@@ -1,5 +1,9 @@
 import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
-import { BookType, LibrarySectionType } from '~/domain/book/infrastructure/graphql/types'
+import {
+  BookType,
+  LibraryPageType,
+  LibrarySectionType,
+} from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
 import { builder } from '~/domain/shared/graphql/builder'
 
@@ -20,6 +24,36 @@ builder.queryFields((t) => ({
       }),
     },
     resolve: (_root, args, context) => BookQuery.library(context.userId, args.status ?? undefined),
+  }),
+
+  libraryPage: t.field({
+    type: LibraryPageType,
+    description:
+      'One page of the library, for a list that draws as it scrolls.\n\n' +
+      'The same sections as `library`, cut through the rows: a saga longer than ' +
+      'a page comes back on two pages under the same heading, and the app ' +
+      'stitches them by `seriesId` and `language`. Read `hasMore`, then pass ' +
+      'the id of the last book as `after` for the next page. A cursor naming a ' +
+      'book no longer there restarts from the top.',
+    args: {
+      status: t.arg({
+        type: ReadingStatusEnum,
+        required: false,
+        description: 'Keep only books in this status. Omit for the whole library.',
+      }),
+      limit: t.arg.int({ defaultValue: 60, description: 'Maximum books in the page' }),
+      after: t.arg({
+        type: 'BookId',
+        required: false,
+        description: 'Cursor: the last book of the previous page',
+      }),
+    },
+    resolve: (_root, args, context) =>
+      BookQuery.libraryPage(
+        context.userId,
+        { limit: Math.max(1, Math.min(args.limit ?? 60, 200)), after: args.after ?? undefined },
+        args.status ?? undefined,
+      ),
   }),
 
   book: t.field({
