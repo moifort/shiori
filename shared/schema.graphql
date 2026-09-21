@@ -278,6 +278,11 @@ type Book {
   subgenres: [Subgenre!]!
   synopsis: Synopsis
   title: BookTitle!
+
+  """
+  When the record was last written, by the reader or by a sync. What the library is ordered on. Falls back to `addedAt` on a record never touched since.
+  """
+  updatedAt: DateTime!
 }
 
 """
@@ -644,9 +649,13 @@ One heading of the library list.
 A section holds only books the reader owns: the catalogue never adds a row here. A saga gets its own section from the first volume owned, so a book never migrates between sections when an unrelated one is added.
 
 A saga held in two languages makes two sections, one per language. They share a `seriesId` and differ by `language`, so a client keying rows on the saga alone must key on the pair instead.
+
+Sections come most recently modified first, each saga kept whole, and the standalone shelf trails them whatever its books' dates.
 """
 type LibrarySection {
-  """Ordered along the spine, then related works; by title on the shelf."""
+  """
+  Ordered along the spine, then related works; most recently modified first on the shelf.
+  """
   books: [Book!]!
 
   """
@@ -654,9 +663,22 @@ type LibrarySection {
   """
   language: BookLanguage
 
+  """
+  What the reader makes of the saga, for the heading. Null on the standalone shelf and on a saga they have said nothing about.
+  """
+  opinion: LibrarySectionOpinion
+
   """Null on the trailing shelf, which gathers the standalone books."""
   series: SeriesName
   seriesId: SeriesId
+}
+
+"""
+The rating and the heart a reader gave a saga, as its library heading shows them.
+"""
+type LibrarySectionOpinion {
+  favorite: Boolean!
+  rating: StarRating
 }
 
 """

@@ -116,6 +116,7 @@ export namespace BookCommand {
       status: input.status ?? 'to-read',
       hidden: input.hidden ?? false,
       addedAt: now,
+      updatedAt: now,
       // A known finishing date stands in for the start as well. The reader never
       // told us when they began, and stamping today would put the start after the
       // end — which every statistic reads as a book finished before it was opened.
@@ -132,11 +133,12 @@ export namespace BookCommand {
     userId: UserId,
     bookId: BookId,
     edit: BookEdit,
+    now = new Date(),
     batch?: WriteBatch,
   ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
-    return repository.save({ ...book, ...edit }, batch)
+    return repository.save({ ...book, ...edit, updatedAt: now }, batch)
   }
 
   /** Record which Audible title a book stands for.
@@ -148,11 +150,12 @@ export namespace BookCommand {
     userId: UserId,
     bookId: BookId,
     audibleAsin: AudibleAsin,
+    now = new Date(),
     batch?: WriteBatch,
   ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
-    return repository.save({ ...book, audibleAsin }, batch)
+    return repository.save({ ...book, audibleAsin, updatedAt: now }, batch)
   }
 
   export const setStatus = async (
@@ -164,7 +167,10 @@ export namespace BookCommand {
   ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
-    return repository.save({ ...book, status, ...datesAfterStatusChange(book, status, now) }, batch)
+    return repository.save(
+      { ...book, status, ...datesAfterStatusChange(book, status, now), updatedAt: now },
+      batch,
+    )
   }
 
   /** Rating a book marks it read: the reader is telling us they finished it, and
@@ -185,6 +191,7 @@ export namespace BookCommand {
         rating,
         status,
         ...datesAfterStatusChange(book, status, now),
+        updatedAt: now,
       },
       batch,
     )
@@ -195,11 +202,12 @@ export namespace BookCommand {
   export const unrate = async (
     userId: UserId,
     bookId: BookId,
+    now = new Date(),
     batch?: WriteBatch,
   ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
-    return repository.save({ ...book, rating: undefined }, batch)
+    return repository.save({ ...book, rating: undefined, updatedAt: now }, batch)
   }
 
   /** Passing no note clears it. An emptied note is a deletion, not an empty
@@ -208,11 +216,12 @@ export namespace BookCommand {
     userId: UserId,
     bookId: BookId,
     note: ReadingNote | undefined,
+    now = new Date(),
     batch?: WriteBatch,
   ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
-    return repository.save({ ...book, note }, batch)
+    return repository.save({ ...book, note, updatedAt: now }, batch)
   }
 
   /** Stored only when true. A book that is not a favourite has nothing to say
@@ -222,22 +231,24 @@ export namespace BookCommand {
     userId: UserId,
     bookId: BookId,
     favorite: boolean,
+    now = new Date(),
     batch?: WriteBatch,
   ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
-    return repository.save({ ...book, favorite: favorite || undefined }, batch)
+    return repository.save({ ...book, favorite: favorite || undefined, updatedAt: now }, batch)
   }
 
   export const setHidden = async (
     userId: UserId,
     bookId: BookId,
     hidden: boolean,
+    now = new Date(),
     batch?: WriteBatch,
   ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
-    return repository.save({ ...book, hidden }, batch)
+    return repository.save({ ...book, hidden, updatedAt: now }, batch)
   }
 
   export const remove = async (

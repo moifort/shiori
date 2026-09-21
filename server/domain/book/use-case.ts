@@ -18,7 +18,7 @@ export namespace BookUseCase {
     withAnalytics(userId, (batch) => BookCommand.add(userId, input, undefined, batch))
 
   export const edit = (userId: UserId, bookId: BookId, edit: BookEdit) =>
-    withAnalytics(userId, (batch) => BookCommand.edit(userId, bookId, edit, batch))
+    withAnalytics(userId, (batch) => BookCommand.edit(userId, bookId, edit, undefined, batch))
 
   export const setStatus = (userId: UserId, bookId: BookId, status: ReadingStatus) =>
     withAnalytics(userId, (batch) =>
@@ -29,16 +29,20 @@ export namespace BookUseCase {
     withAnalytics(userId, (batch) => BookCommand.rate(userId, bookId, rating, undefined, batch))
 
   export const unrate = (userId: UserId, bookId: BookId) =>
-    withAnalytics(userId, (batch) => BookCommand.unrate(userId, bookId, batch))
+    withAnalytics(userId, (batch) => BookCommand.unrate(userId, bookId, undefined, batch))
 
   export const annotate = (userId: UserId, bookId: BookId, note: ReadingNote | undefined) =>
-    withAnalytics(userId, (batch) => BookCommand.annotate(userId, bookId, note, batch))
+    withAnalytics(userId, (batch) => BookCommand.annotate(userId, bookId, note, undefined, batch))
 
   export const setFavorite = (userId: UserId, bookId: BookId, favorite: boolean) =>
-    withAnalytics(userId, (batch) => BookCommand.setFavorite(userId, bookId, favorite, batch))
+    withAnalytics(userId, (batch) =>
+      BookCommand.setFavorite(userId, bookId, favorite, undefined, batch),
+    )
 
   export const setHidden = (userId: UserId, bookId: BookId, hidden: boolean) =>
-    withAnalytics(userId, (batch) => BookCommand.setHidden(userId, bookId, hidden, batch))
+    withAnalytics(userId, (batch) =>
+      BookCommand.setHidden(userId, bookId, hidden, undefined, batch),
+    )
 
   export const remove = (userId: UserId, bookId: BookId) =>
     withAnalytics(userId, (batch) => BookCommand.remove(userId, bookId, batch))

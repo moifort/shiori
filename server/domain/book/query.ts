@@ -2,6 +2,7 @@ import { groupedBySeries } from '~/domain/book/business-rules'
 import * as repository from '~/domain/book/infrastructure/repository'
 import type { Book, BookId, BookView, LibrarySection, ReadingStatus } from '~/domain/book/types'
 import type { SeriesId } from '~/domain/series/types'
+import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { UserId } from '~/domain/shared/types'
 import { objectStore } from '~/system/object-store'
 
@@ -20,7 +21,18 @@ export namespace BookQuery {
   ): Promise<LibrarySection[]> => {
     const books = await repository.findAllByUser(userId)
     const kept = status ? books.filter((book) => book.status === status) : books
-    return groupedBySeries(await withCovers(kept))
+    const sections = groupedBySeries(await withCovers(kept))
+    // One scan of the reader's opinions for every heading, rather than a lookup
+    // per saga: a reader with forty sagas would otherwise pay forty reads.
+    const opinions = new Map(
+      (await SeriesOpinionQuery.all(userId)).map((opinion) => [opinion.seriesId, opinion]),
+    )
+    return sections.map((section) => {
+      const opinion = section.series && opinions.get(section.series.id)
+      return opinion
+        ? { ...section, opinion: { rating: opinion.rating, favorite: opinion.favorite ?? false } }
+        : section
+    })
   }
 
   export const bySeries = async (userId: UserId, seriesId: SeriesId): Promise<Book[]> =>

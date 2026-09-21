@@ -20,7 +20,12 @@ import type { ObjectPath as ObjectPathValue } from '~/system/object-store/types'
  *  is doing in the key. The volumes of a translation are different objects from
  *  the volumes of the original — other covers, other titles, read at other
  *  times — and one heading over both hid that. Books with no language recorded
- *  gather in a section of their own, which is honest: unknown is not French. */
+ *  gather in a section of their own, which is honest: unknown is not French.
+ *
+ *  Sections come in the order the reader last touched them: the saga whose
+ *  volume was rated, moved or edited most recently sits on top, whole, and the
+ *  standalone shelf trails the sagas however recent its books are. Inside a
+ *  saga the spine order holds — a saga is read top to bottom, not by date. */
 export const groupedBySeries = (books: readonly BookView[]): LibrarySection[] => {
   const bySeries = new Map<string, { section: LibrarySection['series']; books: SeriesBook[] }>()
   const standalone: BookView[] = []
@@ -50,8 +55,15 @@ export const groupedBySeries = (books: readonly BookView[]): LibrarySection[] =>
 
   // The standalone shelf trails the sagas: it is the leftovers, and putting it
   // first would bury the structure the reader came for.
-  return standalone.length > 0 ? [...sections, { books: sortedByTitle(standalone) }] : sections
+  return standalone.length > 0
+    ? [...sections, { books: sortedByModification(standalone) }]
+    : sections
 }
+
+/** When a record was last written, for the ordering above. A record from before
+ *  the stamp existed ranks on the day it was added. */
+export const modifiedAtOf = (book: Pick<Book, 'addedAt' | 'updatedAt'>): Date =>
+  book.updatedAt ?? book.addedAt
 
 /** A book paired with its membership, so the ordering below needs no non-null
  *  assertion: the pairing is what proves the book belongs to a saga. */
@@ -63,12 +75,17 @@ const compareEntries = (left: SeriesBook, right: SeriesBook): number =>
     { kind: right.membership.kind, number: right.membership.volume, title: right.book.title },
   )
 
-// Sagas by name, then the languages of one saga in a stable order so its
-// sections never trade places between two reads of the same library.
+// Most recently touched saga first; the name, then the language, break a tie so
+// two sections never trade places between two reads of the same library.
 const compareSections = (left: LibrarySection, right: LibrarySection): number => {
+  const byModification = lastModifiedOf(right) - lastModifiedOf(left)
+  if (byModification !== 0) return byModification
   const byName = nameOf(left).localeCompare(nameOf(right))
   return byName !== 0 ? byName : languageOf(left).localeCompare(languageOf(right))
 }
+
+const lastModifiedOf = (section: LibrarySection): number =>
+  Math.max(...section.books.map((book) => modifiedAtOf(book).getTime()))
 
 const nameOf = (section: LibrarySection): string => section.series?.name ?? ''
 
@@ -76,8 +93,12 @@ const nameOf = (section: LibrarySection): string => section.series?.name ?? ''
 // nothing about its editions belongs under the ones that do.
 const languageOf = (section: LibrarySection): string => section.series?.language ?? '\uffff'
 
-const sortedByTitle = (books: readonly BookView[]): BookView[] =>
-  [...books].sort((left, right) => left.title.localeCompare(right.title))
+const sortedByModification = (books: readonly BookView[]): BookView[] =>
+  [...books].sort(
+    (left, right) =>
+      modifiedAtOf(right).getTime() - modifiedAtOf(left).getTime() ||
+      left.title.localeCompare(right.title),
+  )
 
 /** Which volumes of a saga the reader has finished — what decides whether the
  *  saga reads as complete. Only `read` counts: a volume in progress is not done. */

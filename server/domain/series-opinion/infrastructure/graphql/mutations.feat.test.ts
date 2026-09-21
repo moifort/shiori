@@ -71,6 +71,28 @@ describe('what a reader makes of a saga, through the API', () => {
     expect(result.data?.seriesOpinion).toEqual({ rating: null, favorite: true })
   })
 
+  // The heading of a saga section is where the reader's heart and stars show
+  // in the library, so the list carries them rather than asking per saga.
+  test('shows on the saga heading of the library', async () => {
+    await execute(
+      `mutation { addBook(input: {
+        title: "Dune"
+        authors: ["Frank Herbert"]
+        series: { id: "${DUNE}", name: "Dune", volume: 1, kind: MAIN }
+      }) { id } }`,
+    )
+    await execute(`mutation { rateSeries(seriesId: "${DUNE}", rating: 4) { rating } }`)
+    await execute(
+      `mutation { setSeriesFavorite(seriesId: "${DUNE}", favorite: true) { favorite } }`,
+    )
+
+    const result = await execute('{ library { series opinion { rating favorite } } }')
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.library).toEqual([
+      { series: 'Dune', opinion: { rating: 4, favorite: true } },
+    ])
+  })
+
   // The catalogue is a fact about the world, shared by every reader of the saga.
   // An opinion is the one thing that must never reach it.
   test('keeps the opinion out of the shared catalogue', async () => {

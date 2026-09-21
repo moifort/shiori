@@ -12,12 +12,14 @@ import { BookTitle, UserId } from '~/domain/shared/primitives'
 
 const NOW = new Date('2026-09-14T10:00:00.000Z')
 const EARLIER = new Date('2026-01-02T08:00:00.000Z')
+const LATER = new Date('2026-09-15T10:00:00.000Z')
 
 type BookSpec = {
   title: string
   series?: { name: string; volume?: number; kind?: VolumeKind }
   status?: Book['status']
   language?: BookLanguage
+  updatedAt?: Date
 }
 
 const book = (spec: BookSpec): BookView => ({
@@ -32,6 +34,7 @@ const book = (spec: BookSpec): BookView => ({
   language: spec.language,
   hidden: false,
   addedAt: NOW,
+  updatedAt: spec.updatedAt,
   series: spec.series
     ? {
         id: SeriesId(spec.series.name.toLowerCase()),
@@ -99,12 +102,43 @@ describe('groupedBySeries', () => {
     expect(sections[1].books.map((entry) => String(entry.title))).toEqual(['Standalone'])
   })
 
-  test('sorts sagas by name', () => {
+  // The saga the reader touched last is the one they are most likely to come
+  // back for. One recent volume lifts its whole saga: the section moves as one.
+  test('puts the most recently modified saga first, whole', () => {
+    const sections = groupedBySeries([
+      book({ title: 'A1', series: { name: 'Alpha', volume: 1 }, updatedAt: EARLIER }),
+      book({ title: 'A2', series: { name: 'Alpha', volume: 2 }, updatedAt: NOW }),
+      book({ title: 'Z1', series: { name: 'Zeta', volume: 1 }, updatedAt: LATER }),
+      book({ title: 'Z2', series: { name: 'Zeta', volume: 2 }, updatedAt: EARLIER }),
+    ])
+    expect(sections.map((section) => String(section.series?.name))).toEqual(['Zeta', 'Alpha'])
+    expect(sections[1].books.map((entry) => String(entry.title))).toEqual(['A1', 'A2'])
+  })
+
+  test('breaks a tie on modification by name', () => {
     const sections = groupedBySeries([
       book({ title: 'Z1', series: { name: 'Zeta', volume: 1 } }),
       book({ title: 'A1', series: { name: 'Alpha', volume: 1 } }),
     ])
     expect(sections.map((section) => String(section.series?.name))).toEqual(['Alpha', 'Zeta'])
+  })
+
+  // A record from before the stamp existed is not older than everything: it
+  // ranks on the day it was added, which is the last thing known about it.
+  test('ranks a record never stamped on the day it was added', () => {
+    const sections = groupedBySeries([
+      book({ title: 'Old', updatedAt: EARLIER }),
+      book({ title: 'Unstamped' }),
+    ])
+    expect(sections[0].books.map((entry) => String(entry.title))).toEqual(['Unstamped', 'Old'])
+  })
+
+  test('keeps the shelf behind the sagas however recent its books are', () => {
+    const sections = groupedBySeries([
+      book({ title: 'Fresh standalone', updatedAt: LATER }),
+      book({ title: 'V1', series: { name: 'Saga', volume: 1 }, updatedAt: EARLIER }),
+    ])
+    expect(sections.map((section) => section.series?.name)).toEqual([SeriesName('Saga'), undefined])
   })
 })
 

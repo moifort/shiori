@@ -175,6 +175,11 @@ export type Book = {
    *  adding a boolean to records already in production costs a migration. */
   hidden: boolean
   addedAt: Date
+  /** Stamped by every write the reader or a sync makes to the record. What the
+   *  library is ordered on: the shelf the reader touched last comes first.
+   *  Absent on records written before the field existed, which then rank on
+   *  the day they were added. */
+  updatedAt?: Date
   startedAt?: Date
   finishedAt?: Date
 }
@@ -193,5 +198,8 @@ export type BookView = Book & { coverUrl?: SignedUrl | CoverUrl }
  *  different times — and stacking them under one heading hid that. */
 export type LibrarySection = {
   series?: { id: SeriesId; name: SeriesName; language?: BookLanguage }
+  /** What the reader makes of the saga, when they have said anything: drawn on
+   *  the section heading. Absent on the standalone shelf. */
+  opinion?: { rating?: StarRating; favorite: boolean }
   books: BookView[]
 }

@@ -164,15 +164,18 @@ describe('annotating a book', () => {
 describe('reading the library', () => {
   // The list, the sections and the series tab all want the same rows in one
   // request. Without the per-request memoization each would pay its own query.
-  test('reads the library once however many times it is asked for', async () => {
+  // The headings add one scan of the reader's saga opinions, memoized the same
+  // way, and never a lookup per saga.
+  test('reads the books once and the opinions once however often it is asked', async () => {
     await add('Un')
     await add('Deux')
     const before = fake.queryReads
 
     await BookQuery.library(reader)
+    await BookQuery.library(reader)
     await BookQuery.all(reader)
 
-    expect(fake.queryReads - before).toBe(1)
+    expect(fake.queryReads - before).toBe(2)
   })
 
   // A save inside the same request must be visible to a read that follows it,

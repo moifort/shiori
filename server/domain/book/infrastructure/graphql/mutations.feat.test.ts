@@ -235,6 +235,19 @@ describe('reading the library through the API', () => {
     expect(result.data?.library).toEqual([{ books: [{ title: 'En cours' }] }])
   })
 
+  // The shelf the reader touched last is the one they come back for: a rating
+  // given today lifts its book over one catalogued a minute later.
+  test('puts the most recently modified book first on the shelf', async () => {
+    const first = await addBook('Premier')
+    await addBook('Second')
+    await execute(`mutation { rateBook(id: "${first.id}", rating: 5) { id } }`)
+
+    const result = await execute('{ library { books { title } } }')
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.library).toEqual([{ books: [{ title: 'Premier' }, { title: 'Second' }] }])
+  })
+
   test('has no saga to show before any book carries one', async () => {
     await addBook('Le Nom du vent')
 

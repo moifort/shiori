@@ -141,6 +141,13 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
       resolve: (book) => book.hidden,
     }),
     addedAt: t.field({ type: 'DateTime', resolve: (book) => book.addedAt }),
+    updatedAt: t.field({
+      type: 'DateTime',
+      description:
+        'When the record was last written, by the reader or by a sync. What the ' +
+        'library is ordered on. Falls back to `addedAt` on a record never touched since.',
+      resolve: (book) => book.updatedAt ?? book.addedAt,
+    }),
     startedAt: t.field({
       type: 'DateTime',
       nullable: true,
@@ -162,7 +169,9 @@ export const LibrarySectionType = builder.objectRef<LibrarySection>('LibrarySect
     'never migrates between sections when an unrelated one is added.\n\n' +
     'A saga held in two languages makes two sections, one per language. They ' +
     'share a `seriesId` and differ by `language`, so a client keying rows on the ' +
-    'saga alone must key on the pair instead.',
+    'saga alone must key on the pair instead.\n\n' +
+    'Sections come most recently modified first, each saga kept whole, and the ' +
+    "standalone shelf trails them whatever its books' dates.",
   fields: (t) => ({
     series: t.field({
       type: 'SeriesName',
@@ -183,10 +192,35 @@ export const LibrarySectionType = builder.objectRef<LibrarySection>('LibrarySect
         'on a saga whose volumes carry no recorded language.',
       resolve: (section) => section.series?.language ?? null,
     }),
+    opinion: t.field({
+      type: LibrarySectionOpinionType,
+      nullable: true,
+      description:
+        'What the reader makes of the saga, for the heading. Null on the standalone ' +
+        'shelf and on a saga they have said nothing about.',
+      resolve: (section) => section.opinion ?? null,
+    }),
     books: t.field({
       type: [BookType],
-      description: 'Ordered along the spine, then related works; by title on the shelf.',
+      description:
+        'Ordered along the spine, then related works; most recently modified first ' +
+        'on the shelf.',
       resolve: (section) => section.books,
     }),
   }),
 })
+
+const LibrarySectionOpinionType = builder
+  .objectRef<NonNullable<LibrarySection['opinion']>>('LibrarySectionOpinion')
+  .implement({
+    description:
+      'The rating and the heart a reader gave a saga, as its library heading shows them.',
+    fields: (t) => ({
+      rating: t.field({
+        type: 'StarRating',
+        nullable: true,
+        resolve: (opinion) => opinion.rating ?? null,
+      }),
+      favorite: t.boolean({ resolve: (opinion) => opinion.favorite }),
+    }),
+  })
