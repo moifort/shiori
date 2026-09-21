@@ -249,8 +249,8 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
     }
 }
 
-/// One heading of the library list: a saga the reader owns volumes of, or the
-/// trailing shelf of standalone books.
+/// One saga of the reader's library, or a shelf of standalone books — what the
+/// Series and Favorites screens group the library into.
 struct LibrarySection: Identifiable, Codable, Sendable {
     /// The saga and the language together, or the first book of a standalone
     /// shelf. The saga alone is not an identity any more: a saga held in two
@@ -259,13 +259,6 @@ struct LibrarySection: Identifiable, Codable, Sendable {
     /// status, and each tier trails its sagas with a shelf of its own.
     var id: String {
         seriesId.map { "\($0)|\(language?.rawValue ?? "")" } ?? "standalone|\(books.first?.id ?? "")"
-    }
-
-    /// Whether two sections are the same heading — what stitches a section
-    /// cut across two pages back together. Not the id, which a standalone
-    /// shelf takes from its first book.
-    func continues(_ other: LibrarySection) -> Bool {
-        seriesId == other.seriesId && language == other.language
     }
     let seriesId: String?
     let seriesName: String?

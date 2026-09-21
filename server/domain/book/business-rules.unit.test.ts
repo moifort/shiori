@@ -2,14 +2,15 @@ import { describe, expect, test } from 'bun:test'
 import {
   datesAfterStatusChange,
   groupedBySeries,
-  libraryPageOf,
   readVolumeNumbersOf,
+  shelfPageOf,
+  shelvedOf,
   statusChangedAtOf,
   statusStampAfterChange,
   subgenresOf,
 } from '~/domain/book/business-rules'
 import { BookId, Subgenre } from '~/domain/book/primitives'
-import type { Book, BookLanguage, BookView } from '~/domain/book/types'
+import type { Book, BookLanguage, BookView, Genre } from '~/domain/book/types'
 import { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import type { VolumeKind } from '~/domain/series/types'
 import { BookTitle, UserId } from '~/domain/shared/primitives'
@@ -23,6 +24,8 @@ type BookSpec = {
   series?: { name: string; volume?: number; kind?: VolumeKind }
   status?: Book['status']
   language?: BookLanguage
+  genre?: Genre
+  addedAt?: Date
   statusChangedAt?: Date
   startedAt?: Date
   finishedAt?: Date
@@ -38,8 +41,9 @@ const book = (spec: BookSpec): BookView => ({
   narrators: [],
   status: spec.status ?? 'to-read',
   language: spec.language,
+  genre: spec.genre,
   hidden: false,
-  addedAt: NOW,
+  addedAt: spec.addedAt ?? NOW,
   statusChangedAt: spec.statusChangedAt,
   startedAt: spec.startedAt,
   finishedAt: spec.finishedAt,
@@ -351,32 +355,94 @@ describe('subgenresOf', () => {
   })
 })
 
-describe('libraryPageOf', () => {
-  const sections = groupedBySeries([
-    book({ title: 'V1', series: { name: 'Saga', volume: 1 } }),
-    book({ title: 'V2', series: { name: 'Saga', volume: 2 } }),
-    book({ title: 'V3', series: { name: 'Saga', volume: 3 } }),
-    book({ title: 'Alone' }),
-  ])
-  const titles = (page: { sections: { books: { title: string }[] }[] }) =>
-    page.sections.map((section) => section.books.map((entry) => String(entry.title)))
+describe('shelvedOf', () => {
+  const titles = (books: readonly BookView[]) => books.map((entry) => String(entry.title))
 
-  // A saga longer than a page is cut through, not held back whole: the heading
-  // comes back on both pages and the client stitches them.
-  test('cuts through a saga and says whether more follows', () => {
-    const first = libraryPageOf(sections, 2)
-    expect(titles(first)).toEqual([['V1', 'V2']])
+  test('tiers by status, each tier on the date that names its move', () => {
+    const shelved = shelvedOf(
+      [
+        book({ title: 'Old pile', addedAt: EARLIER }),
+        book({ title: 'Finished long ago', status: 'read', finishedAt: EARLIER }),
+        book({ title: 'New pile', addedAt: LATER }),
+        book({ title: 'Just finished', status: 'read', finishedAt: LATER }),
+        book({ title: 'Started long ago', status: 'reading', startedAt: EARLIER }),
+        book({ title: 'Just started', status: 'reading', startedAt: LATER }),
+      ],
+      'by-status',
+    )
+    expect(titles(shelved)).toEqual([
+      'Just started',
+      'Started long ago',
+      'New pile',
+      'Old pile',
+      'Just finished',
+      'Finished long ago',
+    ])
+  })
+
+  // A saga is not gathered any more: each volume sits where its own status puts it.
+  test('splits a saga across the tiers of its volumes', () => {
+    const shelved = shelvedOf(
+      [
+        book({ title: 'V1', series: { name: 'Saga', volume: 1 }, status: 'read' }),
+        book({ title: 'Alone', status: 'to-read' }),
+        book({ title: 'V2', series: { name: 'Saga', volume: 2 }, status: 'reading' }),
+      ],
+      'by-status',
+    )
+    expect(titles(shelved)).toEqual(['V2', 'Alone', 'V1'])
+  })
+
+  test('sections by genre in the closed list order, no genre last, tiered inside', () => {
+    const shelved = shelvedOf(
+      [
+        book({ title: 'Untagged' }),
+        book({ title: 'Essay read', genre: 'essay', status: 'read' }),
+        book({ title: 'Fantasy pile', genre: 'fantasy' }),
+        book({ title: 'Essay reading', genre: 'essay', status: 'reading' }),
+        book({ title: 'Fantasy reading', genre: 'fantasy', status: 'reading' }),
+      ],
+      'by-genre',
+    )
+    expect(titles(shelved)).toEqual([
+      'Fantasy reading',
+      'Fantasy pile',
+      'Essay reading',
+      'Essay read',
+      'Untagged',
+    ])
+  })
+
+  // A record whose reading dates were never stamped still has a place.
+  test('ranks an unstamped book on the day it was added', () => {
+    const shelved = shelvedOf(
+      [
+        book({ title: 'Stamped', status: 'read', addedAt: LATER, finishedAt: NOW }),
+        book({ title: 'Imported', status: 'read', addedAt: LATER }),
+      ],
+      'by-status',
+    )
+    expect(titles(shelved)).toEqual(['Imported', 'Stamped'])
+  })
+})
+
+describe('shelfPageOf', () => {
+  const books = ['A', 'B', 'C'].map((title) => book({ title }))
+  const titles = (page: { books: readonly BookView[] }) => page.books.map((b) => String(b.title))
+
+  test('cuts after the cursor and says whether more follows', () => {
+    const first = shelfPageOf(books, 2)
+    expect(titles(first)).toEqual(['A', 'B'])
     expect(first.hasMore).toBe(true)
 
-    const second = libraryPageOf(sections, 2, BookId('V2'))
-    expect(titles(second)).toEqual([['V3'], ['Alone']])
-    expect(String(second.sections[0].series?.name)).toBe('Saga')
+    const second = shelfPageOf(books, 2, BookId('B'))
+    expect(titles(second)).toEqual(['C'])
     expect(second.hasMore).toBe(false)
   })
 
   test('restarts from the top when the cursor names a book no longer there', () => {
-    const page = libraryPageOf(sections, 10, BookId('gone'))
-    expect(titles(page)).toEqual([['V1', 'V2', 'V3'], ['Alone']])
+    const page = shelfPageOf(books, 10, BookId('gone'))
+    expect(titles(page)).toEqual(['A', 'B', 'C'])
     expect(page.hasMore).toBe(false)
   })
 })

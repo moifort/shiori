@@ -48,7 +48,7 @@ struct FriendProfileView: View {
     private func shelves(_ profile: FriendProfile) -> some View {
         List {
             shelf("En cours", books: profile.reading, empty: "Aucune lecture en cours.")
-            shelf("Ses favoris", books: profile.favorites, empty: "Aucun favori.")
+            shelf("Ses favoris", books: profile.favorites, empty: "Aucun favori.", showsStatus: true)
             if !profile.sagas.isEmpty {
                 Section("Ses séries") {
                     ForEach(profile.sagas) { saga in
@@ -63,9 +63,14 @@ struct FriendProfileView: View {
     }
 
     @ViewBuilder
-    private func shelf(_ title: LocalizedStringKey, books: [Book], empty: LocalizedStringKey)
-        -> some View
-    {
+    private func shelf(
+        _ title: LocalizedStringKey,
+        books: [Book],
+        empty: LocalizedStringKey,
+        // Only the favourites mix statuses: the other shelves are one each,
+        // and their heading already says which.
+        showsStatus: Bool = false
+    ) -> some View {
         Section(title) {
             if books.isEmpty {
                 Text(empty).font(.subheadline).foregroundStyle(.secondary)
@@ -78,6 +83,7 @@ struct FriendProfileView: View {
                         status: book.status,
                         rating: book.rating,
                         volumeLabel: book.series?.label,
+                        statusTag: showsStatus ? book.status : nil,
                         genre: book.genre,
                         subgenre: book.subgenres.first,
                         format: book.format,

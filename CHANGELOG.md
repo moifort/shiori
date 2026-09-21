@@ -23,16 +23,16 @@ the release tag is pushed.
   the same second chance once. The ISBN and page count a scan records are now those of the
   edition photographed, named by its publisher and language, rather than of any edition of
   the book: the Folio pocket no longer takes the cover of the Québec edition.
-- The library is ordered by reading status: the books in progress first, then those on the
-  pile, then those finished. A saga sits, whole, with its most active volume, and the books
-  outside any series trail each group's sagas without a heading of their own. Within a
-  group, the saga whose volume was just started, finished or put back on the pile comes
-  first; correcting a book or writing a note moves nothing. The status filter is gone, and
-  the camera button in the tab bar now opens the add sheet — scan, recent photos, a title
-  or a record typed by hand — in place of the library's "+" button. A saga heading now
-  carries the heart or the stars the reader gave the saga, on the right, and every row keeps
-  its own in the same place: the heart when the book is a favourite, the stars otherwise,
-  never both.
+- The library switches, from its toolbar, between everything, by genre and the favourites,
+  and a filter narrows any of them to one reading status. Everything and the favourites are
+  sectioned into in progress, to read and finished; the genre view has one section per
+  genre, titled without an icon, each row tagged with its status. Sagas are no longer
+  gathered: each book sits where its own status puts it and names its saga and volume in a
+  tag, the cover badge giving way to the words. Within a status, the book most recently
+  started, added or finished comes first. The camera button in the tab bar now opens the
+  add sheet — scan, recent photos, a title or a record typed by hand — in place of the
+  library's "+" button, and every row shows the heart when the book is a favourite, the
+  stars otherwise, never both.
 - The book sheet folds its publication facts into the main section, names the volume beside
   the cover, shows the format as a glyph in the corner and opens a genre sheet from its genre
   row. A summary longer than five hundred words folds behind "Lire la suite". The list of

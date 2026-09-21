@@ -18,16 +18,16 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   qu’un scan enregistre sont désormais ceux de l’édition photographiée, désignée par son
   éditeur et sa langue, et non ceux d’une édition quelconque du livre : le poche Folio ne
   prend plus la couverture de l’édition québécoise.
-- La bibliothèque est triée par état de lecture : les livres en cours d’abord, puis ceux à
-  lire, puis ceux terminés. Une saga se range, entière, avec son tome le plus actif, et les
-  livres hors série suivent les sagas de chaque groupe sans titre de section. Dans un groupe,
-  la saga dont un tome vient d’être commencé, terminé ou remis sur la pile est en tête ;
-  corriger un livre ou écrire une note ne déplace rien. Le filtre par état disparaît, et le
-  bouton appareil photo de la barre d’onglets ouvre désormais la fenêtre d’ajout — scan,
-  photos récentes, titre ou saisie à la main — à la place du bouton « + » de la
-  bibliothèque. L’en-tête d’une saga porte désormais le cœur ou les étoiles que le lecteur
-  lui a donnés, à droite, et chaque ligne garde les siens au même endroit : le cœur si le
-  livre est un favori, les étoiles sinon, jamais les deux.
+- La bibliothèque bascule, depuis sa barre d’outils, entre tout, par genre et les favoris,
+  et un filtre réduit chacune de ces vues à un état de lecture. Tout et les favoris sont
+  rangés en sections en cours, à lire et terminé ; la vue par genre a une section par genre,
+  titrée sans icône, chaque ligne portant son état en étiquette. Les sagas ne sont plus
+  regroupées : chaque livre se range selon son propre état et nomme sa saga et son tome
+  dans une étiquette, le badge de couverture cédant la place aux mots. Dans un état, le
+  livre le plus récemment commencé, ajouté ou terminé vient en tête. Le bouton appareil
+  photo de la barre d’onglets ouvre désormais la fenêtre d’ajout — scan, photos récentes,
+  titre ou saisie à la main — à la place du bouton « + » de la bibliothèque, et chaque
+  ligne montre le cœur si le livre est un favori, les étoiles sinon, jamais les deux.
 - La fiche du livre fond les informations de publication dans la section principale, nomme
   le tome à côté de la couverture, montre le format en icône dans le coin et ouvre une fenêtre
   de genre depuis sa ligne de genre. Un résumé de plus de cinq cents mots se replie derrière

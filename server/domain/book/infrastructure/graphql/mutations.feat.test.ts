@@ -334,25 +334,38 @@ describe('reading the library through the API', () => {
     setSystemTime(new Date('2026-09-14T10:02:00.000Z'))
     const last = await addBook('Un')
 
-    const first = await execute(
-      '{ libraryPage(limit: 2) { hasMore sections { books { id title } } } }',
-    )
+    const first = await execute('{ libraryPage(limit: 2) { hasMore books { id title } } }')
     expect(first.errors).toBeUndefined()
     const page = first.data?.libraryPage as {
       hasMore: boolean
-      sections: { books: { id: string; title: string }[] }[]
+      books: { id: string; title: string }[]
     }
     expect(page.hasMore).toBe(true)
-    expect(page.sections[0].books.map((book) => book.title)).toEqual(['Un', 'Deux'])
-    expect(page.sections[0].books[0].id).toBe(last.id)
+    expect(page.books.map((book) => book.title)).toEqual(['Un', 'Deux'])
+    expect(page.books[0].id).toBe(last.id)
 
-    const cursor = page.sections[0].books[1].id
+    const cursor = page.books[1].id
     const second = await execute(
-      `{ libraryPage(limit: 2, after: "${cursor}") { hasMore sections { books { title } } } }`,
+      `{ libraryPage(limit: 2, after: "${cursor}") { hasMore books { title } } }`,
     )
-    expect(second.data?.libraryPage).toEqual({
-      hasMore: false,
-      sections: [{ books: [{ title: 'Trois' }] }],
+    expect(second.data?.libraryPage).toEqual({ hasMore: false, books: [{ title: 'Trois' }] })
+  })
+
+  test('narrows a library page to the favourites, tiered by status', async () => {
+    await addBook('Pile ordinaire')
+    const kept = await addBook('Pile aimée')
+    const reading = await addBook('Lecture aimée', 'READING')
+    for (const { id } of [kept, reading])
+      await execute(`mutation { setBookFavorite(id: "${id}", favorite: true) { id } }`)
+
+    const result = await execute('{ libraryPage(favorite: true) { books { title status } } }')
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.libraryPage).toEqual({
+      books: [
+        { title: 'Lecture aimée', status: 'READING' },
+        { title: 'Pile aimée', status: 'TO_READ' },
+      ],
     })
   })
 

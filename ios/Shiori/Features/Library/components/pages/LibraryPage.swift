@@ -3,12 +3,18 @@ import SwiftUI
 /// The library list. Pure and previewable: it takes what to draw and what to
 /// call, and knows nothing about the network.
 ///
-/// Sections are sagas and shelves of standalone books, tiered by reading
-/// status: in progress, then on the pile, then finished. A shelf has no
-/// heading: a title over it would name the one thing those books have in
-/// common, and "no series" is not a thing.
+/// Three views, switched from the toolbar as in Vinarium: everything, by genre,
+/// or the favourites. Everything and the favourites are sectioned by reading
+/// status — in progress, on the pile, finished — and the genre view by genre,
+/// each row then carrying its status as a tag. A filter narrows any of them to
+/// one status. Sagas are not gathered here: the Series tab reads a saga whole,
+/// and a row names its saga in a tag.
 struct LibraryPage: View {
-    let sections: [LibrarySection]
+    @Binding var mode: LibraryMode
+    @Binding var statusFilter: ReadingStatus?
+    let sections: [LibraryShelf]
+    /// Rows say their own status: the list is not sectioned by it.
+    var showsStatus: Bool = false
     let isLoading: Bool
     /// The rows are last session's and fresher ones are on their way: a
     /// spinner row leads the list rather than a loader replacing it.
@@ -28,6 +34,10 @@ struct LibraryPage: View {
     let onImportFromAudible: () -> Void
     let onBookTapped: (Book) -> Void
 
+    /// The shelf is narrowed: an empty list says nothing matches, not that the
+    /// library is empty.
+    private var isNarrowed: Bool { mode == .favorites || statusFilter != nil }
+
     var body: some View {
         Group {
             if isLoading && sections.isEmpty {
@@ -42,12 +52,56 @@ struct LibraryPage: View {
                     AsyncButton("Réessayer") { await onRetry() }
                 }
             } else if sections.isEmpty {
-                emptyState
+                if isNarrowed {
+                    ContentUnavailableView(
+                        mode == .favorites ? "Aucun favori" : "Aucun livre",
+                        systemImage: mode == .favorites ? "heart" : "books.vertical",
+                        description: Text(
+                            mode == .favorites
+                                ? "Touchez le cœur d'un livre pour le retrouver ici."
+                                : "Aucun livre de votre bibliothèque n'a ce statut."
+                        )
+                    )
+                } else {
+                    emptyState
+                }
             } else {
                 list
             }
         }
         .navigationTitle("Bibliothèque")
+        .navigationSubtitle(mode.subtitle)
+        .toolbar {
+            ToolbarItemGroup {
+                ForEach(LibraryMode.allCases) { item in
+                    Button {
+                        mode = item
+                    } label: {
+                        Label(item.label, systemImage: item.icon)
+                    }
+                    .labelStyle(.iconOnly)
+                    .tint(mode == item ? .accentColor : .primary)
+                    .accessibilityIdentifier("library-mode-\(item.rawValue)")
+                }
+            }
+            ToolbarSpacer(.fixed)
+            ToolbarItemGroup {
+                Menu {
+                    Picker("Statut", selection: $statusFilter) {
+                        Label("Tous", systemImage: "tray.full").tag(ReadingStatus?.none)
+                        // In the order the list tiers them, not the picker's.
+                        ForEach([ReadingStatus.reading, .toRead, .read]) { status in
+                            Label(status.shelfTitle, systemImage: status.symbol)
+                                .tag(ReadingStatus?.some(status))
+                        }
+                    }
+                } label: {
+                    Image(systemName: "line.3.horizontal.decrease")
+                        .symbolVariant(statusFilter != nil ? .fill : .none)
+                }
+                .accessibilityIdentifier("library-filter-menu")
+            }
+        }
     }
 
     private var list: some View {
@@ -61,36 +115,11 @@ struct LibraryPage: View {
                 )
             }
             ForEach(sections) { section in
-                if let seriesName = section.seriesName {
-                    Section {
-                        rows(of: section)
-                    } header: {
-                        HStack(spacing: 6) {
-                            Text(seriesName)
-                            // The tag says which of a saga's two shelves this is.
-                            // Trailing the name rather than leading it: the name is
-                            // what the reader scans for, the language only tells two
-                            // headings with that name apart. And only the foreign
-                            // shelf gets one: the reader's own language is the default
-                            // and drawing it would tag every heading.
-                            if let language = section.language, language.isForeign {
-                                LanguageTag(language: language)
-                            }
-                            Spacer(minLength: 8)
-                            // The saga's own heart or stars, on the heading's line
-                            // and against its right edge, where every row below
-                            // keeps its own.
-                            OpinionMark(
-                                rating: section.opinion?.rating,
-                                isFavorite: section.opinion?.favorite == true,
-                                font: .caption
-                            )
-                        }
-                    }
-                } else {
-                    Section {
-                        rows(of: section)
-                    }
+                // The heading is the word alone: a genre's glyph beside its
+                // name is a second thing to decode, and a status reads as well
+                // without one.
+                Section(section.title) {
+                    rows(of: section)
                 }
             }
             if hasMore {
@@ -105,7 +134,7 @@ struct LibraryPage: View {
         .refreshable { await onRetry() }
     }
 
-    private func rows(of section: LibrarySection) -> some View {
+    private func rows(of section: LibraryShelf) -> some View {
         // A Button rather than a NavigationLink: the book opens as a sheet over
         // the list, so the row carries no disclosure chevron promising a push.
         ForEach(section.books) { book in
@@ -118,16 +147,14 @@ struct LibraryPage: View {
                     cover: book,
                     status: book.status,
                     rating: book.rating,
-                    // Only inside a saga: on the standalone shelf there is no
-                    // numbering for a label to explain.
-                    volumeLabel: section.seriesName != nil ? book.series?.label : nil,
-                    genre: book.genre,
+                    series: book.series,
+                    statusTag: showsStatus ? book.status : nil,
+                    // Under a genre heading the genre chip would repeat it; the
+                    // subgenre still says something the heading does not.
+                    genre: mode == .genre ? nil : book.genre,
                     subgenre: book.subgenres.first,
                     format: book.format,
-                    // Inside a saga the heading already carries the language:
-                    // tagging every row under it would say the same thing
-                    // twelve times.
-                    language: section.seriesName == nil ? book.language : nil,
+                    language: book.language,
                     isFavorite: book.favorite,
                     isHidden: book.hidden
                 )
@@ -153,28 +180,26 @@ struct LibraryPage: View {
     }
 }
 
-#Preview("Avec des livres") {
+#Preview("Par statut") {
+    @Previewable @State var mode: LibraryMode = .all
+    @Previewable @State var statusFilter: ReadingStatus?
     let saga = SeriesMembership(id: "s1", name: "Chronique du tueur de roi", volume: 1, kind: .main)
     let saga2 = SeriesMembership(id: "s1", name: "Chronique du tueur de roi", volume: 2, kind: .main)
 
-    return NavigationStack {
+    NavigationStack {
         LibraryPage(
+            mode: $mode,
+            statusFilter: $statusFilter,
             sections: [
-                LibrarySection(
-                    seriesId: "s1",
-                    seriesName: "Chronique du tueur de roi",
-                    books: [
-                        Book(id: "1", title: "Le Nom du vent", authors: ["Patrick Rothfuss"], series: saga, status: .read, rating: 5),
-                        Book(id: "2", title: "La Peur du sage", authors: ["Patrick Rothfuss"], series: saga2, status: .reading),
-                    ]
-                ),
-                LibrarySection(
-                    seriesId: nil,
-                    seriesName: nil,
-                    books: [
-                        Book(id: "3", title: "Piranesi", authors: ["Susanna Clarke"], status: .toRead, hidden: true),
-                    ]
-                ),
+                LibraryShelf(id: 0, key: .status(.reading), books: [
+                    Book(id: "2", title: "La Peur du sage", authors: ["Patrick Rothfuss"], genre: .fantasy, series: saga2, status: .reading),
+                ]),
+                LibraryShelf(id: 1, key: .status(.toRead), books: [
+                    Book(id: "3", title: "Piranesi", authors: ["Susanna Clarke"], status: .toRead, hidden: true),
+                ]),
+                LibraryShelf(id: 2, key: .status(.read), books: [
+                    Book(id: "1", title: "Le Nom du vent", authors: ["Patrick Rothfuss"], genre: .fantasy, series: saga, status: .read, rating: 5),
+                ]),
             ],
             isLoading: false,
             errorMessage: nil,
@@ -186,9 +211,42 @@ struct LibraryPage: View {
     }
 }
 
-#Preview("Vide") {
+#Preview("Par genre") {
+    @Previewable @State var mode: LibraryMode = .genre
+    @Previewable @State var statusFilter: ReadingStatus?
+
     NavigationStack {
         LibraryPage(
+            mode: $mode,
+            statusFilter: $statusFilter,
+            sections: [
+                LibraryShelf(id: 0, key: .genre(.fantasy), books: [
+                    Book(id: "2", title: "La Peur du sage", authors: ["Patrick Rothfuss"], genre: .fantasy, status: .reading),
+                    Book(id: "1", title: "Le Nom du vent", authors: ["Patrick Rothfuss"], genre: .fantasy, status: .read, rating: 5),
+                ]),
+                LibraryShelf(id: 1, key: .genre(nil), books: [
+                    Book(id: "3", title: "Piranesi", authors: ["Susanna Clarke"], status: .toRead),
+                ]),
+            ],
+            showsStatus: true,
+            isLoading: false,
+            errorMessage: nil,
+            onRetry: {},
+            onAdd: {},
+            onImportFromAudible: {},
+            onBookTapped: { _ in }
+        )
+    }
+}
+
+#Preview("Vide") {
+    @Previewable @State var mode: LibraryMode = .all
+    @Previewable @State var statusFilter: ReadingStatus?
+
+    NavigationStack {
+        LibraryPage(
+            mode: $mode,
+            statusFilter: $statusFilter,
             sections: [],
             isLoading: false,
             errorMessage: nil,

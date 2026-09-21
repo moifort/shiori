@@ -6,14 +6,6 @@ import SwiftUI
 struct ReadingStatusBadge: View {
     let status: ReadingStatus
 
-    private var tint: Color {
-        switch status {
-        case .toRead: .gray
-        case .reading: .blue
-        case .read: .green
-        }
-    }
-
     var body: some View {
         Image(systemName: status.symbol)
             .font(.system(size: 7, weight: .bold))
@@ -21,10 +13,32 @@ struct ReadingStatusBadge: View {
             // Wider than the glyph needs, so the symbol sits in the disc with
             // air around it rather than filling it to the rim.
             .frame(width: 18, height: 18)
-            .background(tint, in: Circle())
+            .background(status.tint, in: Circle())
             // A ring in the row's own background lifts the badge off whatever
             // colour the cover happens to be under it.
             .overlay(Circle().strokeBorder(Color(.secondarySystemGroupedBackground), lineWidth: 1.5))
             .accessibilityHidden(true)
+    }
+}
+
+extension ReadingStatus {
+    /// The colour a status is drawn in — the badge on a cover, the tag on a
+    /// library row — so the eye learns one hue per state.
+    var tint: Color {
+        switch self {
+        case .toRead: .gray
+        case .reading: .blue
+        case .read: .green
+        }
+    }
+
+    /// The status as a shelf of the library names it: a heading over the books
+    /// finished reads "Terminé", where the picker's "Lu" answers a question.
+    var shelfTitle: String {
+        switch self {
+        case .toRead: String(localized: "À lire")
+        case .reading: String(localized: "En cours")
+        case .read: String(localized: "Terminé")
+        }
     }
 }

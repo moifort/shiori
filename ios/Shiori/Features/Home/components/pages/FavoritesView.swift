@@ -100,6 +100,7 @@ struct FavoritesView: View {
                                 status: book.status,
                                 rating: book.rating,
                                 volumeLabel: book.series?.label,
+                                statusTag: book.status,
                                 genre: book.genre,
                                 subgenre: book.subgenres.first,
                                 format: book.format,

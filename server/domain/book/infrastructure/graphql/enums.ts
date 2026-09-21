@@ -96,3 +96,19 @@ export const BookLanguageEnum = builder.enumType('BookLanguage', {
     KO: { value: 'ko' },
   } as const,
 })
+
+export const LibraryArrangementEnum = builder.enumType('LibraryArrangement', {
+  description: 'How the Library tab arranges the reader books.',
+  values: {
+    BY_STATUS: {
+      value: 'by-status',
+      description: 'Reading, then to read, then read.',
+    },
+    BY_GENRE: {
+      value: 'by-genre',
+      description:
+        'One run per genre in the closed list order, books of no genre last, tiered ' +
+        'by reading status within each genre.',
+    },
+  } as const,
+})

@@ -13,6 +13,12 @@ struct BookRow: View {
     /// title alone does not say which volume this is. Absent elsewhere: on the
     /// standalone shelf there is no numbering to explain.
     var volumeLabel: String?
+    /// The saga the book belongs to, drawn as a tag with its volume where the
+    /// list is not sectioned by saga — the only place left to say it.
+    var series: SeriesMembership?
+    /// The reading status, drawn as a tag where the list is not already
+    /// sectioned by it. Nil leaves it to the heading above the row.
+    var statusTag: ReadingStatus?
     /// What the book is about. Absent on a book added by hand and on every
     /// Audible import, which draw no genre line at all rather than "Autre".
     var genre: BookGenre?
@@ -39,10 +45,6 @@ struct BookRow: View {
         // whether that line is a volume label or the title itself.
         HStack(alignment: .top, spacing: 12) {
             BookCover(book: cover)
-                .overlay(alignment: .topTrailing) {
-                    ReadingStatusBadge(status: status)
-                        .offset(x: 5, y: -4)
-                }
 
             VStack(alignment: .leading, spacing: 3) {
                 // The marks share the first line with the text rather than
@@ -68,6 +70,25 @@ struct BookRow: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
 
+                // What the reader is doing with it and where it sits in a
+                // saga: the facts about this copy, ahead of what the book is.
+                if statusTag != nil || series != nil {
+                    HStack(spacing: 6) {
+                        if let statusTag {
+                            chip(statusTag.shelfTitle, tint: statusTag.tint)
+                                .fixedSize()
+                        }
+                        if let series {
+                            // Grey, because a saga is a name and not a kind of
+                            // book: tinting it would read as one more genre.
+                            chip("\(series.name) · \(series.label)", tint: .secondary)
+                        }
+                    }
+                    .font(.caption2)
+                    .lineLimit(1)
+                    .padding(.top, 1)
+                }
+
                 // Under the author, where it answers "what is this?" for a title
                 // that does not say. Two chips of the same cut, genre then
                 // subgenre, and no glyph: the genre's icon was a second thing to
@@ -91,9 +112,7 @@ struct BookRow: View {
                 }
             }
         }
-        // Tight, because a library is read by scanning many rows at once. The
-        // badge overhangs the cover by exactly this much, so it stays inside
-        // the row rather than crowding the one above.
+        // Tight, because a library is read by scanning many rows at once.
         .padding(.vertical, 4)
         // The separator runs from one edge of the card to the other: a rule
         // starting under the title cuts the cover column off from the list it
@@ -103,9 +122,9 @@ struct BookRow: View {
         .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] - Self.horizontalInset }
         .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] + Self.horizontalInset }
         .accessibilityElement(children: .combine)
-        // The badge is icon-only, so the status is spoken here rather than
-        // read off a glyph.
-        .accessibilityValue(Text(status.label))
+        // Spoken even where no tag draws it: a heading above the row is not
+        // read with it.
+        .accessibilityValue(statusTag == nil ? Text(status.label) : Text(""))
     }
 
     private var titleText: some View {
@@ -164,7 +183,8 @@ struct BookRow: View {
             cover: Book(id: "1", title: "Le Nom du vent", authors: ["Patrick Rothfuss"], status: .reading),
             status: .reading,
             rating: nil,
-            volumeLabel: "Tome 1"
+            series: SeriesMembership(id: "s1", name: "Chronique du tueur de roi", volume: 1, kind: .main),
+            statusTag: .reading
         )
         BookRow(
             title: "La Peur du sage",

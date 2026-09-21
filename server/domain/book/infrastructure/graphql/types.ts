@@ -239,13 +239,19 @@ const LibrarySectionOpinionType = builder
   })
 
 export const LibraryPageType = builder
-  .objectRef<{ sections: LibrarySection[]; hasMore: boolean }>('LibraryPage')
+  .objectRef<{ books: BookView[]; hasMore: boolean }>('LibraryPage')
   .implement({
     description:
-      'One page of the library. Cursor-less: the page carries its sections plus a ' +
+      'One page of the Library tab. Cursor-less: the page carries its books plus a ' +
       '`hasMore` signal, and the id of its last book is the cursor for the next one.',
     fields: (t) => ({
-      sections: t.field({ type: [LibrarySectionType], resolve: (page) => page.sections }),
+      books: t.field({
+        type: [BookType],
+        description:
+          'In the order the tab draws them. The app opens a section wherever the ' +
+          'status — or, arranged by genre, the genre — changes from one book to the next.',
+        resolve: (page) => page.books,
+      }),
       hasMore: t.exposeBoolean('hasMore', {
         description: 'Whether more books follow this page',
       }),

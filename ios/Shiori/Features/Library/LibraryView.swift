@@ -15,7 +15,10 @@ struct LibraryView: View {
     var body: some View {
         NavigationStack {
             LibraryPage(
+                mode: $viewModel.mode,
+                statusFilter: $viewModel.statusFilter,
                 sections: viewModel.sections,
+                showsStatus: !viewModel.sectionsByStatus,
                 isLoading: viewModel.isLoading,
                 isRefreshing: viewModel.isRefreshing,
                 refreshFailed: viewModel.refreshFailed,
@@ -40,7 +43,7 @@ struct LibraryView: View {
             }
         }
         .sheet(isPresented: $showAudibleImport) {
-            // An import can add a hundred books across a dozen sagas, so the
+            // An import can add a hundred books across every section, so the
             // list is refetched rather than patched row by row as a single
             // edit is.
             AudibleImportView(onImported: { _ in
@@ -51,7 +54,7 @@ struct LibraryView: View {
         // Over last session's snapshot when the disk had one: the list shows at
         // once and the spinner at its top says it is being brought up to date.
         .task { await viewModel.loadOnAppear() }
-        // A book rated in a sheet moves its saga to another tier; one added from the
+        // A book rated in a sheet moves to another tier; one added from the
         // scanner lands in a section this list has not drawn yet. Either way the
         // rows on screen are the old ones until the server is asked again.
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in

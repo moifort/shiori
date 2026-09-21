@@ -6,14 +6,27 @@ query Library($status: ReadingStatus) {
   }
 }
 
-# One page of the same list, for the tab that draws as it scrolls: the last
-# book of a page is the cursor for the next, and a saga cut across two pages
-# comes back under the same heading on both.
-query LibraryPage($status: ReadingStatus, $limit: Int, $after: BookId) {
-  libraryPage(status: $status, limit: $limit, after: $after) {
+# One page of the Library tab, for the list that draws as it scrolls: a flat
+# list the server has already ordered, which the app cuts into sections wherever
+# the status (or, arranged by genre, the genre) changes. The last book of a page
+# is the cursor for the next.
+query LibraryPage(
+  $arrangement: LibraryArrangement
+  $favorite: Boolean
+  $status: ReadingStatus
+  $limit: Int
+  $after: BookId
+) {
+  libraryPage(
+    arrangement: $arrangement
+    favorite: $favorite
+    status: $status
+    limit: $limit
+    after: $after
+  ) {
     hasMore
-    sections {
-      ...LibrarySectionRow
+    books {
+      ...BookSummary
     }
   }
 }

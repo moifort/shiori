@@ -11,20 +11,23 @@ enum LibraryAPI {
         return data.library.map { LibrarySection(row: $0.fragments.librarySectionRow) }
     }
 
-    /// One page of the library, for the tab that draws as it scrolls.
+    /// One page of the Library tab, in the order the server shelved it.
     static func libraryPage(
-        status: ReadingStatus? = nil,
+        mode: LibraryMode,
+        status: ReadingStatus?,
         limit: Int,
         after: String?
     ) async throws -> LibraryPageResult {
         let query = ShioriGraphQL.LibraryPageQuery(
+            arrangement: .some(.case(mode == .genre ? .byGenre : .byStatus)),
+            favorite: mode == .favorites ? .some(true) : .none,
             status: GraphQLHelpers.graphQLNullable(status.map(Self.graphQLStatus)),
             limit: .some(Int32(limit)),
             after: GraphQLHelpers.graphQLNullable(after)
         )
         let data = try await GraphQLHelpers.fetch(GraphQLClient.shared.apollo, query: query)
         return LibraryPageResult(
-            sections: data.libraryPage.sections.map { LibrarySection(row: $0.fragments.librarySectionRow) },
+            books: data.libraryPage.books.map { $0.fragments.bookSummary.asBook },
             hasMore: data.libraryPage.hasMore
         )
     }
@@ -110,7 +113,7 @@ enum LibraryAPI {
 
 /// One page of the library, mirroring the server's `LibraryPage` payload.
 struct LibraryPageResult {
-    let sections: [LibrarySection]
+    let books: [Book]
     let hasMore: Bool
 }
 
