@@ -29,12 +29,28 @@ final class SeriesListViewModel {
     /// changes shape.
     private let cache = SnapshotCache<[FollowedSeries]>("series", version: 1)
 
+    /// More rows follow the ones on screen.
+    private(set) var hasMore = false
+    private(set) var isLoadingMore = false
+    private(set) var loadMoreFailed = false
+
+    private let pageSize = 40
+    private let prefetchThreshold = 6
+    private var generation = 0
+
     func load() async {
+        generation += 1
+        let requested = generation
         isLoading = true
         errorMessage = nil
+        isLoadingMore = false
+        loadMoreFailed = false
         do {
-            let fetched = try await SeriesAPI.mySeries()
+            let page = try await SeriesAPI.mySeriesPage(limit: pageSize, offset: 0)
+            guard requested == generation else { return }
+            let fetched = page.items
             followed = fetched
+            hasMore = page.hasMore
             loaded = true
             let cache = cache
             Task.detached { cache.write(fetched) }
@@ -42,6 +58,36 @@ final class SeriesListViewModel {
             errorMessage = reportError(error)
         }
         isLoading = false
+    }
+
+    /// Loads the next page and appends it to the rows already loaded.
+    func loadMore() async {
+        guard hasMore, !isLoadingMore else { return }
+        let requested = generation
+        isLoadingMore = true
+        loadMoreFailed = false
+        do {
+            let page = try await SeriesAPI.mySeriesPage(limit: pageSize, offset: followed.count)
+            guard requested == generation else { return }
+            followed.append(contentsOf: page.items)
+            hasMore = page.hasMore
+        } catch is CancellationError {
+            return
+        } catch {
+            guard requested == generation else { return }
+            loadMoreFailed = true
+            errorMessage = reportError(error)
+        }
+        isLoadingMore = false
+    }
+
+    /// Starts the next page when a row close to the end appears.
+    func prefetchIfNeeded(for id: String) {
+        guard hasMore, !isLoadingMore else { return }
+        guard let index = followed.firstIndex(where: { $0.id == id }) else { return }
+        if followed.count - index <= prefetchThreshold {
+            Task { await loadMore() }
+        }
     }
 
     /// The tab appeared: a list still showing last session's snapshot refreshes

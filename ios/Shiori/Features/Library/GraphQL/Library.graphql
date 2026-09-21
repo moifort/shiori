@@ -2,16 +2,32 @@
 # `status` narrows it to one shelf of the pile; omitting it returns everything.
 query Library($status: ReadingStatus) {
   library(status: $status) {
-    seriesId
-    series
-    language
-    opinion {
-      rating
-      favorite
+    ...LibrarySectionRow
+  }
+}
+
+# One page of the same list, for the tab that draws as it scrolls: the last
+# book of a page is the cursor for the next, and a saga cut across two pages
+# comes back under the same heading on both.
+query LibraryPage($status: ReadingStatus, $limit: Int, $after: BookId) {
+  libraryPage(status: $status, limit: $limit, after: $after) {
+    hasMore
+    sections {
+      ...LibrarySectionRow
     }
-    books {
-      ...BookSummary
-    }
+  }
+}
+
+fragment LibrarySectionRow on LibrarySection {
+  seriesId
+  series
+  language
+  opinion {
+    rating
+    favorite
+  }
+  books {
+    ...BookSummary
   }
 }
 

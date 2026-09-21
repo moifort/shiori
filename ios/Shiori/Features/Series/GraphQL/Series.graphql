@@ -20,15 +20,29 @@ query Series($id: SeriesId!) {
 # `state` is null exactly when there is no catalogue to derive it from.
 query MySeries {
   mySeries {
-    id
-    name
-    author
-    language
-    state
-    ownedCount
-    opinion {
-      ...SeriesOpinionFields
+    ...FollowedSeriesRow
+  }
+}
+
+# One page of the same rows, for the tab that draws as it scrolls.
+query MySeriesPage($limit: Int, $offset: Int) {
+  mySeriesPage(limit: $limit, offset: $offset) {
+    hasMore
+    items {
+      ...FollowedSeriesRow
     }
+  }
+}
+
+fragment FollowedSeriesRow on FollowedSeries {
+  id
+  name
+  author
+  language
+  state
+  ownedCount
+  opinion {
+    ...SeriesOpinionFields
   }
 }
 

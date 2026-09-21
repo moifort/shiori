@@ -70,6 +70,14 @@ struct SeriesListView: View {
                 }
                 .tint(.primary)
                 .accessibilityIdentifier("series-row")
+                .onAppear { viewModel.prefetchIfNeeded(for: entry.id) }
+            }
+            if viewModel.hasMore {
+                LoadMoreRow(
+                    failed: viewModel.loadMoreFailed,
+                    loadingLabel: "Chargement de la suite",
+                    onLoadMore: { await viewModel.loadMore() }
+                )
             }
         }
         .listStyle(.insetGrouped)

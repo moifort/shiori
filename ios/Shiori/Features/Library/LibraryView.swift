@@ -37,8 +37,12 @@ struct LibraryView: View {
                 refreshFailed: viewModel.refreshFailed,
                 errorMessage: viewModel.errorMessage,
                 filter: $viewModel.filter,
+                hasMore: viewModel.hasMore,
+                loadMoreFailed: viewModel.loadMoreFailed,
                 onRetry: { await viewModel.load() },
                 onRetryRefresh: { await viewModel.refresh() },
+                onPrefetch: { viewModel.prefetchIfNeeded(for: $0) },
+                onLoadMore: { await viewModel.loadMore() },
                 onAdd: { showAddSheet = true },
                 onImportFromAudible: { showAudibleImport = true },
                 onBookTapped: { selectedBook = $0 }

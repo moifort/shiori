@@ -26,6 +26,9 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 - Les réglages, derrière une roue sur l’accueil : le profil avec déconnexion et suppression du
   compte, l’abonnement, les nouveautés, un formulaire pour nous écrire, et la connexion
   Audible, qui quitte le menu des imports.
+- La bibliothèque et l’onglet des séries se chargent page par page et vont chercher la suivante
+  quand le lecteur approche de la fin de la liste, si bien qu’une bibliothèque de trois cents
+  livres s’affiche aussi vite qu’une de trente.
 - La bibliothèque, les séries et l’accueil s’ouvrent sur ce qu’ils montraient la dernière fois
   et se rafraîchissent dessous, sous une roue en haut, plutôt que sur un chargement. Chaque
   bouton qui attend le réseau tourne dès l’appui, et chaque liste se redessine après tout

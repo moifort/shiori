@@ -16,8 +16,14 @@ struct LibraryPage: View {
     var refreshFailed: Bool = false
     let errorMessage: String?
     @Binding var filter: ReadingStatus?
+    /// More rows follow the ones on screen: a sentinel closes the list and
+    /// asks for them as it appears.
+    var hasMore: Bool = false
+    var loadMoreFailed: Bool = false
     let onRetry: () async -> Void
     var onRetryRefresh: () async -> Void = {}
+    var onPrefetch: (String) -> Void = { _ in }
+    var onLoadMore: () async -> Void = {}
     let onAdd: () -> Void
     let onImportFromAudible: () -> Void
     let onBookTapped: (Book) -> Void
@@ -113,6 +119,13 @@ struct LibraryPage: View {
                     }
                 }
             }
+            if hasMore {
+                LoadMoreRow(
+                    failed: loadMoreFailed,
+                    loadingLabel: "Chargement de la suite",
+                    onLoadMore: onLoadMore
+                )
+            }
         }
         .listStyle(.insetGrouped)
         .refreshable { await onRetry() }
@@ -146,6 +159,8 @@ struct LibraryPage: View {
                 )
             }
             .tint(.primary)
+            // Starts the next page a few rows before the end is reached.
+            .onAppear { onPrefetch(book.id) }
         }
     }
 

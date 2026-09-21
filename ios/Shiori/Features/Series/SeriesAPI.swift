@@ -34,17 +34,19 @@ enum SeriesAPI {
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.MySeriesQuery()
         )
-        return data.mySeries.map { followed in
-            FollowedSeries(
-                seriesId: followed.id,
-                name: followed.name,
-                author: followed.author,
-                language: followed.language?.asDomain,
-                state: followed.state?.asDomain,
-                ownedCount: followed.ownedCount,
-                opinion: followed.opinion?.fragments.seriesOpinionFields.asOpinion
-            )
-        }
+        return data.mySeries.map { FollowedSeries(row: $0.fragments.followedSeriesRow) }
+    }
+
+    /// One page of the sagas the reader follows, in the same order.
+    static func mySeriesPage(limit: Int, offset: Int) async throws -> (items: [FollowedSeries], hasMore: Bool) {
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.MySeriesPageQuery(limit: .some(limit), offset: .some(offset))
+        )
+        return (
+            items: data.mySeriesPage.items.map { FollowedSeries(row: $0.fragments.followedSeriesRow) },
+            hasMore: data.mySeriesPage.hasMore
+        )
     }
 
     /// What the reader makes of one saga. Nil until they say something about it:
@@ -81,5 +83,19 @@ enum SeriesAPI {
             mutation: ShioriGraphQL.SetSeriesFavoriteMutation(seriesId: seriesId, favorite: favorite)
         )
         return data.setSeriesFavorite.fragments.seriesOpinionFields.asOpinion
+    }
+}
+
+private extension FollowedSeries {
+    init(row followed: ShioriGraphQL.FollowedSeriesRow) {
+        self.init(
+            seriesId: followed.id,
+            name: followed.name,
+            author: followed.author,
+            language: followed.language?.asDomain,
+            state: followed.state?.asDomain,
+            ownedCount: followed.ownedCount,
+            opinion: followed.opinion?.fragments.seriesOpinionFields.asOpinion
+        )
     }
 }

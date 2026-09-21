@@ -32,6 +32,9 @@ the release tag is pushed.
 - The settings, behind a gear on the dashboard: the profile with sign-out and account
   deletion, the subscription, the release notes, a form to write to us, and the Audible
   connection, which leaves the imports menu.
+- The library and the series tab load a page at a time and fetch the next one as the reader
+  nears the end of the list, so a library of three hundred books draws as fast as one of
+  thirty.
 - The library, the series and the dashboard open on what they showed last time and refresh
   underneath, under a spinner at the top, rather than on a loader. Every button that waits
   on the network spins from the tap, and every list redraws after any change made elsewhere.

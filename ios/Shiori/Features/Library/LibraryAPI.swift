@@ -8,19 +8,25 @@ enum LibraryAPI {
             status: GraphQLHelpers.graphQLNullable(status.map(Self.graphQLStatus))
         )
         let data = try await GraphQLHelpers.fetch(GraphQLClient.shared.apollo, query: query)
-        return data.library.map { section in
-            LibrarySection(
-                seriesId: section.seriesId,
-                seriesName: section.series,
-                language: section.language?.asDomain,
-                opinion: section.opinion.flatMap { opinion in
-                    section.seriesId.map {
-                        SeriesOpinion(seriesId: $0, rating: opinion.rating, favorite: opinion.favorite)
-                    }
-                },
-                books: section.books.map { $0.fragments.bookSummary.asBook }
-            )
-        }
+        return data.library.map { LibrarySection(row: $0.fragments.librarySectionRow) }
+    }
+
+    /// One page of the library, for the tab that draws as it scrolls.
+    static func libraryPage(
+        status: ReadingStatus? = nil,
+        limit: Int,
+        after: String?
+    ) async throws -> LibraryPageResult {
+        let query = ShioriGraphQL.LibraryPageQuery(
+            status: GraphQLHelpers.graphQLNullable(status.map(Self.graphQLStatus)),
+            limit: .some(limit),
+            after: GraphQLHelpers.graphQLNullable(after)
+        )
+        let data = try await GraphQLHelpers.fetch(GraphQLClient.shared.apollo, query: query)
+        return LibraryPageResult(
+            sections: data.libraryPage.sections.map { LibrarySection(row: $0.fragments.librarySectionRow) },
+            hasMore: data.libraryPage.hasMore
+        )
     }
 
     static func graphQLStatus(_ status: ReadingStatus) -> GraphQLEnum<ShioriGraphQL.ReadingStatus> {
@@ -99,5 +105,27 @@ enum LibraryAPI {
         case .novella: .novella
         case .companion: .companion
         }
+    }
+}
+
+/// One page of the library, mirroring the server's `LibraryPage` payload.
+struct LibraryPageResult {
+    let sections: [LibrarySection]
+    let hasMore: Bool
+}
+
+private extension LibrarySection {
+    init(row section: ShioriGraphQL.LibrarySectionRow) {
+        self.init(
+            seriesId: section.seriesId,
+            seriesName: section.series,
+            language: section.language?.asDomain,
+            opinion: section.opinion.flatMap { opinion in
+                section.seriesId.map {
+                    SeriesOpinion(seriesId: $0, rating: opinion.rating, favorite: opinion.favorite)
+                }
+            },
+            books: section.books.map { $0.fragments.bookSummary.asBook }
+        )
     }
 }

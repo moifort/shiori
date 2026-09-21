@@ -73,7 +73,7 @@ schema, a domain command, or several screens at once; **large** brings in a new 
 
 ## Large
 
-- [ ] **Pagination** on every list, as in Vinarium. Cursor arguments on every list query,
+- [x] **Pagination** on every list, as in Vinarium. Cursor arguments on every list query,
       client-side page accumulation, and the read-budget tests to match.
 - [x] **Pre-cached screens render their data immediately** with a loader at the top while the
       fresh data loads, as in Vinarium. A persisted Apollo cache and a cache-then-network

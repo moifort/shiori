@@ -29,9 +29,26 @@ final class LibraryViewModel {
     /// snapshot.
     private var loaded = false
 
-    /// The whole library on disk. Bump the version whenever `LibrarySection`
+    /// The first page on disk. Bump the version whenever `LibrarySection`
     /// or `Book` changes shape.
     private let cache = SnapshotCache<[LibrarySection]>("library", version: 1)
+
+    /// More rows follow the ones on screen.
+    private(set) var hasMore = false
+    private(set) var isLoadingMore = false
+    /// The last page failed: the sentinel turns into a retry button instead of
+    /// a spinner that would keep turning forever without a new attempt.
+    private(set) var loadMoreFailed = false
+
+    /// Sixty rows fill several screens on the smallest phone: enough that the
+    /// next page is fetched while the reader is still scrolling the first.
+    private let pageSize = 60
+    /// Well below the page size, otherwise the next page would load as soon as
+    /// the first one is displayed.
+    private let prefetchThreshold = 8
+    /// Stale-result token: a page asked for before a filter change must not be
+    /// appended to the list that replaced it.
+    private var generation = 0
 
     /// `nil` shows the whole library. The filter is applied server-side, before
     /// grouping, so a filtered saga loses its heading rather than showing an
@@ -47,11 +64,18 @@ final class LibraryViewModel {
     var bookCount: Int { sections.reduce(0) { $0 + $1.books.count } }
 
     func load() async {
+        generation += 1
+        let requested = generation
         isLoading = true
         errorMessage = nil
+        isLoadingMore = false
+        loadMoreFailed = false
         do {
-            let fetched = try await LibraryAPI.library(status: filter)
+            let page = try await LibraryAPI.libraryPage(status: filter, limit: pageSize, after: nil)
+            guard requested == generation else { return }
+            let fetched = page.sections
             sections = fetched
+            hasMore = page.hasMore
             loaded = true
             // Only the whole library is what the next launch opens on: a
             // filtered shelf is a state the reader asked for this once.
@@ -65,6 +89,53 @@ final class LibraryViewModel {
             errorMessage = reportError(error)
         }
         isLoading = false
+    }
+
+    /// Loads the next page and stitches it onto the rows already loaded: a saga
+    /// cut across two pages comes back under the same heading, and its second
+    /// half joins the first rather than opening a second section.
+    func loadMore() async {
+        guard hasMore, !isLoadingMore, let last = sections.last?.books.last else { return }
+        let requested = generation
+        isLoadingMore = true
+        loadMoreFailed = false
+        do {
+            let page = try await LibraryAPI.libraryPage(status: filter, limit: pageSize, after: last.id)
+            guard requested == generation else { return }
+            var stitched = sections
+            for section in page.sections {
+                if let index = stitched.indices.last, stitched[index].id == section.id {
+                    stitched[index] = LibrarySection(
+                        seriesId: section.seriesId,
+                        seriesName: section.seriesName,
+                        language: section.language,
+                        opinion: section.opinion,
+                        books: stitched[index].books + section.books
+                    )
+                } else {
+                    stitched.append(section)
+                }
+            }
+            sections = stitched
+            hasMore = page.hasMore
+        } catch is CancellationError {
+            return
+        } catch {
+            guard requested == generation else { return }
+            loadMoreFailed = true
+            errorMessage = reportError(error)
+        }
+        isLoadingMore = false
+    }
+
+    /// Starts the next page when a row close to the end appears.
+    func prefetchIfNeeded(for bookId: String) {
+        guard hasMore, !isLoadingMore else { return }
+        let ids = sections.flatMap { $0.books.map(\.id) }
+        guard let index = ids.firstIndex(of: bookId) else { return }
+        if ids.count - index <= prefetchThreshold {
+            Task { await loadMore() }
+        }
     }
 
     /// The tab appeared: a list still showing last session's snapshot refreshes
