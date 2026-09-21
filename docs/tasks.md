@@ -29,9 +29,23 @@ schema, a domain command, or several screens at once; **large** brings in a new 
 - [x] **Dashboard, hide the listening hours when the library holds no audiobook.** The
       "Heures" segment of the reading chart widget disappears, and a persisted choice of that
       metric falls back to pages.
+- [ ] **Book screen, header and menu touch-ups.** Drop the icon in front of "Lu par"; show
+      the duration as a pill at the top right of the main section, beside the format icon;
+      give the genre its own icon beside its name and an icon to each subgenre pill; and
+      rename "Retirer de ma bibliothèque" to "Supprimer" in the CTA menu.
 - [x] **Dashboard, remember the reading chart metric across launches.** The segmented picker
       of the reading chart widget is a plain `@State` today, so it resets to pages on every
       start. Persist the choice (`@AppStorage`) and restore it on launch.
+- [ ] **Dashboard, hide the pages when the library holds no printed book.** The mirror of the
+      listening hours rule: a library of audiobooks only drops the "Pages" segment of the
+      reading chart widget, and a persisted choice of that metric falls back to hours.
+- [ ] **Dashboard, tapping the average rating tile opens the library on its favourites
+      filter.** Switches to the Library tab with the favourites view selected.
+- [ ] **Dashboard, remove the favourites tile.** The average rating tile now leads to the
+      favourites; check whether `FavoritesView` still has an entry point once the tile is
+      gone, and delete it if not.
+- [ ] **Dashboard, tapping the genres widget opens the library on its genre view.** Switches
+      to the Library tab with the genre view selected.
 
 ## Medium
 
