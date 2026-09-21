@@ -127,19 +127,6 @@ enum ImportAPI {
             mutation: ShioriGraphQL.DisconnectAudibleMutation()
         )
     }
-}
-
-extension ShioriGraphQL.AudibleAccountSummary {
-    /// A marketplace this build does not know reads as `.com`: the account is
-    /// connected either way, and the label is the only thing that suffers.
-    var asDomain: AudibleAccount {
-        AudibleAccount(
-            marketplace: AudibleMarketplace(rawValue: marketplace.rawValue) ?? .com,
-            connectedAt: GraphQLHelpers.parseISO8601(connectedAt),
-            lastImportedAt: lastImportedAt.flatMap(GraphQLHelpers.parseISO8601),
-            autoSync: autoSync
-        )
-    }
 
     // MARK: - Kindle
 
@@ -170,5 +157,18 @@ extension ShioriGraphQL.AudibleAccountSummary {
             requestTimeout: importTimeout
         )
         return data.importKindleBooks.map { $0.fragments.bookDetail.asBook }
+    }
+}
+
+extension ShioriGraphQL.AudibleAccountSummary {
+    /// A marketplace this build does not know reads as `.com`: the account is
+    /// connected either way, and the label is the only thing that suffers.
+    var asDomain: AudibleAccount {
+        AudibleAccount(
+            marketplace: AudibleMarketplace(rawValue: marketplace.rawValue) ?? .com,
+            connectedAt: GraphQLHelpers.parseISO8601(connectedAt),
+            lastImportedAt: lastImportedAt.flatMap(GraphQLHelpers.parseISO8601),
+            autoSync: autoSync
+        )
     }
 }
