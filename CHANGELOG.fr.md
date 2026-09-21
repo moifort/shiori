@@ -23,6 +23,10 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   section principale, avec les dates de début, d’ajout et de fin de la série ; les tomes
   ressemblent aux lignes de la bibliothèque et ouvrent les livres du lecteur ; et une série peut
   être supprimée avec tous ses livres.
+- Un tome ajouté depuis l’écran d’une série est une fiche complète : la recherche par titre
+  écrit son résumé, son genre, son nombre de pages et sa couverture, comme pour un titre saisi
+  dans la feuille d’ajout, et le tome prend sa ligne dans la série, œuvres liées comprises. Il
+  est ajouté quand même, avec ce que sait le catalogue, quand il ne reste plus de scan.
 - Un livre audio porte une pastille casque sur sa couverture, et une ligne de la bibliothèque
   affiche son état de lecture dans le coin. Le formulaire propose une durée (« 14h30 ») et les
   narrateurs pour un livre audio à la place du nombre de pages, et l’écran du livre indique

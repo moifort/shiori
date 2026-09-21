@@ -26,6 +26,10 @@ the release tag is pushed.
 - The series screen follows the book screen: the genre, subgenres and rating sit in the main
   section, with the dates the saga was started, added and finished; the volumes look like the
   library's rows and open the reader's books; and a saga can be deleted with all its books.
+- A volume added from the series screen is a full record: the title lookup writes its summary,
+  genre, page count and cover, as for a title typed in the add sheet, and the volume takes its
+  row in the saga, related works included. It still lands, with what the catalogue knows, when
+  no scan is left.
 - An audiobook carries a headphones pill on its cover, and a library row shows its reading
   status in the corner. The edit form offers a running time ("14h30") and the narrators for an
   audiobook instead of the page count, and the book screen shows when it was added.

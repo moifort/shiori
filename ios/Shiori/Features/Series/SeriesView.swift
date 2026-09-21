@@ -17,7 +17,6 @@ struct SeriesView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var series: BookSeries?
-    @State private var ownedByNumber: [Int: Book] = [:]
     /// Every volume of the saga the reader holds, numbered or not: what the
     /// genre and the dates are read off, and what the genre is corrected on.
     @State private var owned: [Book] = []
@@ -279,7 +278,9 @@ struct SeriesView: View {
     @ViewBuilder
     private func volumeRow(_ volume: Volume, author: String) -> some View {
         let label = volume.number.map { "\(volume.kind.label) \($0)" } ?? volume.kind.label
-        if let book = volume.number.flatMap({ ownedByNumber[$0] }) {
+        // Matched by kind and number, or by title for an unnumbered related
+        // work: a volume just added from here takes its row back on reload.
+        if let book = owned.first(where: volume.matches) {
             Button { selectedBook = book } label: {
                 BookRow(
                     title: book.title,
@@ -373,8 +374,7 @@ struct SeriesView: View {
     private func progress(_ series: BookSeries) -> (read: Int, published: Int) {
         let published = series.spine.filter { !$0.isForthcoming(asOf: currentYear) }
         let read = published.filter { volume in
-            guard let number = volume.number else { return false }
-            return ownedByNumber[number]?.status == .read
+            owned.first(where: volume.matches)?.status == .read
         }
         return (read.count, published.count)
     }
@@ -386,10 +386,6 @@ struct SeriesView: View {
             opinion = try await SeriesAPI.opinion(seriesId: seriesId)
             let mine = try await LibraryAPI.library()
             owned = mine.filter { $0.seriesId == seriesId }.flatMap(\.books)
-            ownedByNumber = Dictionary(
-                owned.compactMap { book in book.series?.volume.map { ($0, book) } },
-                uniquingKeysWith: { first, _ in first }
-            )
         } catch {
             errorMessage = reportError(error)
         }
@@ -435,13 +431,37 @@ struct SeriesView: View {
         }
     }
 
+    /// Adds a missing volume as a full record: the title lookup — the same AI
+    /// call as a title typed in the add sheet — writes its summary, genre, pages
+    /// and cover, and the volume is filed under this saga at its number, so its
+    /// row here turns into the reader's book as soon as the list reloads.
+    ///
+    /// The lookup spends a scan. When it cannot run — no scan left, the model
+    /// down — the volume is still added, with what the catalogue knows.
     private func add(_ volume: Volume, author: String) async {
         addingTitle = volume.title
         defer { addingTitle = nil }
+        // Another volume of a manga is a manga: the saga shares its format.
+        let format = owned.first?.format ?? .book
+        let membership = SeriesMembership(
+            id: seriesId,
+            name: series?.name ?? owned.first?.series?.name ?? volume.title,
+            volume: volume.number,
+            kind: volume.kind
+        )
+        var draft = BookDraft(title: volume.title, authors: [author], format: format)
+        if let found = try? await ScanAPI.lookUp(title: "\(volume.title) — \(author)"), found.recognized {
+            draft = found.asDraft
+            if draft.title.isEmpty { draft.title = volume.title }
+            if draft.authors.isEmpty { draft.authors = [author] }
+            draft.format = format
+        }
+        // Filed here whatever the lookup answered: the catalogue is what says
+        // which volume this is, and the row it fills.
+        draft.series = membership
+        draft.status = .toRead
         do {
-            // Another volume of a manga is a manga: the saga shares its format.
-            let format = ownedByNumber.values.first?.format ?? .book
-            _ = try await BookAPI.add(BookDraft(title: volume.title, authors: [author], format: format))
+            _ = try await BookAPI.add(draft)
             track(.bookAdded(source: .series))
             await load()
         } catch {
