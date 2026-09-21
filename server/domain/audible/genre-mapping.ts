@@ -46,8 +46,12 @@ const SHELF: Record<AudibleGenre, Shelf> = {
   'science-fiction': { genre: 'science-fiction' },
   fantasy: { genre: 'fantasy' },
   'science-fiction-fantasy': { genre: 'science-fiction', generic: true },
+  // The joint crime-and-thriller rack is ambiguous as the SF-fantasy one is;
+  // crime is where most of what it holds goes.
+  'mystery-thriller-suspense': { genre: 'crime', generic: true },
   thriller: { genre: 'thriller' },
   mystery: { genre: 'crime' },
+  'crime-fiction': { genre: 'crime' },
   horror: { genre: 'horror' },
   romance: { genre: 'romance' },
   'historical-fiction': { genre: 'historical-fiction' },
@@ -83,6 +87,7 @@ const SHELF: Record<AudibleGenre, Shelf> = {
   'fantasy/dragons': { genre: 'fantasy' },
   'fantasy/epic': { genre: 'fantasy' },
   'fantasy/historical': { genre: 'fantasy' },
+  'fantasy/sword-sorcery': { genre: 'fantasy' },
   'fantasy/urban-paranormal': { genre: 'fantasy' },
 
   'thriller/suspense': { genre: 'thriller' },
@@ -91,9 +96,12 @@ const SHELF: Record<AudibleGenre, Shelf> = {
   'thriller/historical': { genre: 'thriller' },
 
   'mystery/amateur-sleuth': { genre: 'crime' },
+  'mystery/cozy': { genre: 'crime' },
   'mystery/detective': { genre: 'crime' },
+  'mystery/hard-boiled': { genre: 'crime' },
   'mystery/historical': { genre: 'crime' },
   'mystery/noir': { genre: 'crime' },
+  'mystery/police-procedural': { genre: 'crime' },
   'mystery/private-investigator': { genre: 'crime' },
   'mystery/traditional': { genre: 'crime' },
 
@@ -116,6 +124,7 @@ const SHELF: Record<AudibleGenre, Shelf> = {
   'literary-fiction/contemporary': { genre: 'literary-fiction', generic: true },
   'literary-fiction/drama': { genre: 'drama' },
   'literary-fiction/family-life': { genre: 'literary-fiction' },
+  'literary-fiction/fiction': { genre: 'literary-fiction', generic: true },
   'literary-fiction/historical': { genre: 'historical-fiction' },
   'literary-fiction/sagas': { genre: 'literary-fiction' },
   'literary-fiction/sea-adventures': { genre: 'adventure' },
@@ -125,9 +134,15 @@ const SHELF: Record<AudibleGenre, Shelf> = {
   'history/europe': { genre: 'history' },
 
   'children/action-adventure': { genre: 'adventure' },
+  'children/mystery': { genre: 'crime' },
+  'children/science-fiction-fantasy': { genre: 'science-fiction', generic: true },
+  'children/fantasy': { genre: 'fantasy' },
+  'children/science-fiction': { genre: 'science-fiction' },
   'young-adult/literary-fiction': { genre: 'literary-fiction', generic: true },
   'young-adult/romance': { genre: 'romance' },
   'young-adult/science-fiction-fantasy': { genre: 'science-fiction', generic: true },
+  'young-adult/fantasy': { genre: 'fantasy' },
+  'young-adult/science-fiction': { genre: 'science-fiction' },
   'young-adult/thriller': { genre: 'thriller' },
 }
 

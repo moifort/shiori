@@ -178,3 +178,120 @@ describe('a title with nothing to read', () => {
     expect(genreFrom(item)).toBe('biography')
   })
 })
+
+/** A ladder exactly as the live catalogue returned it, root first.
+ *
+ *  Here the ids are typed out on purpose. `ladderOf` builds its ladders from the
+ *  package's own table, so a wrong id there went unseen: the test and the code
+ *  agreed with each other and both disagreed with Audible. These were read off
+ *  `api.audible.{fr,com}/1.0/catalog/products` on 21 September 2026. */
+const liveLadder = (...rungs: [id: string, name: string][]): CategoryLadder => ({
+  root: 'Genres',
+  categories: rungs.map(([id, name]) => ({ id, name })),
+})
+
+describe('real titles, as the live catalogue shelves them', () => {
+  const scienceFictionFantasy: [string, string] = ['21228885031', 'Science-Fiction et fantasy']
+  const fiction = liveLadder(
+    ['21228884031', 'Littérature, romans et fiction'],
+    ['21229019031', 'Fiction'],
+  )
+
+  test('Le Dernier vœu is fantasy, not literary fiction', () => {
+    const item = shelvedIn(
+      liveLadder(
+        ['21228877031', 'Jeunesse'],
+        ['21228926031', 'Science-fiction et fantasy'],
+        ['21229338031', 'Fantasy et magie'],
+      ),
+      fiction,
+      liveLadder(scienceFictionFantasy, ['21229021031', 'Fantasy'], ['21229701031', 'Épique']),
+      liveLadder(
+        scienceFictionFantasy,
+        ['21229021031', 'Fantasy'],
+        ['21229713031', 'Sorcellerie et épées'],
+      ),
+    )
+
+    expect(genreFrom(item)).toBe('fantasy')
+  })
+
+  test('Fondation is science fiction, not literary fiction', () => {
+    const item = shelvedIn(
+      fiction,
+      liveLadder(
+        scienceFictionFantasy,
+        ['21229020031', 'Science-fiction'],
+        ['21229684031', 'Cyberpunk'],
+      ),
+      liveLadder(scienceFictionFantasy, ['21229020031', 'Science-fiction']),
+    )
+
+    expect(genreFrom(item)).toBe('science-fiction')
+  })
+
+  // Only the children's rack shelves it, and that rack used to resolve its root
+  // alone: the audience, and no genre at all.
+  test('Harry Potter is fantasy filed under Jeunesse', () => {
+    const item = shelvedIn(
+      liveLadder(
+        ['21228877031', 'Jeunesse'],
+        ['21228926031', 'Science-fiction et fantasy'],
+        ['21229338031', 'Fantasy et magie'],
+      ),
+    )
+
+    expect(genreFrom(item)).toBe('fantasy')
+    expect(subgenresFrom(item).map(String)).toEqual(['Jeunesse'])
+  })
+
+  test('Le Crime de l’Orient-Express is crime, the earlier of two ladders', () => {
+    const item = shelvedIn(
+      liveLadder(
+        ['21228876031', 'Policier, thrillers et œuvres à suspense'],
+        ['21228905031', 'Policier'],
+        ['21229152031', 'Détectives traditionnels'],
+      ),
+      liveLadder(
+        ['21228876031', 'Policier, thrillers et œuvres à suspense'],
+        ['21228906031', 'Thrillers et romans à suspense'],
+      ),
+    )
+
+    expect(genreFrom(item)).toBe('crime')
+  })
+
+  // On audible.com, where nearly every id the package once held was shifted.
+  test('The Thursday Murder Club is crime on audible.com', () => {
+    const mystery: [string, string] = ['18574597011', 'Mystery, Thriller & Suspense']
+    const item = shelvedIn(
+      liveLadder(
+        ['18574426011', 'Literature & Fiction'],
+        ['18574456011', 'Genre Fiction'],
+        ['18574466011', 'Friendship'],
+      ),
+      liveLadder(mystery, ['18574606011', 'Mystery'], ['18574607011', 'Amateur Sleuths']),
+      liveLadder(mystery, ['18574606011', 'Mystery'], ['18574609011', 'Cozy']),
+      liveLadder(
+        mystery,
+        ['18574621011', 'Thriller & Suspense'],
+        ['18574623011', 'Crime Thrillers'],
+      ),
+      liveLadder(['24427740011', 'Comedy & Humor'], ['18574496011', 'Literature & Fiction']),
+    )
+
+    expect(genreFrom(item)).toBe('crime')
+  })
+
+  test('The Last Wish is fantasy on audible.com', () => {
+    const item = shelvedIn(
+      liveLadder(
+        ['18580606011', 'Science Fiction & Fantasy'],
+        ['18580607011', 'Fantasy'],
+        ['18580613011', 'Dragons & Mythical Creatures'],
+      ),
+    )
+
+    expect(genreFrom(item)).toBe('fantasy')
+  })
+})

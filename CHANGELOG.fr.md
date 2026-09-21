@@ -4,6 +4,13 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Un import Audible arrive dans le bon genre. Chaque rayon où Amazon range un titre a
+  désormais voix au chapitre, et plus seulement le premier cité, souvent le rayon fourre-tout
+  de la littérature : Fondation redevient de la science-fiction, Le Dernier vœu de la
+  fantasy. Harry Potter et les rayons fantasy jeunesse et adolescents, la fiction criminelle,
+  les cosy mysteries et la sorcellerie et épées sont reconnus, et les titres d’audible.com ne
+  tombent plus dans des rayons sans rapport. Les livres déjà importés sans genre, ou rangés
+  par erreur en littérature, sont corrigés une fois.
 - L’onglet Séries est découpé par genre et, dans un genre, place les sagas en cours
   d’abord, puis les terminées, puis celles pas encore commencées, le dernier changement
   d’état de lecture en tête de chacune. Chaque saga dit en toutes lettres où en est le

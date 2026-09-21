@@ -1,4 +1,4 @@
-import { readersDueForSync } from '~/domain/audible/business-rules'
+import { connectedReadersOf, readersDueForSync } from '~/domain/audible/business-rules'
 import * as repository from '~/domain/audible/infrastructure/repository'
 import type { ConnectedAccount } from '~/domain/audible/types'
 import type { UserId } from '~/domain/shared/types'
@@ -16,4 +16,8 @@ export namespace AudibleQuery {
    *  first. Readers who turned the sync off are not in it. */
   export const readersToSync = async (): Promise<UserId[]> =>
     readersDueForSync(await repository.findAll())
+
+  /** Every reader with a live account, the sync switch notwithstanding. */
+  export const connectedReaders = async (): Promise<UserId[]> =>
+    connectedReadersOf(await repository.findAll())
 }

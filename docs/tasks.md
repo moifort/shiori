@@ -91,7 +91,7 @@ schema, a domain command, or several screens at once; **large** brings in a new 
 - [x] **Library, replace the `+` CTA** with the import entry point styled like the "add a file"
       flow of the Vinarium wine record. That flow also offers to type only a title and let the
       AI do the search. The title-only path is a new scan mutation.
-- [ ] **Audible import, pick the right genre.** Checked against the public catalogue API
+- [x] **Audible import, pick the right genre.** Checked against the public catalogue API
       (`api.audible.fr/1.0/catalog/categories/{id}`) and forty real titles, the genre an import
       lands in is wrong for three reasons. **The ladder order decides:** `genreFrom` takes the
       first ladder Amazon returns, and that is often the catch-all "Littérature, romans et
