@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// The one empty state of the app, on the dashboard's model: an icon, a title,
-/// one sentence, and when there is something to do about it, one prominent
-/// button — a second, plainer one at most. Every list draws its emptiness with
+/// one sentence, and one prominent button. An empty list of the reader's own
+/// always offers the same one, "Scanner un livre": it is what fills every list.
+/// A second, plainer button exists for the rare screen that needs it. Every list draws its emptiness with
 /// it, so a reader meets the same shape wherever there is nothing to show yet.
 ///
 /// `failure` is the same shape for a list that could not load: the reason in

@@ -12,6 +12,9 @@ import SwiftUI
 /// status change leading each. The list is paginated, and a section grouped on
 /// the phone would grow again every time a page landed.
 struct SeriesListView: View {
+    /// Opens the add sheet, from the one button every empty state offers.
+    var onScan: () -> Void = {}
+
     @State private var viewModel = SeriesListViewModel()
     /// The saga being opened. A button and a destination rather than a
     /// navigation link: the link draws a chevron on every row, and a list of
@@ -33,22 +36,22 @@ struct SeriesListView: View {
                         EmptyStateView(
                             systemImage: "heart",
                             title: "Aucune série favorite",
-                            message: "Touchez le cœur d'une série pour la retrouver ici."
+                            message: "Touchez le cœur d'une série pour la retrouver ici.",
+                            primary: .init("Scanner un livre", systemImage: "camera") { onScan() }
                         )
                     } else if viewModel.stateFilter != nil {
                         EmptyStateView(
                             systemImage: viewModel.stateFilter?.symbol ?? "square.stack",
                             title: "Aucune série",
                             message: "Aucune de vos séries n'est dans cet état.",
-                            primary: .init("Voir toutes les séries", systemImage: "tray.full") {
-                                viewModel.stateFilter = nil
-                            }
+                            primary: .init("Scanner un livre", systemImage: "camera") { onScan() }
                         )
                     } else {
                         EmptyStateView(
                             systemImage: "square.stack",
                             title: "Aucune série",
-                            message: "Scannez un tome d'une saga et elle apparaîtra ici, avec tous ses volumes."
+                            message: "Scannez un tome d'une saga et elle apparaîtra ici, avec tous ses volumes.",
+                            primary: .init("Scanner un livre", systemImage: "camera") { onScan() }
                         )
                     }
                 } else {

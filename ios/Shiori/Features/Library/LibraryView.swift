@@ -13,7 +13,6 @@ struct LibraryView: View {
 
     @State private var viewModel = LibraryViewModel()
     @State private var selectedBook: Book?
-    @State private var showAudibleImport = false
 
     var body: some View {
         NavigationStack {
@@ -33,7 +32,6 @@ struct LibraryView: View {
                 onPrefetch: { viewModel.prefetchIfNeeded(for: $0) },
                 onLoadMore: { await viewModel.loadMore() },
                 onAdd: onAdd,
-                onImportFromAudible: { showAudibleImport = true },
                 onBookTapped: { selectedBook = $0 }
             )
             .sheet(item: $selectedBook) { book in
@@ -44,15 +42,6 @@ struct LibraryView: View {
                     onDeleted: { id in viewModel.remove(id: id) }
                 )
             }
-        }
-        .sheet(isPresented: $showAudibleImport) {
-            // An import can add a hundred books across every section, so the
-            // list is refetched rather than patched row by row as a single
-            // edit is.
-            AudibleImportView(onImported: { _ in
-                showAudibleImport = false
-                Task { await viewModel.load() }
-            })
         }
         // Over last session's snapshot when the disk had one: the list shows at
         // once and the spinner at its top says it is being brought up to date.

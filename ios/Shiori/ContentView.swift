@@ -170,7 +170,7 @@ struct ContentView: View {
                 LibraryView(onAdd: { showAddSheet = true }, requestedMode: $libraryMode)
             }
             Tab(TabSelection.series.label, systemImage: TabSelection.series.symbol, value: .series) {
-                SeriesListView()
+                SeriesListView(onScan: { showAddSheet = true })
             }
             Tab(
                 TabSelection.scan.label,

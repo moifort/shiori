@@ -31,7 +31,6 @@ struct LibraryPage: View {
     var onPrefetch: (String) -> Void = { _ in }
     var onLoadMore: () async -> Void = {}
     let onAdd: () -> Void
-    let onImportFromAudible: () -> Void
     let onBookTapped: (Book) -> Void
 
     /// The shelf is narrowed: an empty list says nothing matches, not that the
@@ -50,14 +49,15 @@ struct LibraryPage: View {
                     EmptyStateView(
                         systemImage: "heart",
                         title: "Aucun favori",
-                        message: "Touchez le cœur d'un livre pour le retrouver ici."
+                        message: "Touchez le cœur d'un livre pour le retrouver ici.",
+                        primary: .init("Scanner un livre", systemImage: "camera") { onAdd() }
                     )
                 } else if isNarrowed {
                     EmptyStateView(
                         systemImage: statusFilter?.symbol ?? "books.vertical",
                         title: "Aucun livre",
                         message: "Aucun livre de votre bibliothèque n'a ce statut.",
-                        primary: .init("Voir tous les livres", systemImage: "tray.full") { statusFilter = nil }
+                        primary: .init("Scanner un livre", systemImage: "camera") { onAdd() }
                     )
                 } else {
                     emptyState
@@ -165,9 +165,8 @@ struct LibraryPage: View {
         EmptyStateView(
             systemImage: "books.vertical",
             title: "Votre bibliothèque est vide",
-            message: "Scannez la couverture d'un livre, ajoutez-en un à la main, ou importez votre bibliothèque Audible.",
-            primary: .init("Scanner un livre", systemImage: "camera") { onAdd() },
-            secondary: .init("Importer depuis Audible", systemImage: "headphones") { onImportFromAudible() }
+            message: "Scannez la couverture d'un livre pour commencer.",
+            primary: .init("Scanner un livre", systemImage: "camera") { onAdd() }
         )
     }
 }
@@ -197,7 +196,6 @@ struct LibraryPage: View {
             errorMessage: nil,
             onRetry: {},
             onAdd: {},
-            onImportFromAudible: {},
             onBookTapped: { _ in }
         )
     }
@@ -225,7 +223,6 @@ struct LibraryPage: View {
             errorMessage: nil,
             onRetry: {},
             onAdd: {},
-            onImportFromAudible: {},
             onBookTapped: { _ in }
         )
     }
@@ -244,7 +241,6 @@ struct LibraryPage: View {
             errorMessage: nil,
             onRetry: {},
             onAdd: {},
-            onImportFromAudible: {},
             onBookTapped: { _ in }
         )
     }
