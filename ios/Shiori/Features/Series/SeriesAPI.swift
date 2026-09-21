@@ -41,7 +41,7 @@ enum SeriesAPI {
     static func mySeriesPage(limit: Int, offset: Int) async throws -> (items: [FollowedSeries], hasMore: Bool) {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.MySeriesPageQuery(limit: .some(limit), offset: .some(offset))
+            query: ShioriGraphQL.MySeriesPageQuery(limit: .some(Int32(limit)), offset: .some(Int32(offset)))
         )
         return (
             items: data.mySeriesPage.items.map { FollowedSeries(row: $0.fragments.followedSeriesRow) },

@@ -19,7 +19,7 @@ enum LibraryAPI {
     ) async throws -> LibraryPageResult {
         let query = ShioriGraphQL.LibraryPageQuery(
             status: GraphQLHelpers.graphQLNullable(status.map(Self.graphQLStatus)),
-            limit: .some(limit),
+            limit: .some(Int32(limit)),
             after: GraphQLHelpers.graphQLNullable(after)
         )
         let data = try await GraphQLHelpers.fetch(GraphQLClient.shared.apollo, query: query)
