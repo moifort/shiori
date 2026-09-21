@@ -1,0 +1,75 @@
+# Sharing a library with somebody.
+#
+# Friendship is symmetric: accepting an invitation opens both libraries at once,
+# and either of the two can end it for both. A friend's books come back as their
+# own type, which carries no reading note at all.
+
+query Friends {
+  friends {
+    ...FriendRow
+  }
+}
+
+fragment FriendRow on Friend {
+  userId
+  firstName
+  since
+}
+
+query FriendProfile($userId: UserId!) {
+  friendProfile(userId: $userId) {
+    userId
+    firstName
+    reading {
+      ...FriendBookRow
+    }
+    pile {
+      ...FriendBookRow
+    }
+    favorites {
+      ...FriendBookRow
+    }
+    sagas {
+      id
+      name
+      author
+      language
+      ownedCount
+    }
+  }
+}
+
+fragment FriendBookRow on FriendBook {
+  id
+  title
+  authors
+  format
+  language
+  coverUrl
+  status
+  rating
+  favorite
+  series {
+    id
+    name
+    volume
+    kind
+  }
+}
+
+mutation InviteFriend {
+  inviteFriend {
+    code
+    expiresAt
+  }
+}
+
+mutation AcceptFriendInvitation($code: String!) {
+  acceptFriendInvitation(code: $code) {
+    ...FriendRow
+  }
+}
+
+mutation RemoveFriend($userId: UserId!) {
+  removeFriend(userId: $userId)
+}

@@ -19,6 +19,11 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 - L’accueil compte les favoris, livres et séries confondus, dans une tuile qui ouvre la liste
   de tout ce qui porte un cœur. Les heures d’écoute quittent le graphique d’une bibliothèque
   sans livre audio, et le graphique se souvient de la mesure choisie d’un lancement à l’autre.
+- Une bibliothèque peut être partagée avec un ami. Le lecteur envoie un lien d’invitation, et
+  celui qui l’accepte voit son étagère pendant qu’il voit la sienne : cela s’ouvre des deux
+  côtés à la fois, et chacun des deux peut y mettre fin pour les deux. Le profil d’un ami
+  montre ses lectures en cours, sa pile, ses favoris et les séries qu’il suit. Les livres
+  marqués « ne pas partager » n’y figurent jamais, et aucune note de lecture n’est montrée.
 - Une bibliothèque Kindle peut être cataloguée depuis l’export de données qu’Amazon fournit à
   ses clients. Amazon n’expose aucune API de bibliothèque Kindle : il n’y a donc pas de compte
   à connecter ni de synchronisation nocturne. Le lecteur demande ses données une fois, puis

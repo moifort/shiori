@@ -25,6 +25,11 @@ the release tag is pushed.
 - The dashboard counts the favourites, books and sagas together, in a tile that opens the
   list of everything hearted. The listening hours leave the chart of a library with no
   recording, and the chart remembers which measure was chosen across launches.
+- A library can be shared with a friend. The reader sends an invitation link, and whoever
+  takes it up sees their shelf while they see theirs: it opens both ways at once, and either
+  of the two can end it for both. A friend's profile shows what they are reading, their pile,
+  their favourites and the sagas they are working through. Books marked "do not share" appear
+  nowhere, and no reading note is ever shown.
 - A Kindle library can be catalogued from the data export Amazon hands its customers. Amazon
   publishes no Kindle library API, so there is no account to connect and no nightly sync: the
   reader asks Amazon for their data once, and hands Shiori the file. The titles it holds are

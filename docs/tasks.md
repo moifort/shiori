@@ -92,7 +92,7 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       the page; and a shared image, which goes through the scan. Needs an app extension
       target, an app group so the extension and the app share the session, and a
       site-by-site URL reader that will break whenever Amazon redraws its page.
-- [ ] **Share a profile with friends.** A new screen lists the reader's friends; opening one
+- [x] **Share a profile with friends.** A new screen lists the reader's friends; opening one
       shows their books in progress and series in progress, their favourites, and their pile.
       Decided: friendship is symmetric — accepting an invitation opens both libraries at once,
       one state to store and nothing to explain — and it is established by a shared invitation

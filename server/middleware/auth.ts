@@ -19,6 +19,12 @@ export default defineEventHandler(async (event) => {
   // Public app configuration: read by the update gate, possibly signed out.
   if (path === '/app-config' || path.startsWith('/app-config?')) return
 
+  // The page an invitation link opens. Public by nature — whoever taps the link
+  // is not signed in, and may not have an account at all — and it gives nothing
+  // away: the code is already in their URL, and the page neither names the
+  // reader who invited them nor spends the invitation.
+  if (path.startsWith('/invite/')) return
+
   // App Store Server Notifications. Apple calls this with no bearer token of
   // ours; its proof of origin is the JWS signature on the payload, which the
   // route verifies against Apple's root certificates before acting on anything.

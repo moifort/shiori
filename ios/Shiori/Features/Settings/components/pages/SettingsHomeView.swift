@@ -44,6 +44,20 @@ struct SettingsHomeView: View {
                     .accessibilityIdentifier("settings-premium")
                 }
 
+                Section {
+                    NavigationLink {
+                        FriendsView()
+                    } label: {
+                        SettingsRow(
+                            icon: "person.2.fill",
+                            title: "Amis",
+                            subtitle: String(localized: "Partagez votre bibliothèque, voyez la leur"),
+                            tint: .purple
+                        )
+                    }
+                    .accessibilityIdentifier("settings-friends")
+                }
+
                 Section("Sources") {
                     ForEach(ImportSource.allCases) { source in
                         Button {
