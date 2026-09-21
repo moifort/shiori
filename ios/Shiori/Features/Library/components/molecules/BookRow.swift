@@ -45,14 +45,24 @@ struct BookRow: View {
                 }
 
             VStack(alignment: .leading, spacing: 3) {
-                if let volumeLabel {
-                    Text(volumeLabel)
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                // The marks share the first line with the text rather than
+                // standing in a column of their own: level with the top of the
+                // cover on every row, and the author and the chips below keep
+                // the whole width instead of being squeezed beside them.
+                HStack(alignment: .top, spacing: 8) {
+                    if let volumeLabel {
+                        Text(volumeLabel)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    } else {
+                        titleText
+                    }
+                    Spacer(minLength: 0)
+                    marks
                 }
-                Text(title)
-                    .font(.body.weight(.medium))
-                    .lineLimit(2)
+                if volumeLabel != nil {
+                    titleText
+                }
                 Text(authorLine)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -80,38 +90,6 @@ struct BookRow: View {
                     .padding(.top, 1)
                 }
             }
-
-            Spacer(minLength: 8)
-
-            // Everything the row says about the object and about the reader's
-            // judgement, on one line level with the top of the cover — the
-            // same line on every row, so the eye finds it where it left it
-            // whether or not a volume label sits above the title.
-            HStack(spacing: 6) {
-                if let language, language.isForeign {
-                    Text(language.flag)
-                        .accessibilityLabel(Text(language.label))
-                }
-                if format == .audiobook {
-                    // A recording sits in the same list as the printed books
-                    // and reads nothing like one — the cover alone never
-                    // says so.
-                    Image(systemName: "headphones")
-                        .foregroundStyle(.secondary)
-                        .accessibilityLabel(Text("Livre audio"))
-                }
-                if isHidden {
-                    // Says the book is excluded from sharing. Only ever an
-                    // icon, tucked in the corner: spelling it out on every
-                    // row would shout a private choice at anyone glancing
-                    // over a shoulder.
-                    Image(systemName: "eye.slash")
-                        .foregroundStyle(.secondary)
-                        .accessibilityLabel(Text("Non partagé"))
-                }
-                OpinionMark(rating: rating, isFavorite: isFavorite, font: .caption)
-            }
-            .font(.caption)
         }
         // Tight, because a library is read by scanning many rows at once. The
         // badge overhangs the cover by exactly this much, so it stays inside
@@ -130,6 +108,41 @@ struct BookRow: View {
         .accessibilityValue(Text(status.label))
     }
 
+    private var titleText: some View {
+        Text(title)
+            .font(.body.weight(.medium))
+            .lineLimit(2)
+    }
+
+    /// Everything the row says about the object and about the reader's
+    /// judgement, on one line in the top corner — the same place on every row,
+    /// so the eye finds it where it left it.
+    private var marks: some View {
+        HStack(spacing: 6) {
+            if let language, language.isForeign {
+                LanguageTag(language: language)
+            }
+            if format == .audiobook {
+                // A recording sits in the same list as the printed books and
+                // reads nothing like one — the cover alone never says so.
+                Image(systemName: "headphones")
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(Text("Livre audio"))
+            }
+            if isHidden {
+                // Says the book is excluded from sharing. Only ever an icon,
+                // tucked in the corner: spelling it out on every row would
+                // shout a private choice at anyone glancing over a shoulder.
+                Image(systemName: "eye.slash")
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(Text("Non partagé"))
+            }
+            OpinionMark(rating: rating, isFavorite: isFavorite, font: .caption)
+        }
+        .font(.caption)
+        .fixedSize()
+    }
+
     /// A word in a capsule, sized for a row: the detail screen's pills would eat
     /// the line. Tinted rather than grey — a shelf of identical grey chips is a
     /// texture, and the colour is what lets the eye find the fantasy among the
@@ -140,35 +153,6 @@ struct BookRow: View {
             .padding(.vertical, 1)
             .foregroundStyle(tint)
             .background(tint.opacity(0.15), in: Capsule())
-    }
-}
-
-/// The reading status pinned to a cover's corner. Icon-only, because a 56-point
-/// cover leaves no room for a word; the colour carries the state at a glance and
-/// the symbol keeps it distinguishable without colour.
-private struct ReadingStatusBadge: View {
-    let status: ReadingStatus
-
-    private var tint: Color {
-        switch status {
-        case .toRead: .gray
-        case .reading: .blue
-        case .read: .green
-        }
-    }
-
-    var body: some View {
-        Image(systemName: status.symbol)
-            .font(.system(size: 10, weight: .bold))
-            .foregroundStyle(.white)
-            // Wider than the glyph needs, so the symbol sits in the disc with
-            // air around it rather than filling it to the rim.
-            .frame(width: 24, height: 24)
-            .background(tint, in: Circle())
-            // A ring in the row's own background lifts the badge off whatever
-            // colour the cover happens to be under it.
-            .overlay(Circle().strokeBorder(Color(.secondarySystemGroupedBackground), lineWidth: 2))
-            .accessibilityHidden(true)
     }
 }
 

@@ -65,7 +65,7 @@ struct FavoritesView: View {
                                     HStack(spacing: 6) {
                                         Text(entry.name).font(.body.weight(.medium))
                                         if let language = entry.language, language.isForeign {
-                                            Text(language.flag).accessibilityLabel(Text(language.label))
+                                            LanguageTag(language: language)
                                         }
                                     }
                                     if let author = entry.author {

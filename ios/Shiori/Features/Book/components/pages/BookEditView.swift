@@ -135,7 +135,7 @@ struct BookEditView: View {
                     Picker(selection: $language) {
                         Text("Non renseignée").tag(BookLanguage?.none)
                         ForEach(BookLanguage.allCases) { language in
-                            Text("\(language.flag)  \(language.label)").tag(BookLanguage?.some(language))
+                            Text(language.label).tag(BookLanguage?.some(language))
                         }
                     } label: {
                         Label {

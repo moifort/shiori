@@ -93,14 +93,14 @@ struct LibraryPage: View {
                     } header: {
                         HStack(spacing: 6) {
                             Text(seriesName)
-                            // The flag says which of a saga's two shelves this is.
+                            // The tag says which of a saga's two shelves this is.
                             // Trailing the name rather than leading it: the name is
                             // what the reader scans for, the language only tells two
                             // headings with that name apart. And only the foreign
                             // shelf gets one: the reader's own language is the default
-                            // and drawing it would flag every heading.
+                            // and drawing it would tag every heading.
                             if let language = section.language, language.isForeign {
-                                Text(language.flag).accessibilityLabel(Text(language.label))
+                                LanguageTag(language: language)
                             }
                             Spacer(minLength: 8)
                             // The saga's own heart or stars, on the heading's line
@@ -151,7 +151,7 @@ struct LibraryPage: View {
                     subgenre: book.subgenres.first,
                     format: book.format,
                     // Inside a saga the heading already carries the language:
-                    // flagging every row under it would say the same thing
+                    // tagging every row under it would say the same thing
                     // twelve times.
                     language: section.seriesName == nil ? book.language : nil,
                     isFavorite: book.favorite,

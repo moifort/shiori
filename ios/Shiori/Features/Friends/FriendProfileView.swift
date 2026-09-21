@@ -97,7 +97,7 @@ struct FriendProfileView: View {
                 HStack(spacing: 6) {
                     Text(saga.name).font(.body.weight(.medium))
                     if let language = saga.language, language.isForeign {
-                        Text(language.flag).accessibilityLabel(Text(language.label))
+                        LanguageTag(language: language)
                     }
                 }
                 if let author = saga.author {

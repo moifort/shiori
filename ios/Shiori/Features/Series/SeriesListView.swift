@@ -97,7 +97,7 @@ struct SeriesListView: View {
                     // the name, as in the library headings: the name is what
                     // the reader scans for, and only foreign, as there too.
                     if let language = entry.language, language.isForeign {
-                        Text(language.flag).accessibilityLabel(Text(language.label))
+                        LanguageTag(language: language)
                     }
                 }
                 if let author = entry.author {

@@ -4,7 +4,8 @@ import Foundation
 /// never the language the app is being used in.
 ///
 /// A closed list, for the reason genres are closed and one of its own: every
-/// value draws a flag, and an arbitrary ISO code has no flag to draw. An edition
+/// value is named in the reader's language, and an arbitrary ISO code has no
+/// name the app can print. An edition
 /// in a language the list does not carry keeps no language at all, rather than an
 /// `other` that would be a second way of saying "unknown".
 enum BookLanguage: String, Codable, CaseIterable, Identifiable, Sendable {
@@ -35,40 +36,20 @@ enum BookLanguage: String, Codable, CaseIterable, Identifiable, Sendable {
 
     /// The language the phone is set to, when it is one this list draws. Nil
     /// when the phone speaks something the list does not: every edition is then
-    /// foreign and every flag shows.
+    /// foreign and every tag shows.
     static var device: BookLanguage? {
         Locale.current.language.languageCode.flatMap { BookLanguage(rawValue: $0.identifier) }
     }
 
-    /// Whether a flag is worth drawing. A reader whose phone is in French owns a
-    /// French library by default, and a 🇫🇷 on every row says nothing; the flag
-    /// marks the exception, the edition in another language. Which is why this
+    /// Whether a language tag is worth drawing. A reader whose phone is in French
+    /// owns a French library by default, and an "FR" on every row says nothing;
+    /// the tag marks the exception, the edition in another language. Which is why this
     /// compares to the phone, not to the reader's most common language: the
     /// phone is known before the library is loaded and never shifts as it grows.
     var isForeign: Bool { self != Self.device }
 
-    /// The flag a reader reads as "this one is the French edition". A language is
-    /// not a country and several of these are spoken in many: the flag is a
-    /// convenience for telling two shelves apart at a glance, not a claim about
-    /// where the book was printed or who speaks the language.
-    var flag: String {
-        switch self {
-        case .fr: "🇫🇷"
-        case .en: "🇬🇧"
-        case .es: "🇪🇸"
-        case .de: "🇩🇪"
-        case .it: "🇮🇹"
-        case .pt: "🇵🇹"
-        case .nl: "🇳🇱"
-        case .sv: "🇸🇪"
-        case .pl: "🇵🇱"
-        case .ru: "🇷🇺"
-        case .uk: "🇺🇦"
-        case .tr: "🇹🇷"
-        case .ar: "🇸🇦"
-        case .ja: "🇯🇵"
-        case .zh: "🇨🇳"
-        case .ko: "🇰🇷"
-        }
-    }
+    /// The code drawn on the language tag: "EN", "JA". A code rather than a flag,
+    /// because a language is not a country — English is not British, Spanish not
+    /// Spanish — and a code is what a bookshop prints beside a foreign edition.
+    var code: String { rawValue.uppercased() }
 }
