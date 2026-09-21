@@ -257,3 +257,33 @@ describe('the sagas a reader follows, a page at a time', () => {
     expect(second).toEqual({ hasMore: false, items: [{ name: 'Hypérion' }] })
   })
 })
+
+describe('the Series tab, sectioned by genre', () => {
+  const addSaga = async (name: string, genre: string) => {
+    const result = await execute(
+      `mutation { addBook(input: { title: "${name} 1", authors: ["Auteur"], genre: ${genre}, ` +
+        `series: { id: "${name.toLowerCase()}--auteur", name: "${name}", volume: 1, kind: MAIN } }) { id } }`,
+    )
+    expect(result.errors).toBeUndefined()
+  }
+
+  // Paginated, the phone cannot group rows itself without a section growing
+  // again each time a page lands: the pages come grouped.
+  test('serves the sagas grouped by genre, alphabetically within one', async () => {
+    await addSaga('Hypérion', 'SCIENCE_FICTION')
+    await addSaga('Dune', 'SCIENCE_FICTION')
+    await addSaga('Wheel', 'FANTASY')
+
+    const result = await execute(
+      '{ mySeriesPage(limit: 10) { items { name genre progress { readCount } } } }',
+    )
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.mySeriesPage).toEqual({
+      items: [
+        { name: 'Wheel', genre: 'FANTASY', progress: null },
+        { name: 'Dune', genre: 'SCIENCE_FICTION', progress: null },
+        { name: 'Hypérion', genre: 'SCIENCE_FICTION', progress: null },
+      ],
+    })
+  })
+})

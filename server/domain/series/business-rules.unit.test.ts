@@ -1,7 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import {
   followedSagasOf,
+  genreOf,
   inCatalogueOrder,
+  inGenreOrder,
+  progressOf,
   splitBySpine,
   stateOf,
 } from '~/domain/series/business-rules'
@@ -140,5 +143,59 @@ describe('followedSagasOf', () => {
   // from somewhere, and the volumes the reader owns are the only source there is.
   test('takes the author from the first volume that names one', () => {
     expect(followedSagasOf([volumeOf('Dune', DUNE)])[0]?.author).toBe(AuthorName('Frank Herbert'))
+  })
+})
+
+describe('progressOf', () => {
+  test('counts the read volumes of the published spine', () => {
+    const series = saga([
+      volume({ title: 'One', number: VolumeNumber(1) }),
+      volume({ title: 'Two', number: VolumeNumber(2) }),
+      volume({ title: 'Three', number: VolumeNumber(3) }),
+    ])
+    expect(progressOf(series, new Set([1, 3]), THIS_YEAR)).toEqual({ readCount: 2, totalCount: 3 })
+  })
+
+  // A finished spine must read as finished: a novella and an announced volume
+  // would otherwise hold the count below the total for years.
+  test('leaves related works and announced volumes out of the count', () => {
+    const series = saga([
+      volume({ title: 'One', number: VolumeNumber(1) }),
+      volume({ title: 'Next', number: VolumeNumber(2), publishedIn: Year(2030) }),
+      volume({ title: 'Side story', kind: 'novella' }),
+    ])
+    expect(progressOf(series, new Set([1]), THIS_YEAR)).toEqual({ readCount: 1, totalCount: 1 })
+  })
+
+  test('has nothing to measure on a catalogue with no numbered volume', () => {
+    expect(progressOf(saga([volume({ title: 'Loose' })]), new Set(), THIS_YEAR)).toBeNull()
+  })
+})
+
+describe('genreOf', () => {
+  test('is the genre most volumes carry', () => {
+    expect(
+      genreOf([{ genre: 'fantasy' }, { genre: 'science-fiction' }, { genre: 'science-fiction' }]),
+    ).toBe('science-fiction')
+  })
+
+  test('breaks a tie on the volume met first', () => {
+    expect(genreOf([{ genre: 'horror' }, { genre: 'fantasy' }])).toBe('horror')
+  })
+
+  test('is unknown when no volume has a genre', () => {
+    expect(genreOf([{}, {}])).toBeUndefined()
+  })
+})
+
+describe('inGenreOrder', () => {
+  test('groups by genre in the closed list order, no genre last, keeping order within', () => {
+    const sagas = [
+      { name: 'A' },
+      { name: 'B', genre: 'science-fiction' as const },
+      { name: 'C', genre: 'fantasy' as const },
+      { name: 'D', genre: 'science-fiction' as const },
+    ]
+    expect(inGenreOrder(sagas).map((saga) => saga.name)).toEqual(['C', 'B', 'D', 'A'])
   })
 })

@@ -1,4 +1,5 @@
-import type { BookLanguage } from '~/domain/book/types'
+import type { BookLanguage, Genre } from '~/domain/book/types'
+import { GENRES } from '~/domain/book/types'
 import type {
   Series,
   SeriesId,
@@ -35,6 +36,49 @@ export const stateOf = (
     (volume) => volume.number !== undefined && readVolumeNumbers.has(volume.number),
   )
   return everyPublishedRead ? 'complete' : 'in-progress'
+}
+
+/** How far the reader is into a saga, measured on the numbered spine of
+ *  published volumes — the same yardstick as the home screen's progress bars.
+ *  Related works and announced volumes are left out: counting them would make a
+ *  finished spine look unfinished.
+ *
+ *  Null when there is no spine to measure against: a catalogue whose volumes
+ *  are all unnumbered or all announced says nothing about how far along one is. */
+export const progressOf = (
+  series: Series,
+  readVolumeNumbers: ReadonlySet<number>,
+  currentYear: Year,
+): { readCount: number; totalCount: number } | null => {
+  const spine = publishedVolumes(series, currentYear).filter(
+    (volume) => volume.kind === 'main' && volume.number !== undefined,
+  )
+  if (spine.length === 0) return null
+  const readCount = spine.filter((volume) => readVolumeNumbers.has(Number(volume.number))).length
+  return { readCount, totalCount: spine.length }
+}
+
+/** The genre a saga is shelved under: the one most of its owned volumes carry.
+ *  A tie goes to the genre met first, so the answer does not change when the
+ *  same books are read in another order... as long as they arrive in the same
+ *  order, which the library guarantees. Undefined when no volume has a genre. */
+export const genreOf = (books: readonly { genre?: Genre }[]): Genre | undefined => {
+  const counts = new Map<Genre, number>()
+  for (const { genre } of books) if (genre) counts.set(genre, (counts.get(genre) ?? 0) + 1)
+  let leading: Genre | undefined
+  for (const [genre, count] of counts)
+    if (leading === undefined || count > (counts.get(leading) ?? 0)) leading = genre
+  return leading
+}
+
+/** Sagas grouped by genre for a list sectioned on it: the closed list's own
+ *  order, sagas of no genre last, and within a genre the order they came in.
+ *
+ *  Done on the server rather than on the phone because the list is paginated:
+ *  grouped on the client, a section would grow again every time a page lands. */
+export const inGenreOrder = <Saga extends { genre?: Genre }>(sagas: readonly Saga[]): Saga[] => {
+  const rank = (saga: Saga) => (saga.genre ? GENRES.indexOf(saga.genre) : GENRES.length)
+  return [...sagas].sort((left, right) => rank(left) - rank(right))
 }
 
 /** Catalogue order for a whole saga. */

@@ -1,8 +1,14 @@
 import { readVolumeNumbersOf } from '~/domain/book/business-rules'
-import { BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
+import { BookLanguageEnum, GenreEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { BookQuery } from '~/domain/book/query'
-import type { BookLanguage } from '~/domain/book/types'
-import { followedSagasOf, stateOf } from '~/domain/series/business-rules'
+import type { BookLanguage, Genre } from '~/domain/book/types'
+import {
+  followedSagasOf,
+  genreOf,
+  inGenreOrder,
+  progressOf,
+  stateOf,
+} from '~/domain/series/business-rules'
 import { SeriesStateEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { SeriesType } from '~/domain/series/infrastructure/graphql/types'
 import { SeriesQuery } from '~/domain/series/query'
@@ -29,11 +35,25 @@ type FollowedSeries = {
   name: SeriesName
   author?: AuthorName
   language?: BookLanguage
+  genre?: Genre
   catalogue: Series | null
   opinion: SeriesOpinion | null
   state: SeriesState | null
+  progress: SagaProgress | null
   ownedCount: CountValue
 }
+
+type SagaProgress = { readCount: number; totalCount: number }
+
+const SagaProgressType = builder.objectRef<SagaProgress>('SagaProgress').implement({
+  description:
+    'How far the reader is into a saga, on the numbered spine of published volumes: ' +
+    'related works and announced volumes are not counted.',
+  fields: (t) => ({
+    readCount: t.exposeInt('readCount', { description: 'Spine volumes the reader has read' }),
+    totalCount: t.exposeInt('totalCount', { description: 'Spine volumes published so far' }),
+  }),
+})
 
 const FollowedSeriesPageType = builder
   .objectRef<{ items: FollowedSeries[]; hasMore: boolean }>('FollowedSeriesPage')
@@ -67,6 +87,14 @@ const FollowedSeriesType = builder.objectRef<FollowedSeries>('FollowedSeries').i
         'client keying rows on the id alone must key on the pair instead.',
       resolve: (followed) => followed.language ?? null,
     }),
+    genre: t.field({
+      type: GenreEnum,
+      nullable: true,
+      description:
+        'The genre most of the owned volumes carry, which is what the Series tab is ' +
+        'sectioned on. Null when none of them has one.',
+      resolve: (followed) => followed.genre ?? null,
+    }),
     catalogue: t.field({
       type: SeriesType,
       nullable: true,
@@ -94,6 +122,15 @@ const FollowedSeriesType = builder.objectRef<FollowedSeries>('FollowedSeries').i
         'Null without a catalogue: which volumes exist is exactly what is unknown ' +
         'then, and IN_PROGRESS would be a guess dressed as a fact.',
       resolve: (followed) => followed.state,
+    }),
+    progress: t.field({
+      type: SagaProgressType,
+      nullable: true,
+      description:
+        'How many of the published spine volumes the reader has read. Null without a ' +
+        'catalogue, and on a catalogue with no numbered published volume: there is ' +
+        'nothing to count against then.',
+      resolve: (followed) => followed.progress,
     }),
     ownedCount: t.field({
       type: 'Count',
@@ -125,14 +162,16 @@ builder.queryFields((t) => ({
   mySeriesPage: t.field({
     type: FollowedSeriesPageType,
     description:
-      'One page of `mySeries`, in the same order, for a list that draws as it ' +
-      'scrolls. Offset-paginated: pass the number of rows already shown.',
+      'One page of `mySeries`, for a list that draws as it scrolls and is sectioned ' +
+      'by genre: grouped by `genre` in the order of the enum, sagas of no genre ' +
+      'last, alphabetically within a genre. Offset-paginated: pass the number of ' +
+      'rows already shown.',
     args: {
       limit: t.arg.int({ defaultValue: 40, description: 'Maximum sagas in the page' }),
       offset: t.arg.int({ defaultValue: 0, description: 'Rows to skip' }),
     },
     resolve: async (_root, args, context) => {
-      const rows = await followedSeriesOf(context.userId)
+      const rows = inGenreOrder(await followedSeriesOf(context.userId))
       const limit = Math.max(1, Math.min(args.limit ?? 40, 200))
       const offset = Math.max(0, args.offset ?? 0)
       return { items: rows.slice(offset, offset + limit), hasMore: offset + limit < rows.length }
@@ -167,14 +206,17 @@ const followedSeriesOf = async (userId: UserId): Promise<FollowedSeries[]> => {
   const currentYear = Year(new Date().getUTCFullYear())
   return sagas.map((saga) => {
     const catalogue = catalogued.get(saga.id) ?? null
+    const read = readVolumeNumbersOf(saga.books)
     return {
       id: saga.id,
       name: saga.name,
       author: saga.author,
       language: saga.language,
+      genre: genreOf(saga.books),
       catalogue,
       opinion: opinions.get(saga.id) ?? null,
-      state: catalogue ? stateOf(catalogue, readVolumeNumbersOf(saga.books), currentYear) : null,
+      state: catalogue ? stateOf(catalogue, read, currentYear) : null,
+      progress: catalogue ? progressOf(catalogue, read, currentYear) : null,
       ownedCount: Count(saga.books.length),
     }
   })

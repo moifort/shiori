@@ -527,6 +527,11 @@ type FollowedSeries {
   What the world knows of the saga. Null until somebody scans a volume of it or opens it with `series`: an import and a manual entry both name a saga without describing it.
   """
   catalogue: Series
+
+  """
+  The genre most of the owned volumes carry, which is what the Series tab is sectioned on. Null when none of them has one.
+  """
+  genre: Genre
   id: SeriesId!
 
   """
@@ -544,6 +549,11 @@ type FollowedSeries {
 
   """How many volumes of the saga are in the library."""
   ownedCount: Count!
+
+  """
+  How many of the published spine volumes the reader has read. Null without a catalogue, and on a catalogue with no numbered published volume: there is nothing to count against then.
+  """
+  progress: SagaProgress
 
   """
   Derived, never stored. COMPLETE once every published volume has been read.
@@ -1317,7 +1327,7 @@ type Query {
   mySeries: [FollowedSeries!]!
 
   """
-  One page of `mySeries`, in the same order, for a list that draws as it scrolls. Offset-paginated: pass the number of rows already shown.
+  One page of `mySeries`, for a list that draws as it scrolls and is sectioned by genre: grouped by `genre` in the order of the enum, sagas of no genre last, alphabetically within a genre. Offset-paginated: pass the number of rows already shown.
   """
   mySeriesPage(
     """Maximum sagas in the page"""
@@ -1425,6 +1435,17 @@ enum ReadingStatus {
 
   """On the pile. Clears any reading date it had."""
   TO_READ
+}
+
+"""
+How far the reader is into a saga, on the numbered spine of published volumes: related works and announced volumes are not counted.
+"""
+type SagaProgress {
+  """Spine volumes the reader has read"""
+  readCount: Int!
+
+  """Spine volumes published so far"""
+  totalCount: Int!
 }
 
 """
