@@ -4,6 +4,13 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- L’accueil est dessiné dès le premier lancement : une bibliothèque vide montre chaque carte
+  avec une esquisse de ce qu’elle contiendra, sous une invitation à scanner un premier livre.
+  Toutes les listes disent de la même façon qu’elles sont vides, ou qu’elles n’ont pas pu se
+  charger.
+- L’accueil des nouveaux lecteurs propose d’importer une bibliothèque Audible après le prénom,
+  une étape que l’on peut passer.
+- Le catalogue d’une série ne liste plus deux fois le même tome.
 - Un livre peut être marqué « Abandonné » depuis son menu quand le lecteur l’a arrêté faute de
   l’avoir aimé. Il a sa propre section en bas de la bibliothèque et son propre filtre, ne compte
   dans aucune statistique de lecture, et l’accueil compte les livres abandonnés dans une petite

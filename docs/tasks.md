@@ -166,19 +166,19 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       the typographic placeholder the series screen uses for them. That reads the catalogue
       for every row of the page, which the denormalized layout was built to avoid: add a
       per-request loader for `series/{seriesKey}` before shipping, and a read-budget test.
-- [ ] **Series catalogue, no volume listed twice.** The Blood Song screen shows Tome 1 and
+- [x] **Series catalogue, no volume listed twice.** The Blood Song screen shows Tome 1 and
       Tome 2 twice each, with the same book behind both rows. The grounded catalogue call can
       return one volume per edition it finds, and `catalogueSeries` stores the list as the
       model answered it, with no deduplication between there and the screen. Deduplicate while
       parsing: one main volume per number, one unnumbered entry per kind and slugified title.
       No migration: the stored catalogues are cleaned by hand in the database.
-- [ ] **Onboarding offers the Audible import.** A new reader lands on an empty library, while
+- [x] **Onboarding offers the Audible import.** A new reader lands on an empty library, while
       an Audible listener already has one waiting. Add a step after the first name that offers
       to connect Audible, with a plain way to skip it. It reuses `AudibleImportView` as it
       stands rather than a second copy of the flow. The step comes after
       `completeOnboarding`, so the welcome scans are granted even if the reader abandons
       the Amazon sign-in. Skipping, or closing the import, leads into the app as today.
-- [ ] **One empty state for every list, on the dashboard's model.** The dashboard's empty
+- [x] **One empty state for every list, on the dashboard's model.** The dashboard's empty
       library page — icon, title, one sentence, a prominent "Scanner un livre" button — is
       the reference. Every list gets the same shape. Today each draws its own
       `ContentUnavailableView` with its own wording, some with an action, some without: the
@@ -186,7 +186,7 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       profile. Extract one shared component in `Shared/Components` that takes the icon, title,
       sentence and optional action, and use it everywhere. Error states ("… indisponible",
       "Réessayer") get the same treatment, as a second variant of the same component.
-- [ ] **Dashboard drawn even when the library is empty.** Instead of the full-page empty
+- [x] **Dashboard drawn even when the library is empty.** Instead of the full-page empty
       state, show the dashboard itself with every card in a designed empty state: a muted
       placeholder of what the card will hold (grey bars for the reading chart, blank cover
       tiles for the shelves, an empty progress ring for the series) under a short line that

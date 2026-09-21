@@ -10,6 +10,11 @@ the release tag is pushed.
 
 ## Unreleased
 
+- The dashboard is drawn from the first launch: an empty library shows every card with a
+  sketch of what it will hold, under a prompt to scan the first book. Every list says it is
+  empty, or could not load, the same way.
+- Onboarding offers to import an Audible library after the first name, and can be skipped.
+- A saga's catalogue no longer lists the same volume twice.
 - A book can be marked "Abandonné" from its menu when the reader stopped because they did not
   like it. It sits in a section of its own at the bottom of the library, has its own filter,
   counts in no reading statistic, and the dashboard counts the dropped books in a small tile
