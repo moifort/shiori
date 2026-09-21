@@ -9,10 +9,13 @@ mock.module('~/system/config', () => ({ config: () => ({ googleApiKey: 'test-key
  *  with an answer, including the answers a model really produces. */
 let answers: unknown[] = []
 const calls: string[] = []
+/** The text each step was prompted with, keyed by step. */
+const prompts: Record<string, string> = {}
 
 mock.module('~/domain/scan/gemini', () => ({
-  generate: async ({ step }: { step: string }) => {
+  generate: async ({ step, parts }: { step: string; parts: { text?: string }[] }) => {
     calls.push(step)
+    prompts[step] = parts.map((part) => part.text ?? '').join('')
     const value = answers.shift()
     if (value === undefined) throw new Error(`no queued answer for step "${step}"`)
     if (value instanceof Error) throw value
@@ -179,6 +182,28 @@ describe('classifying the genre', () => {
     const { result } = await Scan.scanWithCache(image, 'fr')
 
     expect((result.subgenres ?? []).map(String)).toEqual(subgenres.slice(0, 3))
+  })
+})
+
+describe('naming the edition', () => {
+  // A book has several editions in one language — the Folio pocket and the
+  // Québec edition of the same translation — and only the one on the shelf has
+  // the cover the reader recognizes.
+  test('asks for the ISBN of the edition the cover names', async () => {
+    answers = [{ ...aCover, publisher: 'folio', language: 'fr' }, anEnrichment, aCatalogue]
+
+    await Scan.scanWithCache(image, 'fr')
+
+    expect(prompts.enrichment).toContain('éditeur « folio », en français')
+    expect(prompts.enrichment).toContain("l'ISBN-13 de CETTE édition")
+  })
+
+  test('falls back to an edition in the reader language for a typed title', async () => {
+    answers = [anEnrichment, aCatalogue]
+
+    await Scan.lookUpTitle(BookTitle('Le Nom du vent'), 'en')
+
+    expect(prompts.enrichment).toContain('Édition : en anglais.')
   })
 })
 

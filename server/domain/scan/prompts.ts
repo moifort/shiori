@@ -1,4 +1,4 @@
-import type { ScanLanguage } from '~/domain/scan/types'
+import type { ScanLanguage, ScanResult } from '~/domain/scan/types'
 import { VOLUME_KINDS } from '~/domain/series/types'
 
 /** The language name is written into the prompt so Gemini emits every free-text
@@ -32,18 +32,29 @@ export const visionPrompt = (language: ScanLanguage) =>
 
 N'INVENTE RIEN. Si une information n'est pas visible sur l'image, mets null. Toutes les valeurs textuelles doivent être en ${LANGUAGE_NAMES[language]}.`
 
+/** What step 1 read off the cover that step 2 needs to name the edition, not
+ *  merely the work: the reader owns one object, and its ISBN is that object's. */
+type EditionSeen = Pick<ScanResult, 'title' | 'authors' | 'publisher' | 'language'>
+
+const languageNames = new Intl.DisplayNames(['fr'], { type: 'language' })
+
+/** The edition the reader holds, as precisely as the cover said. A typed title
+ *  has no publisher, so it falls back to an edition in the reader's language. */
+const editionOf = (publisher: string | undefined, language: string) =>
+  `Édition : ${publisher ? `éditeur « ${publisher} », ` : ''}en ${languageNames.of(language)}. C'est de CETTE édition que parlent pageCount et isbn13.`
+
 /** Step 2 — what the web knows. This is where grounding earns its cost: series
  *  membership in particular is what the cover conveys badly or not at all, and
  *  it is what the whole series feature is built on. */
 export const enrichmentPrompt = (
-  title: string,
-  authors: string[],
+  { title, authors, publisher, language: editionLanguage }: EditionSeen,
   language: ScanLanguage,
   source: 'cover' | 'typed' = 'cover',
 ) =>
   `${source === 'typed' ? TYPED_TITLE_PREFACE : ''}Recherche sur le web les informations de ce livre et renseigne la fiche.
 
 Livre : « ${title} »${authors.length > 0 ? ` de ${authors.join(', ')}` : ''}
+${editionOf(publisher, editionLanguage ?? language)}
 
 Renseigne :
 - title et authors : corrige-les si la recherche montre que la lecture de la couverture était fautive, sinon reprends-les tels quels.
@@ -51,8 +62,8 @@ Renseigne :
 - firstPublishedIn : l'année de première publication de l'ŒUVRE, pas de cette édition.
 - genre : UN SEUL genre, choisi dans la liste imposée par le schéma : le plus précis qui convienne au contenu. Le format de l'objet (manga, BD) et le public visé (jeunesse, young adult) ne sont pas des genres. Mets other si aucun ne convient.
 - subgenres : de 0 à 3 sous-genres libres qui précisent le genre (« dark fantasy », « space opera », « shōnen », « jeunesse »). Classe-les du plus représentatif au moins représentatif : le premier doit être celui qui décrit le mieux ce livre, car c'est le seul que le lecteur verra dans sa liste. Ne répète pas le genre.
-- pageCount : le nombre de pages d'une édition courante, ou null.
-- isbn13 : l'ISBN-13 d'une édition courante. Mets null si tu n'en connais pas un avec certitude — un ISBN inventé est pire qu'un ISBN absent, car il sera utilisé pour des recherches ultérieures.
+- pageCount : le nombre de pages de CETTE édition, ou null.
+- isbn13 : l'ISBN-13 de CETTE édition. Un même livre a souvent plusieurs éditions dans une même langue (grand format, poche, édition québécoise ou belge) : l'ISBN d'une autre édition est faux ici, même s'il existe. Mets null si tu ne trouves pas celui de cette édition précise — un ISBN inventé ou celui d'une autre édition est pire qu'un ISBN absent, car il sert à retrouver la couverture de l'objet que le lecteur possède.
 - seriesName, volumeNumber, volumeKind : la série à laquelle ce livre appartient. C'est l'information la plus importante de cette fiche. Cherche-la activement : beaucoup de romans appartiennent à un cycle sans que la couverture le dise. volumeKind vaut 'main' pour un tome numéroté de l'histoire principale, 'prequel' pour une préquelle, 'spin-off' pour un récit dérivé, 'novella' pour un texte court rattaché, 'companion' pour un guide ou un artbook. Si le livre est indépendant, mets les trois à null.
 
 Toutes les valeurs textuelles doivent être en ${LANGUAGE_NAMES[language]}.`

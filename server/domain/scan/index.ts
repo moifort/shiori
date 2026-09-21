@@ -174,7 +174,7 @@ export namespace Scan {
   ) => {
     const { value, usage } = await generate<EnrichmentOutput>({
       step: 'enrichment',
-      parts: [{ text: enrichmentPrompt(seen.title, seen.authors, language, source) }],
+      parts: [{ text: enrichmentPrompt(seen, language, source) }],
       responseSchema: ENRICHMENT_SCHEMA,
       grounded: true,
     })

@@ -18,7 +18,9 @@ the release tag is pushed.
   subgenres of every volume at once.
 - A scanned book whose cover Open Library does not have now looks for it on Amazon, by the
   ISBN, before falling back to the typographic placeholder. Books already in the library get
-  the same second chance once.
+  the same second chance once. The ISBN and page count a scan records are now those of the
+  edition photographed, named by its publisher and language, rather than of any edition of
+  the book: the Folio pocket no longer takes the cover of the Québec edition.
 - The library is ordered by the last change of reading status: the saga whose volume was
   just started, finished or put back on the pile sits on top, whole, and the shelf of books
   outside any series trails the sagas without a heading of its own. Correcting a book or

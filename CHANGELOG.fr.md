@@ -12,7 +12,10 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   modifie d’un coup le genre et les sous-genres de tous les tomes.
 - Un livre scanné dont Open Library n’a pas la couverture la cherche désormais sur Amazon,
   par l’ISBN, avant de se replier sur la couverture typographique. Les livres déjà dans la
-  bibliothèque ont droit une fois à la même seconde chance.
+  bibliothèque ont droit une fois à la même seconde chance. L’ISBN et le nombre de pages
+  qu’un scan enregistre sont désormais ceux de l’édition photographiée, désignée par son
+  éditeur et sa langue, et non ceux d’une édition quelconque du livre : le poche Folio ne
+  prend plus la couverture de l’édition québécoise.
 - La bibliothèque est triée sur le dernier changement d’état de lecture : la saga dont un
   tome vient d’être commencé, terminé ou remis sur la pile est en tête, entière, et
   l’étagère des livres hors série suit les sagas sans titre de section. Corriger un livre
