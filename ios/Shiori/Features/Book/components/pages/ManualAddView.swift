@@ -33,7 +33,11 @@ struct ManualAddView: View {
                         .textInputAutocapitalization(.words)
                         .accessibilityIdentifier("manual-author")
                     Picker("Format", selection: $format) {
-                        ForEach(BookFormat.allCases) { Text($0.label).tag($0) }
+                        ForEach(BookFormat.allCases) { format in
+                        Label(format.label, systemImage: format.symbol)
+                            .labelStyle(.titleAndIcon)
+                            .tag(format)
+                    }
                     }
                     .accessibilityIdentifier("manual-format")
                 }

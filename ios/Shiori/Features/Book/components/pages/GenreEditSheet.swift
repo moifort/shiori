@@ -30,7 +30,9 @@ struct GenreEditSheet: View {
                     Picker(selection: $genre) {
                         Text("Non renseigné").tag(BookGenre?.none)
                         ForEach(BookGenre.allCases) { genre in
-                            Label { Text(genre.label) } icon: { genre.image }.tag(BookGenre?.some(genre))
+                            Label { Text(genre.label) } icon: { genre.image }
+                                .labelStyle(.titleAndIcon)
+                                .tag(BookGenre?.some(genre))
                         }
                     } label: {
                         Label {
@@ -56,6 +58,7 @@ struct GenreEditSheet: View {
                     }
                 }
             }
+            .labelStyle(.row)
             .navigationTitle("Genre")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

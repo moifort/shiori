@@ -29,6 +29,7 @@ extension ReadingStatus {
         case .toRead: .gray
         case .reading: .blue
         case .read: .green
+        case .dropped: .red
         }
     }
 
@@ -39,6 +40,7 @@ extension ReadingStatus {
         case .toRead: String(localized: "À lire")
         case .reading: String(localized: "En cours")
         case .read: String(localized: "Terminé")
+        case .dropped: String(localized: "Abandonné")
         }
     }
 }

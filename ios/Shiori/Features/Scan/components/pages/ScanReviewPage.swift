@@ -43,7 +43,11 @@ struct ScanReviewPage: View {
                     .textInputAutocapitalization(.words)
                     .accessibilityIdentifier("review-author")
                 Picker("Format", selection: $draft.format) {
-                    ForEach(BookFormat.allCases) { Text($0.label).tag($0) }
+                    ForEach(BookFormat.allCases) { format in
+                        Label(format.label, systemImage: format.symbol)
+                            .labelStyle(.titleAndIcon)
+                            .tag(format)
+                    }
                 }
                 .accessibilityIdentifier("review-format")
             } header: {
@@ -61,7 +65,7 @@ struct ScanReviewPage: View {
 
             Section("Lecture") {
                 Picker("Statut", selection: $draft.status) {
-                    ForEach(ReadingStatus.allCases) { Text($0.label).tag($0) }
+                    ForEach(ReadingStatus.progression) { Text($0.label).tag($0) }
                 }
                 .pickerStyle(.segmented)
             }

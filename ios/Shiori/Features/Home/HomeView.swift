@@ -14,8 +14,9 @@ struct HomeView: View {
     let onShowReading: () -> Void
     let onShowSeries: () -> Void
     /// Opens the Library tab on one of its views: the favourites from the
-    /// rating tile, the genres from the genre widget.
-    let onShowLibrary: (LibraryMode) -> Void
+    /// rating and favourites tiles, the genres from the genre widget, the
+    /// dropped books from their tile.
+    let onShowLibrary: (LibraryRequest) -> Void
     let onScan: () -> Void
 
     @State private var viewModel = HomeViewModel()
@@ -89,8 +90,10 @@ struct HomeView: View {
                     onRetryRefresh: { await viewModel.refresh() },
                     onReadingTapped: onShowReading,
                     onSeriesTapped: onShowSeries,
-                    onRatingTapped: { onShowLibrary(.favorites) },
-                    onGenresTapped: { onShowLibrary(.genre) },
+                    onRatingTapped: { onShowLibrary(LibraryRequest(mode: .favorites)) },
+                    onFavoritesTapped: { onShowLibrary(LibraryRequest(mode: .favorites)) },
+                    onDroppedTapped: { onShowLibrary(LibraryRequest(status: .dropped)) },
+                    onGenresTapped: { onShowLibrary(LibraryRequest(mode: .genre)) },
                     onBookTapped: { selectedBook = $0 }
                 )
                 .refreshable { await viewModel.load() }

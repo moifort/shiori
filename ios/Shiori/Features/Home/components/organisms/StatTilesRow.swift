@@ -1,17 +1,46 @@
 import SwiftUI
 
-/// The to-read pile and the average rating, in tiles. Every tile is always
-/// drawn: one with nothing behind it reads a dash, with no caption to explain.
-/// The rating tile opens the library on the books hearted — the best of what
-/// was rated, one tap from its average.
+/// The to-read pile and the average rating, in tiles, and under them two small
+/// boxes: the favourites and the books dropped. Every tile is always drawn: one
+/// with nothing behind it reads a dash, with no caption to explain. The rating
+/// and favourites tiles open the library on the books hearted, the dropped one
+/// on the books put down.
 struct StatTilesRow: View {
     let toReadCount: Int
     let monthsToClearPile: Int?
     let averageRating: Double?
     let ratedCount: Int
+    var favoriteCount: Int = 0
+    var droppedCount: Int = 0
     var onRatingTapped: () -> Void = {}
+    var onFavoritesTapped: () -> Void = {}
+    var onDroppedTapped: () -> Void = {}
 
     var body: some View {
+        VStack(spacing: 12) {
+            mainTiles
+            HStack(spacing: 12) {
+                smallTile(
+                    title: "Favoris",
+                    count: favoriteCount,
+                    systemImage: "heart.fill",
+                    color: .pink,
+                    action: onFavoritesTapped
+                )
+                .accessibilityIdentifier("home-favorites")
+                smallTile(
+                    title: "Abandonnés",
+                    count: droppedCount,
+                    systemImage: "hand.thumbsdown.fill",
+                    color: ReadingStatus.dropped.tint,
+                    action: onDroppedTapped
+                )
+                .accessibilityIdentifier("home-dropped")
+            }
+        }
+    }
+
+    private var mainTiles: some View {
         HStack(spacing: 12) {
             tile(
                 title: "Pile à lire",
@@ -36,6 +65,42 @@ struct StatTilesRow: View {
         }
         // Both tiles take the height of the taller one, as the Fitness app's do.
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// A small box: an icon, a count and what it counts, on one line.
+    private func smallTile(
+        title: LocalizedStringKey,
+        count: Int,
+        systemImage: String,
+        color: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: systemImage)
+                    .font(.subheadline)
+                    .foregroundStyle(color)
+                    .frame(width: 22)
+                VStack(alignment: .leading, spacing: 0) {
+                    (count > 0 ? Text(count, format: .number) : Text("–"))
+                        .font(.system(.title3, design: .rounded, weight: .bold))
+                        .foregroundStyle(color)
+                    Text(title)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity)
+            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 16))
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
     }
 
     private var pileCaption: String? {
@@ -77,7 +142,7 @@ struct StatTilesRow: View {
 
 #Preview {
     VStack {
-        StatTilesRow(toReadCount: 27, monthsToClearPile: 9, averageRating: 4.2, ratedCount: 18)
+        StatTilesRow(toReadCount: 27, monthsToClearPile: 9, averageRating: 4.2, ratedCount: 18, favoriteCount: 6, droppedCount: 2)
         StatTilesRow(toReadCount: 0, monthsToClearPile: nil, averageRating: nil, ratedCount: 0)
     }
     .padding()

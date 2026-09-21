@@ -16,8 +16,8 @@ struct BookRow: View {
     /// The saga the book belongs to, drawn as a tag with its volume where the
     /// list is not sectioned by saga — the only place left to say it.
     var series: SeriesMembership?
-    /// The reading status, drawn as a tag where the list is not already
-    /// sectioned by it. Nil leaves it to the heading above the row.
+    /// The reading status, drawn as a tag in the row's top corner where the
+    /// list is not already sectioned by it. Nil leaves it to the heading above.
     var statusTag: ReadingStatus?
     /// What the book is about. Absent on a book added by hand and on every
     /// Audible import, which draw no genre line at all rather than "Autre".
@@ -26,9 +26,6 @@ struct BookRow: View {
     /// scan orders most representative first. The rest stay on the detail screen,
     /// where three pills fit and a row has space for one.
     var subgenre: String?
-    /// What kind of object this is. Only an audiobook draws anything: the others
-    /// are read, which is what a library is assumed to hold.
-    var format: BookFormat = .book
     /// The language of this edition. Absent on every book catalogued before the
     /// scan started reading it off the cover, and left out by the caller inside
     /// a saga section, whose heading already carries it.
@@ -70,14 +67,10 @@ struct BookRow: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
 
-                // What the reader is doing with it and where it sits in a
-                // saga: the facts about this copy, ahead of what the book is.
-                if statusTag != nil || series != nil {
+                // Where it sits in a saga: a fact about this copy, ahead of
+                // what the book is.
+                if series != nil {
                     HStack(spacing: 6) {
-                        if let statusTag {
-                            chip(statusTag.shelfTitle, tint: statusTag.tint)
-                                .fixedSize()
-                        }
                         if let series {
                             // Grey, because a saga is a name and not a kind of
                             // book: tinting it would read as one more genre.
@@ -141,13 +134,6 @@ struct BookRow: View {
             if let language, language.isForeign {
                 LanguageTag(language: language)
             }
-            if format == .audiobook {
-                // A recording sits in the same list as the printed books and
-                // reads nothing like one — the cover alone never says so.
-                Image(systemName: "headphones")
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel(Text("Livre audio"))
-            }
             if isHidden {
                 // Says the book is excluded from sharing. Only ever an icon,
                 // tucked in the corner: spelling it out on every row would
@@ -157,6 +143,12 @@ struct BookRow: View {
                     .accessibilityLabel(Text("Non partagé"))
             }
             OpinionMark(rating: rating, isFavorite: isFavorite, font: .caption)
+            // Where the reader stands, in the corner the eye returns to on
+            // every row. A recording says what it is on its cover instead.
+            if let statusTag {
+                chip(statusTag.shelfTitle, tint: statusTag.tint)
+                    .font(.caption2)
+            }
         }
         .font(.caption)
         .fixedSize()
@@ -213,7 +205,6 @@ struct BookRow: View {
             rating: nil,
             genre: .scienceFiction,
             subgenre: "Space opera",
-            format: .audiobook,
             language: .en
         )
     }

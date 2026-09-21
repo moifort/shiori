@@ -15,6 +15,8 @@ struct HomePage: View {
     let onSeriesTapped: () -> Void
     /// The average rating tile: opens the library on the books hearted.
     let onRatingTapped: () -> Void
+    var onFavoritesTapped: () -> Void = {}
+    var onDroppedTapped: () -> Void = {}
     let onGenresTapped: () -> Void
     let onBookTapped: (Book) -> Void
 
@@ -66,7 +68,11 @@ struct HomePage: View {
                     monthsToClearPile: dashboard.monthsToClearPile,
                     averageRating: dashboard.averageRating,
                     ratedCount: dashboard.ratedCount,
-                    onRatingTapped: onRatingTapped
+                    favoriteCount: dashboard.favoriteCount,
+                    droppedCount: dashboard.droppedCount,
+                    onRatingTapped: onRatingTapped,
+                    onFavoritesTapped: onFavoritesTapped,
+                    onDroppedTapped: onDroppedTapped
                 )
 
                 GenresWidget(
@@ -137,6 +143,8 @@ extension Dashboard {
             .init(id: "a", name: "One Piece", readCount: 107, totalCount: 110),
             .init(id: "b", name: "Chronique du tueur de roi", readCount: 1, totalCount: 2),
         ],
+        favoriteCount: 6,
+        droppedCount: 2,
         hasAudiobooks: true,
         libraryIsEmpty: false
     )

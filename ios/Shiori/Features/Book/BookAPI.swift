@@ -161,6 +161,8 @@ struct BookCorrection: Equatable, Sendable {
     var genre: Change<BookGenre>?
     var subgenres: [String]?
     var pageCount: Change<Int>?
+    var durationMinutes: Change<Int>?
+    var narrators: [String]?
     var isbn13: Change<String>?
     var language: Change<BookLanguage>?
 
@@ -169,11 +171,13 @@ struct BookCorrection: Equatable, Sendable {
     var asInput: ShioriGraphQL.BookEditInput {
         ShioriGraphQL.BookEditInput(
             authors: Self.nullable(authors),
+            durationMinutes: Self.nullable(durationMinutes),
             firstPublishedIn: Self.nullable(firstPublishedIn),
             format: format.map { .some(LibraryAPI.graphQLFormat($0)) } ?? .none,
             genre: Self.nullableGenre(genre),
             isbn13: Self.nullable(isbn13),
             language: Self.nullableLanguage(language),
+            narrators: Self.nullable(narrators),
             pageCount: Self.nullable(pageCount),
             publisher: Self.nullable(publisher),
             subgenres: Self.nullable(subgenres),

@@ -23,6 +23,9 @@ struct BookEditView: View {
     @State private var publisher: String
     @State private var year: String
     @State private var pages: String
+    /// The running time as typed: "14h30", "14 h", "45 min", "870".
+    @State private var duration: String
+    @State private var narrators: String
     @State private var genre: BookGenre?
     @State private var language: BookLanguage?
     @State private var subgenres: String
@@ -44,6 +47,8 @@ struct BookEditView: View {
         _publisher = State(initialValue: book.publisher ?? "")
         _year = State(initialValue: book.firstPublishedIn.map(String.init) ?? "")
         _pages = State(initialValue: book.pageCount.map(String.init) ?? "")
+        _duration = State(initialValue: book.durationMinutes.map(Self.durationText) ?? "")
+        _narrators = State(initialValue: book.narrators.joined(separator: ", "))
         _genre = State(initialValue: book.genre)
         _language = State(initialValue: book.language)
         _subgenres = State(initialValue: book.subgenres.joined(separator: ", "))
@@ -64,9 +69,18 @@ struct BookEditView: View {
                             .textInputAutocapitalization(.words)
                             .accessibilityIdentifier("edit-authors")
                     }
+                    if format == .audiobook {
+                        LabeledField(title: "Narrateurs", icon: "person.wave.2") {
+                            TextField("Narrateur", text: $narrators, axis: .vertical)
+                                .textInputAutocapitalization(.words)
+                                .accessibilityIdentifier("edit-narrators")
+                        }
+                    }
                     Picker(selection: $format) {
                         ForEach(BookFormat.allCases) { format in
-                            Label(format.label, systemImage: format.symbol).tag(format)
+                            Label(format.label, systemImage: format.symbol)
+                                .labelStyle(.titleAndIcon)
+                                .tag(format)
                         }
                     } label: {
                         Label {
@@ -80,7 +94,9 @@ struct BookEditView: View {
                     if trimmed(title).isEmpty {
                         Text("Un livre a besoin d'un titre.").foregroundStyle(.red)
                     } else {
-                        Text("Séparez les auteurs par des virgules.")
+                        Text(format == .audiobook
+                            ? "Séparez les auteurs et les narrateurs par des virgules."
+                            : "Séparez les auteurs par des virgules.")
                     }
                 }
 
@@ -108,13 +124,25 @@ struct BookEditView: View {
                     LabeledField(title: "Première parution", icon: "calendar") {
                         TextField("Année", text: $year).keyboardType(.numberPad)
                     }
-                    LabeledField(title: "Pages", icon: "doc.plaintext") {
-                        TextField("Pages", text: $pages).keyboardType(.numberPad)
+                    // A recording is measured in time, not in pages.
+                    if format == .audiobook {
+                        LabeledField(title: "Durée", icon: "clock") {
+                            TextField("14h30", text: $duration)
+                                .keyboardType(.numbersAndPunctuation)
+                                .textInputAutocapitalization(.never)
+                                .accessibilityIdentifier("edit-duration")
+                        }
+                    } else {
+                        LabeledField(title: "Pages", icon: "doc.plaintext") {
+                            TextField("Pages", text: $pages).keyboardType(.numberPad)
+                        }
                     }
                     Picker(selection: $genre) {
                         Text("Non renseigné").tag(BookGenre?.none)
                         ForEach(BookGenre.allCases) { genre in
-                            Text(genre.label).tag(BookGenre?.some(genre))
+                            Label { Text(genre.label) } icon: { genre.image }
+                                .labelStyle(.titleAndIcon)
+                                .tag(BookGenre?.some(genre))
                         }
                     } label: {
                         Label {
@@ -158,6 +186,7 @@ struct BookEditView: View {
                     }
                 }
             }
+            .labelStyle(.row)
             .navigationTitle("Modifier")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -195,7 +224,10 @@ struct BookEditView: View {
         if !trimmed(year).isEmpty, Int(trimmed(year)) == nil {
             return String(localized: "L'année doit être un nombre.")
         }
-        if !trimmed(pages).isEmpty, (Int(trimmed(pages)) ?? 0) < 1 {
+        if format == .audiobook, !trimmed(duration).isEmpty, Self.minutes(in: duration) == nil {
+            return String(localized: "La durée s'écrit comme 14h30, 14 h ou 45 min.")
+        }
+        if format != .audiobook, !trimmed(pages).isEmpty, (Int(trimmed(pages)) ?? 0) < 1 {
             return String(localized: "Le nombre de pages doit être un nombre positif.")
         }
         if !isbnDigits.isEmpty, !Self.isValidIsbn13(isbnDigits) {
@@ -231,7 +263,13 @@ struct BookEditView: View {
         correction.genre = change(from: book.genre, to: genre)
         let subgenreList = Array(list(subgenres).prefix(3))
         if subgenreList != book.subgenres { correction.subgenres = subgenreList }
-        correction.pageCount = change(from: book.pageCount, to: Int(trimmed(pages)))
+        if format == .audiobook {
+            correction.durationMinutes = change(from: book.durationMinutes, to: Self.minutes(in: duration))
+            let narratorList = list(narrators)
+            if narratorList != book.narrators { correction.narrators = narratorList }
+        } else {
+            correction.pageCount = change(from: book.pageCount, to: Int(trimmed(pages)))
+        }
         correction.isbn13 = change(from: book.isbn13, to: isbnDigits.isEmpty ? nil : isbnDigits)
         correction.language = change(from: book.language, to: language)
         return correction
@@ -245,6 +283,30 @@ struct BookEditView: View {
         } else {
             dismiss()
         }
+    }
+
+    /// Minutes in a running time as a reader types it: "14h30", "14 h 30",
+    /// "14h", "45 min", "45mn", or a bare number of minutes. Nil when it is not
+    /// one of those, or not a positive duration.
+    static func minutes(in text: String) -> Int? {
+        let compact = text.lowercased().filter { !$0.isWhitespace }
+        guard !compact.isEmpty else { return nil }
+        if let bare = Int(compact) { return bare > 0 ? bare : nil }
+        let pattern = /^(?:(\d+)h)?(?:(\d+)(?:min|mn|m)?)?$/
+        guard let match = compact.wholeMatch(of: pattern) else { return nil }
+        let hours = match.1.flatMap { Int($0) } ?? 0
+        let minutes = match.2.flatMap { Int($0) } ?? 0
+        guard match.1 != nil || compact.hasSuffix("min") || compact.hasSuffix("mn") || compact.hasSuffix("m") else { return nil }
+        let total = hours * 60 + minutes
+        return total > 0 ? total : nil
+    }
+
+    /// A running time as the field shows it: "14h30", "14h", "45min".
+    static func durationText(_ minutes: Int) -> String {
+        let hours = minutes / 60
+        let rest = minutes % 60
+        if hours == 0 { return "\(rest)min" }
+        return rest == 0 ? "\(hours)h" : String(format: "%dh%02d", hours, rest)
     }
 
     private func change<Value: Equatable & Sendable>(from old: Value?, to new: Value?) -> BookCorrection.Change<Value>? {

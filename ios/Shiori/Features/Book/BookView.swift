@@ -146,6 +146,20 @@ struct BookView: View {
             }
             .accessibilityIdentifier("book-edit")
 
+            // Not on the segmented picker, which holds the states a book moves
+            // through: dropping one is an ending, chosen once, from here.
+            if book.status == .dropped {
+                Button("Reprendre la lecture", systemImage: "arrow.uturn.backward") {
+                    run { await viewModel.setStatus(.reading) }
+                }
+                .accessibilityIdentifier("book-resume")
+            } else {
+                Button("Abandonné, je n'ai pas aimé", systemImage: "hand.thumbsdown") {
+                    run { await viewModel.setStatus(.dropped) }
+                }
+                .accessibilityIdentifier("book-drop")
+            }
+
             Button("Supprimer", systemImage: "trash", role: .destructive) {
                 confirmDelete = true
             }

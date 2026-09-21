@@ -46,6 +46,8 @@ query Dashboard($timeZone: TimeZone!) {
       readCount
       totalCount
     }
+    favoriteCount
+    droppedCount
     hasAudiobooks
     hasPrintedBooks
     libraryIsEmpty

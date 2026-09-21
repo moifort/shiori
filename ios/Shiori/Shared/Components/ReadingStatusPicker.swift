@@ -12,7 +12,7 @@ struct ReadingStatusPicker: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            ForEach(ReadingStatus.allCases) { option in
+            ForEach(ReadingStatus.progression) { option in
                 Button {
                     withAnimation(.snappy(duration: 0.25)) { status = option }
                 } label: {

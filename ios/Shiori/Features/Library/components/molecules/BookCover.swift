@@ -9,6 +9,10 @@ import SwiftUI
 struct BookCover: View {
     let book: Book
     var width: CGFloat = 56
+    /// A recording carries a headphones pill in the cover's top corner, in every
+    /// list and on the book screen alike: nothing else on a cover says it is
+    /// listened to rather than read. Off where the corner holds something else.
+    var showsFormatBadge: Bool = true
 
     /// Standard trade paperback proportions, so photographed covers are cropped
     /// consistently and placeholders sit at the same size as real ones.
@@ -43,6 +47,12 @@ struct BookCover: View {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .strokeBorder(.separator, lineWidth: 0.5)
         )
+        .overlay(alignment: .topTrailing) {
+            if showsFormatBadge && book.format == .audiobook {
+                AudiobookBadge(size: max(14, width * 0.3))
+                    .padding(width * 0.05)
+            }
+        }
         .accessibilityHidden(true)
     }
 
@@ -66,6 +76,23 @@ struct BookCover: View {
             total = total &* 33 &+ UInt64(scalar.value)
         }
         return Color(hue: Double(hash % 360) / 360, saturation: 0.45, brightness: 0.55)
+    }
+}
+
+/// The pill pinned to a recording's cover: a headphones glyph on a dark disc,
+/// readable over any cover colour.
+struct AudiobookBadge: View {
+    var size: CGFloat = 18
+
+    var body: some View {
+        Image(systemName: "headphones")
+            .font(.system(size: size * 0.52, weight: .bold))
+            .foregroundStyle(.white)
+            .frame(width: size, height: size)
+            .background(Color.orange, in: Circle())
+            .overlay(Circle().strokeBorder(.white.opacity(0.9), lineWidth: 1))
+            .shadow(color: .black.opacity(0.25), radius: 1, y: 0.5)
+            .accessibilityLabel(Text("Livre audio"))
     }
 }
 

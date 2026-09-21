@@ -37,6 +37,7 @@ struct BookPage: View {
             if let synopsis = book.synopsis { synopsisSection(synopsis) }
         }
         .listStyle(.insetGrouped)
+        .labelStyle(.row)
         .disabled(isSaving)
     }
 
@@ -80,21 +81,29 @@ struct BookPage: View {
                     }
                 }
                 Spacer(minLength: 8)
-                // What kind of object this is, in the corner: one glyph reads
-                // faster than a "Format" row, and the word is on the edit form
-                // for anyone who needs it.
-                // How long a recording runs, as a pill beside it: the one
-                // number a listener weighs before starting.
+                // How long a recording runs, as a pill in the corner: the one
+                // number a listener weighs before starting. That it is a
+                // recording is said by the pill on the cover; a drawn story
+                // keeps its format glyph here, a prose book needs none.
+                // A dropped book says so here too: the picker above has no
+                // segment for it.
                 HStack(spacing: 6) {
+                    if book.status == .dropped {
+                        Pill(text: book.status.label, systemImage: book.status.symbol)
+                            .foregroundStyle(book.status.tint)
+                            .accessibilityIdentifier("book-dropped")
+                    }
                     if let durationLabel = book.durationLabel {
                         Pill(text: durationLabel, systemImage: "clock")
                             .accessibilityIdentifier("book-duration")
                     }
-                    Image(systemName: book.format.symbol)
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                        .accessibilityLabel(Text(book.format.label))
-                        .accessibilityIdentifier("book-format")
+                    if book.format != .book && book.format != .audiobook {
+                        Image(systemName: book.format.symbol)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel(Text(book.format.label))
+                            .accessibilityIdentifier("book-format")
+                    }
                 }
             }
             .padding(.vertical, 2)
@@ -186,6 +195,13 @@ struct BookPage: View {
                 .accessibilityIdentifier("book-rate")
             }
 
+            if let added = book.addedAt {
+                LabeledInfoRow(
+                    title: "Ajouté le",
+                    value: added.formatted(date: .abbreviated, time: .omitted),
+                    icon: "tray.and.arrow.down"
+                )
+            }
             if let started = book.startedAt {
                 LabeledInfoRow(
                     title: "Commencé le",

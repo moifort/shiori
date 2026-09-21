@@ -31,6 +31,12 @@ enum LibraryMode: String, CaseIterable, Identifiable {
     }
 }
 
+/// A view of the Library tab another screen asks it to open on.
+struct LibraryRequest: Equatable {
+    var mode: LibraryMode = .all
+    var status: ReadingStatus?
+}
+
 /// One heading of the Library tab: a reading status, or a genre. Cut out of
 /// the flat list the server ordered, wherever the key changes from one book to
 /// the next — so a page that lands extends the last section rather than
@@ -64,13 +70,14 @@ struct LibraryShelf: Identifiable {
 /// It opens on the list it closed on: its `SnapshotCache` hands back the last
 /// visit's books from disk before a byte is asked of the network, so a
 /// relaunch shows the library straight away and refreshes it underneath, under
-/// a spinner row leading the list rather than a loader taking the screen. Only
-/// the default view is cached — it is the one the tab opens on.
+/// a spinner row leading the list rather than a loader taking the screen. Every
+/// view and filter keeps its own snapshot, so switching between them never
+/// empties the list either.
 @MainActor
 @Observable
 final class LibraryViewModel {
     init() {
-        books = cache.read() ?? []
+        books = cache(for: mode, statusFilter).read() ?? []
     }
 
     private(set) var books: [Book] = []
@@ -96,9 +103,13 @@ final class LibraryViewModel {
     /// snapshot.
     private var loaded = false
 
-    /// The default view's first page on disk. Bump the version whenever `Book`
-    /// changes shape.
-    private let cache = SnapshotCache<[Book]>("library", version: 2)
+    /// Each view's first page on disk, one file per view and filter, so that
+    /// switching between them shows the rows of the last visit at once under
+    /// the refresh spinner rather than an empty list reloading. Bump the
+    /// version whenever `Book` changes shape.
+    private func cache(for mode: LibraryMode, _ status: ReadingStatus?) -> SnapshotCache<[Book]> {
+        SnapshotCache("library-\(mode.rawValue)-\(status?.rawValue ?? "all")", version: 3)
+    }
 
     /// More rows follow the ones on screen.
     private(set) var hasMore = false
@@ -117,8 +128,6 @@ final class LibraryViewModel {
     /// appended to the list that replaced it.
     private var generation = 0
     private var reloadTask: Task<Void, Never>?
-
-    private var isDefaultView: Bool { mode == .all && statusFilter == nil }
 
     /// Whether the rows are already sectioned by status, in which case a row
     /// saying its own status would repeat its heading. Filtered to one status,
@@ -146,12 +155,13 @@ final class LibraryViewModel {
         return shelves
     }
 
-    /// Opens one view with every status in it, as the dashboard asks for: the
-    /// favourites behind the rating tile, the genres behind the genre bar. A
-    /// status filter left from an earlier visit would hide half of either.
-    func show(_ requested: LibraryMode) {
-        statusFilter = nil
-        mode = requested
+    /// Opens the view another screen asks for, as the dashboard does: the
+    /// favourites behind the rating tile, the genres behind the genre bar, the
+    /// dropped books behind their tile. A status filter left from an earlier
+    /// visit is replaced, since it would hide half of what was asked for.
+    func show(_ request: LibraryRequest) {
+        statusFilter = request.status
+        mode = request.mode
     }
 
     /// Reloads the first page for a new view or filter, cancelling a reload
@@ -160,11 +170,19 @@ final class LibraryViewModel {
     private func scheduleReload() {
         reloadTask?.cancel()
         generation += 1
-        books = []
+        // The new view's rows from its last visit, when there were any: shown at
+        // once and brought up to date under the spinner, as on launch.
+        books = cache(for: mode, statusFilter).read() ?? []
         hasMore = false
-        isRefreshing = false
+        loaded = false
         refreshFailed = false
-        reloadTask = Task { await load() }
+        isRefreshing = !books.isEmpty
+        reloadTask = Task {
+            await load()
+            guard isRefreshing, !Task.isCancelled else { return }
+            isRefreshing = false
+            refreshFailed = !loaded
+        }
     }
 
     func load() async {
@@ -182,11 +200,9 @@ final class LibraryViewModel {
             books = page.books
             hasMore = page.hasMore
             loaded = true
-            if isDefaultView {
-                let cache = cache
-                let fetched = page.books
-                Task.detached { cache.write(fetched) }
-            }
+            let cache = cache(for: mode, statusFilter)
+            let fetched = page.books
+            Task.detached { cache.write(fetched) }
         } catch is CancellationError {
             return
         } catch {

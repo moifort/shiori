@@ -1,11 +1,18 @@
 import Foundation
 
-/// Where a book stands for its reader. The three cases are ordered as the pile
-/// is worked through, which is the order every picker and filter presents.
+/// Where a book stands for its reader. The cases are ordered as the pile is
+/// worked through, which is the order every picker and filter presents.
+/// `dropped` is a book stopped for good, the reader not having liked it: it is
+/// set from the book's menu rather than the segmented picker, which holds the
+/// states a book moves through.
 enum ReadingStatus: String, Codable, CaseIterable, Identifiable, Sendable {
     case toRead
     case reading
     case read
+    case dropped
+
+    /// The states a book moves through, as the picker offers them.
+    static let progression: [ReadingStatus] = [.toRead, .reading, .read]
 
     var id: String { rawValue }
 
@@ -14,6 +21,7 @@ enum ReadingStatus: String, Codable, CaseIterable, Identifiable, Sendable {
         case .toRead: String(localized: "À lire")
         case .reading: String(localized: "En cours")
         case .read: String(localized: "Lu")
+        case .dropped: String(localized: "Abandonné")
         }
     }
 
@@ -25,6 +33,7 @@ enum ReadingStatus: String, Codable, CaseIterable, Identifiable, Sendable {
         case .toRead: "bookmark.fill"
         case .reading: "book.fill"
         case .read: "checkmark"
+        case .dropped: "xmark"
         }
     }
 }
@@ -94,7 +103,7 @@ enum BookGenre: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .fantasy: String(localized: "Fantasy")
+        case .fantasy: String(localized: "Fantastique")
         case .scienceFiction: String(localized: "Science-fiction")
         case .horror: String(localized: "Horreur")
         case .crime: String(localized: "Polar")

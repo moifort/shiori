@@ -90,7 +90,7 @@ struct LibraryPage: View {
                     Picker("Statut", selection: $statusFilter) {
                         Label("Tous", systemImage: "tray.full").tag(ReadingStatus?.none)
                         // In the order the list tiers them, not the picker's.
-                        ForEach([ReadingStatus.reading, .toRead, .read]) { status in
+                        ForEach([ReadingStatus.reading, .toRead, .read, .dropped]) { status in
                             Label(status.shelfTitle, systemImage: status.symbol)
                                 .tag(ReadingStatus?.some(status))
                         }
@@ -153,7 +153,6 @@ struct LibraryPage: View {
                     // subgenre still says something the heading does not.
                     genre: mode == .genre ? nil : book.genre,
                     subgenre: book.subgenres.first,
-                    format: book.format,
                     language: book.language,
                     isFavorite: book.favorite,
                     isHidden: book.hidden

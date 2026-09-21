@@ -86,7 +86,6 @@ struct FriendProfileView: View {
                         statusTag: showsStatus ? book.status : nil,
                         genre: book.genre,
                         subgenre: book.subgenres.first,
-                        format: book.format,
                         language: book.language,
                         isFavorite: book.favorite
                     )

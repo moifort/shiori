@@ -12,6 +12,7 @@ extension ShioriGraphQL.ReadingStatus {
         case .toRead: .toRead
         case .reading: .reading
         case .read: .read
+        case .dropped: .dropped
         }
     }
 }

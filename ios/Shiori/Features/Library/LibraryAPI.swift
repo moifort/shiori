@@ -37,6 +37,7 @@ enum LibraryAPI {
         case .toRead: .case(.toRead)
         case .reading: .case(.reading)
         case .read: .case(.read)
+        case .dropped: .case(.dropped)
         }
     }
 

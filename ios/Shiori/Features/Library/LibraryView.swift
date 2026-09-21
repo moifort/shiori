@@ -9,7 +9,7 @@ struct LibraryView: View {
     let onAdd: () -> Void
     /// A view another tab asked this one to open on, taken and cleared as
     /// soon as the tab shows it.
-    @Binding var requestedMode: LibraryMode?
+    @Binding var requestedMode: LibraryRequest?
 
     @State private var viewModel = LibraryViewModel()
     @State private var selectedBook: Book?
