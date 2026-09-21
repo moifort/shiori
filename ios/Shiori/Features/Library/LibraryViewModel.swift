@@ -49,6 +49,8 @@ final class LibraryViewModel {
             return LibrarySection(
                 seriesId: section.seriesId,
                 seriesName: section.seriesName,
+                language: section.language,
+                opinion: section.opinion,
                 books: section.books.map { $0.id == book.id ? book : $0 }
             )
         }
@@ -63,6 +65,8 @@ final class LibraryViewModel {
             return LibrarySection(
                 seriesId: section.seriesId,
                 seriesName: section.seriesName,
+                language: section.language,
+                opinion: section.opinion,
                 books: kept
             )
         }

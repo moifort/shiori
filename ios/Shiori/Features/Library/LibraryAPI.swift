@@ -13,6 +13,11 @@ enum LibraryAPI {
                 seriesId: section.seriesId,
                 seriesName: section.series,
                 language: section.language?.asDomain,
+                opinion: section.opinion.flatMap { opinion in
+                    section.seriesId.map {
+                        SeriesOpinion(seriesId: $0, rating: opinion.rating, favorite: opinion.favorite)
+                    }
+                },
                 books: section.books.map { $0.fragments.bookSummary.asBook }
             )
         }

@@ -5,6 +5,10 @@ query Library($status: ReadingStatus) {
     seriesId
     series
     language
+    opinion {
+      rating
+      favorite
+    }
     books {
       ...BookSummary
     }

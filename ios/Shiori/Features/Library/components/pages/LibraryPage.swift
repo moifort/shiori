@@ -3,9 +3,9 @@ import SwiftUI
 /// The library list. Pure and previewable: it takes what to draw and what to
 /// call, and knows nothing about the network.
 ///
-/// Sections are sagas, trailed by a titled shelf of standalone books. The title
-/// says what they share — no series — so the shelf does not read as leftovers
-/// tacked onto the last saga.
+/// Sections are sagas, most recently touched first, trailed by the shelf of
+/// standalone books. The shelf has no heading: a title over it would name the
+/// one thing those books have in common, and "no series" is not a thing.
 struct LibraryPage: View {
     let sections: [LibrarySection]
     let isLoading: Bool
@@ -67,20 +67,35 @@ struct LibraryPage: View {
     private var list: some View {
         List {
             ForEach(sections) { section in
-                Section {
-                    rows(of: section)
-                } header: {
-                    HStack(spacing: 6) {
-                        Text(section.seriesName ?? String(localized: "Livres indépendants"))
-                        // The flag says which of a saga's two shelves this is.
-                        // Trailing the name rather than leading it: the name is
-                        // what the reader scans for, the language only tells two
-                        // headings with that name apart. And only the foreign
-                        // shelf gets one: the reader's own language is the default
-                        // and drawing it would flag every heading.
-                        if let language = section.language, language.isForeign {
-                            Text(language.flag).accessibilityLabel(Text(language.label))
+                if let seriesName = section.seriesName {
+                    Section {
+                        rows(of: section)
+                    } header: {
+                        HStack(spacing: 6) {
+                            Text(seriesName)
+                            // The flag says which of a saga's two shelves this is.
+                            // Trailing the name rather than leading it: the name is
+                            // what the reader scans for, the language only tells two
+                            // headings with that name apart. And only the foreign
+                            // shelf gets one: the reader's own language is the default
+                            // and drawing it would flag every heading.
+                            if let language = section.language, language.isForeign {
+                                Text(language.flag).accessibilityLabel(Text(language.label))
+                            }
+                            Spacer(minLength: 8)
+                            // The saga's own heart or stars, on the heading's line
+                            // and against its right edge, where every row below
+                            // keeps its own.
+                            OpinionMark(
+                                rating: section.opinion?.rating,
+                                isFavorite: section.opinion?.favorite == true,
+                                font: .caption
+                            )
                         }
+                    }
+                } else {
+                    Section {
+                        rows(of: section)
                     }
                 }
             }
@@ -108,7 +123,10 @@ struct LibraryPage: View {
                     genre: book.genre,
                     subgenre: book.subgenres.first,
                     format: book.format,
-                    language: book.language,
+                    // Inside a saga the heading already carries the language:
+                    // flagging every row under it would say the same thing
+                    // twelve times.
+                    language: section.seriesName == nil ? book.language : nil,
                     isFavorite: book.favorite,
                     isHidden: book.hidden
                 )

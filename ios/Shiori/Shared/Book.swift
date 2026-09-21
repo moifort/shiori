@@ -260,6 +260,9 @@ struct LibrarySection: Identifiable, Sendable {
     /// The language its volumes are in. Nil on the standalone shelf, and nil on
     /// a saga whose volumes carry no recorded language.
     var language: BookLanguage?
+    /// What the reader makes of the saga, drawn on the heading. Nil on the
+    /// standalone shelf and on a saga they have said nothing about.
+    var opinion: SeriesOpinion?
     let books: [Book]
 }
 

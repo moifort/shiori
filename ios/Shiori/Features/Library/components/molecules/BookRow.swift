@@ -24,7 +24,8 @@ struct BookRow: View {
     /// are read, which is what a library is assumed to hold.
     var format: BookFormat = .book
     /// The language of this edition. Absent on every book catalogued before the
-    /// scan started reading it off the cover.
+    /// scan started reading it off the cover, and left out by the caller inside
+    /// a saga section, whose heading already carries it.
     var language: BookLanguage?
     var isFavorite: Bool = false
     var isHidden: Bool = false
@@ -53,12 +54,7 @@ struct BookRow: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
 
-                if let rating {
-                    StarRatingView(rating: rating)
-                        .padding(.top, 1)
-                }
-
-                // Under the stars, where it answers "what is this?" for a title
+                // Under the author, where it answers "what is this?" for a title
                 // that does not say. Two chips of the same cut, genre then
                 // subgenre, and no glyph: the genre's icon was a second thing to
                 // decode on a list of twenty different genres, and the word
@@ -79,40 +75,42 @@ struct BookRow: View {
                 }
             }
 
-            Spacer(minLength: 0)
+            Spacer(minLength: 8)
 
-            // The corner markers, in the order a glance wants them: what the
-            // object is, then what the reader chose about it.
-            HStack(spacing: 6) {
-                if isFavorite {
-                    Image(systemName: "heart.fill")
-                        .font(.caption)
-                        .foregroundStyle(.pink)
-                        .accessibilityLabel(Text("Favori"))
-                }
-                if let language, language.isForeign {
-                    Text(language.flag)
-                        .font(.caption)
-                        .accessibilityLabel(Text(language.label))
-                }
-                if format == .audiobook {
-                    // A recording sits in the same list as the printed books and
-                    // reads nothing like one — the cover alone never says so.
-                    Image(systemName: "headphones")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .accessibilityLabel(Text("Livre audio"))
-                }
-                if isHidden {
-                    // Says the book is excluded from sharing. Only ever an icon,
-                    // tucked in the corner: spelling it out on every row would
-                    // shout a private choice at anyone glancing over a shoulder.
-                    Image(systemName: "eye.slash")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .accessibilityLabel(Text("Non partagé"))
+            // The right column, the same on every row so the eye finds things
+            // where it left them: the reader's own judgement on the title's
+            // line, then the markers of what the object is.
+            VStack(alignment: .trailing, spacing: 6) {
+                OpinionMark(rating: rating, isFavorite: isFavorite, font: .caption)
+                HStack(spacing: 6) {
+                    if let language, language.isForeign {
+                        Text(language.flag)
+                            .font(.caption)
+                            .accessibilityLabel(Text(language.label))
+                    }
+                    if format == .audiobook {
+                        // A recording sits in the same list as the printed books
+                        // and reads nothing like one — the cover alone never
+                        // says so.
+                        Image(systemName: "headphones")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel(Text("Livre audio"))
+                    }
+                    if isHidden {
+                        // Says the book is excluded from sharing. Only ever an
+                        // icon, tucked in the corner: spelling it out on every
+                        // row would shout a private choice at anyone glancing
+                        // over a shoulder.
+                        Image(systemName: "eye.slash")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel(Text("Non partagé"))
+                    }
                 }
             }
+            // Level with the title, whether or not a volume label sits above it.
+            .padding(.top, volumeLabel == nil ? 2 : 18)
         }
         // Room for the badge, which overhangs the cover's top edge.
         .padding(.vertical, 6)
