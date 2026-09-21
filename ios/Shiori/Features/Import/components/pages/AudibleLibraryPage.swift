@@ -27,11 +27,11 @@ struct AudibleLibraryPage: View {
                 // Reachable only from a card that already said the library was
                 // empty, so this states the fact without offering the fix again:
                 // changing account lives one screen back.
-                ContentUnavailableView {
-                    Label("Bibliothèque vide", systemImage: "headphones")
-                } description: {
-                    Text("Aucun livre audio sur ce compte.")
-                }
+                EmptyStateView(
+                    systemImage: "headphones",
+                    title: "Bibliothèque vide",
+                    message: "Aucun livre audio sur ce compte."
+                )
             } else {
                 list
             }

@@ -25,30 +25,31 @@ struct SeriesListView: View {
                     ProgressView("Chargement de vos séries...")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if let errorMessage = viewModel.errorMessage, viewModel.followed.isEmpty {
-                    ContentUnavailableView {
-                        Label("Séries indisponibles", systemImage: "wifi.exclamationmark")
-                    } description: {
-                        Text(errorMessage)
-                    } actions: {
-                        AsyncButton("Réessayer") { await viewModel.load() }
+                    EmptyStateView.failure("Séries indisponibles", message: errorMessage) {
+                        await viewModel.load()
                     }
                 } else if viewModel.followed.isEmpty {
-                    if viewModel.mode == .favorites || viewModel.stateFilter != nil {
-                        ContentUnavailableView(
-                            viewModel.mode == .favorites ? "Aucune série favorite" : "Aucune série",
-                            systemImage: viewModel.mode == .favorites ? "heart" : "square.stack",
-                            description: Text(
-                                viewModel.mode == .favorites
-                                    ? "Touchez le cœur d'une série pour la retrouver ici."
-                                    : "Aucune de vos séries n'est dans cet état."
-                            )
+                    if viewModel.mode == .favorites {
+                        EmptyStateView(
+                            systemImage: "heart",
+                            title: "Aucune série favorite",
+                            message: "Touchez le cœur d'une série pour la retrouver ici."
+                        )
+                    } else if viewModel.stateFilter != nil {
+                        EmptyStateView(
+                            systemImage: viewModel.stateFilter?.symbol ?? "square.stack",
+                            title: "Aucune série",
+                            message: "Aucune de vos séries n'est dans cet état.",
+                            primary: .init("Voir toutes les séries", systemImage: "tray.full") {
+                                viewModel.stateFilter = nil
+                            }
                         )
                     } else {
-                        ContentUnavailableView {
-                            Label("Aucune série", systemImage: "square.stack")
-                        } description: {
-                            Text("Scannez un tome d'une saga et elle apparaîtra ici, avec tous ses volumes.")
-                        }
+                        EmptyStateView(
+                            systemImage: "square.stack",
+                            title: "Aucune série",
+                            message: "Scannez un tome d'une saga et elle apparaîtra ici, avec tous ses volumes."
+                        )
                     }
                 } else {
                     list

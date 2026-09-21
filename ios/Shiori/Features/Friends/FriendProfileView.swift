@@ -25,19 +25,13 @@ struct FriendProfileView: View {
             } else if let profile, !profile.isEmpty {
                 shelves(profile)
             } else if let errorMessage {
-                ContentUnavailableView {
-                    Label("Bibliothèque indisponible", systemImage: "wifi.exclamationmark")
-                } description: {
-                    Text(errorMessage)
-                } actions: {
-                    AsyncButton("Réessayer") { await load() }
-                }
+                EmptyStateView.failure("Bibliothèque indisponible", message: errorMessage) { await load() }
             } else {
-                ContentUnavailableView {
-                    Label("Rien à voir pour l'instant", systemImage: "books.vertical")
-                } description: {
-                    Text("\(friend.displayName) n'a encore rien à partager.")
-                }
+                EmptyStateView(
+                    systemImage: "books.vertical",
+                    title: "Rien à voir pour l'instant",
+                    verbatim: String(localized: "\(friend.displayName) n'a encore rien à partager.")
+                )
             }
         }
         .navigationTitle(profile?.displayName ?? friend.displayName)

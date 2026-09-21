@@ -44,11 +44,12 @@ struct SeriesView: View {
             } else if let series {
                 catalogue(series)
             } else {
-                ContentUnavailableView {
-                    Label("Série non cataloguée", systemImage: "square.stack.3d.up.slash")
-                } description: {
-                    Text(errorMessage ?? "Shiori n'a pas réussi à constituer le catalogue de cette série. Réessayez plus tard, ou scannez la couverture d'un de ses tomes.")
-                }
+                EmptyStateView(
+                    systemImage: "square.stack.3d.up.slash",
+                    title: "Série non cataloguée",
+                    verbatim: errorMessage ?? String(localized: "Shiori n'a pas réussi à constituer le catalogue de cette série. Réessayez plus tard, ou scannez la couverture d'un de ses tomes."),
+                    primary: .init("Réessayer", systemImage: "arrow.clockwise") { await load() }
+                )
             }
         }
         .navigationTitle(series?.name ?? "Série")

@@ -44,23 +44,20 @@ struct LibraryPage: View {
                 ProgressView("Chargement de votre bibliothèque...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let errorMessage, sections.isEmpty {
-                ContentUnavailableView {
-                    Label("Bibliothèque indisponible", systemImage: "wifi.exclamationmark")
-                } description: {
-                    Text(errorMessage)
-                } actions: {
-                    AsyncButton("Réessayer") { await onRetry() }
-                }
+                EmptyStateView.failure("Bibliothèque indisponible", message: errorMessage, retry: onRetry)
             } else if sections.isEmpty {
-                if isNarrowed {
-                    ContentUnavailableView(
-                        mode == .favorites ? "Aucun favori" : "Aucun livre",
-                        systemImage: mode == .favorites ? "heart" : "books.vertical",
-                        description: Text(
-                            mode == .favorites
-                                ? "Touchez le cœur d'un livre pour le retrouver ici."
-                                : "Aucun livre de votre bibliothèque n'a ce statut."
-                        )
+                if mode == .favorites {
+                    EmptyStateView(
+                        systemImage: "heart",
+                        title: "Aucun favori",
+                        message: "Touchez le cœur d'un livre pour le retrouver ici."
+                    )
+                } else if isNarrowed {
+                    EmptyStateView(
+                        systemImage: statusFilter?.symbol ?? "books.vertical",
+                        title: "Aucun livre",
+                        message: "Aucun livre de votre bibliothèque n'a ce statut.",
+                        primary: .init("Voir tous les livres", systemImage: "tray.full") { statusFilter = nil }
                     )
                 } else {
                     emptyState
@@ -165,17 +162,13 @@ struct LibraryPage: View {
     }
 
     private var emptyState: some View {
-        ContentUnavailableView {
-            Label("Bibliothèque vide", systemImage: "books.vertical")
-        } description: {
-            Text(
-                "Scannez la couverture d'un livre, ajoutez-en un à la main, ou importez "
-                    + "votre bibliothèque Audible."
-            )
-        } actions: {
-            Button("Ajouter un livre", action: onAdd)
-            Button("Importer depuis Audible", action: onImportFromAudible)
-        }
+        EmptyStateView(
+            systemImage: "books.vertical",
+            title: "Votre bibliothèque est vide",
+            message: "Scannez la couverture d'un livre, ajoutez-en un à la main, ou importez votre bibliothèque Audible.",
+            primary: .init("Scanner un livre", systemImage: "camera") { onAdd() },
+            secondary: .init("Importer depuis Audible", systemImage: "headphones") { onImportFromAudible() }
+        )
     }
 }
 

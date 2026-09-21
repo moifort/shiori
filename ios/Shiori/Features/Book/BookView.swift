@@ -43,11 +43,11 @@ struct BookView: View {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    ContentUnavailableView {
-                        Label("Livre introuvable", systemImage: "book.closed")
-                    } description: {
-                        Text(viewModel.errorMessage ?? "Ce livre n'est plus dans votre bibliothèque.")
-                    }
+                    EmptyStateView(
+                        systemImage: "book.closed",
+                        title: "Livre introuvable",
+                        verbatim: viewModel.errorMessage ?? String(localized: "Ce livre n'est plus dans votre bibliothèque.")
+                    )
                 }
             }
             .navigationBarTitleDisplayMode(.inline)

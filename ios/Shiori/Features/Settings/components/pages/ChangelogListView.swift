@@ -14,12 +14,8 @@ struct ChangelogListView: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let errorMessage, entries.isEmpty {
-                ContentUnavailableView {
-                    Label("Notes de version indisponibles", systemImage: "wifi.exclamationmark")
-                } description: {
-                    Text(errorMessage)
-                } actions: {
-                    AsyncButton("Réessayer") { await load() }
+                EmptyStateView.failure("Notes de version indisponibles", message: errorMessage) {
+                    await load()
                 }
             } else {
                 List(entries) { entry in
