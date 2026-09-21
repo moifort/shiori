@@ -10,7 +10,7 @@ struct GenresWidget: View {
     var body: some View {
         WidgetCard(title: "Genres lus en \(String(currentYear))", action: onTapped) {
             if genres.isEmpty {
-                WidgetEmptyMessage(text: "Terminez un livre cette année pour voir vos genres.")
+                WidgetEmptyMessage(text: "Terminez un livre cette année pour voir vos genres.", placeholder: .segments)
             } else {
                 SegmentedBar(segments: genres.enumerated().map { index, slice in
                     SegmentedBar.Segment(

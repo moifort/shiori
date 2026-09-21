@@ -18,6 +18,8 @@ struct HomePage: View {
     var onFavoritesTapped: () -> Void = {}
     var onDroppedTapped: () -> Void = {}
     let onGenresTapped: () -> Void
+    /// Opens the add sheet from the prompt that leads an empty library.
+    var onScan: () -> Void = {}
     let onBookTapped: (Book) -> Void
 
     var body: some View {
@@ -29,6 +31,12 @@ struct HomePage: View {
                         loadingLabel: "Mise à jour de l'accueil",
                         onRetry: onRetryRefresh
                     )
+                }
+
+                // The one thing a reader can do from an empty dashboard, above
+                // the cards it will fill.
+                if dashboard.libraryIsEmpty {
+                    scanPrompt
                 }
 
                 ReadingChartWidget(
@@ -87,6 +95,29 @@ struct HomePage: View {
             .padding(.bottom, 24)
         }
         .background(Color(.systemGroupedBackground))
+    }
+
+    private var scanPrompt: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label {
+                Text("Votre bibliothèque est vide").font(.headline)
+            } icon: {
+                Image(systemName: "books.vertical").foregroundStyle(.tint)
+            }
+            Text("Scannez la couverture d'un livre pour commencer. Chaque carte ci-dessous se remplira avec vos lectures.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Button(action: onScan) {
+                Label("Scanner un livre", systemImage: "camera")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .accessibilityIdentifier("home-scan")
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 20))
     }
 
     private static func startedCaption(_ book: Book) -> String {

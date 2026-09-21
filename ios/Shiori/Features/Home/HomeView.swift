@@ -72,18 +72,9 @@ struct HomeView: View {
     @ViewBuilder
     private var content: some View {
         if let dashboard = viewModel.dashboard {
-            if dashboard.libraryIsEmpty {
-                ContentUnavailableView {
-                    Label("Votre bibliothèque est vide", systemImage: "books.vertical")
-                } description: {
-                    Text("Scannez la couverture d'un livre pour commencer. Vos statistiques de lecture apparaîtront ici.")
-                } actions: {
-                    Button("Scanner un livre", action: onScan)
-                        .buttonStyle(.borderedProminent)
-                        .accessibilityIdentifier("home-scan")
-                }
-            } else {
-                HomePage(
+            // Drawn even for an empty library: every card sketches what it will
+            // hold, and the scan prompt leads the page until the first book.
+            HomePage(
                     dashboard: dashboard,
                     isRefreshing: viewModel.isRefreshing,
                     refreshFailed: viewModel.refreshFailed,
@@ -94,17 +85,13 @@ struct HomeView: View {
                     onFavoritesTapped: { onShowLibrary(LibraryRequest(mode: .favorites)) },
                     onDroppedTapped: { onShowLibrary(LibraryRequest(status: .dropped)) },
                     onGenresTapped: { onShowLibrary(LibraryRequest(mode: .genre)) },
+                    onScan: onScan,
                     onBookTapped: { selectedBook = $0 }
                 )
                 .refreshable { await viewModel.load() }
-            }
         } else if let errorMessage = viewModel.errorMessage {
-            ContentUnavailableView {
-                Label("Accueil indisponible", systemImage: "wifi.exclamationmark")
-            } description: {
-                Text(errorMessage)
-            } actions: {
-                AsyncButton("Réessayer") { await viewModel.load() }
+            EmptyStateView.failure("Accueil indisponible", message: errorMessage) {
+                await viewModel.load()
             }
         } else {
             ProgressView()

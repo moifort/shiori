@@ -7,7 +7,7 @@ struct SeriesProgressWidget: View {
     var body: some View {
         WidgetCard(title: "Séries en cours", action: onHeaderTapped) {
             if series.isEmpty {
-                WidgetEmptyMessage(text: "Aucune série en cours.")
+                WidgetEmptyMessage(text: "Aucune série en cours.", placeholder: .rings)
             }
             VStack(spacing: 14) {
                 ForEach(series) { entry in

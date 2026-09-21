@@ -14,7 +14,7 @@ struct BookShelfSection: View {
     var body: some View {
         WidgetCard(title: title, action: onHeaderTapped) {
             if books.isEmpty {
-                WidgetEmptyMessage(text: emptyMessage)
+                WidgetEmptyMessage(text: emptyMessage, placeholder: .covers)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(alignment: .top, spacing: 12) {

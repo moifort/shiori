@@ -14,7 +14,7 @@ struct TrendsWidget: View {
         } content: {
             VStack(alignment: .leading, spacing: 14) {
                 if pagesPerDay.current == nil, daysToFinish.current == nil {
-                    WidgetEmptyMessage(text: "Terminez un livre cette année pour voir vos tendances.")
+                    WidgetEmptyMessage(text: "Terminez un livre cette année pour voir vos tendances.", placeholder: .rows)
                 }
                 if let pages = pagesPerDay.current {
                     row(

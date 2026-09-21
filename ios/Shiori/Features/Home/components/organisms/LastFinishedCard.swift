@@ -11,7 +11,7 @@ struct LastFinishedCard: View {
             filled(book)
         } else {
             WidgetCard(title: "Dernier livre terminé") {
-                WidgetEmptyMessage(text: "Terminez un livre pour le retrouver ici.")
+                WidgetEmptyMessage(text: "Terminez un livre pour le retrouver ici.", placeholder: .book)
             }
             .accessibilityIdentifier("home-last-finished")
         }
