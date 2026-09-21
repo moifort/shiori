@@ -36,20 +36,42 @@ struct ReadingChartWidget: View {
     let booksPerYear: [Dashboard.YearCount]
     let pagesPerMonth: [Dashboard.MonthPages]
     let hoursPerMonth: [Dashboard.MonthHours]
+    /// Whether a recording is on the shelf at all. Without one the hours are
+    /// twelve empty bars, so the segment is left out rather than drawn at zero.
+    var hasAudiobooks: Bool = true
     /// Pages open the card rather than books: twelve monthly bars fill its
     /// width where six yearly ones leave it mostly empty, and the running
-    /// year is the figure a reader comes to the dashboard for.
-    @State private var metric: Metric = .pages
+    /// year is the figure a reader comes to the dashboard for. The choice
+    /// survives a relaunch: a reader who listens wants the hours every time.
+    @AppStorage("home.chart.metric") private var storedMetric: String = Metric.pages.rawValue
+
+    private var metrics: [Metric] {
+        hasAudiobooks ? Metric.allCases : Metric.allCases.filter { $0 != .hours }
+    }
+
+    /// The stored choice, unless it names a segment that is not offered — the
+    /// hours of a library that lost its last recording — in which case pages.
+    private var metric: Metric {
+        get {
+            let stored = Metric(rawValue: storedMetric) ?? .pages
+            return metrics.contains(stored) ? stored : .pages
+        }
+        nonmutating set { storedMetric = newValue.rawValue }
+    }
+
+    private var metricSelection: Binding<Metric> {
+        Binding(get: { metric }, set: { metric = $0 })
+    }
 
     var body: some View {
         WidgetCard(title: metric.title) {
-            Picker("Mesure", selection: $metric.animation(.snappy)) {
-                ForEach(Metric.allCases) { Text($0.label).tag($0) }
+            Picker("Mesure", selection: metricSelection.animation(.snappy)) {
+                ForEach(metrics) { Text($0.label).tag($0) }
             }
             .pickerStyle(.segmented)
-            // Three segments of six letters fit in sixty points each; wider than
+            // Segments of six letters fit in sixty points each; wider than
             // that and "Heures écoutées" wraps onto a second line beside them.
-            .frame(width: 180)
+            .frame(width: CGFloat(metrics.count) * 60)
             .accessibilityIdentifier("home-chart-metric")
         } content: {
             VStack(alignment: .leading, spacing: 10) {

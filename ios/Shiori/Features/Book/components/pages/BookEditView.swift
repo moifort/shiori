@@ -29,6 +29,9 @@ struct BookEditView: View {
     @State private var isbn: String
     @State private var isSaving = false
     @State private var errorMessage: String?
+    /// The reader's subgenre vocabulary, proposed under the field. Empty until
+    /// read, and empty for good when the read failed: a convenience, not a need.
+    @State private var subgenreSuggestions: [String] = []
 
     init(book: Book, onSave: @escaping (BookCorrection, Int?) async -> String?) {
         self.book = book
@@ -121,9 +124,13 @@ struct BookEditView: View {
                         }
                     }
                     .accessibilityIdentifier("edit-genre")
-                    LabeledField(title: "Sous-genres", icon: "tag") {
-                        TextField("Dark fantasy, Jeunesse", text: $subgenres)
-                            .accessibilityIdentifier("edit-subgenres")
+                    Label {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Sous-genres")
+                            SubgenreField(text: $subgenres, suggestions: subgenreSuggestions)
+                        }
+                    } icon: {
+                        Image(systemName: "tag").foregroundStyle(.secondary)
                     }
                     Picker(selection: $language) {
                         Text("Non renseignée").tag(BookLanguage?.none)
@@ -165,6 +172,7 @@ struct BookEditView: View {
             }
             .disabled(isSaving)
             .overlay { if isSaving { ProgressView() } }
+            .task { subgenreSuggestions = (try? await BookAPI.subgenres()) ?? [] }
             .alert(
                 "Impossible d'enregistrer",
                 isPresented: .init(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })

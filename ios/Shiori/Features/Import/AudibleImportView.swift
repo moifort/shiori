@@ -72,7 +72,7 @@ struct AudibleImportView: View {
                     // Popped first: the picker behind this card has no account to
                     // stand on once the connection is gone.
                     path = []
-                    Task { await viewModel.disconnect() }
+                    await viewModel.disconnect()
                 }
             )
         } else {

@@ -81,3 +81,9 @@ fragment BookDetail on Book {
     kind
   }
 }
+
+# The reader's own subgenre vocabulary, most used first: what the edit form
+# proposes as they type. Costs the server the same scan as the library.
+query Subgenres {
+  subgenres
+}

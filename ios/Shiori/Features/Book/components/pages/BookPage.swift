@@ -1,25 +1,33 @@
 import SwiftUI
 
 /// One book's screen, laid out like Vinarium's wine sheet: the status first, then
-/// what the book is, then the reader's own reading, then the facts. Pure and
+/// what the book is, then the reader's own reading, then the summary. Pure and
 /// previewable.
 ///
-/// The page reads rather than edits. Only the two things a reader flips often —
-/// the status and sharing — are switched in place, and a missing rating gets a
-/// call to action. Every other correction goes through "Modifier" in the sheet's
-/// menu, which is also where removing the book lives, one deliberate step away.
+/// The page reads rather than edits. Only the things a reader flips often —
+/// the status, sharing, and the genre from its own row — are changed in place,
+/// and a missing rating gets a call to action. Every other correction goes
+/// through "Modifier" in the sheet's menu, which is also where removing the
+/// book lives, one deliberate step away.
+///
+/// The other volumes of the saga are not listed here: that list belongs to the
+/// series screen, one tap away on the series row, which is the one place that
+/// knows the whole catalogue.
 struct BookPage: View {
     let book: Book
-    let otherVolumes: [Volume]
-    let seriesName: String?
     let isSaving: Bool
     let onSetStatus: (ReadingStatus) -> Void
     let onRate: () -> Void
     let onToggleHidden: () -> Void
     let onOpenSeries: () -> Void
-    let onAddVolume: (Volume) -> Void
+    let onEditGenre: () -> Void
 
-    private var currentYear: Int { Calendar.current.component(.year, from: .now) }
+    /// Past this many words the summary folds, and a button unfolds it: an
+    /// Audible blurb can run to a screenful, and the facts below it were
+    /// scrolling out of reach.
+    static let summaryWordLimit = 500
+
+    @State private var summaryExpanded = false
 
     var body: some View {
         List {
@@ -27,8 +35,6 @@ struct BookPage: View {
             header
             readingSection
             if let synopsis = book.synopsis { synopsisSection(synopsis) }
-            publicationSection
-            if !otherVolumes.isEmpty { recommendationsSection }
         }
         .listStyle(.insetGrouped)
         .disabled(isSaving)
@@ -45,22 +51,28 @@ struct BookPage: View {
         }
     }
 
+    /// What the book is: the cover and the title, its place in a saga, and the
+    /// facts of its publication, in one section rather than two — a reader
+    /// looking for the publisher was scrolling past a heading to find it.
     private var header: some View {
         Section {
             HStack(alignment: .top, spacing: 12) {
                 BookCover(book: book, width: 64)
                 VStack(alignment: .leading, spacing: 2) {
+                    // The volume before the title, beside the cover, as the
+                    // library row says it: "Tome 3" is how a reader names a
+                    // book of a saga before its title.
+                    if let series = book.series {
+                        Text(series.label)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
                     Text(book.title).font(.headline)
                     Text(book.authorLine).font(.subheadline).foregroundStyle(.secondary)
                     // Who reads a recording, and how long it runs, are as much a
                     // reason to pick it as who wrote it — so they sit with the
                     // author rather than down among the details. Only a recording
                     // has either.
-                    // The list's own label style would give each icon the wide,
-                    // centred column a row gets, which next to a cover leaves the
-                    // glyph adrift and a size too big for a caption. These two
-                    // are captions: a small glyph in a narrow, fixed column, so
-                    // the words line up beneath each other.
                     Group {
                         if let narratorLine = book.narratorLine {
                             Label("Lu par \(narratorLine)", systemImage: "waveform")
@@ -74,7 +86,15 @@ struct BookPage: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 }
-                Spacer(minLength: 0)
+                Spacer(minLength: 8)
+                // What kind of object this is, in the corner: one glyph reads
+                // faster than a "Format" row, and the word is on the edit form
+                // for anyone who needs it.
+                Image(systemName: book.format.symbol)
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(Text(book.format.label))
+                    .accessibilityIdentifier("book-format")
             }
             .padding(.vertical, 2)
 
@@ -94,13 +114,59 @@ struct BookPage: View {
                 }
                 .tint(.primary)
                 .accessibilityIdentifier("book-series")
-
-                // Off the numbered spine there is no number, and the kind alone
-                // ("Nouvelle") is what the volume is.
-                LabeledInfoRow(title: "Tome", value: series.volume.map(String.init) ?? series.kind.label, icon: "number")
             }
-            LabeledInfoRow(title: "Format", value: book.format.label, icon: book.format.symbol)
+
+            genreRow
+
+            if let publisher = book.publisher {
+                LabeledInfoRow(title: "Éditeur", value: publisher, icon: "building.2")
+            }
+            if let year = book.firstPublishedIn {
+                LabeledInfoRow(title: "Première parution", value: String(year), icon: "calendar")
+            }
+            if let pages = book.pageCount {
+                LabeledInfoRow(title: "Pages", value: String(pages), icon: "doc.plaintext")
+            }
+            if let isbn = book.isbn13 {
+                Label {
+                    LabeledContent("ISBN") {
+                        Text(isbn).font(.callout.monospaced())
+                    }
+                } icon: {
+                    Image(systemName: "barcode").foregroundStyle(.secondary)
+                }
+            }
         }
+    }
+
+    /// The genre and its subgenres on one tappable row. A book with neither
+    /// still gets the row, saying so: it is the way to give it one.
+    private var genreRow: some View {
+        Button(action: onEditGenre) {
+            Label {
+                VStack(alignment: .leading, spacing: 8) {
+                    LabeledContent("Genre") {
+                        HStack(spacing: 4) {
+                            Text(book.genre?.label ?? String(localized: "Non renseigné"))
+                                .multilineTextAlignment(.trailing)
+                            Image(systemName: "chevron.right").font(.caption.weight(.semibold))
+                        }
+                        .foregroundStyle(.tint)
+                    }
+                    if !book.subgenres.isEmpty {
+                        TagList(tags: book.subgenres)
+                    }
+                }
+            } icon: {
+                if let genre = book.genre {
+                    genre.image.foregroundStyle(.secondary)
+                } else {
+                    Image(systemName: "theatermasks").foregroundStyle(.secondary)
+                }
+            }
+        }
+        .tint(.primary)
+        .accessibilityIdentifier("book-genre")
     }
 
     private var readingSection: some View {
@@ -150,90 +216,18 @@ struct BookPage: View {
     }
 
     private func synopsisSection(_ synopsis: String) -> some View {
-        Section("Résumé") {
-            Text(synopsis).font(.callout)
-        }
-    }
-
-    @ViewBuilder
-    private var publicationSection: some View {
-        let hasFacts = book.publisher != nil || book.firstPublishedIn != nil || book.pageCount != nil
-            || book.genre != nil || !book.subgenres.isEmpty || book.isbn13 != nil
-        if hasFacts {
-            Section("Publication") {
-                if let publisher = book.publisher {
-                    LabeledInfoRow(title: "Éditeur", value: publisher, icon: "building.2")
+        let words = synopsis.split(whereSeparator: \.isWhitespace)
+        let folded = words.count > Self.summaryWordLimit && !summaryExpanded
+        let shown = folded ? words.prefix(Self.summaryWordLimit).joined(separator: " ") + "…" : synopsis
+        return Section("Résumé") {
+            Text(shown).font(.callout)
+            if words.count > Self.summaryWordLimit {
+                Button(folded ? "Lire la suite" : "Réduire") {
+                    withAnimation(.snappy) { summaryExpanded.toggle() }
                 }
-                if let year = book.firstPublishedIn {
-                    LabeledInfoRow(title: "Première parution", value: String(year), icon: "calendar")
-                }
-                if let pages = book.pageCount {
-                    LabeledInfoRow(title: "Pages", value: String(pages), icon: "doc.plaintext")
-                }
-                if let genre = book.genre {
-                    LabeledInfoRow(title: "Genre", value: genre.label, icon: "theatermasks")
-                }
-                if !book.subgenres.isEmpty {
-                    Label {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Sous-genres")
-                            TagList(tags: book.subgenres)
-                        }
-                    } icon: {
-                        Image(systemName: "tag").foregroundStyle(.secondary)
-                    }
-                }
-                if let isbn = book.isbn13 {
-                    Label {
-                        LabeledContent("ISBN") {
-                            Text(isbn).font(.callout.monospaced())
-                        }
-                    } icon: {
-                        Image(systemName: "barcode").foregroundStyle(.secondary)
-                    }
-                }
+                .font(.callout)
+                .accessibilityIdentifier("book-summary-toggle")
             }
-        }
-    }
-
-    /// Zero-cost recommendation: the catalogue is already in hand, so the other
-    /// volumes are a filter rather than a call. A volume the reader does not own
-    /// is a proposal — nothing enters the library until they add it.
-    private var recommendationsSection: some View {
-        Section {
-            ForEach(otherVolumes) { volume in
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(volume.title).font(.subheadline.weight(.medium)).lineLimit(2)
-                        HStack(spacing: 6) {
-                            Text(volume.number.map { "\(volume.kind.label) \($0)" } ?? volume.kind.label)
-                            if volume.isForthcoming(asOf: currentYear), let year = volume.publishedIn {
-                                Text("· à paraître en \(String(year))")
-                            } else if let year = volume.publishedIn {
-                                Text("· \(String(year))")
-                            }
-                        }
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    }
-                    Spacer(minLength: 0)
-                    Button {
-                        onAddVolume(volume)
-                    } label: {
-                        Label("Ajouter", systemImage: "plus.circle")
-                            .labelStyle(.iconOnly)
-                            .font(.title3)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.tint)
-                    .accessibilityLabel(Text("Ajouter « \(volume.title) » à ma liste à lire"))
-                }
-                .padding(.vertical, 2)
-            }
-        } header: {
-            Text("Dans la même série")
-        } footer: {
-            Text("Ajouter un tome depuis cette liste ne consomme aucun scan.")
         }
     }
 }
@@ -258,17 +252,12 @@ struct BookPage: View {
                 hidden: true,
                 startedAt: .now.addingTimeInterval(-86400 * 20)
             ),
-            otherVolumes: [
-                Volume(number: 2, title: "La Peur du sage", publishedIn: 2011, kind: .main),
-                Volume(number: 3, title: "Les Portes de pierre", publishedIn: nil, kind: .main),
-            ],
-            seriesName: "Chronique du tueur de roi",
             isSaving: false,
             onSetStatus: { _ in },
             onRate: {},
             onToggleHidden: {},
             onOpenSeries: {},
-            onAddVolume: { _ in }
+            onEditGenre: {}
         )
     }
 }

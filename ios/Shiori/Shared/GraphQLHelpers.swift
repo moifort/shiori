@@ -36,7 +36,13 @@ enum GraphQLHelpers {
             mutation: mutation,
             requestConfiguration: requestTimeout.map { RequestConfiguration(requestTimeout: $0) }
         )
-        return try unwrap(response)
+        let data = try unwrap(response)
+        // The write landed: every list and the dashboard are told, once, here,
+        // rather than by each screen remembering to say so.
+        await MainActor.run {
+            NotificationCenter.default.post(name: .shioriDataDidChange, object: nil)
+        }
+        return data
     }
 
     /// Turn a `GraphQLResponse` into its `Data`, surfacing GraphQL errors and

@@ -175,11 +175,9 @@ struct PremiumSheet: View {
 
     private var legal: some View {
         VStack(spacing: 12) {
-            Button("Restaurer mes achats") {
-                Task { await store.restore() }
-            }
-            .font(.footnote)
-            .disabled(store.isPurchasing)
+            AsyncButton("Restaurer mes achats") { await store.restore() }
+                .font(.footnote)
+                .disabled(store.isPurchasing)
 
             Text("L’abonnement se renouvelle automatiquement sauf résiliation au moins 24 heures avant la fin de la période en cours. La gestion et la résiliation se font dans les réglages du compte App Store.")
                 .font(.caption2)

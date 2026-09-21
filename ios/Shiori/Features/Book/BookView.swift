@@ -13,6 +13,7 @@ struct BookView: View {
 
     @State private var viewModel: BookViewModel
     @State private var showEditor = false
+    @State private var showGenreEditor = false
     @State private var showRatingPrompt = false
     @State private var confirmDelete = false
     @State private var openSeriesId: String?
@@ -31,19 +32,12 @@ struct BookView: View {
                 if let book = viewModel.book {
                     BookPage(
                         book: book,
-                        otherVolumes: viewModel.otherVolumes,
-                        seriesName: book.series?.name,
                         isSaving: viewModel.isSaving,
                         onSetStatus: { status in run { await viewModel.setStatus(status) } },
                         onRate: { showRatingPrompt = true },
                         onToggleHidden: { run { await viewModel.setHidden(!book.hidden) } },
                         onOpenSeries: { openSeriesId = book.series?.id },
-                        onAddVolume: { volume in
-                            Task {
-                                _ = await viewModel.addVolume(volume)
-                                await viewModel.load()
-                            }
-                        }
+                        onEditGenre: { showGenreEditor = true }
                     )
                 } else if viewModel.isLoading {
                     ProgressView()
@@ -76,6 +70,17 @@ struct BookView: View {
                         guard !saved else { return nil }
                         // The form shows the failure itself: an alert hung on this
                         // screen would stay hidden behind the form's sheet.
+                        defer { viewModel.dismissError() }
+                        return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
+                    }
+                }
+            }
+            .sheet(isPresented: $showGenreEditor) {
+                if let book = viewModel.book {
+                    GenreEditSheet(book: book) { correction in
+                        let saved = await viewModel.save(correction, rating: book.rating)
+                        if let book = viewModel.book { onChanged(book) }
+                        guard !saved else { return nil }
                         defer { viewModel.dismissError() }
                         return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
                     }

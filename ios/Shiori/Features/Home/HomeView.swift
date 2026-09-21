@@ -8,6 +8,7 @@ import SwiftUI
 struct HomeView: View {
     enum Destination: Hashable {
         case series(String)
+        case favorites
     }
 
     /// Opens the Library tab on the books being read.
@@ -20,9 +21,13 @@ struct HomeView: View {
     /// The import source whose card is open. One source today; the menu is here so
     /// the next one is an entry rather than a redesign.
     @State private var openSource: ImportSource?
+    /// The stack behind the dashboard: the favourites list is pushed onto it
+    /// from a tile, the way a saga is pushed from its progress row. Untyped,
+    /// so a screen pushed on it can push a saga of its own by id.
+    @State private var path = NavigationPath()
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             content
                 .navigationTitle("Accueil")
                 .toolbar {
@@ -47,12 +52,18 @@ struct HomeView: View {
                 .navigationDestination(for: Destination.self) { destination in
                     switch destination {
                     case let .series(id): SeriesView(seriesId: id)
+                    case .favorites: FavoritesView()
                     }
                 }
         }
         // Every time the tab comes back: a scan or an edit made in another tab
         // changes the figures, and the view behind them is one document read.
         .onAppear { Task { await viewModel.load() } }
+        // And every time a write lands anywhere: the figures behind this screen
+        // are rebuilt by the server on each one, and the tab may be showing.
+        .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
+            Task { await viewModel.load() }
+        }
         .sheet(item: $selectedBook) { book in
             BookView(
                 bookId: book.id,
@@ -91,6 +102,7 @@ struct HomeView: View {
                     dashboard: dashboard,
                     onReadingTapped: onShowReading,
                     onSeriesTapped: onShowSeries,
+                    onFavoritesTapped: { path.append(Destination.favorites) },
                     onBookTapped: { selectedBook = $0 }
                 )
                 .refreshable { await viewModel.load() }
@@ -101,7 +113,7 @@ struct HomeView: View {
             } description: {
                 Text(errorMessage)
             } actions: {
-                Button("Réessayer") { Task { await viewModel.load() } }
+                AsyncButton("Réessayer") { await viewModel.load() }
             }
         } else {
             ProgressView()

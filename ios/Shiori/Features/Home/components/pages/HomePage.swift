@@ -7,6 +7,7 @@ struct HomePage: View {
     let dashboard: Dashboard
     let onReadingTapped: () -> Void
     let onSeriesTapped: () -> Void
+    let onFavoritesTapped: () -> Void
     let onBookTapped: (Book) -> Void
 
     var body: some View {
@@ -16,7 +17,8 @@ struct HomePage: View {
                     currentYear: dashboard.currentYear,
                     booksPerYear: dashboard.booksPerYear,
                     pagesPerMonth: dashboard.pagesPerMonth,
-                    hoursPerMonth: dashboard.hoursPerMonth
+                    hoursPerMonth: dashboard.hoursPerMonth,
+                    hasAudiobooks: dashboard.hasAudiobooks
                 )
 
                 BookShelfSection(
@@ -46,7 +48,9 @@ struct HomePage: View {
                     toReadCount: dashboard.toReadCount,
                     monthsToClearPile: dashboard.monthsToClearPile,
                     averageRating: dashboard.averageRating,
-                    ratedCount: dashboard.ratedCount
+                    ratedCount: dashboard.ratedCount,
+                    favoriteCount: dashboard.favoriteCount,
+                    onFavoritesTapped: onFavoritesTapped
                 )
 
                 GenresWidget(currentYear: dashboard.currentYear, genres: dashboard.genres)
@@ -113,6 +117,8 @@ extension Dashboard {
             .init(id: "a", name: "One Piece", readCount: 107, totalCount: 110),
             .init(id: "b", name: "Chronique du tueur de roi", readCount: 1, totalCount: 2),
         ],
+        favoriteCount: 6,
+        hasAudiobooks: true,
         libraryIsEmpty: false
     )
 }
@@ -142,14 +148,14 @@ extension Dashboard {
 
 #Preview("With data") {
     NavigationStack {
-        HomePage(dashboard: .preview, onReadingTapped: {}, onSeriesTapped: {}, onBookTapped: { _ in })
+        HomePage(dashboard: .preview, onReadingTapped: {}, onSeriesTapped: {}, onFavoritesTapped: {}, onBookTapped: { _ in })
             .navigationTitle("Accueil")
     }
 }
 
 #Preview("First book") {
     NavigationStack {
-        HomePage(dashboard: .firstBook, onReadingTapped: {}, onSeriesTapped: {}, onBookTapped: { _ in })
+        HomePage(dashboard: .firstBook, onReadingTapped: {}, onSeriesTapped: {}, onFavoritesTapped: {}, onBookTapped: { _ in })
             .navigationTitle("Accueil")
     }
 }

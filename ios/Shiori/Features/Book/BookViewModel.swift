@@ -8,10 +8,6 @@ import Foundation
 @Observable
 final class BookViewModel {
     private(set) var book: Book?
-    /// The saga catalogue, loaded after the book and only when it belongs to
-    /// one. Absent is an ordinary state: a book added by hand has no catalogue,
-    /// and neither does one whose catalogue call failed on the scan.
-    private(set) var series: BookSeries?
     private(set) var isLoading = true
     private(set) var errorMessage: String?
     /// Set while a mutation is in flight, so the screen can disable its controls
@@ -24,34 +20,17 @@ final class BookViewModel {
         self.bookId = bookId
     }
 
-    /// The other volumes of the saga — what the recommendations section shows.
-    /// Zero-cost: the catalogue is already loaded, so this is a filter, not a
-    /// call.
-    var otherVolumes: [Volume] {
-        guard let series, let owned = book?.series else { return [] }
-        return (series.spine + series.relatedWorks).filter { $0.number != owned.volume }
-    }
-
+    /// The book alone: its saga's catalogue is the series screen's business,
+    /// one tap away, and reading it here cost a catalogue call per opening.
     func load() async {
         isLoading = true
         errorMessage = nil
         do {
             book = try await BookAPI.book(id: bookId)
-            await loadSeries()
         } catch {
             errorMessage = reportError(error)
         }
         isLoading = false
-    }
-
-    private func loadSeries() async {
-        guard let seriesId = book?.series?.id else {
-            series = nil
-            return
-        }
-        // A missing catalogue must not fail the screen: the book is what the
-        // reader came for, and the recommendations section simply does not show.
-        series = try? await SeriesAPI.series(id: seriesId)
     }
 
     func setStatus(_ status: ReadingStatus) async {
@@ -105,25 +84,6 @@ final class BookViewModel {
         } catch {
             errorMessage = reportError(error)
             return false
-        }
-    }
-
-    /// Adds a volume the reader does not own, from the recommendations section.
-    /// No photo and no AI call, so it spends no scan.
-    func addVolume(_ volume: Volume) async -> Book? {
-        guard let series else { return nil }
-        isSaving = true
-        defer { isSaving = false }
-        do {
-            let added = try await BookAPI.add(
-                // Another volume of a manga is a manga: the saga shares its format.
-                BookDraft(title: volume.title, authors: [series.author], format: book?.format ?? .book)
-            )
-            track(.bookAdded(source: .series))
-            return added
-        } catch {
-            errorMessage = reportError(error)
-            return nil
         }
     }
 

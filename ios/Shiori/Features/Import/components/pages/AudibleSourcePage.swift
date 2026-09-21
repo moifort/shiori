@@ -23,7 +23,7 @@ struct AudibleSourcePage: View {
     let onAutoSyncChange: (Bool) -> Void
     let onSyncNow: () -> Void
     let onPickBooks: () -> Void
-    let onDisconnect: () -> Void
+    let onDisconnect: () async -> Void
 
     var body: some View {
         List {
@@ -119,7 +119,7 @@ struct AudibleSourcePage: View {
 
     private var disconnectSection: some View {
         Section {
-            Button("Déconnecter Audible", role: .destructive, action: onDisconnect)
+            AsyncButton("Déconnecter Audible", role: .destructive) { await onDisconnect() }
                 .accessibilityIdentifier("audible-disconnect")
         } footer: {
             Text(

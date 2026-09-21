@@ -11,7 +11,7 @@ struct LibraryPage: View {
     let isLoading: Bool
     let errorMessage: String?
     @Binding var filter: ReadingStatus?
-    let onRetry: () -> Void
+    let onRetry: () async -> Void
     let onAddManually: () -> Void
     let onImportFromAudible: () -> Void
     let onBookTapped: (Book) -> Void
@@ -27,7 +27,7 @@ struct LibraryPage: View {
                 } description: {
                     Text(errorMessage)
                 } actions: {
-                    Button("Réessayer", action: onRetry)
+                    AsyncButton("Réessayer") { await onRetry() }
                 }
             } else if sections.isEmpty {
                 emptyState
@@ -101,7 +101,7 @@ struct LibraryPage: View {
             }
         }
         .listStyle(.insetGrouped)
-        .refreshable { onRetry() }
+        .refreshable { await onRetry() }
     }
 
     private func rows(of section: LibrarySection) -> some View {

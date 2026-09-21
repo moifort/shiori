@@ -15,6 +15,8 @@ struct SeriesView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var addingTitle: String?
+    /// A rating or a heart is on its way to the server.
+    @State private var isSaving = false
 
     private var currentYear: Int { Calendar.current.component(.year, from: .now) }
 
@@ -41,16 +43,27 @@ struct SeriesView: View {
         // of a saga does not wait on the world having described it.
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                ToolbarIconButton(
+                AsyncToolbarButton(
                     title: isFavorite ? "Retirer des favoris" : "Ajouter aux favoris",
                     systemImage: isFavorite ? "heart.fill" : "heart"
                 ) {
-                    Task { await setFavorite(!isFavorite) }
+                    await setFavorite(!isFavorite)
                 }
                 .tint(isFavorite ? .pink : nil)
                 .accessibilityIdentifier("series-favorite")
             }
         }
+        // The stars commit on the tap and the row's own control cannot show the
+        // call, so the wait is made visible by a scrim, as on the book sheet.
+        .overlay {
+            if isSaving {
+                ZStack {
+                    Color.black.opacity(0.1).ignoresSafeArea()
+                    ProgressView()
+                }
+            }
+        }
+        .disabled(isSaving)
         .task { await load() }
     }
 
@@ -115,10 +128,11 @@ struct SeriesView: View {
         }
         return Label(
             allRead ? "Terminée" : "En cours",
-            systemImage: allRead ? "checkmark.circle.fill" : "book"
+            systemImage: allRead ? "checkmark.circle.fill" : "book.fill"
         )
+        .labelStyle(.caption)
         .font(.caption.weight(.medium))
-        .foregroundStyle(allRead ? Color.green : .secondary)
+        .foregroundStyle(allRead ? Color.green : Color.blue)
     }
 
     private func row(_ volume: Volume, author: String) -> some View {
@@ -143,20 +157,26 @@ struct SeriesView: View {
                 .foregroundStyle(.secondary)
 
                 if let owned {
-                    HStack(spacing: 8) {
-                        Label(owned.status.label, systemImage: owned.status.symbol)
-                            .font(.caption2)
-                            .foregroundStyle(owned.status == .read ? Color.green : .secondary)
-                        if let rating = owned.rating { StarRatingView(rating: rating) }
-                    }
+                    // The reader's own reading of this volume, in a caption
+                    // label sized like the line above it: the list's default
+                    // gave the glyph a column of its own and a size too big.
+                    Label(owned.status.label, systemImage: owned.status.symbol)
+                        .labelStyle(.caption)
+                        .font(.caption)
+                        .foregroundStyle(owned.status == .read ? Color.green : .secondary)
                 }
             }
-            Spacer(minLength: 0)
+            Spacer(minLength: 8)
 
-            if owned != nil {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-                    .accessibilityLabel(Text("Dans votre bibliothèque"))
+            if let owned {
+                // Owned: its place in the library, then the reader's heart or
+                // stars beneath, in the same right column as everywhere.
+                VStack(alignment: .trailing, spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                        .accessibilityLabel(Text("Dans votre bibliothèque"))
+                    OpinionMark(rating: owned.rating, isFavorite: owned.favorite, font: .caption)
+                }
             } else if forthcoming {
                 // Nothing to add: the volume does not exist yet. Batch 4 will
                 // attach an alert here rather than an action.
@@ -201,6 +221,8 @@ struct SeriesView: View {
     // that rather than guessing: a rating taken back may leave a heart behind,
     // and an opinion emptied of both is erased server-side.
     private func rate(_ stars: Int) async {
+        isSaving = true
+        defer { isSaving = false }
         do {
             opinion =
                 stars == 0
@@ -212,6 +234,8 @@ struct SeriesView: View {
     }
 
     private func setFavorite(_ favorite: Bool) async {
+        isSaving = true
+        defer { isSaving = false }
         do {
             opinion = try await SeriesAPI.setFavorite(seriesId: seriesId, favorite: favorite)
         } catch {

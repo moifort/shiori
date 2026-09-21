@@ -75,6 +75,16 @@ enum BookAPI {
         return data.setBookFavorite.fragments.bookDetail.asBook
     }
 
+    /// Every subgenre the reader has used, most used first. What the subgenre
+    /// field proposes: a vocabulary drawn from their own shelf.
+    static func subgenres() async throws -> [String] {
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.SubgenresQuery()
+        )
+        return data.subgenres
+    }
+
     static func delete(id: String) async throws {
         _ = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,

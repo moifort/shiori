@@ -20,7 +20,7 @@ struct LibraryView: View {
                 isLoading: viewModel.isLoading,
                 errorMessage: viewModel.errorMessage,
                 filter: $viewModel.filter,
-                onRetry: { Task { await viewModel.load() } },
+                onRetry: { await viewModel.load() },
                 onAddManually: { showManualAdd = true },
                 onImportFromAudible: { showAudibleImport = true },
                 onBookTapped: { selectedBook = $0 }
@@ -50,6 +50,12 @@ struct LibraryView: View {
             })
         }
         .task { await viewModel.load() }
+        // A book rated in a sheet moves its saga to the top; one added from the
+        // scanner lands in a section this list has not drawn yet. Either way the
+        // rows on screen are the old ones until the server is asked again.
+        .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
+            Task { await viewModel.load() }
+        }
         .onChange(of: filterRequest, initial: true) { _, request in
             guard let request else { return }
             viewModel.filter = request

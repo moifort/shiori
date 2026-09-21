@@ -13,6 +13,10 @@ struct SeriesListView: View {
     @State private var followed: [FollowedSeries] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
+    /// The saga being opened. A button and a destination rather than a
+    /// navigation link: the link draws a chevron on every row, and a list of
+    /// sagas reads better as cards than as a menu.
+    @State private var openSeriesId: String?
 
     var body: some View {
         NavigationStack {
@@ -26,7 +30,7 @@ struct SeriesListView: View {
                     } description: {
                         Text(errorMessage)
                     } actions: {
-                        Button("Réessayer") { Task { await load() } }
+                        AsyncButton("Réessayer") { await load() }
                     }
                 } else if followed.isEmpty {
                     ContentUnavailableView {
@@ -41,58 +45,69 @@ struct SeriesListView: View {
             .navigationTitle("Séries")
         }
         .task { await load() }
+        // A heart given on a saga screen, a volume finished in the library: the
+        // rows here say so the next time the reader looks, not the next launch.
+        .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
+            Task { await load() }
+        }
     }
 
     private var list: some View {
         List(followed) { entry in
-            NavigationLink(value: entry.seriesId) {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Text(entry.name).font(.body.weight(.medium))
-                        // Which of the saga's two shelves this row is. Trailing
-                        // the name, as in the library headings: the name is what
-                        // the reader scans for, and only foreign, as there too.
-                        if let language = entry.language, language.isForeign {
-                            Text(language.flag).accessibilityLabel(Text(language.label))
-                        }
-                        Spacer(minLength: 0)
-                        if entry.opinion?.favorite == true {
-                            Image(systemName: "heart.fill")
-                                .font(.caption)
-                                .foregroundStyle(.pink)
-                                .accessibilityLabel(Text("Favori"))
-                        }
-                    }
-                    if let rating = entry.opinion?.rating {
-                        StarRatingView(rating: rating)
-                    }
-                    if let author = entry.author {
-                        Text(author).font(.subheadline).foregroundStyle(.secondary)
-                    }
-                    if let state = entry.state {
-                        Label(
-                            state.label,
-                            systemImage: state == .complete ? "checkmark.circle.fill" : "book"
-                        )
-                        .font(.caption)
-                        .foregroundStyle(state == .complete ? Color.green : .secondary)
-                        .padding(.top, 1)
-                    } else {
-                        Label(
-                            "\(entry.ownedCount) tome(s)",
-                            systemImage: "books.vertical"
-                        )
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 1)
-                    }
-                }
-                .padding(.vertical, 2)
+            Button {
+                openSeriesId = entry.seriesId
+            } label: {
+                row(entry)
             }
+            .tint(.primary)
+            .accessibilityIdentifier("series-row")
         }
         .listStyle(.insetGrouped)
         .refreshable { await load() }
-        .navigationDestination(for: String.self) { SeriesView(seriesId: $0) }
+        .navigationDestination(item: $openSeriesId) { SeriesView(seriesId: $0) }
+    }
+
+    /// The same shape as a library row: the words on the left, and on the
+    /// right, level with the name, what the reader should know at a glance —
+    /// the saga's state as one glyph, then their own heart or stars beneath.
+    private func row(_ entry: FollowedSeries) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Text(entry.name).font(.body.weight(.medium))
+                    // Which of the saga's two shelves this row is. Trailing
+                    // the name, as in the library headings: the name is what
+                    // the reader scans for, and only foreign, as there too.
+                    if let language = entry.language, language.isForeign {
+                        Text(language.flag).accessibilityLabel(Text(language.label))
+                    }
+                }
+                if let author = entry.author {
+                    Text(author).font(.subheadline).foregroundStyle(.secondary)
+                }
+                // How much of the saga is on the shelf. A saga with a state
+                // says it in the corner; one nobody has catalogued has only
+                // this count to show.
+                Label("\(entry.ownedCount) tome(s)", systemImage: "books.vertical")
+                    .labelStyle(.caption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 1)
+            }
+            Spacer(minLength: 8)
+            VStack(alignment: .trailing, spacing: 6) {
+                if let state = entry.state {
+                    SeriesStateBadge(state: state)
+                }
+                OpinionMark(
+                    rating: entry.opinion?.rating,
+                    isFavorite: entry.opinion?.favorite == true,
+                    font: .caption
+                )
+            }
+            .padding(.top, 2)
+        }
+        .padding(.vertical, 2)
     }
 
     private func load() async {
@@ -104,5 +119,19 @@ struct SeriesListView: View {
             errorMessage = reportError(error)
         }
         isLoading = false
+    }
+}
+
+/// Whether a saga is still going or done, as one glyph in a row's corner: the
+/// tick in green once every published volume is read, an open book until then.
+/// Icon-only, because the corner has no room for a word; the state is spoken.
+struct SeriesStateBadge: View {
+    let state: SeriesState
+
+    var body: some View {
+        Image(systemName: state == .complete ? "checkmark.circle.fill" : "book.fill")
+            .font(.caption)
+            .foregroundStyle(state == .complete ? Color.green : Color.blue)
+            .accessibilityLabel(Text(state.label))
     }
 }

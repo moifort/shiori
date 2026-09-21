@@ -62,7 +62,7 @@ struct AuthRoot: View {
             } description: {
                 Text(message)
             } actions: {
-                Button("Réessayer") { Task { await gate.refresh() } }
+                AsyncButton("Réessayer") { await gate.refresh() }
             }
         }
     }
