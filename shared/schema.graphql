@@ -659,6 +659,25 @@ The check digit is enforced rather than assumed: models invent ISBNs that look r
 scalar Isbn13
 
 """
+One title read off an Amazon data export, before anything is saved.
+
+Thin on purpose: the export is a purchase history, not a catalogue. It names the book and who wrote it and carries nothing else — no summary, no cover, no series — so a book catalogued from it is a stub the reader can scan or correct afterwards.
+"""
+type KindleBook {
+  """
+  Already on the shelf under this title and author, whatever the edition. Show it ticked off and untappable rather than hiding it: hidden, it reads as a title the import lost.
+  """
+  alreadyInLibrary: Boolean!
+  authors: [AuthorName!]!
+
+  """
+  What to tick: the title and first author folded together, the way the duplicate check folds them. Pass the ones wanted to `importKindleBooks`.
+  """
+  key: String!
+  title: BookTitle!
+}
+
+"""
 One page of the library. Cursor-less: the page carries its sections plus a `hasMore` signal, and the id of its last book is the cursor for the next one.
 """
 type LibraryPage {
@@ -818,6 +837,21 @@ type Mutation {
   ): [Book!]!
 
   """
+  Catalogue the titles the reader ticked, from the keys `readKindleExport` answered with.
+  
+  The file is sent again rather than the records: it is read a second time and the keys only say which of its rows were wanted, so every stored field comes from the export. A title already on the shelf is skipped however it was ticked.
+  
+  Each book lands on the pile as an ebook with its title and author and nothing else: that is all the export carries. Answers the books actually catalogued, which is empty when every ticked title was already owned.
+  """
+  importKindleBooks(
+    """The same export file, as text"""
+    csv: String!
+
+    """The keys of the ticked books"""
+    keys: [String!]!
+  ): [Book!]!
+
+  """
   Give a book one to five stars. Rating marks it as read: the reader is saying they finished it, and leaving it on the pile would make every filter lie.
   """
   rateBook(id: BookId!, rating: StarRating!): Book!
@@ -828,6 +862,18 @@ type Mutation {
   The saga is not checked to exist: a reader reaches it from a volume they own, and a saga the catalogue has never described is still theirs to rate.
   """
   rateSeries(rating: StarRating!, seriesId: SeriesId!): SeriesOpinion!
+
+  """
+  Read an Amazon data export and answer with the books it holds, ticked against the library they would join.
+  
+  Nothing is saved: the answer is a proposal, as a scan is. The app lists the titles, the reader ticks, and `importKindleBooks` catalogues those.
+  
+  No model is called and no scan is spent — this reads a file. Fails with `BAD_USER_INPUT` for a file above one megabyte or one with no title column, which is what the wrong CSV out of the archive looks like.
+  """
+  readKindleExport(
+    """The export file, as text"""
+    csv: String!
+  ): [KindleBook!]!
 
   """
   Take a rating back. The book stays read, with its reading dates: withdrawing a judgment is not saying the reading never happened.

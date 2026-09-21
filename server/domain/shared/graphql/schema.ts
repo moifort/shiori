@@ -63,6 +63,11 @@ import '~/domain/audible/infrastructure/graphql/types'
 import '~/domain/audible/infrastructure/graphql/queries'
 import '~/domain/audible/infrastructure/graphql/mutations'
 
+// Kindle (cataloguing a library from the Amazon data export). After book: its
+// importable book borrows the book scalars.
+import '~/domain/kindle/infrastructure/graphql/types'
+import '~/domain/kindle/infrastructure/graphql/mutations'
+
 // Changelog (application release notes)
 import '~/domain/changelog/infrastructure/graphql/types'
 import '~/domain/changelog/infrastructure/graphql/queries'
