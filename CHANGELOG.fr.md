@@ -4,9 +4,11 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
-- L’onglet Séries est découpé par genre et chaque saga montre où en est le lecteur, par une
-  barre et le compte des tomes parus déjà lus. Ses marques tiennent sur une ligne dans le
-  coin supérieur, et l’état de la saga est dessiné en gris. L’écran d’une série s’ouvre sur
+- L’onglet Séries est découpé par genre et, dans un genre, place les sagas en cours
+  d’abord, puis les terminées, puis celles pas encore commencées, le dernier changement
+  d’état de lecture en tête de chacune. Chaque saga dit en toutes lettres où en est le
+  lecteur — en cours, terminée, à lire — et montre ses tomes en une bande de couvertures,
+  qui défile de côté, chacune portant son état de lecture. L’écran d’une série s’ouvre sur
   un anneau d’activité à côté du nom, de l’auteur et du nombre de tomes, liste les tomes un
   par ligne, ne dit où en est le lecteur d’un tome que par le badge sur sa couverture, et
   modifie d’un coup le genre et les sous-genres de tous les tomes.

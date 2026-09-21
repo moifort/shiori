@@ -10,9 +10,11 @@ the release tag is pushed.
 
 ## Unreleased
 
-- The Series tab is sectioned by genre and every saga shows how far the reader is into it,
-  as a bar and a count of the published volumes read. Its marks sit on one line in the top
-  corner, and the saga's state is drawn in grey. The series screen opens on an activity ring
+- The Series tab is sectioned by genre, and within a genre puts the sagas in progress
+  first, then the finished ones, then those not started, the latest change of reading
+  status leading each. Every saga is labelled in words with where the reader stands — in
+  progress, finished, to read — and shows its volumes as a strip of covers, scrolled
+  sideways, each carrying its reading status. The series screen opens on an activity ring
   beside the saga's name, author and size, lists its volumes one per row, says where the
   reader stands with a volume only by the badge on its cover, and edits the genre and
   subgenres of every volume at once.
