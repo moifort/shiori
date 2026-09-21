@@ -19,6 +19,10 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 - L’accueil compte les favoris, livres et séries confondus, dans une tuile qui ouvre la liste
   de tout ce qui porte un cœur. Les heures d’écoute quittent le graphique d’une bibliothèque
   sans livre audio, et le graphique se souvient de la mesure choisie d’un lancement à l’autre.
+- L’écran d’une saga est devenu une étagère : ses tomes côte à côte dans l’ordre du cycle,
+  ceux qui sont sur l’étagère en couleur, ceux qui manquent en vignettes estompées avec un
+  bouton pour les ajouter, et ceux qui ne sont pas parus signalés comme tels. Une barre sous
+  la description dit où en est le lecteur sur les tomes parus. Toucher un tome possédé l’ouvre.
 - Le bouton « ajouter » de la bibliothèque ouvre une feuille disposée comme celle des fichiers
   de Vinarium : l’appareil photo et les dernières photos sur une même bande, un titre à taper de
   mémoire — l’IA retrouve le livre et propose la même fiche qu’un scan, pour un scan du quota —

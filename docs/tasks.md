@@ -51,7 +51,7 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       applied to every book of that series.** A fan-out write in the book command.
 - [x] **Book screen, remove the "in the same series" section**, back end to front end. That
       list belongs to the series domain and must come from it.
-- [ ] **Series screen, rework it around a shelf of covers.** Decided: the volumes become a
+- [x] **Series screen, rework it around a shelf of covers.** Decided: the volumes become a
       horizontal shelf, as the dashboard draws its shelves. A volume the reader does not own
       has no cover — the catalogue holds a title, a year and a kind, never an ISBN or an
       image — so it takes the typographic placeholder of the library, with the add button in

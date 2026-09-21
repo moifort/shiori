@@ -25,6 +25,10 @@ the release tag is pushed.
 - The dashboard counts the favourites, books and sagas together, in a tile that opens the
   list of everything hearted. The listening hours leave the chart of a library with no
   recording, and the chart remembers which measure was chosen across launches.
+- A saga's screen is now a shelf: its volumes side by side in the order of the cycle, the
+  ones on the shelf in full colour, the ones still missing as dimmed stand-ins with a button
+  to add them, and the ones not out yet marked as such. A bar under the description says how
+  far along the published volumes the reader is. Tapping a volume they own opens it.
 - The library's "add" button opens a sheet laid out like Vinarium's file sheet: the camera
   and the last photos in one strip, a title to type as remembered — the AI looks the book up
   and proposes the same record a scan would, for one scan of the allowance — and the form
