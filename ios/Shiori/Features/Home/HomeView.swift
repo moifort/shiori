@@ -18,9 +18,7 @@ struct HomeView: View {
 
     @State private var viewModel = HomeViewModel()
     @State private var selectedBook: Book?
-    /// The import source whose card is open. One source today; the menu is here so
-    /// the next one is an entry rather than a redesign.
-    @State private var openSource: ImportSource?
+    @State private var showSettings = false
     /// The stack behind the dashboard: the favourites list is pushed onto it
     /// from a tile, the way a saga is pushed from its progress row. Untyped,
     /// so a screen pushed on it can push a saga of its own by id.
@@ -32,21 +30,13 @@ struct HomeView: View {
                 .navigationTitle("Accueil")
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
-                        // A menu rather than a button, because managing a
-                        // connected library is not the same act as importing from
-                        // it, and the next source lands here too.
-                        Menu {
-                            ForEach(ImportSource.allCases) { source in
-                                Button {
-                                    openSource = source
-                                } label: {
-                                    Label(source.label, systemImage: source.symbol)
-                                }
-                            }
-                        } label: {
-                            Label("Imports", systemImage: "arrow.triangle.2.circlepath")
+                        // The settings hold the account, the subscription and the
+                        // connected sources: managing a linked Audible account is
+                        // a setting, not an import, and lives there.
+                        ToolbarIconButton(title: "Réglages", systemImage: "gearshape") {
+                            showSettings = true
                         }
-                        .accessibilityIdentifier("home-imports")
+                        .accessibilityIdentifier("home-settings")
                     }
                 }
                 .navigationDestination(for: Destination.self) { destination in
@@ -58,7 +48,7 @@ struct HomeView: View {
         }
         // Every time the tab comes back: a scan or an edit made in another tab
         // changes the figures, and the view behind them is one document read.
-        .onAppear { Task { await viewModel.load() } }
+        .onAppear { Task { await viewModel.loadOnAppear() } }
         // And every time a write lands anywhere: the figures behind this screen
         // are rebuilt by the server on each one, and the tab may be showing.
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
@@ -71,16 +61,10 @@ struct HomeView: View {
                 onDeleted: { _ in Task { await viewModel.load() } }
             )
         }
-        // Reloaded on dismissal rather than on the import's callback: a pass asked
-        // for on the card catalogues books without ever importing anything through
-        // the picker, and the figures behind this sheet have moved either way.
-        // An import can add a hundred books across a dozen sagas, so the dashboard
-        // is rebuilt rather than patched figure by figure.
-        .sheet(item: $openSource, onDismiss: { Task { await viewModel.load() } }) { source in
-            switch source {
-            case .audible:
-                AudibleImportView(onImported: { _ in openSource = nil })
-            }
+        // Reloaded on dismissal: an import or a sync asked for from the settings
+        // moves the figures behind this sheet, a hundred books at a time.
+        .sheet(isPresented: $showSettings, onDismiss: { Task { await viewModel.load() } }) {
+            SettingsHomeView()
         }
     }
 
@@ -100,6 +84,9 @@ struct HomeView: View {
             } else {
                 HomePage(
                     dashboard: dashboard,
+                    isRefreshing: viewModel.isRefreshing,
+                    refreshFailed: viewModel.refreshFailed,
+                    onRetryRefresh: { await viewModel.refresh() },
                     onReadingTapped: onShowReading,
                     onSeriesTapped: onShowSeries,
                     onFavoritesTapped: { path.append(Destination.favorites) },

@@ -18,9 +18,12 @@ struct LibraryView: View {
             LibraryPage(
                 sections: viewModel.sections,
                 isLoading: viewModel.isLoading,
+                isRefreshing: viewModel.isRefreshing,
+                refreshFailed: viewModel.refreshFailed,
                 errorMessage: viewModel.errorMessage,
                 filter: $viewModel.filter,
                 onRetry: { await viewModel.load() },
+                onRetryRefresh: { await viewModel.refresh() },
                 onAddManually: { showManualAdd = true },
                 onImportFromAudible: { showAudibleImport = true },
                 onBookTapped: { selectedBook = $0 }
@@ -49,7 +52,9 @@ struct LibraryView: View {
                 Task { await viewModel.load() }
             })
         }
-        .task { await viewModel.load() }
+        // Over last session's snapshot when the disk had one: the list shows at
+        // once and the spinner at its top says it is being brought up to date.
+        .task { await viewModel.loadOnAppear() }
         // A book rated in a sheet moves its saga to the top; one added from the
         // scanner lands in a section this list has not drawn yet. Either way the
         // rows on screen are the old ones until the server is asked again.

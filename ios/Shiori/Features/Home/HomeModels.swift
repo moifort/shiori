@@ -2,14 +2,14 @@ import Foundation
 
 /// The home dashboard as the app draws it. Books are plain `Book` values so the
 /// covers, the sheets and the placeholders are the ones used everywhere else.
-struct Dashboard: Sendable {
-    struct YearCount: Identifiable, Hashable, Sendable {
+struct Dashboard: Codable, Sendable {
+    struct YearCount: Identifiable, Hashable, Codable, Sendable {
         var id: Int { year }
         let year: Int
         let count: Int
     }
 
-    struct MonthPages: Identifiable, Hashable, Sendable {
+    struct MonthPages: Identifiable, Hashable, Codable, Sendable {
         var id: Int { month }
         /// 1 for January.
         let month: Int
@@ -19,7 +19,7 @@ struct Dashboard: Sendable {
     /// Hours listened, rounded to the hour by the server. Only audiobooks
     /// imported from Audible carry a running time, so a printed library reads
     /// twelve zeros here.
-    struct MonthHours: Identifiable, Hashable, Sendable {
+    struct MonthHours: Identifiable, Hashable, Codable, Sendable {
         var id: Int { month }
         /// 1 for January.
         let month: Int
@@ -28,7 +28,7 @@ struct Dashboard: Sendable {
 
     /// This year to date against the same span of last year. No `previous`, no
     /// arrow: a comparison with nothing is not a trend.
-    struct Trend: Hashable, Sendable {
+    struct Trend: Hashable, Codable, Sendable {
         let current: Int?
         let previous: Int?
 
@@ -41,13 +41,13 @@ struct Dashboard: Sendable {
     }
 
     /// One segment of the genre bar; a nil genre is the "others" segment.
-    struct GenreSlice: Identifiable, Hashable, Sendable {
+    struct GenreSlice: Identifiable, Hashable, Codable, Sendable {
         var id: String { genre?.rawValue ?? "others" }
         let genre: BookGenre?
         let count: Int
     }
 
-    struct SeriesProgress: Identifiable, Hashable, Sendable {
+    struct SeriesProgress: Identifiable, Hashable, Codable, Sendable {
         let id: String
         let name: String
         let readCount: Int

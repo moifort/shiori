@@ -158,7 +158,7 @@ enum SeriesState: String, Codable, Sendable {
 
 /// A book's place in a saga, carried on the book itself so a list can group
 /// without fetching a catalogue per row.
-struct SeriesMembership: Identifiable, Hashable, Sendable {
+struct SeriesMembership: Identifiable, Hashable, Codable, Sendable {
     let id: String
     let name: String
     let volume: Int?
@@ -174,7 +174,7 @@ struct SeriesMembership: Identifiable, Hashable, Sendable {
 
 /// A book as its reader holds it: the public facts and their own judgment on the
 /// same record, because the record belongs to the reader rather than the world.
-struct Book: Identifiable, Hashable, Sendable {
+struct Book: Identifiable, Hashable, Codable, Sendable {
     let id: String
     let title: String
     let authors: [String]
@@ -249,7 +249,7 @@ struct Book: Identifiable, Hashable, Sendable {
 
 /// One heading of the library list: a saga the reader owns volumes of, or the
 /// trailing shelf of standalone books.
-struct LibrarySection: Identifiable, Sendable {
+struct LibrarySection: Identifiable, Codable, Sendable {
     /// The saga and the language together, or a fixed key for the standalone
     /// shelf. The saga alone is not an identity any more: a saga held in two
     /// languages makes two sections, and SwiftUI would take them for one row
@@ -307,7 +307,7 @@ struct BookSeries: Identifiable, Sendable {
 ///
 /// Held per saga, never per saga and language: the split the library draws by
 /// language is about editions on a shelf, and this is about the work.
-struct SeriesOpinion: Sendable, Equatable {
+struct SeriesOpinion: Sendable, Equatable, Codable {
     let seriesId: String
     var rating: Int?
     var favorite: Bool = false
@@ -316,7 +316,7 @@ struct SeriesOpinion: Sendable, Equatable {
 /// A saga the reader follows. Its identity comes from their own books, not from
 /// the catalogue: an Audible import and a book typed by hand both name a saga
 /// without describing it, and reading the catalogue first lost every one of them.
-struct FollowedSeries: Identifiable, Sendable {
+struct FollowedSeries: Identifiable, Codable, Sendable {
     /// The saga and the language together. The saga alone is not an identity:
     /// held in two languages it follows as two rows, and SwiftUI would take them
     /// for one row redrawn twice.

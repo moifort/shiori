@@ -10,6 +10,28 @@ the release tag is pushed.
 
 ## Unreleased
 
+- The library is ordered by what was touched last: the saga whose volume was just rated,
+  moved or corrected sits on top, whole, and the shelf of books outside any series trails
+  the sagas without a heading of its own. A saga heading now carries the heart or the stars
+  the reader gave the saga, on the right, and every row keeps its own in the same place:
+  the heart when the book is a favourite, the stars otherwise, never both.
+- The book sheet folds its publication facts into the main section, names the volume beside
+  the cover, shows the format as a glyph in the corner and opens a genre sheet from its genre
+  row. A summary longer than five hundred words folds behind "Lire la suite". The list of
+  the other volumes leaves the sheet: the series screen, one tap away, is where the
+  catalogue lives.
+- A genre or subgenre corrected on one volume is applied to every volume of its saga in the
+  library, and the subgenre field proposes the words the reader has already used.
+- The dashboard counts the favourites, books and sagas together, in a tile that opens the
+  list of everything hearted. The listening hours leave the chart of a library with no
+  recording, and the chart remembers which measure was chosen across launches.
+- The settings, behind a gear on the dashboard: the profile with sign-out and account
+  deletion, the subscription, the release notes, a form to write to us, and the Audible
+  connection, which leaves the imports menu.
+- The library, the series and the dashboard open on what they showed last time and refresh
+  underneath, under a spinner at the top, rather than on a loader. Every button that waits
+  on the network spins from the tap, and every list redraws after any change made elsewhere.
+
 - A saga imported from Audible now has a series screen. Until now only a scan built a saga's
   catalogue, so every saga an import named opened on "not catalogued" for good. The catalogue
   is now built the first time the saga is opened, from the volume already in the library; that

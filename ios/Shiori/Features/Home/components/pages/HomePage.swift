@@ -5,6 +5,12 @@ import SwiftUI
 /// one with nothing to show yet says what will fill it.
 struct HomePage: View {
     let dashboard: Dashboard
+    /// The page is last session's snapshot and a fresher one is on its way: a
+    /// spinner leads the page rather than a loader replacing it.
+    var isRefreshing: Bool = false
+    /// That refresh failed — the leading row becomes a retry.
+    var refreshFailed: Bool = false
+    var onRetryRefresh: () async -> Void = {}
     let onReadingTapped: () -> Void
     let onSeriesTapped: () -> Void
     let onFavoritesTapped: () -> Void
@@ -13,6 +19,14 @@ struct HomePage: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
+                if isRefreshing || refreshFailed {
+                    RefreshRow(
+                        failed: refreshFailed,
+                        loadingLabel: "Mise à jour de l'accueil",
+                        onRetry: onRetryRefresh
+                    )
+                }
+
                 ReadingChartWidget(
                     currentYear: dashboard.currentYear,
                     booksPerYear: dashboard.booksPerYear,

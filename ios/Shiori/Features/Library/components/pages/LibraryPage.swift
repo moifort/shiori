@@ -9,9 +9,15 @@ import SwiftUI
 struct LibraryPage: View {
     let sections: [LibrarySection]
     let isLoading: Bool
+    /// The rows are last session's and fresher ones are on their way: a
+    /// spinner row leads the list rather than a loader replacing it.
+    var isRefreshing: Bool = false
+    /// That refresh failed — the leading row becomes a retry.
+    var refreshFailed: Bool = false
     let errorMessage: String?
     @Binding var filter: ReadingStatus?
     let onRetry: () async -> Void
+    var onRetryRefresh: () async -> Void = {}
     let onAddManually: () -> Void
     let onImportFromAudible: () -> Void
     let onBookTapped: (Book) -> Void
@@ -66,6 +72,14 @@ struct LibraryPage: View {
 
     private var list: some View {
         List {
+            // Leads the rows it is refreshing, never replaces them.
+            if isRefreshing || refreshFailed {
+                RefreshRow(
+                    failed: refreshFailed,
+                    loadingLabel: "Mise à jour de la bibliothèque",
+                    onRetry: onRetryRefresh
+                )
+            }
             ForEach(sections) { section in
                 if let seriesName = section.seriesName {
                     Section {

@@ -4,6 +4,29 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- La bibliothèque est triée sur ce qui a été touché en dernier : la saga dont un tome vient
+  d’être noté, déplacé ou corrigé est en tête, entière, et l’étagère des livres hors série
+  suit les sagas sans titre de section. L’en-tête d’une saga porte désormais le cœur ou les
+  étoiles que le lecteur lui a donnés, à droite, et chaque ligne garde les siens au même
+  endroit : le cœur si le livre est un favori, les étoiles sinon, jamais les deux.
+- La fiche du livre fond les informations de publication dans la section principale, nomme
+  le tome à côté de la couverture, montre le format en icône dans le coin et ouvre une fenêtre
+  de genre depuis sa ligne de genre. Un résumé de plus de cinq cents mots se replie derrière
+  « Lire la suite ». La liste des autres tomes quitte la fiche : l’écran de la série, à un
+  geste, est là où vit le catalogue.
+- Un genre ou un sous-genre corrigé sur un tome s’applique à tous les tomes de sa saga dans
+  la bibliothèque, et le champ des sous-genres propose les mots déjà employés par le lecteur.
+- L’accueil compte les favoris, livres et séries confondus, dans une tuile qui ouvre la liste
+  de tout ce qui porte un cœur. Les heures d’écoute quittent le graphique d’une bibliothèque
+  sans livre audio, et le graphique se souvient de la mesure choisie d’un lancement à l’autre.
+- Les réglages, derrière une roue sur l’accueil : le profil avec déconnexion et suppression du
+  compte, l’abonnement, les nouveautés, un formulaire pour nous écrire, et la connexion
+  Audible, qui quitte le menu des imports.
+- La bibliothèque, les séries et l’accueil s’ouvrent sur ce qu’ils montraient la dernière fois
+  et se rafraîchissent dessous, sous une roue en haut, plutôt que sur un chargement. Chaque
+  bouton qui attend le réseau tourne dès l’appui, et chaque liste se redessine après tout
+  changement fait ailleurs.
+
 - Une saga importée depuis Audible a désormais son écran de série. Jusqu’ici, seul un scan
   constituait le catalogue d’une saga, si bien que toute saga nommée par un import s’ouvrait
   pour de bon sur « non cataloguée ». Le catalogue se constitue maintenant à la première

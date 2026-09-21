@@ -10,9 +10,7 @@ import SwiftUI
 /// how many volumes are on the shelf. That is a fact about the library, not a
 /// score out of a total nobody knows.
 struct SeriesListView: View {
-    @State private var followed: [FollowedSeries] = []
-    @State private var isLoading = true
-    @State private var errorMessage: String?
+    @State private var viewModel = SeriesListViewModel()
     /// The saga being opened. A button and a destination rather than a
     /// navigation link: the link draws a chevron on every row, and a list of
     /// sagas reads better as cards than as a menu.
@@ -21,18 +19,18 @@ struct SeriesListView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if isLoading && followed.isEmpty {
+                if viewModel.isLoading && viewModel.followed.isEmpty {
                     ProgressView("Chargement de vos séries...")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if let errorMessage, followed.isEmpty {
+                } else if let errorMessage = viewModel.errorMessage, viewModel.followed.isEmpty {
                     ContentUnavailableView {
                         Label("Séries indisponibles", systemImage: "wifi.exclamationmark")
                     } description: {
                         Text(errorMessage)
                     } actions: {
-                        AsyncButton("Réessayer") { await load() }
+                        AsyncButton("Réessayer") { await viewModel.load() }
                     }
-                } else if followed.isEmpty {
+                } else if viewModel.followed.isEmpty {
                     ContentUnavailableView {
                         Label("Aucune série", systemImage: "square.stack")
                     } description: {
@@ -44,26 +42,38 @@ struct SeriesListView: View {
             }
             .navigationTitle("Séries")
         }
-        .task { await load() }
+        // Over last session's snapshot when the disk had one: the rows show at
+        // once and the spinner at the top says they are being brought up to date.
+        .task { await viewModel.loadOnAppear() }
         // A heart given on a saga screen, a volume finished in the library: the
         // rows here say so the next time the reader looks, not the next launch.
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
-            Task { await load() }
+            Task { await viewModel.load() }
         }
     }
 
     private var list: some View {
-        List(followed) { entry in
-            Button {
-                openSeriesId = entry.seriesId
-            } label: {
-                row(entry)
+        List {
+            // Leads the rows it is refreshing, never replaces them.
+            if viewModel.isRefreshing || viewModel.refreshFailed {
+                RefreshRow(
+                    failed: viewModel.refreshFailed,
+                    loadingLabel: "Mise à jour des séries",
+                    onRetry: { await viewModel.refresh() }
+                )
             }
-            .tint(.primary)
-            .accessibilityIdentifier("series-row")
+            ForEach(viewModel.followed) { entry in
+                Button {
+                    openSeriesId = entry.seriesId
+                } label: {
+                    row(entry)
+                }
+                .tint(.primary)
+                .accessibilityIdentifier("series-row")
+            }
         }
         .listStyle(.insetGrouped)
-        .refreshable { await load() }
+        .refreshable { await viewModel.load() }
         .navigationDestination(item: $openSeriesId) { SeriesView(seriesId: $0) }
     }
 
@@ -110,16 +120,6 @@ struct SeriesListView: View {
         .padding(.vertical, 2)
     }
 
-    private func load() async {
-        isLoading = true
-        errorMessage = nil
-        do {
-            followed = try await SeriesAPI.mySeries()
-        } catch {
-            errorMessage = reportError(error)
-        }
-        isLoading = false
-    }
 }
 
 /// Whether a saga is still going or done, as one glyph in a row's corner: the
