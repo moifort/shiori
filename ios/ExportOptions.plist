@@ -18,6 +18,10 @@
     <dict>
         <key>com.polyforms.shiori.app</key>
         <string>Shiori App Store</string>
+        <!-- The share extension is its own bundle and needs its own profile: an
+             archive cannot be signed with the app's. -->
+        <key>com.polyforms.shiori.app.share</key>
+        <string>Shiori Share App Store</string>
     </dict>
     <key>uploadSymbols</key>
     <true/>

@@ -6,8 +6,10 @@ import SwiftUI
 /// once signed in, reads the onboarding state and shows the wizard until it is
 /// completed, otherwise the main TabView (`ContentView`).
 ///
-/// There is no deep-link handling here. Vinarium catches household invitation
-/// links at this point; Shiori shares nothing yet, so there is no link to catch.
+/// Invitation links are caught here rather than deeper in, because the link may
+/// arrive before there is anywhere to show it: a reader who taps an invitation
+/// without an account lands on the login screen, and the code has to survive
+/// until they are signed in and past onboarding. This view outlives both.
 struct AuthRoot: View {
     @State private var session = AuthSession()
     @State private var gate = OnboardingGate()
@@ -15,6 +17,8 @@ struct AuthRoot: View {
     /// App-scoped: it listens to `Transaction.updates` for the whole lifetime of
     /// the app, so a renewal landing mid-session is picked up wherever the user is.
     @State private var subscriptions = SubscriptionStore()
+    /// An invitation the reader tapped, held until there is a screen to ask on.
+    @State private var invitationRequest: InvitationRequest?
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -45,6 +49,13 @@ struct AuthRoot: View {
                 gate.reset()
             }
         }
+        // Both shapes of invitation link land here: the universal link, and the
+        // shiori:// the web page falls back to.
+        .onOpenURL { url in
+            if let code = InvitationLink.code(from: url) {
+                invitationRequest = InvitationRequest(code: code)
+            }
+        }
     }
 
     @ViewBuilder
@@ -55,7 +66,7 @@ struct AuthRoot: View {
         case .required:
             OnboardingView(onCompleted: { gate.markCompleted() })
         case .ready:
-            ContentView()
+            ContentView(invitation: $invitationRequest)
         case .failed(let message):
             ContentUnavailableView {
                 Label("Connexion impossible", systemImage: "wifi.exclamationmark")

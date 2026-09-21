@@ -24,6 +24,10 @@ enum TabSelection: Int, CaseIterable, Identifiable {
 }
 
 struct ContentView: View {
+    /// An invitation the reader arrived on by tapping a link, owned by
+    /// `AuthRoot` so that it survives signing in, and cleared once asked.
+    @Binding var invitation: InvitationRequest?
+
     @Environment(\.isAdmin) private var isAdmin
 
     @State private var selectedTab: TabSelection = .home
@@ -63,6 +67,12 @@ struct ContentView: View {
             // Shiori, and the book is waiting for them.
             .fullScreenCover(item: $sharedStart) { start in
                 ScanView(start: start, onDismiss: { sharedStart = nil })
+            }
+            // The invitation is asked about rather than accepted: the link
+            // came from somewhere the reader does not control, and accepting
+            // opens their library to whoever sent it.
+            .sheet(item: $invitation) { request in
+                InvitationAcceptSheet(request: request, onAccepted: {})
             }
             .task { takeSharedIntake() }
             .onChange(of: scenePhase) { _, phase in

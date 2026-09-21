@@ -25,6 +25,11 @@ export default defineEventHandler(async (event) => {
   // reader who invited them nor spends the invitation.
   if (path.startsWith('/invite/')) return
 
+  // What tells iOS that this host's invitation links open the app. Apple
+  // fetches it from its own CDN with no credentials of anybody's, and it says
+  // nothing a reader could not read off the App Store listing.
+  if (path === '/.well-known/apple-app-site-association') return
+
   // App Store Server Notifications. Apple calls this with no bearer token of
   // ours; its proof of origin is the JWS signature on the payload, which the
   // route verifies against Apple's root certificates before acting on anything.

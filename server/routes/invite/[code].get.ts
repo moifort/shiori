@@ -2,9 +2,12 @@
  * The page an invitation link opens.
  *
  * A reader shares a link rather than a bare code, because a link is what people
- * send each other. Whoever taps it may not have Shiori, may be on a laptop, may
- * not know what any of this is — so the link lands here rather than nowhere, and
- * this page says what to do next.
+ * send each other. On an iPhone with Shiori installed the link never gets here:
+ * it is a universal link, so iOS opens the app on the invitation and the reader
+ * accepts it in one tap. This page is what is left — somebody without the app,
+ * on a laptop, or in an app whose in-app browser swallowed the universal link —
+ * so it says what to do next, and offers `shiori://` for that last case, since a
+ * universal link cannot re-trigger from the page it already landed on.
  *
  * It is public on purpose and it gives nothing away: the code is already in the
  * URL of whoever is reading, and the page never names the reader who made the
@@ -64,17 +67,27 @@ export default defineEventHandler((event) => {
   }
   ol { text-align: left; margin: 0 auto; max-width: 24rem; padding-left: 1.25rem; }
   li { margin-bottom: .5rem; }
+  .open {
+    display: inline-block; margin-bottom: 1.5rem; padding: .85rem 1.5rem;
+    border-radius: .75rem; background: #b4302c; color: #fff;
+    text-decoration: none; font-weight: 600;
+  }
 </style>
 </head>
 <body>
 <main>
   <h1>Une bibliothèque vous est ouverte</h1>
   <p>Quelqu'un vous invite à partager sa bibliothèque sur Shiori, et à voir la sienne.</p>
-  ${code ? `<div class="code">${escaped(code)}</div>` : "<p>Ce lien est incomplet : demandez qu'on vous le renvoie.</p>"}
+  ${
+    code
+      ? `<a class="open" href="shiori://invite/${escaped(code)}">Ouvrir dans Shiori</a>
+  <div class="code">${escaped(code)}</div>`
+      : "<p>Ce lien est incomplet : demandez qu'on vous le renvoie.</p>"
+  }
   <ol>
     <li>Installez Shiori sur votre iPhone, si ce n'est pas déjà fait.</li>
-    <li>Ouvrez les réglages de l'application, puis « Amis ».</li>
-    <li>Touchez « J'ai reçu une invitation » et collez ce code.</li>
+    <li>Rouvrez ce lien : l'application s'ouvrira sur l'invitation.</li>
+    <li>Sinon, dans les réglages, « Amis », « J'ai reçu une invitation », et collez ce code.</li>
   </ol>
 </main>
 </body>

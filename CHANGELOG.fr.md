@@ -24,6 +24,9 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   côtés à la fois, et chacun des deux peut y mettre fin pour les deux. Le profil d’un ami
   montre ses lectures en cours, sa pile, ses favoris et les séries qu’il suit. Les livres
   marqués « ne pas partager » n’y figurent jamais, et aucune note de lecture n’est montrée.
+  Toucher l’invitation depuis un iPhone qui a Shiori ouvre l’application directement sur
+  l’invitation, avec un geste pour l’accepter — et un pour la refuser, parce que le lien
+  vient d’ailleurs. Sans l’application, il ouvre la page comme avant.
 - Une bibliothèque Kindle peut être cataloguée depuis l’export de données qu’Amazon fournit à
   ses clients. Amazon n’expose aucune API de bibliothèque Kindle : il n’y a donc pas de compte
   à connecter ni de synchronisation nocturne. Le lecteur demande ses données une fois, puis

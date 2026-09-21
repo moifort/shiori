@@ -30,6 +30,9 @@ the release tag is pushed.
   of the two can end it for both. A friend's profile shows what they are reading, their pile,
   their favourites and the sagas they are working through. Books marked "do not share" appear
   nowhere, and no reading note is ever shown.
+  Tapping the invitation on an iPhone that has Shiori opens the app on the invitation
+  itself, with one tap to accept — and one tap to decline, because the link came from
+  somewhere the reader does not control. Without the app it opens the page it always did.
 - A Kindle library can be catalogued from the data export Amazon hands its customers. Amazon
   publishes no Kindle library API, so there is no account to connect and no nightly sync: the
   reader asks Amazon for their data once, and hands Shiori the file. The titles it holds are

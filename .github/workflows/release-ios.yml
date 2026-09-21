@@ -128,22 +128,36 @@ jobs:
           chmod +x "$CLI_DIR/apollo-ios-cli"
           (cd ios && "$CLI_DIR/apollo-ios-cli" generate)
 
-      - name: Install the App Store provisioning profile
+      - name: Install the App Store provisioning profiles
         env:
           IOS_PROVISION_PROFILE: ${{ secrets.IOS_PROVISION_PROFILE }}
+          IOS_SHARE_PROVISION_PROFILE: ${{ secrets.IOS_SHARE_PROVISION_PROFILE }}
         run: |
           set -euo pipefail
-          # Xcode looks a profile up by the UUID in its file name. Vinarium hardcodes its
-          # own; reading it from the profile means a renewed "Shiori App Store" profile
-          # only needs the secret replaced, not this step edited.
-          PROFILE_PATH="$RUNNER_TEMP/shiori.mobileprovision"
-          printf '%s' "$IOS_PROVISION_PROFILE" | base64 -d > "$PROFILE_PATH"
-          security cms -D -i "$PROFILE_PATH" > "$RUNNER_TEMP/profile.plist"
-          UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$RUNNER_TEMP/profile.plist")
+          # Two bundles, two profiles: the app and the share extension are signed
+          # separately, and an archive missing either one fails at export with a
+          # message that does not name the profile it wanted.
           PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
           mkdir -p "$PROFILES_DIR"
-          mv "$PROFILE_PATH" "$PROFILES_DIR/$UUID.mobileprovision"
-          echo "Installed provisioning profile $UUID"
+          install_profile() {
+            local name="$1" encoded="$2"
+            if [ -z "$encoded" ]; then
+              echo "::error::$name is unset — create the profile in the Apple Developer portal and store it as a base64 secret"
+              exit 1
+            fi
+            # Xcode looks a profile up by the UUID in its file name. Vinarium hardcodes
+            # its own; reading it from the profile means a renewed profile only needs
+            # the secret replaced, not this step edited.
+            local path="$RUNNER_TEMP/$name.mobileprovision"
+            printf '%s' "$encoded" | base64 -d > "$path"
+            security cms -D -i "$path" > "$RUNNER_TEMP/$name.plist"
+            local uuid
+            uuid=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$RUNNER_TEMP/$name.plist")
+            mv "$path" "$PROFILES_DIR/$uuid.mobileprovision"
+            echo "Installed provisioning profile $uuid ($name)"
+          }
+          install_profile IOS_PROVISION_PROFILE "$IOS_PROVISION_PROFILE"
+          install_profile IOS_SHARE_PROVISION_PROFILE "$IOS_SHARE_PROVISION_PROFILE"
 
       - name: Archive (Release, manual signing with the installed cert and profile)
         run: |

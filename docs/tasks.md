@@ -98,7 +98,19 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       site-by-site: only the `<title>` is read and the shop's own name stripped off it, which
       survives a redesign. **Apple Developer portal work is outstanding** — an App ID for
       `com.polyforms.shiori.app.share`, the App Groups capability on both App IDs, and a
-      "Shiori Share App Store" provisioning profile.
+      "Shiori Share App Store" provisioning profile, stored as the
+      `IOS_SHARE_PROVISION_PROFILE` secret the release workflow now expects.
+- [x] **An invitation link opens the app, not a web page.** Tapping an invitation on an
+      iPhone with Shiori installed opens the app on the invitation itself, with one tap to
+      accept. A universal link: the API serves `/.well-known/apple-app-site-association`
+      scoped to `/invite/*`, the app carries the matching `applinks:` entitlement, and
+      `AuthRoot` catches the link and holds the code until the reader is signed in and past
+      onboarding. The web page stays for everybody else — no app, a laptop, an in-app browser
+      that swallowed the universal link — and offers `shiori://invite/<CODE>` to reopen the
+      app, since a universal link cannot re-trigger from the page it already landed on.
+      Accepting is never automatic: the link comes from somewhere the reader does not control.
+      **Outstanding**: the Associated Domains capability on the App ID, and a rebuilt
+      "Shiori App Store" profile carrying it.
 - [x] **Share a profile with friends.** A new screen lists the reader's friends; opening one
       shows their books in progress and series in progress, their favourites, and their pile.
       Decided: friendship is symmetric — accepting an invitation opens both libraries at once,
@@ -108,6 +120,18 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       list on top: an invitation and acceptance flow, a friendship record, a query that reads
       another reader's books under the `hidden` rule, and it exposes books only, never the
       series catalogue.
+- [ ] **A TestFlight build from CI, without cutting a release.** Today `release-ios.yml`
+      only fires on an `ios-v*` tag, so testing a change on a real phone means tagging a
+      release that is not one. Wanted: a workflow that archives, uploads and distributes to
+      an internal TestFlight group on demand — `workflow_dispatch`, and optionally every push
+      to `main` — with the build number taken from the run number or the commit count so two
+      uploads never collide, and the release notes taken from the commit subject. It shares
+      every signing step with `release-ios.yml`, so the two should be one reusable workflow
+      called twice rather than a copy: the difference is the trigger, the build number and
+      whether App Store Connect is asked to submit for review. Needs an internal testing
+      group in App Store Connect, which does not exist yet because the app has no record
+      there.
+
 - [x] **Kindle import from the Amazon data export.** Decided: the reader asks Amazon for
       their data, receives a CSV, and imports it here. A one-off import, never a sync — the
       constraint recorded in [roadmap.md](roadmap.md#batch-6--kindle-import) stands, Amazon

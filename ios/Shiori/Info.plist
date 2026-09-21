@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Partial Info.plist, merged with the generated one (GENERATE_INFOPLIST_FILE).
+	     Declares the shiori:// scheme the invitation web page's "Ouvrir dans Shiori"
+	     button uses: a universal link cannot re-trigger from the page it already
+	     landed on, so that page needs a scheme to reopen the app with. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.polyforms.shiori.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>shiori</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

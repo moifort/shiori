@@ -10,5 +10,9 @@
 	<array>
 		<string>Default</string>
 	</array>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:shiori-server-hvrhl6ox5q-ey.a.run.app</string>
+	</array>
 </dict>
 </plist>

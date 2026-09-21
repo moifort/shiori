@@ -48,11 +48,10 @@ struct FriendInvitation: Sendable {
     let code: String
     let expiresAt: Date
 
-    /// The link to share. It lands on a page that says what to do with the
+    /// The link to share. It opens the app straight on the invitation when
+    /// Shiori is installed, and otherwise a page that says what to do with the
     /// code, so it means something to somebody who does not have Shiori yet.
-    var url: URL {
-        APIClient.shared.baseURL.appendingPathComponent("invite").appendingPathComponent(code)
-    }
+    var url: URL { InvitationLink.url(code: code) }
 }
 
 enum FriendsAPI {
