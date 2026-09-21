@@ -1,5 +1,5 @@
-import { SeriesOpinionCommand } from '~/domain/series-opinion/command'
 import { SeriesOpinionType } from '~/domain/series-opinion/infrastructure/graphql/types'
+import { SeriesOpinionUseCase } from '~/domain/series-opinion/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
 
 builder.mutationFields((t) => ({
@@ -15,7 +15,7 @@ builder.mutationFields((t) => ({
       rating: t.arg({ type: 'StarRating', required: true }),
     },
     resolve: (_root, args, context) =>
-      SeriesOpinionCommand.rate(context.userId, args.seriesId, args.rating),
+      SeriesOpinionUseCase.rate(context.userId, args.seriesId, args.rating),
   }),
 
   removeSeriesRating: t.field({
@@ -23,7 +23,7 @@ builder.mutationFields((t) => ({
     description: 'Take a saga rating back. Leaves the heart alone.',
     args: { seriesId: t.arg({ type: 'SeriesId', required: true }) },
     resolve: (_root, args, context) =>
-      SeriesOpinionCommand.rate(context.userId, args.seriesId, undefined),
+      SeriesOpinionUseCase.rate(context.userId, args.seriesId, undefined),
   }),
 
   setSeriesFavorite: t.field({
@@ -34,6 +34,6 @@ builder.mutationFields((t) => ({
       favorite: t.arg.boolean({ required: true }),
     },
     resolve: (_root, args, context) =>
-      SeriesOpinionCommand.setFavorite(context.userId, args.seriesId, args.favorite),
+      SeriesOpinionUseCase.setFavorite(context.userId, args.seriesId, args.favorite),
   }),
 }))

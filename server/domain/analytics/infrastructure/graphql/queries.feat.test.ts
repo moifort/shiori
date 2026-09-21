@@ -44,6 +44,8 @@ describe('the dashboard through the API', () => {
         averageRating
         ratedCount
         genres { genre count }
+        favoriteCount
+        hasAudiobooks
         libraryIsEmpty
       }
     }`)
@@ -69,6 +71,8 @@ describe('the dashboard through the API', () => {
       averageRating: 5,
       ratedCount: 1,
       genres: [{ genre: 'FANTASY', count: 1 }],
+      favoriteCount: 0,
+      hasAudiobooks: false,
       libraryIsEmpty: false,
     })
   })
@@ -92,6 +96,21 @@ describe('the dashboard through the API', () => {
     const result = await execute('{ dashboard(timeZone: "Mars/Olympus") { libraryIsEmpty } }')
 
     expect(result.errors?.[0].message).toContain('TimeZone')
+  })
+
+  test('counts a hearted book and a hearted saga together', async () => {
+    const id = await addBook('title: "Dune", format: AUDIOBOOK')
+    await execute(`mutation { setBookFavorite(id: "${id}", favorite: true) { id } }`)
+    await execute(
+      'mutation { setSeriesFavorite(seriesId: "dune--frank-herbert", favorite: true) { favorite } }',
+    )
+
+    const result = await execute(
+      '{ dashboard(timeZone: "Europe/Paris") { favoriteCount hasAudiobooks } }',
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.dashboard).toEqual({ favoriteCount: 2, hasAudiobooks: true })
   })
 
   // Every mutation that changes a book must leave the view fresh: one that forgot

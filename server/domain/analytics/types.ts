@@ -66,6 +66,9 @@ export type SeriesProgress = {
 export type AnalyticsView = {
   userId: UserId
   timeZone: TimeZone
+  /** The shape this view was built with. A view built by an older rule set is
+   *  rebuilt on read rather than served with a figure it never computed. */
+  version?: number
   /** Set in the same batch as any book write, cleared by the rebuild that
    *  follows. A view left stale by a failed rebuild is rebuilt on read. */
   stale: boolean
@@ -76,6 +79,13 @@ export type AnalyticsView = {
   toRead: BookCard[]
   lastFinished?: BookCard
   series: SeriesProgress[]
+  /** Books and sagas the reader keeps close, counted apart because a saga is
+   *  hearted once whatever the number of its volumes on the shelf. */
+  favoriteBookCount?: number
+  favoriteSeriesCount?: number
+  /** How many recordings the library holds — what decides whether the listening
+   *  hours are worth a chart at all. */
+  audiobookCount?: number
 }
 
 export type YearCount = { year: number; count: number }
@@ -111,5 +121,9 @@ export type Dashboard<Card = DashboardBook> = {
   ratedCount: number
   genres: GenreCount[]
   series: SeriesProgress[]
+  /** Books and sagas hearted, together. */
+  favoriteCount: number
+  /** Whether a single recording is on the shelf. */
+  hasAudiobooks: boolean
   libraryIsEmpty: boolean
 }

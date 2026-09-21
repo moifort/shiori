@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import type { SeriesId } from '~/domain/series/types'
 import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
 
@@ -17,6 +18,8 @@ const { TimeZone } = await import('~/domain/analytics/primitives')
 const { BookTitle } = await import('~/domain/shared/primitives')
 const { PageCount, StarRating } = await import('~/domain/book/primitives')
 const { UserUseCase } = await import('~/domain/user/use-case')
+const { SeriesOpinionUseCase } = await import('~/domain/series-opinion/use-case')
+const { VIEW_VERSION } = await import('~/domain/analytics/business-rules')
 
 const reader = 'reader-1' as UserId
 const paris = TimeZone('Europe/Paris')
@@ -75,6 +78,30 @@ describe('keeping the view in step with the library', () => {
 
     expect(outcome).toBe('not-found')
     expect(fake.data('analytics', reader)).toEqual(before)
+  })
+
+  // A heart on a saga is a figure of the dashboard, so it goes through the same
+  // door as a book: flagged in the batch, rebuilt after it.
+  test('follows a saga hearted, in the very batch that writes the opinion', async () => {
+    await addBook('Dune')
+
+    await SeriesOpinionUseCase.setFavorite(reader, 'dune--frank-herbert' as SeriesId, true)
+
+    const batch = fake.batches.at(-1)
+    expect(batch?.ops.map((op) => [op.type, op.ref.collectionPath])).toEqual([
+      ['set', 'series-opinions'],
+      ['merge', 'analytics'],
+    ])
+    expect(fake.data('analytics', reader)?.favoriteSeriesCount).toBe(1)
+  })
+
+  test('rebuilds a view stored by an older rule set on its next read', async () => {
+    await addBook('Le Nom du vent')
+    fake.seed('analytics', reader, { ...fake.data('analytics', reader), version: 1 })
+
+    await AnalyticsUseCase.dashboard(reader, paris)
+
+    expect(fake.data('analytics', reader)?.version).toBe(VIEW_VERSION)
   })
 
   test('keeps the time zone of the last dashboard read across a rebuild', async () => {

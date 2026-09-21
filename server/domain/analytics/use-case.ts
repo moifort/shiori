@@ -1,4 +1,4 @@
-import { dashboardOf, localDateOf } from '~/domain/analytics/business-rules'
+import { dashboardOf, localDateOf, VIEW_VERSION } from '~/domain/analytics/business-rules'
 import { AnalyticsCommand } from '~/domain/analytics/command'
 import { AnalyticsQuery } from '~/domain/analytics/query'
 import type { BookCard, Dashboard, DashboardBook, TimeZone } from '~/domain/analytics/types'
@@ -10,8 +10,9 @@ const logger = createLogger('analytics')
 
 export namespace AnalyticsUseCase {
   /** The home dashboard. One document read when the view is fresh; rebuilt first
-   *  when it is missing, left stale by a failed refresh, or built in another time
-   *  zone than the reader's — so it is never wrong, at worst slow once. */
+   *  when it is missing, left stale by a failed refresh, built by an older rule
+   *  set, or built in another time zone than the reader's — so it is never
+   *  wrong, at worst slow once. */
   export const dashboard = async (
     userId: UserId,
     timeZone: TimeZone,
@@ -19,14 +20,16 @@ export namespace AnalyticsUseCase {
   ): Promise<Dashboard> => {
     const stored = await AnalyticsQuery.view(userId)
     const view =
-      stored && !stored.stale && stored.timeZone === timeZone
+      stored && !stored.stale && stored.version === VIEW_VERSION && stored.timeZone === timeZone
         ? stored
         : await AnalyticsCommand.refresh(userId, timeZone, now)
     return withCovers(dashboardOf(view, localDateOf(now, timeZone)))
   }
 
-  /** Rebuild after a book write. A failure is logged and swallowed: the write
-   *  itself landed, and the view it left stale is rebuilt on the next read. */
+  /** Rebuild after a write the view reflects — a book, a saga opinion, or a
+   *  catalogue a saga in the library just gained. A failure is logged and
+   *  swallowed: the write itself landed, and the view it left stale is rebuilt
+   *  on the next read. */
   export const refreshAfterWrite = async (userId: UserId): Promise<void> => {
     try {
       await AnalyticsCommand.refresh(userId)

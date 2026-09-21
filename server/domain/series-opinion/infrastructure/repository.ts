@@ -1,3 +1,4 @@
+import type { WriteBatch } from 'firebase-admin/firestore'
 import type { SeriesId } from '~/domain/series/types'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import type { UserId } from '~/domain/shared/types'
@@ -27,10 +28,11 @@ export const findAllByUser = (userId: UserId): Promise<SeriesOpinion[]> =>
 export const findBy = async (userId: UserId, seriesId: SeriesId): Promise<SeriesOpinion | null> =>
   (await findAllByUser(userId)).find((opinion) => opinion.seriesId === seriesId) ?? null
 
-export const save = async (opinion: SeriesOpinion): Promise<SeriesOpinion> => {
-  await opinions()
-    .doc(documentId(opinion.userId, opinion.seriesId))
-    .set(withoutAbsentFields(opinion))
+export const save = async (opinion: SeriesOpinion, batch?: WriteBatch): Promise<SeriesOpinion> => {
+  const ref = opinions().doc(documentId(opinion.userId, opinion.seriesId))
+  const document = withoutAbsentFields(opinion)
+  if (batch) batch.set(ref, document)
+  else await ref.set(document)
   evictFromRequestCache(allCacheKey(opinion.userId))
   return opinion
 }
@@ -38,8 +40,14 @@ export const save = async (opinion: SeriesOpinion): Promise<SeriesOpinion> => {
 // An opinion with nothing left in it is deleted rather than stored empty: a
 // document saying "no rating, not a favourite" is what an absent document
 // already says, and keeping it would bill a read for nothing on every tab open.
-export const remove = async (userId: UserId, seriesId: SeriesId): Promise<void> => {
-  await opinions().doc(documentId(userId, seriesId)).delete()
+export const remove = async (
+  userId: UserId,
+  seriesId: SeriesId,
+  batch?: WriteBatch,
+): Promise<void> => {
+  const ref = opinions().doc(documentId(userId, seriesId))
+  if (batch) batch.delete(ref)
+  else await ref.delete()
   evictFromRequestCache(allCacheKey(userId))
 }
 

@@ -16,6 +16,7 @@ import { readVolumeNumbersOf } from '~/domain/book/business-rules'
 import type { Book, Genre } from '~/domain/book/types'
 import { publishedVolumes, stateOf } from '~/domain/series/business-rules'
 import type { Series } from '~/domain/series/types'
+import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import { Year } from '~/domain/shared/primitives'
 import type { UserId } from '~/domain/shared/types'
 import type { LocalDate as LocalDateValue } from './types'
@@ -27,6 +28,11 @@ const READING_SHOWN = 10
 const SUGGESTIONS_SHOWN = 6
 const SERIES_SHOWN = 3
 const TOP_GENRES = 4
+
+/** Bumped whenever the view gains a figure or a rule changes, so a view stored
+ *  by an older bundle is rebuilt on its next read instead of answering with a
+ *  field it never computed. */
+export const VIEW_VERSION = 2
 
 // MARK: - Calendar
 
@@ -69,10 +75,12 @@ export const analyticsViewOf = (input: {
   userId: UserId
   books: readonly Book[]
   catalogues: readonly Series[]
+  /** What the reader makes of their sagas; only the hearts are counted here. */
+  opinions?: readonly SeriesOpinion[]
   timeZone: TimeZone
   now: Date
 }): AnalyticsView => {
-  const { userId, books, catalogues, timeZone, now } = input
+  const { userId, books, catalogues, opinions = [], timeZone, now } = input
   const finished = books.filter(
     (book): book is Book & { finishedAt: Date } =>
       book.status === 'read' && book.finishedAt !== undefined,
@@ -113,6 +121,7 @@ export const analyticsViewOf = (input: {
   return {
     userId,
     timeZone,
+    version: VIEW_VERSION,
     stale: false,
     refreshedAt: now,
     finishes,
@@ -120,6 +129,9 @@ export const analyticsViewOf = (input: {
     toRead,
     lastFinished: last ? cardOf(last) : undefined,
     series: seriesProgressOf(books, catalogues, yearOf(localDateOf(now, timeZone))),
+    favoriteBookCount: books.filter((book) => book.favorite === true).length,
+    favoriteSeriesCount: opinions.filter((opinion) => opinion.favorite === true).length,
+    audiobookCount: books.filter((book) => book.format === 'audiobook').length,
   }
 }
 
@@ -195,6 +207,8 @@ export const dashboardOf = (view: AnalyticsView, today: LocalDateValue): Dashboa
     series: [...view.series]
       .sort((left, right) => right.lastActivityAt.getTime() - left.lastActivityAt.getTime())
       .slice(0, SERIES_SHOWN),
+    favoriteCount: (view.favoriteBookCount ?? 0) + (view.favoriteSeriesCount ?? 0),
+    hasAudiobooks: (view.audiobookCount ?? 0) > 0,
     libraryIsEmpty: finishes.length === 0 && view.reading.length === 0 && view.toRead.length === 0,
   }
 }

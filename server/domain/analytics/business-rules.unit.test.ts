@@ -3,6 +3,7 @@ import {
   analyticsViewOf,
   averageRatingOf,
   booksPerYearOf,
+  dashboardOf,
   daysToFinishTrendOf,
   genresOf,
   hoursPerMonthOf,
@@ -13,6 +14,7 @@ import {
   pagesPerMonthOf,
   seriesProgressOf,
   shuffled,
+  VIEW_VERSION,
 } from '~/domain/analytics/business-rules'
 import { LocalDate, TimeZone } from '~/domain/analytics/primitives'
 import type { Finish } from '~/domain/analytics/types'
@@ -366,5 +368,51 @@ describe('building the view', () => {
     expect(view.toRead).toHaveLength(1)
     expect(view.finishes).toHaveLength(2)
     expect(view.stale).toBe(false)
+    expect(view.version).toBe(VIEW_VERSION)
+  })
+
+  // A saga is hearted once whatever the number of its volumes on the shelf, so
+  // its heart is counted beside the books' rather than through them.
+  test('counts the hearted books and sagas, and the recordings', () => {
+    const view = analyticsViewOf({
+      userId: reader,
+      timeZone: paris,
+      now: new Date('2026-09-15T10:00:00.000Z'),
+      catalogues: [],
+      opinions: [
+        { userId: reader, seriesId: kingkiller, favorite: true },
+        { userId: reader, seriesId: 'dune' as SeriesId, rating: StarRating(4) },
+      ],
+      books: [
+        book('loved', { favorite: true }),
+        book('heard', { format: 'audiobook' }),
+        book('plain', {}),
+      ],
+    })
+
+    expect(view.favoriteBookCount).toBe(1)
+    expect(view.favoriteSeriesCount).toBe(1)
+    expect(view.audiobookCount).toBe(1)
+
+    const today = day('2026-09-15')
+    expect(dashboardOf(view, today).favoriteCount).toBe(2)
+    expect(dashboardOf(view, today).hasAudiobooks).toBe(true)
+  })
+
+  // A view stored before these figures existed answers nothing for them, and
+  // nothing must read as zero, not as a crash.
+  test('reads a view built before the counters as empty', () => {
+    const legacy = analyticsViewOf({
+      userId: reader,
+      timeZone: paris,
+      now: new Date('2026-09-15T10:00:00.000Z'),
+      catalogues: [],
+      books: [],
+    })
+    const { favoriteBookCount, favoriteSeriesCount, audiobookCount, ...stored } = legacy
+
+    const dashboard = dashboardOf(stored, day('2026-09-15'))
+    expect(dashboard.favoriteCount).toBe(0)
+    expect(dashboard.hasAudiobooks).toBe(false)
   })
 })

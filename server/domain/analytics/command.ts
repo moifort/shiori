@@ -6,6 +6,7 @@ import type { AnalyticsView, TimeZone as TimeZoneValue } from '~/domain/analytic
 import { BookQuery } from '~/domain/book/query'
 import { SeriesQuery } from '~/domain/series/query'
 import type { SeriesId } from '~/domain/series/types'
+import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { UserId } from '~/domain/shared/types'
 
 /** The zone a view is built in before the app has ever read its dashboard. The
@@ -13,7 +14,8 @@ import type { UserId } from '~/domain/shared/types'
 const DEFAULT_TIME_ZONE = TimeZone('UTC')
 
 export namespace AnalyticsCommand {
-  /** Rebuild the reader's view from every book they own, and write it whole.
+  /** Rebuild the reader's view from every book they own and every saga they
+   *  have an opinion of, and write it whole.
    *
    *  A full rebuild rather than an increment: writes are rare next to dashboard
    *  reads, and a view rebuilt from source cannot drift — a wrong rule is corrected
@@ -28,7 +30,10 @@ export namespace AnalyticsCommand {
     const books = await BookQuery.all(userId)
     const seriesIds = [...new Set(books.flatMap((book) => (book.series ? [book.series.id] : [])))]
     const catalogues = await SeriesQuery.byIds(seriesIds as SeriesId[])
-    return repository.save(analyticsViewOf({ userId, books, catalogues, timeZone: zone, now }))
+    const opinions = await SeriesOpinionQuery.all(userId)
+    return repository.save(
+      analyticsViewOf({ userId, books, catalogues, opinions, timeZone: zone, now }),
+    )
   }
 
   /** Enlisted in the batch of a book write, so the view can never look fresh

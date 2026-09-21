@@ -178,6 +178,14 @@ export const DashboardType = builder.objectRef<Dashboard>('Dashboard').implement
       description: 'Sagas in progress, most recent activity first, three at most.',
       resolve: (dashboard) => dashboard.series,
     }),
+    favoriteCount: t.exposeInt('favoriteCount', {
+      description: 'Books and sagas the reader hearted, together.',
+    }),
+    hasAudiobooks: t.exposeBoolean('hasAudiobooks', {
+      description:
+        'Whether the library holds a single recording. False, and the listening ' +
+        'hours have nothing to chart.',
+    }),
     libraryIsEmpty: t.exposeBoolean('libraryIsEmpty', {
       description: 'True when the reader has not catalogued a single book yet.',
     }),

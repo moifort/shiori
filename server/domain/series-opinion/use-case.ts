@@ -1,0 +1,39 @@
+import type { WriteBatch } from 'firebase-admin/firestore'
+import { AnalyticsCommand } from '~/domain/analytics/command'
+import { AnalyticsUseCase } from '~/domain/analytics/use-case'
+import type { StarRating } from '~/domain/book/types'
+import type { SeriesId } from '~/domain/series/types'
+import { SeriesOpinionCommand } from '~/domain/series-opinion/command'
+import type { SeriesOpinion } from '~/domain/series-opinion/types'
+import type { UserId } from '~/domain/shared/types'
+import { atomically } from '~/utils/firestore'
+
+/** What a reader says about a saga, kept in step with the analytics view: the
+ *  dashboard counts the hearts, so a heart given or taken back must reach it
+ *  the way a book write does. The GraphQL layer writes opinions through here,
+ *  never through `SeriesOpinionCommand` directly. */
+export namespace SeriesOpinionUseCase {
+  export const rate = (userId: UserId, seriesId: SeriesId, rating: StarRating | undefined) =>
+    withAnalytics(userId, (batch) => SeriesOpinionCommand.rate(userId, seriesId, rating, batch))
+
+  export const setFavorite = (userId: UserId, seriesId: SeriesId, favorite: boolean) =>
+    withAnalytics(userId, (batch) =>
+      SeriesOpinionCommand.setFavorite(userId, seriesId, favorite, batch),
+    )
+}
+
+// The opinion and the view's stale flag land in one batch, as a book and its
+// flag do: the view can never look fresh while a heart it does not count is
+// already stored.
+const withAnalytics = async (
+  userId: UserId,
+  write: (batch: WriteBatch) => Promise<SeriesOpinion>,
+): Promise<SeriesOpinion> => {
+  const opinion = await atomically(async (batch) => {
+    const result = await write(batch)
+    AnalyticsCommand.markStale(userId, batch)
+    return result
+  })
+  await AnalyticsUseCase.refreshAfterWrite(userId)
+  return opinion
+}

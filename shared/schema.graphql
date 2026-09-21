@@ -424,8 +424,16 @@ type Dashboard {
   """Median days from start to finish, both days included."""
   daysToFinish: Trend!
 
+  """Books and sagas the reader hearted, together."""
+  favoriteCount: Int!
+
   """Books finished this year: four genres, then one "others" segment."""
   genres: [GenreCount!]!
+
+  """
+  Whether the library holds a single recording. False, and the listening hours have nothing to chart.
+  """
+  hasAudiobooks: Boolean!
 
   """The twelve months of the current year."""
   hoursPerMonth: [MonthHours!]!

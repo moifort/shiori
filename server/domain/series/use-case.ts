@@ -1,4 +1,5 @@
 import { AdminCommand } from '~/domain/admin/command'
+import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import { BookQuery } from '~/domain/book/query'
 import { Scan } from '~/domain/scan'
 import type { ScanLanguage } from '~/domain/scan/types'
@@ -48,6 +49,10 @@ export namespace SeriesUseCase {
       await AdminCommand.recordCatalogueUsage(usage).catch((error) =>
         logger.warn(`AI usage not recorded: ${error}`),
       )
+    // The dashboard measures a saga against its catalogue, and this saga had
+    // none until now: rebuilt here, or the progress bar would wait for the next
+    // unrelated book write to appear.
+    if (series) await AnalyticsUseCase.refreshAfterWrite(userId)
     return series ?? null
   }
 }
