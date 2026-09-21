@@ -12,7 +12,7 @@ const coverUrlOf = (isbn13: Isbn13) => `https://covers.openlibrary.org/b/isbn/${
  *  the book is added without a cover rather than kept waiting. */
 const LOOKUP_TIMEOUT_MS = 3000
 
-/** The publisher's cover for an ISBN, or undefined when Open Library has none.
+/** Open Library's cover for an ISBN, or undefined when it has none.
  *
  *  Checked once, at scan time, so a library of 300 books never probes 300 URLs.
  *  `default=false` is what makes the check possible: without it a missing cover
@@ -26,7 +26,7 @@ const LOOKUP_TIMEOUT_MS = 3000
  *  and the app falls back to its placeholder rather than a blank frame.
  *
  *  Never throws: a failed lookup is a book without a cover, not a failed scan. */
-export const publishedCoverOf = async (isbn13: Isbn13): Promise<CoverUrlType | undefined> => {
+export const openLibraryCoverOf = async (isbn13: Isbn13): Promise<CoverUrlType | undefined> => {
   const url = coverUrlOf(isbn13)
   try {
     const response = await fetch(`${url}?default=false`, {

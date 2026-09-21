@@ -4,6 +4,9 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Un livre scanné dont Open Library n’a pas la couverture la cherche désormais sur Amazon,
+  par l’ISBN, avant de se replier sur la couverture typographique. Les livres déjà dans la
+  bibliothèque ont droit une fois à la même seconde chance.
 - La bibliothèque est triée sur le dernier changement d’état de lecture : la saga dont un
   tome vient d’être commencé, terminé ou remis sur la pile est en tête, entière, et
   l’étagère des livres hors série suit les sagas sans titre de section. Corriger un livre

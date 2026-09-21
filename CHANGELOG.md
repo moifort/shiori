@@ -10,6 +10,9 @@ the release tag is pushed.
 
 ## Unreleased
 
+- A scanned book whose cover Open Library does not have now looks for it on Amazon, by the
+  ISBN, before falling back to the typographic placeholder. Books already in the library get
+  the same second chance once.
 - The library is ordered by the last change of reading status: the saga whose volume was
   just started, finished or put back on the pile sits on top, whole, and the shelf of books
   outside any series trails the sagas without a heading of its own. Correcting a book or

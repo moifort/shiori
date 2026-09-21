@@ -20,11 +20,11 @@ mock.module('~/domain/scan/gemini', () => ({
   },
 }))
 
-/** Covers found by ISBN, standing in for Open Library. Undefined means none. */
+/** Covers found by ISBN, standing in for Open Library and Amazon. Undefined means none. */
 let covers: Record<string, string> = {}
 const coverLookups: string[] = []
 
-mock.module('~/domain/scan/open-library', () => ({
+mock.module('~/domain/scan/published-cover', () => ({
   publishedCoverOf: async (isbn13: string) => {
     coverLookups.push(isbn13)
     return covers[isbn13]
