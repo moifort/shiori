@@ -25,25 +25,54 @@ query MySeries {
 }
 
 # One page of the same rows, for the tab that draws as it scrolls. Only the tab
-# asks for the volumes: each one costs a signed cover URL.
-query MySeriesPage($limit: Int, $offset: Int) {
-  mySeriesPage(limit: $limit, offset: $offset) {
+# asks for the volumes: each one costs a signed cover URL. The catalogue spine
+# comes along so the strip can draw the volumes the reader does not own; the
+# server reads every catalogue of the page in one getAll.
+query MySeriesPage(
+  $limit: Int
+  $offset: Int
+  $arrangement: LibraryArrangement
+  $favorite: Boolean
+  $state: SeriesState
+) {
+  mySeriesPage(
+    limit: $limit
+    offset: $offset
+    arrangement: $arrangement
+    favorite: $favorite
+    state: $state
+  ) {
     hasMore
     items {
       ...FollowedSeriesRow
       volumes {
         ...FollowedVolume
       }
+      catalogue {
+        spine {
+          ...VolumeEntry
+        }
+      }
     }
   }
 }
 
-# One cover of a row's strip: enough to draw it and pin its status on it.
+# One cover of a row's strip: enough to draw it, pin its status on it, and
+# place it against the catalogue's numbering.
 fragment FollowedVolume on Book {
   id
   title
   coverUrl
   status
+  format
+  series {
+    volume
+    kind
+  }
+}
+
+mutation DeleteSeries($seriesId: SeriesId!) {
+  deleteSeries(seriesId: $seriesId)
 }
 
 fragment FollowedSeriesRow on FollowedSeries {

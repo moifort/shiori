@@ -1,13 +1,16 @@
 import SwiftUI
 
-/// The Series tab: the sagas the reader follows, in one section per genre, each
-/// row labelled with where the reader stands and drawn as a strip of the owned
-/// volumes' covers, each carrying its reading status.
+/// The Series tab: the sagas the reader follows, switched and filtered from the
+/// toolbar exactly as the Library tab is — everything or the favourites
+/// sectioned by where the reader stands, or one section per genre — each row
+/// labelled with its state and drawn as a strip of covers: the owned volumes
+/// with their reading status, and the published ones the reader lacks dimmed
+/// between them.
 ///
-/// The sections and their order come from the server — within a genre, what
-/// the reader is on first, then what they finished, then what they have not
-/// opened, the latest status change leading each. The list is paginated, and a
-/// section grouped on the phone would grow again every time a page landed.
+/// The sections and their order come from the server — what the reader is on
+/// first, then what they finished, then what they have not opened, the latest
+/// status change leading each. The list is paginated, and a section grouped on
+/// the phone would grow again every time a page landed.
 struct SeriesListView: View {
     @State private var viewModel = SeriesListViewModel()
     /// The saga being opened. A button and a destination rather than a
@@ -30,16 +33,30 @@ struct SeriesListView: View {
                         AsyncButton("Réessayer") { await viewModel.load() }
                     }
                 } else if viewModel.followed.isEmpty {
-                    ContentUnavailableView {
-                        Label("Aucune série", systemImage: "square.stack")
-                    } description: {
-                        Text("Scannez un tome d'une saga et elle apparaîtra ici, avec tous ses volumes.")
+                    if viewModel.mode == .favorites || viewModel.stateFilter != nil {
+                        ContentUnavailableView(
+                            viewModel.mode == .favorites ? "Aucune série favorite" : "Aucune série",
+                            systemImage: viewModel.mode == .favorites ? "heart" : "square.stack",
+                            description: Text(
+                                viewModel.mode == .favorites
+                                    ? "Touchez le cœur d'une série pour la retrouver ici."
+                                    : "Aucune de vos séries n'est dans cet état."
+                            )
+                        )
+                    } else {
+                        ContentUnavailableView {
+                            Label("Aucune série", systemImage: "square.stack")
+                        } description: {
+                            Text("Scannez un tome d'une saga et elle apparaîtra ici, avec tous ses volumes.")
+                        }
                     }
                 } else {
                     list
                 }
             }
             .navigationTitle("Séries")
+            .navigationSubtitle(viewModel.mode.subtitle)
+            .toolbar { toolbar }
         }
         // Over last session's snapshot when the disk had one: the rows show at
         // once and the spinner at the top says they are being brought up to date.
@@ -77,11 +94,7 @@ struct SeriesListView: View {
                             .onAppear { viewModel.prefetchIfNeeded(for: entry.id) }
                     }
                 } header: {
-                    if let genre = section.genre {
-                        Label { Text(genre.label) } icon: { genre.image }
-                    } else {
-                        Text("Sans genre")
-                    }
+                    Text(section.title)
                 }
             }
             if viewModel.hasMore {
@@ -97,19 +110,70 @@ struct SeriesListView: View {
         .navigationDestination(item: $openSeriesId) { SeriesView(seriesId: $0) }
     }
 
-    /// Consecutive rows of one genre, as the server ordered them. Grouped on
-    /// runs rather than on the genre itself, so a page that lands never moves a
-    /// row the reader has already scrolled past.
-    private var sections: [(id: Int, genre: BookGenre?, entries: [FollowedSeries])] {
-        var sections: [(id: Int, genre: BookGenre?, entries: [FollowedSeries])] = []
-        for entry in viewModel.followed {
-            if let last = sections.last, last.genre == entry.genre {
-                sections[sections.count - 1].entries.append(entry)
-            } else {
-                sections.append((id: sections.count, genre: entry.genre, entries: [entry]))
+    /// The same controls as the Library tab: the three views on the left, the
+    /// state filter beside them.
+    @ToolbarContentBuilder
+    private var toolbar: some ToolbarContent {
+        ToolbarItemGroup {
+            ForEach(LibraryMode.allCases) { item in
+                Button {
+                    viewModel.mode = item
+                } label: {
+                    Label(item.label, systemImage: item.icon)
+                }
+                .labelStyle(.iconOnly)
+                .tint(viewModel.mode == item ? .accentColor : .primary)
+                .accessibilityIdentifier("series-mode-\(item.rawValue)")
             }
         }
-        return sections
+        ToolbarSpacer(.fixed)
+        ToolbarItemGroup {
+            Menu {
+                Picker("État", selection: $viewModel.stateFilter) {
+                    Label("Toutes", systemImage: "tray.full").tag(SeriesState?.none)
+                    ForEach([SeriesState.inProgress, .notStarted, .complete]) { state in
+                        Label(state.shelfTitle, systemImage: state.symbol)
+                            .tag(SeriesState?.some(state))
+                    }
+                }
+            } label: {
+                Image(systemName: "line.3.horizontal.decrease")
+                    .symbolVariant(viewModel.stateFilter != nil ? .fill : .none)
+            }
+            .accessibilityIdentifier("series-filter-menu")
+        }
+    }
+
+    /// What a section is keyed on: the genre in the genre view, where the
+    /// reader stands everywhere else.
+    private enum SectionKey: Equatable {
+        case genre(BookGenre?)
+        case state(SeriesState?)
+    }
+
+    /// Consecutive rows of one key, as the server ordered them. Grouped on runs
+    /// rather than on the key itself, so a page that lands never moves a row
+    /// the reader has already scrolled past.
+    private var sections: [(id: Int, title: String, entries: [FollowedSeries])] {
+        var sections: [(id: Int, key: SectionKey, entries: [FollowedSeries])] = []
+        for entry in viewModel.followed {
+            let key: SectionKey = viewModel.mode == .genre ? .genre(entry.genre) : .state(entry.state)
+            if let last = sections.last, last.key == key {
+                sections[sections.count - 1].entries.append(entry)
+            } else {
+                sections.append((id: sections.count, key: key, entries: [entry]))
+            }
+        }
+        return sections.map { (id: $0.id, title: title(of: $0.key), entries: $0.entries) }
+    }
+
+    private func title(of key: SectionKey) -> String {
+        switch key {
+        case let .genre(genre): genre?.label ?? String(localized: "Sans genre")
+        // Every owned volume read and no catalogue to say more: finished as
+        // far as the shelf goes.
+        case let .state(state): state?.shelfTitle ?? String(localized: "Lues")
+        }
     }
 
     /// The words on the left and every mark on one line in the top corner —
@@ -147,19 +211,35 @@ struct SeriesListView: View {
         .padding(.vertical, 2)
     }
 
-    /// Every owned volume, in the order the saga runs, as a cover with its
-    /// status pinned on — the reader's progress read off the books themselves
-    /// rather than off a bar. No titles: the covers say which book is which,
-    /// and the saga screen is a tap away.
+    /// Every volume of the cycle, in its order, as a cover: the owned ones with
+    /// their status pinned on, the missing ones dimmed with their number — the
+    /// reader's progress, and what they lack, read off the books themselves
+    /// rather than off a bar. No titles: the saga screen is a tap away.
     private func covers(_ entry: FollowedSeries) -> some View {
         ScrollView(.horizontal) {
             LazyHStack(spacing: 10) {
-                ForEach(entry.volumes) { volume in
-                    BookCover(book: volume, width: coverWidth)
-                        .overlay(alignment: .topTrailing) {
-                            ReadingStatusBadge(status: volume.status)
-                                .offset(x: 5, y: -5)
+                ForEach(entry.strip.isEmpty ? entry.volumes.map { SeriesStripItem.owned($0) } : entry.strip) { item in
+                    switch item {
+                    case let .owned(volume):
+                        BookCover(book: volume, width: coverWidth, showsFormatBadge: false)
+                            .overlay(alignment: .topTrailing) {
+                                ReadingStatusBadge(status: volume.status)
+                                    .offset(x: 5, y: -5)
+                            }
+                    case let .missing(number, title):
+                        BookCover(
+                            book: Book(id: item.id, title: title, authors: entry.author.map { [$0] } ?? [], status: .toRead),
+                            width: coverWidth,
+                            showsFormatBadge: false
+                        )
+                        .opacity(0.35)
+                        .overlay(alignment: .bottom) {
+                            Text(verbatim: "\(number)")
+                                .font(.caption2.weight(.bold).monospacedDigit())
+                                .foregroundStyle(.secondary)
+                                .padding(.bottom, 4)
                         }
+                    }
                 }
             }
             // Room for the badges, which overhang the covers' corners and the

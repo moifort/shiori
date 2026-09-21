@@ -37,20 +37,58 @@ enum SeriesAPI {
         return data.mySeries.map { FollowedSeries(row: $0.fragments.followedSeriesRow) }
     }
 
-    /// One page of the sagas the reader follows, in the same order.
-    static func mySeriesPage(limit: Int, offset: Int) async throws -> (items: [FollowedSeries], hasMore: Bool) {
+    /// One page of the sagas the reader follows, arranged and narrowed as the
+    /// Library tab is: sectioned by state or by genre, the hearted sagas only,
+    /// or the sagas in one state.
+    static func mySeriesPage(
+        limit: Int,
+        offset: Int,
+        mode: LibraryMode = .all,
+        state: SeriesState? = nil
+    ) async throws -> (items: [FollowedSeries], hasMore: Bool) {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.MySeriesPageQuery(limit: .some(Int32(limit)), offset: .some(Int32(offset)))
+            query: ShioriGraphQL.MySeriesPageQuery(
+                limit: .some(Int32(limit)),
+                offset: .some(Int32(offset)),
+                arrangement: .some(.case(mode == .genre ? .byGenre : .byStatus)),
+                favorite: mode == .favorites ? .some(true) : .none,
+                state: state.map { .some(.case(graphQLState($0))) } ?? .none
+            )
         )
+        let currentYear = Calendar.current.component(.year, from: .now)
         return (
             items: data.mySeriesPage.items.map { item in
                 var followed = FollowedSeries(row: item.fragments.followedSeriesRow)
                 followed.volumes = item.volumes.map { $0.fragments.followedVolume.asBook }
+                followed.strip = SeriesStripItem.strip(
+                    owned: followed.volumes,
+                    spine: item.catalogue?.spine.map { $0.fragments.volumeEntry.asVolume } ?? [],
+                    currentYear: currentYear
+                )
                 return followed
             },
             hasMore: data.mySeriesPage.hasMore
         )
+    }
+
+    private static func graphQLState(_ state: SeriesState) -> ShioriGraphQL.SeriesState {
+        switch state {
+        case .notStarted: .notStarted
+        case .inProgress: .inProgress
+        case .complete: .complete
+        }
+    }
+
+    /// Removes the saga from the library: every volume the reader holds, and
+    /// their rating and heart for it. Answers how many books went.
+    @discardableResult
+    static func delete(seriesId: String) async throws -> Int {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.DeleteSeriesMutation(seriesId: seriesId)
+        )
+        return data.deleteSeries
     }
 
     /// What the reader makes of one saga. Nil until they say something about it:
@@ -113,6 +151,10 @@ private extension ShioriGraphQL.FollowedVolume {
             id: id,
             title: title,
             authors: [],
+            format: format.asDomain,
+            series: series.map {
+                SeriesMembership(id: "", name: "", volume: $0.volume, kind: $0.kind.asDomain)
+            },
             coverURL: coverUrl.flatMap(URL.init(string:)),
             status: status.asDomain
         )

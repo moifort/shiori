@@ -153,7 +153,7 @@ enum VolumeKind: String, Codable, CaseIterable, Identifiable, Sendable {
 
 /// Where the reader stands on a saga: not started, working through it, or done
 /// with it. Derived by the server from what they own, never stored.
-enum SeriesState: String, Codable, Sendable {
+enum SeriesState: String, Codable, CaseIterable, Identifiable, Sendable {
     case notStarted
     case inProgress
     case complete
@@ -163,6 +163,26 @@ enum SeriesState: String, Codable, Sendable {
         case .notStarted: String(localized: "À lire")
         case .inProgress: String(localized: "En cours")
         case .complete: String(localized: "Terminée")
+        }
+    }
+
+    var id: String { rawValue }
+
+    /// The state as a section of the Series tab names its sagas.
+    var shelfTitle: String {
+        switch self {
+        case .notStarted: String(localized: "À lire")
+        case .inProgress: String(localized: "En cours")
+        case .complete: String(localized: "Terminées")
+        }
+    }
+
+    /// The same symbols as the reading statuses they mirror.
+    var symbol: String {
+        switch self {
+        case .notStarted: ReadingStatus.toRead.symbol
+        case .inProgress: ReadingStatus.reading.symbol
+        case .complete: ReadingStatus.read.symbol
         }
     }
 }
@@ -280,6 +300,48 @@ struct LibrarySection: Identifiable, Codable, Sendable {
     let books: [Book]
 }
 
+/// One place in a saga's cover strip: a volume the reader owns, or one of the
+/// cycle they do not, drawn as a dimmed placeholder.
+enum SeriesStripItem: Identifiable, Hashable, Codable, Sendable {
+    case owned(Book)
+    case missing(number: Int, title: String)
+
+    var id: String {
+        switch self {
+        case let .owned(book): book.id
+        case let .missing(number, _): "missing-\(number)"
+        }
+    }
+
+    /// The owned volumes laid against the cycle's published spine: each number
+    /// takes the reader's book when they have it and a placeholder when they do
+    /// not; what sits off the numbering follows. Announced volumes are left
+    /// out, as they are from the progress everywhere else.
+    static func strip(owned: [Book], spine: [Volume], currentYear: Int) -> [SeriesStripItem] {
+        guard !spine.isEmpty else { return owned.map { .owned($0) } }
+        var byNumber: [Int: Book] = [:]
+        for book in owned {
+            if book.series?.kind == .main, let number = book.series?.volume, byNumber[number] == nil {
+                byNumber[number] = book
+            }
+        }
+        var placed = Set<String>()
+        var items: [SeriesStripItem] = []
+        for volume in spine where !volume.isForthcoming(asOf: currentYear) {
+            guard let number = volume.number else { continue }
+            if let book = byNumber[number] {
+                items.append(.owned(book))
+                placed.insert(book.id)
+            } else {
+                items.append(.missing(number: number, title: volume.title))
+            }
+        }
+        // Volumes the catalogue does not number, or numbers past what it lists.
+        items += owned.filter { !placed.contains($0.id) }.map { .owned($0) }
+        return items
+    }
+}
+
 /// One entry of a saga catalogue, owned or not. Most of these are books the
 /// reader does not own: the catalogue lists what exists in the world, and
 /// nothing enters a library until they add it.
@@ -354,6 +416,10 @@ struct FollowedSeries: Identifiable, Codable, Sendable {
     /// status. Only the Series tab asks for them — every one costs the server
     /// a signed cover URL — so they are empty anywhere else.
     var volumes: [Book] = []
+    /// What the tab's cover strip draws: the owned volumes and, between them,
+    /// the published volumes of the cycle the reader does not have, in the
+    /// order of the cycle. Just the owned volumes when no catalogue exists.
+    var strip: [SeriesStripItem] = []
     /// Nil until the reader says something about the saga. The two rows of a
     /// saga held in two languages carry the same one.
     var opinion: SeriesOpinion?
