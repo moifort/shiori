@@ -1,6 +1,13 @@
-import { groupedBySeries } from '~/domain/book/business-rules'
+import { groupedBySeries, subgenresOf } from '~/domain/book/business-rules'
 import * as repository from '~/domain/book/infrastructure/repository'
-import type { Book, BookId, BookView, LibrarySection, ReadingStatus } from '~/domain/book/types'
+import type {
+  Book,
+  BookId,
+  BookView,
+  LibrarySection,
+  ReadingStatus,
+  Subgenre,
+} from '~/domain/book/types'
 import type { SeriesId } from '~/domain/series/types'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { UserId } from '~/domain/shared/types'
@@ -39,6 +46,10 @@ export namespace BookQuery {
     repository.findBySeries(userId, seriesId)
 
   export const all = async (userId: UserId): Promise<Book[]> => repository.findAllByUser(userId)
+
+  /** The reader's own subgenre vocabulary, for the edit form to propose. */
+  export const subgenres = async (userId: UserId): Promise<Subgenre[]> =>
+    subgenresOf(await repository.findAllByUser(userId))
 }
 
 // Cover URLs are signed one by one because each signature is a separate call, but

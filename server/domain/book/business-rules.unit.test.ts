@@ -3,8 +3,9 @@ import {
   datesAfterStatusChange,
   groupedBySeries,
   readVolumeNumbersOf,
+  subgenresOf,
 } from '~/domain/book/business-rules'
-import { BookId } from '~/domain/book/primitives'
+import { BookId, Subgenre } from '~/domain/book/primitives'
 import type { Book, BookLanguage, BookView } from '~/domain/book/types'
 import { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import type { VolumeKind } from '~/domain/series/types'
@@ -235,5 +236,24 @@ describe('groupedBySeries, across languages', () => {
     ])
 
     expect(sections.map((section) => section.series?.language)).toEqual(['fr', undefined])
+  })
+})
+
+describe('subgenresOf', () => {
+  const tagged = (...subgenres: string[]) => ({ subgenres: subgenres.map(Subgenre) })
+
+  test('proposes the most used first, then alphabetically', () => {
+    const proposed = subgenresOf([
+      tagged('Space opera', 'Jeunesse'),
+      tagged('Dark fantasy'),
+      tagged('Space opera'),
+    ])
+    expect(proposed.map(String)).toEqual(['Space opera', 'Dark fantasy', 'Jeunesse'])
+  })
+
+  // Two spellings of one word are one word: the form must not propose both.
+  test('folds case, keeping the first spelling seen', () => {
+    const proposed = subgenresOf([tagged('Dark fantasy'), tagged('dark fantasy')])
+    expect(proposed.map(String)).toEqual(['Dark fantasy'])
   })
 })

@@ -1,4 +1,11 @@
-import type { Book, BookId, BookView, LibrarySection, ReadingStatus } from '~/domain/book/types'
+import type {
+  Book,
+  BookId,
+  BookView,
+  LibrarySection,
+  ReadingStatus,
+  Subgenre,
+} from '~/domain/book/types'
 import { compareWithinSeries } from '~/domain/series/business-rules'
 import type { UserId } from '~/domain/shared/types'
 import { ObjectPath } from '~/system/object-store/primitives'
@@ -147,3 +154,21 @@ export const coverPrefixOf = (userId: UserId): ObjectPathValue => ObjectPath(`co
 
 export const coverPathOf = (userId: UserId, bookId: BookId): ObjectPathValue =>
   ObjectPath(`${coverPrefixOf(userId)}${bookId}`)
+
+/** Every subgenre the reader has used, the most used first and the alphabet
+ *  breaking ties, folded on case so "Dark fantasy" and "dark fantasy" are one
+ *  entry. What the edit form proposes as the reader types: a vocabulary drawn
+ *  from their own shelf rather than from a list nobody agreed on. */
+export const subgenresOf = (books: readonly Pick<Book, 'subgenres'>[]): Subgenre[] => {
+  const counts = new Map<string, { subgenre: Subgenre; count: number }>()
+  for (const book of books)
+    for (const subgenre of book.subgenres) {
+      const key = subgenre.toLocaleLowerCase()
+      const entry = counts.get(key)
+      if (entry) entry.count += 1
+      else counts.set(key, { subgenre, count: 1 })
+    }
+  return [...counts.values()]
+    .sort((left, right) => right.count - left.count || left.subgenre.localeCompare(right.subgenre))
+    .map((entry) => entry.subgenre)
+}

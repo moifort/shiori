@@ -1071,7 +1071,7 @@ type Query {
   """
   The reader whole library, grouped into series sections.
   
-  Filtering by status happens before grouping, so a filter empties a saga section rather than leaving an empty heading behind. Sections are sorted by series name, and the standalone shelf trails them.
+  Filtering by status happens before grouping, so a filter empties a saga section rather than leaving an empty heading behind. Sections come most recently modified first, each saga kept whole, and the standalone shelf trails them.
   """
   library(
     """Keep only books in this status. Omit for the whole library."""
@@ -1128,6 +1128,11 @@ type Query {
   A root query rather than a field on `Series`: the catalogue holds no reference to any reader, and it must stay that way.
   """
   seriesOpinion(seriesId: SeriesId!): SeriesOpinion
+
+  """
+  Every subgenre the reader has used across their library, the most used first. What the edit form proposes as they type: a vocabulary drawn from their own shelf. Costs the same scan as the library.
+  """
+  subgenres: [Subgenre!]!
 }
 
 """

@@ -174,6 +174,74 @@ describe('correcting a book through the API', () => {
     })
   })
 
+  // A genre describes the saga. Corrected on one volume, it is corrected on
+  // every volume the reader holds, rather than fourteen times by hand.
+  test('applies a genre corrected on one volume to every volume of its saga', async () => {
+    const volume = async (number: number) => {
+      const result = await execute(
+        `mutation { addBook(input: { title: "Dune ${number}", genre: FANTASY, ` +
+          `series: { id: "dune--frank-herbert", name: "Dune", volume: ${number}, kind: MAIN } }) { id } }`,
+      )
+      expect(result.errors).toBeUndefined()
+      return (result.data as { addBook: { id: string } }).addBook.id
+    }
+    const first = await volume(1)
+    await volume(2)
+    await addBook('Alone')
+
+    const result = await execute(
+      `mutation { updateBook(id: "${first}", input: { genre: SCIENCE_FICTION, subgenres: ["Space opera"] }) { id } }`,
+    )
+    expect(result.errors).toBeUndefined()
+
+    const library = await execute('{ library { books { title genre subgenres } } }')
+    expect(library.data?.library).toEqual([
+      {
+        books: [
+          { title: 'Dune 1', genre: 'SCIENCE_FICTION', subgenres: ['Space opera'] },
+          { title: 'Dune 2', genre: 'SCIENCE_FICTION', subgenres: ['Space opera'] },
+        ],
+      },
+      { books: [{ title: 'Alone', genre: null, subgenres: [] }] },
+    ])
+  })
+
+  test('leaves the other volumes alone when the correction is not about the genre', async () => {
+    const volume = async (number: number) => {
+      const result = await execute(
+        `mutation { addBook(input: { title: "Dune ${number}", genre: FANTASY, ` +
+          `series: { id: "dune--frank-herbert", name: "Dune", volume: ${number}, kind: MAIN } }) { id } }`,
+      )
+      return (result.data as { addBook: { id: string } }).addBook.id
+    }
+    const first = await volume(1)
+    await volume(2)
+
+    await execute(`mutation { updateBook(id: "${first}", input: { pageCount: 600 }) { id } }`)
+
+    const library = await execute('{ library { books { title pageCount } } }')
+    expect(library.data?.library).toEqual([
+      {
+        books: [
+          { title: 'Dune 1', pageCount: 600 },
+          { title: 'Dune 2', pageCount: null },
+        ],
+      },
+    ])
+  })
+
+  test('proposes the subgenres of the whole library, the most used first', async () => {
+    await execute(
+      'mutation { addBook(input: { title: "Un", subgenres: ["Jeunesse", "Aventure"] }) { id } }',
+    )
+    await execute('mutation { addBook(input: { title: "Deux", subgenres: ["Aventure"] }) { id } }')
+
+    const result = await execute('{ subgenres }')
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.subgenres).toEqual(['Aventure', 'Jeunesse'])
+  })
+
   test('reads back the genre and subgenres it was created with', async () => {
     const book = await addDetailedBook()
 
