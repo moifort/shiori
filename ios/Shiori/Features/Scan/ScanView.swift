@@ -8,6 +8,16 @@ import SwiftUI
 /// under whatever light the reader had, and this is where a wrong title gets
 /// fixed before it becomes a record they live with.
 struct ScanView: View {
+    /// Where the pass begins: on the camera, on a photo already taken, or on a
+    /// title typed as remembered. The camera is what the tab bar opens; the
+    /// other two come from the library's add sheet.
+    enum Start {
+        case camera
+        case photo(Data)
+        case title(String)
+    }
+
+    var start: Start = .camera
     var onDismiss: () -> Void
 
     @State private var viewModel = ScanViewModel()
@@ -41,6 +51,13 @@ struct ScanView: View {
             guard let item else { return }
             selectedPhoto = nil
             Task { await scanPickedPhoto(item) }
+        }
+        .task {
+            switch start {
+            case .camera: break
+            case let .photo(data): await scan(imageData: data)
+            case let .title(title): await viewModel.lookUp(title: title)
+            }
         }
     }
 
@@ -121,6 +138,10 @@ struct ScanView: View {
     /// a cover.
     private func scanPickedPhoto(_ item: PhotosPickerItem) async {
         guard let data = try? await item.loadTransferable(type: Data.self) else { return }
+        await scan(imageData: data)
+    }
+
+    private func scan(imageData data: Data) async {
         let jpeg = await Task.detached(priority: .userInitiated) {
             UIImage(data: data)
                 .flatMap { $0.resized(maxDimension: 1000).jpegData(compressionQuality: 0.7) }

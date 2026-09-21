@@ -19,6 +19,10 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 - L’accueil compte les favoris, livres et séries confondus, dans une tuile qui ouvre la liste
   de tout ce qui porte un cœur. Les heures d’écoute quittent le graphique d’une bibliothèque
   sans livre audio, et le graphique se souvient de la mesure choisie d’un lancement à l’autre.
+- Le bouton « ajouter » de la bibliothèque ouvre une feuille disposée comme celle des fichiers
+  de Vinarium : l’appareil photo et les dernières photos sur une même bande, un titre à taper de
+  mémoire — l’IA retrouve le livre et propose la même fiche qu’un scan, pour un scan du quota —
+  et le formulaire à remplir à la main.
 - Les réglages, derrière une roue sur l’accueil : le profil avec déconnexion et suppression du
   compte, l’abonnement, les nouveautés, un formulaire pour nous écrire, et la connexion
   Audible, qui quitte le menu des imports.

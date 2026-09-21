@@ -25,6 +25,10 @@ the release tag is pushed.
 - The dashboard counts the favourites, books and sagas together, in a tile that opens the
   list of everything hearted. The listening hours leave the chart of a library with no
   recording, and the chart remembers which measure was chosen across launches.
+- The library's "add" button opens a sheet laid out like Vinarium's file sheet: the camera
+  and the last photos in one strip, a title to type as remembered — the AI looks the book up
+  and proposes the same record a scan would, for one scan of the allowance — and the form
+  to fill by hand.
 - The settings, behind a gear on the dashboard: the profile with sign-out and account
   deletion, the subscription, the release notes, a form to write to us, and the Audible
   connection, which leaves the imports menu.

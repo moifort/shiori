@@ -365,6 +365,7 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.books";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Shiori a besoin de votre appareil photo pour scanner la couverture de vos livres.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Shiori montre vos derni\U00e8res photos pour scanner une couverture d\U00e9j\U00e0 prise.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -404,6 +405,7 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.books";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Shiori a besoin de votre appareil photo pour scanner la couverture de vos livres.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Shiori montre vos derni\U00e8res photos pour scanner une couverture d\U00e9j\U00e0 prise.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

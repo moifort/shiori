@@ -34,6 +34,7 @@ mock.module('~/domain/scan/open-library', () => ({
 const { Scan } = await import('~/domain/scan')
 const { SeriesQuery } = await import('~/domain/series/query')
 const { seriesKeyOf } = await import('~/domain/series/primitives')
+const { BookTitle } = await import('~/domain/shared/primitives')
 
 const image = Buffer.from('a cover photo')
 
@@ -111,6 +112,23 @@ describe('scanning a cover', () => {
     const { cacheHit } = await Scan.scanWithCache(image, 'fr')
 
     expect(cacheHit).toBe(false)
+  })
+})
+
+describe('looking a title up', () => {
+  // A typed title skips the cover: one grounded call finds the book, the
+  // catalogue follows when the saga is new, and nothing is cached.
+  test('enriches the title and catalogues its saga without reading a cover', async () => {
+    answers = [anEnrichment, aCatalogue]
+
+    const { result } = await Scan.lookUpTitle(BookTitle('le nom du vent'), 'fr')
+
+    expect(String(result.title)).toBe('Le Nom du vent')
+    expect(String(result.series?.name)).toBe('Chronique du tueur de roi')
+    expect(calls).toEqual(['enrichment', 'catalogue'])
+    expect(
+      await SeriesQuery.byId(seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss')),
+    ).not.toBeNull()
   })
 })
 

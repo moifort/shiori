@@ -1,3 +1,4 @@
+import PhotosUI
 import SwiftUI
 
 /// The Library tab's coordinator: owns the view model, the navigation stack and
@@ -10,8 +11,22 @@ struct LibraryView: View {
 
     @State private var viewModel = LibraryViewModel()
     @State private var selectedBook: Book?
+    @State private var showAddSheet = false
+    /// What the add sheet chose, acted on once it has closed: the scanner and
+    /// the form are presentations of their own and would fight the sheet on
+    /// its way out.
+    @State private var pendingSource: AddBookSource?
+    @State private var scanStart: ScanStart?
+    @State private var showPhotoPicker = false
+    @State private var pickedPhoto: PhotosPickerItem?
     @State private var showManualAdd = false
     @State private var showAudibleImport = false
+
+    /// The scanner's opening step, boxed so a sheet can be keyed on it.
+    private struct ScanStart: Identifiable {
+        let id = UUID()
+        let start: ScanView.Start
+    }
 
     var body: some View {
         NavigationStack {
@@ -24,7 +39,7 @@ struct LibraryView: View {
                 filter: $viewModel.filter,
                 onRetry: { await viewModel.load() },
                 onRetryRefresh: { await viewModel.refresh() },
-                onAddManually: { showManualAdd = true },
+                onAdd: { showAddSheet = true },
                 onImportFromAudible: { showAudibleImport = true },
                 onBookTapped: { selectedBook = $0 }
             )
@@ -35,6 +50,27 @@ struct LibraryView: View {
                     // The sheet dismisses itself once the deletion lands.
                     onDeleted: { id in viewModel.remove(id: id) }
                 )
+            }
+        }
+        .sheet(isPresented: $showAddSheet, onDismiss: actOnPendingSource) {
+            AddBookSheet(
+                onCamera: { choose(.camera) },
+                onAllPhotos: { choose(.library) },
+                onPickedPhoto: { choose(.photo($0)) },
+                onTitle: { choose(.title($0)) },
+                onManual: { choose(.manual) }
+            )
+        }
+        .fullScreenCover(item: $scanStart) { boxed in
+            ScanView(start: boxed.start, onDismiss: { scanStart = nil })
+        }
+        .photosPicker(isPresented: $showPhotoPicker, selection: $pickedPhoto, matching: .images)
+        .onChange(of: pickedPhoto) { _, item in
+            guard let item else { return }
+            pickedPhoto = nil
+            Task {
+                guard let data = try? await item.loadTransferable(type: Data.self) else { return }
+                scanStart = ScanStart(start: .photo(data))
             }
         }
         .sheet(isPresented: $showManualAdd) {
@@ -65,6 +101,24 @@ struct LibraryView: View {
             guard let request else { return }
             viewModel.filter = request
             filterRequest = nil
+        }
+    }
+
+    private func choose(_ source: AddBookSource) {
+        pendingSource = source
+        showAddSheet = false
+    }
+
+    /// The sheet is gone: open what it chose.
+    private func actOnPendingSource() {
+        guard let source = pendingSource else { return }
+        pendingSource = nil
+        switch source {
+        case .camera: scanStart = ScanStart(start: .camera)
+        case let .photo(data): scanStart = ScanStart(start: .photo(data))
+        case .library: showPhotoPicker = true
+        case let .title(title): scanStart = ScanStart(start: .title(title))
+        case .manual: showManualAdd = true
         }
     }
 }

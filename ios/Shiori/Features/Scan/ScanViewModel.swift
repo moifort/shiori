@@ -31,6 +31,8 @@ final class ScanViewModel {
     private(set) var seriesLabel: String?
     /// Why the step is `.failed`, in the reader's words.
     private(set) var failure: String?
+    /// The title being looked up, kept so a failed lookup can be run again.
+    private(set) var typedTitle: String?
     var error: String?
     var paywallShown = false
     private(set) var isSaving = false
@@ -63,16 +65,49 @@ final class ScanViewModel {
         }
     }
 
+    /// Looks a book up from a title typed as remembered: the same proposal as
+    /// a scan, with no cover to sweep on the waiting screen.
+    func lookUp(title: String) async {
+        capturedCover = nil
+        typedTitle = title
+        step = .analyzing
+        track(.scanStarted)
+        do {
+            let scanned = try await ScanAPI.lookUp(title: title)
+            guard scanned.recognized, let found = scanned.title, !found.isEmpty else {
+                track(.scanNoResult)
+                step = .noResult
+                return
+            }
+            track(.scanSucceeded)
+            draft = scanned.asDraft
+            seriesLabel = scanned.series.map { series in
+                series.volume.map { "\(series.name) · Tome \($0)" } ?? series.name
+            }
+            step = .review
+        } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {
+            track(.scanBlockedByQuota)
+            step = .camera
+            paywallShown = true
+        } catch {
+            track(.scanFailed)
+            failure = reportError(error)
+            step = .failed
+        }
+    }
+
     /// Runs the analysis again on the shot that failed. It spends nothing extra:
     /// a failed scan is not counted, and one that completed server-side after the
     /// app stopped waiting is answered from the cache.
     func retry() async {
-        guard let jpeg = capturedCover else {
-            step = .camera
-            return
-        }
         failure = nil
-        await capture(jpeg)
+        if let jpeg = capturedCover {
+            await capture(jpeg)
+        } else if let typedTitle {
+            await lookUp(title: typedTitle)
+        } else {
+            step = .camera
+        }
     }
 
     /// Saves what the reader approved. The review screen is the safety net
@@ -92,6 +127,7 @@ final class ScanViewModel {
 
     func retake() {
         capturedCover = nil
+        typedTitle = nil
         failure = nil
         draft = nil
         seriesLabel = nil

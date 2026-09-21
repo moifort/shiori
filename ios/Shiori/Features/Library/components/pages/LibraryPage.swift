@@ -18,7 +18,7 @@ struct LibraryPage: View {
     @Binding var filter: ReadingStatus?
     let onRetry: () async -> Void
     var onRetryRefresh: () async -> Void = {}
-    let onAddManually: () -> Void
+    let onAdd: () -> Void
     let onImportFromAudible: () -> Void
     let onBookTapped: (Book) -> Void
 
@@ -58,12 +58,12 @@ struct LibraryPage: View {
                 .accessibilityIdentifier("library-filter")
             }
             ToolbarItem(placement: .topBarTrailing) {
-                // A book arrives scanned from the tab bar or typed in here.
-                // Importing a whole library is not adding a book: it is managing a
-                // connected account, and it lives in the Accueil tab's imports menu
-                // alongside the sync it governs.
-                Button(action: onAddManually) {
-                    Label("Ajouter à la main", systemImage: "plus")
+                // Every way a book gets in — scanned, from a photo, from a
+                // title, typed — behind one entry, on a sheet that lays them out.
+                // Importing a whole library is not adding a book: it is managing
+                // a connected account, and it lives in the settings.
+                Button(action: onAdd) {
+                    Label("Ajouter un livre", systemImage: "plus")
                 }
                 .accessibilityIdentifier("library-add")
             }
@@ -168,7 +168,7 @@ struct LibraryPage: View {
                         + "votre bibliothèque Audible."
                 )
             } actions: {
-                Button("Ajouter à la main", action: onAddManually)
+                Button("Ajouter un livre", action: onAdd)
                 Button("Importer depuis Audible", action: onImportFromAudible)
             }
         }
@@ -203,7 +203,7 @@ struct LibraryPage: View {
             errorMessage: nil,
             filter: $filter,
             onRetry: {},
-            onAddManually: {},
+            onAdd: {},
             onImportFromAudible: {},
             onBookTapped: { _ in }
         )
@@ -219,7 +219,7 @@ struct LibraryPage: View {
             errorMessage: nil,
             filter: $filter,
             onRetry: {},
-            onAddManually: {},
+            onAdd: {},
             onImportFromAudible: {},
             onBookTapped: { _ in }
         )

@@ -67,7 +67,7 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       [roadmap.md](roadmap.md#resolved-sign-in-with-apple)). Decide the new tiers first, then
       declare the subscription group and both products with those prices when the app record
       is created, and keep the StoreKit file in lockstep.
-- [ ] **Library, replace the `+` CTA** with the import entry point styled like the "add a file"
+- [x] **Library, replace the `+` CTA** with the import entry point styled like the "add a file"
       flow of the Vinarium wine record. That flow also offers to type only a title and let the
       AI do the search. The title-only path is a new scan mutation.
 

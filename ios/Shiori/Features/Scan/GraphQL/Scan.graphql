@@ -2,23 +2,35 @@
 # `addBook` persists what they approve.
 mutation ScanBook($imageBase64: String!) {
   scanBook(imageBase64: $imageBase64) {
-    recognized
-    title
-    authors
-    format
-    publisher
-    firstPublishedIn
-    synopsis
-    genre
-    subgenres
-    pageCount
-    isbn13
-    coverUrl
-    series {
-      id
-      name
-      volume
-      kind
-    }
+    ...ScannedRecord
+  }
+}
+
+# Looks a book up from a title the reader typed, as remembered: the same
+# proposal as a scan, without a cover to read.
+mutation LookUpTitle($title: BookTitle!) {
+  scanTitle(title: $title) {
+    ...ScannedRecord
+  }
+}
+
+fragment ScannedRecord on ScanResult {
+  recognized
+  title
+  authors
+  format
+  publisher
+  firstPublishedIn
+  synopsis
+  genre
+  subgenres
+  pageCount
+  isbn13
+  coverUrl
+  series {
+    id
+    name
+    volume
+    kind
   }
 }

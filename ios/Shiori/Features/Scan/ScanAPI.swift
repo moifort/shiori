@@ -59,8 +59,24 @@ enum ScanAPI {
             mutation: ShioriGraphQL.ScanBookMutation(imageBase64: jpeg.base64EncodedString()),
             requestTimeout: requestTimeout
         )
-        let result = data.scanBook
-        return ScannedBook(
+        return ScannedBook(fields: data.scanBook.fragments.scannedRecord)
+    }
+
+    /// The same proposal from a title typed as remembered. Always spends one
+    /// scan: there is no cover to have cached.
+    static func lookUp(title: String) async throws -> ScannedBook {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.LookUpTitleMutation(title: title),
+            requestTimeout: requestTimeout
+        )
+        return ScannedBook(fields: data.scanTitle.fragments.scannedRecord)
+    }
+}
+
+private extension ScannedBook {
+    init(fields result: ShioriGraphQL.ScannedRecord) {
+        self.init(
             recognized: result.recognized,
             title: result.title,
             authors: result.authors,

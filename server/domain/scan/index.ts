@@ -28,7 +28,10 @@ import {
 import { SeriesQuery } from '~/domain/series/query'
 import type { Series, SeriesId, SeriesName as SeriesNameValue, Volume } from '~/domain/series/types'
 import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
-import type { AuthorName as AuthorNameValue } from '~/domain/shared/types'
+import type {
+  AuthorName as AuthorNameValue,
+  BookTitle as BookTitleValue,
+} from '~/domain/shared/types'
 import { config } from '~/system/config'
 import { createLogger } from '~/system/logger'
 import { isPresent, optionally as optional } from '~/utils/input'
@@ -111,6 +114,24 @@ export namespace Scan {
     return { result, cacheHit: false, usage: { vision, enrichment, catalogue } }
   }
 
+  /** A book named rather than photographed: the reader typed a title, and the
+   *  grounded step does the rest, exactly as it does after a cover was read.
+   *  Never cached — a typed string has no image to hash and is rarely typed
+   *  twice — and always metered as a real scan, since it always calls the model. */
+  export const lookUpTitle = async (
+    title: BookTitleValue,
+    language: ScanLanguage,
+  ): Promise<{ result: ScanResult; usage: ScanUsage }> => {
+    if (import.meta.dev && config().scanStub) return { result: STUBBED_SCAN, usage: {} }
+
+    const named: ScanResult = { recognized: true, title, authors: [], subgenres: [] }
+    const { result: enriched, usage: enrichment } = await enrich(named, language, 'typed')
+    const coverUrl = enriched.isbn13 ? await publishedCoverOf(enriched.isbn13) : undefined
+    const result = { ...enriched, coverUrl }
+    const catalogue = await catalogueSeriesIfNeeded(result, language)
+    return { result, usage: { enrichment, catalogue } }
+  }
+
   /** Step 1. Not grounded: the answer is in the image, and letting the model
    *  search here invites it to "correct" a cover it read correctly. */
   const readCover = async (image: Buffer, language: ScanLanguage) => {
@@ -146,10 +167,14 @@ export namespace Scan {
 
   /** Step 2. Grounded, and the only step that can find a series the cover never
    *  mentioned — which most of them do not. */
-  const enrich = async (seen: ScanResult, language: ScanLanguage) => {
+  const enrich = async (
+    seen: ScanResult,
+    language: ScanLanguage,
+    source: 'cover' | 'typed' = 'cover',
+  ) => {
     const { value, usage } = await generate<EnrichmentOutput>({
       step: 'enrichment',
-      parts: [{ text: enrichmentPrompt(seen.title, seen.authors, language) }],
+      parts: [{ text: enrichmentPrompt(seen.title, seen.authors, language, source) }],
       responseSchema: ENRICHMENT_SCHEMA,
       grounded: true,
     })

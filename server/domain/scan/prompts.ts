@@ -35,8 +35,13 @@ N'INVENTE RIEN. Si une information n'est pas visible sur l'image, mets null. Tou
 /** Step 2 — what the web knows. This is where grounding earns its cost: series
  *  membership in particular is what the cover conveys badly or not at all, and
  *  it is what the whole series feature is built on. */
-export const enrichmentPrompt = (title: string, authors: string[], language: ScanLanguage) =>
-  `Recherche sur le web les informations de ce livre et renseigne la fiche.
+export const enrichmentPrompt = (
+  title: string,
+  authors: string[],
+  language: ScanLanguage,
+  source: 'cover' | 'typed' = 'cover',
+) =>
+  `${source === 'typed' ? TYPED_TITLE_PREFACE : ''}Recherche sur le web les informations de ce livre et renseigne la fiche.
 
 Livre : « ${title} »${authors.length > 0 ? ` de ${authors.join(', ')}` : ''}
 
@@ -55,6 +60,14 @@ Toutes les valeurs textuelles doivent être en ${LANGUAGE_NAMES[language]}.`
 /** Step 3 — the saga's catalogue. Runs once per series for the whole app, not
  *  once per reader, which is what makes it affordable to ask for the complete
  *  list rather than just the next volume. */
+/** A title the reader typed is not a title read off a cover: it can be
+ *  approximate, partial, or misspelt, and the model has nothing else to go on.
+ *  Said up front, so it looks for the most likely book rather than the exact
+ *  string. */
+const TYPED_TITLE_PREFACE = `Le titre ci-dessous a été saisi de mémoire par le lecteur, pas lu sur une couverture : il peut être approximatif, partiel ou mal orthographié. Retrouve le livre le plus probable et renseigne sa fiche avec son titre exact.
+
+`
+
 export const cataloguePrompt = (seriesName: string, author: string, language: ScanLanguage) =>
   `Recherche sur le web la liste COMPLÈTE des volumes de cette série et renseigne son catalogue.
 

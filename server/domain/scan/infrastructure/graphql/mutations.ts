@@ -13,6 +13,48 @@ import { ScanResultType } from './types'
 
 const logger = createLogger('scan')
 
+builder.mutationField('scanTitle', (t) =>
+  t.field({
+    type: ScanResultType,
+    description:
+      'Look a book up from a title the reader typed and return a record to review, ' +
+      'as `scanBook` does from a cover.\n\n' +
+      'The title can be approximate: the model looks for the most likely book and ' +
+      'answers with its exact title. Nothing is saved; the reader corrects the ' +
+      'proposal and `addBook` persists it.\n\n' +
+      'Two model calls at most — the web-grounded enrichment, and a series ' +
+      'catalogue only when the saga is not already known. Never cached, and always ' +
+      'spends one scan of the allowance. Fails with `QUOTA_EXHAUSTED` once nothing ' +
+      'is left, or `SCAN_FAILED` when the model call errors.',
+    args: {
+      title: t.arg({ type: 'BookTitle', required: true, description: 'The title as remembered' }),
+    },
+    resolve: async (_root, { title }, { userId, event }) => {
+      const [plan, quota, credit] = await Promise.all([
+        EntitlementQuery.planOf(userId),
+        QuotaQuery.ofCurrentMonth(userId),
+        QuotaQuery.creditOf(userId),
+      ])
+      if (exhausted(plan, quota, credit))
+        return domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up')
+
+      const language = languageFrom(event && getHeader(event, 'accept-language'))
+
+      try {
+        const { result, usage } = await Scan.lookUpTitle(title, language)
+        await QuotaCommand.record(userId, plan)
+        await AdminCommand.recordAiUsage({ cacheHit: false, usage }).catch((error) =>
+          logger.warn(`AI usage not recorded: ${error}`),
+        )
+        return result
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Lookup failed'
+        return domainError('SCAN_FAILED', message)
+      }
+    },
+  }),
+)
+
 builder.mutationField('scanBook', (t) =>
   t.field({
     type: ScanResultType,

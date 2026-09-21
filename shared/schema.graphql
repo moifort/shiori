@@ -836,6 +836,18 @@ type Mutation {
   ): ScanResult!
 
   """
+  Look a book up from a title the reader typed and return a record to review, as `scanBook` does from a cover.
+  
+  The title can be approximate: the model looks for the most likely book and answers with its exact title. Nothing is saved; the reader corrects the proposal and `addBook` persists it.
+  
+  Two model calls at most — the web-grounded enrichment, and a series catalogue only when the saga is not already known. Never cached, and always spends one scan of the allowance. Fails with `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` when the model call errors.
+  """
+  scanTitle(
+    """The title as remembered"""
+    title: BookTitle!
+  ): ScanResult!
+
+  """
   Turn the nightly Audible sync on or off.
   
   On, a nightly pass catalogues what the reader bought since the last one and moves imported books to the status Audible reports — a title finished there becomes `READ` here, one it says was never opened goes back to the pile. Off, nothing happens until the reader imports by hand again; books already catalogued stay exactly as they are.
