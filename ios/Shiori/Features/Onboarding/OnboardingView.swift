@@ -14,7 +14,11 @@ struct OnboardingView: View {
     @State private var firstName = ""
     @State private var isSaving = false
     @State private var errorMessage: String?
-    @State private var showAudibleImport = false
+    /// Amazon's sign-in page, while it is on screen.
+    @State private var audibleSignIn: AudibleLogin?
+    /// Between tapping "Importer" and Amazon's page, and between the page
+    /// closing and the app opening.
+    @State private var isConnectingAudible = false
 
     private enum Step {
         case welcome
@@ -37,15 +41,31 @@ struct OnboardingView: View {
                 )
             case .audible:
                 AudibleOfferPage(
-                    onConnect: { showAudibleImport = true },
+                    isWorking: isConnectingAudible,
+                    onConnect: { Task { await startAudibleSignIn() } },
                     onSkip: onCompleted
                 )
             }
         }
-        // The import flow as it stands everywhere else. However it ends —
-        // books imported, or closed without — the reader goes into the app.
-        .sheet(isPresented: $showAudibleImport, onDismiss: onCompleted) {
-            AudibleImportView(onImported: { _ in showAudibleImport = false })
+        // Straight to Amazon's page, and from it straight into the app: the
+        // whole library is imported in the background, the dashboard showing
+        // the pass running, with no picker in between.
+        .sheet(item: $audibleSignIn) { login in
+            NavigationStack {
+                AmazonSignInWebView(login: login) { code in
+                    Task { await finishAudibleSignIn(code: code) }
+                }
+                .ignoresSafeArea(edges: .bottom)
+                .navigationTitle("Connexion Amazon")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        ToolbarIconButton(title: "Annuler", systemImage: "xmark", role: .cancel) {
+                            audibleSignIn = nil
+                        }
+                    }
+                }
+            }
         }
         .disabled(isSaving)
         .overlay { if isSaving { ProgressView().controlSize(.large) } }
@@ -58,6 +78,32 @@ struct OnboardingView: View {
             Text(errorMessage ?? "")
         }
         .onAppear { track(.onboardingStarted) }
+    }
+
+    private func startAudibleSignIn() async {
+        isConnectingAudible = true
+        defer { isConnectingAudible = false }
+        do {
+            audibleSignIn = try await ImportAPI.startSignIn(on: .suggested)
+        } catch {
+            errorMessage = reportError(error)
+        }
+    }
+
+    /// The code Amazon handed back: the account is linked, the pass starts in
+    /// the background, and the reader goes in. A failed link leaves them on the
+    /// offer, free to try again or skip.
+    private func finishAudibleSignIn(code: String) async {
+        audibleSignIn = nil
+        isConnectingAudible = true
+        defer { isConnectingAudible = false }
+        do {
+            _ = try await ImportAPI.completeSignIn(authorizationCode: code)
+            AudibleBackgroundSync.shared.start()
+            onCompleted()
+        } catch {
+            errorMessage = reportError(error)
+        }
     }
 
     private func complete() async {

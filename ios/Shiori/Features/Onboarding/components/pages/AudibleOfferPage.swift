@@ -5,6 +5,8 @@ import SwiftUI
 /// spares them a first visit to an empty shelf. Everyone else skips it in one
 /// tap and lands in the app as before.
 struct AudibleOfferPage: View {
+    /// Amazon's page is being prepared, or the account linked.
+    var isWorking: Bool = false
     var onConnect: () -> Void
     var onSkip: () -> Void
 
@@ -24,7 +26,7 @@ struct AudibleOfferPage: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Vous écoutez sur Audible ?")
                     .font(.title.bold())
-                Text("Importez votre bibliothèque Audible : vos livres audio arrivent avec leur genre, leur série et ce que vous avez déjà écouté. Vous pourrez aussi le faire plus tard depuis les réglages.")
+                Text("Connectez votre compte Amazon : toute votre bibliothèque Audible est importée pendant que vous découvrez l'application, avec le genre, la série et ce que vous avez déjà écouté. Vous pourrez aussi le faire plus tard depuis les réglages.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -35,9 +37,14 @@ struct AudibleOfferPage: View {
 
             VStack(spacing: 12) {
                 Button(action: onConnect) {
-                    Label("Importer depuis Audible", systemImage: "arrow.down.circle")
-                        .frame(maxWidth: .infinity)
+                    ZStack {
+                        Label("Importer depuis Audible", systemImage: "arrow.down.circle")
+                            .opacity(isWorking ? 0 : 1)
+                        if isWorking { ProgressView() }
+                    }
+                    .frame(maxWidth: .infinity)
                 }
+                .disabled(isWorking)
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .accessibilityIdentifier("onboarding-audible-connect")

@@ -22,6 +22,8 @@ struct HomeView: View {
     @State private var viewModel = HomeViewModel()
     @State private var selectedBook: Book?
     @State private var showSettings = false
+    /// An Audible pass started at onboarding, still bringing the library in.
+    @State private var audibleSync = AudibleBackgroundSync.shared
     /// The stack behind the dashboard: a saga is pushed onto it from its
     /// progress row.
     @State private var path = NavigationPath()
@@ -35,9 +37,18 @@ struct HomeView: View {
                         // The settings hold the account, the subscription and the
                         // connected sources: managing a linked Audible account is
                         // a setting, not an import, and lives there.
-                        ToolbarIconButton(title: "Réglages", systemImage: "gearshape") {
-                            showSettings = true
+                        // While an Audible import runs in the background, the
+                        // gear turns into a spinning sync icon: the one sign
+                        // that more books are on their way.
+                        Button { showSettings = true } label: {
+                            if audibleSync.isSyncing {
+                                Label("Import Audible en cours", systemImage: "arrow.triangle.2.circlepath")
+                                    .symbolEffect(.rotate, options: .repeat(.continuous))
+                            } else {
+                                Label("Réglages", systemImage: "gearshape")
+                            }
                         }
+                        .labelStyle(.iconOnly)
                         .accessibilityIdentifier("home-settings")
                     }
                 }
@@ -54,6 +65,17 @@ struct HomeView: View {
         // are rebuilt by the server on each one, and the tab may be showing.
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
             Task { await viewModel.load() }
+        }
+        .alert(
+            "Import Audible interrompu",
+            isPresented: Binding(
+                get: { audibleSync.errorMessage != nil },
+                set: { if !$0 { audibleSync.errorMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) { audibleSync.errorMessage = nil }
+        } message: {
+            Text("\(audibleSync.errorMessage ?? "") Vous pouvez relancer la synchronisation depuis les réglages.")
         }
         .sheet(item: $selectedBook) { book in
             BookView(
