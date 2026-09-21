@@ -36,7 +36,7 @@
     "@apple/app-store-server-library": "3.1.0",
     "@pothos/core": "4.13.1",
     "@sentry/node": "10.74.0",
-    "audible-api-ts": "0.2.0",
+    "audible-api-ts": "0.3.0",
     "consola": "3.4.2",
     "firebase-admin": "13.10.0",
     "graphql": "16.14.2",
