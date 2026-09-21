@@ -47,22 +47,28 @@ schema, a domain command, or several screens at once; **large** brings in a new 
 - [x] **Dashboard, tapping the genres widget opens the library on its genre view.** Switches
       to the Library tab with the genre view selected.
 
-- [ ] **Audible badge on the cover.** An audiobook carries the Audible logo as a pill at
+- [x] **Audible badge on the cover.** An audiobook carries the Audible logo as a pill at
       the top right of its cover, in every list and on the book screen alike.
-- [ ] **Book screen, the reading status at the top right of the main section,** where the
+      Built: an orange headphones pill on every audiobook's cover, rather than the Audible
+      logo, which the app would have to ship as a trademark asset.
+- [x] **Book screen, the reading status at the top right of the main section,** where the
       format icon sits today. The format moves to the cover badge above, so the corner says
       "en cours", "à lire" and so on instead.
-- [ ] **Menu icons at the right size and spacing, app-wide.** The icons in the dropdown
+      Built on the library row, where the headphones glyph was: the book screen keeps its
+      status picker, and shows a pill in that corner only for a dropped book.
+- [x] **Menu icons at the right size and spacing, app-wide.** The icons in the dropdown
       menus are sized and spaced inconsistently; go through every `Menu` of the app and
       align them on one size and one gap.
-- [ ] **Multiline fields, the icon aligned on the first line of text.** The subgenre field's
+- [x] **Multiline fields, the icon aligned on the first line of text.** The subgenre field's
       icon is centred on the whole field; it should sit level with the top line. Same fix
       for every multiline field of the app.
-- [ ] **Book edit screen, edit the narrators.** `BookEdit` and the `editBook` input already
+- [x] **Book edit screen, edit the narrators.** `BookEdit` and the `editBook` input already
       accept them; only the form is missing.
-- [ ] **Library list, show the date added** beside the started and finished dates on a row.
-- [ ] **Library, genre view headings in the app's language.** The section titles of the
+- [x] **Library list, show the date added** beside the started and finished dates on a row.
+      Built on the book screen's reading section, beside the started and finished dates.
+- [x] **Library, genre view headings in the app's language.** The section titles of the
       genre view must read the genre's localized name, not its raw value.
+      Built: "Fantasy" now reads "Fantastique".
 
 ## Medium
 
@@ -126,35 +132,35 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       from `resolveGenreId`. Books already imported keep their wrong genre, so they need
       re-mapping through a migration or a fresh import.
 
-- [ ] **Book edit screen, a running time instead of pages for an audiobook.** An audiobook
+- [x] **Book edit screen, a running time instead of pages for an audiobook.** An audiobook
       offers no page count field but a duration field, typed as hours and minutes ("14h30").
       `durationMinutes` is not part of `BookEdit` nor of the `editBook` input yet.
-- [ ] **Subgenres in title case, their own capitals kept.** Every word of a subgenre starts
+- [x] **Subgenres in title case, their own capitals kept.** Every word of a subgenre starts
       with a capital, and a capital already inside a word stays: "LitRPG" stays "LitRPG",
       never "Litrpg". Normalized in the `Subgenre` constructor so the scan, the import and the
       form agree; existing records need a migration, since the autocompletion would otherwise
       offer both spellings.
-- [ ] **Library views cached, with the small loader on top.** The favourites and genre views,
+- [x] **Library views cached, with the small loader on top.** The favourites and genre views,
       and every status filter, render last visit's rows at once with the refresh spinner
       leading the list, as the default view does, rather than an empty list reloading on
       every switch. Today only the default view has a `SnapshotCache`.
-- [ ] **A "dropped" reading status.** A new state in the book screen's status menu for a
+- [x] **A "dropped" reading status.** A new state in the book screen's status menu for a
       book the reader stopped because they could not go on or did not like it. The default
       library view gives it its own section, last. A new enum value needs no migration, but
       the analytics (pile, finishes) and every `match().exhaustive()` over the status must
       decide what a dropped book counts as.
-- [ ] **Dashboard, two small tiles: favourites and dropped.** One counts the favourites, the
+- [x] **Dashboard, two small tiles: favourites and dropped.** One counts the favourites, the
       other the books the reader stopped because they did not like them — the "dropped"
       status above, which this depends on. The server still serves `favoriteCount`; the
       dropped count is a new analytics figure. Each tile opens the library on the matching
       view.
 
-- [ ] **Series tab, the library's filters.** The same toolbar as the Library tab: switch
+- [x] **Series tab, the library's filters.** The same toolbar as the Library tab: switch
       between everything, by genre and the favourites, and narrow any of them to one reading
       status. The tab is sectioned by genre today with no way to change it, so the series
       query needs the arrangement, favourite and status arguments `libraryPage` already has.
 
-- [ ] **Series tab, the missing volumes in each row's strip.** The strip shows only the
+- [x] **Series tab, the missing volumes in each row's strip.** The strip shows only the
       volumes the reader owns: `FollowedSeries.volumes` is a list of their own `Book`s. The
       volumes of the cycle they do not have should sit in it too, in cycle order, drawn with
       the typographic placeholder the series screen uses for them. That reads the catalogue
@@ -250,7 +256,7 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       columns between exports), the same duplicate check the Audible import uses, and a screen
       that takes the file and lists what it found for the reader to tick.
 
-- [ ] **Series screen, rework it on the book screen's model.**
+- [x] **Series screen, rework it on the book screen's model.**
       - The progress label on one line, "0/3" with no spaces, same size and weight as today.
       - The genre and subgenres merge into the main section, shown and edited exactly as on
         the book screen; so does the rating.

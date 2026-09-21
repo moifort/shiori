@@ -10,6 +10,23 @@ the release tag is pushed.
 
 ## Unreleased
 
+- A book can be marked "Abandonné" from its menu when the reader stopped because they did not
+  like it. It sits in a section of its own at the bottom of the library, has its own filter,
+  counts in no reading statistic, and the dashboard counts the dropped books in a small tile
+  beside a new favourites tile.
+- The Series tab has the library's views and filter: everything, by genre or the favourites,
+  narrowed to one state. Each row's cover strip shows the volumes the reader does not own,
+  dimmed, between the ones they do.
+- The series screen follows the book screen: the genre, subgenres and rating sit in the main
+  section, with the dates the saga was started, added and finished; the volumes look like the
+  library's rows and open the reader's books; and a saga can be deleted with all its books.
+- An audiobook carries a headphones pill on its cover, and a library row shows its reading
+  status in the corner. The edit form offers a running time ("14h30") and the narrators for an
+  audiobook instead of the page count, and the book screen shows when it was added.
+- Subgenres are written with a capital on every word, keeping the capitals they already have
+  ("LitRPG"); the existing ones are rewritten once.
+- Every view of the library, and of the Series tab, shows its last rows at once when switched
+  to, with the small refresh spinner on top.
 - An Audible import lands in the right genre. Every shelf Amazon files a title on now has
   its say, rather than the first one listed, which was often the catch-all literary rack:
   Fondation is science fiction again, Le Dernier vœu fantasy. Harry Potter and the

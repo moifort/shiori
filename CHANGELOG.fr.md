@@ -4,6 +4,25 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Un livre peut être marqué « Abandonné » depuis son menu quand le lecteur l’a arrêté faute de
+  l’avoir aimé. Il a sa propre section en bas de la bibliothèque et son propre filtre, ne compte
+  dans aucune statistique de lecture, et l’accueil compte les livres abandonnés dans une petite
+  tuile, à côté d’une nouvelle tuile des favoris.
+- L’onglet Séries reprend les vues et le filtre de la bibliothèque : tout, par genre ou les
+  favoris, restreint à un état. La bande de couvertures de chaque série montre, estompés, les
+  tomes que le lecteur n’a pas, entre ceux qu’il possède.
+- L’écran d’une série suit celui d’un livre : le genre, les sous-genres et la note rejoignent la
+  section principale, avec les dates de début, d’ajout et de fin de la série ; les tomes
+  ressemblent aux lignes de la bibliothèque et ouvrent les livres du lecteur ; et une série peut
+  être supprimée avec tous ses livres.
+- Un livre audio porte une pastille casque sur sa couverture, et une ligne de la bibliothèque
+  affiche son état de lecture dans le coin. Le formulaire propose une durée (« 14h30 ») et les
+  narrateurs pour un livre audio à la place du nombre de pages, et l’écran du livre indique
+  quand il a été ajouté.
+- Les sous-genres prennent une majuscule à chaque mot, en gardant celles qu’ils ont déjà
+  (« LitRPG ») ; ceux déjà enregistrés sont réécrits une fois.
+- Chaque vue de la bibliothèque, et de l’onglet Séries, affiche aussitôt ses dernières lignes
+  quand on y revient, avec le petit indicateur de mise à jour en haut.
 - Un import Audible arrive dans le bon genre. Chaque rayon où Amazon range un titre a
   désormais voix au chapitre, et plus seulement le premier cité, souvent le rayon fourre-tout
   de la littérature : Fondation redevient de la science-fiction, Le Dernier vœu de la
