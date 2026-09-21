@@ -1,4 +1,4 @@
-import type { BookLanguage, Genre } from '~/domain/book/types'
+import type { BookLanguage, Genre, ReadingStatus } from '~/domain/book/types'
 import { GENRES } from '~/domain/book/types'
 import type {
   Series,
@@ -29,7 +29,7 @@ export const stateOf = (
   series: Series,
   readVolumeNumbers: ReadonlySet<number>,
   currentYear: Year,
-): SeriesState => {
+): Exclude<SeriesState, 'not-started'> => {
   const published = publishedVolumes(series, currentYear)
   if (published.length === 0) return 'in-progress'
   const everyPublishedRead = published.every(
@@ -71,14 +71,53 @@ export const genreOf = (books: readonly { genre?: Genre }[]): Genre | undefined 
   return leading
 }
 
-/** Sagas grouped by genre for a list sectioned on it: the closed list's own
- *  order, sagas of no genre last, and within a genre the order they came in.
+/** Where the reader stands on a saga they follow, as the Series tab labels it.
+ *
+ *  A saga nothing of which has been opened is `not-started`, catalogue or not:
+ *  that is a fact about the reader's own books. Past that, the catalogue decides
+ *  whether published volumes remain. Without one, an owned volume still unread
+ *  holds the saga open; every owned volume read says nothing, since which
+ *  volumes exist is exactly what is unknown then, and null says so. */
+export const followedStateOf = (
+  statuses: readonly ReadingStatus[],
+  catalogue: Series | null,
+  readVolumeNumbers: ReadonlySet<number>,
+  currentYear: Year,
+): SeriesState | null => {
+  if (statuses.every((status) => status === 'to-read')) return 'not-started'
+  if (catalogue) return stateOf(catalogue, readVolumeNumbers, currentYear)
+  return statuses.some((status) => status !== 'read') ? 'in-progress' : null
+}
+
+// What the reader is on first, then what they finished, then what they have
+// not opened. A saga read as far as the shelf goes, with no catalogue to say
+// whether it is over, sits with the finished ones it most resembles.
+const STATE_RANK: Record<SeriesState | 'unknown', number> = {
+  'in-progress': 0,
+  complete: 1,
+  unknown: 2,
+  'not-started': 3,
+}
+
+/** The Series tab's order: sectioned by genre in the closed list's own order,
+ *  sagas of no genre last; within a genre by state, and within a state the saga
+ *  whose volume last changed status first — the same recency the library is
+ *  ordered on. Sagas that tie keep the order they came in.
  *
  *  Done on the server rather than on the phone because the list is paginated:
  *  grouped on the client, a section would grow again every time a page lands. */
-export const inGenreOrder = <Saga extends { genre?: Genre }>(sagas: readonly Saga[]): Saga[] => {
-  const rank = (saga: Saga) => (saga.genre ? GENRES.indexOf(saga.genre) : GENRES.length)
-  return [...sagas].sort((left, right) => rank(left) - rank(right))
+export const inTabOrder = <
+  Saga extends { genre?: Genre; state: SeriesState | null; lastStatusChangeAt: Date },
+>(
+  sagas: readonly Saga[],
+): Saga[] => {
+  const genreRank = (saga: Saga) => (saga.genre ? GENRES.indexOf(saga.genre) : GENRES.length)
+  return [...sagas].sort(
+    (left, right) =>
+      genreRank(left) - genreRank(right) ||
+      STATE_RANK[left.state ?? 'unknown'] - STATE_RANK[right.state ?? 'unknown'] ||
+      right.lastStatusChangeAt.getTime() - left.lastStatusChangeAt.getTime(),
+  )
 }
 
 /** Catalogue order for a whole saga. */

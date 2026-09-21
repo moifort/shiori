@@ -35,6 +35,6 @@ export type Series = {
   catalogedAt: Date
 }
 
-/** Whether the reader is still working through a saga or has finished it. Derived,
- *  never stored: it depends on which books the reader owns. */
-export type SeriesState = 'in-progress' | 'complete'
+/** Where the reader stands on a saga: not started, working through it, or done
+ *  with it. Derived, never stored: it depends on which books the reader owns. */
+export type SeriesState = 'not-started' | 'in-progress' | 'complete'

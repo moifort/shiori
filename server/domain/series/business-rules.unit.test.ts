@@ -1,9 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import {
   followedSagasOf,
+  followedStateOf,
   genreOf,
   inCatalogueOrder,
-  inGenreOrder,
+  inTabOrder,
   progressOf,
   splitBySpine,
   stateOf,
@@ -188,14 +189,55 @@ describe('genreOf', () => {
   })
 })
 
-describe('inGenreOrder', () => {
-  test('groups by genre in the closed list order, no genre last, keeping order within', () => {
+describe('followedStateOf', () => {
+  const series = saga([volume({ title: 'One', number: VolumeNumber(1), publishedIn: Year(2020) })])
+
+  test('is not started while no volume has been opened, catalogue or not', () => {
+    expect(followedStateOf(['to-read'], series, new Set(), THIS_YEAR)).toBe('not-started')
+    expect(followedStateOf(['to-read', 'to-read'], null, new Set(), THIS_YEAR)).toBe('not-started')
+  })
+
+  test('lets the catalogue decide once a volume has been opened', () => {
+    expect(followedStateOf(['read'], series, new Set([1]), THIS_YEAR)).toBe('complete')
+    expect(followedStateOf(['reading'], series, new Set(), THIS_YEAR)).toBe('in-progress')
+  })
+
+  test('is in progress without a catalogue while an owned volume is unread', () => {
+    expect(followedStateOf(['read', 'to-read'], null, new Set([1]), THIS_YEAR)).toBe('in-progress')
+  })
+
+  test('is unknown without a catalogue once every owned volume is read', () => {
+    expect(followedStateOf(['read'], null, new Set([1]), THIS_YEAR)).toBeNull()
+  })
+})
+
+describe('inTabOrder', () => {
+  const at = (day: number) => new Date(`2026-09-${String(day).padStart(2, '0')}`)
+
+  test('groups by genre in the closed list order, no genre last', () => {
     const sagas = [
-      { name: 'A' },
-      { name: 'B', genre: 'science-fiction' as const },
-      { name: 'C', genre: 'fantasy' as const },
-      { name: 'D', genre: 'science-fiction' as const },
+      { name: 'A', state: null, lastStatusChangeAt: at(1) },
+      { name: 'B', genre: 'science-fiction' as const, state: null, lastStatusChangeAt: at(1) },
+      { name: 'C', genre: 'fantasy' as const, state: null, lastStatusChangeAt: at(1) },
+      { name: 'D', genre: 'science-fiction' as const, state: null, lastStatusChangeAt: at(1) },
     ]
-    expect(inGenreOrder(sagas).map((saga) => saga.name)).toEqual(['C', 'B', 'D', 'A'])
+    expect(inTabOrder(sagas).map((saga) => saga.name)).toEqual(['C', 'B', 'D', 'A'])
+  })
+
+  test('orders a genre by state, then by the latest status change first', () => {
+    const sagas = [
+      { name: 'untouched', state: 'not-started' as const, lastStatusChangeAt: at(20) },
+      { name: 'unknown', state: null, lastStatusChangeAt: at(19) },
+      { name: 'done', state: 'complete' as const, lastStatusChangeAt: at(18) },
+      { name: 'older', state: 'in-progress' as const, lastStatusChangeAt: at(2) },
+      { name: 'newer', state: 'in-progress' as const, lastStatusChangeAt: at(10) },
+    ]
+    expect(inTabOrder(sagas).map((saga) => saga.name)).toEqual([
+      'newer',
+      'older',
+      'done',
+      'unknown',
+      'untouched',
+    ])
   })
 })

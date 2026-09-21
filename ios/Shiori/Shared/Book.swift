@@ -142,14 +142,16 @@ enum VolumeKind: String, Codable, CaseIterable, Identifiable, Sendable {
     }
 }
 
-/// Whether the reader is still working through a saga. Derived by the server
-/// from what they own, never stored.
+/// Where the reader stands on a saga: not started, working through it, or done
+/// with it. Derived by the server from what they own, never stored.
 enum SeriesState: String, Codable, Sendable {
+    case notStarted
     case inProgress
     case complete
 
     var label: String {
         switch self {
+        case .notStarted: String(localized: "À lire")
         case .inProgress: String(localized: "En cours")
         case .complete: String(localized: "Terminée")
         }
@@ -326,12 +328,6 @@ struct SeriesOpinion: Sendable, Equatable, Codable {
 /// A saga the reader follows. Its identity comes from their own books, not from
 /// the catalogue: an Audible import and a book typed by hand both name a saga
 /// without describing it, and reading the catalogue first lost every one of them.
-/// Where the reader stands on a saga's published spine.
-struct SeriesProgressCount: Codable, Sendable, Equatable {
-    let read: Int
-    let total: Int
-}
-
 struct FollowedSeries: Identifiable, Codable, Sendable {
     /// The saga and the language together. The saga alone is not an identity:
     /// held in two languages it follows as two rows, and SwiftUI would take them
@@ -345,16 +341,17 @@ struct FollowedSeries: Identifiable, Codable, Sendable {
     /// The language the reader holds these volumes in. Nil on a saga whose
     /// volumes carry no recorded language.
     let language: BookLanguage?
-    /// Nil when no catalogue exists to derive it from: which volumes the saga has
-    /// is precisely what is unknown then.
+    /// Nil when every owned volume is read and no catalogue says whether more
+    /// exist: whether the saga is over is precisely what is unknown then.
     let state: SeriesState?
     /// The genre most of the owned volumes carry: what the Series tab is
     /// sectioned on. Nil when none of them has one.
     let genre: BookGenre?
-    /// How many of the published spine volumes are read, out of how many. Nil
-    /// without a catalogue, like the state, and for the same reason.
-    let progress: SeriesProgressCount?
     let ownedCount: Int
+    /// The owned volumes in the order the saga runs, each with its cover and
+    /// status. Only the Series tab asks for them — every one costs the server
+    /// a signed cover URL — so they are empty anywhere else.
+    var volumes: [Book] = []
     /// Nil until the reader says something about the saga. The two rows of a
     /// saga held in two languages carry the same one.
     var opinion: SeriesOpinion?

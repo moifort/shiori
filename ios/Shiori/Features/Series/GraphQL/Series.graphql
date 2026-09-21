@@ -24,14 +24,26 @@ query MySeries {
   }
 }
 
-# One page of the same rows, for the tab that draws as it scrolls.
+# One page of the same rows, for the tab that draws as it scrolls. Only the tab
+# asks for the volumes: each one costs a signed cover URL.
 query MySeriesPage($limit: Int, $offset: Int) {
   mySeriesPage(limit: $limit, offset: $offset) {
     hasMore
     items {
       ...FollowedSeriesRow
+      volumes {
+        ...FollowedVolume
+      }
     }
   }
+}
+
+# One cover of a row's strip: enough to draw it and pin its status on it.
+fragment FollowedVolume on Book {
+  id
+  title
+  coverUrl
+  status
 }
 
 fragment FollowedSeriesRow on FollowedSeries {
@@ -41,10 +53,6 @@ fragment FollowedSeriesRow on FollowedSeries {
   language
   genre
   state
-  progress {
-    readCount
-    totalCount
-  }
   ownedCount
   opinion {
     ...SeriesOpinionFields

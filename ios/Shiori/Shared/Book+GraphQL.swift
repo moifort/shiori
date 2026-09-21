@@ -96,6 +96,7 @@ extension ShioriGraphQL.VolumeKind {
 extension ShioriGraphQL.SeriesState {
     var asDomain: SeriesState {
         switch self {
+        case .notStarted: .notStarted
         case .inProgress: .inProgress
         case .complete: .complete
         }

@@ -99,7 +99,7 @@ describe('the sagas a reader follows', () => {
         id: 'dune--frank-herbert',
         name: 'Dune',
         author: 'Frank Herbert',
-        state: null,
+        state: 'NOT_STARTED',
         ownedCount: 2,
         catalogue: null,
       },
@@ -241,7 +241,7 @@ describe('opening a saga nobody has catalogued', () => {
 })
 
 describe('the sagas a reader follows, a page at a time', () => {
-  test('serves them in the same order as the whole list, with what follows', async () => {
+  test('cuts the pages from one order, with what follows', async () => {
     for (const name of ['Dune', 'Fondation', 'Hypérion']) {
       const result = await execute(
         `mutation { addBook(input: { title: "${name} 1", authors: ["Auteur"], ` +
@@ -250,26 +250,37 @@ describe('the sagas a reader follows, a page at a time', () => {
       expect(result.errors).toBeUndefined()
     }
 
+    const whole = await mySeriesPage(10, 0)
+    expect(whole.items).toHaveLength(3)
+
     const first = await mySeriesPage(2, 0)
-    expect(first).toEqual({ hasMore: true, items: [{ name: 'Dune' }, { name: 'Fondation' }] })
+    expect(first).toEqual({ hasMore: true, items: whole.items.slice(0, 2) })
 
     const second = await mySeriesPage(2, 2)
-    expect(second).toEqual({ hasMore: false, items: [{ name: 'Hypérion' }] })
+    expect(second).toEqual({ hasMore: false, items: whole.items.slice(2) })
   })
 })
 
 describe('the Series tab, sectioned by genre', () => {
-  const addSaga = async (name: string, genre: string) => {
+  const addSaga = async (name: string, genre: string, volume = 1) => {
     const result = await execute(
-      `mutation { addBook(input: { title: "${name} 1", authors: ["Auteur"], genre: ${genre}, ` +
-        `series: { id: "${name.toLowerCase()}--auteur", name: "${name}", volume: 1, kind: MAIN } }) { id } }`,
+      `mutation { addBook(input: { title: "${name} ${volume}", authors: ["Auteur"], genre: ${genre}, ` +
+        `series: { id: "${name.toLowerCase()}--auteur", name: "${name}", volume: ${volume}, kind: MAIN } }) { id } }`,
+    )
+    expect(result.errors).toBeUndefined()
+    return (result.data as { addBook: { id: string } }).addBook.id
+  }
+
+  const setStatus = async (bookId: string, status: string) => {
+    const result = await execute(
+      `mutation { setReadingStatus(id: "${bookId}", status: ${status}) { id } }`,
     )
     expect(result.errors).toBeUndefined()
   }
 
   // Paginated, the phone cannot group rows itself without a section growing
   // again each time a page lands: the pages come grouped.
-  test('serves the sagas grouped by genre, alphabetically within one', async () => {
+  test('serves the sagas grouped by genre', async () => {
     await addSaga('Hypérion', 'SCIENCE_FICTION')
     await addSaga('Dune', 'SCIENCE_FICTION')
     await addSaga('Wheel', 'FANTASY')
@@ -283,6 +294,50 @@ describe('the Series tab, sectioned by genre', () => {
         { name: 'Wheel', genre: 'FANTASY', progress: null },
         { name: 'Dune', genre: 'SCIENCE_FICTION', progress: null },
         { name: 'Hypérion', genre: 'SCIENCE_FICTION', progress: null },
+      ],
+    })
+  })
+
+  // What the reader is on leads its section, then what they finished, then
+  // what they have not opened; within a state, the latest status change first.
+  test('orders the sagas of one genre by state, then by the latest status change', async () => {
+    const untouched = await addSaga('Anathem', 'SCIENCE_FICTION')
+    const finished = await addSaga('Berserk', 'SCIENCE_FICTION')
+    const earlier = await addSaga('Culture', 'SCIENCE_FICTION')
+    const later = await addSaga('Dune', 'SCIENCE_FICTION')
+    await addSaga('Dune', 'SCIENCE_FICTION', 2)
+    await setStatus(finished, 'READ')
+    await setStatus(earlier, 'READING')
+    // Two stamps in one millisecond would tie and fall back to the name.
+    await Bun.sleep(5)
+    await setStatus(later, 'READ')
+    expect(untouched).toBeString()
+
+    const result = await execute(
+      '{ mySeriesPage(limit: 10) { items { name state volumes { title status } } } }',
+    )
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.mySeriesPage).toEqual({
+      items: [
+        {
+          name: 'Dune',
+          state: 'IN_PROGRESS',
+          volumes: [
+            { title: 'Dune 1', status: 'READ' },
+            { title: 'Dune 2', status: 'TO_READ' },
+          ],
+        },
+        {
+          name: 'Culture',
+          state: 'IN_PROGRESS',
+          volumes: [{ title: 'Culture 1', status: 'READING' }],
+        },
+        { name: 'Berserk', state: null, volumes: [{ title: 'Berserk 1', status: 'READ' }] },
+        {
+          name: 'Anathem',
+          state: 'NOT_STARTED',
+          volumes: [{ title: 'Anathem 1', status: 'TO_READ' }],
+        },
       ],
     })
   })

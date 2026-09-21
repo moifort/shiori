@@ -44,7 +44,11 @@ enum SeriesAPI {
             query: ShioriGraphQL.MySeriesPageQuery(limit: .some(Int32(limit)), offset: .some(Int32(offset)))
         )
         return (
-            items: data.mySeriesPage.items.map { FollowedSeries(row: $0.fragments.followedSeriesRow) },
+            items: data.mySeriesPage.items.map { item in
+                var followed = FollowedSeries(row: item.fragments.followedSeriesRow)
+                followed.volumes = item.volumes.map { $0.fragments.followedVolume.asBook }
+                return followed
+            },
             hasMore: data.mySeriesPage.hasMore
         )
     }
@@ -95,9 +99,22 @@ private extension FollowedSeries {
             language: followed.language?.asDomain,
             state: followed.state?.asDomain,
             genre: followed.genre?.asDomain,
-            progress: followed.progress.map { SeriesProgressCount(read: $0.readCount, total: $0.totalCount) },
             ownedCount: followed.ownedCount,
             opinion: followed.opinion?.fragments.seriesOpinionFields.asOpinion
+        )
+    }
+}
+
+private extension ShioriGraphQL.FollowedVolume {
+    /// Only what a cover in the strip draws: the image, the status pinned on
+    /// it, and the title the placeholder is lettered from.
+    var asBook: Book {
+        Book(
+            id: id,
+            title: title,
+            authors: [],
+            coverURL: coverUrl.flatMap(URL.init(string:)),
+            status: status.asDomain
         )
     }
 }

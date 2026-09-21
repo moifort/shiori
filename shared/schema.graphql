@@ -556,11 +556,18 @@ type FollowedSeries {
   progress: SagaProgress
 
   """
-  Derived, never stored. COMPLETE once every published volume has been read.
+  Derived, never stored. NOT_STARTED while no owned volume has been opened; COMPLETE once every published volume has been read.
   
-  Null without a catalogue: which volumes exist is exactly what is unknown then, and IN_PROGRESS would be a guess dressed as a fact.
+  Without a catalogue, an owned volume still unread makes it IN_PROGRESS. Null when every owned volume is read and there is no catalogue: which volumes exist is exactly what is unknown then, and COMPLETE would be a guess dressed as a fact.
   """
   state: SeriesState
+
+  """
+  The volumes of the saga in the library, in the order the saga runs: the numbered spine, then what orbits it. What the Series tab draws as a strip of covers.
+  
+  Covers are signed only for the rows that select this field, so a page of the tab pays for the covers it draws and nothing more.
+  """
+  volumes: [Book!]!
 }
 
 """One page of the sagas the reader follows, plus whether more follow it."""
@@ -1327,7 +1334,7 @@ type Query {
   mySeries: [FollowedSeries!]!
 
   """
-  One page of `mySeries`, for a list that draws as it scrolls and is sectioned by genre: grouped by `genre` in the order of the enum, sagas of no genre last, alphabetically within a genre. Offset-paginated: pass the number of rows already shown.
+  One page of `mySeries`, for a list that draws as it scrolls and is sectioned by genre: grouped by `genre` in the order of the enum, sagas of no genre last. Within a genre, by `state` — in progress, complete, unknown, not started — then the saga whose volume last changed status first. Offset-paginated: pass the number of rows already shown.
   """
   mySeriesPage(
     """Maximum sagas in the page"""
@@ -1599,9 +1606,9 @@ type SeriesProgress {
 }
 
 """
-Whether the reader is still working through a saga.
+Where the reader stands on a saga.
 
-Derived per request from what they own, never stored. `COMPLETE` means every published volume has been read; an announced but unpublished volume does not hold a saga open, because a reader who is up to date has finished it.
+Derived per request from what they own, never stored. `NOT_STARTED` means no owned volume has been opened yet. `COMPLETE` means every published volume has been read; an announced but unpublished volume does not hold a saga open, because a reader who is up to date has finished it.
 """
 enum SeriesState {
   """Every published volume has been read."""
@@ -1609,6 +1616,9 @@ enum SeriesState {
 
   """Published volumes remain unread."""
   IN_PROGRESS
+
+  """No owned volume has been opened."""
+  NOT_STARTED
 }
 
 """

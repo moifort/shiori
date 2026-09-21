@@ -75,7 +75,7 @@ struct FavoritesView: View {
                                 Spacer(minLength: 8)
                                 VStack(alignment: .trailing, spacing: 6) {
                                     if let state = entry.state {
-                                        SeriesStateBadge(state: state)
+                                        SeriesStateLabel(state: state)
                                     }
                                     OpinionMark(rating: entry.opinion?.rating, isFavorite: true, font: .caption)
                                 }

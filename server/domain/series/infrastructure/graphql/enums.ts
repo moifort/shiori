@@ -26,11 +26,13 @@ export const VolumeKindEnum = builder.enumType('VolumeKind', {
 
 export const SeriesStateEnum = builder.enumType('SeriesState', {
   description:
-    'Whether the reader is still working through a saga.\n\n' +
-    'Derived per request from what they own, never stored. `COMPLETE` means every ' +
+    'Where the reader stands on a saga.\n\n' +
+    'Derived per request from what they own, never stored. `NOT_STARTED` means no ' +
+    'owned volume has been opened yet. `COMPLETE` means every ' +
     'published volume has been read; an announced but unpublished volume does not ' +
     'hold a saga open, because a reader who is up to date has finished it.',
   values: {
+    NOT_STARTED: { value: 'not-started', description: 'No owned volume has been opened.' },
     IN_PROGRESS: { value: 'in-progress', description: 'Published volumes remain unread.' },
     COMPLETE: { value: 'complete', description: 'Every published volume has been read.' },
   } as const,

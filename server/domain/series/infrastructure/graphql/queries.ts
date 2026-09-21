@@ -1,13 +1,15 @@
-import { readVolumeNumbersOf } from '~/domain/book/business-rules'
+import { readVolumeNumbersOf, statusChangedAtOf } from '~/domain/book/business-rules'
 import { BookLanguageEnum, GenreEnum } from '~/domain/book/infrastructure/graphql/enums'
+import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
-import type { BookLanguage, Genre } from '~/domain/book/types'
+import type { Book, BookLanguage, Genre } from '~/domain/book/types'
 import {
+  compareWithinSeries,
   followedSagasOf,
+  followedStateOf,
   genreOf,
-  inGenreOrder,
+  inTabOrder,
   progressOf,
-  stateOf,
 } from '~/domain/series/business-rules'
 import { SeriesStateEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { SeriesType } from '~/domain/series/infrastructure/graphql/types'
@@ -41,6 +43,11 @@ type FollowedSeries = {
   state: SeriesState | null
   progress: SagaProgress | null
   ownedCount: CountValue
+  /** The owned volumes, in the order the saga itself runs. */
+  books: Book[]
+  /** When one of the owned volumes last changed status: what orders sagas of
+   *  one state against each other. */
+  lastStatusChangeAt: Date
 }
 
 type SagaProgress = { readCount: number; totalCount: number }
@@ -118,9 +125,12 @@ const FollowedSeriesType = builder.objectRef<FollowedSeries>('FollowedSeries').i
       type: SeriesStateEnum,
       nullable: true,
       description:
-        'Derived, never stored. COMPLETE once every published volume has been read.\n\n' +
-        'Null without a catalogue: which volumes exist is exactly what is unknown ' +
-        'then, and IN_PROGRESS would be a guess dressed as a fact.',
+        'Derived, never stored. NOT_STARTED while no owned volume has been opened; ' +
+        'COMPLETE once every published volume has been read.\n\n' +
+        'Without a catalogue, an owned volume still unread makes it IN_PROGRESS. ' +
+        'Null when every owned volume is read and there is no catalogue: which ' +
+        'volumes exist is exactly what is unknown then, and COMPLETE would be a ' +
+        'guess dressed as a fact.',
       resolve: (followed) => followed.state,
     }),
     progress: t.field({
@@ -136,6 +146,16 @@ const FollowedSeriesType = builder.objectRef<FollowedSeries>('FollowedSeries').i
       type: 'Count',
       description: 'How many volumes of the saga are in the library.',
       resolve: (followed) => followed.ownedCount,
+    }),
+    volumes: t.field({
+      type: [BookType],
+      description:
+        'The volumes of the saga in the library, in the order the saga runs: the ' +
+        'numbered spine, then what orbits it. What the Series tab draws as a strip ' +
+        'of covers.\n\n' +
+        'Covers are signed only for the rows that select this field, so a page of ' +
+        'the tab pays for the covers it draws and nothing more.',
+      resolve: (followed) => BookQuery.withSignedCovers(followed.books),
     }),
   }),
 })
@@ -164,14 +184,15 @@ builder.queryFields((t) => ({
     description:
       'One page of `mySeries`, for a list that draws as it scrolls and is sectioned ' +
       'by genre: grouped by `genre` in the order of the enum, sagas of no genre ' +
-      'last, alphabetically within a genre. Offset-paginated: pass the number of ' +
-      'rows already shown.',
+      'last. Within a genre, by `state` — in progress, complete, unknown, not ' +
+      'started — then the saga whose volume last changed status first. ' +
+      'Offset-paginated: pass the number of rows already shown.',
     args: {
       limit: t.arg.int({ defaultValue: 40, description: 'Maximum sagas in the page' }),
       offset: t.arg.int({ defaultValue: 0, description: 'Rows to skip' }),
     },
     resolve: async (_root, args, context) => {
-      const rows = inGenreOrder(await followedSeriesOf(context.userId))
+      const rows = inTabOrder(await followedSeriesOf(context.userId))
       const limit = Math.max(1, Math.min(args.limit ?? 40, 200))
       const offset = Math.max(0, args.offset ?? 0)
       return { items: rows.slice(offset, offset + limit), hasMore: offset + limit < rows.length }
@@ -215,9 +236,26 @@ const followedSeriesOf = async (userId: UserId): Promise<FollowedSeries[]> => {
       genre: genreOf(saga.books),
       catalogue,
       opinion: opinions.get(saga.id) ?? null,
-      state: catalogue ? stateOf(catalogue, read, currentYear) : null,
+      state: followedStateOf(
+        saga.books.map((book) => book.status),
+        catalogue,
+        read,
+        currentYear,
+      ),
       progress: catalogue ? progressOf(catalogue, read, currentYear) : null,
       ownedCount: Count(saga.books.length),
+      books: inSagaOrder(saga.books),
+      lastStatusChangeAt: new Date(
+        Math.max(...saga.books.map((book) => statusChangedAtOf(book).getTime())),
+      ),
     }
   })
 }
+
+const inSagaOrder = (books: readonly Book[]): Book[] =>
+  [...books].sort((left, right) =>
+    compareWithinSeries(
+      { kind: left.series?.kind ?? 'main', number: left.series?.volume, title: left.title },
+      { kind: right.series?.kind ?? 'main', number: right.series?.volume, title: right.title },
+    ),
+  )
