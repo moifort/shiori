@@ -69,32 +69,33 @@ struct BookPage: View {
                     }
                     Text(book.title).font(.headline)
                     Text(book.authorLine).font(.subheadline).foregroundStyle(.secondary)
-                    // Who reads a recording, and how long it runs, are as much a
-                    // reason to pick it as who wrote it — so they sit with the
-                    // author rather than down among the details. Only a recording
-                    // has either.
-                    Group {
-                        if let narratorLine = book.narratorLine {
-                            Label("Lu par \(narratorLine)", systemImage: "waveform")
-                                .padding(.top, 1)
-                        }
-                        if let durationLabel = book.durationLabel {
-                            Label(durationLabel, systemImage: "clock")
-                        }
+                    // Who reads a recording is as much a reason to pick it as
+                    // who wrote it, so it sits with the author rather than down
+                    // among the details. Only a recording has a reader.
+                    if let narratorLine = book.narratorLine {
+                        Text("Lu par \(narratorLine)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 1)
                     }
-                    .labelStyle(.caption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 8)
                 // What kind of object this is, in the corner: one glyph reads
                 // faster than a "Format" row, and the word is on the edit form
                 // for anyone who needs it.
-                Image(systemName: book.format.symbol)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel(Text(book.format.label))
-                    .accessibilityIdentifier("book-format")
+                // How long a recording runs, as a pill beside it: the one
+                // number a listener weighs before starting.
+                HStack(spacing: 6) {
+                    if let durationLabel = book.durationLabel {
+                        Pill(text: durationLabel, systemImage: "clock")
+                            .accessibilityIdentifier("book-duration")
+                    }
+                    Image(systemName: book.format.symbol)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel(Text(book.format.label))
+                        .accessibilityIdentifier("book-format")
+                }
             }
             .padding(.vertical, 2)
 
@@ -147,6 +148,9 @@ struct BookPage: View {
                 VStack(alignment: .leading, spacing: 8) {
                     LabeledContent("Genre") {
                         HStack(spacing: 4) {
+                            if let genre = book.genre {
+                                genre.image.imageScale(.small)
+                            }
                             Text(book.genre?.label ?? String(localized: "Non renseigné"))
                                 .multilineTextAlignment(.trailing)
                             Image(systemName: "chevron.right").font(.caption.weight(.semibold))
@@ -154,15 +158,12 @@ struct BookPage: View {
                         .foregroundStyle(.tint)
                     }
                     if !book.subgenres.isEmpty {
-                        TagList(tags: book.subgenres)
+                        TagList(tags: book.subgenres, systemImage: "tag")
                     }
                 }
             } icon: {
-                if let genre = book.genre {
-                    genre.image.foregroundStyle(.secondary)
-                } else {
-                    Image(systemName: "theatermasks").foregroundStyle(.secondary)
-                }
+                // Neutral here: the genre's own glyph sits beside its name.
+                Image(systemName: "books.vertical").foregroundStyle(.secondary)
             }
         }
         .tint(.primary)

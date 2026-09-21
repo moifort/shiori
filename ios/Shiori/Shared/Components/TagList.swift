@@ -4,17 +4,33 @@ import SwiftUI
 /// book's genres, where a comma-joined line would truncate on the third one.
 struct TagList: View {
     let tags: [String]
+    var systemImage: String?
 
     var body: some View {
         FlowLayout(spacing: 6) {
             ForEach(tags, id: \.self) { tag in
-                Text(tag)
-                    .font(.caption)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(.quaternary, in: Capsule())
+                Pill(text: tag, systemImage: systemImage)
             }
         }
+    }
+}
+
+/// One word in a capsule: a tag, or a figure set apart from the text around it.
+struct Pill: View {
+    let text: String
+    var systemImage: String?
+
+    var body: some View {
+        HStack(spacing: 4) {
+            if let systemImage {
+                Image(systemName: systemImage).imageScale(.small)
+            }
+            Text(text)
+        }
+        .font(.caption)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
+        .background(.quaternary, in: Capsule())
     }
 }
 

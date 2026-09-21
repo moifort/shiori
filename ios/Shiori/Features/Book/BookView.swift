@@ -146,7 +146,7 @@ struct BookView: View {
             }
             .accessibilityIdentifier("book-edit")
 
-            Button("Retirer de ma bibliothèque", systemImage: "trash", role: .destructive) {
+            Button("Supprimer", systemImage: "trash", role: .destructive) {
                 confirmDelete = true
             }
             .accessibilityIdentifier("book-delete")

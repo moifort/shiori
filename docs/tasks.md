@@ -29,7 +29,7 @@ schema, a domain command, or several screens at once; **large** brings in a new 
 - [x] **Dashboard, hide the listening hours when the library holds no audiobook.** The
       "Heures" segment of the reading chart widget disappears, and a persisted choice of that
       metric falls back to pages.
-- [ ] **Book screen, header and menu touch-ups.** Drop the icon in front of "Lu par"; show
+- [x] **Book screen, header and menu touch-ups.** Drop the icon in front of "Lu par"; show
       the duration as a pill at the top right of the main section, beside the format icon;
       give the genre its own icon beside its name and an icon to each subgenre pill; and
       rename "Retirer de ma bibliothèque" to "Supprimer" in the CTA menu.
