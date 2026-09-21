@@ -166,6 +166,12 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       model answered it, with no deduplication between there and the screen. Deduplicate while
       parsing: one main volume per number, one unnumbered entry per kind and slugified title.
       No migration: the stored catalogues are cleaned by hand in the database.
+- [ ] **Onboarding offers the Audible import.** A new reader lands on an empty library, while
+      an Audible listener already has one waiting. Add a step after the first name that offers
+      to connect Audible, with a plain way to skip it. It reuses `AudibleImportView` as it
+      stands rather than a second copy of the flow. The step comes after
+      `completeOnboarding`, so the welcome scans are granted even if the reader abandons
+      the Amazon sign-in. Skipping, or closing the import, leads into the app as today.
 
 ## Large
 
