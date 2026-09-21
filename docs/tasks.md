@@ -143,6 +143,11 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       library view gives it its own section, last. A new enum value needs no migration, but
       the analytics (pile, finishes) and every `match().exhaustive()` over the status must
       decide what a dropped book counts as.
+- [ ] **Dashboard, two small tiles: favourites and dropped.** One counts the favourites, the
+      other the books the reader stopped because they did not like them — the "dropped"
+      status above, which this depends on. The server still serves `favoriteCount`; the
+      dropped count is a new analytics figure. Each tile opens the library on the matching
+      view.
 
 - [ ] **Series tab, the library's filters.** The same toolbar as the Library tab: switch
       between everything, by genre and the favourites, and narrow any of them to one reading
