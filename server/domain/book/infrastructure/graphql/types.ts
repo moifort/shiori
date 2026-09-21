@@ -8,23 +8,25 @@ import type { BookView, LibrarySection, SeriesMembership } from '~/domain/book/t
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { builder } from '~/domain/shared/graphql/builder'
 
-const SeriesMembershipType = builder.objectRef<SeriesMembership>('SeriesMembership').implement({
-  description:
-    'A book place in a saga, carried on the book itself.\n\n' +
-    'The series name is denormalized here on purpose: grouping a 300-book ' +
-    'library into sections must not read one catalogue document per row.',
-  fields: (t) => ({
-    id: t.field({ type: 'SeriesId', resolve: (membership) => membership.id }),
-    name: t.field({ type: 'SeriesName', resolve: (membership) => membership.name }),
-    volume: t.field({
-      type: 'VolumeNumber',
-      nullable: true,
-      description: 'Null for a spin-off or companion, which sit outside the numbering.',
-      resolve: (membership) => membership.volume ?? null,
+export const SeriesMembershipType = builder
+  .objectRef<SeriesMembership>('SeriesMembership')
+  .implement({
+    description:
+      'A book place in a saga, carried on the book itself.\n\n' +
+      'The series name is denormalized here on purpose: grouping a 300-book ' +
+      'library into sections must not read one catalogue document per row.',
+    fields: (t) => ({
+      id: t.field({ type: 'SeriesId', resolve: (membership) => membership.id }),
+      name: t.field({ type: 'SeriesName', resolve: (membership) => membership.name }),
+      volume: t.field({
+        type: 'VolumeNumber',
+        nullable: true,
+        description: 'Null for a spin-off or companion, which sit outside the numbering.',
+        resolve: (membership) => membership.volume ?? null,
+      }),
+      kind: t.field({ type: VolumeKindEnum, resolve: (membership) => membership.kind }),
     }),
-    kind: t.field({ type: VolumeKindEnum, resolve: (membership) => membership.kind }),
-  }),
-})
+  })
 
 export const BookType = builder.objectRef<BookView>('Book').implement({
   description:

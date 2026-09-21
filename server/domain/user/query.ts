@@ -16,6 +16,17 @@ export namespace UserQuery {
     }
   }
 
+  /** The first names behind a set of ids, for a list that names people. An
+   *  account with no profile yet is simply absent from the map: the app then
+   *  draws the friend without a name rather than an empty row. */
+  export const namesOf = async (userIds: readonly UserId[]): Promise<Map<UserId, string>> =>
+    new Map(
+      (await repository.findProfiles(userIds)).map((profile) => [
+        profile.userId,
+        String(profile.firstName),
+      ]),
+    )
+
   // How many accounts completed onboarding — the admin metrics' user count.
   export const total = async (): Promise<CountType> => Count(await repository.countProfiles())
 }

@@ -555,6 +555,79 @@ type FollowedSeriesPage {
   items: [FollowedSeries!]!
 }
 
+"""Somebody whose library the reader can see, and who can see theirs."""
+type Friend {
+  """Null for an account that never finished its onboarding."""
+  firstName: String
+  since: DateTime!
+  userId: UserId!
+}
+
+"""
+A book as a friend sees it: what is on the shelf and what its owner makes of it, never their reading note.
+"""
+type FriendBook {
+  authors: [AuthorName!]!
+  coverUrl: String
+  favorite: Boolean!
+  format: BookFormat!
+  id: BookId!
+  language: BookLanguage
+  rating: StarRating
+  series: SeriesMembership
+  status: ReadingStatus!
+  title: BookTitle!
+}
+
+"""
+An invitation to share libraries, for the reader to pass on however they like.
+
+One live invitation per reader: asking again answers the same one until it expires, rather than leaving another key to their library outstanding.
+"""
+type FriendInvitation {
+  """Eight characters, drawn to survive being read aloud."""
+  code: String!
+  expiresAt: DateTime!
+}
+
+"""
+One friend's shelf at a glance: what they are reading, what is on their pile, what they keep close, and the sagas they are working through.
+
+A book marked "do not share" is absent from every list here, and thirty of each is the most any of them carries.
+"""
+type FriendProfile {
+  """The books they keep close."""
+  favorites: [FriendBook!]!
+  firstName: String
+
+  """What they mean to read, most recently added first."""
+  pile: [FriendBook!]!
+
+  """Most recently started first."""
+  reading: [FriendBook!]!
+  sagas: [FriendSaga!]!
+  userId: UserId!
+}
+
+"""
+A saga a friend is reading, as their own books describe it.
+
+Taken from the books and nothing else: the shared catalogue is never exposed here, so this says how many volumes they hold and never how many the saga has.
+"""
+type FriendSaga {
+  author: AuthorName
+
+  """
+  The saga and the language together: two shelves of one saga are two rows.
+  """
+  id: String!
+  language: BookLanguage
+  name: SeriesName!
+
+  """How many volumes of the saga are on their shelf."""
+  ownedCount: Count!
+}
+
 """
 What a book is about, from a closed list.
 
@@ -779,6 +852,18 @@ type MonthPages {
 
 type Mutation {
   """
+  Take an invitation up, by its code or by the link carrying it.
+  
+  Both libraries open at once: friendship here is symmetric, and there is nothing further to accept on the other side. The code is spent, so a link that reached more people than intended opens nothing twice.
+  
+  Accepting an invitation already taken up answers the friendship that exists rather than failing. Fails with `NOT_FOUND` for a code that names nothing, `INVITATION_EXPIRED` past its week, and `BAD_USER_INPUT` for the reader's own invitation.
+  """
+  acceptFriendInvitation(
+    """The code, or the invitation link that ends with it"""
+    code: String!
+  ): Friend!
+
+  """
   Catalogue a book without scanning it — typed by hand, or taken from a series catalogue. Consumes no scan credit.
   """
   addBook(input: NewBookInput!): Book!
@@ -852,6 +937,13 @@ type Mutation {
   ): [Book!]!
 
   """
+  The reader's invitation to share libraries, to pass on however they like.
+  
+  Asking again answers the invitation already standing rather than making another: a reader who taps this three times has shared one link three times, not left three keys to their library lying around. It stands for a week.
+  """
+  inviteFriend: FriendInvitation!
+
+  """
   Give a book one to five stars. Rating marks it as read: the reader is saying they finished it, and leaving it on the pile would make every filter lie.
   """
   rateBook(id: BookId!, rating: StarRating!): Book!
@@ -879,6 +971,13 @@ type Mutation {
   Take a rating back. The book stays read, with its reading dates: withdrawing a judgment is not saying the reading never happened.
   """
   removeBookRating(id: BookId!): Book!
+
+  """
+  Stop sharing libraries with somebody.
+  
+  Either of the two can end it and it ends for both: one fact, and a reader who no longer wants to be read must not have to ask the other to agree. Answers false when they were not friends to begin with.
+  """
+  removeFriend(userId: UserId!): Boolean!
 
   """Take a saga rating back. Leaves the heart alone."""
   removeSeriesRating(seriesId: SeriesId!): SeriesOpinion!
@@ -1141,6 +1240,22 @@ type Query {
   ```
   """
   entitlement: Entitlement!
+
+  """
+  One friend's shelf: what they are reading, their pile, their favourites and the sagas they are working through.
+  
+  Null for anybody the reader is not friends with, which is also the answer for an id that names nobody: a stranger must not be able to tell an account that refused them from one that does not exist.
+  
+  A book marked "do not share" appears nowhere here, and no reading note is exposed at all.
+  """
+  friendProfile(userId: UserId!): FriendProfile
+
+  """
+  Everybody the reader shares libraries with, by first name.
+  
+  Friendship is symmetric: each of these can see the reader's shelf on the same terms. Their books are a separate read — a list of six friends must not fetch six libraries.
+  """
+  friends: [Friend!]!
 
   """
   The reader whole library, grouped into series sections.

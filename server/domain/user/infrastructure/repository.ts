@@ -18,6 +18,18 @@ export const findProfile = (userId: UserId): Promise<UserProfile | null> =>
     return doc.data() ?? null
   })
 
+// The names behind a list of ids, in one getAll rather than a lookup per row:
+// a friends list of forty would otherwise pay forty reads to write forty names.
+export const findProfiles = async (userIds: readonly UserId[]): Promise<UserProfile[]> => {
+  if (userIds.length === 0) return []
+  const refs = [...new Set(userIds)].map((userId) => profiles().doc(userId))
+  const docs = await db().getAll(...refs)
+  return docs.flatMap((doc) => {
+    const profile = doc.data() as UserProfile | undefined
+    return profile ? [profile] : []
+  })
+}
+
 // How many accounts have a profile — a Firestore count() aggregate, one billed
 // query round-trip however large the collection grows, never a scan.
 export const countProfiles = async (): Promise<number> => {

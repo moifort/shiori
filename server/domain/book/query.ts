@@ -55,6 +55,19 @@ export namespace BookQuery {
 
   export const all = async (userId: UserId): Promise<Book[]> => repository.findAllByUser(userId)
 
+  /** A reader's books as somebody else may see them: everything they did not
+   *  mark "do not share". The one place the `hidden` flag is enforced, so a
+   *  shared view cannot forget it.
+   *
+   *  Covers are not signed here: a profile draws three shortlists out of a whole
+   *  library, and signing four hundred URLs to show thirty is four hundred calls
+   *  for nothing. Pass what will actually be drawn through `withSignedCovers`. */
+  export const shared = async (userId: UserId): Promise<Book[]> =>
+    (await repository.findAllByUser(userId)).filter((book) => !book.hidden)
+
+  /** Sign the covers of the books that are about to be drawn. */
+  export const withSignedCovers = (books: readonly Book[]): Promise<BookView[]> => withCovers(books)
+
   /** The reader's own subgenre vocabulary, for the edit form to propose. */
   export const subgenres = async (userId: UserId): Promise<Subgenre[]> =>
     subgenresOf(await repository.findAllByUser(userId))

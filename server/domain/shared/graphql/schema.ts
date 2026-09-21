@@ -68,6 +68,12 @@ import '~/domain/audible/infrastructure/graphql/mutations'
 import '~/domain/kindle/infrastructure/graphql/types'
 import '~/domain/kindle/infrastructure/graphql/mutations'
 
+// Friendship (sharing a library with somebody). After book and series: a
+// friend's shelf borrows their scalars and enums.
+import '~/domain/friendship/infrastructure/graphql/types'
+import '~/domain/friendship/infrastructure/graphql/queries'
+import '~/domain/friendship/infrastructure/graphql/mutations'
+
 // Changelog (application release notes)
 import '~/domain/changelog/infrastructure/graphql/types'
 import '~/domain/changelog/infrastructure/graphql/queries'
