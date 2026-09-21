@@ -154,7 +154,7 @@ struct BookView: View {
                 }
                 .accessibilityIdentifier("book-resume")
             } else {
-                Button("Abandonné, je n'ai pas aimé", systemImage: "hand.thumbsdown") {
+                Button("Abandonné", systemImage: "hand.thumbsdown") {
                     run { await viewModel.setStatus(.dropped) }
                 }
                 .accessibilityIdentifier("book-drop")

@@ -47,10 +47,13 @@ struct BookCover: View {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .strokeBorder(.separator, lineWidth: 0.5)
         )
+        // Overhanging the corner, as the status badges do: pinned on the cover
+        // rather than printed on it.
         .overlay(alignment: .topTrailing) {
             if showsFormatBadge && book.format == .audiobook {
-                AudiobookBadge(size: max(14, width * 0.3))
-                    .padding(width * 0.05)
+                let size = max(16, width * 0.32)
+                AudiobookBadge(size: size)
+                    .offset(x: size * 0.3, y: -size * 0.3)
             }
         }
         .accessibilityHidden(true)
@@ -79,19 +82,18 @@ struct BookCover: View {
     }
 }
 
-/// The pill pinned to a recording's cover: a headphones glyph on a dark disc,
-/// readable over any cover colour.
+/// The pill pinned to a recording's cover: a headphones glyph on a neutral
+/// disc, monochrome so it sits beside a cover of any colour without competing
+/// with it.
 struct AudiobookBadge: View {
     var size: CGFloat = 18
 
     var body: some View {
         Image(systemName: "headphones")
             .font(.system(size: size * 0.52, weight: .bold))
-            .foregroundStyle(.white)
+            .foregroundStyle(Color(.systemBackground))
             .frame(width: size, height: size)
-            .background(Color.orange, in: Circle())
-            .overlay(Circle().strokeBorder(.white.opacity(0.9), lineWidth: 1))
-            .shadow(color: .black.opacity(0.25), radius: 1, y: 0.5)
+            .background(Color.primary.opacity(0.85), in: Circle())
             .accessibilityLabel(Text("Livre audio"))
     }
 }

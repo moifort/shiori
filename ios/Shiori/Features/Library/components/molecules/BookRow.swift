@@ -146,8 +146,16 @@ struct BookRow: View {
             // Where the reader stands, in the corner the eye returns to on
             // every row. A recording says what it is on its cover instead.
             if let statusTag {
-                chip(statusTag.shelfTitle, tint: statusTag.tint)
-                    .font(.caption2)
+                // A dropped book says so by its mark alone: the word would read
+                // as a verdict repeated on every row.
+                if statusTag == .dropped {
+                    ReadingStatusBadge(status: .dropped)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(Text(statusTag.label))
+                } else {
+                    chip(statusTag.shelfTitle, tint: statusTag.tint)
+                        .font(.caption2)
+                }
             }
         }
         .font(.caption)

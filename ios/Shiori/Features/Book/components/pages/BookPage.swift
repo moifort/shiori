@@ -89,8 +89,10 @@ struct BookPage: View {
                 // segment for it.
                 HStack(spacing: 6) {
                     if book.status == .dropped {
-                        Pill(text: book.status.label, systemImage: book.status.symbol)
-                            .foregroundStyle(book.status.tint)
+                        ReadingStatusBadge(status: .dropped)
+                            .scaleEffect(1.2)
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel(Text(book.status.label))
                             .accessibilityIdentifier("book-dropped")
                     }
                     if let durationLabel = book.durationLabel {
