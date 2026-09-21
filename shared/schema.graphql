@@ -781,7 +781,7 @@ A section holds only books the reader owns: the catalogue never adds a row here.
 
 A saga held in two languages makes two sections, one per language. They share a `seriesId` and differ by `language`, so a client keying rows on the saga alone must key on the pair instead.
 
-Sections come most recently modified first, each saga kept whole, and the standalone shelf trails them whatever its books' dates.
+Sections come in three tiers: reading, then to read, then read. A saga sits in the tier of its most active volume, kept whole; standalone books sit on a headless shelf trailing their own status's tier, so more than one section can have no series. Within a tier, the most recently modified saga comes first.
 """
 type LibrarySection {
   """
@@ -799,7 +799,7 @@ type LibrarySection {
   """
   opinion: LibrarySectionOpinion
 
-  """Null on the trailing shelf, which gathers the standalone books."""
+  """Null on a shelf of standalone books."""
   series: SeriesName
   seriesId: SeriesId
 }
@@ -1287,7 +1287,7 @@ type Query {
   """
   The reader whole library, grouped into series sections.
   
-  Filtering by status happens before grouping, so a filter empties a saga section rather than leaving an empty heading behind. Sections come most recently modified first, each saga kept whole, and the standalone shelf trails them.
+  Filtering by status happens before grouping, so a filter empties a saga section rather than leaving an empty heading behind. Sections are tiered by reading status — reading, to read, read — each saga kept whole, and each tier's standalone books trail its sagas.
   """
   library(
     """Keep only books in this status. Omit for the whole library."""

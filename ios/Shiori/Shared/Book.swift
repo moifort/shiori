@@ -250,11 +250,21 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
 /// One heading of the library list: a saga the reader owns volumes of, or the
 /// trailing shelf of standalone books.
 struct LibrarySection: Identifiable, Codable, Sendable {
-    /// The saga and the language together, or a fixed key for the standalone
+    /// The saga and the language together, or the first book of a standalone
     /// shelf. The saga alone is not an identity any more: a saga held in two
     /// languages makes two sections, and SwiftUI would take them for one row
-    /// redrawn twice.
-    var id: String { seriesId.map { "\($0)|\(language?.rawValue ?? "")" } ?? "standalone" }
+    /// redrawn twice. Nor is "standalone": the list is tiered by reading
+    /// status, and each tier trails its sagas with a shelf of its own.
+    var id: String {
+        seriesId.map { "\($0)|\(language?.rawValue ?? "")" } ?? "standalone|\(books.first?.id ?? "")"
+    }
+
+    /// Whether two sections are the same heading — what stitches a section
+    /// cut across two pages back together. Not the id, which a standalone
+    /// shelf takes from its first book.
+    func continues(_ other: LibrarySection) -> Bool {
+        seriesId == other.seriesId && language == other.language
+    }
     let seriesId: String?
     let seriesName: String?
     /// The language its volumes are in. Nil on the standalone shelf, and nil on

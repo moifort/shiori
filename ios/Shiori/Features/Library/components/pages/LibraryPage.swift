@@ -3,9 +3,10 @@ import SwiftUI
 /// The library list. Pure and previewable: it takes what to draw and what to
 /// call, and knows nothing about the network.
 ///
-/// Sections are sagas, most recently touched first, trailed by the shelf of
-/// standalone books. The shelf has no heading: a title over it would name the
-/// one thing those books have in common, and "no series" is not a thing.
+/// Sections are sagas and shelves of standalone books, tiered by reading
+/// status: in progress, then on the pile, then finished. A shelf has no
+/// heading: a title over it would name the one thing those books have in
+/// common, and "no series" is not a thing.
 struct LibraryPage: View {
     let sections: [LibrarySection]
     let isLoading: Bool
@@ -15,7 +16,6 @@ struct LibraryPage: View {
     /// That refresh failed — the leading row becomes a retry.
     var refreshFailed: Bool = false
     let errorMessage: String?
-    @Binding var filter: ReadingStatus?
     /// More rows follow the ones on screen: a sentinel closes the list and
     /// asks for them as it appears.
     var hasMore: Bool = false
@@ -48,32 +48,6 @@ struct LibraryPage: View {
             }
         }
         .navigationTitle("Bibliothèque")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Picker("Filtrer", selection: $filter) {
-                        Text("Tout").tag(ReadingStatus?.none)
-                        ForEach(ReadingStatus.allCases) { status in
-                            Label(status.label, systemImage: status.symbol)
-                                .tag(ReadingStatus?.some(status))
-                        }
-                    }
-                } label: {
-                    Label("Filtrer", systemImage: filter == nil ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
-                }
-                .accessibilityIdentifier("library-filter")
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                // Every way a book gets in — scanned, from a photo, from a
-                // title, typed — behind one entry, on a sheet that lays them out.
-                // Importing a whole library is not adding a book: it is managing
-                // a connected account, and it lives in the settings.
-                Button(action: onAdd) {
-                    Label("Ajouter un livre", systemImage: "plus")
-                }
-                .accessibilityIdentifier("library-add")
-            }
-        }
     }
 
     private var list: some View {
@@ -164,34 +138,22 @@ struct LibraryPage: View {
         }
     }
 
-    @ViewBuilder
     private var emptyState: some View {
-        if let filter {
-            ContentUnavailableView {
-                Label("Rien ici", systemImage: filter.symbol)
-            } description: {
-                Text("Aucun livre au statut « \(filter.label) ».")
-            } actions: {
-                Button("Voir toute la bibliothèque") { self.filter = nil }
-            }
-        } else {
-            ContentUnavailableView {
-                Label("Bibliothèque vide", systemImage: "books.vertical")
-            } description: {
-                Text(
-                    "Scannez la couverture d'un livre, ajoutez-en un à la main, ou importez "
-                        + "votre bibliothèque Audible."
-                )
-            } actions: {
-                Button("Ajouter un livre", action: onAdd)
-                Button("Importer depuis Audible", action: onImportFromAudible)
-            }
+        ContentUnavailableView {
+            Label("Bibliothèque vide", systemImage: "books.vertical")
+        } description: {
+            Text(
+                "Scannez la couverture d'un livre, ajoutez-en un à la main, ou importez "
+                    + "votre bibliothèque Audible."
+            )
+        } actions: {
+            Button("Ajouter un livre", action: onAdd)
+            Button("Importer depuis Audible", action: onImportFromAudible)
         }
     }
 }
 
 #Preview("Avec des livres") {
-    @Previewable @State var filter: ReadingStatus?
     let saga = SeriesMembership(id: "s1", name: "Chronique du tueur de roi", volume: 1, kind: .main)
     let saga2 = SeriesMembership(id: "s1", name: "Chronique du tueur de roi", volume: 2, kind: .main)
 
@@ -216,7 +178,6 @@ struct LibraryPage: View {
             ],
             isLoading: false,
             errorMessage: nil,
-            filter: $filter,
             onRetry: {},
             onAdd: {},
             onImportFromAudible: {},
@@ -226,13 +187,11 @@ struct LibraryPage: View {
 }
 
 #Preview("Vide") {
-    @Previewable @State var filter: ReadingStatus?
     NavigationStack {
         LibraryPage(
             sections: [],
             isLoading: false,
             errorMessage: nil,
-            filter: $filter,
             onRetry: {},
             onAdd: {},
             onImportFromAudible: {},

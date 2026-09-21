@@ -308,11 +308,14 @@ describe('reading the library through the API', () => {
     expect(result.data?.library).toEqual([{ books: [{ title: 'En cours' }] }])
   })
 
-  // The shelf the reader touched last is the one they come back for: a rating
-  // given today lifts its book over one catalogued a minute later.
+  // The shelf the reader touched last is the one they come back for: within a
+  // tier, a rating given last lifts its book over one rated before it.
   test('puts the most recently modified book first on the shelf', async () => {
+    setSystemTime(new Date('2026-09-14T10:00:00.000Z'))
     const first = await addBook('Premier')
-    await addBook('Second')
+    const second = await addBook('Second')
+    await execute(`mutation { rateBook(id: "${second.id}", rating: 4) { id } }`)
+    setSystemTime(new Date('2026-09-14T10:01:00.000Z'))
     await execute(`mutation { rateBook(id: "${first.id}", rating: 5) { id } }`)
 
     const result = await execute('{ library { books { title } } }')

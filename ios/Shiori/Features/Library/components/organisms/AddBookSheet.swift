@@ -12,7 +12,7 @@ enum AddBookSource {
     case manual
 }
 
-/// The sheet behind the library's "add" button, laid out as Vinarium's file
+/// The sheet behind the tab bar's scan button, laid out as Vinarium's file
 /// sheet: the camera and the last photos in one strip, ready to tap — a cover
 /// shot a minute ago is one tap away instead of a trip through the picker —
 /// then the two ways in that need no photo: a title typed as remembered, which

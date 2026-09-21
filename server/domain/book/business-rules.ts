@@ -29,12 +29,16 @@ import type { ObjectPath as ObjectPathValue } from '~/system/object-store/types'
  *  times — and one heading over both hid that. Books with no language recorded
  *  gather in a section of their own, which is honest: unknown is not French.
  *
- *  Sections come in the order the reader last moved a book along: the saga
+ *  Sections come in three tiers, in the order the reader cares about them:
+ *  what is being read, then what waits on the pile, then what is finished. A
+ *  saga sits in the tier of its most active volume — one volume in progress
+ *  lifts it to the top, whole — and a standalone book in its own status's
+ *  tier, on a headless shelf trailing that tier's sagas: the leftovers, which
+ *  must not bury the structure the reader came for. Within a tier the saga
  *  whose volume was most recently started, finished or put back on the pile
- *  sits on top, whole, and the standalone shelf trails the sagas however
- *  recent its books are. Correcting a title or writing a note moves nothing:
- *  the list follows the reading, not the housekeeping. Inside a saga the spine
- *  order holds — a saga is read top to bottom, not by date. */
+ *  comes first. Correcting a title or writing a note moves nothing: the list
+ *  follows the reading, not the housekeeping. Inside a saga the spine order
+ *  holds — a saga is read top to bottom, not by date. */
 export const groupedBySeries = (books: readonly BookView[]): LibrarySection[] => {
   const bySeries = new Map<string, { section: LibrarySection['series']; books: SeriesBook[] }>()
   const standalone: BookView[] = []
@@ -55,19 +59,31 @@ export const groupedBySeries = (books: readonly BookView[]): LibrarySection[] =>
       })
   }
 
-  const sections: LibrarySection[] = [...bySeries.values()]
-    .map(({ section, books: entries }) => ({
-      series: section,
-      books: [...entries].sort(compareEntries).map((entry) => entry.book),
-    }))
-    .sort(compareSections)
+  const sagas: LibrarySection[] = [...bySeries.values()].map(({ section, books: entries }) => ({
+    series: section,
+    books: [...entries].sort(compareEntries).map((entry) => entry.book),
+  }))
 
-  // The standalone shelf trails the sagas: it is the leftovers, and putting it
-  // first would bury the structure the reader came for.
-  return standalone.length > 0
-    ? [...sections, { books: sortedByStatusChange(standalone) }]
-    : sections
+  const sections: LibrarySection[] = []
+  for (const status of statusTiers) {
+    sections.push(...sagas.filter((saga) => tierOf(saga) === status).sort(compareSections))
+    const shelf = sortedByStatusChange(standalone.filter((book) => book.status === status))
+    if (shelf.length === 0) continue
+    // A tier with no saga of its own would leave two headless shelves back to
+    // back, which read as one with a gap in it: they are drawn as one.
+    const previous = sections.at(-1)
+    if (previous && !previous.series) previous.books.push(...shelf)
+    else sections.push({ books: shelf })
+  }
+  return sections
 }
+
+/** The tiers the library is read in, most active first. */
+const statusTiers: readonly ReadingStatus[] = ['reading', 'to-read', 'read']
+
+/** The tier of a saga: that of its most active volume. */
+const tierOf = (section: LibrarySection): ReadingStatus =>
+  statusTiers.find((status) => section.books.some((book) => book.status === status)) ?? 'read'
 
 /** When the book last changed status, for the ordering above. A record from
  *  before the stamp existed answers with the date its status implies — finished

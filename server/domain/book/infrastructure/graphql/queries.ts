@@ -13,9 +13,9 @@ builder.queryFields((t) => ({
     description:
       'The reader whole library, grouped into series sections.\n\n' +
       'Filtering by status happens before grouping, so a filter empties a saga ' +
-      'section rather than leaving an empty heading behind. Sections come most ' +
-      'recently modified first, each saga kept whole, and the standalone shelf ' +
-      'trails them.',
+      'section rather than leaving an empty heading behind. Sections are tiered ' +
+      'by reading status — reading, to read, read — each saga kept whole, and ' +
+      "each tier's standalone books trail its sagas.",
     args: {
       status: t.arg({
         type: ReadingStatusEnum,

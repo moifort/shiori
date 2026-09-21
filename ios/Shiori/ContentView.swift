@@ -1,3 +1,4 @@
+import PhotosUI
 import SwiftUI
 
 enum TabSelection: Int, CaseIterable, Identifiable {
@@ -33,9 +34,17 @@ struct ContentView: View {
     @State private var selectedTab: TabSelection = .home
     /// The last real content tab, restored when the scan cover is dismissed.
     @State private var lastContentTab: TabSelection = .home
-    @State private var showScanner = false
-    /// A shelf the Home tab asked the Library to open on, consumed once applied.
-    @State private var libraryFilterRequest: ReadingStatus?
+    /// The add sheet, behind the tab bar's scan button: the camera, the last
+    /// photos, a title and a record typed by hand, from every tab.
+    @State private var showAddSheet = false
+    /// What the add sheet chose, acted on once it has closed: the scanner and
+    /// the form are presentations of their own and would fight the sheet on
+    /// its way out.
+    @State private var pendingSource: AddBookSource?
+    @State private var scanStart: ScanStart?
+    @State private var showPhotoPicker = false
+    @State private var pickedPhoto: PhotosPickerItem?
+    @State private var showManualAdd = false
     /// A page shared into Shiori from elsewhere on the phone, picked up when the
     /// app comes to the front. Nil the rest of the time.
     @State private var sharedStart: ScanView.Start?
@@ -55,10 +64,39 @@ struct ContentView: View {
         return .search
     }
 
+    /// The scanner's opening step, boxed so a cover can be keyed on it.
+    private struct ScanStart: Identifiable {
+        let id = UUID()
+        let start: ScanView.Start
+    }
+
     var body: some View {
         tabs
-            .fullScreenCover(isPresented: $showScanner) {
-                ScanView(onDismiss: { showScanner = false })
+            .sheet(isPresented: $showAddSheet, onDismiss: actOnPendingSource) {
+                AddBookSheet(
+                    onCamera: { choose(.camera) },
+                    onAllPhotos: { choose(.library) },
+                    onPickedPhoto: { choose(.photo($0)) },
+                    onTitle: { choose(.title($0)) },
+                    onManual: { choose(.manual) }
+                )
+            }
+            .fullScreenCover(item: $scanStart) { boxed in
+                ScanView(start: boxed.start, onDismiss: { scanStart = nil })
+            }
+            .photosPicker(isPresented: $showPhotoPicker, selection: $pickedPhoto, matching: .images)
+            .onChange(of: pickedPhoto) { _, item in
+                guard let item else { return }
+                pickedPhoto = nil
+                Task {
+                    guard let data = try? await item.loadTransferable(type: Data.self) else { return }
+                    scanStart = ScanStart(start: .photo(data))
+                }
+            }
+            // Every list redraws itself on the data-change notice the mutation
+            // posts, so the form only has to close.
+            .sheet(isPresented: $showManualAdd) {
+                ManualAddView(onAdded: { _ in showManualAdd = false })
             }
             // A page shared from Safari or a bookshop app: the extension left it
             // in the container both halves see, and this is where it is picked
@@ -79,11 +117,12 @@ struct ContentView: View {
                 if phase == .active { takeSharedIntake() }
             }
             .onChange(of: selectedTab) { _, tab in
-                // The scan tab is a button, not a destination: it opens the
-                // camera and hands the selection straight back, so the tab bar
+                // The scan tab is a button, not a destination: it opens the add
+                // sheet — the camera, and the photos the camera alone would not
+                // reach — and hands the selection straight back, so the tab bar
                 // never shows a selected "Scanner" with nothing behind it.
                 if tab == .scan {
-                    showScanner = true
+                    showAddSheet = true
                     selectedTab = lastContentTab
                 } else {
                     lastContentTab = tab
@@ -95,7 +134,7 @@ struct ContentView: View {
     /// shared image goes through the scan, a page through its link, a selection
     /// through the title lookup. Nothing to take is the ordinary case.
     private func takeSharedIntake() {
-        guard sharedStart == nil, !showScanner, let taken = SharedIntake.take() else { return }
+        guard sharedStart == nil, scanStart == nil, let taken = SharedIntake.take() else { return }
         if let image = taken.image {
             sharedStart = .photo(image)
         } else if let url = taken.intake.url, !url.isEmpty {
@@ -111,12 +150,10 @@ struct ContentView: View {
         TabView(selection: $selectedTab) {
             Tab(TabSelection.home.label, systemImage: TabSelection.home.symbol, value: .home) {
                 HomeView(
-                    onShowReading: {
-                        libraryFilterRequest = .reading
-                        selectedTab = .library
-                    },
+                    // Books in progress lead the library, so the tab opens on them.
+                    onShowReading: { selectedTab = .library },
                     onShowSeries: { selectedTab = .series },
-                    onScan: { showScanner = true }
+                    onScan: { showAddSheet = true }
                 )
             }
             Tab(
@@ -124,7 +161,7 @@ struct ContentView: View {
                 systemImage: TabSelection.library.symbol,
                 value: .library
             ) {
-                LibraryView(filterRequest: $libraryFilterRequest)
+                LibraryView(onAdd: { showAddSheet = true })
             }
             Tab(TabSelection.series.label, systemImage: TabSelection.series.symbol, value: .series) {
                 SeriesListView()
@@ -139,6 +176,24 @@ struct ContentView: View {
                 // appears. The cover owns the camera.
                 Color.clear
             }
+        }
+    }
+
+    private func choose(_ source: AddBookSource) {
+        pendingSource = source
+        showAddSheet = false
+    }
+
+    /// The sheet is gone: open what it chose.
+    private func actOnPendingSource() {
+        guard let source = pendingSource else { return }
+        pendingSource = nil
+        switch source {
+        case .camera: scanStart = ScanStart(start: .camera)
+        case let .photo(data): scanStart = ScanStart(start: .photo(data))
+        case .library: showPhotoPicker = true
+        case let .title(title): scanStart = ScanStart(start: .title(title))
+        case .manual: showManualAdd = true
         }
     }
 }

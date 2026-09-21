@@ -16,15 +16,15 @@ struct ReadingStatusBadge: View {
 
     var body: some View {
         Image(systemName: status.symbol)
-            .font(.system(size: 9, weight: .bold))
+            .font(.system(size: 7, weight: .bold))
             .foregroundStyle(.white)
             // Wider than the glyph needs, so the symbol sits in the disc with
             // air around it rather than filling it to the rim.
-            .frame(width: 26, height: 26)
+            .frame(width: 18, height: 18)
             .background(tint, in: Circle())
             // A ring in the row's own background lifts the badge off whatever
             // colour the cover happens to be under it.
-            .overlay(Circle().strokeBorder(Color(.secondarySystemGroupedBackground), lineWidth: 2))
+            .overlay(Circle().strokeBorder(Color(.secondarySystemGroupedBackground), lineWidth: 1.5))
             .accessibilityHidden(true)
     }
 }

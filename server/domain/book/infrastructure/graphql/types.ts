@@ -181,13 +181,15 @@ export const LibrarySectionType = builder.objectRef<LibrarySection>('LibrarySect
     'A saga held in two languages makes two sections, one per language. They ' +
     'share a `seriesId` and differ by `language`, so a client keying rows on the ' +
     'saga alone must key on the pair instead.\n\n' +
-    'Sections come most recently modified first, each saga kept whole, and the ' +
-    "standalone shelf trails them whatever its books' dates.",
+    'Sections come in three tiers: reading, then to read, then read. A saga sits ' +
+    'in the tier of its most active volume, kept whole; standalone books sit on a ' +
+    "headless shelf trailing their own status's tier, so more than one section " +
+    'can have no series. Within a tier, the most recently modified saga comes first.',
   fields: (t) => ({
     series: t.field({
       type: 'SeriesName',
       nullable: true,
-      description: 'Null on the trailing shelf, which gathers the standalone books.',
+      description: 'Null on a shelf of standalone books.',
       resolve: (section) => section.series?.name ?? null,
     }),
     seriesId: t.field({

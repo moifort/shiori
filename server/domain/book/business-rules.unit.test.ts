@@ -151,6 +151,61 @@ describe('groupedBySeries', () => {
   })
 })
 
+describe('groupedBySeries, by reading status', () => {
+  const names = (sections: { series?: { name: string } }[]) =>
+    sections.map((section) => (section.series ? String(section.series.name) : 'shelf'))
+
+  // What is being read comes first, then the pile, then what is finished,
+  // however recently a finished saga moved.
+  test('orders the sagas in progress, then on the pile, then finished', () => {
+    const sections = groupedBySeries([
+      book({ title: 'F1', series: { name: 'Finished' }, status: 'read', statusChangedAt: LATER }),
+      book({ title: 'P1', series: { name: 'Pile' }, status: 'to-read', statusChangedAt: NOW }),
+      book({
+        title: 'R1',
+        series: { name: 'Reading' },
+        status: 'reading',
+        statusChangedAt: EARLIER,
+      }),
+    ])
+    expect(names(sections)).toEqual(['Reading', 'Pile', 'Finished'])
+  })
+
+  // One volume in progress is enough: the saga is what the reader is in.
+  test('ranks a saga by its most active volume', () => {
+    const sections = groupedBySeries([
+      book({ title: 'P1', series: { name: 'Pile', volume: 1 }, status: 'to-read' }),
+      book({ title: 'M1', series: { name: 'Mixed', volume: 1 }, status: 'read' }),
+      book({ title: 'M2', series: { name: 'Mixed', volume: 2 }, status: 'reading' }),
+    ])
+    expect(names(sections)).toEqual(['Mixed', 'Pile'])
+  })
+
+  test('trails each tier with its own standalone books', () => {
+    const sections = groupedBySeries([
+      book({ title: 'Done alone', status: 'read' }),
+      book({ title: 'Reading alone', status: 'reading' }),
+      book({ title: 'R1', series: { name: 'Reading' }, status: 'reading' }),
+      book({ title: 'F1', series: { name: 'Finished' }, status: 'read' }),
+    ])
+    expect(names(sections)).toEqual(['Reading', 'shelf', 'Finished', 'shelf'])
+    expect(sections[1].books.map((entry) => String(entry.title))).toEqual(['Reading alone'])
+  })
+
+  // Two headless shelves back to back read as one shelf with a gap in it.
+  test('draws the shelves of two tiers as one when no saga stands between them', () => {
+    const sections = groupedBySeries([
+      book({ title: 'Pile alone', status: 'to-read' }),
+      book({ title: 'Reading alone', status: 'reading' }),
+    ])
+    expect(sections).toHaveLength(1)
+    expect(sections[0].books.map((entry) => String(entry.title))).toEqual([
+      'Reading alone',
+      'Pile alone',
+    ])
+  })
+})
+
 // A record from before the stamp existed still says when its status was set:
 // the reading dates are written by the very move the stamp would have recorded.
 describe('statusChangedAtOf', () => {

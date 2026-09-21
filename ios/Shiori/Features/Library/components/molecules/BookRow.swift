@@ -41,7 +41,7 @@ struct BookRow: View {
             BookCover(book: cover)
                 .overlay(alignment: .topTrailing) {
                     ReadingStatusBadge(status: status)
-                        .offset(x: 6, y: -4)
+                        .offset(x: 5, y: -4)
                 }
 
             VStack(alignment: .leading, spacing: 3) {

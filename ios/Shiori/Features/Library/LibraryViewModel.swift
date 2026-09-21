@@ -1,7 +1,6 @@
 import Foundation
 
-/// Owns the library list: what is on screen, which shelf is filtered, and the
-/// one in-flight load. Kept on the main actor because every property it exposes
+/// Owns the library list: what is on screen and the one in-flight load. Kept on the main actor because every property it exposes
 /// is read by a view.
 ///
 /// It opens on the list it closed on: its `SnapshotCache` hands back the last
@@ -46,22 +45,11 @@ final class LibraryViewModel {
     /// Well below the page size, otherwise the next page would load as soon as
     /// the first one is displayed.
     private let prefetchThreshold = 8
-    /// Stale-result token: a page asked for before a filter change must not be
+    /// Stale-result token: a page asked for before a reload must not be
     /// appended to the list that replaced it.
     private var generation = 0
 
-    /// `nil` shows the whole library. The filter is applied server-side, before
-    /// grouping, so a filtered saga loses its heading rather than showing an
-    /// empty one.
-    var filter: ReadingStatus? {
-        didSet { if filter != oldValue { Task { await load() } } }
-    }
-
     var isEmpty: Bool { sections.isEmpty && !isLoading && errorMessage == nil }
-
-    /// How many books are on screen, across every section — what the empty and
-    /// filtered states phrase themselves against.
-    var bookCount: Int { sections.reduce(0) { $0 + $1.books.count } }
 
     func load() async {
         generation += 1
@@ -71,18 +59,14 @@ final class LibraryViewModel {
         isLoadingMore = false
         loadMoreFailed = false
         do {
-            let page = try await LibraryAPI.libraryPage(status: filter, limit: pageSize, after: nil)
+            let page = try await LibraryAPI.libraryPage(limit: pageSize, after: nil)
             guard requested == generation else { return }
             let fetched = page.sections
             sections = fetched
             hasMore = page.hasMore
             loaded = true
-            // Only the whole library is what the next launch opens on: a
-            // filtered shelf is a state the reader asked for this once.
-            if filter == nil {
-                let cache = cache
-                Task.detached { cache.write(fetched) }
-            }
+            let cache = cache
+            Task.detached { cache.write(fetched) }
         } catch {
             // The list keeps whatever it was showing: replacing a good library
             // with an empty one because a refresh failed reads as data loss.
@@ -100,11 +84,11 @@ final class LibraryViewModel {
         isLoadingMore = true
         loadMoreFailed = false
         do {
-            let page = try await LibraryAPI.libraryPage(status: filter, limit: pageSize, after: last.id)
+            let page = try await LibraryAPI.libraryPage(limit: pageSize, after: last.id)
             guard requested == generation else { return }
             var stitched = sections
             for section in page.sections {
-                if let index = stitched.indices.last, stitched[index].id == section.id {
+                if let index = stitched.indices.last, stitched[index].continues(section) {
                     stitched[index] = LibrarySection(
                         seriesId: section.seriesId,
                         seriesName: section.seriesName,
@@ -159,10 +143,11 @@ final class LibraryViewModel {
     }
 
     /// Applies a book the detail screen just changed, without refetching the
-    /// whole library. A status change can move a book out of the current filter,
-    /// so that case falls back to a reload rather than leaving a stale row.
+    /// whole library. A status change moves the book to another tier, so that
+    /// case falls back to a reload rather than leaving a row out of place.
     func apply(_ book: Book) async {
-        if let filter, book.status != filter {
+        let current = sections.lazy.flatMap(\.books).first { $0.id == book.id }
+        if current?.status != book.status {
             await load()
             return
         }

@@ -21,12 +21,16 @@ the release tag is pushed.
   the same second chance once. The ISBN and page count a scan records are now those of the
   edition photographed, named by its publisher and language, rather than of any edition of
   the book: the Folio pocket no longer takes the cover of the Québec edition.
-- The library is ordered by the last change of reading status: the saga whose volume was
-  just started, finished or put back on the pile sits on top, whole, and the shelf of books
-  outside any series trails the sagas without a heading of its own. Correcting a book or
-  writing a note moves nothing. A saga heading now carries the heart or the stars
-  the reader gave the saga, on the right, and every row keeps its own in the same place:
-  the heart when the book is a favourite, the stars otherwise, never both.
+- The library is ordered by reading status: the books in progress first, then those on the
+  pile, then those finished. A saga sits, whole, with its most active volume, and the books
+  outside any series trail each group's sagas without a heading of their own. Within a
+  group, the saga whose volume was just started, finished or put back on the pile comes
+  first; correcting a book or writing a note moves nothing. The status filter is gone, and
+  the camera button in the tab bar now opens the add sheet — scan, recent photos, a title
+  or a record typed by hand — in place of the library's "+" button. A saga heading now
+  carries the heart or the stars the reader gave the saga, on the right, and every row keeps
+  its own in the same place: the heart when the book is a favourite, the stars otherwise,
+  never both.
 - The book sheet folds its publication facts into the main section, names the volume beside
   the cover, shows the format as a glyph in the corner and opens a genre sheet from its genre
   row. A summary longer than five hundred words folds behind "Lire la suite". The list of
