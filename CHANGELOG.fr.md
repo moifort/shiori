@@ -38,6 +38,11 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   de Vinarium : l’appareil photo et les dernières photos sur une même bande, un titre à taper de
   mémoire — l’IA retrouve le livre et propose la même fiche qu’un scan, pour un scan du quota —
   et le formulaire à remplir à la main.
+- Shiori apparaît dans la feuille de partage de l’iPhone. La page d’un livre partagée depuis
+  Safari ou l’application Amazon, un titre sélectionné, la photo d’une couverture : ce qui est
+  envoyé arrive dans Shiori, et à la prochaine ouverture la fiche attend d’être vérifiée. Une
+  page partagée est lue pour son titre, débarrassé du nom de la boutique et du format ; une
+  page qui ne mène nulle part ne coûte rien.
 - Les réglages, derrière une roue sur l’accueil : le profil avec déconnexion et suppression du
   compte, l’abonnement, les nouveautés, un formulaire pour nous écrire, et la connexion
   Audible, qui quitte le menu des imports.

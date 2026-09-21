@@ -11,10 +11,21 @@ struct ScanView: View {
     /// Where the pass begins: on the camera, on a photo already taken, or on a
     /// title typed as remembered. The camera is what the tab bar opens; the
     /// other two come from the library's add sheet.
-    enum Start {
+    enum Start: Identifiable {
         case camera
         case photo(Data)
         case title(String)
+        /// A page shared from Safari or a bookshop app.
+        case link(String)
+
+        var id: String {
+            switch self {
+            case .camera: "camera"
+            case let .photo(data): "photo-\(data.count)"
+            case let .title(title): "title-\(title)"
+            case let .link(link): "link-\(link)"
+            }
+        }
     }
 
     var start: Start = .camera
@@ -57,6 +68,7 @@ struct ScanView: View {
             case .camera: break
             case let .photo(data): await scan(imageData: data)
             case let .title(title): await viewModel.lookUp(title: title)
+            case let .link(link): await viewModel.lookUp(link: link)
             }
         }
     }

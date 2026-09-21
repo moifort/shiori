@@ -33,6 +33,8 @@ final class ScanViewModel {
     private(set) var failure: String?
     /// The title being looked up, kept so a failed lookup can be run again.
     private(set) var typedTitle: String?
+    /// The shared page being looked up, kept for the same reason.
+    private(set) var sharedLink: String?
     var error: String?
     var paywallShown = false
     private(set) var isSaving = false
@@ -44,6 +46,37 @@ final class ScanViewModel {
         do {
             let scanned = try await ScanAPI.scan(jpeg: jpeg)
             guard scanned.recognized, let title = scanned.title, !title.isEmpty else {
+                track(.scanNoResult)
+                step = .noResult
+                return
+            }
+            track(.scanSucceeded)
+            draft = scanned.asDraft
+            seriesLabel = scanned.series.map { series in
+                series.volume.map { "\(series.name) · Tome \($0)" } ?? series.name
+            }
+            step = .review
+        } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {
+            track(.scanBlockedByQuota)
+            step = .camera
+            paywallShown = true
+        } catch {
+            track(.scanFailed)
+            failure = reportError(error)
+            step = .failed
+        }
+    }
+
+    /// Looks a book up from a page the reader shared from Safari or a bookshop.
+    func lookUp(link: String) async {
+        capturedCover = nil
+        typedTitle = nil
+        sharedLink = link
+        step = .analyzing
+        track(.scanStarted)
+        do {
+            let scanned = try await ScanAPI.lookUp(link: link)
+            guard scanned.recognized, let found = scanned.title, !found.isEmpty else {
                 track(.scanNoResult)
                 step = .noResult
                 return
@@ -105,6 +138,8 @@ final class ScanViewModel {
             await capture(jpeg)
         } else if let typedTitle {
             await lookUp(title: typedTitle)
+        } else if let sharedLink {
+            await lookUp(link: sharedLink)
         } else {
             step = .camera
         }
@@ -128,6 +163,7 @@ final class ScanViewModel {
     func retake() {
         capturedCover = nil
         typedTitle = nil
+        sharedLink = nil
         failure = nil
         draft = nil
         seriesLabel = nil

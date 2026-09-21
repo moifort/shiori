@@ -38,7 +38,9 @@ final class AuthSession {
 
     func signOut() throws {
         try Auth.auth().signOut()
-        // Whoever signs in next must not open on this account's library.
+        // Whoever signs in next must not open on this account's library, nor be
+        // handed the page the last reader shared.
         SnapshotCaches.clear()
+        SharedIntake.clear()
     }
 }

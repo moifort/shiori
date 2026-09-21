@@ -32,6 +32,10 @@ struct ContentView: View {
     @State private var showScanner = false
     /// A shelf the Home tab asked the Library to open on, consumed once applied.
     @State private var libraryFilterRequest: ReadingStatus?
+    /// A page shared into Shiori from elsewhere on the phone, picked up when the
+    /// app comes to the front. Nil the rest of the time.
+    @State private var sharedStart: ScanView.Start?
+    @Environment(\.scenePhase) private var scenePhase
 
     /// The trailing "Scanner" entry must stay detached from the content tabs.
     /// iOS 26 separates the `.search` role; iOS 27 folded `.search` back into the
@@ -52,6 +56,18 @@ struct ContentView: View {
             .fullScreenCover(isPresented: $showScanner) {
                 ScanView(onDismiss: { showScanner = false })
             }
+            // A page shared from Safari or a bookshop app: the extension left it
+            // in the container both halves see, and this is where it is picked
+            // up. On every return to the front, because the extension cannot
+            // bring the app forward itself — the reader shares, then opens
+            // Shiori, and the book is waiting for them.
+            .fullScreenCover(item: $sharedStart) { start in
+                ScanView(start: start, onDismiss: { sharedStart = nil })
+            }
+            .task { takeSharedIntake() }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { takeSharedIntake() }
+            }
             .onChange(of: selectedTab) { _, tab in
                 // The scan tab is a button, not a destination: it opens the
                 // camera and hands the selection straight back, so the tab bar
@@ -63,6 +79,22 @@ struct ContentView: View {
                     lastContentTab = tab
                 }
             }
+    }
+
+    /// Whatever the share extension left, turned into the flow that suits it: a
+    /// shared image goes through the scan, a page through its link, a selection
+    /// through the title lookup. Nothing to take is the ordinary case.
+    private func takeSharedIntake() {
+        guard sharedStart == nil, !showScanner, let taken = SharedIntake.take() else { return }
+        if let image = taken.image {
+            sharedStart = .photo(image)
+        } else if let url = taken.intake.url, !url.isEmpty {
+            sharedStart = .link(url)
+        } else if let text = taken.intake.text?.trimmingCharacters(in: .whitespacesAndNewlines),
+            !text.isEmpty
+        {
+            sharedStart = .title(text)
+        }
     }
 
     private var tabs: some View {

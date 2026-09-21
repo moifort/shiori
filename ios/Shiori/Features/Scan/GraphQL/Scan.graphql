@@ -6,6 +6,14 @@ mutation ScanBook($imageBase64: String!) {
   }
 }
 
+# Looks a book up from a page the reader shared: the page is fetched for its
+# title, and the rest is the lookup below.
+mutation ScanLink($url: String!) {
+  scanLink(url: $url) {
+    ...ScannedRecord
+  }
+}
+
 # Looks a book up from a title the reader typed, as remembered: the same
 # proposal as a scan, without a cover to read.
 mutation LookUpTitle($title: BookTitle!) {

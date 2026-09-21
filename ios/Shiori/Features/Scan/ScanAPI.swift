@@ -62,6 +62,17 @@ enum ScanAPI {
         return ScannedBook(fields: data.scanBook.fragments.scannedRecord)
     }
 
+    /// The same proposal from a page the reader shared. A page that leads
+    /// nowhere comes back unrecognized and costs nothing.
+    static func lookUp(link: String) async throws -> ScannedBook {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.ScanLinkMutation(url: link),
+            requestTimeout: requestTimeout
+        )
+        return ScannedBook(fields: data.scanLink.fragments.scannedRecord)
+    }
+
     /// The same proposal from a title typed as remembered. Always spends one
     /// scan: there is no cover to have cached.
     static func lookUp(title: String) async throws -> ScannedBook {

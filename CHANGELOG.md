@@ -43,6 +43,11 @@ the release tag is pushed.
   and the last photos in one strip, a title to type as remembered — the AI looks the book up
   and proposes the same record a scan would, for one scan of the allowance — and the form
   to fill by hand.
+- Shiori appears in the iPhone share sheet. A book's page shared from Safari or the Amazon
+  app, a selected title, a photo of a cover — whatever is sent lands in Shiori, and the next
+  time it is opened the record is waiting to be reviewed. A shared page is fetched for its
+  title, the shop's own name and the format stripped off it; a page that leads nowhere costs
+  nothing.
 - The settings, behind a gear on the dashboard: the profile with sign-out and account
   deletion, the subscription, the release notes, a form to write to us, and the Audible
   connection, which leaves the imports menu.

@@ -102,7 +102,8 @@ describe('importing from an Amazon data export', () => {
     expect(again.errors).toBeUndefined()
     expect(again.data?.importKindleBooks).toEqual([])
     const library = await execute('{ library { books { title } } }')
-    expect((library.data?.library as { books: unknown[] }[])[0].books).toHaveLength(2)
+    const sections = library.data?.library as { books: unknown[] }[]
+    expect(sections[0]?.books).toHaveLength(2)
   })
 
   // The dashboard counts what the library holds, so an import of a hundred

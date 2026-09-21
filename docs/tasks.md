@@ -85,13 +85,20 @@ schema, a domain command, or several screens at once; **large** brings in a new 
 - [x] **Pre-cached screens render their data immediately** with a loader at the top while the
       fresh data loads, as in Vinarium. A persisted Apollo cache and a cache-then-network
       policy on every screen query.
-- [ ] **Share sheet import.** Register Shiori as a share target so that a page shared from
+- [x] **Share sheet import.** Register Shiori as a share target so that a page shared from
       Safari or the Amazon app on iPhone offers the Shiori icon. Decided: the extension
       accepts all three payloads — the page title or selected text, which goes through the
       title lookup already built; a URL, read server-side to pull the title and the ISBN off
       the page; and a shared image, which goes through the scan. Needs an app extension
       target, an app group so the extension and the app share the session, and a
       site-by-site URL reader that will break whenever Amazon redraws its page.
+      Built: a `ShioriShare` app-extension target writes what was shared into the
+      `group.com.polyforms.shiori.app` container, and the app picks it up on every return to
+      the front. The extension carries no session of its own. The page reader is not
+      site-by-site: only the `<title>` is read and the shop's own name stripped off it, which
+      survives a redesign. **Apple Developer portal work is outstanding** — an App ID for
+      `com.polyforms.shiori.app.share`, the App Groups capability on both App IDs, and a
+      "Shiori Share App Store" provisioning profile.
 - [x] **Share a profile with friends.** A new screen lists the reader's friends; opening one
       shows their books in progress and series in progress, their favourites, and their pile.
       Decided: friendship is symmetric — accepting an invitation opens both libraries at once,
