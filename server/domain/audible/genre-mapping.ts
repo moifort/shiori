@@ -9,7 +9,7 @@ import type { Genre, Subgenre as SubgenreValue } from '~/domain/book/types'
  *  Every shelf says one or the other. There is no third case and no `undefined`:
  *  a shelf nobody decided about would go missing in silence, and the union is
  *  what forces the decision to be written down. */
-type Shelf = { genre: Genre } | { subgenre: string }
+type Shelf = { genre: Genre; generic?: true } | { subgenre: string }
 
 /** What each of Audible's shelves becomes here.
  *
@@ -29,9 +29,12 @@ type Shelf = { genre: Genre } | { subgenre: string }
  *  - **Audible's shelf wins over the subject.** `romance/fantasy` is romance and
  *    `romance/science-fiction` is romance: that is the rack the reader bought
  *    from, and it is how they will look for it again.
- *  - **`science-fiction-fantasy` is genuinely ambiguous.** It is a joint rack, so
- *    it only answers when no rung below it does — and then it answers
- *    `science-fiction`, the broader of the two.
+ *  - **A generic rack only answers when nothing else does.** Amazon files half its
+ *    catalogue under "Littérature, romans et fiction" beside the real shelf, and
+ *    the joint "Science-Fiction et fantasy" rack is genuinely ambiguous. Those
+ *    are marked `generic`: Fondation and Le Dernier vœu both sit on one, and
+ *    neither is literary fiction. When a generic rack is all there is, the joint
+ *    one answers `science-fiction`, the broader of the two.
  *
  *  The subgenre labels are written here rather than taken from Audible's own
  *  shelf name, for the same reason the ids are matched and the names are not: the
@@ -42,13 +45,13 @@ type Shelf = { genre: Genre } | { subgenre: string }
 const SHELF: Record<AudibleGenre, Shelf> = {
   'science-fiction': { genre: 'science-fiction' },
   fantasy: { genre: 'fantasy' },
-  'science-fiction-fantasy': { genre: 'science-fiction' },
+  'science-fiction-fantasy': { genre: 'science-fiction', generic: true },
   thriller: { genre: 'thriller' },
   mystery: { genre: 'crime' },
   horror: { genre: 'horror' },
   romance: { genre: 'romance' },
   'historical-fiction': { genre: 'historical-fiction' },
-  'literary-fiction': { genre: 'literary-fiction' },
+  'literary-fiction': { genre: 'literary-fiction', generic: true },
   biography: { genre: 'biography' },
   history: { genre: 'history' },
   business: { genre: 'business' },
@@ -108,23 +111,23 @@ const SHELF: Record<AudibleGenre, Shelf> = {
   // sea adventure is an adventure and a play is a drama, whatever aisle Audible
   // files them under.
   'literary-fiction/action-adventure': { genre: 'adventure' },
-  'literary-fiction/classics': { genre: 'literary-fiction' },
+  'literary-fiction/classics': { genre: 'literary-fiction', generic: true },
   'literary-fiction/coming-of-age': { genre: 'literary-fiction' },
-  'literary-fiction/contemporary': { genre: 'literary-fiction' },
+  'literary-fiction/contemporary': { genre: 'literary-fiction', generic: true },
   'literary-fiction/drama': { genre: 'drama' },
   'literary-fiction/family-life': { genre: 'literary-fiction' },
   'literary-fiction/historical': { genre: 'historical-fiction' },
   'literary-fiction/sagas': { genre: 'literary-fiction' },
   'literary-fiction/sea-adventures': { genre: 'adventure' },
-  'literary-fiction/world-literature': { genre: 'literary-fiction' },
+  'literary-fiction/world-literature': { genre: 'literary-fiction', generic: true },
 
   'biography/entertainment': { genre: 'biography' },
   'history/europe': { genre: 'history' },
 
   'children/action-adventure': { genre: 'adventure' },
-  'young-adult/literary-fiction': { genre: 'literary-fiction' },
+  'young-adult/literary-fiction': { genre: 'literary-fiction', generic: true },
   'young-adult/romance': { genre: 'romance' },
-  'young-adult/science-fiction-fantasy': { genre: 'science-fiction' },
+  'young-adult/science-fiction-fantasy': { genre: 'science-fiction', generic: true },
   'young-adult/thriller': { genre: 'thriller' },
 }
 
@@ -145,37 +148,55 @@ const SHELF_BY_CATEGORY_ID: ReadonlyMap<string, Shelf> = new Map(
   ),
 )
 
-/** Every shelf of a title we recognize, leaf first within each of Audible's
- *  category ladders.
+/** The shelves we recognize on each of the title's category ladders, leaf first
+ *  within a ladder, ladders in the order Amazon returns them — the first being
+ *  the title's own aisle.
  *
  *  Leaf first is what lets the rung below a joint rack decide: "Science-Fiction
  *  et Fantasy > Fantasy > Épique" has to answer fantasy, and only the rungs below
- *  the joint rack can say so. Ladders come in the order Amazon returns them, the
- *  first being the title's own aisle.
+ *  the joint rack can say so.
  *
  *  Empty for every marketplace outside `fr` and `com`, whose ids are unknown. */
-const shelvesOf = (item: AudibleItem): Shelf[] => {
-  const found: Shelf[] = []
-  for (const ladder of item.categories ?? []) {
-    for (let rung = ladder.categories.length - 1; rung >= 0; rung -= 1) {
-      const shelf = SHELF_BY_CATEGORY_ID.get(ladder.categories[rung].id)
-      if (shelf) found.push(shelf)
-    }
-  }
-  return found
+const laddersOf = (item: AudibleItem): Shelf[][] =>
+  (item.categories ?? []).map((ladder) =>
+    ladder.categories.toReversed().flatMap((category) => {
+      const shelf = SHELF_BY_CATEGORY_ID.get(category.id)
+      return shelf ? [shelf] : []
+    }),
+  )
+
+/** What one ladder says the book is: its most precise genre, a specific rack
+ *  before a generic one wherever it sits on the ladder. */
+const voteOf = (ladder: readonly Shelf[]): { genre: Genre; generic: boolean } | undefined => {
+  const genres = ladder.flatMap((shelf) => ('genre' in shelf ? [shelf] : []))
+  const chosen = genres.find((shelf) => !shelf.generic) ?? genres[0]
+  return chosen && { genre: chosen.genre, generic: chosen.generic === true }
 }
 
 /** The genre an Audible title lands in, or nothing.
+ *
+ *  Every ladder votes, and the genre most of them name wins. Taking the first
+ *  ladder instead let the catch-all "Littérature, romans et fiction" decide for
+ *  whatever Amazon happened to list first. Generic racks vote only when no
+ *  ladder names anything more precise; a tie goes to the earlier ladder.
  *
  *  Nothing when no shelf is recognized, and nothing when every shelf it sits on
  *  is an audience or a theme. The book is then catalogued without a genre and the
  *  reader picks one on the book screen, which is what a book typed in by hand
  *  does too — but `subgenresFrom` has still kept what those shelves said. */
 export const genreFrom = (item: AudibleItem): Genre | undefined => {
-  for (const shelf of shelvesOf(item)) {
-    if ('genre' in shelf) return shelf.genre
+  const votes = laddersOf(item).flatMap((ladder) => voteOf(ladder) ?? [])
+  const specific = votes.filter((vote) => !vote.generic)
+  const counted = specific.length > 0 ? specific : votes
+  const tally = new Map<Genre, number>()
+  for (const { genre } of counted) tally.set(genre, (tally.get(genre) ?? 0) + 1)
+  // A Map keeps insertion order and only a strictly greater count replaces the
+  // leader, so a tie stays with the earlier ladder.
+  let winner: Genre | undefined
+  for (const [genre, count] of tally) {
+    if (winner === undefined || count > (tally.get(winner) ?? 0)) winner = genre
   }
-  return undefined
+  return winner
 }
 
 /** What the title's shelves say that no genre can hold.
@@ -190,6 +211,8 @@ export const genreFrom = (item: AudibleItem): Genre | undefined => {
  *  at `MAX_SUBGENRES`, in the order the ladders gave them, since the first is the
  *  only one the library list shows. */
 export const subgenresFrom = (item: AudibleItem): SubgenreValue[] => {
-  const labels = shelvesOf(item).flatMap((shelf) => ('subgenre' in shelf ? [shelf.subgenre] : []))
+  const labels = laddersOf(item)
+    .flat()
+    .flatMap((shelf) => ('subgenre' in shelf ? [shelf.subgenre] : []))
   return [...new Set(labels)].slice(0, MAX_SUBGENRES).map(Subgenre)
 }

@@ -56,6 +56,46 @@ describe('reading the shelf an Audible title sits on', () => {
   })
 })
 
+describe('a title on several ladders', () => {
+  // Amazon lists the catch-all literary rack first for half its catalogue, and
+  // taking the first ladder filed Le problème à trois corps as literary fiction.
+  test('lets a specific rack outvote a generic one listed before it', () => {
+    const item = shelvedIn(
+      ladderOf(['literary-fiction']),
+      ladderOf(['science-fiction-fantasy', 'science-fiction', 'science-fiction/military']),
+    )
+
+    expect(genreFrom(item)).toBe('science-fiction')
+  })
+
+  test('gives the genre most ladders name', () => {
+    const item = shelvedIn(
+      ladderOf(['thriller']),
+      ladderOf(['science-fiction-fantasy', 'fantasy', 'fantasy/epic']),
+      ladderOf(['science-fiction-fantasy', 'fantasy', 'fantasy/dragons']),
+    )
+
+    expect(genreFrom(item)).toBe('fantasy')
+  })
+
+  // Dune sits on a science-fiction ladder and an epic fantasy one, science
+  // fiction first.
+  test('breaks a tie in favour of the earlier ladder', () => {
+    const item = shelvedIn(
+      ladderOf(['science-fiction-fantasy', 'science-fiction']),
+      ladderOf(['science-fiction-fantasy', 'fantasy', 'fantasy/epic']),
+    )
+
+    expect(genreFrom(item)).toBe('science-fiction')
+  })
+
+  test('still answers from a generic rack when it is all there is', () => {
+    expect(genreFrom(shelvedIn(ladderOf(['literary-fiction', 'literary-fiction/classics'])))).toBe(
+      'literary-fiction',
+    )
+  })
+})
+
 describe('a shelf that is not a genre', () => {
   // `GENRES` says so outright: an audience is not a genre. But "Jeunesse" is
   // exactly what a subgenre is for — the scan names it as one of its own
