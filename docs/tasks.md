@@ -51,8 +51,12 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       applied to every book of that series.** A fan-out write in the book command.
 - [x] **Book screen, remove the "in the same series" section**, back end to front end. That
       list belongs to the series domain and must come from it.
-- [ ] **Series screen, rework the layout** and fix the icon + label bugs (size and spacing).
-      Propose options that make it more readable.
+- [ ] **Series screen, rework it around a shelf of covers.** Decided: the volumes become a
+      horizontal shelf, as the dashboard draws its shelves. A volume the reader does not own
+      has no cover — the catalogue holds a title, a year and a kind, never an ISBN or an
+      image — so it takes the typographic placeholder of the library, with the add button in
+      its corner. Owned and missing volumes sit together in the order of the cycle, so the
+      progression reads at a glance. The icon and label sizes are already fixed.
 - [x] **Dashboard, show the total number of favourites.** Tapping it opens the list of every
       favourite, series included. Needs a new analytics figure and a new list screen.
 - [x] **Settings screen as in Vinarium, reached from the dashboard.** Replace the "Imports"
@@ -60,13 +64,15 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       into that screen. Copy every Vinarium settings menu, including the Sentry user feedback
       form (the `sendFeedback` helper exists without a screen today), except the admin
       section with the platform statistics.
-- [ ] **Paywall as in Vinarium, and revisit the subscription prices.** Rebuild the premium
-      sheet on the Vinarium paywall (layout, copy, trial and plan presentation). Prices are
-      2.99 a month and 24.99 a year with a one-week trial today, in the StoreKit configuration
-      only: the App Store Connect app record does not exist yet (see
-      [roadmap.md](roadmap.md#resolved-sign-in-with-apple)). Decide the new tiers first, then
-      declare the subscription group and both products with those prices when the app record
-      is created, and keep the StoreKit file in lockstep.
+- [ ] **Paywall as in Vinarium, at 1.99 a month and 17.99 a year.** Decided: an entry price
+      for the first year, the one-week trial kept on the yearly plan. Rebuild the premium
+      sheet on the Vinarium paywall — the allowance gauge argued from the account's own
+      figures, the benefits, the two offers with the saving computed from the store's own
+      prices, restore, terms and privacy. The App Store Connect app record does not exist yet
+      (see [roadmap.md](roadmap.md#resolved-sign-in-with-apple)): declare the subscription
+      group and both products with those prices when it is created, and keep the StoreKit
+      file in lockstep. A low price is hard to raise — Apple never migrates existing
+      subscribers — so this is the floor, not a trial balloon.
 - [x] **Library, replace the `+` CTA** with the import entry point styled like the "add a file"
       flow of the Vinarium wine record. That flow also offers to type only a title and let the
       AI do the search. The title-only path is a new scan mutation.
@@ -79,17 +85,25 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       fresh data loads, as in Vinarium. A persisted Apollo cache and a cache-then-network
       policy on every screen query.
 - [ ] **Share sheet import.** Register Shiori as a share target so that a page shared from
-      Safari or the Amazon app on iPhone offers the Shiori icon, and the app catalogues a book
-      from the shared content. An app extension, a shared container, and a scan from text or
-      URL rather than from a photo.
+      Safari or the Amazon app on iPhone offers the Shiori icon. Decided: the extension
+      accepts all three payloads — the page title or selected text, which goes through the
+      title lookup already built; a URL, read server-side to pull the title and the ISBN off
+      the page; and a shared image, which goes through the scan. Needs an app extension
+      target, an app group so the extension and the app share the session, and a
+      site-by-site URL reader that will break whenever Amazon redraws its page.
 - [ ] **Share a profile with friends.** A new screen lists the reader's friends; opening one
-      shows their books in progress and series in progress, their favourites, and their
-      reading pile. This is batch 3 of [roadmap.md](roadmap.md#batch-3--sharing) with a
-      friend list on top: it needs an invitation and acceptance flow, a friendship record, a
-      query that reads another reader's books under the `hidden` rule, and it exposes books
-      only, never the series catalogue.
-- [ ] **Kindle sync, on the model of the Audible connection.** Constraint recorded in
-      [roadmap.md](roadmap.md#batch-6--kindle-import): Amazon publishes no Kindle library API
-      and the Audible credentials do not reach Kindle, so the Audible design (sign-in, nightly
-      sync, ASIN matching) cannot be transposed as is. Settle the source first: the Amazon data
-      export, the Kindle Cloud Reader session, or a paid third party.
+      shows their books in progress and series in progress, their favourites, and their pile.
+      Decided: friendship is symmetric — accepting an invitation opens both libraries at once,
+      one state to store and nothing to explain — and it is established by a shared invitation
+      link, as Vinarium's household code is. The pile is the "to read" status, not a new
+      ordered list. This is batch 3 of [roadmap.md](roadmap.md#batch-3--sharing) with a friend
+      list on top: an invitation and acceptance flow, a friendship record, a query that reads
+      another reader's books under the `hidden` rule, and it exposes books only, never the
+      series catalogue.
+- [ ] **Kindle import from the Amazon data export.** Decided: the reader asks Amazon for
+      their data, receives a CSV, and imports it here. A one-off import, never a sync — the
+      constraint recorded in [roadmap.md](roadmap.md#batch-6--kindle-import) stands, Amazon
+      publishes no Kindle library API and the Audible credentials do not reach Kindle, so the
+      Audible design cannot be transposed. Needs a tolerant CSV reader (Amazon renames its
+      columns between exports), the same duplicate check the Audible import uses, and a screen
+      that takes the file and lists what it found for the reader to tick.
