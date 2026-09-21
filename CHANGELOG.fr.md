@@ -16,8 +16,9 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   dans aucune statistique de lecture, et l’accueil compte les livres abandonnés dans une petite
   tuile, à côté d’une nouvelle tuile des favoris.
 - L’onglet Séries reprend les vues et le filtre de la bibliothèque : tout, par genre ou les
-  favoris, restreint à un état. La bande de couvertures de chaque série montre, estompés, les
-  tomes que le lecteur n’a pas, entre ceux qu’il possède.
+  favoris, restreint à un état. La bande de couvertures de chaque série liste tous les tomes de
+  l’écran de la série, tomes annoncés et œuvres liées compris, ceux que le lecteur n’a pas
+  estompés entre ceux qu’il possède.
 - L’écran d’une série suit celui d’un livre : le genre, les sous-genres et la note rejoignent la
   section principale, avec les dates de début, d’ajout et de fin de la série ; les tomes
   ressemblent aux lignes de la bibliothèque et ouvrent les livres du lecteur ; et une série peut

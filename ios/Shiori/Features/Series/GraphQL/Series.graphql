@@ -25,9 +25,9 @@ query MySeries {
 }
 
 # One page of the same rows, for the tab that draws as it scrolls. Only the tab
-# asks for the volumes: each one costs a signed cover URL. The catalogue spine
-# comes along so the strip can draw the volumes the reader does not own; the
-# server reads every catalogue of the page in one getAll.
+# asks for the volumes: each one costs a signed cover URL. The catalogue comes
+# along so the strip can draw the volumes the reader does not own; the server
+# reads every catalogue of the page in one getAll.
 query MySeriesPage(
   $limit: Int
   $offset: Int
@@ -50,6 +50,9 @@ query MySeriesPage(
       }
       catalogue {
         spine {
+          ...VolumeEntry
+        }
+        relatedWorks {
           ...VolumeEntry
         }
       }

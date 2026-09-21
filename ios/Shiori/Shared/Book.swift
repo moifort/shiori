@@ -304,39 +304,41 @@ struct LibrarySection: Identifiable, Codable, Sendable {
 /// cycle they do not, drawn as a dimmed placeholder.
 enum SeriesStripItem: Identifiable, Hashable, Codable, Sendable {
     case owned(Book)
-    case missing(number: Int, title: String)
+    /// A volume the reader lacks. `number` is its place along the spine, nil
+    /// for an unnumbered related work; `forthcoming` marks one announced for a
+    /// year that has not come yet.
+    case missing(key: String, number: Int?, title: String, forthcoming: Bool)
 
     var id: String {
         switch self {
         case let .owned(book): book.id
-        case let .missing(number, _): "missing-\(number)"
+        case let .missing(key, _, _, _): "missing-\(key)"
         }
     }
 
-    /// The owned volumes laid against the cycle's published spine: each number
-    /// takes the reader's book when they have it and a placeholder when they do
-    /// not; what sits off the numbering follows. Announced volumes are left
-    /// out, as they are from the progress everywhere else.
-    static func strip(owned: [Book], spine: [Volume], currentYear: Int) -> [SeriesStripItem] {
-        guard !spine.isEmpty else { return owned.map { .owned($0) } }
-        var byNumber: [Int: Book] = [:]
-        for book in owned {
-            if book.series?.kind == .main, let number = book.series?.volume, byNumber[number] == nil {
-                byNumber[number] = book
-            }
-        }
+    /// Every volume the saga screen lists, in its order: the spine, announced
+    /// volumes included, then the prequels, novellas and companions. Each
+    /// takes the reader's book when they have it and a placeholder when they
+    /// do not; owned volumes the catalogue does not list follow. Just the owned
+    /// volumes when the saga has no catalogue yet — the saga screen is what
+    /// builds it, and a scroll through the tab must not pay for one per row.
+    static func strip(owned: [Book], catalogue: [Volume], currentYear: Int) -> [SeriesStripItem] {
+        guard !catalogue.isEmpty else { return owned.map { .owned($0) } }
         var placed = Set<String>()
         var items: [SeriesStripItem] = []
-        for volume in spine where !volume.isForthcoming(asOf: currentYear) {
-            guard let number = volume.number else { continue }
-            if let book = byNumber[number] {
+        for volume in catalogue {
+            if let book = owned.first(where: { !placed.contains($0.id) && volume.matches($0) }) {
                 items.append(.owned(book))
                 placed.insert(book.id)
             } else {
-                items.append(.missing(number: number, title: volume.title))
+                items.append(.missing(
+                    key: volume.id,
+                    number: volume.number,
+                    title: volume.title,
+                    forthcoming: volume.isForthcoming(asOf: currentYear)
+                ))
             }
         }
-        // Volumes the catalogue does not number, or numbers past what it lists.
         items += owned.filter { !placed.contains($0.id) }.map { .owned($0) }
         return items
     }
@@ -357,6 +359,16 @@ struct Volume: Identifiable, Hashable, Sendable {
     func isForthcoming(asOf year: Int) -> Bool {
         guard let publishedIn else { return false }
         return publishedIn > year
+    }
+
+    /// Whether the reader's book is this volume: the same kind at the same
+    /// number, or, for an unnumbered related work, the same title.
+    func matches(_ book: Book) -> Bool {
+        let kind = book.series?.kind ?? .main
+        guard kind == self.kind else { return false }
+        if let number { return book.series?.volume == number }
+        return book.title.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+            == title.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
     }
 }
 

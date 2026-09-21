@@ -20,8 +20,9 @@ the release tag is pushed.
   counts in no reading statistic, and the dashboard counts the dropped books in a small tile
   beside a new favourites tile.
 - The Series tab has the library's views and filter: everything, by genre or the favourites,
-  narrowed to one state. Each row's cover strip shows the volumes the reader does not own,
-  dimmed, between the ones they do.
+  narrowed to one state. Each row's cover strip lists every volume the series screen does,
+  announced volumes and related works included, the ones the reader does not own dimmed
+  between the ones they do.
 - The series screen follows the book screen: the genre, subgenres and rating sit in the main
   section, with the dates the saga was started, added and finished; the volumes look like the
   library's rows and open the reader's books; and a saga can be deleted with all its books.

@@ -216,7 +216,8 @@ struct SeriesListView: View {
     }
 
     /// Every volume of the cycle, in its order, as a cover: the owned ones with
-    /// their status pinned on, the missing ones dimmed with their number — the
+    /// their status pinned on, the missing ones dimmed with their number, the
+    /// announced ones fainter still under a clock, the related works last — the
     /// reader's progress, and what they lack, read off the books themselves
     /// rather than off a bar. No titles: the saga screen is a tap away.
     private func covers(_ entry: FollowedSeries) -> some View {
@@ -230,18 +231,30 @@ struct SeriesListView: View {
                                 ReadingStatusBadge(status: volume.status)
                                     .offset(x: 5, y: -5)
                             }
-                    case let .missing(number, title):
+                    case let .missing(_, number, title, forthcoming):
                         BookCover(
                             book: Book(id: item.id, title: title, authors: entry.author.map { [$0] } ?? [], status: .toRead),
                             width: coverWidth,
                             showsFormatBadge: false
                         )
-                        .opacity(0.35)
+                        .opacity(forthcoming ? 0.2 : 0.35)
                         .overlay(alignment: .bottom) {
-                            Text(verbatim: "\(number)")
-                                .font(.caption2.weight(.bold).monospacedDigit())
-                                .foregroundStyle(.secondary)
-                                .padding(.bottom, 4)
+                            if let number {
+                                Text(verbatim: "\(number)")
+                                    .font(.caption2.weight(.bold).monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                                    .padding(.bottom, 4)
+                            }
+                        }
+                        // Where an owned volume pins its status: an announced
+                        // one says it is not out yet.
+                        .overlay(alignment: .topTrailing) {
+                            if forthcoming {
+                                Image(systemName: "clock")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.tertiary)
+                                    .padding(4)
+                            }
                         }
                     }
                 }
