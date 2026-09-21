@@ -34,6 +34,8 @@ struct ContentView: View {
     @State private var selectedTab: TabSelection = .home
     /// The last real content tab, restored when the scan cover is dismissed.
     @State private var lastContentTab: TabSelection = .home
+    /// The Library view the dashboard asked for, handed to the Library tab.
+    @State private var libraryMode: LibraryMode?
     /// The add sheet, behind the tab bar's scan button: the camera, the last
     /// photos, a title and a record typed by hand, from every tab.
     @State private var showAddSheet = false
@@ -153,6 +155,10 @@ struct ContentView: View {
                     // Books in progress lead the library, so the tab opens on them.
                     onShowReading: { selectedTab = .library },
                     onShowSeries: { selectedTab = .series },
+                    onShowLibrary: { mode in
+                        libraryMode = mode
+                        selectedTab = .library
+                    },
                     onScan: { showAddSheet = true }
                 )
             }
@@ -161,7 +167,7 @@ struct ContentView: View {
                 systemImage: TabSelection.library.symbol,
                 value: .library
             ) {
-                LibraryView(onAdd: { showAddSheet = true })
+                LibraryView(onAdd: { showAddSheet = true }, requestedMode: $libraryMode)
             }
             Tab(TabSelection.series.label, systemImage: TabSelection.series.symbol, value: .series) {
                 SeriesListView()

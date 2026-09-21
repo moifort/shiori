@@ -35,9 +35,10 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   geste, est là où vit le catalogue.
 - Un genre ou un sous-genre corrigé sur un tome s’applique à tous les tomes de sa saga dans
   la bibliothèque, et le champ des sous-genres propose les mots déjà employés par le lecteur.
-- L’accueil compte les favoris, livres et séries confondus, dans une tuile qui ouvre la liste
-  de tout ce qui porte un cœur. Les heures d’écoute quittent le graphique d’une bibliothèque
-  sans livre audio, et le graphique se souvient de la mesure choisie d’un lancement à l’autre.
+- La note moyenne de l’accueil ouvre la bibliothèque sur les favoris, et sa barre des genres
+  sur la vue par genre. Les heures d’écoute quittent le graphique d’une bibliothèque sans
+  livre audio, les pages celui d’une bibliothèque qui n’a que des livres audio, et le
+  graphique se souvient de la mesure choisie d’un lancement à l’autre.
 - Une bibliothèque peut être partagée avec un ami. Le lecteur envoie un lien d’invitation, et
   celui qui l’accepte voit son étagère pendant qu’il voit la sienne : cela s’ouvre des deux
   côtés à la fois, et chacun des deux peut y mettre fin pour les deux. Le profil d’un ami

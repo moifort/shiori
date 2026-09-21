@@ -40,9 +40,10 @@ the release tag is pushed.
   catalogue lives.
 - A genre or subgenre corrected on one volume is applied to every volume of its saga in the
   library, and the subgenre field proposes the words the reader has already used.
-- The dashboard counts the favourites, books and sagas together, in a tile that opens the
-  list of everything hearted. The listening hours leave the chart of a library with no
-  recording, and the chart remembers which measure was chosen across launches.
+- The dashboard's average rating opens the library on the favourites, and its genre bar on
+  the genre view. The listening hours leave the chart of a library with no recording, the
+  pages that of a library of recordings only, and the chart remembers which measure was
+  chosen across launches.
 - A library can be shared with a friend. The reader sends an invitation link, and whoever
   takes it up sees their shelf while they see theirs: it opens both ways at once, and either
   of the two can end it for both. A friend's profile shows what they are reading, their pile,

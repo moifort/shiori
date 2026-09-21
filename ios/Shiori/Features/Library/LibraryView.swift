@@ -7,6 +7,9 @@ struct LibraryView: View {
     /// Opens the add sheet, which the tab bar's scan button owns: every way a
     /// book gets in sits behind that one entry, on every tab.
     let onAdd: () -> Void
+    /// A view another tab asked this one to open on, taken and cleared as
+    /// soon as the tab shows it.
+    @Binding var requestedMode: LibraryMode?
 
     @State private var viewModel = LibraryViewModel()
     @State private var selectedBook: Book?
@@ -53,12 +56,22 @@ struct LibraryView: View {
         }
         // Over last session's snapshot when the disk had one: the list shows at
         // once and the spinner at its top says it is being brought up to date.
-        .task { await viewModel.loadOnAppear() }
+        .task {
+            takeRequestedMode()
+            await viewModel.loadOnAppear()
+        }
+        .onChange(of: requestedMode) { takeRequestedMode() }
         // A book rated in a sheet moves to another tier; one added from the
         // scanner lands in a section this list has not drawn yet. Either way the
         // rows on screen are the old ones until the server is asked again.
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
             Task { await viewModel.load() }
         }
+    }
+
+    private func takeRequestedMode() {
+        guard let requestedMode else { return }
+        viewModel.show(requestedMode)
+        self.requestedMode = nil
     }
 }

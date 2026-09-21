@@ -27,8 +27,8 @@ enum HomeAPI {
             series: dashboard.series.map {
                 .init(id: $0.id, name: $0.name, readCount: $0.readCount, totalCount: $0.totalCount)
             },
-            favoriteCount: dashboard.favoriteCount,
             hasAudiobooks: dashboard.hasAudiobooks,
+            hasPrintedBooks: dashboard.hasPrintedBooks,
             libraryIsEmpty: dashboard.libraryIsEmpty
         )
     }

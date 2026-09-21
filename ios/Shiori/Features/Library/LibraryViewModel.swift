@@ -146,6 +146,14 @@ final class LibraryViewModel {
         return shelves
     }
 
+    /// Opens one view with every status in it, as the dashboard asks for: the
+    /// favourites behind the rating tile, the genres behind the genre bar. A
+    /// status filter left from an earlier visit would hide half of either.
+    func show(_ requested: LibraryMode) {
+        statusFilter = nil
+        mode = requested
+    }
+
     /// Reloads the first page for a new view or filter, cancelling a reload
     /// still in flight. The rows go at once: the old view's books under the new
     /// view's headings would be wrong for as long as the request takes.

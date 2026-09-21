@@ -8,20 +8,21 @@ import SwiftUI
 struct HomeView: View {
     enum Destination: Hashable {
         case series(String)
-        case favorites
     }
 
     /// Opens the Library tab on the books being read.
     let onShowReading: () -> Void
     let onShowSeries: () -> Void
+    /// Opens the Library tab on one of its views: the favourites from the
+    /// rating tile, the genres from the genre widget.
+    let onShowLibrary: (LibraryMode) -> Void
     let onScan: () -> Void
 
     @State private var viewModel = HomeViewModel()
     @State private var selectedBook: Book?
     @State private var showSettings = false
-    /// The stack behind the dashboard: the favourites list is pushed onto it
-    /// from a tile, the way a saga is pushed from its progress row. Untyped,
-    /// so a screen pushed on it can push a saga of its own by id.
+    /// The stack behind the dashboard: a saga is pushed onto it from its
+    /// progress row.
     @State private var path = NavigationPath()
 
     var body: some View {
@@ -42,7 +43,6 @@ struct HomeView: View {
                 .navigationDestination(for: Destination.self) { destination in
                     switch destination {
                     case let .series(id): SeriesView(seriesId: id)
-                    case .favorites: FavoritesView()
                     }
                 }
         }
@@ -89,7 +89,8 @@ struct HomeView: View {
                     onRetryRefresh: { await viewModel.refresh() },
                     onReadingTapped: onShowReading,
                     onSeriesTapped: onShowSeries,
-                    onFavoritesTapped: { path.append(Destination.favorites) },
+                    onRatingTapped: { onShowLibrary(.favorites) },
+                    onGenresTapped: { onShowLibrary(.genre) },
                     onBookTapped: { selectedBook = $0 }
                 )
                 .refreshable { await viewModel.load() }

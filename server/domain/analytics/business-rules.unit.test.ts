@@ -393,10 +393,25 @@ describe('building the view', () => {
     expect(view.favoriteBookCount).toBe(1)
     expect(view.favoriteSeriesCount).toBe(1)
     expect(view.audiobookCount).toBe(1)
+    expect(view.printedBookCount).toBe(2)
 
     const today = day('2026-09-15')
     expect(dashboardOf(view, today).favoriteCount).toBe(2)
     expect(dashboardOf(view, today).hasAudiobooks).toBe(true)
+    expect(dashboardOf(view, today).hasPrintedBooks).toBe(true)
+  })
+
+  // A library of recordings only has no page to chart.
+  test('reads a library of audiobooks only as holding no printed book', () => {
+    const view = analyticsViewOf({
+      userId: reader,
+      timeZone: paris,
+      now: new Date('2026-09-15T10:00:00.000Z'),
+      catalogues: [],
+      books: [book('heard', { format: 'audiobook' })],
+    })
+
+    expect(dashboardOf(view, day('2026-09-15')).hasPrintedBooks).toBe(false)
   })
 
   // A view stored before these figures existed answers nothing for them, and
@@ -409,10 +424,12 @@ describe('building the view', () => {
       catalogues: [],
       books: [],
     })
-    const { favoriteBookCount, favoriteSeriesCount, audiobookCount, ...stored } = legacy
+    const { favoriteBookCount, favoriteSeriesCount, audiobookCount, printedBookCount, ...stored } =
+      legacy
 
     const dashboard = dashboardOf(stored, day('2026-09-15'))
     expect(dashboard.favoriteCount).toBe(0)
     expect(dashboard.hasAudiobooks).toBe(false)
+    expect(dashboard.hasPrintedBooks).toBe(true)
   })
 })

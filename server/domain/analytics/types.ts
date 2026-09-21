@@ -86,6 +86,10 @@ export type AnalyticsView = {
   /** How many recordings the library holds — what decides whether the listening
    *  hours are worth a chart at all. */
   audiobookCount?: number
+  /** How many books have pages — every format but the recording — which decides
+   *  the same for the pages. A view stored before it answers nothing, read as
+   *  pages to chart rather than as a library of recordings only. */
+  printedBookCount?: number
 }
 
 export type YearCount = { year: number; count: number }
@@ -125,5 +129,7 @@ export type Dashboard<Card = DashboardBook> = {
   favoriteCount: number
   /** Whether a single recording is on the shelf. */
   hasAudiobooks: boolean
+  /** Whether a single book with pages is on the shelf. */
+  hasPrintedBooks: boolean
   libraryIsEmpty: boolean
 }

@@ -39,6 +39,9 @@ struct ReadingChartWidget: View {
     /// Whether a recording is on the shelf at all. Without one the hours are
     /// twelve empty bars, so the segment is left out rather than drawn at zero.
     var hasAudiobooks: Bool = true
+    /// Whether a book with pages is on the shelf. A library of recordings
+    /// only has twelve empty bars of pages, and loses that segment likewise.
+    var hasPrintedBooks: Bool = true
     /// Pages open the card rather than books: twelve monthly bars fill its
     /// width where six yearly ones leave it mostly empty, and the running
     /// year is the figure a reader comes to the dashboard for. The choice
@@ -46,15 +49,29 @@ struct ReadingChartWidget: View {
     @AppStorage("home.chart.metric") private var storedMetric: String = Metric.pages.rawValue
 
     private var metrics: [Metric] {
-        hasAudiobooks ? Metric.allCases : Metric.allCases.filter { $0 != .hours }
+        Metric.allCases.filter { metric in
+            switch metric {
+            case .books: true
+            case .pages: hasPrintedBooks
+            case .hours: hasAudiobooks
+            }
+        }
     }
 
+    /// What a missing segment falls back to: pages, or the hours when the
+    /// library listens to everything it holds.
+    private var defaultMetric: Metric { hasPrintedBooks ? .pages : .hours }
+
     /// The stored choice, unless it names a segment that is not offered — the
-    /// hours of a library that lost its last recording — in which case pages.
+    /// hours of a library that lost its last recording, the pages of one that
+    /// holds only recordings — in which case the default above.
     private var metric: Metric {
         get {
-            let stored = Metric(rawValue: storedMetric) ?? .pages
-            return metrics.contains(stored) ? stored : .pages
+            let stored = Metric(rawValue: storedMetric) ?? defaultMetric
+            guard metrics.contains(stored) else {
+                return metrics.contains(defaultMetric) ? defaultMetric : .books
+            }
+            return stored
         }
         nonmutating set { storedMetric = newValue.rawValue }
     }

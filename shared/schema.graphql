@@ -440,6 +440,11 @@ type Dashboard {
   """
   hasAudiobooks: Boolean!
 
+  """
+  Whether the library holds a single book with pages, printed or electronic. False, and the pages have nothing to chart.
+  """
+  hasPrintedBooks: Boolean!
+
   """The twelve months of the current year."""
   hoursPerMonth: [MonthHours!]!
   lastFinished: DashboardBook

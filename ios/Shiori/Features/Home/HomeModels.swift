@@ -69,11 +69,11 @@ struct Dashboard: Codable, Sendable {
     let ratedCount: Int
     let genres: [GenreSlice]
     let series: [SeriesProgress]
-    /// Books and sagas the reader hearted, together.
-    var favoriteCount: Int = 0
     /// Whether a single recording is on the shelf: without one the listening
     /// hours have nothing to chart and the picker leaves them out.
     var hasAudiobooks: Bool = false
+    /// The same for the pages: a library of recordings only has none to chart.
+    var hasPrintedBooks: Bool = true
     let libraryIsEmpty: Bool
 }
 

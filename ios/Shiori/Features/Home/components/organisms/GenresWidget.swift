@@ -3,9 +3,12 @@ import SwiftUI
 struct GenresWidget: View {
     let currentYear: Int
     let genres: [Dashboard.GenreSlice]
+    /// Opens the library sectioned by genre, where the books behind each
+    /// segment are.
+    var onTapped: (() -> Void)?
 
     var body: some View {
-        WidgetCard(title: "Genres lus en \(String(currentYear))") {
+        WidgetCard(title: "Genres lus en \(String(currentYear))", action: onTapped) {
             if genres.isEmpty {
                 WidgetEmptyMessage(text: "Terminez un livre cette année pour voir vos genres.")
             } else {

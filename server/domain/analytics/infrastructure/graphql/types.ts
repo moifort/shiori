@@ -186,6 +186,11 @@ export const DashboardType = builder.objectRef<Dashboard>('Dashboard').implement
         'Whether the library holds a single recording. False, and the listening ' +
         'hours have nothing to chart.',
     }),
+    hasPrintedBooks: t.exposeBoolean('hasPrintedBooks', {
+      description:
+        'Whether the library holds a single book with pages, printed or electronic. ' +
+        'False, and the pages have nothing to chart.',
+    }),
     libraryIsEmpty: t.exposeBoolean('libraryIsEmpty', {
       description: 'True when the reader has not catalogued a single book yet.',
     }),

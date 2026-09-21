@@ -46,6 +46,7 @@ describe('the dashboard through the API', () => {
         genres { genre count }
         favoriteCount
         hasAudiobooks
+        hasPrintedBooks
         libraryIsEmpty
       }
     }`)
@@ -73,6 +74,7 @@ describe('the dashboard through the API', () => {
       genres: [{ genre: 'FANTASY', count: 1 }],
       favoriteCount: 0,
       hasAudiobooks: false,
+      hasPrintedBooks: true,
       libraryIsEmpty: false,
     })
   })
@@ -106,11 +108,15 @@ describe('the dashboard through the API', () => {
     )
 
     const result = await execute(
-      '{ dashboard(timeZone: "Europe/Paris") { favoriteCount hasAudiobooks } }',
+      '{ dashboard(timeZone: "Europe/Paris") { favoriteCount hasAudiobooks hasPrintedBooks } }',
     )
 
     expect(result.errors).toBeUndefined()
-    expect(result.data?.dashboard).toEqual({ favoriteCount: 2, hasAudiobooks: true })
+    expect(result.data?.dashboard).toEqual({
+      favoriteCount: 2,
+      hasAudiobooks: true,
+      hasPrintedBooks: false,
+    })
   })
 
   // Every mutation that changes a book must leave the view fresh: one that forgot
