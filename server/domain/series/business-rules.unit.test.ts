@@ -8,6 +8,7 @@ import {
   progressOf,
   splitBySpine,
   stateOf,
+  withoutDuplicateVolumes,
 } from '~/domain/series/business-rules'
 import { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import type { Series, Volume } from '~/domain/series/types'
@@ -239,5 +240,30 @@ describe('inTabOrder', () => {
       'unknown',
       'untouched',
     ])
+  })
+})
+
+describe('withoutDuplicateVolumes', () => {
+  // Blood Song came back with Tome 1 and Tome 2 twice each, one per edition.
+  test('keeps one main volume per number, the first one given', () => {
+    const folded = withoutDuplicateVolumes([
+      volume({ title: 'La Voix du sang', number: VolumeNumber(1) }),
+      volume({ title: 'Blood Song', number: VolumeNumber(1) }),
+      volume({ title: 'Le Seigneur de la tour', number: VolumeNumber(2) }),
+      volume({ title: 'Tower Lord', number: VolumeNumber(2) }),
+    ])
+    expect(folded.map((entry) => String(entry.title))).toEqual([
+      'La Voix du sang',
+      'Le Seigneur de la tour',
+    ])
+  })
+
+  test('keeps one entry per kind and title off the numbering', () => {
+    const folded = withoutDuplicateVolumes([
+      volume({ title: 'Le Loup', kind: 'novella' }),
+      volume({ title: 'le loup', kind: 'novella' }),
+      volume({ title: 'Le Loup', kind: 'companion' }),
+    ])
+    expect(folded.map((entry) => entry.kind)).toEqual(['novella', 'companion'])
   })
 })

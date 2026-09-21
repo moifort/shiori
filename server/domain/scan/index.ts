@@ -17,6 +17,7 @@ import { publishedCoverOf } from '~/domain/scan/published-cover'
 import { CATALOGUE_SCHEMA, ENRICHMENT_SCHEMA, VISION_SCHEMA } from '~/domain/scan/schemas'
 import { STUBBED_SCAN } from '~/domain/scan/stub'
 import type { AiStepUsage, ScanLanguage, ScanResult, ScanUsage } from '~/domain/scan/types'
+import { withoutDuplicateVolumes } from '~/domain/series/business-rules'
 import { SeriesCommand } from '~/domain/series/command'
 import {
   SeriesDescription,
@@ -244,7 +245,7 @@ export namespace Scan {
         grounded: true,
       })
 
-      const volumes = value.volumes.map(parsedVolume).filter(isPresent)
+      const volumes = withoutDuplicateVolumes(value.volumes.map(parsedVolume).filter(isPresent))
       if (volumes.length === 0) return { usage }
 
       const series = await SeriesCommand.catalogue({

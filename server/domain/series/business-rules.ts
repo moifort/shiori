@@ -9,6 +9,7 @@ import type {
   VolumeKind,
 } from '~/domain/series/types'
 import type { AuthorName, Year } from '~/domain/shared/types'
+import { slugify } from '~/utils/slug'
 
 /** A volume the reader could still be waiting for. Announced volumes are kept in
  *  the catalogue on purpose: they are what a release alert will attach to. */
@@ -138,6 +139,24 @@ export const matchingFilter = <Saga extends { state: SeriesState | null; favorit
       (!filter.favorite || saga.favorite) &&
       (filter.state === undefined || (saga.state ?? 'complete') === filter.state),
   )
+
+/** A catalogue with every volume once. The grounded model can answer one entry
+ *  per edition it found — Blood Song listed Tome 1 and Tome 2 twice each — so
+ *  the list is folded before it is stored: one main volume per number, and one
+ *  entry per kind and title for everything off the numbering. The first entry
+ *  seen is kept, in the order the model gave them. */
+export const withoutDuplicateVolumes = (volumes: readonly Volume[]): Volume[] => {
+  const seen = new Set<string>()
+  return volumes.filter((volume) => {
+    const key =
+      volume.kind === 'main' && volume.number !== undefined
+        ? `main#${volume.number}`
+        : `${volume.kind}:${slugify(volume.title)}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
 
 /** Catalogue order for a whole saga. */
 export const inCatalogueOrder = (volumes: readonly Volume[]): Volume[] =>
