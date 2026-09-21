@@ -997,6 +997,18 @@ type Mutation {
   ): ScanResult!
 
   """
+  Look a book up from a page the reader shared — a bookshop, a review, a library catalogue — and return a record to review.
+  
+  The page is fetched for its title, the shop's own name and the format stripped off it, and the rest goes through the same lookup a typed title does. A page that does not answer, is not a page, or has no title falls back to `recognized: false` rather than failing: a shared link is a convenience, not a contract.
+  
+  Spends one scan of the allowance, and only when the title was found — a link that led nowhere costs the reader nothing.
+  """
+  scanLink(
+    """The page that was shared"""
+    url: String!
+  ): ScanResult!
+
+  """
   Look a book up from a title the reader typed and return a record to review, as `scanBook` does from a cover.
   
   The title can be approximate: the model looks for the most likely book and answers with its exact title. Nothing is saved; the reader corrects the proposal and `addBook` persists it.

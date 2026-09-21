@@ -5,13 +5,59 @@ import { QuotaCommand } from '~/domain/quota/command'
 import { QuotaQuery } from '~/domain/quota/query'
 import { Scan } from '~/domain/scan'
 import { imageWithinSizeLimit } from '~/domain/scan/limits'
+import { pageTitleOf } from '~/domain/scan/page-title'
 import { builder } from '~/domain/shared/graphql/builder'
 import { domainError } from '~/domain/shared/graphql/errors'
 import { languageFrom } from '~/domain/shared/language'
+import { BookTitle } from '~/domain/shared/primitives'
 import { createLogger } from '~/system/logger'
 import { ScanResultType } from './types'
 
 const logger = createLogger('scan')
+
+builder.mutationField('scanLink', (t) =>
+  t.field({
+    type: ScanResultType,
+    description:
+      'Look a book up from a page the reader shared — a bookshop, a review, a ' +
+      'library catalogue — and return a record to review.\n\n' +
+      "The page is fetched for its title, the shop's own name and the format " +
+      'stripped off it, and the rest goes through the same lookup a typed title ' +
+      'does. A page that does not answer, is not a page, or has no title falls ' +
+      'back to `recognized: false` rather than failing: a shared link is a ' +
+      'convenience, not a contract.\n\n' +
+      'Spends one scan of the allowance, and only when the title was found — a ' +
+      'link that led nowhere costs the reader nothing.',
+    args: {
+      url: t.arg.string({ required: true, description: 'The page that was shared' }),
+    },
+    resolve: async (_root, { url }, { userId, event }) => {
+      const [plan, quota, credit] = await Promise.all([
+        EntitlementQuery.planOf(userId),
+        QuotaQuery.ofCurrentMonth(userId),
+        QuotaQuery.creditOf(userId),
+      ])
+      if (exhausted(plan, quota, credit))
+        return domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up')
+
+      const title = await pageTitleOf(url)
+      if (!title) return { recognized: false, title: '' as const, authors: [], subgenres: [] }
+
+      const language = languageFrom(event && getHeader(event, 'accept-language'))
+      try {
+        const { result, usage } = await Scan.lookUpTitle(BookTitle(title), language)
+        await QuotaCommand.record(userId, plan)
+        await AdminCommand.recordAiUsage({ cacheHit: false, usage }).catch((error) =>
+          logger.warn(`AI usage not recorded: ${error}`),
+        )
+        return result
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Lookup failed'
+        return domainError('SCAN_FAILED', message)
+      }
+    },
+  }),
+)
 
 builder.mutationField('scanTitle', (t) =>
   t.field({
