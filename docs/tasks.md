@@ -154,6 +154,13 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       status. The tab is sectioned by genre today with no way to change it, so the series
       query needs the arrangement, favourite and status arguments `libraryPage` already has.
 
+- [ ] **Series tab, the missing volumes in each row's strip.** The strip shows only the
+      volumes the reader owns: `FollowedSeries.volumes` is a list of their own `Book`s. The
+      volumes of the cycle they do not have should sit in it too, in cycle order, drawn with
+      the typographic placeholder the series screen uses for them. That reads the catalogue
+      for every row of the page, which the denormalized layout was built to avoid: add a
+      per-request loader for `series/{seriesKey}` before shipping, and a read-budget test.
+
 ## Large
 
 - [x] **Pagination** on every list, as in Vinarium. Cursor arguments on every list query,
