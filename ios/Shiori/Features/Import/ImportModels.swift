@@ -134,23 +134,65 @@ struct ImportableBook: Identifiable, Sendable {
     }
 }
 
-/// Where a library can be imported from. One source today; the menu exists so
-/// the next one is an entry rather than a redesign.
+/// Where a library can be imported from.
+///
+/// The two are not the same kind of thing and the screens say so: Audible is an
+/// account Shiori stays connected to and syncs each night, Kindle is a file
+/// Amazon hands the reader once. There is no Kindle library API to connect to,
+/// and the Audible credentials reach nothing on that side.
 enum ImportSource: String, CaseIterable, Identifiable, Sendable {
     case audible
+    case kindle
 
     var id: String { rawValue }
 
     var label: String {
         switch self {
         case .audible: "Audible"
+        case .kindle: "Kindle"
         }
     }
 
     var symbol: String {
         switch self {
         case .audible: "headphones"
+        case .kindle: "ipad"
         }
+    }
+
+    /// What the settings row says under the name, since the two sources work
+    /// nothing alike.
+    var subtitle: String {
+        switch self {
+        case .audible: String(localized: "Connexion, import et synchronisation")
+        case .kindle: String(localized: "Import depuis l'export de données Amazon")
+        }
+    }
+}
+
+/// One title read off an Amazon data export, before anything is saved.
+///
+/// Thin on purpose: the export is a purchase history. It names the book and who
+/// wrote it and carries nothing else, so a book catalogued from it is a stub the
+/// reader can scan or correct afterwards.
+struct KindleBook: Identifiable, Sendable {
+    /// The title and first author folded together, as the duplicate check folds
+    /// them. The identity, rather than the title: two different books that
+    /// happen to share one are still two rows.
+    var id: String { key }
+    let key: String
+    let title: String
+    let authors: [String]
+    let alreadyInLibrary: Bool
+
+    var authorLine: String {
+        authors.isEmpty ? String(localized: "Auteur inconnu") : authors.joined(separator: ", ")
+    }
+
+    /// A stand-in book, only so the row can draw the shared cover component and
+    /// its typographic placeholder. An export carries no image.
+    var asCoverSubject: Book {
+        Book(id: key, title: title, authors: authors, status: .toRead)
     }
 }
 

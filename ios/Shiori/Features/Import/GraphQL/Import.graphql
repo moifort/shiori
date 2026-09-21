@@ -84,3 +84,21 @@ mutation SyncAudibleNow {
 mutation DisconnectAudible {
   disconnectAudible
 }
+
+# The Amazon data export, read into books to tick. Saves nothing: the reader
+# picks, and `importKindleBooks` catalogues what they picked from a second read
+# of the same file.
+mutation ReadKindleExport($csv: String!) {
+  readKindleExport(csv: $csv) {
+    key
+    title
+    authors
+    alreadyInLibrary
+  }
+}
+
+mutation ImportKindleBooks($csv: String!, $keys: [String!]!) {
+  importKindleBooks(csv: $csv, keys: $keys) {
+    ...BookDetail
+  }
+}

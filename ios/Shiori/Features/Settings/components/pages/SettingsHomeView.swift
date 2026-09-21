@@ -52,7 +52,7 @@ struct SettingsHomeView: View {
                             SettingsRow(
                                 icon: source.symbol,
                                 title: LocalizedStringKey(source.label),
-                                subtitle: String(localized: "Connexion, import et synchronisation"),
+                                subtitle: source.subtitle,
                                 tint: .teal
                             )
                         }
@@ -99,6 +99,8 @@ struct SettingsHomeView: View {
                 switch source {
                 case .audible:
                     AudibleImportView(onImported: { _ in openSource = nil })
+                case .kindle:
+                    KindleImportView(onImported: { _ in openSource = nil })
                 }
             }
             .toolbar {

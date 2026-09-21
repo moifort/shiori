@@ -101,7 +101,7 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       list on top: an invitation and acceptance flow, a friendship record, a query that reads
       another reader's books under the `hidden` rule, and it exposes books only, never the
       series catalogue.
-- [ ] **Kindle import from the Amazon data export.** Decided: the reader asks Amazon for
+- [x] **Kindle import from the Amazon data export.** Decided: the reader asks Amazon for
       their data, receives a CSV, and imports it here. A one-off import, never a sync — the
       constraint recorded in [roadmap.md](roadmap.md#batch-6--kindle-import) stands, Amazon
       publishes no Kindle library API and the Audible credentials do not reach Kindle, so the

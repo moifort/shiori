@@ -140,4 +140,35 @@ extension ShioriGraphQL.AudibleAccountSummary {
             autoSync: autoSync
         )
     }
+
+    // MARK: - Kindle
+
+    /// Reads an Amazon data export into books to tick. Saves nothing, calls no
+    /// model, and spends no scan: this reads a file.
+    static func readKindleExport(csv: String) async throws -> [KindleBook] {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.ReadKindleExportMutation(csv: csv)
+        )
+        return data.readKindleExport.map {
+            KindleBook(
+                key: $0.key,
+                title: $0.title,
+                authors: $0.authors,
+                alreadyInLibrary: $0.alreadyInLibrary
+            )
+        }
+    }
+
+    /// Catalogues the ticked titles. The file goes back with the keys: the
+    /// server reads it again rather than trusting records the app composed, so
+    /// every stored field comes from the export.
+    static func importKindleBooks(csv: String, keys: [String]) async throws -> [Book] {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.ImportKindleBooksMutation(csv: csv, keys: keys),
+            requestTimeout: importTimeout
+        )
+        return data.importKindleBooks.map { $0.fragments.bookDetail.asBook }
+    }
 }

@@ -19,6 +19,12 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 - L’accueil compte les favoris, livres et séries confondus, dans une tuile qui ouvre la liste
   de tout ce qui porte un cœur. Les heures d’écoute quittent le graphique d’une bibliothèque
   sans livre audio, et le graphique se souvient de la mesure choisie d’un lancement à l’autre.
+- Une bibliothèque Kindle peut être cataloguée depuis l’export de données qu’Amazon fournit à
+  ses clients. Amazon n’expose aucune API de bibliothèque Kindle : il n’y a donc pas de compte
+  à connecter ni de synchronisation nocturne. Le lecteur demande ses données une fois, puis
+  donne le fichier à Shiori. Les titres qu’il contient sont listés, ceux déjà sur l’étagère
+  cochés d’office, et ceux qu’on garde arrivent sur la pile en livres numériques avec leur
+  titre et leur auteur : c’est tout ce qu’un historique d’achats contient.
 - L’écran d’une saga est devenu une étagère : ses tomes côte à côte dans l’ordre du cycle,
   ceux qui sont sur l’étagère en couleur, ceux qui manquent en vignettes estompées avec un
   bouton pour les ajouter, et ceux qui ne sont pas parus signalés comme tels. Une barre sous

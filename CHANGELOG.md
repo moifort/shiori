@@ -25,6 +25,11 @@ the release tag is pushed.
 - The dashboard counts the favourites, books and sagas together, in a tile that opens the
   list of everything hearted. The listening hours leave the chart of a library with no
   recording, and the chart remembers which measure was chosen across launches.
+- A Kindle library can be catalogued from the data export Amazon hands its customers. Amazon
+  publishes no Kindle library API, so there is no account to connect and no nightly sync: the
+  reader asks Amazon for their data once, and hands Shiori the file. The titles it holds are
+  listed, the ones already on the shelf ticked off, and the ones kept land on the pile as
+  ebooks with their title and author — all a purchase history carries.
 - A saga's screen is now a shelf: its volumes side by side in the order of the cycle, the
   ones on the shelf in full colour, the ones still missing as dimmed stand-ins with a button
   to add them, and the ones not out yet marked as such. A bar under the description says how
