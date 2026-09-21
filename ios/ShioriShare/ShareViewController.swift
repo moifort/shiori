@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 
 /// What the share sheet hands over, dropped in the shared container for the app
@@ -51,29 +52,55 @@ final class ShareViewController: UIViewController {
         var imageData: Data?
 
         for provider in attachments {
-            if imageData == nil, provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
-                imageData = await load(provider, as: UTType.image) as? Data
-                    ?? (await load(provider, as: UTType.image) as? UIImage)?.jpegData(
-                        compressionQuality: 0.8
-                    )
+            if imageData == nil, provider.hasItemConformingToTypeIdentifier(UTType.image.identifier)
+            {
+                imageData = await load(provider, dataOf: .image)
             }
             if intake.url == nil, provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
-                intake.url = (await load(provider, as: UTType.url) as? URL)?.absoluteString
+                intake.url = (await loadURL(provider))?.absoluteString
             }
             if intake.text == nil,
                 provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier)
             {
-                intake.text = await load(provider, as: UTType.plainText) as? String
+                intake.text = await loadText(provider)
             }
         }
 
         write(intake, image: imageData)
     }
 
-    private func load(_ provider: NSItemProvider, as type: UTType) async -> Any? {
+    /// The bytes behind an attachment. Asked for as data rather than as an
+    /// object: Photos hands a screenshot over as a file, a web page as a
+    /// `UIImage`, and neither of those crosses an actor boundary — `Data` does.
+    private func load(_ provider: NSItemProvider, dataOf type: UTType) async -> Data? {
         await withCheckedContinuation { continuation in
             let gate = ResumeGate()
-            provider.loadItem(forTypeIdentifier: type.identifier) { value, _ in
+            provider.loadDataRepresentation(forTypeIdentifier: type.identifier) { data, _ in
+                guard gate.claim() else { return }
+                continuation.resume(returning: data)
+            }
+        }
+    }
+
+    /// The page that was shared. Spelled out rather than made generic: the
+    /// constraint `loadObject(ofClass:)` carries is an underscored bridging
+    /// protocol, and restating it buys nothing for two call sites.
+    private func loadURL(_ provider: NSItemProvider) async -> URL? {
+        await withCheckedContinuation { continuation in
+            let gate = ResumeGate()
+            _ = provider.loadObject(ofClass: URL.self) { value, _ in
+                guard gate.claim() else { return }
+                continuation.resume(returning: value)
+            }
+        }
+    }
+
+    /// The text that was shared: a selection, or the title the page sends
+    /// alongside its address.
+    private func loadText(_ provider: NSItemProvider) async -> String? {
+        await withCheckedContinuation { continuation in
+            let gate = ResumeGate()
+            _ = provider.loadObject(ofClass: String.self) { value, _ in
                 guard gate.claim() else { return }
                 continuation.resume(returning: value)
             }
