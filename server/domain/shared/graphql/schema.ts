@@ -22,6 +22,7 @@ import '~/domain/book/infrastructure/graphql/mutations'
 // Series queries come last among the core domains: mySeries reads the library,
 // so it depends on the book domain being registered.
 import '~/domain/series/infrastructure/graphql/queries'
+import '~/domain/series/infrastructure/graphql/mutations'
 
 // What a reader makes of a saga, kept out of the catalogue on purpose: `series`
 // is a fact about the world with no reader in it. After series, whose SeriesId

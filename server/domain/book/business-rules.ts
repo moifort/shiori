@@ -81,7 +81,7 @@ export const groupedBySeries = (books: readonly BookView[]): LibrarySection[] =>
 }
 
 /** The tiers the library is read in, most active first. */
-const statusTiers: readonly ReadingStatus[] = ['reading', 'to-read', 'read']
+const statusTiers: readonly ReadingStatus[] = ['reading', 'to-read', 'read', 'dropped']
 
 /** The tier of a saga: that of its most active volume. */
 const tierOf = (section: LibrarySection): ReadingStatus =>
@@ -170,7 +170,8 @@ export const datesAfterStatusChange = (
   now: Date,
 ): { startedAt?: Date; finishedAt?: Date } => {
   if (next === 'to-read') return { startedAt: undefined, finishedAt: undefined }
-  if (next === 'reading') return { startedAt: book.startedAt ?? now, finishedAt: undefined }
+  if (next === 'reading' || next === 'dropped')
+    return { startedAt: book.startedAt ?? now, finishedAt: undefined }
   // Finishing a book that was never marked as started still has a start: the
   // reader read it, they just never told the app. Stamping both keeps the
   // statistics honest rather than leaving a finished book with no beginning.
@@ -179,8 +180,10 @@ export const datesAfterStatusChange = (
 
 /** Rating a book means having read it. The app lets a reader rate from anywhere,
  *  and silently leaving such a book in `to-read` would be a lie the library then
- *  repeats in every filter. */
-export const statusAfterRating = (): ReadingStatus => 'read'
+ *  repeats in every filter. A dropped book keeps its status: one star is often
+ *  exactly why it was dropped. */
+export const statusAfterRating = (current: ReadingStatus): ReadingStatus =>
+  current === 'dropped' ? 'dropped' : 'read'
 
 /** Where a reader's cover images live in the bucket. Derived from the owner and
  *  the book, never chosen by a caller: a caller-supplied path is a traversal.
@@ -222,7 +225,7 @@ export const subgenresOf = (books: readonly Pick<Book, 'subgenres'>[]): Subgenre
  *
  *  Within a tier the book most recently moved there leads, on the date that
  *  names the move: started for a book in progress, added for one on the pile,
- *  finished for one that is done. */
+ *  finished for one that is done, put down for one dropped. */
 export const shelvedOf = <T extends Book>(
   books: readonly T[],
   arrangement: LibraryArrangement,
@@ -242,10 +245,13 @@ const genreRankOf = (book: Pick<Book, 'genre'>): number =>
  *  were never stamped — an import, a book from before the dates existed —
  *  falls back to the day it was added. */
 export const shelfDateOf = (
-  book: Pick<Book, 'status' | 'addedAt' | 'startedAt' | 'finishedAt'>,
+  book: Pick<Book, 'status' | 'addedAt' | 'startedAt' | 'finishedAt' | 'statusChangedAt'>,
 ): Date => {
   if (book.status === 'reading') return book.startedAt ?? book.addedAt
   if (book.status === 'read') return book.finishedAt ?? book.addedAt
+  // A dropped book carries no date of its own: the day it was put down is the
+  // day its status last moved.
+  if (book.status === 'dropped') return book.statusChangedAt ?? book.startedAt ?? book.addedAt
   return book.addedAt
 }
 

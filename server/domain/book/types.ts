@@ -31,8 +31,10 @@ export type ReadingNote = Brand<string, 'ReadingNote'>
 export type CoverUrl = Brand<string, 'CoverUrl'>
 
 /** Where a book stands for its reader. `reading` is where a book spends most of
- *  its life, and the only state in which a note actually gets written. */
-export const READING_STATUSES = ['to-read', 'reading', 'read'] as const
+ *  its life, and the only state in which a note actually gets written.
+ *  `dropped` is a book the reader stopped and will not finish: not read, so it
+ *  counts in no reading statistic, and not on the pile either. */
+export const READING_STATUSES = ['to-read', 'reading', 'read', 'dropped'] as const
 export type ReadingStatus = (typeof READING_STATUSES)[number]
 
 /** What the book is about, from a closed list. Closed on purpose: free labels

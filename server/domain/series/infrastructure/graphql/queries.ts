@@ -1,5 +1,9 @@
 import { readVolumeNumbersOf, statusChangedAtOf } from '~/domain/book/business-rules'
-import { BookLanguageEnum, GenreEnum } from '~/domain/book/infrastructure/graphql/enums'
+import {
+  BookLanguageEnum,
+  GenreEnum,
+  LibraryArrangementEnum,
+} from '~/domain/book/infrastructure/graphql/enums'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
 import type { Book, BookLanguage, Genre } from '~/domain/book/types'
@@ -9,6 +13,7 @@ import {
   followedStateOf,
   genreOf,
   inTabOrder,
+  matchingFilter,
   progressOf,
 } from '~/domain/series/business-rules'
 import { SeriesStateEnum } from '~/domain/series/infrastructure/graphql/enums'
@@ -182,17 +187,30 @@ builder.queryFields((t) => ({
   mySeriesPage: t.field({
     type: FollowedSeriesPageType,
     description:
-      'One page of `mySeries`, for a list that draws as it scrolls and is sectioned ' +
-      'by genre: grouped by `genre` in the order of the enum, sagas of no genre ' +
-      'last. Within a genre, by `state` — in progress, complete, unknown, not ' +
-      'started — then the saga whose volume last changed status first. ' +
+      'One page of `mySeries`, for a list that draws as it scrolls. BY_GENRE (the ' +
+      'default) sections it by `genre` in the order of the enum, sagas of no genre ' +
+      'last, then by `state`; BY_STATUS by `state` alone — in progress, complete, ' +
+      'unknown, not started. Within a section the saga whose volume last changed ' +
+      'status comes first. `favorite` keeps the hearted sagas, `state` one state ' +
+      '(COMPLETE also keeps the sagas of unknown state). ' +
       'Offset-paginated: pass the number of rows already shown.',
     args: {
       limit: t.arg.int({ defaultValue: 40, description: 'Maximum sagas in the page' }),
       offset: t.arg.int({ defaultValue: 0, description: 'Rows to skip' }),
+      arrangement: t.arg({ type: LibraryArrangementEnum, required: false }),
+      favorite: t.arg.boolean({ required: false, description: 'Only the hearted sagas' }),
+      state: t.arg({ type: SeriesStateEnum, required: false }),
     },
     resolve: async (_root, args, context) => {
-      const rows = inTabOrder(await followedSeriesOf(context.userId))
+      const followed = (await followedSeriesOf(context.userId)).map((saga) => ({
+        ...saga,
+        favorite: saga.opinion?.favorite === true,
+      }))
+      const kept = matchingFilter(followed, {
+        favorite: args.favorite ?? undefined,
+        state: args.state ?? undefined,
+      })
+      const rows = inTabOrder(kept, args.arrangement ?? 'by-genre')
       const limit = Math.max(1, Math.min(args.limit ?? 40, 200))
       const offset = Math.max(0, args.offset ?? 0)
       return { items: rows.slice(offset, offset + limit), hasMore: offset + limit < rows.length }

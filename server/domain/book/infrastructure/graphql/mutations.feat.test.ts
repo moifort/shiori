@@ -65,6 +65,38 @@ describe('cataloguing through the API', () => {
     expect(corrected.data?.updateBook).toEqual({ title: 'One Piece', format: 'BANDE_DESSINEE' })
   })
 
+  test('corrects the running time and the narrators of an audiobook', async () => {
+    const created = await execute(
+      'mutation { addBook(input: { title: "Dune", format: AUDIOBOOK }) { id } }',
+    )
+    const { id } = (created.data as { addBook: { id: string } }).addBook
+
+    const corrected = await execute(
+      `mutation { updateBook(id: "${id}", input: { durationMinutes: 870, ` +
+        'narrators: ["Simon Vance"] }) { durationMinutes narrators } }',
+    )
+
+    expect(corrected.errors).toBeUndefined()
+    expect(corrected.data?.updateBook).toEqual({ durationMinutes: 870, narrators: ['Simon Vance'] })
+
+    const cleared = await execute(
+      `mutation { updateBook(id: "${id}", input: { durationMinutes: null }) { durationMinutes } }`,
+    )
+    expect(cleared.data?.updateBook).toEqual({ durationMinutes: null })
+  })
+
+  test('marks a book dropped, and a rating leaves it dropped', async () => {
+    const book = await addBook('Le Maître du Haut Château', 'READING')
+
+    await execute(`mutation { setReadingStatus(id: "${book.id}", status: DROPPED) { id } }`)
+    const rated = await execute(
+      `mutation { rateBook(id: "${book.id}", rating: 1) { status finishedAt } }`,
+    )
+
+    expect(rated.errors).toBeUndefined()
+    expect(rated.data?.rateBook).toEqual({ status: 'DROPPED', finishedAt: null })
+  })
+
   // The cover `scanBook` found rides back through `addBook`, and is what every
   // later read of the book draws.
   test('keeps the publisher cover a scan found and reads it back', async () => {
@@ -203,8 +235,8 @@ describe('correcting a book through the API', () => {
     expect(library.data?.library).toEqual([
       {
         books: [
-          { title: 'Dune 1', genre: 'SCIENCE_FICTION', subgenres: ['Space opera'] },
-          { title: 'Dune 2', genre: 'SCIENCE_FICTION', subgenres: ['Space opera'] },
+          { title: 'Dune 1', genre: 'SCIENCE_FICTION', subgenres: ['Space Opera'] },
+          { title: 'Dune 2', genre: 'SCIENCE_FICTION', subgenres: ['Space Opera'] },
         ],
       },
       { books: [{ title: 'Alone', genre: null, subgenres: [] }] },

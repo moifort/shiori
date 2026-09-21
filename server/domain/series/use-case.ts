@@ -1,16 +1,36 @@
 import { AdminCommand } from '~/domain/admin/command'
+import { AnalyticsCommand } from '~/domain/analytics/command'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
+import { BookCommand } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
 import { Scan } from '~/domain/scan'
 import type { ScanLanguage } from '~/domain/scan/types'
 import { SeriesQuery } from '~/domain/series/query'
 import type { Series, SeriesId } from '~/domain/series/types'
+import { SeriesOpinionCommand } from '~/domain/series-opinion/command'
 import type { UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
+import { atomically } from '~/utils/firestore'
 
 const logger = createLogger('series')
 
 export namespace SeriesUseCase {
+  /** Removes a saga from the reader's library: every volume they hold, and what
+   *  they made of it. The shared catalogue stays, as it belongs to nobody.
+   *
+   *  One batch, so the library never shows half a saga. Returns how many books
+   *  went; zero when the reader held none. */
+  export const removeFromLibrary = async (userId: UserId, seriesId: SeriesId): Promise<number> => {
+    const removed = await atomically(async (batch) => {
+      const count = await BookCommand.removeSeries(userId, seriesId, batch)
+      await SeriesOpinionCommand.forget(userId, seriesId, batch)
+      if (count > 0) AnalyticsCommand.markStale(userId, batch)
+      return count
+    })
+    if (removed > 0) await AnalyticsUseCase.refreshAfterWrite(userId)
+    return removed
+  }
+
   /** One saga's catalogue, built the first time somebody asks for it.
    *
    *  A scan catalogues the saga of every volume it reads, but an Audible import

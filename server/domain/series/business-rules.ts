@@ -1,4 +1,4 @@
-import type { BookLanguage, Genre, ReadingStatus } from '~/domain/book/types'
+import type { BookLanguage, Genre, LibraryArrangement, ReadingStatus } from '~/domain/book/types'
 import { GENRES } from '~/domain/book/types'
 import type {
   Series,
@@ -86,7 +86,8 @@ export const followedStateOf = (
 ): SeriesState | null => {
   if (statuses.every((status) => status === 'to-read')) return 'not-started'
   if (catalogue) return stateOf(catalogue, readVolumeNumbers, currentYear)
-  return statuses.some((status) => status !== 'read') ? 'in-progress' : null
+  // A dropped volume is as done with as a read one: it holds nothing open.
+  return statuses.some((status) => status !== 'read' && status !== 'dropped') ? 'in-progress' : null
 }
 
 // What the reader is on first, then what they finished, then what they have
@@ -104,14 +105,19 @@ const STATE_RANK: Record<SeriesState | 'unknown', number> = {
  *  whose volume last changed status first — the same recency the library is
  *  ordered on. Sagas that tie keep the order they came in.
  *
+ *  Arranged by status, the genre is left out and the tab is sectioned by state
+ *  alone, as the library is by reading status.
+ *
  *  Done on the server rather than on the phone because the list is paginated:
  *  grouped on the client, a section would grow again every time a page lands. */
 export const inTabOrder = <
   Saga extends { genre?: Genre; state: SeriesState | null; lastStatusChangeAt: Date },
 >(
   sagas: readonly Saga[],
+  arrangement: LibraryArrangement = 'by-genre',
 ): Saga[] => {
-  const genreRank = (saga: Saga) => (saga.genre ? GENRES.indexOf(saga.genre) : GENRES.length)
+  const genreRank = (saga: Saga) =>
+    arrangement === 'by-status' ? 0 : saga.genre ? GENRES.indexOf(saga.genre) : GENRES.length
   return [...sagas].sort(
     (left, right) =>
       genreRank(left) - genreRank(right) ||
@@ -119,6 +125,19 @@ export const inTabOrder = <
       right.lastStatusChangeAt.getTime() - left.lastStatusChangeAt.getTime(),
   )
 }
+
+/** The sagas a filter of the Series tab keeps: the hearted ones, and those in
+ *  one state. A saga whose state is unknown — every owned volume read and no
+ *  catalogue to say more — is kept with the complete ones it resembles. */
+export const matchingFilter = <Saga extends { state: SeriesState | null; favorite: boolean }>(
+  sagas: readonly Saga[],
+  filter: { favorite?: boolean; state?: SeriesState },
+): Saga[] =>
+  sagas.filter(
+    (saga) =>
+      (!filter.favorite || saga.favorite) &&
+      (filter.state === undefined || (saga.state ?? 'complete') === filter.state),
+  )
 
 /** Catalogue order for a whole saga. */
 export const inCatalogueOrder = (volumes: readonly Volume[]): Volume[] =>

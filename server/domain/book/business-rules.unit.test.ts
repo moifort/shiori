@@ -5,6 +5,7 @@ import {
   readVolumeNumbersOf,
   shelfPageOf,
   shelvedOf,
+  statusAfterRating,
   statusChangedAtOf,
   statusStampAfterChange,
   subgenresOf,
@@ -296,6 +297,47 @@ describe('datesAfterStatusChange', () => {
   })
 })
 
+describe('a dropped book', () => {
+  // Not read, so no finish date to count in the statistics; but it was opened.
+  test('keeps its start, stamping one if it had none, and never a finish', () => {
+    expect(datesAfterStatusChange({ status: 'to-read' }, 'dropped', NOW)).toEqual({
+      startedAt: NOW,
+      finishedAt: undefined,
+    })
+    expect(
+      datesAfterStatusChange(
+        { status: 'read', startedAt: EARLIER, finishedAt: NOW },
+        'dropped',
+        NOW,
+      ),
+    ).toEqual({ startedAt: EARLIER, finishedAt: undefined })
+  })
+
+  // One star is often exactly why it was dropped.
+  test('stays dropped when rated, where any other book becomes read', () => {
+    expect(statusAfterRating('dropped')).toBe('dropped')
+    expect(statusAfterRating('to-read')).toBe('read')
+  })
+
+  test('sits last, after the books finished, the latest put down first', () => {
+    const shelved = shelvedOf(
+      [
+        book({ title: 'Dropped long ago', status: 'dropped', statusChangedAt: EARLIER }),
+        book({ title: 'Finished', status: 'read', finishedAt: EARLIER }),
+        book({ title: 'Just dropped', status: 'dropped', statusChangedAt: LATER }),
+        book({ title: 'Pile' }),
+      ],
+      'by-status',
+    )
+    expect(shelved.map((entry) => String(entry.title))).toEqual([
+      'Pile',
+      'Finished',
+      'Just dropped',
+      'Dropped long ago',
+    ])
+  })
+})
+
 describe('groupedBySeries, across languages', () => {
   // The editions of a translation are different objects from the editions of
   // the original — other covers, other titles, read at other times — and one
@@ -345,13 +387,13 @@ describe('subgenresOf', () => {
       tagged('Dark fantasy'),
       tagged('Space opera'),
     ])
-    expect(proposed.map(String)).toEqual(['Space opera', 'Dark fantasy', 'Jeunesse'])
+    expect(proposed.map(String)).toEqual(['Space Opera', 'Dark Fantasy', 'Jeunesse'])
   })
 
   // Two spellings of one word are one word: the form must not propose both.
   test('folds case, keeping the first spelling seen', () => {
-    const proposed = subgenresOf([tagged('Dark fantasy'), tagged('dark fantasy')])
-    expect(proposed.map(String)).toEqual(['Dark fantasy'])
+    const proposed = subgenresOf([tagged('Dark fantasy'), tagged('dark FANTASY')])
+    expect(proposed.map(String)).toEqual(['Dark Fantasy'])
   })
 })
 

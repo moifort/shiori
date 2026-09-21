@@ -387,18 +387,21 @@ describe('building the view', () => {
         book('loved', { favorite: true }),
         book('heard', { format: 'audiobook' }),
         book('plain', {}),
+        book('put-down', { status: 'dropped' }),
       ],
     })
 
     expect(view.favoriteBookCount).toBe(1)
     expect(view.favoriteSeriesCount).toBe(1)
     expect(view.audiobookCount).toBe(1)
-    expect(view.printedBookCount).toBe(2)
+    expect(view.printedBookCount).toBe(3)
+    expect(view.droppedCount).toBe(1)
 
     const today = day('2026-09-15')
     expect(dashboardOf(view, today).favoriteCount).toBe(2)
     expect(dashboardOf(view, today).hasAudiobooks).toBe(true)
     expect(dashboardOf(view, today).hasPrintedBooks).toBe(true)
+    expect(dashboardOf(view, today).droppedCount).toBe(1)
   })
 
   // A library of recordings only has no page to chart.
@@ -424,12 +427,19 @@ describe('building the view', () => {
       catalogues: [],
       books: [],
     })
-    const { favoriteBookCount, favoriteSeriesCount, audiobookCount, printedBookCount, ...stored } =
-      legacy
+    const {
+      favoriteBookCount,
+      favoriteSeriesCount,
+      audiobookCount,
+      printedBookCount,
+      droppedCount,
+      ...stored
+    } = legacy
 
     const dashboard = dashboardOf(stored, day('2026-09-15'))
     expect(dashboard.favoriteCount).toBe(0)
     expect(dashboard.hasAudiobooks).toBe(false)
     expect(dashboard.hasPrintedBooks).toBe(true)
+    expect(dashboard.droppedCount).toBe(0)
   })
 })

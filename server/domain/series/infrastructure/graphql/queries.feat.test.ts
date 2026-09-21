@@ -341,4 +341,62 @@ describe('the Series tab, sectioned by genre', () => {
       ],
     })
   })
+
+  test('sections by state alone when arranged by status', async () => {
+    const reading = await addSaga('Wheel', 'FANTASY')
+    await addSaga('Dune', 'SCIENCE_FICTION')
+    await setStatus(reading, 'READING')
+
+    const result = await execute(
+      '{ mySeriesPage(limit: 10, arrangement: BY_STATUS) { items { name state } } }',
+    )
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.mySeriesPage).toEqual({
+      items: [
+        { name: 'Wheel', state: 'IN_PROGRESS' },
+        { name: 'Dune', state: 'NOT_STARTED' },
+      ],
+    })
+  })
+
+  test('keeps only the hearted sagas, or those in one state', async () => {
+    const finished = await addSaga('Berserk', 'FANTASY')
+    await addSaga('Dune', 'SCIENCE_FICTION')
+    await setStatus(finished, 'READ')
+    await execute(
+      'mutation { setSeriesFavorite(seriesId: "dune--auteur", favorite: true) { favorite } }',
+    )
+
+    const hearted = await execute('{ mySeriesPage(favorite: true) { items { name } } }')
+    expect(hearted.data?.mySeriesPage).toEqual({ items: [{ name: 'Dune' }] })
+
+    // Every owned volume read and no catalogue: unknown, kept with the complete.
+    const complete = await execute('{ mySeriesPage(state: COMPLETE) { items { name } } }')
+    expect(complete.data?.mySeriesPage).toEqual({ items: [{ name: 'Berserk' }] })
+  })
+})
+
+describe('removing a saga from the library', () => {
+  test('removes every volume and the opinion, and nothing else', async () => {
+    await addVolume('Dune', 1)
+    await addVolume('Le Messie de Dune', 2)
+    await execute(
+      'mutation { addBook(input: { title: "Hypérion", authors: ["Dan Simmons"] }) { id } }',
+    )
+    await execute('mutation { rateSeries(seriesId: "dune--frank-herbert", rating: 4) { rating } }')
+
+    const removed = await execute('mutation { deleteSeries(seriesId: "dune--frank-herbert") }')
+    expect(removed.errors).toBeUndefined()
+    expect(removed.data?.deleteSeries).toBe(2)
+
+    const left = await execute(
+      '{ mySeries { name } seriesOpinion(seriesId: "dune--frank-herbert") { rating } }',
+    )
+    expect(left.data).toEqual({ mySeries: [], seriesOpinion: null })
+  })
+
+  test('removes nothing from a saga the reader holds no volume of', async () => {
+    const removed = await execute('mutation { deleteSeries(seriesId: "dune--frank-herbert") }')
+    expect(removed.data?.deleteSeries).toBe(0)
+  })
 })

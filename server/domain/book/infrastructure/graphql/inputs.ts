@@ -99,6 +99,11 @@ export const BookEditInput = builder.inputType('BookEditInput', {
       description: 'At most three, most representative first.',
     }),
     pageCount: t.field({ type: 'PageCount', required: false }),
+    durationMinutes: t.field({
+      type: 'ListeningMinutes',
+      required: false,
+      description: 'The running time of an audiobook, in minutes.',
+    }),
     narrators: t.field({ type: ['NarratorName'], required: false, description: 'At most five.' }),
     language: t.field({ type: BookLanguageEnum, required: false }),
     isbn13: t.field({ type: 'Isbn13', required: false }),

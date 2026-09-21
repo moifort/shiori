@@ -27,6 +27,7 @@ import type {
   Subgenre,
   Synopsis,
 } from '~/domain/book/types'
+import type { SeriesId } from '~/domain/series/types'
 import type { AuthorName, BookTitle, UserId, Year } from '~/domain/shared/types'
 import type { ObjectPath } from '~/system/object-store/types'
 
@@ -81,6 +82,7 @@ export type BookEdit = Partial<
     | 'genre'
     | 'subgenres'
     | 'pageCount'
+    | 'durationMinutes'
     | 'narrators'
     | 'isbn13'
     | 'language'
@@ -210,7 +212,7 @@ export namespace BookCommand {
   ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
-    const status = statusAfterRating()
+    const status = statusAfterRating(book.status)
     return repository.save(
       {
         ...book,
@@ -287,6 +289,18 @@ export namespace BookCommand {
     if (!book) return 'not-found'
     await repository.remove(userId, bookId, batch)
     return 'removed'
+  }
+
+  /** Remove every volume of one saga from the reader's library, in one batch.
+   *  Returns how many books went. */
+  export const removeSeries = async (
+    userId: UserId,
+    seriesId: SeriesId,
+    batch?: WriteBatch,
+  ): Promise<number> => {
+    const volumes = await repository.findBySeries(userId, seriesId)
+    for (const volume of volumes) await repository.remove(userId, volume.id, batch)
+    return volumes.length
   }
 
   /** Erase the reader's whole library — an account deletion wipes it outright. */

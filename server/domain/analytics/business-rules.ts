@@ -133,6 +133,7 @@ export const analyticsViewOf = (input: {
     favoriteSeriesCount: opinions.filter((opinion) => opinion.favorite === true).length,
     audiobookCount: books.filter((book) => book.format === 'audiobook').length,
     printedBookCount: books.filter((book) => book.format !== 'audiobook').length,
+    droppedCount: books.filter((book) => book.status === 'dropped').length,
   }
 }
 
@@ -211,6 +212,7 @@ export const dashboardOf = (view: AnalyticsView, today: LocalDateValue): Dashboa
     favoriteCount: (view.favoriteBookCount ?? 0) + (view.favoriteSeriesCount ?? 0),
     hasAudiobooks: (view.audiobookCount ?? 0) > 0,
     hasPrintedBooks: view.printedBookCount === undefined || view.printedBookCount > 0,
+    droppedCount: view.droppedCount ?? 0,
     libraryIsEmpty: finishes.length === 0 && view.reading.length === 0 && view.toRead.length === 0,
   }
 }

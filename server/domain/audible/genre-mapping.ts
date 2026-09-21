@@ -22,7 +22,7 @@ type Shelf = { genre: Genre; generic?: true } | { subgenre: string }
  *  - **An audience is not a genre.** `children` and `young-adult` say who a book
  *    is for, which `GENRES` refuses to record. They become subgenres instead, so
  *    nothing is lost — and the rungs below them still supply the genre: a
- *    young-adult thriller is a thriller filed under "Young adult".
+ *    young-adult thriller is a thriller filed under "Young Adult".
  *  - **A theme is not a genre either.** `lgbtq` and `sports` describe what a book
  *    is about across every rack, so they land in subgenres rather than being
  *    swept into `other`, which has to stay something the reader chose.
@@ -62,7 +62,7 @@ const SHELF: Record<AudibleGenre, Shelf> = {
   'self-help': { genre: 'self-help' },
   science: { genre: 'science' },
   children: { subgenre: 'Jeunesse' },
-  'young-adult': { subgenre: 'Young adult' },
+  'young-adult': { subgenre: 'Young Adult' },
   comedy: { genre: 'humor' },
   erotica: { genre: 'romance' },
   religion: { genre: 'essay' },
@@ -221,7 +221,7 @@ export const genreFrom = (item: AudibleItem): Genre | undefined => {
  *  names it as one of its own examples. They are kept here instead.
  *
  *  Collected whether or not a genre was found, because the two answer different
- *  questions: a young-adult thriller is a thriller, filed under "Young adult".
+ *  questions: a young-adult thriller is a thriller, filed under "Young Adult".
  *  Deduplicated — a title sits on several ladders and they overlap — and capped
  *  at `MAX_SUBGENRES`, in the order the ladders gave them, since the first is the
  *  only one the library list shows. */

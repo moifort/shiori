@@ -56,7 +56,7 @@ const anEnrichment = {
   volumeKind: 'main',
   firstPublishedIn: 2007,
   genre: 'fantasy',
-  subgenres: ['Roman initiatique'],
+  subgenres: ['Roman Initiatique'],
   pageCount: 662,
   isbn13: '9782352943556',
   synopsis: 'Kvothe raconte sa propre légende.',
@@ -163,7 +163,7 @@ describe('classifying the genre', () => {
     const { result } = await Scan.scanWithCache(image, 'fr')
 
     expect(result.genre).toBe('fantasy')
-    expect((result.subgenres ?? []).map(String)).toEqual(['Roman initiatique'])
+    expect((result.subgenres ?? []).map(String)).toEqual(['Roman Initiatique'])
   })
 
   test('drops a genre outside the list without losing the book', async () => {
@@ -176,7 +176,7 @@ describe('classifying the genre', () => {
   })
 
   test('keeps three subgenres at most', async () => {
-    const subgenres = ['Dark fantasy', 'Roman initiatique', 'Musique', 'Magie']
+    const subgenres = ['Dark Fantasy', 'Roman Initiatique', 'Musique', 'Magie']
     answers = [aCover, { ...anEnrichment, subgenres }, aCatalogue]
 
     const { result } = await Scan.scanWithCache(image, 'fr')

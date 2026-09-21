@@ -295,6 +295,9 @@ Corrections to a book record. Omitted fields are left as they are; null clears a
 """
 input BookEditInput {
   authors: [AuthorName!]
+
+  """The running time of an audiobook, in minutes."""
+  durationMinutes: ListeningMinutes
   firstPublishedIn: Year
   format: BookFormat
   genre: Genre
@@ -428,6 +431,9 @@ type Dashboard {
 
   """Median days from start to finish, both days included."""
   daysToFinish: Trend!
+
+  """Books the reader dropped because they did not like them."""
+  droppedCount: Int!
 
   """Books and sagas the reader hearted, together."""
   favoriteCount: Int!
@@ -840,6 +846,11 @@ type LibrarySectionOpinion {
 }
 
 """
+An audiobook running time in whole minutes, 1 to 60000. Absent when unknown. Example: 870 for 14 h 30.
+"""
+scalar ListeningMinutes
+
+"""
 The signed-in user: their identity and onboarding state.
 
 Always resolvable from the auth token, so `userId` is always present. Every other field is null until the onboarding wizard completes, which lets the app route a fresh account into onboarding.
@@ -943,6 +954,11 @@ type Mutation {
   Remove a book from the library for good. Returns true when it was there.
   """
   deleteBook(id: BookId!): Boolean!
+
+  """
+  Remove a saga from the library: every volume the reader holds, and their rating and heart for it. The shared catalogue is left alone. Returns how many books were removed, zero when the reader held none.
+  """
+  deleteSeries(seriesId: SeriesId!): Int!
 
   """
   Forget the Audible connection. Books already imported stay in the library.
@@ -1360,14 +1376,20 @@ type Query {
   mySeries: [FollowedSeries!]!
 
   """
-  One page of `mySeries`, for a list that draws as it scrolls and is sectioned by genre: grouped by `genre` in the order of the enum, sagas of no genre last. Within a genre, by `state` — in progress, complete, unknown, not started — then the saga whose volume last changed status first. Offset-paginated: pass the number of rows already shown.
+  One page of `mySeries`, for a list that draws as it scrolls. BY_GENRE (the default) sections it by `genre` in the order of the enum, sagas of no genre last, then by `state`; BY_STATUS by `state` alone — in progress, complete, unknown, not started. Within a section the saga whose volume last changed status comes first. `favorite` keeps the hearted sagas, `state` one state (COMPLETE also keeps the sagas of unknown state). Offset-paginated: pass the number of rows already shown.
   """
   mySeriesPage(
+    arrangement: LibraryArrangement
+
+    """Only the hearted sagas"""
+    favorite: Boolean
+
     """Maximum sagas in the page"""
     limit: Int = 40
 
     """Rows to skip"""
     offset: Int = 0
+    state: SeriesState
   ): FollowedSeriesPage!
 
   """
@@ -1455,9 +1477,14 @@ scalar ReadingNote
 """
 Where a book stands for its reader.
 
-`TO_READ` is where every book lands when catalogued, `READING` is where it spends most of its life, `READ` is the end. Moving between them stamps the reading dates: those follow from the move and are never typed by the reader.
+`TO_READ` is where every book lands when catalogued, `READING` is where it spends most of its life, `READ` is the end, `DROPPED` the end of a book not finished. Moving between them stamps the reading dates: those follow from the move and are never typed by the reader.
 """
 enum ReadingStatus {
+  """
+  Stopped for good, the reader did not like it. Keeps `startedAt` (stamping it if it was never set) and clears `finishedAt`: a dropped book was not read.
+  """
+  DROPPED
+
   """
   Finished. Stamps `finishedAt`, and `startedAt` too if it was never set.
   """

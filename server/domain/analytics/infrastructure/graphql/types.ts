@@ -186,6 +186,9 @@ export const DashboardType = builder.objectRef<Dashboard>('Dashboard').implement
         'Whether the library holds a single recording. False, and the listening ' +
         'hours have nothing to chart.',
     }),
+    droppedCount: t.exposeInt('droppedCount', {
+      description: 'Books the reader dropped because they did not like them.',
+    }),
     hasPrintedBooks: t.exposeBoolean('hasPrintedBooks', {
       description:
         'Whether the library holds a single book with pages, printed or electronic. ' +

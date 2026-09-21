@@ -26,6 +26,10 @@ export namespace SeriesOpinionCommand {
   ) =>
     write(userId, seriesId, (opinion) => ({ ...opinion, favorite: favorite || undefined }), batch)
 
+  /** Forget what the reader made of a saga they no longer hold. */
+  export const forget = (userId: UserId, seriesId: SeriesId, batch?: WriteBatch): Promise<void> =>
+    repository.remove(userId, seriesId, batch)
+
   export const deleteAllForUser = (userId: UserId): Promise<void> =>
     repository.removeAllByUser(userId)
 }

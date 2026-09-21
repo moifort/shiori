@@ -117,7 +117,7 @@ describe('a shelf that is not a genre', () => {
     const item = shelvedIn(ladderOf(['young-adult', 'young-adult/thriller']))
 
     expect(genreFrom(item)).toBe('thriller')
-    expect(subgenresFrom(item).map(String)).toEqual(['Young adult'])
+    expect(subgenresFrom(item).map(String)).toEqual(['Young Adult'])
   })
 
   test('says nothing extra for a title whose every shelf is a genre', () => {
@@ -143,7 +143,7 @@ describe('a shelf that is not a genre', () => {
       ladderOf(['sports']),
     )
 
-    expect(subgenresFrom(item).map(String)).toEqual(['Jeunesse', 'Young adult', 'LGBTQ+'])
+    expect(subgenresFrom(item).map(String)).toEqual(['Jeunesse', 'Young Adult', 'LGBTQ+'])
   })
 })
 

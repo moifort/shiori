@@ -90,6 +90,8 @@ export type AnalyticsView = {
    *  the same for the pages. A view stored before it answers nothing, read as
    *  pages to chart rather than as a library of recordings only. */
   printedBookCount?: number
+  /** Books the reader stopped because they did not like them. */
+  droppedCount?: number
 }
 
 export type YearCount = { year: number; count: number }
@@ -131,5 +133,7 @@ export type Dashboard<Card = DashboardBook> = {
   hasAudiobooks: boolean
   /** Whether a single book with pages is on the shelf. */
   hasPrintedBooks: boolean
+  /** Books dropped, the reader not having liked them. */
+  droppedCount: number
   libraryIsEmpty: boolean
 }

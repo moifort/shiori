@@ -6,6 +6,7 @@ import {
   BookId,
   CoverUrl,
   Isbn13,
+  ListeningMinutes,
   NarratorName,
   PageCount,
   Publisher,
@@ -133,6 +134,14 @@ builder.scalarType('PageCount', {
     'which would read as a real count of nothing. Example: 662.',
   serialize: (value) => value as number,
   parseValue: validatedParse('PageCount', PageCount),
+})
+
+builder.scalarType('ListeningMinutes', {
+  description:
+    'An audiobook running time in whole minutes, 1 to 60000. Absent when unknown. ' +
+    'Example: 870 for 14 h 30.',
+  serialize: (value) => value as number,
+  parseValue: validatedParse('ListeningMinutes', ListeningMinutes),
 })
 
 builder.scalarType('StarRating', {

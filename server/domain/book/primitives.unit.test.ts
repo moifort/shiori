@@ -92,7 +92,21 @@ describe('GenreValue', () => {
 
 describe('Subgenre', () => {
   test('trims a free label', () => {
-    expect(String(Subgenre('  Dark fantasy '))).toBe('Dark fantasy')
+    expect(String(Subgenre('  Dark fantasy '))).toBe('Dark Fantasy')
+  })
+
+  test('raises the first letter of every word and keeps the capitals already there', () => {
+    expect(String(Subgenre('space opera'))).toBe('Space Opera')
+    expect(String(Subgenre('LitRPG'))).toBe('LitRPG')
+    expect(String(Subgenre('litRPG progression'))).toBe('LitRPG Progression')
+  })
+
+  test('keeps the minor words lowered, except at the start', () => {
+    expect(String(Subgenre('roman De gare'))).toBe('Roman de Gare')
+    expect(String(Subgenre('science et magie'))).toBe('Science et Magie')
+    expect(String(Subgenre('le cycle'))).toBe('Le Cycle')
+    expect(String(Subgenre('roman d’aventure'))).toBe('Roman d’Aventure')
+    expect(String(Subgenre("l'épée et la magie"))).toBe("L'Épée et la Magie")
   })
 
   test('refuses an empty label and one past 100 characters', () => {

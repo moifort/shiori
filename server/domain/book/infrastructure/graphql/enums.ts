@@ -4,7 +4,7 @@ export const ReadingStatusEnum = builder.enumType('ReadingStatus', {
   description:
     'Where a book stands for its reader.\n\n' +
     '`TO_READ` is where every book lands when catalogued, `READING` is where it ' +
-    'spends most of its life, `READ` is the end. Moving between them stamps the ' +
+    'spends most of its life, `READ` is the end, `DROPPED` the end of a book not finished. Moving between them stamps the ' +
     'reading dates: those follow from the move and are never typed by the reader.',
   values: {
     TO_READ: { value: 'to-read', description: 'On the pile. Clears any reading date it had.' },
@@ -15,6 +15,12 @@ export const ReadingStatusEnum = builder.enumType('ReadingStatus', {
     READ: {
       value: 'read',
       description: 'Finished. Stamps `finishedAt`, and `startedAt` too if it was never set.',
+    },
+    DROPPED: {
+      value: 'dropped',
+      description:
+        'Stopped for good, the reader did not like it. Keeps `startedAt` (stamping it ' +
+        'if it was never set) and clears `finishedAt`: a dropped book was not read.',
     },
   } as const,
 })

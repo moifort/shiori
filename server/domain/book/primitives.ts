@@ -31,8 +31,72 @@ export const Publisher = (value: unknown) => {
   return make<PublisherType>()(v)
 }
 
+/** The words a subgenre keeps in lower case unless it starts with them, in the
+ *  two languages its labels arrive in. */
+const MINOR_WORDS = new Set([
+  'à',
+  'au',
+  'aux',
+  'de',
+  'des',
+  'du',
+  'en',
+  'et',
+  'la',
+  'le',
+  'les',
+  'ou',
+  'par',
+  'pour',
+  'sur',
+  'un',
+  'une',
+  'a',
+  'an',
+  'and',
+  'for',
+  'in',
+  'of',
+  'on',
+  'or',
+  'the',
+  'to',
+  'with',
+])
+
+const capitalized = (word: string): string => word.charAt(0).toLocaleUpperCase('fr') + word.slice(1)
+
+/** One word of a subgenre as it is shelved: its first letter raised, every
+ *  other letter left as typed — "LitRPG" stays "LitRPG", never "Litrpg". A minor
+ *  word inside the label is lowered, and an elided article keeps its
+ *  apostrophe lowered with the word after it raised: "Roman d'Aventure". */
+const shelvedWord = (word: string, first: boolean): string => {
+  const lowered = word.toLocaleLowerCase('fr')
+  if (!first && MINOR_WORDS.has(lowered)) return lowered
+  const elision = /^([dlDL])(['’])(.+)$/u.exec(word)
+  if (elision) {
+    const [, article, apostrophe, rest] = elision
+    return `${first ? article.toUpperCase() : article.toLowerCase()}${apostrophe}${capitalized(rest)}`
+  }
+  return capitalized(word)
+}
+
+/** A subgenre in title case, so the scan, the imports and the form converge on
+ *  one spelling of each: "dark fantasy", "Dark fantasy" and "Dark Fantasy" were
+ *  three entries in the autocompletion. */
 export const Subgenre = (value: unknown) => {
-  const v = z.string().trim().min(1).max(100).parse(value)
+  const v = z
+    .string()
+    .trim()
+    .min(1)
+    .max(100)
+    .transform((label) =>
+      label
+        .split(/\s+/u)
+        .map((word, index) => shelvedWord(word, index === 0))
+        .join(' '),
+    )
+    .parse(value)
   return make<SubgenreType>()(v)
 }
 
