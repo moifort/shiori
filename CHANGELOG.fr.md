@@ -4,7 +4,7 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
-- Correction de la bibliothèque qui remontait en haut après l’enregistrement d’un livre situé loin dans la liste.
+- Correction des listes de la bibliothèque et des séries qui remontaient en haut après l’enregistrement d’un livre situé loin dans la liste.
 - Correction des erreurs de chargement lors de la génération de la fiche d’une série.
 - Correction des livres audio vendus en deux parties, affichés à part de leur tome dans une série.
 - La fiche d’une série affiche l’année de parution des tomes que vous possédez.

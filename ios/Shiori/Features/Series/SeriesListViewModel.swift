@@ -81,27 +81,42 @@ final class SeriesListViewModel {
     private(set) var loadMoreFailed = false
 
     private let pageSize = 40
+    /// The most rows the server hands back in one page.
+    private let maxPageSize = 200
     private let prefetchThreshold = 6
     private var generation = 0
 
-    func load() async {
+    /// Loads the first page, or as many rows as the list already shows when
+    /// `keepingDepth` is set: a reload after an edit far down the list must
+    /// not cut it back to the first page and throw the reader to the top.
+    func load(keepingDepth: Bool = false) async {
         generation += 1
         let requested = generation
+        let wanted = keepingDepth ? max(followed.count, pageSize) : pageSize
         isLoading = true
         errorMessage = nil
         isLoadingMore = false
         loadMoreFailed = false
         do {
-            let page = try await SeriesAPI.mySeriesPage(
-                limit: pageSize, offset: 0, mode: mode, state: stateFilter
-            )
-            guard requested == generation else { return }
-            let fetched = page.items
+            // The server caps a page, so a deep list comes back in several,
+            // swapped in at once so the rows never shrink in between.
+            var fetched: [FollowedSeries] = []
+            var more = true
+            while more, fetched.count < wanted {
+                let page = try await SeriesAPI.mySeriesPage(
+                    limit: min(wanted - fetched.count, maxPageSize), offset: fetched.count,
+                    mode: mode, state: stateFilter
+                )
+                guard requested == generation else { return }
+                fetched += page.items
+                more = page.hasMore && !page.items.isEmpty
+            }
             followed = fetched
-            hasMore = page.hasMore
+            hasMore = more
             loaded = true
             let cache = cache(for: mode, stateFilter)
-            Task.detached { cache.write(fetched) }
+            let firstPage = Array(fetched.prefix(pageSize))
+            Task.detached { cache.write(firstPage) }
         } catch is CancellationError {
             return
         } catch {

@@ -79,7 +79,7 @@ struct SeriesListView: View {
         // A heart given on a saga screen, a volume finished in the library: the
         // rows here say so the next time the reader looks, not the next launch.
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
-            Task { await viewModel.load() }
+            Task { await viewModel.load(keepingDepth: true) }
         }
     }
 
