@@ -10,6 +10,9 @@ the release tag is pushed.
 
 ## Unreleased
 
+- The Series tab and the dashboard redraw when a saga screen is closed: a catalogue built
+  on a saga's first opening now shows at once in the row's cover strip and in the progress
+  bars, rather than on the next visit to the tab.
 - Every card and tile of the dashboard opens the list it counts: "Reading" opens the
   library on the books in progress, the pile and the suggestions on the books to read, the
   average rating on the rated books, and "Series in progress" opens the Series tab filtered

@@ -51,10 +51,14 @@ struct HomeView: View {
                     case let .series(id): SeriesView(seriesId: id)
                     }
                 }
+                // Every time the tab comes back, and every time a saga pushed
+                // from the progress card is popped: a scan or an edit made in
+                // another tab changes the figures, a saga's first opening
+                // builds the catalogue its bar is measured on, and the view
+                // behind them is one document read. On the content rather
+                // than on the stack, which stays put under a pushed saga.
+                .onAppear { Task { await viewModel.loadOnAppear() } }
         }
-        // Every time the tab comes back: a scan or an edit made in another tab
-        // changes the figures, and the view behind them is one document read.
-        .onAppear { Task { await viewModel.loadOnAppear() } }
         // And every time a write lands anywhere: the figures behind this screen
         // are rebuilt by the server on each one, and the tab may be showing.
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in

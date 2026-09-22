@@ -63,12 +63,17 @@ struct SeriesListView: View {
             .navigationTitle("Séries")
             .navigationSubtitle(viewModel.mode.subtitle)
             .toolbar { toolbar }
-        }
-        // Over last session's snapshot when the disk had one: the rows show at
-        // once and the spinner at the top says they are being brought up to date.
-        .task {
-            takeRequested()
-            await viewModel.loadOnAppear()
+            // On the content rather than on the stack: the stack stays put
+            // while a saga is pushed over it, the content comes back when the
+            // saga is popped — and comes back changed, since a saga's first
+            // opening is where the server builds its catalogue, which this
+            // list draws as the missing covers of the strip. Over last
+            // session's snapshot when the disk had one: the rows show at once
+            // and the spinner at the top says they are being brought up to date.
+            .task {
+                takeRequested()
+                await viewModel.loadOnAppear()
+            }
         }
         .onChange(of: requested) { takeRequested() }
         // A heart given on a saga screen, a volume finished in the library: the

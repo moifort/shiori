@@ -4,6 +4,9 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- L’onglet Séries et l’accueil se redessinent à la fermeture de l’écran d’une saga : un
+  catalogue constitué à la première ouverture apparaît aussitôt dans la bande de couvertures
+  de la ligne et dans les barres de progression, et non à la prochaine visite de l’onglet.
 - Chaque carte et chaque tuile de l’accueil ouvre la liste qu’elle compte : « En cours »
   ouvre la bibliothèque sur les livres en cours, la pile et les suggestions sur les livres
   à lire, la note moyenne sur les livres notés, et « Séries en cours » ouvre l’onglet Séries
