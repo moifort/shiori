@@ -1,5 +1,4 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
-import { AnalyticsCommand } from '~/domain/analytics/command'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import { BookCommand, type BookEdit, type NewBook } from '~/domain/book/command'
 import type {
@@ -10,15 +9,13 @@ import type {
   StarRating,
 } from '~/domain/book/types'
 import type { UserId } from '~/domain/shared/types'
-import { atomically } from '~/utils/firestore'
 
 /** Every change a reader makes to their library, kept in step with the analytics
  *  view behind the home dashboard. The GraphQL layer writes books through here,
  *  never through `BookCommand` directly, so no write can forget the view.
  *
  *  The book and the view's stale flag land in one batch: the view can never look
- *  fresh while a book it does not reflect is already stored. The rebuild follows
- *  the commit, and a failed one leaves the view stale for the next read to redo. */
+ *  fresh while a book it does not reflect is already stored. */
 export namespace BookUseCase {
   export const add = (userId: UserId, input: NewBook) =>
     withAnalytics(userId, (batch) => BookCommand.add(userId, input, undefined, batch))
@@ -65,17 +62,7 @@ export namespace BookUseCase {
 
 // A book that was not found, or an edit refused, wrote nothing, so the view
 // stays as it was.
-const withAnalytics = async <Outcome>(
-  userId: UserId,
-  write: (batch: WriteBatch) => Promise<Outcome>,
-): Promise<Outcome> => {
-  const outcome = await atomically(async (batch) => {
-    const result = await write(batch)
-    if (wrote(result)) AnalyticsCommand.markStale(userId, batch)
-    return result
-  })
-  if (wrote(outcome)) await AnalyticsUseCase.refreshAfterWrite(userId)
-  return outcome
-}
+const withAnalytics = <Outcome>(userId: UserId, write: (batch: WriteBatch) => Promise<Outcome>) =>
+  AnalyticsUseCase.afterWrite(userId, write, wrote)
 
 const wrote = (outcome: unknown): boolean => outcome !== 'not-found' && outcome !== 'no-author'

@@ -1,5 +1,6 @@
 import {
   groupedBySeries,
+  inSagaOrder,
   ratedShelfOf,
   seriesRatingsOf,
   shelfPageOf,
@@ -21,7 +22,10 @@ import type {
 import type { SeriesId } from '~/domain/series/types'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { UserId } from '~/domain/shared/types'
+import { createLogger } from '~/system/logger'
 import { objectStore } from '~/system/object-store'
+
+const logger = createLogger('book')
 
 export namespace BookQuery {
   export const byId = async (userId: UserId, bookId: BookId): Promise<BookView | null> => {
@@ -53,15 +57,33 @@ export namespace BookQuery {
   }
 
   /** One page of the Library tab: the reader's books in the order the tab
-   *  draws them, optionally narrowed to their favourites, to the rated ones —
-   *  best first, a saga's rating standing in for its unrated volumes — or to
-   *  one status. Covers are signed for the page only — a 300-book library
-   *  would otherwise pay 300 signatures to draw 60 rows. */
+   *  draws them, optionally narrowed to their favourites or to one status.
+   *  Read with a Firestore cursor, so a page costs its own rows rather than the
+   *  whole library; covers are signed for the page only.
+   *
+   *  The deprecated rated view — best first, a saga's rating standing in for
+   *  its unrated volumes — ranks on the saga opinions, which no index holds, so
+   *  it still sorts the whole library in memory. So does any view while its
+   *  index is still building after a deploy: slower, never wrong. */
   export const libraryPage = async (
     userId: UserId,
     page: { limit: number; after?: BookId },
     view: { favorite?: boolean; rated?: boolean; status?: ReadingStatus },
   ): Promise<{ books: BookView[]; hasMore: boolean }> => {
+    if (!view.rated) {
+      try {
+        const { books, hasMore } = await repository.findShelfPage(
+          userId,
+          { favorite: view.favorite, status: view.status },
+          page.limit,
+          page.after,
+        )
+        return { books: await withCovers(books), hasMore }
+      } catch (error) {
+        if (!missingIndex(error)) throw error
+        logger.warn('library page index missing, sorted in memory', { error, view })
+      }
+    }
     const kept = (await repository.findAllByUser(userId)).filter(
       (book) =>
         (!view.favorite || book.favorite === true) && (!view.status || book.status === view.status),
@@ -75,6 +97,19 @@ export namespace BookQuery {
 
   export const bySeries = async (userId: UserId, seriesId: SeriesId): Promise<Book[]> =>
     repository.findBySeries(userId, seriesId)
+
+  /** The volumes of one saga the reader holds, in the order the saga runs, with
+   *  their covers — only one edition's when `edition` names it. Covers are
+   *  signed for these volumes alone, not for the whole library. */
+  export const sagaVolumes = async (
+    userId: UserId,
+    seriesId: SeriesId,
+    edition?: BookLanguage,
+  ): Promise<BookView[]> => {
+    const held = await repository.findBySeries(userId, seriesId)
+    const kept = edition ? held.filter((book) => book.language === edition) : held
+    return withCovers(inSagaOrder(kept))
+  }
 
   export const all = async (userId: UserId): Promise<Book[]> => repository.findAllByUser(userId)
 
@@ -102,6 +137,11 @@ export namespace BookQuery {
     language: BookLanguage,
   ): Promise<ShelfVocabulary> => vocabularyOf(await repository.findAllByUser(userId), language)
 }
+
+// Firestore refuses a query whose composite index does not exist, or is still
+// building, with FAILED_PRECONDITION (gRPC code 9).
+const missingIndex = (error: unknown): boolean =>
+  typeof error === 'object' && error !== null && (error as { code?: unknown }).code === 9
 
 // Cover URLs are signed one by one because each signature is a separate call, but
 // a page of them is signed concurrently rather than in sequence: a 40-row library

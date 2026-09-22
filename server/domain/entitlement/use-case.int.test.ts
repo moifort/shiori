@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { UserId } from '~/domain/shared/types'
 import type { AppleNotification, AppleTransaction } from '~/system/apple/types'
-import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
+import { fakeDb, resetFakeFirestore, startFakeRequest } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
 
@@ -155,6 +155,7 @@ describe('reading the plan', () => {
   test('costs one document read, however many times it is asked in a request', async () => {
     verifiedTransaction = aTransaction()
     await EntitlementUseCase.sync(user('u1'), 'signed-jws')
+    startFakeRequest()
 
     const before = fake.docReads
     await EntitlementQuery.planOf(user('u1'))

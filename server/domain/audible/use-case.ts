@@ -1,4 +1,4 @@
-import { AnalyticsCommand } from '~/domain/analytics/command'
+import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import {
   audibleLinksFor,
   bookFrom,
@@ -26,7 +26,8 @@ import { BookQuery } from '~/domain/book/query'
 import type { Book } from '~/domain/book/types'
 import type { UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
-import { atomically, bulkSave } from '~/utils/firestore'
+import { withRequestCacheScope } from '~/system/request-cache'
+import { bulkSave } from '~/utils/firestore'
 import { isPresent } from '~/utils/input'
 
 const logger = createLogger('audible')
@@ -55,7 +56,8 @@ export namespace AudibleUseCase {
    *
    *  Books are written one by one rather than in a batch — a library can run past
    *  the 500-write cap — and the dashboard is marked stale before the first one
-   *  lands, so it can never look fresh over books it does not count. */
+   *  lands, so it can never look fresh over books it does not count. Its next
+   *  read rebuilds it. */
   export const importBooks = async (
     userId: UserId,
     asins: readonly AudibleAsin[],
@@ -70,21 +72,14 @@ export namespace AudibleUseCase {
     )
 
     const imported: Book[] = []
-    if (chosen.length > 0) {
-      await atomically(async (batch) => AnalyticsCommand.markStale(userId, batch))
-      await bulkSave(chosen, async (importable) => {
-        imported.push(await BookCommand.add(userId, bookFrom(importable)))
-      })
-    }
+    if (chosen.length > 0)
+      await AnalyticsUseCase.whileStale(userId, () =>
+        bulkSave(chosen, async (importable) => {
+          imported.push(await BookCommand.add(userId, bookFrom(importable)))
+        }),
+      )
 
     await AudibleCommand.recordImport(userId)
-    // Same contract as a book write: a failed rebuild leaves the view stale for
-    // the next read to redo, it does not fail the import that already landed.
-    try {
-      await AnalyticsCommand.refresh(userId)
-    } catch (error) {
-      logger.warn('dashboard rebuild failed after import, left stale', { error, userId })
-    }
     return imported
   }
 
@@ -135,37 +130,34 @@ export namespace AudibleUseCase {
     ).filter((importable) => !importable.alreadyInLibrary)
 
     const changed = links.length + moves.length + listened.length + redates.length + bought.length
-    if (changed > 0) await atomically(async (batch) => AnalyticsCommand.markStale(userId, batch))
-
-    await bulkSave(links, async (link) =>
-      BookCommand.linkToAudible(userId, link.bookId, link.audibleAsin),
-    )
-    // Audible's own finishing date, not tonight's: a title finished last spring
-    // that the sync only hears about now must not land on today and rewrite the
-    // reading statistics, for the same reason an import does not.
-    await bulkSave(moves, async (move) =>
-      BookCommand.setStatus(userId, move.bookId, move.status, move.at ?? now),
-    )
-    // Where the player got to, which the dashboard and the book read the
-    // listening progress off.
-    await bulkSave(listened, async ({ bookId, listenedMinutes }) =>
-      BookCommand.recordListening(userId, bookId, listenedMinutes, now),
-    )
-    // Books imported before the purchase date was kept all sit on import night;
-    // this is what files them under the month they were in fact bought.
-    await bulkSave(redates, async ({ bookId, ...dates }) =>
-      BookCommand.backdate(userId, bookId, dates, now),
-    )
-    await bulkSave(bought, async (importable) => BookCommand.add(userId, bookFrom(importable), now))
+    const write = async () => {
+      await bulkSave(links, async (link) =>
+        BookCommand.linkToAudible(userId, link.bookId, link.audibleAsin),
+      )
+      // Audible's own finishing date, not tonight's: a title finished last spring
+      // that the sync only hears about now must not land on today and rewrite the
+      // reading statistics, for the same reason an import does not.
+      await bulkSave(moves, async (move) =>
+        BookCommand.setStatus(userId, move.bookId, move.status, move.at ?? now),
+      )
+      // Where the player got to, which the dashboard and the book read the
+      // listening progress off.
+      await bulkSave(listened, async ({ bookId, listenedMinutes }) =>
+        BookCommand.recordListening(userId, bookId, listenedMinutes, now),
+      )
+      // Books imported before the purchase date was kept all sit on import night;
+      // this is what files them under the month they were in fact bought.
+      await bulkSave(redates, async ({ bookId, ...dates }) =>
+        BookCommand.backdate(userId, bookId, dates, now),
+      )
+      await bulkSave(bought, async (importable) =>
+        BookCommand.add(userId, bookFrom(importable), now),
+      )
+    }
+    // A night with nothing new leaves the dashboard as it was.
+    if (changed > 0) await AnalyticsUseCase.whileStale(userId, write)
 
     await AudibleCommand.recordImport(userId, now)
-    if (changed > 0) {
-      try {
-        await AnalyticsCommand.refresh(userId)
-      } catch (error) {
-        logger.warn('dashboard rebuild failed after sync, left stale', { error, userId })
-      }
-    }
     return {
       linked: links.length,
       moved: moves.length,
@@ -202,7 +194,9 @@ export namespace AudibleUseCase {
         return { synced, failed, deferred }
       }
       try {
-        const outcome = await syncLibrary(userId)
+        // A cache of its own per reader: the run is one request, and it must not
+        // hold every library it has passed over until the very last reader.
+        const outcome = await withRequestCacheScope(() => syncLibrary(userId))
         if (typeof outcome === 'object') synced += 1
       } catch (error) {
         failed += 1

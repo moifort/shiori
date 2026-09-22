@@ -254,19 +254,6 @@ export const storedRecommendation = (
 export const statusAfterRating = (current: ReadingStatus): ReadingStatus =>
   current === 'dropped' ? 'dropped' : 'read'
 
-/** The rating a heart stands for: the top of the scale. A heart is five
- *  stars, not a second judgement beside them, on a book as on a saga. */
-export const HEART_RATING = 5 as StarRating
-
-/** Whether a heart survives a new rating. Only five stars can hold one: a heart
- *  over three stars would say two things the reader cannot both mean. Five
- *  stars given by hand keep a heart but never grant one — the heart stays the
- *  reader's own gesture. */
-export const favoriteAfterRating = (
-  favorite: boolean | undefined,
-  rating: StarRating | undefined,
-): true | undefined => (favorite === true && rating === HEART_RATING ? true : undefined)
-
 /** Where a reader's cover images live in the bucket. Derived from the owner and
  *  the book, never chosen by a caller: a caller-supplied path is a traversal.
  *
@@ -411,3 +398,15 @@ export const shelfPageOf = <T extends Book>(
   const start = after ? books.findIndex((book) => book.id === after) + 1 : 0
   return { books: books.slice(start, start + limit), hasMore: start + limit < books.length }
 }
+
+/** A saga's volumes in the order the saga runs: the numbered spine, then what
+ *  orbits it. */
+export const inSagaOrder = <Volume extends Pick<Book, 'series' | 'title'>>(
+  books: readonly Volume[],
+): Volume[] =>
+  [...books].sort((left, right) =>
+    compareWithinSeries(
+      { kind: left.series?.kind ?? 'main', number: left.series?.volume, title: left.title },
+      { kind: right.series?.kind ?? 'main', number: right.series?.volume, title: right.title },
+    ),
+  )

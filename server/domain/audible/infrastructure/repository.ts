@@ -1,7 +1,11 @@
 import type { AudibleConnection } from '~/domain/audible/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
-import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
+import {
+  evictFromRequestCache,
+  memoizedPerRequest,
+  rememberInRequestCache,
+} from '~/system/request-cache'
 import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 
 // One document per reader, whose id IS the userId: a reader has one Audible
@@ -36,7 +40,9 @@ export const save = async (connection: AudibleConnection): Promise<AudibleConnec
   // A full set rather than a merge: finishing a sign-in has to make `pending`
   // disappear, and a merge would leave the spent code verifier behind forever.
   await connections().doc(connection.userId).set(withoutAbsentFields(connection))
-  evictFromRequestCache(cacheKey(connection.userId))
+  // Remembered rather than dropped: an import rotates the token, then records
+  // itself on the same connection, and must not read it back in between.
+  rememberInRequestCache(cacheKey(connection.userId), Promise.resolve(connection))
   return connection
 }
 

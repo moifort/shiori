@@ -8,6 +8,7 @@ import type {
   Month as MonthType,
   Percentage as PercentageType,
   PersonName as PersonNameType,
+  StarRating as StarRatingType,
   UserId as UserIdType,
   Year as YearType,
 } from '~/domain/shared/types'
@@ -73,4 +74,11 @@ export const AuthorName = (value: unknown) => {
 export const PersonName = (value: unknown) => {
   const v = z.string().trim().min(1).max(200).parse(value)
   return make<PersonNameType>()(v)
+}
+
+export const StarRating = (value: unknown) => {
+  const v = z
+    .preprocess((v) => (typeof v === 'string' ? Number(v) : v), z.number().int().min(1).max(5))
+    .parse(value)
+  return make<StarRatingType>()(v)
 }

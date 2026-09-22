@@ -3,7 +3,7 @@ import type { Friendship, Invitation, InvitationCode } from '~/domain/friendship
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
-import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
+import { deleteInBatches, genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 
 // Flat, like every other collection. The code IS the document id: an invitation
 // is looked up by the only thing the person holding it knows.
@@ -18,13 +18,8 @@ const friendships = () =>
 export const findInvitation = async (code: InvitationCode): Promise<Invitation | null> =>
   (await invitations().doc(code).get()).data() ?? null
 
-export const findLiveInvitationBy = async (
-  userId: UserId,
-  now: Date,
-): Promise<Invitation | null> => {
-  const snapshot = await invitations().where('userId', '==', userId).get()
-  return snapshot.docs.map((doc) => doc.data()).find((entry) => entry.expiresAt > now) ?? null
-}
+export const findInvitationsBy = async (userId: UserId): Promise<Invitation[]> =>
+  (await invitations().where('userId', '==', userId).get()).docs.map((doc) => doc.data())
 
 export const saveInvitation = async (invitation: Invitation): Promise<Invitation> => {
   await invitations().doc(invitation.code).set(withoutAbsentFields(invitation))
@@ -34,6 +29,9 @@ export const saveInvitation = async (invitation: Invitation): Promise<Invitation
 export const removeInvitation = async (code: InvitationCode): Promise<void> => {
   await invitations().doc(code).delete()
 }
+
+export const removeInvitations = async (codes: readonly InvitationCode[]): Promise<void> =>
+  deleteInBatches(codes.map((code) => invitations().doc(code)))
 
 const friendsCacheKey = (userId: UserId) => `friendships:all:${userId}`
 
@@ -72,10 +70,10 @@ export const removeAllForUser = async (userId: UserId): Promise<void> => {
     findAllByUser(userId),
     invitations().where('userId', '==', userId).get(),
   ])
-  const batch = db().batch()
-  for (const friendship of mine) batch.delete(friendships().doc(friendship.id))
-  for (const doc of invited.docs) batch.delete(doc.ref)
-  await batch.commit()
+  await deleteInBatches([
+    ...mine.map((friendship) => friendships().doc(friendship.id)),
+    ...invited.docs.map((doc) => doc.ref),
+  ])
   for (const friendship of mine) {
     for (const member of friendship.userIds) evictFromRequestCache(friendsCacheKey(member))
   }

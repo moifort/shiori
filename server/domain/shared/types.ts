@@ -19,3 +19,6 @@ export type AuthorName = Brand<string, 'AuthorName'>
  *  recommended them a book. Distinct from AuthorName, which names someone who
  *  wrote a book. */
 export type PersonName = Brand<string, 'PersonName'>
+/** One to five whole stars, given to a book or to a saga. Half stars double the
+ *  value space without adding discernment, and shrink the touch target. */
+export type StarRating = Brand<number, 'StarRating'>

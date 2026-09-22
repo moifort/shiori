@@ -71,15 +71,16 @@ export type SeriesProgress = {
  *
  *  It holds raw aggregates rather than rendered figures: anything that depends on
  *  today's date is derived when the dashboard is read, so the view never goes
- *  stale by the calendar alone — only by a write to a book, which rebuilds it. */
+ *  stale by the calendar alone — only by a write to a book, which marks it so
+ *  for the next dashboard read to rebuild. */
 export type AnalyticsView = {
   userId: UserId
   timeZone: TimeZone
   /** The shape this view was built with. A view built by an older rule set is
    *  rebuilt on read rather than served with a figure it never computed. */
   version?: number
-  /** Set in the same batch as any book write, cleared by the rebuild that
-   *  follows. A view left stale by a failed rebuild is rebuilt on read. */
+  /** Set in the same batch as any book write, cleared by the rebuild the next
+   *  dashboard read runs. Ten ratings in a row cost one rebuild, not ten. */
   stale: boolean
   refreshedAt: Date
   finishes: Finish[]

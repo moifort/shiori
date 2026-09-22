@@ -1,19 +1,18 @@
-import { AdminCommand } from '~/domain/admin/command'
-import { EntitlementQuery } from '~/domain/entitlement/query'
-import { exhausted } from '~/domain/quota/business-rules'
-import { QuotaCommand } from '~/domain/quota/command'
-import { QuotaQuery } from '~/domain/quota/query'
-import { Scan } from '~/domain/scan'
+import { match, P } from 'ts-pattern'
 import { imageWithinSizeLimit } from '~/domain/scan/limits'
-import { pageTitleOf } from '~/domain/scan/page-title'
+import type { ScanOutcome } from '~/domain/scan/use-case'
+import { ScanUseCase } from '~/domain/scan/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
 import { domainError } from '~/domain/shared/graphql/errors'
 import { languageFrom } from '~/domain/shared/language'
-import { BookTitle } from '~/domain/shared/primitives'
-import { createLogger } from '~/system/logger'
 import { ScanResultType } from './types'
 
-const logger = createLogger('scan')
+const answered = (outcome: ScanOutcome) =>
+  match(outcome)
+    .with('quota-exhausted', () => domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up'))
+    .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
+    .with({ recognized: P.boolean }, (result) => result)
+    .exhaustive()
 
 builder.mutationField('scanLink', (t) =>
   t.field({
@@ -31,33 +30,14 @@ builder.mutationField('scanLink', (t) =>
     args: {
       url: t.arg.string({ required: true, description: 'The page that was shared' }),
     },
-    resolve: async (_root, { url }, { userId, event }) => {
-      const [plan, quota, credit] = await Promise.all([
-        EntitlementQuery.planOf(userId),
-        QuotaQuery.ofCurrentMonth(userId),
-        QuotaQuery.creditOf(userId),
-      ])
-      if (exhausted(plan, quota, credit))
-        return domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up')
-
-      const title = await pageTitleOf(url)
-      if (!title) return { recognized: false, title: '' as const, authors: [], subgenres: [] }
-
-      const language = languageFrom(event && getHeader(event, 'accept-language'))
-      try {
-        const { result, usage } = await Scan.lookUpTitle(BookTitle(title), language)
-        await QuotaCommand.record(userId, plan)
-        await AdminCommand.recordAiUsage({ cacheHit: false, usage }).catch((error) =>
-          logger.warn('AI usage not recorded', { error }),
-        )
-        return result
-      } catch (error) {
-        // The reader is told the scan failed; we are told why.
-        logger.error('shared link lookup failed', { error, userId })
-        const message = error instanceof Error ? error.message : 'Lookup failed'
-        return domainError('SCAN_FAILED', message)
-      }
-    },
+    resolve: async (_root, { url }, { userId, event }) =>
+      answered(
+        await ScanUseCase.lookUpLink(
+          userId,
+          url,
+          languageFrom(event && getHeader(event, 'accept-language')),
+        ),
+      ),
   }),
 )
 
@@ -77,31 +57,14 @@ builder.mutationField('scanTitle', (t) =>
     args: {
       title: t.arg({ type: 'BookTitle', required: true, description: 'The title as remembered' }),
     },
-    resolve: async (_root, { title }, { userId, event }) => {
-      const [plan, quota, credit] = await Promise.all([
-        EntitlementQuery.planOf(userId),
-        QuotaQuery.ofCurrentMonth(userId),
-        QuotaQuery.creditOf(userId),
-      ])
-      if (exhausted(plan, quota, credit))
-        return domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up')
-
-      const language = languageFrom(event && getHeader(event, 'accept-language'))
-
-      try {
-        const { result, usage } = await Scan.lookUpTitle(title, language)
-        await QuotaCommand.record(userId, plan)
-        await AdminCommand.recordAiUsage({ cacheHit: false, usage }).catch((error) =>
-          logger.warn('AI usage not recorded', { error }),
-        )
-        return result
-      } catch (error) {
-        // The reader is told the scan failed; we are told why.
-        logger.error('title lookup failed', { error, userId })
-        const message = error instanceof Error ? error.message : 'Lookup failed'
-        return domainError('SCAN_FAILED', message)
-      }
-    },
+    resolve: async (_root, { title }, { userId, event }) =>
+      answered(
+        await ScanUseCase.lookUpTitle(
+          userId,
+          title,
+          languageFrom(event && getHeader(event, 'accept-language')),
+        ),
+      ),
   }),
 )
 
@@ -131,40 +94,15 @@ builder.mutationField('scanBook', (t) =>
     resolve: async (_root, { imageBase64 }, { userId, event }) => {
       if (!imageWithinSizeLimit(imageBase64.length))
         return domainError('IMAGE_TOO_LARGE', 'Image exceeds the 10 MB size limit')
-
-      const [plan, quota, credit] = await Promise.all([
-        EntitlementQuery.planOf(userId),
-        QuotaQuery.ofCurrentMonth(userId),
-        QuotaQuery.creditOf(userId),
-      ])
-      if (exhausted(plan, quota, credit))
-        return domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up')
-
       // The model writes its free text in the caller's language, and the header
       // also partitions the cache so two languages never cross-contaminate.
-      const language = languageFrom(event && getHeader(event, 'accept-language'))
-
-      try {
-        const { result, cacheHit, usage } = await Scan.scanWithCache(
+      return answered(
+        await ScanUseCase.scanCover(
+          userId,
           Buffer.from(imageBase64, 'base64'),
-          language,
-        )
-        // Metered after the fact, and only on a real model call: a Gemini failure
-        // must not cost the reader a scan, and a cache hit costs us nothing.
-        if (!cacheHit) await QuotaCommand.record(userId, plan)
-        // What the call cost us, for the admin screen. Pure telemetry: the scan
-        // already succeeded, so a failed counter write is logged and swallowed
-        // rather than turned into an error the reader has to read.
-        await AdminCommand.recordAiUsage({ cacheHit, usage }).catch((error) =>
-          logger.warn('AI usage not recorded', { error }),
-        )
-        return result
-      } catch (error) {
-        // The reader is told the scan failed; we are told why.
-        logger.error('cover scan failed', { error, userId })
-        const message = error instanceof Error ? error.message : 'Scan failed'
-        return domainError('SCAN_FAILED', message)
-      }
+          languageFrom(event && getHeader(event, 'accept-language')),
+        ),
+      )
     },
   }),
 )

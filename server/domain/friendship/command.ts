@@ -19,10 +19,15 @@ export namespace FriendshipCommand {
    *
    *  Reused rather than piled up. A reader who taps "invite" three times has
    *  shared one link three times, and every extra code would be another key to
-   *  their library outstanding. */
+   *  their library outstanding.
+   *
+   *  The lapsed ones are swept on the way past: nothing reads them again, and
+   *  left in place each would cost a read on every later invitation. */
   export const invite = async (userId: UserId, now = new Date()): Promise<Invitation> => {
-    const live = await repository.findLiveInvitationBy(userId, now)
+    const standing = await repository.findInvitationsBy(userId)
+    const live = standing.find((invitation) => invitation.expiresAt > now)
     if (live) return live
+    await repository.removeInvitations(standing.map((invitation) => invitation.code))
     return repository.saveInvitation({
       code: freshInvitationCode(),
       userId,

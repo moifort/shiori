@@ -28,7 +28,7 @@ mock.module('~/system/firebase', () => ({ db: fakeDb }))
 mock.module('~/system/config', () => ({ config: () => ({ googleApiKey: apiKey }) }))
 resetFakeFirestore()
 
-const { Scan } = await import('~/domain/scan')
+const { ScanCommand } = await import('~/domain/scan/command')
 const { SeriesQuery } = await import('~/domain/series/query')
 const { seriesKeyOf } = await import('~/domain/series/primitives')
 
@@ -36,7 +36,7 @@ const image = readFileSync(imagePath)
 process.stdout.write(`Scanning ${imagePath} (${image.byteLength} bytes) in ${language}\n\n`)
 
 const started = Date.now()
-const { result, cacheHit, usage } = await Scan.scanWithCache(image, language as 'fr' | 'en')
+const { result, cacheHit, usage } = await ScanCommand.scanWithCache(image, language as 'fr' | 'en')
 
 process.stdout.write(`${JSON.stringify(result, null, 2)}\n\n`)
 process.stdout.write(`cacheHit: ${cacheHit}\n`)

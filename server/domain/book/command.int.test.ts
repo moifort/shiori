@@ -468,6 +468,110 @@ describe('reading the library', () => {
   })
 })
 
+describe('paging the Library tab', () => {
+  const shelve = async (count: number) => {
+    const shelved = []
+    for (let index = 0; index < count; index++)
+      shelved.push(
+        await BookCommand.add(
+          reader,
+          { title: BookTitle(`Tome ${String(index).padStart(2, '0')}`) },
+          new Date(NOW.getTime() - index * 60_000),
+        ),
+      )
+    return shelved
+  }
+
+  // The point of the cursor: a page costs its own rows, not the library.
+  test('reads a page and one row more, however large the library', async () => {
+    await shelve(30)
+    const before = fake.queriedDocs
+
+    const { books, hasMore } = await BookQuery.libraryPage(reader, { limit: 10 }, {})
+
+    expect(books.map((book) => String(book.title))).toEqual(
+      Array.from({ length: 10 }, (_, index) => `Tome ${String(index).padStart(2, '0')}`),
+    )
+    expect(hasMore).toBe(true)
+    expect(fake.queriedDocs - before).toBe(11)
+  })
+
+  test('carries on after the last book of the page before', async () => {
+    const shelved = await shelve(12)
+
+    const { books, hasMore } = await BookQuery.libraryPage(
+      reader,
+      { limit: 10, after: shelved[9]?.id },
+      {},
+    )
+
+    expect(books.map((book) => book.id)).toEqual([shelved[10]?.id, shelved[11]?.id])
+    expect(hasMore).toBe(false)
+  })
+
+  test('keeps only the status asked for', async () => {
+    const [reading] = await shelve(3)
+    if (reading) await BookCommand.setStatus(reader, reading.id, 'reading', NOW)
+
+    const { books } = await BookQuery.libraryPage(reader, { limit: 10 }, { status: 'reading' })
+
+    expect(books.map((book) => book.id)).toEqual([reading?.id])
+  })
+
+  test('restarts from the top when the cursor book is gone', async () => {
+    const shelved = await shelve(3)
+    const gone = shelved[1]
+    if (gone) await BookCommand.remove(reader, gone.id)
+
+    const { books } = await BookQuery.libraryPage(reader, { limit: 10, after: gone?.id }, {})
+
+    expect(books).toHaveLength(2)
+  })
+
+  // Right after a deploy, an index may still be building: the tab answers
+  // from the scan it used before, slower but whole.
+  test('falls back on the full scan while its index is missing', async () => {
+    await shelve(3)
+    fake.failNextQueryWith(
+      Object.assign(new Error('FAILED_PRECONDITION: The query requires an index'), { code: 9 }),
+    )
+
+    const { books } = await BookQuery.libraryPage(reader, { limit: 10 }, { favorite: false })
+
+    expect(books).toHaveLength(3)
+  })
+
+  test('never hands the stored shelf date back as part of a book', async () => {
+    const [book] = await shelve(1)
+    expect(fake.data('books', book?.id ?? '')?.shelvedAt).toEqual(NOW)
+
+    const { books } = await BookQuery.libraryPage(reader, { limit: 10 }, {})
+
+    expect(books[0]).not.toHaveProperty('shelvedAt')
+  })
+})
+
+describe('reading the library back within a request', () => {
+  // A sync writes book after book and then reads the shelf: the scan it already
+  // holds follows the writes rather than being paid for again.
+  test('follows a direct write without scanning the library again', async () => {
+    const first = await add('Un')
+    await BookQuery.all(reader)
+    const before = { docs: fake.docReads, queries: fake.queryReads }
+
+    await BookCommand.setStatus(reader, first.id, 'reading', NOW)
+    const second = await add('Deux')
+
+    const library = await BookQuery.all(reader)
+    expect(library.map((book) => [book.id, book.status])).toEqual([
+      [first.id, 'reading'],
+      [second.id, 'to-read'],
+    ])
+    expect(fake.queryReads).toBe(before.queries)
+    expect(fake.docReads).toBe(before.docs)
+  })
+})
+
 describe('deleting', () => {
   test('removes the book and says so', async () => {
     const book = await add('Le Nom du vent')
@@ -479,6 +583,14 @@ describe('deleting', () => {
   test('wipes the whole library on account deletion', async () => {
     await add('Un')
     await add('Deux')
+
+    await BookCommand.deleteAllForUser(reader)
+
+    expect(await BookQuery.all(reader)).toHaveLength(0)
+  })
+
+  test('wipes a library larger than one batch can carry', async () => {
+    for (let index = 0; index < 650; index++) await add(`Tome ${index}`)
 
     await BookCommand.deleteAllForUser(reader)
 

@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto'
 import type { AudibleItem, LastPosition } from 'audible-api-ts'
 import type { AudibleAsin } from '~/domain/audible/types'
 import type { UserId } from '~/domain/shared/types'
-import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
+import { fakeDb, resetFakeFirestore, startFakeRequest } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
 // One key for the whole file: config() is read on every seal and every open, and
@@ -141,6 +141,7 @@ describe('listing what could be imported', () => {
         connectedAt: NOW,
       },
     })
+    startFakeRequest()
 
     expect(await AudibleUseCase.importableBooks(reader)).toBe('not-connected')
     expect(libraryCalls).toHaveLength(0)
@@ -354,8 +355,9 @@ describe('importing the ticked titles', () => {
   })
 
   // The dashboard is derived data. It must never look fresh over books it does
-  // not count, so it is marked stale before the first one lands.
-  test('leaves the dashboard counting the imported books', async () => {
+  // not count, so it is marked stale before the first one lands, and its next
+  // read rebuilds it.
+  test('leaves the dashboard stale over the imported books', async () => {
     await connect()
     items = [
       anItem({
@@ -365,7 +367,7 @@ describe('importing the ticked titles', () => {
 
     await AudibleUseCase.importBooks(reader, [asin('B002V1OF70')])
 
-    expect(fake.data('analytics', reader)).toMatchObject({ stale: false })
+    expect(fake.data('analytics', reader)).toMatchObject({ stale: true })
   })
 })
 
@@ -540,6 +542,44 @@ describe('the nightly sync', () => {
     expect(book?.listenedMinutes).toBe(ListeningMinutes(598))
     expect(book?.status).toBe('read')
     expect(book?.finishedAt).toEqual(lastHeard)
+  })
+
+  // The pass already holds the whole shelf: moving a book must not read it again,
+  // or a night that moves forty books pays for them twice.
+  test('reads the shelf once, however many books it moves', async () => {
+    await connect()
+    await AudibleCommand.recordImport(reader, NOW)
+    const titles = ['B000000001', 'B000000002', 'B000000003']
+    for (const id of titles)
+      await BookCommand.add(
+        reader,
+        {
+          title: BookTitle(`Tome ${id}`),
+          authors: [AuthorName('Patrick Rothfuss')],
+          format: 'audiobook',
+          durationMinutes: ListeningMinutes(600),
+          audibleAsin: asin(id),
+          status: 'reading',
+        },
+        NOW,
+      )
+    const lastHeard = new Date('2026-09-24T20:55:15.357Z')
+    items = titles.map((id) =>
+      anItem({ asin: id, durationMinutes: 600, listeningStatus: { percentComplete: 0 } }),
+    )
+    positions = titles.map((id) => ({
+      asin: id,
+      positionMs: 598 * 60 * 1000,
+      lastUpdatedAt: lastHeard,
+    }))
+    startFakeRequest()
+    const before = { docs: fake.docReads, queries: fake.queryReads }
+
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ moved: 3 })
+
+    // One scan of the shelf; the one document is the Audible connection.
+    expect(fake.queryReads - before.queries).toBe(1)
+    expect(fake.docReads - before.docs).toBe(1)
   })
 
   test('moves the cutoff forward, so the next pass finds nothing to redo', async () => {

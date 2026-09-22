@@ -1,14 +1,11 @@
-import { AnalyticsCommand } from '~/domain/analytics/command'
+import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import { BookCommand } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
 import type { Book } from '~/domain/book/types'
 import { bookFrom, importablesFrom } from '~/domain/kindle/business-rules'
 import type { ImportableKindleBook, UnreadableExport } from '~/domain/kindle/types'
 import type { UserId } from '~/domain/shared/types'
-import { createLogger } from '~/system/logger'
-import { atomically, bulkSave } from '~/utils/firestore'
-
-const logger = createLogger('kindle')
+import { bulkSave } from '~/utils/firestore'
 
 /** Cataloguing a Kindle library from the file Amazon hands its customers.
  *
@@ -39,7 +36,7 @@ export namespace KindleUseCase {
    *  untappable, and a second request must not be able to duplicate them.
    *
    *  The analytics view is marked stale before the first book lands, so it can
-   *  never look fresh over books it does not count. */
+   *  never look fresh over books it does not count. Its next read rebuilds it. */
   export const importBooks = async (
     userId: UserId,
     csv: string,
@@ -54,20 +51,12 @@ export namespace KindleUseCase {
     )
 
     const imported: Book[] = []
-    if (chosen.length > 0) {
-      await atomically(async (batch) => AnalyticsCommand.markStale(userId, batch))
-      await bulkSave(chosen, async (importable) => {
-        imported.push(await BookCommand.add(userId, bookFrom(importable)))
-      })
-    }
-
-    // Same contract as a book write: a failed rebuild leaves the view stale for
-    // the next read to redo, it does not fail the import that already landed.
-    try {
-      await AnalyticsCommand.refresh(userId)
-    } catch (error) {
-      logger.warn('dashboard rebuild failed after import, left stale', { error, userId })
-    }
+    if (chosen.length > 0)
+      await AnalyticsUseCase.whileStale(userId, () =>
+        bulkSave(chosen, async (importable) => {
+          imported.push(await BookCommand.add(userId, bookFrom(importable)))
+        }),
+      )
     return imported
   }
 }

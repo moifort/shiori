@@ -27,7 +27,6 @@ import {
   VolumeKindValue,
   VolumeNumber,
 } from '~/domain/series/primitives'
-import { SeriesQuery } from '~/domain/series/query'
 import type { Series, SeriesId, SeriesName as SeriesNameValue, Volume } from '~/domain/series/types'
 import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
 import type {
@@ -72,7 +71,7 @@ type CatalogueOutput = {
   volumes: { kind: string; number?: number | null; title: string; publishedIn?: number | null }[]
 }
 
-export namespace Scan {
+export namespace ScanCommand {
   /** Read a cover and produce a reviewable record.
    *
    *  `cacheHit` is what the quota is metered on: a cover already scanned costs
@@ -216,7 +215,7 @@ export namespace Scan {
     if (!series || result.authors.length === 0) return undefined
 
     const seriesId = seriesKeyOf(series.name, result.authors[0])
-    if (await SeriesQuery.byId(seriesId)) return undefined
+    if (await SeriesCommand.isCatalogued(seriesId)) return undefined
 
     const { usage } = await catalogueSeries(
       seriesId,

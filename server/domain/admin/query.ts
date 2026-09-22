@@ -6,7 +6,7 @@ import {
   tokenCostEur,
 } from '~/domain/admin/business-rules'
 import * as repository from '~/domain/admin/infrastructure/repository'
-import type { AdminMetricsView } from '~/domain/admin/types'
+import type { AdminMetricsProjection, AdminMetricsView } from '~/domain/admin/types'
 import { Count, Eur } from '~/domain/shared/primitives'
 
 export namespace AdminQuery {
@@ -42,4 +42,8 @@ export namespace AdminQuery {
       refreshedAt: projection?.refreshedAt,
     }
   }
+
+  /** The projection the last daily refresh stored, if any. */
+  export const projection = (): Promise<AdminMetricsProjection | undefined> =>
+    repository.findProjection()
 }

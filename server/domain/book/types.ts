@@ -1,7 +1,14 @@
 import type { Brand } from 'ts-brand'
 import type { AudibleAsin } from '~/domain/audible/types'
 import type { SeriesId, SeriesName, VolumeKind, VolumeNumber } from '~/domain/series/types'
-import type { AuthorName, BookTitle, PersonName, UserId, Year } from '~/domain/shared/types'
+import type {
+  AuthorName,
+  BookTitle,
+  PersonName,
+  StarRating,
+  UserId,
+  Year,
+} from '~/domain/shared/types'
 import type { ObjectPath, SignedUrl } from '~/system/object-store/types'
 
 export type BookId = Brand<string, 'BookId'>
@@ -26,9 +33,7 @@ export type ListeningMinutes = Brand<number, 'ListeningMinutes'>
  *  narrator is not an author, and a library that conflated the two would credit
  *  the wrong person on every recording. */
 export type NarratorName = Brand<string, 'NarratorName'>
-/** One to five whole stars. Half stars double the value space without adding
- *  discernment, and shrink the touch target. */
-export type StarRating = Brand<number, 'StarRating'>
+export type { StarRating }
 export type ReadingNote = Brand<string, 'ReadingNote'>
 /** What the friend who recommended a book said of it: why they pressed it on
  *  the reader, in their words or the reader's recollection of them. */
