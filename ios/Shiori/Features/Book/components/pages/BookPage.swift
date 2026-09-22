@@ -68,25 +68,23 @@ struct BookPage: View {
                 VStack(alignment: .leading, spacing: 2) {
                     // The pills share the first line only: beside a whole
                     // column they squeezed the title, the author and the
-                    // reader into half the width the row has.
-                    HStack(alignment: .center, spacing: 8) {
-                        // The volume before the title, beside the cover, as
-                        // the library row says it: "Tome 3" is how a reader
-                        // names a book of a saga before its title.
-                        if let series = book.series {
-                            Text(series.label)
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Text(book.title).font(.headline)
-                        }
+                    // reader into half the width the row has. On the title's
+                    // baseline, so the taller pills do not push the author down.
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(book.title).font(.headline)
                         Spacer(minLength: 0)
                         badges
                     }
-                    if book.series != nil {
-                        Text(book.title).font(.headline)
+                    // The volume after the author, on the same line: a fact
+                    // about the book rather than a heading over its title.
+                    HStack(spacing: 4) {
+                        Text(book.authorLine)
+                        if let series = book.series {
+                            Text(verbatim: "· \(series.label)").fixedSize()
+                        }
                     }
-                    Text(book.authorLine).font(.subheadline).foregroundStyle(.secondary)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                     // Who reads a recording is as much a reason to pick it as
                     // who wrote it, so it sits with the author rather than down
                     // among the details. Only a recording has a reader.

@@ -58,8 +58,10 @@ struct BookRow: View {
                 // The marks share the first line with the text rather than
                 // standing in a column of their own: level with the top of the
                 // cover on every row, and the author and the chips below keep
-                // the whole width instead of being squeezed beside them.
-                HStack(alignment: .top, spacing: 8) {
+                // the whole width instead of being squeezed beside them. On
+                // the text's baseline, so the taller tags do not push the next
+                // line down.
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
                     if let volumeLabel {
                         Text(volumeLabel)
                             .font(.caption2.weight(.semibold))
