@@ -33,7 +33,8 @@ enum ImportAPI {
             GraphQLClient.shared.apollo,
             mutation: ShioriGraphQL.StartAudibleLoginMutation(
                 marketplace: GraphQLEnum(rawValue: marketplace.rawValue)
-            )
+            ),
+            changesLibrary: false
         )
         let login = data.startAudibleLogin
         return AudibleLogin(
@@ -54,7 +55,9 @@ enum ImportAPI {
             GraphQLClient.shared.apollo,
             mutation: ShioriGraphQL.CompleteAudibleLoginMutation(
                 authorizationCode: authorizationCode
-            )
+            ),
+            // Links the account; the books come with the sync that follows.
+            changesLibrary: false
         )
         return data.completeAudibleLogin.fragments.audibleAccountSummary.asDomain
     }
@@ -80,7 +83,8 @@ enum ImportAPI {
     static func setAutoSync(_ enabled: Bool) async throws -> AudibleAccount {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.SetAudibleAutoSyncMutation(enabled: enabled)
+            mutation: ShioriGraphQL.SetAudibleAutoSyncMutation(enabled: enabled),
+            changesLibrary: false
         )
         return data.setAudibleAutoSync.fragments.audibleAccountSummary.asDomain
     }
@@ -116,7 +120,9 @@ enum ImportAPI {
     static func disconnect() async throws {
         _ = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.DisconnectAudibleMutation()
+            mutation: ShioriGraphQL.DisconnectAudibleMutation(),
+            // Imported books stay in the library.
+            changesLibrary: false
         )
     }
 
@@ -127,7 +133,9 @@ enum ImportAPI {
     static func readKindleExport(csv: String) async throws -> [KindleBook] {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.ReadKindleExportMutation(csv: csv)
+            mutation: ShioriGraphQL.ReadKindleExportMutation(csv: csv),
+            // Reads a file: nothing is saved before `importKindleBooks`.
+            changesLibrary: false
         )
         return data.readKindleExport.map {
             KindleBook(

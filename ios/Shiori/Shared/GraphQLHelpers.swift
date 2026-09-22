@@ -26,10 +26,17 @@ enum GraphQLHelpers {
     /// `requestTimeout` overrides the session's 60 s idle limit for the
     /// mutations that legitimately keep the server silent for longer: a scan,
     /// an import.
+    ///
+    /// `changesLibrary` is false for a mutation that leaves the books, the sagas
+    /// and the figures drawn from them as they were — a scan that only proposes,
+    /// a sign-in, an invitation, a purchase check. Every open tab refetches on
+    /// the notice, so posting it for those cost three requests for nothing. On
+    /// by default: a new mutation that forgets to say stays correct, just dearer.
     static func perform<M: GraphQLMutation>(
         _ client: ApolloClient,
         mutation: M,
-        requestTimeout: TimeInterval? = nil
+        requestTimeout: TimeInterval? = nil,
+        changesLibrary: Bool = true
     ) async throws -> M.Data
     where M.ResponseFormat == SingleResponseFormat {
         let response = try await client.perform(
@@ -39,6 +46,7 @@ enum GraphQLHelpers {
         let data = try unwrap(response)
         // The write landed: every list and the dashboard are told, once, here,
         // rather than by each screen remembering to say so.
+        guard changesLibrary else { return data }
         await MainActor.run {
             NotificationCenter.default.post(name: .shioriDataDidChange, object: nil)
         }

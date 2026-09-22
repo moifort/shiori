@@ -62,7 +62,9 @@ enum ScanAPI {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
             mutation: ShioriGraphQL.ScanBookMutation(imageBase64: jpeg.base64EncodedString()),
-            requestTimeout: requestTimeout
+            requestTimeout: requestTimeout,
+            // A proposal: nothing reaches the library before `addBook`.
+            changesLibrary: false
         )
         return ScannedBook(fields: data.scanBook.fragments.scannedRecord)
     }
@@ -73,7 +75,9 @@ enum ScanAPI {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
             mutation: ShioriGraphQL.ScanLinkMutation(url: link),
-            requestTimeout: requestTimeout
+            requestTimeout: requestTimeout,
+            // A proposal: nothing reaches the library before `addBook`.
+            changesLibrary: false
         )
         return ScannedBook(fields: data.scanLink.fragments.scannedRecord)
     }
@@ -84,7 +88,9 @@ enum ScanAPI {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
             mutation: ShioriGraphQL.LookUpTitleMutation(title: title),
-            requestTimeout: requestTimeout
+            requestTimeout: requestTimeout,
+            // A proposal: nothing reaches the library before `addBook`.
+            changesLibrary: false
         )
         return ScannedBook(fields: data.scanTitle.fragments.scannedRecord)
     }

@@ -144,9 +144,13 @@ final class SeriesListViewModel {
     }
 
     /// The tab appeared: a list still showing last session's snapshot refreshes
-    /// it under the leading spinner, anything else loads as it always did.
+    /// it under the leading spinner, one never loaded loads. A list the server
+    /// already answered asks nothing: every write posts the change notice this
+    /// tab listens to, so coming back to it only redrew the same rows at the
+    /// cost of a request.
     func loadOnAppear() async {
-        if !loaded, !followed.isEmpty {
+        guard !loaded, !isLoading else { return }
+        if !followed.isEmpty {
             await refresh()
         } else {
             await load()

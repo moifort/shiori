@@ -31,7 +31,8 @@ enum SettingsAPI {
     static func deleteAccount() async throws {
         _ = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.DeleteAccountMutation()
+            mutation: ShioriGraphQL.DeleteAccountMutation(),
+            changesLibrary: false
         )
     }
 }

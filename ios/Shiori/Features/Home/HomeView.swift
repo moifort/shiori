@@ -51,13 +51,15 @@ struct HomeView: View {
                     case let .series(id): SeriesView(seriesId: id)
                     }
                 }
-                // Every time the tab comes back, and every time a saga pushed
-                // from the progress card is popped: a scan or an edit made in
-                // another tab changes the figures, a saga's first opening
-                // builds the catalogue its bar is measured on, and the view
-                // behind them is one document read. On the content rather
-                // than on the stack, which stays put under a pushed saga.
-                .onAppear { Task { await viewModel.loadOnAppear() } }
+                // The first time only: after that, writes made anywhere
+                // arrive through the change notice below.
+                .task { await viewModel.loadOnAppear() }
+        }
+        // A saga pushed from the progress card was popped: its first opening
+        // may have built the catalogue its bar is measured on, and reading a
+        // catalogue is no write, so no notice says so.
+        .onChange(of: path.count) { previous, current in
+            if current < previous { Task { await viewModel.load() } }
         }
         // And every time a write lands anywhere: the figures behind this screen
         // are rebuilt by the server on each one, and the tab may be showing.
@@ -76,15 +78,13 @@ struct HomeView: View {
             Text("\(audibleSync.errorMessage ?? "") Vous pouvez relancer la synchronisation depuis les réglages.")
         }
         .sheet(item: $selectedBook) { book in
-            BookView(
-                bookId: book.id,
-                onChanged: { _ in Task { await viewModel.load() } },
-                onDeleted: { _ in Task { await viewModel.load() } }
-            )
+            // The book's own writes post the change notice this screen
+            // reloads on: reloading here as well asked the server twice.
+            BookView(bookId: book.id)
         }
-        // Reloaded on dismissal: an import or a sync asked for from the settings
-        // moves the figures behind this sheet, a hundred books at a time.
-        .sheet(isPresented: $showSettings, onDismiss: { Task { await viewModel.load() } }) {
+        // An import or a sync asked for from the settings posts the change
+        // notice as it lands: nothing is left to reload on dismissal.
+        .sheet(isPresented: $showSettings) {
             SettingsHomeView()
         }
     }

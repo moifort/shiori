@@ -35,12 +35,11 @@ struct LibraryView: View {
                 onBookTapped: { selectedBook = $0 }
             )
             .sheet(item: $selectedBook) { book in
-                BookView(
-                    bookId: book.id,
-                    onChanged: { updated in Task { await viewModel.apply(updated) } },
-                    // The sheet dismisses itself once the deletion lands.
-                    onDeleted: { id in viewModel.remove(id: id) }
-                )
+                // An edit reaches this list through the change notice, which
+                // reloads the page once. Patching the row as well sent a second
+                // request whenever the book changed section. A deletion still
+                // takes the row away at once, before the reload lands.
+                BookView(bookId: book.id, onDeleted: { id in viewModel.remove(id: id) })
             }
         }
         // Over last session's snapshot when the disk had one: the list shows at

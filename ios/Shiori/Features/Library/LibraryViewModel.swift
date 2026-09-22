@@ -203,9 +203,13 @@ final class LibraryViewModel {
     }
 
     /// The tab appeared: a list still showing last session's snapshot refreshes
-    /// it under the leading spinner, anything else loads as it always did.
+    /// it under the leading spinner, one never loaded loads. A list the server
+    /// already answered asks nothing: every write posts the change notice this
+    /// tab listens to, so coming back to it only redrew the same rows at the
+    /// cost of a request.
     func loadOnAppear() async {
-        if !loaded, !books.isEmpty {
+        guard !loaded, !isLoading else { return }
+        if !books.isEmpty {
             await refresh()
         } else {
             await load()
@@ -223,26 +227,6 @@ final class LibraryViewModel {
         guard isRefreshing else { return }
         isRefreshing = false
         refreshFailed = !loaded
-    }
-
-    /// Applies a book the detail screen just changed, without refetching the
-    /// whole library. A change to what places the book — its status, which
-    /// moves the date it is shelved on, or its heart, which the favourites view
-    /// filters on — moves it, so that case falls back to a reload rather than
-    /// leaving a row out of place.
-    func apply(_ book: Book) async {
-        guard let current = books.first(where: { $0.id == book.id }) else { return }
-        let moved = current.status != book.status
-            || current.favorite != book.favorite
-        if moved {
-            await load()
-            return
-        }
-        // The detail screen's record does not carry the date the list files it
-        // under; it has not moved, so the row keeps its own.
-        var updated = book
-        updated.shelvedAt = current.shelvedAt
-        books = books.map { $0.id == book.id ? updated : $0 }
     }
 
     func remove(id: String) {

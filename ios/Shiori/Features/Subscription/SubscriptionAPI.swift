@@ -52,7 +52,9 @@ enum SubscriptionAPI {
     static func sync(signedTransaction: String) async throws -> EntitlementState {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.SyncEntitlementMutation(signedTransaction: signedTransaction)
+            mutation: ShioriGraphQL.SyncEntitlementMutation(signedTransaction: signedTransaction),
+            // Sent at every launch for a subscriber: it must not refetch the tabs.
+            changesLibrary: false
         )
         return data.syncEntitlement.fragments.entitlementFields.asState
     }

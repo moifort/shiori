@@ -92,7 +92,8 @@ enum FriendsAPI {
     static func invite() async throws -> FriendInvitation {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.InviteFriendMutation()
+            mutation: ShioriGraphQL.InviteFriendMutation(),
+            changesLibrary: false
         )
         return FriendInvitation(
             code: data.inviteFriend.code,
@@ -105,7 +106,8 @@ enum FriendsAPI {
     static func accept(code: String) async throws -> Friend {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.AcceptFriendInvitationMutation(code: code)
+            mutation: ShioriGraphQL.AcceptFriendInvitationMutation(code: code),
+            changesLibrary: false
         )
         return Friend(row: data.acceptFriendInvitation.fragments.friendRow)
     }
@@ -114,7 +116,8 @@ enum FriendsAPI {
     static func remove(userId: String) async throws -> Bool {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.RemoveFriendMutation(userId: userId)
+            mutation: ShioriGraphQL.RemoveFriendMutation(userId: userId),
+            changesLibrary: false
         )
         return data.removeFriend
     }

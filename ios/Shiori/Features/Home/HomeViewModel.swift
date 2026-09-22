@@ -45,10 +45,12 @@ final class HomeViewModel {
     }
 
     /// The tab appeared: a dashboard still showing last session's snapshot
-    /// refreshes it under the leading spinner, anything else loads as it
-    /// always did.
+    /// refreshes it under the leading spinner, one never loaded loads. A
+    /// dashboard the server already answered asks nothing: every write posts
+    /// the change notice this tab listens to.
     func loadOnAppear() async {
-        if !loaded, dashboard != nil {
+        guard !loaded, !isLoading else { return }
+        if dashboard != nil {
             await refresh()
         } else {
             await load()

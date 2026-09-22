@@ -33,7 +33,8 @@ enum OnboardingAPI {
         let input = ShioriGraphQL.CompleteOnboardingInput(firstName: firstName)
         _ = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.CompleteOnboardingMutation(input: input)
+            mutation: ShioriGraphQL.CompleteOnboardingMutation(input: input),
+            changesLibrary: false
         )
     }
 }
