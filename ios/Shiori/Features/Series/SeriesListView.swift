@@ -130,8 +130,10 @@ struct SeriesListView: View {
 
     private var list: some View {
         List {
-            // Leads the rows it is refreshing, never replaces them.
-            if viewModel.isRefreshing || viewModel.refreshFailed {
+            // The snapshot on screen is brought up to date silently: a spinner
+            // at the top on every change of view was noise. Only a refresh that
+            // failed says so, since the rows are then last time's.
+            if viewModel.refreshFailed {
                 RefreshRow(
                     failed: viewModel.refreshFailed,
                     loadingLabel: "Mise à jour des séries",

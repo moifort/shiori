@@ -83,7 +83,7 @@ final class LibraryViewModel {
     /// the refresh spinner rather than an empty list reloading. Bump the
     /// version whenever `Book` changes shape.
     private func cache(for mode: LibraryMode, _ status: ReadingStatus?) -> SnapshotCache<[Book]> {
-        SnapshotCache("library-\(mode.rawValue)-\(status?.rawValue ?? "all")", version: 4)
+        SnapshotCache("library-\(mode.rawValue)-\(status?.rawValue ?? "all")", version: 5)
     }
 
     /// More rows follow the ones on screen.

@@ -20,6 +20,7 @@ import type {
   ShelfVocabulary,
   Subgenre,
 } from '~/domain/book/types'
+import { READING_STATUSES } from '~/domain/book/types'
 import type { SeriesId } from '~/domain/series/types'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { UserId } from '~/domain/shared/types'
@@ -27,6 +28,18 @@ import { createLogger } from '~/system/logger'
 import { objectStore } from '~/system/object-store'
 
 const logger = createLogger('book')
+
+/** The statuses a view of the Library tab shows. The default view leaves the
+ *  dropped books out: they are books the reader gave up on, and they have a
+ *  filter of their own. The favourites show whatever was hearted. */
+const shownStatusesOf = (view: {
+  favorite?: boolean
+  status?: ReadingStatus
+}): readonly ReadingStatus[] | undefined => {
+  if (view.status) return [view.status]
+  if (view.favorite) return undefined
+  return READING_STATUSES.filter((status) => status !== 'dropped')
+}
 
 export namespace BookQuery {
   export const byId = async (userId: UserId, bookId: BookId): Promise<BookView | null> => {
@@ -71,11 +84,12 @@ export namespace BookQuery {
     page: { limit: number; after?: BookId },
     view: { favorite?: boolean; rated?: boolean; status?: ReadingStatus },
   ): Promise<{ books: BookView[]; hasMore: boolean }> => {
+    const statuses = shownStatusesOf(view)
     if (!view.rated) {
       try {
         const { books, hasMore } = await repository.findShelfPage(
           userId,
-          { favorite: view.favorite, status: view.status },
+          { favorite: view.favorite, statuses },
           page.limit,
           page.after,
         )
@@ -87,7 +101,7 @@ export namespace BookQuery {
     }
     const kept = (await repository.findAllByUser(userId)).filter(
       (book) =>
-        (!view.favorite || book.favorite === true) && (!view.status || book.status === view.status),
+        (!view.favorite || book.favorite === true) && (!statuses || statuses.includes(book.status)),
     )
     const ordered = view.rated
       ? ratedShelfOf(kept, seriesRatingsOf(await SeriesOpinionQuery.all(userId)))

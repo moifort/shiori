@@ -16,10 +16,8 @@ struct LibraryPage: View {
     /// Rows say their own status, unless a filter already says which.
     var showsStatus: Bool = false
     let isLoading: Bool
-    /// The rows are last session's and fresher ones are on their way: a
-    /// spinner row leads the list rather than a loader replacing it.
-    var isRefreshing: Bool = false
-    /// That refresh failed — the leading row becomes a retry.
+    /// Bringing last session's rows up to date failed: a retry row leads the
+    /// list.
     var refreshFailed: Bool = false
     let errorMessage: String?
     /// More rows follow the ones on screen: a sentinel closes the list and
@@ -103,8 +101,10 @@ struct LibraryPage: View {
 
     private var list: some View {
         List {
-            // Leads the rows it is refreshing, never replaces them.
-            if isRefreshing || refreshFailed {
+            // The snapshot on screen is brought up to date silently: a spinner
+            // at the top on every change of view was noise. Only a refresh that
+            // failed says so, since the rows are then last time's.
+            if refreshFailed {
                 RefreshRow(
                     failed: refreshFailed,
                     loadingLabel: "Mise à jour de la bibliothèque",

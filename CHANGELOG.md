@@ -10,6 +10,8 @@ the release tag is pushed.
 
 ## Unreleased
 
+- The library no longer lists abandoned books by default; the "Abandoned" filter still shows them.
+- Switching between views of the library or the series no longer shows a spinner above the list.
 - A new Discover tab proposes what to read next, each book with the reason it was picked
   for you: the next volumes of your series and when they come out, new Audible releases in
   the series you listen to, books in the vein of the ones you loved, award winners and the

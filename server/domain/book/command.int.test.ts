@@ -540,6 +540,20 @@ describe('paging the Library tab', () => {
     expect(books.map((book) => book.id)).toEqual([reading?.id])
   })
 
+  // A book given up on has a filter of its own; the default view is what the
+  // reader is reading, will read and has read.
+  test('leaves the dropped books out of the default view, not out of their filter', async () => {
+    const [dropped] = await shelve(3)
+    if (dropped) await BookCommand.setStatus(reader, dropped.id, 'dropped', NOW)
+
+    const all = await BookQuery.libraryPage(reader, { limit: 10 }, {})
+    const filtered = await BookQuery.libraryPage(reader, { limit: 10 }, { status: 'dropped' })
+
+    expect(all.books.map((book) => book.id)).not.toContain(dropped?.id)
+    expect(all.books).toHaveLength(2)
+    expect(filtered.books.map((book) => book.id)).toEqual([dropped?.id])
+  })
+
   test('restarts from the top when the cursor book is gone', async () => {
     const shelved = await shelve(3)
     const gone = shelved[1]

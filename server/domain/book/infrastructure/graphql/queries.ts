@@ -33,7 +33,8 @@ builder.queryFields((t) => ({
     description:
       'One page of the Library tab, for a list that draws as it scrolls.\n\n' +
       'A flat list, not sections: newest first on `shelvedAt` — the day each book ' +
-      'was finished, else started, else added — whatever its status. The app cuts ' +
+      'was finished, else started, else added. With no `status`, the dropped books ' +
+      'are left out: they have their own filter. The app cuts ' +
       'it into month sections on that date — or, with `rated`, best first and cut ' +
       'by stars. Read `hasMore`, then pass the id of the ' +
       'last book as `after` for the next page. A cursor naming a book no longer ' +

@@ -4,6 +4,8 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- La bibliothèque n’affiche plus les livres abandonnés par défaut ; le filtre « Abandonné » les montre toujours.
+- Changer de vue dans la bibliothèque ou les séries n’affiche plus de petit chargement au-dessus de la liste.
 - Un nouvel onglet Découvrir propose vos prochaines lectures, chaque livre avec la raison de
   son choix : les prochains tomes de vos séries et leur date de sortie, les nouveautés
   Audible des séries que vous écoutez, des livres dans la veine de ceux que vous avez

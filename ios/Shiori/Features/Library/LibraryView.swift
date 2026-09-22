@@ -25,7 +25,6 @@ struct LibraryView: View {
                 sections: viewModel.sections,
                 showsStatus: viewModel.statusFilter == nil,
                 isLoading: viewModel.isLoading,
-                isRefreshing: viewModel.isRefreshing,
                 refreshFailed: viewModel.refreshFailed,
                 errorMessage: viewModel.errorMessage,
                 hasMore: viewModel.hasMore,
