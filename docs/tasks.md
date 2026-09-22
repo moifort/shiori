@@ -378,17 +378,14 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       list on top: an invitation and acceptance flow, a friendship record, a query that reads
       another reader's books under the `hidden` rule, and it exposes books only, never the
       series catalogue.
-- [ ] **A TestFlight build from CI, without cutting a release.** Today `release-ios.yml`
-      only fires on an `ios-v*` tag, so testing a change on a real phone means tagging a
-      release that is not one. Wanted: a workflow that archives, uploads and distributes to
-      an internal TestFlight group on demand — `workflow_dispatch`, and optionally every push
-      to `main` — with the build number taken from the run number or the commit count so two
-      uploads never collide, and the release notes taken from the commit subject. It shares
-      every signing step with `release-ios.yml`, so the two should be one reusable workflow
-      called twice rather than a copy: the difference is the trigger, the build number and
-      whether App Store Connect is asked to submit for review. Needs an internal testing
-      group in App Store Connect, which does not exist yet because the app has no record
-      there.
+- [x] **A TestFlight build from CI, without cutting a release.** `testflight-ios.yml` puts
+      main on the internal "Nightly" TestFlight group every night, and on demand. Archive,
+      signing and upload live once in `ios-upload.yml`, which `release-ios.yml` calls too.
+      The build number stays the commit count, so a commit already on App Store Connect is
+      never rebuilt: a night where main did not move stops after one Linux check, and a tag
+      on a commit that went up the night before submits that very binary. The marketing
+      version is the latest `CHANGELOG.md` heading until its `ios-v*` tag exists, then the
+      next minor. "What to Test" is the commit subjects since the previous upload.
 
 - [x] **Kindle import from the Amazon data export.** Decided: the reader asks Amazon for
       their data, receives a CSV, and imports it here. A one-off import, never a sync — the

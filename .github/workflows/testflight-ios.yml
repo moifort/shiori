@@ -1,0 +1,56 @@
+name: TestFlight
+
+# Every night, puts main on the internal TestFlight group ("Nightly" in App Store Connect,
+# which has access to every build), so a change can be tried on a phone without tagging a
+# release that is not one. Nothing is submitted for review. When main has not moved since
+# the last upload, the build already exists and ios-upload.yml stops before any macOS job.
+
+on:
+  schedule:
+    - cron: '0 1 * * *'   # 03:00 in Paris in summer, 02:00 in winter
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Shared with release-ios.yml: two uploads at once would race for the same build number.
+concurrency:
+  group: ios-upload
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: 🏷️ Version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      marketing: ${{ steps.version.outputs.marketing }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # the ios-v* tags decide whether a version has shipped
+
+      # The version the next release will carry. The latest versioned heading of
+      # CHANGELOG.md is that release until its tag exists; once it has shipped, App Store
+      # Connect closes its train to new builds, so the nightly moves on to the next minor.
+      - name: Pick the version under development
+        id: version
+        run: |
+          set -euo pipefail
+          LATEST=$(grep -m1 -oE '^## [0-9]+(\.[0-9]+)+' CHANGELOG.md | cut -c4- || true)
+          if [ -z "$LATEST" ]; then
+            MARKETING=1.0
+          elif git rev-parse -q --verify "refs/tags/ios-v$LATEST" >/dev/null; then
+            MARKETING=$(echo "$LATEST" | awk -F. '{ print $1 "." $2 + 1 }')
+          else
+            MARKETING="$LATEST"
+          fi
+          echo "marketing=$MARKETING" >> "$GITHUB_OUTPUT"
+          echo "Nightly build of Shiori $MARKETING"
+
+  testflight:
+    needs: version
+    uses: ./.github/workflows/ios-upload.yml
+    with:
+      marketing_version: ${{ needs.version.outputs.marketing }}
+    secrets: inherit
