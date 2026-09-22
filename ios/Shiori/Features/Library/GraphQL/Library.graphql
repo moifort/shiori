@@ -10,18 +10,8 @@ query Library($status: ReadingStatus) {
 # list the server has already ordered, newest first, which the app cuts into
 # month sections wherever the month of `shelvedAt` changes. The last book of a
 # page is the cursor for the next.
-query LibraryPage(
-  $favorite: Boolean
-  $status: ReadingStatus
-  $limit: Int
-  $after: BookId
-) {
-  libraryPage(
-    favorite: $favorite
-    status: $status
-    limit: $limit
-    after: $after
-  ) {
+query LibraryPage($favorite: Boolean, $status: ReadingStatus, $limit: Int, $after: BookId) {
+  libraryPage(favorite: $favorite, status: $status, limit: $limit, after: $after) {
     hasMore
     books {
       ...BookSummary

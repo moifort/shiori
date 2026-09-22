@@ -28,18 +28,8 @@ query MySeries {
 # asks for the volumes: each one costs a signed cover URL. The catalogue comes
 # along so the strip can draw the volumes the reader does not own; the server
 # reads every catalogue of the page in one getAll.
-query MySeriesPage(
-  $limit: Int
-  $offset: Int
-  $favorite: Boolean
-  $state: SeriesState
-) {
-  mySeriesPage(
-    limit: $limit
-    offset: $offset
-    favorite: $favorite
-    state: $state
-  ) {
+query MySeriesPage($limit: Int, $offset: Int, $favorite: Boolean, $state: SeriesState) {
+  mySeriesPage(limit: $limit, offset: $offset, favorite: $favorite, state: $state) {
     hasMore
     items {
       ...FollowedSeriesRow
