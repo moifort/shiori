@@ -95,6 +95,9 @@ export const analyticsViewOf = (input: {
   // What the statistics count is what the reader sees on the book: a saga
   // rated as a whole rates each of its unrated volumes, once per volume.
   const seriesRatings = seriesRatingsOf(opinions)
+  const unfollowed = new Set(
+    opinions.filter((opinion) => opinion.unfollowed).map((opinion) => opinion.seriesId),
+  )
   const ratingOf = (book: Book) => shownRatingOf(book, seriesRatings)
   const cardOf = (book: Book): BookCard => ({
     id: book.id,
@@ -145,7 +148,12 @@ export const analyticsViewOf = (input: {
     reading,
     toRead,
     lastFinished: last ? cardOf(last) : undefined,
-    series: seriesProgressOf(books, catalogues, yearOf(localDateOf(now, timeZone))),
+    // A saga set aside is not one the reader is working through.
+    series: seriesProgressOf(
+      books,
+      catalogues.filter((series) => !unfollowed.has(series.id)),
+      yearOf(localDateOf(now, timeZone)),
+    ),
     favoriteBookCount: books.filter((book) => book.favorite === true).length,
     favoriteSeriesCount: opinions.filter((opinion) => opinion.favorite === true).length,
     audiobookCount: books.filter((book) => book.format === 'audiobook').length,

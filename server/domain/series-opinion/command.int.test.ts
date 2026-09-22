@@ -47,6 +47,20 @@ describe('what a reader makes of a saga', () => {
 
   // How many volumes the reader says the saga has, when nobody has catalogued
   // it: theirs alone, never written into the shared catalogue.
+  test('keeps a saga the reader stopped following', async () => {
+    await SeriesOpinionCommand.setFollowed(reader, dune, false)
+
+    expect(await SeriesOpinionQuery.of(reader, dune)).toMatchObject({ unfollowed: true })
+  })
+
+  // Following is what an absent opinion already says.
+  test('erases the opinion when following again leaves nothing in it', async () => {
+    await SeriesOpinionCommand.setFollowed(reader, dune, false)
+    await SeriesOpinionCommand.setFollowed(reader, dune, true)
+
+    expect(await SeriesOpinionQuery.of(reader, dune)).toBeNull()
+  })
+
   test('keeps the number of volumes the reader declared', async () => {
     await SeriesOpinionCommand.declareVolumeCount(reader, dune, VolumeNumber(6))
 

@@ -1137,6 +1137,11 @@ type Mutation {
   setSeriesFavorite(favorite: Boolean!, seriesId: SeriesId!): SeriesOpinion!
 
   """
+  Set a saga aside, or follow it again. A saga the reader stopped following is `UNFOLLOWED` whatever its volumes say: out of the sagas in progress and of the finished ones, off the dashboard progress bars, last in the state filter. Only the saga — its volumes keep their own statuses. Leaves the rating and the heart alone.
+  """
+  setSeriesFollowed(followed: Boolean!, seriesId: SeriesId!): SeriesOpinion!
+
+  """
   Open an Amazon sign-in for the given marketplace.
   
   The exchange is PKCE and its secret half stays on the server: the app gets the page to show, the cookies to plant first and the redirect to watch for. Hand the authorization code that redirect carries to `completeAudibleLogin` within thirty minutes.
@@ -1686,6 +1691,11 @@ type SeriesOpinion {
   favorite: Boolean!
 
   """
+  Whether the reader follows the saga. True until they set it aside with `setSeriesFollowed`, which makes its state `UNFOLLOWED`.
+  """
+  followed: Boolean!
+
+  """
   The reader's judgement of the saga itself, and deliberately not the average of their volume ratings: a cycle can be worth more than its books, or rather less. Null until they rate it.
   """
   rating: StarRating
@@ -1710,7 +1720,7 @@ type SeriesProgress {
 """
 Where the reader stands on a saga.
 
-Derived per request from what they own, never stored. `NOT_STARTED` means no owned volume has been opened yet. `COMPLETE` means every published volume has been read; an announced but unpublished volume does not hold a saga open, because a reader who is up to date has finished it.
+Derived per request from what they own, never stored. `NOT_STARTED` means no owned volume has been opened yet. `COMPLETE` means every published volume has been read; an announced but unpublished volume does not hold a saga open, because a reader who is up to date has finished it. `UNFOLLOWED` is the reader setting the saga aside, and overrides the rest.
 """
 enum SeriesState {
   """Every published volume has been read."""
@@ -1721,6 +1731,11 @@ enum SeriesState {
 
   """No owned volume has been opened."""
   NOT_STARTED
+
+  """
+  The reader stopped following the saga (`setSeriesFollowed`). Whatever their volumes say, it is out of the sagas in progress and of the finished ones. Its volumes keep their own statuses.
+  """
+  UNFOLLOWED
 }
 
 """

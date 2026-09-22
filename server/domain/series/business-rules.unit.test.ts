@@ -200,6 +200,14 @@ describe('followedStateOf', () => {
     expect(followedStateOf(['to-read', 'to-read'], null, new Set(), THIS_YEAR)).toBe('not-started')
   })
 
+  // A saga the reader stopped following is out of every other state, whatever
+  // their volumes say: it is neither in progress nor done, it is set aside.
+  test('is unfollowed once the reader stopped following it, whatever was read', () => {
+    expect(followedStateOf(['reading'], series, new Set(), THIS_YEAR, true)).toBe('unfollowed')
+    expect(followedStateOf(['read'], series, new Set([1]), THIS_YEAR, true)).toBe('unfollowed')
+    expect(followedStateOf(['to-read'], null, new Set(), THIS_YEAR, true)).toBe('unfollowed')
+  })
+
   test('lets the catalogue decide once a volume has been opened', () => {
     expect(followedStateOf(['read'], series, new Set([1]), THIS_YEAR)).toBe('complete')
     expect(followedStateOf(['reading'], series, new Set(), THIS_YEAR)).toBe('in-progress')

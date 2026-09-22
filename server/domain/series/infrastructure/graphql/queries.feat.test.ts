@@ -599,3 +599,46 @@ describe('a saga the reader counted themselves', () => {
     expect(calls).toEqual(['catalogue'])
   })
 })
+
+describe('a saga the reader stopped following', () => {
+  const DUNE = 'dune--frank-herbert'
+  const unfollow = async (followed = false) => {
+    const result = await execute(
+      `mutation { setSeriesFollowed(seriesId: "${DUNE}", followed: ${followed}) { followed } }`,
+    )
+    expect(result.errors).toBeUndefined()
+    return result.data?.setSeriesFollowed
+  }
+  const states = async (filter = '') => {
+    const result = await execute(`{ mySeriesPage${filter} { items { name state } } }`)
+    expect(result.errors).toBeUndefined()
+    return (result.data as { mySeriesPage: { items: { name: string; state: string }[] } })
+      .mySeriesPage.items
+  }
+
+  test('is set aside in a state of its own, out of the sagas in progress', async () => {
+    await addVolume('Dune', 1, { status: 'READING' })
+
+    expect(await unfollow()).toEqual({ followed: false })
+
+    expect(await states()).toEqual([{ name: 'Dune', state: 'UNFOLLOWED' }])
+    expect(await states('(state: IN_PROGRESS)')).toEqual([])
+    expect(await states('(state: UNFOLLOWED)')).toEqual([{ name: 'Dune', state: 'UNFOLLOWED' }])
+  })
+
+  test('takes its place back once the reader follows it again', async () => {
+    await addVolume('Dune', 1, { status: 'READING' })
+    await unfollow()
+
+    expect(await unfollow(true)).toEqual({ followed: true })
+    expect(await states()).toEqual([{ name: 'Dune', state: 'IN_PROGRESS' }])
+  })
+
+  test('leaves the volumes as they were', async () => {
+    await addVolume('Dune', 1, { status: 'READING' })
+    await unfollow()
+
+    const result = await execute('{ libraryPage { books { title status } } }')
+    expect(result.data?.libraryPage).toEqual({ books: [{ title: 'Dune', status: 'READING' }] })
+  })
+})

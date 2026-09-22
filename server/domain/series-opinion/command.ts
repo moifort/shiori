@@ -37,6 +37,20 @@ export namespace SeriesOpinionCommand {
     batch?: WriteBatch,
   ) => write(userId, seriesId, (opinion) => ({ ...opinion, volumeCount }), batch)
 
+  /** Set a saga aside, or follow it again. */
+  export const setFollowed = (
+    userId: UserId,
+    seriesId: SeriesId,
+    followed: boolean,
+    batch?: WriteBatch,
+  ) =>
+    write(
+      userId,
+      seriesId,
+      (opinion) => ({ ...opinion, unfollowed: followed ? undefined : true }),
+      batch,
+    )
+
   /** Forget what the reader made of a saga they no longer hold. */
   export const forget = (userId: UserId, seriesId: SeriesId, batch?: WriteBatch): Promise<void> =>
     repository.remove(userId, seriesId, batch)
@@ -45,10 +59,10 @@ export namespace SeriesOpinionCommand {
     repository.removeAllByUser(userId)
 }
 
-// Read, change, and then either store or erase. An opinion holding neither a
-// rating, nor a heart, nor a count says exactly what an absent document already
-// says, so it is deleted rather than kept as a row that costs a read and
-// answers nothing.
+// Read, change, and then either store or erase. An opinion holding no rating,
+// no heart, no count and no unfollowing says exactly what an absent document
+// already says, so it is deleted rather than kept as a row that costs a read
+// and answers nothing.
 const write = async (
   userId: UserId,
   seriesId: SeriesId,
@@ -57,7 +71,12 @@ const write = async (
 ): Promise<SeriesOpinion> => {
   const current = (await repository.findBy(userId, seriesId)) ?? { userId, seriesId }
   const next = change(current)
-  if (next.rating === undefined && next.favorite === undefined && next.volumeCount === undefined) {
+  if (
+    next.rating === undefined &&
+    next.favorite === undefined &&
+    next.volumeCount === undefined &&
+    next.unfollowed === undefined
+  ) {
     await repository.remove(userId, seriesId, batch)
     return next
   }

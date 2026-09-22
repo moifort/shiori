@@ -260,6 +260,7 @@ const followedSeriesOf = async (userId: UserId): Promise<FollowedSeries[]> => {
   const currentYear = Year(new Date().getUTCFullYear())
   return sagas.map((saga) => {
     const catalogue = catalogued.get(saga.id) ?? null
+    const opinion = opinions.get(saga.id) ?? null
     const read = readVolumeNumbersOf(saga.books)
     return {
       id: saga.id,
@@ -268,12 +269,13 @@ const followedSeriesOf = async (userId: UserId): Promise<FollowedSeries[]> => {
       language: saga.language,
       genre: genreOf(saga.books),
       catalogue,
-      opinion: opinions.get(saga.id) ?? null,
+      opinion,
       state: followedStateOf(
         saga.books.map((book) => book.status),
         catalogue,
         read,
         currentYear,
+        opinion?.unfollowed === true,
       ),
       progress: catalogue ? progressOf(catalogue, read, currentYear) : null,
       ownedCount: Count(saga.books.length),

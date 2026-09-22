@@ -27,4 +27,9 @@ export type SeriesOpinion = {
    *  fact about the world and a reader's guess is not written into it. As a
    *  `VolumeNumber`, since it is the number the last volume carries. */
   volumeCount?: VolumeNumber
+  /** The reader set the saga aside: it leaves the sagas in progress and the
+   *  finished ones, whatever its volumes say. Only the saga — its volumes keep
+   *  their own statuses. Absent is following, which is what every saga starts
+   *  as, so a follow again leaves nothing stored. */
+  unfollowed?: true
 }

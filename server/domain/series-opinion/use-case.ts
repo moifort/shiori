@@ -21,6 +21,13 @@ export namespace SeriesOpinionUseCase {
       SeriesOpinionCommand.setFavorite(userId, seriesId, favorite, batch),
     )
 
+  /** The dashboard's progress bars leave out a saga set aside, so following
+   *  reaches the view as a heart does. */
+  export const setFollowed = (userId: UserId, seriesId: SeriesId, followed: boolean) =>
+    withAnalytics(userId, (batch) =>
+      SeriesOpinionCommand.setFollowed(userId, seriesId, followed, batch),
+    )
+
   /** The dashboard measures a saga against this count when nobody has
    *  catalogued it, so the count reaches the view as a heart does. */
   export const declareVolumeCount = (

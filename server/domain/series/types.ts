@@ -40,6 +40,8 @@ export type Series = {
   provisional?: true
 }
 
-/** Where the reader stands on a saga: not started, working through it, or done
- *  with it. Derived, never stored: it depends on which books the reader owns. */
-export type SeriesState = 'not-started' | 'in-progress' | 'complete'
+/** Where the reader stands on a saga: not started, working through it, done
+ *  with it, or set aside. Derived, never stored: it depends on which books the
+ *  reader owns — and, for `unfollowed`, on their own choice to stop following
+ *  it, which overrides the rest. */
+export type SeriesState = 'not-started' | 'in-progress' | 'complete' | 'unfollowed'

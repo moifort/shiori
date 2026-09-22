@@ -30,10 +30,18 @@ export const SeriesStateEnum = builder.enumType('SeriesState', {
     'Derived per request from what they own, never stored. `NOT_STARTED` means no ' +
     'owned volume has been opened yet. `COMPLETE` means every ' +
     'published volume has been read; an announced but unpublished volume does not ' +
-    'hold a saga open, because a reader who is up to date has finished it.',
+    'hold a saga open, because a reader who is up to date has finished it. ' +
+    '`UNFOLLOWED` is the reader setting the saga aside, and overrides the rest.',
   values: {
     NOT_STARTED: { value: 'not-started', description: 'No owned volume has been opened.' },
     IN_PROGRESS: { value: 'in-progress', description: 'Published volumes remain unread.' },
     COMPLETE: { value: 'complete', description: 'Every published volume has been read.' },
+    UNFOLLOWED: {
+      value: 'unfollowed',
+      description:
+        'The reader stopped following the saga (`setSeriesFollowed`). Whatever their ' +
+        'volumes say, it is out of the sagas in progress and of the finished ones. ' +
+        'Its volumes keep their own statuses.',
+    },
   } as const,
 })

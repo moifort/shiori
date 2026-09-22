@@ -49,6 +49,22 @@ builder.mutationFields((t) => ({
       SeriesOpinionUseCase.declareVolumeCount(context.userId, args.seriesId, args.count),
   }),
 
+  setSeriesFollowed: t.field({
+    type: SeriesOpinionType,
+    description:
+      'Set a saga aside, or follow it again. A saga the reader stopped following ' +
+      'is `UNFOLLOWED` whatever its volumes say: out of the sagas in progress and ' +
+      'of the finished ones, off the dashboard progress bars, last in the state ' +
+      'filter. Only the saga — its volumes keep their own statuses. Leaves the ' +
+      'rating and the heart alone.',
+    args: {
+      seriesId: t.arg({ type: 'SeriesId', required: true }),
+      followed: t.arg.boolean({ required: true }),
+    },
+    resolve: (_root, args, context) =>
+      SeriesOpinionUseCase.setFollowed(context.userId, args.seriesId, args.followed),
+  }),
+
   setSeriesFavorite: t.field({
     type: SeriesOpinionType,
     description: 'Keep a saga close, or stop. Leaves the rating alone.',

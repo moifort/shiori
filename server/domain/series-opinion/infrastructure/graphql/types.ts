@@ -22,6 +22,12 @@ export const SeriesOpinionType = builder.objectRef<SeriesOpinion>('SeriesOpinion
       description: 'A saga the reader keeps close. Independent of the rating.',
       resolve: (opinion) => opinion.favorite ?? false,
     }),
+    followed: t.boolean({
+      description:
+        'Whether the reader follows the saga. True until they set it aside with ' +
+        '`setSeriesFollowed`, which makes its state `UNFOLLOWED`.',
+      resolve: (opinion) => opinion.unfollowed !== true,
+    }),
     volumeCount: t.field({
       type: 'VolumeNumber',
       nullable: true,

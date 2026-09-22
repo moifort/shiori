@@ -503,6 +503,27 @@ describe('building the view', () => {
     expect(dashboard.averageRating).toBe(3)
   })
 
+  // "Series in progress" lists what the reader is working through; a saga they
+  // stopped following is set aside, however far they got.
+  test('leaves a saga the reader stopped following off the progress bars', () => {
+    const view = analyticsViewOf({
+      userId: reader,
+      timeZone: paris,
+      now: new Date('2026-09-15T10:00:00.000Z'),
+      catalogues: [catalogue],
+      opinions: [{ userId: reader, seriesId: kingkiller, unfollowed: true }],
+      books: [
+        book('vol-1', {
+          status: 'read',
+          finishedAt: new Date('2026-02-10'),
+          series: { id: kingkiller, name: catalogue.name, volume: VolumeNumber(1), kind: 'main' },
+        }),
+      ],
+    })
+
+    expect(view.series).toEqual([])
+  })
+
   test('draws the saga rating on an unrated volume in progress', () => {
     const view = analyticsViewOf({
       userId: reader,

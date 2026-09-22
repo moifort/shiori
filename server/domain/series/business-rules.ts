@@ -163,6 +163,8 @@ export const genreOf = (books: readonly { genre?: Genre }[]): Genre | undefined 
 
 /** Where the reader stands on a saga they follow, as the Series tab labels it.
  *
+ *  A saga the reader stopped following is `unfollowed`, whatever else holds.
+ *
  *  A saga nothing of which has been opened is `not-started`, catalogue or not:
  *  that is a fact about the reader's own books. Past that, the catalogue decides
  *  whether published volumes remain. Without one, an owned volume still unread
@@ -173,7 +175,11 @@ export const followedStateOf = (
   catalogue: Series | null,
   readVolumeNumbers: ReadonlySet<number>,
   currentYear: Year,
+  unfollowed = false,
 ): SeriesState | null => {
+  // The reader's own choice, above whatever their volumes say: a saga set
+  // aside is neither in progress nor done.
+  if (unfollowed) return 'unfollowed'
   if (statuses.every((status) => status === 'to-read')) return 'not-started'
   if (catalogue) return stateOf(catalogue, readVolumeNumbers, currentYear)
   // A dropped volume is as done with as a read one: it holds nothing open.
