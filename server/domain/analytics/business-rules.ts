@@ -22,6 +22,7 @@ import {
 import type { Book, Genre, StarRating } from '~/domain/book/types'
 import { progressOf, stateOf } from '~/domain/series/business-rules'
 import type { Series, SeriesId } from '~/domain/series/types'
+import { editionUnfollowed } from '~/domain/series-opinion/business-rules'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import { Year } from '~/domain/shared/primitives'
 import type { UserId } from '~/domain/shared/types'
@@ -96,8 +97,12 @@ export const analyticsViewOf = (input: {
   // What the statistics count is what the reader sees on the book: a saga
   // rated as a whole rates each of its unrated volumes, once per volume.
   const seriesRatings = seriesRatingsOf(opinions)
-  const unfollowed = new Set(
-    opinions.filter((opinion) => opinion.unfollowed).map((opinion) => opinion.seriesId),
+  // An edition set aside is not one the reader is working through: its volumes
+  // leave the progress bars, and a saga with no edition left leaves them too.
+  const opinionOf = new Map(opinions.map((opinion) => [opinion.seriesId, opinion]))
+  const followedBooks = books.filter(
+    (book) =>
+      book.series === undefined || !editionUnfollowed(opinionOf.get(book.series.id), book.language),
   )
   const ratingOf = (book: Book) => shownRatingOf(book, seriesRatings)
   const cardOf = (book: Book): BookCard => ({
@@ -150,10 +155,9 @@ export const analyticsViewOf = (input: {
     reading,
     toRead,
     lastFinished: last ? cardOf(last) : undefined,
-    // A saga set aside is not one the reader is working through.
     series: seriesProgressOf(
-      books,
-      catalogues.filter((series) => !unfollowed.has(series.id)),
+      followedBooks,
+      catalogues,
       yearOf(localDateOf(now, timeZone)),
       seriesRatings,
     ),

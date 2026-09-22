@@ -1,3 +1,4 @@
+import { BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { SeriesOpinionType } from '~/domain/series-opinion/infrastructure/graphql/types'
 import { SeriesOpinionUseCase } from '~/domain/series-opinion/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
@@ -56,13 +57,22 @@ builder.mutationFields((t) => ({
       'is `UNFOLLOWED` whatever its volumes say: out of the sagas in progress and ' +
       'of the finished ones, off the dashboard progress bars, last in the state ' +
       'filter. Only the saga — its volumes keep their own statuses. Leaves the ' +
-      'rating and the heart alone.',
+      'rating and the heart alone.\n\n' +
+      '`language` names one edition, and only that edition moves: setting the ' +
+      'English Dune aside leaves the French one followed. Without it, the whole ' +
+      'saga moves, every edition at once.',
     args: {
       seriesId: t.arg({ type: 'SeriesId', required: true }),
       followed: t.arg.boolean({ required: true }),
+      language: t.arg({ type: BookLanguageEnum, required: false }),
     },
     resolve: (_root, args, context) =>
-      SeriesOpinionUseCase.setFollowed(context.userId, args.seriesId, args.followed),
+      SeriesOpinionUseCase.setFollowed(
+        context.userId,
+        args.seriesId,
+        args.followed,
+        args.language ?? undefined,
+      ),
   }),
 
   setSeriesFavorite: t.field({

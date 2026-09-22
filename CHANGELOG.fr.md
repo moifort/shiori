@@ -4,6 +4,10 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Une série possédée en deux langues se suit édition par édition : « Ne plus suivre » sur
+  le Dune anglais laisse le Dune français suivi, dans l’onglet Séries comme sur l’accueil.
+  Depuis la carte de l’accueil, qui réunit toutes les éditions, la série entière est mise de
+  côté.
 - La carte « Séries en cours » de l’accueil liste six séries au lieu de trois, les mieux
   notées en premier : la note donnée à la série, sinon la moyenne des tomes notés, et
   l’activité la plus récente à égalité. Une série sans note passe après toutes les autres.

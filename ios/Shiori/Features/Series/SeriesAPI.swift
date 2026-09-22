@@ -155,10 +155,20 @@ enum SeriesAPI {
 
     /// Sets the saga aside, or follows it again. Only the saga: its volumes
     /// keep their own statuses.
-    static func setFollowed(seriesId: String, followed: Bool) async throws -> SeriesOpinion {
+    /// One edition when `language` names it, else the whole saga: setting the
+    /// English Dune aside leaves the French one followed.
+    static func setFollowed(
+        seriesId: String,
+        followed: Bool,
+        language: BookLanguage? = nil
+    ) async throws -> SeriesOpinion {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.SetSeriesFollowedMutation(seriesId: seriesId, followed: followed)
+            mutation: ShioriGraphQL.SetSeriesFollowedMutation(
+                seriesId: seriesId,
+                followed: followed,
+                language: graphQLLanguage(language)
+            )
         )
         return data.setSeriesFollowed.fragments.seriesOpinionFields.asOpinion
     }

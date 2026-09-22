@@ -18,6 +18,7 @@ import { SeriesType } from '~/domain/series/infrastructure/graphql/types'
 import { SeriesQuery } from '~/domain/series/query'
 import type { Series, SeriesId, SeriesName, SeriesState } from '~/domain/series/types'
 import { SeriesUseCase } from '~/domain/series/use-case'
+import { editionUnfollowed } from '~/domain/series-opinion/business-rules'
 import { SeriesOpinionType } from '~/domain/series-opinion/infrastructure/graphql/types'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
@@ -275,7 +276,7 @@ const followedSeriesOf = async (userId: UserId): Promise<FollowedSeries[]> => {
         catalogue,
         read,
         currentYear,
-        opinion?.unfollowed === true,
+        editionUnfollowed(opinion, saga.language),
       ),
       progress: catalogue ? progressOf(catalogue, read, currentYear) : null,
       ownedCount: Count(saga.books.length),

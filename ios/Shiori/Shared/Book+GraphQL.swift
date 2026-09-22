@@ -238,7 +238,8 @@ extension ShioriGraphQL.SeriesOpinionFields {
             rating: rating,
             favorite: favorite,
             volumeCount: volumeCount,
-            followed: followed
+            followed: followed,
+            unfollowedLanguages: unfollowedLanguages.compactMap(\.asDomain)
         )
     }
 }

@@ -518,13 +518,19 @@ struct SeriesView: View {
         }
     }
 
-    private var isFollowed: Bool { opinion?.followed ?? true }
+    private var isFollowed: Bool { opinion?.follows(language) ?? true }
 
     private func setFollowed(_ followed: Bool) async {
         isSaving = true
         defer { isSaving = false }
         do {
-            opinion = try await SeriesAPI.setFollowed(seriesId: seriesId, followed: followed)
+            // Only the edition the reader came from: the French row set
+            // aside says nothing of the English one.
+            opinion = try await SeriesAPI.setFollowed(
+                seriesId: seriesId,
+                followed: followed,
+                language: language
+            )
         } catch {
             errorMessage = reportError(error)
         }

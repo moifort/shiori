@@ -1,7 +1,8 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
 import { favoriteAfterRating, HEART_RATING } from '~/domain/book/business-rules'
-import type { StarRating } from '~/domain/book/types'
+import type { BookLanguage, StarRating } from '~/domain/book/types'
 import type { SeriesId, VolumeNumber } from '~/domain/series/types'
+import { followingAfter } from '~/domain/series-opinion/business-rules'
 import * as repository from '~/domain/series-opinion/infrastructure/repository'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import type { UserId } from '~/domain/shared/types'
@@ -57,17 +58,25 @@ export namespace SeriesOpinionCommand {
     batch?: WriteBatch,
   ) => write(userId, seriesId, (opinion) => ({ ...opinion, volumeCount }), batch)
 
-  /** Set a saga aside, or follow it again. */
+  /** Set a saga aside, or follow it again: one edition when `language` names
+   *  it, else the whole saga. `heldLanguages` are the editions the reader
+   *  holds, which following one edition of a saga set aside as a whole keeps
+   *  aside. */
   export const setFollowed = (
     userId: UserId,
     seriesId: SeriesId,
     followed: boolean,
+    language: BookLanguage | undefined,
+    heldLanguages: readonly BookLanguage[],
     batch?: WriteBatch,
   ) =>
     write(
       userId,
       seriesId,
-      (opinion) => ({ ...opinion, unfollowed: followed ? undefined : true }),
+      (opinion) => ({
+        ...opinion,
+        ...followingAfter(opinion, followed, language, heldLanguages),
+      }),
       batch,
     )
 
@@ -80,7 +89,7 @@ export namespace SeriesOpinionCommand {
 }
 
 // Read, change, and then either store or erase. An opinion holding no rating,
-// no heart, no count and no unfollowing says exactly what an absent document
+// no heart, no count and nothing set aside says exactly what an absent document
 // already says, so it is deleted rather than kept as a row that costs a read
 // and answers nothing.
 const write = async (
@@ -95,7 +104,8 @@ const write = async (
     next.rating === undefined &&
     next.favorite === undefined &&
     next.volumeCount === undefined &&
-    next.unfollowed === undefined
+    next.unfollowed === undefined &&
+    next.unfollowedLanguages === undefined
   ) {
     await repository.remove(userId, seriesId, batch)
     return next

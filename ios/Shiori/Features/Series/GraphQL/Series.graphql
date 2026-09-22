@@ -126,8 +126,8 @@ mutation RemoveSeriesRating($seriesId: SeriesId!) {
 
 # Set a saga aside, or follow it again. Only the saga: its volumes keep their
 # own statuses.
-mutation SetSeriesFollowed($seriesId: SeriesId!, $followed: Boolean!) {
-  setSeriesFollowed(seriesId: $seriesId, followed: $followed) {
+mutation SetSeriesFollowed($seriesId: SeriesId!, $followed: Boolean!, $language: BookLanguage) {
+  setSeriesFollowed(seriesId: $seriesId, followed: $followed, language: $language) {
     ...SeriesOpinionFields
   }
 }
@@ -151,5 +151,6 @@ fragment SeriesOpinionFields on SeriesOpinion {
   rating
   favorite
   followed
+  unfollowedLanguages
   volumeCount
 }

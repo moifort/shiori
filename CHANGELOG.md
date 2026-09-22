@@ -10,6 +10,9 @@ the release tag is pushed.
 
 ## Unreleased
 
+- A saga held in two languages is followed edition by edition: "Stop following" on the
+  English Dune leaves the French one followed, in the Series tab and on the dashboard. From
+  the dashboard's card, which draws every edition as one, it still sets the whole saga aside.
 - The dashboard's "Series in progress" card lists six sagas rather than three, the best
   rated first: the reader's rating of the saga, else the average of the volumes they rated,
   and the most recent activity among equals. An unrated saga comes after every rated one.

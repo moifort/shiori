@@ -1148,8 +1148,10 @@ type Mutation {
 
   """
   Set a saga aside, or follow it again. A saga the reader stopped following is `UNFOLLOWED` whatever its volumes say: out of the sagas in progress and of the finished ones, off the dashboard progress bars, last in the state filter. Only the saga — its volumes keep their own statuses. Leaves the rating and the heart alone.
+  
+  `language` names one edition, and only that edition moves: setting the English Dune aside leaves the French one followed. Without it, the whole saga moves, every edition at once.
   """
-  setSeriesFollowed(followed: Boolean!, seriesId: SeriesId!): SeriesOpinion!
+  setSeriesFollowed(followed: Boolean!, language: BookLanguage, seriesId: SeriesId!): SeriesOpinion!
 
   """
   Open an Amazon sign-in for the given marketplace.
@@ -1694,14 +1696,14 @@ scalar SeriesName
 """
 What one reader makes of one saga — never part of the saga's shared catalogue, which is a fact about the world with no reader in it.
 
-Held per saga, never per saga and language: the split the library draws by language is about editions on a shelf, and an opinion is about the work.
+Held per saga, never per saga and language: the split the library draws by language is about editions on a shelf, and an opinion is about the work. Only following is told edition by edition, in `unfollowedLanguages`.
 """
 type SeriesOpinion {
   """A saga the reader keeps close. Independent of the rating."""
   favorite: Boolean!
 
   """
-  Whether the reader follows the saga. True until they set it aside with `setSeriesFollowed`, which makes its state `UNFOLLOWED`.
+  Whether the reader follows the saga as a whole. True until they set it aside with `setSeriesFollowed` and no language, which makes every edition `UNFOLLOWED`. One edition set aside is in `unfollowedLanguages` instead.
   """
   followed: Boolean!
 
@@ -1710,6 +1712,11 @@ type SeriesOpinion {
   """
   rating: StarRating
   seriesId: SeriesId!
+
+  """
+  The editions set aside one by one, by language, while the saga as a whole is followed. Empty when none is.
+  """
+  unfollowedLanguages: [BookLanguage!]!
 
   """
   How many volumes the saga has by the reader's own count, set with `declareSeriesVolumeCount`. Null until they say. Only read while nobody has catalogued the saga.

@@ -634,6 +634,56 @@ describe('a saga the reader stopped following', () => {
     expect(await states()).toEqual([{ name: 'Dune', state: 'IN_PROGRESS' }])
   })
 
+  // Two editions are two sets of books: setting the English one aside says
+  // nothing about the French one on the shelf beside it.
+  test('sets aside one edition, and leaves the other followed', async () => {
+    await addVolume('Dune', 1, { language: 'FR', status: 'READING' })
+    await addVolume('Dune', 1, { language: 'EN', status: 'READING' })
+    const setEnglish = async (followed: boolean) => {
+      const result = await execute(
+        `mutation { setSeriesFollowed(seriesId: "${DUNE}", followed: ${followed}, language: EN) {
+          followed unfollowedLanguages
+        } }`,
+      )
+      expect(result.errors).toBeUndefined()
+      return result.data?.setSeriesFollowed
+    }
+    const editions = async () => {
+      const result = await execute('{ mySeriesPage { items { language state } } }')
+      expect(result.errors).toBeUndefined()
+      const items = (
+        result.data as { mySeriesPage: { items: { language: string; state: string }[] } }
+      ).mySeriesPage.items
+      return [...items].sort((left, right) => left.language.localeCompare(right.language))
+    }
+
+    expect(await setEnglish(false)).toEqual({ followed: true, unfollowedLanguages: ['EN'] })
+    expect(await editions()).toEqual([
+      { language: 'EN', state: 'UNFOLLOWED' },
+      { language: 'FR', state: 'IN_PROGRESS' },
+    ])
+
+    expect(await setEnglish(true)).toEqual({ followed: true, unfollowedLanguages: [] })
+    expect(await editions()).toEqual([
+      { language: 'EN', state: 'IN_PROGRESS' },
+      { language: 'FR', state: 'IN_PROGRESS' },
+    ])
+  })
+
+  // Without an edition, from the dashboard card that draws them all as one,
+  // the whole saga is set aside.
+  test('sets aside every edition when none is named', async () => {
+    await addVolume('Dune', 1, { language: 'FR', status: 'READING' })
+    await addVolume('Dune', 1, { language: 'EN', status: 'READING' })
+
+    await unfollow()
+
+    const result = await execute('{ mySeriesPage { items { state } } }')
+    expect(result.data?.mySeriesPage).toEqual({
+      items: [{ state: 'UNFOLLOWED' }, { state: 'UNFOLLOWED' }],
+    })
+  })
+
   test('leaves the volumes as they were', async () => {
     await addVolume('Dune', 1, { status: 'READING' })
     await unfollow()

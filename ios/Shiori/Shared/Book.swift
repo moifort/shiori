@@ -450,10 +450,21 @@ struct SeriesOpinion: Sendable, Equatable, Codable {
     /// How many volumes the saga has by the reader's own count, for a saga
     /// nobody has catalogued. Nil until they say.
     var volumeCount: Int?
-    /// False once the reader set the saga aside: it is then `unfollowed`,
-    /// whatever its volumes say. Only the saga — its volumes keep their own
-    /// statuses.
+    /// False once the reader set the saga aside as a whole: every edition is
+    /// then `unfollowed`, whatever its volumes say. Only the saga — its volumes
+    /// keep their own statuses.
     var followed: Bool = true
+    /// The editions set aside one by one while the saga as a whole is followed.
+    var unfollowedLanguages: [BookLanguage] = []
+
+    /// Whether the reader follows the edition held in `language`. Nil names
+    /// no edition — the dashboard's card, which draws them all as one — and
+    /// asks about the saga as a whole.
+    func follows(_ language: BookLanguage?) -> Bool {
+        guard followed else { return false }
+        guard let language else { return true }
+        return !unfollowedLanguages.contains(language)
+    }
 }
 
 /// A saga the reader follows. Its identity comes from their own books, not from

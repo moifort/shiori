@@ -1,7 +1,8 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
 import { AnalyticsCommand } from '~/domain/analytics/command'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
-import type { StarRating } from '~/domain/book/types'
+import { BookQuery } from '~/domain/book/query'
+import type { Book, BookLanguage, StarRating } from '~/domain/book/types'
 import type { SeriesId, VolumeNumber } from '~/domain/series/types'
 import { SeriesOpinionCommand } from '~/domain/series-opinion/command'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
@@ -21,12 +22,22 @@ export namespace SeriesOpinionUseCase {
       SeriesOpinionCommand.setFavorite(userId, seriesId, favorite, batch),
     )
 
-  /** The dashboard's progress bars leave out a saga set aside, so following
-   *  reaches the view as a heart does. */
-  export const setFollowed = (userId: UserId, seriesId: SeriesId, followed: boolean) =>
-    withAnalytics(userId, (batch) =>
-      SeriesOpinionCommand.setFollowed(userId, seriesId, followed, batch),
+  /** The dashboard's progress bars leave out an edition set aside, so
+   *  following reaches the view as a heart does. The editions the reader holds
+   *  are read only when one edition is named: they are what following it keeps
+   *  aside of a saga set aside as a whole. */
+  export const setFollowed = async (
+    userId: UserId,
+    seriesId: SeriesId,
+    followed: boolean,
+    language?: BookLanguage,
+  ) => {
+    const heldLanguages =
+      language === undefined ? [] : heldLanguagesOf(await BookQuery.all(userId), seriesId)
+    return withAnalytics(userId, (batch) =>
+      SeriesOpinionCommand.setFollowed(userId, seriesId, followed, language, heldLanguages, batch),
     )
+  }
 
   /** The dashboard measures a saga against this count when nobody has
    *  catalogued it, so the count reaches the view as a heart does. */
@@ -55,3 +66,11 @@ const withAnalytics = async (
   await AnalyticsUseCase.refreshAfterWrite(userId)
   return opinion
 }
+
+const heldLanguagesOf = (books: readonly Book[], seriesId: SeriesId): BookLanguage[] => [
+  ...new Set(
+    books.flatMap((book) =>
+      book.series?.id === seriesId && book.language !== undefined ? [book.language] : [],
+    ),
+  ),
+]

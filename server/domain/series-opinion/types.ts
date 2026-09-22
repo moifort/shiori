@@ -1,4 +1,4 @@
-import type { StarRating } from '~/domain/book/types'
+import type { BookLanguage, StarRating } from '~/domain/book/types'
 import type { SeriesId, VolumeNumber } from '~/domain/series/types'
 import type { UserId } from '~/domain/shared/types'
 
@@ -32,4 +32,8 @@ export type SeriesOpinion = {
    *  their own statuses. Absent is following, which is what every saga starts
    *  as, so a follow again leaves nothing stored. */
   unfollowed?: true
+  /** The editions of the saga the reader set aside, by language, while they
+   *  follow the others: setting the English Dune aside says nothing of the
+   *  French one beside it. Absent when no single edition is set aside. */
+  unfollowedLanguages?: BookLanguage[]
 }
