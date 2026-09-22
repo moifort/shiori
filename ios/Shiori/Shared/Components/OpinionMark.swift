@@ -11,6 +11,8 @@ struct OpinionMark: View {
     let rating: Int?
     let isFavorite: Bool
     var font: Font = .caption2
+    /// The stars are the saga's, lent to an unrated volume: drawn grey.
+    var ratingIsInherited: Bool = false
 
     var body: some View {
         if isFavorite {
@@ -19,7 +21,7 @@ struct OpinionMark: View {
                 .foregroundStyle(.pink)
                 .accessibilityLabel(Text("Favori"))
         } else if let rating {
-            StarRatingView(rating: rating, font: font)
+            StarRatingView(rating: rating, font: font, inherited: ratingIsInherited)
         }
     }
 }

@@ -10,8 +10,16 @@ query Library($status: ReadingStatus) {
 # list the server has already ordered, newest first, which the app cuts into
 # month sections wherever the month of `shelvedAt` changes. The last book of a
 # page is the cursor for the next.
-query LibraryPage($favorite: Boolean, $status: ReadingStatus, $limit: Int, $after: BookId) {
-  libraryPage(favorite: $favorite, status: $status, limit: $limit, after: $after) {
+# `rated` is the "Notés" view: the books that show stars, best first, which the
+# app cuts into sections by stars rather than by month.
+query LibraryPage(
+  $favorite: Boolean
+  $rated: Boolean
+  $status: ReadingStatus
+  $limit: Int
+  $after: BookId
+) {
+  libraryPage(favorite: $favorite, rated: $rated, status: $status, limit: $limit, after: $after) {
     hasMore
     books {
       ...BookSummary
@@ -45,6 +53,7 @@ fragment BookSummary on Book {
   coverUrl
   status
   rating
+  seriesRating
   favorite
   shelvedAt
   series {

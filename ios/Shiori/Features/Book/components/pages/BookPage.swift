@@ -190,6 +190,23 @@ struct BookPage: View {
                     Image(systemName: "star").foregroundStyle(.secondary)
                 }
                 .accessibilityIdentifier("book-rating")
+            } else if let seriesRating = book.seriesRating {
+                // The saga's stars, lent to this volume: grey, named as such,
+                // and a tap gives the book a rating of its own.
+                Button(action: onRate) {
+                    Label {
+                        LabeledContent {
+                            StarRatingView(rating: seriesRating, inherited: true)
+                        } label: {
+                            Text("Note")
+                            Text("Héritée de la série")
+                        }
+                    } icon: {
+                        Image(systemName: "star").foregroundStyle(.secondary)
+                    }
+                }
+                .tint(.primary)
+                .accessibilityIdentifier("book-rating-inherited")
             } else {
                 Button(action: onRate) {
                     Label("Noter ce livre", systemImage: "star")

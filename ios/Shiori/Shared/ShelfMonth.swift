@@ -38,8 +38,10 @@ struct MonthSection<Row>: Identifiable {
     /// Nil for rows that carry no date, which only a stale snapshot can hold.
     let month: ShelfMonth?
     var rows: [Row]
+    /// A heading that is not a month: the rated view cuts its rows by stars.
+    var heading: String?
 
-    var title: String { month?.title ?? String(localized: "Sans date") }
+    var title: String { heading ?? month?.title ?? String(localized: "Sans date") }
 
     /// Cuts `rows` wherever the month changes from one row to the next, so a
     /// page that lands extends the last section rather than opening a second
@@ -52,6 +54,28 @@ struct MonthSection<Row>: Identifiable {
                 sections[sections.count - 1].rows.append(row)
             } else {
                 sections.append(MonthSection(id: sections.count, month: month, rows: [row]))
+            }
+        }
+        return sections
+    }
+
+    /// Cuts `rows` wherever the number of stars changes from one row to the
+    /// next, for a list the server ordered best first: "5 étoiles", "4
+    /// étoiles"… A row with no stars, which only a stale snapshot can hold,
+    /// goes under a dateless heading.
+    static func cutByStars(_ rows: [Row], on stars: (Row) -> Int?) -> [MonthSection<Row>] {
+        var sections: [MonthSection<Row>] = []
+        var lastStars: Int?? = .none
+        for row in rows {
+            let current = stars(row)
+            if let last = lastStars, last == current {
+                sections[sections.count - 1].rows.append(row)
+            } else {
+                let heading = current.map { count in
+                    count == 1 ? String(localized: "1 étoile") : String(localized: "\(count) étoiles")
+                }
+                sections.append(MonthSection(id: sections.count, month: nil, rows: [row], heading: heading))
+                lastStars = .some(current)
             }
         }
         return sections

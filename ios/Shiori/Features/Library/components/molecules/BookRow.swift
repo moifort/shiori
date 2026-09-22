@@ -9,6 +9,9 @@ struct BookRow: View {
     let cover: Book
     let status: ReadingStatus
     let rating: Int?
+    /// The stars are the saga's, lent to a volume the reader left unrated:
+    /// drawn grey, so a judgement given is told from one lent.
+    var ratingIsInherited: Bool = false
     /// The volume label ("Tome 3") shown inside a series section, where the
     /// title alone does not say which volume this is. Absent elsewhere: on the
     /// standalone shelf there is no numbering to explain.
@@ -142,7 +145,12 @@ struct BookRow: View {
                     .foregroundStyle(.secondary)
                     .accessibilityLabel(Text("Non partagé"))
             }
-            OpinionMark(rating: rating, isFavorite: isFavorite, font: .caption)
+            OpinionMark(
+                rating: rating,
+                isFavorite: isFavorite,
+                font: .caption,
+                ratingIsInherited: ratingIsInherited
+            )
             // Where the reader stands, in the corner the eye returns to on
             // every row. A recording says what it is on its cover instead.
             if let statusTag {

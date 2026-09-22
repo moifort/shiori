@@ -171,6 +171,7 @@ extension ShioriGraphQL.BookSummary {
             coverURL: coverUrl.flatMap(URL.init(string:)),
             status: status.asDomain,
             rating: rating,
+            seriesRating: seriesRating,
             favorite: favorite,
             shelvedAt: GraphQLHelpers.parseISO8601(shelvedAt)
         )
@@ -198,6 +199,7 @@ extension ShioriGraphQL.BookDetail {
             coverURL: coverUrl.flatMap(URL.init(string:)),
             status: status.asDomain,
             rating: rating,
+            seriesRating: seriesRating,
             favorite: favorite,
             note: note,
             hidden: hidden,

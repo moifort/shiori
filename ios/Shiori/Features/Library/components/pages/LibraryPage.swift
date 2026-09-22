@@ -3,10 +3,11 @@ import SwiftUI
 /// The library list. Pure and previewable: it takes what to draw and what to
 /// call, and knows nothing about the network.
 ///
-/// Two views, switched from the toolbar as in Vinarium: everything, or the
+/// Three views, switched from the toolbar as in Vinarium: everything, or the
 /// favourites, both sectioned by month as Vinarium's wine list is — newest
-/// first, on the day each book was finished, else started, else added — each
-/// row carrying its status as a tag. A filter narrows either to one status.
+/// first, on the day each book was finished, else started, else added — and
+/// the rated books, best first and sectioned by stars; each row carries its
+/// status as a tag. A filter narrows any of them to one status.
 /// Sagas are not gathered here: the Series tab reads a saga whole, and a row
 /// names its saga in a tag.
 struct LibraryPage: View {
@@ -35,7 +36,7 @@ struct LibraryPage: View {
 
     /// The shelf is narrowed: an empty list says nothing matches, not that the
     /// library is empty.
-    private var isNarrowed: Bool { mode == .favorites || statusFilter != nil }
+    private var isNarrowed: Bool { mode != .all || statusFilter != nil }
 
     var body: some View {
         Group {
@@ -50,6 +51,13 @@ struct LibraryPage: View {
                         systemImage: "heart",
                         title: "Aucun favori",
                         message: "Touchez le cœur d'un livre pour le retrouver ici.",
+                        primary: .init("Scanner un livre", systemImage: "camera") { onAdd() }
+                    )
+                } else if mode == .rated {
+                    EmptyStateView(
+                        systemImage: "star",
+                        title: "Aucun livre noté",
+                        message: "Notez un livre, ou une série entière, pour le retrouver ici.",
                         primary: .init("Scanner un livre", systemImage: "camera") { onAdd() }
                     )
                 } else if isNarrowed {
@@ -140,7 +148,8 @@ struct LibraryPage: View {
                     authorLine: book.authorLine,
                     cover: book,
                     status: book.status,
-                    rating: book.rating,
+                    rating: book.shownRating,
+                    ratingIsInherited: book.ratingIsInherited,
                     series: book.series,
                     statusTag: showsStatus ? book.status : nil,
                     genre: book.genre,

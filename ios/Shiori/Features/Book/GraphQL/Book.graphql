@@ -68,6 +68,7 @@ fragment BookDetail on Book {
   coverUrl
   status
   rating
+  seriesRating
   favorite
   note
   hidden
