@@ -101,6 +101,16 @@ enum BookGenre: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
+    /// The list a picker offers: by label, in the reader's language, so a genre
+    /// is found where the eye expects it rather than where the server declares
+    /// it. `other` closes the list, as a catch-all does.
+    static var alphabetical: [BookGenre] {
+        allCases
+            .filter { $0 != .other }
+            .sorted { $0.label.localizedStandardCompare($1.label) == .orderedAscending }
+            + [.other]
+    }
+
     var label: String {
         switch self {
         case .fantasy: String(localized: "Fantastique")

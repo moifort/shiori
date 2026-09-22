@@ -57,7 +57,7 @@ struct MenuPickerRow<Value: Hashable>: View {
             title: "Genre",
             icon: "theatermasks",
             selection: $genre,
-            options: [nil] + BookGenre.allCases.map(Optional.some),
+            options: [nil] + BookGenre.alphabetical.map(Optional.some),
             label: { $0?.label ?? String(localized: "Non renseigné") },
             image: { $0?.image }
         )

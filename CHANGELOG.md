@@ -10,6 +10,8 @@ the release tag is pushed.
 
 ## Unreleased
 
+- The genre pickers list genres alphabetically, with "Other" last, rather than in the
+  server's own order.
 - A saga held in two languages opens on the edition the reader tapped: the French row of the
   Series tab, or a French volume, showed the English covers when both editions were in the
   library, since the catalogue is shared between them.

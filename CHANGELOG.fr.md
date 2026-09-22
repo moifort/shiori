@@ -4,6 +4,8 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Les sélecteurs de genre listent les genres par ordre alphabétique, « Autre » en dernier,
+  plutôt que dans l’ordre du serveur.
 - Une saga possédée en deux langues s’ouvre sur l’édition touchée : la ligne française de
   l’onglet Séries, ou un tome français, affichait les couvertures anglaises quand les deux
   éditions étaient dans la bibliothèque, le catalogue étant partagé entre elles.
