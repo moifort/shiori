@@ -93,9 +93,10 @@ export const AudibleAccountType = builder.objectRef<ConnectedAccount>('AudibleAc
  *  Both in one answer so the screen that asked can redraw itself whole — the
  *  counts it reports and the date it now shows — without a second round trip.
  *
- *  `linked` and `redated` are deliberately not here. They count books imported
- *  before the ASIN, then the purchase date, were kept being matched or dated
- *  after the fact, which happens once and means nothing to a reader. */
+ *  `linked`, `redated` and `renumbered` are deliberately not here. They count
+ *  books imported before the ASIN, the purchase date, then the parts of a split
+ *  novel, were kept being matched, dated or numbered after the fact, which
+ *  happens once and means nothing to a reader. */
 export const AudibleSyncType = builder
   .objectRef<{ sync: LibrarySync; account: ConnectedAccount }>('AudibleSync')
   .implement({

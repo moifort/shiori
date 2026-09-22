@@ -11,6 +11,7 @@ import {
   plainTextOf,
   purchaseDatesFor,
   readersDueForSync,
+  seriesVolumesFor,
   shelfKeyOf,
   shelfKeysOf,
   statusOf,
@@ -18,6 +19,7 @@ import {
 import type { AudibleAsin as AudibleAsinValue, AudibleConnection } from '~/domain/audible/types'
 import { ListeningMinutes } from '~/domain/book/primitives'
 import type { Book, BookId } from '~/domain/book/types'
+import type { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { BookTitle, UserId } from '~/domain/shared/types'
 
 const anItem = (overrides: Partial<AudibleItem> = {}): AudibleItem =>
@@ -376,6 +378,19 @@ describe('the saga a title belongs to', () => {
     expect(importable?.series?.volume).toBeUndefined()
   })
 
+  // A novel too long for one recording is sold in parts, numbered 1.1 and 1.2:
+  // both are volume 1, as the printed book they were cut from.
+  test('files each part of a split novel under the volume it was cut from', () => {
+    const volumeOf = (position: number) =>
+      importableFrom(anItem({ series: { name: 'Chronique du Tueur de Roi', position } }), noneOwned)
+        ?.series?.volume
+
+    expect(volumeOf(1.1)).toBe(1 as VolumeNumber)
+    expect(volumeOf(1.2)).toBe(1 as VolumeNumber)
+    expect(volumeOf(2.1)).toBe(2 as VolumeNumber)
+    expect(volumeOf(0.5)).toBeUndefined()
+  })
+
   // Without an author there is no stable key, and an id nothing else shares would
   // make a saga nobody can ever rejoin.
   test('drops the saga when nothing names an author', () => {
@@ -634,6 +649,42 @@ describe('dating an import back to the day the title was bought', () => {
       purchaseDatesFor([aBook({ addedAt: imported })], [anItem({ dateAdded: bought })]),
     ).toEqual([])
     expect(purchaseDatesFor([linked()], [anItem()])).toEqual([])
+  })
+})
+
+describe('numbering an import made before split novels were numbered', () => {
+  const saga = {
+    id: 'chronique-du-tueur-de-roi--patrick-rothfuss' as SeriesId,
+    name: 'Chronique du Tueur de Roi' as SeriesName,
+    kind: 'main' as const,
+  }
+  const linked = (overrides: Partial<Book> = {}) =>
+    aBook({ audibleAsin: asin('B002V1OF70'), series: saga, ...overrides })
+  const part = (position: number) =>
+    anItem({ series: { name: 'Chronique du Tueur de Roi', position } })
+
+  test('numbers a volume the import left without a rank', () => {
+    expect(seriesVolumesFor([linked()], [part(1.2)])).toEqual([
+      { bookId: bookId('book-1'), volume: 1 as VolumeNumber },
+    ])
+  })
+
+  test('leaves a numbered volume, and a side story that has no rank, alone', () => {
+    expect(
+      seriesVolumesFor([linked({ series: { ...saga, volume: 3 as VolumeNumber } })], [part(1.2)]),
+    ).toEqual([])
+    expect(seriesVolumesFor([linked()], [part(4.5)])).toEqual([])
+  })
+
+  // The reader filed it in another saga by hand: Audible's numbering is not theirs.
+  test('leaves a book filed under another saga alone', () => {
+    const elsewhere = linked({ series: { ...saga, id: 'other--someone' as SeriesId } })
+    expect(seriesVolumesFor([elsewhere], [part(1.2)])).toEqual([])
+  })
+
+  test('leaves an unlinked book, and one outside any saga, alone', () => {
+    expect(seriesVolumesFor([aBook({ series: saga })], [part(1.2)])).toEqual([])
+    expect(seriesVolumesFor([linked({ series: undefined })], [part(1.2)])).toEqual([])
   })
 })
 

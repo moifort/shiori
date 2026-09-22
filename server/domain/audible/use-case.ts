@@ -8,6 +8,7 @@ import {
   listenedMinutesFor,
   listeningChangesFor,
   purchaseDatesFor,
+  seriesVolumesFor,
   shelfKeysOf,
 } from '~/domain/audible/business-rules'
 import { AudibleCommand } from '~/domain/audible/command'
@@ -124,12 +125,19 @@ export namespace AudibleUseCase {
     const moves = listeningChangesFor(linked, items, positions)
     const listened = listenedMinutesFor(linked, positions)
     const redates = purchaseDatesFor(linked, items)
+    const renumbers = seriesVolumesFor(linked, items)
     const bought = toImportable(
       { items: boughtSince(items, account.lastImportedAt), positions },
       linked,
     ).filter((importable) => !importable.alreadyInLibrary)
 
-    const changed = links.length + moves.length + listened.length + redates.length + bought.length
+    const changed =
+      links.length +
+      moves.length +
+      listened.length +
+      redates.length +
+      renumbers.length +
+      bought.length
     const write = async () => {
       await bulkSave(links, async (link) =>
         BookCommand.linkToAudible(userId, link.bookId, link.audibleAsin),
@@ -150,6 +158,11 @@ export namespace AudibleUseCase {
       await bulkSave(redates, async ({ bookId, ...dates }) =>
         BookCommand.backdate(userId, bookId, dates, now),
       )
+      // Split novels imported before their parts were numbered sit in their
+      // saga without a rank; this is what puts them on the volume they are.
+      await bulkSave(renumbers, async ({ bookId, volume }) =>
+        BookCommand.numberInSeries(userId, bookId, volume, now),
+      )
       await bulkSave(bought, async (importable) =>
         BookCommand.add(userId, bookFrom(importable), now),
       )
@@ -163,6 +176,7 @@ export namespace AudibleUseCase {
       moved: moves.length,
       imported: bought.length,
       redated: redates.length,
+      renumbered: renumbers.length,
     }
   }
 

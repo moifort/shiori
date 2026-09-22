@@ -32,7 +32,7 @@ import type {
   Synopsis,
   TaggedSubgenre,
 } from '~/domain/book/types'
-import type { SeriesId } from '~/domain/series/types'
+import type { SeriesId, VolumeNumber } from '~/domain/series/types'
 import { favoriteAfterRating, HEART_RATING } from '~/domain/shared/rating'
 import type { AuthorName, BookTitle, UserId, Year } from '~/domain/shared/types'
 import type { ObjectPath } from '~/system/object-store/types'
@@ -244,6 +244,24 @@ export namespace BookCommand {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
     return repository.save({ ...book, audibleAsin, updatedAt: now }, batch)
+  }
+
+  /** Give a book its rank in the saga it is already filed under.
+   *
+   *  Its own command rather than a field of `BookEdit`: an edit names the saga
+   *  as the reader types it and keys it afresh, where this only fills the rank
+   *  a machine learned after the fact — the volume an imported part was cut
+   *  from. The saga itself is left exactly as it is. */
+  export const numberInSeries = async (
+    userId: UserId,
+    bookId: BookId,
+    volume: VolumeNumber,
+    now = new Date(),
+    batch?: WriteBatch,
+  ): Promise<Book | 'not-found'> => {
+    const book = await repository.findById(userId, bookId)
+    if (!book?.series) return 'not-found'
+    return repository.save({ ...book, series: { ...book.series, volume }, updatedAt: now }, batch)
   }
 
   /** Record where the Audible player last stopped in a recording.

@@ -84,6 +84,9 @@ export type LibrarySync = {
   /** Books imported before the purchase date was kept, dated back to it. Only
    *  ever non-zero on the first pass after that change. */
   redated: number
+  /** Parts of split novels imported without a rank, numbered after the volume
+   *  they were cut from. Only ever non-zero on the first pass after that change. */
+  renumbered: number
 }
 
 /** What one run of the nightly job did, across every reader it reached. */

@@ -83,6 +83,7 @@ const { BookQuery } = await import('~/domain/book/query')
 const { BookCommand } = await import('~/domain/book/command')
 const { BookTitle, AuthorName } = await import('~/domain/shared/primitives')
 const { ListeningMinutes } = await import('~/domain/book/primitives')
+const { SeriesId, SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
 
 const reader = 'reader-1' as UserId
 const NOW = new Date('2026-09-19T10:00:00.000Z')
@@ -406,6 +407,7 @@ describe('the nightly sync', () => {
       moved: 0,
       imported: 1,
       redated: 0,
+      renumbered: 0,
     })
     expect((await BookQuery.all(reader)).map((book) => String(book.title))).toEqual([
       'Le Nom du vent',
@@ -430,6 +432,7 @@ describe('the nightly sync', () => {
       moved: 1,
       imported: 0,
       redated: 0,
+      renumbered: 0,
     })
     const [book] = await BookQuery.all(reader)
     expect(book?.audibleAsin).toBe(asin('B002V1OF70'))
@@ -453,6 +456,7 @@ describe('the nightly sync', () => {
       moved: 0,
       imported: 0,
       redated: 0,
+      renumbered: 0,
     })
     const [book] = await BookQuery.all(reader)
     expect(book?.status).toBe('to-read')
@@ -482,6 +486,7 @@ describe('the nightly sync', () => {
       moved: 0,
       imported: 0,
       redated: 1,
+      renumbered: 0,
     })
     const [book] = await BookQuery.all(reader)
     expect(book?.addedAt).toEqual(dateAdded)
@@ -490,6 +495,36 @@ describe('the nightly sync', () => {
     expect(book?.updatedAt).toEqual(LATER)
 
     expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ redated: 0 })
+  })
+
+  // Split novels were imported without a rank, and the saga drew a placeholder
+  // for the very volume the reader holds. The pass numbers them, once.
+  test('numbers the part of a split novel imported without a rank', async () => {
+    await connect()
+    await AudibleCommand.recordImport(reader, NOW)
+    await BookCommand.add(
+      reader,
+      {
+        title: BookTitle('Le Nom du Vent - Seconde partie'),
+        authors: [AuthorName('Patrick Rothfuss')],
+        format: 'audiobook',
+        audibleAsin: asin('B002V1OF70'),
+        series: {
+          id: SeriesId('chronique-du-tueur-de-roi--patrick-rothfuss'),
+          name: SeriesName('Chronique du Tueur de Roi'),
+          kind: 'main',
+        },
+      },
+      NOW,
+    )
+    items = [anItem({ series: { name: 'Chronique du Tueur de Roi', position: 1.2 } })]
+
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ renumbered: 1 })
+    const [book] = await BookQuery.all(reader)
+    expect(book?.series?.volume).toBe(VolumeNumber(1))
+    expect(book?.updatedAt).toEqual(LATER)
+
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ renumbered: 0 })
   })
 
   // A book the old rule left on the pile, and one the reader started since:
@@ -594,6 +629,7 @@ describe('the nightly sync', () => {
       moved: 0,
       imported: 0,
       redated: 0,
+      renumbered: 0,
     })
     expect(await BookQuery.all(reader)).toHaveLength(1)
   })

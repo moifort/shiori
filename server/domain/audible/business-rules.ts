@@ -24,6 +24,7 @@ import type {
   ReadingStatus,
 } from '~/domain/book/types'
 import { SeriesName, seriesKeyOf, VolumeNumber } from '~/domain/series/primitives'
+import type { VolumeNumber as VolumeNumberValue } from '~/domain/series/types'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import type { AuthorName as AuthorNameValue, UserId } from '~/domain/shared/types'
 import { isPresent, optionally } from '~/utils/input'
@@ -214,11 +215,41 @@ const seriesMembershipOf = (
   return {
     id: seriesKeyOf(name, authors[0]),
     name,
-    // Audible numbers half-volumes ("4.5") for side stories; VolumeNumber takes
-    // whole numbers only, so those keep their place in the saga without a rank.
-    volume: optionally(item.series?.position, VolumeNumber),
+    volume: volumeOf(item.series?.position),
     kind: 'main',
   }
+}
+
+/** The volume an Audible position names on the saga's spine.
+ *
+ *  Audible numbers a side story between two volumes "4.5", and the parts of a
+ *  novel too long for one recording "1.1" and "1.2". A part is the volume it was
+ *  cut from — the printed book is one volume — while a side story has no rank
+ *  on the spine and keeps its place in the saga without one. */
+const volumeOf = (position: number | undefined) => {
+  if (position === undefined || position % 1 === 0.5) return undefined
+  return optionally(Math.floor(position), VolumeNumber)
+}
+
+/** The volume numbers to give books imported before split novels were numbered.
+ *
+ *  Such a book joined its saga without a rank, and the saga drew a placeholder
+ *  for the very volume it is. Only a book still filed under the saga Audible
+ *  names moves: one the reader filed elsewhere by hand is theirs, and one that
+ *  already has a number keeps it. */
+export const seriesVolumesFor = (
+  books: readonly Book[],
+  items: readonly AudibleItem[],
+): { bookId: BookId; volume: VolumeNumberValue }[] => {
+  const byAsin = new Map(items.map((item) => [item.asin, item]))
+
+  return books.flatMap((book) => {
+    if (!book.audibleAsin || !book.series || book.series.volume !== undefined) return []
+    const item = byAsin.get(book.audibleAsin)
+    const membership = item && seriesMembershipOf(item, authorsOf(item))
+    if (!membership?.volume || membership.id !== book.series.id) return []
+    return [{ bookId: book.id, volume: membership.volume }]
+  })
 }
 
 /** Audible names a language rather than coding it, and does so in English on
