@@ -12,8 +12,8 @@ import type {
 } from '~/domain/book/types'
 import { BookUseCase } from '~/domain/book/use-case'
 import {
-  coverVolumeOf,
   favoritesOutsideSagas,
+  inReadingOrder,
   lastActivityOf,
   subgenreOf,
 } from '~/domain/friendship/business-rules'
@@ -49,9 +49,10 @@ export type FriendSaga = {
   favorite: boolean
   genre?: Genre
   subgenre?: TaggedSubgenre
-  /** The cover of its first volume on the shelf. Drawn for a hearted saga
-   *  only: each cover is a signed URL, and only the favourites draw one. */
-  coverUrl?: string
+  /** Its volumes on the shelf, in reading order, for the favourites to draw
+   *  as a strip of covers. Empty on a saga that is not hearted: each cover is
+   *  a signed URL, and only the favourites draw them. */
+  volumes: FriendBook[]
 }
 
 /** A book on a friend's shelf, with whether the reader already owns the
@@ -217,16 +218,18 @@ const sharedShelfOf = async (
   ).slice(0, shown)
 
   const sagas = followedSagasOf(books)
-  const coverVolumes = sagas.map((saga) =>
-    favoriteSagaIds.has(saga.id) ? coverVolumeOf(saga.books) : undefined,
-  )
-  const [signedReading, signedPile, signedFavorites, signedCovers] = await Promise.all([
+  const [signedReading, signedPile, signedFavorites, signedVolumes] = await Promise.all([
     BookQuery.withSignedCovers(reading),
     BookQuery.withSignedCovers(pile),
     BookQuery.withSignedCovers(favorites),
-    BookQuery.withSignedCovers(coverVolumes.flatMap((volume) => (volume ? [volume] : []))),
+    Promise.all(
+      sagas.map((saga) =>
+        favoriteSagaIds.has(saga.id)
+          ? BookQuery.withSignedCovers(inReadingOrder(saga.books))
+          : Promise.resolve([]),
+      ),
+    ),
   ])
-  const coverOf = new Map(signedCovers.map((volume) => [volume.id, volume.coverUrl]))
   const unmarked = (books: BookView[]): FriendBook[] =>
     books.map((book) => ({ ...book, inLibrary: false }))
 
@@ -238,7 +241,6 @@ const sharedShelfOf = async (
     favorites: unmarked(signedFavorites),
     sagas: sagas.map((saga, index) => {
       const genre = genreOf(saga.books)
-      const coverVolume = coverVolumes[index]
       return {
         id: `${saga.id}\u0000${saga.language ?? ''}`,
         name: saga.name,
@@ -248,7 +250,7 @@ const sharedShelfOf = async (
         favorite: favoriteSagaIds.has(saga.id),
         genre,
         subgenre: subgenreOf(saga.books, genre),
-        coverUrl: coverVolume ? coverOf.get(coverVolume.id) : undefined,
+        volumes: unmarked(signedVolumes[index] ?? []),
       }
     }),
   }
@@ -263,6 +265,7 @@ const marked = (shelf: FriendProfile, inLibrary: (book: FriendBook) => boolean):
     reading: mark(shelf.reading),
     pile: mark(shelf.pile),
     favorites: mark(shelf.favorites),
+    sagas: shelf.sagas.map((saga) => ({ ...saga, volumes: mark(saga.volumes) })),
   }
 }
 

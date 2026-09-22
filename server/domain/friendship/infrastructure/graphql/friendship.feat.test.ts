@@ -234,7 +234,7 @@ describe("the reader's own shelf, as friends see it", () => {
     )
 
     const result = await as(alice)(
-      '{ myShelf { favorites { title } sagas { name favorite ownedCount genre coverUrl } } }',
+      '{ myShelf { favorites { title } sagas { name favorite ownedCount genre volumes { title coverUrl } } } }',
     )
 
     expect(result.errors).toBeUndefined()
@@ -246,7 +246,10 @@ describe("the reader's own shelf, as friends see it", () => {
           favorite: true,
           ownedCount: 2,
           genre: 'SCIENCE_FICTION',
-          coverUrl: 'https://covers.example/dune-1.jpg',
+          volumes: [
+            { title: 'Dune 1', coverUrl: 'https://covers.example/dune-1.jpg' },
+            { title: 'Dune 2', coverUrl: 'https://covers.example/dune-2.jpg' },
+          ],
         },
       ],
     })

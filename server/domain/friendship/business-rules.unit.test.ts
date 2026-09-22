@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import { Subgenre } from '~/domain/book/primitives'
 import {
-  coverVolumeOf,
   favoritesOutsideSagas,
+  inReadingOrder,
   lastActivityOf,
   subgenreOf,
 } from '~/domain/friendship/business-rules'
@@ -67,13 +67,8 @@ describe('subgenreOf', () => {
   })
 })
 
-describe('coverVolumeOf', () => {
-  const volume = (
-    title: string,
-    number: number | undefined,
-    kind: 'main' | 'novella',
-    cover: boolean,
-  ) => ({
+describe('inReadingOrder', () => {
+  const volume = (title: string, number: number | undefined, kind: 'main' | 'novella') => ({
     title,
     series: {
       id: SeriesId('dune--frank-herbert'),
@@ -81,22 +76,21 @@ describe('coverVolumeOf', () => {
       volume: number === undefined ? undefined : VolumeNumber(number),
       kind,
     },
-    publishedCoverUrl: cover ? ('https://covers.example/x.jpg' as never) : undefined,
-    coverPath: undefined,
   })
 
-  test('takes the first main volume that has a cover, whatever order the shelf holds them in', () => {
+  test('puts main volumes first by number, the rest after, whatever order the shelf holds them in', () => {
     const volumes = [
-      volume('Les Enfants de Dune', 3, 'main', true),
-      volume('Dune', 1, 'main', false),
-      volume('Une nouvelle', 1, 'novella', true),
-      volume('Le Messie de Dune', 2, 'main', true),
+      volume('Les Enfants de Dune', 3, 'main'),
+      volume('Une nouvelle', 1, 'novella'),
+      volume('Sans numéro', undefined, 'main'),
+      volume('Dune', 1, 'main'),
     ]
 
-    expect(coverVolumeOf(volumes)?.title).toBe('Le Messie de Dune')
-  })
-
-  test('says nothing for a saga none of whose volumes has a cover', () => {
-    expect(coverVolumeOf([volume('Dune', 1, 'main', false)])).toBeUndefined()
+    expect(inReadingOrder(volumes).map((book) => book.title)).toEqual([
+      'Dune',
+      'Les Enfants de Dune',
+      'Sans numéro',
+      'Une nouvelle',
+    ])
   })
 })
