@@ -12,7 +12,12 @@ import type {
   Trend,
   YearCount,
 } from '~/domain/analytics/types'
-import { readVolumeNumbersOf, shelvedOf } from '~/domain/book/business-rules'
+import {
+  readVolumeNumbersOf,
+  seriesRatingsOf,
+  shelvedOf,
+  shownRatingOf,
+} from '~/domain/book/business-rules'
 import type { Book, Genre } from '~/domain/book/types'
 import { publishedVolumes, stateOf } from '~/domain/series/business-rules'
 import type { Series } from '~/domain/series/types'
@@ -32,7 +37,7 @@ const TOP_GENRES = 4
 /** Bumped whenever the view gains a figure or a rule changes, so a view stored
  *  by an older bundle is rebuilt on its next read instead of answering with a
  *  field it never computed. */
-export const VIEW_VERSION = 3
+export const VIEW_VERSION = 4
 
 // MARK: - Calendar
 
@@ -75,7 +80,8 @@ export const analyticsViewOf = (input: {
   userId: UserId
   books: readonly Book[]
   catalogues: readonly Series[]
-  /** What the reader makes of their sagas; only the hearts are counted here. */
+  /** What the reader makes of their sagas: the hearts are counted, and a saga's
+   *  rating stands in for every volume of it the reader left unrated. */
   opinions?: readonly SeriesOpinion[]
   timeZone: TimeZone
   now: Date
@@ -85,6 +91,21 @@ export const analyticsViewOf = (input: {
     (book): book is Book & { finishedAt: Date } =>
       book.status === 'read' && book.finishedAt !== undefined,
   )
+
+  // What the statistics count is what the reader sees on the book: a saga
+  // rated as a whole rates each of its unrated volumes, once per volume.
+  const seriesRatings = seriesRatingsOf(opinions)
+  const ratingOf = (book: Book) => shownRatingOf(book, seriesRatings)
+  const cardOf = (book: Book): BookCard => ({
+    id: book.id,
+    title: book.title,
+    authors: book.authors,
+    coverPath: book.coverPath,
+    publishedCoverUrl: book.publishedCoverUrl,
+    rating: ratingOf(book),
+    startedAt: book.startedAt,
+    finishedAt: book.finishedAt,
+  })
 
   const finishes = finished.map((book): Finish => {
     const finishedOn = localDateOf(book.finishedAt, timeZone)
@@ -97,7 +118,7 @@ export const analyticsViewOf = (input: {
       pageCount: book.pageCount,
       durationMinutes: book.durationMinutes,
       genre: book.genre,
-      rating: book.rating,
+      rating: ratingOf(book),
     }
   })
 
@@ -132,17 +153,6 @@ export const analyticsViewOf = (input: {
     droppedCount: books.filter((book) => book.status === 'dropped').length,
   }
 }
-
-const cardOf = (book: Book): BookCard => ({
-  id: book.id,
-  title: book.title,
-  authors: book.authors,
-  coverPath: book.coverPath,
-  publishedCoverUrl: book.publishedCoverUrl,
-  rating: book.rating,
-  startedAt: book.startedAt,
-  finishedAt: book.finishedAt,
-})
 
 /** The sagas still in progress, measured on the numbered spine of published
  *  volumes: related works and announced volumes would make a finished spine look

@@ -464,4 +464,61 @@ describe('building the view', () => {
     expect(dashboard.hasPrintedBooks).toBe(true)
     expect(dashboard.droppedCount).toBe(0)
   })
+
+  // A saga rated as a whole rates each of its volumes the reader left unrated:
+  // the stars drawn on the book are the ones the statistics count.
+  test('rates a finished volume left unrated with the rating of its saga', () => {
+    const inSaga = { id: kingkiller, name: catalogue.name, kind: 'main' as const }
+    const view = analyticsViewOf({
+      userId: reader,
+      timeZone: paris,
+      now: new Date('2026-09-15T10:00:00.000Z'),
+      catalogues: [],
+      opinions: [{ userId: reader, seriesId: kingkiller, rating: StarRating(4) }],
+      books: [
+        book('inherits', {
+          status: 'read',
+          finishedAt: new Date('2026-06-01'),
+          series: { ...inSaga, volume: VolumeNumber(1) },
+        }),
+        book('own', {
+          status: 'read',
+          finishedAt: new Date('2026-06-02'),
+          rating: StarRating(2),
+          series: { ...inSaga, volume: VolumeNumber(2) },
+        }),
+        book('standalone', { status: 'read', finishedAt: new Date('2026-06-03') }),
+      ],
+    })
+
+    expect(view.finishes.map((finish) => [String(finish.bookId), finish.rating])).toEqual([
+      ['inherits', StarRating(4)],
+      ['own', StarRating(2)],
+      ['standalone', undefined],
+    ])
+    expect(view.lastFinished?.rating).toBeUndefined()
+
+    const dashboard = dashboardOf(view, day('2026-09-15'))
+    expect(dashboard.ratedCount).toBe(2)
+    expect(dashboard.averageRating).toBe(3)
+  })
+
+  test('draws the saga rating on an unrated volume in progress', () => {
+    const view = analyticsViewOf({
+      userId: reader,
+      timeZone: paris,
+      now: new Date('2026-09-15T10:00:00.000Z'),
+      catalogues: [],
+      opinions: [{ userId: reader, seriesId: kingkiller, rating: StarRating(5) }],
+      books: [
+        book('open', {
+          status: 'reading',
+          startedAt: new Date('2026-09-01'),
+          series: { id: kingkiller, name: catalogue.name, volume: VolumeNumber(1), kind: 'main' },
+        }),
+      ],
+    })
+
+    expect(view.reading[0]?.rating).toBe(StarRating(5))
+  })
 })

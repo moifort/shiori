@@ -33,13 +33,21 @@ builder.queryFields((t) => ({
       'One page of the Library tab, for a list that draws as it scrolls.\n\n' +
       'A flat list, not sections: newest first on `shelvedAt` — the day each book ' +
       'was finished, else started, else added — whatever its status. The app cuts ' +
-      'it into month sections on that date. Read `hasMore`, then pass the id of the ' +
+      'it into month sections on that date — or, with `rated`, best first and cut ' +
+      'by stars. Read `hasMore`, then pass the id of the ' +
       'last book as `after` for the next page. A cursor naming a book no longer ' +
       'there restarts from the top.',
     args: {
       favorite: t.arg.boolean({
         required: false,
         description: 'Keep only the books the reader marked as favourites.',
+      }),
+      rated: t.arg.boolean({
+        required: false,
+        description:
+          'Keep only the books that show stars, the best first: rated by hand, or ' +
+          'through their saga (`seriesRating`). Within one band of stars, the order ' +
+          'of the shelf. The app cuts the page into sections by stars rather than by month.',
       }),
       status: t.arg({
         type: ReadingStatusEnum,
@@ -59,6 +67,7 @@ builder.queryFields((t) => ({
         { limit: Math.max(1, Math.min(args.limit ?? 60, 200)), after: args.after ?? undefined },
         {
           favorite: args.favorite ?? undefined,
+          rated: args.rated ?? undefined,
           status: args.status ?? undefined,
         },
       ),

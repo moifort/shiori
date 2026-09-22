@@ -1,4 +1,11 @@
-import { groupedBySeries, shelfPageOf, shelvedOf, subgenresOf } from '~/domain/book/business-rules'
+import {
+  groupedBySeries,
+  ratedShelfOf,
+  seriesRatingsOf,
+  shelfPageOf,
+  shelvedOf,
+  subgenresOf,
+} from '~/domain/book/business-rules'
 import * as repository from '~/domain/book/infrastructure/repository'
 import type {
   Book,
@@ -44,19 +51,23 @@ export namespace BookQuery {
   }
 
   /** One page of the Library tab: the reader's books in the order the tab
-   *  draws them, optionally narrowed to their favourites or to one status.
-   *  Covers are signed for the page only — a 300-book library would otherwise
-   *  pay 300 signatures to draw 60 rows. */
+   *  draws them, optionally narrowed to their favourites, to the rated ones —
+   *  best first, a saga's rating standing in for its unrated volumes — or to
+   *  one status. Covers are signed for the page only — a 300-book library
+   *  would otherwise pay 300 signatures to draw 60 rows. */
   export const libraryPage = async (
     userId: UserId,
     page: { limit: number; after?: BookId },
-    view: { favorite?: boolean; status?: ReadingStatus },
+    view: { favorite?: boolean; rated?: boolean; status?: ReadingStatus },
   ): Promise<{ books: BookView[]; hasMore: boolean }> => {
     const kept = (await repository.findAllByUser(userId)).filter(
       (book) =>
         (!view.favorite || book.favorite === true) && (!view.status || book.status === view.status),
     )
-    const { books, hasMore } = shelfPageOf(shelvedOf(kept), page.limit, page.after)
+    const ordered = view.rated
+      ? ratedShelfOf(kept, seriesRatingsOf(await SeriesOpinionQuery.all(userId)))
+      : shelvedOf(kept)
+    const { books, hasMore } = shelfPageOf(ordered, page.limit, page.after)
     return { books: await withCovers(books), hasMore }
   }
 

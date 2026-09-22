@@ -7,6 +7,7 @@ import {
 } from '~/domain/book/infrastructure/graphql/enums'
 import type { BookView, LibrarySection, SeriesMembership } from '~/domain/book/types'
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
+import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import { builder } from '~/domain/shared/graphql/builder'
 
 export const SeriesMembershipType = builder
@@ -128,6 +129,21 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
       nullable: true,
       description: 'One to five whole stars. Null until the reader rates it.',
       resolve: (book) => book.rating ?? null,
+    }),
+    seriesRating: t.field({
+      type: 'StarRating',
+      nullable: true,
+      description:
+        "The rating the reader gave the book's saga, lent to every volume they " +
+        'left unrated: the stars a row draws are `rating`, else this. Kept apart ' +
+        'from `rating` so a screen still knows whether the book itself was rated. ' +
+        'Null for a standalone book, and for a saga the reader has not rated.\n\n' +
+        "Read off the reader's saga opinions, scanned once per request whatever " +
+        'the number of rows.',
+      resolve: async (book, _args, context) =>
+        book.series
+          ? ((await SeriesOpinionQuery.of(context.userId, book.series.id))?.rating ?? null)
+          : null,
     }),
     note: t.field({
       type: 'ReadingNote',

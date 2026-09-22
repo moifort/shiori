@@ -5,10 +5,12 @@ import type {
   BookView,
   LibrarySection,
   ReadingStatus,
+  StarRating,
   Subgenre,
   TaggedSubgenre,
 } from '~/domain/book/types'
 import { compareWithinSeries } from '~/domain/series/business-rules'
+import type { SeriesId } from '~/domain/series/types'
 import type { UserId } from '~/domain/shared/types'
 import { ObjectPath } from '~/system/object-store/primitives'
 import type { ObjectPath as ObjectPathValue } from '~/system/object-store/types'
@@ -144,6 +146,39 @@ const sortedByStatusChange = (books: readonly BookView[]): BookView[] =>
       statusChangedAtOf(right).getTime() - statusChangedAtOf(left).getTime() ||
       left.title.localeCompare(right.title),
   )
+
+/** The stars a book shows: its own, else the rating of its saga. A saga rated
+ *  as a whole rates each volume the reader left unrated, and a rating given to
+ *  the book itself always wins. `seriesRatings` is the reader's saga ratings,
+ *  keyed by saga. */
+export const shownRatingOf = (
+  book: Pick<Book, 'rating' | 'series'>,
+  seriesRatings: ReadonlyMap<SeriesId, StarRating>,
+): StarRating | undefined =>
+  book.rating ?? (book.series ? seriesRatings.get(book.series.id) : undefined)
+
+/** The reader's saga ratings, keyed by saga, from their opinions. */
+export const seriesRatingsOf = (
+  opinions: readonly { seriesId: SeriesId; rating?: StarRating }[],
+): Map<SeriesId, StarRating> =>
+  new Map(
+    opinions.flatMap((opinion) =>
+      opinion.rating === undefined ? [] : [[opinion.seriesId, opinion.rating] as const],
+    ),
+  )
+
+/** The "Rated" view of the library: every book that shows stars, the best
+ *  first, and within one band of stars in the order of the shelf. A volume
+ *  rated through its saga ranks on that rating, since that is what it shows. */
+export const ratedShelfOf = <T extends Book>(
+  books: readonly T[],
+  seriesRatings: ReadonlyMap<SeriesId, StarRating>,
+): T[] =>
+  shelvedOf(books)
+    .map((book) => ({ book, rating: shownRatingOf(book, seriesRatings) }))
+    .filter((entry): entry is { book: T; rating: StarRating } => entry.rating !== undefined)
+    .sort((left, right) => right.rating - left.rating)
+    .map((entry) => entry.book)
 
 /** Which volumes of a saga the reader has finished — what decides whether the
  *  saga reads as complete. Only `read` counts: a volume in progress is not done. */

@@ -452,6 +452,38 @@ describe('reading the library through the API', () => {
     })
   })
 
+  // The "Rated" view: the best first, and a volume rated through its saga
+  // stands among the books rated by hand, since that is the rating it shows.
+  test('narrows a library page to the rated books, best first', async () => {
+    await addBook('Sans note')
+    const good = await addBook('Bien', 'READ')
+    const great = await addBook('Excellent', 'READ')
+    await execute(`mutation { rateBook(id: "${good.id}", rating: 3) { id } }`)
+    await execute(`mutation { rateBook(id: "${great.id}", rating: 5) { id } }`)
+    const volume = await execute(
+      `mutation { addBook(input: {
+        title: "Dune"
+        status: READ
+        series: { id: "dune--frank-herbert", name: "Dune", volume: 1, kind: MAIN }
+      }) { id } }`,
+    )
+    expect(volume.errors).toBeUndefined()
+    await execute('mutation { rateSeries(seriesId: "dune--frank-herbert", rating: 4) { rating } }')
+
+    const result = await execute(
+      '{ libraryPage(rated: true) { books { title rating seriesRating } } }',
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.libraryPage).toEqual({
+      books: [
+        { title: 'Excellent', rating: 5, seriesRating: null },
+        { title: 'Dune', rating: null, seriesRating: 4 },
+        { title: 'Bien', rating: 3, seriesRating: null },
+      ],
+    })
+  })
+
   test('has no saga to show before any book carries one', async () => {
     await addBook('Le Nom du vent')
 

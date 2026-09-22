@@ -22,6 +22,36 @@ const execute = (source: string) => graphql({ schema, source, contextValue: { ev
 const DUNE = 'dune--frank-herbert'
 
 describe('what a reader makes of a saga, through the API', () => {
+  // The stars drawn on a volume: its own, else the saga's, and the app knows
+  // which is which, so the edit screen still sees an unrated book.
+  test('lends the saga rating to a volume the reader left unrated', async () => {
+    const added = await execute(
+      `mutation { addBook(input: {
+        title: "Dune"
+        authors: ["Frank Herbert"]
+        series: { id: "${DUNE}", name: "Dune", volume: 1, kind: MAIN }
+      }) { id } }`,
+    )
+    const { id } = (added.data as { addBook: { id: string } }).addBook
+    await execute(`mutation { rateSeries(seriesId: "${DUNE}", rating: 4) { rating } }`)
+
+    const unrated = await execute(`{ book(id: "${id}") { rating seriesRating } }`)
+    expect(unrated.errors).toBeUndefined()
+    expect(unrated.data?.book).toEqual({ rating: null, seriesRating: 4 })
+
+    await execute(`mutation { rateBook(id: "${id}", rating: 2) { id } }`)
+    const rated = await execute(`{ book(id: "${id}") { rating seriesRating } }`)
+    expect(rated.data?.book).toEqual({ rating: 2, seriesRating: 4 })
+  })
+
+  test('has no saga rating to lend to a standalone book', async () => {
+    const added = await execute('mutation { addBook(input: { title: "Piranesi" }) { id } }')
+    const { id } = (added.data as { addBook: { id: string } }).addBook
+
+    const result = await execute(`{ book(id: "${id}") { seriesRating } }`)
+    expect(result.data?.book).toEqual({ seriesRating: null })
+  })
+
   test('rates a saga without touching any volume rating', async () => {
     const added = await execute(
       `mutation { addBook(input: {
