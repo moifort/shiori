@@ -1,5 +1,20 @@
-# Read at launch to decide routing: the wizard, or the app. `isAdmin` rides the
-# same query so the admin surfaces cost no extra call.
+# Everything a signed-in launch needs, in one request: the wizard or the app,
+# the admin surfaces, and the plan and allowance the subscription store starts
+# from.
+query Launch {
+  me {
+    onboardingCompleted
+    isAdmin
+  }
+  entitlement {
+    ...EntitlementFields
+  }
+  quota {
+    ...QuotaFields
+  }
+}
+
+# The account alone, for the profile settings to prefill the first name.
 query Me {
   me {
     userId

@@ -8,7 +8,29 @@ struct MeState {
     let isAdmin: Bool
 }
 
+/// What a signed-in launch reads, in one request: where to route, and the plan
+/// and allowance the subscription store starts from.
+struct LaunchState {
+    let onboardingCompleted: Bool
+    let isAdmin: Bool
+    let entitlement: EntitlementState
+    let quota: QuotaState
+}
+
 enum OnboardingAPI {
+    static func launch() async throws -> LaunchState {
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.LaunchQuery()
+        )
+        return LaunchState(
+            onboardingCompleted: data.me.onboardingCompleted,
+            isAdmin: data.me.isAdmin,
+            entitlement: data.entitlement.fragments.entitlementFields.asState,
+            quota: data.quota.fragments.quotaFields.asState
+        )
+    }
+
     static func loadMe() async throws -> MeState {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,

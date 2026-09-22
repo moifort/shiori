@@ -19,12 +19,15 @@ final class OnboardingGate {
     /// settings row are simply absent for them.
     private(set) var isAdmin = false
 
-    func refresh() async {
+    /// Reads where to route, and hands the plan and allowance that ride the same
+    /// request to the subscription store: a launch costs one round trip.
+    func refresh(subscriptions: SubscriptionStore) async {
         state = .loading
         do {
-            let me = try await OnboardingAPI.loadMe()
-            isAdmin = me.isAdmin
-            state = me.onboardingCompleted ? .ready : .required
+            let launch = try await OnboardingAPI.launch()
+            isAdmin = launch.isAdmin
+            state = launch.onboardingCompleted ? .ready : .required
+            await subscriptions.start(with: launch.entitlement, quota: launch.quota)
         } catch {
             state = .failed(reportError(error))
         }

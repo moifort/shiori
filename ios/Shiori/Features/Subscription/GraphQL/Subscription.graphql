@@ -1,34 +1,45 @@
-query Entitlement {
+# The plan and the scan allowance together, for the subscription sheet: one
+# request draws the whole of it.
+query SubscriptionState {
   entitlement {
-    plan
-    productId
-    expiresOn
-    appAccountToken
+    ...EntitlementFields
   }
+  quota {
+    ...QuotaFields
+  }
+}
+
+# The allowance alone, re-read after a scan so the counter shows the server's.
+query Quota {
+  quota {
+    ...QuotaFields
+  }
+}
+
+fragment EntitlementFields on Entitlement {
+  plan
+  productId
+  expiresOn
+  appAccountToken
 }
 
 # The scan allowance. `totalRemaining` is what the app gates on: it folds the
 # month's allowance and the welcome credits into the one number that answers
 # "can I scan right now".
-query Quota {
-  quota {
-    plan
-    limit
-    used
-    remaining
-    welcomeRemaining
-    totalRemaining
-    renewsOn
-  }
+fragment QuotaFields on Quota {
+  plan
+  limit
+  used
+  remaining
+  welcomeRemaining
+  totalRemaining
+  renewsOn
 }
 
 # Hands App Store's signed transaction to the server, which verifies it against
 # Apple's root certificates before granting anything.
 mutation SyncEntitlement($signedTransaction: String!) {
   syncEntitlement(signedTransaction: $signedTransaction) {
-    plan
-    productId
-    expiresOn
-    appAccountToken
+    ...EntitlementFields
   }
 }

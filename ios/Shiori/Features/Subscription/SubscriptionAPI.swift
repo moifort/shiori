@@ -26,16 +26,16 @@ struct QuotaState: Sendable {
 }
 
 enum SubscriptionAPI {
-    static func load() async throws -> EntitlementState {
+    /// The plan and the allowance, in one request: what the subscription sheet
+    /// draws.
+    static func state() async throws -> (entitlement: EntitlementState, quota: QuotaState) {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.EntitlementQuery()
+            query: ShioriGraphQL.SubscriptionStateQuery()
         )
-        return state(
-            plan: data.entitlement.plan,
-            token: data.entitlement.appAccountToken,
-            productId: data.entitlement.productId,
-            expiresOn: data.entitlement.expiresOn
+        return (
+            entitlement: data.entitlement.fragments.entitlementFields.asState,
+            quota: data.quota.fragments.quotaFields.asState
         )
     }
 
@@ -44,15 +44,7 @@ enum SubscriptionAPI {
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.QuotaQuery()
         )
-        return QuotaState(
-            isPremium: data.quota.plan.value == .premium,
-            used: data.quota.used,
-            limit: data.quota.limit,
-            remaining: data.quota.remaining,
-            welcomeRemaining: data.quota.welcomeRemaining,
-            totalRemaining: data.quota.totalRemaining,
-            renewsOn: GraphQLHelpers.parseISO8601(data.quota.renewsOn)
-        )
+        return data.quota.fragments.quotaFields.asState
     }
 
     /// Hand a transaction the App Store signed to the server, which verifies it
@@ -62,25 +54,31 @@ enum SubscriptionAPI {
             GraphQLClient.shared.apollo,
             mutation: ShioriGraphQL.SyncEntitlementMutation(signedTransaction: signedTransaction)
         )
-        return state(
-            plan: data.syncEntitlement.plan,
-            token: data.syncEntitlement.appAccountToken,
-            productId: data.syncEntitlement.productId,
-            expiresOn: data.syncEntitlement.expiresOn
-        )
+        return data.syncEntitlement.fragments.entitlementFields.asState
     }
+}
 
-    private static func state(
-        plan: GraphQLEnum<ShioriGraphQL.Plan>,
-        token: String,
-        productId: String?,
-        expiresOn: String?
-    ) -> EntitlementState {
+extension ShioriGraphQL.EntitlementFields {
+    var asState: EntitlementState {
         EntitlementState(
             isPremium: plan.value == .premium,
-            appAccountToken: UUID(uuidString: token),
+            appAccountToken: UUID(uuidString: appAccountToken),
             productId: productId,
             expiresOn: expiresOn.flatMap { GraphQLHelpers.parseISO8601($0) }
+        )
+    }
+}
+
+extension ShioriGraphQL.QuotaFields {
+    var asState: QuotaState {
+        QuotaState(
+            isPremium: plan.value == .premium,
+            used: used,
+            limit: limit,
+            remaining: remaining,
+            welcomeRemaining: welcomeRemaining,
+            totalRemaining: totalRemaining,
+            renewsOn: GraphQLHelpers.parseISO8601(renewsOn)
         )
     }
 }

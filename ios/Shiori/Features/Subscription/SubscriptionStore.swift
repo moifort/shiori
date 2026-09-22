@@ -43,18 +43,36 @@ final class SubscriptionStore {
 
     deinit { updates?.cancel() }
 
-    /// Read the plan and the allowance from the server, load the offers, and
-    /// report whatever the App Store already considers ours. Safe to call on
-    /// every appearance.
+    /// Read the plan and the allowance from the server, in one request, load the
+    /// offers, and report whatever the App Store already considers ours. Safe to
+    /// call on every appearance.
     func refresh() async {
         isLoading = true
         defer { isLoading = false }
 
-        if let state = try? await SubscriptionAPI.load() {
-            isPremium = state.isPremium
-            appAccountToken = state.appAccountToken
+        if let state = try? await SubscriptionAPI.state() {
+            apply(state.entitlement, quota: state.quota)
         }
-        quota = try? await SubscriptionAPI.quota()
+        await loadOffers()
+    }
+
+    /// Start from the plan and the allowance the launch request already read,
+    /// rather than asking the server a second time, then load the offers.
+    func start(with entitlement: EntitlementState, quota: QuotaState) async {
+        isLoading = true
+        defer { isLoading = false }
+
+        apply(entitlement, quota: quota)
+        await loadOffers()
+    }
+
+    private func apply(_ entitlement: EntitlementState, quota: QuotaState) {
+        isPremium = entitlement.isPremium
+        appAccountToken = entitlement.appAccountToken
+        self.quota = quota
+    }
+
+    private func loadOffers() async {
         products = (try? await Product.products(for: SubscriptionProducts.all)) ?? []
         // Re-arm what Apple already sold us: a reinstall, a new device, or a
         // renewal that happened while the app was closed.

@@ -35,16 +35,14 @@ struct AuthRoot: View {
         .environment(subscriptions)
         .environment(\.isAdmin, gate.isAdmin)
         .task { await supportGate.check() }
-        .task(id: session.user?.uid) {
-            // The plan is the server's answer, and it needs a signed-in caller.
-            if session.user != nil { await subscriptions.refresh() }
-        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { Task { await supportGate.check() } }
         }
+        // One request routes the launch and carries the plan along: it needs a
+        // signed-in caller, and the plan is the server's answer.
         .task(id: session.user?.uid) {
             if session.user != nil {
-                await gate.refresh()
+                await gate.refresh(subscriptions: subscriptions)
             } else {
                 gate.reset()
             }
@@ -73,7 +71,7 @@ struct AuthRoot: View {
             } description: {
                 Text(message)
             } actions: {
-                AsyncButton("Réessayer") { await gate.refresh() }
+                AsyncButton("Réessayer") { await gate.refresh(subscriptions: subscriptions) }
             }
         }
     }
