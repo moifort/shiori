@@ -54,16 +54,25 @@ struct FriendSaga: Identifiable, Sendable {
     let author: String?
     let language: BookLanguage?
     let ownedCount: Int
+    /// Hearted by its owner. It then stands for its volumes among the
+    /// favourites, which do not list them again one by one.
+    let favorite: Bool
+    let genre: BookGenre?
+    let subgenre: String?
 }
 
 /// A friend's shelf at a glance.
 struct FriendProfile: Sendable {
     let userId: String
     let firstName: String?
+    /// Most recently active first.
     var reading: [FriendBook]
     var pile: [FriendBook]
+    /// The hearted books a hearted saga does not already stand for.
     var favorites: [FriendBook]
     let sagas: [FriendSaga]
+
+    var favoriteSagas: [FriendSaga] { sagas.filter(\.favorite) }
 
     var displayName: String {
         firstName ?? String(localized: "Un lecteur")
@@ -102,23 +111,18 @@ enum FriendsAPI {
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.FriendProfileQuery(userId: userId)
         )
-        guard let profile = data.friendProfile else { return nil }
-        return FriendProfile(
-            userId: profile.userId,
-            firstName: profile.firstName,
-            reading: profile.reading.map { FriendBook(row: $0.fragments.friendBookRow) },
-            pile: profile.pile.map { FriendBook(row: $0.fragments.friendBookRow) },
-            favorites: profile.favorites.map { FriendBook(row: $0.fragments.friendBookRow) },
-            sagas: profile.sagas.map {
-                FriendSaga(
-                    id: $0.id,
-                    name: $0.name,
-                    author: $0.author,
-                    language: $0.language?.asDomain,
-                    ownedCount: $0.ownedCount
-                )
-            }
+        return data.friendProfile.map { FriendProfile(shelf: $0.fragments.sharedShelf) }
+    }
+
+    /// The reader's own shelf, exactly as their friends see it: the books they
+    /// keep to themselves left out, in full rather than the thirty a friend is
+    /// shown of each list.
+    static func myShelf() async throws -> FriendProfile {
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.MyShelfQuery()
         )
+        return FriendProfile(shelf: data.myShelf.fragments.sharedShelf)
     }
 
     /// One book of a friend's shelf, with everything the read-only page shows.
@@ -134,8 +138,6 @@ enum FriendsAPI {
         friendBook.book.publisher = row.publisher
         friendBook.book.firstPublishedIn = row.firstPublishedIn
         friendBook.book.synopsis = row.synopsis
-        friendBook.book.genre = row.genre?.asDomain
-        friendBook.book.subgenres = row.subgenres
         friendBook.book.pageCount = row.pageCount
         friendBook.book.durationMinutes = row.durationMinutes
         friendBook.book.narrators = row.narrators
@@ -205,6 +207,30 @@ private extension Friend {
     }
 }
 
+private extension FriendProfile {
+    init(shelf: ShioriGraphQL.SharedShelf) {
+        self.init(
+            userId: shelf.userId,
+            firstName: shelf.firstName,
+            reading: shelf.reading.map { FriendBook(row: $0.fragments.friendBookRow) },
+            pile: shelf.pile.map { FriendBook(row: $0.fragments.friendBookRow) },
+            favorites: shelf.favorites.map { FriendBook(row: $0.fragments.friendBookRow) },
+            sagas: shelf.sagas.map {
+                FriendSaga(
+                    id: $0.id,
+                    name: $0.name,
+                    author: $0.author,
+                    language: $0.language?.asDomain,
+                    ownedCount: $0.ownedCount,
+                    favorite: $0.favorite,
+                    genre: $0.genre?.asDomain,
+                    subgenre: $0.subgenre
+                )
+            }
+        )
+    }
+}
+
 private extension FriendBook {
     init(row: ShioriGraphQL.FriendBookRow) {
         self.init(book: Book(row: row), inLibrary: row.inLibrary)
@@ -220,6 +246,8 @@ private extension Book {
             title: row.title,
             authors: row.authors,
             format: row.format.asDomain,
+            genre: row.genre?.asDomain,
+            subgenres: row.subgenres,
             language: row.language?.asDomain,
             series: row.series.map {
                 SeriesMembership(

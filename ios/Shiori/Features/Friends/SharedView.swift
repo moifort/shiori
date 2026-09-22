@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// The Partagé tab: who the reader shares their library with, each friend
+/// The Partagé tab: the reader's own shelf as their friends see it, in three
+/// boxes at the top, then who the reader shares their library with, each friend
 /// with their shelf in figures — favourites, books in progress, pile — and the
 /// book they are reading. A friend opens on their shelf, where any book can be
 /// taken onto the reader's own.
@@ -11,6 +12,7 @@ import SwiftUI
 /// other side and no half-state to explain.
 struct SharedView: View {
     @State private var friends: [Friend] = []
+    @State private var myShelf: FriendProfile?
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var loadFailed: String?
@@ -20,15 +22,21 @@ struct SharedView: View {
     @State private var accepted: String?
     @State private var removing: Friend?
     @State private var isInviting = false
+    @State private var path = NavigationPath()
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             content
                 .navigationTitle("Partagé")
                 .toolbar { toolbar }
                 .navigationDestination(for: Friend.ID.self) { userId in
                     if let friend = friends.first(where: { $0.userId == userId }) {
                         FriendProfileView(friend: friend)
+                    }
+                }
+                .navigationDestination(for: MyShelfList.self) { list in
+                    if let myShelf {
+                        MyShelfListView(list: list, shelf: myShelf)
                     }
                 }
         }
@@ -90,39 +98,67 @@ struct SharedView: View {
 
     @ViewBuilder
     private var content: some View {
-        if isLoading && friends.isEmpty {
+        if isLoading && friends.isEmpty && myShelf == nil {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if let loadFailed, friends.isEmpty {
+        } else if let loadFailed, friends.isEmpty, myShelf == nil {
             EmptyStateView.failure("Amis indisponibles", message: loadFailed) { await load() }
-        } else if friends.isEmpty {
-            EmptyStateView(
-                systemImage: "person.2",
-                title: "Partagez vos lectures",
-                message: "Invitez un ami : vous verrez sa bibliothèque et il verra la vôtre. Chacun pourra piocher des livres chez l'autre.",
-                primary: .init("Inviter un ami", systemImage: "person.badge.plus") { await invite() },
-                secondary: .init("J'ai reçu une invitation", systemImage: "arrow.down.circle") {
-                    pastedCode = ""
-                    showAccept = true
-                }
-            )
         } else {
             List {
-                Section {
-                    ForEach(friends) { friend in
-                        NavigationLink(value: friend.userId) {
-                            row(friend)
-                        }
-                        .swipeActions {
-                            Button("Retirer", role: .destructive) { removing = friend }
-                        }
-                        .accessibilityIdentifier("shared-friend-row")
+                if let myShelf {
+                    Section {
+                        MyShelfHeader(shelf: myShelf) { list in path.append(list) }
+                            .listRowInsets(EdgeInsets())
+                            .listRowBackground(Color.clear)
+                    } header: {
+                        Text("Ce que vos amis voient")
                     }
-                } footer: {
-                    Text("Un ami voit vos lectures en cours, votre pile, vos favoris et vos séries. Jamais vos notes de lecture, ni les livres que vous avez marqués « ne pas partager ».")
+                }
+                if friends.isEmpty {
+                    invitePrompt
+                } else {
+                    Section {
+                        ForEach(friends) { friend in
+                            NavigationLink(value: friend.userId) {
+                                row(friend)
+                            }
+                            .swipeActions {
+                                Button("Retirer", role: .destructive) { removing = friend }
+                            }
+                            .accessibilityIdentifier("shared-friend-row")
+                        }
+                    } header: {
+                        Text("Mes amis")
+                    } footer: {
+                        Text("Un ami voit vos lectures en cours, votre pile, vos favoris et vos séries. Jamais vos notes de lecture, ni les livres que vous avez marqués « ne pas partager ».")
+                    }
                 }
             }
             .listStyle(.insetGrouped)
+        }
+    }
+
+    /// Nobody to share with yet: what sharing does, and the two ways in.
+    private var invitePrompt: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Partagez vos lectures").font(.headline)
+                Text("Invitez un ami : vous verrez sa bibliothèque et il verra la vôtre. Chacun pourra piocher des livres chez l'autre.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.vertical, 4)
+            Button {
+                Task { await invite() }
+            } label: {
+                Label("Inviter un ami", systemImage: "person.badge.plus")
+            }
+            Button {
+                pastedCode = ""
+                showAccept = true
+            } label: {
+                Label("J'ai reçu une invitation", systemImage: "arrow.down.circle")
+            }
         }
     }
 
@@ -187,11 +223,19 @@ struct SharedView: View {
 
     private func load() async {
         isLoading = true
+        // The two reads are independent: the boxes still draw when the
+        // friends list fails, and the other way round.
+        async let shelf = FriendsAPI.myShelf()
         do {
             friends = try await FriendsAPI.friends()
             loadFailed = nil
         } catch {
             loadFailed = reportError(error)
+        }
+        do {
+            myShelf = try await shelf
+        } catch {
+            _ = reportError(error)
         }
         isLoading = false
     }

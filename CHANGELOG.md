@@ -24,6 +24,11 @@ the release tag is pushed.
 - A new Shared tab lists your friends with their favourites, books in progress and pile.
   Any book on a friend's shelf opens on its own page and goes on your pile in one tap,
   noted as recommended by that friend; a book you already own says so.
+- The Shared tab opens on your own shelf as your friends see it: your favourites, your pile
+  and your books in progress, the most recently active first and each with its series.
+  Your favourite series now show on your friends' view too, standing for their volumes
+  rather than listing them again, and your favourites can be sent by mail or message, or
+  copied, as a list of titles, authors and genres.
 - Books and series now share the Library tab, switched from a capsule above the tab bar.
 - Fixed the library and series lists jumping back to the top after saving a book far down.
 - Fixed loading errors when generating a series page.

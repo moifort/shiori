@@ -22,24 +22,38 @@ fragment FriendRow on Friend {
 
 query FriendProfile($userId: UserId!) {
   friendProfile(userId: $userId) {
-    userId
-    firstName
-    reading {
-      ...FriendBookRow
-    }
-    pile {
-      ...FriendBookRow
-    }
-    favorites {
-      ...FriendBookRow
-    }
-    sagas {
-      id
-      name
-      author
-      language
-      ownedCount
-    }
+    ...SharedShelf
+  }
+}
+
+# The reader's own shelf, exactly as their friends see it.
+query MyShelf {
+  myShelf {
+    ...SharedShelf
+  }
+}
+
+fragment SharedShelf on FriendProfile {
+  userId
+  firstName
+  reading {
+    ...FriendBookRow
+  }
+  pile {
+    ...FriendBookRow
+  }
+  favorites {
+    ...FriendBookRow
+  }
+  sagas {
+    id
+    name
+    author
+    language
+    ownedCount
+    favorite
+    genre
+    subgenre
   }
 }
 
@@ -54,6 +68,8 @@ fragment FriendBookRow on FriendBook {
   rating
   favorite
   inLibrary
+  genre
+  subgenres
   series {
     id
     name
@@ -86,8 +102,6 @@ query FriendBook($userId: UserId!, $bookId: BookId!) {
     publisher
     firstPublishedIn
     synopsis
-    genre
-    subgenres
     pageCount
     durationMinutes
     narrators

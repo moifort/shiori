@@ -71,12 +71,26 @@ struct FriendProfileView: View {
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
             }
-            shelf("En cours", books: profile.reading, empty: "Aucune lecture en cours.")
-            shelf("Ses favoris", books: profile.favorites, empty: "Aucun favori.", showsStatus: true)
+            shelf("En cours", books: profile.reading, empty: "Aucune lecture en cours.", showsSeries: true)
+            // A hearted saga stands for its volumes: the books below it are
+            // the hearts it does not already cover.
+            if !profile.favoriteSagas.isEmpty {
+                Section("Ses séries favorites") {
+                    ForEach(profile.favoriteSagas) { saga in
+                        SagaRow(saga: saga)
+                    }
+                }
+            }
+            shelf(
+                "Ses livres favoris",
+                books: profile.favorites,
+                empty: "Aucun livre favori.",
+                showsStatus: true
+            )
             if !profile.sagas.isEmpty {
                 Section("Ses séries") {
                     ForEach(profile.sagas) { saga in
-                        sagaRow(saga)
+                        SagaRow(saga: saga)
                     }
                 }
             }
@@ -104,7 +118,9 @@ struct FriendProfileView: View {
         empty: LocalizedStringKey,
         // Only the favourites mix statuses: the other shelves are one each,
         // and their heading already says which.
-        showsStatus: Bool = false
+        showsStatus: Bool = false,
+        // Books in progress name their saga: "Tome 3" of what, otherwise.
+        showsSeries: Bool = false
     ) -> some View {
         Section(title) {
             if books.isEmpty {
@@ -118,7 +134,8 @@ struct FriendProfileView: View {
                             cover: entry.book,
                             status: entry.book.status,
                             rating: entry.book.rating,
-                            volumeLabel: entry.book.series?.label,
+                            volumeLabel: showsSeries ? nil : entry.book.series?.label,
+                            series: showsSeries ? entry.book.series : nil,
                             statusTag: showsStatus ? entry.book.status : nil,
                             genre: entry.book.genre,
                             subgenre: entry.book.subgenres.first,
@@ -161,31 +178,6 @@ struct FriendProfileView: View {
             .accessibilityLabel(Text("Ajouter à ma pile"))
             .accessibilityIdentifier("friend-book-add")
         }
-    }
-
-    /// How many volumes of a saga are on their shelf, never how many the saga
-    /// has: the catalogue is not something a friendship opens.
-    private func sagaRow(_ saga: FriendSaga) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    Text(saga.name).font(.body.weight(.medium))
-                    if let language = saga.language, language.isForeign {
-                        LanguageTag(language: language)
-                    }
-                }
-                if let author = saga.author {
-                    Text(author).font(.subheadline).foregroundStyle(.secondary)
-                }
-            }
-            Spacer(minLength: 8)
-            Label("\(saga.ownedCount) tome(s)", systemImage: "books.vertical")
-                .labelStyle(.caption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.top, 2)
-        }
-        .padding(.vertical, 2)
     }
 
     private func load() async {
