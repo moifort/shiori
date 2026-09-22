@@ -299,10 +299,11 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
         return String(localized: "\(hours) h \(minutes)")
     }
 
-    /// The listening progress as a reader says it — "42 %" — in the device's
-    /// own percent format. Nil where there is no progress to tell.
+    /// The listening progress as a tag says it — "42%" — the figure against
+    /// its sign: the French format's space would let a narrow tag break it
+    /// in two. Nil where there is no progress to tell.
     var listeningProgressLabel: String? {
-        listeningProgress.map { (Double($0) / 100).formatted(.percent.precision(.fractionLength(0))) }
+        listeningProgress.map { "\($0)%" }
     }
 
     /// Authors as one line. Falls back to a placeholder rather than an empty

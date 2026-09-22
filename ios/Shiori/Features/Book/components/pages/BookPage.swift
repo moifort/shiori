@@ -99,7 +99,8 @@ struct BookPage: View {
                     // under way only: before, there is nothing to tell, and
                     // once it is over the status says it.
                     if book.status == .reading, let progress = book.listeningProgressLabel {
-                        Pill(text: progress)
+                        // In the colour of "En cours", which it measures.
+                        Pill(text: progress, tint: ReadingStatus.reading.tint)
                             .accessibilityLabel(Text("Écouté à \(progress)"))
                             .accessibilityIdentifier("book-listening-progress")
                     }

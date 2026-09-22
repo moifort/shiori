@@ -19,6 +19,9 @@ struct TagList: View {
 struct Pill: View {
     let text: String
     var systemImage: String?
+    /// A pill that stands for a status takes that status's colour, as the
+    /// library row's chips do. Nil draws the neutral grey of a plain fact.
+    var tint: Color?
 
     var body: some View {
         HStack(spacing: 4) {
@@ -30,7 +33,11 @@ struct Pill: View {
         .font(.caption)
         .padding(.horizontal, 10)
         .padding(.vertical, 4)
-        .background(.quaternary, in: Capsule())
+        .foregroundStyle(tint.map(AnyShapeStyle.init) ?? AnyShapeStyle(.primary))
+        .background(
+            tint.map { AnyShapeStyle($0.opacity(0.15)) } ?? AnyShapeStyle(.quaternary),
+            in: Capsule()
+        )
     }
 }
 
