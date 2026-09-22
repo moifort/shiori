@@ -5,15 +5,19 @@ import type {
   BookView,
   LibrarySection,
   ReadingStatus,
+  SeriesMembership,
+  SeriesPlacement,
   StarRating,
   Subgenre,
   TaggedSubgenre,
 } from '~/domain/book/types'
 import { compareWithinSeries } from '~/domain/series/business-rules'
+import { seriesKeyOf } from '~/domain/series/primitives'
 import type { SeriesId } from '~/domain/series/types'
-import type { UserId } from '~/domain/shared/types'
+import type { AuthorName, UserId } from '~/domain/shared/types'
 import { ObjectPath } from '~/system/object-store/primitives'
 import type { ObjectPath as ObjectPathValue } from '~/system/object-store/types'
+import { slugify } from '~/utils/slug'
 
 /** Arrange a library into the sections the list renders. A book that belongs to a
  *  saga sits under that saga's heading, ordered along the spine; everything else
@@ -301,6 +305,41 @@ export const retaggedAfterEdit = (
       current.find((tagged) => tagged.label.toLocaleLowerCase() === label.toLocaleLowerCase())
         ?.language ?? language,
   }))
+
+/** Where a book lands when the reader names its saga by hand.
+ *
+ *  A typed name must not start a saga of its own that no catalogue knows and no
+ *  other volume ever joins, so it goes, in order: to the saga the reader holds
+ *  under the very key a scan would have given it, from the name and the first
+ *  author; else to a saga they hold under the same name, folded as keys are —
+ *  the volume a scan filed under a misspelled author, which is the one the
+ *  reader is gathering; else under that key, new, exactly as a scan would have
+ *  filed it, so the catalogue the series screen builds is the shared one.
+ *
+ *  A joined saga keeps its name as the reader's shelves already show it. The
+ *  volume kind survives when the book stays in its saga, and a book moved to
+ *  another is a main volume. `'no-author'` when a new key is needed and the book
+ *  has no author to build it from. */
+export const membershipFor = (
+  placement: SeriesPlacement,
+  authors: readonly AuthorName[],
+  current: SeriesMembership | undefined,
+  held: readonly SeriesMembership[],
+): SeriesMembership | 'no-author' => {
+  const derived = authors[0] ? seriesKeyOf(placement.name, authors[0]) : undefined
+  const folded = slugify(placement.name)
+  const joined =
+    held.find((series) => series.id === derived) ??
+    held.find((series) => slugify(series.name) === folded)
+  const id = joined?.id ?? derived
+  if (!id) return 'no-author'
+  return {
+    id,
+    name: joined?.name ?? placement.name,
+    ...(placement.volume ? { volume: placement.volume } : {}),
+    kind: current?.id === id ? current.kind : 'main',
+  }
+}
 
 /** The Library tab's order: newest first on the date that last moved each
  *  book, a flat list the app cuts into month sections wherever the month of

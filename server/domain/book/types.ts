@@ -122,6 +122,14 @@ export type SeriesMembership = {
   kind: VolumeKind
 }
 
+/** A saga as the reader names it by hand, when the scan missed it: a name and
+ *  maybe a volume number. The key it lands under is worked out from it, never
+ *  typed — see `membershipFor`. */
+export type SeriesPlacement = {
+  name: SeriesName
+  volume?: VolumeNumber
+}
+
 /** A book as one reader holds it. Private, owned by exactly one user, never
  *  merged with anyone else's: two readers who scan the same novel keep two
  *  independent records. Public facts and personal judgment live side by side,

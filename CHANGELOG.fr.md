@@ -4,6 +4,10 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- La série d’un livre se renseigne à la main depuis son écran de modification, pour un tome
+  que le scan n’a pas rangé : il suffit de nommer la série — celles de la bibliothèque sont
+  proposées pendant la saisie — et son numéro de tome, et le livre rejoint les tomes déjà
+  rangés sous ce nom. Vider le nom sort le livre de sa série.
 - L’accueil compte tous les livres lus depuis le premier, dans une case « Lus » à côté des
   favoris et des abandonnés, qui ouvre la bibliothèque sur les livres lus.
 - La carte des séries de l’accueil devient « Meilleures séries en cours », dessinée en vert

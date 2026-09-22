@@ -333,6 +333,11 @@ input BookEditInput {
   pageCount: PageCount
   publisher: Publisher
 
+  """
+  Put the book in a saga, or move it to another. Null takes it out of its saga. A book with no author can only join a saga the reader already holds.
+  """
+  series: SeriesPlacementInput
+
   """At most three, most representative first."""
   subgenres: [Subgenre!]
   synopsis: Synopsis
@@ -1212,7 +1217,7 @@ type Mutation {
   ): Entitlement!
 
   """
-  Correct a record the scan got wrong. Omitted fields are left alone; an optional field passed as null is cleared.
+  Correct a record the scan got wrong. Omitted fields are left alone; an optional field passed as null is cleared. BAD_USER_INPUT when `series` names a saga the reader does not hold and the book has no author to key it with.
   """
   updateBook(id: BookId!, input: BookEditInput!): Book!
 }
@@ -1747,6 +1752,16 @@ type SeriesOpinion {
   How many volumes the saga has by the reader's own count, set with `declareSeriesVolumeCount`. Null until they say. Only read while nobody has catalogued the saga.
   """
   volumeCount: VolumeNumber
+}
+
+"""
+The saga a reader puts a book in by hand. The saga is found from the name, never typed as a key: the one the reader holds under the key a scan would give it (name and first author), else one they hold under the same name folded — accents, punctuation and a leading article aside — else a new saga under that key.
+"""
+input SeriesPlacementInput {
+  name: SeriesName!
+
+  """The volume number. Absent for a volume with no number."""
+  volume: VolumeNumber
 }
 
 """

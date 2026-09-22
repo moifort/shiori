@@ -167,6 +167,13 @@ struct BookDraft {
     }
 }
 
+/// A saga named by hand in the edit form: a name, and a volume number when the
+/// volume has one.
+struct SeriesPlacement: Equatable, Sendable {
+    var name: String
+    var volume: Int?
+}
+
 /// What the reader changed on a book in the edit form. A nil property was not
 /// touched and is not sent; `.clear` empties a field the reader deleted.
 struct BookCorrection: Equatable, Sendable {
@@ -188,6 +195,9 @@ struct BookCorrection: Equatable, Sendable {
     var narrators: [String]?
     var isbn13: Change<String>?
     var language: Change<BookLanguage>?
+    /// The saga as the reader names it. The server works out which saga that
+    /// is, so the book joins the one its siblings already sit in.
+    var series: Change<SeriesPlacement>?
 
     var isEmpty: Bool { self == BookCorrection() }
 
@@ -203,10 +213,25 @@ struct BookCorrection: Equatable, Sendable {
             narrators: Self.nullable(narrators),
             pageCount: Self.nullable(pageCount),
             publisher: Self.nullable(publisher),
+            series: Self.nullableSeries(series),
             subgenres: Self.nullable(subgenres),
             synopsis: Self.nullable(synopsis),
             title: Self.nullable(title)
         )
+    }
+
+    private static func nullableSeries(
+        _ change: Change<SeriesPlacement>?
+    ) -> GraphQLNullable<ShioriGraphQL.SeriesPlacementInput> {
+        switch change {
+        case nil: .none
+        case let .set(placement):
+            .some(ShioriGraphQL.SeriesPlacementInput(
+                name: placement.name,
+                volume: GraphQLHelpers.graphQLNullable(placement.volume)
+            ))
+        case .clear: .null
+        }
     }
 
     private static func nullable<Value>(_ value: Value?) -> GraphQLNullable<Value> {

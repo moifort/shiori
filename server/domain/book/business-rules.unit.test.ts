@@ -3,6 +3,7 @@ import {
   datesAfterStatusChange,
   groupedBySeries,
   listeningProgressOf,
+  membershipFor,
   ratedShelfOf,
   readVolumeNumbersOf,
   retaggedAfterEdit,
@@ -18,7 +19,8 @@ import { BookId, ListeningMinutes, StarRating, Subgenre } from '~/domain/book/pr
 import type { Book, BookLanguage, BookView, Genre } from '~/domain/book/types'
 import { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import type { VolumeKind } from '~/domain/series/types'
-import { BookTitle, UserId } from '~/domain/shared/primitives'
+import { AuthorName, BookTitle, UserId } from '~/domain/shared/primitives'
+import { slugify } from '~/utils/slug'
 
 const NOW = new Date('2026-09-14T10:00:00.000Z')
 const EARLIER = new Date('2026-01-02T08:00:00.000Z')
@@ -583,5 +585,90 @@ describe('how far into a recording the reader is', () => {
   test('is unknown without a running time or a position', () => {
     expect(listeningProgressOf({ listenedMinutes: minutes(10) })).toBeUndefined()
     expect(listeningProgressOf({ durationMinutes: minutes(600) })).toBeUndefined()
+  })
+})
+
+describe('placing a book in a saga by hand', () => {
+  const thilliez = [AuthorName('Franck Thilliez')]
+  const held = (name: string, author: string, kind: VolumeKind = 'main') => ({
+    id: SeriesId(`${slugify(name)}--${slugify(author)}`),
+    name: SeriesName(name),
+    kind,
+  })
+
+  test('keys a new saga the way a scan would, from the name and the first author', () => {
+    const placed = membershipFor(
+      { name: SeriesName('Sharko et Henebelle'), volume: VolumeNumber(3) },
+      thilliez,
+      undefined,
+      [],
+    )
+
+    expect(placed).toEqual({
+      id: SeriesId('sharko-et-henebelle--franck-thilliez'),
+      name: SeriesName('Sharko et Henebelle'),
+      volume: VolumeNumber(3),
+      kind: 'main',
+    })
+  })
+
+  // The scan may have filed the other volumes under a misspelled author: the
+  // reader is gathering the saga their shelves show, not starting a second one.
+  test('joins a saga the reader holds under the same name, whatever its author', () => {
+    const shelf = held('Sharko et Henebelle', 'Franck Tillier')
+
+    const placed = membershipFor({ name: SeriesName('sharko et hénebelle') }, thilliez, undefined, [
+      shelf,
+    ])
+
+    expect(placed).toEqual({ id: shelf.id, name: SeriesName('Sharko et Henebelle'), kind: 'main' })
+  })
+
+  test('prefers the saga held under its own key over a namesake by another author', () => {
+    const namesake = held('Chronicles', 'Someone Else')
+    const own = held('Chronicles', 'Franck Thilliez')
+
+    const placed = membershipFor({ name: SeriesName('Chronicles') }, thilliez, undefined, [
+      namesake,
+      own,
+    ])
+
+    expect(placed).toMatchObject({ id: own.id })
+  })
+
+  test('keeps the volume kind of a book that stays in its saga', () => {
+    const prequel = held('Dune', 'Frank Herbert', 'prequel')
+
+    const placed = membershipFor(
+      { name: SeriesName('Dune'), volume: VolumeNumber(1) },
+      [AuthorName('Frank Herbert')],
+      prequel,
+      [prequel],
+    )
+
+    expect(placed).toMatchObject({ id: prequel.id, kind: 'prequel' })
+  })
+
+  test('makes a book moved to another saga a main volume', () => {
+    const placed = membershipFor(
+      { name: SeriesName('Autre') },
+      thilliez,
+      held('Dune', 'Frank Herbert', 'prequel'),
+      [],
+    )
+
+    expect(placed).toMatchObject({ kind: 'main' })
+  })
+
+  test('lets a book with no author join a saga the reader holds', () => {
+    const shelf = held('Dune', 'Frank Herbert')
+
+    expect(membershipFor({ name: SeriesName('Dune') }, [], undefined, [shelf])).toMatchObject({
+      id: shelf.id,
+    })
+  })
+
+  test('refuses a new saga for a book with no author to key it with', () => {
+    expect(membershipFor({ name: SeriesName('Dune') }, [], undefined, [])).toBe('no-author')
   })
 })

@@ -9,9 +9,9 @@ import { builder } from '~/domain/shared/graphql/builder'
 
 /** The saga a scanned book belongs to, carried back from `scanBook` unchanged.
  *
- *  Only ever filled from a scan result. The app does not let a reader type this:
- *  membership is keyed to the shared catalogue, and a hand-typed saga would be
- *  one no catalogue knows, which would then never gather its other volumes. */
+ *  Only ever filled from a scan result. A reader who names a saga by hand does it
+ *  through `SeriesPlacementInput`, which keys it the way a scan would: a typed
+ *  key would be one no catalogue knows, and would never gather other volumes. */
 export const SeriesMembershipInput = builder.inputType('SeriesMembershipInput', {
   description: 'A book place in a saga, as `scanBook` resolved it. Pass it back unchanged.',
   fields: (t) => ({
@@ -19,6 +19,23 @@ export const SeriesMembershipInput = builder.inputType('SeriesMembershipInput', 
     name: t.field({ type: 'SeriesName', required: true }),
     volume: t.field({ type: 'VolumeNumber', required: false }),
     kind: t.field({ type: VolumeKindEnum, required: true }),
+  }),
+})
+
+/** A saga named by hand in the edit form, for a book the scan did not place. */
+export const SeriesPlacementInput = builder.inputType('SeriesPlacementInput', {
+  description:
+    'The saga a reader puts a book in by hand. The saga is found from the name, never ' +
+    'typed as a key: the one the reader holds under the key a scan would give it ' +
+    '(name and first author), else one they hold under the same name folded — ' +
+    'accents, punctuation and a leading article aside — else a new saga under that key.',
+  fields: (t) => ({
+    name: t.field({ type: 'SeriesName', required: true }),
+    volume: t.field({
+      type: 'VolumeNumber',
+      required: false,
+      description: 'The volume number. Absent for a volume with no number.',
+    }),
   }),
 })
 
@@ -107,5 +124,12 @@ export const BookEditInput = builder.inputType('BookEditInput', {
     narrators: t.field({ type: ['NarratorName'], required: false, description: 'At most five.' }),
     language: t.field({ type: BookLanguageEnum, required: false }),
     isbn13: t.field({ type: 'Isbn13', required: false }),
+    series: t.field({
+      type: SeriesPlacementInput,
+      required: false,
+      description:
+        'Put the book in a saga, or move it to another. Null takes it out of its saga. ' +
+        'A book with no author can only join a saga the reader already holds.',
+    }),
   }),
 })

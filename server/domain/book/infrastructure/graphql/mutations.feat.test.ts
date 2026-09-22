@@ -94,6 +94,40 @@ describe('cataloguing through the API', () => {
     expect(cleared.data?.updateBook).toEqual({ durationMinutes: null })
   })
 
+  test('puts a book in a saga by hand, groups it there, and takes it out again', async () => {
+    const created = await execute(
+      'mutation { addBook(input: { title: "Gataca", authors: ["Franck Thilliez"] }) { id } }',
+    )
+    const { id } = (created.data as { addBook: { id: string } }).addBook
+
+    const placed = await execute(
+      `mutation { updateBook(id: "${id}", input: { series: { name: "Sharko", volume: 2 } }) ` +
+        '{ series { id name volume kind } } }',
+    )
+
+    expect(placed.errors).toBeUndefined()
+    expect(placed.data?.updateBook).toEqual({
+      series: { id: 'sharko--franck-thilliez', name: 'Sharko', volume: 2, kind: 'MAIN' },
+    })
+    const library = await execute('{ library { series books { title } } }')
+    expect(library.data?.library).toEqual([{ series: 'Sharko', books: [{ title: 'Gataca' }] }])
+
+    const cleared = await execute(
+      `mutation { updateBook(id: "${id}", input: { series: null }) { series { id } } }`,
+    )
+    expect(cleared.data?.updateBook).toEqual({ series: null })
+  })
+
+  test('refuses to start a saga for a book with no author', async () => {
+    const book = await addBook('Gataca')
+
+    const refused = await execute(
+      `mutation { updateBook(id: "${book.id}", input: { series: { name: "Sharko" } }) { id } }`,
+    )
+
+    expect(refused.errors?.[0]?.extensions?.code).toBe('BAD_USER_INPUT')
+  })
+
   test('marks a book dropped, and a rating leaves it dropped', async () => {
     const book = await addBook('Le Maître du Haut Château', 'READING')
 

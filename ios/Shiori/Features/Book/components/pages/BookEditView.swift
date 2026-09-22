@@ -1,8 +1,10 @@
 import SwiftUI
 
-/// Correcting a book: every fact on the sheet except its place in a saga. Series
-/// and volume are keyed to the shared catalogue, and a hand-edited membership
-/// would drift from the catalogue that gathers the other volumes.
+/// Correcting a book: every fact on the sheet, its place in a saga included.
+/// The saga is named, never keyed: the server files the book under the saga the
+/// reader already holds by that name, or keys a new one the way a scan would, so
+/// a volume the scan missed joins its siblings rather than starting a saga of
+/// its own.
 ///
 /// The reading dates are not here either: they follow from status changes and
 /// are never typed.
@@ -30,11 +32,16 @@ struct BookEditView: View {
     @State private var language: BookLanguage?
     @State private var subgenres: String
     @State private var isbn: String
+    @State private var seriesName: String
+    @State private var seriesVolume: String
     @State private var isSaving = false
     @State private var errorMessage: String?
     /// The reader's subgenre vocabulary, proposed under the field. Empty until
     /// read, and empty for good when the read failed: a convenience, not a need.
     @State private var subgenreSuggestions: [String] = []
+    /// The names of the sagas the reader holds, proposed under the series field
+    /// so a missed volume joins its siblings under the name they already carry.
+    @State private var seriesSuggestions: [String] = []
 
     init(book: Book, onSave: @escaping (BookCorrection, Int?) async -> String?) {
         self.book = book
@@ -53,6 +60,8 @@ struct BookEditView: View {
         _language = State(initialValue: book.language)
         _subgenres = State(initialValue: book.subgenres.joined(separator: ", "))
         _isbn = State(initialValue: book.isbn13 ?? "")
+        _seriesName = State(initialValue: book.series?.name ?? "")
+        _seriesVolume = State(initialValue: book.series?.volume.map(String.init) ?? "")
     }
 
     var body: some View {
@@ -169,6 +178,32 @@ struct BookEditView: View {
                         Text("Séparez les sous-genres par des virgules, trois au plus ; le premier est celui qui s'affiche dans la liste. Un champ vidé est effacé.")
                     }
                 }
+
+                Section {
+                    Label {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Nom")
+                            SeriesNameField(text: $seriesName, suggestions: seriesSuggestions)
+                        }
+                    } icon: {
+                        Image(systemName: "books.vertical").foregroundStyle(.secondary)
+                    }
+                    if !trimmed(seriesName).isEmpty {
+                        LabeledField(title: "Tome", icon: "number") {
+                            TextField("Sans numéro", text: $seriesVolume)
+                                .keyboardType(.numberPad)
+                                .accessibilityIdentifier("edit-series-volume")
+                        }
+                    }
+                } header: {
+                    Text("Série")
+                } footer: {
+                    if let problem = seriesProblem {
+                        Text(problem).foregroundStyle(.red)
+                    } else {
+                        Text("Choisissez une série de votre bibliothèque pour y ranger ce livre avec les autres tomes. Videz le nom pour le sortir de sa série.")
+                    }
+                }
             }
             .labelStyle(.row)
             .navigationTitle("Modifier")
@@ -186,6 +221,7 @@ struct BookEditView: View {
             .disabled(isSaving)
             .overlay { if isSaving { ProgressView() } }
             .task { subgenreSuggestions = (try? await BookAPI.subgenres()) ?? [] }
+            .task { seriesSuggestions = await Self.heldSeriesNames() }
             .alert(
                 "Impossible d'enregistrer",
                 isPresented: .init(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
@@ -200,7 +236,24 @@ struct BookEditView: View {
 
     // MARK: - Validation
 
-    private var isValid: Bool { !trimmed(title).isEmpty && publicationProblem == nil }
+    private var isValid: Bool {
+        !trimmed(title).isEmpty && publicationProblem == nil && seriesProblem == nil
+    }
+
+    /// A volume number the server would refuse, or a new saga it could not key:
+    /// a saga is keyed on its first author, and only one the reader already
+    /// holds can be joined without one.
+    private var seriesProblem: String? {
+        guard !trimmed(seriesName).isEmpty else { return nil }
+        if !trimmed(seriesVolume).isEmpty, !(1...200).contains(Int(trimmed(seriesVolume)) ?? 0) {
+            return String(localized: "Le tome doit être un nombre entre 1 et 200.")
+        }
+        let held = seriesSuggestions.contains { $0.localizedCaseInsensitiveCompare(trimmed(seriesName)) == .orderedSame }
+        if list(authors).isEmpty, !held, trimmed(seriesName) != book.series?.name {
+            return String(localized: "Ajoutez un auteur pour créer une nouvelle série.")
+        }
+        return nil
+    }
 
     /// The first thing the server would refuse, said in the form rather than
     /// after a round trip.
@@ -256,7 +309,20 @@ struct BookEditView: View {
         }
         correction.isbn13 = change(from: book.isbn13, to: isbnDigits.isEmpty ? nil : isbnDigits)
         correction.language = change(from: book.language, to: language)
+        correction.series = change(
+            from: book.series.map { SeriesPlacement(name: $0.name, volume: $0.volume) },
+            to: optional(seriesName).map { SeriesPlacement(name: $0, volume: Int(trimmed(seriesVolume))) }
+        )
         return correction
+    }
+
+    /// The sagas the reader holds, each named once: a saga held in two
+    /// languages is two rows of the Series tab but one name to propose. Empty
+    /// when the read failed, since the proposals are a convenience.
+    private static func heldSeriesNames() async -> [String] {
+        let series = (try? await SeriesAPI.mySeries()) ?? []
+        var seen = Set<String>()
+        return series.map(\.name).filter { seen.insert($0.lowercased()).inserted }
     }
 
     private func save() async {
@@ -308,6 +374,56 @@ struct BookEditView: View {
 
     private func list(_ text: String) -> [String] {
         text.split(separator: ",").map { trimmed(String($0)) }.filter { !$0.isEmpty }
+    }
+}
+
+/// The saga's name, with the reader's own sagas proposed underneath as they
+/// type: picking one files the book with its siblings under the exact name
+/// they carry.
+private struct SeriesNameField: View {
+    @Binding var text: String
+    let suggestions: [String]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            TextField("Aucune", text: $text)
+                .textInputAutocapitalization(.words)
+                .accessibilityIdentifier("edit-series-name")
+            if !proposals.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(proposals, id: \.self) { proposal in
+                            Button {
+                                text = proposal
+                            } label: {
+                                Text(proposal)
+                                    .font(.caption)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(.quaternary, in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("series-suggestion")
+                        }
+                    }
+                }
+                .scrollClipDisabled()
+            }
+        }
+    }
+
+    /// The reader's sagas narrowed to what is typed, and none once the name
+    /// typed is one of them.
+    private var proposals: [String] {
+        let typed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !suggestions.contains(where: { $0.localizedCaseInsensitiveCompare(typed) == .orderedSame }) else {
+            return []
+        }
+        return Array(
+            suggestions
+                .filter { typed.isEmpty || $0.localizedCaseInsensitiveContains(typed) }
+                .prefix(8)
+        )
     }
 }
 

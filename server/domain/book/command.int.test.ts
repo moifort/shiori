@@ -6,7 +6,8 @@ mock.module('~/system/firebase', () => ({ db: fakeDb }))
 
 const { BookCommand } = await import('~/domain/book/command')
 const { BookQuery } = await import('~/domain/book/query')
-const { BookTitle } = await import('~/domain/shared/primitives')
+const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
+const { SeriesId, SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
 const { StarRating, ReadingNote, Publisher, PageCount } = await import('~/domain/book/primitives')
 
 const reader = 'reader-1' as UserId
@@ -55,7 +56,7 @@ describe('cataloguing a book', () => {
 
     const edited = await BookCommand.edit(reader, book.id, { publisher: undefined })
 
-    if (edited === 'not-found') throw new Error('unreachable')
+    if (typeof edited === 'string') throw new Error('unreachable')
     expect(edited.publisher).toBeUndefined()
     expect(Number(edited.pageCount)).toBe(56)
     expect(Object.hasOwn(fake.data('books', book.id) as object, 'publisher')).toBe(false)
@@ -102,7 +103,7 @@ describe('cataloguing a book', () => {
     expect(book.statusChangedAt).toEqual(NOW)
 
     const edited = await BookCommand.edit(reader, book.id, { publisher: Publisher('X') }, LATER)
-    if (edited === 'not-found') throw new Error('unreachable')
+    if (typeof edited === 'string') throw new Error('unreachable')
     expect(edited.statusChangedAt).toEqual(NOW)
 
     const same = await BookCommand.setStatus(reader, book.id, 'to-read', LATER)
@@ -131,6 +132,89 @@ describe('cataloguing a book', () => {
 
     const mine = await BookQuery.all(reader)
     expect(mine.map((book) => String(book.title))).toEqual(['Le Nom du vent'])
+  })
+})
+
+describe('placing a book in a saga by hand', () => {
+  const thilliez = [AuthorName('Franck Thilliez')]
+  const scanned = (title: string, volume: number) =>
+    BookCommand.add(
+      reader,
+      {
+        title: BookTitle(title),
+        authors: [AuthorName('Franck Tillier')],
+        series: {
+          id: SeriesId('sharko-et-henebelle--franck-tillier'),
+          name: SeriesName('Sharko et Henebelle'),
+          volume: VolumeNumber(volume),
+          kind: 'main',
+        },
+      },
+      NOW,
+    )
+
+  // The case the feature exists for: the scan missed the saga of one volume,
+  // and its siblings sit under an author the scan misspelled.
+  test('gathers a volume the scan missed with the ones it filed', async () => {
+    await scanned('Le Syndrome E', 1)
+    const missed = await BookCommand.add(
+      reader,
+      { title: BookTitle('Gataca'), authors: thilliez },
+      NOW,
+    )
+    const before = { docs: fake.docReads, queries: fake.queryReads }
+
+    const placed = await BookCommand.edit(reader, missed.id, {
+      series: { name: SeriesName('Sharko et Henebelle'), volume: VolumeNumber(2) },
+    })
+
+    if (typeof placed === 'string') throw new Error('unreachable')
+    expect(placed.series).toEqual({
+      id: SeriesId('sharko-et-henebelle--franck-tillier'),
+      name: SeriesName('Sharko et Henebelle'),
+      volume: VolumeNumber(2),
+      kind: 'main',
+    })
+    expect(fake.data('books', missed.id)?.series).toEqual(placed.series)
+    expect(fake.docReads - before.docs).toBe(1)
+    expect(fake.queryReads - before.queries).toBe(1)
+  })
+
+  test('takes a book out of its saga when the reader clears it', async () => {
+    const book = await scanned('Le Syndrome E', 1)
+    const before = { docs: fake.docReads, queries: fake.queryReads }
+
+    const cleared = await BookCommand.edit(reader, book.id, { series: undefined })
+
+    if (typeof cleared === 'string') throw new Error('unreachable')
+    expect(cleared.series).toBeUndefined()
+    expect(fake.docReads - before.docs).toBe(1)
+    expect(fake.queryReads - before.queries).toBe(0)
+    expect(Object.hasOwn(fake.data('books', book.id) as object, 'series')).toBe(false)
+  })
+
+  // The authors typed in the same correction are the ones the key is built from.
+  test('keys a new saga on the authors corrected in the same edit', async () => {
+    const book = await add('Pandemia')
+
+    const placed = await BookCommand.edit(reader, book.id, {
+      authors: thilliez,
+      series: { name: SeriesName('Sharko') },
+    })
+
+    expect(placed).toMatchObject({ series: { id: 'sharko--franck-thilliez' } })
+  })
+
+  test('refuses a new saga for a book with no author, and writes nothing', async () => {
+    const book = await add('Pandemia')
+
+    const refused = await BookCommand.edit(reader, book.id, {
+      publisher: undefined,
+      series: { name: SeriesName('Sharko') },
+    })
+
+    expect(refused).toBe('no-author')
+    expect(fake.data('books', book.id)?.series).toBeUndefined()
   })
 })
 

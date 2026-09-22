@@ -5,6 +5,7 @@ import {
   datesAfterStatusChange,
   favoriteAfterRating,
   HEART_RATING,
+  membershipFor,
   retaggedAfterEdit,
   statusAfterRating,
   statusStampAfterChange,
@@ -26,6 +27,7 @@ import type {
   ReadingNote,
   ReadingStatus,
   SeriesMembership,
+  SeriesPlacement,
   StarRating,
   Synopsis,
   TaggedSubgenre,
@@ -80,7 +82,11 @@ export type NewBook = {
 
 /** The fields a reader may correct after the fact. Absent means untouched; the
  *  caller clears a field by passing null, which the GraphQL layer maps to
- *  undefined — Firestore rejects undefined, and the repository drops the key. */
+ *  undefined — Firestore rejects undefined, and the repository drops the key.
+ *
+ *  The saga is named rather than keyed: `series` says where the reader wants the
+ *  book, and `membershipFor` decides which saga that is. Undefined takes the book
+ *  out of its saga. */
 export type BookEdit = Partial<
   Pick<
     Book,
@@ -97,8 +103,7 @@ export type BookEdit = Partial<
     | 'narrators'
     | 'isbn13'
     | 'language'
-    | 'series'
-  >
+  > & { series: SeriesPlacement }
 >
 
 export namespace BookCommand {
@@ -178,23 +183,42 @@ export namespace BookCommand {
     edit: BookEdit,
     now = new Date(),
     batch?: WriteBatch,
-  ): Promise<Book | 'not-found'> => {
+  ): Promise<Book | 'not-found' | 'no-author'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
+    const { series: placement, ...facts } = edit
     const retagged =
-      'subgenres' in edit
-        ? { subgenres: retaggedAfterEdit(edit.subgenres ?? [], book.subgenres) }
+      'subgenres' in facts
+        ? { subgenres: retaggedAfterEdit(facts.subgenres ?? [], book.subgenres) }
         : {}
-    const edited = await repository.save({ ...book, ...edit, ...retagged, updatedAt: now }, batch)
+    let membership: { series?: SeriesMembership } = {}
+    if ('series' in edit) {
+      const placed = placement
+        ? membershipFor(
+            placement,
+            facts.authors ?? book.authors,
+            book.series,
+            (await repository.findAllByUser(userId)).flatMap((other) =>
+              other.series ? [other.series] : [],
+            ),
+          )
+        : undefined
+      if (placed === 'no-author') return 'no-author'
+      membership = { series: placed }
+    }
+    const edited = await repository.save(
+      { ...book, ...facts, ...retagged, ...membership, updatedAt: now },
+      batch,
+    )
     // A genre is a fact about the saga, not about one of its volumes: the
     // reader who corrects it on one book expects the whole shelf to follow,
     // rather than fixing fourteen records one by one.
-    if (book.series && ('genre' in edit || 'subgenres' in edit)) {
+    if (edited.series && ('genre' in edit || 'subgenres' in edit)) {
       const classification = {
         ...('genre' in edit ? { genre: edit.genre } : {}),
         ...('subgenres' in edit ? { subgenres: edited.subgenres } : {}),
       }
-      const siblings = (await repository.findBySeries(userId, book.series.id)).filter(
+      const siblings = (await repository.findBySeries(userId, edited.series.id)).filter(
         (other) => other.id !== book.id,
       )
       for (const sibling of siblings)

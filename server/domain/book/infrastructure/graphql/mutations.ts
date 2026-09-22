@@ -9,7 +9,7 @@ import { BookQuery } from '~/domain/book/query'
 import type { BookId } from '~/domain/book/types'
 import { BookUseCase } from '~/domain/book/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
-import { notFound } from '~/domain/shared/graphql/errors'
+import { badUserInput, notFound } from '~/domain/shared/graphql/errors'
 import { languageOf } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 
@@ -77,7 +77,8 @@ builder.mutationFields((t) => ({
     type: BookType,
     description:
       'Correct a record the scan got wrong. Omitted fields are left alone; an ' +
-      'optional field passed as null is cleared.',
+      'optional field passed as null is cleared. BAD_USER_INPUT when `series` names ' +
+      'a saga the reader does not hold and the book has no author to key it with.',
     args: {
       id: t.arg({ type: 'BookId', required: true }),
       input: t.arg({ type: BookEditInput, required: true }),
@@ -111,9 +112,20 @@ builder.mutationFields((t) => ({
         ...clearable('durationMinutes', input.durationMinutes),
         ...clearable('isbn13', input.isbn13),
         ...clearable('language', input.language),
+        ...(input.series !== undefined
+          ? {
+              series: input.series
+                ? {
+                    name: input.series.name,
+                    ...(input.series.volume != null ? { volume: input.series.volume } : {}),
+                  }
+                : undefined,
+            }
+          : {}),
       })
       return match(result)
         .with('not-found', () => notFound('Book not found'))
+        .with('no-author', () => badUserInput('A book needs an author to start a new saga'))
         .otherwise((book) => readBack(context.userId, book.id))
     },
   }),

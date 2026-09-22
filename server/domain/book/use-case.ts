@@ -48,16 +48,19 @@ export namespace BookUseCase {
     withAnalytics(userId, (batch) => BookCommand.remove(userId, bookId, batch))
 }
 
-// A book that was not found wrote nothing, so the view stays as it was.
+// A book that was not found, or an edit refused, wrote nothing, so the view
+// stays as it was.
 const withAnalytics = async <Outcome>(
   userId: UserId,
   write: (batch: WriteBatch) => Promise<Outcome>,
 ): Promise<Outcome> => {
   const outcome = await atomically(async (batch) => {
     const result = await write(batch)
-    if (result !== 'not-found') AnalyticsCommand.markStale(userId, batch)
+    if (wrote(result)) AnalyticsCommand.markStale(userId, batch)
     return result
   })
-  if (outcome !== 'not-found') await AnalyticsUseCase.refreshAfterWrite(userId)
+  if (wrote(outcome)) await AnalyticsUseCase.refreshAfterWrite(userId)
   return outcome
 }
+
+const wrote = (outcome: unknown): boolean => outcome !== 'not-found' && outcome !== 'no-author'

@@ -10,6 +10,10 @@ the release tag is pushed.
 
 ## Unreleased
 
+- A book's saga can be set by hand from its edit screen, for a volume the scan did not place:
+  name the saga — the reader's own sagas are proposed as they type — and its volume number,
+  and the book joins the volumes already filed under that name. Emptying the name takes the
+  book out of its saga.
 - The dashboard counts every book read since the first, in a "Read" box beside the
   favourites and the dropped books, which opens the library on the books read.
 - The dashboard's saga card is now "Best series in progress", drawn in mint rather than
