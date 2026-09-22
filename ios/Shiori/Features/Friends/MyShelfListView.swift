@@ -89,7 +89,7 @@ struct MyShelfListView: View {
                 }
             }
             if !shelf.favorites.isEmpty {
-                books(shelf.favorites, title: "Livres", empty: "", showsStatus: true)
+                books(shelf.favorites, title: "Livres", empty: "", asFavorites: true)
             }
         }
     }
@@ -99,7 +99,10 @@ struct MyShelfListView: View {
         _ entries: [FriendBook],
         title: LocalizedStringKey? = nil,
         empty: LocalizedStringKey,
-        showsStatus: Bool = false,
+        // Every favourite is hearted and nearly all are read: the heart and
+        // the status would say the same thing on every row, so the genre
+        // takes their corner.
+        asFavorites: Bool = false,
         showsSeries: Bool = false
     ) -> some View {
         Section {
@@ -113,13 +116,13 @@ struct MyShelfListView: View {
                         authorLine: book.authorLine,
                         cover: book,
                         status: book.status,
-                        rating: book.rating,
+                        rating: asFavorites ? nil : book.rating,
                         series: showsSeries ? book.series : nil,
-                        statusTag: showsStatus ? book.status : nil,
                         genre: book.genre,
                         subgenre: book.subgenres.first,
                         language: book.language,
-                        isFavorite: book.favorite
+                        isFavorite: asFavorites ? false : book.favorite,
+                        genreInCorner: asFavorites
                     )
                     .contentShape(.rect)
                     .onTapGesture { openBook = book }
@@ -134,9 +137,10 @@ struct MyShelfListView: View {
 
 /// A saga on somebody's shelf: its name, author and genre. Among the
 /// favourites it is drawn as the Series tab draws it, its volumes on the shelf
-/// as a strip of covers underneath, each with its status pinned on — owned
-/// volumes only, since the catalogue is not something a friendship opens.
-/// Elsewhere it says how many of its volumes are on that shelf.
+/// as a strip of covers underneath — owned volumes only, since the catalogue
+/// is not something a friendship opens — with its genre in the top corner.
+/// Elsewhere it says it is hearted and how many of its volumes are on that
+/// shelf.
 struct SagaRow: View {
     let saga: FriendSaga
     /// The favourites draw the covers in place of the volume count.
@@ -144,53 +148,59 @@ struct SagaRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 3) {
+                // The marks in the top corner, as on a book row: the heart is
+                // left out among the favourites, where every saga has one, and
+                // the genre takes its place.
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(saga.name).font(.body.weight(.medium)).lineLimit(2)
+                    Spacer(minLength: 0)
                     HStack(spacing: 6) {
-                        Text(saga.name).font(.body.weight(.medium))
-                        if saga.favorite {
-                            Image(systemName: "heart.fill")
-                                .font(.caption)
-                                .foregroundStyle(.pink)
-                                .accessibilityLabel(Text("Favori"))
-                        }
                         if let language = saga.language, language.isForeign {
                             LanguageTag(language: language)
                         }
+                        if showsCovers {
+                            if let genre = saga.genre {
+                                RowChip(text: genre.label, tint: genre.tint)
+                            }
+                        } else {
+                            if saga.favorite {
+                                Image(systemName: "heart.fill")
+                                    .foregroundStyle(.pink)
+                                    .accessibilityLabel(Text("Favori"))
+                            }
+                            Label("\(saga.ownedCount) tome(s)", systemImage: "books.vertical")
+                                .labelStyle(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
-                    if let author = saga.author {
-                        Text(author).font(.subheadline).foregroundStyle(.secondary)
-                    }
-                    if let genre = saga.genre {
-                        Text([genre.label, saga.subgenre].compactMap(\.self).joined(separator: " · "))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                    .font(.caption2)
+                    .fixedSize()
                 }
-                Spacer(minLength: 8)
-                if !showsCovers {
-                    Label("\(saga.ownedCount) tome(s)", systemImage: "books.vertical")
-                        .labelStyle(.caption)
+                if let author = saga.author {
+                    Text(author).font(.subheadline).foregroundStyle(.secondary)
+                }
+                if showsCovers {
+                    if let subgenre = saga.subgenre {
+                        RowChip(text: subgenre, tint: saga.genre?.tint ?? .secondary)
+                            .font(.caption2)
+                            .padding(.top, 1)
+                    }
+                } else if let genre = saga.genre {
+                    Text([genre.label, saga.subgenre].compactMap(\.self).joined(separator: " · "))
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .padding(.top, 2)
                 }
             }
+            // Covers only: where the reader stands on each volume is theirs
+            // to read on the saga itself, not on a list of what they love.
             if showsCovers, !saga.volumes.isEmpty {
                 ScrollView(.horizontal) {
                     LazyHStack(spacing: 10) {
                         ForEach(saga.volumes) { volume in
                             BookCover(book: volume, width: 44, showsFormatBadge: false)
-                                .overlay(alignment: .topTrailing) {
-                                    ReadingStatusBadge(status: volume.status)
-                                        .offset(x: 5, y: -5)
-                                }
                         }
                     }
-                    // Room for the badges, which overhang the covers' corners
-                    // and the scroll view would otherwise clip.
-                    .padding(.top, 6)
-                    .padding(.trailing, 6)
                 }
                 .scrollIndicators(.hidden)
                 .accessibilityHidden(true)

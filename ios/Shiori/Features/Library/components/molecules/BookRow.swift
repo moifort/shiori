@@ -38,6 +38,11 @@ struct BookRow: View {
     /// a saga section, whose heading already carries it.
     var language: BookLanguage?
     var isFavorite: Bool = false
+    /// Draws the genre as a tag in the top corner, where the status and the
+    /// heart usually sit, leaving only the subgenre under the author. For a
+    /// list whose rows are all one status and all hearted, where the genre is
+    /// what tells them apart.
+    var genreInCorner: Bool = false
     var isHidden: Bool = false
     /// How far into a recording the player got, already formatted — "42 %".
     /// Passed only for a recording under way, and drawn as a chip beside the
@@ -113,9 +118,9 @@ struct BookRow: View {
                 // subgenre, and no glyph: the genre's icon was a second thing to
                 // decode on a list of twenty different genres, and the word
                 // alone is what the eye reads anyway.
-                if genre != nil || subgenre != nil {
+                if (genre != nil && !genreInCorner) || subgenre != nil {
                     HStack(spacing: 6) {
-                        if let genre {
+                        if let genre, !genreInCorner {
                             chip(genre.label, tint: genre.tint)
                         }
                         if let subgenre {
@@ -196,6 +201,10 @@ struct BookRow: View {
                         .font(.caption2)
                 }
             }
+            if genreInCorner, let genre {
+                chip(genre.label, tint: genre.tint)
+                    .font(.caption2)
+            }
         }
         .font(.caption)
         .fixedSize()
@@ -206,6 +215,17 @@ struct BookRow: View {
     /// texture, and the colour is what lets the eye find the fantasy among the
     /// essays without reading a word.
     private func chip(_ text: String, tint: Color) -> some View {
+        RowChip(text: text, tint: tint)
+    }
+}
+
+/// The small tinted capsule a list row draws its tags in — genre, subgenre,
+/// status, saga — smaller than a `Pill`, which is sized for a detail screen.
+struct RowChip: View {
+    let text: String
+    let tint: Color
+
+    var body: some View {
         Text(text)
             .padding(.horizontal, 6)
             .padding(.vertical, 1)
