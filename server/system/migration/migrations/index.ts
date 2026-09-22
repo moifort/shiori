@@ -1,11 +1,11 @@
+import { heartsAreFiveStars } from '~/system/migration/migrations/004-hearts-are-five-stars'
 import type { Migration } from '~/system/migration/types'
 
-// Forward-only, sequential, no rollback. Shiori restarted on an empty database,
-// so the list is empty again. Adding a new optional field or a new collection
-// needs no migration — only renaming, restructuring, or removing stale data does.
+// Forward-only, sequential, no rollback. Adding a new optional field or a new
+// collection needs no migration — only renaming, restructuring, or removing
+// stale data does.
 //
-// Number the next one 4: `migration-meta` in production records version 2, left there
-// by the two migrations this list held before the reset, or 3, if the withdrawn
-// subgenre translation ran before the database was cleared again. The runner skips
-// any version at or below the one recorded.
-export const migrations: Migration[] = []
+// Numbering resumed at 4 after the database was reset: `migration-meta` in
+// production records version 2, or 3, left by the migrations this list held
+// before, and the runner skips any version at or below the one recorded.
+export const migrations: Migration[] = [heartsAreFiveStars]

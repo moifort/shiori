@@ -7,7 +7,8 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 - Un cœur vaut cinq étoiles, sur un livre comme sur une série. Mettre le cœur donne cinq
   étoiles — un livre passe alors à « Lu », comme pour toute note — et retirer le cœur
   retire les étoiles avec. Noter sous cinq étoiles, ou effacer la note, retire aussi le
-  cœur. Cinq étoiles données à la main ne mettent toujours pas de cœur.
+  cœur. Cinq étoiles données à la main ne mettent toujours pas de cœur. Chaque cœur déjà
+  mis reçoit ses cinq étoiles, et un livre favori pas encore lu passe à « Lu ».
 - Une série dont tous les tomes principaux sont lus est terminée, quels que soient ses récits
   annexes : une nouvelle ou une préquelle non lue la laissait « En cours » dans l’onglet
   Séries, à côté d’un anneau qui disait tous les tomes lus. L’onglet Séries, la fiche de la
