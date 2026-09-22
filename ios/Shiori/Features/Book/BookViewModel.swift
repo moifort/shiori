@@ -50,16 +50,14 @@ final class BookViewModel {
         isSaving = true
         defer { isSaving = false }
         do {
-            if !correction.isEmpty {
-                self.book = try await BookAPI.update(id: bookId, correction: correction)
-            }
-            if rating != book.rating {
-                self.book = if let rating {
-                    try await BookAPI.rate(id: bookId, stars: rating)
-                } else {
-                    try await BookAPI.removeRating(id: bookId)
-                }
-            }
+            // One request for the whole sheet: the stars ride the correction,
+            // and only when they changed.
+            let saved = try await BookAPI.save(
+                id: bookId,
+                correction: correction,
+                rating: rating != book.rating ? .some(rating) : .none
+            )
+            if let saved { self.book = saved }
             return true
         } catch {
             errorMessage = reportError(error)

@@ -4,8 +4,10 @@
 // cross-request state, no staleness. Requires `experimental.asyncContext`.
 //
 // Caveat: the cache is held for the whole request, so a flow that reads, writes,
-// then reads again would see pre-write state. Fine today: clients send one
-// mutation per request and resolvers return from the command, not a re-query.
+// then reads again would see pre-write state. Every repository that memoizes a
+// read therefore evicts it on write: the app sends a whole screen in one
+// document, and a mutation document can carry several writes in a row (the
+// book sheet corrects, then rates), each of which must see the one before.
 
 export const memoizedPerRequest = <T>(key: string, fn: () => T): T => {
   try {

@@ -38,6 +38,34 @@ enum BookAPI {
         return data.updateBook.fragments.bookDetail.asBook
     }
 
+    /// Saves the edit sheet in one request: the correction when there is one,
+    /// then the stars when they changed — `rating` nil takes them back. Answers
+    /// with the book as the last write left it, or nil when there was nothing
+    /// to send.
+    static func save(id: String, correction: BookCorrection, rating: Int??) async throws -> Book? {
+        let correct = !correction.isEmpty
+        let rate = rating.flatMap { $0 }
+        let unrate = rating.map { $0 == nil } ?? false
+        guard correct || rate != nil || unrate else { return nil }
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.SaveBookMutation(
+                id: id,
+                input: correction.asInput,
+                correct: correct,
+                rating: rate.map { .some($0) } ?? .none,
+                rate: rate != nil,
+                unrate: unrate
+            )
+        )
+        if let rate { track(.bookRated(stars: rate)) }
+        // The last write run is the book as it now stands.
+        let saved = data.removeBookRating?.fragments.bookDetail
+            ?? data.rateBook?.fragments.bookDetail
+            ?? data.updateBook?.fragments.bookDetail
+        return saved?.asBook
+    }
+
     static func rate(id: String, stars: Int) async throws -> Book {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
@@ -45,16 +73,6 @@ enum BookAPI {
         )
         track(.bookRated(stars: stars))
         return data.rateBook.fragments.bookDetail.asBook
-    }
-
-    /// Takes the stars back. The book stays read: the server keeps its status
-    /// and its reading dates.
-    static func removeRating(id: String) async throws -> Book {
-        let data = try await GraphQLHelpers.perform(
-            GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.RemoveBookRatingMutation(id: id)
-        )
-        return data.removeBookRating.fragments.bookDetail.asBook
     }
 
     static func setHidden(id: String, hidden: Bool) async throws -> Book {

@@ -16,6 +16,29 @@ mutation UpdateBook($id: BookId!, $input: BookEditInput!) {
   }
 }
 
+# The edit sheet, saved in one request: the correction and the stars ride one
+# document, which the server runs field by field in order, and only what the
+# reader changed is sent. `rating` defaults so a sheet that clears or keeps the
+# stars need not invent a value for a field it skips.
+mutation SaveBook(
+  $id: BookId!
+  $input: BookEditInput!
+  $correct: Boolean!
+  $rating: StarRating = 5
+  $rate: Boolean!
+  $unrate: Boolean!
+) {
+  updateBook(id: $id, input: $input) @include(if: $correct) {
+    ...BookDetail
+  }
+  rateBook(id: $id, rating: $rating) @include(if: $rate) {
+    ...BookDetail
+  }
+  removeBookRating(id: $id) @include(if: $unrate) {
+    ...BookDetail
+  }
+}
+
 mutation SetReadingStatus($id: BookId!, $status: ReadingStatus!) {
   setReadingStatus(id: $id, status: $status) {
     ...BookDetail
@@ -24,12 +47,6 @@ mutation SetReadingStatus($id: BookId!, $status: ReadingStatus!) {
 
 mutation RateBook($id: BookId!, $rating: StarRating!) {
   rateBook(id: $id, rating: $rating) {
-    ...BookDetail
-  }
-}
-
-mutation RemoveBookRating($id: BookId!) {
-  removeBookRating(id: $id) {
     ...BookDetail
   }
 }

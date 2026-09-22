@@ -186,6 +186,62 @@ describe('rating through the API', () => {
   })
 })
 
+describe('saving the edit sheet in one request', () => {
+  // The sheet corrects and rates together: one document, run field by field in
+  // order, where the second write must see what the first one wrote.
+  test('keeps both the correction and the stars', async () => {
+    const book = await addBook('Dune')
+
+    const result = await execute(`mutation {
+      updateBook(id: "${book.id}", input: { title: "Dune (édition intégrale)" }) { title }
+      rateBook(id: "${book.id}", rating: 4) { title rating }
+    }`)
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.rateBook).toEqual({ title: 'Dune (édition intégrale)', rating: 4 })
+  })
+
+  // The document the app sends, variables and all: a sheet that clears the
+  // stars sends no rating, and the default stands in for the skipped field.
+  test('takes the stars back without inventing a rating', async () => {
+    const book = await addBook('Dune')
+    await execute(`mutation { rateBook(id: "${book.id}", rating: 4) { id } }`)
+
+    const result = await graphql({
+      schema,
+      source: `mutation SaveBook($id: BookId!, $input: BookEditInput!, $correct: Boolean!,
+        $rating: StarRating = 5, $rate: Boolean!, $unrate: Boolean!) {
+        updateBook(id: $id, input: $input) @include(if: $correct) { title }
+        rateBook(id: $id, rating: $rating) @include(if: $rate) { rating }
+        removeBookRating(id: $id) @include(if: $unrate) { title rating }
+      }`,
+      variableValues: {
+        id: book.id,
+        input: { title: 'Dune (poche)' },
+        correct: true,
+        rate: false,
+        unrate: true,
+      },
+      contextValue: { event: {}, userId },
+    })
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.removeBookRating).toEqual({ title: 'Dune (poche)', rating: null })
+  })
+
+  test('leaves out what the sheet did not change', async () => {
+    const book = await addBook('Dune')
+
+    const result = await execute(`mutation {
+      updateBook(id: "${book.id}", input: { title: "Autre" }) @include(if: false) { title }
+      rateBook(id: "${book.id}", rating: 3) @include(if: true) { title rating }
+    }`)
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data).toEqual({ rateBook: { title: 'Dune', rating: 3 } })
+  })
+})
+
 describe('correcting a book through the API', () => {
   const addDetailedBook = async () => {
     const result = await execute(
