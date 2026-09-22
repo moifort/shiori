@@ -22,6 +22,12 @@ struct SeriesListView: View {
     /// navigation link: the link draws a chevron on every row, and a list of
     /// sagas reads better as cards than as a menu.
     @State private var openSeries: SeriesDestination?
+    /// What changed while a saga was open, kept until the reader comes back
+    /// to the list: then only that saga's rows are asked again, unless
+    /// something else changed too.
+    @State private var openSeriesChanged = false
+    @State private var changedVolumes: Set<String> = []
+    @State private var changedElsewhere = false
 
     var body: some View {
         NavigationStack {
@@ -76,10 +82,39 @@ struct SeriesListView: View {
             }
         }
         .onChange(of: requested) { takeRequested() }
-        // A heart given on a saga screen, a volume finished in the library: the
-        // rows here say so the next time the reader looks, not the next launch.
-        .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
-            Task { await viewModel.load(keepingDepth: true) }
+        // A volume finished in the library, a book scanned: the rows here say
+        // so the next time the reader looks, not the next launch — all of them,
+        // so the reader stays where they were. A change made from an open saga
+        // waits for the reader to come back, and only that saga is asked again.
+        .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { notice in
+            guard let open = openSeries else {
+                Task { await viewModel.load(keepingDepth: true) }
+                return
+            }
+            switch notice.object as? DataChange {
+            case let .series(id) where id == open.seriesId:
+                openSeriesChanged = true
+            case let .book(id) where viewModel.holds(bookId: id, in: open):
+                changedVolumes.insert(id)
+            default:
+                // A book scanned, a change made from another tab while this
+                // saga stayed open: anything may have moved.
+                changedElsewhere = true
+            }
+        }
+        .onChange(of: openSeries) { closed, opened in
+            guard let closed, opened == nil else { return }
+            let reloadAll = changedElsewhere
+            let refreshSaga = openSeriesChanged || !changedVolumes.isEmpty
+            let volumes = changedVolumes
+            openSeriesChanged = false
+            changedVolumes = []
+            changedElsewhere = false
+            if reloadAll {
+                Task { await viewModel.load(keepingDepth: true) }
+            } else if refreshSaga {
+                Task { await viewModel.refreshRows(of: closed, changedBooks: volumes) }
+            }
         }
     }
 

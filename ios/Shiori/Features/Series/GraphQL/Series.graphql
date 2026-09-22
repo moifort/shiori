@@ -61,6 +61,23 @@ query MySeriesPage($limit: Int, $offset: Int, $favorite: Boolean, $state: Series
   }
 }
 
+# One row of the tab, asked again once the reader has changed that saga: the
+# same selection as a page's rows, so the patched row draws exactly as the
+# others do.
+query MyFollowedSeries($seriesId: SeriesId!, $language: BookLanguage) {
+  myFollowedSeries(seriesId: $seriesId, language: $language) {
+    ...FollowedSeriesRow
+    volumes {
+      ...FollowedVolume
+    }
+    catalogue {
+      spine {
+        ...VolumeEntry
+      }
+    }
+  }
+}
+
 # One cover of a row's strip: enough to draw it, pin its status on it, and
 # place it against the catalogue's numbering.
 fragment FollowedVolume on Book {

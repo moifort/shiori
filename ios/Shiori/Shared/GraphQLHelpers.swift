@@ -33,12 +33,12 @@ enum GraphQLHelpers {
     /// the notice, so posting it for those cost three requests for nothing. On
     /// by default: a new mutation that forgets to say stays correct, just dearer.
     ///
-    /// `concerning` names the one book a mutation changed, sent as the
-    /// notice's object: a list that patched that row from the answer itself
-    /// can let the notice pass rather than reload for it.
+    /// `concerning` names the one book or saga a mutation changed, sent as the
+    /// notice's object: a list that knows what it has open can patch that row
+    /// rather than reload for it.
     static func perform<M: GraphQLMutation>(
         _ client: ApolloClient,
-        concerning bookId: String? = nil,
+        concerning change: DataChange? = nil,
         mutation: M,
         requestTimeout: TimeInterval? = nil,
         changesLibrary: Bool = true
@@ -53,7 +53,7 @@ enum GraphQLHelpers {
         // rather than by each screen remembering to say so.
         guard changesLibrary else { return data }
         await MainActor.run {
-            NotificationCenter.default.post(name: .shioriDataDidChange, object: bookId)
+            NotificationCenter.default.post(name: .shioriDataDidChange, object: change)
         }
         return data
     }

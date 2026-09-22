@@ -11,8 +11,18 @@ extension Notification.Name {
     /// the alternative — naming what changed and having every screen decide
     /// whether it cares — is where stale rows come from.
     ///
-    /// The one exception: a write to a single book carries its id as the
-    /// notice's object, so the list whose sheet made the edit, and patched the
-    /// row from the answer, can skip the reload that would lose its place.
+    /// The one refinement: a write to a single book or a single saga carries
+    /// a `DataChange` as the notice's object, so a list that knows what it
+    /// has open can patch that one row instead of reloading. A notice with no
+    /// object may have changed anything.
     static let shioriDataDidChange = Notification.Name("ShioriDataDidChange")
+}
+
+/// What a single write changed, when it changed one thing.
+enum DataChange: Hashable, Sendable {
+    /// One book: its fields, its status, its saga — or the book is gone.
+    case book(id: String)
+    /// One saga, in every edition: the reader's rating, heart, count of
+    /// volumes, whether they follow it, its catalogue — or the saga is gone.
+    case series(id: String)
 }

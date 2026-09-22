@@ -466,7 +466,12 @@ struct FollowedSeries: Identifiable, Codable, Sendable {
     /// The saga and the language together. The saga alone is not an identity:
     /// held in two languages it follows as two rows, and SwiftUI would take them
     /// for one row redrawn twice.
-    var id: String { "\(seriesId)|\(language?.rawValue ?? "")" }
+    var id: String { Self.id(seriesId: seriesId, language: language) }
+
+    static func id(seriesId: String, language: BookLanguage?) -> String {
+        "\(seriesId)|\(language?.rawValue ?? "")"
+    }
+
     let seriesId: String
     let name: String
     /// Taken from a volume the reader owns, which is what answers for a saga the

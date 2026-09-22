@@ -40,6 +40,7 @@ enum SeriesAPI {
     static func refresh(seriesId: String, language: BookLanguage? = nil) async throws -> BookSeries? {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
+            concerning: .series(id: seriesId),
             mutation: ShioriGraphQL.RefreshSeriesMutation(
                 seriesId: seriesId,
                 language: graphQLLanguage(language)
@@ -73,20 +74,50 @@ enum SeriesAPI {
                 state: state.map { .some(.case(graphQLState($0))) } ?? .none
             )
         )
-        let currentYear = Calendar.current.component(.year, from: .now)
         return (
             items: data.mySeriesPage.items.map { item in
-                var followed = FollowedSeries(row: item.fragments.followedSeriesRow)
-                followed.volumes = item.volumes.map { $0.fragments.followedVolume.asBook }
-                followed.strip = SeriesStripItem.strip(
-                    owned: followed.volumes,
-                    spine: item.catalogue?.spine.map { $0.fragments.volumeEntry.asVolume } ?? [],
-                    currentYear: currentYear
+                followedRow(
+                    item.fragments.followedSeriesRow,
+                    volumes: item.volumes.map(\.fragments.followedVolume),
+                    spine: item.catalogue?.spine.map(\.fragments.volumeEntry)
                 )
-                return followed
             },
             hasMore: data.mySeriesPage.hasMore
         )
+    }
+
+    /// One row of the tab, drawn as a page draws it: what the list asks again
+    /// for the saga the reader just changed. Nil when they no longer hold a
+    /// volume of that edition.
+    static func followedSeries(seriesId: String, language: BookLanguage?) async throws -> FollowedSeries? {
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.MyFollowedSeriesQuery(
+                seriesId: seriesId, language: graphQLLanguage(language)
+            )
+        )
+        return data.myFollowedSeries.map { item in
+            followedRow(
+                item.fragments.followedSeriesRow,
+                volumes: item.volumes.map(\.fragments.followedVolume),
+                spine: item.catalogue?.spine.map(\.fragments.volumeEntry)
+            )
+        }
+    }
+
+    private static func followedRow(
+        _ row: ShioriGraphQL.FollowedSeriesRow,
+        volumes: [ShioriGraphQL.FollowedVolume],
+        spine: [ShioriGraphQL.VolumeEntry]?
+    ) -> FollowedSeries {
+        var followed = FollowedSeries(row: row)
+        followed.volumes = volumes.map(\.asBook)
+        followed.strip = SeriesStripItem.strip(
+            owned: followed.volumes,
+            spine: spine?.map(\.asVolume) ?? [],
+            currentYear: Calendar.current.component(.year, from: .now)
+        )
+        return followed
     }
 
     private static func graphQLState(_ state: SeriesState) -> ShioriGraphQL.SeriesState {
@@ -106,6 +137,7 @@ enum SeriesAPI {
     static func delete(seriesId: String, language: BookLanguage? = nil) async throws -> Int {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
+            concerning: .series(id: seriesId),
             mutation: ShioriGraphQL.DeleteSeriesMutation(
                 seriesId: seriesId,
                 language: graphQLLanguage(language)
@@ -119,6 +151,7 @@ enum SeriesAPI {
     static func rate(seriesId: String, stars: Int) async throws -> SeriesOpinion {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
+            concerning: .series(id: seriesId),
             mutation: ShioriGraphQL.RateSeriesMutation(seriesId: seriesId, rating: stars)
         )
         return data.rateSeries.fragments.seriesOpinionFields.asOpinion
@@ -127,6 +160,7 @@ enum SeriesAPI {
     static func removeRating(seriesId: String) async throws -> SeriesOpinion {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
+            concerning: .series(id: seriesId),
             mutation: ShioriGraphQL.RemoveSeriesRatingMutation(seriesId: seriesId)
         )
         return data.removeSeriesRating.fragments.seriesOpinionFields.asOpinion
@@ -138,6 +172,7 @@ enum SeriesAPI {
     static func declareVolumeCount(seriesId: String, count: Int) async throws -> SeriesOpinion {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
+            concerning: .series(id: seriesId),
             mutation: ShioriGraphQL.DeclareSeriesVolumeCountMutation(seriesId: seriesId, count: count)
         )
         return data.declareSeriesVolumeCount.fragments.seriesOpinionFields.asOpinion
@@ -154,6 +189,7 @@ enum SeriesAPI {
     ) async throws -> SeriesOpinion {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
+            concerning: .series(id: seriesId),
             mutation: ShioriGraphQL.SetSeriesFollowedMutation(
                 seriesId: seriesId,
                 followed: followed,
@@ -166,6 +202,7 @@ enum SeriesAPI {
     static func setFavorite(seriesId: String, favorite: Bool) async throws -> SeriesOpinion {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
+            concerning: .series(id: seriesId),
             mutation: ShioriGraphQL.SetSeriesFavoriteMutation(seriesId: seriesId, favorite: favorite)
         )
         return data.setSeriesFavorite.fragments.seriesOpinionFields.asOpinion

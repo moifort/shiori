@@ -158,6 +158,76 @@ final class SeriesListViewModel {
         }
     }
 
+    /// Whether a book is one of the volumes the list shows for this edition.
+    func holds(bookId: String, in destination: SeriesDestination) -> Bool {
+        let id = FollowedSeries.id(seriesId: destination.seriesId, language: destination.language)
+        return followed.first { $0.id == id }?.volumes.contains { $0.id == bookId } == true
+    }
+
+    /// Asks the server again for one saga the reader just changed and puts its
+    /// rows back, rather than reloading every page to find them: the edition
+    /// that was open, and every other edition on screen, since the rating,
+    /// the heart and the count of volumes belong to the saga. A row keeps its
+    /// place unless the change moved it — a volume finished moves the saga's
+    /// date — and leaves the list when the saga is gone or no longer matches
+    /// the view. One shelved past the last loaded row waits for its page.
+    ///
+    /// A changed book that is no longer among the saga's volumes went to
+    /// another saga, or away: that other row is not known here, so the list
+    /// reloads whole, keeping the reader's place.
+    func refreshRows(of destination: SeriesDestination, changedBooks: Set<String>) async {
+        let requested = generation
+        var languages = [destination.language]
+        for row in followed where row.seriesId == destination.seriesId && !languages.contains(row.language) {
+            languages.append(row.language)
+        }
+        var volumes: Set<String> = []
+        do {
+            for language in languages {
+                let fresh = try await SeriesAPI.followedSeries(
+                    seriesId: destination.seriesId, language: language
+                )
+                guard requested == generation else { return }
+                place(fresh, as: FollowedSeries.id(seriesId: destination.seriesId, language: language))
+                volumes.formUnion(fresh?.volumes.map(\.id) ?? [])
+            }
+        } catch is CancellationError {
+            return
+        } catch {
+            guard requested == generation else { return }
+            errorMessage = reportError(error)
+            return
+        }
+        if !changedBooks.isSubset(of: volumes) {
+            await load(keepingDepth: true)
+        }
+    }
+
+    private func place(_ fresh: FollowedSeries?, as id: String) {
+        followed.removeAll { $0.id == id }
+        guard let fresh, belongs(fresh) else { return }
+        let index = followed.firstIndex { Self.shelvesBefore(fresh, $0) } ?? followed.endIndex
+        guard index < followed.endIndex || !hasMore else { return }
+        followed.insert(fresh, at: index)
+    }
+
+    /// The server's filter: a saga of unknown state counts as complete, and one
+    /// set aside shows under its own filter only.
+    private func belongs(_ saga: FollowedSeries) -> Bool {
+        if mode == .favorites, saga.opinion?.favorite != true { return false }
+        let state = saga.state ?? .complete
+        guard let stateFilter else { return state != .unfollowed }
+        return state == stateFilter
+    }
+
+    /// The server's order: the most recently shelved saga first, then by name.
+    private static func shelvesBefore(_ left: FollowedSeries, _ right: FollowedSeries) -> Bool {
+        let leftDate = left.shelvedAt ?? .distantPast
+        let rightDate = right.shelvedAt ?? .distantPast
+        if leftDate != rightDate { return leftDate > rightDate }
+        return left.name < right.name
+    }
+
     /// The tab appeared: a list still showing last session's snapshot refreshes
     /// it under the leading spinner, one never loaded loads. A list the server
     /// already answered asks nothing: every write posts the change notice this

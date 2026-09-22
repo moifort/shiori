@@ -23,7 +23,7 @@ enum BookAPI {
     static func setStatus(id: String, status: ReadingStatus) async throws -> Book {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            concerning: id,
+            concerning: .book(id: id),
             mutation: ShioriGraphQL.SetReadingStatusMutation(id: id, status: LibraryAPI.graphQLStatus(status))
         )
         return data.setReadingStatus.fragments.bookDetail.asBook
@@ -34,7 +34,7 @@ enum BookAPI {
     static func update(id: String, correction: BookCorrection) async throws -> Book {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            concerning: id,
+            concerning: .book(id: id),
             mutation: ShioriGraphQL.UpdateBookMutation(id: id, input: correction.asInput)
         )
         return data.updateBook.fragments.bookDetail.asBook
@@ -51,7 +51,7 @@ enum BookAPI {
         guard correct || rate != nil || unrate else { return nil }
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            concerning: id,
+            concerning: .book(id: id),
             mutation: ShioriGraphQL.SaveBookMutation(
                 id: id,
                 input: correction.asInput,
@@ -72,7 +72,7 @@ enum BookAPI {
     static func rate(id: String, stars: Int) async throws -> Book {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            concerning: id,
+            concerning: .book(id: id),
             mutation: ShioriGraphQL.RateBookMutation(id: id, rating: stars)
         )
         track(.bookRated(stars: stars))
@@ -82,7 +82,7 @@ enum BookAPI {
     static func setHidden(id: String, hidden: Bool) async throws -> Book {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            concerning: id,
+            concerning: .book(id: id),
             mutation: ShioriGraphQL.SetBookHiddenMutation(id: id, hidden: hidden)
         )
         return data.setBookHidden.fragments.bookDetail.asBook
@@ -93,7 +93,7 @@ enum BookAPI {
     static func setFavorite(id: String, favorite: Bool) async throws -> Book {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            concerning: id,
+            concerning: .book(id: id),
             mutation: ShioriGraphQL.SetBookFavoriteMutation(id: id, favorite: favorite)
         )
         return data.setBookFavorite.fragments.bookDetail.asBook
@@ -110,7 +110,7 @@ enum BookAPI {
         }
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            concerning: id,
+            concerning: .book(id: id),
             mutation: ShioriGraphQL.SetBookRecommendationMutation(
                 id: id,
                 recommendation: input.map { .some($0) } ?? .null
@@ -142,7 +142,7 @@ enum BookAPI {
     static func delete(id: String) async throws {
         _ = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            concerning: id,
+            concerning: .book(id: id),
             mutation: ShioriGraphQL.DeleteBookMutation(id: id)
         )
     }

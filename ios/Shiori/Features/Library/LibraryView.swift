@@ -59,7 +59,7 @@ struct LibraryView: View {
         // were. The book open in the sheet is the exception: its row is
         // patched from the sheet's own answer.
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { notice in
-            if let bookId = notice.object as? String, bookId == selectedBook?.id { return }
+            if let selectedBook, notice.object as? DataChange == .book(id: selectedBook.id) { return }
             Task { await viewModel.load(keepingDepth: true) }
         }
     }
