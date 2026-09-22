@@ -156,17 +156,19 @@ struct SeriesListView: View {
     /// The words on the left and every mark on one line in the top corner —
     /// the edition's language, where the reader stands, their heart or stars —
     /// so the eye finds them in the same place on every row; the covers
-    /// underneath.
+    /// underneath. The marks hug their own width and the title takes every
+    /// point up to them: left to the stack, a long name was wrapped at half the
+    /// row while the marks kept room they never used.
     private func row(_ entry: FollowedSeries) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top, spacing: 12) {
+            HStack(alignment: .top, spacing: 8) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(entry.name).font(.body.weight(.medium))
+                    Text(entry.name).font(.body.weight(.medium)).lineLimit(2)
                     if let author = entry.author {
                         Text(author).font(.subheadline).foregroundStyle(.secondary)
                     }
                 }
-                Spacer(minLength: 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 HStack(spacing: 6) {
                     if let language = entry.language, language.isForeign {
                         LanguageTag(language: language)
@@ -181,6 +183,7 @@ struct SeriesListView: View {
                     )
                 }
                 .font(.caption)
+                .fixedSize()
                 .padding(.top, 3)
             }
             covers(entry)

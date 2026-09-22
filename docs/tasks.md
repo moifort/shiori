@@ -94,7 +94,7 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       an old finish date, or two started the same day, land in different places on the two
       screens. Sort the shelf with `shelvedOf` so the first cover of the dashboard is the
       first row of the library.
-- [ ] **Series tab, the title takes the whole width up to the first mark on its right.**
+- [x] **Series tab, the title takes the whole width up to the first mark on its right.**
       The row lays the name and author in a `VStack` next to a `Spacer(minLength: 8)` and the
       marks (`SeriesListView.row`), but a long name such as "Dungeon Crawler Carl" is not
       given the room: let the title stretch and wrap until it meets the first pill — the
