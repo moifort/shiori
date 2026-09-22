@@ -43,13 +43,13 @@ struct OnboardingView: View {
                 AudibleOfferPage(
                     isWorking: isConnectingAudible,
                     onConnect: { Task { await startAudibleSignIn() } },
-                    onSkip: onCompleted
+                    onSkip: enterApp
                 )
             }
         }
         // Straight to Amazon's page, and from it straight into the app: the
-        // whole library is imported in the background, the dashboard showing
-        // the pass running, with no picker in between.
+        // whole library is imported in the background, the dashboard waiting
+        // on the pass behind its preparation screen, with no picker in between.
         .sheet(item: $audibleSignIn) { login in
             NavigationStack {
                 AmazonSignInWebView(login: login) { code in
@@ -100,10 +100,17 @@ struct OnboardingView: View {
         do {
             _ = try await ImportAPI.completeSignIn(authorizationCode: code)
             AudibleBackgroundSync.shared.start()
-            onCompleted()
+            enterApp()
         } catch {
             errorMessage = reportError(error)
         }
+    }
+
+    /// Into the app by way of the preparation screen, which the dashboard
+    /// draws until the library is ready to be shown.
+    private func enterApp() {
+        LibraryPreparation.shared.begin()
+        onCompleted()
     }
 
     private func complete() async {

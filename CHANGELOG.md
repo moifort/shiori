@@ -10,6 +10,10 @@ the release tag is pushed.
 
 ## Unreleased
 
+- After onboarding, the dashboard opens on a short preparation screen while the library is
+  set up, waiting on an Audible import long enough for its first books to be there. The
+  settings button stays a gear; an import still running afterwards shows as the dashboard's
+  leading spinner.
 - Subgenres read in the app's language, whichever language they were scanned, imported or
   typed in: each one is kept in French and in English, and the ones already in the library
   are translated.

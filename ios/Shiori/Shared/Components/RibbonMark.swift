@@ -5,9 +5,10 @@ import SwiftUI
 /// calls for. Drawn at icon proportions so it reads as the icon at any size;
 /// bare, the ribbon is too thin to be anything but a red stroke.
 ///
-/// - `.loop` is the app opening, spent on the launch gate alone: the ribbon
-///   drops in from above the frame, settles with a little overshoot, swings
-///   twice and comes to rest, then lifts away and starts over.
+/// - `.loop` is the app opening, spent on the launch gate and the library
+///   preparation after onboarding: the ribbon drops in from above the frame,
+///   settles with a little overshoot, swings twice and comes to rest, then
+///   lifts away and starts over.
 /// - `.once` is the entrance for the sign-in and welcome screens: the drop and
 ///   the swing, after which the ribbon hangs still and the view stops drawing.
 /// - `.still` is the mark at rest.

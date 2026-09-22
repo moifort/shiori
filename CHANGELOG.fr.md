@@ -4,6 +4,10 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Après l’onboarding, l’accueil s’ouvre sur un court écran de préparation pendant que la
+  bibliothèque se met en place, et attend un import Audible assez longtemps pour que ses
+  premiers livres soient là. Le bouton des réglages reste un engrenage ; un import encore en
+  cours ensuite s’affiche par la roue qui mène l’accueil.
 - Les sous-genres s’affichent dans la langue de l’app, quelle que soit la langue dans
   laquelle ils ont été scannés, importés ou saisis : chacun est conservé en français et en
   anglais, et ceux déjà présents dans la bibliothèque sont traduits.

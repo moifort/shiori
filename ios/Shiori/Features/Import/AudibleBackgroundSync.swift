@@ -2,8 +2,8 @@ import Foundation
 
 /// An Audible pass that outlives the screen that asked for it. Onboarding
 /// starts one right after the Amazon sign-in and walks the reader straight
-/// into the app; the dashboard shows it running, in place of its settings
-/// icon, until the library has landed.
+/// into the app; the dashboard's preparation screen waits on it, then its
+/// leading spinner shows it running until the library has landed.
 ///
 /// One at a time, app-wide: a second start while a pass runs does nothing.
 @MainActor

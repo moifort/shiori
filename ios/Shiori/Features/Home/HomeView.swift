@@ -24,6 +24,8 @@ struct HomeView: View {
     @State private var showSettings = false
     /// An Audible pass started at onboarding, still bringing the library in.
     @State private var audibleSync = AudibleBackgroundSync.shared
+    /// The wait onboarding hands over to, drawn in place of the dashboard.
+    @State private var preparation = LibraryPreparation.shared
     /// The stack behind the dashboard: a saga is pushed onto it from its
     /// progress row.
     @State private var path = NavigationPath()
@@ -37,16 +39,8 @@ struct HomeView: View {
                         // The settings hold the account, the subscription and the
                         // connected sources: managing a linked Audible account is
                         // a setting, not an import, and lives there.
-                        // While an Audible import runs in the background, the
-                        // gear turns into a spinning sync icon: the one sign
-                        // that more books are on their way.
                         Button { showSettings = true } label: {
-                            if audibleSync.isSyncing {
-                                Label("Import Audible en cours", systemImage: "arrow.triangle.2.circlepath")
-                                    .symbolEffect(.rotate, options: .repeat(.continuous))
-                            } else {
-                                Label("Réglages", systemImage: "gearshape")
-                            }
+                            Label("Réglages", systemImage: "gearshape")
                         }
                         .labelStyle(.iconOnly)
                         .accessibilityIdentifier("home-settings")
@@ -93,12 +87,17 @@ struct HomeView: View {
 
     @ViewBuilder
     private var content: some View {
-        if let dashboard = viewModel.dashboard {
+        if preparation.isActive {
+            LibraryPreparationView { await viewModel.load() }
+                .transition(.opacity)
+        } else if let dashboard = viewModel.dashboard {
             // Drawn even for an empty library: every card sketches what it will
             // hold, and the scan prompt leads the page until the first book.
             HomePage(
                     dashboard: dashboard,
-                    isRefreshing: viewModel.isRefreshing,
+                    // An Audible pass that outlasted the preparation screen is
+                    // still bringing books in: the leading spinner says so.
+                    isRefreshing: viewModel.isRefreshing || audibleSync.isSyncing,
                     refreshFailed: viewModel.refreshFailed,
                     onRetryRefresh: { await viewModel.refresh() },
                     onReadingTapped: onShowReading,
