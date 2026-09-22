@@ -391,5 +391,11 @@ describe('cataloguesOf', () => {
     )
 
     expect([...catalogues.keys()]).toEqual([kingkiller])
+    // One spine over both editions, the first-shelved title standing for a
+    // number both hold.
+    expect(catalogues.get(kingkiller)?.volumes.map((volume) => String(volume.title))).toEqual([
+      'Le Nom du vent',
+      'Kingkiller',
+    ])
   })
 })

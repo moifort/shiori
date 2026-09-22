@@ -73,10 +73,12 @@ export const provisionalCatalogueOf = (
   volumeCount: VolumeNumber,
   now = new Date(),
 ): Series => {
+  // The first title seen stands for a number held twice — two editions of one
+  // volume — so the spine does not depend on the order the books came in.
   const titles = new Map<number, BookTitle>()
   for (const book of owned)
     if (book.series?.kind === 'main' && book.series.volume !== undefined)
-      titles.set(book.series.volume, book.title)
+      if (!titles.has(book.series.volume)) titles.set(book.series.volume, book.title)
   const length = Math.max(Number(volumeCount), ...titles.keys())
   return {
     id: saga.id,
@@ -121,23 +123,10 @@ export const cataloguesOf = (
     ),
   )
   const catalogues = new Map<SeriesId, Series>()
+  // One row per saga and language: the second edition of a saga is skipped,
+  // since its spine was drawn from every edition's volumes on the first.
   for (const saga of followedSagasOf(books)) {
-    if (catalogues.has(saga.id)) {
-      // Another edition of a saga already counted: its volumes fill the spine too.
-      const drawn = catalogues.get(saga.id)
-      const count = counts.get(saga.id)
-      if (drawn?.provisional && count !== undefined)
-        catalogues.set(
-          saga.id,
-          provisionalCatalogueOf(
-            drawn,
-            books.filter((book) => book.series?.id === saga.id),
-            count,
-            drawn.catalogedAt,
-          ),
-        )
-      continue
-    }
+    if (catalogues.has(saga.id)) continue
     const series = stored.get(saga.id)
     if (series) {
       catalogues.set(saga.id, series)
@@ -151,7 +140,7 @@ export const cataloguesOf = (
         // A saga no owned volume names an author for is catalogued under none:
         // the count still deserves its spine.
         { id: saga.id, name: saga.name, author: saga.author ?? ('' as AuthorName) },
-        saga.books,
+        books.filter((book) => book.series?.id === saga.id),
         count,
       ),
     )
