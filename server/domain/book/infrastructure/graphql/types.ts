@@ -255,8 +255,8 @@ export const LibraryPageType = builder
       books: t.field({
         type: [BookType],
         description:
-          'In the order the tab draws them. The app opens a section wherever the ' +
-          'status — or, arranged by genre, the genre — changes from one book to the next.',
+          'In the order the tab draws them. The app opens a section wherever the month ' +
+          'of `shelvedAt` changes from one book to the next.',
         resolve: (page) => page.books,
       }),
       hasMore: t.exposeBoolean('hasMore', {

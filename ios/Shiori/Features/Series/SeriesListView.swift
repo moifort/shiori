@@ -1,16 +1,15 @@
 import SwiftUI
 
 /// The Series tab: the sagas the reader follows, switched and filtered from the
-/// toolbar exactly as the Library tab is — everything or the favourites
-/// sectioned by where the reader stands, or one section per genre — each row
-/// labelled with its state and drawn as a strip of covers: the owned volumes
-/// with their reading status, and the published ones the reader lacks dimmed
-/// between them.
+/// toolbar exactly as the Library tab is — everything or the favourites,
+/// sectioned by month — each row labelled with its state and drawn as a strip
+/// of covers: the owned volumes with their reading status, and the published
+/// ones the reader lacks dimmed between them.
 ///
-/// The sections and their order come from the server — what the reader is on
-/// first, then what they finished, then what they have not opened, the latest
-/// status change leading each. The list is paginated, and a section grouped on
-/// the phone would grow again every time a page landed.
+/// The order comes from the server — the saga whose latest volume was shelved
+/// most recently first — and the phone only cuts where the month changes. The
+/// list is paginated, and ordered on the phone it would reshuffle every time a
+/// page landed.
 struct SeriesListView: View {
     /// Opens the add sheet, from the one button every empty state offers.
     var onScan: () -> Void = {}

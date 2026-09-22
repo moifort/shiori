@@ -3,8 +3,8 @@ import SwiftUI
 struct GenresWidget: View {
     let currentYear: Int
     let genres: [Dashboard.GenreSlice]
-    /// Opens the library sectioned by genre, where the books behind each
-    /// segment are.
+    /// Opens the library on its default view: the genres are no longer a
+    /// view of their own.
     var onTapped: (() -> Void)?
 
     var body: some View {

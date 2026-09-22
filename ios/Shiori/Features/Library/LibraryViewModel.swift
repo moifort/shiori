@@ -221,20 +221,23 @@ final class LibraryViewModel {
     }
 
     /// Applies a book the detail screen just changed, without refetching the
-    /// whole library. A change to what places the book — its status, its
-    /// genre, its heart — moves it, so that case falls back to a reload rather
-    /// than leaving a row out of place. The reading dates only ever move with
-    /// the status, and the rows do not carry them.
+    /// whole library. A change to what places the book — its status, which
+    /// moves the date it is shelved on, or its heart, which the favourites view
+    /// filters on — moves it, so that case falls back to a reload rather than
+    /// leaving a row out of place.
     func apply(_ book: Book) async {
         guard let current = books.first(where: { $0.id == book.id }) else { return }
         let moved = current.status != book.status
-            || current.genre != book.genre
             || current.favorite != book.favorite
         if moved {
             await load()
             return
         }
-        books = books.map { $0.id == book.id ? book : $0 }
+        // The detail screen's record does not carry the date the list files it
+        // under; it has not moved, so the row keeps its own.
+        var updated = book
+        updated.shelvedAt = current.shelvedAt
+        books = books.map { $0.id == book.id ? updated : $0 }
     }
 
     func remove(id: String) {
