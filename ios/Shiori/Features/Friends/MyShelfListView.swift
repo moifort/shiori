@@ -156,11 +156,11 @@ struct SagaRow: View {
                 // the genre takes its place.
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(saga.name).font(.body.weight(.medium)).lineLimit(2)
+                    if let language = saga.language, language.isForeign {
+                        LanguageTag(language: language)
+                    }
                     Spacer(minLength: 0)
                     HStack(spacing: 6) {
-                        if let language = saga.language, language.isForeign {
-                            LanguageTag(language: language)
-                        }
                         if showsCovers {
                             if let genre = saga.genre {
                                 RowChip(text: genre.label, tint: genre.tint)

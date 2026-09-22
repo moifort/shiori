@@ -166,10 +166,18 @@ struct BookRow: View {
         statusTag == .read ? nil : statusTag
     }
 
+    /// The title, with a foreign edition's language tagged right after it:
+    /// "EN" says which book this is, as a subtitle would, rather than being
+    /// one more mark in the corner.
     private var titleText: some View {
-        Text(title)
-            .font(.body.weight(.medium))
-            .lineLimit(2)
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text(title)
+                .font(.body.weight(.medium))
+                .lineLimit(2)
+            if let language, language.isForeign {
+                LanguageTag(language: language)
+            }
+        }
     }
 
     /// Everything the row says about the object and about the reader's
@@ -177,9 +185,6 @@ struct BookRow: View {
     /// so the eye finds it where it left it.
     private var marks: some View {
         HStack(spacing: 6) {
-            if let language, language.isForeign {
-                LanguageTag(language: language)
-            }
             if isHidden {
                 // Says the book is excluded from sharing. Only ever an icon,
                 // tucked in the corner: spelling it out on every row would
