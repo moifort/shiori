@@ -3,6 +3,8 @@ import type { WriteBatch } from 'firebase-admin/firestore'
 import type { AudibleAsin } from '~/domain/audible/types'
 import {
   datesAfterStatusChange,
+  favoriteAfterRating,
+  HEART_RATING,
   retaggedAfterEdit,
   statusAfterRating,
   statusStampAfterChange,
@@ -272,6 +274,7 @@ export namespace BookCommand {
       {
         ...book,
         rating,
+        favorite: favoriteAfterRating(book.favorite, rating),
         status,
         ...datesAfterStatusChange(book, status, now),
         ...statusStampAfterChange(book, status, now),
@@ -282,7 +285,8 @@ export namespace BookCommand {
   }
 
   /** Taking the stars back leaves the book read, with its dates: the reader is
-   *  withdrawing a judgment, not saying the reading never happened. */
+   *  withdrawing a judgment, not saying the reading never happened. The heart
+   *  goes with the stars it stood for. */
   export const unrate = async (
     userId: UserId,
     bookId: BookId,
@@ -291,7 +295,10 @@ export namespace BookCommand {
   ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
-    return repository.save({ ...book, rating: undefined, updatedAt: now }, batch)
+    return repository.save(
+      { ...book, rating: undefined, favorite: undefined, updatedAt: now },
+      batch,
+    )
   }
 
   /** Passing no note clears it. An emptied note is a deletion, not an empty
@@ -308,9 +315,10 @@ export namespace BookCommand {
     return repository.save({ ...book, note, updatedAt: now }, batch)
   }
 
-  /** Stored only when true. A book that is not a favourite has nothing to say
-   *  about it, and a `false` on every record would be a field that means
-   *  "the reader once looked at this and moved on". */
+  /** A heart is five stars: giving it rates the book five — which marks it read,
+   *  as any rating does — and taking it back takes the stars with it. Stored
+   *  only when true: a `false` on every record would be a field that means "the
+   *  reader once looked at this and moved on". */
   export const setFavorite = async (
     userId: UserId,
     bookId: BookId,
@@ -320,7 +328,24 @@ export namespace BookCommand {
   ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
-    return repository.save({ ...book, favorite: favorite || undefined, updatedAt: now }, batch)
+    if (!favorite)
+      return repository.save(
+        { ...book, favorite: undefined, rating: undefined, updatedAt: now },
+        batch,
+      )
+    const status = statusAfterRating(book.status)
+    return repository.save(
+      {
+        ...book,
+        favorite: true,
+        rating: HEART_RATING,
+        status,
+        ...datesAfterStatusChange(book, status, now),
+        ...statusStampAfterChange(book, status, now),
+        updatedAt: now,
+      },
+      batch,
+    )
   }
 
   export const setHidden = async (

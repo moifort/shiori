@@ -189,6 +189,78 @@ describe('rating a book', () => {
   })
 })
 
+describe('a heart is five stars', () => {
+  // The heart is the top of the scale, not a second judgement beside it: giving
+  // it rates the book five, and a rating marks the book read as ever.
+  test('giving the heart rates the book five and marks it read', async () => {
+    const book = await add('Le Nom du vent')
+
+    const loved = await BookCommand.setFavorite(reader, book.id, true, NOW)
+
+    if (loved === 'not-found') throw new Error('unreachable')
+    expect(loved.favorite).toBe(true)
+    expect(Number(loved.rating)).toBe(5)
+    expect(loved.status).toBe('read')
+    expect(loved.finishedAt).toEqual(NOW)
+  })
+
+  // Dropping a book is an ending the reader chose: a heart does not undo it.
+  test('a dropped book keeps its status under the heart', async () => {
+    const book = await add('Le Nom du vent')
+    await BookCommand.setStatus(reader, book.id, 'dropped', NOW)
+
+    const loved = await BookCommand.setFavorite(reader, book.id, true, NOW)
+
+    if (loved === 'not-found') throw new Error('unreachable')
+    expect(loved.status).toBe('dropped')
+  })
+
+  test('taking the heart back takes the stars with it, and leaves the book read', async () => {
+    const book = await add('Le Nom du vent')
+    await BookCommand.setFavorite(reader, book.id, true, NOW)
+
+    const unloved = await BookCommand.setFavorite(reader, book.id, false, NOW)
+
+    if (unloved === 'not-found') throw new Error('unreachable')
+    expect(unloved.favorite).toBeUndefined()
+    expect(unloved.rating).toBeUndefined()
+    expect(unloved.status).toBe('read')
+  })
+
+  // Otherwise a heart would sit on three stars, which it can no longer mean.
+  test('rating below five takes the heart back', async () => {
+    const book = await add('Le Nom du vent')
+    await BookCommand.setFavorite(reader, book.id, true, NOW)
+
+    const rated = await BookCommand.rate(reader, book.id, StarRating(3), NOW)
+
+    if (rated === 'not-found') throw new Error('unreachable')
+    expect(Number(rated.rating)).toBe(3)
+    expect(rated.favorite).toBeUndefined()
+  })
+
+  test('removing the rating takes the heart back', async () => {
+    const book = await add('Le Nom du vent')
+    await BookCommand.setFavorite(reader, book.id, true, NOW)
+
+    const unrated = await BookCommand.unrate(reader, book.id, NOW)
+
+    if (unrated === 'not-found') throw new Error('unreachable')
+    expect(unrated.favorite).toBeUndefined()
+  })
+
+  // Five stars given by hand are a rating, not a heart: the heart stays the
+  // reader's own gesture.
+  test('rating five by hand gives no heart', async () => {
+    const book = await add('Le Nom du vent')
+
+    const rated = await BookCommand.rate(reader, book.id, StarRating(5), NOW)
+
+    if (rated === 'not-found') throw new Error('unreachable')
+    expect(rated.favorite).toBeUndefined()
+  })
+})
+
 describe('annotating a book', () => {
   test('stores the note and clears it when none is passed', async () => {
     const book = await add('Le Nom du vent')

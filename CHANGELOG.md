@@ -10,6 +10,10 @@ the release tag is pushed.
 
 ## Unreleased
 
+- A heart is five stars, on a book as on a saga. Giving the heart rates it five — a book
+  is then marked read, as any rating marks it — and taking the heart back takes the stars
+  with it. Rating below five, or removing the rating, takes the heart back too. Five stars
+  given by hand still grant no heart.
 - A saga whose main volumes are all read is finished, whatever its related works: an unread
   novella or prequel held it "in progress" in the Series tab, beside a ring that said every
   volume was read. The Series tab, the saga screen and the dashboard now measure a saga on

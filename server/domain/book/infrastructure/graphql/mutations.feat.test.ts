@@ -434,22 +434,24 @@ describe('reading the library through the API', () => {
     expect(second.data?.libraryPage).toEqual({ hasMore: false, books: [{ title: 'Trois' }] })
   })
 
-  test('narrows a library page to the favourites, newest first', async () => {
+  // A heart is five stars, and a rating marks the book read: both hearts land
+  // on the read shelf, and the page keeps them apart from the rest of the pile.
+  test('narrows a library page to the favourites', async () => {
     await addBook('Pile ordinaire')
     const kept = await addBook('Pile aimée')
     const reading = await addBook('Lecture aimée', 'READING')
     for (const { id } of [kept, reading])
       await execute(`mutation { setBookFavorite(id: "${id}", favorite: true) { id } }`)
 
-    const result = await execute('{ libraryPage(favorite: true) { books { title status } } }')
+    const result = await execute(
+      '{ libraryPage(favorite: true) { books { title status rating favorite } } }',
+    )
 
     expect(result.errors).toBeUndefined()
-    expect(result.data?.libraryPage).toEqual({
-      books: [
-        { title: 'Lecture aimée', status: 'READING' },
-        { title: 'Pile aimée', status: 'TO_READ' },
-      ],
-    })
+    const books = (result.data as { libraryPage: { books: { title: string }[] } }).libraryPage.books
+    expect(books.map((book) => book.title).sort()).toEqual(['Lecture aimée', 'Pile aimée'])
+    for (const book of books)
+      expect(book).toMatchObject({ status: 'READ', rating: 5, favorite: true })
   })
 
   // The "Rated" view: the best first, and a volume rated through its saga

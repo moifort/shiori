@@ -127,9 +127,13 @@ describe('reading a friend shelf', () => {
       alice,
       'title: "Hypérion", authors: ["Dan Simmons"], series: { id: "hyperion--dan-simmons", name: "Hypérion", volume: 1, kind: MAIN }',
     )
+    // A heart is five stars, which marks a book read: the favourite is one
+    // off the pile.
+    const loved = await addBook(alice, 'title: "Fondation", status: READ')
     expect(reading.errors).toBeUndefined()
-    const pileId = (pile.data as { addBook: { id: string } }).addBook.id
-    await as(alice)(`mutation { setBookFavorite(id: "${pileId}", favorite: true) { id } }`)
+    expect(pile.errors).toBeUndefined()
+    const lovedId = (loved.data as { addBook: { id: string } }).addBook.id
+    await as(alice)(`mutation { setBookFavorite(id: "${lovedId}", favorite: true) { id } }`)
     await befriend()
 
     const result = await as(bob)(
@@ -140,8 +144,8 @@ describe('reading a friend shelf', () => {
     expect(result.data?.friendProfile).toEqual({
       firstName: null,
       reading: [{ title: 'Dune' }],
-      pile: [{ title: 'Hypérion', favorite: true }],
-      favorites: [{ title: 'Hypérion' }],
+      pile: [{ title: 'Hypérion', favorite: false }],
+      favorites: [{ title: 'Fondation' }],
       sagas: [{ name: 'Hypérion', ownedCount: 1 }],
     })
   })

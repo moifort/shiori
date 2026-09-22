@@ -90,15 +90,16 @@ describe('what a reader makes of a saga, through the API', () => {
     expect(result.data?.seriesOpinion).toBeNull()
   })
 
-  test('a heart survives the rating being taken back', async () => {
-    await execute(
-      `mutation { setSeriesFavorite(seriesId: "${DUNE}", favorite: true) { favorite } }`,
+  test('a heart is five stars, and goes with them', async () => {
+    const loved = await execute(
+      `mutation { setSeriesFavorite(seriesId: "${DUNE}", favorite: true) { rating favorite } }`,
     )
-    await execute(`mutation { rateSeries(seriesId: "${DUNE}", rating: 4) { rating } }`)
+    expect(loved.data?.setSeriesFavorite).toEqual({ rating: 5, favorite: true })
+
     await execute(`mutation { removeSeriesRating(seriesId: "${DUNE}") { rating } }`)
 
     const result = await execute(`{ seriesOpinion(seriesId: "${DUNE}") { rating favorite } }`)
-    expect(result.data?.seriesOpinion).toEqual({ rating: null, favorite: true })
+    expect(result.data?.seriesOpinion).toBeNull()
   })
 
   // The heading of a saga section is where the reader's heart and stars show
@@ -119,7 +120,7 @@ describe('what a reader makes of a saga, through the API', () => {
     const result = await execute('{ library { series opinion { rating favorite } } }')
     expect(result.errors).toBeUndefined()
     expect(result.data?.library).toEqual([
-      { series: 'Dune', opinion: { rating: 4, favorite: true } },
+      { series: 'Dune', opinion: { rating: 5, favorite: true } },
     ])
   })
 

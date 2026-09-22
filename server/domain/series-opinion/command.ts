@@ -1,4 +1,5 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
+import { favoriteAfterRating, HEART_RATING } from '~/domain/book/business-rules'
 import type { StarRating } from '~/domain/book/types'
 import type { SeriesId, VolumeNumber } from '~/domain/series/types'
 import * as repository from '~/domain/series-opinion/infrastructure/repository'
@@ -16,15 +17,34 @@ export namespace SeriesOpinionCommand {
     seriesId: SeriesId,
     rating: StarRating | undefined,
     batch?: WriteBatch,
-  ) => write(userId, seriesId, (opinion) => ({ ...opinion, rating }), batch)
+  ) =>
+    write(
+      userId,
+      seriesId,
+      (opinion) => ({
+        ...opinion,
+        rating,
+        favorite: favoriteAfterRating(opinion.favorite, rating),
+      }),
+      batch,
+    )
 
+  /** A heart is five stars, as on a book: given with them, taken back with them. */
   export const setFavorite = (
     userId: UserId,
     seriesId: SeriesId,
     favorite: boolean,
     batch?: WriteBatch,
   ) =>
-    write(userId, seriesId, (opinion) => ({ ...opinion, favorite: favorite || undefined }), batch)
+    write(
+      userId,
+      seriesId,
+      (opinion) =>
+        favorite
+          ? { ...opinion, favorite: true, rating: HEART_RATING }
+          : { ...opinion, favorite: undefined, rating: undefined },
+      batch,
+    )
 
   /** How many volumes the reader says the saga has. Kept on their opinion,
    *  never on the shared catalogue: a count typed by one reader is not a fact

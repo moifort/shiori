@@ -25,24 +25,39 @@ describe('what a reader makes of a saga', () => {
     expect(await SeriesOpinionQuery.of(reader, dune)).toMatchObject({ rating: StarRating(4) })
   })
 
-  // The two are independent on purpose: a five-star saga one never wants to open
-  // again and a three-star one kept for what it meant are both real.
-  test('holds a heart and a rating apart', async () => {
+  // The heart is the top of the scale, as on a book.
+  test('giving the heart rates the saga five', async () => {
     await SeriesOpinionCommand.rate(reader, dune, StarRating(2))
     await SeriesOpinionCommand.setFavorite(reader, dune, true)
 
     expect(await SeriesOpinionQuery.of(reader, dune)).toMatchObject({
-      rating: StarRating(2),
+      rating: StarRating(5),
       favorite: true,
     })
   })
 
-  test('taking the rating back leaves the heart', async () => {
+  // Heart and stars gone together leave nothing: the opinion is erased.
+  test('taking the heart back takes the stars with it', async () => {
     await SeriesOpinionCommand.setFavorite(reader, dune, true)
-    await SeriesOpinionCommand.rate(reader, dune, StarRating(5))
+    await SeriesOpinionCommand.setFavorite(reader, dune, false)
+
+    expect(await SeriesOpinionQuery.of(reader, dune)).toBeNull()
+  })
+
+  test('rating below five takes the heart back', async () => {
+    await SeriesOpinionCommand.setFavorite(reader, dune, true)
+    await SeriesOpinionCommand.rate(reader, dune, StarRating(4))
+
+    const opinion = await SeriesOpinionQuery.of(reader, dune)
+    expect(opinion?.rating).toBe(StarRating(4))
+    expect(opinion?.favorite).toBeUndefined()
+  })
+
+  test('taking the rating back takes the heart back', async () => {
+    await SeriesOpinionCommand.setFavorite(reader, dune, true)
     await SeriesOpinionCommand.rate(reader, dune, undefined)
 
-    expect(await SeriesOpinionQuery.of(reader, dune)).toMatchObject({ favorite: true })
+    expect(await SeriesOpinionQuery.of(reader, dune)).toBeNull()
   })
 
   // How many volumes the reader says the saga has, when nobody has catalogued
