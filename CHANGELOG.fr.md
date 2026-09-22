@@ -4,6 +4,9 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Supprimer une saga depuis son écran ne supprime que l’édition affichée : supprimer la
+  ligne anglaise d’une saga possédée en français et en anglais emportait aussi les tomes
+  français. La note et le cœur partent avec le dernier tome, quelle que soit son édition.
 - Un livre scanné garde la langue de son édition, que le scan lisait sur la couverture et
   que l’app perdait en chemin. Un tome ajouté depuis l’écran d’une saga rejoint l’édition de
   cette ligne : sans langue propre, il ouvrait une seconde ligne de la même saga dans

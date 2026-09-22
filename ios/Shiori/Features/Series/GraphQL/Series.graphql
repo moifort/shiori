@@ -77,8 +77,10 @@ fragment FollowedVolume on Book {
   }
 }
 
-mutation DeleteSeries($seriesId: SeriesId!) {
-  deleteSeries(seriesId: $seriesId)
+# Removes the saga from the library — or one edition of it, when the reader
+# stands in one: a saga held in two languages is two rows, removed apart.
+mutation DeleteSeries($seriesId: SeriesId!, $language: BookLanguage) {
+  deleteSeries(seriesId: $seriesId, language: $language)
 }
 
 fragment FollowedSeriesRow on FollowedSeries {

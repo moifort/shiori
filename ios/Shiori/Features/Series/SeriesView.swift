@@ -524,7 +524,9 @@ struct SeriesView: View {
         isSaving = true
         defer { isSaving = false }
         do {
-            try await SeriesAPI.delete(seriesId: seriesId)
+            // The edition this screen shows, and no other: the French row of a
+            // saga held in two languages must not take the English books with it.
+            try await SeriesAPI.delete(seriesId: seriesId, language: language)
             dismiss()
         } catch {
             errorMessage = reportError(error)

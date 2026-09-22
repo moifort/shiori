@@ -10,6 +10,9 @@ the release tag is pushed.
 
 ## Unreleased
 
+- Removing a saga from its screen removes the edition on that screen only: deleting the
+  English row of a saga held in French and in English took the French volumes with it. The
+  rating and heart go with the last volume, whichever edition it belongs to.
 - A scanned book keeps the language of its edition, which the scan read off the cover and
   the app dropped on the way. A volume added from a saga screen joins the edition of that
   row: without a language of its own, it opened a second row of the same saga on the Series

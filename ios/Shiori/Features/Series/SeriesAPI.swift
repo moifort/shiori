@@ -97,13 +97,18 @@ enum SeriesAPI {
         }
     }
 
-    /// Removes the saga from the library: every volume the reader holds, and
-    /// their rating and heart for it. Answers how many books went.
+    /// Removes the saga from the library: every volume the reader holds, or
+    /// only the volumes of `language` when they stand in one edition of a saga
+    /// held in two. The rating and heart go with the last volume. Answers how
+    /// many books went.
     @discardableResult
-    static func delete(seriesId: String) async throws -> Int {
+    static func delete(seriesId: String, language: BookLanguage? = nil) async throws -> Int {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.DeleteSeriesMutation(seriesId: seriesId)
+            mutation: ShioriGraphQL.DeleteSeriesMutation(
+                seriesId: seriesId,
+                language: graphQLLanguage(language)
+            )
         )
         return data.deleteSeries
     }
