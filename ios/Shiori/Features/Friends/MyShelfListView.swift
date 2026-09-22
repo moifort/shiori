@@ -84,7 +84,7 @@ struct MyShelfListView: View {
             if !shelf.favoriteSagas.isEmpty {
                 Section("Séries") {
                     ForEach(shelf.favoriteSagas) { saga in
-                        SagaRow(saga: saga, showsCover: true)
+                        SagaRow(saga: saga, showsCovers: true)
                     }
                 }
             }
@@ -133,62 +133,77 @@ struct MyShelfListView: View {
 }
 
 /// A saga on somebody's shelf: its name, author and genre. Among the
-/// favourites it is drawn like a book, with the cover of its first volume;
-/// elsewhere it says how many of its volumes are on that shelf — never how
-/// many the saga has, since the catalogue is not something a friendship opens.
+/// favourites it is drawn as the Series tab draws it, its volumes on the shelf
+/// as a strip of covers underneath, each with its status pinned on — owned
+/// volumes only, since the catalogue is not something a friendship opens.
+/// Elsewhere it says how many of its volumes are on that shelf.
 struct SagaRow: View {
     let saga: FriendSaga
-    /// The favourites draw the cover in place of the volume count.
-    var showsCover = false
+    /// The favourites draw the covers in place of the volume count.
+    var showsCovers = false
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            if showsCover {
-                BookCover(book: coverBook, showsFormatBadge: false)
-            }
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    Text(saga.name).font(.body.weight(.medium))
-                    if saga.favorite {
-                        Image(systemName: "heart.fill")
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Text(saga.name).font(.body.weight(.medium))
+                        if saga.favorite {
+                            Image(systemName: "heart.fill")
+                                .font(.caption)
+                                .foregroundStyle(.pink)
+                                .accessibilityLabel(Text("Favori"))
+                        }
+                        if let language = saga.language, language.isForeign {
+                            LanguageTag(language: language)
+                        }
+                    }
+                    if let author = saga.author {
+                        Text(author).font(.subheadline).foregroundStyle(.secondary)
+                    }
+                    if let genre = saga.genre {
+                        Text([genre.label, saga.subgenre].compactMap(\.self).joined(separator: " · "))
                             .font(.caption)
-                            .foregroundStyle(.pink)
-                            .accessibilityLabel(Text("Favori"))
-                    }
-                    if let language = saga.language, language.isForeign {
-                        LanguageTag(language: language)
+                            .foregroundStyle(.secondary)
                     }
                 }
-                if let author = saga.author {
-                    Text(author).font(.subheadline).foregroundStyle(.secondary)
-                }
-                if let genre = saga.genre {
-                    Text([genre.label, saga.subgenre].compactMap(\.self).joined(separator: " · "))
+                Spacer(minLength: 8)
+                if !showsCovers {
+                    Label("\(saga.ownedCount) tome(s)", systemImage: "books.vertical")
+                        .labelStyle(.caption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .padding(.top, 2)
                 }
             }
-            Spacer(minLength: 8)
-            if !showsCover {
-                Label("\(saga.ownedCount) tome(s)", systemImage: "books.vertical")
-                    .labelStyle(.caption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 2)
+            if showsCovers, !saga.volumes.isEmpty {
+                ScrollView(.horizontal) {
+                    LazyHStack(spacing: 10) {
+                        ForEach(saga.volumes) { volume in
+                            BookCover(book: volume, width: 44, showsFormatBadge: false)
+                                .overlay(alignment: .topTrailing) {
+                                    ReadingStatusBadge(status: volume.status)
+                                        .offset(x: 5, y: -5)
+                                }
+                        }
+                    }
+                    // Room for the badges, which overhang the covers' corners
+                    // and the scroll view would otherwise clip.
+                    .padding(.top, 6)
+                    .padding(.trailing, 6)
+                }
+                .scrollIndicators(.hidden)
+                .accessibilityHidden(true)
             }
         }
         .padding(.vertical, 2)
     }
+}
 
-    /// The saga as the cover view draws it: its first volume's cover, or the
-    /// typographic placeholder made from its name and author.
-    private var coverBook: Book {
-        Book(
-            id: saga.id,
-            title: saga.name,
-            authors: saga.author.map { [$0] } ?? [],
-            coverURL: saga.coverURL,
-            status: .read
-        )
+extension FriendSaga {
+    /// The saga as one cover: its first volume on the shelf, or the typographic
+    /// placeholder made from its name and author.
+    var coverBook: Book {
+        volumes.first ?? Book(id: id, title: name, authors: author.map { [$0] } ?? [], status: .read)
     }
 }

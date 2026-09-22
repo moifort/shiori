@@ -41,7 +41,10 @@ struct MyShelfHeader: View {
                 Text("\(sagas) série(s) · \(books) livre(s)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                covers(shelf.favorites.map(\.book))
+            }
+        } strip: {
+            if sagas + books > 0 {
+                covers(shelf.favoriteSagas.map(\.coverBook) + shelf.favorites.map(\.book))
             }
         }
         .accessibilityIdentifier("my-shelf-favorites")
@@ -85,12 +88,21 @@ struct MyShelfHeader: View {
         .accessibilityIdentifier("my-shelf-reading")
     }
 
+    /// Every favourite's cover, sagas first, running to the box's edges and
+    /// scrolling sideways past them: the row is the favourites at a glance,
+    /// not a sample of six. A tap on a cover still opens the list.
     private func covers(_ books: [Book]) -> some View {
-        HStack(spacing: 6) {
-            ForEach(books.prefix(6)) { book in
-                BookCover(book: book, width: 34, showsFormatBadge: false)
+        ScrollView(.horizontal) {
+            LazyHStack(spacing: 8) {
+                ForEach(books) { book in
+                    BookCover(book: book, width: 48, showsFormatBadge: false)
+                }
             }
         }
+        .onTapGesture { open(.favorites) }
+        .scrollIndicators(.hidden)
+        .contentMargins(.horizontal, ShelfBoxMetrics.padding, for: .scrollContent)
+        .padding(.horizontal, -ShelfBoxMetrics.padding)
         .accessibilityHidden(true)
     }
 
@@ -114,38 +126,72 @@ struct MyShelfHeader: View {
 }
 
 /// A rounded box with a tinted heading, a count, and a line or two of what it
-/// holds; the whole box is the tap target.
-private struct ShelfBox<Content: View>: View {
+/// holds, all of it the tap target; under it an optional strip that scrolls
+/// sideways, kept outside the button so a drag scrolls it rather than opening
+/// the list.
+private struct ShelfBox<Content: View, Strip: View>: View {
     let title: LocalizedStringKey
     let systemImage: String
     let tint: Color
     let count: Int
     let action: () -> Void
     @ViewBuilder let content: Content
+    @ViewBuilder let strip: Strip
 
     var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 6) {
-                    Image(systemName: systemImage)
-                        .foregroundStyle(tint)
-                    Text(title)
-                        .font(.subheadline.weight(.semibold))
-                    Spacer(minLength: 4)
-                    Text(verbatim: "\(count)")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                    Image(systemName: "chevron.right")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(.tertiary)
+        VStack(alignment: .leading, spacing: 8) {
+            Button(action: action) {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 6) {
+                        Image(systemName: systemImage)
+                            .foregroundStyle(tint)
+                        Text(title)
+                            .font(.subheadline.weight(.semibold))
+                        Spacer(minLength: 4)
+                        Text(verbatim: "\(count)")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        Image(systemName: "chevron.right")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    content
                 }
-                content
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .contentShape(.rect)
             }
-            .padding(14)
-            .frame(maxWidth: .infinity, minHeight: 88, alignment: .topLeading)
-            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 18))
-            .contentShape(.rect(cornerRadius: 18))
+            .buttonStyle(.plain)
+            strip
         }
-        .buttonStyle(.plain)
+        .padding(ShelfBoxMetrics.padding)
+        .frame(maxWidth: .infinity, minHeight: 88, alignment: .topLeading)
+        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 18))
     }
+}
+
+extension ShelfBox where Strip == EmptyView {
+    init(
+        title: LocalizedStringKey,
+        systemImage: String,
+        tint: Color,
+        count: Int,
+        action: @escaping () -> Void,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.init(
+            title: title,
+            systemImage: systemImage,
+            tint: tint,
+            count: count,
+            action: action,
+            content: content,
+            strip: { EmptyView() }
+        )
+    }
+}
+
+/// Between a box's edge and its content; the favourites' cover strip reaches
+/// back across it to run edge to edge.
+private enum ShelfBoxMetrics {
+    static let padding: CGFloat = 14
 }

@@ -54,7 +54,9 @@ fragment SharedShelf on FriendProfile {
     favorite
     genre
     subgenre
-    coverUrl
+    volumes {
+      ...FriendBookRow
+    }
   }
 }
 

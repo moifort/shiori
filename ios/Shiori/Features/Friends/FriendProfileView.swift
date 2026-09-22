@@ -77,7 +77,7 @@ struct FriendProfileView: View {
             if !profile.favoriteSagas.isEmpty {
                 Section("Ses séries favorites") {
                     ForEach(profile.favoriteSagas) { saga in
-                        SagaRow(saga: saga, showsCover: true)
+                        SagaRow(saga: saga, showsCovers: true)
                     }
                 }
             }

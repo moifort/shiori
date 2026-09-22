@@ -26,7 +26,7 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 - L’onglet Partagé s’ouvre sur votre propre bibliothèque telle que vos amis la voient : vos
   favoris, votre pile et vos lectures en cours, les plus récemment actives d’abord et chacune
   avec sa série. Vos séries favorites apparaissent désormais aussi chez vos amis, à la place
-  de leurs tomes plutôt qu’en double, chacune avec la couverture de son premier tome. Vos
+  de leurs tomes plutôt qu’en double, chacune avec la bande des couvertures de ses tomes. Vos
   favoris s’envoient par mail ou par message, ou se copient, en une liste de titres et
   d’auteurs regroupés par genre.
 - Les livres et les séries se partagent désormais l’onglet Bibliothèque, qu’une capsule

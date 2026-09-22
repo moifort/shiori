@@ -29,7 +29,7 @@ the release tag is pushed.
 - The Shared tab opens on your own shelf as your friends see it: your favourites, your pile
   and your books in progress, the most recently active first and each with its series.
   Your favourite series now show on your friends' view too, standing for their volumes
-  rather than listing them again, each with the cover of its first volume. Your favourites
+  rather than listing them again, each with its volumes as a strip of covers. Your favourites
   can be sent by mail or message, or copied, as a list of titles and authors grouped by
   genre.
 - Books and series now share the Library tab, switched from a capsule above the tab bar.
