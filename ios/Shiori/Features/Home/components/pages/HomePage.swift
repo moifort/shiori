@@ -11,9 +11,14 @@ struct HomePage: View {
     /// That refresh failed — the leading row becomes a retry.
     var refreshFailed: Bool = false
     var onRetryRefresh: () async -> Void = {}
+    /// The "reading" shelf: opens the library on the books being read.
     let onReadingTapped: () -> Void
+    /// The progress card: opens the Series tab on the sagas in progress.
     let onSeriesTapped: () -> Void
-    /// The average rating tile: opens the library on the books hearted.
+    /// The pile tile and the suggestions shelf, which is drawn from the pile:
+    /// open the library on the books to read.
+    var onPileTapped: () -> Void = {}
+    /// The average rating tile: opens the library on the rated books, best first.
     let onRatingTapped: () -> Void
     var onFavoritesTapped: () -> Void = {}
     var onDroppedTapped: () -> Void = {}
@@ -63,6 +68,7 @@ struct HomePage: View {
                     books: dashboard.suggestions,
                     caption: { $0.authorLine },
                     emptyMessage: "Ajoutez des livres à votre pile à lire pour en tirer quelques idées.",
+                    onHeaderTapped: onPileTapped,
                     onBookTapped: onBookTapped
                 )
                 .accessibilityIdentifier("home-suggestions")
@@ -78,6 +84,7 @@ struct HomePage: View {
                     ratedCount: dashboard.ratedCount,
                     favoriteCount: dashboard.favoriteCount,
                     droppedCount: dashboard.droppedCount,
+                    onPileTapped: onPileTapped,
                     onRatingTapped: onRatingTapped,
                     onFavoritesTapped: onFavoritesTapped,
                     onDroppedTapped: onDroppedTapped

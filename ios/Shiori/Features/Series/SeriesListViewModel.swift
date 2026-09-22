@@ -1,5 +1,12 @@
 import Foundation
 
+/// A view of the Series tab another screen asks it to open on: the dashboard's
+/// "series in progress" card opens it on the sagas in progress.
+struct SeriesRequest: Equatable {
+    var mode: LibraryMode = .all
+    var state: SeriesState?
+}
+
 /// Owns the Series tab: the sagas the reader follows, how they are narrowed —
 /// the Library tab's two views and a state filter — and the
 /// one in-flight load. Every view opens on the rows it last showed: a
@@ -22,6 +29,13 @@ final class SeriesListViewModel {
         didSet { if oldValue != stateFilter { scheduleReload() } }
     }
     private var reloadTask: Task<Void, Never>?
+
+    /// Opens the view another screen asks for. A state filter left from an
+    /// earlier visit is replaced, since it would hide what was asked for.
+    func show(_ request: SeriesRequest) {
+        stateFilter = request.state
+        mode = request.mode
+    }
 
     private(set) var followed: [FollowedSeries] = []
     private(set) var isLoading = false

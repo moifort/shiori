@@ -10,12 +10,12 @@ struct HomeView: View {
         case series(String)
     }
 
-    /// Opens the Library tab on the books being read.
-    let onShowReading: () -> Void
-    let onShowSeries: () -> Void
-    /// Opens the Library tab on one of its views: the favourites from the
-    /// rating and favourites tiles, the whole shelf from the genre widget, the
-    /// dropped books from their tile.
+    /// Opens the Series tab on one of its views: the sagas in progress from
+    /// the progress card.
+    let onShowSeries: (SeriesRequest) -> Void
+    /// Opens the Library tab on one of its views: every card and tile of the
+    /// dashboard leads to the list it counts — the books being read, the pile,
+    /// the rated books, the favourites, the dropped ones, the whole shelf.
     let onShowLibrary: (LibraryRequest) -> Void
     let onScan: () -> Void
 
@@ -100,9 +100,10 @@ struct HomeView: View {
                     isRefreshing: viewModel.isRefreshing || audibleSync.isSyncing,
                     refreshFailed: viewModel.refreshFailed,
                     onRetryRefresh: { await viewModel.refresh() },
-                    onReadingTapped: onShowReading,
-                    onSeriesTapped: onShowSeries,
-                    onRatingTapped: { onShowLibrary(LibraryRequest(mode: .favorites)) },
+                    onReadingTapped: { onShowLibrary(LibraryRequest(status: .reading)) },
+                    onSeriesTapped: { onShowSeries(SeriesRequest(state: .inProgress)) },
+                    onPileTapped: { onShowLibrary(LibraryRequest(status: .toRead)) },
+                    onRatingTapped: { onShowLibrary(LibraryRequest(mode: .rated)) },
                     onFavoritesTapped: { onShowLibrary(LibraryRequest(mode: .favorites)) },
                     onDroppedTapped: { onShowLibrary(LibraryRequest(status: .dropped)) },
                     onGenresTapped: { onShowLibrary(LibraryRequest()) },

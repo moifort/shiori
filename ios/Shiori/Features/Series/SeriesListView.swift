@@ -13,6 +13,9 @@ import SwiftUI
 struct SeriesListView: View {
     /// Opens the add sheet, from the one button every empty state offers.
     var onScan: () -> Void = {}
+    /// A view another tab asked this one to open on, taken and cleared as
+    /// soon as the tab shows it.
+    @Binding var requested: SeriesRequest?
 
     @State private var viewModel = SeriesListViewModel()
     /// The saga being opened. A button and a destination rather than a
@@ -63,12 +66,22 @@ struct SeriesListView: View {
         }
         // Over last session's snapshot when the disk had one: the rows show at
         // once and the spinner at the top says they are being brought up to date.
-        .task { await viewModel.loadOnAppear() }
+        .task {
+            takeRequested()
+            await viewModel.loadOnAppear()
+        }
+        .onChange(of: requested) { takeRequested() }
         // A heart given on a saga screen, a volume finished in the library: the
         // rows here say so the next time the reader looks, not the next launch.
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
             Task { await viewModel.load() }
         }
+    }
+
+    private func takeRequested() {
+        guard let requested else { return }
+        viewModel.show(requested)
+        self.requested = nil
     }
 
     private var list: some View {
@@ -126,7 +139,7 @@ struct SeriesListView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItemGroup {
-            ForEach(LibraryMode.allCases) { item in
+            ForEach(LibraryMode.seriesViews) { item in
                 Button {
                     viewModel.mode = item
                 } label: {

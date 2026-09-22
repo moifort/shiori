@@ -2,9 +2,9 @@ import SwiftUI
 
 /// The to-read pile and the average rating, in tiles, and under them two small
 /// boxes: the favourites and the books dropped. Every tile is always drawn: one
-/// with nothing behind it reads a dash, with no caption to explain. The rating
-/// and favourites tiles open the library on the books hearted, the dropped one
-/// on the books put down.
+/// with nothing behind it reads a dash, with no caption to explain. Each opens
+/// the library on the list it counts: the pile, the rated books best first,
+/// the books hearted, the books put down.
 struct StatTilesRow: View {
     let toReadCount: Int
     let monthsToClearPile: Int?
@@ -12,6 +12,7 @@ struct StatTilesRow: View {
     let ratedCount: Int
     var favoriteCount: Int = 0
     var droppedCount: Int = 0
+    var onPileTapped: () -> Void = {}
     var onRatingTapped: () -> Void = {}
     var onFavoritesTapped: () -> Void = {}
     var onDroppedTapped: () -> Void = {}
@@ -42,12 +43,17 @@ struct StatTilesRow: View {
 
     private var mainTiles: some View {
         HStack(spacing: 12) {
-            tile(
-                title: "Pile à lire",
-                value: toReadCount > 0 ? Text(toReadCount, format: .number) : Text("–"),
-                caption: pileCaption,
-                color: DashboardPalette.pile
-            )
+            Button(action: onPileTapped) {
+                tile(
+                    title: "Pile à lire",
+                    value: toReadCount > 0 ? Text(toReadCount, format: .number) : Text("–"),
+                    caption: pileCaption,
+                    color: DashboardPalette.pile,
+                    leadsSomewhere: true
+                )
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
             .accessibilityIdentifier("home-pile")
             Button(action: onRatingTapped) {
                 tile(
