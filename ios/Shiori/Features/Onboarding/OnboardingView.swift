@@ -16,6 +16,8 @@ struct OnboardingView: View {
     @State private var errorMessage: String?
     /// Amazon's sign-in page, while it is on screen.
     @State private var audibleSignIn: AudibleLogin?
+    /// The store the reader signs in on, proposed from the device region.
+    @State private var audibleMarketplace: AudibleMarketplace = .suggested
     /// Between tapping "Importer" and Amazon's page, and between the page
     /// closing and the app opening.
     @State private var isConnectingAudible = false
@@ -41,6 +43,7 @@ struct OnboardingView: View {
                 )
             case .audible:
                 AudibleOfferPage(
+                    marketplace: $audibleMarketplace,
                     isWorking: isConnectingAudible,
                     onConnect: { Task { await startAudibleSignIn() } },
                     onSkip: enterApp
@@ -84,7 +87,7 @@ struct OnboardingView: View {
         isConnectingAudible = true
         defer { isConnectingAudible = false }
         do {
-            audibleSignIn = try await ImportAPI.startSignIn(on: .suggested)
+            audibleSignIn = try await ImportAPI.startSignIn(on: audibleMarketplace)
         } catch {
             errorMessage = reportError(error)
         }

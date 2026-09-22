@@ -37,21 +37,50 @@ enum AudibleMarketplace: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// The store the reader most likely buys from, guessed from the device
-    /// region. Only a default: the picker is right there, and a reader who
-    /// bought abroad changes it in one tap.
+    /// The store the reader most likely buys from, guessed from the language
+    /// the phone is set to. Only a default: the picker is right there, and a
+    /// reader who bought abroad changes it in one tap.
     static var suggested: AudibleMarketplace {
-        switch Locale.current.region?.identifier {
-        case "FR", "BE", "LU", "CH": .fr
-        case "GB", "IE": .coUk
-        case "DE", "AT": .de
-        case "IT": .it
-        case "ES": .es
-        case "CA": .ca
-        case "AU", "NZ": .comAu
-        case "IN": .india
-        case "JP": .coJp
-        default: .com
+        suggested(
+            // The device's own first language, not the app's: the app speaks
+            // French only, so its language would say French for everyone.
+            language: Locale.preferredLanguages.first.map { Locale.Language(identifier: $0) },
+            region: Locale.current.region?.identifier
+        )
+    }
+
+    /// The language decides, and the region only settles a language several
+    /// stores sell in: English, and French in Canada. A language no store
+    /// sells in falls back on the region, then on audible.com.
+    static func suggested(language: Locale.Language?, region: String?) -> AudibleMarketplace {
+        let region = language?.region?.identifier ?? region
+        switch language?.languageCode?.identifier {
+        case "fr": return region == "CA" ? .ca : .fr
+        case "de": return .de
+        case "it": return .it
+        case "es": return .es
+        case "ja": return .coJp
+        case "en":
+            switch region {
+            case "GB", "IE": return .coUk
+            case "CA": return .ca
+            case "AU", "NZ": return .comAu
+            case "IN": return .india
+            default: return .com
+            }
+        default:
+            switch region {
+            case "FR", "BE", "LU", "CH": return .fr
+            case "GB", "IE": return .coUk
+            case "DE", "AT": return .de
+            case "IT": return .it
+            case "ES": return .es
+            case "CA": return .ca
+            case "AU", "NZ": return .comAu
+            case "IN": return .india
+            case "JP": return .coJp
+            default: return .com
+            }
         }
     }
 }

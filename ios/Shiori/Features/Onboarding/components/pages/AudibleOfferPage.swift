@@ -5,6 +5,10 @@ import SwiftUI
 /// spares them a first visit to an empty shelf. Everyone else skips it in one
 /// tap and lands in the app as before.
 struct AudibleOfferPage: View {
+    /// The store to sign in on: guessed from the device region, shown so the
+    /// reader can confirm it or change it — one bought abroad would otherwise
+    /// find an empty library on the store their phone suggested.
+    @Binding var marketplace: AudibleMarketplace
     /// Amazon's page is being prepared, or the account linked.
     var isWorking: Bool = false
     var onConnect: () -> Void
@@ -32,6 +36,30 @@ struct AudibleOfferPage: View {
             }
             .opacity(appeared ? 1 : 0)
             .animation(.easeOut(duration: 0.4).delay(0.08), value: appeared)
+
+            // The store the account was opened on decides where the library
+            // is read from. Proposed, never imposed.
+            LabeledContent {
+                Picker("Boutique Audible", selection: $marketplace) {
+                    ForEach(AudibleMarketplace.allCases) { store in
+                        Text(store.label).tag(store)
+                    }
+                }
+                .labelsHidden()
+                .accessibilityIdentifier("onboarding-audible-marketplace")
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Boutique")
+                    Text("Celle sur laquelle vous achetez vos livres audio.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(12)
+            .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 12))
+            .disabled(isWorking)
+            .opacity(appeared ? 1 : 0)
+            .animation(.easeOut(duration: 0.4).delay(0.12), value: appeared)
 
             Spacer()
 
@@ -66,5 +94,6 @@ struct AudibleOfferPage: View {
 }
 
 #Preview {
-    AudibleOfferPage(onConnect: {}, onSkip: {})
+    @Previewable @State var marketplace: AudibleMarketplace = .fr
+    AudibleOfferPage(marketplace: $marketplace, onConnect: {}, onSkip: {})
 }
