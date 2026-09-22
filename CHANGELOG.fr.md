@@ -4,6 +4,11 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Une série dont tous les tomes principaux sont lus est terminée, quels que soient ses récits
+  annexes : une nouvelle ou une préquelle non lue la laissait « En cours » dans l’onglet
+  Séries, à côté d’un anneau qui disait tous les tomes lus. L’onglet Séries, la fiche de la
+  série et l’accueil mesurent maintenant une série sur les mêmes tomes principaux, et un
+  récit annexe lu ne compte plus comme le tome principal du même numéro.
 - Le premier lancement affiche la boutique Audible avant la connexion, présélectionnée
   d’après la langue du téléphone : un lecteur qui achète sur une autre boutique la change
   avant de se connecter, au lieu de trouver une bibliothèque vide.

@@ -19,30 +19,36 @@ export const isForthcoming = (volume: Volume, currentYear: Year): boolean =>
 export const publishedVolumes = (series: Series, currentYear: Year): Volume[] =>
   series.volumes.filter((volume) => !isForthcoming(volume, currentYear))
 
-/** A saga is complete once every volume that exists has been read. Forthcoming
- *  volumes are excluded: a reader who is up to date on a running saga has
- *  finished it as far as the world is concerned, and telling them otherwise
- *  because book 15 is announced for next year would be wrong.
+/** The volumes a saga is measured on: the numbered main volumes already out.
+ *  Related works and announced volumes are left out — a novella the reader
+ *  skipped, or book 15 due next year, would make a finished spine look
+ *  unfinished. The one yardstick behind the saga's state, its ring and the
+ *  dashboard's bars, so the three can never disagree. */
+export const publishedSpineOf = (series: Series, currentYear: Year): Volume[] =>
+  publishedVolumes(series, currentYear).filter(
+    (volume) => volume.kind === 'main' && volume.number !== undefined,
+  )
+
+/** A saga is complete once every volume of its published spine has been read.
+ *  A reader who is up to date on a running saga has finished it as far as the
+ *  world is concerned, and telling them otherwise because book 15 is announced
+ *  for next year, or because a side novella is unread, would be wrong.
  *
- *  A saga with no published volume at all is `in-progress`, not `complete`:
+ *  A saga with no published spine at all is `in-progress`, not `complete`:
  *  "complete" would read as an achievement where nothing was achieved. */
 export const stateOf = (
   series: Series,
   readVolumeNumbers: ReadonlySet<number>,
   currentYear: Year,
 ): Exclude<SeriesState, 'not-started'> => {
-  const published = publishedVolumes(series, currentYear)
-  if (published.length === 0) return 'in-progress'
-  const everyPublishedRead = published.every(
-    (volume) => volume.number !== undefined && readVolumeNumbers.has(volume.number),
-  )
-  return everyPublishedRead ? 'complete' : 'in-progress'
+  const spine = publishedSpineOf(series, currentYear)
+  if (spine.length === 0) return 'in-progress'
+  const everyRead = spine.every((volume) => readVolumeNumbers.has(Number(volume.number)))
+  return everyRead ? 'complete' : 'in-progress'
 }
 
-/** How far the reader is into a saga, measured on the numbered spine of
- *  published volumes — the same yardstick as the home screen's progress bars.
- *  Related works and announced volumes are left out: counting them would make a
- *  finished spine look unfinished.
+/** How far the reader is into a saga, measured on its published spine — the
+ *  same yardstick as its state and the home screen's progress bars.
  *
  *  Null when there is no spine to measure against: a catalogue whose volumes
  *  are all unnumbered or all announced says nothing about how far along one is. */
@@ -51,9 +57,7 @@ export const progressOf = (
   readVolumeNumbers: ReadonlySet<number>,
   currentYear: Year,
 ): { readCount: number; totalCount: number } | null => {
-  const spine = publishedVolumes(series, currentYear).filter(
-    (volume) => volume.kind === 'main' && volume.number !== undefined,
-  )
+  const spine = publishedSpineOf(series, currentYear)
   if (spine.length === 0) return null
   const readCount = spine.filter((volume) => readVolumeNumbers.has(Number(volume.number))).length
   return { readCount, totalCount: spine.length }

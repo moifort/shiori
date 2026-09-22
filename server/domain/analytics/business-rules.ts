@@ -20,7 +20,7 @@ import {
   shownRatingOf,
 } from '~/domain/book/business-rules'
 import type { Book, Genre } from '~/domain/book/types'
-import { publishedVolumes, stateOf } from '~/domain/series/business-rules'
+import { progressOf, stateOf } from '~/domain/series/business-rules'
 import type { Series } from '~/domain/series/types'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import { Year } from '~/domain/shared/primitives'
@@ -164,10 +164,9 @@ export const analyticsViewOf = (input: {
   }
 }
 
-/** The sagas still in progress, measured on the numbered spine of published
- *  volumes: related works and announced volumes would make a finished spine look
- *  unfinished. A saga with no catalogue, or no numbered volume, has nothing to
- *  measure against and is left out. */
+/** The sagas still in progress, measured on their published spine as the saga
+ *  screen measures them. A saga with no catalogue, or no numbered volume, has
+ *  nothing to measure against and is left out. */
 export const seriesProgressOf = (
   books: readonly Book[],
   catalogues: readonly Series[],
@@ -178,19 +177,17 @@ export const seriesProgressOf = (
     const owned = books.filter((book) => book.series?.id === series.id)
     if (owned.length === 0) continue
     const read = readVolumeNumbersOf(owned)
+    // The saga's own state and ring: a saga the Series tab calls finished is
+    // not one the dashboard still counts as in progress.
     if (stateOf(series, read, Year(currentYear)) !== 'in-progress') continue
-    const spine = publishedVolumes(series, Year(currentYear)).filter(
-      (volume) => volume.kind === 'main' && volume.number !== undefined,
-    )
-    const readCount = spine.filter((volume) => read.has(Number(volume.number))).length
-    // A saga can stay in progress on an unread novella alone; a full bar there
-    // would sit among the sagas still to finish and read as a bug.
-    if (spine.length === 0 || readCount === spine.length) continue
+    const measured = progressOf(series, read, Year(currentYear))
+    if (!measured) continue
+    const { readCount, totalCount } = measured
     progress.push({
       id: series.id,
       name: series.name,
       readCount,
-      totalCount: spine.length,
+      totalCount,
       lastActivityAt: new Date(
         Math.max(
           ...owned.map((book) => (book.finishedAt ?? book.startedAt ?? book.addedAt).getTime()),

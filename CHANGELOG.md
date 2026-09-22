@@ -10,6 +10,11 @@ the release tag is pushed.
 
 ## Unreleased
 
+- A saga whose main volumes are all read is finished, whatever its related works: an unread
+  novella or prequel held it "in progress" in the Series tab, beside a ring that said every
+  volume was read. The Series tab, the saga screen and the dashboard now measure a saga on
+  the same main volumes, and a related work read no longer counts as the main volume of the
+  same number.
 - Onboarding shows the Audible store before connecting, preselected from the phone's
   language, so a reader who buys on another store changes it before signing in rather than
   finding an empty library.

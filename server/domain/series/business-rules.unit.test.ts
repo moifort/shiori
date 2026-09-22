@@ -68,6 +68,19 @@ describe('stateOf', () => {
     ])
     expect(stateOf(series, new Set(), THIS_YEAR)).toBe('in-progress')
   })
+
+  // The same yardstick as the ring beside it: a saga whose four main volumes
+  // are read was labelled "in progress" on an unread novella, next to a ring
+  // that said four out of four.
+  test('is complete once the main spine is read, whatever the related works', () => {
+    const series = saga([
+      volume({ title: 'One', number: VolumeNumber(1) }),
+      volume({ title: 'Two', number: VolumeNumber(2) }),
+      volume({ title: 'Side story', kind: 'novella' }),
+      volume({ title: 'Prequel', number: VolumeNumber(3), kind: 'prequel' }),
+    ])
+    expect(stateOf(series, new Set([1, 2]), THIS_YEAR)).toBe('complete')
+  })
 })
 
 describe('inCatalogueOrder', () => {

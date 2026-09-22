@@ -459,11 +459,14 @@ struct SeriesView: View {
     private var startedAt: Date? { owned.compactMap(\.startedAt).min() }
     /// When the first of their volumes entered the library.
     private var addedAt: Date? { owned.compactMap(\.addedAt).min() }
-    /// When they finished the last of their volumes — only once every volume
-    /// they hold is read: a saga with one volume still open is not finished.
+    /// When they finished the last of their main volumes — only once every one
+    /// they hold is read: a saga with a volume still open is not finished. The
+    /// related works are left out, as the server leaves them out of the saga's
+    /// state: an unread novella does not hold a finished saga open.
     private var finishedAt: Date? {
-        guard !owned.isEmpty, owned.allSatisfy({ $0.status == .read }) else { return nil }
-        return owned.compactMap(\.finishedAt).max()
+        let main = owned.filter { $0.series?.kind == .main }
+        guard !main.isEmpty, main.allSatisfy({ $0.status == .read }) else { return nil }
+        return main.compactMap(\.finishedAt).max()
     }
 
     /// How far the reader is along the published spine. Announced volumes are

@@ -255,6 +255,16 @@ describe('readVolumeNumbersOf', () => {
     ])
     expect([...numbers]).toEqual([1])
   })
+
+  // A related work numbered on its own shelf is not the main volume of the
+  // same number: reading novella 2 does not finish tome 2.
+  test('counts only the main spine', () => {
+    const numbers = readVolumeNumbersOf([
+      book({ title: 'One', series: { name: 'Saga', volume: 1 }, status: 'read' }),
+      book({ title: 'Side', series: { name: 'Saga', volume: 2, kind: 'novella' }, status: 'read' }),
+    ])
+    expect([...numbers]).toEqual([1])
+  })
 })
 
 describe('datesAfterStatusChange', () => {

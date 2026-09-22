@@ -191,13 +191,15 @@ export const ratedShelfOf = <T extends Book>(
     .sort((left, right) => right.rating - left.rating)
     .map((entry) => entry.book)
 
-/** Which volumes of a saga the reader has finished — what decides whether the
- *  saga reads as complete. Only `read` counts: a volume in progress is not done. */
+/** Which main volumes of a saga the reader has finished — what decides whether
+ *  the saga reads as complete. Only `read` counts: a volume in progress is not
+ *  done. Only the main spine counts: a related work carries its own numbering,
+ *  and novella 2 read is not tome 2 read. */
 export const readVolumeNumbersOf = (books: readonly Book[]): Set<number> => {
   const numbers = new Set<number>()
   for (const book of books) {
-    if (book.status !== 'read') continue
-    const volume = book.series?.volume
+    if (book.status !== 'read' || book.series?.kind !== 'main') continue
+    const volume = book.series.volume
     if (volume !== undefined) numbers.add(volume)
   }
   return numbers
