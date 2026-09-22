@@ -29,7 +29,7 @@ struct RecommendationSheet: View {
             Form {
                 Section {
                     HStack {
-                        Label("Conseillé par", systemImage: "person.badge.star")
+                        Label("Conseillé par", systemImage: "person.badge.plus")
                             .foregroundStyle(.secondary)
                         TextField("Nom", text: $recommenderName)
                             .textInputAutocapitalization(.words)
