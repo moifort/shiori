@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { billedSearches, type GeminiResponse } from '~/domain/scan/gemini'
+import { answerOf, billedSearches, type GeminiResponse, requestBodyOf } from '~/domain/scan/gemini'
 
 const answered = (parts: Partial<GeminiResponse>): GeminiResponse => ({
   candidates: [{ content: { parts: [{ text: '{}' }] } }],
@@ -66,5 +66,61 @@ describe('counting the searches a call is billed for', () => {
     })
 
     expect(billedSearches(response, true)).toBe(1)
+  })
+})
+
+describe('asking for JSON', () => {
+  const schema = { type: 'object', properties: { name: { type: 'string' } } }
+
+  test('an ungrounded step uses the API JSON mode, with its schema', () => {
+    const body = requestBodyOf({
+      step: 'vision',
+      parts: [{ text: 'Lis.' }],
+      responseSchema: schema,
+    })
+
+    expect(body.generationConfig).toEqual({
+      responseMimeType: 'application/json',
+      responseSchema: schema,
+    })
+    expect(body.tools).toBeUndefined()
+    expect(body.contents[0].parts).toEqual([{ text: 'Lis.' }])
+  })
+
+  test('a grounded step asks for its JSON in words, since the API JSON mode answers empty', () => {
+    const body = requestBodyOf({
+      step: 'catalogue',
+      parts: [{ text: 'Cherche.' }],
+      responseSchema: schema,
+      grounded: true,
+    })
+
+    expect(body.generationConfig).toBeUndefined()
+    expect(body.tools).toEqual([{ google_search: {} }])
+    const [prompt, shape] = body.contents[0].parts
+    expect(prompt).toEqual({ text: 'Cherche.' })
+    expect(shape).toHaveProperty('text', expect.stringContaining(JSON.stringify(schema)))
+  })
+})
+
+describe('reading the answer', () => {
+  test('a bare JSON object is read as it is', () => {
+    expect(answerOf('{"name":"Heretical Fishing"}')).toEqual({ name: 'Heretical Fishing' })
+  })
+
+  test('a fenced object is read out of its fence', () => {
+    expect(answerOf('```json\n{"name":"Heretical Fishing"}\n```')).toEqual({
+      name: 'Heretical Fishing',
+    })
+  })
+
+  test('words around the object are ignored', () => {
+    expect(answerOf('Voici le catalogue :\n{"volumes":[{"title":"Un"}]}\nBonne lecture.')).toEqual({
+      volumes: [{ title: 'Un' }],
+    })
+  })
+
+  test('an answer with no object is an error, not an empty value', () => {
+    expect(() => answerOf('Je ne trouve pas cette série.')).toThrow()
   })
 })

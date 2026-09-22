@@ -47,42 +47,77 @@ export type GeminiResponse = {
 
 type Part = { text: string } | { inline_data: { mime_type: string; data: string } }
 
-/** One call to the model, returning the decoded JSON and what it consumed.
- *
- *  `usage` is captured on every step so the allowance and the price can be
- *  recalibrated against measured tokens rather than an estimate — Vinarium's
- *  first costing was four times under for exactly the want of this.
- */
-export const generate = async <T>(options: {
+type GenerateOptions = {
   step: string
   parts: Part[]
   responseSchema: unknown
   /** Grounding is what makes enrichment and cataloguing worth their cost; the
    *  vision step must NOT use it, since the answer is in the image. */
   grounded?: boolean
-}): Promise<{ value: T; usage?: AiStepUsage }> => {
+}
+
+/** One call to the model, returning the decoded JSON and what it consumed.
+ *
+ *  `usage` is captured on every step so the allowance and the price can be
+ *  recalibrated against measured tokens rather than an estimate — Vinarium's
+ *  first costing was four times under for exactly the want of this.
+ */
+export const generate = async <T>(
+  options: GenerateOptions,
+): Promise<{ value: T; usage?: AiStepUsage }> => {
   const { googleApiKey } = config()
 
   const response = await $fetch<GeminiResponse>(`${GEMINI_API_URL}?key=${googleApiKey}`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: {
-      contents: [{ parts: options.parts }],
-      ...(options.grounded ? { tools: [{ google_search: {} }] } : {}),
-      generationConfig: {
-        responseMimeType: 'application/json',
-        responseSchema: options.responseSchema,
-      },
-    },
+    body: requestBodyOf(options),
   })
 
   const text = response.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('')
   if (!text) throw new Error(`${options.step}: Gemini returned no content`)
 
   return {
-    value: JSON.parse(text) as T,
+    value: answerOf(text) as T,
     usage: capturedUsage(options.step, response, options.grounded === true),
   }
+}
+
+/** What is sent for one step.
+ *
+ *  A grounded step does not use the API's JSON mode. On Flash-Lite, Google
+ *  Search combined with `responseMimeType: 'application/json'` answers 200 with
+ *  no candidate at all — measured on September 22nd 2026: every call empty
+ *  without a schema, one in three with one, against none out of ten for either
+ *  option alone. So a grounded step describes its schema in the prompt and its
+ *  answer is read out of free text; an ungrounded one keeps the API's guarantee.
+ */
+export const requestBodyOf = ({ parts, responseSchema, grounded }: GenerateOptions) =>
+  grounded
+    ? {
+        contents: [{ parts: [...parts, { text: answerShape(responseSchema) }] }],
+        tools: [{ google_search: {} }],
+        generationConfig: undefined,
+      }
+    : {
+        contents: [{ parts }],
+        tools: undefined,
+        generationConfig: { responseMimeType: 'application/json', responseSchema },
+      }
+
+/** Said as a description, because the model shown a bare schema sometimes
+ *  answers with the schema itself. */
+const answerShape = (schema: unknown) =>
+  `Réponds UNIQUEMENT par l'objet JSON demandé, sans aucun texte autour. Le schéma JSON ci-dessous décrit la forme de cet objet ; c'est une description, ne le recopie pas :
+${JSON.stringify(schema)}`
+
+/** The JSON object in an answer. JSON mode returns it bare; free text may fence
+ *  it or say a word around it, so the object is taken from its first brace to
+ *  its last. */
+export const answerOf = (text: string): unknown => {
+  const start = text.indexOf('{')
+  const end = text.lastIndexOf('}')
+  if (start === -1 || end < start) throw new Error('Gemini answered without a JSON object')
+  return JSON.parse(text.slice(start, end + 1))
 }
 
 const capturedUsage = (
