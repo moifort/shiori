@@ -1,19 +1,22 @@
 import SwiftUI
 
-/// The to-read pile and the average rating, in tiles, and under them two small
-/// boxes: the favourites and the books dropped. Every tile is always drawn: one
-/// with nothing behind it reads a dash, with no caption to explain. Each opens
-/// the library on the list it counts: the pile, the rated books best first,
+/// The to-read pile and the average rating, in tiles, and under them three
+/// small boxes: every book read since the start, the favourites and the books
+/// dropped. Every tile is always drawn: one with nothing behind it reads a
+/// dash, with no caption to explain. Each opens the library on the list it
+/// counts: the pile, the favourites — a heart is five stars — the books read,
 /// the books hearted, the books put down.
 struct StatTilesRow: View {
     let toReadCount: Int
     let monthsToClearPile: Int?
     let averageRating: Double?
     let ratedCount: Int
+    var readCount: Int = 0
     var favoriteCount: Int = 0
     var droppedCount: Int = 0
     var onPileTapped: () -> Void = {}
     var onRatingTapped: () -> Void = {}
+    var onReadTapped: () -> Void = {}
     var onFavoritesTapped: () -> Void = {}
     var onDroppedTapped: () -> Void = {}
 
@@ -21,6 +24,14 @@ struct StatTilesRow: View {
         VStack(spacing: 12) {
             mainTiles
             HStack(spacing: 12) {
+                smallTile(
+                    title: "Lus",
+                    count: readCount,
+                    systemImage: ReadingStatus.read.symbol,
+                    color: ReadingStatus.read.tint,
+                    action: onReadTapped
+                )
+                .accessibilityIdentifier("home-read")
                 smallTile(
                     title: "Favoris",
                     count: favoriteCount,
@@ -73,7 +84,9 @@ struct StatTilesRow: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
-    /// A small box: an icon, a count and what it counts, on one line.
+    /// A small box: an icon beside a count, and what it counts under them.
+    /// Stacked rather than on one line so that three fit side by side on the
+    /// narrowest phone.
     private func smallTile(
         title: LocalizedStringKey,
         count: Int,
@@ -82,27 +95,25 @@ struct StatTilesRow: View {
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: systemImage)
-                    .font(.title2)
-                    .foregroundStyle(color)
-                    .frame(width: 32)
-                VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Image(systemName: systemImage)
+                        .font(.headline)
+                        .foregroundStyle(color)
                     (count > 0 ? Text(count, format: .number) : Text("–"))
                         .font(.system(.title3, design: .rounded, weight: .bold))
                         .foregroundStyle(color)
-                    Text(title)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                 }
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
+                Text(title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
-            .padding(.horizontal, 14)
+            .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 16))
             .contentShape(.rect)
         }

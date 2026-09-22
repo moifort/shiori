@@ -24,7 +24,7 @@ final class HomeViewModel {
 
     /// The last dashboard on disk. Bump the version whenever `Dashboard`
     /// changes shape.
-    private let cache = SnapshotCache<Dashboard>("dashboard", version: 1)
+    private let cache = SnapshotCache<Dashboard>("dashboard", version: 2)
 
     func load() async {
         guard !isLoading else { return }

@@ -33,6 +33,7 @@ query Dashboard($timeZone: TimeZone!) {
       previous
     }
     toReadCount
+    readCount
     monthsToClearPile
     averageRating
     ratedCount
@@ -45,6 +46,8 @@ query Dashboard($timeZone: TimeZone!) {
       name
       readCount
       totalCount
+      rating
+      favorite
     }
     favoriteCount
     droppedCount

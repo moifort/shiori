@@ -20,12 +20,20 @@ enum HomeAPI {
             pagesPerDay: .init(current: dashboard.pagesPerDay.current, previous: dashboard.pagesPerDay.previous),
             daysToFinish: .init(current: dashboard.daysToFinish.current, previous: dashboard.daysToFinish.previous),
             toReadCount: dashboard.toReadCount,
+            readCount: dashboard.readCount,
             monthsToClearPile: dashboard.monthsToClearPile,
             averageRating: dashboard.averageRating,
             ratedCount: dashboard.ratedCount,
             genres: dashboard.genres.map { .init(genre: $0.genre?.asDomain, count: $0.count) },
             series: dashboard.series.map {
-                .init(id: $0.id, name: $0.name, readCount: $0.readCount, totalCount: $0.totalCount)
+                .init(
+                    id: $0.id,
+                    name: $0.name,
+                    readCount: $0.readCount,
+                    totalCount: $0.totalCount,
+                    rating: $0.rating.map { Int($0.rounded()) },
+                    favorite: $0.favorite
+                )
             },
             favoriteCount: dashboard.favoriteCount,
             droppedCount: dashboard.droppedCount,

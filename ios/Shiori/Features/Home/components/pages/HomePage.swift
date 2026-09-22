@@ -20,6 +20,7 @@ struct HomePage: View {
     var onPileTapped: () -> Void = {}
     /// The average rating tile: opens the library on the rated books, best first.
     let onRatingTapped: () -> Void
+    var onReadTapped: () -> Void = {}
     var onFavoritesTapped: () -> Void = {}
     var onDroppedTapped: () -> Void = {}
     let onGenresTapped: () -> Void
@@ -82,10 +83,12 @@ struct HomePage: View {
                     monthsToClearPile: dashboard.monthsToClearPile,
                     averageRating: dashboard.averageRating,
                     ratedCount: dashboard.ratedCount,
+                    readCount: dashboard.readCount,
                     favoriteCount: dashboard.favoriteCount,
                     droppedCount: dashboard.droppedCount,
                     onPileTapped: onPileTapped,
                     onRatingTapped: onRatingTapped,
+                    onReadTapped: onReadTapped,
                     onFavoritesTapped: onFavoritesTapped,
                     onDroppedTapped: onDroppedTapped
                 )
@@ -175,6 +178,7 @@ extension Dashboard {
         pagesPerDay: .init(current: 24, previous: 18),
         daysToFinish: .init(current: 11, previous: 14),
         toReadCount: 27,
+        readCount: 142,
         monthsToClearPile: 9,
         averageRating: 4.2,
         ratedCount: 18,
@@ -183,8 +187,8 @@ extension Dashboard {
             .init(genre: .adventure, count: 3), .init(genre: .crime, count: 2), .init(genre: nil, count: 2),
         ],
         series: [
-            .init(id: "a", name: "One Piece", readCount: 107, totalCount: 110),
-            .init(id: "b", name: "Chronique du tueur de roi", readCount: 1, totalCount: 2),
+            .init(id: "a", name: "One Piece", readCount: 107, totalCount: 110, favorite: true),
+            .init(id: "b", name: "Chronique du tueur de roi", readCount: 1, totalCount: 2, rating: 4),
         ],
         favoriteCount: 6,
         droppedCount: 2,

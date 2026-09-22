@@ -119,6 +119,17 @@ const SeriesProgressType = builder.objectRef<SeriesProgress>('SeriesProgress').i
     name: t.field({ type: 'SeriesName', resolve: (series) => series.name }),
     readCount: t.exposeInt('readCount'),
     totalCount: t.exposeInt('totalCount'),
+    rating: t.float({
+      nullable: true,
+      description:
+        "The reader's rating of the saga, else the average of the volumes they " +
+        'rated. Null when they rated neither.',
+      resolve: (series) => series.rating ?? null,
+    }),
+    favorite: t.boolean({
+      description: 'The reader hearted the saga, which is five stars.',
+      resolve: (series) => series.favorite,
+    }),
   }),
 })
 
@@ -167,6 +178,9 @@ export const DashboardType = builder.objectRef<Dashboard>('Dashboard').implement
       resolve: (dashboard) => dashboard.daysToFinish,
     }),
     toReadCount: t.exposeInt('toReadCount'),
+    readCount: t.exposeInt('readCount', {
+      description: 'Every book finished since the first, whatever the year.',
+    }),
     monthsToClearPile: t.int({
       nullable: true,
       description: 'At the pace of the last twelve months. Null with no pile or no pace.',
@@ -185,7 +199,9 @@ export const DashboardType = builder.objectRef<Dashboard>('Dashboard').implement
     }),
     series: t.field({
       type: [SeriesProgressType],
-      description: 'Sagas in progress, most recent activity first, three at most.',
+      description:
+        'Sagas in progress, six at most: the best rated first, an unrated saga after ' +
+        'every rated one, the most recent activity among equals.',
       resolve: (dashboard) => dashboard.series,
     }),
     favoriteCount: t.exposeInt('favoriteCount', {

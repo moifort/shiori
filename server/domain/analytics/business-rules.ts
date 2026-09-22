@@ -39,7 +39,7 @@ const TOP_GENRES = 4
 /** Bumped whenever the view gains a figure or a rule changes, so a view stored
  *  by an older bundle is rebuilt on its next read instead of answering with a
  *  field it never computed. */
-export const VIEW_VERSION = 6
+export const VIEW_VERSION = 7
 
 // MARK: - Calendar
 
@@ -160,6 +160,7 @@ export const analyticsViewOf = (input: {
       catalogues,
       yearOf(localDateOf(now, timeZone)),
       seriesRatings,
+      new Set(opinions.filter((opinion) => opinion.favorite).map((opinion) => opinion.seriesId)),
     ),
     favoriteBookCount: books.filter((book) => book.favorite === true).length,
     favoriteSeriesCount: opinions.filter((opinion) => opinion.favorite === true).length,
@@ -177,6 +178,7 @@ export const seriesProgressOf = (
   catalogues: readonly Series[],
   currentYear: number,
   seriesRatings: ReadonlyMap<SeriesId, StarRating> = new Map(),
+  hearted: ReadonlySet<SeriesId> = new Set(),
 ): SeriesProgress[] => {
   const progress: SeriesProgress[] = []
   for (const series of catalogues) {
@@ -195,6 +197,7 @@ export const seriesProgressOf = (
       readCount,
       totalCount,
       rating: sagaRatingOf(series.id, owned, seriesRatings),
+      favorite: hearted.has(series.id),
       lastActivityAt: new Date(
         Math.max(
           ...owned.map((book) => (book.finishedAt ?? book.startedAt ?? book.addedAt).getTime()),
@@ -244,11 +247,16 @@ export const dashboardOf = (view: AnalyticsView, today: LocalDateValue): Dashboa
     pagesPerDay: pagesPerDayTrendOf(finishes, today),
     daysToFinish: daysToFinishTrendOf(finishes, today),
     toReadCount: view.toRead.length,
+    readCount: finishes.length,
     monthsToClearPile: monthsToClearPileOf(finishes, view.toRead.length, today),
     averageRating: averageRatingOf(finishes),
     ratedCount: finishes.filter((finish) => finish.rating !== undefined).length,
     genres: genresOf(finishes, currentYear),
-    series: [...view.series].sort(compareSeriesProgress).slice(0, SERIES_SHOWN),
+    // A view stored before the heart was carried reads as no heart.
+    series: [...view.series]
+      .sort(compareSeriesProgress)
+      .slice(0, SERIES_SHOWN)
+      .map((series) => ({ ...series, favorite: series.favorite ?? false })),
     favoriteCount: (view.favoriteBookCount ?? 0) + (view.favoriteSeriesCount ?? 0),
     hasAudiobooks: (view.audiobookCount ?? 0) > 0,
     hasPrintedBooks: view.printedBookCount === undefined || view.printedBookCount > 0,

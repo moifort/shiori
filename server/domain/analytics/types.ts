@@ -62,6 +62,8 @@ export type SeriesProgress = {
    *  its rated volumes — which ranks the dashboard's card. Absent when they
    *  have rated neither, and on a view stored before the field existed. */
   rating?: number
+  /** The reader hearted the saga: drawn as the heart, which is five stars. */
+  favorite: boolean
   lastActivityAt: Date
 }
 
@@ -129,6 +131,8 @@ export type Dashboard<Card = DashboardBook> = {
   pagesPerDay: Trend
   daysToFinish: Trend
   toReadCount: number
+  /** Every book finished since the first, whatever the year. */
+  readCount: number
   monthsToClearPile?: number
   averageRating?: number
   ratedCount: number

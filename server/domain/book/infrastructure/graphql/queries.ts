@@ -44,6 +44,9 @@ builder.queryFields((t) => ({
       }),
       rated: t.arg.boolean({
         required: false,
+        deprecationReason:
+          'A heart is five stars, so the favourites are the best rated: the app no ' +
+          'longer has a rated view. Kept for the builds that still send it.',
         description:
           'Keep only the books that show stars, the best first: rated by hand, or ' +
           'through their saga (`seriesRating`). Within one band of stars, the order ' +

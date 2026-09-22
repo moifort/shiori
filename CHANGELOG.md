@@ -10,6 +10,16 @@ the release tag is pushed.
 
 ## Unreleased
 
+- The dashboard counts every book read since the first, in a "Read" box beside the
+  favourites and the dropped books, which opens the library on the books read.
+- The dashboard's saga card is now "Best series in progress", drawn in mint rather than
+  purple, and shows the heart or the stars of each saga beside its count.
+- The library's "Rated" view is gone: a heart is five stars, so the favourites are the best
+  rated. The average rating tile opens the favourites.
+- A dropped book is marked by a thumbs-down, in the library filter and everywhere its status
+  is drawn, rather than by a cross.
+- A saga the reader stopped following carries a crossed-out bell in its top corner, on its
+  row and on its screen, instead of the "Not followed" label.
 - A saga the reader stopped following leaves the Series tab: it shows only under the
   "Not followed" filter, and no longer in the full list or the favourites.
 - A saga held in two languages is followed edition by edition: "Stop following" on the

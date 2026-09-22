@@ -4,6 +4,17 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- L’accueil compte tous les livres lus depuis le premier, dans une case « Lus » à côté des
+  favoris et des abandonnés, qui ouvre la bibliothèque sur les livres lus.
+- La carte des séries de l’accueil devient « Meilleures séries en cours », dessinée en vert
+  menthe plutôt qu’en violet, et affiche le cœur ou les étoiles de chaque série à côté de son
+  compte.
+- La vue « Notés » de la bibliothèque disparaît : un cœur vaut cinq étoiles, donc les favoris
+  sont les mieux notés. La case de la note moyenne ouvre les favoris.
+- Un livre abandonné est marqué d’un pouce vers le bas, dans le filtre de la bibliothèque et
+  partout où son statut est dessiné, plutôt que d’une croix.
+- Une série que le lecteur ne suit plus porte une cloche barrée dans son coin, sur sa ligne
+  et sur sa fiche, à la place du label « Non suivie ».
 - Une série que le lecteur ne suit plus quitte l’onglet Séries : elle n’apparaît plus que
   sous le filtre « Non suivies », ni dans la liste complète ni dans les favoris.
 - Une série possédée en deux langues se suit édition par édition : « Ne plus suivre » sur

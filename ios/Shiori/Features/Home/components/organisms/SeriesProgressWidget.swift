@@ -5,7 +5,7 @@ struct SeriesProgressWidget: View {
     let onHeaderTapped: () -> Void
 
     var body: some View {
-        WidgetCard(title: "Séries en cours", action: onHeaderTapped) {
+        WidgetCard(title: "Meilleures séries en cours", action: onHeaderTapped) {
             if series.isEmpty {
                 WidgetEmptyMessage(text: "Aucune série en cours.", placeholder: .rings)
             }
@@ -16,6 +16,9 @@ struct SeriesProgressWidget: View {
                             HStack {
                                 Text(entry.name).font(.subheadline.weight(.medium)).lineLimit(1)
                                 Spacer()
+                                // What ranks the saga here: the heart, else
+                                // the stars.
+                                OpinionMark(rating: entry.rating, isFavorite: entry.favorite)
                                 Text("\(entry.readCount)/\(entry.totalCount)")
                                     .font(.subheadline.monospacedDigit())
                                     .foregroundStyle(.secondary)

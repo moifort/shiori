@@ -1,21 +1,19 @@
 import Foundation
 
-/// The three ways the Library tab looks at the shelf, switched from the
-/// toolbar as Vinarium switches its wine list: everything, the favourites, or
-/// the rated books best first. The Series tab offers the first two.
+/// The two ways the Library tab looks at the shelf, switched from the toolbar
+/// as Vinarium switches its wine list: everything, or the favourites. There is
+/// no rated view: a heart is five stars, so the favourites are the best rated.
 enum LibraryMode: String, CaseIterable, Identifiable {
-    case all, favorites, rated
+    case all, favorites
     var id: String { rawValue }
 
-    /// The views the Series tab shares: sagas are hearted as books are, but
-    /// the tab has no rating order of its own.
+    /// The views the Series tab shares: sagas are hearted as books are.
     static let seriesViews: [LibraryMode] = [.all, .favorites]
 
     var label: String {
         switch self {
         case .all: String(localized: "Tout")
         case .favorites: String(localized: "Favoris")
-        case .rated: String(localized: "Notés")
         }
     }
 
@@ -23,7 +21,6 @@ enum LibraryMode: String, CaseIterable, Identifiable {
         switch self {
         case .all: "books.vertical"
         case .favorites: "heart.fill"
-        case .rated: "star.fill"
         }
     }
 
@@ -31,7 +28,6 @@ enum LibraryMode: String, CaseIterable, Identifiable {
         switch self {
         case .all: String(localized: "Par date")
         case .favorites: String(localized: "Vos coups de cœur")
-        case .rated: String(localized: "Par note")
         }
     }
 }
@@ -109,16 +105,13 @@ final class LibraryViewModel {
     private var reloadTask: Task<Void, Never>?
 
     /// The rows cut into month headings, newest first, on the date the
-    /// server shelved each book on — or, in the rated view, into one heading
-    /// per number of stars, best first.
+    /// server shelved each book on.
     var sections: [MonthSection<Book>] {
-        mode == .rated
-            ? MonthSection.cutByStars(books, on: \.shownRating)
-            : MonthSection.cut(books, on: \.shelvedAt)
+        MonthSection.cut(books, on: \.shelvedAt)
     }
 
     /// Opens the view another screen asks for, as the dashboard does: the
-    /// rated books behind the rating tile, the pile behind its tile, the
+    /// favourites behind the rating tile, the pile behind its tile, the
     /// favourites and the dropped books behind theirs, the whole shelf behind
     /// the genre bar. A status filter left from an earlier visit is replaced,
     /// since it would hide half of what was asked for.

@@ -483,10 +483,15 @@ type Dashboard {
   pagesPerMonth: [MonthPages!]!
   ratedCount: Int!
 
+  """Every book finished since the first, whatever the year."""
+  readCount: Int!
+
   """Most recently started first, ten at most."""
   reading: [DashboardBook!]!
 
-  """Sagas in progress, most recent activity first, three at most."""
+  """
+  Sagas in progress, six at most: the best rated first, an unrated saga after every rated one, the most recent activity among equals.
+  """
   series: [SeriesProgress!]!
 
   """Six books of the pile, drawn at random once a day."""
@@ -1402,7 +1407,7 @@ type Query {
     """
     Keep only the books that show stars, the best first: rated by hand, or through their saga (`seriesRating`). Within one band of stars, the order of the shelf. The app cuts the page into sections by stars rather than by month.
     """
-    rated: Boolean
+    rated: Boolean @deprecated(reason: "A heart is five stars, so the favourites are the best rated: the app no longer has a rated view. Kept for the builds that still send it.")
 
     """Keep only books in this status. Omit for the whole library."""
     status: ReadingStatus
@@ -1728,8 +1733,15 @@ type SeriesOpinion {
 How far the reader is through a saga in progress, on the numbered volumes already published.
 """
 type SeriesProgress {
+  """The reader hearted the saga, which is five stars."""
+  favorite: Boolean!
   id: SeriesId!
   name: SeriesName!
+
+  """
+  The reader's rating of the saga, else the average of the volumes they rated. Null when they rated neither.
+  """
+  rating: Float
   readCount: Int!
   totalCount: Int!
 }

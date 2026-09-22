@@ -41,6 +41,7 @@ describe('the dashboard through the API', () => {
         suggestions { title }
         lastFinished { title rating }
         toReadCount
+        readCount
         averageRating
         ratedCount
         genres { genre count }
@@ -69,6 +70,7 @@ describe('the dashboard through the API', () => {
       suggestions: [{ title: 'Hypérion' }],
       lastFinished: { title: 'Le Nom du vent', rating: 5 },
       toReadCount: 1,
+      readCount: 1,
       averageRating: 5,
       ratedCount: 1,
       genres: [{ genre: 'FANTASY', count: 1 }],

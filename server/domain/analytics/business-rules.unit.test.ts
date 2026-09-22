@@ -364,7 +364,7 @@ describe('building the view', () => {
       now: new Date('2026-09-15T10:00:00.000Z'),
       catalogues: sagas,
       opinions: [
-        { userId: reader, seriesId: 'b' as SeriesId, rating: StarRating(5) },
+        { userId: reader, seriesId: 'b' as SeriesId, rating: StarRating(5), favorite: true },
         // The saga's own rating wins over its volumes'.
         { userId: reader, seriesId: 'c' as SeriesId, rating: StarRating(2) },
       ],
@@ -380,9 +380,12 @@ describe('building the view', () => {
       ],
     })
 
-    const shown = dashboardOf(view, day('2026-09-15')).series.map((entry) => entry.id)
+    const series = dashboardOf(view, day('2026-09-15')).series
 
-    expect(shown).toEqual(['b', 'e', 'd', 'c', 'a', 'h'] as SeriesId[])
+    expect(series.map((entry) => entry.id)).toEqual(['b', 'e', 'd', 'c', 'a', 'h'] as SeriesId[])
+    // What the card draws beside each saga: the heart, else the stars.
+    expect(series[0]).toMatchObject({ rating: 5, favorite: true })
+    expect(series[1]).toMatchObject({ rating: 4, favorite: false })
   })
 
   test('sorts the shelves and keeps the last finished book', () => {
@@ -469,6 +472,23 @@ describe('building the view', () => {
     expect(dashboardOf(view, today).hasAudiobooks).toBe(true)
     expect(dashboardOf(view, today).hasPrintedBooks).toBe(true)
     expect(dashboardOf(view, today).droppedCount).toBe(1)
+  })
+
+  // Every book finished since the reader's first, whatever the year.
+  test('counts every book read since the start', () => {
+    const view = analyticsViewOf({
+      userId: reader,
+      timeZone: paris,
+      now: new Date('2026-09-15T10:00:00.000Z'),
+      catalogues: [],
+      books: [
+        book('long-ago', { status: 'read', finishedAt: new Date('2012-05-01') }),
+        book('this-year', { status: 'read', finishedAt: new Date('2026-05-01') }),
+        book('open', { status: 'reading' }),
+      ],
+    })
+
+    expect(dashboardOf(view, day('2026-09-15')).readCount).toBe(2)
   })
 
   // A library of recordings only has no page to chart.

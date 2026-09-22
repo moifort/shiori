@@ -52,6 +52,11 @@ struct Dashboard: Codable, Sendable {
         let name: String
         let readCount: Int
         let totalCount: Int
+        /// The reader's rating of the saga, else the average of the volumes
+        /// they rated, rounded to the stars drawn. Nil when they rated neither.
+        var rating: Int?
+        /// A hearted saga, drawn as the heart, which is five stars.
+        var favorite: Bool = false
     }
 
     let currentYear: Int
@@ -64,6 +69,8 @@ struct Dashboard: Codable, Sendable {
     let pagesPerDay: Trend
     let daysToFinish: Trend
     let toReadCount: Int
+    /// Every book finished since the first, whatever the year.
+    var readCount: Int = 0
     let monthsToClearPile: Int?
     let averageRating: Double?
     let ratedCount: Int
