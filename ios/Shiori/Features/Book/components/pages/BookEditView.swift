@@ -93,14 +93,13 @@ struct BookEditView: View {
                                 .accessibilityIdentifier("edit-narrators")
                         }
                     }
-                    MenuPickerRow(
-                        title: "Format",
-                        icon: "books.vertical",
-                        selection: $format,
-                        options: BookFormat.allCases,
-                        label: { $0.label },
-                        image: { Image(systemName: $0.symbol) }
-                    )
+                    Picker(selection: $format) {
+                        ForEach(BookFormat.allCases, id: \.self) { option in
+                            Label(option.label, systemImage: option.symbol).tag(option)
+                        }
+                    } label: {
+                        Label("Format", systemImage: "books.vertical")
+                    }
                     .accessibilityIdentifier("edit-format")
                 } footer: {
                     if trimmed(title).isEmpty {
@@ -113,18 +112,20 @@ struct BookEditView: View {
                 }
 
                 Section {
-                    InteractiveStarRating(rating: $rating)
-                        .accessibilityIdentifier("edit-rating")
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("Note", systemImage: "star")
+                            .foregroundStyle(.secondary)
+                        InteractiveStarRating(rating: $rating)
+                            .accessibilityIdentifier("edit-rating")
+                    }
+                    .padding(.vertical, 4)
+                    dateFields
                 } header: {
-                    Text("Note")
+                    Text("Ma lecture")
                 } footer: {
                     Text(rating == 0
                         ? "Noter un livre le marque comme lu."
                         : "Touchez l'étoile sélectionnée pour retirer la note.")
-                }
-
-                if book.addedAt != nil || book.startedAt != nil || book.finishedAt != nil {
-                    datesSection
                 }
 
                 Section("Résumé") {
@@ -153,30 +154,30 @@ struct BookEditView: View {
                             TextField("Pages", text: $pages).keyboardType(.numberPad)
                         }
                     }
-                    MenuPickerRow(
-                        title: "Genre",
-                        icon: "theatermasks",
-                        selection: $genre,
-                        options: [nil] + BookGenre.alphabetical.map(Optional.some),
-                        label: { $0?.label ?? String(localized: "Non renseigné") },
-                        image: { $0?.image }
-                    )
-                    .accessibilityIdentifier("edit-genre")
-                    Label {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Sous-genres")
-                            SubgenreField(text: $subgenres, suggestions: subgenreSuggestions)
+                    Picker(selection: $genre) {
+                        Text("Non renseigné").tag(BookGenre?.none)
+                        ForEach(BookGenre.alphabetical, id: \.self) { option in
+                            Label { Text(option.label) } icon: { option.image }
+                                .tag(BookGenre?.some(option))
                         }
-                    } icon: {
-                        Image(systemName: "tag").foregroundStyle(.secondary)
+                    } label: {
+                        Label("Genre", systemImage: "theatermasks")
                     }
-                    MenuPickerRow(
-                        title: "Langue",
-                        icon: "globe",
-                        selection: $language,
-                        options: [nil] + BookLanguage.allCases.map(Optional.some),
-                        label: { $0?.label ?? String(localized: "Non renseignée") }
-                    )
+                    .accessibilityIdentifier("edit-genre")
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("Sous-genres", systemImage: "tag")
+                            .foregroundStyle(.secondary)
+                        SubgenreField(text: $subgenres, suggestions: subgenreSuggestions)
+                    }
+                    .padding(.vertical, 4)
+                    Picker(selection: $language) {
+                        Text("Non renseignée").tag(BookLanguage?.none)
+                        ForEach(BookLanguage.allCases, id: \.self) { option in
+                            Text(option.label).tag(BookLanguage?.some(option))
+                        }
+                    } label: {
+                        Label("Langue", systemImage: "globe")
+                    }
                     .accessibilityIdentifier("edit-language")
                     LabeledField(title: "ISBN", icon: "barcode") {
                         TextField("978…", text: $isbn).keyboardType(.numberPad)
@@ -192,14 +193,12 @@ struct BookEditView: View {
                 }
 
                 Section {
-                    Label {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Nom")
-                            SeriesNameField(text: $seriesName, suggestions: seriesSuggestions)
-                        }
-                    } icon: {
-                        Image(systemName: "books.vertical").foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("Nom", systemImage: "books.vertical")
+                            .foregroundStyle(.secondary)
+                        SeriesNameField(text: $seriesName, suggestions: seriesSuggestions)
                     }
+                    .padding(.vertical, 4)
                     if !trimmed(seriesName).isEmpty {
                         LabeledField(title: "Tome", icon: "number") {
                             TextField("Sans numéro", text: $seriesVolume)
@@ -217,7 +216,6 @@ struct BookEditView: View {
                     }
                 }
             }
-            .labelStyle(.row)
             .navigationTitle("Modifier")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -253,35 +251,32 @@ struct BookEditView: View {
 
     /// Each picker is bounded by its neighbours, so the form cannot say a book
     /// was finished before it was begun, nor on a day still to come.
-    private var datesSection: some View {
+    @ViewBuilder
+    private var dateFields: some View {
         // Never before a date already stored: a server clock a little ahead of
         // the phone's must not leave a picker with an empty range.
         let latest = [Date.now, book.addedAt, book.startedAt, book.finishedAt].compactMap(\.self).max() ?? .now
-        return Section {
-            if book.addedAt != nil {
-                DateField(title: "Ajouté le", icon: "tray.and.arrow.down", date: $addedAt, range: .distantPast...latest)
-                    .accessibilityIdentifier("edit-added-at")
-            }
-            if book.startedAt != nil {
-                DateField(
-                    title: "Commencé le",
-                    icon: "calendar.badge.plus",
-                    date: $startedAt,
-                    range: .distantPast...(book.finishedAt != nil ? finishedAt : latest)
-                )
-                .accessibilityIdentifier("edit-started-at")
-            }
-            if book.finishedAt != nil {
-                DateField(
-                    title: "Terminé le",
-                    icon: "calendar.badge.checkmark",
-                    date: $finishedAt,
-                    range: (book.startedAt != nil ? startedAt : .distantPast)...latest
-                )
-                .accessibilityIdentifier("edit-finished-at")
-            }
-        } header: {
-            Text("Dates")
+        if book.addedAt != nil {
+            DateField(title: "Ajouté le", icon: "tray.and.arrow.down", date: $addedAt, range: .distantPast...latest)
+                .accessibilityIdentifier("edit-added-at")
+        }
+        if book.startedAt != nil {
+            DateField(
+                title: "Commencé le",
+                icon: "calendar.badge.plus",
+                date: $startedAt,
+                range: .distantPast...(book.finishedAt != nil ? finishedAt : latest)
+            )
+            .accessibilityIdentifier("edit-started-at")
+        }
+        if book.finishedAt != nil {
+            DateField(
+                title: "Terminé le",
+                icon: "calendar.badge.checkmark",
+                date: $finishedAt,
+                range: (book.startedAt != nil ? startedAt : .distantPast)...latest
+            )
+            .accessibilityIdentifier("edit-finished-at")
         }
     }
 
@@ -422,8 +417,7 @@ struct BookEditView: View {
     }
 }
 
-/// A day picked on a form row, with the same icon and label as the sheet's
-/// reading row. The day only: the time of day a book was finished is nobody's
+/// A day picked on a form row, laid out as Vinarium's edit form lays its dates. The day only: the time of day a book was finished is nobody's
 /// business, and the picker keeps the one already stored.
 private struct DateField: View {
     let title: LocalizedStringKey
@@ -432,32 +426,27 @@ private struct DateField: View {
     let range: ClosedRange<Date>
 
     var body: some View {
-        // The icon inside the picker's label, not beside the whole picker: its
-        // taller date button pushed an outer icon up off the label's line.
-        DatePicker(selection: $date, in: range, displayedComponents: .date) {
-            Label {
-                Text(title)
-            } icon: {
-                Image(systemName: icon).foregroundStyle(.secondary)
-            }
+        LabeledContent {
+            DatePicker("", selection: $date, in: range, displayedComponents: .date)
+                .labelsHidden()
+        } label: {
+            Label(title, systemImage: icon)
         }
     }
 }
 
-/// A form row with the same icon and label as the sheet's reading row, and the
-/// field trailing where the value was.
+/// A form row as Vinarium's edit form draws one: the icon and title leading,
+/// the field trailing where the value was.
 private struct LabeledField<Field: View>: View {
     let title: LocalizedStringKey
     let icon: String
     @ViewBuilder let field: Field
 
     var body: some View {
-        Label {
-            LabeledContent(title) {
-                field.multilineTextAlignment(.trailing)
-            }
-        } icon: {
-            Image(systemName: icon).foregroundStyle(.secondary)
+        LabeledContent {
+            field.multilineTextAlignment(.trailing)
+        } label: {
+            Label(title, systemImage: icon)
         }
     }
 }
