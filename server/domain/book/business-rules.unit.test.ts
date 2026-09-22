@@ -3,6 +3,7 @@ import {
   datesAfterStatusChange,
   groupedBySeries,
   readVolumeNumbersOf,
+  retaggedAfterEdit,
   shelfPageOf,
   shelvedOf,
   statusAfterRating,
@@ -371,35 +372,48 @@ describe('groupedBySeries, across languages', () => {
 })
 
 describe('subgenresOf', () => {
-  const tagged = (...subgenres: [fr: string, en: string][]) => ({
-    subgenres: subgenres.map(([fr, en]) => ({ fr: Subgenre(fr), en: Subgenre(en) })),
+  const tagged = (...subgenres: string[]) => ({
+    subgenres: subgenres.map((label) => ({ label: Subgenre(label), language: 'fr' as const })),
   })
 
   test('proposes the most used first, then alphabetically', () => {
     const proposed = subgenresOf(
-      [
-        tagged(['Space opera', 'Space opera'], ['Jeunesse', 'Children']),
-        tagged(['Dark fantasy', 'Dark fantasy']),
-        tagged(['Space opera', 'Space opera']),
-      ],
+      [tagged('Space opera', 'Jeunesse'), tagged('Dark fantasy'), tagged('Space opera')],
       'fr',
     )
     expect(proposed.map(String)).toEqual(['Space Opera', 'Dark Fantasy', 'Jeunesse'])
   })
 
-  // The same shelf, read by an English-speaking app.
-  test('proposes the labels of the language asked for', () => {
-    const proposed = subgenresOf([tagged(['Roman initiatique', 'Coming-of-age'])], 'en')
-    expect(proposed.map(String)).toEqual(['Coming-of-age'])
+  // A French app proposes what was written in French, and nothing else.
+  test('proposes only the labels written in the language asked for', () => {
+    const shelf = [
+      tagged('Jeunesse'),
+      { subgenres: [{ label: Subgenre('Grimdark'), language: 'en' as const }] },
+    ]
+    expect(subgenresOf(shelf, 'fr').map(String)).toEqual(['Jeunesse'])
+    expect(subgenresOf(shelf, 'en').map(String)).toEqual(['Grimdark'])
   })
 
   // Two spellings of one word are one word: the form must not propose both.
   test('folds case, keeping the first spelling seen', () => {
-    const proposed = subgenresOf(
-      [tagged(['Dark fantasy', 'Dark fantasy']), tagged(['dark FANTASY', 'dark FANTASY'])],
-      'fr',
-    )
+    const proposed = subgenresOf([tagged('Dark fantasy'), tagged('dark FANTASY')], 'fr')
     expect(proposed.map(String)).toEqual(['Dark Fantasy'])
+  })
+})
+
+describe('retaggedAfterEdit', () => {
+  const tag = (label: string, language: 'fr' | 'en') => ({ label: Subgenre(label), language })
+
+  // Editing the list is not rewriting what was already on it.
+  test('keeps the language of a label the book already carried, tags a new one', () => {
+    const edited = retaggedAfterEdit(
+      [tag('grimdark', 'fr'), tag('Roman noir', 'fr')],
+      [tag('Grimdark', 'en')],
+    )
+    expect(edited.map(({ label, language }) => [String(label), language])).toEqual([
+      ['Grimdark', 'en'],
+      ['Roman Noir', 'fr'],
+    ])
   })
 })
 

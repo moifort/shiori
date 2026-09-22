@@ -1,7 +1,7 @@
 import type { AudibleGenre, AudibleItem } from 'audible-api-ts'
 import { GENRE_CATEGORIES } from 'audible-api-ts'
 import { MAX_SUBGENRES, Subgenre } from '~/domain/book/primitives'
-import type { Genre, LocalizedSubgenre } from '~/domain/book/types'
+import type { BookLanguage, Genre, TaggedSubgenre } from '~/domain/book/types'
 
 /** What one Audible shelf says about a book: the genre it belongs to, or — when
  *  the shelf is not a genre at all — the subgenre that records it anyway.
@@ -40,8 +40,9 @@ type Shelf = { genre: Genre; generic?: true } | { subgenre: { fr: string; en: st
  *  shelf name, for the same reason the ids are matched and the names are not: the
  *  name arrives translated per marketplace and reworded between seasons, and a
  *  library would end up carrying "Jeunesse" and "Children's" as two different
- *  subgenres. Each is written in every language the app speaks, as a book's
- *  subgenres are stored, so the import costs no translation call. */
+ *  subgenres. Each is written in French and in English, and a title takes the
+ *  one of its own language, as a scan writes a subgenre in the language of the
+ *  edition. */
 const SHELF: Record<AudibleGenre, Shelf> = {
   'science-fiction': { genre: 'science-fiction' },
   fantasy: { genre: 'fantasy' },
@@ -225,11 +226,14 @@ export const genreFrom = (item: AudibleItem): Genre | undefined => {
  *  Deduplicated — a title sits on several ladders and they overlap — and capped
  *  at `MAX_SUBGENRES`, in the order the ladders gave them, since the first is the
  *  only one the library list shows. */
-export const subgenresFrom = (item: AudibleItem): LocalizedSubgenre[] => {
-  const shelves = laddersOf(item)
+export const subgenresFrom = (item: AudibleItem, language?: BookLanguage): TaggedSubgenre[] => {
+  // Written in the title's own language; English, the closer of the two to
+  // anything else Audible sells, when that is neither.
+  const side = language === 'fr' ? 'fr' : 'en'
+  const labels = laddersOf(item)
     .flat()
-    .flatMap((shelf) => ('subgenre' in shelf ? [shelf.subgenre] : []))
-  return [...new Map(shelves.map((shelf) => [shelf.en, shelf])).values()]
+    .flatMap((shelf) => ('subgenre' in shelf ? [shelf.subgenre[side]] : []))
+  return [...new Set(labels)]
     .slice(0, MAX_SUBGENRES)
-    .map(({ fr, en }) => ({ fr: Subgenre(fr), en: Subgenre(en) }))
+    .map((label) => ({ label: Subgenre(label), language: side }))
 }

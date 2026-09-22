@@ -8,9 +8,10 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   bibliothèque se met en place, et attend un import Audible assez longtemps pour que ses
   premiers livres soient là. Le bouton des réglages reste un engrenage ; un import encore en
   cours ensuite s’affiche par la roue qui mène l’accueil.
-- Les sous-genres s’affichent dans la langue de l’app, quelle que soit la langue dans
-  laquelle ils ont été scannés, importés ou saisis : chacun est conservé en français et en
-  anglais, et ceux déjà présents dans la bibliothèque sont traduits.
+- Les sous-genres ne sont jamais traduits, et chacun connaît sa langue : un scan les écrit
+  dans la langue de l’édition, un import Audible dans celle du titre, et un lecteur qui en
+  saisit un dans la langue de son app. Les suggestions proposées pendant la saisie sont
+  celles de la langue de l’app.
 - La bibliothèque et l’onglet Séries sont triés par date et découpés par mois, comme dans
   Vinarium : du plus récent au plus ancien selon le jour où un livre a été terminé, sinon
   commencé, sinon ajouté, et une saga selon son dernier tome. Cela remplace les sections par

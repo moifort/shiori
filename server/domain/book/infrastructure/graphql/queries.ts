@@ -75,9 +75,10 @@ builder.queryFields((t) => ({
   subgenres: t.field({
     type: ['Subgenre'],
     description:
-      'Every subgenre the reader has used across their library, the most used ' +
-      'first. What the edit form proposes as they type: a vocabulary drawn from ' +
-      'their own shelf. Costs the same scan as the library.',
+      'Every subgenre the reader has used across their library in the language of ' +
+      '`Accept-Language`, the most used first. What the edit form proposes as they ' +
+      'type: a vocabulary drawn from their own shelf, in the language they type in. ' +
+      'Costs the same scan as the library.',
     resolve: (_root, _args, context) =>
       BookQuery.subgenres(context.userId, languageOf(context.event)),
   }),

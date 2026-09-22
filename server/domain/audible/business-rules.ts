@@ -42,6 +42,10 @@ export const importableFrom = (
 
   const authors = authorsOf(item)
   const status = statusOf(item)
+  // Audible spells the language out ("french", "english"), and files a handful
+  // of titles under a language nobody expected. Unknown ones are dropped: a
+  // guess here would split a saga's shelves on a value nothing established.
+  const language = optionally(languageCodeOf(item.language), BookLanguageValue)
 
   return {
     asin,
@@ -57,13 +61,10 @@ export const importableFrom = (
     // Audible carries the ISBN of the printed edition when it has one at all, so
     // this is the one field that can reach Open Library later.
     isbn13: optionally(item.isbn, Isbn13),
-    // Audible spells the language out ("french", "english"), and files a handful
-    // of titles under a language nobody expected. Unknown ones are dropped: a
-    // guess here would split a saga's shelves on a value nothing established.
-    language: optionally(languageCodeOf(item.language), BookLanguageValue),
+    language,
     coverUrl: optionally(largestCoverOf(item), CoverUrl),
     genre: genreFrom(item),
-    subgenres: subgenresFrom(item),
+    subgenres: subgenresFrom(item, language),
     series: seriesMembershipOf(item, authors),
     status,
     // Only a finished book has a finishing date to keep. A part-listened title

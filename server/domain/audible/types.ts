@@ -5,12 +5,12 @@ import type {
   Genre,
   Isbn13,
   ListeningMinutes,
-  LocalizedSubgenre,
   NarratorName,
   Publisher,
   ReadingStatus,
   SeriesMembership,
   Synopsis,
+  TaggedSubgenre,
 } from '~/domain/book/types'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 
@@ -142,7 +142,7 @@ export type ImportableBook = {
   genre?: Genre
   /** What the title's shelves say that no genre can hold — an audience
    *  ("Jeunesse") or a theme ("LGBTQ+"). Empty far more often than not. */
-  subgenres: LocalizedSubgenre[]
+  subgenres: TaggedSubgenre[]
   series?: SeriesMembership
   status: ReadingStatus
   /** When Audible says the listening ended. Carried onto the book so importing a

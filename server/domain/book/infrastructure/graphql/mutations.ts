@@ -1,4 +1,5 @@
 import { match } from 'ts-pattern'
+import { taggedIn } from '~/domain/book/business-rules'
 import type { BookEdit } from '~/domain/book/command'
 import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { BookEditInput, NewBookInput } from '~/domain/book/infrastructure/graphql/inputs'
@@ -11,7 +12,6 @@ import { builder } from '~/domain/shared/graphql/builder'
 import { notFound } from '~/domain/shared/graphql/errors'
 import { languageOf } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
-import { SubgenreUseCase } from '~/domain/subgenre/use-case'
 
 // Commands answer with the record or a bare 'not-found'. Re-reading through the
 // query is what attaches the signed cover URL, which the command layer knows
@@ -45,10 +45,12 @@ builder.mutationFields((t) => ({
         firstPublishedIn: args.input.firstPublishedIn ?? undefined,
         synopsis: args.input.synopsis ?? undefined,
         genre: args.input.genre ?? undefined,
+        // A new book's subgenres come from its scan, written in the language of the
+        // edition — or of the app, when the scan could not tell the edition's.
         subgenres: args.input.subgenres
-          ? await SubgenreUseCase.localized(
+          ? taggedIn(
               args.input.subgenres.slice(0, MAX_SUBGENRES),
-              languageOf(context.event),
+              args.input.language ?? languageOf(context.event),
             )
           : undefined,
         pageCount: args.input.pageCount ?? undefined,
@@ -88,9 +90,11 @@ builder.mutationFields((t) => ({
         ...(input.format != null ? { format: input.format } : {}),
         // Lists clear to empty rather than to absent: the record always has them.
         ...(input.authors !== undefined ? { authors: input.authors ?? [] } : {}),
+        // Typed by the reader, so in the language of their app — except the labels
+        // the book already carried, which the command leaves in their own.
         ...(input.subgenres !== undefined
           ? {
-              subgenres: await SubgenreUseCase.localized(
+              subgenres: taggedIn(
                 (input.subgenres ?? []).slice(0, MAX_SUBGENRES),
                 languageOf(context.event),
               ),

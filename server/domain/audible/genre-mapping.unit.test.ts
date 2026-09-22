@@ -3,9 +3,9 @@ import type { AudibleGenre, AudibleItem, CategoryLadder } from 'audible-api-ts'
 import { resolveGenreId } from 'audible-api-ts'
 import { genreFrom, subgenresFrom } from '~/domain/audible/genre-mapping'
 
-/** The French side of what an import files, as a French reader's app reads it. */
-const frenchSubgenresOf = (item: Parameters<typeof subgenresFrom>[0]) =>
-  subgenresFrom(item).map((subgenre) => String(subgenre.fr))
+/** What a French title's shelves file, as its labels. */
+const frenchSubgenresOf = (item: AudibleItem) =>
+  subgenresFrom(item, 'fr').map(({ label }) => String(label))
 
 /** A ladder built from the shelves Audible would file a title under, root first.
  *
@@ -107,6 +107,23 @@ describe('a shelf that is not a genre', () => {
   test('records an audience as a subgenre instead', () => {
     expect(genreFrom(shelvedIn(ladderOf(['children'])))).toBeUndefined()
     expect(frenchSubgenresOf(shelvedIn(ladderOf(['children'])))).toEqual(['Jeunesse'])
+  })
+
+  // A title takes the labels of its own language, as a scan does the edition's.
+  test('writes the subgenres in the language of the title, tagged with it', () => {
+    const item = shelvedIn(ladderOf(['children']), ladderOf(['sports']))
+    expect(
+      subgenresFrom(item, 'en').map(({ label, language }) => [String(label), language]),
+    ).toEqual([
+      ['Children', 'en'],
+      ['Sports', 'en'],
+    ])
+    expect(
+      subgenresFrom(item, 'fr').map(({ label, language }) => [String(label), language]),
+    ).toEqual([
+      ['Jeunesse', 'fr'],
+      ['Sport', 'fr'],
+    ])
   })
 
   test('records a theme as a subgenre instead', () => {

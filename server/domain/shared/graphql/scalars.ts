@@ -116,9 +116,8 @@ builder.scalarType('NarratorName', {
 
 builder.scalarType('Subgenre', {
   description:
-    'One free label refining the genre, 1 to 100 characters, in the language of ' +
-    '`Accept-Language`: sent in it, and served in it whichever language it was ' +
-    'first written in. Example: "Dark fantasy".',
+    'One free label refining the genre, 1 to 100 characters, never translated: sent ' +
+    'in the language of `Accept-Language`, served as it was written. Example: "Dark fantasy".',
   serialize: (value) => value as string,
   parseValue: validatedParse('Subgenre', Subgenre),
 })

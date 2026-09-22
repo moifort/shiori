@@ -3,6 +3,7 @@ import * as repository from '~/domain/book/infrastructure/repository'
 import type {
   Book,
   BookId,
+  BookLanguage,
   BookView,
   LibrarySection,
   ReadingStatus,
@@ -10,7 +11,6 @@ import type {
 } from '~/domain/book/types'
 import type { SeriesId } from '~/domain/series/types'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
-import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 import { objectStore } from '~/system/object-store'
 
@@ -78,9 +78,8 @@ export namespace BookQuery {
   /** Sign the covers of the books that are about to be drawn. */
   export const withSignedCovers = (books: readonly Book[]): Promise<BookView[]> => withCovers(books)
 
-  /** The reader's own subgenre vocabulary in `language`, for the edit form to
-   *  propose. */
-  export const subgenres = async (userId: UserId, language: Language): Promise<Subgenre[]> =>
+  /** The reader's own subgenre vocabulary, for the edit form to propose. */
+  export const subgenres = async (userId: UserId, language: BookLanguage): Promise<Subgenre[]> =>
     subgenresOf(await repository.findAllByUser(userId), language)
 }
 

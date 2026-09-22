@@ -1,7 +1,6 @@
 import type { Brand } from 'ts-brand'
 import type { AudibleAsin } from '~/domain/audible/types'
 import type { SeriesId, SeriesName, VolumeKind, VolumeNumber } from '~/domain/series/types'
-import type { Language } from '~/domain/shared/language'
 import type { AuthorName, BookTitle, UserId, Year } from '~/domain/shared/types'
 import type { ObjectPath, SignedUrl } from '~/system/object-store/types'
 
@@ -11,9 +10,11 @@ export type Isbn13 = Brand<string, 'Isbn13'>
 /** One free label refining the genre: "dark fantasy", "space opera", "shōnen".
  *  Written by the model in the scan language, or typed by the reader. */
 export type Subgenre = Brand<string, 'Subgenre'>
-/** One subgenre in every language the app is localized into, so the record
- *  reads in the app's language whichever one it was written in. */
-export type LocalizedSubgenre = Readonly<Record<Language, Subgenre>>
+/** A subgenre with the language it was written in. Never translated: the scan
+ *  writes it in the language of the edition, a reader types it in the language
+ *  of their app, and it is shown as it was written. The language is what the
+ *  autocompletion keeps to, so a French app proposes French labels only. */
+export type TaggedSubgenre = { label: Subgenre; language: BookLanguage }
 export type Synopsis = Brand<string, 'Synopsis'>
 export type PageCount = Brand<number, 'PageCount'>
 /** How long an audiobook runs, in whole minutes. Kept on the record rather than
@@ -138,7 +139,7 @@ export type Book = {
   genre?: Genre
   /** Ordered, most representative first: a library row has space for one
    *  subgenre and takes the head of this list, so the order is data. */
-  subgenres: LocalizedSubgenre[]
+  subgenres: TaggedSubgenre[]
   pageCount?: PageCount
   /** An audiobook's running time. Absent on anything else, and absent on an
    *  audiobook catalogued by hand or by scan, which had no source for it. */

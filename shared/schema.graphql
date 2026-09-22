@@ -283,7 +283,7 @@ type Book {
   statusChangedAt: DateTime!
 
   """
-  Zero to three free labels refining the genre, most representative first — a list shows only that one — in the language of `Accept-Language`, whichever one they were written in. Empty, never null.
+  Zero to three free labels refining the genre, most representative first — a list shows only that one — each as it was written, never translated: in the language of the edition when a scan wrote it, of the app when the reader typed it. Empty, never null.
   """
   subgenres: [Subgenre!]!
   synopsis: Synopsis
@@ -1422,7 +1422,7 @@ type Query {
   seriesOpinion(seriesId: SeriesId!): SeriesOpinion
 
   """
-  Every subgenre the reader has used across their library, the most used first. What the edit form proposes as they type: a vocabulary drawn from their own shelf. Costs the same scan as the library.
+  Every subgenre the reader has used across their library in the language of `Accept-Language`, the most used first. What the edit form proposes as they type: a vocabulary drawn from their own shelf, in the language they type in. Costs the same scan as the library.
   """
   subgenres: [Subgenre!]!
 }
@@ -1676,7 +1676,7 @@ Whole stars only: half stars double the value space without adding discernment. 
 scalar StarRating
 
 """
-One free label refining the genre, 1 to 100 characters, in the language of `Accept-Language`: sent in it, and served in it whichever language it was first written in. Example: "Dark fantasy".
+One free label refining the genre, 1 to 100 characters, never translated: sent in the language of `Accept-Language`, served as it was written. Example: "Dark fantasy".
 """
 scalar Subgenre
 

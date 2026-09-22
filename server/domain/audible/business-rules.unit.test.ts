@@ -230,9 +230,7 @@ describe('the shelf a title is filed under', () => {
     if (!importable) throw new Error('unreachable')
     const book = bookFrom(importable)
     expect(book.genre).toBe('thriller')
-    expect((book.subgenres ?? []).map(({ fr, en }) => [String(fr), String(en)])).toEqual([
-      ['Young Adult', 'Young Adult'],
-    ])
+    expect((book.subgenres ?? []).map(({ label }) => String(label))).toEqual(['Young Adult'])
   })
 })
 

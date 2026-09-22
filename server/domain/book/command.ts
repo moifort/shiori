@@ -3,6 +3,7 @@ import type { WriteBatch } from 'firebase-admin/firestore'
 import type { AudibleAsin } from '~/domain/audible/types'
 import {
   datesAfterStatusChange,
+  retaggedAfterEdit,
   statusAfterRating,
   statusStampAfterChange,
 } from '~/domain/book/business-rules'
@@ -17,7 +18,6 @@ import type {
   Genre,
   Isbn13,
   ListeningMinutes,
-  LocalizedSubgenre,
   NarratorName,
   PageCount,
   Publisher,
@@ -26,6 +26,7 @@ import type {
   SeriesMembership,
   StarRating,
   Synopsis,
+  TaggedSubgenre,
 } from '~/domain/book/types'
 import type { SeriesId } from '~/domain/series/types'
 import type { AuthorName, BookTitle, UserId, Year } from '~/domain/shared/types'
@@ -42,7 +43,7 @@ export type NewBook = {
   firstPublishedIn?: Year
   synopsis?: Synopsis
   genre?: Genre
-  subgenres?: LocalizedSubgenre[]
+  subgenres?: TaggedSubgenre[]
   pageCount?: PageCount
   /** An audiobook's running time, which only an Audible import knows. */
   durationMinutes?: ListeningMinutes
@@ -145,14 +146,18 @@ export namespace BookCommand {
   ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
-    const edited = await repository.save({ ...book, ...edit, updatedAt: now }, batch)
+    const retagged =
+      'subgenres' in edit
+        ? { subgenres: retaggedAfterEdit(edit.subgenres ?? [], book.subgenres) }
+        : {}
+    const edited = await repository.save({ ...book, ...edit, ...retagged, updatedAt: now }, batch)
     // A genre is a fact about the saga, not about one of its volumes: the
     // reader who corrects it on one book expects the whole shelf to follow,
     // rather than fixing fourteen records one by one.
     if (book.series && ('genre' in edit || 'subgenres' in edit)) {
       const classification = {
         ...('genre' in edit ? { genre: edit.genre } : {}),
-        ...('subgenres' in edit ? { subgenres: edit.subgenres ?? [] } : {}),
+        ...('subgenres' in edit ? { subgenres: edited.subgenres } : {}),
       }
       const siblings = (await repository.findBySeries(userId, book.series.id)).filter(
         (other) => other.id !== book.id,

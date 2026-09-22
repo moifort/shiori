@@ -1,13 +1,14 @@
 import type {
   Book,
   BookId,
+  BookLanguage,
   BookView,
   LibrarySection,
   ReadingStatus,
   Subgenre,
+  TaggedSubgenre,
 } from '~/domain/book/types'
 import { compareWithinSeries } from '~/domain/series/business-rules'
-import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 import { ObjectPath } from '~/system/object-store/primitives'
 import type { ObjectPath as ObjectPathValue } from '~/system/object-store/types'
@@ -195,17 +196,20 @@ export const coverPrefixOf = (userId: UserId): ObjectPathValue => ObjectPath(`co
 export const coverPathOf = (userId: UserId, bookId: BookId): ObjectPathValue =>
   ObjectPath(`${coverPrefixOf(userId)}${bookId}`)
 
-/** Every subgenre the reader has used, in `language`, the most used first and
+/** Every subgenre the reader has used in `language`, the most used first and
  *  the alphabet breaking ties, folded on case so "Dark fantasy" and "dark
  *  fantasy" are one entry. What the edit form proposes as the reader types: a
- *  vocabulary drawn from their own shelf rather than from a list nobody agreed on. */
+ *  vocabulary drawn from their own shelf, in the language they type in, rather
+ *  than from a list nobody agreed on. */
 export const subgenresOf = (
   books: readonly Pick<Book, 'subgenres'>[],
-  language: Language,
+  language: BookLanguage,
 ): Subgenre[] => {
   const counts = new Map<string, { subgenre: Subgenre; count: number }>()
   for (const book of books)
-    for (const { [language]: subgenre } of book.subgenres) {
+    for (const { label: subgenre } of book.subgenres.filter(
+      (tagged) => tagged.language === language,
+    )) {
       const key = subgenre.toLocaleLowerCase()
       const entry = counts.get(key)
       if (entry) entry.count += 1
@@ -215,6 +219,27 @@ export const subgenresOf = (
     .sort((left, right) => right.count - left.count || left.subgenre.localeCompare(right.subgenre))
     .map((entry) => entry.subgenre)
 }
+
+/** Subgenres a reader typed, tagged with the language of their app: never
+ *  translated, never read back by a model. */
+export const taggedIn = (labels: readonly Subgenre[], language: BookLanguage): TaggedSubgenre[] =>
+  labels.map((label) => ({ label, language }))
+
+/** The subgenres of a book after the reader edited the list. A label the book
+ *  already carried keeps the language it was written in — a scanned English
+ *  "Grimdark" left in place stays English — and a new one keeps the language of
+ *  the reader's app it was tagged with. Folded on case: retyping a label is not
+ *  writing a new one. */
+export const retaggedAfterEdit = (
+  edited: readonly TaggedSubgenre[],
+  current: readonly TaggedSubgenre[],
+): TaggedSubgenre[] =>
+  edited.map(({ label, language }) => ({
+    label,
+    language:
+      current.find((tagged) => tagged.label.toLocaleLowerCase() === label.toLocaleLowerCase())
+        ?.language ?? language,
+  }))
 
 /** The Library tab's order: newest first on the date that last moved each
  *  book, a flat list the app cuts into month sections wherever the month of

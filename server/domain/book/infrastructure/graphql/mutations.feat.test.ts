@@ -11,38 +11,12 @@ mock.module('~/system/object-store', () => ({
   objectStore: () => ({ downloadUrl: async () => 'https://fake.store/cover' }),
 }))
 
-/** The translations the model would give, by English label. A label missing
- *  here comes back the same on both sides. Nobody pays Google in a test, and no
- *  test reaches the network. */
-const FRENCH: Record<string, string> = { Children: 'Jeunesse', Adventure: 'Aventure' }
-const translationCalls: string[][] = []
-
-// Spread over the real module: a mock is global to the run, and the files that
-// test the module's other exports must still find them.
-const realGemini = { ...(await import('~/domain/scan/gemini')) }
-mock.module('~/domain/scan/gemini', () => ({
-  ...realGemini,
-  generate: async ({ parts }: { parts: { text?: string }[] }) => {
-    const labels = [...(parts[0]?.text ?? '').matchAll(/^\d+\. (.+)$/gm)].map((line) => line[1])
-    translationCalls.push(labels)
-    return {
-      value: {
-        subgenres: labels.map((label) => ({
-          fr: FRENCH[label] ?? Object.keys(FRENCH).find((en) => FRENCH[en] === label) ?? label,
-          en: Object.keys(FRENCH).find((en) => FRENCH[en] === label) ?? label,
-        })),
-      },
-    }
-  },
-}))
-
 const { schema } = await import('~/domain/shared/graphql/schema')
 
 const userId = 'reader-1' as UserId
 
 beforeEach(() => {
   resetFakeFirestore()
-  translationCalls.length = 0
 })
 
 // A test that freezes the clock hands the real one back to the next.
@@ -52,7 +26,8 @@ afterEach(() => {
 
 const execute = (source: string) => graphql({ schema, source, contextValue: { event: {}, userId } })
 
-/** A request from an app set to French: every subgenre reads in French. */
+/** A request from an app set to French. `execute` speaks English, the fallback
+ *  of a request that names no language. */
 const executeInFrench = (source: string) =>
   graphql({
     schema,
@@ -313,29 +288,46 @@ describe('correcting a book through the API', () => {
     expect(result.data?.subgenres).toEqual(['Aventure', 'Jeunesse'])
   })
 
-  // Typed in an English app, read in a French one: the record holds both.
-  test('serves every subgenre in the language of the request', async () => {
-    const added = await execute(
-      'mutation { addBook(input: { title: "Un", subgenres: ["Children", "Grimdark"] }) { subgenres } }',
+  // Never translated: each label is shown as written, and proposed only to an
+  // app in the language it was written in.
+  test('tags a typed subgenre with the language of the app, and proposes it only there', async () => {
+    const book = await addBook('Un')
+    await executeInFrench(
+      `mutation { updateBook(id: "${book.id}", input: { subgenres: ["Jeunesse"] }) { id } }`,
     )
-    expect(added.data?.addBook).toEqual({ subgenres: ['Children', 'Grimdark'] })
+    await execute('mutation { addBook(input: { title: "Deux", subgenres: ["Grimdark"] }) { id } }')
 
     const inFrench = await executeInFrench('{ libraryPage { books { subgenres } } subgenres }')
-    expect(inFrench.errors).toBeUndefined()
     expect(inFrench.data).toEqual({
-      libraryPage: { books: [{ subgenres: ['Jeunesse', 'Grimdark'] }] },
-      subgenres: ['Grimdark', 'Jeunesse'],
+      libraryPage: { books: [{ subgenres: ['Grimdark'] }, { subgenres: ['Jeunesse'] }] },
+      subgenres: ['Jeunesse'],
     })
+    const inEnglish = await execute('{ subgenres }')
+    expect(inEnglish.data).toEqual({ subgenres: ['Grimdark'] })
   })
 
-  // The dictionary is shared: a label anybody translated before costs no call.
-  test('translates a label once, whoever types it next and in whichever language', async () => {
-    await execute('mutation { addBook(input: { title: "Un", subgenres: ["Children"] }) { id } }')
+  // A new book's subgenres come from its scan, written in the edition's language.
+  test("tags a new book's subgenres with the language of its edition", async () => {
     await executeInFrench(
-      'mutation { addBook(input: { title: "Deux", subgenres: ["Jeunesse"] }) { id } }',
+      'mutation { addBook(input: { title: "Dune", language: EN, subgenres: ["Space Opera"] }) { id } }',
     )
 
-    expect(translationCalls).toEqual([['Children']])
+    expect((await executeInFrench('{ subgenres }')).data).toEqual({ subgenres: [] })
+    expect((await execute('{ subgenres }')).data).toEqual({ subgenres: ['Space Opera'] })
+  })
+
+  // Editing the list keeps what was there in its own language.
+  test('keeps the language of a subgenre left in place when the list is edited', async () => {
+    const result = await execute(
+      'mutation { addBook(input: { title: "Dune", subgenres: ["Space Opera"] }) { id } }',
+    )
+    const { id } = (result.data as { addBook: { id: string } }).addBook
+    await executeInFrench(
+      `mutation { updateBook(id: "${id}", input: { subgenres: ["Space Opera", "Roman culte"] }) { id } }`,
+    )
+
+    expect((await execute('{ subgenres }')).data).toEqual({ subgenres: ['Space Opera'] })
+    expect((await executeInFrench('{ subgenres }')).data).toEqual({ subgenres: ['Roman Culte'] })
   })
 
   test('reads back the genre and subgenres it was created with', async () => {

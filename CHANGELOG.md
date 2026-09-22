@@ -14,9 +14,10 @@ the release tag is pushed.
   set up, waiting on an Audible import long enough for its first books to be there. The
   settings button stays a gear; an import still running afterwards shows as the dashboard's
   leading spinner.
-- Subgenres read in the app's language, whichever language they were scanned, imported or
-  typed in: each one is kept in French and in English, and the ones already in the library
-  are translated.
+- Subgenres are never translated, and each one knows its language: a scan writes them in the
+  language of the edition, an Audible import in the title's, and a reader's typing in the
+  language of their app. The suggestions offered while typing are the ones in the app's
+  language.
 - The library and the Series tab are sorted by date and sectioned by month, as in Vinarium:
   newest first on the day a book was finished, else started, else added, and a saga on its
   latest volume. This replaces the sections by reading status and by genre, and the genre

@@ -9,7 +9,6 @@ import {
   Subgenre,
   Synopsis,
 } from '~/domain/book/primitives'
-import type { LocalizedSubgenre } from '~/domain/book/types'
 import { generate } from '~/domain/scan/gemini'
 import * as repository from '~/domain/scan/infrastructure/repository'
 import { hashImage } from '~/domain/scan/primitives'
@@ -34,7 +33,6 @@ import type {
   AuthorName as AuthorNameValue,
   BookTitle as BookTitleValue,
 } from '~/domain/shared/types'
-import { SubgenreCommand } from '~/domain/subgenre/command'
 import { config } from '~/system/config'
 import { createLogger } from '~/system/logger'
 import { isPresent, optionally as optional } from '~/utils/input'
@@ -60,7 +58,7 @@ type EnrichmentOutput = {
   volumeKind?: string | null
   firstPublishedIn?: number | null
   genre?: string | null
-  subgenres: { fr: string; en: string }[]
+  subgenres: string[]
   pageCount?: number | null
   isbn13?: string | null
   synopsis?: string | null
@@ -72,20 +70,6 @@ type CatalogueOutput = {
   description?: string | null
   volumes: { kind: string; number?: number | null; title: string; publishedIn?: number | null }[]
 }
-
-/** Both sides of every subgenre the model named. A pair with a side that is not
- *  a valid label is dropped whole: half a translation would read as the other
- *  language in the app that asked for the missing side. */
-const parsedSubgenres = (
-  subgenres: EnrichmentOutput['subgenres'] | undefined,
-): LocalizedSubgenre[] =>
-  (subgenres ?? [])
-    .flatMap((subgenre) => {
-      const fr = optional(subgenre?.fr, Subgenre)
-      const en = optional(subgenre?.en, Subgenre)
-      return fr && en ? [{ fr, en }] : []
-    })
-    .slice(0, MAX_SUBGENRES)
 
 export namespace Scan {
   /** Read a cover and produce a reviewable record.
@@ -197,13 +181,6 @@ export namespace Scan {
     })
 
     const authors = parsedAuthors(value.authors)
-    const subgenres = parsedSubgenres(value.subgenres)
-    // Filed in the shared dictionary so the book this scan becomes is stored in
-    // both languages without a second call. Best-effort: a failed write only
-    // costs that call later.
-    SubgenreCommand.remember(subgenres).catch((error) =>
-      logger.warn(`subgenre dictionary write failed: ${error}`),
-    )
     return {
       result: {
         recognized: true,
@@ -218,8 +195,10 @@ export namespace Scan {
         firstPublishedIn: optional(value.firstPublishedIn, Year),
         synopsis: optional(value.synopsis, Synopsis),
         genre: optional(value.genre, GenreValue),
-        // The scan answers in the reader's language, as every other text of it.
-        subgenres: subgenres.map((subgenre) => subgenre[language]),
+        subgenres: (value.subgenres ?? [])
+          .map((subgenre) => optional(subgenre, Subgenre))
+          .filter(isPresent)
+          .slice(0, MAX_SUBGENRES),
         pageCount: optional(value.pageCount, PageCount),
         isbn13: optional(value.isbn13, Isbn13),
         series: parsedSeries(value, authors.length > 0 ? authors : seen.authors),

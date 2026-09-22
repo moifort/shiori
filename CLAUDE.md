@@ -76,10 +76,6 @@ This is the rule the data model turns on, and getting it backwards is expensive:
   user, and is keyed by name and author rather than randomly, so two readers converge on one
   document and the AI call that produced it is paid once. **It is never exposed through library
   sharing**, which shows books only.
-- **The subgenre dictionary is shared too.** A book stores each subgenre in every app
-  language (`{ fr, en }`); `subgenre-translations/{lang}-{slug}` files every pair under
-  each side, with no user reference, so a label translated once — by the scan or by one
-  model call when a reader types it — costs nobody a call again.
 - **Every book carries `hidden`.** Sharing is not built yet; the flag exists now because adding
   a boolean to production records costs a migration.
 
