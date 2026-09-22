@@ -815,14 +815,18 @@ One friend's shelf at a glance: what they are reading, what is on their pile, wh
 A book marked "do not share" is absent from every list here, and thirty of each is the most any of them carries.
 """
 type FriendProfile {
-  """The books they keep close."""
+  """
+  The books they keep close, less the volumes of a saga they hearted: that saga, among `sagas`, stands for them.
+  """
   favorites: [FriendBook!]!
   firstName: String
 
   """What they mean to read, most recently added first."""
   pile: [FriendBook!]!
 
-  """Most recently started first."""
+  """
+  Most recently active first: started, moved, or advanced by a listening sync.
+  """
   reading: [FriendBook!]!
   sagas: [FriendSaga!]!
   userId: UserId!
@@ -837,6 +841,14 @@ type FriendSaga {
   author: AuthorName
 
   """
+  Hearted by its owner. Its hearted volumes are then left out of the favourite books, which the saga already stands for.
+  """
+  favorite: Boolean!
+
+  """The genre most of the volumes on their shelf carry."""
+  genre: Genre
+
+  """
   The saga and the language together: two shelves of one saga are two rows.
   """
   id: String!
@@ -845,6 +857,9 @@ type FriendSaga {
 
   """How many volumes of the saga are on their shelf."""
   ownedCount: Count!
+
+  """The leading subgenre of a volume of that genre."""
+  subgenre: Subgenre
 }
 
 """
@@ -1709,6 +1724,11 @@ type Query {
     language: BookLanguage
     seriesId: SeriesId!
   ): [Book!]!
+
+  """
+  The reader's own shelf exactly as their friends see it: the same lists, the same order, the books marked "do not share" left out. Uncut, where a friend's view stops at thirty of each.
+  """
+  myShelf: FriendProfile!
 
   """The alerts the reader switched on, for the settings screen."""
   notificationSettings: NotificationSettings!

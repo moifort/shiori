@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, mock, setSystemTime, test } from 'bun:test'
 import { graphql } from 'graphql'
 import type { UserId } from '~/domain/shared/types'
 import {
@@ -204,6 +204,81 @@ describe('reading a friend shelf', () => {
 
     const result = await as(bob)('{ friendProfile(userId: "alice") { reading { title } } }')
     expect(result.data?.friendProfile).toBeNull()
+  })
+})
+
+describe("the reader's own shelf, as friends see it", () => {
+  // A test that freezes the clock hands the real one back to the next.
+  afterEach(() => {
+    setSystemTime()
+  })
+
+  const addBook = async (owner: UserId, fields: string) => {
+    const result = await as(owner)(`mutation { addBook(input: { ${fields} }) { id } }`)
+    expect(result.errors).toBeUndefined()
+    return (result.data as { addBook: { id: string } }).addBook.id
+  }
+  const dune = (volume: number) =>
+    `title: "Dune ${volume}", authors: ["Frank Herbert"], genre: SCIENCE_FICTION, status: READ, series: { id: "dune--frank-herbert", name: "Dune", volume: ${volume}, kind: MAIN }`
+
+  // A hearted saga stands for its volumes: listing one again among the
+  // favourite books would carry it twice into a list shared with somebody.
+  test('lists a hearted volume under its hearted saga, never again on its own', async () => {
+    const first = await addBook(alice, dune(1))
+    await addBook(alice, dune(2))
+    const piranesi = await addBook(alice, 'title: "Piranesi", status: READ')
+    for (const id of [first, piranesi])
+      await as(alice)(`mutation { setBookFavorite(id: "${id}", favorite: true) { id } }`)
+    await as(alice)(
+      'mutation { setSeriesFavorite(seriesId: "dune--frank-herbert", favorite: true) { favorite } }',
+    )
+
+    const result = await as(alice)(
+      '{ myShelf { favorites { title } sagas { name favorite ownedCount genre } } }',
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.myShelf).toEqual({
+      favorites: [{ title: 'Piranesi' }],
+      sagas: [{ name: 'Dune', favorite: true, ownedCount: 2, genre: 'SCIENCE_FICTION' }],
+    })
+  })
+
+  test('is what a friend sees: hidden books left out, hearted sagas shown to them too', async () => {
+    await addBook(alice, dune(1))
+    const secret = await addBook(alice, 'title: "Un secret", status: READING')
+    await as(alice)(`mutation { setBookHidden(id: "${secret}", hidden: true) { id } }`)
+    await as(alice)(
+      'mutation { setSeriesFavorite(seriesId: "dune--frank-herbert", favorite: true) { favorite } }',
+    )
+    await befriend()
+
+    const own = await as(alice)('{ myShelf { reading { title } sagas { name favorite } } }')
+    const seen = await as(bob)(
+      '{ friendProfile(userId: "alice") { reading { title } sagas { name favorite } } }',
+    )
+
+    expect(own.data?.myShelf).toEqual({ reading: [], sagas: [{ name: 'Dune', favorite: true }] })
+    expect(seen.data?.friendProfile).toEqual(own.data?.myShelf)
+  })
+
+  test('puts the book in progress touched most recently first', async () => {
+    setSystemTime(new Date('2026-09-01T00:00:00Z'))
+    await addBook(alice, 'title: "Ancien", status: READING')
+    setSystemTime(new Date('2026-09-02T00:00:00Z'))
+    const touched = await addBook(alice, 'title: "Repris", status: READING')
+    setSystemTime(new Date('2026-09-03T00:00:00Z'))
+    await addBook(alice, 'title: "Moyen", status: READING')
+    // Any write counts as activity, the way a listening sync moving the
+    // position does.
+    setSystemTime(new Date('2026-09-04T00:00:00Z'))
+    await as(alice)(`mutation { setBookNote(id: "${touched}", note: "Relu") { id } }`)
+
+    const result = await as(alice)('{ myShelf { reading { title } } }')
+
+    expect(result.data?.myShelf).toEqual({
+      reading: [{ title: 'Repris' }, { title: 'Moyen' }, { title: 'Ancien' }],
+    })
   })
 })
 

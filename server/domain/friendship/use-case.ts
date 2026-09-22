@@ -1,12 +1,26 @@
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import { shelfKeyOf } from '~/domain/book/business-rules'
 import { BookQuery } from '~/domain/book/query'
-import type { Book, BookId, BookLanguage, BookView, ReadingStatus } from '~/domain/book/types'
+import type {
+  Book,
+  BookId,
+  BookLanguage,
+  BookView,
+  Genre,
+  ReadingStatus,
+  TaggedSubgenre,
+} from '~/domain/book/types'
 import { BookUseCase } from '~/domain/book/use-case'
+import {
+  favoritesOutsideSagas,
+  lastActivityOf,
+  subgenreOf,
+} from '~/domain/friendship/business-rules'
 import { FriendshipQuery } from '~/domain/friendship/query'
 import type { Friend } from '~/domain/friendship/types'
-import { followedSagasOf } from '~/domain/series/business-rules'
+import { followedSagasOf, genreOf } from '~/domain/series/business-rules'
 import type { SeriesName } from '~/domain/series/types'
+import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import { Count, PersonName } from '~/domain/shared/primitives'
 import type { AuthorName, Count as CountValue, UserId } from '~/domain/shared/types'
 import { UserQuery } from '~/domain/user/query'
@@ -29,18 +43,25 @@ export type FriendSaga = {
   author?: AuthorName
   language?: BookLanguage
   ownedCount: CountValue
+  /** Hearted by its owner. A hearted saga stands for its volumes among the
+   *  favourites, which then do not list them again one by one. */
+  favorite: boolean
+  genre?: Genre
+  subgenre?: TaggedSubgenre
 }
 
 /** A book on a friend's shelf, with whether the reader already owns the
  *  story — the "Chez vous" badge, matched on the shelf key the imports use. */
 export type FriendBook = BookView & { inLibrary: boolean }
 
-/** A friend's shelf, as the profile screen draws it. */
+/** A friend's shelf, as the profile screen draws it — and the reader's own,
+ *  drawn the same way, so what they are shown of it is what their friends see. */
 export type FriendProfile = {
   userId: UserId
   firstName?: string
   reading: FriendBook[]
   pile: FriendBook[]
+  /** The hearted books a hearted saga does not already stand for. */
   favorites: FriendBook[]
   sagas: FriendSaga[]
 }
@@ -93,45 +114,18 @@ export namespace FriendshipUseCase {
     friendId: UserId,
   ): Promise<FriendProfile | 'not-friends'> => {
     if (!(await FriendshipQuery.areFriends(userId, friendId))) return 'not-friends'
-
-    const books = await BookQuery.shared(friendId)
-    const reading = books
-      .filter((book) => book.status === 'reading')
-      .sort(
-        (left, right) =>
-          (right.startedAt ?? right.addedAt).getTime() - (left.startedAt ?? left.addedAt).getTime(),
-      )
-      .slice(0, SHELF_SHOWN)
-    const pile = books
-      .filter((book) => book.status === 'to-read')
-      .sort((left, right) => right.addedAt.getTime() - left.addedAt.getTime())
-      .slice(0, SHELF_SHOWN)
-    const favorites = books.filter((book) => book.favorite === true).slice(0, SHELF_SHOWN)
-
-    const [signedReading, signedPile, signedFavorites, owned] = await Promise.all([
-      BookQuery.withSignedCovers(reading),
-      BookQuery.withSignedCovers(pile),
-      BookQuery.withSignedCovers(favorites),
+    const [owned, shelf] = await Promise.all([
       BookQuery.shelfKeys(userId),
+      sharedShelfOf(friendId, SHELF_SHOWN),
     ])
-    const marked = (books: BookView[]): FriendBook[] =>
-      books.map((book) => ({ ...book, inLibrary: ownsStory(owned, book) }))
-
-    return {
-      userId: friendId,
-      firstName: (await UserQuery.namesOf([friendId])).get(friendId),
-      reading: marked(signedReading),
-      pile: marked(signedPile),
-      favorites: marked(signedFavorites),
-      sagas: followedSagasOf(books).map((saga) => ({
-        id: `${saga.id}\u0000${saga.language ?? ''}`,
-        name: saga.name,
-        author: saga.author,
-        language: saga.language,
-        ownedCount: Count(saga.books.length),
-      })),
-    }
+    return marked(shelf, (book) => ownsStory(owned, book))
   }
+
+  /** The reader's own shelf exactly as a friend sees it: the books marked "do
+   *  not share" left out, a hearted saga standing for its volumes. Uncut, since
+   *  it is the reader's to read through and to send on in full. */
+  export const ownShelf = async (userId: UserId): Promise<FriendProfile> =>
+    marked(await sharedShelfOf(userId), () => true)
 
   /** One book of a friend's shelf, for the read-only page a row opens. Null
    *  for a stranger's book, a book that does not exist and a book marked "do
@@ -186,6 +180,77 @@ export namespace FriendshipUseCase {
       status,
       recommendation: firstName ? { recommenderName: PersonName(firstName) } : undefined,
     })
+  }
+}
+
+/** One reader's shelf as it is shared: what they are reading, most recently
+ *  active first; their pile, newest first; their hearts; their sagas. At most
+ *  `shown` of each list of books when given. Whether the viewer owns each
+ *  book is left to `marked`, so the two reads can run side by side. */
+const sharedShelfOf = async (
+  ownerId: UserId,
+  shown = Number.POSITIVE_INFINITY,
+): Promise<FriendProfile> => {
+  const [books, opinions, names] = await Promise.all([
+    BookQuery.shared(ownerId),
+    SeriesOpinionQuery.all(ownerId),
+    UserQuery.namesOf([ownerId]),
+  ])
+  const favoriteSagaIds = new Set(
+    opinions.filter((opinion) => opinion.favorite).map((opinion) => opinion.seriesId),
+  )
+  const reading = books
+    .filter((book) => book.status === 'reading')
+    .sort((left, right) => lastActivityOf(right).getTime() - lastActivityOf(left).getTime())
+    .slice(0, shown)
+  const pile = books
+    .filter((book) => book.status === 'to-read')
+    .sort((left, right) => right.addedAt.getTime() - left.addedAt.getTime())
+    .slice(0, shown)
+  const favorites = favoritesOutsideSagas(
+    books.filter((book) => book.favorite === true),
+    favoriteSagaIds,
+  ).slice(0, shown)
+
+  const [signedReading, signedPile, signedFavorites] = await Promise.all([
+    BookQuery.withSignedCovers(reading),
+    BookQuery.withSignedCovers(pile),
+    BookQuery.withSignedCovers(favorites),
+  ])
+  const unmarked = (books: BookView[]): FriendBook[] =>
+    books.map((book) => ({ ...book, inLibrary: false }))
+
+  return {
+    userId: ownerId,
+    firstName: names.get(ownerId),
+    reading: unmarked(signedReading),
+    pile: unmarked(signedPile),
+    favorites: unmarked(signedFavorites),
+    sagas: followedSagasOf(books).map((saga) => {
+      const genre = genreOf(saga.books)
+      return {
+        id: `${saga.id}\u0000${saga.language ?? ''}`,
+        name: saga.name,
+        author: saga.author,
+        language: saga.language,
+        ownedCount: Count(saga.books.length),
+        favorite: favoriteSagaIds.has(saga.id),
+        genre,
+        subgenre: subgenreOf(saga.books, genre),
+      }
+    }),
+  }
+}
+
+/** The shelf with each book saying whether the viewer already owns it. */
+const marked = (shelf: FriendProfile, inLibrary: (book: FriendBook) => boolean): FriendProfile => {
+  const mark = (books: FriendBook[]) =>
+    books.map((book) => ({ ...book, inLibrary: inLibrary(book) }))
+  return {
+    ...shelf,
+    reading: mark(shelf.reading),
+    pile: mark(shelf.pile),
+    favorites: mark(shelf.favorites),
   }
 }
 

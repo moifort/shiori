@@ -35,6 +35,15 @@ builder.queryFields((t) => ({
     },
   }),
 
+  myShelf: t.field({
+    type: FriendProfileType,
+    description:
+      "The reader's own shelf exactly as their friends see it: the same lists, " +
+      'the same order, the books marked "do not share" left out. Uncut, where a ' +
+      "friend's view stops at thirty of each.",
+    resolve: (_root, _args, context) => FriendshipUseCase.ownShelf(context.userId),
+  }),
+
   friendBook: t.field({
     type: FriendBookType,
     nullable: true,

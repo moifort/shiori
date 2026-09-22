@@ -105,6 +105,24 @@ export const FriendSagaType = builder.objectRef<FriendSaga>('FriendSaga').implem
       description: 'How many volumes of the saga are on their shelf.',
       resolve: (saga) => saga.ownedCount,
     }),
+    favorite: t.boolean({
+      description:
+        'Hearted by its owner. Its hearted volumes are then left out of the ' +
+        'favourite books, which the saga already stands for.',
+      resolve: (saga) => saga.favorite,
+    }),
+    genre: t.field({
+      type: GenreEnum,
+      nullable: true,
+      description: 'The genre most of the volumes on their shelf carry.',
+      resolve: (saga) => saga.genre ?? null,
+    }),
+    subgenre: t.field({
+      type: 'Subgenre',
+      nullable: true,
+      description: 'The leading subgenre of a volume of that genre.',
+      resolve: (saga) => saga.subgenre?.label ?? null,
+    }),
   }),
 })
 
@@ -153,7 +171,7 @@ export const FriendProfileType = builder.objectRef<FriendProfile>('FriendProfile
     firstName: t.string({ nullable: true, resolve: (profile) => profile.firstName ?? null }),
     reading: t.field({
       type: [FriendBookType],
-      description: 'Most recently started first.',
+      description: 'Most recently active first: started, moved, or advanced by a listening sync.',
       resolve: (profile) => profile.reading,
     }),
     pile: t.field({
@@ -163,7 +181,9 @@ export const FriendProfileType = builder.objectRef<FriendProfile>('FriendProfile
     }),
     favorites: t.field({
       type: [FriendBookType],
-      description: 'The books they keep close.',
+      description:
+        'The books they keep close, less the volumes of a saga they hearted: ' +
+        'that saga, among `sagas`, stands for them.',
       resolve: (profile) => profile.favorites,
     }),
     sagas: t.field({
