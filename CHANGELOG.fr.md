@@ -4,6 +4,11 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Un import Audible distingue un titre en cours d’écoute d’un titre jamais ouvert d’après
+  l’endroit où le lecteur s’est arrêté, et non d’après le pourcentage de la bibliothèque,
+  qui affiche 0 sur un titre entamé depuis des heures. Un titre arrêté après plus de cinq
+  minutes est en cours ; la synchronisation nocturne déplace de la même façon les livres
+  déjà importés, datés du jour de la dernière écoute.
 - Un import Audible date chaque livre du jour où le titre est entré dans la bibliothèque
   Audible, et non du jour de l’import : un achat jamais ouvert se range dans le mois de son
   achat, et un titre en cours y commence, faute de meilleure date. Les livres importés avant

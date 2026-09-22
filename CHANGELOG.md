@@ -10,6 +10,10 @@ the release tag is pushed.
 
 ## Unreleased
 
+- An Audible import tells a title being listened to from one never opened by where the
+  player last stopped, not by the library's own percentage, which reports 0 on a title
+  hours in. A title stopped more than five minutes in is being read; the nightly sync
+  moves books already imported the same way, dated on the day the player last heard them.
 - An Audible import dates each book on the day the title entered the Audible library,
   instead of on the day of the import: an unread purchase sits in the month it was bought,
   and a title in progress starts there for want of a better date. Books imported before

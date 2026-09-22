@@ -1,4 +1,4 @@
-import type { AudibleItem } from 'audible-api-ts'
+import type { AudibleItem, LastPosition } from 'audible-api-ts'
 import { genreFrom, subgenresFrom } from '~/domain/audible/genre-mapping'
 import { AudibleAsin } from '~/domain/audible/primitives'
 import type {
@@ -35,13 +35,14 @@ import { slugify } from '~/utils/slug'
 export const importableFrom = (
   item: AudibleItem,
   ownedKeys: ReadonlySet<string>,
+  heard?: LastPosition,
 ): ImportableBook | undefined => {
   const asin = optionally(item.asin, AudibleAsin)
   const title = optionally(item.title, BookTitle)
   if (!asin || !title) return undefined
 
   const authors = authorsOf(item)
-  const status = statusOf(item)
+  const status = statusOf(item, heard)
   // Audible spells the language out ("french", "english"), and files a handful
   // of titles under a language nobody expected. Unknown ones are dropped: a
   // guess here would split a saga's shelves on a value nothing established.
@@ -144,14 +145,32 @@ const authorsOf = (item: AudibleItem): AuthorNameValue[] => {
     .filter(isPresent)
 }
 
-/** Where the reader stands in a title, as Audible knows it. Anything started is
- *  "reading", anything finished is "read", and an untouched purchase lands on the
- *  pile — which is exactly what an unopened Audible title is. */
-export const statusOf = (item: AudibleItem): ReadingStatus => {
+/** How far into a title the player must have stopped for the reader to be in
+ *  it. A position of a minute or two is a title opened by curiosity — a sample,
+ *  a wrong tap — and filing it as being read would put a dozen such on the
+ *  reader's nightstand. Five minutes is past the opening credits of any title. */
+const STARTED_AFTER_MS = 5 * 60 * 1000
+
+/** Where the reader stands in a title, as Audible knows it. Anything finished
+ *  is "read", anything started is "reading", and an untouched purchase lands
+ *  on the pile — which is exactly what an unopened Audible title is.
+ *
+ *  Started is read off where the player last stopped, when the caller asked
+ *  for it: the library's own percentage is stale, reporting 0 on a title two
+ *  hours in, and is kept only as a second opinion for a title the player never
+ *  saved a position for. */
+export const statusOf = (item: AudibleItem, heard?: LastPosition): ReadingStatus => {
   const listening = item.listeningStatus
   if (listening?.isFinished) return 'read'
+  if ((heard?.positionMs ?? 0) >= STARTED_AFTER_MS) return 'reading'
   return (listening?.percentComplete ?? 0) > 0 ? 'reading' : 'to-read'
 }
+
+/** The positions the player saved, by title, for the rules that read them. */
+export const heardByAsin = (
+  positions: readonly LastPosition[],
+): ReadonlyMap<string, LastPosition> =>
+  new Map(positions.map((position) => [position.asin, position]))
 
 /** The saga the title belongs to, keyed the same way a scan keys it, so an
  *  imported volume joins the very catalogue a scanned one built.
@@ -293,25 +312,36 @@ export const audibleLinksFor = (
  *  the pile. A book whose status already agrees produces nothing, so a night that
  *  changed nothing writes nothing.
  *
- *  `at` is Audible's own finishing date when it has one. Without it the caller
- *  stamps the moment of the sync, which is the best it can honestly say. */
+ *  `at` is Audible's own finishing date for a finish, and for a start the day
+ *  the player last saved a position: the sync learns of a start after the fact,
+ *  and that is the closest date it has, never later than tonight. Without either
+ *  the caller stamps the moment of the sync, which is the best it can honestly
+ *  say. */
 export const listeningChangesFor = (
   books: readonly Book[],
   items: readonly AudibleItem[],
+  positions: readonly LastPosition[] = [],
 ): { bookId: BookId; status: ReadingStatus; at?: Date }[] => {
   const byAsin = new Map(items.map((item) => [item.asin, item]))
+  const heard = heardByAsin(positions)
 
   return books.flatMap((book) => {
     if (!book.audibleAsin) return []
     const item = byAsin.get(book.audibleAsin)
     if (!item) return []
-    const status = statusOf(item)
+    const position = heard.get(book.audibleAsin)
+    const status = statusOf(item, position)
     if (status === book.status) return []
     return [
       {
         bookId: book.id,
         status,
-        at: status === 'read' ? item.listeningStatus?.finishedAt : undefined,
+        at:
+          status === 'read'
+            ? item.listeningStatus?.finishedAt
+            : status === 'reading'
+              ? position?.lastUpdatedAt
+              : undefined,
       },
     ]
   })

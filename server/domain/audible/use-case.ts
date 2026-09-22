@@ -3,6 +3,7 @@ import {
   audibleLinksFor,
   bookFrom,
   boughtSince,
+  heardByAsin,
   importableFrom,
   listeningChangesFor,
   purchaseDatesFor,
@@ -41,7 +42,7 @@ export namespace AudibleUseCase {
     const fetched = await fetchLibrary(userId)
     if (fetched === 'not-connected') return fetched
     const owned = await BookQuery.all(userId)
-    return toImportable(fetched.items, owned)
+    return toImportable(fetched, owned)
   }
 
   /** Catalogue the titles the reader ticked.
@@ -63,7 +64,7 @@ export namespace AudibleUseCase {
 
     const wanted = new Set<string>(asins)
     const owned = await BookQuery.all(userId)
-    const chosen = toImportable(fetched.items, owned).filter(
+    const chosen = toImportable(fetched, owned).filter(
       (importable) => wanted.has(importable.asin) && !importable.alreadyInLibrary,
     )
 
@@ -116,7 +117,7 @@ export namespace AudibleUseCase {
 
     const fetched = await fetchLibrary(userId)
     if (fetched === 'not-connected') return fetched
-    const { items } = fetched
+    const { items, positions } = fetched
 
     const owned = await BookQuery.all(userId)
     const links = audibleLinksFor(owned, items)
@@ -124,11 +125,12 @@ export namespace AudibleUseCase {
       const link = links.find((candidate) => candidate.bookId === book.id)
       return link ? { ...book, audibleAsin: link.audibleAsin } : book
     })
-    const moves = listeningChangesFor(linked, items)
+    const moves = listeningChangesFor(linked, items, positions)
     const redates = purchaseDatesFor(linked, items)
-    const bought = toImportable(boughtSince(items, account.lastImportedAt), linked).filter(
-      (importable) => !importable.alreadyInLibrary,
-    )
+    const bought = toImportable(
+      { items: boughtSince(items, account.lastImportedAt), positions },
+      linked,
+    ).filter((importable) => !importable.alreadyInLibrary)
 
     const changed = links.length + moves.length + redates.length + bought.length
     if (changed > 0) await atomically(async (batch) => AnalyticsCommand.markStale(userId, batch))
@@ -230,8 +232,15 @@ const fetchLibrary = async (userId: UserId) => {
   }
 
   const { items, credentials: rotated } = await api.library(credentials)
-  await AudibleCommand.rememberRotatedCredentials(userId, rotated)
-  return { items, account }
+  // Where the player last stopped in every title, in one pass: the library's
+  // own percentage is stale, and this is what decides which titles are being
+  // read. Both trips can rotate the token; the last word is what is kept.
+  const { positions, credentials: rotatedAgain } = await api.lastPositions(
+    rotated,
+    items.map((item) => item.asin),
+  )
+  await AudibleCommand.rememberRotatedCredentials(userId, rotatedAgain)
+  return { items, positions, account }
 }
 
 const opened = (sealed: ConnectedAccount['credentials']) => {
@@ -243,9 +252,15 @@ const opened = (sealed: ConnectedAccount['credentials']) => {
 }
 
 const toImportable = (
-  items: Awaited<ReturnType<typeof api.library>>['items'],
+  fetched: {
+    items: Awaited<ReturnType<typeof api.library>>['items']
+    positions: Awaited<ReturnType<typeof api.lastPositions>>['positions']
+  },
   owned: readonly Book[],
 ): ImportableBook[] => {
   const ownedKeys = shelfKeysOf(owned)
-  return items.map((item) => importableFrom(item, ownedKeys)).filter(isPresent)
+  const heard = heardByAsin(fetched.positions)
+  return fetched.items
+    .map((item) => importableFrom(item, ownedKeys, heard.get(item.asin)))
+    .filter(isPresent)
 }

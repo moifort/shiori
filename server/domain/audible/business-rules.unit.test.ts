@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { AudibleItem } from 'audible-api-ts'
+import type { AudibleItem, LastPosition } from 'audible-api-ts'
 import { resolveGenreId } from 'audible-api-ts'
 import {
   audibleLinksFor,
@@ -36,6 +36,13 @@ const anItem = (overrides: Partial<AudibleItem> = {}): AudibleItem =>
   }) as AudibleItem
 
 const noneOwned = new Set<string>()
+
+const aPosition = (overrides: Partial<LastPosition> = {}): LastPosition => ({
+  asin: 'B002V1OF70',
+  positionMs: 0,
+  lastUpdatedAt: new Date('2026-09-16T20:55:15.357Z'),
+  ...overrides,
+})
 
 describe('reading one Audible title', () => {
   test('catalogues it with what Audible knows', () => {
@@ -246,6 +253,29 @@ describe('where the reader stands in a title', () => {
 
   test('leaves an untouched purchase on the pile', () => {
     expect(statusOf(anItem())).toBe('to-read')
+  })
+
+  // The library's percent is stale: a title two hours in reports 0. Where the
+  // player last stopped is what says the reader is in it.
+  test('reads a title the player stopped well into as reading, whatever the percent', () => {
+    const heard = aPosition({ positionMs: 138 * 60 * 1000 })
+    expect(statusOf(anItem({ listeningStatus: { percentComplete: 0 } }), heard)).toBe('reading')
+  })
+
+  // A position of a minute or two is a title opened by curiosity, not a reading.
+  test('leaves a title barely opened on the pile', () => {
+    expect(statusOf(anItem(), aPosition({ positionMs: 4 * 60 * 1000 }))).toBe('to-read')
+    expect(statusOf(anItem(), aPosition({ positionMs: 5 * 60 * 1000 }))).toBe('reading')
+  })
+
+  test('reads a finished listen as read whatever the position', () => {
+    const item = anItem({ listeningStatus: { isFinished: true } })
+    expect(statusOf(item, aPosition({ positionMs: 0 }))).toBe('read')
+  })
+
+  test('catalogues a title on the position the player saved', () => {
+    const heard = aPosition({ positionMs: 138 * 60 * 1000 })
+    expect(importableFrom(anItem(), noneOwned, heard)?.status).toBe('reading')
   })
 
   // Importing a decade of listening must not stamp every title with today's
@@ -478,6 +508,15 @@ describe('following the listening', () => {
   test('ignores a book with no ASIN on it', () => {
     const items = [anItem({ listeningStatus: { isFinished: true } })]
     expect(listeningChangesFor([aBook()], items)).toEqual([])
+  })
+
+  // The sync learns of a start after the fact. The last time the player saved
+  // a position is the closest date it has, and never later than tonight.
+  test('starts a book on the day the player last heard it', () => {
+    const heard = aPosition({ positionMs: 138 * 60 * 1000 })
+    expect(listeningChangesFor([linked()], [anItem()], [heard])).toEqual([
+      { bookId: bookId('book-1'), status: 'reading', at: heard.lastUpdatedAt },
+    ])
   })
 
   test('leaves a book whose title has left the library alone', () => {

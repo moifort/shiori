@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import { randomBytes } from 'node:crypto'
-import type { AudibleItem } from 'audible-api-ts'
+import type { AudibleItem, LastPosition } from 'audible-api-ts'
 import type { AudibleAsin } from '~/domain/audible/types'
 import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
@@ -16,6 +16,9 @@ mock.module('~/system/config', () => ({ config: () => ({ audibleKey }) }))
  *  not one per title. */
 let items: AudibleItem[] = []
 const libraryCalls: unknown[] = []
+/** Where the player last stopped, per title, as Amazon would answer it. */
+let positions: LastPosition[] = []
+const positionCalls: string[][] = []
 /** Refusals to hand out, one per call, oldest first. Empty means Amazon
  *  answers — which is how one reader's revoked device is staged without
  *  disturbing the other's. */
@@ -55,6 +58,21 @@ mock.module('~/domain/audible/infrastructure/audible-api', () => ({
       },
     }
   },
+  lastPositions: async (_credentials: unknown, asins: readonly string[]) => {
+    positionCalls.push([...asins])
+    return {
+      positions: positions.filter((position) => asins.includes(position.asin)),
+      credentials: {
+        accessToken: 'access-3',
+        refreshToken: 'Atnr|the-refresh-token',
+        adpToken: '{enc:token}',
+        devicePrivateKey: 'key',
+        serial: 'SERIAL1',
+        locale: 'fr',
+        expiresAt: new Date('2026-09-19T13:00:00.000Z'),
+      },
+    }
+  },
   landingUrlOf: (marketplace: string) => `https://www.amazon.${marketplace}/ap/maplanding`,
 }))
 
@@ -91,7 +109,9 @@ let fake = resetFakeFirestore()
 beforeEach(() => {
   fake = resetFakeFirestore()
   items = []
+  positions = []
   libraryCalls.length = 0
+  positionCalls.length = 0
   libraryRefusals.length = 0
 })
 
@@ -244,6 +264,28 @@ describe('importing the ticked titles', () => {
     expect(started?.startedAt).toEqual(dateAdded)
   })
 
+  // The library says 0% of a title the reader is two hours into. Where the
+  // player last stopped is the signal, asked for every title in one pass.
+  test('catalogues a title the player stopped well into as being read', async () => {
+    await connect()
+    const dateAdded = new Date('2026-09-14T20:19:22.409Z')
+    items = [anItem({ dateAdded, listeningStatus: { percentComplete: 0 } })]
+    positions = [
+      {
+        asin: 'B002V1OF70',
+        positionMs: 138 * 60 * 1000,
+        lastUpdatedAt: new Date('2026-09-16T20:55:15.357Z'),
+      },
+    ]
+
+    await AudibleUseCase.importBooks(reader, [asin('B002V1OF70')])
+
+    const [book] = await BookQuery.all(reader)
+    expect(book?.status).toBe('reading')
+    expect(book?.startedAt).toEqual(dateAdded)
+    expect(positionCalls).toEqual([['B002V1OF70']])
+  })
+
   // The client sends identifiers, every stored field comes from the source. An
   // identifier the reader's library does not hold must simply match nothing.
   test('ignores an identifier the library does not hold', async () => {
@@ -305,8 +347,9 @@ describe('importing the ticked titles', () => {
     await AudibleUseCase.importBooks(reader, [asin('B002V1OF70')])
     await AudibleUseCase.importableBooks(reader)
 
-    expect(libraryCalls[1]).toMatchObject({ accessToken: 'access-2' })
-    expect(JSON.stringify(fake.data('audible-connections', reader))).not.toContain('access-2')
+    // The last rotation of the pass — the positions are asked after the library.
+    expect(libraryCalls[1]).toMatchObject({ accessToken: 'access-3' })
+    expect(JSON.stringify(fake.data('audible-connections', reader))).not.toContain('access-3')
   })
 
   // The dashboard is derived data. It must never look fresh over books it does
@@ -444,6 +487,31 @@ describe('the nightly sync', () => {
     expect(book?.updatedAt).toEqual(LATER)
 
     expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ redated: 0 })
+  })
+
+  // A book the old rule left on the pile, and one the reader started since:
+  // both move on the position, dated on the day the player last heard them.
+  test('starts a book on the pile once the player has stopped well into it', async () => {
+    await connect()
+    await AudibleCommand.recordImport(reader, NOW)
+    await BookCommand.add(
+      reader,
+      {
+        title: BookTitle('Le Nom du vent'),
+        authors: [AuthorName('Patrick Rothfuss')],
+        format: 'audiobook',
+        audibleAsin: asin('B002V1OF70'),
+      },
+      NOW,
+    )
+    const lastHeard = new Date('2026-09-24T20:55:15.357Z')
+    items = [anItem({ listeningStatus: { percentComplete: 0 } })]
+    positions = [{ asin: 'B002V1OF70', positionMs: 138 * 60 * 1000, lastUpdatedAt: lastHeard }]
+
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ moved: 1 })
+    const [book] = await BookQuery.all(reader)
+    expect(book?.status).toBe('reading')
+    expect(book?.startedAt).toEqual(lastHeard)
   })
 
   test('moves the cutoff forward, so the next pass finds nothing to redo', async () => {

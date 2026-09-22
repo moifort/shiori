@@ -9,7 +9,7 @@
         "@apple/app-store-server-library": "3.1.0",
         "@pothos/core": "4.13.1",
         "@sentry/node": "10.74.0",
-        "audible-api-ts": "0.3.0",
+        "audible-api-ts": "0.4.0",
         "consola": "3.4.2",
         "firebase-admin": "13.10.0",
         "graphql": "16.14.2",
@@ -460,7 +460,7 @@
 
     "asynckit": ["asynckit@0.4.0", "", {}, "sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q=="],
 
-    "audible-api-ts": ["audible-api-ts@0.3.0", "", { "dependencies": { "lodash-es": "^4.17.23", "zod": "^3.24.0" } }, "sha512-vHug0mwI/ZURgHfwZY2L0Vy9WnzU4boCLrJrMHCYy3FqUZk+dULcGb/w4odslMS2AeOXoUfQl55XeMr0tMCcGg=="],
+    "audible-api-ts": ["audible-api-ts@0.4.0", "", { "dependencies": { "lodash-es": "^4.17.23", "zod": "^3.24.0" } }, "sha512-y3fD+S/fe2Ho+MxWP+4SZYvRFnHBF3tRhibgcXEJ/c6genf65Es1hmb4dKkq2AUFPMbzLY/QYL78BQn5QbmbQw=="],
 
     "available-typed-arrays": ["available-typed-arrays@1.0.7", "", { "dependencies": { "possible-typed-array-names": "^1.0.0" } }, "sha512-wvUjBtSGN7+7SjNpq/9M2Tg350UZD3q62IFZLbRAR1bSMlCo1ZaeW+BJ+D090e4hIIZLBcTDWe4Mh4jvUDajzQ=="],
 
