@@ -16,6 +16,10 @@ struct BookRow: View {
     /// title alone does not say which volume this is. Absent elsewhere: on the
     /// standalone shelf there is no numbering to explain.
     var volumeLabel: String?
+    /// The year the work first came out, beside the author inside a saga's
+    /// list of volumes, where it tells the order of writing from the order of
+    /// the story. Absent elsewhere.
+    var publishedIn: Int?
     /// The saga the book belongs to, drawn as a tag with its volume where the
     /// list is not sectioned by saga — the only place left to say it.
     var series: SeriesMembership?
@@ -69,10 +73,18 @@ struct BookRow: View {
                 if volumeLabel != nil {
                     titleText
                 }
-                Text(authorLine)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                // The year keeps its place when a long author line truncates.
+                HStack(spacing: 4) {
+                    Text(authorLine)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                    if let publishedIn {
+                        Text(verbatim: "· \(publishedIn)")
+                            .foregroundStyle(.tertiary)
+                            .fixedSize()
+                    }
+                }
+                .font(.subheadline)
 
 
                 // Where it sits in a saga: a fact about this copy, ahead of

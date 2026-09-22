@@ -6,6 +6,7 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 - Correction des erreurs de chargement lors de la génération de la fiche d’une série.
 - Correction des livres audio vendus en deux parties, affichés à part de leur tome dans une série.
+- La fiche d’une série affiche l’année de parution des tomes que vous possédez.
 - Un livre garde la trace de qui l’a conseillé, comme un vin dans Vinarium : « Conseillé par
   un ami », dans le menu du livre, prend un nom, saisi ou choisi dans les contacts, et ce
   qu’on vous en a dit. Le conseil s’affiche sur la fiche du livre, où un toucher le corrige

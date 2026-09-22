@@ -406,6 +406,7 @@ struct SeriesView: View {
                     rating: book.shownRating,
                     ratingIsInherited: book.ratingIsInherited,
                     volumeLabel: label,
+                    publishedIn: volume.publishedIn,
                     statusTag: book.status,
                     subgenre: nil,
                     isFavorite: book.favorite,
