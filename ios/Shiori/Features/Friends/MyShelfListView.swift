@@ -119,7 +119,8 @@ struct MyShelfListView: View {
                         rating: asFavorites ? nil : book.rating,
                         series: showsSeries ? book.series : nil,
                         genre: book.genre,
-                        subgenre: book.subgenres.first,
+                        // The favourites keep to the genre in the corner.
+                        subgenre: asFavorites ? nil : book.subgenres.first,
                         language: book.language,
                         isFavorite: asFavorites ? false : book.favorite,
                         genreInCorner: asFavorites
@@ -138,7 +139,8 @@ struct MyShelfListView: View {
 /// A saga on somebody's shelf: its name, author and genre. Among the
 /// favourites it is drawn as the Series tab draws it, its volumes on the shelf
 /// as a strip of covers underneath — owned volumes only, since the catalogue
-/// is not something a friendship opens — with its genre in the top corner.
+/// is not something a friendship opens — with its genre, alone, in the top
+/// corner.
 /// Elsewhere it says it is hearted and how many of its volumes are on that
 /// shelf.
 struct SagaRow: View {
@@ -180,13 +182,7 @@ struct SagaRow: View {
                 if let author = saga.author {
                     Text(author).font(.subheadline).foregroundStyle(.secondary)
                 }
-                if showsCovers {
-                    if let subgenre = saga.subgenre {
-                        RowChip(text: subgenre, tint: saga.genre?.tint ?? .secondary)
-                            .font(.caption2)
-                            .padding(.top, 1)
-                    }
-                } else if let genre = saga.genre {
+                if !showsCovers, let genre = saga.genre {
                     Text([genre.label, saga.subgenre].compactMap(\.self).joined(separator: " · "))
                         .font(.caption)
                         .foregroundStyle(.secondary)
