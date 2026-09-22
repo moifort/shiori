@@ -1,21 +1,128 @@
 import { AdminCommand } from '~/domain/admin/command'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
+import { inSagaOrder, readVolumeNumbersOf, shelfDateOf } from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
-import type { BookLanguage } from '~/domain/book/types'
+import type { Book, BookLanguage, Genre } from '~/domain/book/types'
 import { Scan } from '~/domain/scan'
 import type { ScanLanguage } from '~/domain/scan/types'
-import { cataloguesOf } from '~/domain/series/business-rules'
+import {
+  cataloguesOf,
+  followedSagasOf,
+  followedStateOf,
+  genreOf,
+  inTabOrder,
+  matchingFilter,
+  progressOf,
+} from '~/domain/series/business-rules'
 import { SeriesQuery } from '~/domain/series/query'
-import type { Series, SeriesId } from '~/domain/series/types'
+import type { Series, SeriesId, SeriesName, SeriesState } from '~/domain/series/types'
+import { editionUnfollowed } from '~/domain/series-opinion/business-rules'
 import { SeriesOpinionCommand } from '~/domain/series-opinion/command'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
-import type { UserId } from '~/domain/shared/types'
+import type { SeriesOpinion } from '~/domain/series-opinion/types'
+import { Count, Year } from '~/domain/shared/primitives'
+import type { AuthorName, Count as CountValue, UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
 
 const logger = createLogger('series')
 
+/** A saga the reader follows.
+ *
+ *  Its identity comes from the reader's own books, not from the catalogue: a
+ *  saga named by an Audible import or by a book added by hand has no catalogue
+ *  document, and reading the catalogue first made every one of those disappear
+ *  from the Series tab.
+ *
+ *  So `catalogue` is what may be missing, never the saga. */
+export type FollowedSeries = {
+  id: SeriesId
+  name: SeriesName
+  author?: AuthorName
+  language?: BookLanguage
+  genre?: Genre
+  catalogue: Series | null
+  opinion: SeriesOpinion | null
+  state: SeriesState | null
+  progress: SagaProgress | null
+  ownedCount: CountValue
+  /** The owned volumes, in the order the saga itself runs. */
+  books: Book[]
+  /** The latest date any owned volume is shelved on: what the tab is ordered
+   *  and cut into month sections by. */
+  shelvedAt: Date
+}
+
+export type SagaProgress = { readCount: number; totalCount: number }
+
 export namespace SeriesUseCase {
+  /** Every saga the reader follows, one row per saga and language: a reader who
+   *  holds Dune in French and in English follows two rows, because those are
+   *  two sets of books.
+   *
+   *  Taken from the books, then matched against the catalogue in one getAll and
+   *  against the reader's opinions in one scan — never a lookup per saga. */
+  export const followed = async (userId: UserId): Promise<FollowedSeries[]> => {
+    const [books, held] = await Promise.all([BookQuery.all(userId), SeriesOpinionQuery.all(userId)])
+    const sagas = followedSagasOf(books)
+    const opinions = new Map(held.map((opinion) => [opinion.seriesId, opinion]))
+    // The world's catalogues, and the reader's own count where the world has
+    // none: a saga they counted themselves is measured like any other.
+    const catalogued = cataloguesOf(
+      books,
+      await SeriesQuery.byIds(sagas.map((saga) => saga.id)),
+      held,
+    )
+    const currentYear = Year(new Date().getUTCFullYear())
+    return sagas.map((saga) => {
+      const catalogue = catalogued.get(saga.id) ?? null
+      const opinion = opinions.get(saga.id) ?? null
+      const read = readVolumeNumbersOf(saga.books)
+      return {
+        id: saga.id,
+        name: saga.name,
+        author: saga.author,
+        language: saga.language,
+        genre: genreOf(saga.books),
+        catalogue,
+        opinion,
+        state: followedStateOf(
+          saga.books.map((book) => book.status),
+          catalogue,
+          read,
+          currentYear,
+          editionUnfollowed(opinion, saga.language),
+        ),
+        progress: catalogue ? progressOf(catalogue, read, currentYear) : null,
+        ownedCount: Count(saga.books.length),
+        books: inSagaOrder(saga.books),
+        shelvedAt: new Date(Math.max(...saga.books.map((book) => shelfDateOf(book).getTime()))),
+      }
+    })
+  }
+
+  /** One page of the Series tab, newest first on `shelvedAt`, narrowed to the
+   *  hearted sagas or to one state. */
+  export const followedPage = async (
+    userId: UserId,
+    page: { limit: number; offset: number },
+    filter: { favorite?: boolean; state?: SeriesState },
+  ): Promise<{ items: FollowedSeries[]; hasMore: boolean }> => {
+    const rows = inTabOrder(
+      matchingFilter(
+        (await followed(userId)).map((saga) => ({
+          ...saga,
+          favorite: saga.opinion?.favorite === true,
+        })),
+        filter,
+      ),
+    )
+    return {
+      items: rows.slice(page.offset, page.offset + page.limit),
+      hasMore: page.offset + page.limit < rows.length,
+    }
+  }
+
   /** Take a saga off the shelf: every volume the reader holds, or only those
    *  of one edition when `edition` names a language — the Series tab shows a
    *  saga held in two languages as two rows, and the reader removes the row

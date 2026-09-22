@@ -1,5 +1,6 @@
 import {
   groupedBySeries,
+  inSagaOrder,
   ratedShelfOf,
   seriesRatingsOf,
   shelfPageOf,
@@ -73,6 +74,19 @@ export namespace BookQuery {
 
   export const bySeries = async (userId: UserId, seriesId: SeriesId): Promise<Book[]> =>
     repository.findBySeries(userId, seriesId)
+
+  /** The volumes of one saga the reader holds, in the order the saga runs, with
+   *  their covers — only one edition's when `edition` names it. Covers are
+   *  signed for these volumes alone, not for the whole library. */
+  export const sagaVolumes = async (
+    userId: UserId,
+    seriesId: SeriesId,
+    edition?: BookLanguage,
+  ): Promise<BookView[]> => {
+    const held = await repository.findBySeries(userId, seriesId)
+    const kept = edition ? held.filter((book) => book.language === edition) : held
+    return withCovers(inSagaOrder(kept))
+  }
 
   export const all = async (userId: UserId): Promise<Book[]> => repository.findAllByUser(userId)
 

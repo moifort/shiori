@@ -1,59 +1,12 @@
-import { readVolumeNumbersOf, shelfDateOf } from '~/domain/book/business-rules'
 import { BookLanguageEnum, GenreEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
-import type { Book, BookLanguage, Genre } from '~/domain/book/types'
-import {
-  cataloguesOf,
-  compareWithinSeries,
-  followedSagasOf,
-  followedStateOf,
-  genreOf,
-  inTabOrder,
-  matchingFilter,
-  progressOf,
-} from '~/domain/series/business-rules'
 import { SeriesStateEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { SeriesType } from '~/domain/series/infrastructure/graphql/types'
-import { SeriesQuery } from '~/domain/series/query'
-import type { Series, SeriesId, SeriesName, SeriesState } from '~/domain/series/types'
-import { SeriesUseCase } from '~/domain/series/use-case'
-import { editionUnfollowed } from '~/domain/series-opinion/business-rules'
+import { type FollowedSeries, type SagaProgress, SeriesUseCase } from '~/domain/series/use-case'
 import { SeriesOpinionType } from '~/domain/series-opinion/infrastructure/graphql/types'
-import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
-import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import { builder } from '~/domain/shared/graphql/builder'
 import { languageOf } from '~/domain/shared/language'
-import { Count, Year } from '~/domain/shared/primitives'
-import type { AuthorName, Count as CountValue, UserId } from '~/domain/shared/types'
-
-/** A saga the reader follows.
- *
- *  Its identity comes from the reader's own books, not from the catalogue: a
- *  saga named by an Audible import or by a book added by hand has no catalogue
- *  document, and reading the catalogue first made every one of those disappear
- *  from the Series tab.
- *
- *  So `catalogue` is what may be missing, never the saga. */
-type FollowedSeries = {
-  id: SeriesId
-  name: SeriesName
-  author?: AuthorName
-  language?: BookLanguage
-  genre?: Genre
-  catalogue: Series | null
-  opinion: SeriesOpinion | null
-  state: SeriesState | null
-  progress: SagaProgress | null
-  ownedCount: CountValue
-  /** The owned volumes, in the order the saga itself runs. */
-  books: Book[]
-  /** The latest date any owned volume is shelved on: what the tab is ordered
-   *  and cut into month sections by. */
-  shelvedAt: Date
-}
-
-type SagaProgress = { readCount: number; totalCount: number }
 
 const SagaProgressType = builder.objectRef<SagaProgress>('SagaProgress').implement({
   description:
@@ -219,12 +172,8 @@ builder.queryFields((t) => ({
           'Absent, every edition answers.',
       }),
     },
-    resolve: async (_root, args, { userId }) => {
-      const held = await BookQuery.bySeries(userId, args.seriesId)
-      const edition = args.language ?? undefined
-      const kept = edition ? held.filter((book) => book.language === edition) : held
-      return BookQuery.withSignedCovers(inSagaOrder(kept))
-    },
+    resolve: (_root, args, { userId }) =>
+      BookQuery.sagaVolumes(userId, args.seriesId, args.language ?? undefined),
   }),
 
   mySeriesPage: t.field({
@@ -241,20 +190,15 @@ builder.queryFields((t) => ({
       favorite: t.arg.boolean({ required: false, description: 'Only the hearted sagas' }),
       state: t.arg({ type: SeriesStateEnum, required: false }),
     },
-    resolve: async (_root, args, context) => {
-      const followed = (await followedSeriesOf(context.userId)).map((saga) => ({
-        ...saga,
-        favorite: saga.opinion?.favorite === true,
-      }))
-      const kept = matchingFilter(followed, {
-        favorite: args.favorite ?? undefined,
-        state: args.state ?? undefined,
-      })
-      const rows = inTabOrder(kept)
-      const limit = Math.max(1, Math.min(args.limit ?? 40, 200))
-      const offset = Math.max(0, args.offset ?? 0)
-      return { items: rows.slice(offset, offset + limit), hasMore: offset + limit < rows.length }
-    },
+    resolve: (_root, args, context) =>
+      SeriesUseCase.followedPage(
+        context.userId,
+        {
+          limit: Math.max(1, Math.min(args.limit ?? 40, 200)),
+          offset: Math.max(0, args.offset ?? 0),
+        },
+        { favorite: args.favorite ?? undefined, state: args.state ?? undefined },
+      ),
   }),
 
   mySeries: t.field({
@@ -266,58 +210,6 @@ builder.queryFields((t) => ({
       'here, with a null catalogue and a null state.\n\n' +
       'One row per saga and language: a reader who holds Dune in French and in ' +
       'English follows two rows, because those are two sets of books.',
-    resolve: (_root, _args, context) => followedSeriesOf(context.userId),
+    resolve: (_root, _args, context) => SeriesUseCase.followed(context.userId),
   }),
 }))
-
-/** Every saga the reader follows, one row per saga and language: what both
- *  the whole list and a page of it are cut from. */
-const followedSeriesOf = async (userId: UserId): Promise<FollowedSeries[]> => {
-  const books = await BookQuery.all(userId)
-  const sagas = followedSagasOf(books)
-  // One scan of the reader's opinions for the whole tab, rather than a
-  // lookup per row: a reader with forty sagas would otherwise pay forty.
-  const held = await SeriesOpinionQuery.all(userId)
-  const opinions = new Map(held.map((opinion) => [opinion.seriesId, opinion]))
-  // The world's catalogues, and the reader's own count where the world has
-  // none: a saga they counted themselves is measured like any other.
-  const catalogued = cataloguesOf(
-    books,
-    await SeriesQuery.byIds(sagas.map((saga) => saga.id)),
-    held,
-  )
-  const currentYear = Year(new Date().getUTCFullYear())
-  return sagas.map((saga) => {
-    const catalogue = catalogued.get(saga.id) ?? null
-    const opinion = opinions.get(saga.id) ?? null
-    const read = readVolumeNumbersOf(saga.books)
-    return {
-      id: saga.id,
-      name: saga.name,
-      author: saga.author,
-      language: saga.language,
-      genre: genreOf(saga.books),
-      catalogue,
-      opinion,
-      state: followedStateOf(
-        saga.books.map((book) => book.status),
-        catalogue,
-        read,
-        currentYear,
-        editionUnfollowed(opinion, saga.language),
-      ),
-      progress: catalogue ? progressOf(catalogue, read, currentYear) : null,
-      ownedCount: Count(saga.books.length),
-      books: inSagaOrder(saga.books),
-      shelvedAt: new Date(Math.max(...saga.books.map((book) => shelfDateOf(book).getTime()))),
-    }
-  })
-}
-
-const inSagaOrder = (books: readonly Book[]): Book[] =>
-  [...books].sort((left, right) =>
-    compareWithinSeries(
-      { kind: left.series?.kind ?? 'main', number: left.series?.volume, title: left.title },
-      { kind: right.series?.kind ?? 'main', number: right.series?.volume, title: right.title },
-    ),
-  )

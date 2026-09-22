@@ -362,3 +362,15 @@ export const shelfPageOf = <T extends Book>(
   const start = after ? books.findIndex((book) => book.id === after) + 1 : 0
   return { books: books.slice(start, start + limit), hasMore: start + limit < books.length }
 }
+
+/** A saga's volumes in the order the saga runs: the numbered spine, then what
+ *  orbits it. */
+export const inSagaOrder = <Volume extends Pick<Book, 'series' | 'title'>>(
+  books: readonly Volume[],
+): Volume[] =>
+  [...books].sort((left, right) =>
+    compareWithinSeries(
+      { kind: left.series?.kind ?? 'main', number: left.series?.volume, title: left.title },
+      { kind: right.series?.kind ?? 'main', number: right.series?.volume, title: right.title },
+    ),
+  )

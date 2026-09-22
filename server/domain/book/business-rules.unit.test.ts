@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import {
   datesAfterStatusChange,
   groupedBySeries,
+  inSagaOrder,
   listeningProgressOf,
   membershipFor,
   ratedShelfOf,
@@ -670,5 +671,23 @@ describe('placing a book in a saga by hand', () => {
 
   test('refuses a new saga for a book with no author to key it with', () => {
     expect(membershipFor({ name: SeriesName('Dune') }, [], undefined, [])).toBe('no-author')
+  })
+})
+
+describe('a saga in the order it runs', () => {
+  test('puts the numbered spine first, then what orbits it', () => {
+    const ordered = inSagaOrder([
+      book({ title: 'Contes', series: { name: 'Terremer', kind: 'novella' } }),
+      book({ title: 'Tome 2', series: { name: 'Terremer', volume: 2 } }),
+      book({ title: 'Tome 1', series: { name: 'Terremer', volume: 1 } }),
+    ])
+
+    expect(ordered.map(({ title }) => String(title))).toEqual(['Tome 1', 'Tome 2', 'Contes'])
+  })
+
+  test('treats a volume with no saga as part of the spine', () => {
+    expect(inSagaOrder([book({ title: 'Seul' })]).map(({ title }) => String(title))).toEqual([
+      'Seul',
+    ])
   })
 })
