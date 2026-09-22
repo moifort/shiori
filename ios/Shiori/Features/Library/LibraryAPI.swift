@@ -3,14 +3,6 @@ import Foundation
 /// The library, as the app talks to it. One place maps the generated GraphQL
 /// types onto the domain model, so no screen ever touches a generated type.
 enum LibraryAPI {
-    static func library(status: ReadingStatus? = nil) async throws -> [LibrarySection] {
-        let query = ShioriGraphQL.LibraryQuery(
-            status: GraphQLHelpers.graphQLNullable(status.map(Self.graphQLStatus))
-        )
-        let data = try await GraphQLHelpers.fetch(GraphQLClient.shared.apollo, query: query)
-        return data.library.map { LibrarySection(row: $0.fragments.librarySectionRow) }
-    }
-
     /// One page of the Library tab, in the order the server shelved it.
     static func libraryPage(
         mode: LibraryMode,
@@ -115,20 +107,4 @@ enum LibraryAPI {
 struct LibraryPageResult {
     let books: [Book]
     let hasMore: Bool
-}
-
-private extension LibrarySection {
-    init(row section: ShioriGraphQL.LibrarySectionRow) {
-        self.init(
-            seriesId: section.seriesId,
-            seriesName: section.series,
-            language: section.language?.asDomain,
-            opinion: section.opinion.flatMap { opinion in
-                section.seriesId.map {
-                    SeriesOpinion(seriesId: $0, rating: opinion.rating, favorite: opinion.favorite)
-                }
-            },
-            books: section.books.map { $0.fragments.bookSummary.asBook }
-        )
-    }
 }

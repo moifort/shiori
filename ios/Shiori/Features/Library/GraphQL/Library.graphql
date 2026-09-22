@@ -1,11 +1,3 @@
-# The library list: every book the reader owns, grouped into series sections.
-# `status` narrows it to one shelf of the pile; omitting it returns everything.
-query Library($status: ReadingStatus) {
-  library(status: $status) {
-    ...LibrarySectionRow
-  }
-}
-
 # One page of the Library tab, for the list that draws as it scrolls: a flat
 # list the server has already ordered, newest first, which the app cuts into
 # month sections wherever the month of `shelvedAt` changes. The last book of a
@@ -18,19 +10,6 @@ query LibraryPage($favorite: Boolean, $status: ReadingStatus, $limit: Int, $afte
     books {
       ...BookSummary
     }
-  }
-}
-
-fragment LibrarySectionRow on LibrarySection {
-  seriesId
-  series
-  language
-  opinion {
-    rating
-    favorite
-  }
-  books {
-    ...BookSummary
   }
 }
 

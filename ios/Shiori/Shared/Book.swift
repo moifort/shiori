@@ -321,28 +321,6 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
     }
 }
 
-/// One saga of the reader's library, or a shelf of standalone books — what the
-/// Series and Favorites screens group the library into.
-struct LibrarySection: Identifiable, Codable, Sendable {
-    /// The saga and the language together, or the first book of a standalone
-    /// shelf. The saga alone is not an identity any more: a saga held in two
-    /// languages makes two sections, and SwiftUI would take them for one row
-    /// redrawn twice. Nor is "standalone": the list is tiered by reading
-    /// status, and each tier trails its sagas with a shelf of its own.
-    var id: String {
-        seriesId.map { "\($0)|\(language?.rawValue ?? "")" } ?? "standalone|\(books.first?.id ?? "")"
-    }
-    let seriesId: String?
-    let seriesName: String?
-    /// The language its volumes are in. Nil on the standalone shelf, and nil on
-    /// a saga whose volumes carry no recorded language.
-    var language: BookLanguage?
-    /// What the reader makes of the saga, drawn on the heading. Nil on the
-    /// standalone shelf and on a saga they have said nothing about.
-    var opinion: SeriesOpinion?
-    let books: [Book]
-}
-
 /// One place in a saga's cover strip: a volume the reader owns, or one of the
 /// cycle they do not, drawn as a dimmed placeholder.
 enum SeriesStripItem: Identifiable, Hashable, Codable, Sendable {
