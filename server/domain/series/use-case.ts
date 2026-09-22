@@ -1,5 +1,4 @@
 import { AdminCommand } from '~/domain/admin/command'
-import { AnalyticsCommand } from '~/domain/analytics/command'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import { BookCommand } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
@@ -13,40 +12,38 @@ import { SeriesOpinionCommand } from '~/domain/series-opinion/command'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
-import { atomically } from '~/utils/firestore'
 
 const logger = createLogger('series')
 
 export namespace SeriesUseCase {
-  /** Removes a saga from the reader's library: every volume they hold, and what
-   *  they made of it. The shared catalogue stays, as it belongs to nobody.
-   *
-   *  One batch, so the library never shows half a saga. Returns how many books
-   *  went; zero when the reader held none. */
   /** Take a saga off the shelf: every volume the reader holds, or only those
    *  of one edition when `edition` names a language — the Series tab shows a
    *  saga held in two languages as two rows, and the reader removes the row
    *  they see. Their opinion is of the work, not of an edition, so it is
-   *  forgotten only once no volume of the saga remains. */
-  export const removeFromLibrary = async (
+   *  forgotten only once no volume of the saga remains. The shared catalogue
+   *  stays, as it belongs to nobody.
+   *
+   *  One batch, so the library never shows half a saga. Returns how many books
+   *  went; zero when the reader held none. */
+  export const removeFromLibrary = (
     userId: UserId,
     seriesId: SeriesId,
     edition?: BookLanguage,
-  ): Promise<number> => {
-    const removed = await atomically(async (batch) => {
-      const { removed, remaining } = await BookCommand.removeSeries(
-        userId,
-        seriesId,
-        edition,
-        batch,
-      )
-      if (remaining === 0) await SeriesOpinionCommand.forget(userId, seriesId, batch)
-      if (removed > 0) AnalyticsCommand.markStale(userId, batch)
-      return removed
-    })
-    if (removed > 0) await AnalyticsUseCase.refreshAfterWrite(userId)
-    return removed
-  }
+  ): Promise<number> =>
+    AnalyticsUseCase.afterWrite(
+      userId,
+      async (batch) => {
+        const { removed, remaining } = await BookCommand.removeSeries(
+          userId,
+          seriesId,
+          edition,
+          batch,
+        )
+        if (remaining === 0) await SeriesOpinionCommand.forget(userId, seriesId, batch)
+        return removed
+      },
+      (removed) => removed > 0,
+    )
 
   /** One saga's catalogue, built the first time somebody asks for it.
    *
@@ -140,9 +137,9 @@ export namespace SeriesUseCase {
         logger.warn('AI usage not recorded', { error }),
       )
     // The dashboard measures a saga against its catalogue, and this saga had
-    // none until now: rebuilt here, or the progress bar would wait for the next
+    // none until now: flagged here, or the progress bar would wait for the next
     // unrelated book write to appear.
-    if (series) await AnalyticsUseCase.refreshAfterWrite(userId)
+    if (series) await AnalyticsUseCase.markStale(userId)
     return series ?? null
   }
 }

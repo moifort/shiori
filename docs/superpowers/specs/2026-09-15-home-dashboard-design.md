@@ -78,6 +78,11 @@ concurrently.
 
 ### Keeping it fresh
 
+> **Superseded on 2026-09-22:** a write no longer rebuilds the view. It only marks it
+> `stale: true` in its batch (`AnalyticsUseCase.afterWrite`), and the next dashboard read
+> rebuilds it in the requested time zone. Rebuilding on write read the whole library for a
+> single star and made every mutation wait for it.
+
 **Full recompute on every write.** After any change to a book, the view is rebuilt from all
 the reader's books and written whole. Writes are rare and the home screen is read often, so
 the extra query is paid on the cheap side; and a view rebuilt from source cannot drift, so a

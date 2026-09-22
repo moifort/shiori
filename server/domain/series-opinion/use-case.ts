@@ -1,5 +1,4 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
-import { AnalyticsCommand } from '~/domain/analytics/command'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import { BookQuery } from '~/domain/book/query'
 import type { Book, BookLanguage, StarRating } from '~/domain/book/types'
@@ -7,7 +6,6 @@ import type { SeriesId, VolumeNumber } from '~/domain/series/types'
 import { SeriesOpinionCommand } from '~/domain/series-opinion/command'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import type { UserId } from '~/domain/shared/types'
-import { atomically } from '~/utils/firestore'
 
 /** What a reader says about a saga, kept in step with the analytics view: the
  *  dashboard counts the hearts, so a heart given or taken back must reach it
@@ -54,18 +52,10 @@ export namespace SeriesOpinionUseCase {
 // The opinion and the view's stale flag land in one batch, as a book and its
 // flag do: the view can never look fresh while a heart it does not count is
 // already stored.
-const withAnalytics = async (
+const withAnalytics = (
   userId: UserId,
   write: (batch: WriteBatch) => Promise<SeriesOpinion>,
-): Promise<SeriesOpinion> => {
-  const opinion = await atomically(async (batch) => {
-    const result = await write(batch)
-    AnalyticsCommand.markStale(userId, batch)
-    return result
-  })
-  await AnalyticsUseCase.refreshAfterWrite(userId)
-  return opinion
-}
+): Promise<SeriesOpinion> => AnalyticsUseCase.afterWrite(userId, write)
 
 const heldLanguagesOf = (books: readonly Book[], seriesId: SeriesId): BookLanguage[] => [
   ...new Set(

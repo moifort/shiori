@@ -354,8 +354,9 @@ describe('importing the ticked titles', () => {
   })
 
   // The dashboard is derived data. It must never look fresh over books it does
-  // not count, so it is marked stale before the first one lands.
-  test('leaves the dashboard counting the imported books', async () => {
+  // not count, so it is marked stale before the first one lands, and its next
+  // read rebuilds it.
+  test('leaves the dashboard stale over the imported books', async () => {
     await connect()
     items = [
       anItem({
@@ -365,7 +366,7 @@ describe('importing the ticked titles', () => {
 
     await AudibleUseCase.importBooks(reader, [asin('B002V1OF70')])
 
-    expect(fake.data('analytics', reader)).toMatchObject({ stale: false })
+    expect(fake.data('analytics', reader)).toMatchObject({ stale: true })
   })
 })
 

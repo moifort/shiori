@@ -1,18 +1,33 @@
+import type { WriteBatch } from 'firebase-admin/firestore'
 import { dashboardOf, localDateOf, VIEW_VERSION } from '~/domain/analytics/business-rules'
 import { AnalyticsCommand } from '~/domain/analytics/command'
 import { AnalyticsQuery } from '~/domain/analytics/query'
-import type { BookCard, Dashboard, DashboardBook, TimeZone } from '~/domain/analytics/types'
+import type {
+  AnalyticsView,
+  BookCard,
+  Dashboard,
+  DashboardBook,
+  TimeZone,
+} from '~/domain/analytics/types'
+import { BookQuery } from '~/domain/book/query'
+import { cataloguesOf } from '~/domain/series/business-rules'
+import { SeriesQuery } from '~/domain/series/query'
+import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { UserId } from '~/domain/shared/types'
-import { createLogger } from '~/system/logger'
 import { objectStore } from '~/system/object-store'
+import { atomically } from '~/utils/firestore'
 
-const logger = createLogger('analytics')
-
+/** The home dashboard, and the one way a write reaches it.
+ *
+ *  A write never rebuilds the view: it only flags it stale, in the batch that
+ *  carries the write, and the next dashboard read rebuilds it. A rebuild reads
+ *  the whole library, so rebuilding on every write made a single star cost the
+ *  whole shelf, and made the mutation wait for it — while ten ratings in a row
+ *  only ever needed the last rebuild. */
 export namespace AnalyticsUseCase {
-  /** The home dashboard. One document read when the view is fresh; rebuilt first
-   *  when it is missing, left stale by a failed refresh, built by an older rule
-   *  set, or built in another time zone than the reader's — so it is never
-   *  wrong, at worst slow once. */
+  /** One document read when the view is fresh; rebuilt first when it is
+   *  missing, stale, built by an older rule set, or built in another time zone
+   *  than the reader's — so it is never wrong, at worst slow once. */
   export const dashboard = async (
     userId: UserId,
     timeZone: TimeZone,
@@ -22,21 +37,50 @@ export namespace AnalyticsUseCase {
     const view =
       stored && !stored.stale && stored.version === VIEW_VERSION && stored.timeZone === timeZone
         ? stored
-        : await AnalyticsCommand.refresh(userId, timeZone, now)
+        : await rebuild(userId, timeZone, now)
     return withCovers(dashboardOf(view, localDateOf(now, timeZone)))
   }
 
-  /** Rebuild after a write the view reflects — a book, a saga opinion, or a
-   *  catalogue a saga in the library just gained. A failure is logged and
-   *  swallowed: the write itself landed, and the view it left stale is rebuilt
-   *  on the next read. */
-  export const refreshAfterWrite = async (userId: UserId): Promise<void> => {
-    try {
-      await AnalyticsCommand.refresh(userId)
-    } catch (error) {
-      logger.warn('dashboard refresh failed, left stale', { error, userId })
-    }
+  /** Run a write the dashboard reflects, with the view's stale flag in the same
+   *  batch. `wrote` tells an outcome that changed nothing (a book not found, an
+   *  edit refused) from one that did: the former leaves the view alone. */
+  export const afterWrite = async <Outcome>(
+    userId: UserId,
+    write: (batch: WriteBatch) => Promise<Outcome>,
+    wrote: (outcome: Outcome) => boolean = () => true,
+  ): Promise<Outcome> =>
+    atomically(async (batch) => {
+      const outcome = await write(batch)
+      if (wrote(outcome)) await AnalyticsCommand.markStale(userId, batch)
+      return outcome
+    })
+
+  /** Run writes too many for one batch — an import, a nightly sync — with the
+   *  view flagged stale before the first of them lands, so it can never look
+   *  fresh over books it does not count. */
+  export const whileStale = async <Outcome>(
+    userId: UserId,
+    write: () => Promise<Outcome>,
+  ): Promise<Outcome> => {
+    await AnalyticsCommand.markStale(userId)
+    return write()
   }
+
+  /** Flag the view after something it is built from changed outside the
+   *  reader's library — a saga they hold gaining its catalogue. */
+  export const markStale = (userId: UserId): Promise<void> => AnalyticsCommand.markStale(userId)
+}
+
+const rebuild = async (userId: UserId, timeZone: TimeZone, now: Date): Promise<AnalyticsView> => {
+  const [books, opinions] = await Promise.all([
+    BookQuery.all(userId),
+    SeriesOpinionQuery.all(userId),
+  ])
+  const seriesIds = [...new Set(books.flatMap((book) => (book.series ? [book.series.id] : [])))]
+  // The world's catalogues, and the reader's own count where the world has
+  // none: a saga they counted themselves has a bar on the dashboard too.
+  const catalogues = [...cataloguesOf(books, await SeriesQuery.byIds(seriesIds), opinions).values()]
+  return AnalyticsCommand.rebuild({ userId, books, catalogues, opinions, timeZone, now })
 }
 
 // Signed here rather than stored: a signed URL expires. A dozen covers at most,

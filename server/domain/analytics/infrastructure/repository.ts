@@ -17,10 +17,12 @@ export const save = async (view: AnalyticsView): Promise<AnalyticsView> => {
   return view
 }
 
-// A merge, so the flag lands on an existing view without erasing the time zone
-// the rebuild needs, and creates a bare stale document when there is none yet.
-export const markStale = (userId: UserId, batch: WriteBatch): void => {
-  batch.set(views().doc(userId), { userId, stale: true }, { merge: true })
+// A merge, so the flag lands on an existing view without erasing it, and creates
+// a bare stale document when there is none yet.
+export const markStale = async (userId: UserId, batch?: WriteBatch): Promise<void> => {
+  const ref = views().doc(userId)
+  if (batch) batch.set(ref, { userId, stale: true }, { merge: true })
+  else await ref.set({ userId, stale: true }, { merge: true })
 }
 
 export const remove = async (userId: UserId): Promise<void> => {

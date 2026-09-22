@@ -121,9 +121,10 @@ describe('the dashboard through the API', () => {
     })
   })
 
-  // Every mutation that changes a book must leave the view fresh: one that forgot
-  // would silently serve yesterday's figures until the next unrelated write.
-  test('is rebuilt by every mutation that changes a book', async () => {
+  // Every mutation that changes a book must flag the view for the next read to
+  // rebuild: one that forgot would silently serve yesterday's figures until the
+  // next unrelated write.
+  test('is flagged stale by every mutation that changes a book', async () => {
     const id = await addBook('title: "Le Nom du vent"')
     const mutations = [
       `updateBook(id: "${id}", input: { title: "Le Nom du vent (poche)" }) { id }`,
@@ -145,7 +146,7 @@ describe('the dashboard through the API', () => {
       expect({ mutation, staled, stale: fake.data('analytics', userId)?.stale }).toEqual({
         mutation,
         staled: true,
-        stale: false,
+        stale: true,
       })
     }
   })

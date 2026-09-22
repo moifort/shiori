@@ -33,11 +33,19 @@ beforeEach(() => {
 const addBook = async (title: string, status: 'to-read' | 'reading' | 'read' = 'to-read') =>
   BookUseCase.add(reader, { title: BookTitle(title), status, pageCount: PageCount(300) })
 
+// A write only flags the view; the next dashboard read rebuilds it. What the
+// reader sees is the dashboard, so that is what these read back.
+const viewAfterRead = async () => {
+  await AnalyticsUseCase.dashboard(reader, paris)
+  return fake.data('analytics', reader)
+}
+
 describe('keeping the view in step with the library', () => {
-  test('rebuilds the view after a book is added', async () => {
+  test('counts a book added, on the next read', async () => {
     await addBook('Le Nom du vent', 'reading')
 
-    const view = fake.data('analytics', reader)
+    expect(fake.data('analytics', reader)?.stale).toBe(true)
+    const view = await viewAfterRead()
     expect(view?.stale).toBe(false)
     expect(view?.reading).toHaveLength(1)
   })
@@ -52,26 +60,42 @@ describe('keeping the view in step with the library', () => {
     ])
   })
 
-  test('follows a rating, which finishes the book', async () => {
+  // The point of rebuilding on read: a rating is one book read and one batch,
+  // however large the library, rather than a scan of the whole shelf.
+  test('does not read the library to write a rating', async () => {
     const book = await addBook('Le Nom du vent', 'reading')
+    await viewAfterRead()
+    const before = { docs: fake.docReads, queries: fake.queryReads }
 
     await BookUseCase.rate(reader, book.id, StarRating(5))
 
-    const view = fake.data('analytics', reader)
+    expect(fake.queryReads).toBe(before.queries)
+    expect(fake.docReads).toBe(before.docs + 1)
+  })
+
+  test('follows a rating, which finishes the book', async () => {
+    const book = await addBook('Le Nom du vent', 'reading')
+    await viewAfterRead()
+
+    await BookUseCase.rate(reader, book.id, StarRating(5))
+
+    const view = await viewAfterRead()
     expect(view?.reading).toHaveLength(0)
     expect(view?.finishes).toHaveLength(1)
   })
 
   test('follows a deletion', async () => {
     const book = await addBook('Le Nom du vent')
+    await viewAfterRead()
 
     await BookUseCase.remove(reader, book.id)
 
-    expect(fake.data('analytics', reader)?.toRead).toHaveLength(0)
+    expect((await viewAfterRead())?.toRead).toHaveLength(0)
   })
 
   test('leaves the view alone when the book does not exist', async () => {
     await addBook('Le Nom du vent')
+    await viewAfterRead()
     const before = fake.data('analytics', reader)
 
     const outcome = await BookUseCase.setHidden(reader, 'missing' as never, true)
@@ -81,7 +105,7 @@ describe('keeping the view in step with the library', () => {
   })
 
   // A heart on a saga is a figure of the dashboard, so it goes through the same
-  // door as a book: flagged in the batch, rebuilt after it.
+  // door as a book: flagged in the batch, rebuilt on the next read.
   test('follows a saga hearted, in the very batch that writes the opinion', async () => {
     await addBook('Dune')
 
@@ -92,25 +116,17 @@ describe('keeping the view in step with the library', () => {
       ['set', 'series-opinions'],
       ['merge', 'analytics'],
     ])
-    expect(fake.data('analytics', reader)?.favoriteSeriesCount).toBe(1)
+    expect((await viewAfterRead())?.favoriteSeriesCount).toBe(1)
   })
 
   test('rebuilds a view stored by an older rule set on its next read', async () => {
     await addBook('Le Nom du vent')
+    await viewAfterRead()
     fake.seed('analytics', reader, { ...fake.data('analytics', reader), version: 1 })
 
     await AnalyticsUseCase.dashboard(reader, paris)
 
     expect(fake.data('analytics', reader)?.version).toBe(VIEW_VERSION)
-  })
-
-  test('keeps the time zone of the last dashboard read across a rebuild', async () => {
-    await addBook('Le Nom du vent')
-    await AnalyticsUseCase.dashboard(reader, paris)
-
-    await addBook('La Peur du sage')
-
-    expect(fake.data('analytics', reader)?.timeZone).toBe('Europe/Paris')
   })
 })
 
@@ -127,7 +143,7 @@ describe('reading the dashboard', () => {
     expect(fake.queryReads - before.queries).toBe(0)
   })
 
-  test('rebuilds a view a failed refresh left stale', async () => {
+  test('rebuilds a view a write left stale', async () => {
     await addBook('Le Nom du vent', 'reading')
     await AnalyticsUseCase.dashboard(reader, paris)
     fake.seed('analytics', reader, { ...fake.data('analytics', reader), stale: true, reading: [] })
