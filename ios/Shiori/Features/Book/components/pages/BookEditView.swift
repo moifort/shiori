@@ -93,16 +93,14 @@ struct BookEditView: View {
                                 .accessibilityIdentifier("edit-narrators")
                         }
                     }
-                    Picker(selection: $format) {
-                        ForEach(BookFormat.allCases, id: \.self) { option in
-                            Label(option.label, systemImage: option.symbol).tag(option)
-                        }
-                    } label: {
-                        Label("Format", systemImage: "books.vertical")
-                    } currentValueLabel: {
-                        // The word alone on the row: the icons are for the list.
-                        Text(format.label)
-                    }
+                    MenuPicker(
+                        "Format",
+                        systemImage: "books.vertical",
+                        selection: $format,
+                        options: BookFormat.allCases,
+                        label: { $0.label },
+                        image: { Image(systemName: $0.symbol) }
+                    )
                     .accessibilityIdentifier("edit-format")
                 } footer: {
                     if trimmed(title).isEmpty {
@@ -157,17 +155,14 @@ struct BookEditView: View {
                             TextField("Pages", text: $pages).keyboardType(.numberPad)
                         }
                     }
-                    Picker(selection: $genre) {
-                        Text("Non renseigné").tag(BookGenre?.none)
-                        ForEach(BookGenre.alphabetical, id: \.self) { option in
-                            Label { Text(option.label) } icon: { option.image }
-                                .tag(BookGenre?.some(option))
-                        }
-                    } label: {
-                        Label("Genre", systemImage: "theatermasks")
-                    } currentValueLabel: {
-                        Text(genre?.label ?? String(localized: "Non renseigné"))
-                    }
+                    MenuPicker(
+                        "Genre",
+                        systemImage: "theatermasks",
+                        selection: $genre,
+                        options: [nil] + BookGenre.alphabetical.map(Optional.some),
+                        label: { $0?.label ?? String(localized: "Non renseigné") },
+                        image: { $0?.image }
+                    )
                     .accessibilityIdentifier("edit-genre")
                     VStack(alignment: .leading, spacing: 8) {
                         Label("Sous-genres", systemImage: "tag")
@@ -175,14 +170,13 @@ struct BookEditView: View {
                         SubgenreField(text: $subgenres, suggestions: subgenreSuggestions)
                     }
                     .padding(.vertical, 4)
-                    Picker(selection: $language) {
-                        Text("Non renseignée").tag(BookLanguage?.none)
-                        ForEach(BookLanguage.allCases, id: \.self) { option in
-                            Text(option.label).tag(BookLanguage?.some(option))
-                        }
-                    } label: {
-                        Label("Langue", systemImage: "globe")
-                    }
+                    MenuPicker(
+                        "Langue",
+                        systemImage: "globe",
+                        selection: $language,
+                        options: [nil] + BookLanguage.allCases.map(Optional.some),
+                        label: { $0?.label ?? String(localized: "Non renseignée") }
+                    )
                     .accessibilityIdentifier("edit-language")
                     LabeledField(title: "ISBN", icon: "barcode") {
                         TextField("978…", text: $isbn).keyboardType(.numberPad)

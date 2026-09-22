@@ -27,14 +27,18 @@ struct GenreEditSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    MenuPickerRow(
-                        title: "Genre",
-                        icon: "theatermasks",
+                    MenuPicker(
                         selection: $genre,
                         options: [nil] + BookGenre.alphabetical.map(Optional.some),
                         label: { $0?.label ?? String(localized: "Non renseigné") },
                         image: { $0?.image }
-                    )
+                    ) {
+                        Label {
+                            Text("Genre")
+                        } icon: {
+                            Image(systemName: "theatermasks").foregroundStyle(.secondary)
+                        }
+                    }
                     .accessibilityIdentifier("edit-genre")
                     Label {
                         VStack(alignment: .leading, spacing: 6) {

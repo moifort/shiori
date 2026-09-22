@@ -42,13 +42,13 @@ struct ScanReviewPage: View {
                 TextField("Auteur", text: $authorLine)
                     .textInputAutocapitalization(.words)
                     .accessibilityIdentifier("review-author")
-                Picker("Format", selection: $draft.format) {
-                    ForEach(BookFormat.allCases) { format in
-                        Label(format.label, systemImage: format.symbol)
-                            .labelStyle(.titleAndIcon)
-                            .tag(format)
-                    }
-                }
+                MenuPicker(
+                    "Format",
+                    selection: $draft.format,
+                    options: BookFormat.allCases,
+                    label: { $0.label },
+                    image: { Image(systemName: $0.symbol) }
+                )
                 .accessibilityIdentifier("review-format")
             } header: {
                 Text("À vérifier")
