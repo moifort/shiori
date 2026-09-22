@@ -17,7 +17,12 @@ import {
   Publisher,
   Synopsis,
 } from '~/domain/book/primitives'
-import type { Book, BookId, ReadingStatus } from '~/domain/book/types'
+import type {
+  Book,
+  BookId,
+  ListeningMinutes as ListeningMinutesValue,
+  ReadingStatus,
+} from '~/domain/book/types'
 import { SeriesName, seriesKeyOf, VolumeNumber } from '~/domain/series/primitives'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import type { AuthorName as AuthorNameValue, UserId } from '~/domain/shared/types'
@@ -70,7 +75,11 @@ export const importableFrom = (
     status,
     // Only a finished book has a finishing date to keep. A part-listened title
     // gets today's start stamp like any book the reader moves to "reading".
-    finishedAt: status === 'read' ? item.listeningStatus?.finishedAt : undefined,
+    // Audible's own finishing date, else the night the player stopped at the
+    // end: a title finished by the three-minute rule has no date of Audible's.
+    finishedAt:
+      status === 'read' ? (item.listeningStatus?.finishedAt ?? heard?.lastUpdatedAt) : undefined,
+    listenedMinutes: listenedMinutesOf(heard),
     addedAt: purchaseDateOf(item),
     alreadyInLibrary: ownedKeys.has(shelfKeyOf(title, authors[0])),
   }
@@ -111,6 +120,7 @@ export const bookFrom = (importable: ImportableBook): NewBook => ({
   finishedAt: importable.finishedAt,
   addedAt: importable.addedAt,
   durationMinutes: importable.durationMinutes,
+  listenedMinutes: importable.listenedMinutes,
   narrators: importable.narrators,
   audibleAsin: importable.asin,
 })
@@ -151,6 +161,24 @@ const authorsOf = (item: AudibleItem): AuthorNameValue[] => {
  *  reader's nightstand. Five minutes is past the opening credits of any title. */
 const STARTED_AFTER_MS = 5 * 60 * 1000
 
+/** How close to the end the player must have stopped for the title to be
+ *  finished. Audible keeps a title "unfinished" when the reader stops during
+ *  the closing credits or the publisher's trailer; three minutes from the end
+ *  is the end of any story. */
+const FINISHED_WITHIN_MS = 3 * 60 * 1000
+
+/** Whether the player stopped close enough to the end to call the title
+ *  finished. A title with no running time cannot say. */
+const heardToTheEnd = (item: AudibleItem, heard?: LastPosition): boolean =>
+  heard !== undefined &&
+  item.durationMinutes > 0 &&
+  heard.positionMs >= item.durationMinutes * 60 * 1000 - FINISHED_WITHIN_MS
+
+/** Where the player last stopped, in whole minutes. Undefined for a title the
+ *  player never opened, or left before its first minute. */
+const listenedMinutesOf = (heard?: LastPosition) =>
+  heard ? optionally(Math.floor(heard.positionMs / 60_000), ListeningMinutes) : undefined
+
 /** Where the reader stands in a title, as Audible knows it. Anything finished
  *  is "read", anything started is "reading", and an untouched purchase lands
  *  on the pile — which is exactly what an unopened Audible title is.
@@ -161,7 +189,7 @@ const STARTED_AFTER_MS = 5 * 60 * 1000
  *  saved a position for. */
 export const statusOf = (item: AudibleItem, heard?: LastPosition): ReadingStatus => {
   const listening = item.listeningStatus
-  if (listening?.isFinished) return 'read'
+  if (listening?.isFinished || heardToTheEnd(item, heard)) return 'read'
   if ((heard?.positionMs ?? 0) >= STARTED_AFTER_MS) return 'reading'
   return (listening?.percentComplete ?? 0) > 0 ? 'reading' : 'to-read'
 }
@@ -338,12 +366,27 @@ export const listeningChangesFor = (
         status,
         at:
           status === 'read'
-            ? item.listeningStatus?.finishedAt
+            ? (item.listeningStatus?.finishedAt ?? position?.lastUpdatedAt)
             : status === 'reading'
               ? position?.lastUpdatedAt
               : undefined,
       },
     ]
+  })
+}
+
+/** Where the player got to in each linked book, for those it moved since the
+ *  last pass. A night the player did not move writes nothing. */
+export const listenedMinutesFor = (
+  books: readonly Book[],
+  positions: readonly LastPosition[],
+): { bookId: BookId; listenedMinutes: ListeningMinutesValue }[] => {
+  const heard = heardByAsin(positions)
+  return books.flatMap((book) => {
+    if (!book.audibleAsin) return []
+    const listenedMinutes = listenedMinutesOf(heard.get(book.audibleAsin))
+    if (listenedMinutes === undefined || listenedMinutes === book.listenedMinutes) return []
+    return [{ bookId: book.id, listenedMinutes }]
   })
 }
 

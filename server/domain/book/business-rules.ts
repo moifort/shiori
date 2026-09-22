@@ -147,6 +147,17 @@ const sortedByStatusChange = (books: readonly BookView[]): BookView[] =>
       left.title.localeCompare(right.title),
   )
 
+/** How far into a recording the reader is, as a whole percentage of its
+ *  running time, rounded down so a title only reads 100 once the player got
+ *  there. Undefined without a running time or a position — a printed book, or
+ *  a recording the player never opened. */
+export const listeningProgressOf = (
+  book: Pick<Book, 'durationMinutes' | 'listenedMinutes'>,
+): number | undefined => {
+  if (book.durationMinutes === undefined || book.listenedMinutes === undefined) return undefined
+  return Math.min(100, Math.floor((book.listenedMinutes / book.durationMinutes) * 100))
+}
+
 /** The stars a book shows: its own, else the rating of its saga. A saga rated
  *  as a whole rates each volume the reader left unrated, and a rating given to
  *  the book itself always wins. `seriesRatings` is the reader's saga ratings,

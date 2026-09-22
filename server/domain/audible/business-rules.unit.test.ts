@@ -6,6 +6,7 @@ import {
   bookFrom,
   boughtSince,
   importableFrom,
+  listenedMinutesFor,
   listeningChangesFor,
   plainTextOf,
   purchaseDatesFor,
@@ -268,6 +269,32 @@ describe('where the reader stands in a title', () => {
     expect(statusOf(anItem(), aPosition({ positionMs: 5 * 60 * 1000 }))).toBe('reading')
   })
 
+  // Audible keeps a title "unfinished" when the reader stops during the
+  // closing credits. Three minutes from the end is the end.
+  test('reads a title the player stopped three minutes from the end as read', () => {
+    const item = anItem({ durationMinutes: 600 })
+    expect(statusOf(item, aPosition({ positionMs: 597 * 60 * 1000 }))).toBe('read')
+    expect(statusOf(item, aPosition({ positionMs: 596 * 60 * 1000 }))).toBe('reading')
+  })
+
+  test('dates a title finished near its end on the day the player stopped', () => {
+    const heard = aPosition({ positionMs: 599 * 60 * 1000 })
+    const importable = importableFrom(anItem({ durationMinutes: 600 }), noneOwned, heard)
+
+    expect(importable?.status).toBe('read')
+    expect(importable?.finishedAt).toEqual(heard.lastUpdatedAt)
+  })
+
+  test('catalogues how far the player got, in whole minutes', () => {
+    const heard = aPosition({ positionMs: 138 * 60 * 1000 + 59_000 })
+    const importable = importableFrom(anItem(), noneOwned, heard)
+
+    expect(importable?.listenedMinutes).toBe(ListeningMinutes(138))
+    expect(bookFrom(importable as NonNullable<typeof importable>).listenedMinutes).toBe(
+      ListeningMinutes(138),
+    )
+  })
+
   test('reads a finished listen as read whatever the position', () => {
     const item = anItem({ listeningStatus: { isFinished: true } })
     expect(statusOf(item, aPosition({ positionMs: 0 }))).toBe('read')
@@ -521,6 +548,41 @@ describe('following the listening', () => {
 
   test('leaves a book whose title has left the library alone', () => {
     expect(listeningChangesFor([linked({ status: 'read' })], [])).toEqual([])
+  })
+
+  test('finishes a book the player stopped three minutes from the end', () => {
+    const heard = aPosition({ positionMs: 598 * 60 * 1000 })
+    const items = [anItem({ durationMinutes: 600 })]
+
+    expect(listeningChangesFor([linked({ status: 'reading' })], items, [heard])).toEqual([
+      { bookId: bookId('book-1'), status: 'read', at: heard.lastUpdatedAt },
+    ])
+  })
+})
+
+describe('following how far the player got', () => {
+  const linked = (overrides: Partial<Book> = {}) =>
+    aBook({ audibleAsin: asin('B002V1OF70'), format: 'audiobook', ...overrides })
+
+  test('records the minutes the player reached', () => {
+    const heard = aPosition({ positionMs: 42 * 60 * 1000 })
+
+    expect(listenedMinutesFor([linked()], [heard])).toEqual([
+      { bookId: bookId('book-1'), listenedMinutes: ListeningMinutes(42) },
+    ])
+  })
+
+  // A night the player did not move writes nothing.
+  test('writes nothing when the minutes already agree', () => {
+    const heard = aPosition({ positionMs: 42 * 60 * 1000 + 30_000 })
+    expect(
+      listenedMinutesFor([linked({ listenedMinutes: ListeningMinutes(42) })], [heard]),
+    ).toEqual([])
+  })
+
+  test('ignores a book with no ASIN, and a title the player never opened', () => {
+    expect(listenedMinutesFor([aBook()], [aPosition({ positionMs: 60_000 })])).toEqual([])
+    expect(listenedMinutesFor([linked()], [])).toEqual([])
   })
 })
 

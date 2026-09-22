@@ -5,6 +5,7 @@ import {
   boughtSince,
   heardByAsin,
   importableFrom,
+  listenedMinutesFor,
   listeningChangesFor,
   purchaseDatesFor,
   shelfKeysOf,
@@ -126,13 +127,14 @@ export namespace AudibleUseCase {
       return link ? { ...book, audibleAsin: link.audibleAsin } : book
     })
     const moves = listeningChangesFor(linked, items, positions)
+    const listened = listenedMinutesFor(linked, positions)
     const redates = purchaseDatesFor(linked, items)
     const bought = toImportable(
       { items: boughtSince(items, account.lastImportedAt), positions },
       linked,
     ).filter((importable) => !importable.alreadyInLibrary)
 
-    const changed = links.length + moves.length + redates.length + bought.length
+    const changed = links.length + moves.length + listened.length + redates.length + bought.length
     if (changed > 0) await atomically(async (batch) => AnalyticsCommand.markStale(userId, batch))
 
     await bulkSave(links, async (link) =>
@@ -143,6 +145,11 @@ export namespace AudibleUseCase {
     // reading statistics, for the same reason an import does not.
     await bulkSave(moves, async (move) =>
       BookCommand.setStatus(userId, move.bookId, move.status, move.at ?? now),
+    )
+    // Where the player got to, which the dashboard and the book read the
+    // listening progress off.
+    await bulkSave(listened, async ({ bookId, listenedMinutes }) =>
+      BookCommand.recordListening(userId, bookId, listenedMinutes, now),
     )
     // Books imported before the purchase date was kept all sit on import night;
     // this is what files them under the month they were in fact bought.

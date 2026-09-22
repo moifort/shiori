@@ -82,6 +82,7 @@ const { AudibleQuery } = await import('~/domain/audible/query')
 const { BookQuery } = await import('~/domain/book/query')
 const { BookCommand } = await import('~/domain/book/command')
 const { BookTitle, AuthorName } = await import('~/domain/shared/primitives')
+const { ListeningMinutes } = await import('~/domain/book/primitives')
 
 const reader = 'reader-1' as UserId
 const NOW = new Date('2026-09-19T10:00:00.000Z')
@@ -512,6 +513,33 @@ describe('the nightly sync', () => {
     const [book] = await BookQuery.all(reader)
     expect(book?.status).toBe('reading')
     expect(book?.startedAt).toEqual(lastHeard)
+  })
+
+  test('follows how far the player got, and finishes a title three minutes from its end', async () => {
+    await connect()
+    await AudibleCommand.recordImport(reader, NOW)
+    await BookCommand.add(
+      reader,
+      {
+        title: BookTitle('Le Nom du vent'),
+        authors: [AuthorName('Patrick Rothfuss')],
+        format: 'audiobook',
+        durationMinutes: ListeningMinutes(600),
+        audibleAsin: asin('B002V1OF70'),
+        status: 'reading',
+      },
+      NOW,
+    )
+    const lastHeard = new Date('2026-09-24T20:55:15.357Z')
+    items = [anItem({ durationMinutes: 600, listeningStatus: { percentComplete: 0 } })]
+    positions = [{ asin: 'B002V1OF70', positionMs: 598 * 60 * 1000, lastUpdatedAt: lastHeard }]
+
+    await AudibleUseCase.syncLibrary(reader, LATER)
+
+    const [book] = await BookQuery.all(reader)
+    expect(book?.listenedMinutes).toBe(ListeningMinutes(598))
+    expect(book?.status).toBe('read')
+    expect(book?.finishedAt).toEqual(lastHeard)
   })
 
   test('moves the cutoff forward, so the next pass finds nothing to redo', async () => {

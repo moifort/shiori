@@ -132,6 +132,9 @@ export type ImportableBook = {
   /** Audible's own running time, shown in the picker and carried onto the book:
    *  a library counts pages, and what an audiobook has instead is hours. */
   durationMinutes?: ListeningMinutes
+  /** Where the player last stopped, in whole minutes. Absent on a title it
+   *  never opened, or opened for less than a minute. */
+  listenedMinutes?: ListeningMinutes
   publisher?: Publisher
   synopsis?: Synopsis
   isbn13?: Isbn13

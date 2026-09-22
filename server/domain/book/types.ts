@@ -147,6 +147,12 @@ export type Book = {
   /** Who reads the recording. Empty on anything but an audiobook, and empty on
    *  an audiobook whose source never said — a cover does not name its narrator. */
   narrators: NarratorName[]
+  /** How far into the recording the player last stopped, in whole minutes:
+   *  what the listening progress is read off, against `durationMinutes`. Only
+   *  Audible knows it, from the position its player saves; the import and the
+   *  nightly sync keep it current. Absent on anything else, and on a title the
+   *  player never opened. */
+  listenedMinutes?: ListeningMinutes
   isbn13?: Isbn13
   /** The language of the edition on the shelf, not the app's language. Absent on
    *  every book catalogued before the scan started reading it, and on any edition

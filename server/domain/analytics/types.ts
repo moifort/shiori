@@ -30,6 +30,9 @@ export type BookCard = {
   coverPath?: ObjectPath
   publishedCoverUrl?: CoverUrl
   rating?: StarRating
+  /** How far into a recording the player last stopped, in whole percent. Only
+   *  on an audiobook the Audible player opened. */
+  listeningProgress?: number
   startedAt?: Date
   finishedAt?: Date
 }

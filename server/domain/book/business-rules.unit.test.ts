@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import {
   datesAfterStatusChange,
   groupedBySeries,
+  listeningProgressOf,
   ratedShelfOf,
   readVolumeNumbersOf,
   retaggedAfterEdit,
@@ -13,7 +14,7 @@ import {
   statusStampAfterChange,
   subgenresOf,
 } from '~/domain/book/business-rules'
-import { BookId, StarRating, Subgenre } from '~/domain/book/primitives'
+import { BookId, ListeningMinutes, StarRating, Subgenre } from '~/domain/book/primitives'
 import type { Book, BookLanguage, BookView, Genre } from '~/domain/book/types'
 import { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import type { VolumeKind } from '~/domain/series/types'
@@ -551,5 +552,26 @@ describe('the rated shelf', () => {
     )
 
     expect(shelf.map((entry) => String(entry.id))).toEqual(['volume', 'three'])
+  })
+})
+
+describe('how far into a recording the reader is', () => {
+  const minutes = (value: number) => ListeningMinutes(value)
+
+  test('is the share of the running time the player reached, rounded down', () => {
+    expect(
+      listeningProgressOf({ durationMinutes: minutes(600), listenedMinutes: minutes(299) }),
+    ).toBe(49)
+  })
+
+  test('never runs past a hundred', () => {
+    expect(
+      listeningProgressOf({ durationMinutes: minutes(600), listenedMinutes: minutes(610) }),
+    ).toBe(100)
+  })
+
+  test('is unknown without a running time or a position', () => {
+    expect(listeningProgressOf({ listenedMinutes: minutes(10) })).toBeUndefined()
+    expect(listeningProgressOf({ durationMinutes: minutes(600) })).toBeUndefined()
   })
 })

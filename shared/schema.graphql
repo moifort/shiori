@@ -257,6 +257,11 @@ type Book {
   language: BookLanguage
 
   """
+  How far into the recording the Audible player last stopped, as a whole percentage of `durationMinutes`, rounded down. Kept current by the import and the nightly sync. Null on anything but an audiobook linked to Audible, and on one the player never opened.
+  """
+  listeningProgress: Percentage
+
+  """
   Who reads the recording, at most five. Empty on anything but an audiobook, and empty on an audiobook no import ever named.
   """
   narrators: [NarratorName!]!
@@ -499,6 +504,11 @@ type DashboardBook {
   coverUrl: CoverUrl
   finishedAt: DateTime
   id: BookId!
+
+  """
+  How far into the recording the Audible player last stopped, in whole percent. Null on anything but an audiobook the player opened.
+  """
+  listeningProgress: Percentage
   rating: StarRating
   startedAt: DateTime
   title: BookTitle!

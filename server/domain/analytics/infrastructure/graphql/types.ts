@@ -10,6 +10,7 @@ import type {
 } from '~/domain/analytics/types'
 import { GenreEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { builder } from '~/domain/shared/graphql/builder'
+import { Percentage } from '~/domain/shared/primitives'
 
 const DashboardBookType = builder.objectRef<DashboardBook>('DashboardBook').implement({
   description: 'A book as a dashboard tile draws it: a cover and two lines, nothing more.',
@@ -27,6 +28,15 @@ const DashboardBookType = builder.objectRef<DashboardBook>('DashboardBook').impl
       type: 'StarRating',
       nullable: true,
       resolve: (book) => book.rating ?? null,
+    }),
+    listeningProgress: t.field({
+      type: 'Percentage',
+      nullable: true,
+      description:
+        'How far into the recording the Audible player last stopped, in whole ' +
+        'percent. Null on anything but an audiobook the player opened.',
+      resolve: (book) =>
+        book.listeningProgress === undefined ? null : Percentage(book.listeningProgress),
     }),
     startedAt: t.field({
       type: 'DateTime',

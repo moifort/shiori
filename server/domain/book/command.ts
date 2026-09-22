@@ -47,6 +47,8 @@ export type NewBook = {
   pageCount?: PageCount
   /** An audiobook's running time, which only an Audible import knows. */
   durationMinutes?: ListeningMinutes
+  /** Where the Audible player last stopped, which only an import knows. */
+  listenedMinutes?: ListeningMinutes
   /** Who reads the recording. An import knows them; a scan reads a cover, which
    *  does not name its narrator. */
   narrators?: NarratorName[]
@@ -127,6 +129,7 @@ export namespace BookCommand {
       subgenres: input.subgenres ?? [],
       pageCount: input.pageCount,
       durationMinutes: input.durationMinutes,
+      listenedMinutes: input.listenedMinutes,
       narrators: input.narrators ?? [],
       isbn13: input.isbn13,
       language: input.language,
@@ -213,6 +216,23 @@ export namespace BookCommand {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
     return repository.save({ ...book, audibleAsin, updatedAt: now }, batch)
+  }
+
+  /** Record where the Audible player last stopped in a recording.
+   *
+   *  Its own command rather than a field of `BookEdit`: the reader never types
+   *  a position, and the only thing that moves it is the sync reading the
+   *  player's own. */
+  export const recordListening = async (
+    userId: UserId,
+    bookId: BookId,
+    listenedMinutes: ListeningMinutes,
+    now = new Date(),
+    batch?: WriteBatch,
+  ): Promise<Book | 'not-found'> => {
+    const book = await repository.findById(userId, bookId)
+    if (!book) return 'not-found'
+    return repository.save({ ...book, listenedMinutes, updatedAt: now }, batch)
   }
 
   export const setStatus = async (

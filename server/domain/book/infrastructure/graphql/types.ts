@@ -1,4 +1,4 @@
-import { shelfDateOf, statusChangedAtOf } from '~/domain/book/business-rules'
+import { listeningProgressOf, shelfDateOf, statusChangedAtOf } from '~/domain/book/business-rules'
 import {
   BookFormatEnum,
   BookLanguageEnum,
@@ -9,6 +9,7 @@ import type { BookView, LibrarySection, SeriesMembership } from '~/domain/book/t
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import { builder } from '~/domain/shared/graphql/builder'
+import { Percentage } from '~/domain/shared/primitives'
 
 export const SeriesMembershipType = builder
   .objectRef<SeriesMembership>('SeriesMembership')
@@ -93,6 +94,19 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
         'and null on an audiobook no import ever timed — a scanned cover does ' +
         'not say how long the recording is.',
       resolve: (book) => book.durationMinutes ?? null,
+    }),
+    listeningProgress: t.field({
+      type: 'Percentage',
+      nullable: true,
+      description:
+        'How far into the recording the Audible player last stopped, as a whole ' +
+        'percentage of `durationMinutes`, rounded down. Kept current by the ' +
+        'import and the nightly sync. Null on anything but an audiobook linked ' +
+        'to Audible, and on one the player never opened.',
+      resolve: (book) => {
+        const progress = listeningProgressOf(book)
+        return progress === undefined ? null : Percentage(progress)
+      },
     }),
     narrators: t.field({
       type: ['NarratorName'],
