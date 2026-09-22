@@ -165,3 +165,7 @@ export type ImportableBook = {
   addedAt?: Date
   alreadyInLibrary: boolean
 }
+
+/** A recording of a saga the reader listens to that they do not own yet: out
+ *  already, or up for preorder when the release date is ahead. */
+export type AudibleRelease = ImportableBook & { releaseDate?: Date }

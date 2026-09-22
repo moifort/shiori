@@ -63,3 +63,59 @@ resource "google_cloud_scheduler_job" "sync_audible_libraries" {
 
   depends_on = [google_project_service.apis]
 }
+
+# Keeps every reader's Découvrir tab a week fresh: each hourly run refreshes the
+# readers whose tab is oldest until two minutes are spent, so the population is
+# spread across the week rather than paid for in one burst. Only readers who
+# opened the tab are refreshed. Answers 200 with the counts, like the Audible
+# sync, so a retry never re-runs everybody for one reader.
+resource "google_cloud_scheduler_job" "refresh_discover" {
+  project   = google_project.this.project_id
+  region    = var.region
+  name      = "refresh-discover"
+  schedule  = "15 * * * *"
+  time_zone = "Europe/Paris"
+
+  attempt_deadline = "180s"
+
+  retry_config {
+    retry_count = 0
+  }
+
+  http_target {
+    http_method = "POST"
+    uri         = "${google_cloudfunctions2_function.server.service_config[0].uri}/admin/refresh-discover"
+    headers = {
+      Authorization = "Bearer ${local.admin_token_value}"
+    }
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
+# Pushes the books that came out today to the readers who switched the matching
+# alert on, once a morning. No model call: the weekly refresh already holds the
+# dates, and a release is pushed once, so a retry sends nothing twice.
+resource "google_cloud_scheduler_job" "send_release_alerts" {
+  project   = google_project.this.project_id
+  region    = var.region
+  name      = "send-release-alerts"
+  schedule  = "0 9 * * *"
+  time_zone = "Europe/Paris"
+
+  attempt_deadline = "180s"
+
+  retry_config {
+    retry_count = 1
+  }
+
+  http_target {
+    http_method = "POST"
+    uri         = "${google_cloudfunctions2_function.server.service_config[0].uri}/admin/send-release-alerts"
+    headers = {
+      Authorization = "Bearer ${local.admin_token_value}"
+    }
+  }
+
+  depends_on = [google_project_service.apis]
+}

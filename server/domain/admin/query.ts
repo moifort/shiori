@@ -1,5 +1,6 @@
 import {
   aiCostEur,
+  freshStep,
   monthOf,
   searchCostEur,
   searchesOf,
@@ -39,6 +40,7 @@ export namespace AdminQuery {
       vision: usage.vision,
       enrichment: usage.enrichment,
       catalogue: usage.catalogue,
+      discovery: usage.discovery ?? freshStep(),
       refreshedAt: projection?.refreshedAt,
     }
   }

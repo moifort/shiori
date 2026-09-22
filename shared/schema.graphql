@@ -20,6 +20,11 @@ type AdminMetrics {
   catalogue: AiTokenUsage!
 
   """
+  The Découvrir tab's token consumption this month: each reader's weekly suggestions, the award lists shared per genre, and the release dates of followed sagas and authors.
+  """
+  discovery: AiTokenUsage!
+
+  """
   The web-grounded enrichment step's token consumption this month. Skipped when the cover was not recognized.
   """
   enrichment: AiTokenUsage!
@@ -102,6 +107,29 @@ type AiTokenUsage {
 
   """Reasoning tokens, billed at the output rate, e.g. `1500`"""
   thinkingTokens: Int!
+}
+
+"""
+An alert the reader can switch on. Every one is about a book coming out: Shiori never pushes to bring a reader back.
+"""
+enum AlertKind {
+  """A new Audible recording in a followed saga."""
+  AUDIBLE_RELEASE
+
+  """A new book by an author the reader hearted or rated five stars."""
+  AUTHOR_RELEASE
+
+  """A new volume of a followed saga."""
+  SERIES_VOLUME
+
+  """The French translation of a book the reader read in English."""
+  TRANSLATION
+}
+
+"""One alert and whether the reader switched it on."""
+type AlertSwitch {
+  enabled: Boolean!
+  kind: AlertKind!
 }
 
 """
@@ -448,6 +476,15 @@ input CompleteOnboardingInput {
   firstName: PersonName!
 }
 
+"""Where a book copied from a friend's shelf lands on the reader's own."""
+enum CopiedStatus {
+  """Among the books read: the reader had already read it."""
+  READ
+
+  """On the pile."""
+  TO_READ
+}
+
 """A non-negative whole number of things. Example: 12."""
 scalar Count
 
@@ -554,6 +591,49 @@ On output a JavaScript `Date` is rendered as an ISO string; on input an ISO stri
 scalar DateTime
 
 """
+The token APNs hands a device for this app, in hexadecimal, as the app receives it on registering for remote notifications.
+"""
+scalar DeviceToken
+
+"""
+The Découvrir tab: shelves of books to read next, each suggestion with its reason. The friends’ hearts are read live; the rest is what the weekly refresh found.
+"""
+type Discover {
+  """The books readers worldwide rate highest in the reader’s genres."""
+  acclaimed: [Suggestion!]!
+
+  """The next recordings of the sagas the reader listens to on Audible."""
+  audible: [Suggestion!]!
+
+  """Prize winners in the reader’s leading genres."""
+  awards: [Suggestion!]!
+  becauseYouLoved: [LovedShelf!]!
+
+  """
+  Whether `refreshDiscover` would prepare a fresh set: once a day at most.
+  """
+  canRefresh: Boolean!
+
+  """Hearted by friends, not on the reader’s shelf; the most hearted first."""
+  friendsFavorites: [FriendFavorite!]!
+
+  """
+  Genres the reader never tried, reached through one they love; the first is the hero of the week.
+  """
+  offTrail: [Suggestion!]!
+
+  """
+  When the shelves were last prepared. Null before the first time: the app then offers to prepare them with `refreshDiscover`.
+  """
+  preparedAt: DateTime
+
+  """
+  What comes out in the reader’s sagas, by their loved authors, and in their language for books they read in another; the soonest first.
+  """
+  releases: [Release!]!
+}
+
+"""
 What the account is entitled to, and what the App Store sold to get there.
 
 Read it before starting a purchase: `appAccountToken` is what ties the payment back to this account, and a purchase made without it cannot be matched to anyone.
@@ -649,9 +729,25 @@ type FollowedSeriesPage {
 
 """Somebody whose library the reader can see, and who can see theirs."""
 type Friend {
+  """
+  How many books they hearted, the ones they keep to themselves left out.
+  """
+  favoriteCount: Count!
+
   """Null for an account that never finished its onboarding."""
   firstName: String
+
+  """How many books they are reading."""
+  readingCount: Count!
+
+  """
+  The book they started most recently, null when they are reading nothing.
+  """
+  readingTitle: BookTitle
   since: DateTime!
+
+  """How many books wait on their pile."""
+  toReadCount: Count!
   userId: UserId!
 }
 
@@ -661,14 +757,45 @@ A book as a friend sees it: what is on the shelf and what its owner makes of it,
 type FriendBook {
   authors: [AuthorName!]!
   coverUrl: String
+  durationMinutes: Int
   favorite: Boolean!
+  firstPublishedIn: Year
   format: BookFormat!
+  genre: Genre
   id: BookId!
+
+  """
+  The reader already owns this story — same title and first author, whatever the edition — so there is nothing to add.
+  """
+  inLibrary: Boolean!
   language: BookLanguage
+  narrators: [NarratorName!]!
+  pageCount: PageCount
+  publisher: Publisher
   rating: StarRating
   series: SeriesMembership
   status: ReadingStatus!
+  subgenres: [Subgenre!]!
+  synopsis: Synopsis
   title: BookTitle!
+}
+
+"""
+A book a friend hearted that the reader does not own. Opens as the friend’s copy, through `friendBook(userId, bookId)`.
+"""
+type FriendFavorite {
+  authors: [AuthorName!]!
+  bookId: BookId!
+  coverUrl: CoverUrl
+  format: BookFormat!
+  friendId: UserId!
+
+  """Every friend who hearted it, first names."""
+  friendNames: [String!]!
+  key: String!
+  seriesName: SeriesName
+  title: BookTitle!
+  volume: VolumeNumber
 }
 
 """
@@ -899,6 +1026,14 @@ An audiobook running time in whole minutes, 1 to 60000. Absent when unknown. Exa
 scalar ListeningMinutes
 
 """
+"Parce que vous avez aimé X": books in the vein of one the reader loved.
+"""
+type LovedShelf {
+  anchor: BookTitle!
+  items: [Suggestion!]!
+}
+
+"""
 The signed-in user: their identity and onboarding state.
 
 Always resolvable from the auth token, so `userId` is always present. Every other field is null until the onboarding wizard completes, which lets the app route a fresh account into onboarding.
@@ -970,6 +1105,24 @@ type Mutation {
   addBook(input: NewBookInput!): Book!
 
   """
+  Put a friend's book on the reader's own shelf, on the pile or among the books read.
+  
+  Only the friend and the book are named: the server re-reads the book and copies its catalogue facts, never what the friend made of it — no status, rating, heart or note. The copy records the friend as who recommended it. Fails with `NOT_FOUND` for a stranger, a missing book or one marked "do not share", and `ALREADY_IN_LIBRARY` when the reader owns the story.
+  """
+  addFriendBook(
+    bookId: BookId!
+    status: CopiedStatus!
+
+    """The friend"""
+    userId: UserId!
+  ): Book!
+
+  """
+  Put a suggestion on the reader’s shelf, on the pile or among the books read. The client names it by its key; the book is made from what the tab stored. Fails with `NOT_FOUND` for a key the tab does not hold and `ALREADY_IN_LIBRARY` for a story the reader owns.
+  """
+  addSuggestion(key: String!, status: CopiedStatus!): Book!
+
+  """
   Register the device with the authorization code the web view caught, and link the account.
   
   The credentials are sealed before they reach storage and never leave the server. Fails with `AUDIBLE_NO_PENDING_LOGIN` when no sign-in was started, `AUDIBLE_LOGIN_EXPIRED` past the thirty-minute window — start over in both cases — and `AUDIBLE_UNAVAILABLE` when Amazon refuses the registration.
@@ -1033,6 +1186,11 @@ type Mutation {
   disconnectAudible: Boolean!
 
   """
+  "Pas pour moi": never propose this book again, and let the next refresh know. Answers false before the tab was ever opened.
+  """
+  dismissSuggestion(key: String!): Boolean!
+
+  """
   Catalogue the Audible titles the reader ticked, and return the books created.
   
   The library is read again from Amazon rather than trusted from the app: the client sends identifiers, every stored field comes from the source. An ASIN the library does not hold matches nothing, and a title already catalogued is skipped — so calling this twice with the same list creates no duplicates.
@@ -1091,11 +1249,21 @@ type Mutation {
   ): [KindleBook!]!
 
   """
+  Prepare the Découvrir shelves now rather than waiting for the weekly refresh. Granted once a day; past that it answers the tab as it stands. Slow — several grounded model calls — so the app waits with a loader.
+  """
+  refreshDiscover: Discover!
+
+  """
   Ask the world about a saga again: one fresh web-grounded model call, whose catalogue replaces the stored one for every reader of the saga. For a volume announced since the catalogue was built, or a catalogue built in the wrong language.
   
   Built as `series` builds a first catalogue: from a volume the reader holds, titled as the edition on the shelf titles it, `language` naming that edition when the saga is held in more than one. Takes a few seconds. Null when the reader holds no volume of the saga, and when the model failed or found no volumes — the previous catalogue is then kept as it was.
   """
   refreshSeries(language: BookLanguage, seriesId: SeriesId!): Series
+
+  """
+  Remember a device to push alerts to. The app calls it on every launch with notifications allowed, so a token APNs rotated is picked up; registering the same token again only refreshes it.
+  """
+  registerDevice(environment: PushEnvironment!, token: DeviceToken!): NotificationSettings!
 
   """
   Take a rating back. The book stays read, with its reading dates: withdrawing a judgment is not saying the reading never happened.
@@ -1149,6 +1317,9 @@ type Mutation {
     """The title as remembered"""
     title: BookTitle!
   ): ScanResult!
+
+  """Switch one alert on or off."""
+  setAlert(enabled: Boolean!, kind: AlertKind!): NotificationSettings!
 
   """
   Turn the nightly Audible sync on or off.
@@ -1236,6 +1407,9 @@ type Mutation {
     signedTransaction: String!
   ): Entitlement!
 
+  """Forget a device, when the reader signs out of it."""
+  unregisterDevice(token: DeviceToken!): NotificationSettings!
+
   """
   Correct a record the scan got wrong. Omitted fields are left alone; an optional field passed as null is cleared. BAD_USER_INPUT when `series` names a saga the reader does not hold and the book has no author to key it with, or when a reading date is in the future, precedes the start, or is one the status does not carry.
   """
@@ -1294,6 +1468,17 @@ input NewBookInput {
 }
 
 """
+What the reader wants to hear about, and whether any device can hear it. Every alert starts switched off.
+"""
+type NotificationSettings {
+  """Every alert there is, in a fixed order, each with its switch."""
+  alerts: [AlertSwitch!]!
+
+  """How many devices are registered to receive them."""
+  deviceCount: Int!
+}
+
+"""
 Page count of this edition, 1 to 20000. Absent when unknown — never zero, which would read as a real count of nothing. Example: 662.
 """
 scalar PageCount
@@ -1327,6 +1512,14 @@ enum Plan {
 The publisher of this edition, 1 to 200 characters. Example: "DAW Books".
 """
 scalar Publisher
+
+"""
+Which APNs gateway a device token belongs to: a development build gets a sandbox token, which the production gateway rejects.
+"""
+enum PushEnvironment {
+  PRODUCTION
+  SANDBOX
+}
 
 type Query {
   """
@@ -1380,6 +1573,11 @@ type Query {
   dashboard(timeZone: TimeZone!): Dashboard!
 
   """
+  The Découvrir tab. Opening it the first time enrols the reader in the weekly refresh; until that has run, only the friends’ hearts are there.
+  """
+  discover: Discover!
+
+  """
   What the account is entitled to today, and the account token to start a purchase with. The app reads this before showing the subscription sheet.
   
   ```graphql
@@ -1394,6 +1592,18 @@ type Query {
   ```
   """
   entitlement: Entitlement!
+
+  """
+  One book of a friend's shelf, for the read-only page a row opens.
+  
+  Null for a stranger, a book that does not exist and a book marked "do not share" alike — none of the three may be told apart.
+  """
+  friendBook(
+    bookId: BookId!
+
+    """The friend"""
+    userId: UserId!
+  ): FriendBook
 
   """
   One friend's shelf: what they are reading, their pile, their favourites and the sagas they are working through.
@@ -1499,6 +1709,9 @@ type Query {
     language: BookLanguage
     seriesId: SeriesId!
   ): [Book!]!
+
+  """The alerts the reader switched on, for the settings screen."""
+  notificationSettings: NotificationSettings!
 
   """
   This month’s scan allowance for the signed-in account. The scan screen reads it to show what is left, and the paywall to explain what a subscription lifts.
@@ -1643,6 +1856,21 @@ input RecommendationInput {
 
   """Who recommended the book, typically picked from the contacts."""
   recommenderName: PersonName
+}
+
+"""A book coming out that the reader has a reason to care about."""
+type Release {
+  """`YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Only a day ever fires an alert."""
+  date: String!
+
+  """What `dismissSuggestion` names to hide it."""
+  key: String!
+
+  """Which alert it would fire: a saga volume, a translation, a recording…"""
+  kind: AlertKind!
+
+  """The book itself; its key is what `addSuggestion` names."""
+  suggestion: Suggestion!
 }
 
 """
@@ -1892,6 +2120,44 @@ scalar StarRating
 One free label refining the genre, 1 to 100 characters, never translated: sent in the language of `Accept-Language`, served as it was written. Example: "Dark fantasy".
 """
 scalar Subgenre
+
+"""
+A book the Découvrir tab proposes, with the one line that says why. Never a book the reader owns or dismissed.
+"""
+type Suggestion {
+  authors: [AuthorName!]!
+
+  """The prize it won, e.g. "Hugo 2024"."""
+  award: String
+  coverUrl: CoverUrl
+  firstPublishedIn: Year
+  format: BookFormat!
+  genre: Genre
+
+  """
+  The title and first author folded: what `dismissSuggestion` and `addSuggestion` name.
+  """
+  key: String!
+  language: BookLanguage
+
+  """What readers worldwide rate it, out of five, one decimal."""
+  publicRating: Float
+
+  """How many readers rated it."""
+  ratingCount: Int
+
+  """Why this book, for this reader, in one line of their language."""
+  reason: String!
+
+  """
+  When it comes out, as precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`.
+  """
+  releaseDate: String
+  seriesName: SeriesName
+  synopsis: Synopsis
+  title: BookTitle!
+  volume: VolumeNumber
+}
 
 """The book summary, 1 to 4000 characters, in the caller language."""
 scalar Synopsis

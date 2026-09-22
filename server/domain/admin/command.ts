@@ -26,6 +26,12 @@ export namespace AdminCommand {
     await repository.recordUsage(monthOf(new Date()), { scans: 0, cacheHits: 0, catalogue })
   }
 
+  // A Découvrir call — suggestions, an award list, release dates. Telemetry
+  // like the above: the caller logs and swallows a failure.
+  export const recordDiscoveryUsage = async (discovery: AiStepUsage) => {
+    await repository.recordUsage(monthOf(new Date()), { scans: 0, cacheHits: 0, discovery })
+  }
+
   /** Store the daily projection the admin screen reads. A full set: the
    *  refresh recomputes everything, and a section that came back absent must
    *  disappear rather than linger. */

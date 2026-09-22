@@ -43,16 +43,22 @@ export const freshUsage = (month: MonthType): AiUsage => ({
   vision: freshStep(),
   enrichment: freshStep(),
   catalogue: freshStep(),
+  discovery: freshStep(),
 })
 
-const freshStep = (): AiStepUsage => ({
+export const freshStep = (): AiStepUsage => ({
   promptTokens: Count(0),
   outputTokens: Count(0),
   thinkingTokens: Count(0),
   searches: Count(0),
 })
 
-const stepsOf = (usage: AiUsage) => [usage.vision, usage.enrichment, usage.catalogue]
+const stepsOf = (usage: AiUsage) => [
+  usage.vision,
+  usage.enrichment,
+  usage.catalogue,
+  usage.discovery ?? freshStep(),
+]
 
 // What the month's measured tokens cost in euros, every Gemini call combined.
 export const tokenCostEur = (usage: AiUsage): EurType => {

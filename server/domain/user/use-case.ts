@@ -2,6 +2,7 @@ import { AnalyticsCommand } from '~/domain/analytics/command'
 import { AudibleCommand } from '~/domain/audible/command'
 import { coverPrefixOf } from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
+import { DiscoverCommand } from '~/domain/discover/command'
 import { EntitlementCommand } from '~/domain/entitlement/command'
 import { FriendshipCommand } from '~/domain/friendship/command'
 import { NotificationCommand } from '~/domain/notification/command'
@@ -63,6 +64,7 @@ export namespace UserUseCase {
       SeriesOpinionCommand.deleteAllForUser(userId),
       FriendshipCommand.deleteAllForUser(userId),
       NotificationCommand.deleteForUser(userId),
+      DiscoverCommand.deleteForUser(userId),
     ])
     await objectStore().removeByPrefix(coverPrefixOf(userId))
     await UserCommand.deleteProfile(userId)

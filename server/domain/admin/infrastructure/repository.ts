@@ -35,6 +35,7 @@ export const recordUsage = async (
     vision?: StepDelta
     enrichment?: StepDelta
     catalogue?: StepDelta
+    discovery?: StepDelta
   },
 ): Promise<void> => {
   await db()
@@ -48,6 +49,7 @@ export const recordUsage = async (
         vision: stepIncrements(delta.vision),
         enrichment: stepIncrements(delta.enrichment),
         catalogue: stepIncrements(delta.catalogue),
+        discovery: stepIncrements(delta.discovery),
       },
       { merge: true },
     )

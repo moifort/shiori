@@ -81,6 +81,12 @@ import '~/domain/notification/infrastructure/graphql/types'
 import '~/domain/notification/infrastructure/graphql/queries'
 import '~/domain/notification/infrastructure/graphql/mutations'
 
+// Discover (the Découvrir tab). After friendship and notification: a friend's
+// heart opens as a friend book, and a release names its alert kind.
+import '~/domain/discover/infrastructure/graphql/types'
+import '~/domain/discover/infrastructure/graphql/queries'
+import '~/domain/discover/infrastructure/graphql/mutations'
+
 // Changelog (application release notes)
 import '~/domain/changelog/infrastructure/graphql/types'
 import '~/domain/changelog/infrastructure/graphql/queries'

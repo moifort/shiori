@@ -131,6 +131,13 @@ export const AdminMetricsType = builder.objectRef<AdminMetricsView>('AdminMetric
         'reader has catalogued yet, so it is the line that spikes on a new author.',
       resolve: (metrics) => metrics.catalogue,
     }),
+    discovery: t.field({
+      type: AiTokenUsageType,
+      description:
+        "The Découvrir tab's token consumption this month: each reader's weekly suggestions, " +
+        'the award lists shared per genre, and the release dates of followed sagas and authors.',
+      resolve: (metrics) => metrics.discovery,
+    }),
     refreshedAt: t.expose('refreshedAt', {
       type: 'DateTime',
       nullable: true,

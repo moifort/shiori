@@ -31,6 +31,9 @@ export type AiUsage = {
   vision: AiStepUsage
   enrichment: AiStepUsage
   catalogue: AiStepUsage
+  /** The Découvrir tab's calls: suggestions, award lists and release dates.
+   *  Absent on a month recorded before the tab existed. */
+  discovery?: AiStepUsage
 }
 
 /** Active subscribers right now, split by the billing period their product id
@@ -91,5 +94,6 @@ export type AdminMetricsView = {
   vision: AiStepUsage
   enrichment: AiStepUsage
   catalogue: AiStepUsage
+  discovery: AiStepUsage
   refreshedAt?: Date
 }

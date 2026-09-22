@@ -6,8 +6,11 @@ import {
   heardByAsin,
   importableFrom,
   listenedMinutesFor,
+  listenedSagasOf,
   listeningChangesFor,
+  nextInSaga,
   purchaseDatesFor,
+  SAGAS_SEARCHED,
   seriesVolumesFor,
   shelfKeysOf,
 } from '~/domain/audible/business-rules'
@@ -17,6 +20,7 @@ import { openCredentials } from '~/domain/audible/infrastructure/credentials-vau
 import { AudibleQuery } from '~/domain/audible/query'
 import type {
   AudibleAsin,
+  AudibleRelease,
   ConnectedAccount,
   ImportableBook,
   LibrarySync,
@@ -34,6 +38,49 @@ import { isPresent } from '~/utils/input'
 const logger = createLogger('audible')
 
 export namespace AudibleUseCase {
+  /** The next recordings of the sagas the reader listens to — out already or
+   *  up for preorder — for the Découvrir tab and its alerts.
+   *
+   *  One library read and one catalogue search per saga, the sagas bought most
+   *  recently first. A saga whose search fails is skipped: one refusal from
+   *  Amazon must not cost the reader every other saga. */
+  export const nextInListenedSagas = async (
+    userId: UserId,
+  ): Promise<AudibleRelease[] | 'not-connected'> => {
+    const account = await AudibleQuery.accountOf(userId)
+    if (!account) return 'not-connected'
+    let credentials = opened(account.credentials)
+    if (!credentials) return 'not-connected'
+
+    const library = await api.library(credentials)
+    credentials = library.credentials
+    const owned = library.items
+    const ownedAsins = new Set(owned.map((item) => item.asin))
+    const ownedKeys = shelfKeysOf(await BookQuery.all(userId))
+
+    const releases: AudibleRelease[] = []
+    for (const saga of listenedSagasOf(owned).slice(0, SAGAS_SEARCHED)) {
+      try {
+        const found = await api.catalog(credentials, {
+          categoryId: saga.categoryId,
+          keywords: saga.name,
+          sortBy: '-ReleaseDate',
+          limit: 20,
+        })
+        credentials = found.credentials
+        for (const item of nextInSaga(saga, found.items, ownedAsins)) {
+          const book = importableFrom(item, ownedKeys)
+          if (book && !book.alreadyInLibrary)
+            releases.push({ ...book, releaseDate: item.releaseDate })
+        }
+      } catch (error) {
+        logger.warn('Audible saga search failed', { error, userId, saga: saga.name })
+      }
+    }
+    await AudibleCommand.rememberRotatedCredentials(userId, credentials)
+    return releases
+  }
+
   /** The reader's Audible library, as books they could catalogue.
    *
    *  Nothing is saved: the answer is a proposal, the same contract `scanBook`

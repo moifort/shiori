@@ -29,6 +29,7 @@ import type { VolumeNumber as VolumeNumberValue } from '~/domain/series/types'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import type { AuthorName as AuthorNameValue, UserId } from '~/domain/shared/types'
 import { isPresent, optionally } from '~/utils/input'
+import { slugify } from '~/utils/slug'
 
 /** What one Audible title becomes in a Shiori library.
  *
@@ -481,3 +482,71 @@ export const readersDueForSync = (connections: readonly AudibleConnection[]): Us
         (right.account?.lastImportedAt?.getTime() ?? 0),
     )
     .map((connection) => connection.userId)
+
+/** A saga the reader listens to, as their Audible library shows it: what to
+ *  search the catalogue for, and how far they already are. */
+export type ListenedSaga = {
+  name: string
+  author?: string
+  /** The Audible shelf the saga sits on, which the catalogue search needs. */
+  categoryId: string
+  /** The highest volume number they own, when Audible numbers the saga. */
+  lastPosition?: number
+  /** The latest release date among what they own. */
+  lastReleasedAt?: Date
+  /** When they last bought a volume: the sagas bought most recently first. */
+  lastBoughtAt: number
+}
+
+/** How many sagas one pass searches: each is one call to Amazon. */
+export const SAGAS_SEARCHED = 6
+
+/** The sagas of an Audible library, most recently bought first. */
+export const listenedSagasOf = (items: readonly AudibleItem[]): ListenedSaga[] => {
+  const sagas = new Map<string, ListenedSaga>()
+  for (const item of items) {
+    const name = item.series?.name
+    const categoryId = item.categories?.[0]?.categories?.[0]?.id
+    if (!name || !categoryId) continue
+    const key = slugify(name)
+    const known = sagas.get(key)
+    const position = item.series?.position
+    const boughtAt = (item.purchaseDate ?? item.dateAdded)?.getTime() ?? 0
+    sagas.set(key, {
+      name,
+      author: known?.author ?? item.authors[0],
+      categoryId: known?.categoryId ?? categoryId,
+      lastPosition:
+        position === undefined
+          ? known?.lastPosition
+          : Math.max(position, known?.lastPosition ?? Number.NEGATIVE_INFINITY),
+      lastReleasedAt: laterOf(known?.lastReleasedAt, item.releaseDate),
+      lastBoughtAt: Math.max(boughtAt, known?.lastBoughtAt ?? 0),
+    })
+  }
+  return [...sagas.values()].sort((left, right) => right.lastBoughtAt - left.lastBoughtAt)
+}
+
+const laterOf = (left: Date | undefined, right: Date | undefined): Date | undefined =>
+  !left ? right : !right ? left : left > right ? left : right
+
+/** The volumes of a saga the catalogue has that come after what the reader
+ *  owns: numbered past their last volume, or, for a saga Audible does not
+ *  number, released after the newest one they have. Preorders included — a
+ *  release date in the future is exactly what the reader wants to know. */
+export const nextInSaga = (
+  saga: ListenedSaga,
+  found: readonly AudibleItem[],
+  ownedAsins: ReadonlySet<string>,
+): AudibleItem[] =>
+  found.filter((item) => {
+    if (ownedAsins.has(item.asin)) return false
+    if (!item.series || slugify(item.series.name) !== slugify(saga.name)) return false
+    if (saga.lastPosition !== undefined && item.series.position !== undefined)
+      return item.series.position > saga.lastPosition
+    return (
+      item.releaseDate !== undefined &&
+      saga.lastReleasedAt !== undefined &&
+      item.releaseDate > saga.lastReleasedAt
+    )
+  })
