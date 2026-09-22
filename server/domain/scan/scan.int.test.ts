@@ -38,6 +38,8 @@ const { Scan } = await import('~/domain/scan')
 const { SeriesQuery } = await import('~/domain/series/query')
 const { seriesKeyOf } = await import('~/domain/series/primitives')
 const { BookTitle } = await import('~/domain/shared/primitives')
+const { Subgenre } = await import('~/domain/book/primitives')
+const { SubgenreQuery } = await import('~/domain/subgenre/query')
 
 const image = Buffer.from('a cover photo')
 
@@ -56,7 +58,7 @@ const anEnrichment = {
   volumeKind: 'main',
   firstPublishedIn: 2007,
   genre: 'fantasy',
-  subgenres: ['Roman Initiatique'],
+  subgenres: [{ fr: 'Roman Initiatique', en: 'Coming-of-Age Novel' }],
   pageCount: 662,
   isbn13: '9782352943556',
   synopsis: 'Kvothe raconte sa propre légende.',
@@ -176,12 +178,27 @@ describe('classifying the genre', () => {
   })
 
   test('keeps three subgenres at most', async () => {
-    const subgenres = ['Dark Fantasy', 'Roman Initiatique', 'Musique', 'Magie']
+    const labels = ['Dark Fantasy', 'Roman Initiatique', 'Musique', 'Magie']
+    const subgenres = labels.map((label) => ({ fr: label, en: label }))
     answers = [aCover, { ...anEnrichment, subgenres }, aCatalogue]
 
     const { result } = await Scan.scanWithCache(image, 'fr')
 
-    expect((result.subgenres ?? []).map(String)).toEqual(subgenres.slice(0, 3))
+    expect((result.subgenres ?? []).map(String)).toEqual(labels.slice(0, 3))
+  })
+
+  // The reader reads the language they scanned in; the other side waits in the
+  // shared dictionary for the book this scan becomes.
+  test('answers the subgenres in the scan language and files both sides', async () => {
+    answers = [aCover, anEnrichment, aCatalogue]
+
+    const { result } = await Scan.scanWithCache(image, 'en')
+
+    expect((result.subgenres ?? []).map(String)).toEqual(['Coming-of-Age Novel'])
+    const filed = await SubgenreQuery.known([Subgenre('Roman initiatique')], 'fr')
+    expect([...filed.values()].map(({ fr, en }) => [String(fr), String(en)])).toEqual([
+      ['Roman Initiatique', 'Coming-of-Age Novel'],
+    ])
   })
 })
 

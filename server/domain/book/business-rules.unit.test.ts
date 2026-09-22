@@ -371,20 +371,34 @@ describe('groupedBySeries, across languages', () => {
 })
 
 describe('subgenresOf', () => {
-  const tagged = (...subgenres: string[]) => ({ subgenres: subgenres.map(Subgenre) })
+  const tagged = (...subgenres: [fr: string, en: string][]) => ({
+    subgenres: subgenres.map(([fr, en]) => ({ fr: Subgenre(fr), en: Subgenre(en) })),
+  })
 
   test('proposes the most used first, then alphabetically', () => {
-    const proposed = subgenresOf([
-      tagged('Space opera', 'Jeunesse'),
-      tagged('Dark fantasy'),
-      tagged('Space opera'),
-    ])
+    const proposed = subgenresOf(
+      [
+        tagged(['Space opera', 'Space opera'], ['Jeunesse', 'Children']),
+        tagged(['Dark fantasy', 'Dark fantasy']),
+        tagged(['Space opera', 'Space opera']),
+      ],
+      'fr',
+    )
     expect(proposed.map(String)).toEqual(['Space Opera', 'Dark Fantasy', 'Jeunesse'])
+  })
+
+  // The same shelf, read by an English-speaking app.
+  test('proposes the labels of the language asked for', () => {
+    const proposed = subgenresOf([tagged(['Roman initiatique', 'Coming-of-age'])], 'en')
+    expect(proposed.map(String)).toEqual(['Coming-of-age'])
   })
 
   // Two spellings of one word are one word: the form must not propose both.
   test('folds case, keeping the first spelling seen', () => {
-    const proposed = subgenresOf([tagged('Dark fantasy'), tagged('dark FANTASY')])
+    const proposed = subgenresOf(
+      [tagged(['Dark fantasy', 'Dark fantasy']), tagged(['dark FANTASY', 'dark FANTASY'])],
+      'fr',
+    )
     expect(proposed.map(String)).toEqual(['Dark Fantasy'])
   })
 })

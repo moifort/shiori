@@ -3,6 +3,10 @@ import type { AudibleGenre, AudibleItem, CategoryLadder } from 'audible-api-ts'
 import { resolveGenreId } from 'audible-api-ts'
 import { genreFrom, subgenresFrom } from '~/domain/audible/genre-mapping'
 
+/** The French side of what an import files, as a French reader's app reads it. */
+const frenchSubgenresOf = (item: Parameters<typeof subgenresFrom>[0]) =>
+  subgenresFrom(item).map((subgenre) => String(subgenre.fr))
+
 /** A ladder built from the shelves Audible would file a title under, root first.
  *
  *  The ids come from `resolveGenreId` rather than being typed out: they are
@@ -102,13 +106,13 @@ describe('a shelf that is not a genre', () => {
   // examples — so the shelf is kept there rather than dropped.
   test('records an audience as a subgenre instead', () => {
     expect(genreFrom(shelvedIn(ladderOf(['children'])))).toBeUndefined()
-    expect(subgenresFrom(shelvedIn(ladderOf(['children']))).map(String)).toEqual(['Jeunesse'])
+    expect(frenchSubgenresOf(shelvedIn(ladderOf(['children'])))).toEqual(['Jeunesse'])
   })
 
   test('records a theme as a subgenre instead', () => {
     expect(genreFrom(shelvedIn(ladderOf(['lgbtq'])))).toBeUndefined()
-    expect(subgenresFrom(shelvedIn(ladderOf(['lgbtq']))).map(String)).toEqual(['LGBTQ+'])
-    expect(subgenresFrom(shelvedIn(ladderOf(['sports']))).map(String)).toEqual(['Sport'])
+    expect(frenchSubgenresOf(shelvedIn(ladderOf(['lgbtq'])))).toEqual(['LGBTQ+'])
+    expect(frenchSubgenresOf(shelvedIn(ladderOf(['sports'])))).toEqual(['Sport'])
   })
 
   // The two answer different questions, so the subgenre is kept even when a rung
@@ -117,11 +121,11 @@ describe('a shelf that is not a genre', () => {
     const item = shelvedIn(ladderOf(['young-adult', 'young-adult/thriller']))
 
     expect(genreFrom(item)).toBe('thriller')
-    expect(subgenresFrom(item).map(String)).toEqual(['Young Adult'])
+    expect(frenchSubgenresOf(item)).toEqual(['Young Adult'])
   })
 
   test('says nothing extra for a title whose every shelf is a genre', () => {
-    expect(subgenresFrom(shelvedIn(ladderOf(['fantasy', 'fantasy/epic'])))).toEqual([])
+    expect(frenchSubgenresOf(shelvedIn(ladderOf(['fantasy', 'fantasy/epic'])))).toEqual([])
   })
 
   // A title sits on several ladders and they overlap, so the same audience comes
@@ -132,7 +136,7 @@ describe('a shelf that is not a genre', () => {
       ladderOf(['children', 'children/action-adventure']),
     )
 
-    expect(subgenresFrom(item).map(String)).toEqual(['Jeunesse'])
+    expect(frenchSubgenresOf(item)).toEqual(['Jeunesse'])
   })
 
   test('keeps at most three, the first being the one the library list shows', () => {
@@ -143,7 +147,7 @@ describe('a shelf that is not a genre', () => {
       ladderOf(['sports']),
     )
 
-    expect(subgenresFrom(item).map(String)).toEqual(['Jeunesse', 'Young Adult', 'LGBTQ+'])
+    expect(frenchSubgenresOf(item)).toEqual(['Jeunesse', 'Young Adult', 'LGBTQ+'])
   })
 })
 
@@ -163,7 +167,7 @@ describe('across marketplaces', () => {
     }
 
     expect(genreFrom(shelvedIn(shelfOnSomeOtherStore))).toBeUndefined()
-    expect(subgenresFrom(shelvedIn(shelfOnSomeOtherStore))).toEqual([])
+    expect(frenchSubgenresOf(shelvedIn(shelfOnSomeOtherStore))).toEqual([])
   })
 })
 
@@ -242,7 +246,7 @@ describe('real titles, as the live catalogue shelves them', () => {
     )
 
     expect(genreFrom(item)).toBe('fantasy')
-    expect(subgenresFrom(item).map(String)).toEqual(['Jeunesse'])
+    expect(frenchSubgenresOf(item)).toEqual(['Jeunesse'])
   })
 
   test('Le Crime de l’Orient-Express is crime, the earlier of two ladders', () => {

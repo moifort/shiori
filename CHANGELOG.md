@@ -10,6 +10,9 @@ the release tag is pushed.
 
 ## Unreleased
 
+- Subgenres read in the app's language, whichever language they were scanned, imported or
+  typed in: each one is kept in French and in English, and the ones already in the library
+  are translated.
 - The library and the Series tab are sorted by date and sectioned by month, as in Vinarium:
   newest first on the day a book was finished, else started, else added, and a saga on its
   latest volume. This replaces the sections by reading status and by genre, and the genre

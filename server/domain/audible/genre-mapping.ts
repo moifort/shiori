@@ -1,7 +1,7 @@
 import type { AudibleGenre, AudibleItem } from 'audible-api-ts'
 import { GENRE_CATEGORIES } from 'audible-api-ts'
 import { MAX_SUBGENRES, Subgenre } from '~/domain/book/primitives'
-import type { Genre, Subgenre as SubgenreValue } from '~/domain/book/types'
+import type { Genre, LocalizedSubgenre } from '~/domain/book/types'
 
 /** What one Audible shelf says about a book: the genre it belongs to, or — when
  *  the shelf is not a genre at all — the subgenre that records it anyway.
@@ -9,7 +9,7 @@ import type { Genre, Subgenre as SubgenreValue } from '~/domain/book/types'
  *  Every shelf says one or the other. There is no third case and no `undefined`:
  *  a shelf nobody decided about would go missing in silence, and the union is
  *  what forces the decision to be written down. */
-type Shelf = { genre: Genre; generic?: true } | { subgenre: string }
+type Shelf = { genre: Genre; generic?: true } | { subgenre: { fr: string; en: string } }
 
 /** What each of Audible's shelves becomes here.
  *
@@ -40,8 +40,8 @@ type Shelf = { genre: Genre; generic?: true } | { subgenre: string }
  *  shelf name, for the same reason the ids are matched and the names are not: the
  *  name arrives translated per marketplace and reworded between seasons, and a
  *  library would end up carrying "Jeunesse" and "Children's" as two different
- *  subgenres. They are French because that is what a subgenre is here — the scan
- *  writes them in French, and "jeunesse" is one of its own examples. */
+ *  subgenres. Each is written in every language the app speaks, as a book's
+ *  subgenres are stored, so the import costs no translation call. */
 const SHELF: Record<AudibleGenre, Shelf> = {
   'science-fiction': { genre: 'science-fiction' },
   fantasy: { genre: 'fantasy' },
@@ -61,14 +61,14 @@ const SHELF: Record<AudibleGenre, Shelf> = {
   business: { genre: 'business' },
   'self-help': { genre: 'self-help' },
   science: { genre: 'science' },
-  children: { subgenre: 'Jeunesse' },
-  'young-adult': { subgenre: 'Young Adult' },
+  children: { subgenre: { fr: 'Jeunesse', en: 'Children' } },
+  'young-adult': { subgenre: { fr: 'Young Adult', en: 'Young Adult' } },
   comedy: { genre: 'humor' },
   erotica: { genre: 'romance' },
   religion: { genre: 'essay' },
-  sports: { subgenre: 'Sport' },
+  sports: { subgenre: { fr: 'Sport', en: 'Sports' } },
   travel: { genre: 'travel' },
-  lgbtq: { subgenre: 'LGBTQ+' },
+  lgbtq: { subgenre: { fr: 'LGBTQ+', en: 'LGBTQ+' } },
 
   'science-fiction/adventure': { genre: 'science-fiction' },
   'science-fiction/adaptations': { genre: 'science-fiction' },
@@ -225,9 +225,11 @@ export const genreFrom = (item: AudibleItem): Genre | undefined => {
  *  Deduplicated — a title sits on several ladders and they overlap — and capped
  *  at `MAX_SUBGENRES`, in the order the ladders gave them, since the first is the
  *  only one the library list shows. */
-export const subgenresFrom = (item: AudibleItem): SubgenreValue[] => {
-  const labels = laddersOf(item)
+export const subgenresFrom = (item: AudibleItem): LocalizedSubgenre[] => {
+  const shelves = laddersOf(item)
     .flat()
     .flatMap((shelf) => ('subgenre' in shelf ? [shelf.subgenre] : []))
-  return [...new Set(labels)].slice(0, MAX_SUBGENRES).map(Subgenre)
+  return [...new Map(shelves.map((shelf) => [shelf.en, shelf])).values()]
+    .slice(0, MAX_SUBGENRES)
+    .map(({ fr, en }) => ({ fr: Subgenre(fr), en: Subgenre(en) }))
 }

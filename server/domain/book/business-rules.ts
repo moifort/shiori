@@ -7,6 +7,7 @@ import type {
   Subgenre,
 } from '~/domain/book/types'
 import { compareWithinSeries } from '~/domain/series/business-rules'
+import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 import { ObjectPath } from '~/system/object-store/primitives'
 import type { ObjectPath as ObjectPathValue } from '~/system/object-store/types'
@@ -194,14 +195,17 @@ export const coverPrefixOf = (userId: UserId): ObjectPathValue => ObjectPath(`co
 export const coverPathOf = (userId: UserId, bookId: BookId): ObjectPathValue =>
   ObjectPath(`${coverPrefixOf(userId)}${bookId}`)
 
-/** Every subgenre the reader has used, the most used first and the alphabet
- *  breaking ties, folded on case so "Dark fantasy" and "dark fantasy" are one
- *  entry. What the edit form proposes as the reader types: a vocabulary drawn
- *  from their own shelf rather than from a list nobody agreed on. */
-export const subgenresOf = (books: readonly Pick<Book, 'subgenres'>[]): Subgenre[] => {
+/** Every subgenre the reader has used, in `language`, the most used first and
+ *  the alphabet breaking ties, folded on case so "Dark fantasy" and "dark
+ *  fantasy" are one entry. What the edit form proposes as the reader types: a
+ *  vocabulary drawn from their own shelf rather than from a list nobody agreed on. */
+export const subgenresOf = (
+  books: readonly Pick<Book, 'subgenres'>[],
+  language: Language,
+): Subgenre[] => {
   const counts = new Map<string, { subgenre: Subgenre; count: number }>()
   for (const book of books)
-    for (const subgenre of book.subgenres) {
+    for (const { [language]: subgenre } of book.subgenres) {
       const key = subgenre.toLocaleLowerCase()
       const entry = counts.get(key)
       if (entry) entry.count += 1

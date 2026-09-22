@@ -11,12 +11,38 @@ mock.module('~/system/object-store', () => ({
   objectStore: () => ({ downloadUrl: async () => 'https://fake.store/cover' }),
 }))
 
+/** The translations the model would give, by English label. A label missing
+ *  here comes back the same on both sides. Nobody pays Google in a test, and no
+ *  test reaches the network. */
+const FRENCH: Record<string, string> = { Children: 'Jeunesse', Adventure: 'Aventure' }
+const translationCalls: string[][] = []
+
+// Spread over the real module: a mock is global to the run, and the files that
+// test the module's other exports must still find them.
+const realGemini = { ...(await import('~/domain/scan/gemini')) }
+mock.module('~/domain/scan/gemini', () => ({
+  ...realGemini,
+  generate: async ({ parts }: { parts: { text?: string }[] }) => {
+    const labels = [...(parts[0]?.text ?? '').matchAll(/^\d+\. (.+)$/gm)].map((line) => line[1])
+    translationCalls.push(labels)
+    return {
+      value: {
+        subgenres: labels.map((label) => ({
+          fr: FRENCH[label] ?? Object.keys(FRENCH).find((en) => FRENCH[en] === label) ?? label,
+          en: Object.keys(FRENCH).find((en) => FRENCH[en] === label) ?? label,
+        })),
+      },
+    }
+  },
+}))
+
 const { schema } = await import('~/domain/shared/graphql/schema')
 
 const userId = 'reader-1' as UserId
 
 beforeEach(() => {
   resetFakeFirestore()
+  translationCalls.length = 0
 })
 
 // A test that freezes the clock hands the real one back to the next.
@@ -25,6 +51,14 @@ afterEach(() => {
 })
 
 const execute = (source: string) => graphql({ schema, source, contextValue: { event: {}, userId } })
+
+/** A request from an app set to French: every subgenre reads in French. */
+const executeInFrench = (source: string) =>
+  graphql({
+    schema,
+    source,
+    contextValue: { event: { node: { req: { headers: { 'accept-language': 'fr-FR' } } } }, userId },
+  })
 
 const addBook = async (title: string, status = 'TO_READ') => {
   const result = await execute(
@@ -277,6 +311,31 @@ describe('correcting a book through the API', () => {
 
     expect(result.errors).toBeUndefined()
     expect(result.data?.subgenres).toEqual(['Aventure', 'Jeunesse'])
+  })
+
+  // Typed in an English app, read in a French one: the record holds both.
+  test('serves every subgenre in the language of the request', async () => {
+    const added = await execute(
+      'mutation { addBook(input: { title: "Un", subgenres: ["Children", "Grimdark"] }) { subgenres } }',
+    )
+    expect(added.data?.addBook).toEqual({ subgenres: ['Children', 'Grimdark'] })
+
+    const inFrench = await executeInFrench('{ libraryPage { books { subgenres } } subgenres }')
+    expect(inFrench.errors).toBeUndefined()
+    expect(inFrench.data).toEqual({
+      libraryPage: { books: [{ subgenres: ['Jeunesse', 'Grimdark'] }] },
+      subgenres: ['Grimdark', 'Jeunesse'],
+    })
+  })
+
+  // The dictionary is shared: a label anybody translated before costs no call.
+  test('translates a label once, whoever types it next and in whichever language', async () => {
+    await execute('mutation { addBook(input: { title: "Un", subgenres: ["Children"] }) { id } }')
+    await executeInFrench(
+      'mutation { addBook(input: { title: "Deux", subgenres: ["Jeunesse"] }) { id } }',
+    )
+
+    expect(translationCalls).toEqual([['Children']])
   })
 
   test('reads back the genre and subgenres it was created with', async () => {

@@ -17,6 +17,7 @@ import type {
   Genre,
   Isbn13,
   ListeningMinutes,
+  LocalizedSubgenre,
   NarratorName,
   PageCount,
   Publisher,
@@ -24,7 +25,6 @@ import type {
   ReadingStatus,
   SeriesMembership,
   StarRating,
-  Subgenre,
   Synopsis,
 } from '~/domain/book/types'
 import type { SeriesId } from '~/domain/series/types'
@@ -42,7 +42,7 @@ export type NewBook = {
   firstPublishedIn?: Year
   synopsis?: Synopsis
   genre?: Genre
-  subgenres?: Subgenre[]
+  subgenres?: LocalizedSubgenre[]
   pageCount?: PageCount
   /** An audiobook's running time, which only an Audible import knows. */
   durationMinutes?: ListeningMinutes

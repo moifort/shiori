@@ -283,7 +283,7 @@ type Book {
   statusChangedAt: DateTime!
 
   """
-  Zero to three free labels refining the genre, most representative first — a list shows only that one. Empty, never null.
+  Zero to three free labels refining the genre, most representative first — a list shows only that one — in the language of `Accept-Language`, whichever one they were written in. Empty, never null.
   """
   subgenres: [Subgenre!]!
   synopsis: Synopsis
@@ -798,7 +798,7 @@ One page of the Library tab. Cursor-less: the page carries its books plus a `has
 """
 type LibraryPage {
   """
-  In the order the tab draws them. The app opens a section wherever the status — or, arranged by genre, the genre — changes from one book to the next.
+  In the order the tab draws them. The app opens a section wherever the month of `shelvedAt` changes from one book to the next.
   """
   books: [Book!]!
 
@@ -1676,7 +1676,7 @@ Whole stars only: half stars double the value space without adding discernment. 
 scalar StarRating
 
 """
-One free label refining the genre, 1 to 100 characters, in the caller language. Example: "Dark fantasy".
+One free label refining the genre, 1 to 100 characters, in the language of `Accept-Language`: sent in it, and served in it whichever language it was first written in. Example: "Dark fantasy".
 """
 scalar Subgenre
 

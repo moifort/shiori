@@ -8,6 +8,7 @@ import {
 import type { BookView, LibrarySection, SeriesMembership } from '~/domain/book/types'
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { builder } from '~/domain/shared/graphql/builder'
+import { languageOf } from '~/domain/shared/language'
 
 export const SeriesMembershipType = builder
   .objectRef<SeriesMembership>('SeriesMembership')
@@ -71,8 +72,10 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
       type: ['Subgenre'],
       description:
         'Zero to three free labels refining the genre, most representative first — a ' +
-        'list shows only that one. Empty, never null.',
-      resolve: (book) => book.subgenres,
+        'list shows only that one — in the language of `Accept-Language`, whichever ' +
+        'one they were written in. Empty, never null.',
+      resolve: (book, _args, context) =>
+        book.subgenres.map((subgenre) => subgenre[languageOf(context.event)]),
     }),
     language: t.field({
       type: BookLanguageEnum,

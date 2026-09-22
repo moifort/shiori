@@ -78,9 +78,14 @@ export const ENRICHMENT_SCHEMA = {
     },
     subgenres: {
       type: 'array',
-      items: { type: 'string' },
+      items: {
+        type: 'object',
+        properties: { fr: { type: 'string' }, en: { type: 'string' } },
+        required: ['fr', 'en'],
+        propertyOrdering: ['fr', 'en'],
+      },
       description:
-        'De 0 à 3 sous-genres libres qui précisent le genre, du plus représentatif au moins représentatif',
+        'De 0 à 3 sous-genres libres qui précisent le genre, du plus représentatif au moins représentatif, chacun en français et en anglais',
     },
     pageCount: { type: 'integer', nullable: true },
     isbn13: {

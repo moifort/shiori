@@ -233,7 +233,7 @@ schema, a domain command, or several screens at once; **large** brings in a new 
 
 ## Large
 
-- [ ] **Subgenres and tags in the app's language, the scan's included.** A subgenre is free
+- [x] **Subgenres and tags in the app's language, the scan's included.** A subgenre is free
       text stored as the source wrote it, so one library mixes languages: the Audible import
       files an audience as "Young Adult", the scan prompt's examples are French whatever the
       reader's language, and switching the app to English leaves every stored subgenre in
@@ -243,6 +243,13 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       the scan and the import mapping onto those keys and a free-text fallback decided for
       what falls outside it. Existing records need a migration onto the keys, and the
       autocompletion and the series fan-out follow.
+      Built instead as bilingual free text: a book stores `{ fr, en }` per subgenre and the
+      API serves the side of `Accept-Language`. A shared `subgenre-translations`
+      dictionary files every pair; the scan asks the model for both sides, a typed label
+      unknown to the dictionary costs one small model call (on failure it reads the same
+      in both languages), and the Audible shelves carry both. Migration 3 translates the
+      stored labels, one call per chunk of distinct labels. The translation call is not
+      counted in the admin AI costs yet.
 
 - [x] **Pagination** on every list, as in Vinarium. Cursor arguments on every list query,
       client-side page accumulation, and the read-budget tests to match.

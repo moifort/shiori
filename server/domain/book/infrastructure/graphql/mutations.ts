@@ -9,7 +9,9 @@ import type { BookId } from '~/domain/book/types'
 import { BookUseCase } from '~/domain/book/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
 import { notFound } from '~/domain/shared/graphql/errors'
+import { languageOf } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
+import { SubgenreUseCase } from '~/domain/subgenre/use-case'
 
 // Commands answer with the record or a bare 'not-found'. Re-reading through the
 // query is what attaches the signed cover URL, which the command layer knows
@@ -43,7 +45,12 @@ builder.mutationFields((t) => ({
         firstPublishedIn: args.input.firstPublishedIn ?? undefined,
         synopsis: args.input.synopsis ?? undefined,
         genre: args.input.genre ?? undefined,
-        subgenres: args.input.subgenres?.slice(0, MAX_SUBGENRES) ?? undefined,
+        subgenres: args.input.subgenres
+          ? await SubgenreUseCase.localized(
+              args.input.subgenres.slice(0, MAX_SUBGENRES),
+              languageOf(context.event),
+            )
+          : undefined,
         pageCount: args.input.pageCount ?? undefined,
         narrators: args.input.narrators?.slice(0, MAX_NARRATORS) ?? undefined,
         language: args.input.language ?? undefined,
@@ -82,7 +89,12 @@ builder.mutationFields((t) => ({
         // Lists clear to empty rather than to absent: the record always has them.
         ...(input.authors !== undefined ? { authors: input.authors ?? [] } : {}),
         ...(input.subgenres !== undefined
-          ? { subgenres: (input.subgenres ?? []).slice(0, MAX_SUBGENRES) }
+          ? {
+              subgenres: await SubgenreUseCase.localized(
+                (input.subgenres ?? []).slice(0, MAX_SUBGENRES),
+                languageOf(context.event),
+              ),
+            }
           : {}),
         ...(input.narrators !== undefined
           ? { narrators: (input.narrators ?? []).slice(0, MAX_NARRATORS) }

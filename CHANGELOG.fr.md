@@ -4,6 +4,9 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Les sous-genres s’affichent dans la langue de l’app, quelle que soit la langue dans
+  laquelle ils ont été scannés, importés ou saisis : chacun est conservé en français et en
+  anglais, et ceux déjà présents dans la bibliothèque sont traduits.
 - La bibliothèque et l’onglet Séries sont triés par date et découpés par mois, comme dans
   Vinarium : du plus récent au plus ancien selon le jour où un livre a été terminé, sinon
   commencé, sinon ajouté, et une saga selon son dernier tome. Cela remplace les sections par
