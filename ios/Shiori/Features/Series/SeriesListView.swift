@@ -223,7 +223,7 @@ struct SeriesListView: View {
 
     /// Every volume of the cycle, in its order, as a cover: the owned ones with
     /// their status pinned on, the missing ones dimmed with their number, the
-    /// announced ones fainter still under a clock, the related works last — the
+    /// announced ones fainter still under a clock, nothing off the cycle — the
     /// reader's progress, and what they lack, read off the books themselves
     /// rather than off a bar. No titles: the saga screen is a tap away.
     private func covers(_ entry: FollowedSeries) -> some View {

@@ -140,7 +140,7 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 - L’onglet Séries reprend les vues et le filtre de la bibliothèque : tout ou les favoris,
   restreint à un état. La bande de couvertures de chaque série liste tous les tomes du
   cycle, tomes annoncés compris, ceux que le lecteur n’a pas estompés entre ceux qu’il
-  possède ; les œuvres liées n’y figurent que s’il les possède.
+  possède ; les œuvres liées restent sur l’écran de la série.
 - L’écran d’une série suit celui d’un livre : le genre, les sous-genres et la note rejoignent la
   section principale, avec les dates de début, d’ajout et de fin de la série ; les tomes
   ressemblent aux lignes de la bibliothèque et ouvrent les livres du lecteur ; et une série peut

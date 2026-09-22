@@ -351,9 +351,10 @@ enum SeriesStripItem: Identifiable, Hashable, Codable, Sendable {
     /// The saga's spine in order, announced volumes included: each volume
     /// takes the reader's books when they have it — every part of a novel sold
     /// in two, and every format held — and a placeholder when they do not. The
-    /// owned volumes off the spine follow — a prequel or companion
-    /// the reader lacks gets no placeholder, the strip is the cycle itself and
-    /// the saga screen lists the rest. Just the owned volumes when the saga has
+    /// books off the spine are left out, owned or not — a prequel or novella
+    /// is not a volume of the cycle, and a saga marked finished would still
+    /// show it unread. The strip is the cycle itself and the saga screen lists
+    /// the rest. Just the owned volumes when the saga has
     /// no catalogue yet — the saga screen is what builds it, and a scroll
     /// through the tab must not pay for one per row.
     static func strip(owned: [Book], spine: [Volume], currentYear: Int) -> [SeriesStripItem] {
@@ -374,7 +375,6 @@ enum SeriesStripItem: Identifiable, Hashable, Codable, Sendable {
                 ))
             }
         }
-        items += owned.filter { !placed.contains($0.id) }.map { .owned($0) }
         return items
     }
 }
@@ -490,7 +490,8 @@ struct FollowedSeries: Identifiable, Codable, Sendable {
     var volumes: [Book] = []
     /// What the tab's cover strip draws: the owned volumes and, between them,
     /// the published volumes of the cycle the reader does not have, in the
-    /// order of the cycle. Just the owned volumes when no catalogue exists.
+    /// order of the cycle — nothing off it. Just the owned volumes when no
+    /// catalogue exists.
     var strip: [SeriesStripItem] = []
     /// Nil until the reader says something about the saga. The two rows of a
     /// saga held in two languages carry the same one.
