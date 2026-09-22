@@ -10,6 +10,7 @@ the release tag is pushed.
 
 ## Unreleased
 
+- Fixed the library jumping back to the top after saving a book far down the list.
 - Fixed loading errors when generating a series page.
 - Fixed audiobooks sold in two parts showing apart from their volume in a series.
 - A series page shows the year each volume you own came out.

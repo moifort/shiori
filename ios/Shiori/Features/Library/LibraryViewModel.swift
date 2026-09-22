@@ -96,6 +96,8 @@ final class LibraryViewModel {
     /// Sixty rows fill several screens on the smallest phone: enough that the
     /// next page is fetched while the reader is still scrolling the first.
     private let pageSize = 60
+    /// The most rows the server hands back in one page.
+    private let maxPageSize = 200
     /// Well below the page size, otherwise the next page would load as soon as
     /// the first one is displayed.
     private let prefetchThreshold = 8
@@ -141,24 +143,38 @@ final class LibraryViewModel {
         }
     }
 
-    func load() async {
+    /// Loads the first page, or as many rows as the list already shows when
+    /// `keepingDepth` is set: a reload after an edit made on page three must
+    /// not cut the list back to page one, or the reader lands far above the
+    /// book they just saved and scrolls all the way down again.
+    func load(keepingDepth: Bool = false) async {
         generation += 1
         let requested = generation
+        let wanted = keepingDepth ? max(books.count, pageSize) : pageSize
         isLoading = true
         errorMessage = nil
         isLoadingMore = false
         loadMoreFailed = false
         do {
-            let page = try await LibraryAPI.libraryPage(
-                mode: mode, status: statusFilter, limit: pageSize, after: nil
-            )
-            guard requested == generation else { return }
-            books = page.books
-            hasMore = page.hasMore
+            // The server caps a page, so a deep list comes back in several,
+            // swapped in at once so the rows never shrink in between.
+            var fetched: [Book] = []
+            var more = true
+            while more, fetched.count < wanted {
+                let page = try await LibraryAPI.libraryPage(
+                    mode: mode, status: statusFilter,
+                    limit: min(wanted - fetched.count, maxPageSize), after: fetched.last?.id
+                )
+                guard requested == generation else { return }
+                fetched += page.books
+                more = page.hasMore && !page.books.isEmpty
+            }
+            books = fetched
+            hasMore = more
             loaded = true
             let cache = cache(for: mode, statusFilter)
-            let fetched = page.books
-            Task.detached { cache.write(fetched) }
+            let firstPage = Array(fetched.prefix(pageSize))
+            Task.detached { cache.write(firstPage) }
         } catch is CancellationError {
             return
         } catch {

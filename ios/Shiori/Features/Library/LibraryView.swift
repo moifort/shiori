@@ -51,9 +51,10 @@ struct LibraryView: View {
         .onChange(of: requestedMode) { takeRequestedMode() }
         // A book rated in a sheet moves to another month; one added from the
         // scanner lands in a section this list has not drawn yet. Either way the
-        // rows on screen are the old ones until the server is asked again.
+        // rows on screen are the old ones until the server is asked again —
+        // all of them, so the reader stays where they were in the list.
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
-            Task { await viewModel.load() }
+            Task { await viewModel.load(keepingDepth: true) }
         }
     }
 
