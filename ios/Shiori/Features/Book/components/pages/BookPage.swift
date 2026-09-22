@@ -223,7 +223,7 @@ struct BookPage: View {
                 Button(action: onRate) {
                     Label {
                         LabeledContent {
-                            StarRatingView(rating: seriesRating, inherited: true)
+                            OpinionMark(rating: seriesRating, isFavorite: false, font: .caption2, ratingIsInherited: true)
                         } label: {
                             Text("Note")
                             Text("Héritée de la série")

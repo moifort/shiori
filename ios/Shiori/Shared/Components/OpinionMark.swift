@@ -20,6 +20,13 @@ struct OpinionMark: View {
                 .font(font)
                 .foregroundStyle(.pink)
                 .accessibilityLabel(Text("Favori"))
+        } else if ratingIsInherited, rating == 5 {
+            // Full marks lent by the saga read as the saga's heart, grey like
+            // every lent mark so it is not taken for the reader's own.
+            Image(systemName: "heart.fill")
+                .font(font)
+                .foregroundStyle(.secondary)
+                .accessibilityLabel(Text("Série favorite"))
         } else if let rating {
             StarRatingView(rating: rating, font: font, inherited: ratingIsInherited)
         }
@@ -31,6 +38,7 @@ struct OpinionMark: View {
         OpinionMark(rating: 4, isFavorite: true)
         OpinionMark(rating: 4, isFavorite: false)
         OpinionMark(rating: nil, isFavorite: false)
+        OpinionMark(rating: 5, isFavorite: false, ratingIsInherited: true)
     }
     .padding()
 }
