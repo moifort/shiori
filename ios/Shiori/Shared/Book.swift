@@ -348,17 +348,18 @@ enum SeriesStripItem: Identifiable, Hashable, Codable, Sendable {
         }
     }
 
-    /// Every volume the saga screen lists, in its order: the spine, announced
-    /// volumes included, then the prequels, novellas and companions. Each
+    /// The saga's spine in order, announced volumes included: each volume
     /// takes the reader's book when they have it and a placeholder when they
-    /// do not; owned volumes the catalogue does not list follow. Just the owned
-    /// volumes when the saga has no catalogue yet — the saga screen is what
-    /// builds it, and a scroll through the tab must not pay for one per row.
-    static func strip(owned: [Book], catalogue: [Volume], currentYear: Int) -> [SeriesStripItem] {
-        guard !catalogue.isEmpty else { return owned.map { .owned($0) } }
+    /// do not. The owned volumes off the spine follow — a prequel or companion
+    /// the reader lacks gets no placeholder, the strip is the cycle itself and
+    /// the saga screen lists the rest. Just the owned volumes when the saga has
+    /// no catalogue yet — the saga screen is what builds it, and a scroll
+    /// through the tab must not pay for one per row.
+    static func strip(owned: [Book], spine: [Volume], currentYear: Int) -> [SeriesStripItem] {
+        guard !spine.isEmpty else { return owned.map { .owned($0) } }
         var placed = Set<String>()
         var items: [SeriesStripItem] = []
-        for volume in catalogue {
+        for volume in spine {
             if let book = owned.first(where: { !placed.contains($0.id) && volume.matches($0) }) {
                 items.append(.owned(book))
                 placed.insert(book.id)

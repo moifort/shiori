@@ -80,8 +80,7 @@ enum SeriesAPI {
                 followed.volumes = item.volumes.map { $0.fragments.followedVolume.asBook }
                 followed.strip = SeriesStripItem.strip(
                     owned: followed.volumes,
-                    catalogue: (item.catalogue?.spine.map { $0.fragments.volumeEntry.asVolume } ?? [])
-                        + (item.catalogue?.relatedWorks.map { $0.fragments.volumeEntry.asVolume } ?? []),
+                    spine: item.catalogue?.spine.map { $0.fragments.volumeEntry.asVolume } ?? [],
                     currentYear: currentYear
                 )
                 return followed

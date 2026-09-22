@@ -41,8 +41,8 @@ fragment SeriesCatalogue on Series {
 # than from the catalogue: a saga an import named and nobody described is still
 # one they read. `state` is null exactly when there is no catalogue to derive it
 # from. For the tab that draws as it scrolls. Only the tab
-# asks for the volumes: each one costs a signed cover URL. The catalogue comes
-# along so the strip can draw the volumes the reader does not own; the server
+# asks for the volumes: each one costs a signed cover URL. The catalogue's spine
+# comes along so the strip can draw the volumes the reader does not own; the server
 # reads every catalogue of the page in one getAll.
 query MySeriesPage($limit: Int, $offset: Int, $favorite: Boolean, $state: SeriesState) {
   mySeriesPage(limit: $limit, offset: $offset, favorite: $favorite, state: $state) {
@@ -54,9 +54,6 @@ query MySeriesPage($limit: Int, $offset: Int, $favorite: Boolean, $state: Series
       }
       catalogue {
         spine {
-          ...VolumeEntry
-        }
-        relatedWorks {
           ...VolumeEntry
         }
       }
