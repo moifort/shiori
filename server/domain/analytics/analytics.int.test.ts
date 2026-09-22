@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { SeriesId } from '~/domain/series/types'
 import type { UserId } from '~/domain/shared/types'
-import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
+import { fakeDb, resetFakeFirestore, startFakeRequest } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
 mock.module('~/system/object-store', () => ({
@@ -65,6 +65,7 @@ describe('keeping the view in step with the library', () => {
   test('does not read the library to write a rating', async () => {
     const book = await addBook('Le Nom du vent', 'reading')
     await viewAfterRead()
+    startFakeRequest()
     const before = { docs: fake.docReads, queries: fake.queryReads }
 
     await BookUseCase.rate(reader, book.id, StarRating(5))

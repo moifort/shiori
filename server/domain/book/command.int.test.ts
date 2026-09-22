@@ -395,6 +395,27 @@ describe('reading the library', () => {
   })
 })
 
+describe('reading the library back within a request', () => {
+  // A sync writes book after book and then reads the shelf: the scan it already
+  // holds follows the writes rather than being paid for again.
+  test('follows a direct write without scanning the library again', async () => {
+    const first = await add('Un')
+    await BookQuery.all(reader)
+    const before = { docs: fake.docReads, queries: fake.queryReads }
+
+    await BookCommand.setStatus(reader, first.id, 'reading', NOW)
+    const second = await add('Deux')
+
+    const library = await BookQuery.all(reader)
+    expect(library.map((book) => [book.id, book.status])).toEqual([
+      [first.id, 'reading'],
+      [second.id, 'to-read'],
+    ])
+    expect(fake.queryReads).toBe(before.queries)
+    expect(fake.docReads).toBe(before.docs)
+  })
+})
+
 describe('deleting', () => {
   test('removes the book and says so', async () => {
     const book = await add('Le Nom du vent')

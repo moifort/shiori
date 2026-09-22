@@ -1,7 +1,11 @@
 import type { AppAccountToken, Entitlement } from '~/domain/entitlement/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
-import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
+import {
+  evictFromRequestCache,
+  memoizedPerRequest,
+  rememberInRequestCache,
+} from '~/system/request-cache'
 import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 
 const entitlements = () =>
@@ -39,7 +43,7 @@ export const save = async (entitlement: Entitlement): Promise<Entitlement> => {
   // Full `set`, never a merge: an omitted key erases the stored field, which is
   // what an absent `revokedAt` means (a refund reversed is Premium restored).
   await entitlements().doc(entitlement.userId).set(withoutAbsentFields(entitlement))
-  evictFromRequestCache(cacheKey(entitlement.userId))
+  rememberInRequestCache(cacheKey(entitlement.userId), Promise.resolve(entitlement))
   return entitlement
 }
 

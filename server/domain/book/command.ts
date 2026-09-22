@@ -206,24 +206,25 @@ export namespace BookCommand {
       if (placed === 'no-author') return 'no-author'
       membership = { series: placed }
     }
+    // A genre is a fact about the saga, not about one of its volumes: the
+    // reader who corrects it on one book expects the whole shelf to follow,
+    // rather than fixing fourteen records one by one. The volumes are looked up
+    // before anything is written, so the scan never sees a half-written batch.
+    const series = 'series' in edit ? membership.series : book.series
+    const siblings =
+      series && ('genre' in edit || 'subgenres' in edit)
+        ? (await repository.findBySeries(userId, series.id)).filter((other) => other.id !== book.id)
+        : []
     const edited = await repository.save(
       { ...book, ...facts, ...retagged, ...membership, updatedAt: now },
       batch,
     )
-    // A genre is a fact about the saga, not about one of its volumes: the
-    // reader who corrects it on one book expects the whole shelf to follow,
-    // rather than fixing fourteen records one by one.
-    if (edited.series && ('genre' in edit || 'subgenres' in edit)) {
-      const classification = {
-        ...('genre' in edit ? { genre: edit.genre } : {}),
-        ...('subgenres' in edit ? { subgenres: edited.subgenres } : {}),
-      }
-      const siblings = (await repository.findBySeries(userId, edited.series.id)).filter(
-        (other) => other.id !== book.id,
-      )
-      for (const sibling of siblings)
-        await repository.save({ ...sibling, ...classification, updatedAt: now }, batch)
+    const classification = {
+      ...('genre' in edit ? { genre: edit.genre } : {}),
+      ...('subgenres' in edit ? { subgenres: edited.subgenres } : {}),
     }
+    for (const sibling of siblings)
+      await repository.save({ ...sibling, ...classification, updatedAt: now }, batch)
     return edited
   }
 

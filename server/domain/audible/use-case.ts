@@ -26,6 +26,7 @@ import { BookQuery } from '~/domain/book/query'
 import type { Book } from '~/domain/book/types'
 import type { UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
+import { withRequestCacheScope } from '~/system/request-cache'
 import { bulkSave } from '~/utils/firestore'
 import { isPresent } from '~/utils/input'
 
@@ -193,7 +194,9 @@ export namespace AudibleUseCase {
         return { synced, failed, deferred }
       }
       try {
-        const outcome = await syncLibrary(userId)
+        // A cache of its own per reader: the run is one request, and it must not
+        // hold every library it has passed over until the very last reader.
+        const outcome = await withRequestCacheScope(() => syncLibrary(userId))
         if (typeof outcome === 'object') synced += 1
       } catch (error) {
         failed += 1

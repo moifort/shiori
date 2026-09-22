@@ -391,11 +391,16 @@ const holder = { current: createFakeFirestore() }
 
 export const resetFakeFirestore = () => {
   holder.current = createFakeFirestore()
-  // Give each test a fresh, stable request context so memoizedPerRequest() caches
-  // within the test (mirroring one HTTP request) and is cleared between tests.
+  startFakeRequest()
+  return holder.current
+}
+
+/** Give the next calls a fresh, stable request context so memoizedPerRequest()
+ *  caches within it (mirroring one HTTP request). Each test starts one; a test
+ *  that spans two requests — a screen read, then a mutation — starts the second. */
+export const startFakeRequest = () => {
   const context: Record<string, unknown> = {}
   ;(globalThis as unknown as { useEvent: () => unknown }).useEvent = () => ({ context })
-  return holder.current
 }
 
 export const fakeDb = () => holder.current.db

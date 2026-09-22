@@ -18,13 +18,8 @@ const friendships = () =>
 export const findInvitation = async (code: InvitationCode): Promise<Invitation | null> =>
   (await invitations().doc(code).get()).data() ?? null
 
-export const findLiveInvitationBy = async (
-  userId: UserId,
-  now: Date,
-): Promise<Invitation | null> => {
-  const snapshot = await invitations().where('userId', '==', userId).get()
-  return snapshot.docs.map((doc) => doc.data()).find((entry) => entry.expiresAt > now) ?? null
-}
+export const findInvitationsBy = async (userId: UserId): Promise<Invitation[]> =>
+  (await invitations().where('userId', '==', userId).get()).docs.map((doc) => doc.data())
 
 export const saveInvitation = async (invitation: Invitation): Promise<Invitation> => {
   await invitations().doc(invitation.code).set(withoutAbsentFields(invitation))
@@ -34,6 +29,9 @@ export const saveInvitation = async (invitation: Invitation): Promise<Invitation
 export const removeInvitation = async (code: InvitationCode): Promise<void> => {
   await invitations().doc(code).delete()
 }
+
+export const removeInvitations = async (codes: readonly InvitationCode[]): Promise<void> =>
+  deleteInBatches(codes.map((code) => invitations().doc(code)))
 
 const friendsCacheKey = (userId: UserId) => `friendships:all:${userId}`
 

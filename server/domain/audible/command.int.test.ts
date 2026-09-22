@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import { randomBytes } from 'node:crypto'
 import type { UserId } from '~/domain/shared/types'
-import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
+import { fakeDb, resetFakeFirestore, startFakeRequest } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
 // One key for the whole file: config() is read on every seal and every open, and
@@ -152,6 +152,7 @@ describe('reading the connection back', () => {
   // credentials. One document read between them.
   test('costs one read however many times the request asks for it', async () => {
     await connect()
+    startFakeRequest()
     const before = fake.docReads
 
     await AudibleQuery.accountOf(reader)
