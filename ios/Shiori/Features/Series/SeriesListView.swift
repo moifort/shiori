@@ -222,8 +222,10 @@ struct SeriesListView: View {
     /// takes the whole width instead of being squeezed beside them.
     private func row(_ entry: FollowedSeries) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .top, spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                // On the title's baseline, so the taller tag does not push the
+                // author down.
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(entry.name).font(.body.weight(.medium)).lineLimit(2)
                     Spacer(minLength: 0)
                     marks(entry)
@@ -253,7 +255,6 @@ struct SeriesListView: View {
         }
         .font(.caption)
         .fixedSize()
-        .padding(.top, 3)
     }
 
     /// Every volume of the cycle, in its order, as a cover: the owned ones with
