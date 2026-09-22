@@ -10,6 +10,21 @@ the release tag is pushed.
 
 ## Unreleased
 
+- A new Discover tab proposes what to read next, each book with the reason it was picked
+  for you: the next volumes of your series and when they come out, new Audible releases in
+  the series you listen to, books in the vein of the ones you loved, award winners and the
+  books readers love most in your genres, a genre you have never tried reached through one
+  you love, and your friends' favourites. A suggestion goes on your pile in one tap, or
+  away for good with "Not for me".
+- When a book you read in English comes out in French, in print or on Audible, Discover
+  says so.
+- Notifications, each switched on in Settings: a new volume of a series you follow, the
+  French translation of a book you read in English, a new Audible release in your series,
+  a new book by an author you loved. Shiori only ever notifies on the day a book comes out.
+- A new Shared tab lists your friends with their favourites, books in progress and pile.
+  Any book on a friend's shelf opens on its own page and goes on your pile in one tap,
+  noted as recommended by that friend; a book you already own says so.
+- Books and series now share the Library tab, switched from a capsule above the tab bar.
 - Fixed the library and series lists jumping back to the top after saving a book far down.
 - Fixed loading errors when generating a series page.
 - Fixed audiobooks sold in two parts showing apart from their volume in a series.

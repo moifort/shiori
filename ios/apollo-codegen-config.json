@@ -12,7 +12,8 @@
       "Shiori/Features/Onboarding/GraphQL/*.graphql",
       "Shiori/Features/Settings/GraphQL/*.graphql",
       "Shiori/Features/Friends/GraphQL/*.graphql",
-      "Shiori/Features/Subscription/GraphQL/*.graphql"
+      "Shiori/Features/Subscription/GraphQL/*.graphql",
+      "Shiori/Features/Discover/GraphQL/*.graphql"
     ]
   },
   "output": {

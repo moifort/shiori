@@ -80,10 +80,15 @@ struct ProfileSettingsView: View {
 
     private func signOut() {
         signOutError = nil
-        do {
-            try authSession.signOut()
-        } catch {
-            signOutError = reportError(error)
+        Task {
+            // While the session still stands: the server must stop pushing to
+            // this phone before it forgets who holds it.
+            await PushRegistrar.shared.forgetDevice()
+            do {
+                try authSession.signOut()
+            } catch {
+                signOutError = reportError(error)
+            }
         }
     }
 

@@ -7,9 +7,41 @@ struct Friend: Identifiable, Sendable {
     /// Nil for an account that never finished its onboarding.
     let firstName: String?
     let since: Date
+    /// Their shelf in figures, the books they keep to themselves left out.
+    var favoriteCount = 0
+    var readingCount = 0
+    var toReadCount = 0
+    /// The book they started most recently.
+    var readingTitle: String?
 
     var displayName: String {
         firstName ?? String(localized: "Un lecteur")
+    }
+
+    /// One or two letters for the avatar.
+    var initials: String {
+        let letters = displayName.split(separator: " ").prefix(2).compactMap(\.first)
+        return String(letters).uppercased()
+    }
+}
+
+/// A book on a friend's shelf, and whether the reader already owns the story —
+/// same title and first author, whatever the edition.
+struct FriendBook: Identifiable, Hashable, Sendable {
+    var id: String { book.id }
+    var book: Book
+    var inLibrary: Bool
+}
+
+/// Where a book taken from somebody else's shelf lands on the reader's own.
+enum CopiedStatus: Sendable {
+    case toRead, read
+
+    var graphQL: ShioriGraphQL.CopiedStatus {
+        switch self {
+        case .toRead: .toRead
+        case .read: .read
+        }
     }
 }
 
@@ -28,9 +60,9 @@ struct FriendSaga: Identifiable, Sendable {
 struct FriendProfile: Sendable {
     let userId: String
     let firstName: String?
-    let reading: [Book]
-    let pile: [Book]
-    let favorites: [Book]
+    var reading: [FriendBook]
+    var pile: [FriendBook]
+    var favorites: [FriendBook]
     let sagas: [FriendSaga]
 
     var displayName: String {
@@ -74,9 +106,9 @@ enum FriendsAPI {
         return FriendProfile(
             userId: profile.userId,
             firstName: profile.firstName,
-            reading: profile.reading.map { Book(row: $0.fragments.friendBookRow) },
-            pile: profile.pile.map { Book(row: $0.fragments.friendBookRow) },
-            favorites: profile.favorites.map { Book(row: $0.fragments.friendBookRow) },
+            reading: profile.reading.map { FriendBook(row: $0.fragments.friendBookRow) },
+            pile: profile.pile.map { FriendBook(row: $0.fragments.friendBookRow) },
+            favorites: profile.favorites.map { FriendBook(row: $0.fragments.friendBookRow) },
             sagas: profile.sagas.map {
                 FriendSaga(
                     id: $0.id,
@@ -87,6 +119,42 @@ enum FriendsAPI {
                 )
             }
         )
+    }
+
+    /// One book of a friend's shelf, with everything the read-only page shows.
+    /// Nil for a book they keep to themselves, and for anybody who is not a
+    /// friend.
+    static func book(friendId: String, bookId: String) async throws -> FriendBook? {
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.FriendBookQuery(userId: friendId, bookId: bookId)
+        )
+        guard let row = data.friendBook else { return nil }
+        var friendBook = FriendBook(row: row.fragments.friendBookRow)
+        friendBook.book.publisher = row.publisher
+        friendBook.book.firstPublishedIn = row.firstPublishedIn
+        friendBook.book.synopsis = row.synopsis
+        friendBook.book.genre = row.genre?.asDomain
+        friendBook.book.subgenres = row.subgenres
+        friendBook.book.pageCount = row.pageCount
+        friendBook.book.durationMinutes = row.durationMinutes
+        friendBook.book.narrators = row.narrators
+        return friendBook
+    }
+
+    /// Put a friend's book on the reader's shelf. The server copies it from the
+    /// friend's record and names them as who recommended it.
+    @discardableResult
+    static func addBook(friendId: String, bookId: String, status: CopiedStatus) async throws -> String {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.AddFriendBookMutation(
+                userId: friendId,
+                bookId: bookId,
+                status: .case(status.graphQL)
+            )
+        )
+        return data.addFriendBook.id
     }
 
     static func invite() async throws -> FriendInvitation {
@@ -128,8 +196,18 @@ private extension Friend {
         self.init(
             userId: row.userId,
             firstName: row.firstName,
-            since: GraphQLHelpers.parseISO8601(row.since) ?? .now
+            since: GraphQLHelpers.parseISO8601(row.since) ?? .now,
+            favoriteCount: row.favoriteCount,
+            readingCount: row.readingCount,
+            toReadCount: row.toReadCount,
+            readingTitle: row.readingTitle
         )
+    }
+}
+
+private extension FriendBook {
+    init(row: ShioriGraphQL.FriendBookRow) {
+        self.init(book: Book(row: row), inLibrary: row.inLibrary)
     }
 }
 

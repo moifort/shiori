@@ -4,6 +4,25 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Un nouvel onglet Découvrir propose vos prochaines lectures, chaque livre avec la raison de
+  son choix : les prochains tomes de vos séries et leur date de sortie, les nouveautés
+  Audible des séries que vous écoutez, des livres dans la veine de ceux que vous avez
+  adorés, les lauréats des grands prix et les livres les plus aimés des lecteurs dans vos
+  genres, un genre jamais tenté que vous rejoignez par un genre que vous aimez, et les
+  coups de cœur de vos amis. Une suggestion rejoint votre pile d’un toucher, ou disparaît
+  pour de bon avec « Pas pour moi ».
+- Quand un livre lu en anglais paraît en français, en papier ou sur Audible, Découvrir vous
+  le signale.
+- Des notifications, chacune à activer dans les réglages : un nouveau tome d’une série
+  suivie, la traduction française d’un livre lu en VO, une nouveauté Audible dans vos
+  séries, un nouveau livre d’un auteur adoré. Shiori ne vous prévient que le jour de la
+  sortie.
+- Un nouvel onglet Partagé liste vos amis avec leurs favoris, leurs lectures en cours et
+  leur pile. Chaque livre de leur bibliothèque s’ouvre sur sa propre fiche et rejoint
+  votre pile d’un toucher, noté « Conseillé par » cet ami ; un livre que vous avez déjà
+  le signale.
+- Les livres et les séries se partagent désormais l’onglet Bibliothèque, qu’une capsule
+  au-dessus de la barre d’onglets fait passer de l’un à l’autre.
 - Correction des listes de la bibliothèque et des séries qui remontaient en haut après l’enregistrement d’un livre situé loin dans la liste.
 - Correction des erreurs de chargement lors de la génération de la fiche d’une série.
 - Correction des livres audio vendus en deux parties, affichés à part de leur tome dans une série.

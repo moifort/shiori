@@ -10,10 +10,10 @@ are recorded here so their constraints are not forgotten while the foundation is
 | 1 | Cover scan, enriched record, library, three reading statuses, five-star rating, note | **specified** |
 | 2 | Series: shared catalogue, library grouping, series screen, related works | **specified** |
 | 3 | Sharing a library with other people, `hidden` books excluded | **built** |
-| 4 | Release alerts: forthcoming volumes, loved authors, French translations, Audible | planned |
+| 4 | Release alerts: forthcoming volumes, loved authors, French translations, Audible | **built** |
 | 5 | Audible import | **built** |
 | 6 | Kindle import | planned |
-| 7 | The Découvrir tab: friends, awards, public ratings, AI suggestions | planned |
+| 7 | The Découvrir tab: friends, awards, public ratings, AI suggestions | **built** |
 
 ## Batch 3 — Sharing
 
@@ -31,6 +31,11 @@ quality — publication dates are unreliable outside Google Books and Open Libra
 
 It depends on batch 2: a forthcoming volume is already an identified row in the series
 catalogue, which is what an alert attaches to.
+
+Built, pending the APNs key and the provisioning profile it needs (see
+[tasks.md](tasks.md)); until the key is deployed the alerts are logged, not sent. The data
+quality problem has its answer: a date is kept as precisely as it was announced — a year, a
+month or a day — and only a day ever fires an alert.
 
 Four alerts, each switched on by the reader: a volume of a followed series, a new book from a
 loved author, a new Audible release in a followed series, and, for a book read in English,

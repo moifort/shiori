@@ -2,14 +2,15 @@ import PhotosUI
 import SwiftUI
 
 enum TabSelection: Int, CaseIterable, Identifiable {
-    case home, library, series, scan
+    case home, library, discover, shared, scan
     var id: Int { rawValue }
 
     var label: String {
         switch self {
         case .home: String(localized: "Accueil")
         case .library: String(localized: "Bibliothèque")
-        case .series: String(localized: "Séries")
+        case .discover: String(localized: "Découvrir")
+        case .shared: String(localized: "Partagé")
         case .scan: String(localized: "Scanner")
         }
     }
@@ -18,7 +19,8 @@ enum TabSelection: Int, CaseIterable, Identifiable {
         switch self {
         case .home: "house"
         case .library: "books.vertical"
-        case .series: "square.stack"
+        case .discover: "sparkles"
+        case .shared: "person.2"
         case .scan: "camera.viewfinder"
         }
     }
@@ -36,7 +38,7 @@ struct ContentView: View {
     @State private var lastContentTab: TabSelection = .home
     /// The Library view the dashboard asked for, handed to the Library tab.
     @State private var libraryMode: LibraryRequest?
-    /// The same for the Series tab.
+    /// The same for the Library tab's series shelf.
     @State private var seriesMode: SeriesRequest?
     /// The add sheet, behind the tab bar's scan button: the camera, the last
     /// photos, a title and a record typed by hand, from every tab.
@@ -117,8 +119,14 @@ struct ContentView: View {
                 InvitationAcceptSheet(request: request, onAccepted: {})
             }
             .task { takeSharedIntake() }
+            // A token APNs rotated reaches the server on the next launch.
+            .task { await PushRegistrar.shared.refreshRegistration() }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active { takeSharedIntake() }
+            }
+            // A release alert tapped: its book is on the Découvrir tab.
+            .onReceive(NotificationCenter.default.publisher(for: .shioriOpenDiscover)) { _ in
+                selectedTab = .discover
             }
             .onChange(of: selectedTab) { _, tab in
                 // The scan tab is a button, not a destination: it opens the add
@@ -156,7 +164,7 @@ struct ContentView: View {
                 HomeView(
                     onShowSeries: { request in
                         seriesMode = request
-                        selectedTab = .series
+                        selectedTab = .library
                     },
                     onShowLibrary: { request in
                         libraryMode = request
@@ -170,10 +178,21 @@ struct ContentView: View {
                 systemImage: TabSelection.library.symbol,
                 value: .library
             ) {
-                LibraryView(onAdd: { showAddSheet = true }, requestedMode: $libraryMode)
+                LibraryTab(
+                    onAdd: { showAddSheet = true },
+                    libraryRequest: $libraryMode,
+                    seriesRequest: $seriesMode
+                )
             }
-            Tab(TabSelection.series.label, systemImage: TabSelection.series.symbol, value: .series) {
-                SeriesListView(onScan: { showAddSheet = true }, requested: $seriesMode)
+            Tab(
+                TabSelection.discover.label,
+                systemImage: TabSelection.discover.symbol,
+                value: .discover
+            ) {
+                DiscoverView()
+            }
+            Tab(TabSelection.shared.label, systemImage: TabSelection.shared.symbol, value: .shared) {
+                SharedView()
             }
             Tab(
                 TabSelection.scan.label,

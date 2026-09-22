@@ -1,70 +1,45 @@
 import SwiftUI
 
-/// Who the reader shares their library with.
+/// The Partagé tab: who the reader shares their library with, each friend
+/// with their shelf in figures — favourites, books in progress, pile — and the
+/// book they are reading. A friend opens on their shelf, where any book can be
+/// taken onto the reader's own.
 ///
 /// Sharing is symmetric and the screen says so plainly rather than leaving it
 /// to be discovered: accepting an invitation opens both shelves at once, and
 /// either of the two can end it for both. There is nothing to approve on the
 /// other side and no half-state to explain.
-struct FriendsView: View {
+struct SharedView: View {
     @State private var friends: [Friend] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
+    @State private var loadFailed: String?
     @State private var invitation: FriendInvitation?
     @State private var showAccept = false
     @State private var pastedCode = ""
     @State private var accepted: String?
     @State private var removing: Friend?
+    @State private var isInviting = false
 
     var body: some View {
-        List {
-            if isLoading && friends.isEmpty {
-                Section {
-                    HStack {
-                        Spacer()
-                        ProgressView()
-                        Spacer()
-                    }
-                    .listRowBackground(Color.clear)
-                }
-            } else if friends.isEmpty {
-                Section {
-                    Text("Personne pour l'instant. Invitez quelqu'un, ou acceptez son invitation : vous verrez sa bibliothèque et il verra la vôtre.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-            } else {
-                Section("Vos amis") {
-                    ForEach(friends) { friend in
-                        NavigationLink {
-                            FriendProfileView(friend: friend)
-                        } label: {
-                            row(friend)
-                        }
-                        .swipeActions {
-                            Button("Retirer", role: .destructive) { removing = friend }
-                        }
+        NavigationStack {
+            content
+                .navigationTitle("Partagé")
+                .toolbar { toolbar }
+                .navigationDestination(for: Friend.ID.self) { userId in
+                    if let friend = friends.first(where: { $0.userId == userId }) {
+                        FriendProfileView(friend: friend)
                     }
                 }
-            }
-
-            Section {
-                AsyncButton("Inviter un ami", systemImage: "person.badge.plus") { await invite() }
-                    .accessibilityIdentifier("friends-invite")
-                Button {
-                    pastedCode = ""
-                    showAccept = true
-                } label: {
-                    Label("J'ai reçu une invitation", systemImage: "arrow.down.circle")
-                }
-                .accessibilityIdentifier("friends-accept")
-            } footer: {
-                Text("Un ami voit vos lectures en cours, votre pile, vos favoris et vos séries. Jamais vos notes de lecture, ni les livres que vous avez marqués « ne pas partager ».")
-            }
         }
-        .navigationTitle("Amis")
-        .navigationBarTitleDisplayMode(.inline)
         .task { await load() }
+        .refreshable { await load() }
+        // A book taken from a friend changes what "Chez vous" says on their
+        // shelves, and their counts move when they write: asked again on the
+        // next look.
+        .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
+            Task { await load() }
+        }
         // The invitation is shared the moment it comes back: the reader tapped
         // "invite", and a code sitting on screen with nothing to do is a step
         // they did not ask for.
@@ -113,31 +88,117 @@ struct FriendsView: View {
         }
     }
 
-    private func row(_ friend: Friend) -> some View {
-        Label {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(friend.displayName)
-                Text("depuis le \(friend.since.formatted(date: .abbreviated, time: .omitted))")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+    @ViewBuilder
+    private var content: some View {
+        if isLoading && friends.isEmpty {
+            ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if let loadFailed, friends.isEmpty {
+            EmptyStateView.failure("Amis indisponibles", message: loadFailed) { await load() }
+        } else if friends.isEmpty {
+            EmptyStateView(
+                systemImage: "person.2",
+                title: "Partagez vos lectures",
+                message: "Invitez un ami : vous verrez sa bibliothèque et il verra la vôtre. Chacun pourra piocher des livres chez l'autre.",
+                primary: .init("Inviter un ami", systemImage: "person.badge.plus") { await invite() },
+                secondary: .init("J'ai reçu une invitation", systemImage: "arrow.down.circle") {
+                    pastedCode = ""
+                    showAccept = true
+                }
+            )
+        } else {
+            List {
+                Section {
+                    ForEach(friends) { friend in
+                        NavigationLink(value: friend.userId) {
+                            row(friend)
+                        }
+                        .swipeActions {
+                            Button("Retirer", role: .destructive) { removing = friend }
+                        }
+                        .accessibilityIdentifier("shared-friend-row")
+                    }
+                } footer: {
+                    Text("Un ami voit vos lectures en cours, votre pile, vos favoris et vos séries. Jamais vos notes de lecture, ni les livres que vous avez marqués « ne pas partager ».")
+                }
             }
-        } icon: {
-            Image(systemName: "person.crop.circle.fill")
-                .foregroundStyle(.secondary)
+            .listStyle(.insetGrouped)
         }
+    }
+
+    @ToolbarContentBuilder
+    private var toolbar: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Menu {
+                Button {
+                    Task { await invite() }
+                } label: {
+                    Label("Inviter un ami", systemImage: "person.badge.plus")
+                }
+                .accessibilityIdentifier("friends-invite")
+                Button {
+                    pastedCode = ""
+                    showAccept = true
+                } label: {
+                    Label("J'ai reçu une invitation", systemImage: "arrow.down.circle")
+                }
+                .accessibilityIdentifier("friends-accept")
+            } label: {
+                if isInviting {
+                    ProgressView()
+                } else {
+                    Label("Ajouter un ami", systemImage: "person.badge.plus")
+                }
+            }
+            .accessibilityIdentifier("shared-add-friend")
+        }
+    }
+
+    private func row(_ friend: Friend) -> some View {
+        HStack(spacing: 12) {
+            Text(friend.initials)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.tint)
+                .frame(width: 40, height: 40)
+                .background(.tint.opacity(0.15), in: .circle)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(friend.displayName).font(.body.weight(.medium))
+                HStack(spacing: 12) {
+                    Label("\(friend.favoriteCount)", systemImage: "heart")
+                        .accessibilityLabel(Text("\(friend.favoriteCount) favoris"))
+                    Label("\(friend.readingCount)", systemImage: "book")
+                        .accessibilityLabel(Text("\(friend.readingCount) en cours"))
+                    Label("\(friend.toReadCount)", systemImage: "books.vertical")
+                        .accessibilityLabel(Text("\(friend.toReadCount) à lire"))
+                }
+                .labelStyle(.caption)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                if let title = friend.readingTitle {
+                    Text("Lit : \(title)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+        }
+        .padding(.vertical, 2)
     }
 
     private func load() async {
         isLoading = true
         do {
             friends = try await FriendsAPI.friends()
+            loadFailed = nil
         } catch {
-            errorMessage = reportError(error)
+            loadFailed = reportError(error)
         }
         isLoading = false
     }
 
     private func invite() async {
+        isInviting = true
+        defer { isInviting = false }
         do {
             invitation = try await FriendsAPI.invite()
         } catch {
@@ -238,5 +299,5 @@ private struct InvitationSheet: View {
 }
 
 #Preview {
-    NavigationStack { FriendsView() }
+    SharedView()
 }

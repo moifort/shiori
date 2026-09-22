@@ -4,6 +4,8 @@ import SwiftUI
 
 @main
 struct ShioriApp: App {
+    @UIApplicationDelegateAdaptor(ShioriAppDelegate.self) private var appDelegate
+
     init() {
         FirebaseApp.configure()
         #if DEBUG

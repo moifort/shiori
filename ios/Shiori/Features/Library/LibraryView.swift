@@ -10,6 +10,9 @@ struct LibraryView: View {
     /// A view another tab asked this one to open on, taken and cleared as
     /// soon as the tab shows it.
     @Binding var requestedMode: LibraryRequest?
+    /// The shelf capsule of the Library tab, drawn under the list. Nil where
+    /// the list stands alone.
+    var shelf: Binding<LibraryShelf>? = nil
 
     @State private var viewModel = LibraryViewModel()
     @State private var selectedBook: Book?
@@ -34,6 +37,7 @@ struct LibraryView: View {
                 onAdd: onAdd,
                 onBookTapped: { selectedBook = $0 }
             )
+            .libraryShelfPicker(shelf)
             .sheet(item: $selectedBook) { book in
                 // An edit to this book patches its own row from what the sheet
                 // already holds, and the list lets the change notice it posts

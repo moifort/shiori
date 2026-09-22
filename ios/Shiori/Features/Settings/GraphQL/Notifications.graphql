@@ -1,0 +1,33 @@
+# Push alerts about books coming out, one switch per kind.
+
+query NotificationSettings {
+  notificationSettings {
+    ...NotificationSettingsFields
+  }
+}
+
+mutation RegisterDevice($token: DeviceToken!, $environment: PushEnvironment!) {
+  registerDevice(token: $token, environment: $environment) {
+    ...NotificationSettingsFields
+  }
+}
+
+mutation UnregisterDevice($token: DeviceToken!) {
+  unregisterDevice(token: $token) {
+    ...NotificationSettingsFields
+  }
+}
+
+mutation SetAlert($kind: AlertKind!, $enabled: Boolean!) {
+  setAlert(kind: $kind, enabled: $enabled) {
+    ...NotificationSettingsFields
+  }
+}
+
+fragment NotificationSettingsFields on NotificationSettings {
+  alerts {
+    kind
+    enabled
+  }
+  deviceCount
+}

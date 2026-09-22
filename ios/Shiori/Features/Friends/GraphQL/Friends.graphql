@@ -14,6 +14,10 @@ fragment FriendRow on Friend {
   userId
   firstName
   since
+  favoriteCount
+  readingCount
+  toReadCount
+  readingTitle
 }
 
 query FriendProfile($userId: UserId!) {
@@ -49,6 +53,7 @@ fragment FriendBookRow on FriendBook {
   status
   rating
   favorite
+  inLibrary
   series {
     id
     name
@@ -72,4 +77,27 @@ mutation AcceptFriendInvitation($code: String!) {
 
 mutation RemoveFriend($userId: UserId!) {
   removeFriend(userId: $userId)
+}
+
+# One book of a friend's shelf, for the read-only page a row opens.
+query FriendBook($userId: UserId!, $bookId: BookId!) {
+  friendBook(userId: $userId, bookId: $bookId) {
+    ...FriendBookRow
+    publisher
+    firstPublishedIn
+    synopsis
+    genre
+    subgenres
+    pageCount
+    durationMinutes
+    narrators
+  }
+}
+
+# Copy a friend's book onto the reader's shelf. The server re-reads it and
+# records the friend as the recommender.
+mutation AddFriendBook($userId: UserId!, $bookId: BookId!, $status: CopiedStatus!) {
+  addFriendBook(userId: $userId, bookId: $bookId, status: $status) {
+    id
+  }
 }

@@ -16,6 +16,9 @@ struct SeriesListView: View {
     /// A view another tab asked this one to open on, taken and cleared as
     /// soon as the tab shows it.
     @Binding var requested: SeriesRequest?
+    /// The shelf capsule of the Library tab, drawn under the list. Nil where
+    /// the list stands alone.
+    var shelf: Binding<LibraryShelf>? = nil
 
     @State private var viewModel = SeriesListViewModel()
     /// The saga being opened. A button and a destination rather than a
@@ -69,6 +72,7 @@ struct SeriesListView: View {
             .navigationTitle("Séries")
             .navigationSubtitle(viewModel.mode.subtitle)
             .toolbar { toolbar }
+            .libraryShelfPicker(shelf)
             // On the content rather than on the stack: the stack stays put
             // while a saga is pushed over it, the content comes back when the
             // saga is popped — and comes back changed, since a saga's first

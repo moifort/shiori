@@ -1,0 +1,85 @@
+# The Découvrir tab: shelves of books to read next, each with its reason.
+
+query Discover {
+  discover {
+    ...DiscoverFields
+  }
+}
+
+mutation RefreshDiscover {
+  refreshDiscover {
+    ...DiscoverFields
+  }
+}
+
+mutation DismissSuggestion($key: String!) {
+  dismissSuggestion(key: $key)
+}
+
+mutation AddSuggestion($key: String!, $status: CopiedStatus!) {
+  addSuggestion(key: $key, status: $status) {
+    id
+  }
+}
+
+fragment DiscoverFields on Discover {
+  preparedAt
+  canRefresh
+  friendsFavorites {
+    key
+    friendId
+    bookId
+    friendNames
+    title
+    authors
+    format
+    seriesName
+    volume
+    coverUrl
+  }
+  audible {
+    ...SuggestionFields
+  }
+  releases {
+    key
+    kind
+    date
+    suggestion {
+      ...SuggestionFields
+    }
+  }
+  becauseYouLoved {
+    anchor
+    items {
+      ...SuggestionFields
+    }
+  }
+  awards {
+    ...SuggestionFields
+  }
+  acclaimed {
+    ...SuggestionFields
+  }
+  offTrail {
+    ...SuggestionFields
+  }
+}
+
+fragment SuggestionFields on Suggestion {
+  key
+  title
+  authors
+  firstPublishedIn
+  language
+  format
+  genre
+  seriesName
+  volume
+  synopsis
+  coverUrl
+  reason
+  award
+  publicRating
+  ratingCount
+  releaseDate
+}

@@ -46,16 +46,16 @@ struct SettingsHomeView: View {
 
                 Section {
                     NavigationLink {
-                        FriendsView()
+                        NotificationSettingsView()
                     } label: {
                         SettingsRow(
-                            icon: "person.2.fill",
-                            title: "Amis",
-                            subtitle: String(localized: "Partagez votre bibliothèque, voyez la leur"),
-                            tint: .purple
+                            icon: "bell.badge.fill",
+                            title: "Notifications",
+                            subtitle: String(localized: "Les sorties de vos séries et de vos auteurs"),
+                            tint: .red
                         )
                     }
-                    .accessibilityIdentifier("settings-friends")
+                    .accessibilityIdentifier("settings-notifications")
                 }
 
                 Section("Sources") {

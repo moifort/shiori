@@ -124,6 +124,10 @@ Both are `import.meta.dev` gated and tree-shaken out of a production bundle.
 Without it the Audible mutations fail with a clear error and nothing else breaks; changing it
 makes every stored connection unreadable, so readers would have to connect again.
 
+`NITRO_APNS_KEY_ID`, `NITRO_APNS_PRIVATE_KEY` and `NITRO_APNS_TEAM_ID` send the release
+alerts through APNs. Without them every alert is logged instead of sent, and nothing else
+changes.
+
 The Firestore emulator needs a JDK and the Firebase CLI, neither of which is required for
 `bun test` — the integration tests run against the in-memory fake.
 
