@@ -1,7 +1,7 @@
 import type { Brand } from 'ts-brand'
 import type { AudibleAsin } from '~/domain/audible/types'
 import type { SeriesId, SeriesName, VolumeKind, VolumeNumber } from '~/domain/series/types'
-import type { AuthorName, BookTitle, UserId, Year } from '~/domain/shared/types'
+import type { AuthorName, BookTitle, StarRating, UserId, Year } from '~/domain/shared/types'
 import type { ObjectPath, SignedUrl } from '~/system/object-store/types'
 
 export type BookId = Brand<string, 'BookId'>
@@ -26,9 +26,7 @@ export type ListeningMinutes = Brand<number, 'ListeningMinutes'>
  *  narrator is not an author, and a library that conflated the two would credit
  *  the wrong person on every recording. */
 export type NarratorName = Brand<string, 'NarratorName'>
-/** One to five whole stars. Half stars double the value space without adding
- *  discernment, and shrink the touch target. */
-export type StarRating = Brand<number, 'StarRating'>
+export type { StarRating }
 export type ReadingNote = Brand<string, 'ReadingNote'>
 /** Where the app loads a cover image from: the reader's own photo behind a signed
  *  URL, or the publisher's cover found by ISBN. Always HTTPS — iOS refuses to load

@@ -3,8 +3,6 @@ import type { WriteBatch } from 'firebase-admin/firestore'
 import type { AudibleAsin } from '~/domain/audible/types'
 import {
   datesAfterStatusChange,
-  favoriteAfterRating,
-  HEART_RATING,
   membershipFor,
   retaggedAfterEdit,
   statusAfterRating,
@@ -33,6 +31,7 @@ import type {
   TaggedSubgenre,
 } from '~/domain/book/types'
 import type { SeriesId } from '~/domain/series/types'
+import { favoriteAfterRating, HEART_RATING } from '~/domain/shared/rating'
 import type { AuthorName, BookTitle, UserId, Year } from '~/domain/shared/types'
 import type { ObjectPath } from '~/system/object-store/types'
 

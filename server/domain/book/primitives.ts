@@ -13,13 +13,12 @@ import type {
   Publisher as PublisherType,
   ReadingNote as ReadingNoteType,
   ReadingStatus,
-  StarRating as StarRatingType,
   Subgenre as SubgenreType,
   Synopsis as SynopsisType,
 } from '~/domain/book/types'
 import { BOOK_FORMATS, BOOK_LANGUAGES, GENRES, READING_STATUSES } from '~/domain/book/types'
 
-export { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
+export { AuthorName, BookTitle, StarRating, Year } from '~/domain/shared/primitives'
 
 export const BookId = (value: unknown) => {
   const v = z.string().min(1).max(200).parse(value)
@@ -166,13 +165,6 @@ export const CoverUrl = (value: unknown) => {
     .refine((url) => url.startsWith('https://'), 'cover URL must be HTTPS')
     .parse(value)
   return make<CoverUrlType>()(v)
-}
-
-export const StarRating = (value: unknown) => {
-  const v = z
-    .preprocess((v) => (typeof v === 'string' ? Number(v) : v), z.number().int().min(1).max(5))
-    .parse(value)
-  return make<StarRatingType>()(v)
 }
 
 export const ReadingNote = (value: unknown) => {

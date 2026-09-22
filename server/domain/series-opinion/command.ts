@@ -1,11 +1,11 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
-import { favoriteAfterRating, HEART_RATING } from '~/domain/book/business-rules'
-import type { BookLanguage, StarRating } from '~/domain/book/types'
+import type { BookLanguage } from '~/domain/book/types'
 import type { SeriesId, VolumeNumber } from '~/domain/series/types'
 import { followingAfter } from '~/domain/series-opinion/business-rules'
 import * as repository from '~/domain/series-opinion/infrastructure/repository'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
-import type { UserId } from '~/domain/shared/types'
+import { favoriteAfterRating, HEART_RATING } from '~/domain/shared/rating'
+import type { StarRating, UserId } from '~/domain/shared/types'
 
 export namespace SeriesOpinionCommand {
   /** Rate a saga, or take the rating back by passing undefined.
