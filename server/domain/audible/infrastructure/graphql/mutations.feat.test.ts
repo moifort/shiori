@@ -36,6 +36,8 @@ mock.module('~/domain/audible/infrastructure/audible-api', () => ({
     if (libraryFails) throw libraryFails
     return { items, credentials }
   },
+  // Nobody has stopped anywhere: the statuses under test come off the library.
+  lastPositions: async (credentials: unknown) => ({ positions: [], credentials }),
   landingUrlOf: (marketplace: string) => `https://www.amazon.${marketplace}/ap/maplanding`,
 }))
 
