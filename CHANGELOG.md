@@ -11,6 +11,7 @@ the release tag is pushed.
 ## Unreleased
 
 - Fixed loading errors when generating a series page.
+- Fixed audiobooks sold in two parts showing apart from their volume in a series.
 - A book can record who recommended it, as a wine can in Vinarium: "Recommended by a friend"
   in the book's menu takes a name, typed or picked from the contacts, and what they said of
   it. The recommendation shows on the book's page, where a tap corrects or removes it, and

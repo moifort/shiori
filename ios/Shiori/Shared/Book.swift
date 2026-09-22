@@ -349,8 +349,9 @@ enum SeriesStripItem: Identifiable, Hashable, Codable, Sendable {
     }
 
     /// The saga's spine in order, announced volumes included: each volume
-    /// takes the reader's book when they have it and a placeholder when they
-    /// do not. The owned volumes off the spine follow — a prequel or companion
+    /// takes the reader's books when they have it — every part of a novel sold
+    /// in two, and every format held — and a placeholder when they do not. The
+    /// owned volumes off the spine follow — a prequel or companion
     /// the reader lacks gets no placeholder, the strip is the cycle itself and
     /// the saga screen lists the rest. Just the owned volumes when the saga has
     /// no catalogue yet — the saga screen is what builds it, and a scroll
@@ -360,9 +361,10 @@ enum SeriesStripItem: Identifiable, Hashable, Codable, Sendable {
         var placed = Set<String>()
         var items: [SeriesStripItem] = []
         for volume in spine {
-            if let book = owned.first(where: { !placed.contains($0.id) && volume.matches($0) }) {
-                items.append(.owned(book))
-                placed.insert(book.id)
+            let books = owned.filter { !placed.contains($0.id) && volume.matches($0) }
+            if !books.isEmpty {
+                items += books.map { .owned($0) }
+                placed.formUnion(books.map(\.id))
             } else {
                 items.append(.missing(
                     key: volume.id,

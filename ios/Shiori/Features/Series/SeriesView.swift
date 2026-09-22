@@ -383,15 +383,20 @@ struct SeriesView: View {
         }
     }
 
-    /// One volume. Owned, it is the reader's own book, drawn as the library
-    /// draws it and opened as the library opens it; missing, it is dimmed and
-    /// offers to be added; not out yet, it says when.
+    /// One volume. Owned, it is the reader's own books, drawn as the library
+    /// draws them and opened as the library opens them — a row per part of a
+    /// novel sold in two; missing, it is dimmed and offers to be added; not out
+    /// yet, it says when.
     @ViewBuilder
     private func volumeRow(_ volume: Volume, author: String) -> some View {
         let label = volume.number.map { "\(volume.kind.label) \($0)" } ?? volume.kind.label
         // Matched by kind and number, or by title for an unnumbered related
         // work: a volume just added from here takes its row back on reload.
-        if let book = owned.first(where: volume.matches) {
+        let books = owned.filter(volume.matches)
+        if books.isEmpty {
+            missingRow(volume, label: label, author: author)
+        }
+        ForEach(books) { book in
             Button { selectedBook = book } label: {
                 BookRow(
                     title: book.title,
@@ -409,8 +414,6 @@ struct SeriesView: View {
             }
             .tint(.primary)
             .accessibilityIdentifier("series-volume-owned")
-        } else {
-            missingRow(volume, label: label, author: author)
         }
     }
 
@@ -488,8 +491,10 @@ struct SeriesView: View {
     /// left out: they would make a finished saga look unfinished for years.
     private func progress(_ series: BookSeries) -> (read: Int, published: Int) {
         let published = series.spine.filter { !$0.isForthcoming(asOf: currentYear) }
+        // Read once any of its books is, as the server counts it: a part read
+        // with the other still ahead, or one format of two, reads the volume.
         let read = published.filter { volume in
-            owned.first(where: volume.matches)?.status == .read
+            owned.contains { volume.matches($0) && $0.status == .read }
         }
         return (read.count, published.count)
     }
