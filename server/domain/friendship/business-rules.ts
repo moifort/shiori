@@ -35,3 +35,21 @@ export const subgenreOf = (
   genre: Genre | undefined,
 ): TaggedSubgenre | undefined =>
   books.find((book) => book.genre === genre && book.subgenres.length > 0)?.subgenres[0]
+
+/** The volume whose cover stands for a saga: the first one on the shelf that
+ *  has a cover to draw, main volumes before the rest and in reading order, so
+ *  a hearted saga shows the book it starts with rather than whichever was
+ *  scanned last. Undefined when no volume has a cover. */
+export const coverVolumeOf = <
+  Volume extends Pick<Book, 'series' | 'coverPath' | 'publishedCoverUrl'>,
+>(
+  volumes: readonly Volume[],
+): Volume | undefined =>
+  volumes
+    .filter((volume) => volume.coverPath !== undefined || volume.publishedCoverUrl !== undefined)
+    .sort(
+      (left, right) =>
+        Number(left.series?.kind !== 'main') - Number(right.series?.kind !== 'main') ||
+        (left.series?.volume ?? Number.POSITIVE_INFINITY) -
+          (right.series?.volume ?? Number.POSITIVE_INFINITY),
+    )[0]

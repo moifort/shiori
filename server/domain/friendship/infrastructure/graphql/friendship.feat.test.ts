@@ -219,7 +219,7 @@ describe("the reader's own shelf, as friends see it", () => {
     return (result.data as { addBook: { id: string } }).addBook.id
   }
   const dune = (volume: number) =>
-    `title: "Dune ${volume}", authors: ["Frank Herbert"], genre: SCIENCE_FICTION, status: READ, series: { id: "dune--frank-herbert", name: "Dune", volume: ${volume}, kind: MAIN }`
+    `title: "Dune ${volume}", authors: ["Frank Herbert"], genre: SCIENCE_FICTION, status: READ, series: { id: "dune--frank-herbert", name: "Dune", volume: ${volume}, kind: MAIN }, coverUrl: "https://covers.example/dune-${volume}.jpg"`
 
   // A hearted saga stands for its volumes: listing one again among the
   // favourite books would carry it twice into a list shared with somebody.
@@ -234,13 +234,21 @@ describe("the reader's own shelf, as friends see it", () => {
     )
 
     const result = await as(alice)(
-      '{ myShelf { favorites { title } sagas { name favorite ownedCount genre } } }',
+      '{ myShelf { favorites { title } sagas { name favorite ownedCount genre coverUrl } } }',
     )
 
     expect(result.errors).toBeUndefined()
     expect(result.data?.myShelf).toEqual({
       favorites: [{ title: 'Piranesi' }],
-      sagas: [{ name: 'Dune', favorite: true, ownedCount: 2, genre: 'SCIENCE_FICTION' }],
+      sagas: [
+        {
+          name: 'Dune',
+          favorite: true,
+          ownedCount: 2,
+          genre: 'SCIENCE_FICTION',
+          coverUrl: 'https://covers.example/dune-1.jpg',
+        },
+      ],
     })
   })
 

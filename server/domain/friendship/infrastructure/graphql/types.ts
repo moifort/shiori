@@ -123,6 +123,14 @@ export const FriendSagaType = builder.objectRef<FriendSaga>('FriendSaga').implem
       description: 'The leading subgenre of a volume of that genre.',
       resolve: (saga) => saga.subgenre?.label ?? null,
     }),
+    coverUrl: t.string({
+      nullable: true,
+      description:
+        'The cover of its first volume on the shelf that has one. Only a ' +
+        'hearted saga carries it: the favourites are where a saga is drawn ' +
+        'with a cover.',
+      resolve: (saga) => saga.coverUrl ?? null,
+    }),
   }),
 })
 

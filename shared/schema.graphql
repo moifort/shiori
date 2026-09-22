@@ -841,6 +841,11 @@ type FriendSaga {
   author: AuthorName
 
   """
+  The cover of its first volume on the shelf that has one. Only a hearted saga carries it: the favourites are where a saga is drawn with a cover.
+  """
+  coverUrl: String
+
+  """
   Hearted by its owner. Its hearted volumes are then left out of the favourite books, which the saga already stands for.
   """
   favorite: Boolean!
