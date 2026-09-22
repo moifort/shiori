@@ -35,11 +35,14 @@ struct LibraryView: View {
                 onBookTapped: { selectedBook = $0 }
             )
             .sheet(item: $selectedBook) { book in
-                // An edit reaches this list through the change notice, which
-                // reloads the page once. Patching the row as well sent a second
-                // request whenever the book changed section. A deletion still
-                // takes the row away at once, before the reload lands.
-                BookView(bookId: book.id, onDeleted: { id in viewModel.remove(id: id) })
+                // An edit to this book patches its own row from what the sheet
+                // already holds, and the list lets the change notice it posts
+                // pass: reloading would cost a request per edit.
+                BookView(
+                    bookId: book.id,
+                    onChanged: { viewModel.apply($0) },
+                    onDeleted: { viewModel.remove(id: $0) }
+                )
             }
         }
         // Over last session's snapshot when the disk had one: the list shows at
@@ -49,11 +52,14 @@ struct LibraryView: View {
             await viewModel.loadOnAppear()
         }
         .onChange(of: requestedMode) { takeRequestedMode() }
-        // A book rated in a sheet moves to another month; one added from the
-        // scanner lands in a section this list has not drawn yet. Either way the
-        // rows on screen are the old ones until the server is asked again —
-        // all of them, so the reader stays where they were in the list.
-        .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
+        // A book added from the scanner lands in a section this list has not
+        // drawn yet; a saga rated from a book's sheet lends its stars to every
+        // volume. Either way the rows on screen are the old ones until the
+        // server is asked again — all of them, so the reader stays where they
+        // were. The book open in the sheet is the exception: its row is
+        // patched from the sheet's own answer.
+        .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { notice in
+            if let bookId = notice.object as? String, bookId == selectedBook?.id { return }
             Task { await viewModel.load(keepingDepth: true) }
         }
     }

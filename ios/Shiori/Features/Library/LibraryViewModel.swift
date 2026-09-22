@@ -245,6 +245,35 @@ final class LibraryViewModel {
         refreshFailed = !loaded
     }
 
+    /// Puts back a book the detail screen just changed, without asking the
+    /// server again: the sheet already holds what the server answered. The
+    /// row keeps the reader's place unless the edit moved it — a new status
+    /// stamps a new reading date, and the book goes where the server would
+    /// now shelve it. One that no longer belongs in the view — unhearted
+    /// under the favourites, given another status under a filter — leaves
+    /// it, and one shelved past the last loaded row waits for its page.
+    func apply(_ book: Book) {
+        guard let current = books.firstIndex(where: { $0.id == book.id }) else { return }
+        var updated = book
+        updated.shelvedAt = book.finishedAt ?? book.startedAt ?? book.addedAt
+            ?? books[current].shelvedAt
+        books.remove(at: current)
+        let belongs = (mode != .favorites || updated.favorite)
+            && (statusFilter == nil || statusFilter == updated.status)
+        guard belongs else { return }
+        let index = books.firstIndex { Self.shelvesBefore(updated, $0) } ?? books.endIndex
+        guard index < books.endIndex || !hasMore else { return }
+        books.insert(updated, at: index)
+    }
+
+    /// The server's order: newest shelf date first, then by title.
+    private static func shelvesBefore(_ left: Book, _ right: Book) -> Bool {
+        let leftDate = left.shelvedAt ?? .distantPast
+        let rightDate = right.shelvedAt ?? .distantPast
+        if leftDate != rightDate { return leftDate > rightDate }
+        return left.title < right.title
+    }
+
     func remove(id: String) {
         books.removeAll { $0.id == id }
     }
