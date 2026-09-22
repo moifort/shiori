@@ -152,13 +152,11 @@ struct BookRow: View {
         .accessibilityValue(shownStatusTag == nil ? Text(status.label) : Text(""))
     }
 
-    /// The status tag actually drawn. A book the reader rated themselves is
-    /// read — rating one marks it so — and its stars already say it: "Terminé"
-    /// beside them would repeat it on most of the library. Stars lent by the
-    /// saga say nothing of this volume, so the tag stays with them.
+    /// The status tag actually drawn. "Terminé" never is: a library is mostly
+    /// books read, and the tag on most rows told the eye nothing. Only what
+    /// sets a book apart — in progress, on the pile, dropped — is marked.
     private var shownStatusTag: ReadingStatus? {
-        if statusTag == .read, rating != nil, !ratingIsInherited { return nil }
-        return statusTag
+        statusTag == .read ? nil : statusTag
     }
 
     private var titleText: some View {
