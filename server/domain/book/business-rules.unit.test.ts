@@ -7,6 +7,7 @@ import {
   ratedShelfOf,
   readVolumeNumbersOf,
   retaggedAfterEdit,
+  sagaNamesOf,
   shelfPageOf,
   shelvedOf,
   shownRatingOf,
@@ -14,6 +15,7 @@ import {
   statusChangedAtOf,
   statusStampAfterChange,
   subgenresOf,
+  vocabularyOf,
 } from '~/domain/book/business-rules'
 import { BookId, ListeningMinutes, StarRating, Subgenre } from '~/domain/book/primitives'
 import type { Book, BookLanguage, BookView, Genre } from '~/domain/book/types'
@@ -413,6 +415,42 @@ describe('subgenresOf', () => {
   test('folds case, keeping the first spelling seen', () => {
     const proposed = subgenresOf([tagged('Dark fantasy'), tagged('dark FANTASY')], 'fr')
     expect(proposed.map(String)).toEqual(['Dark Fantasy'])
+  })
+})
+
+describe('sagaNamesOf', () => {
+  const inSaga = (name: string) => ({
+    series: { id: SeriesId(slugify(name)), name: SeriesName(name), kind: 'main' as VolumeKind },
+  })
+
+  test('names every saga held once, alphabetically, and leaves standalone books out', () => {
+    const names = sagaNamesOf([inSaga('Sharko'), {}, inSaga('Dune'), inSaga('Sharko')])
+    expect(names.map(String)).toEqual(['Dune', 'Sharko'])
+  })
+
+  // A saga held in two languages, or spelt two ways, is one name to propose.
+  test('folds case, keeping the first spelling seen', () => {
+    expect(sagaNamesOf([inSaga('La Passe-miroir'), inSaga('la passe-miroir')]).map(String)).toEqual(
+      ['La Passe-miroir'],
+    )
+  })
+})
+
+describe('vocabularyOf', () => {
+  test('draws the subgenres and the sagas from the same books', () => {
+    const vocabulary = vocabularyOf(
+      [
+        {
+          subgenres: [{ label: Subgenre('Space opera'), language: 'fr' as const }],
+          series: { id: SeriesId('dune'), name: SeriesName('Dune'), kind: 'main' as VolumeKind },
+        },
+      ],
+      'fr',
+    )
+    expect(vocabulary).toEqual({
+      subgenres: [Subgenre('Space opera')],
+      sagas: [SeriesName('Dune')],
+    })
   })
 })
 

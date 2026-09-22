@@ -37,16 +37,10 @@ fragment SeriesCatalogue on Series {
   }
 }
 
-# The sagas the reader follows, taken from their own books rather than from the
-# catalogue: a saga an import named and nobody described is still one they read.
-# `state` is null exactly when there is no catalogue to derive it from.
-query MySeries {
-  mySeries {
-    ...FollowedSeriesRow
-  }
-}
-
-# One page of the same rows, for the tab that draws as it scrolls. Only the tab
+# One page of the sagas the reader follows, taken from their own books rather
+# than from the catalogue: a saga an import named and nobody described is still
+# one they read. `state` is null exactly when there is no catalogue to derive it
+# from. For the tab that draws as it scrolls. Only the tab
 # asks for the volumes: each one costs a signed cover URL. The catalogue comes
 # along so the strip can draw the volumes the reader does not own; the server
 # reads every catalogue of the page in one getAll.

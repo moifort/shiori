@@ -5,6 +5,7 @@ import {
   shelfPageOf,
   shelvedOf,
   subgenresOf,
+  vocabularyOf,
 } from '~/domain/book/business-rules'
 import * as repository from '~/domain/book/infrastructure/repository'
 import type {
@@ -14,6 +15,7 @@ import type {
   BookView,
   LibrarySection,
   ReadingStatus,
+  ShelfVocabulary,
   Subgenre,
 } from '~/domain/book/types'
 import type { SeriesId } from '~/domain/series/types'
@@ -92,6 +94,13 @@ export namespace BookQuery {
   /** The reader's own subgenre vocabulary, for the edit form to propose. */
   export const subgenres = async (userId: UserId, language: BookLanguage): Promise<Subgenre[]> =>
     subgenresOf(await repository.findAllByUser(userId), language)
+
+  /** The reader's subgenres and sagas together, for the edit form: one scan of
+   *  the library where asking for each apart would cost two. */
+  export const vocabulary = async (
+    userId: UserId,
+    language: BookLanguage,
+  ): Promise<ShelfVocabulary> => vocabularyOf(await repository.findAllByUser(userId), language)
 }
 
 // Cover URLs are signed one by one because each signature is a separate call, but

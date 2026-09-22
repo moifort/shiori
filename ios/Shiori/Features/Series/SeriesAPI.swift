@@ -55,15 +55,6 @@ enum SeriesAPI {
         language.map { .some(LibraryAPI.graphQLLanguage($0)) } ?? .none
     }
 
-    /// Every saga the reader owns a volume of, alphabetically.
-    static func mySeries() async throws -> [FollowedSeries] {
-        let data = try await GraphQLHelpers.fetch(
-            GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.MySeriesQuery()
-        )
-        return data.mySeries.map { FollowedSeries(row: $0.fragments.followedSeriesRow) }
-    }
-
     /// One page of the sagas the reader follows, ordered and narrowed as the
     /// Library tab is: newest first, the hearted sagas only, or the sagas in
     /// one state.

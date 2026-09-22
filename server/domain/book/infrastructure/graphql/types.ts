@@ -5,7 +5,12 @@ import {
   GenreEnum,
   ReadingStatusEnum,
 } from '~/domain/book/infrastructure/graphql/enums'
-import type { BookView, LibrarySection, SeriesMembership } from '~/domain/book/types'
+import type {
+  BookView,
+  LibrarySection,
+  SeriesMembership,
+  ShelfVocabulary,
+} from '~/domain/book/types'
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import { builder } from '~/domain/shared/graphql/builder'
@@ -296,3 +301,25 @@ export const LibraryPageType = builder
       }),
     }),
   })
+
+export const ShelfVocabularyType = builder.objectRef<ShelfVocabulary>('ShelfVocabulary').implement({
+  description:
+    'The words the reader has already used, for the edit form to propose as they ' +
+    'type. Both lists come from one read of the library.',
+  fields: (t) => ({
+    subgenres: t.field({
+      type: ['Subgenre'],
+      description:
+        'Every subgenre the reader has used in the language of `Accept-Language`, ' +
+        'the most used first.',
+      resolve: (vocabulary) => vocabulary.subgenres,
+    }),
+    sagas: t.field({
+      type: ['SeriesName'],
+      description:
+        'Every saga the reader holds a volume of, alphabetically, each named once: ' +
+        'a saga held in two languages is two rows of the Series tab but one name here.',
+      resolve: (vocabulary) => vocabulary.sagas,
+    }),
+  }),
+})

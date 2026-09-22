@@ -378,6 +378,24 @@ describe('correcting a book through the API', () => {
     expect(result.data?.subgenres).toEqual(['Aventure', 'Jeunesse'])
   })
 
+  // The edit form's proposals in one request: its subgenres and its sagas.
+  test('proposes the subgenres and the sagas of the library together', async () => {
+    const added = await execute(
+      'mutation { addBook(input: { title: "Dune", authors: ["Frank Herbert"], subgenres: ["Space opera"] }) { id } }',
+    )
+    const { id } = (added.data as { addBook: { id: string } }).addBook
+    const edited = await execute(
+      `mutation { updateBook(id: "${id}", input: { series: { name: "Dune", volume: 1 } }) { id } }`,
+    )
+    expect(edited.errors).toBeUndefined()
+    await addBook('Le Nom du vent')
+
+    const result = await execute('{ vocabulary { subgenres sagas } }')
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.vocabulary).toEqual({ subgenres: ['Space Opera'], sagas: ['Dune'] })
+  })
+
   // Never translated: each label is shown as written, and proposed only to an
   // app in the language it was written in.
   test('tags a typed subgenre with the language of the app, and proposes it only there', async () => {

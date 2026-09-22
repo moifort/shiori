@@ -101,8 +101,18 @@ fragment BookDetail on Book {
   }
 }
 
-# The reader's own subgenre vocabulary, most used first: what the edit form
+# The reader's own subgenre vocabulary, most used first: what the genre sheet
 # proposes as they type. Costs the server the same scan as the library.
 query Subgenres {
   subgenres
+}
+
+# What the edit form proposes as the reader types, in one request and one scan
+# of the library: their subgenres, most used first, and the sagas they hold,
+# each named once.
+query EditVocabulary {
+  vocabulary {
+    subgenres
+    sagas
+  }
 }

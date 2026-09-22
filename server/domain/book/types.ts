@@ -214,6 +214,14 @@ export type Book = {
  *  `CoverUrl` rightly refuses as input but the dev app still has to draw. */
 export type BookView = Book & { coverUrl?: SignedUrl | CoverUrl }
 
+/** The words the reader has already used, for the edit form to propose as they
+ *  type: their subgenres in the language of the app, the most used first, and
+ *  the sagas they hold, alphabetically. Drawn from one read of the library. */
+export type ShelfVocabulary = {
+  subgenres: Subgenre[]
+  sagas: SeriesName[]
+}
+
 /** One section of the library: either a saga the reader owns several volumes of,
  *  or the standalone shelf. Derived per request, never stored.
  *

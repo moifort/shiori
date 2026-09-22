@@ -1517,6 +1517,11 @@ type Query {
   Every subgenre the reader has used across their library in the language of `Accept-Language`, the most used first. What the edit form proposes as they type: a vocabulary drawn from their own shelf, in the language they type in. Costs the same scan as the library.
   """
   subgenres: [Subgenre!]!
+
+  """
+  The reader subgenres and the sagas they hold, together: what the edit form proposes as they type, in one request and one scan of the library, where `subgenres` and `mySeries` asked apart would cost two scans and a catalogue read.
+  """
+  vocabulary: ShelfVocabulary!
 }
 
 """
@@ -1802,6 +1807,21 @@ enum SeriesState {
   The reader stopped following the saga (`setSeriesFollowed`). Whatever their volumes say, it is out of the sagas in progress and of the finished ones, and out of every list of `mySeriesPage` but the one filtered on this state. Its volumes keep their own statuses.
   """
   UNFOLLOWED
+}
+
+"""
+The words the reader has already used, for the edit form to propose as they type. Both lists come from one read of the library.
+"""
+type ShelfVocabulary {
+  """
+  Every saga the reader holds a volume of, alphabetically, each named once: a saga held in two languages is two rows of the Series tab but one name here.
+  """
+  sagas: [SeriesName!]!
+
+  """
+  Every subgenre the reader has used in the language of `Accept-Language`, the most used first.
+  """
+  subgenres: [Subgenre!]!
 }
 
 """

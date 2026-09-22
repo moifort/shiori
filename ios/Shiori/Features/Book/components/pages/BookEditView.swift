@@ -220,8 +220,13 @@ struct BookEditView: View {
             }
             .disabled(isSaving)
             .overlay { if isSaving { ProgressView() } }
-            .task { subgenreSuggestions = (try? await BookAPI.subgenres()) ?? [] }
-            .task { seriesSuggestions = await Self.heldSeriesNames() }
+            // Both proposal lists in one request. Empty when the read failed,
+            // since the proposals are a convenience.
+            .task {
+                guard let vocabulary = try? await BookAPI.vocabulary() else { return }
+                subgenreSuggestions = vocabulary.subgenres
+                seriesSuggestions = vocabulary.sagas
+            }
             .alert(
                 "Impossible d'enregistrer",
                 isPresented: .init(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
@@ -314,15 +319,6 @@ struct BookEditView: View {
             to: optional(seriesName).map { SeriesPlacement(name: $0, volume: Int(trimmed(seriesVolume))) }
         )
         return correction
-    }
-
-    /// The sagas the reader holds, each named once: a saga held in two
-    /// languages is two rows of the Series tab but one name to propose. Empty
-    /// when the read failed, since the proposals are a convenience.
-    private static func heldSeriesNames() async -> [String] {
-        let series = (try? await SeriesAPI.mySeries()) ?? []
-        var seen = Set<String>()
-        return series.map(\.name).filter { seen.insert($0.lowercased()).inserted }
     }
 
     private func save() async {

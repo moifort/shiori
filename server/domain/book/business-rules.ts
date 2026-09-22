@@ -7,13 +7,14 @@ import type {
   ReadingStatus,
   SeriesMembership,
   SeriesPlacement,
+  ShelfVocabulary,
   StarRating,
   Subgenre,
   TaggedSubgenre,
 } from '~/domain/book/types'
 import { compareWithinSeries } from '~/domain/series/business-rules'
 import { seriesKeyOf } from '~/domain/series/primitives'
-import type { SeriesId } from '~/domain/series/types'
+import type { SeriesId, SeriesName } from '~/domain/series/types'
 import type { AuthorName, UserId } from '~/domain/shared/types'
 import { ObjectPath } from '~/system/object-store/primitives'
 import type { ObjectPath as ObjectPathValue } from '~/system/object-store/types'
@@ -284,6 +285,25 @@ export const subgenresOf = (
     .sort((left, right) => right.count - left.count || left.subgenre.localeCompare(right.subgenre))
     .map((entry) => entry.subgenre)
 }
+
+/** Every saga the reader holds a volume of, named once and alphabetically,
+ *  folded on case: a saga held in two languages, or spelt two ways, is one
+ *  name to propose. The first spelling seen is the one kept. */
+export const sagaNamesOf = (books: readonly Pick<Book, 'series'>[]): SeriesName[] => {
+  const names = new Map<string, SeriesName>()
+  for (const book of books) {
+    if (!book.series) continue
+    const key = book.series.name.toLocaleLowerCase()
+    if (!names.has(key)) names.set(key, book.series.name)
+  }
+  return [...names.values()].sort((left, right) => left.localeCompare(right))
+}
+
+/** What the edit form proposes, from one read of the library. */
+export const vocabularyOf = (
+  books: readonly Pick<Book, 'series' | 'subgenres'>[],
+  language: BookLanguage,
+): ShelfVocabulary => ({ subgenres: subgenresOf(books, language), sagas: sagaNamesOf(books) })
 
 /** Subgenres a reader typed, tagged with the language of their app: never
  *  translated, never read back by a model. */

@@ -3,6 +3,7 @@ import {
   BookType,
   LibraryPageType,
   LibrarySectionType,
+  ShelfVocabularyType,
 } from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
 import { builder } from '~/domain/shared/graphql/builder'
@@ -93,5 +94,15 @@ builder.queryFields((t) => ({
       'Costs the same scan as the library.',
     resolve: (_root, _args, context) =>
       BookQuery.subgenres(context.userId, languageOf(context.event)),
+  }),
+
+  vocabulary: t.field({
+    type: ShelfVocabularyType,
+    description:
+      'The reader subgenres and the sagas they hold, together: what the edit form ' +
+      'proposes as they type, in one request and one scan of the library, where ' +
+      '`subgenres` and `mySeries` asked apart would cost two scans and a catalogue read.',
+    resolve: (_root, _args, context) =>
+      BookQuery.vocabulary(context.userId, languageOf(context.event)),
   }),
 }))

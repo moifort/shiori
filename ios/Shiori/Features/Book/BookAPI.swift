@@ -95,6 +95,16 @@ enum BookAPI {
 
     /// Every subgenre the reader has used, most used first. What the subgenre
     /// field proposes: a vocabulary drawn from their own shelf.
+    /// The edit form's proposals, both lists in one request: the subgenres the
+    /// reader has used and the sagas they hold, each saga named once.
+    static func vocabulary() async throws -> (subgenres: [String], sagas: [String]) {
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.EditVocabularyQuery()
+        )
+        return (data.vocabulary.subgenres, data.vocabulary.sagas)
+    }
+
     static func subgenres() async throws -> [String] {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
