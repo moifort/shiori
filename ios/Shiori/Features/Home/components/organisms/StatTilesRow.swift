@@ -76,11 +76,11 @@ struct StatTilesRow: View {
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            HStack(spacing: 10) {
+            HStack(spacing: 12) {
                 Image(systemName: systemImage)
-                    .font(.subheadline)
+                    .font(.title2)
                     .foregroundStyle(color)
-                    .frame(width: 22)
+                    .frame(width: 32)
                 VStack(alignment: .leading, spacing: 0) {
                     (count > 0 ? Text(count, format: .number) : Text("–"))
                         .font(.system(.title3, design: .rounded, weight: .bold))

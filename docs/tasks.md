@@ -70,7 +70,7 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       genre view must read the genre's localized name, not its raw value.
       Built: "Fantasy" now reads "Fantastique".
 
-- [ ] **Dashboard, bigger icons on the favourites and dropped tiles.** The heart and the
+- [x] **Dashboard, bigger icons on the favourites and dropped tiles.** The heart and the
       thumbs-down of the two small boxes are drawn at `.subheadline` in a 22 pt frame, small
       beside the count and its label; enlarge them (around `.title2`) so they balance the
       two lines of text beside them (`StatTilesRow.smallTile`).
