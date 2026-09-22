@@ -55,9 +55,9 @@ builder.mutationFields((t) => ({
     description:
       'Set a saga aside, or follow it again. A saga the reader stopped following ' +
       'is `UNFOLLOWED` whatever its volumes say: out of the sagas in progress and ' +
-      'of the finished ones, off the dashboard progress bars, last in the state ' +
-      'filter. Only the saga — its volumes keep their own statuses. Leaves the ' +
-      'rating and the heart alone.\n\n' +
+      'of the finished ones, off the dashboard progress bars, and listed only ' +
+      'under its own state filter. Only the saga — its volumes keep their own ' +
+      'statuses. Leaves the rating and the heart alone.\n\n' +
       '`language` names one edition, and only that edition moves: setting the ' +
       'English Dune aside leaves the French one followed. Without it, the whole ' +
       'saga moves, every edition at once.',

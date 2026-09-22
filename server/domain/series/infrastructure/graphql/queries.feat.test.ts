@@ -621,7 +621,8 @@ describe('a saga the reader stopped following', () => {
 
     expect(await unfollow()).toEqual({ followed: false })
 
-    expect(await states()).toEqual([{ name: 'Dune', state: 'UNFOLLOWED' }])
+    // Out of the reader's way: only its own filter shows it.
+    expect(await states()).toEqual([])
     expect(await states('(state: IN_PROGRESS)')).toEqual([])
     expect(await states('(state: UNFOLLOWED)')).toEqual([{ name: 'Dune', state: 'UNFOLLOWED' }])
   })
@@ -648,8 +649,8 @@ describe('a saga the reader stopped following', () => {
       expect(result.errors).toBeUndefined()
       return result.data?.setSeriesFollowed
     }
-    const editions = async () => {
-      const result = await execute('{ mySeriesPage { items { language state } } }')
+    const editions = async (filter = '') => {
+      const result = await execute(`{ mySeriesPage${filter} { items { language state } } }`)
       expect(result.errors).toBeUndefined()
       const items = (
         result.data as { mySeriesPage: { items: { language: string; state: string }[] } }
@@ -658,10 +659,8 @@ describe('a saga the reader stopped following', () => {
     }
 
     expect(await setEnglish(false)).toEqual({ followed: true, unfollowedLanguages: ['EN'] })
-    expect(await editions()).toEqual([
-      { language: 'EN', state: 'UNFOLLOWED' },
-      { language: 'FR', state: 'IN_PROGRESS' },
-    ])
+    expect(await editions()).toEqual([{ language: 'FR', state: 'IN_PROGRESS' }])
+    expect(await editions('(state: UNFOLLOWED)')).toEqual([{ language: 'EN', state: 'UNFOLLOWED' }])
 
     expect(await setEnglish(true)).toEqual({ followed: true, unfollowedLanguages: [] })
     expect(await editions()).toEqual([
@@ -678,7 +677,7 @@ describe('a saga the reader stopped following', () => {
 
     await unfollow()
 
-    const result = await execute('{ mySeriesPage { items { state } } }')
+    const result = await execute('{ mySeriesPage(state: UNFOLLOWED) { items { state } } }')
     expect(result.data?.mySeriesPage).toEqual({
       items: [{ state: 'UNFOLLOWED' }, { state: 'UNFOLLOWED' }],
     })

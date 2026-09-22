@@ -1147,7 +1147,7 @@ type Mutation {
   setSeriesFavorite(favorite: Boolean!, seriesId: SeriesId!): SeriesOpinion!
 
   """
-  Set a saga aside, or follow it again. A saga the reader stopped following is `UNFOLLOWED` whatever its volumes say: out of the sagas in progress and of the finished ones, off the dashboard progress bars, last in the state filter. Only the saga — its volumes keep their own statuses. Leaves the rating and the heart alone.
+  Set a saga aside, or follow it again. A saga the reader stopped following is `UNFOLLOWED` whatever its volumes say: out of the sagas in progress and of the finished ones, off the dashboard progress bars, and listed only under its own state filter. Only the saga — its volumes keep their own statuses. Leaves the rating and the heart alone.
   
   `language` names one edition, and only that edition moves: setting the English Dune aside leaves the French one followed. Without it, the whole saga moves, every edition at once.
   """
@@ -1750,7 +1750,7 @@ enum SeriesState {
   NOT_STARTED
 
   """
-  The reader stopped following the saga (`setSeriesFollowed`). Whatever their volumes say, it is out of the sagas in progress and of the finished ones. Its volumes keep their own statuses.
+  The reader stopped following the saga (`setSeriesFollowed`). Whatever their volumes say, it is out of the sagas in progress and of the finished ones, and out of every list of `mySeriesPage` but the one filtered on this state. Its volumes keep their own statuses.
   """
   UNFOLLOWED
 }

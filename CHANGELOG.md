@@ -10,6 +10,8 @@ the release tag is pushed.
 
 ## Unreleased
 
+- A saga the reader stopped following leaves the Series tab: it shows only under the
+  "Not followed" filter, and no longer in the full list or the favourites.
 - A saga held in two languages is followed edition by edition: "Stop following" on the
   English Dune leaves the French one followed, in the Series tab and on the dashboard. From
   the dashboard's card, which draws every edition as one, it still sets the whole saga aside.

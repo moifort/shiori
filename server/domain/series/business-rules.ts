@@ -202,16 +202,21 @@ export const inTabOrder = <Saga extends { shelvedAt: Date }>(sagas: readonly Sag
 
 /** The sagas a filter of the Series tab keeps: the hearted ones, and those in
  *  one state. A saga whose state is unknown — every owned volume read and no
- *  catalogue to say more — is kept with the complete ones it resembles. */
+ *  catalogue to say more — is kept with the complete ones it resembles.
+ *
+ *  A saga set aside shows only under its own filter: the reader put it out of
+ *  their way, and every other list — everything, the favourites — leaves it
+ *  out. */
 export const matchingFilter = <Saga extends { state: SeriesState | null; favorite: boolean }>(
   sagas: readonly Saga[],
   filter: { favorite?: boolean; state?: SeriesState },
 ): Saga[] =>
-  sagas.filter(
-    (saga) =>
-      (!filter.favorite || saga.favorite) &&
-      (filter.state === undefined || (saga.state ?? 'complete') === filter.state),
-  )
+  sagas.filter((saga) => {
+    const state = saga.state ?? 'complete'
+    if (filter.favorite && !saga.favorite) return false
+    if (filter.state === undefined) return state !== 'unfollowed'
+    return state === filter.state
+  })
 
 /** A catalogue with every volume once. The grounded model can answer one entry
  *  per edition it found — Blood Song listed Tome 1 and Tome 2 twice each — so

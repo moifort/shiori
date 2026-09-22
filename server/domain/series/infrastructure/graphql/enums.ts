@@ -40,7 +40,8 @@ export const SeriesStateEnum = builder.enumType('SeriesState', {
       value: 'unfollowed',
       description:
         'The reader stopped following the saga (`setSeriesFollowed`). Whatever their ' +
-        'volumes say, it is out of the sagas in progress and of the finished ones. ' +
+        'volumes say, it is out of the sagas in progress and of the finished ones, ' +
+        'and out of every list of `mySeriesPage` but the one filtered on this state. ' +
         'Its volumes keep their own statuses.',
     },
   } as const,

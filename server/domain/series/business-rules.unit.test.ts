@@ -6,6 +6,7 @@ import {
   genreOf,
   inCatalogueOrder,
   inTabOrder,
+  matchingFilter,
   progressOf,
   provisionalCatalogueOf,
   splitBySpine,
@@ -418,5 +419,26 @@ describe('cataloguesOf', () => {
       'Le Nom du vent',
       'Kingkiller',
     ])
+  })
+})
+
+describe('matchingFilter', () => {
+  const sagas = [
+    { name: 'Dune', state: 'in-progress' as const, favorite: true },
+    { name: 'Hyperion', state: 'unfollowed' as const, favorite: true },
+    { name: 'Fondation', state: null, favorite: false },
+  ]
+  const names = (kept: { name: string }[]) => kept.map((saga) => saga.name)
+
+  // A saga set aside is out of the reader's way: it shows only where they
+  // asked for the sagas set aside.
+  test('leaves the sagas set aside out of every list but their own', () => {
+    expect(names(matchingFilter(sagas, {}))).toEqual(['Dune', 'Fondation'])
+    expect(names(matchingFilter(sagas, { favorite: true }))).toEqual(['Dune'])
+    expect(names(matchingFilter(sagas, { state: 'unfollowed' }))).toEqual(['Hyperion'])
+  })
+
+  test('keeps a saga of unknown state with the complete ones', () => {
+    expect(names(matchingFilter(sagas, { state: 'complete' }))).toEqual(['Fondation'])
   })
 })
