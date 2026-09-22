@@ -149,7 +149,16 @@ struct BookRow: View {
         .accessibilityElement(children: .combine)
         // Spoken even where no tag draws it: a heading above the row is not
         // read with it.
-        .accessibilityValue(statusTag == nil ? Text(status.label) : Text(""))
+        .accessibilityValue(shownStatusTag == nil ? Text(status.label) : Text(""))
+    }
+
+    /// The status tag actually drawn. A book the reader rated themselves is
+    /// read — rating one marks it so — and its stars already say it: "Terminé"
+    /// beside them would repeat it on most of the library. Stars lent by the
+    /// saga say nothing of this volume, so the tag stays with them.
+    private var shownStatusTag: ReadingStatus? {
+        if statusTag == .read, rating != nil, !ratingIsInherited { return nil }
+        return statusTag
     }
 
     private var titleText: some View {
@@ -189,7 +198,7 @@ struct BookRow: View {
             }
             // Where the reader stands, in the corner the eye returns to on
             // every row. A recording says what it is on its cover instead.
-            if let statusTag {
+            if let statusTag = shownStatusTag {
                 // A dropped book says so by its mark alone: the word would read
                 // as a verdict repeated on every row.
                 if statusTag == .dropped {
