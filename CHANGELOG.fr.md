@@ -4,10 +4,16 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
-- Un livre audio importé d’Audible affiche où en est le lecteur, en pourcentage : en barre sur
-  la fiche du livre, sur sa ligne de bibliothèque pendant l’écoute, et sous sa couverture
-  dans l’étagère « En cours » de l’accueil. L’import et la synchronisation de nuit le tiennent
-  à jour d’après la position du lecteur lui-même.
+- Le premier lancement affiche la boutique Audible avant la connexion, présélectionnée
+  d’après la langue du téléphone : un lecteur qui achète sur une autre boutique la change
+  avant de se connecter, au lieu de trouver une bibliothèque vide.
+- Un appui long sur un champ de la fiche d’un livre ou d’une série le copie : l’ISBN, le
+  titre, l’auteur, le lecteur, l’éditeur, le résumé, le nom de la série et sa description.
+- Un livre audio importé d’Audible affiche où en est le lecteur pendant l’écoute, en
+  pourcentage : une étiquette à côté de la durée sur la fiche du livre, une étiquette à côté
+  de « En cours » sur sa ligne de bibliothèque, et une légende sous sa couverture dans
+  l’étagère « En cours » de l’accueil. L’import et la synchronisation de nuit le tiennent à
+  jour d’après la position du lecteur lui-même.
 - Un titre arrêté par le lecteur Audible à trois minutes ou moins de la fin est terminé :
   Audible le garde « non terminé » pendant le générique, et le livre passe désormais en
   « Lu », daté du jour où le lecteur s’est arrêté.

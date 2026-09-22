@@ -117,6 +117,11 @@ struct BookPage: View {
                 }
             }
             .padding(.vertical, 2)
+            .copyable([
+                CopyableValue(title: "Copier le titre", value: book.title),
+                CopyableValue(title: "Copier l'auteur", value: book.authors.joined(separator: ", ")),
+                CopyableValue(title: "Copier le lecteur", value: book.narratorLine ?? ""),
+            ])
 
             if let series = book.series {
                 Button(action: onOpenSeries) {
@@ -155,6 +160,7 @@ struct BookPage: View {
                 } icon: {
                     Image(systemName: "barcode").foregroundStyle(.secondary)
                 }
+                .copyable(isbn)
             }
         }
     }
@@ -264,7 +270,9 @@ struct BookPage: View {
         let folded = words.count > Self.summaryWordLimit && !summaryExpanded
         let shown = folded ? words.prefix(Self.summaryWordLimit).joined(separator: " ") + "…" : synopsis
         return Section("Résumé") {
-            Text(shown).font(.callout)
+            // The whole summary, folded or not: what is copied is the text,
+            // not the part of it on screen.
+            Text(shown).font(.callout).copyable(synopsis)
             if words.count > Self.summaryWordLimit {
                 Button(folded ? "Lire la suite" : "Réduire") {
                     withAnimation(.snappy) { summaryExpanded.toggle() }

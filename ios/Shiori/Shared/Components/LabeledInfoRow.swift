@@ -16,6 +16,8 @@ struct LabeledInfoRow: View {
             Image(systemName: icon)
                 .foregroundStyle(.secondary)
         }
+        // Every fact a sheet states can be taken elsewhere with a long press.
+        .copyable(value)
     }
 }
 

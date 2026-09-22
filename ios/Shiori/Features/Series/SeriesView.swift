@@ -233,9 +233,11 @@ struct SeriesView: View {
                         Text(series.name)
                             .font(.title3.weight(.semibold))
                             .fixedSize(horizontal: false, vertical: true)
+                            .copyable(series.name)
                         Text(series.author)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
+                            .copyable(series.author)
                         Text("\(series.spine.count) tome(s)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -256,6 +258,7 @@ struct SeriesView: View {
                     Text(description)
                         .font(.callout)
                         .foregroundStyle(.secondary)
+                        .copyable(description)
                 }
             }
             .padding(.vertical, 6)

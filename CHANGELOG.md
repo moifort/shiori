@@ -10,10 +10,15 @@ the release tag is pushed.
 
 ## Unreleased
 
-- An audiobook imported from Audible shows how far the player got, as a percentage: on the
-  book screen as a bar, on its library row while it is being listened to, and under its
-  cover on the dashboard's "Reading" shelf. The import and the nightly sync keep it current
-  from the player's own position.
+- Onboarding shows the Audible store before connecting, preselected from the phone's
+  language, so a reader who buys on another store changes it before signing in rather than
+  finding an empty library.
+- A long press on a field of a book or a series screen copies it: the ISBN, the title, the
+  author, the narrator, the publisher, the summary, the series name and its description.
+- An audiobook imported from Audible shows how far the player got while it is being listened
+  to, as a percentage: a tag beside the running time on the book screen, a tag beside "In
+  progress" on its library row, and a caption under its cover on the dashboard's "Reading"
+  shelf. The import and the nightly sync keep it current from the player's own position.
 - A title the Audible player stopped within three minutes of its end is finished: Audible
   keeps it "unfinished" through the closing credits, and the book now moves to "Read",
   dated on the day the player stopped.
