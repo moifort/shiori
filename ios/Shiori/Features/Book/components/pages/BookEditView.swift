@@ -99,6 +99,9 @@ struct BookEditView: View {
                         }
                     } label: {
                         Label("Format", systemImage: "books.vertical")
+                    } currentValueLabel: {
+                        // The word alone on the row: the icons are for the list.
+                        Text(format.label)
                     }
                     .accessibilityIdentifier("edit-format")
                 } footer: {
@@ -162,6 +165,8 @@ struct BookEditView: View {
                         }
                     } label: {
                         Label("Genre", systemImage: "theatermasks")
+                    } currentValueLabel: {
+                        Text(genre?.label ?? String(localized: "Non renseigné"))
                     }
                     .accessibilityIdentifier("edit-genre")
                     VStack(alignment: .leading, spacing: 8) {
