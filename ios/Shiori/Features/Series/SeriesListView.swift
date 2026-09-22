@@ -180,42 +180,45 @@ struct SeriesListView: View {
         MonthSection.cut(viewModel.followed, on: \.shelvedAt)
     }
 
-    /// The words on the left and every mark on one line in the top corner —
-    /// the edition's language, where the reader stands, their heart or stars —
-    /// so the eye finds them in the same place on every row; the covers
-    /// underneath. The marks hug their own width and the title takes every
-    /// point up to them: left to the stack, a long name was wrapped at half the
-    /// row while the marks kept room they never used.
+    /// Every mark on the first line, in the top corner — the edition's
+    /// language, where the reader stands, their heart or stars — so the eye
+    /// finds them in the same place on every row; the covers underneath. The
+    /// marks share that line only, as on the library rows: the author below
+    /// takes the whole width instead of being squeezed beside them.
     private func row(_ entry: FollowedSeries) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top, spacing: 8) {
-                VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .top, spacing: 8) {
                     Text(entry.name).font(.body.weight(.medium)).lineLimit(2)
-                    if let author = entry.author {
-                        Text(author).font(.subheadline).foregroundStyle(.secondary)
-                    }
+                    Spacer(minLength: 0)
+                    marks(entry)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                HStack(spacing: 6) {
-                    if let language = entry.language, language.isForeign {
-                        LanguageTag(language: language)
-                    }
-                    if let state = entry.state {
-                        SeriesStateLabel(state: state)
-                    }
-                    OpinionMark(
-                        rating: entry.opinion?.rating,
-                        isFavorite: entry.opinion?.favorite == true,
-                        font: .caption
-                    )
+                if let author = entry.author {
+                    Text(author).font(.subheadline).foregroundStyle(.secondary)
                 }
-                .font(.caption)
-                .fixedSize()
-                .padding(.top, 3)
             }
             covers(entry)
         }
         .padding(.vertical, 2)
+    }
+
+    private func marks(_ entry: FollowedSeries) -> some View {
+        HStack(spacing: 6) {
+            if let language = entry.language, language.isForeign {
+                LanguageTag(language: language)
+            }
+            if let state = entry.state {
+                SeriesStateLabel(state: state)
+            }
+            OpinionMark(
+                rating: entry.opinion?.rating,
+                isFavorite: entry.opinion?.favorite == true,
+                font: .caption
+            )
+        }
+        .font(.caption)
+        .fixedSize()
+        .padding(.top, 3)
     }
 
     /// Every volume of the cycle, in its order, as a cover: the owned ones with
