@@ -206,7 +206,33 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       showing its owned volumes only: building catalogues from the tab would pay one AI call
       per row just for scrolling past it.
 
+- [ ] **Library and Series tabs, drop the "by genre" sections.** Remove the arrangement from
+      both toolbars, which leaves everything, the favourites and the status filters. The
+      `by-genre` value of `LibraryArrangement` and the arrangement argument go with it if
+      nothing else reads them. The dashboard's genres widget opens the library on that view
+      today: decide where a tap on it leads instead, or make it inert.
+- [ ] **Library and Series tabs, sorted by date under "Month Year" headings, as in
+      Vinarium.** A book is placed by its finish date, else its start date, else the date it
+      was added, newest first, and the list is cut into sections titled with the month and
+      year of that date in the app's language ("septembre 2026"), with Vinarium's
+      `MMMM yyyy` formatter. The Series tab applies the same rule to each saga, dated by its
+      most recent volume. Replaces the ordering by last modification, which grouped a saga's
+      volumes into one section: decide whether a saga still keeps its volumes together in
+      the Library tab, and under which month, or whether each volume falls under its own.
+      Changes the `library` and series queries' ordering and their cursors.
+
 ## Large
+
+- [ ] **Subgenres and tags in the app's language, the scan's included.** A subgenre is free
+      text stored as the source wrote it, so one library mixes languages: the Audible import
+      files an audience as "Young Adult", the scan prompt's examples are French whatever the
+      reader's language, and switching the app to English leaves every stored subgenre in
+      French. Every subgenre and tag the app shows, and every one the scan or the import
+      writes, must read in the app's language. Probably means turning subgenres into a
+      closed vocabulary of keys localized in `Localizable.xcstrings`, as the genres are, with
+      the scan and the import mapping onto those keys and a free-text fallback decided for
+      what falls outside it. Existing records need a migration onto the keys, and the
+      autocompletion and the series fan-out follow.
 
 - [x] **Pagination** on every list, as in Vinarium. Cursor arguments on every list query,
       client-side page accumulation, and the read-budget tests to match.
