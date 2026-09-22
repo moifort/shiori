@@ -10,6 +10,10 @@ the release tag is pushed.
 
 ## Unreleased
 
+- A saga can be set aside from its screen, with "Stop following the series" in the "More
+  actions" menu. It is then "Not followed", whatever its volumes say: out of the sagas in
+  progress and the finished ones, off the dashboard's "Series in progress", and last in the
+  Series tab's filter. Only the saga changes; its volumes keep their own statuses.
 - Removing a saga from its screen removes the edition on that screen only: deleting the
   English row of a saga held in French and in English took the French volumes with it. The
   rating and heart go with the last volume, whichever edition it belongs to.

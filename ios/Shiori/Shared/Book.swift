@@ -161,18 +161,22 @@ enum VolumeKind: String, Codable, CaseIterable, Identifiable, Sendable {
     }
 }
 
-/// Where the reader stands on a saga: not started, working through it, or done
-/// with it. Derived by the server from what they own, never stored.
+/// Where the reader stands on a saga: not started, working through it, done
+/// with it, or set aside. Derived by the server from what they own and, for
+/// `unfollowed`, from their own choice, which overrides the rest. Declared in
+/// the order a filter lists them: the saga set aside always comes last.
 enum SeriesState: String, Codable, CaseIterable, Identifiable, Sendable {
     case notStarted
     case inProgress
     case complete
+    case unfollowed
 
     var label: String {
         switch self {
         case .notStarted: String(localized: "À lire")
         case .inProgress: String(localized: "En cours")
         case .complete: String(localized: "Terminée")
+        case .unfollowed: String(localized: "Non suivie")
         }
     }
 
@@ -184,15 +188,18 @@ enum SeriesState: String, Codable, CaseIterable, Identifiable, Sendable {
         case .notStarted: String(localized: "À lire")
         case .inProgress: String(localized: "En cours")
         case .complete: String(localized: "Terminées")
+        case .unfollowed: String(localized: "Non suivies")
         }
     }
 
-    /// The same symbols as the reading statuses they mirror.
+    /// The same symbols as the reading statuses they mirror; a saga set aside
+    /// has no reading status to mirror, and says it is no longer followed.
     var symbol: String {
         switch self {
         case .notStarted: ReadingStatus.toRead.symbol
         case .inProgress: ReadingStatus.reading.symbol
         case .complete: ReadingStatus.read.symbol
+        case .unfollowed: "bell.slash"
         }
     }
 }
@@ -433,6 +440,10 @@ struct SeriesOpinion: Sendable, Equatable, Codable {
     /// How many volumes the saga has by the reader's own count, for a saga
     /// nobody has catalogued. Nil until they say.
     var volumeCount: Int?
+    /// False once the reader set the saga aside: it is then `unfollowed`,
+    /// whatever its volumes say. Only the saga — its volumes keep their own
+    /// statuses.
+    var followed: Bool = true
 }
 
 /// A saga the reader follows. Its identity comes from their own books, not from

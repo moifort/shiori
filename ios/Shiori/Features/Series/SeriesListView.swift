@@ -160,7 +160,8 @@ struct SeriesListView: View {
             Menu {
                 Picker("État", selection: $viewModel.stateFilter) {
                     Label("Toutes", systemImage: "tray.full").tag(SeriesState?.none)
-                    ForEach([SeriesState.inProgress, .notStarted, .complete]) { state in
+                    // The saga set aside always last.
+                    ForEach([SeriesState.inProgress, .notStarted, .complete, .unfollowed]) { state in
                         Label(state.shelfTitle, systemImage: state.symbol)
                             .tag(SeriesState?.some(state))
                     }
@@ -284,6 +285,7 @@ struct SeriesStateLabel: View {
         case .notStarted: .gray
         case .inProgress: .blue
         case .complete: .green
+        case .unfollowed: .secondary
         }
     }
 

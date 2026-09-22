@@ -104,6 +104,19 @@ struct SeriesView: View {
                             }
                             .accessibilityIdentifier("series-volume-count")
                         }
+                        // Only the saga is set aside: its volumes keep their
+                        // own statuses in the library.
+                        if isFollowed {
+                            Button("Ne plus suivre la série", systemImage: "bell.slash") {
+                                Task { await setFollowed(false) }
+                            }
+                            .accessibilityIdentifier("series-unfollow")
+                        } else {
+                            Button("Suivre la série", systemImage: "bell") {
+                                Task { await setFollowed(true) }
+                            }
+                            .accessibilityIdentifier("series-follow")
+                        }
                         Button("Supprimer la série", systemImage: "trash", role: .destructive) {
                             confirmDelete = true
                         }
@@ -231,6 +244,10 @@ struct SeriesView: View {
                             Text("d'après votre décompte")
                                 .font(.caption)
                                 .foregroundStyle(.tertiary)
+                        }
+                        if !isFollowed {
+                            SeriesStateLabel(state: .unfollowed)
+                                .padding(.top, 2)
                         }
                     }
                     Spacer(minLength: 0)
@@ -484,6 +501,18 @@ struct SeriesView: View {
                 stars == 0
                 ? try await SeriesAPI.removeRating(seriesId: seriesId)
                 : try await SeriesAPI.rate(seriesId: seriesId, stars: stars)
+        } catch {
+            errorMessage = reportError(error)
+        }
+    }
+
+    private var isFollowed: Bool { opinion?.followed ?? true }
+
+    private func setFollowed(_ followed: Bool) async {
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            opinion = try await SeriesAPI.setFollowed(seriesId: seriesId, followed: followed)
         } catch {
             errorMessage = reportError(error)
         }

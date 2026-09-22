@@ -94,6 +94,7 @@ enum SeriesAPI {
         case .notStarted: .notStarted
         case .inProgress: .inProgress
         case .complete: .complete
+        case .unfollowed: .unfollowed
         }
     }
 
@@ -150,6 +151,16 @@ enum SeriesAPI {
             mutation: ShioriGraphQL.DeclareSeriesVolumeCountMutation(seriesId: seriesId, count: count)
         )
         return data.declareSeriesVolumeCount.fragments.seriesOpinionFields.asOpinion
+    }
+
+    /// Sets the saga aside, or follows it again. Only the saga: its volumes
+    /// keep their own statuses.
+    static func setFollowed(seriesId: String, followed: Bool) async throws -> SeriesOpinion {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.SetSeriesFollowedMutation(seriesId: seriesId, followed: followed)
+        )
+        return data.setSeriesFollowed.fragments.seriesOpinionFields.asOpinion
     }
 
     static func setFavorite(seriesId: String, favorite: Bool) async throws -> SeriesOpinion {

@@ -100,6 +100,7 @@ extension ShioriGraphQL.SeriesState {
         case .notStarted: .notStarted
         case .inProgress: .inProgress
         case .complete: .complete
+        case .unfollowed: .unfollowed
         }
     }
 }
@@ -230,6 +231,12 @@ extension ShioriGraphQL.VolumeEntry {
 
 extension ShioriGraphQL.SeriesOpinionFields {
     var asOpinion: SeriesOpinion {
-        SeriesOpinion(seriesId: seriesId, rating: rating, favorite: favorite, volumeCount: volumeCount)
+        SeriesOpinion(
+            seriesId: seriesId,
+            rating: rating,
+            favorite: favorite,
+            volumeCount: volumeCount,
+            followed: followed
+        )
     }
 }

@@ -4,6 +4,10 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Une saga peut être mise de côté depuis son écran, avec « Ne plus suivre la série » dans le
+  menu « Plus d’actions ». Elle est alors « Non suivie », quoi que disent ses tomes : hors des
+  sagas en cours et des terminées, absente des « Séries en cours » de l’accueil, et dernière
+  dans le filtre de l’onglet Séries. Seule la saga change ; ses tomes gardent leur statut.
 - Supprimer une saga depuis son écran ne supprime que l’édition affichée : supprimer la
   ligne anglaise d’une saga possédée en français et en anglais emportait aussi les tomes
   français. La note et le cœur partent avec le dernier tome, quelle que soit son édition.
