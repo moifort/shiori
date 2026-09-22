@@ -72,7 +72,7 @@ type CatalogueOutput = {
   volumes: { kind: string; number?: number | null; title: string; publishedIn?: number | null }[]
 }
 
-export namespace Scan {
+export namespace ScanCommand {
   /** Read a cover and produce a reviewable record.
    *
    *  `cacheHit` is what the quota is metered on: a cover already scanned costs

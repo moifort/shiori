@@ -4,7 +4,7 @@ import { inSagaOrder, readVolumeNumbersOf, shelfDateOf } from '~/domain/book/bus
 import { BookCommand } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
 import type { Book, BookLanguage, Genre } from '~/domain/book/types'
-import { Scan } from '~/domain/scan'
+import { ScanCommand } from '~/domain/scan/command'
 import type { ScanLanguage } from '~/domain/scan/types'
 import {
   cataloguesOf,
@@ -230,7 +230,7 @@ export namespace SeriesUseCase {
       held[0]
     if (!volume?.series) return null
 
-    const { series, usage } = await Scan.catalogueSeries(
+    const { series, usage } = await ScanCommand.catalogueSeries(
       seriesId,
       volume.series.name,
       volume.authors[0],
