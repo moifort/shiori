@@ -10,6 +10,9 @@ the release tag is pushed.
 
 ## Unreleased
 
+- A saga held in two languages opens on the edition the reader tapped: the French row of the
+  Series tab, or a French volume, showed the English covers when both editions were in the
+  library, since the catalogue is shared between them.
 - An Audible import tells a title being listened to from one never opened by where the
   player last stopped, not by the library's own percentage, which reports 0 on a title
   hours in. A title stopped more than five minutes in is being read; the nightly sync

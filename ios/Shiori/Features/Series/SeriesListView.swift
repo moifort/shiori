@@ -18,7 +18,7 @@ struct SeriesListView: View {
     /// The saga being opened. A button and a destination rather than a
     /// navigation link: the link draws a chevron on every row, and a list of
     /// sagas reads better as cards than as a menu.
-    @State private var openSeriesId: String?
+    @State private var openSeries: SeriesDestination?
 
     var body: some View {
         NavigationStack {
@@ -89,10 +89,10 @@ struct SeriesListView: View {
                         // whole row on every swipe through it.
                         row(entry)
                             .contentShape(Rectangle())
-                            .onTapGesture { openSeriesId = entry.seriesId }
+                            .onTapGesture { openSeries = destination(of: entry) }
                             .accessibilityElement(children: .combine)
                             .accessibilityAddTraits(.isButton)
-                            .accessibilityAction { openSeriesId = entry.seriesId }
+                            .accessibilityAction { openSeries = destination(of: entry) }
                             .accessibilityIdentifier("series-row")
                             .onAppear { viewModel.prefetchIfNeeded(for: entry.id) }
                     }
@@ -110,7 +110,15 @@ struct SeriesListView: View {
         }
         .listStyle(.insetGrouped)
         .refreshable { await viewModel.load() }
-        .navigationDestination(item: $openSeriesId) { SeriesView(seriesId: $0) }
+        .navigationDestination(item: $openSeries) {
+            SeriesView(seriesId: $0.seriesId, language: $0.language)
+        }
+    }
+
+    /// The saga in the edition of this row: a saga held in two languages makes
+    /// two rows, and each must open on its own covers.
+    private func destination(of entry: FollowedSeries) -> SeriesDestination {
+        SeriesDestination(seriesId: entry.seriesId, language: entry.language)
     }
 
     /// The same controls as the Library tab: the two views on the left, the

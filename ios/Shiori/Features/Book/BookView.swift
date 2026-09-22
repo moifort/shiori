@@ -16,7 +16,7 @@ struct BookView: View {
     @State private var showGenreEditor = false
     @State private var showRatingPrompt = false
     @State private var confirmDelete = false
-    @State private var openSeriesId: String?
+    @State private var openSeries: SeriesDestination?
     @Environment(\.dismiss) private var dismiss
 
     init(bookId: String, onChanged: @escaping (Book) -> Void = { _ in }, onDeleted: @escaping (String) -> Void = { _ in }) {
@@ -36,7 +36,11 @@ struct BookView: View {
                         onSetStatus: { status in run { await viewModel.setStatus(status) } },
                         onRate: { showRatingPrompt = true },
                         onToggleHidden: { run { await viewModel.setHidden(!book.hidden) } },
-                        onOpenSeries: { openSeriesId = book.series?.id },
+                        onOpenSeries: {
+                            openSeries = book.series.map {
+                                SeriesDestination(seriesId: $0.id, language: book.language)
+                            }
+                        },
                         onEditGenre: { showGenreEditor = true }
                     )
                 } else if viewModel.isLoading {
@@ -92,8 +96,8 @@ struct BookView: View {
                     run { await viewModel.rate(stars) }
                 }
             }
-            .navigationDestination(item: $openSeriesId) { id in
-                SeriesView(seriesId: id)
+            .navigationDestination(item: $openSeries) { destination in
+                SeriesView(seriesId: destination.seriesId, language: destination.language)
             }
             .alert(
                 "Une erreur est survenue",

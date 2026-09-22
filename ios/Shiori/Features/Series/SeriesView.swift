@@ -13,6 +13,12 @@ import SwiftUI
 /// confirmation says in so many words.
 struct SeriesView: View {
     let seriesId: String
+    /// The edition the reader came from. The catalogue is keyed by name and
+    /// author, so a saga held in two languages shares one `seriesId` and the
+    /// library answers with both editions' books: without this, the French row
+    /// of the Series tab opened on the English covers. Nil where the caller
+    /// knows no edition — the dashboard's series card — and every edition shows.
+    var language: BookLanguage? = nil
 
     @Environment(\.dismiss) private var dismiss
 
@@ -385,7 +391,9 @@ struct SeriesView: View {
             series = try await SeriesAPI.series(id: seriesId)
             opinion = try await SeriesAPI.opinion(seriesId: seriesId)
             let mine = try await LibraryAPI.library()
-            owned = mine.filter { $0.seriesId == seriesId }.flatMap(\.books)
+            owned = mine
+                .filter { $0.seriesId == seriesId && (language == nil || $0.language == language) }
+                .flatMap(\.books)
         } catch {
             errorMessage = reportError(error)
         }
@@ -521,4 +529,14 @@ struct SeriesRing: View {
         SeriesRing(read: 7, total: 7).frame(width: 84, height: 84)
     }
     .padding()
+}
+
+/// What opens a saga screen: the saga and, when the caller stands in one, the
+/// edition. Two rows of the Series tab share a saga and differ by language, so
+/// the language is part of the identity, as it is on `FollowedSeries`.
+struct SeriesDestination: Identifiable, Hashable {
+    let seriesId: String
+    let language: BookLanguage?
+
+    var id: String { "\(seriesId)|\(language?.rawValue ?? "")" }
 }

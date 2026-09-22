@@ -267,7 +267,7 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       `progressOf` already uses. On the phone, `SeriesView.finishedAt` demands every owned
       volume read, related works included, and must apply the same rule. Derived, never
       stored: no migration.
-- [ ] **Series screen, the covers of the edition the reader tapped, not the other one.**
+- [x] **Series screen, the covers of the edition the reader tapped, not the other one.**
       A saga held in two languages — Dungeon Crawler Carl in French and in English — makes
       two rows of the Series tab, each keyed by saga and language, and each strip draws its
       own covers correctly. Tapping the French row opens a screen that shows the English
@@ -278,6 +278,8 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       into the screen and keep only that edition's books; the dates, the progress and the
       genre row read off `owned` and follow. The same applies wherever else the screen is
       opened, from the library section header and the dashboard's series card.
+      Built: the Series tab and the book screen open the saga in their own edition; the
+      dashboard's series card knows no edition and keeps showing every one.
 
 ## Large
 

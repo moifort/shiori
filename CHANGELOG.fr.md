@@ -4,6 +4,9 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Une saga possédée en deux langues s’ouvre sur l’édition touchée : la ligne française de
+  l’onglet Séries, ou un tome français, affichait les couvertures anglaises quand les deux
+  éditions étaient dans la bibliothèque, le catalogue étant partagé entre elles.
 - Un import Audible distingue un titre en cours d’écoute d’un titre jamais ouvert d’après
   l’endroit où le lecteur s’est arrêté, et non d’après le pourcentage de la bibliothèque,
   qui affiche 0 sur un titre entamé depuis des heures. Un titre arrêté après plus de cinq
