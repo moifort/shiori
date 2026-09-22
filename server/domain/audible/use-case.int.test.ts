@@ -217,6 +217,33 @@ describe('importing the ticked titles', () => {
     expect(book?.startedAt).toEqual(new Date('2022-04-01T00:00:00.000Z'))
   })
 
+  // The library is cut into months on the finish, else the start, else the
+  // addition. A title bought in 2019 and never opened belongs to 2019, and one
+  // half-listened since 2019 has no better start than that.
+  test('dates an unread title on the day Audible added it, not on import night', async () => {
+    await connect()
+    const dateAdded = new Date('2019-06-01T00:00:00.000Z')
+    items = [
+      anItem({ dateAdded }),
+      anItem({
+        asin: 'B00X57B4KE',
+        title: 'La Peur du sage',
+        dateAdded,
+        listeningStatus: { percentComplete: 30 },
+      }),
+    ]
+
+    await AudibleUseCase.importBooks(reader, [asin('B002V1OF70'), asin('B00X57B4KE')])
+
+    // Field by field: Bun's toMatchObject holds any two dates equal.
+    const [unread, started] = await BookQuery.all(reader)
+    expect(unread?.status).toBe('to-read')
+    expect(unread?.addedAt).toEqual(dateAdded)
+    expect(started?.status).toBe('reading')
+    expect(started?.addedAt).toEqual(dateAdded)
+    expect(started?.startedAt).toEqual(dateAdded)
+  })
+
   // The client sends identifiers, every stored field comes from the source. An
   // identifier the reader's library does not hold must simply match nothing.
   test('ignores an identifier the library does not hold', async () => {
@@ -332,6 +359,7 @@ describe('the nightly sync', () => {
       linked: 0,
       moved: 0,
       imported: 1,
+      redated: 0,
     })
     expect((await BookQuery.all(reader)).map((book) => String(book.title))).toEqual([
       'Le Nom du vent',
@@ -355,6 +383,7 @@ describe('the nightly sync', () => {
       linked: 1,
       moved: 1,
       imported: 0,
+      redated: 0,
     })
     const [book] = await BookQuery.all(reader)
     expect(book?.audibleAsin).toBe(asin('B002V1OF70'))
@@ -377,9 +406,44 @@ describe('the nightly sync', () => {
       linked: 0,
       moved: 0,
       imported: 0,
+      redated: 0,
     })
     const [book] = await BookQuery.all(reader)
     expect(book?.status).toBe('to-read')
+  })
+
+  // Books imported before the purchase date was kept all sit on import night.
+  // The pass moves them back, once: after that the dates agree and nothing moves.
+  test('dates a book imported before the purchase date was kept back to the purchase', async () => {
+    await connect()
+    await AudibleCommand.recordImport(reader, NOW)
+    const dateAdded = new Date('2019-06-01T00:00:00.000Z')
+    await BookCommand.add(
+      reader,
+      {
+        title: BookTitle('Le Nom du vent'),
+        authors: [AuthorName('Patrick Rothfuss')],
+        format: 'audiobook',
+        status: 'reading',
+        audibleAsin: asin('B002V1OF70'),
+      },
+      NOW,
+    )
+    items = [anItem({ dateAdded, listeningStatus: { percentComplete: 30 } })]
+
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toEqual({
+      linked: 0,
+      moved: 0,
+      imported: 0,
+      redated: 1,
+    })
+    const [book] = await BookQuery.all(reader)
+    expect(book?.addedAt).toEqual(dateAdded)
+    expect(book?.startedAt).toEqual(dateAdded)
+    expect(book?.statusChangedAt).toEqual(dateAdded)
+    expect(book?.updatedAt).toEqual(LATER)
+
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ redated: 0 })
   })
 
   test('moves the cutoff forward, so the next pass finds nothing to redo', async () => {
@@ -393,6 +457,7 @@ describe('the nightly sync', () => {
       linked: 0,
       moved: 0,
       imported: 0,
+      redated: 0,
     })
     expect(await BookQuery.all(reader)).toHaveLength(1)
   })

@@ -81,6 +81,9 @@ export type LibrarySync = {
   moved: number
   /** Titles bought since the last pass, catalogued. */
   imported: number
+  /** Books imported before the purchase date was kept, dated back to it. Only
+   *  ever non-zero on the first pass after that change. */
+  redated: number
 }
 
 /** What one run of the nightly job did, across every reader it reached. */
@@ -149,5 +152,10 @@ export type ImportableBook = {
    *  decade of listening does not land every title on today's date and rewrite
    *  the reading statistics. */
   finishedAt?: Date
+  /** When the title entered the reader's Audible library — the day it was
+   *  added, else the day it was bought. Carried onto the book as its own
+   *  addition date, so a purchase from 2019 sits in 2019 and not on import
+   *  night. Absent for a title Amazon dates neither way. */
+  addedAt?: Date
   alreadyInLibrary: boolean
 }

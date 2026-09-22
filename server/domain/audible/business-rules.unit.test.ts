@@ -8,6 +8,7 @@ import {
   importableFrom,
   listeningChangesFor,
   plainTextOf,
+  purchaseDatesFor,
   readersDueForSync,
   shelfKeyOf,
   shelfKeysOf,
@@ -269,6 +270,26 @@ describe('where the reader stands in a title', () => {
 
     expect(importable?.finishedAt).toBeUndefined()
   })
+
+  // A title bought in 2019 and never opened belongs to 2019, not to the night
+  // it was imported: the library is cut into months on that date.
+  test('keeps the day Audible added the title, else the day it was bought', () => {
+    const dateAdded = new Date('2019-06-01T00:00:00.000Z')
+    const purchaseDate = new Date('2019-05-30T00:00:00.000Z')
+
+    expect(importableFrom(anItem({ dateAdded, purchaseDate }), noneOwned)?.addedAt).toEqual(
+      dateAdded,
+    )
+    expect(importableFrom(anItem({ purchaseDate }), noneOwned)?.addedAt).toEqual(purchaseDate)
+    expect(importableFrom(anItem(), noneOwned)?.addedAt).toBeUndefined()
+  })
+
+  test('carries that day onto the book it writes', () => {
+    const dateAdded = new Date('2019-06-01T00:00:00.000Z')
+    const importable = importableFrom(anItem({ dateAdded }), noneOwned)
+
+    expect(bookFrom(importable as NonNullable<typeof importable>).addedAt).toEqual(dateAdded)
+  })
 })
 
 describe('the saga a title belongs to', () => {
@@ -461,6 +482,57 @@ describe('following the listening', () => {
 
   test('leaves a book whose title has left the library alone', () => {
     expect(listeningChangesFor([linked({ status: 'read' })], [])).toEqual([])
+  })
+})
+
+describe('dating an import back to the day the title was bought', () => {
+  const bought = new Date('2019-06-01T00:00:00.000Z')
+  const imported = new Date('2026-09-22T08:00:00.000Z')
+  const linked = (overrides: Partial<Book> = {}) =>
+    aBook({ audibleAsin: asin('B002V1OF70'), addedAt: imported, ...overrides })
+
+  test('moves a book stamped on the import day back to the purchase', () => {
+    expect(purchaseDatesFor([linked()], [anItem({ dateAdded: bought })])).toEqual([
+      { bookId: bookId('book-1'), addedAt: bought },
+    ])
+  })
+
+  // The import stamped every date it did not know with one instant. Only those
+  // move: a start the reader set themselves a week later is theirs to keep.
+  test('moves the start and the status stamp only when they carry the same stamp', () => {
+    const stamped = linked({ status: 'reading', startedAt: imported, statusChangedAt: imported })
+    expect(purchaseDatesFor([stamped], [anItem({ dateAdded: bought })])).toEqual([
+      { bookId: bookId('book-1'), addedAt: bought, startedAt: bought, statusChangedAt: bought },
+    ])
+
+    const later = new Date('2026-09-29T08:00:00.000Z')
+    const own = linked({ status: 'reading', startedAt: later, statusChangedAt: later })
+    expect(purchaseDatesFor([own], [anItem({ dateAdded: bought })])).toEqual([
+      { bookId: bookId('book-1'), addedAt: bought },
+    ])
+  })
+
+  test('falls back on the purchase date when Audible has no addition date', () => {
+    expect(purchaseDatesFor([linked()], [anItem({ purchaseDate: bought })])).toEqual([
+      { bookId: bookId('book-1'), addedAt: bought },
+    ])
+  })
+
+  test('leaves a book already dated on or before the purchase alone', () => {
+    expect(
+      purchaseDatesFor([linked({ addedAt: bought })], [anItem({ dateAdded: bought })]),
+    ).toEqual([])
+    const earlier = new Date('2018-01-01T00:00:00.000Z')
+    expect(
+      purchaseDatesFor([linked({ addedAt: earlier })], [anItem({ dateAdded: bought })]),
+    ).toEqual([])
+  })
+
+  test('leaves an unlinked book, and one Audible cannot date, alone', () => {
+    expect(
+      purchaseDatesFor([aBook({ addedAt: imported })], [anItem({ dateAdded: bought })]),
+    ).toEqual([])
+    expect(purchaseDatesFor([linked()], [anItem()])).toEqual([])
   })
 })
 

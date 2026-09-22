@@ -70,6 +70,7 @@ export const importableFrom = (
     // Only a finished book has a finishing date to keep. A part-listened title
     // gets today's start stamp like any book the reader moves to "reading".
     finishedAt: status === 'read' ? item.listeningStatus?.finishedAt : undefined,
+    addedAt: purchaseDateOf(item),
     alreadyInLibrary: ownedKeys.has(shelfKeyOf(title, authors[0])),
   }
 }
@@ -107,6 +108,7 @@ export const bookFrom = (importable: ImportableBook): NewBook => ({
   status: importable.status,
   language: importable.language,
   finishedAt: importable.finishedAt,
+  addedAt: importable.addedAt,
   durationMinutes: importable.durationMinutes,
   narrators: importable.narrators,
   audibleAsin: importable.asin,
@@ -315,6 +317,43 @@ export const listeningChangesFor = (
   })
 }
 
+/** When a title entered the reader's Audible library: the day Amazon added it,
+ *  else the day it was bought. Undefined for a title it dates neither way. */
+const purchaseDateOf = (item: AudibleItem): Date | undefined => item.dateAdded ?? item.purchaseDate
+
+/** The dates to move on books imported before the purchase date was kept.
+ *
+ *  Such a book carries import night as its addition date, and the library is
+ *  cut into months on that date — a 2019 purchase filed under this month. The
+ *  move is one-way and one-shot: only a book dated after Amazon's date moves,
+ *  and once moved the dates agree.
+ *
+ *  The import stamped every date it did not know with one instant, so a start
+ *  or a status stamp equal to the addition date is that same guess and moves
+ *  with it. One that differs was set by the reader afterwards and is theirs. */
+export const purchaseDatesFor = (
+  books: readonly Book[],
+  items: readonly AudibleItem[],
+): { bookId: BookId; addedAt: Date; startedAt?: Date; statusChangedAt?: Date }[] => {
+  const byAsin = new Map(items.map((item) => [item.asin, item]))
+
+  return books.flatMap((book) => {
+    if (!book.audibleAsin) return []
+    const item = byAsin.get(book.audibleAsin)
+    const addedAt = item && purchaseDateOf(item)
+    if (!addedAt || addedAt.getTime() >= book.addedAt.getTime()) return []
+    const stamped = (date: Date | undefined) => date?.getTime() === book.addedAt.getTime()
+    return [
+      {
+        bookId: book.id,
+        addedAt,
+        ...(stamped(book.startedAt) ? { startedAt: addedAt } : {}),
+        ...(stamped(book.statusChangedAt) ? { statusChangedAt: addedAt } : {}),
+      },
+    ]
+  })
+}
+
 /** The titles bought since the reader last looked.
  *
  *  The cutoff is what keeps the sync from undoing a choice: everything on offer
@@ -331,7 +370,7 @@ export const boughtSince = (
 ): AudibleItem[] => {
   if (!since) return [...items]
   return items.filter((item) => {
-    const at = item.purchaseDate ?? item.dateAdded
+    const at = purchaseDateOf(item)
     return at !== undefined && at.getTime() > since.getTime()
   })
 }

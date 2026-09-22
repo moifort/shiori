@@ -10,6 +10,10 @@ the release tag is pushed.
 
 ## Unreleased
 
+- An Audible import dates each book on the day the title entered the Audible library,
+  instead of on the day of the import: an unread purchase sits in the month it was bought,
+  and a title in progress starts there for want of a better date. Books imported before
+  this change are moved back to that day by the next sync.
 - After onboarding, the dashboard opens on a short preparation screen while the library is
   set up, waiting on an Audible import long enough for its first books to be there. The
   settings button stays a gear; an import still running afterwards shows as the dashboard's

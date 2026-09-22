@@ -61,6 +61,31 @@ describe('cataloguing a book', () => {
     expect(Object.hasOwn(fake.data('books', book.id) as object, 'publisher')).toBe(false)
   })
 
+  // An import knows when the reader got the book, and the library is cut into
+  // months on that date: a title bought in 2019 must not land on import night.
+  test('lands on the day the caller says it was added, and stamps the status then', async () => {
+    const PAST = new Date('2019-06-01T00:00:00.000Z')
+    const book = await BookCommand.add(reader, { title: BookTitle('Dune'), addedAt: PAST }, NOW)
+
+    expect(book.addedAt).toEqual(PAST)
+    expect(book.statusChangedAt).toEqual(PAST)
+    expect(book.updatedAt).toEqual(NOW)
+  })
+
+  // Nobody knows when the reading began; the day the book arrived is the honest
+  // lower bound, and the only one that keeps it out of the current month.
+  test('starts a book already being read on the day it was added, for want of better', async () => {
+    const PAST = new Date('2019-06-01T00:00:00.000Z')
+    const book = await BookCommand.add(
+      reader,
+      { title: BookTitle('Dune'), status: 'reading', addedAt: PAST },
+      NOW,
+    )
+
+    expect(book.startedAt).toEqual(PAST)
+    expect(book.statusChangedAt).toEqual(PAST)
+  })
+
   test('stamps a start when it is catalogued as already being read', async () => {
     const book = await add('Le Nom du vent', 'reading')
 

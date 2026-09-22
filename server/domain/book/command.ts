@@ -66,6 +66,12 @@ export type NewBook = {
    *  would land on today's date and rewrite every reading statistic. Ignored
    *  unless the status says the book is read. */
   finishedAt?: Date
+  /** When the book entered the reader's hands, for a book catalogued from
+   *  elsewhere. An Audible import knows the day the title was bought, and the
+   *  library is cut into months on that date: without it, a decade of purchases
+   *  would all sit in the month of the import. Defaults to the moment of the
+   *  write. */
+  addedAt?: Date
 }
 
 /** The fields a reader may correct after the fact. Absent means untouched; the
@@ -98,6 +104,16 @@ export namespace BookCommand {
     now = new Date(),
     batch?: WriteBatch,
   ): Promise<Book> => {
+    const addedAt = input.addedAt ?? now
+    // A known finishing date stands in for the start as well. The reader never
+    // told us when they began, and stamping today would put the start after the
+    // end — which every statistic reads as a book finished before it was opened.
+    // Failing that, the day the book arrived is the honest lower bound.
+    const dates = datesAfterStatusChange(
+      { status: 'to-read', startedAt: input.finishedAt ?? addedAt, finishedAt: input.finishedAt },
+      input.status ?? 'to-read',
+      now,
+    )
     const book: Book = {
       id: BookIdOf(randomUUID()),
       userId,
@@ -122,19 +138,33 @@ export namespace BookCommand {
       // the only status that is true of every book the moment it is catalogued.
       status: input.status ?? 'to-read',
       hidden: input.hidden ?? false,
-      addedAt: now,
+      addedAt,
       updatedAt: now,
-      statusChangedAt: now,
-      // A known finishing date stands in for the start as well. The reader never
-      // told us when they began, and stamping today would put the start after the
-      // end — which every statistic reads as a book finished before it was opened.
-      ...datesAfterStatusChange(
-        { status: 'to-read', startedAt: input.finishedAt, finishedAt: input.finishedAt },
-        input.status ?? 'to-read',
-        now,
-      ),
+      // The status was set when the date it implies says so — finished, else
+      // started, else added — not on the night a record was written about it.
+      statusChangedAt: dates.finishedAt ?? dates.startedAt ?? addedAt,
+      ...dates,
     }
     return repository.save(book, batch)
+  }
+
+  /** Move the dates a record was stamped with on arrival back to the day the
+   *  book was in fact acquired.
+   *
+   *  Its own command rather than a field of `BookEdit`: the reader never types
+   *  these dates, and the only thing that moves them is a machine learning,
+   *  after the fact, when a title it imported was bought. `updatedAt` moves to
+   *  now like any write; the reading dates are what is being corrected. */
+  export const backdate = async (
+    userId: UserId,
+    bookId: BookId,
+    dates: { addedAt: Date; startedAt?: Date; statusChangedAt?: Date },
+    now = new Date(),
+    batch?: WriteBatch,
+  ): Promise<Book | 'not-found'> => {
+    const book = await repository.findById(userId, bookId)
+    if (!book) return 'not-found'
+    return repository.save({ ...book, ...dates, updatedAt: now }, batch)
   }
 
   export const edit = async (

@@ -5,6 +5,7 @@ import {
   boughtSince,
   importableFrom,
   listeningChangesFor,
+  purchaseDatesFor,
   shelfKeysOf,
 } from '~/domain/audible/business-rules'
 import { AudibleCommand } from '~/domain/audible/command'
@@ -89,7 +90,8 @@ export namespace AudibleUseCase {
    *
    *  Three things, in an order that matters. Books imported before the ASIN was
    *  kept are linked first, so they take part in the very pass that links them.
-   *  Then statuses follow the listening. Then titles bought since the reader last
+   *  Then statuses follow the listening, and books imported before the purchase
+   *  date was kept are dated back to it. Then titles bought since the reader last
    *  looked are catalogued — and only those: everything older was on offer when
    *  they last chose what to import, and importing it now would overrule them.
    *
@@ -123,11 +125,12 @@ export namespace AudibleUseCase {
       return link ? { ...book, audibleAsin: link.audibleAsin } : book
     })
     const moves = listeningChangesFor(linked, items)
+    const redates = purchaseDatesFor(linked, items)
     const bought = toImportable(boughtSince(items, account.lastImportedAt), linked).filter(
       (importable) => !importable.alreadyInLibrary,
     )
 
-    const changed = links.length + moves.length + bought.length
+    const changed = links.length + moves.length + redates.length + bought.length
     if (changed > 0) await atomically(async (batch) => AnalyticsCommand.markStale(userId, batch))
 
     await bulkSave(links, async (link) =>
@@ -139,6 +142,11 @@ export namespace AudibleUseCase {
     await bulkSave(moves, async (move) =>
       BookCommand.setStatus(userId, move.bookId, move.status, move.at ?? now),
     )
+    // Books imported before the purchase date was kept all sit on import night;
+    // this is what files them under the month they were in fact bought.
+    await bulkSave(redates, async ({ bookId, ...dates }) =>
+      BookCommand.backdate(userId, bookId, dates, now),
+    )
     await bulkSave(bought, async (importable) => BookCommand.add(userId, bookFrom(importable), now))
 
     await AudibleCommand.recordImport(userId, now)
@@ -149,7 +157,12 @@ export namespace AudibleUseCase {
         logger.warn(`dashboard rebuild failed after sync for ${userId}, left stale: ${error}`)
       }
     }
-    return { linked: links.length, moved: moves.length, imported: bought.length }
+    return {
+      linked: links.length,
+      moved: moves.length,
+      imported: bought.length,
+      redated: redates.length,
+    }
   }
 
   /** The nightly job: every reader who left the sync on, staleest first.

@@ -4,6 +4,10 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Un import Audible date chaque livre du jour où le titre est entré dans la bibliothèque
+  Audible, et non du jour de l’import : un achat jamais ouvert se range dans le mois de son
+  achat, et un titre en cours y commence, faute de meilleure date. Les livres importés avant
+  ce changement sont ramenés à ce jour par la prochaine synchronisation.
 - Après l’onboarding, l’accueil s’ouvre sur un court écran de préparation pendant que la
   bibliothèque se met en place, et attend un import Audible assez longtemps pour que ses
   premiers livres soient là. Le bouton des réglages reste un engrenage ; un import encore en
