@@ -23,7 +23,7 @@ the release tag is pushed.
   and the book joins the volumes already filed under that name. Emptying the name takes the
   book out of its saga.
 - A book's added, started and finished dates can be corrected from its edit screen.
-- A book in no series offers "Add to a series" on its page, which files it into one without
+- A book in no series offers "Add to a series" in its page's menu, which files it into one without
   opening the whole edit screen.
 - The dashboard's genres card counts every book read since the first, not only this year's:
   it is now "Genres read", and matches the "Read" box beside it.

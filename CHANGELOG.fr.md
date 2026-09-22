@@ -18,7 +18,7 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   rangés sous ce nom. Vider le nom sort le livre de sa série.
 - Les dates d’ajout, de début et de fin de lecture d’un livre se corrigent depuis son écran
   de modification.
-- Un livre sans série propose « Ajouter à une série » sur sa fiche, pour l’y ranger sans
+- Un livre sans série propose « Ajouter à une série » dans le menu de sa fiche, pour l’y ranger sans
   passer par tout l’écran de modification.
 - La carte des genres de l’accueil compte tous les livres lus depuis le premier, et plus
   seulement ceux de l’année : elle devient « Genres lus » et concorde avec la case « Lus ».

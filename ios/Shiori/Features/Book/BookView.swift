@@ -44,7 +44,6 @@ struct BookView: View {
                                 SeriesDestination(seriesId: $0.id, language: book.language)
                             }
                         },
-                        onJoinSeries: { showSeriesJoin = true },
                         onEditGenre: { showGenreEditor = true },
                         onEditRecommendation: { showRecommendation = true }
                     )
@@ -176,6 +175,16 @@ struct BookView: View {
                 showEditor = true
             }
             .accessibilityIdentifier("book-edit")
+
+            // A volume the scan did not recognise as one is filed from here,
+            // without going through the whole edit form. Only for a book in no
+            // saga: a filed one changes series from the edit form.
+            if book.series == nil {
+                Button("Ajouter à une série", systemImage: "square.stack") {
+                    showSeriesJoin = true
+                }
+                .accessibilityIdentifier("book-join-series")
+            }
 
             // As in Vinarium: who pressed the book on the reader, picked from
             // their contacts. Once recorded, it is also corrected from its own
