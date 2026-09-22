@@ -20,7 +20,7 @@ struct LibraryView: View {
                 mode: $viewModel.mode,
                 statusFilter: $viewModel.statusFilter,
                 sections: viewModel.sections,
-                showsStatus: !viewModel.sectionsByStatus,
+                showsStatus: viewModel.statusFilter == nil,
                 isLoading: viewModel.isLoading,
                 isRefreshing: viewModel.isRefreshing,
                 refreshFailed: viewModel.refreshFailed,

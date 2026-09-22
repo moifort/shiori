@@ -261,7 +261,7 @@ describe('the sagas a reader follows, a page at a time', () => {
   })
 })
 
-describe('the Series tab, sectioned by genre', () => {
+describe('the Series tab, newest first', () => {
   const addSaga = async (name: string, genre: string, volume = 1) => {
     const result = await execute(
       `mutation { addBook(input: { title: "${name} ${volume}", authors: ["Auteur"], genre: ${genre}, ` +
@@ -278,85 +278,47 @@ describe('the Series tab, sectioned by genre', () => {
     expect(result.errors).toBeUndefined()
   }
 
-  // Paginated, the phone cannot group rows itself without a section growing
-  // again each time a page lands: the pages come grouped.
-  test('serves the sagas grouped by genre', async () => {
-    await addSaga('Hypérion', 'SCIENCE_FICTION')
-    await addSaga('Dune', 'SCIENCE_FICTION')
-    await addSaga('Wheel', 'FANTASY')
-
-    const result = await execute(
-      '{ mySeriesPage(limit: 10) { items { name genre progress { readCount } } } }',
-    )
-    expect(result.errors).toBeUndefined()
-    expect(result.data?.mySeriesPage).toEqual({
-      items: [
-        { name: 'Wheel', genre: 'FANTASY', progress: null },
-        { name: 'Dune', genre: 'SCIENCE_FICTION', progress: null },
-        { name: 'Hypérion', genre: 'SCIENCE_FICTION', progress: null },
-      ],
-    })
-  })
-
-  // What the reader is on leads its section, then what they finished, then
-  // what they have not opened; within a state, the latest status change first.
-  test('orders the sagas of one genre by state, then by the latest status change', async () => {
-    const untouched = await addSaga('Anathem', 'SCIENCE_FICTION')
-    const finished = await addSaga('Berserk', 'SCIENCE_FICTION')
-    const earlier = await addSaga('Culture', 'SCIENCE_FICTION')
-    const later = await addSaga('Dune', 'SCIENCE_FICTION')
-    await addSaga('Dune', 'SCIENCE_FICTION', 2)
-    await setStatus(finished, 'READ')
-    await setStatus(earlier, 'READING')
-    // Two stamps in one millisecond would tie and fall back to the name.
+  // Paginated, the phone cannot order rows itself without a page landing late
+  // reshuffling what is drawn: the pages come ordered, the phone cuts months.
+  test('orders the sagas on their latest shelved volume, whatever their genre or state', async () => {
+    const finished = await addSaga('Berserk', 'FANTASY')
+    const started = await addSaga('Culture', 'SCIENCE_FICTION')
+    // Two stamps in one millisecond would tie and keep the incoming order.
     await Bun.sleep(5)
-    await setStatus(later, 'READ')
-    expect(untouched).toBeString()
+    await addSaga('Anathem', 'SCIENCE_FICTION')
+    await Bun.sleep(5)
+    await setStatus(started, 'READING')
+    await Bun.sleep(5)
+    await setStatus(finished, 'READ')
 
-    const result = await execute(
-      '{ mySeriesPage(limit: 10) { items { name state volumes { title status } } } }',
-    )
+    const result = await execute('{ mySeriesPage(limit: 10) { items { name state shelvedAt } } }')
     expect(result.errors).toBeUndefined()
-    expect(result.data?.mySeriesPage).toEqual({
-      items: [
-        {
-          name: 'Dune',
-          state: 'IN_PROGRESS',
-          volumes: [
-            { title: 'Dune 1', status: 'READ' },
-            { title: 'Dune 2', status: 'TO_READ' },
-          ],
-        },
-        {
-          name: 'Culture',
-          state: 'IN_PROGRESS',
-          volumes: [{ title: 'Culture 1', status: 'READING' }],
-        },
-        { name: 'Berserk', state: null, volumes: [{ title: 'Berserk 1', status: 'READ' }] },
-        {
-          name: 'Anathem',
-          state: 'NOT_STARTED',
-          volumes: [{ title: 'Anathem 1', status: 'TO_READ' }],
-        },
-      ],
-    })
+    const { items } = (
+      result.data as {
+        mySeriesPage: { items: { name: string; state: string | null; shelvedAt: string }[] }
+      }
+    ).mySeriesPage
+    expect(items.map(({ name, state }) => ({ name, state }))).toEqual([
+      { name: 'Berserk', state: null },
+      { name: 'Culture', state: 'IN_PROGRESS' },
+      { name: 'Anathem', state: 'NOT_STARTED' },
+    ])
+    const dates = items.map((item) => Date.parse(item.shelvedAt))
+    expect(dates).toEqual([...dates].sort((left, right) => right - left))
   })
 
-  test('sections by state alone when arranged by status', async () => {
-    const reading = await addSaga('Wheel', 'FANTASY')
-    await addSaga('Dune', 'SCIENCE_FICTION')
-    await setStatus(reading, 'READING')
+  // A saga is dated by its most recent volume, not by its first.
+  test('dates a saga by the volume shelved last', async () => {
+    const first = await addSaga('Dune', 'SCIENCE_FICTION')
+    await Bun.sleep(5)
+    await addSaga('Wheel', 'FANTASY')
+    await Bun.sleep(5)
+    await addSaga('Dune', 'SCIENCE_FICTION', 2)
+    expect(first).toBeString()
 
-    const result = await execute(
-      '{ mySeriesPage(limit: 10, arrangement: BY_STATUS) { items { name state } } }',
-    )
+    const result = await execute('{ mySeriesPage(limit: 10) { items { name } } }')
     expect(result.errors).toBeUndefined()
-    expect(result.data?.mySeriesPage).toEqual({
-      items: [
-        { name: 'Wheel', state: 'IN_PROGRESS' },
-        { name: 'Dune', state: 'NOT_STARTED' },
-      ],
-    })
+    expect(result.data?.mySeriesPage).toEqual({ items: [{ name: 'Dune' }, { name: 'Wheel' }] })
   })
 
   test('keeps only the hearted sagas, or those in one state', async () => {

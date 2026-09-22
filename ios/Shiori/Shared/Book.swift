@@ -243,6 +243,9 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
     var addedAt: Date?
     var startedAt: Date?
     var finishedAt: Date?
+    /// The date the Library tab files the book under, as the server decides it:
+    /// finished, else started, else added. Only the list rows carry it.
+    var shelvedAt: Date?
 
     /// Who reads the recording, as one line. Nil rather than a placeholder: a
     /// book with no narrator draws no line at all, where an author is always
@@ -420,10 +423,12 @@ struct FollowedSeries: Identifiable, Codable, Sendable {
     /// Nil when every owned volume is read and no catalogue says whether more
     /// exist: whether the saga is over is precisely what is unknown then.
     let state: SeriesState?
-    /// The genre most of the owned volumes carry: what the Series tab is
-    /// sectioned on. Nil when none of them has one.
+    /// The genre most of the owned volumes carry. Nil when none of them has one.
     let genre: BookGenre?
     let ownedCount: Int
+    /// The latest date any owned volume is shelved on — finished, else started,
+    /// else added: what the Series tab is ordered and cut into months by.
+    var shelvedAt: Date?
     /// The owned volumes in the order the saga runs, each with its cover and
     /// status. Only the Series tab asks for them — every one costs the server
     /// a signed cover URL — so they are empty anywhere else.

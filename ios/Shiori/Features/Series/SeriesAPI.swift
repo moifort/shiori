@@ -37,9 +37,9 @@ enum SeriesAPI {
         return data.mySeries.map { FollowedSeries(row: $0.fragments.followedSeriesRow) }
     }
 
-    /// One page of the sagas the reader follows, arranged and narrowed as the
-    /// Library tab is: sectioned by state or by genre, the hearted sagas only,
-    /// or the sagas in one state.
+    /// One page of the sagas the reader follows, ordered and narrowed as the
+    /// Library tab is: newest first, the hearted sagas only, or the sagas in
+    /// one state.
     static func mySeriesPage(
         limit: Int,
         offset: Int,
@@ -51,7 +51,6 @@ enum SeriesAPI {
             query: ShioriGraphQL.MySeriesPageQuery(
                 limit: .some(Int32(limit)),
                 offset: .some(Int32(offset)),
-                arrangement: .some(.case(mode == .genre ? .byGenre : .byStatus)),
                 favorite: mode == .favorites ? .some(true) : .none,
                 state: state.map { .some(.case(graphQLState($0))) } ?? .none
             )
@@ -139,6 +138,7 @@ private extension FollowedSeries {
             state: followed.state?.asDomain,
             genre: followed.genre?.asDomain,
             ownedCount: followed.ownedCount,
+            shelvedAt: GraphQLHelpers.parseISO8601(followed.shelvedAt),
             opinion: followed.opinion?.fragments.seriesOpinionFields.asOpinion
         )
     }

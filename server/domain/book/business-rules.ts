@@ -1,12 +1,10 @@
-import {
-  type Book,
-  type BookId,
-  type BookView,
-  GENRES,
-  type LibraryArrangement,
-  type LibrarySection,
-  type ReadingStatus,
-  type Subgenre,
+import type {
+  Book,
+  BookId,
+  BookView,
+  LibrarySection,
+  ReadingStatus,
+  Subgenre,
 } from '~/domain/book/types'
 import { compareWithinSeries } from '~/domain/series/business-rules'
 import type { UserId } from '~/domain/shared/types'
@@ -214,46 +212,24 @@ export const subgenresOf = (books: readonly Pick<Book, 'subgenres'>[]): Subgenre
     .map((entry) => entry.subgenre)
 }
 
-/** The Library tab's order: a flat list the app cuts into sections wherever
- *  the key changes, so the server alone decides what sits where.
- *
- *  By status, the tiers the reader cares about in order — what is being read,
- *  what waits on the pile, what is finished. By genre, one run per genre in the
- *  closed list's own order, books of no genre last, and the same tiers inside
- *  each genre. Sagas are not gathered: a volume sits where its own status puts
- *  it, and the Series tab is where a saga is read whole.
- *
- *  Within a tier the book most recently moved there leads, on the date that
- *  names the move: started for a book in progress, added for one on the pile,
- *  finished for one that is done, put down for one dropped. */
-export const shelvedOf = <T extends Book>(
-  books: readonly T[],
-  arrangement: LibraryArrangement,
-): T[] =>
+/** The Library tab's order: newest first on the date that last moved each
+ *  book, a flat list the app cuts into month sections wherever the month of
+ *  that date changes, so the server alone decides what sits where. Sagas are
+ *  not gathered: a volume sits on its own date, and the Series tab is where a
+ *  saga is read whole. */
+export const shelvedOf = <T extends Book>(books: readonly T[]): T[] =>
   [...books].sort(
     (left, right) =>
-      (arrangement === 'by-genre' ? genreRankOf(left) - genreRankOf(right) : 0) ||
-      statusTiers.indexOf(left.status) - statusTiers.indexOf(right.status) ||
       shelfDateOf(right).getTime() - shelfDateOf(left).getTime() ||
       left.title.localeCompare(right.title),
   )
 
-const genreRankOf = (book: Pick<Book, 'genre'>): number =>
-  book.genre ? GENRES.indexOf(book.genre) : GENRES.length
-
-/** The date a book ranks on within its status. A record whose reading dates
- *  were never stamped — an import, a book from before the dates existed —
- *  falls back to the day it was added. */
-export const shelfDateOf = (
-  book: Pick<Book, 'status' | 'addedAt' | 'startedAt' | 'finishedAt' | 'statusChangedAt'>,
-): Date => {
-  if (book.status === 'reading') return book.startedAt ?? book.addedAt
-  if (book.status === 'read') return book.finishedAt ?? book.addedAt
-  // A dropped book carries no date of its own: the day it was put down is the
-  // day its status last moved.
-  if (book.status === 'dropped') return book.statusChangedAt ?? book.startedAt ?? book.addedAt
-  return book.addedAt
-}
+/** The date a book is shelved on, whatever its status: the day it was
+ *  finished, else the day it was started, else the day it was added. A record
+ *  whose reading dates were never stamped — an import, a book from before the
+ *  dates existed — falls back to the day it was added. */
+export const shelfDateOf = (book: Pick<Book, 'addedAt' | 'startedAt' | 'finishedAt'>): Date =>
+  book.finishedAt ?? book.startedAt ?? book.addedAt
 
 /** One page of the shelved list. The cursor is the last book of the previous
  *  page.

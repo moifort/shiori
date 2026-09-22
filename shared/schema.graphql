@@ -269,11 +269,16 @@ type Book {
 
   """Null for a standalone book."""
   series: SeriesMembership
+
+  """
+  The date the Library tab shelves the book on, newest first, and cuts its month sections by: when it was finished, else started, else added.
+  """
+  shelvedAt: DateTime!
   startedAt: DateTime
   status: ReadingStatus!
 
   """
-  When the book last moved between the pile, the reading and the read. What the library is ordered on. On a record from before the stamp existed, the date its status implies: finished, started, or added.
+  When the book last moved between the pile, the reading and the read. On a record from before the stamp existed, the date its status implies: finished, started, or added.
   """
   statusChangedAt: DateTime!
 
@@ -540,7 +545,7 @@ type FollowedSeries {
   catalogue: Series
 
   """
-  The genre most of the owned volumes carry, which is what the Series tab is sectioned on. Null when none of them has one.
+  The genre most of the owned volumes carry. Null when none of them has one.
   """
   genre: Genre
   id: SeriesId!
@@ -565,6 +570,11 @@ type FollowedSeries {
   How many of the published spine volumes the reader has read. Null without a catalogue, and on a catalogue with no numbered published volume: there is nothing to count against then.
   """
   progress: SagaProgress
+
+  """
+  The latest date any owned volume is shelved on — finished, else started, else added — which the Series tab is ordered and cut into month sections by.
+  """
+  shelvedAt: DateTime!
 
   """
   Derived, never stored. NOT_STARTED while no owned volume has been opened; COMPLETE once every published volume has been read.
@@ -781,17 +791,6 @@ type KindleBook {
   """
   key: String!
   title: BookTitle!
-}
-
-"""How the Library tab arranges the reader books."""
-enum LibraryArrangement {
-  """
-  One run per genre in the closed list order, books of no genre last, tiered by reading status within each genre.
-  """
-  BY_GENRE
-
-  """Reading, then to read, then read."""
-  BY_STATUS
 }
 
 """
@@ -1340,14 +1339,11 @@ type Query {
   """
   One page of the Library tab, for a list that draws as it scrolls.
   
-  A flat list, not sections: tiered by reading status — reading, to read, read — or by genre then status, and within a status the book most recently started, added or finished first. Read `hasMore`, then pass the id of the last book as `after` for the next page. A cursor naming a book no longer there restarts from the top.
+  A flat list, not sections: newest first on `shelvedAt` — the day each book was finished, else started, else added — whatever its status. The app cuts it into month sections on that date. Read `hasMore`, then pass the id of the last book as `after` for the next page. A cursor naming a book no longer there restarts from the top.
   """
   libraryPage(
     """Cursor: the last book of the previous page"""
     after: BookId
-
-    """By status, or by genre then status."""
-    arrangement: LibraryArrangement = BY_STATUS
 
     """Keep only the books the reader marked as favourites."""
     favorite: Boolean
@@ -1376,11 +1372,9 @@ type Query {
   mySeries: [FollowedSeries!]!
 
   """
-  One page of `mySeries`, for a list that draws as it scrolls. BY_GENRE (the default) sections it by `genre` in the order of the enum, sagas of no genre last, then by `state`; BY_STATUS by `state` alone — in progress, complete, unknown, not started. Within a section the saga whose volume last changed status comes first. `favorite` keeps the hearted sagas, `state` one state (COMPLETE also keeps the sagas of unknown state). Offset-paginated: pass the number of rows already shown.
+  One page of `mySeries`, for a list that draws as it scrolls: newest first on `shelvedAt`, which the app cuts into month sections as the Library tab does. `favorite` keeps the hearted sagas, `state` one state (COMPLETE also keeps the sagas of unknown state). Offset-paginated: pass the number of rows already shown.
   """
   mySeriesPage(
-    arrangement: LibraryArrangement
-
     """Only the hearted sagas"""
     favorite: Boolean
 

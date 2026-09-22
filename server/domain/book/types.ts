@@ -196,11 +196,6 @@ export type Book = {
  *  `CoverUrl` rightly refuses as input but the dev app still has to draw. */
 export type BookView = Book & { coverUrl?: SignedUrl | CoverUrl }
 
-/** How the Library tab arranges the reader's books: tiered by reading status,
- *  or sectioned by genre and tiered by status within each genre. */
-export const LIBRARY_ARRANGEMENTS = ['by-status', 'by-genre'] as const
-export type LibraryArrangement = (typeof LIBRARY_ARRANGEMENTS)[number]
-
 /** One section of the library: either a saga the reader owns several volumes of,
  *  or the standalone shelf. Derived per request, never stored.
  *

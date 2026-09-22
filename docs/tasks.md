@@ -211,12 +211,14 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       showing its owned volumes only: building catalogues from the tab would pay one AI call
       per row just for scrolling past it.
 
-- [ ] **Library and Series tabs, drop the "by genre" sections.** Remove the arrangement from
+- [x] **Library and Series tabs, drop the "by genre" sections.** Remove the arrangement from
       both toolbars, which leaves everything, the favourites and the status filters. The
       `by-genre` value of `LibraryArrangement` and the arrangement argument go with it if
       nothing else reads them. The dashboard's genres widget opens the library on that view
       today: decide where a tap on it leads instead, or make it inert.
-- [ ] **Library and Series tabs, sorted by date under "Month Year" headings, as in
+      Built: `LibraryArrangement` and the argument are gone; the genres card opens the
+      library on its default view.
+- [x] **Library and Series tabs, sorted by date under "Month Year" headings, as in
       Vinarium.** A book is placed by its finish date, else its start date, else the date it
       was added, newest first, and the list is cut into sections titled with the month and
       year of that date in the app's language ("septembre 2026"), with Vinarium's
@@ -225,6 +227,9 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       volumes into one section: decide whether a saga still keeps its volumes together in
       the Library tab, and under which month, or whether each volume falls under its own.
       Changes the `library` and series queries' ordering and their cursors.
+      Built: each volume falls under its own month — the Library tab already split sagas —
+      and the status tiers are gone with the genre ones, each row tagging its status. The
+      server serves `shelvedAt` on `Book` and on `FollowedSeries`; the app cuts the months.
 
 ## Large
 

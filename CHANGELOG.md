@@ -10,16 +10,19 @@ the release tag is pushed.
 
 ## Unreleased
 
+- The library and the Series tab are sorted by date and sectioned by month, as in Vinarium:
+  newest first on the day a book was finished, else started, else added, and a saga on its
+  latest volume. This replaces the sections by reading status and by genre, and the genre
+  view is gone from both toolbars; the dashboard's genres card opens the library.
 - The dashboard is drawn from the first launch: an empty library shows every card with a
   sketch of what it will hold, under a prompt to scan the first book. Every list says it is
   empty, or could not load, the same way.
 - Onboarding offers to import an Audible library after the first name, and can be skipped.
 - A saga's catalogue no longer lists the same volume twice.
 - A book can be marked "Abandonné" from its menu when the reader stopped because they did not
-  like it. It sits in a section of its own at the bottom of the library, has its own filter,
-  counts in no reading statistic, and the dashboard counts the dropped books in a small tile
-  beside a new favourites tile.
-- The Series tab has the library's views and filter: everything, by genre or the favourites,
+  like it. It has its own filter, counts in no reading statistic, and the dashboard counts the
+  dropped books in a small tile beside a new favourites tile.
+- The Series tab has the library's views and filter: everything or the favourites,
   narrowed to one state. Each row's cover strip lists every volume the series screen does,
   announced volumes and related works included, the ones the reader does not own dimmed
   between the ones they do.

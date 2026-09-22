@@ -4,7 +4,6 @@ import type {
   Book,
   BookId,
   BookView,
-  LibraryArrangement,
   LibrarySection,
   ReadingStatus,
   Subgenre,
@@ -50,17 +49,13 @@ export namespace BookQuery {
   export const libraryPage = async (
     userId: UserId,
     page: { limit: number; after?: BookId },
-    view: { arrangement: LibraryArrangement; favorite?: boolean; status?: ReadingStatus },
+    view: { favorite?: boolean; status?: ReadingStatus },
   ): Promise<{ books: BookView[]; hasMore: boolean }> => {
     const kept = (await repository.findAllByUser(userId)).filter(
       (book) =>
         (!view.favorite || book.favorite === true) && (!view.status || book.status === view.status),
     )
-    const { books, hasMore } = shelfPageOf(
-      shelvedOf(kept, view.arrangement),
-      page.limit,
-      page.after,
-    )
+    const { books, hasMore } = shelfPageOf(shelvedOf(kept), page.limit, page.after)
     return { books: await withCovers(books), hasMore }
   }
 

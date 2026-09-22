@@ -1,4 +1,4 @@
-import { statusChangedAtOf } from '~/domain/book/business-rules'
+import { shelfDateOf, statusChangedAtOf } from '~/domain/book/business-rules'
 import {
   BookFormatEnum,
   BookLanguageEnum,
@@ -154,10 +154,17 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
     statusChangedAt: t.field({
       type: 'DateTime',
       description:
-        'When the book last moved between the pile, the reading and the read. What the ' +
-        'library is ordered on. On a record from before the stamp existed, the date its ' +
-        'status implies: finished, started, or added.',
+        'When the book last moved between the pile, the reading and the read. On a ' +
+        'record from before the stamp existed, the date its status implies: finished, ' +
+        'started, or added.',
       resolve: (book) => statusChangedAtOf(book),
+    }),
+    shelvedAt: t.field({
+      type: 'DateTime',
+      description:
+        'The date the Library tab shelves the book on, newest first, and cuts its month ' +
+        'sections by: when it was finished, else started, else added.',
+      resolve: (book) => shelfDateOf(book),
     }),
     startedAt: t.field({
       type: 'DateTime',

@@ -319,22 +319,14 @@ describe('a dropped book', () => {
     expect(statusAfterRating('to-read')).toBe('read')
   })
 
-  test('sits last, after the books finished, the latest put down first', () => {
-    const shelved = shelvedOf(
-      [
-        book({ title: 'Dropped long ago', status: 'dropped', statusChangedAt: EARLIER }),
-        book({ title: 'Finished', status: 'read', finishedAt: EARLIER }),
-        book({ title: 'Just dropped', status: 'dropped', statusChangedAt: LATER }),
-        book({ title: 'Pile' }),
-      ],
-      'by-status',
-    )
-    expect(shelved.map((entry) => String(entry.title))).toEqual([
-      'Pile',
-      'Finished',
-      'Just dropped',
-      'Dropped long ago',
+  // It carries a start and no finish, so it sits in the timeline on its start.
+  test('is shelved on the day it was started, among the others', () => {
+    const shelved = shelvedOf([
+      book({ title: 'Dropped', status: 'dropped', addedAt: EARLIER, startedAt: NOW }),
+      book({ title: 'Finished', status: 'read', finishedAt: LATER }),
+      book({ title: 'Pile', addedAt: EARLIER }),
     ])
+    expect(shelved.map((entry) => String(entry.title))).toEqual(['Finished', 'Dropped', 'Pile'])
   })
 })
 
@@ -400,71 +392,51 @@ describe('subgenresOf', () => {
 describe('shelvedOf', () => {
   const titles = (books: readonly BookView[]) => books.map((entry) => String(entry.title))
 
-  test('tiers by status, each tier on the date that names its move', () => {
-    const shelved = shelvedOf(
-      [
-        book({ title: 'Old pile', addedAt: EARLIER }),
-        book({ title: 'Finished long ago', status: 'read', finishedAt: EARLIER }),
-        book({ title: 'New pile', addedAt: LATER }),
-        book({ title: 'Just finished', status: 'read', finishedAt: LATER }),
-        book({ title: 'Started long ago', status: 'reading', startedAt: EARLIER }),
-        book({ title: 'Just started', status: 'reading', startedAt: LATER }),
-      ],
-      'by-status',
-    )
+  // Status no longer tiers the list: one timeline, whatever each book's state.
+  test('orders every book newest first on its finish, else start, else added date', () => {
+    const shelved = shelvedOf([
+      book({ title: 'Old pile', addedAt: EARLIER }),
+      book({ title: 'Finished long ago', status: 'read', addedAt: EARLIER, finishedAt: EARLIER }),
+      book({ title: 'New pile', addedAt: LATER }),
+      book({ title: 'Just finished', status: 'read', addedAt: EARLIER, finishedAt: LATER }),
+      book({ title: 'Started', status: 'reading', addedAt: EARLIER, startedAt: NOW }),
+    ])
     expect(titles(shelved)).toEqual([
-      'Just started',
-      'Started long ago',
-      'New pile',
-      'Old pile',
       'Just finished',
+      'New pile',
+      'Started',
       'Finished long ago',
+      'Old pile',
     ])
   })
 
-  // A saga is not gathered any more: each volume sits where its own status puts it.
-  test('splits a saga across the tiers of its volumes', () => {
-    const shelved = shelvedOf(
-      [
-        book({ title: 'V1', series: { name: 'Saga', volume: 1 }, status: 'read' }),
-        book({ title: 'Alone', status: 'to-read' }),
-        book({ title: 'V2', series: { name: 'Saga', volume: 2 }, status: 'reading' }),
-      ],
-      'by-status',
-    )
+  // The finish date wins over a later start: a reread stays where it ended.
+  test('shelves a book on its finish date even when its start is later', () => {
+    const shelved = shelvedOf([
+      book({ title: 'Reread', status: 'read', startedAt: LATER, finishedAt: EARLIER }),
+      book({ title: 'Middle', addedAt: NOW }),
+    ])
+    expect(titles(shelved)).toEqual(['Middle', 'Reread'])
+  })
+
+  // A saga is not gathered: each volume sits on its own date.
+  test('splits a saga across the dates of its volumes', () => {
+    const shelved = shelvedOf([
+      book({ title: 'V1', series: { name: 'Saga', volume: 1 }, finishedAt: EARLIER }),
+      book({ title: 'Alone', addedAt: NOW }),
+      book({ title: 'V2', series: { name: 'Saga', volume: 2 }, startedAt: LATER }),
+    ])
     expect(titles(shelved)).toEqual(['V2', 'Alone', 'V1'])
   })
 
-  test('sections by genre in the closed list order, no genre last, tiered inside', () => {
-    const shelved = shelvedOf(
-      [
-        book({ title: 'Untagged' }),
-        book({ title: 'Essay read', genre: 'essay', status: 'read' }),
-        book({ title: 'Fantasy pile', genre: 'fantasy' }),
-        book({ title: 'Essay reading', genre: 'essay', status: 'reading' }),
-        book({ title: 'Fantasy reading', genre: 'fantasy', status: 'reading' }),
-      ],
-      'by-genre',
-    )
-    expect(titles(shelved)).toEqual([
-      'Fantasy reading',
-      'Fantasy pile',
-      'Essay reading',
-      'Essay read',
-      'Untagged',
-    ])
-  })
-
   // A record whose reading dates were never stamped still has a place.
-  test('ranks an unstamped book on the day it was added', () => {
-    const shelved = shelvedOf(
-      [
-        book({ title: 'Stamped', status: 'read', addedAt: LATER, finishedAt: NOW }),
-        book({ title: 'Imported', status: 'read', addedAt: LATER }),
-      ],
-      'by-status',
-    )
-    expect(titles(shelved)).toEqual(['Imported', 'Stamped'])
+  test('ranks an unstamped book on the day it was added, ties by title', () => {
+    const shelved = shelvedOf([
+      book({ title: 'Stamped', status: 'read', addedAt: EARLIER, finishedAt: LATER }),
+      book({ title: 'Imported B', status: 'read', addedAt: LATER }),
+      book({ title: 'Imported A', status: 'read', addedAt: LATER }),
+    ])
+    expect(titles(shelved)).toEqual(['Imported A', 'Imported B', 'Stamped'])
   })
 })
 

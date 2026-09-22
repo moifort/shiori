@@ -82,9 +82,9 @@ struct SeriesListView: View {
                     onRetry: { await viewModel.refresh() }
                 )
             }
-            ForEach(sections, id: \.id) { section in
+            ForEach(sections) { section in
                 Section {
-                    ForEach(section.entries) { entry in
+                    ForEach(section.rows) { entry in
                         // A tap rather than a button: a button would claim the
                         // drag that scrolls the cover strip and highlight the
                         // whole row on every swipe through it.
@@ -114,7 +114,7 @@ struct SeriesListView: View {
         .navigationDestination(item: $openSeriesId) { SeriesView(seriesId: $0) }
     }
 
-    /// The same controls as the Library tab: the three views on the left, the
+    /// The same controls as the Library tab: the two views on the left, the
     /// state filter beside them.
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
@@ -148,36 +148,10 @@ struct SeriesListView: View {
         }
     }
 
-    /// What a section is keyed on: the genre in the genre view, where the
-    /// reader stands everywhere else.
-    private enum SectionKey: Equatable {
-        case genre(BookGenre?)
-        case state(SeriesState?)
-    }
-
-    /// Consecutive rows of one key, as the server ordered them. Grouped on runs
-    /// rather than on the key itself, so a page that lands never moves a row
-    /// the reader has already scrolled past.
-    private var sections: [(id: Int, title: String, entries: [FollowedSeries])] {
-        var sections: [(id: Int, key: SectionKey, entries: [FollowedSeries])] = []
-        for entry in viewModel.followed {
-            let key: SectionKey = viewModel.mode == .genre ? .genre(entry.genre) : .state(entry.state)
-            if let last = sections.last, last.key == key {
-                sections[sections.count - 1].entries.append(entry)
-            } else {
-                sections.append((id: sections.count, key: key, entries: [entry]))
-            }
-        }
-        return sections.map { (id: $0.id, title: title(of: $0.key), entries: $0.entries) }
-    }
-
-    private func title(of key: SectionKey) -> String {
-        switch key {
-        case let .genre(genre): genre?.label ?? String(localized: "Sans genre")
-        // Every owned volume read and no catalogue to say more: finished as
-        // far as the shelf goes.
-        case let .state(state): state?.shelfTitle ?? String(localized: "Lues")
-        }
+    /// The sagas cut into months, as the Library tab cuts its books, on the
+    /// date the latest volume of each was shelved.
+    private var sections: [MonthSection<FollowedSeries>] {
+        MonthSection.cut(viewModel.followed, on: \.shelvedAt)
     }
 
     /// The words on the left and every mark on one line in the top corner —

@@ -31,14 +31,12 @@ query MySeries {
 query MySeriesPage(
   $limit: Int
   $offset: Int
-  $arrangement: LibraryArrangement
   $favorite: Boolean
   $state: SeriesState
 ) {
   mySeriesPage(
     limit: $limit
     offset: $offset
-    arrangement: $arrangement
     favorite: $favorite
     state: $state
   ) {
@@ -86,6 +84,7 @@ fragment FollowedSeriesRow on FollowedSeries {
   genre
   state
   ownedCount
+  shelvedAt
   opinion {
     ...SeriesOpinionFields
   }

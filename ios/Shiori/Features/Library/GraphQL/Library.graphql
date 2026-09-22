@@ -7,18 +7,16 @@ query Library($status: ReadingStatus) {
 }
 
 # One page of the Library tab, for the list that draws as it scrolls: a flat
-# list the server has already ordered, which the app cuts into sections wherever
-# the status (or, arranged by genre, the genre) changes. The last book of a page
-# is the cursor for the next.
+# list the server has already ordered, newest first, which the app cuts into
+# month sections wherever the month of `shelvedAt` changes. The last book of a
+# page is the cursor for the next.
 query LibraryPage(
-  $arrangement: LibraryArrangement
   $favorite: Boolean
   $status: ReadingStatus
   $limit: Int
   $after: BookId
 ) {
   libraryPage(
-    arrangement: $arrangement
     favorite: $favorite
     status: $status
     limit: $limit
@@ -58,6 +56,7 @@ fragment BookSummary on Book {
   status
   rating
   favorite
+  shelvedAt
   series {
     id
     name

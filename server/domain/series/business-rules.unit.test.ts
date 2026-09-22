@@ -215,31 +215,33 @@ describe('followedStateOf', () => {
 describe('inTabOrder', () => {
   const at = (day: number) => new Date(`2026-09-${String(day).padStart(2, '0')}`)
 
-  test('groups by genre in the closed list order, no genre last', () => {
+  // Neither genre nor state sections the tab any more: one timeline of sagas.
+  test('puts the saga shelved most recently first, whatever its genre or state', () => {
     const sagas = [
-      { name: 'A', state: null, lastStatusChangeAt: at(1) },
-      { name: 'B', genre: 'science-fiction' as const, state: null, lastStatusChangeAt: at(1) },
-      { name: 'C', genre: 'fantasy' as const, state: null, lastStatusChangeAt: at(1) },
-      { name: 'D', genre: 'science-fiction' as const, state: null, lastStatusChangeAt: at(1) },
-    ]
-    expect(inTabOrder(sagas).map((saga) => saga.name)).toEqual(['C', 'B', 'D', 'A'])
-  })
-
-  test('orders a genre by state, then by the latest status change first', () => {
-    const sagas = [
-      { name: 'untouched', state: 'not-started' as const, lastStatusChangeAt: at(20) },
-      { name: 'unknown', state: null, lastStatusChangeAt: at(19) },
-      { name: 'done', state: 'complete' as const, lastStatusChangeAt: at(18) },
-      { name: 'older', state: 'in-progress' as const, lastStatusChangeAt: at(2) },
-      { name: 'newer', state: 'in-progress' as const, lastStatusChangeAt: at(10) },
+      {
+        name: 'untouched',
+        genre: 'fantasy' as const,
+        state: 'not-started' as const,
+        shelvedAt: at(20),
+      },
+      { name: 'older', state: 'in-progress' as const, shelvedAt: at(2) },
+      { name: 'done', genre: 'essay' as const, state: 'complete' as const, shelvedAt: at(18) },
+      { name: 'newer', state: 'in-progress' as const, shelvedAt: at(10) },
     ]
     expect(inTabOrder(sagas).map((saga) => saga.name)).toEqual([
+      'untouched',
+      'done',
       'newer',
       'older',
-      'done',
-      'unknown',
-      'untouched',
     ])
+  })
+
+  test('keeps the incoming order of sagas shelved on the same day', () => {
+    const sagas = [
+      { name: 'first', shelvedAt: at(5) },
+      { name: 'second', shelvedAt: at(5) },
+    ]
+    expect(inTabOrder(sagas).map((saga) => saga.name)).toEqual(['first', 'second'])
   })
 })
 

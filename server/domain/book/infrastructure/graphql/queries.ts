@@ -1,7 +1,4 @@
-import {
-  LibraryArrangementEnum,
-  ReadingStatusEnum,
-} from '~/domain/book/infrastructure/graphql/enums'
+import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
 import {
   BookType,
   LibraryPageType,
@@ -33,17 +30,12 @@ builder.queryFields((t) => ({
     type: LibraryPageType,
     description:
       'One page of the Library tab, for a list that draws as it scrolls.\n\n' +
-      'A flat list, not sections: tiered by reading status — reading, to read, ' +
-      'read — or by genre then status, and within a status the book most recently ' +
-      'started, added or finished first. Read `hasMore`, then pass the id of the ' +
+      'A flat list, not sections: newest first on `shelvedAt` — the day each book ' +
+      'was finished, else started, else added — whatever its status. The app cuts ' +
+      'it into month sections on that date. Read `hasMore`, then pass the id of the ' +
       'last book as `after` for the next page. A cursor naming a book no longer ' +
       'there restarts from the top.',
     args: {
-      arrangement: t.arg({
-        type: LibraryArrangementEnum,
-        defaultValue: 'by-status',
-        description: 'By status, or by genre then status.',
-      }),
       favorite: t.arg.boolean({
         required: false,
         description: 'Keep only the books the reader marked as favourites.',
@@ -65,7 +57,6 @@ builder.queryFields((t) => ({
         context.userId,
         { limit: Math.max(1, Math.min(args.limit ?? 60, 200)), after: args.after ?? undefined },
         {
-          arrangement: args.arrangement ?? 'by-status',
           favorite: args.favorite ?? undefined,
           status: args.status ?? undefined,
         },

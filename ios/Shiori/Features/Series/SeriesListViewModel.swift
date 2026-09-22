@@ -1,7 +1,7 @@
 import Foundation
 
-/// Owns the Series tab: the sagas the reader follows, how they are arranged
-/// and narrowed — the Library tab's three views and a state filter — and the
+/// Owns the Series tab: the sagas the reader follows, how they are narrowed —
+/// the Library tab's two views and a state filter — and the
 /// one in-flight load. Every view opens on the rows it last showed: a
 /// `SnapshotCache` per view hands them back from disk before a byte is asked
 /// of the network, and the fetch runs under a spinner row rather than behind
@@ -40,7 +40,7 @@ final class SeriesListViewModel {
     /// Each view's sagas on disk. Bump the version whenever `FollowedSeries`
     /// changes shape.
     private func cache(for mode: LibraryMode, _ state: SeriesState?) -> SnapshotCache<[FollowedSeries]> {
-        SnapshotCache("series-\(mode.rawValue)-\(state?.rawValue ?? "all")", version: 5)
+        SnapshotCache("series-\(mode.rawValue)-\(state?.rawValue ?? "all")", version: 6)
     }
 
     /// Switching view: the new view's rows from its last visit at once, brought

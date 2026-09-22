@@ -14,7 +14,7 @@ struct HomeView: View {
     let onShowReading: () -> Void
     let onShowSeries: () -> Void
     /// Opens the Library tab on one of its views: the favourites from the
-    /// rating and favourites tiles, the genres from the genre widget, the
+    /// rating and favourites tiles, the whole shelf from the genre widget, the
     /// dropped books from their tile.
     let onShowLibrary: (LibraryRequest) -> Void
     let onScan: () -> Void
@@ -106,7 +106,7 @@ struct HomeView: View {
                     onRatingTapped: { onShowLibrary(LibraryRequest(mode: .favorites)) },
                     onFavoritesTapped: { onShowLibrary(LibraryRequest(mode: .favorites)) },
                     onDroppedTapped: { onShowLibrary(LibraryRequest(status: .dropped)) },
-                    onGenresTapped: { onShowLibrary(LibraryRequest(mode: .genre)) },
+                    onGenresTapped: { onShowLibrary(LibraryRequest()) },
                     onScan: onScan,
                     onBookTapped: { selectedBook = $0 }
                 )

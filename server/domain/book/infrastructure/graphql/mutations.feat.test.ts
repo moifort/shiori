@@ -383,7 +383,7 @@ describe('reading the library through the API', () => {
     expect(second.data?.libraryPage).toEqual({ hasMore: false, books: [{ title: 'Trois' }] })
   })
 
-  test('narrows a library page to the favourites, tiered by status', async () => {
+  test('narrows a library page to the favourites, newest first', async () => {
     await addBook('Pile ordinaire')
     const kept = await addBook('Pile aimée')
     const reading = await addBook('Lecture aimée', 'READING')

@@ -19,7 +19,6 @@ enum LibraryAPI {
         after: String?
     ) async throws -> LibraryPageResult {
         let query = ShioriGraphQL.LibraryPageQuery(
-            arrangement: .some(.case(mode == .genre ? .byGenre : .byStatus)),
             favorite: mode == .favorites ? .some(true) : .none,
             status: GraphQLHelpers.graphQLNullable(status.map(Self.graphQLStatus)),
             limit: .some(Int32(limit)),

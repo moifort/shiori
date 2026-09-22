@@ -3,17 +3,17 @@ import SwiftUI
 /// The library list. Pure and previewable: it takes what to draw and what to
 /// call, and knows nothing about the network.
 ///
-/// Three views, switched from the toolbar as in Vinarium: everything, by genre,
-/// or the favourites. Everything and the favourites are sectioned by reading
-/// status — in progress, on the pile, finished — and the genre view by genre,
-/// each row then carrying its status as a tag. A filter narrows any of them to
-/// one status. Sagas are not gathered here: the Series tab reads a saga whole,
-/// and a row names its saga in a tag.
+/// Two views, switched from the toolbar as in Vinarium: everything, or the
+/// favourites, both sectioned by month as Vinarium's wine list is — newest
+/// first, on the day each book was finished, else started, else added — each
+/// row carrying its status as a tag. A filter narrows either to one status.
+/// Sagas are not gathered here: the Series tab reads a saga whole, and a row
+/// names its saga in a tag.
 struct LibraryPage: View {
     @Binding var mode: LibraryMode
     @Binding var statusFilter: ReadingStatus?
-    let sections: [LibraryShelf]
-    /// Rows say their own status: the list is not sectioned by it.
+    let sections: [MonthSection<Book>]
+    /// Rows say their own status, unless a filter already says which.
     var showsStatus: Bool = false
     let isLoading: Bool
     /// The rows are last session's and fresher ones are on their way: a
@@ -86,7 +86,7 @@ struct LibraryPage: View {
                 Menu {
                     Picker("Statut", selection: $statusFilter) {
                         Label("Tous", systemImage: "tray.full").tag(ReadingStatus?.none)
-                        // In the order the list tiers them, not the picker's.
+                        // In the order a book lives through them, not the enum's.
                         ForEach([ReadingStatus.reading, .toRead, .read, .dropped]) { status in
                             Label(status.shelfTitle, systemImage: status.symbol)
                                 .tag(ReadingStatus?.some(status))
@@ -112,9 +112,6 @@ struct LibraryPage: View {
                 )
             }
             ForEach(sections) { section in
-                // The heading is the word alone: a genre's glyph beside its
-                // name is a second thing to decode, and a status reads as well
-                // without one.
                 Section(section.title) {
                     rows(of: section)
                 }
@@ -131,10 +128,10 @@ struct LibraryPage: View {
         .refreshable { await onRetry() }
     }
 
-    private func rows(of section: LibraryShelf) -> some View {
+    private func rows(of section: MonthSection<Book>) -> some View {
         // A Button rather than a NavigationLink: the book opens as a sheet over
         // the list, so the row carries no disclosure chevron promising a push.
-        ForEach(section.books) { book in
+        ForEach(section.rows) { book in
             Button {
                 onBookTapped(book)
             } label: {
@@ -146,9 +143,7 @@ struct LibraryPage: View {
                     rating: book.rating,
                     series: book.series,
                     statusTag: showsStatus ? book.status : nil,
-                    // Under a genre heading the genre chip would repeat it; the
-                    // subgenre still says something the heading does not.
-                    genre: mode == .genre ? nil : book.genre,
+                    genre: book.genre,
                     subgenre: book.subgenres.first,
                     language: book.language,
                     isFavorite: book.favorite,
@@ -171,53 +166,22 @@ struct LibraryPage: View {
     }
 }
 
-#Preview("Par statut") {
+#Preview("Par date") {
     @Previewable @State var mode: LibraryMode = .all
     @Previewable @State var statusFilter: ReadingStatus?
     let saga = SeriesMembership(id: "s1", name: "Chronique du tueur de roi", volume: 1, kind: .main)
     let saga2 = SeriesMembership(id: "s1", name: "Chronique du tueur de roi", volume: 2, kind: .main)
+    let books = [
+        Book(id: "2", title: "La Peur du sage", authors: ["Patrick Rothfuss"], genre: .fantasy, series: saga2, status: .reading, shelvedAt: .now),
+        Book(id: "3", title: "Piranesi", authors: ["Susanna Clarke"], status: .toRead, hidden: true, shelvedAt: .now.addingTimeInterval(-86400)),
+        Book(id: "1", title: "Le Nom du vent", authors: ["Patrick Rothfuss"], genre: .fantasy, series: saga, status: .read, rating: 5, shelvedAt: .now.addingTimeInterval(-60 * 86400)),
+    ]
 
     NavigationStack {
         LibraryPage(
             mode: $mode,
             statusFilter: $statusFilter,
-            sections: [
-                LibraryShelf(id: 0, key: .status(.reading), books: [
-                    Book(id: "2", title: "La Peur du sage", authors: ["Patrick Rothfuss"], genre: .fantasy, series: saga2, status: .reading),
-                ]),
-                LibraryShelf(id: 1, key: .status(.toRead), books: [
-                    Book(id: "3", title: "Piranesi", authors: ["Susanna Clarke"], status: .toRead, hidden: true),
-                ]),
-                LibraryShelf(id: 2, key: .status(.read), books: [
-                    Book(id: "1", title: "Le Nom du vent", authors: ["Patrick Rothfuss"], genre: .fantasy, series: saga, status: .read, rating: 5),
-                ]),
-            ],
-            isLoading: false,
-            errorMessage: nil,
-            onRetry: {},
-            onAdd: {},
-            onBookTapped: { _ in }
-        )
-    }
-}
-
-#Preview("Par genre") {
-    @Previewable @State var mode: LibraryMode = .genre
-    @Previewable @State var statusFilter: ReadingStatus?
-
-    NavigationStack {
-        LibraryPage(
-            mode: $mode,
-            statusFilter: $statusFilter,
-            sections: [
-                LibraryShelf(id: 0, key: .genre(.fantasy), books: [
-                    Book(id: "2", title: "La Peur du sage", authors: ["Patrick Rothfuss"], genre: .fantasy, status: .reading),
-                    Book(id: "1", title: "Le Nom du vent", authors: ["Patrick Rothfuss"], genre: .fantasy, status: .read, rating: 5),
-                ]),
-                LibraryShelf(id: 1, key: .genre(nil), books: [
-                    Book(id: "3", title: "Piranesi", authors: ["Susanna Clarke"], status: .toRead),
-                ]),
-            ],
+            sections: MonthSection.cut(books, on: \.shelvedAt),
             showsStatus: true,
             isLoading: false,
             errorMessage: nil,

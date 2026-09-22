@@ -1,9 +1,5 @@
-import { readVolumeNumbersOf, statusChangedAtOf } from '~/domain/book/business-rules'
-import {
-  BookLanguageEnum,
-  GenreEnum,
-  LibraryArrangementEnum,
-} from '~/domain/book/infrastructure/graphql/enums'
+import { readVolumeNumbersOf, shelfDateOf } from '~/domain/book/business-rules'
+import { BookLanguageEnum, GenreEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
 import type { Book, BookLanguage, Genre } from '~/domain/book/types'
@@ -50,9 +46,9 @@ type FollowedSeries = {
   ownedCount: CountValue
   /** The owned volumes, in the order the saga itself runs. */
   books: Book[]
-  /** When one of the owned volumes last changed status: what orders sagas of
-   *  one state against each other. */
-  lastStatusChangeAt: Date
+  /** The latest date any owned volume is shelved on: what the tab is ordered
+   *  and cut into month sections by. */
+  shelvedAt: Date
 }
 
 type SagaProgress = { readCount: number; totalCount: number }
@@ -102,9 +98,7 @@ const FollowedSeriesType = builder.objectRef<FollowedSeries>('FollowedSeries').i
     genre: t.field({
       type: GenreEnum,
       nullable: true,
-      description:
-        'The genre most of the owned volumes carry, which is what the Series tab is ' +
-        'sectioned on. Null when none of them has one.',
+      description: 'The genre most of the owned volumes carry. Null when none of them has one.',
       resolve: (followed) => followed.genre ?? null,
     }),
     catalogue: t.field({
@@ -152,6 +146,13 @@ const FollowedSeriesType = builder.objectRef<FollowedSeries>('FollowedSeries').i
       description: 'How many volumes of the saga are in the library.',
       resolve: (followed) => followed.ownedCount,
     }),
+    shelvedAt: t.field({
+      type: 'DateTime',
+      description:
+        'The latest date any owned volume is shelved on — finished, else started, ' +
+        'else added — which the Series tab is ordered and cut into month sections by.',
+      resolve: (followed) => followed.shelvedAt,
+    }),
     volumes: t.field({
       type: [BookType],
       description:
@@ -187,17 +188,14 @@ builder.queryFields((t) => ({
   mySeriesPage: t.field({
     type: FollowedSeriesPageType,
     description:
-      'One page of `mySeries`, for a list that draws as it scrolls. BY_GENRE (the ' +
-      'default) sections it by `genre` in the order of the enum, sagas of no genre ' +
-      'last, then by `state`; BY_STATUS by `state` alone — in progress, complete, ' +
-      'unknown, not started. Within a section the saga whose volume last changed ' +
-      'status comes first. `favorite` keeps the hearted sagas, `state` one state ' +
+      'One page of `mySeries`, for a list that draws as it scrolls: newest first on ' +
+      '`shelvedAt`, which the app cuts into month sections as the Library tab does. ' +
+      '`favorite` keeps the hearted sagas, `state` one state ' +
       '(COMPLETE also keeps the sagas of unknown state). ' +
       'Offset-paginated: pass the number of rows already shown.',
     args: {
       limit: t.arg.int({ defaultValue: 40, description: 'Maximum sagas in the page' }),
       offset: t.arg.int({ defaultValue: 0, description: 'Rows to skip' }),
-      arrangement: t.arg({ type: LibraryArrangementEnum, required: false }),
       favorite: t.arg.boolean({ required: false, description: 'Only the hearted sagas' }),
       state: t.arg({ type: SeriesStateEnum, required: false }),
     },
@@ -210,7 +208,7 @@ builder.queryFields((t) => ({
         favorite: args.favorite ?? undefined,
         state: args.state ?? undefined,
       })
-      const rows = inTabOrder(kept, args.arrangement ?? 'by-genre')
+      const rows = inTabOrder(kept)
       const limit = Math.max(1, Math.min(args.limit ?? 40, 200))
       const offset = Math.max(0, args.offset ?? 0)
       return { items: rows.slice(offset, offset + limit), hasMore: offset + limit < rows.length }
@@ -263,9 +261,7 @@ const followedSeriesOf = async (userId: UserId): Promise<FollowedSeries[]> => {
       progress: catalogue ? progressOf(catalogue, read, currentYear) : null,
       ownedCount: Count(saga.books.length),
       books: inSagaOrder(saga.books),
-      lastStatusChangeAt: new Date(
-        Math.max(...saga.books.map((book) => statusChangedAtOf(book).getTime())),
-      ),
+      shelvedAt: new Date(Math.max(...saga.books.map((book) => shelfDateOf(book).getTime()))),
     }
   })
 }

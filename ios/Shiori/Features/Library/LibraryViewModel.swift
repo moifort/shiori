@@ -1,15 +1,14 @@
 import Foundation
 
-/// The three ways the Library tab looks at the shelf, switched from the
+/// The two ways the Library tab looks at the shelf, switched from the
 /// toolbar as Vinarium switches its wine list.
 enum LibraryMode: String, CaseIterable, Identifiable {
-    case all, genre, favorites
+    case all, favorites
     var id: String { rawValue }
 
     var label: String {
         switch self {
         case .all: String(localized: "Tout")
-        case .genre: String(localized: "Genre")
         case .favorites: String(localized: "Favoris")
         }
     }
@@ -17,15 +16,13 @@ enum LibraryMode: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .all: "books.vertical"
-        case .genre: "square.grid.2x2"
         case .favorites: "heart.fill"
         }
     }
 
     var subtitle: String {
         switch self {
-        case .all: String(localized: "Par statut de lecture")
-        case .genre: String(localized: "Par genre")
+        case .all: String(localized: "Par date")
         case .favorites: String(localized: "Vos coups de cœur")
         }
     }
@@ -35,32 +32,6 @@ enum LibraryMode: String, CaseIterable, Identifiable {
 struct LibraryRequest: Equatable {
     var mode: LibraryMode = .all
     var status: ReadingStatus?
-}
-
-/// One heading of the Library tab: a reading status, or a genre. Cut out of
-/// the flat list the server ordered, wherever the key changes from one book to
-/// the next — so a page that lands extends the last section rather than
-/// opening a second one under the same heading.
-struct LibraryShelf: Identifiable {
-    enum Key: Equatable {
-        case status(ReadingStatus)
-        /// Nil for the books of no genre, which the server puts last.
-        case genre(BookGenre?)
-    }
-
-    /// The position, not the key: the key is unique only as long as the server
-    /// keeps its promise of one run per key, and a duplicate id is a list that
-    /// draws the wrong rows.
-    let id: Int
-    let key: Key
-    let books: [Book]
-
-    var title: String {
-        switch key {
-        case .status(let status): status.shelfTitle
-        case .genre(let genre): genre?.label ?? String(localized: "Sans genre")
-        }
-    }
 }
 
 /// Owns the library list: what is on screen, how it is arranged, and the one
@@ -108,7 +79,7 @@ final class LibraryViewModel {
     /// the refresh spinner rather than an empty list reloading. Bump the
     /// version whenever `Book` changes shape.
     private func cache(for mode: LibraryMode, _ status: ReadingStatus?) -> SnapshotCache<[Book]> {
-        SnapshotCache("library-\(mode.rawValue)-\(status?.rawValue ?? "all")", version: 3)
+        SnapshotCache("library-\(mode.rawValue)-\(status?.rawValue ?? "all")", version: 4)
     }
 
     /// More rows follow the ones on screen.
@@ -129,35 +100,15 @@ final class LibraryViewModel {
     private var generation = 0
     private var reloadTask: Task<Void, Never>?
 
-    /// Whether the rows are already sectioned by status, in which case a row
-    /// saying its own status would repeat its heading. Filtered to one status,
-    /// every row has the same one and the filter already says which.
-    var sectionsByStatus: Bool { mode != .genre || statusFilter != nil }
-
-    /// The rows cut into headings wherever the key changes.
-    var sections: [LibraryShelf] {
-        var shelves: [LibraryShelf] = []
-        var current: (key: LibraryShelf.Key, books: [Book])?
-        for book in books {
-            let key: LibraryShelf.Key = mode == .genre ? .genre(book.genre) : .status(book.status)
-            if current?.key == key {
-                current?.books.append(book)
-            } else {
-                if let current {
-                    shelves.append(LibraryShelf(id: shelves.count, key: current.key, books: current.books))
-                }
-                current = (key, [book])
-            }
-        }
-        if let current {
-            shelves.append(LibraryShelf(id: shelves.count, key: current.key, books: current.books))
-        }
-        return shelves
+    /// The rows cut into month headings, newest first, on the date the
+    /// server shelved each book on.
+    var sections: [MonthSection<Book>] {
+        MonthSection.cut(books, on: \.shelvedAt)
     }
 
     /// Opens the view another screen asks for, as the dashboard does: the
-    /// favourites behind the rating tile, the genres behind the genre bar, the
-    /// dropped books behind their tile. A status filter left from an earlier
+    /// favourites behind the rating tile, the whole shelf behind the genre bar,
+    /// the dropped books behind their tile. A status filter left from an earlier
     /// visit is replaced, since it would hide half of what was asked for.
     func show(_ request: LibraryRequest) {
         statusFilter = request.status

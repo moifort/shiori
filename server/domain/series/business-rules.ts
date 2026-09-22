@@ -1,5 +1,4 @@
-import type { BookLanguage, Genre, LibraryArrangement, ReadingStatus } from '~/domain/book/types'
-import { GENRES } from '~/domain/book/types'
+import type { BookLanguage, Genre, ReadingStatus } from '~/domain/book/types'
 import type {
   Series,
   SeriesId,
@@ -91,41 +90,15 @@ export const followedStateOf = (
   return statuses.some((status) => status !== 'read' && status !== 'dropped') ? 'in-progress' : null
 }
 
-// What the reader is on first, then what they finished, then what they have
-// not opened. A saga read as far as the shelf goes, with no catalogue to say
-// whether it is over, sits with the finished ones it most resembles.
-const STATE_RANK: Record<SeriesState | 'unknown', number> = {
-  'in-progress': 0,
-  complete: 1,
-  unknown: 2,
-  'not-started': 3,
-}
-
-/** The Series tab's order: sectioned by genre in the closed list's own order,
- *  sagas of no genre last; within a genre by state, and within a state the saga
- *  whose volume last changed status first — the same recency the library is
- *  ordered on. Sagas that tie keep the order they came in.
- *
- *  Arranged by status, the genre is left out and the tab is sectioned by state
- *  alone, as the library is by reading status.
+/** The Series tab's order: the saga whose latest volume was shelved most
+ *  recently first — finished, else started, else added, the date the Library
+ *  tab orders books on — so the app cuts it into the same month sections.
+ *  Sagas that tie keep the order they came in.
  *
  *  Done on the server rather than on the phone because the list is paginated:
- *  grouped on the client, a section would grow again every time a page lands. */
-export const inTabOrder = <
-  Saga extends { genre?: Genre; state: SeriesState | null; lastStatusChangeAt: Date },
->(
-  sagas: readonly Saga[],
-  arrangement: LibraryArrangement = 'by-genre',
-): Saga[] => {
-  const genreRank = (saga: Saga) =>
-    arrangement === 'by-status' ? 0 : saga.genre ? GENRES.indexOf(saga.genre) : GENRES.length
-  return [...sagas].sort(
-    (left, right) =>
-      genreRank(left) - genreRank(right) ||
-      STATE_RANK[left.state ?? 'unknown'] - STATE_RANK[right.state ?? 'unknown'] ||
-      right.lastStatusChangeAt.getTime() - left.lastStatusChangeAt.getTime(),
-  )
-}
+ *  ordered on the client, a page landing late would reshuffle what is drawn. */
+export const inTabOrder = <Saga extends { shelvedAt: Date }>(sagas: readonly Saga[]): Saga[] =>
+  [...sagas].sort((left, right) => right.shelvedAt.getTime() - left.shelvedAt.getTime())
 
 /** The sagas a filter of the Series tab keeps: the hearted ones, and those in
  *  one state. A saga whose state is unknown — every owned volume read and no

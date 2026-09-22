@@ -4,6 +4,11 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- La bibliothèque et l’onglet Séries sont triés par date et découpés par mois, comme dans
+  Vinarium : du plus récent au plus ancien selon le jour où un livre a été terminé, sinon
+  commencé, sinon ajouté, et une saga selon son dernier tome. Cela remplace les sections par
+  état de lecture et par genre, et la vue par genre disparaît des deux barres d’outils ; la
+  carte des genres de l’accueil ouvre la bibliothèque.
 - L’accueil est dessiné dès le premier lancement : une bibliothèque vide montre chaque carte
   avec une esquisse de ce qu’elle contiendra, sous une invitation à scanner un premier livre.
   Toutes les listes disent de la même façon qu’elles sont vides, ou qu’elles n’ont pas pu se
@@ -12,11 +17,11 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   une étape que l’on peut passer.
 - Le catalogue d’une série ne liste plus deux fois le même tome.
 - Un livre peut être marqué « Abandonné » depuis son menu quand le lecteur l’a arrêté faute de
-  l’avoir aimé. Il a sa propre section en bas de la bibliothèque et son propre filtre, ne compte
-  dans aucune statistique de lecture, et l’accueil compte les livres abandonnés dans une petite
-  tuile, à côté d’une nouvelle tuile des favoris.
-- L’onglet Séries reprend les vues et le filtre de la bibliothèque : tout, par genre ou les
-  favoris, restreint à un état. La bande de couvertures de chaque série liste tous les tomes de
+  l’avoir aimé. Il a son propre filtre, ne compte dans aucune statistique de lecture, et
+  l’accueil compte les livres abandonnés dans une petite tuile, à côté d’une nouvelle tuile des
+  favoris.
+- L’onglet Séries reprend les vues et le filtre de la bibliothèque : tout ou les favoris,
+  restreint à un état. La bande de couvertures de chaque série liste tous les tomes de
   l’écran de la série, tomes annoncés et œuvres liées compris, ceux que le lecteur n’a pas
   estompés entre ceux qu’il possède.
 - L’écran d’une série suit celui d’un livre : le genre, les sous-genres et la note rejoignent la
