@@ -8,6 +8,7 @@ import { ScanCommand } from '~/domain/scan/command'
 import type { ScanLanguage } from '~/domain/scan/types'
 import {
   cataloguesOf,
+  type FollowedSaga,
   followedSagasOf,
   followedStateOf,
   genreOf,
@@ -63,64 +64,36 @@ export namespace SeriesUseCase {
    *  Taken from the books, then matched against the catalogue in one getAll and
    *  against the reader's opinions in one scan — never a lookup per saga. */
   export const followed = async (userId: UserId): Promise<FollowedSeries[]> => {
-    const [books, held] = await Promise.all([BookQuery.all(userId), SeriesOpinionQuery.all(userId)])
-    const sagas = followedSagasOf(books)
-    const opinions = new Map(held.map((opinion) => [opinion.seriesId, opinion]))
-    // The world's catalogues, and the reader's own count where the world has
-    // none: a saga they counted themselves is measured like any other.
-    const catalogued = cataloguesOf(
-      books,
-      await SeriesQuery.byIds(sagas.map((saga) => saga.id)),
-      held,
-    )
-    const currentYear = Year(new Date().getUTCFullYear())
-    return sagas.map((saga) => {
-      const catalogue = catalogued.get(saga.id) ?? null
-      const opinion = opinions.get(saga.id) ?? null
-      const read = readVolumeNumbersOf(saga.books)
-      return {
-        id: saga.id,
-        name: saga.name,
-        author: saga.author,
-        language: saga.language,
-        genre: genreOf(saga.books),
-        catalogue,
-        opinion,
-        state: followedStateOf(
-          saga.books.map((book) => book.status),
-          catalogue,
-          read,
-          currentYear,
-          editionUnfollowed(opinion, saga.language),
-        ),
-        progress: catalogue ? progressOf(catalogue, read, currentYear) : null,
-        ownedCount: Count(saga.books.length),
-        books: inSagaOrder(saga.books),
-        shelvedAt: new Date(Math.max(...saga.books.map((book) => shelfDateOf(book).getTime()))),
-      }
-    })
+    const shelf = await shelfOf(userId)
+    return described(shelf, shelf.sagas)
   }
 
   /** One page of the Series tab, newest first on `shelvedAt`, narrowed to the
-   *  hearted sagas or to one state. */
+   *  hearted sagas or to one state.
+   *
+   *  Without a state filter, which sagas a page holds depends on the books and
+   *  the opinions alone — a saga set aside is the reader's own flag — so only
+   *  the page's sagas have their catalogue read. A state filter needs every
+   *  saga's state, and so every catalogue. */
   export const followedPage = async (
     userId: UserId,
     page: { limit: number; offset: number },
     filter: { favorite?: boolean; state?: SeriesState },
   ): Promise<{ items: FollowedSeries[]; hasMore: boolean }> => {
-    const rows = inTabOrder(
-      matchingFilter(
-        (await followed(userId)).map((saga) => ({
-          ...saga,
-          favorite: saga.opinion?.favorite === true,
-        })),
-        filter,
-      ),
-    )
-    return {
-      items: rows.slice(page.offset, page.offset + page.limit),
-      hasMore: page.offset + page.limit < rows.length,
+    const shelf = await shelfOf(userId)
+    if (filter.state !== undefined) {
+      const all = (await described(shelf, shelf.sagas)).map((saga) => ({
+        ...saga,
+        favorite: saga.opinion?.favorite === true,
+      }))
+      return pageOf(inTabOrder(matchingFilter(all, filter)), page)
     }
+    const kept = matchingFilter(
+      shelf.sagas.map((saga) => ({ ...saga, state: saga.unfollowed ? 'unfollowed' : null })),
+      filter,
+    )
+    const { items, hasMore } = pageOf(inTabOrder(kept), page)
+    return { items: await described(shelf, items), hasMore }
   }
 
   /** Take a saga off the shelf: every volume the reader holds, or only those
@@ -250,3 +223,79 @@ export namespace SeriesUseCase {
     return series ?? null
   }
 }
+
+/** A saga as the books and the opinions describe it, before any catalogue is
+ *  read: enough to filter and order the Series tab. */
+type ShelvedSaga = FollowedSaga<Book> & {
+  opinion: SeriesOpinion | null
+  favorite: boolean
+  unfollowed: boolean
+  shelvedAt: Date
+}
+
+type Shelf = { books: Book[]; opinions: SeriesOpinion[]; sagas: ShelvedSaga[] }
+
+const shelfOf = async (userId: UserId): Promise<Shelf> => {
+  const [books, opinions] = await Promise.all([
+    BookQuery.all(userId),
+    SeriesOpinionQuery.all(userId),
+  ])
+  const byId = new Map(opinions.map((opinion) => [opinion.seriesId, opinion]))
+  const sagas = followedSagasOf(books).map((saga) => {
+    const opinion = byId.get(saga.id) ?? null
+    return {
+      ...saga,
+      opinion,
+      favorite: opinion?.favorite === true,
+      unfollowed: editionUnfollowed(opinion, saga.language),
+      shelvedAt: new Date(Math.max(...saga.books.map((book) => shelfDateOf(book).getTime()))),
+    }
+  })
+  return { books, opinions, sagas }
+}
+
+/** The sagas given, with what the catalogue says of them: their catalogue in
+ *  one getAll, and the state and progress it decides. Every edition's volumes
+ *  of those sagas are passed on, since a count the reader typed draws its
+ *  spine from all of them. */
+const described = async (
+  shelf: Shelf,
+  sagas: readonly ShelvedSaga[],
+): Promise<FollowedSeries[]> => {
+  const ids = new Set(sagas.map((saga) => saga.id))
+  const catalogued = cataloguesOf(
+    shelf.books.filter((book) => book.series && ids.has(book.series.id)),
+    await SeriesQuery.byIds([...ids]),
+    shelf.opinions,
+  )
+  const currentYear = Year(new Date().getUTCFullYear())
+  return sagas.map((saga) => {
+    const catalogue = catalogued.get(saga.id) ?? null
+    const read = readVolumeNumbersOf(saga.books)
+    return {
+      id: saga.id,
+      name: saga.name,
+      author: saga.author,
+      language: saga.language,
+      genre: genreOf(saga.books),
+      catalogue,
+      opinion: saga.opinion,
+      state: followedStateOf(
+        saga.books.map((book) => book.status),
+        catalogue,
+        read,
+        currentYear,
+        saga.unfollowed,
+      ),
+      progress: catalogue ? progressOf(catalogue, read, currentYear) : null,
+      ownedCount: Count(saga.books.length),
+      books: inSagaOrder(saga.books),
+      shelvedAt: saga.shelvedAt,
+    }
+  })
+}
+
+const pageOf = <Row>(rows: readonly Row[], page: { limit: number; offset: number }) => ({
+  items: rows.slice(page.offset, page.offset + page.limit),
+  hasMore: page.offset + page.limit < rows.length,
+})
