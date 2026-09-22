@@ -152,6 +152,13 @@ struct BookRow: View {
         .accessibilityValue(shownStatusTag == nil ? Text(status.label) : Text(""))
     }
 
+    /// The stars actually drawn. Stars lent by the saga only on a volume the
+    /// reader has read: on one still on the pile, under way or dropped, they
+    /// would pass for a verdict on a book not yet judged.
+    private var shownRating: Int? {
+        ratingIsInherited && status != .read ? nil : rating
+    }
+
     /// The status tag actually drawn. "Terminé" never is: a library is mostly
     /// books read, and the tag on most rows told the eye nothing. Only what
     /// sets a book apart — in progress, on the pile, dropped — is marked.
@@ -182,7 +189,7 @@ struct BookRow: View {
                     .accessibilityLabel(Text("Non partagé"))
             }
             OpinionMark(
-                rating: rating,
+                rating: shownRating,
                 isFavorite: isFavorite,
                 font: .caption,
                 ratingIsInherited: ratingIsInherited
