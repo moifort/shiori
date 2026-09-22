@@ -201,6 +201,26 @@ builder.queryFields((t) => ({
       ),
   }),
 
+  myFollowedSeries: t.field({
+    type: FollowedSeriesType,
+    nullable: true,
+    description:
+      'One row of `mySeriesPage`, as the page would draw it: what the tab asks again ' +
+      'for the saga the reader just changed, rather than reloading every page to find ' +
+      "it. Reads that saga's catalogue only. Null when the reader no longer holds a " +
+      'volume of that edition.',
+    args: {
+      seriesId: t.arg({ type: 'SeriesId', required: true }),
+      language: t.arg({
+        type: BookLanguageEnum,
+        required: false,
+        description: 'The edition of the row; absent for the volumes that record no language.',
+      }),
+    },
+    resolve: (_root, args, { userId }) =>
+      SeriesUseCase.followedOne(userId, args.seriesId, args.language ?? undefined),
+  }),
+
   mySeries: t.field({
     type: [FollowedSeriesType],
     description:

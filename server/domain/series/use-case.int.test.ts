@@ -78,3 +78,33 @@ describe('a page of the Series tab', () => {
     expect(fake.docReads - before).toBe(6)
   })
 })
+
+describe('one row of the Series tab', () => {
+  // What the tab asks after the reader edited a saga: the row it shows, and
+  // only its catalogue — not a page of every saga to find it in.
+  test('answers the same row as the whole list, reading its catalogue only', async () => {
+    await followSagas(6)
+    const before = fake.docReads
+
+    const row = await SeriesUseCase.followedOne(reader, SeriesId('saga-3'))
+    expect(fake.docReads - before).toBe(1)
+
+    const all = await SeriesUseCase.followed(reader)
+    expect(row).toEqual(all.find((saga) => String(saga.id) === 'saga-3') ?? null)
+  })
+
+  test('answers nothing for a saga the reader no longer holds', async () => {
+    await followSagas(1)
+
+    expect(await SeriesUseCase.followedOne(reader, SeriesId('saga-9'))).toBeNull()
+  })
+
+  // A saga held in two languages is two rows: the one asked for, not the other.
+  test('answers the edition asked for', async () => {
+    await followSagas(1)
+    const id = SeriesId('saga-0')
+
+    expect(await SeriesUseCase.followedOne(reader, id, 'fr')).toBeNull()
+    expect((await SeriesUseCase.followedOne(reader, id))?.language).toBeUndefined()
+  })
+})

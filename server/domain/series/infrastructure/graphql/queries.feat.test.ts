@@ -750,3 +750,29 @@ describe('a saga the reader stopped following', () => {
     expect(result.data?.libraryPage).toEqual({ books: [{ title: 'Dune', status: 'READING' }] })
   })
 })
+
+describe('one row of the Series tab', () => {
+  const followedRow = async (language?: string) => {
+    const result = await execute(
+      `{ myFollowedSeries(seriesId: "dune--frank-herbert"${language ? `, language: ${language}` : ''}) {
+        name language ownedCount
+      } }`,
+    )
+    expect(result.errors).toBeUndefined()
+    return result.data?.myFollowedSeries
+  }
+
+  test('answers the edition asked for', async () => {
+    await addVolume('Dune', 1, { language: 'FR' })
+    await addVolume('Le Messie de Dune', 2, { language: 'FR' })
+    await addVolume('Dune', 1, { language: 'EN' })
+
+    expect(await followedRow('FR')).toEqual({ name: 'Dune', language: 'FR', ownedCount: 2 })
+  })
+
+  test('answers nothing once the reader holds none of it', async () => {
+    await addVolume('Dune', 1, { language: 'FR' })
+
+    expect(await followedRow('EN')).toBeNull()
+  })
+})

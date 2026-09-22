@@ -1443,6 +1443,17 @@ type Query {
   me: Me!
 
   """
+  One row of `mySeriesPage`, as the page would draw it: what the tab asks again for the saga the reader just changed, rather than reloading every page to find it. Reads that saga's catalogue only. Null when the reader no longer holds a volume of that edition.
+  """
+  myFollowedSeries(
+    """
+    The edition of the row; absent for the volumes that record no language.
+    """
+    language: BookLanguage
+    seriesId: SeriesId!
+  ): FollowedSeries
+
+  """
   Every saga the reader owns a volume of, alphabetically.
   
   Taken from the books, then matched against the catalogue in one getAll rather than a lookup per saga. A saga nobody has catalogued still answers here, with a null catalogue and a null state.

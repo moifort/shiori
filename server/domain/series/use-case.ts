@@ -68,6 +68,24 @@ export namespace SeriesUseCase {
     return described(shelf, shelf.sagas)
   }
 
+  /** One row of the Series tab — a saga in one edition, `language` absent for
+   *  the volumes that record none — as the page it sits in would draw it: what
+   *  the tab asks again once the reader has changed that saga, rather than a
+   *  page of every saga to find it in. Only its own catalogue is read.
+   *
+   *  Null when the reader no longer holds a volume of that edition. */
+  export const followedOne = async (
+    userId: UserId,
+    seriesId: SeriesId,
+    language?: BookLanguage,
+  ): Promise<FollowedSeries | null> => {
+    const shelf = await shelfOf(userId)
+    const saga = shelf.sagas.find((saga) => saga.id === seriesId && saga.language === language)
+    if (!saga) return null
+    const [row] = await described(shelf, [saga])
+    return row ?? null
+  }
+
   /** One page of the Series tab, newest first on `shelvedAt`, narrowed to the
    *  hearted sagas or to one state.
    *
