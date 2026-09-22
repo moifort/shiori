@@ -32,13 +32,13 @@ struct ManualAddView: View {
                     TextField("Auteur (facultatif)", text: $author)
                         .textInputAutocapitalization(.words)
                         .accessibilityIdentifier("manual-author")
-                    Picker("Format", selection: $format) {
-                        ForEach(BookFormat.allCases) { format in
-                        Label(format.label, systemImage: format.symbol)
-                            .labelStyle(.titleAndIcon)
-                            .tag(format)
-                    }
-                    }
+                    MenuPicker(
+                        "Format",
+                        selection: $format,
+                        options: BookFormat.allCases,
+                        label: { $0.label },
+                        image: { Image(systemName: $0.symbol) }
+                    )
                     .accessibilityIdentifier("manual-format")
                 }
                 Section("Lecture") {

@@ -39,15 +39,11 @@ struct AudibleOfferPage: View {
 
             // The store the account was opened on decides where the library
             // is read from. Proposed, never imposed.
-            LabeledContent {
-                Picker("Boutique Audible", selection: $marketplace) {
-                    ForEach(AudibleMarketplace.allCases) { store in
-                        Text(store.label).tag(store)
-                    }
-                }
-                .labelsHidden()
-                .accessibilityIdentifier("onboarding-audible-marketplace")
-            } label: {
+            MenuPicker(
+                selection: $marketplace,
+                options: AudibleMarketplace.allCases,
+                label: { $0.label }
+            ) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Boutique")
                     Text("Celle sur laquelle vous achetez vos livres audio.")
@@ -55,6 +51,7 @@ struct AudibleOfferPage: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            .accessibilityIdentifier("onboarding-audible-marketplace")
             .padding(12)
             .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 12))
             .disabled(isWorking)

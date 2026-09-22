@@ -32,11 +32,12 @@ struct AudibleConnectPage: View {
             }
 
             Section {
-                Picker("Boutique Audible", selection: $marketplace) {
-                    ForEach(AudibleMarketplace.allCases) { store in
-                        Text(store.label).tag(store)
-                    }
-                }
+                MenuPicker(
+                    "Boutique Audible",
+                    selection: $marketplace,
+                    options: AudibleMarketplace.allCases,
+                    label: { $0.label }
+                )
                 .accessibilityIdentifier("audible-marketplace")
             } header: {
                 Text("Boutique")
