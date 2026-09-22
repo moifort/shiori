@@ -97,6 +97,28 @@ describe('cataloguing a book', () => {
     expect(book.finishedAt).toBeUndefined()
   })
 
+  // Saying when a book was finished is saying when it moved to the read shelf,
+  // so the library order follows the corrected date.
+  test('files a read book on the finish date the reader corrected', async () => {
+    const MARCH = new Date('2026-03-12T12:00:00.000Z')
+    const book = await add('Le Nom du vent')
+    await BookCommand.setStatus(reader, book.id, 'read', NOW)
+
+    const FEBRUARY = new Date('2026-02-20T12:00:00.000Z')
+    const edited = await BookCommand.edit(
+      reader,
+      book.id,
+      { startedAt: FEBRUARY, finishedAt: MARCH },
+      NOW,
+    )
+    if (typeof edited === 'string') throw new Error('unreachable')
+    expect(edited.finishedAt).toEqual(MARCH)
+    expect(edited.statusChangedAt).toEqual(MARCH)
+
+    const refused = await BookCommand.edit(reader, book.id, { finishedAt: new Date('2026-01-01') })
+    expect(refused).toBe('bad-dates')
+  })
+
   // The library is ordered on the last status change, so cataloguing counts as
   // one and housekeeping does not: a corrected publisher must not lift a book
   // over one the reader just finished.

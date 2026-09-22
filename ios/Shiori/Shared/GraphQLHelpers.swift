@@ -86,6 +86,13 @@ enum GraphQLHelpers {
         return withFraction.date(from: string) ?? withoutFraction.date(from: string)
     }
 
+    /// Encode a date for a GraphQL DateTime scalar, as the server writes them.
+    static func iso8601(_ date: Date) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.string(from: date)
+    }
+
     /// Wrap an optional Swift value into the GraphQLNullable form expected by
     /// generated operation initializers (`.some(...)` vs `.none`).
     static func graphQLNullable<T>(_ value: T?) -> GraphQLNullable<T> {

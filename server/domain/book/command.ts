@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { WriteBatch } from 'firebase-admin/firestore'
 import type { AudibleAsin } from '~/domain/audible/types'
 import {
+  datesAfterCorrection,
   datesAfterStatusChange,
   membershipFor,
   retaggedAfterEdit,
@@ -104,6 +105,9 @@ export type BookEdit = Partial<
     | 'narrators'
     | 'isbn13'
     | 'language'
+    | 'addedAt'
+    | 'startedAt'
+    | 'finishedAt'
   > & { series: SeriesPlacement }
 >
 
@@ -184,10 +188,20 @@ export namespace BookCommand {
     edit: BookEdit,
     now = new Date(),
     batch?: WriteBatch,
-  ): Promise<Book | 'not-found' | 'no-author'> => {
+  ): Promise<Book | 'not-found' | 'no-author' | 'bad-dates'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
-    const { series: placement, ...facts } = edit
+    const { series: placement, addedAt, startedAt, finishedAt, ...facts } = edit
+    const dates = datesAfterCorrection(
+      book,
+      {
+        ...(addedAt ? { addedAt } : {}),
+        ...(startedAt ? { startedAt } : {}),
+        ...(finishedAt ? { finishedAt } : {}),
+      },
+      now,
+    )
+    if (dates === 'bad-dates') return 'bad-dates'
     const retagged =
       'subgenres' in facts
         ? { subgenres: retaggedAfterEdit(facts.subgenres ?? [], book.subgenres) }
@@ -217,7 +231,7 @@ export namespace BookCommand {
         ? (await repository.findBySeries(userId, series.id)).filter((other) => other.id !== book.id)
         : []
     const edited = await repository.save(
-      { ...book, ...facts, ...retagged, ...membership, updatedAt: now },
+      { ...book, ...facts, ...retagged, ...membership, ...dates, updatedAt: now },
       batch,
     )
     const classification = {

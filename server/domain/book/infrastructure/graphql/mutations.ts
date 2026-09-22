@@ -82,7 +82,9 @@ builder.mutationFields((t) => ({
     description:
       'Correct a record the scan got wrong. Omitted fields are left alone; an ' +
       'optional field passed as null is cleared. BAD_USER_INPUT when `series` names ' +
-      'a saga the reader does not hold and the book has no author to key it with.',
+      'a saga the reader does not hold and the book has no author to key it with, or ' +
+      'when a reading date is in the future, precedes the start, or is one the status ' +
+      'does not carry.',
     args: {
       id: t.arg({ type: 'BookId', required: true }),
       input: t.arg({ type: BookEditInput, required: true }),
@@ -92,6 +94,11 @@ builder.mutationFields((t) => ({
       const result = await BookUseCase.edit(context.userId, args.id, {
         // Title and format have no absent state, so a null for them is ignored.
         ...(input.title != null ? { title: input.title } : {}),
+        // Nor do the reading dates, which follow from the status: moving the
+        // book along the pile is what clears them.
+        ...(input.addedAt != null ? { addedAt: input.addedAt } : {}),
+        ...(input.startedAt != null ? { startedAt: input.startedAt } : {}),
+        ...(input.finishedAt != null ? { finishedAt: input.finishedAt } : {}),
         ...(input.format != null ? { format: input.format } : {}),
         // Lists clear to empty rather than to absent: the record always has them.
         ...(input.authors !== undefined ? { authors: input.authors ?? [] } : {}),
@@ -130,6 +137,7 @@ builder.mutationFields((t) => ({
       return match(result)
         .with('not-found', () => notFound('Book not found'))
         .with('no-author', () => badUserInput('A book needs an author to start a new saga'))
+        .with('bad-dates', () => badUserInput('These reading dates cannot be true'))
         .otherwise((book) => readBack(context.userId, book.id))
     },
   }),

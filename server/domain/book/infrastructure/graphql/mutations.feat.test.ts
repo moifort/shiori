@@ -128,6 +128,35 @@ describe('cataloguing through the API', () => {
     expect(refused.errors?.[0]?.extensions?.code).toBe('BAD_USER_INPUT')
   })
 
+  test('corrects the reading dates of a read book', async () => {
+    const book = await addBook('Gataca')
+    await execute(`mutation { setReadingStatus(id: "${book.id}", status: READ) { id } }`)
+
+    const corrected = await execute(
+      `mutation { updateBook(id: "${book.id}", input: { ` +
+        'startedAt: "2026-03-01T12:00:00.000Z", finishedAt: "2026-03-12T12:00:00.000Z" }) ' +
+        '{ startedAt finishedAt } }',
+    )
+
+    expect(corrected.errors).toBeUndefined()
+    expect(corrected.data?.updateBook).toEqual({
+      startedAt: '2026-03-01T12:00:00.000Z',
+      finishedAt: '2026-03-12T12:00:00.000Z',
+    })
+  })
+
+  test('refuses a finish date before the start', async () => {
+    const book = await addBook('Gataca')
+    await execute(`mutation { setReadingStatus(id: "${book.id}", status: READ) { id } }`)
+
+    const refused = await execute(
+      `mutation { updateBook(id: "${book.id}", input: { ` +
+        'startedAt: "2026-03-12T12:00:00.000Z", finishedAt: "2026-03-01T12:00:00.000Z" }) { id } }',
+    )
+
+    expect(refused.errors?.[0]?.extensions?.code).toBe('BAD_USER_INPUT')
+  })
+
   test('marks a book dropped, and a rating leaves it dropped', async () => {
     const book = await addBook('Le Maître du Haut Château', 'READING')
 

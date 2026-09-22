@@ -235,13 +235,20 @@ struct BookCorrection: Equatable, Sendable {
     /// The saga as the reader names it. The server works out which saga that
     /// is, so the book joins the one its siblings already sit in.
     var series: Change<SeriesPlacement>?
+    /// The reading dates, corrected by hand. Never cleared: they follow from
+    /// the status, and moving the book along the pile is what clears them.
+    var addedAt: Date?
+    var startedAt: Date?
+    var finishedAt: Date?
 
     var isEmpty: Bool { self == BookCorrection() }
 
     var asInput: ShioriGraphQL.BookEditInput {
         ShioriGraphQL.BookEditInput(
+            addedAt: Self.nullable(addedAt.map(GraphQLHelpers.iso8601)),
             authors: Self.nullable(authors),
             durationMinutes: Self.nullable(durationMinutes),
+            finishedAt: Self.nullable(finishedAt.map(GraphQLHelpers.iso8601)),
             firstPublishedIn: Self.nullable(firstPublishedIn),
             format: format.map { .some(LibraryAPI.graphQLFormat($0)) } ?? .none,
             genre: Self.nullableGenre(genre),
@@ -251,6 +258,7 @@ struct BookCorrection: Equatable, Sendable {
             pageCount: Self.nullable(pageCount),
             publisher: Self.nullable(publisher),
             series: Self.nullableSeries(series),
+            startedAt: Self.nullable(startedAt.map(GraphQLHelpers.iso8601)),
             subgenres: Self.nullable(subgenres),
             synopsis: Self.nullable(synopsis),
             title: Self.nullable(title)

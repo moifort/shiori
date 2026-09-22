@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  datesAfterCorrection,
   datesAfterStatusChange,
   groupedBySeries,
   inSagaOrder,
@@ -320,6 +321,72 @@ describe('datesAfterStatusChange', () => {
     )
     expect(dates.startedAt).toBe(EARLIER)
     expect(dates.finishedAt).toBeUndefined()
+  })
+})
+
+describe('datesAfterCorrection', () => {
+  const read = { status: 'read' as const, addedAt: EARLIER, startedAt: EARLIER, finishedAt: NOW }
+
+  test('takes the dates the reader typed, and leaves the others', () => {
+    const corrected = new Date('2026-03-01T12:00:00.000Z')
+    expect(datesAfterCorrection(read, { startedAt: corrected }, NOW)).toEqual({
+      startedAt: corrected,
+    })
+  })
+
+  // The library is ordered on when a book last changed status. Saying "I
+  // finished it in March" is saying when that move happened.
+  test('moves the status stamp with the date that marks the current status', () => {
+    const march = new Date('2026-03-01T12:00:00.000Z')
+    expect(datesAfterCorrection(read, { finishedAt: march }, NOW)).toEqual({
+      finishedAt: march,
+      statusChangedAt: march,
+    })
+    expect(
+      datesAfterCorrection({ status: 'reading', addedAt: EARLIER }, { startedAt: march }, NOW),
+    ).toEqual({ startedAt: march, statusChangedAt: march })
+    expect(
+      datesAfterCorrection({ status: 'to-read', addedAt: EARLIER }, { addedAt: march }, NOW),
+    ).toEqual({ addedAt: march, statusChangedAt: march })
+  })
+
+  // Dropping is its own moment, which no typed date says.
+  test('leaves the stamp of a dropped book where it is', () => {
+    const march = new Date('2026-03-01T12:00:00.000Z')
+    expect(
+      datesAfterCorrection({ status: 'dropped', addedAt: EARLIER }, { startedAt: march }, NOW),
+    ).toEqual({ startedAt: march })
+  })
+
+  test('refuses a finish before the start', () => {
+    expect(datesAfterCorrection(read, { finishedAt: new Date('2025-12-01') }, NOW)).toBe(
+      'bad-dates',
+    )
+    expect(datesAfterCorrection(read, { startedAt: LATER }, LATER)).toBe('bad-dates')
+  })
+
+  // A day of slack for a phone whose clock runs ahead of the server's.
+  test('refuses a date in the future, past a day of clock drift', () => {
+    const hourAhead = new Date(NOW.getTime() + 3_600_000)
+    expect(datesAfterCorrection(read, { finishedAt: hourAhead }, NOW)).toEqual({
+      finishedAt: hourAhead,
+      statusChangedAt: hourAhead,
+    })
+    const twoDaysAhead = new Date(NOW.getTime() + 2 * 86_400_000)
+    expect(datesAfterCorrection(read, { addedAt: twoDaysAhead }, NOW)).toBe('bad-dates')
+  })
+
+  test('refuses a date that does not parse', () => {
+    expect(datesAfterCorrection(read, { addedAt: new Date('not a date') }, NOW)).toBe('bad-dates')
+  })
+
+  // The dates follow from the status: a book on the pile was never opened, and
+  // only a read one was finished.
+  test('refuses a date the status does not carry', () => {
+    const toRead = { status: 'to-read' as const, addedAt: EARLIER }
+    expect(datesAfterCorrection(toRead, { startedAt: EARLIER }, NOW)).toBe('bad-dates')
+    const reading = { status: 'reading' as const, addedAt: EARLIER, startedAt: EARLIER }
+    expect(datesAfterCorrection(reading, { finishedAt: NOW }, NOW)).toBe('bad-dates')
   })
 })
 

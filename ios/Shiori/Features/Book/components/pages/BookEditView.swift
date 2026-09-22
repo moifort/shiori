@@ -6,8 +6,10 @@ import SwiftUI
 /// a volume the scan missed joins its siblings rather than starting a saga of
 /// its own.
 ///
-/// The reading dates are not here either: they follow from status changes and
-/// are never typed.
+/// The reading dates are stamped by status changes, and corrected here: only
+/// the ones the status carries are shown — a book on the pile was never
+/// opened, and only a read one was finished — and none is ever cleared, since
+/// moving the book along the pile is what does that.
 ///
 /// The form edits text as the reader sees it and works out the difference only
 /// on save, so a field left alone is never sent and one emptied is cleared.
@@ -34,6 +36,9 @@ struct BookEditView: View {
     @State private var isbn: String
     @State private var seriesName: String
     @State private var seriesVolume: String
+    @State private var addedAt: Date
+    @State private var startedAt: Date
+    @State private var finishedAt: Date
     @State private var isSaving = false
     @State private var errorMessage: String?
     /// The reader's subgenre vocabulary, proposed under the field. Empty until
@@ -62,6 +67,9 @@ struct BookEditView: View {
         _isbn = State(initialValue: book.isbn13 ?? "")
         _seriesName = State(initialValue: book.series?.name ?? "")
         _seriesVolume = State(initialValue: book.series?.volume.map(String.init) ?? "")
+        _addedAt = State(initialValue: book.addedAt ?? .now)
+        _startedAt = State(initialValue: book.startedAt ?? .now)
+        _finishedAt = State(initialValue: book.finishedAt ?? .now)
     }
 
     var body: some View {
@@ -113,6 +121,10 @@ struct BookEditView: View {
                     Text(rating == 0
                         ? "Noter un livre le marque comme lu."
                         : "Touchez l'étoile sélectionnée pour retirer la note.")
+                }
+
+                if book.addedAt != nil || book.startedAt != nil || book.finishedAt != nil {
+                    datesSection
                 }
 
                 Section("Résumé") {
@@ -239,6 +251,40 @@ struct BookEditView: View {
         .interactiveDismissDisabled(correction != BookCorrection() || (rating == 0 ? nil : rating) != book.rating)
     }
 
+    /// Each picker is bounded by its neighbours, so the form cannot say a book
+    /// was finished before it was begun, nor on a day still to come.
+    private var datesSection: some View {
+        // Never before a date already stored: a server clock a little ahead of
+        // the phone's must not leave a picker with an empty range.
+        let latest = [Date.now, book.addedAt, book.startedAt, book.finishedAt].compactMap(\.self).max() ?? .now
+        return Section {
+            if book.addedAt != nil {
+                DateField(title: "Ajouté le", icon: "tray.and.arrow.down", date: $addedAt, range: .distantPast...latest)
+                    .accessibilityIdentifier("edit-added-at")
+            }
+            if book.startedAt != nil {
+                DateField(
+                    title: "Commencé le",
+                    icon: "calendar.badge.plus",
+                    date: $startedAt,
+                    range: .distantPast...(book.finishedAt != nil ? finishedAt : latest)
+                )
+                .accessibilityIdentifier("edit-started-at")
+            }
+            if book.finishedAt != nil {
+                DateField(
+                    title: "Terminé le",
+                    icon: "calendar.badge.checkmark",
+                    date: $finishedAt,
+                    range: (book.startedAt != nil ? startedAt : .distantPast)...latest
+                )
+                .accessibilityIdentifier("edit-finished-at")
+            }
+        } header: {
+            Text("Dates")
+        }
+    }
+
     // MARK: - Validation
 
     private var isValid: Bool {
@@ -318,6 +364,9 @@ struct BookEditView: View {
             from: book.series.map { SeriesPlacement(name: $0.name, volume: $0.volume) },
             to: optional(seriesName).map { SeriesPlacement(name: $0, volume: Int(trimmed(seriesVolume))) }
         )
+        if let original = book.addedAt, addedAt != original { correction.addedAt = addedAt }
+        if let original = book.startedAt, startedAt != original { correction.startedAt = startedAt }
+        if let original = book.finishedAt, finishedAt != original { correction.finishedAt = finishedAt }
         return correction
     }
 
@@ -370,6 +419,24 @@ struct BookEditView: View {
 
     private func list(_ text: String) -> [String] {
         text.split(separator: ",").map { trimmed(String($0)) }.filter { !$0.isEmpty }
+    }
+}
+
+/// A day picked on a form row, with the same icon and label as the sheet's
+/// reading row. The day only: the time of day a book was finished is nobody's
+/// business, and the picker keeps the one already stored.
+private struct DateField: View {
+    let title: LocalizedStringKey
+    let icon: String
+    @Binding var date: Date
+    let range: ClosedRange<Date>
+
+    var body: some View {
+        Label {
+            DatePicker(title, selection: $date, in: range, displayedComponents: .date)
+        } icon: {
+            Image(systemName: icon).foregroundStyle(.secondary)
+        }
     }
 }
 

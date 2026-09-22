@@ -232,6 +232,41 @@ export const datesAfterStatusChange = (
   return { startedAt: book.startedAt ?? now, finishedAt: book.finishedAt ?? now }
 }
 
+/** How far ahead of the server a typed date may sit: the reader's phone picks
+ *  "today" on its own clock, which can run ahead. */
+const CLOCK_DRIFT_MS = 86_400_000
+
+/** The reading dates a reader corrected by hand, checked against what the
+ *  status says of the book, or `bad-dates` when they cannot be true: a date that
+ *  does not parse, one in the future, a finish before the start, or a date the status does not carry
+ *  — a book on the pile was never opened, and only a read one was finished.
+ *
+ *  Correcting the date that marks the current status — the finish of a read
+ *  book, the start of one in progress, the arrival of one on the pile — also
+ *  moves the status stamp the library is ordered on: the reader is saying when
+ *  that move happened. A dropped book keeps its stamp, since no typed date says
+ *  when it was dropped. */
+export const datesAfterCorrection = (
+  book: Pick<Book, 'status' | 'addedAt' | 'startedAt' | 'finishedAt'>,
+  typed: Partial<Pick<Book, 'addedAt' | 'startedAt' | 'finishedAt'>>,
+  now: Date,
+):
+  | Partial<Pick<Book, 'addedAt' | 'startedAt' | 'finishedAt' | 'statusChangedAt'>>
+  | 'bad-dates' => {
+  const latest = now.getTime() + CLOCK_DRIFT_MS
+  const unbelievable = (date?: Date) =>
+    date !== undefined && (Number.isNaN(date.getTime()) || date.getTime() > latest)
+  if (Object.values(typed).some(unbelievable)) return 'bad-dates'
+  if (typed.startedAt && book.status === 'to-read') return 'bad-dates'
+  if (typed.finishedAt && book.status !== 'read') return 'bad-dates'
+  const startedAt = typed.startedAt ?? book.startedAt
+  const finishedAt = typed.finishedAt ?? book.finishedAt
+  if (startedAt && finishedAt && finishedAt < startedAt) return 'bad-dates'
+  const marking = { read: typed.finishedAt, reading: typed.startedAt, 'to-read': typed.addedAt }
+  const stamp = book.status === 'dropped' ? undefined : marking[book.status]
+  return { ...typed, ...(stamp ? { statusChangedAt: stamp } : {}) }
+}
+
 /** Rating a book means having read it. The app lets a reader rate from anywhere,
  *  and silently leaving such a book in `to-read` would be a lie the library then
  *  repeats in every filter. A dropped book keeps its status: one star is often

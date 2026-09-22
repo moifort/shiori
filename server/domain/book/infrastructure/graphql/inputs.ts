@@ -139,6 +139,22 @@ export const BookEditInput = builder.inputType('BookEditInput', {
     narrators: t.field({ type: ['NarratorName'], required: false, description: 'At most five.' }),
     language: t.field({ type: BookLanguageEnum, required: false }),
     isbn13: t.field({ type: 'Isbn13', required: false }),
+    addedAt: t.field({
+      type: 'DateTime',
+      required: false,
+      description: 'When the book joined the library. Null is ignored.',
+    }),
+    startedAt: t.field({
+      type: 'DateTime',
+      required: false,
+      description:
+        'When the reading began. Only for a book in progress, read or dropped; null is ignored.',
+    }),
+    finishedAt: t.field({
+      type: 'DateTime',
+      required: false,
+      description: 'When the reading ended. Only for a read book; null is ignored.',
+    }),
     series: t.field({
       type: SeriesPlacementInput,
       required: false,

@@ -321,10 +321,15 @@ type Book {
 Corrections to a book record. Omitted fields are left as they are; null clears a field (an empty list for authors, subgenres and narrators). Title and format ignore null.
 """
 input BookEditInput {
+  """When the book joined the library. Null is ignored."""
+  addedAt: DateTime
   authors: [AuthorName!]
 
   """The running time of an audiobook, in minutes."""
   durationMinutes: ListeningMinutes
+
+  """When the reading ended. Only for a read book; null is ignored."""
+  finishedAt: DateTime
   firstPublishedIn: Year
   format: BookFormat
   genre: Genre
@@ -340,6 +345,11 @@ input BookEditInput {
   Put the book in a saga, or move it to another. Null takes it out of its saga. A book with no author can only join a saga the reader already holds.
   """
   series: SeriesPlacementInput
+
+  """
+  When the reading began. Only for a book in progress, read or dropped; null is ignored.
+  """
+  startedAt: DateTime
 
   """At most three, most representative first."""
   subgenres: [Subgenre!]
@@ -1227,7 +1237,7 @@ type Mutation {
   ): Entitlement!
 
   """
-  Correct a record the scan got wrong. Omitted fields are left alone; an optional field passed as null is cleared. BAD_USER_INPUT when `series` names a saga the reader does not hold and the book has no author to key it with.
+  Correct a record the scan got wrong. Omitted fields are left alone; an optional field passed as null is cleared. BAD_USER_INPUT when `series` names a saga the reader does not hold and the book has no author to key it with, or when a reading date is in the future, precedes the start, or is one the status does not carry.
   """
   updateBook(id: BookId!, input: BookEditInput!): Book!
 }
