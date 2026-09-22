@@ -106,6 +106,10 @@ struct BookDraft {
     var subgenres: [String] = []
     var pageCount: Int?
     var isbn13: String?
+    /// The language of the edition: read off the cover by a scan, or the
+    /// edition of the saga a volume is added to. Nil when nothing said, and
+    /// the book then shelves apart from any edition that did.
+    var language: BookLanguage?
     /// Only ever filled from a scan, like the series: it was found for the scanned
     /// ISBN, and the server is what vouches it exists.
     var coverURL: URL?
@@ -124,6 +128,7 @@ struct BookDraft {
             genre: GraphQLHelpers.graphQLNullable(genre.map(LibraryAPI.graphQLGenre)),
             hidden: .some(hidden),
             isbn13: GraphQLHelpers.graphQLNullable(isbn13),
+            language: GraphQLHelpers.graphQLNullable(language.map(LibraryAPI.graphQLLanguage)),
             pageCount: GraphQLHelpers.graphQLNullable(pageCount),
             publisher: GraphQLHelpers.graphQLNullable(publisher),
             series: GraphQLHelpers.graphQLNullable(

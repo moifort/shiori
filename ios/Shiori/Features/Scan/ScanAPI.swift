@@ -14,6 +14,10 @@ struct ScannedBook {
     var subgenres: [String] = []
     var pageCount: Int?
     var isbn13: String?
+    /// The language of the photographed edition, read off the cover: the
+    /// object on the shelf, not the language the work was written in. Nil
+    /// when the cover did not say.
+    var language: BookLanguage?
     /// The publisher's cover, found by ISBN server-side and already checked to exist.
     var coverURL: URL?
     var series: SeriesMembership?
@@ -36,6 +40,7 @@ struct ScannedBook {
             subgenres: subgenres,
             pageCount: pageCount,
             isbn13: isbn13,
+            language: language,
             coverURL: coverURL,
             series: series
         )
@@ -99,6 +104,7 @@ private extension ScannedBook {
             subgenres: result.subgenres,
             pageCount: result.pageCount,
             isbn13: result.isbn13,
+            language: result.language?.asDomain,
             coverURL: result.coverUrl.flatMap(URL.init(string:)),
             series: result.series.map { series in
                 SeriesMembership(

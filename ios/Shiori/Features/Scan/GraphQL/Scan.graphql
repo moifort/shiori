@@ -34,6 +34,7 @@ fragment ScannedRecord on ScanResult {
   subgenres
   pageCount
   isbn13
+  language
   coverUrl
   series {
     id
