@@ -75,6 +75,19 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       beside the count and its label; enlarge them (around `.title2`) so they balance the
       two lines of text beside them (`StatTilesRow.smallTile`).
 
+- [ ] **Book screen, a "Sous-genre" field of its own, plainly visible.** The subgenres sit
+      today as small tag pills under the genre line of the genre row (`BookPage.genreRow`),
+      easy to miss. Give them a labelled row of their own, "Sous-genre", drawn as the other
+      fields of the main section are, so a reader sees them at a glance. Still tappable to
+      edit, as the genre row is.
+- [ ] **Series screen, the genre and subgenres drawn with the rest of the screen, not after
+      it.** `SeriesView.load()` awaits the catalogue, then the opinion, then the whole
+      library one after the other, and assigns each as it lands; the screen switches from
+      the loader to the catalogue as soon as `series` is set, while the genre row is read
+      off `owned`, which arrives with the last call — so the genre and subgenres pop in a
+      moment later. Run the three calls concurrently (`async let`) and assign them together,
+      or keep the loader up until all three have settled.
+
 ## Medium
 
 - [x] **Adding a series updates the analytics**, including when the series is set from the
@@ -230,6 +243,17 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       Built: each volume falls under its own month — the Library tab already split sagas —
       and the status tiers are gone with the genre ones, each row tagging its status. The
       server serves `shelvedAt` on `Book` and on `FollowedSeries`; the app cuts the months.
+
+- [ ] **A series is complete when its main volumes are read, whatever the related works.**
+      The prequels, novellas, spin-offs and companions are proposals hung on the saga, not
+      what finishing it means: a reader who has read every numbered main volume is done,
+      unread novellas or not. Today `stateOf` in the series business rules counts every
+      published volume of the catalogue, related works included, and requires each to carry
+      a number — so one unnumbered novella keeps a saga `in-progress` forever. Measure the
+      state on the published spine only (`kind === 'main'`, numbered), the yardstick
+      `progressOf` already uses. On the phone, `SeriesView.finishedAt` demands every owned
+      volume read, related works included, and must apply the same rule. Derived, never
+      stored: no migration.
 
 ## Large
 
