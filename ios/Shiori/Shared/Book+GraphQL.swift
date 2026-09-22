@@ -205,6 +205,9 @@ extension ShioriGraphQL.BookDetail {
             seriesRating: seriesRating,
             favorite: favorite,
             note: note,
+            recommendation: recommendation.map {
+                BookRecommendation(recommenderName: $0.recommenderName, comment: $0.comment)
+            },
             hidden: hidden,
             addedAt: GraphQLHelpers.parseISO8601(addedAt),
             startedAt: startedAt.flatMap(GraphQLHelpers.parseISO8601),

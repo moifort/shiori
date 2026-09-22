@@ -93,6 +93,25 @@ enum BookAPI {
         return data.setBookFavorite.fragments.bookDetail.asBook
     }
 
+    /// Records who recommended the book, replacing what was there. Nil forgets
+    /// it; so does a recommendation whose two halves are empty.
+    static func setRecommendation(id: String, recommendation: BookRecommendation?) async throws -> Book {
+        let input = recommendation.map {
+            ShioriGraphQL.RecommendationInput(
+                comment: GraphQLHelpers.graphQLNullable($0.comment),
+                recommenderName: GraphQLHelpers.graphQLNullable($0.recommenderName)
+            )
+        }
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.SetBookRecommendationMutation(
+                id: id,
+                recommendation: input.map { .some($0) } ?? .null
+            )
+        )
+        return data.setBookRecommendation.fragments.bookDetail.asBook
+    }
+
     /// Every subgenre the reader has used, most used first. What the subgenre
     /// field proposes: a vocabulary drawn from their own shelf.
     /// The edit form's proposals, both lists in one request: the subgenres the

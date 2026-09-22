@@ -14,6 +14,7 @@ struct BookView: View {
     @State private var viewModel: BookViewModel
     @State private var showEditor = false
     @State private var showGenreEditor = false
+    @State private var showRecommendation = false
     @State private var showRatingPrompt = false
     @State private var confirmDelete = false
     @State private var openSeries: SeriesDestination?
@@ -41,7 +42,8 @@ struct BookView: View {
                                 SeriesDestination(seriesId: $0.id, language: book.language)
                             }
                         },
-                        onEditGenre: { showGenreEditor = true }
+                        onEditGenre: { showGenreEditor = true },
+                        onEditRecommendation: { showRecommendation = true }
                     )
                 } else if viewModel.isLoading {
                     ProgressView()
@@ -83,6 +85,17 @@ struct BookView: View {
                 if let book = viewModel.book {
                     GenreEditSheet(book: book) { correction in
                         let saved = await viewModel.save(correction, rating: book.rating)
+                        if let book = viewModel.book { onChanged(book) }
+                        guard !saved else { return nil }
+                        defer { viewModel.dismissError() }
+                        return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
+                    }
+                }
+            }
+            .sheet(isPresented: $showRecommendation) {
+                if let book = viewModel.book {
+                    RecommendationSheet(current: book.recommendation) { recommendation in
+                        let saved = await viewModel.setRecommendation(recommendation)
                         if let book = viewModel.book { onChanged(book) }
                         guard !saved else { return nil }
                         defer { viewModel.dismissError() }
@@ -149,6 +162,14 @@ struct BookView: View {
                 showEditor = true
             }
             .accessibilityIdentifier("book-edit")
+
+            // As in Vinarium: who pressed the book on the reader, picked from
+            // their contacts. Once recorded, it is also corrected from its own
+            // section on the page.
+            Button("Conseillé par un ami", systemImage: "person.badge.plus") {
+                showRecommendation = true
+            }
+            .accessibilityIdentifier("book-recommend")
 
             // Not on the segmented picker, which holds the states a book moves
             // through: dropping one is an ending, chosen once, from here.

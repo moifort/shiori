@@ -63,6 +63,14 @@ mutation SetBookFavorite($id: BookId!, $favorite: Boolean!) {
   }
 }
 
+# Who recommended the book: null forgets it, as does one that names nobody
+# and says nothing.
+mutation SetBookRecommendation($id: BookId!, $recommendation: RecommendationInput) {
+  setBookRecommendation(id: $id, recommendation: $recommendation) {
+    ...BookDetail
+  }
+}
+
 mutation DeleteBook($id: BookId!) {
   deleteBook(id: $id)
 }
@@ -89,6 +97,10 @@ fragment BookDetail on Book {
   seriesRating
   favorite
   note
+  recommendation {
+    recommenderName
+    comment
+  }
   hidden
   addedAt
   startedAt

@@ -4,6 +4,10 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Un livre garde la trace de qui l’a conseillé, comme un vin dans Vinarium : « Conseillé par
+  un ami », dans le menu du livre, prend un nom, saisi ou choisi dans les contacts, et ce
+  qu’on vous en a dit. Le conseil s’affiche sur la fiche du livre, où un toucher le corrige
+  ou le retire, et jamais dans la bibliothèque vue par un ami.
 - La série d’un livre se renseigne à la main depuis son écran de modification, pour un tome
   que le scan n’a pas rangé : il suffit de nommer la série — celles de la bibliothèque sont
   proposées pendant la saisie — et son numéro de tome, et le livre rejoint les tomes déjà

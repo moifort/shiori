@@ -21,6 +21,7 @@ struct BookPage: View {
     let onToggleHidden: () -> Void
     let onOpenSeries: () -> Void
     let onEditGenre: () -> Void
+    let onEditRecommendation: () -> Void
 
     /// Past this many words the summary folds, and a button unfolds it: an
     /// Audible blurb can run to a screenful, and the facts below it were
@@ -34,6 +35,9 @@ struct BookPage: View {
             statusSection
             header
             readingSection
+            if let recommendation = book.recommendation {
+                recommendationSection(recommendation)
+            }
             if let synopsis = book.synopsis { synopsisSection(synopsis) }
         }
         .listStyle(.insetGrouped)
@@ -279,6 +283,38 @@ struct BookPage: View {
         }
     }
 
+    /// Who pressed the book on the reader, as in Vinarium's wine sheet. Only
+    /// drawn once there is one: the menu's "Conseillé par un ami" is how a
+    /// reader adds it, and a tap here corrects it.
+    private func recommendationSection(_ recommendation: BookRecommendation) -> some View {
+        Section("Conseillé") {
+            Button(action: onEditRecommendation) {
+                Label {
+                    if let name = recommendation.recommenderName {
+                        LabeledContent("Conseillé par") {
+                            Text(name).foregroundStyle(.tint)
+                        }
+                    } else {
+                        Text("Livre conseillé")
+                    }
+                } icon: {
+                    Image(systemName: "person.badge.star").foregroundStyle(.secondary)
+                }
+            }
+            .tint(.primary)
+            .accessibilityIdentifier("book-recommendation")
+
+            if let comment = recommendation.comment {
+                Label {
+                    Text(comment).font(.callout)
+                } icon: {
+                    Image(systemName: "text.quote").foregroundStyle(.secondary)
+                }
+                .copyable(comment)
+            }
+        }
+    }
+
     private func synopsisSection(_ synopsis: String) -> some View {
         let words = synopsis.split(whereSeparator: \.isWhitespace)
         let folded = words.count > Self.summaryWordLimit && !summaryExpanded
@@ -315,6 +351,7 @@ struct BookPage: View {
                 isbn13: "9782352943556",
                 series: SeriesMembership(id: "s1", name: "Chronique du tueur de roi", volume: 1, kind: .main),
                 status: .reading,
+                recommendation: BookRecommendation(recommenderName: "Marie Curie", comment: "Lis-le cet été."),
                 hidden: true,
                 startedAt: .now.addingTimeInterval(-86400 * 20)
             ),
@@ -323,7 +360,8 @@ struct BookPage: View {
             onRate: {},
             onToggleHidden: {},
             onOpenSeries: {},
-            onEditGenre: {}
+            onEditGenre: {},
+            onEditRecommendation: {}
         )
     }
 }

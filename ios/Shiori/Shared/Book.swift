@@ -222,6 +222,14 @@ struct SeriesMembership: Identifiable, Hashable, Codable, Sendable {
 
 /// A book as its reader holds it: the public facts and their own judgment on the
 /// same record, because the record belongs to the reader rather than the world.
+/// Who recommended a book to the reader, and what they said of it, as in
+/// Vinarium's "Conseillé par un ami". Either half may be missing, never both.
+/// The name is copied from the reader's contacts, never linked to them.
+struct BookRecommendation: Hashable, Codable, Sendable {
+    var recommenderName: String?
+    var comment: String?
+}
+
 struct Book: Identifiable, Hashable, Codable, Sendable {
     let id: String
     let title: String
@@ -263,6 +271,9 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
     /// meant are both real, and one field cannot say both.
     var favorite: Bool = false
     var note: String?
+    /// Who recommended the book, when the reader recorded it. Nil when nobody
+    /// was: the server never keeps one that names nobody and says nothing.
+    var recommendation: BookRecommendation?
     var hidden: Bool = false
     var addedAt: Date?
     var startedAt: Date?

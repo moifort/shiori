@@ -69,6 +69,20 @@ final class BookViewModel {
         await mutate { try await BookAPI.setFavorite(id: self.bookId, favorite: favorite) }
     }
 
+    /// Returns false when the call failed, so the sheet stays open with what
+    /// the reader typed.
+    func setRecommendation(_ recommendation: BookRecommendation?) async -> Bool {
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            book = try await BookAPI.setRecommendation(id: bookId, recommendation: recommendation)
+            return true
+        } catch {
+            errorMessage = reportError(error)
+            return false
+        }
+    }
+
     func setHidden(_ hidden: Bool) async {
         await mutate { try await BookAPI.setHidden(id: self.bookId, hidden: hidden) }
     }

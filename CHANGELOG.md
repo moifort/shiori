@@ -10,6 +10,10 @@ the release tag is pushed.
 
 ## Unreleased
 
+- A book can record who recommended it, as a wine can in Vinarium: "Recommended by a friend"
+  in the book's menu takes a name, typed or picked from the contacts, and what they said of
+  it. The recommendation shows on the book's page, where a tap corrects or removes it, and
+  never on a friend's view of the library.
 - A book's saga can be set by hand from its edit screen, for a volume the scan did not place:
   name the saga — the reader's own sagas are proposed as they type — and its volume number,
   and the book joins the volumes already filed under that name. Emptying the name takes the
