@@ -303,3 +303,8 @@ the release tag is pushed.
 - A series opens in one request, and no longer reads the whole library to show its own
   volumes: it used to open slower the bigger the library grew. Launching the app, the Audible
   import screen and saving a book's edits each cost one round trip too.
+- A scan, a sign-in, an invitation or a subscription check no longer makes the home screen,
+  the library and the series tab read themselves again, and coming back to a tab no longer
+  reloads it: they refresh when the library actually changes. A book's edit screen loads its
+  proposals in one request, and adding a volume from a series or editing its genre no longer
+  reads the whole series again.

@@ -323,3 +323,8 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   ses propres tomes : elle s’ouvrait d’autant plus lentement que la bibliothèque grossissait.
   Le lancement de l’app, l’écran d’import Audible et l’enregistrement d’un livre modifié ne
   coûtent plus, eux aussi, qu’un seul aller-retour.
+- Un scan, une connexion, une invitation ou une vérification d’abonnement ne font plus relire
+  l’accueil, la bibliothèque et l’onglet des séries, et revenir sur un onglet ne le recharge
+  plus : ils se mettent à jour quand la bibliothèque change vraiment. L’écran de modification
+  d’un livre charge ses propositions en une seule requête, et ajouter un tome depuis une série
+  ou en modifier le genre ne relit plus toute la série.
