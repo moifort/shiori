@@ -212,3 +212,7 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   lecteur dont le téléphone est en français a une bibliothèque française par défaut, et un 🇫🇷
   sur chaque ligne ne disait rien ; le drapeau reste pour l’exception, l’édition anglaise ou
   japonaise parmi les autres.
+- La couverture éditeur d’un livre scanné est désormais cherchée sur Amazon d’abord, puis sur
+  Open Library quand Amazon n’en a pas. Amazon a presque toujours l’édition exacte, là où Open
+  Library manquait souvent une édition française récente, ou rangeait dessous une couverture
+  périmée.

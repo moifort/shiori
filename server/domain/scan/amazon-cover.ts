@@ -25,9 +25,11 @@ const coverUrlOf = (asin: string) =>
 
 /** Amazon's cover for an ISBN, or undefined when it has none.
  *
- *  The URL pattern is undocumented and carries no promise of lasting: it is the
- *  fallback behind Open Library, never the first source. A cover that later
- *  disappears fails to load, and the app falls back to its placeholder.
+ *  The first source asked, for the quality of what it answers: the cover of the
+ *  exact edition, at a size a Retina book sheet can draw. The URL pattern is
+ *  undocumented and carries no promise of lasting, which is why Open Library
+ *  stays behind it: a cover that later disappears fails to load, and the app
+ *  falls back to its placeholder.
  *
  *  A missing cover still answers 200, with a 43-byte transparent GIF. The
  *  content type tells the two apart without downloading the image.

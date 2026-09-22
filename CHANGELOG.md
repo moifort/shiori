@@ -199,3 +199,6 @@ the release tag is pushed.
 - A flag now marks only the editions in a language other than the phone's. A reader whose
   iPhone is in French owns a French library by default, and a 🇫🇷 on every row said nothing;
   the flag is kept for the exception, the English or Japanese edition among them.
+- A scanned book's published cover is now looked up on Amazon first, then on Open Library
+  when Amazon has none. Amazon nearly always has the exact edition where Open Library often
+  missed a recent French one, or filed a stale cover under it.
