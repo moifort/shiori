@@ -8,6 +8,8 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   que le scan n’a pas rangé : il suffit de nommer la série — celles de la bibliothèque sont
   proposées pendant la saisie — et son numéro de tome, et le livre rejoint les tomes déjà
   rangés sous ce nom. Vider le nom sort le livre de sa série.
+- La carte des genres de l’accueil compte tous les livres lus depuis le premier, et plus
+  seulement ceux de l’année : elle devient « Genres lus » et concorde avec la case « Lus ».
 - L’accueil compte tous les livres lus depuis le premier, dans une case « Lus » à côté des
   favoris et des abandonnés, qui ouvre la bibliothèque sur les livres lus.
 - La carte des séries de l’accueil devient « Meilleures séries en cours », dessinée en vert

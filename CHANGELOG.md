@@ -14,6 +14,8 @@ the release tag is pushed.
   name the saga — the reader's own sagas are proposed as they type — and its volume number,
   and the book joins the volumes already filed under that name. Emptying the name takes the
   book out of its saga.
+- The dashboard's genres card counts every book read since the first, not only this year's:
+  it is now "Genres read", and matches the "Read" box beside it.
 - The dashboard counts every book read since the first, in a "Read" box beside the
   favourites and the dropped books, which opens the library on the books read.
 - The dashboard's saga card is now "Best series in progress", drawn in mint rather than

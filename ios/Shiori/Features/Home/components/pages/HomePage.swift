@@ -94,7 +94,6 @@ struct HomePage: View {
                 )
 
                 GenresWidget(
-                    currentYear: dashboard.currentYear,
                     genres: dashboard.genres,
                     onTapped: onGenresTapped
                 )

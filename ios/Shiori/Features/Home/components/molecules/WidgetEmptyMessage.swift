@@ -97,7 +97,7 @@ struct WidgetEmptyMessage: View {
             WidgetEmptyMessage(text: "Terminez un livre pour le retrouver ici.", placeholder: .book)
         }
         WidgetCard(title: "Genres") {
-            WidgetEmptyMessage(text: "Terminez un livre cette année pour voir vos genres.", placeholder: .segments)
+            WidgetEmptyMessage(text: "Terminez un livre pour voir vos genres.", placeholder: .segments)
         }
         WidgetCard(title: "Séries en cours") {
             WidgetEmptyMessage(text: "Aucune série en cours.", placeholder: .rings)

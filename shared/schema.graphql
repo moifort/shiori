@@ -467,7 +467,9 @@ type Dashboard {
   """Books and sagas the reader hearted, together."""
   favoriteCount: Int!
 
-  """Books finished this year: four genres, then one "others" segment."""
+  """
+  Every book finished, whatever the year: four genres, then one "others" segment.
+  """
   genres: [GenreCount!]!
 
   """

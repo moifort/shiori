@@ -251,7 +251,7 @@ export const dashboardOf = (view: AnalyticsView, today: LocalDateValue): Dashboa
     monthsToClearPile: monthsToClearPileOf(finishes, view.toRead.length, today),
     averageRating: averageRatingOf(finishes),
     ratedCount: finishes.filter((finish) => finish.rating !== undefined).length,
-    genres: genresOf(finishes, currentYear),
+    genres: genresOf(finishes),
     // A view stored before the heart was carried reads as no heart.
     series: [...view.series]
       .sort(compareSeriesProgress)
@@ -417,12 +417,13 @@ export const averageRatingOf = (finishes: readonly Finish[]): number | undefined
   return Math.round((ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length) * 10) / 10
 }
 
-/** The genres of the books finished this year: the four most read, then one
- *  "others" segment gathering the rest, books without a genre and `other`. */
-export const genresOf = (finishes: readonly Finish[], currentYear: number): GenreCount[] => {
+/** The genres of every book finished since the first: the four most read, then
+ *  one "others" segment gathering the rest, books without a genre and `other`.
+ *  Every year rather than this one: what the reader reads is a taste, and a
+ *  January card holding two books says nothing about it. */
+export const genresOf = (finishes: readonly Finish[]): GenreCount[] => {
   const counts = new Map<Genre, number>()
   for (const finish of finishes) {
-    if (yearOf(finish.finishedOn) !== currentYear) continue
     const genre = finish.genre ?? 'other'
     counts.set(genre, (counts.get(genre) ?? 0) + 1)
   }

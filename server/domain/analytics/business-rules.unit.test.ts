@@ -222,7 +222,7 @@ describe('the average rating', () => {
   })
 })
 
-describe('the genres read this year', () => {
+describe('the genres read', () => {
   test('keeps four genres and gathers the rest, other and unclassified into one segment', () => {
     const read = (genre: Genre | undefined, count: number) =>
       Array.from({ length: count }, () => finish('2026-01-01', '2026-01-02', { genre }))
@@ -234,15 +234,27 @@ describe('the genres read this year', () => {
       ...read('poetry', 1),
       ...read('other', 1),
       ...read(undefined, 1),
-      finish('2025-01-01', '2025-01-02', { genre: 'horror' }),
     ]
 
-    expect(genresOf(finishes, 2026)).toEqual([
+    expect(genresOf(finishes)).toEqual([
       { genre: 'fantasy', count: 5 },
       { genre: 'crime', count: 4 },
       { genre: 'romance', count: 3 },
       { genre: 'essay', count: 2 },
       { count: 3 },
+    ])
+  })
+
+  test('count the books of every year, not only this one', () => {
+    const finishes = [
+      finish('2024-03-01', '2024-03-10', { genre: 'fantasy' }),
+      finish('2025-06-01', '2025-06-10', { genre: 'fantasy' }),
+      finish('2026-01-01', '2026-01-02', { genre: 'crime' }),
+    ]
+
+    expect(genresOf(finishes)).toEqual([
+      { genre: 'fantasy', count: 2 },
+      { genre: 'crime', count: 1 },
     ])
   })
 })

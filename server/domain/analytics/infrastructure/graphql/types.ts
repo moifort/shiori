@@ -194,7 +194,7 @@ export const DashboardType = builder.objectRef<Dashboard>('Dashboard').implement
     ratedCount: t.exposeInt('ratedCount'),
     genres: t.field({
       type: [GenreCountType],
-      description: 'Books finished this year: four genres, then one "others" segment.',
+      description: 'Every book finished, whatever the year: four genres, then one "others" segment.',
       resolve: (dashboard) => dashboard.genres,
     }),
     series: t.field({
