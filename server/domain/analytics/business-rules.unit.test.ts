@@ -340,6 +340,51 @@ describe('building the view', () => {
     expect(seriesProgressOf([volume(1), volume(2)], [catalogue], 2026)).toEqual([])
   })
 
+  // The card leads with the sagas the reader thinks most of: their own rating
+  // of the saga, else what their rated volumes average, and the most recent
+  // activity among equals. An unrated saga comes after every rated one.
+  test('puts the best rated sagas in progress first, and shows six', () => {
+    const sagaOf = (name: string): Series => ({
+      ...catalogue,
+      id: name as SeriesId,
+      name: SeriesName(name),
+    })
+    const sagas = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map(sagaOf)
+    const firstVolume = (saga: Series, finishedAt: string, rating?: number) =>
+      book(`${saga.id}-1`, {
+        status: 'read',
+        startedAt: new Date(finishedAt),
+        finishedAt: new Date(finishedAt),
+        rating: rating === undefined ? undefined : StarRating(rating),
+        series: { id: saga.id, name: saga.name, volume: VolumeNumber(1), kind: 'main' },
+      })
+    const view = analyticsViewOf({
+      userId: reader,
+      timeZone: paris,
+      now: new Date('2026-09-15T10:00:00.000Z'),
+      catalogues: sagas,
+      opinions: [
+        { userId: reader, seriesId: 'b' as SeriesId, rating: StarRating(5) },
+        // The saga's own rating wins over its volumes'.
+        { userId: reader, seriesId: 'c' as SeriesId, rating: StarRating(2) },
+      ],
+      books: [
+        firstVolume(sagas[0], '2026-09-01'),
+        firstVolume(sagas[1], '2026-01-01'),
+        firstVolume(sagas[2], '2026-02-01', 5),
+        firstVolume(sagas[3], '2026-03-01', 4),
+        firstVolume(sagas[4], '2026-04-01', 4),
+        firstVolume(sagas[5], '2026-05-01'),
+        firstVolume(sagas[6], '2026-06-01'),
+        firstVolume(sagas[7], '2026-07-01'),
+      ],
+    })
+
+    const shown = dashboardOf(view, day('2026-09-15')).series.map((entry) => entry.id)
+
+    expect(shown).toEqual(['b', 'e', 'd', 'c', 'a', 'h'] as SeriesId[])
+  })
+
   test('sorts the shelves and keeps the last finished book', () => {
     const view = analyticsViewOf({
       userId: reader,

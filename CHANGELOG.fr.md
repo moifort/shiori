@@ -4,6 +4,9 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- La carte « Séries en cours » de l’accueil liste six séries au lieu de trois, les mieux
+  notées en premier : la note donnée à la série, sinon la moyenne des tomes notés, et
+  l’activité la plus récente à égalité. Une série sans note passe après toutes les autres.
 - Un cœur vaut cinq étoiles, sur un livre comme sur une série. Mettre le cœur donne cinq
   étoiles — un livre passe alors à « Lu », comme pour toute note — et retirer le cœur
   retire les étoiles avec. Noter sous cinq étoiles, ou effacer la note, retire aussi le

@@ -58,6 +58,10 @@ export type SeriesProgress = {
   name: SeriesName
   readCount: number
   totalCount: number
+  /** What the reader thinks of the saga — its own rating, else the average of
+   *  its rated volumes — which ranks the dashboard's card. Absent when they
+   *  have rated neither, and on a view stored before the field existed. */
+  rating?: number
   lastActivityAt: Date
 }
 

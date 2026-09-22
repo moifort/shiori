@@ -19,9 +19,9 @@ import {
   shelvedOf,
   shownRatingOf,
 } from '~/domain/book/business-rules'
-import type { Book, Genre } from '~/domain/book/types'
+import type { Book, Genre, StarRating } from '~/domain/book/types'
 import { progressOf, stateOf } from '~/domain/series/business-rules'
-import type { Series } from '~/domain/series/types'
+import type { Series, SeriesId } from '~/domain/series/types'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import { Year } from '~/domain/shared/primitives'
 import type { UserId } from '~/domain/shared/types'
@@ -32,13 +32,13 @@ import type { LocalDate as LocalDateValue } from './types'
 const YEARS_SHOWN = 9
 const READING_SHOWN = 10
 const SUGGESTIONS_SHOWN = 6
-const SERIES_SHOWN = 3
+const SERIES_SHOWN = 6
 const TOP_GENRES = 4
 
 /** Bumped whenever the view gains a figure or a rule changes, so a view stored
  *  by an older bundle is rebuilt on its next read instead of answering with a
  *  field it never computed. */
-export const VIEW_VERSION = 5
+export const VIEW_VERSION = 6
 
 // MARK: - Calendar
 
@@ -155,6 +155,7 @@ export const analyticsViewOf = (input: {
       books,
       catalogues.filter((series) => !unfollowed.has(series.id)),
       yearOf(localDateOf(now, timeZone)),
+      seriesRatings,
     ),
     favoriteBookCount: books.filter((book) => book.favorite === true).length,
     favoriteSeriesCount: opinions.filter((opinion) => opinion.favorite === true).length,
@@ -171,6 +172,7 @@ export const seriesProgressOf = (
   books: readonly Book[],
   catalogues: readonly Series[],
   currentYear: number,
+  seriesRatings: ReadonlyMap<SeriesId, StarRating> = new Map(),
 ): SeriesProgress[] => {
   const progress: SeriesProgress[] = []
   for (const series of catalogues) {
@@ -188,6 +190,7 @@ export const seriesProgressOf = (
       name: series.name,
       readCount,
       totalCount,
+      rating: sagaRatingOf(series.id, owned, seriesRatings),
       lastActivityAt: new Date(
         Math.max(
           ...owned.map((book) => (book.finishedAt ?? book.startedAt ?? book.addedAt).getTime()),
@@ -197,6 +200,28 @@ export const seriesProgressOf = (
   }
   return progress
 }
+
+/** What the reader thinks of a saga, for ranking the sagas in progress: their
+ *  own rating of it, else the average of the volumes they rated themselves.
+ *  Undefined when they have said nothing of it. */
+const sagaRatingOf = (
+  seriesId: SeriesId,
+  owned: readonly Book[],
+  seriesRatings: ReadonlyMap<SeriesId, StarRating>,
+): number | undefined => {
+  const own = seriesRatings.get(seriesId)
+  if (own !== undefined) return own
+  const rated = owned.flatMap((book) => (book.rating === undefined ? [] : [book.rating]))
+  return rated.length === 0
+    ? undefined
+    : rated.reduce((sum, rating) => sum + rating, 0) / rated.length
+}
+
+// The best rated first, an unrated saga after every rated one, and the most
+// recent activity among equals.
+const compareSeriesProgress = (left: SeriesProgress, right: SeriesProgress): number =>
+  (right.rating ?? 0) - (left.rating ?? 0) ||
+  right.lastActivityAt.getTime() - left.lastActivityAt.getTime()
 
 // MARK: - Reading the view against today
 
@@ -219,9 +244,7 @@ export const dashboardOf = (view: AnalyticsView, today: LocalDateValue): Dashboa
     averageRating: averageRatingOf(finishes),
     ratedCount: finishes.filter((finish) => finish.rating !== undefined).length,
     genres: genresOf(finishes, currentYear),
-    series: [...view.series]
-      .sort((left, right) => right.lastActivityAt.getTime() - left.lastActivityAt.getTime())
-      .slice(0, SERIES_SHOWN),
+    series: [...view.series].sort(compareSeriesProgress).slice(0, SERIES_SHOWN),
     favoriteCount: (view.favoriteBookCount ?? 0) + (view.favoriteSeriesCount ?? 0),
     hasAudiobooks: (view.audiobookCount ?? 0) > 0,
     hasPrintedBooks: view.printedBookCount === undefined || view.printedBookCount > 0,

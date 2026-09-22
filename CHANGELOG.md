@@ -10,6 +10,9 @@ the release tag is pushed.
 
 ## Unreleased
 
+- The dashboard's "Series in progress" card lists six sagas rather than three, the best
+  rated first: the reader's rating of the saga, else the average of the volumes they rated,
+  and the most recent activity among equals. An unrated saga comes after every rated one.
 - A heart is five stars, on a book as on a saga. Giving the heart rates it five — a book
   is then marked read, as any rating marks it — and taking the heart back takes the stars
   with it. Rating below five, or removing the rating, takes the heart back too. Five stars
