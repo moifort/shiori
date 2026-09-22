@@ -23,12 +23,26 @@ export namespace SeriesUseCase {
    *
    *  One batch, so the library never shows half a saga. Returns how many books
    *  went; zero when the reader held none. */
-  export const removeFromLibrary = async (userId: UserId, seriesId: SeriesId): Promise<number> => {
+  /** Take a saga off the shelf: every volume the reader holds, or only those
+   *  of one edition when `edition` names a language — the Series tab shows a
+   *  saga held in two languages as two rows, and the reader removes the row
+   *  they see. Their opinion is of the work, not of an edition, so it is
+   *  forgotten only once no volume of the saga remains. */
+  export const removeFromLibrary = async (
+    userId: UserId,
+    seriesId: SeriesId,
+    edition?: BookLanguage,
+  ): Promise<number> => {
     const removed = await atomically(async (batch) => {
-      const count = await BookCommand.removeSeries(userId, seriesId, batch)
-      await SeriesOpinionCommand.forget(userId, seriesId, batch)
-      if (count > 0) AnalyticsCommand.markStale(userId, batch)
-      return count
+      const { removed, remaining } = await BookCommand.removeSeries(
+        userId,
+        seriesId,
+        edition,
+        batch,
+      )
+      if (remaining === 0) await SeriesOpinionCommand.forget(userId, seriesId, batch)
+      if (removed > 0) AnalyticsCommand.markStale(userId, batch)
+      return removed
     })
     if (removed > 0) await AnalyticsUseCase.refreshAfterWrite(userId)
     return removed

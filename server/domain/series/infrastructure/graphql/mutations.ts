@@ -33,11 +33,23 @@ builder.mutationFields((t) => ({
 
   deleteSeries: t.int({
     description:
-      'Remove a saga from the library: every volume the reader holds, and their ' +
-      'rating and heart for it. The shared catalogue is left alone. Returns how many ' +
-      'books were removed, zero when the reader held none.',
-    args: { seriesId: t.arg({ type: 'SeriesId', required: true }) },
+      'Remove a saga from the library: every volume the reader holds, or only the ' +
+      'volumes of one edition when `language` names it — a saga held in two ' +
+      'languages is two rows of the Series tab, removed apart. The rating and heart ' +
+      'go with the last volume, since they are of the work rather than of an ' +
+      'edition. The shared catalogue is left alone. Returns how many books were ' +
+      'removed, zero when the reader held none.',
+    args: {
+      seriesId: t.arg({ type: 'SeriesId', required: true }),
+      language: t.arg({
+        type: BookLanguageEnum,
+        required: false,
+        description:
+          'The edition to remove, for a saga held in more than one language. ' +
+          'Absent, every edition goes.',
+      }),
+    },
     resolve: (_root, args, context) =>
-      SeriesUseCase.removeFromLibrary(context.userId, args.seriesId),
+      SeriesUseCase.removeFromLibrary(context.userId, args.seriesId, args.language ?? undefined),
   }),
 }))

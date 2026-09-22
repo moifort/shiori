@@ -454,6 +454,40 @@ describe('removing a saga from the library', () => {
     expect(left.data).toEqual({ mySeries: [], seriesOpinion: null })
   })
 
+  // The Series tab shows a saga held in two languages as two rows, and the
+  // reader removes the row they see: the other edition is a different set of
+  // books, and their opinion is of the work, which they still hold.
+  test('removes one edition of a saga and leaves the other, with the opinion', async () => {
+    await addVolume('Dune', 1, { language: 'EN' })
+    await addVolume('Dune Messiah', 2, { language: 'EN' })
+    await addVolume('Dune', 1, { language: 'FR' })
+    await execute('mutation { rateSeries(seriesId: "dune--frank-herbert", rating: 4) { rating } }')
+
+    const removed = await execute(
+      'mutation { deleteSeries(seriesId: "dune--frank-herbert", language: EN) }',
+    )
+    expect(removed.errors).toBeUndefined()
+    expect(removed.data?.deleteSeries).toBe(2)
+
+    const left = await execute(
+      '{ mySeries { language ownedCount } seriesOpinion(seriesId: "dune--frank-herbert") { rating } }',
+    )
+    expect(left.data).toEqual({
+      mySeries: [{ language: 'FR', ownedCount: 1 }],
+      seriesOpinion: { rating: 4 },
+    })
+  })
+
+  test('forgets the opinion once the last edition is gone', async () => {
+    await addVolume('Dune', 1, { language: 'EN' })
+    await execute('mutation { rateSeries(seriesId: "dune--frank-herbert", rating: 4) { rating } }')
+
+    await execute('mutation { deleteSeries(seriesId: "dune--frank-herbert", language: EN) }')
+
+    const left = await execute('{ seriesOpinion(seriesId: "dune--frank-herbert") { rating } }')
+    expect(left.data).toEqual({ seriesOpinion: null })
+  })
+
   test('removes nothing from a saga the reader holds no volume of', async () => {
     const removed = await execute('mutation { deleteSeries(seriesId: "dune--frank-herbert") }')
     expect(removed.data?.deleteSeries).toBe(0)

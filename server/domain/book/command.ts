@@ -326,16 +326,20 @@ export namespace BookCommand {
     return 'removed'
   }
 
-  /** Remove every volume of one saga from the reader's library, in one batch.
-   *  Returns how many books went. */
+  /** Remove every volume of one saga from the reader's library, in one batch —
+   *  or only the volumes of one edition, when `edition` names a language: a
+   *  saga held in two languages is two sets of books, removed apart. Returns
+   *  how many books went, and how many volumes of the saga remain. */
   export const removeSeries = async (
     userId: UserId,
     seriesId: SeriesId,
+    edition: BookLanguage | undefined,
     batch?: WriteBatch,
-  ): Promise<number> => {
+  ): Promise<{ removed: number; remaining: number }> => {
     const volumes = await repository.findBySeries(userId, seriesId)
-    for (const volume of volumes) await repository.remove(userId, volume.id, batch)
-    return volumes.length
+    const going = edition ? volumes.filter((volume) => volume.language === edition) : volumes
+    for (const volume of going) await repository.remove(userId, volume.id, batch)
+    return { removed: going.length, remaining: volumes.length - going.length }
   }
 
   /** Erase the reader's whole library — an account deletion wipes it outright. */

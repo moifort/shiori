@@ -973,9 +973,15 @@ type Mutation {
   deleteBook(id: BookId!): Boolean!
 
   """
-  Remove a saga from the library: every volume the reader holds, and their rating and heart for it. The shared catalogue is left alone. Returns how many books were removed, zero when the reader held none.
+  Remove a saga from the library: every volume the reader holds, or only the volumes of one edition when `language` names it — a saga held in two languages is two rows of the Series tab, removed apart. The rating and heart go with the last volume, since they are of the work rather than of an edition. The shared catalogue is left alone. Returns how many books were removed, zero when the reader held none.
   """
-  deleteSeries(seriesId: SeriesId!): Int!
+  deleteSeries(
+    """
+    The edition to remove, for a saga held in more than one language. Absent, every edition goes.
+    """
+    language: BookLanguage
+    seriesId: SeriesId!
+  ): Int!
 
   """
   Forget the Audible connection. Books already imported stay in the library.
