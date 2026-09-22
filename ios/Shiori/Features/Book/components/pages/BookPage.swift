@@ -12,7 +12,8 @@ import SwiftUI
 ///
 /// The other volumes of the saga are not listed here: that list belongs to the
 /// series screen, one tap away on the series row, which is the one place that
-/// knows the whole catalogue.
+/// knows the whole catalogue. A book in no saga gets a call to action in that
+/// row's place, to file it into one.
 struct BookPage: View {
     let book: Book
     let isSaving: Bool
@@ -20,6 +21,7 @@ struct BookPage: View {
     let onRate: () -> Void
     let onToggleHidden: () -> Void
     let onOpenSeries: () -> Void
+    let onJoinSeries: () -> Void
     let onEditGenre: () -> Void
     let onEditRecommendation: () -> Void
 
@@ -120,6 +122,14 @@ struct BookPage: View {
                 }
                 .tint(.primary)
                 .accessibilityIdentifier("book-series")
+            } else {
+                // As the missing rating gets its call to action: a volume the
+                // scan did not recognise as one is filed from here, without
+                // going through the whole edit form.
+                Button(action: onJoinSeries) {
+                    Label("Ajouter à une série", systemImage: "square.stack")
+                }
+                .accessibilityIdentifier("book-join-series")
             }
 
             genreRow
@@ -360,6 +370,7 @@ struct BookPage: View {
             onRate: {},
             onToggleHidden: {},
             onOpenSeries: {},
+            onJoinSeries: {},
             onEditGenre: {},
             onEditRecommendation: {}
         )

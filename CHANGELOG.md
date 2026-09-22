@@ -22,6 +22,8 @@ the release tag is pushed.
   name the saga — the reader's own sagas are proposed as they type — and its volume number,
   and the book joins the volumes already filed under that name. Emptying the name takes the
   book out of its saga.
+- A book in no series offers "Add to a series" on its page, which files it into one without
+  opening the whole edit screen.
 - The dashboard's genres card counts every book read since the first, not only this year's:
   it is now "Genres read", and matches the "Read" box beside it.
 - The dashboard counts every book read since the first, in a "Read" box beside the

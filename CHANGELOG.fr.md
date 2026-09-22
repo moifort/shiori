@@ -16,6 +16,8 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   que le scan n’a pas rangé : il suffit de nommer la série — celles de la bibliothèque sont
   proposées pendant la saisie — et son numéro de tome, et le livre rejoint les tomes déjà
   rangés sous ce nom. Vider le nom sort le livre de sa série.
+- Un livre sans série propose « Ajouter à une série » sur sa fiche, pour l’y ranger sans
+  passer par tout l’écran de modification.
 - La carte des genres de l’accueil compte tous les livres lus depuis le premier, et plus
   seulement ceux de l’année : elle devient « Genres lus » et concorde avec la case « Lus ».
 - L’accueil compte tous les livres lus depuis le premier, dans une case « Lus » à côté des

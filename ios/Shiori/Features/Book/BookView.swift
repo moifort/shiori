@@ -2,7 +2,8 @@ import SwiftUI
 
 /// One book's coordinator, presented as a sheet over the list that opened it:
 /// owns the view model, the toolbar menu, the edit form, the rating prompt, the
-/// delete confirmation, and the hop to the series screen.
+/// delete confirmation, filing a standalone book into a saga, and the hop to
+/// the series screen.
 ///
 /// The sheet carries its own NavigationStack, so the series screen pushes inside
 /// it and closing the sheet always lands back on the row the reader tapped.
@@ -14,6 +15,7 @@ struct BookView: View {
     @State private var viewModel: BookViewModel
     @State private var showEditor = false
     @State private var showGenreEditor = false
+    @State private var showSeriesJoin = false
     @State private var showRecommendation = false
     @State private var showRatingPrompt = false
     @State private var confirmDelete = false
@@ -42,6 +44,7 @@ struct BookView: View {
                                 SeriesDestination(seriesId: $0.id, language: book.language)
                             }
                         },
+                        onJoinSeries: { showSeriesJoin = true },
                         onEditGenre: { showGenreEditor = true },
                         onEditRecommendation: { showRecommendation = true }
                     )
@@ -84,6 +87,17 @@ struct BookView: View {
             .sheet(isPresented: $showGenreEditor) {
                 if let book = viewModel.book {
                     GenreEditSheet(book: book) { correction in
+                        let saved = await viewModel.save(correction, rating: book.rating)
+                        if let book = viewModel.book { onChanged(book) }
+                        guard !saved else { return nil }
+                        defer { viewModel.dismissError() }
+                        return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
+                    }
+                }
+            }
+            .sheet(isPresented: $showSeriesJoin) {
+                if let book = viewModel.book {
+                    SeriesJoinSheet(book: book) { correction in
                         let saved = await viewModel.save(correction, rating: book.rating)
                         if let book = viewModel.book { onChanged(book) }
                         guard !saved else { return nil }
