@@ -48,11 +48,15 @@ struct BookRow: View {
     /// on an iPhone, stated here so the separator can span it.
     private static let horizontalInset: CGFloat = 16
 
+    /// The height of the text beside the cover, which the cover stretches to
+    /// so its bottom sits level with the last line.
+    @State private var textHeight: CGFloat?
+
     var body: some View {
         // Top-aligned so the first line of text starts level with the cover,
         // whether that line is a volume label or the title itself.
         HStack(alignment: .top, spacing: 12) {
-            BookCover(book: cover)
+            BookCover(book: cover, minHeight: textHeight)
 
             VStack(alignment: .leading, spacing: 3) {
                 // The marks share the first line with the text rather than
@@ -126,6 +130,7 @@ struct BookRow: View {
                     .padding(.top, 1)
                 }
             }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { textHeight = $0 }
         }
         // Tight, because a library is read by scanning many rows at once.
         .padding(.vertical, 4)

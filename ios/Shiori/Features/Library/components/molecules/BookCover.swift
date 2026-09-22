@@ -13,10 +13,14 @@ struct BookCover: View {
     /// list and on the book screen alike: nothing else on a cover says it is
     /// listened to rather than read. Off where the corner holds something else.
     var showsFormatBadge: Bool = true
+    /// Stretches the cover past its proportions, cropping the photo's sides, so
+    /// a list row can bring its bottom level with the text beside it. Never
+    /// shorter than the standard height.
+    var minHeight: CGFloat?
 
     /// Standard trade paperback proportions, so photographed covers are cropped
     /// consistently and placeholders sit at the same size as real ones.
-    private var height: CGFloat { width * 1.5 }
+    private var height: CGFloat { max(width * 1.5, minHeight ?? 0) }
     private var cornerRadius: CGFloat { width * 0.07 }
 
     var body: some View {
