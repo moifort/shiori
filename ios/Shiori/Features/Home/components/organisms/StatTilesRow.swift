@@ -36,7 +36,7 @@ struct StatTilesRow: View {
                     title: "Favoris",
                     count: favoriteCount,
                     systemImage: "heart.fill",
-                    color: .pink,
+                    color: .red,
                     action: onFavoritesTapped
                 )
                 .accessibilityIdentifier("home-favorites")

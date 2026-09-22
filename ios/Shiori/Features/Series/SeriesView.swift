@@ -82,7 +82,7 @@ struct SeriesView: View {
                 ) {
                     await setFavorite(!isFavorite)
                 }
-                .tint(isFavorite ? .pink : nil)
+                .tint(isFavorite ? .red : nil)
                 .accessibilityIdentifier("series-favorite")
             }
             if !owned.isEmpty {

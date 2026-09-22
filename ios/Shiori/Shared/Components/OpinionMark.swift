@@ -18,7 +18,7 @@ struct OpinionMark: View {
         if isFavorite {
             Image(systemName: "heart.fill")
                 .font(font)
-                .foregroundStyle(.pink)
+                .foregroundStyle(.red)
                 .accessibilityLabel(Text("Favori"))
         } else if ratingIsInherited, rating == 5 {
             // Full marks lent by the saga read as the saga's heart, grey like

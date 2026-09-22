@@ -64,7 +64,7 @@ struct FriendProfileView: View {
         List {
             Section {
                 HStack(spacing: 8) {
-                    tile(friend.favoriteCount, "Favoris", systemImage: "heart.fill", tint: .pink)
+                    tile(friend.favoriteCount, "Favoris", systemImage: "heart.fill", tint: .red)
                     tile(friend.readingCount, "En cours", systemImage: "book.fill", tint: ReadingStatus.reading.tint)
                     tile(friend.toReadCount, "À lire", systemImage: "bookmark.fill", tint: ReadingStatus.toRead.tint)
                 }

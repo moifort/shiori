@@ -168,7 +168,7 @@ struct SagaRow: View {
                         } else {
                             if saga.favorite {
                                 Image(systemName: "heart.fill")
-                                    .foregroundStyle(.pink)
+                                    .foregroundStyle(.red)
                                     .accessibilityLabel(Text("Favori"))
                             }
                             Label("\(saga.ownedCount) tome(s)", systemImage: "books.vertical")

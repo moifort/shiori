@@ -56,7 +56,7 @@ struct FriendBookView: View {
                     Label {
                         Text("Coup de cœur de \(friendName)")
                     } icon: {
-                        Image(systemName: "heart.fill").foregroundStyle(.pink)
+                        Image(systemName: "heart.fill").foregroundStyle(.red)
                     }
                 } else if let rating = entry.book.rating {
                     Label {

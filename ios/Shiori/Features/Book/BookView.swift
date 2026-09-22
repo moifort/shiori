@@ -158,7 +158,7 @@ struct BookView: View {
                 ) {
                     run { await viewModel.setFavorite(!book.favorite) }
                 }
-                .tint(book.favorite ? .pink : nil)
+                .tint(book.favorite ? .red : nil)
                 .accessibilityIdentifier("book-favorite")
             }
             ToolbarItem(placement: .primaryAction) {

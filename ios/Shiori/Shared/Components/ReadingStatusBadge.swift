@@ -26,7 +26,7 @@ extension ReadingStatus {
     /// library row — so the eye learns one hue per state.
     var tint: Color {
         switch self {
-        case .toRead: .gray
+        case .toRead: .orange
         case .reading: .blue
         case .read: .green
         case .dropped: .red

@@ -31,7 +31,7 @@ struct MyShelfHeader: View {
         return ShelfBox(
             title: "Mes favoris",
             systemImage: "heart.fill",
-            tint: .pink,
+            tint: .red,
             count: sagas + books,
             action: { open(.favorites) }
         ) {
