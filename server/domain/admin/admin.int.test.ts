@@ -31,6 +31,7 @@ mock.module('~/system/gcp-billing', () => ({
 
 const { AdminCommand } = await import('~/domain/admin/command')
 const { AdminQuery } = await import('~/domain/admin/query')
+const { AdminUseCase } = await import('~/domain/admin/use-case')
 const { monthOf } = await import('~/domain/admin/business-rules')
 
 const month = monthOf(new Date()) as string
@@ -148,7 +149,7 @@ describe('refreshing the metrics projection', () => {
     seedEntitlement('u2', 'com.polyforms.shiori.app.premium.monthly', future)
     seedEntitlement('u3', 'com.polyforms.shiori.app.premium.yearly', new Date('2026-01-01'))
 
-    const projection = await AdminCommand.refreshMetrics()
+    const projection = await AdminUseCase.refreshMetrics()
 
     expect(projection.totalUsers as number).toBe(3)
     expect(projection.premium).toMatchObject({ total: 2, monthly: 1, yearly: 1 })
@@ -159,14 +160,14 @@ describe('refreshing the metrics projection', () => {
     ascSales = { proceedsEur: 12.4, grossEur: 17.9 }
     gcpCost = 0.42
 
-    const projection = await AdminCommand.refreshMetrics()
+    const projection = await AdminUseCase.refreshMetrics()
 
     expect(projection.revenue).toMatchObject({ month, proceedsEur: 12.4, grossEur: 17.9 })
     expect(projection.infra).toMatchObject({ month, gcpCostEur: 0.42 })
   })
 
   test('leaves revenue and infra absent while their sources are unconfigured', async () => {
-    const projection = await AdminCommand.refreshMetrics()
+    const projection = await AdminUseCase.refreshMetrics()
 
     expect(projection.revenue).toBeUndefined()
     expect(projection.infra).toBeUndefined()
@@ -184,7 +185,7 @@ describe('refreshing the metrics projection', () => {
     ascFails = true
     gcpFails = true
 
-    const projection = await AdminCommand.refreshMetrics()
+    const projection = await AdminUseCase.refreshMetrics()
 
     expect(projection.revenue).toMatchObject({ proceedsEur: 9.9 })
     expect(projection.infra).toMatchObject({ gcpCostEur: 0.3 })
@@ -194,7 +195,7 @@ describe('refreshing the metrics projection', () => {
     seedProfile('u1')
     seedProfile('u2')
 
-    await AdminCommand.refreshMetrics()
+    await AdminUseCase.refreshMetrics()
 
     // The previous projection (keyed read), plus the profiles count() aggregate
     // and the entitlements stream — never a per-reader read.
@@ -207,7 +208,7 @@ describe('reading the metrics view', () => {
   test('joins the live month usage with the projection and prices it', async () => {
     await scanned({ vision: step(1_000_000, 0, 0) })
     gcpCost = 0.5
-    await AdminCommand.refreshMetrics()
+    await AdminUseCase.refreshMetrics()
 
     const view = await AdminQuery.metrics()
 

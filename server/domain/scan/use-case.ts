@@ -1,5 +1,4 @@
 import { AdminCommand } from '~/domain/admin/command'
-import { EntitlementQuery } from '~/domain/entitlement/query'
 import { exhausted } from '~/domain/quota/business-rules'
 import { QuotaCommand } from '~/domain/quota/command'
 import { QuotaQuery } from '~/domain/quota/query'
@@ -49,11 +48,7 @@ export namespace ScanUseCase {
 }
 
 const planIfAllowed = async (userId: UserId): Promise<Plan | undefined> => {
-  const [plan, quota, credit] = await Promise.all([
-    EntitlementQuery.planOf(userId),
-    QuotaQuery.ofCurrentMonth(userId),
-    QuotaQuery.creditOf(userId),
-  ])
+  const { plan, quota, credit } = await QuotaQuery.allowanceOf(userId)
   return exhausted(plan, quota, credit) ? undefined : plan
 }
 
