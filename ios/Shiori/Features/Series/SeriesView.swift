@@ -476,13 +476,19 @@ struct SeriesView: View {
         return (read.count, published.count)
     }
 
+    /// The three calls leave together and land together: assigned one by one,
+    /// the catalogue drew first with placeholder covers and no genre row, and
+    /// the reader's own volumes filled it in a moment later.
     private func load() async {
         isLoading = true
         do {
-            series = try await SeriesAPI.series(id: seriesId, language: language)
-            opinion = try await SeriesAPI.opinion(seriesId: seriesId)
-            let mine = try await LibraryAPI.library()
-            owned = mine
+            async let catalogue = SeriesAPI.series(id: seriesId, language: language)
+            async let reading = SeriesAPI.opinion(seriesId: seriesId)
+            async let mine = LibraryAPI.library()
+            let (fetchedSeries, fetchedOpinion, library) = try await (catalogue, reading, mine)
+            series = fetchedSeries
+            opinion = fetchedOpinion
+            owned = library
                 .filter { $0.seriesId == seriesId && (language == nil || $0.language == language) }
                 .flatMap(\.books)
         } catch {
