@@ -1,5 +1,6 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
-import type { Book, BookId } from '~/domain/book/types'
+import { shelfDateOf } from '~/domain/book/business-rules'
+import type { Book, BookId, ReadingStatus } from '~/domain/book/types'
 import type { SeriesId } from '~/domain/series/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
@@ -14,7 +15,18 @@ import { deleteInBatches, genericDataConverter, withoutAbsentFields } from '~/ut
 // One flat collection for every reader, never a subcollection: a book carries its
 // owner in `userId`, and a library is an equality query on that field, which the
 // automatic single-field index answers without a composite one.
-const books = () => db().collection('books').withConverter(genericDataConverter<Book>())
+//
+// Stored with the date the Library tab shelves it on, derived on every write: the
+// tab pages on it with a Firestore cursor rather than scanning the library for
+// each page. A storage field only — it is stripped on the way back to a `Book`.
+type StoredBook = Book & { shelvedAt: Date }
+
+const books = () => db().collection('books').withConverter(genericDataConverter<StoredBook>())
+
+const stored = (book: Book): StoredBook =>
+  withoutAbsentFields({ ...book, shelvedAt: shelfDateOf(book) })
+
+const asBook = ({ shelvedAt: _, ...book }: StoredBook): Book => book
 
 const ownedBy = (userId: UserId) => books().where('userId', '==', userId)
 
@@ -26,8 +38,36 @@ const allCacheKey = (userId: UserId) => `books:all:${userId}`
 export const findAllByUser = (userId: UserId): Promise<Book[]> =>
   memoizedPerRequest(allCacheKey(userId), async () => {
     const snapshot = await ownedBy(userId).get()
-    return snapshot.docs.map((doc) => doc.data())
+    return snapshot.docs.map((doc) => asBook(doc.data()))
   })
+
+/** One page of the Library tab, newest on the shelf first, read with a cursor:
+ *  `limit + 1` documents a page, whatever the size of the library, the extra
+ *  one only saying whether more follow. `after` is the last book of the page
+ *  before; one that is gone restarts from the top.
+ *
+ *  Ties on the shelf date fall to the title in Firestore's own order, which is
+ *  by code point rather than by locale.
+ *
+ *  Each filter combination needs its composite index (firestore.indexes.json). */
+export const findShelfPage = async (
+  userId: UserId,
+  view: { favorite?: boolean; status?: ReadingStatus },
+  limit: number,
+  after?: BookId,
+): Promise<{ books: Book[]; hasMore: boolean }> => {
+  let query = ownedBy(userId)
+  if (view.status) query = query.where('status', '==', view.status)
+  if (view.favorite) query = query.where('favorite', '==', true)
+  query = query.orderBy('shelvedAt', 'desc').orderBy('title', 'asc')
+  if (after) {
+    const cursor = await books().doc(after).get()
+    if (cursor.exists && cursor.data()?.userId === userId) query = query.startAfter(cursor)
+  }
+  const snapshot = await query.limit(limit + 1).get()
+  const rows = snapshot.docs.map((doc) => asBook(doc.data()))
+  return { books: rows.slice(0, limit), hasMore: rows.length > limit }
+}
 
 // The id alone reaches any reader's book now that the collection is shared, so
 // a book owned by someone else answers exactly like one that does not exist.
@@ -38,7 +78,7 @@ export const findById = async (userId: UserId, bookId: BookId): Promise<Book | n
   if (isInRequestCache(allCacheKey(userId)))
     return (await findAllByUser(userId)).find((book) => book.id === bookId) ?? null
   const book = (await books().doc(bookId).get()).data()
-  return book?.userId === userId ? book : null
+  return book?.userId === userId ? asBook(book) : null
 }
 
 // Resolved from the memoized scan rather than a `where` query. A reader owns a
@@ -57,7 +97,7 @@ export const findBySeries = async (userId: UserId, seriesId: SeriesId): Promise<
 // write, the next read after the commit sees it.
 export const save = async (book: Book, batch?: WriteBatch): Promise<Book> => {
   const ref = books().doc(book.id)
-  const document = withoutAbsentFields(book)
+  const document = stored(book)
   if (batch) {
     batch.set(ref, document)
     evictFromRequestCache(allCacheKey(book.userId))

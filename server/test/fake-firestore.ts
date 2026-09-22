@@ -79,6 +79,10 @@ export const createFakeFirestore = () => {
   let generatedIds = 0
   let docReads = 0
   let queryReads = 0
+  // Documents a query returned: what Firestore actually bills a query for.
+  let queriedDocs = 0
+  // Handed to the next query instead of an answer, once.
+  let queryError: Error | undefined
 
   const docsOf = (collection: string) => {
     const existing = store.get(collection)
@@ -172,10 +176,10 @@ export const createFakeFirestore = () => {
   type Filter = [field: string, op: string, value: unknown]
   type QueryState = {
     filters: Filter[]
-    order?: { field: string; direction: 'asc' | 'desc' }
+    orders: { field: string; direction: 'asc' | 'desc' }[]
     limit?: number
     offset?: number
-    startAfterId?: string
+    startAfter?: { id: string; data: Doc | undefined }
   }
 
   // Only the operators production code actually uses — fail loudly otherwise.
@@ -199,32 +203,54 @@ export const createFakeFirestore = () => {
     where: (field, op, value) =>
       makeQuery(collection, { ...state, filters: [...state.filters, [field, op, value]] }),
     orderBy: (field, direction = 'asc') =>
-      makeQuery(collection, { ...state, order: { field, direction } }),
+      makeQuery(collection, { ...state, orders: [...state.orders, { field, direction }] }),
     limit: (count) => makeQuery(collection, { ...state, limit: count }),
     offset: (count) => makeQuery(collection, { ...state, offset: count }),
-    startAfter: (cursor) => makeQuery(collection, { ...state, startAfterId: cursor.id }),
+    startAfter: (cursor) =>
+      makeQuery(collection, { ...state, startAfter: { id: cursor.id, data: cursor.data() } }),
     get: async () => {
+      if (queryError) {
+        const error = queryError
+        queryError = undefined
+        throw error
+      }
       queryReads += 1
       let matching = [...docsOf(collection).entries()].filter(([, data]) =>
         state.filters.every((filter) => matchesFilter(data, filter)),
       )
-      if (state.order) {
-        const { field, direction } = state.order
-        // Firestore uses the document id as an implicit tie-break — mirror it.
-        matching.sort(([idA, a], [idB, b]) => {
-          const left = sortValue(a[field])
-          const right = sortValue(b[field])
-          const primary = left < right ? -1 : left > right ? 1 : 0
-          const comparison = primary !== 0 ? primary : idA < idB ? -1 : idA > idB ? 1 : 0
-          return direction === 'desc' ? -comparison : comparison
-        })
-      }
-      if (state.startAfterId) {
-        const cursorIndex = matching.findIndex(([id]) => id === state.startAfterId)
+      if (state.orders.length > 0) {
+        const { orders } = state
+        // Firestore leaves out a document missing an ordered field — mirror it,
+        // so a record a migration forgot is as invisible here as in production.
+        matching = matching.filter(([, data]) => orders.every(({ field }) => field in data))
+        const compared = (left: unknown, right: unknown) => {
+          const [a, b] = [sortValue(left), sortValue(right)]
+          return a < b ? -1 : a > b ? 1 : 0
+        }
+        // Firestore uses the document id as an implicit tie-break, in the
+        // direction of the last ordering — mirror it.
+        const last = orders.at(-1)?.direction ?? 'asc'
+        const inOrder = ([idA, a]: [string, Doc], [idB, b]: [string, Doc]) => {
+          for (const { field, direction } of orders) {
+            const comparison = compared(a[field], b[field])
+            if (comparison !== 0) return direction === 'desc' ? -comparison : comparison
+          }
+          const tie = compared(idA, idB)
+          return last === 'desc' ? -tie : tie
+        }
+        matching.sort(inOrder)
+        // A snapshot cursor positions by the values it holds, as Firestore's
+        // does: the cursor need not match the filters, nor still be stored.
+        const cursor = state.startAfter
+        if (cursor?.data)
+          matching = matching.filter((row) => inOrder(row, [cursor.id, cursor.data as Doc]) > 0)
+      } else if (state.startAfter) {
+        const cursorIndex = matching.findIndex(([id]) => id === state.startAfter?.id)
         if (cursorIndex >= 0) matching = matching.slice(cursorIndex + 1)
       }
       if (state.offset !== undefined) matching = matching.slice(state.offset)
       if (state.limit !== undefined) matching = matching.slice(0, state.limit)
+      queriedDocs += matching.length
       return {
         docs: matching.map(([id, data]) => ({ data: () => data, ref: makeRef(collection, id) })),
       }
@@ -249,11 +275,12 @@ export const createFakeFirestore = () => {
       await ref.set(data)
       return ref
     },
-    where: (field, op, value) => makeQuery(name, { filters: [[field, op, value]] }),
-    orderBy: (field, direction) => makeQuery(name, { filters: [] }).orderBy(field, direction),
-    limit: (count) => makeQuery(name, { filters: [] }).limit(count),
-    get: () => makeQuery(name, { filters: [] }).get(),
-    count: () => makeQuery(name, { filters: [] }).count(),
+    where: (field, op, value) => makeQuery(name, { filters: [[field, op, value]], orders: [] }),
+    orderBy: (field, direction) =>
+      makeQuery(name, { filters: [], orders: [] }).orderBy(field, direction),
+    limit: (count) => makeQuery(name, { filters: [], orders: [] }).limit(count),
+    get: () => makeQuery(name, { filters: [], orders: [] }).get(),
+    count: () => makeQuery(name, { filters: [], orders: [] }).count(),
   })
 
   const makeBatch = (): FakeBatch => {
@@ -379,8 +406,14 @@ export const createFakeFirestore = () => {
     get queryReads() {
       return queryReads
     },
+    get queriedDocs() {
+      return queriedDocs
+    },
     failCommitsWith: (error: Error) => {
       commitError = error
+    },
+    failNextQueryWith: (error: Error) => {
+      queryError = error
     },
   }
 }
