@@ -1,5 +1,8 @@
 import { match } from 'ts-pattern'
+import { BookType } from '~/domain/book/infrastructure/graphql/types'
+import { BookQuery } from '~/domain/book/query'
 import { FriendshipCommand } from '~/domain/friendship/command'
+import { CopiedStatusEnum } from '~/domain/friendship/infrastructure/graphql/enums'
 import { FriendInvitationType, FriendType } from '~/domain/friendship/infrastructure/graphql/types'
 import { FriendshipUseCase } from '~/domain/friendship/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
@@ -59,5 +62,36 @@ builder.mutationFields((t) => ({
     args: { userId: t.arg({ type: 'UserId', required: true }) },
     resolve: async (_root, args, context) =>
       (await FriendshipCommand.remove(context.userId, args.userId)) === 'removed',
+  }),
+
+  addFriendBook: t.field({
+    type: BookType,
+    description:
+      "Put a friend's book on the reader's own shelf, on the pile or among the " +
+      'books read.\n\n' +
+      'Only the friend and the book are named: the server re-reads the book and ' +
+      'copies its catalogue facts, never what the friend made of it — no status, ' +
+      'rating, heart or note. The copy records the friend as who recommended it. ' +
+      'Fails with `NOT_FOUND` for a stranger, a missing book or one marked "do ' +
+      'not share", and `ALREADY_IN_LIBRARY` when the reader owns the story.',
+    args: {
+      userId: t.arg({ type: 'UserId', required: true, description: 'The friend' }),
+      bookId: t.arg({ type: 'BookId', required: true }),
+      status: t.arg({ type: CopiedStatusEnum, required: true }),
+    },
+    resolve: async (_root, args, context) => {
+      const outcome = await FriendshipUseCase.copyBook(
+        context.userId,
+        args.userId,
+        args.bookId,
+        args.status,
+      )
+      return match(outcome)
+        .with('not-found', () => notFound('Book not found'))
+        .with('already-owned', () =>
+          domainError('ALREADY_IN_LIBRARY', 'That book is already in your library'),
+        )
+        .otherwise(async (book) => (await BookQuery.withSignedCovers([book]))[0])
+    },
   }),
 }))

@@ -1,10 +1,13 @@
+import { AnalyticsUseCase } from '~/domain/analytics/use-case'
+import { shelfKeyOf } from '~/domain/book/business-rules'
 import { BookQuery } from '~/domain/book/query'
-import type { BookLanguage, BookView } from '~/domain/book/types'
+import type { Book, BookId, BookLanguage, BookView, ReadingStatus } from '~/domain/book/types'
+import { BookUseCase } from '~/domain/book/use-case'
 import { FriendshipQuery } from '~/domain/friendship/query'
 import type { Friend } from '~/domain/friendship/types'
 import { followedSagasOf } from '~/domain/series/business-rules'
 import type { SeriesName } from '~/domain/series/types'
-import { Count } from '~/domain/shared/primitives'
+import { Count, PersonName } from '~/domain/shared/primitives'
 import type { AuthorName, Count as CountValue, UserId } from '~/domain/shared/types'
 import { UserQuery } from '~/domain/user/query'
 
@@ -28,15 +31,23 @@ export type FriendSaga = {
   ownedCount: CountValue
 }
 
+/** A book on a friend's shelf, with whether the reader already owns the
+ *  story — the "Chez vous" badge, matched on the shelf key the imports use. */
+export type FriendBook = BookView & { inLibrary: boolean }
+
 /** A friend's shelf, as the profile screen draws it. */
 export type FriendProfile = {
   userId: UserId
   firstName?: string
-  reading: BookView[]
-  pile: BookView[]
-  favorites: BookView[]
+  reading: FriendBook[]
+  pile: FriendBook[]
+  favorites: FriendBook[]
   sagas: FriendSaga[]
 }
+
+/** The statuses a book copied from a friend may land in: on the pile, or
+ *  straight among the books read, for a reader who had already read it. */
+export type CopiedStatus = Extract<ReadingStatus, 'to-read' | 'read'>
 
 export namespace FriendshipUseCase {
   /** The reader's friends, named. One scan of the friendships and one batched
@@ -47,9 +58,11 @@ export namespace FriendshipUseCase {
       friendship,
       userId: friendship.userIds.find((member) => member !== userId),
     }))
-    const names = await UserQuery.namesOf(
-      others.flatMap((entry) => (entry.userId ? [entry.userId] : [])),
-    )
+    const ids = others.flatMap((entry) => (entry.userId ? [entry.userId] : []))
+    const [names, shelves] = await Promise.all([
+      UserQuery.namesOf(ids),
+      AnalyticsUseCase.sharedShelves(ids),
+    ])
     return others
       .flatMap((entry) =>
         entry.userId
@@ -58,6 +71,7 @@ export namespace FriendshipUseCase {
                 userId: entry.userId,
                 firstName: names.get(entry.userId),
                 since: entry.friendship.since,
+                shelf: shelves.get(entry.userId),
               },
             ]
           : [],
@@ -94,18 +108,21 @@ export namespace FriendshipUseCase {
       .slice(0, SHELF_SHOWN)
     const favorites = books.filter((book) => book.favorite === true).slice(0, SHELF_SHOWN)
 
-    const [signedReading, signedPile, signedFavorites] = await Promise.all([
+    const [signedReading, signedPile, signedFavorites, owned] = await Promise.all([
       BookQuery.withSignedCovers(reading),
       BookQuery.withSignedCovers(pile),
       BookQuery.withSignedCovers(favorites),
+      BookQuery.shelfKeys(userId),
     ])
+    const marked = (books: BookView[]): FriendBook[] =>
+      books.map((book) => ({ ...book, inLibrary: ownsStory(owned, book) }))
 
     return {
       userId: friendId,
       firstName: (await UserQuery.namesOf([friendId])).get(friendId),
-      reading: signedReading,
-      pile: signedPile,
-      favorites: signedFavorites,
+      reading: marked(signedReading),
+      pile: marked(signedPile),
+      favorites: marked(signedFavorites),
       sagas: followedSagasOf(books).map((saga) => ({
         id: `${saga.id}\u0000${saga.language ?? ''}`,
         name: saga.name,
@@ -115,4 +132,62 @@ export namespace FriendshipUseCase {
       })),
     }
   }
+
+  /** One book of a friend's shelf, for the read-only page a row opens. Null
+   *  for a stranger's book, a book that does not exist and a book marked "do
+   *  not share" alike. */
+  export const book = async (
+    userId: UserId,
+    friendId: UserId,
+    bookId: BookId,
+  ): Promise<FriendBook | null> => {
+    if (!(await FriendshipQuery.areFriends(userId, friendId))) return null
+    const [book, owned] = await Promise.all([
+      BookQuery.sharedById(friendId, bookId),
+      BookQuery.shelfKeys(userId),
+    ])
+    return book ? { ...book, inLibrary: ownsStory(owned, book) } : null
+  }
+
+  /** Put a friend's book on the reader's own shelf.
+   *
+   *  Only the friend and the book are named: the record is re-read here and
+   *  its catalogue facts copied, never taken from the client, as the imports
+   *  do. What the friend made of it stays theirs — no status, rating, heart,
+   *  note, nor their cover photo, which lives under their account. The copy
+   *  remembers who it came from as its recommendation, which the reader can
+   *  correct afterwards like any other. */
+  export const copyBook = async (
+    userId: UserId,
+    friendId: UserId,
+    bookId: BookId,
+    status: CopiedStatus,
+  ): Promise<Book | 'not-found' | 'already-owned'> => {
+    const source = await book(userId, friendId, bookId)
+    if (!source) return 'not-found'
+    if (source.inLibrary) return 'already-owned'
+    const firstName = (await UserQuery.namesOf([friendId])).get(friendId)
+    return BookUseCase.add(userId, {
+      title: source.title,
+      authors: source.authors,
+      format: source.format,
+      publisher: source.publisher,
+      firstPublishedIn: source.firstPublishedIn,
+      synopsis: source.synopsis,
+      genre: source.genre,
+      subgenres: source.subgenres,
+      pageCount: source.pageCount,
+      durationMinutes: source.durationMinutes,
+      narrators: source.narrators,
+      isbn13: source.isbn13,
+      language: source.language,
+      series: source.series,
+      publishedCoverUrl: source.publishedCoverUrl,
+      status,
+      recommendation: firstName ? { recommenderName: PersonName(firstName) } : undefined,
+    })
+  }
 }
+
+const ownsStory = (owned: ReadonlySet<string>, book: Pick<Book, 'title' | 'authors'>): boolean =>
+  owned.has(shelfKeyOf(book.title, book.authors[0]))

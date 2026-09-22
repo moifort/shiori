@@ -1,13 +1,15 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
 import { dashboardOf, localDateOf, VIEW_VERSION } from '~/domain/analytics/business-rules'
 import { AnalyticsCommand } from '~/domain/analytics/command'
+import { TimeZone } from '~/domain/analytics/primitives'
 import { AnalyticsQuery } from '~/domain/analytics/query'
 import type {
   AnalyticsView,
   BookCard,
   Dashboard,
   DashboardBook,
-  TimeZone,
+  SharedShelf,
+  TimeZone as TimeZoneValue,
 } from '~/domain/analytics/types'
 import { BookQuery } from '~/domain/book/query'
 import { cataloguesOf } from '~/domain/series/business-rules'
@@ -30,7 +32,7 @@ export namespace AnalyticsUseCase {
    *  than the reader's — so it is never wrong, at worst slow once. */
   export const dashboard = async (
     userId: UserId,
-    timeZone: TimeZone,
+    timeZone: TimeZoneValue,
     now = new Date(),
   ): Promise<Dashboard> => {
     const stored = await AnalyticsQuery.view(userId)
@@ -66,12 +68,43 @@ export namespace AnalyticsUseCase {
     return write()
   }
 
+  /** What each of these readers' friends may see of their shelf, keyed by
+   *  reader. One batched read of the views; a view that is missing, stale or
+   *  built by an older rule set is rebuilt first, in the time zone it was last
+   *  built in, so a friend is never shown a count their last write did not
+   *  reach. */
+  export const sharedShelves = async (
+    userIds: readonly UserId[],
+    now = new Date(),
+  ): Promise<Map<UserId, SharedShelf>> => {
+    const stored = new Map((await AnalyticsQuery.views(userIds)).map((view) => [view.userId, view]))
+    const views = await Promise.all(
+      [...new Set(userIds)].map(async (userId) => {
+        const view = stored.get(userId)
+        if (view && !view.stale && view.version === VIEW_VERSION && view.shared) return view
+        return rebuild(userId, view?.timeZone ?? FALLBACK_TIME_ZONE, now)
+      }),
+    )
+    return new Map(
+      views.flatMap((view) => (view.shared ? [[view.userId, view.shared] as const] : [])),
+    )
+  }
+
   /** Flag the view after something it is built from changed outside the
    *  reader's library — a saga they hold gaining its catalogue. */
   export const markStale = (userId: UserId): Promise<void> => AnalyticsCommand.markStale(userId)
 }
 
-const rebuild = async (userId: UserId, timeZone: TimeZone, now: Date): Promise<AnalyticsView> => {
+/** The zone a view is built in when its reader never opened their dashboard:
+ *  the counts a friend sees do not depend on it, and the reader's own first
+ *  dashboard read rebuilds the view in theirs. */
+const FALLBACK_TIME_ZONE = TimeZone('Europe/Paris')
+
+const rebuild = async (
+  userId: UserId,
+  timeZone: TimeZoneValue,
+  now: Date,
+): Promise<AnalyticsView> => {
   const [books, opinions] = await Promise.all([
     BookQuery.all(userId),
     SeriesOpinionQuery.all(userId),

@@ -445,3 +445,17 @@ export const inSagaOrder = <Volume extends Pick<Book, 'series' | 'title'>>(
       { kind: right.series?.kind ?? 'main', number: right.series?.volume, title: right.title },
     ),
   )
+
+/** The title and first author folded together: whether the reader already owns
+ *  this story, loosely and across editions. A novel scanned from the printed
+ *  edition is the same story as its Audible recording, and a friend's copy of
+ *  it is one the reader already has.
+ *
+ *  Loose on purpose, and not an identity: the ASIN of an imported record is the
+ *  precise answer to "which record is this exact Audible title", which is what
+ *  the sync writes a status into. */
+export const shelfKeyOf = (title: string, author: string | undefined): string =>
+  `${slugify(title)}--${slugify(author ?? '')}`
+
+export const shelfKeysOf = (books: readonly Book[]): Set<string> =>
+  new Set(books.map((book) => shelfKeyOf(book.title, book.authors[0])))

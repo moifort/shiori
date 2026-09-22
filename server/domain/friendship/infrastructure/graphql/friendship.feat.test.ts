@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import { graphql } from 'graphql'
 import type { UserId } from '~/domain/shared/types'
-import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
+import {
+  type FakeFirestore,
+  fakeDb,
+  resetFakeFirestore,
+  startFakeRequest,
+} from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
 mock.module('~/system/object-store', () => ({
@@ -18,8 +23,10 @@ const alice = 'alice' as UserId
 const bob = 'bob' as UserId
 const carol = 'carol' as UserId
 
+let fake: FakeFirestore
+
 beforeEach(() => {
-  resetFakeFirestore()
+  fake = resetFakeFirestore()
 })
 
 const as = (userId: UserId) => (source: string, variableValues?: Record<string, unknown>) =>
@@ -197,6 +204,164 @@ describe('reading a friend shelf', () => {
 
     const result = await as(bob)('{ friendProfile(userId: "alice") { reading { title } } }')
     expect(result.data?.friendProfile).toBeNull()
+  })
+})
+
+describe('the friends list in figures', () => {
+  const addBook = (owner: UserId, fields: string) =>
+    as(owner)(`mutation { addBook(input: { ${fields} }) { id } }`)
+  const idOf = (result: Awaited<ReturnType<typeof addBook>>) =>
+    (result.data as { addBook: { id: string } }).addBook.id
+
+  const stockAlice = async () => {
+    await addBook(alice, 'title: "Dune", status: READING')
+    await addBook(alice, 'title: "Hypérion"')
+    await addBook(alice, 'title: "Fondation"')
+    const loved = idOf(await addBook(alice, 'title: "Le Nom du vent", status: READ'))
+    await as(alice)(`mutation { setBookFavorite(id: "${loved}", favorite: true) { id } }`)
+    const secret = idOf(await addBook(alice, 'title: "Un secret", status: READING'))
+    await as(alice)(`mutation { setBookHidden(id: "${secret}", hidden: true) { id } }`)
+  }
+
+  // The counts are what a friend may see: a hidden book in progress must not
+  // show as a second book in progress, nor its title as the one being read.
+  test('counts their favourites, books in progress and pile, hidden books left out', async () => {
+    await stockAlice()
+    await befriend()
+
+    const result = await as(bob)(
+      '{ friends { userId favoriteCount readingCount toReadCount readingTitle } }',
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.friends).toEqual([
+      {
+        userId: 'alice',
+        favoriteCount: 1,
+        readingCount: 1,
+        toReadCount: 2,
+        readingTitle: 'Dune',
+      },
+    ])
+  })
+
+  // One friendships query, then one document per friend for the names and one
+  // for the figures — never their library.
+  test('reads one view per friend, not their books', async () => {
+    await stockAlice()
+    await befriend()
+    await as(bob)('{ friends { favoriteCount } }')
+
+    startFakeRequest()
+    const before = { docs: fake.docReads, queries: fake.queryReads }
+    await as(bob)('{ friends { favoriteCount } }')
+
+    expect(fake.queryReads - before.queries).toBe(1)
+    expect(fake.docReads - before.docs).toBe(2)
+  })
+
+  test('follows a write made since the last count', async () => {
+    await stockAlice()
+    await befriend()
+    await as(bob)('{ friends { toReadCount } }')
+
+    await addBook(alice, 'title: "Piranesi"')
+    const result = await as(bob)('{ friends { toReadCount } }')
+
+    expect(result.data?.friends).toEqual([{ toReadCount: 3 }])
+  })
+})
+
+describe("taking a book off a friend's shelf", () => {
+  const addBook = (owner: UserId, fields: string) =>
+    as(owner)(`mutation { addBook(input: { ${fields} }) { id } }`)
+  const idOf = (result: Awaited<ReturnType<typeof addBook>>) =>
+    (result.data as { addBook: { id: string } }).addBook.id
+  const copy = (bookId: string, status = 'TO_READ') =>
+    as(bob)(
+      `mutation { addFriendBook(userId: "alice", bookId: "${bookId}", status: ${status}) { title authors status rating favorite recommendation { recommenderName } series { name volume } } }`,
+    )
+
+  const nameAlice = () =>
+    as(alice)('mutation { completeOnboarding(input: { firstName: "Alice" }) { firstName } }')
+
+  test('opens the book read-only, with whether the reader already owns it', async () => {
+    const dune = idOf(
+      await addBook(alice, 'title: "Dune", authors: ["Frank Herbert"], synopsis: "Arrakis."'),
+    )
+    await addBook(bob, 'title: "DUNE", authors: ["Frank Herbert"]')
+    await befriend()
+
+    const result = await as(bob)(
+      `{ friendBook(userId: "alice", bookId: "${dune}") { title synopsis inLibrary } }`,
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.friendBook).toEqual({
+      title: 'Dune',
+      synopsis: 'Arrakis.',
+      inLibrary: true,
+    })
+  })
+
+  test('copies the catalogue facts, never what the friend made of the book', async () => {
+    await nameAlice()
+    const hyperion = idOf(
+      await addBook(
+        alice,
+        'title: "Hypérion", authors: ["Dan Simmons"], status: READ, series: { id: "hyperion--dan-simmons", name: "Hypérion", volume: 1, kind: MAIN }',
+      ),
+    )
+    await as(alice)(`mutation { setBookFavorite(id: "${hyperion}", favorite: true) { id } }`)
+    await befriend()
+
+    const result = await copy(hyperion)
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.addFriendBook).toEqual({
+      title: 'Hypérion',
+      authors: ['Dan Simmons'],
+      status: 'TO_READ',
+      rating: null,
+      favorite: false,
+      recommendation: { recommenderName: 'Alice' },
+      series: { name: 'Hypérion', volume: 1 },
+    })
+  })
+
+  test('files it among the books read for a reader who had read it', async () => {
+    const dune = idOf(await addBook(alice, 'title: "Dune"'))
+    await befriend()
+
+    const result = await copy(dune, 'READ')
+
+    expect(result.data?.addFriendBook).toMatchObject({ status: 'READ' })
+  })
+
+  test('refuses a story the reader already owns', async () => {
+    const dune = idOf(await addBook(alice, 'title: "Dune", authors: ["Frank Herbert"]'))
+    await addBook(bob, 'title: "Dune", authors: ["Frank Herbert"]')
+    await befriend()
+
+    const result = await copy(dune)
+
+    expect(result.errors?.[0]?.extensions?.code).toBe('ALREADY_IN_LIBRARY')
+  })
+
+  // A stranger, a hidden book and a missing one answer alike.
+  test('refuses a hidden book and a stranger alike', async () => {
+    const secret = idOf(await addBook(alice, 'title: "Un secret"'))
+    await as(alice)(`mutation { setBookHidden(id: "${secret}", hidden: true) { id } }`)
+    const dune = idOf(await addBook(alice, 'title: "Dune"'))
+
+    const stranger = await copy(dune)
+    await befriend()
+    const hidden = await copy(secret)
+    const page = await as(bob)(`{ friendBook(userId: "alice", bookId: "${secret}") { title } }`)
+
+    expect(stranger.errors?.[0]?.extensions?.code).toBe('NOT_FOUND')
+    expect(hidden.errors?.[0]?.extensions?.code).toBe('NOT_FOUND')
+    expect(page.data?.friendBook).toBeNull()
   })
 })
 

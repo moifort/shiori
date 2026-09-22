@@ -1,9 +1,9 @@
+import { shelfKeyOf } from '~/domain/book/business-rules'
 import type { NewBook } from '~/domain/book/command'
 import type { Book } from '~/domain/book/types'
 import type { ImportableKindleBook, UnreadableExport } from '~/domain/kindle/types'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import { optionally } from '~/utils/input'
-import { slugify } from '~/utils/slug'
 
 /** The separators a spreadsheet writes. Amazon serves commas; a French Excel
  *  that opened and saved the file writes semicolons, and the reader is not going
@@ -133,11 +133,9 @@ export const authorsOf = (cell: string | undefined): string[] =>
       return `${first} ${last}`
     })
 
-/** The title and first author folded together: the duplicate check the Audible
- *  import uses, so a novel already on the shelf from a scan is recognized here
- *  whatever edition each of them is. */
-export const shelfKeyOf = (title: string, author: string | undefined): string =>
-  `${slugify(title)}--${slugify(author ?? '')}`
+// The duplicate check the Audible import uses, so a novel already on the shelf
+// from a scan is recognized here whatever edition each of them is.
+export { shelfKeyOf }
 
 /** Read an Amazon data export into rows the reader can tick.
  *

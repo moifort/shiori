@@ -3,6 +3,7 @@ import {
   inSagaOrder,
   ratedShelfOf,
   seriesRatingsOf,
+  shelfKeysOf,
   shelfPageOf,
   shelvedOf,
   subgenresOf,
@@ -122,6 +123,19 @@ export namespace BookQuery {
    *  for nothing. Pass what will actually be drawn through `withSignedCovers`. */
   export const shared = async (userId: UserId): Promise<Book[]> =>
     (await repository.findAllByUser(userId)).filter((book) => !book.hidden)
+
+  /** One of a reader's books as somebody else may see it: null when it is not
+   *  theirs, does not exist, or is marked "do not share" — three answers a
+   *  friend must not be able to tell apart. */
+  export const sharedById = async (userId: UserId, bookId: BookId): Promise<BookView | null> => {
+    const book = await repository.findById(userId, bookId)
+    return book && !book.hidden ? await withCover(book) : null
+  }
+
+  /** The stories the reader already owns, as shelf keys: whether a book seen
+   *  elsewhere — a friend's copy, a suggestion — is one they have. */
+  export const shelfKeys = async (userId: UserId): Promise<Set<string>> =>
+    shelfKeysOf(await repository.findAllByUser(userId))
 
   /** Sign the covers of the books that are about to be drawn. */
   export const withSignedCovers = (books: readonly Book[]): Promise<BookView[]> => withCovers(books)

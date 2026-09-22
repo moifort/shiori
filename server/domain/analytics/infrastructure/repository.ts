@@ -12,6 +12,18 @@ const views = () =>
 export const findByUser = async (userId: UserId): Promise<AnalyticsView | null> =>
   (await views().doc(userId).get()).data() ?? null
 
+/** Several readers' views in one round trip, for the friends list. Absent
+ *  views are simply missing from the map. */
+export const findByUsers = async (userIds: readonly UserId[]): Promise<AnalyticsView[]> => {
+  if (userIds.length === 0) return []
+  const snapshots = await db().getAll(...[...new Set(userIds)].map((userId) => views().doc(userId)))
+  return snapshots.flatMap((snapshot) => {
+    // Typed loosely by getAll, though each ref carries the converter.
+    const view = snapshot.data() as AnalyticsView | undefined
+    return view ? [view] : []
+  })
+}
+
 export const save = async (view: AnalyticsView): Promise<AnalyticsView> => {
   await views().doc(view.userId).set(withoutAbsentFields(view))
   return view

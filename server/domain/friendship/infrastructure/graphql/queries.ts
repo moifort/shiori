@@ -1,4 +1,8 @@
-import { FriendProfileType, FriendType } from '~/domain/friendship/infrastructure/graphql/types'
+import {
+  FriendBookType,
+  FriendProfileType,
+  FriendType,
+} from '~/domain/friendship/infrastructure/graphql/types'
 import { FriendshipUseCase } from '~/domain/friendship/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
 
@@ -29,5 +33,20 @@ builder.queryFields((t) => ({
       const profile = await FriendshipUseCase.profile(context.userId, args.userId)
       return profile === 'not-friends' ? null : profile
     },
+  }),
+
+  friendBook: t.field({
+    type: FriendBookType,
+    nullable: true,
+    description:
+      "One book of a friend's shelf, for the read-only page a row opens.\n\n" +
+      'Null for a stranger, a book that does not exist and a book marked "do ' +
+      'not share" alike — none of the three may be told apart.',
+    args: {
+      userId: t.arg({ type: 'UserId', required: true, description: 'The friend' }),
+      bookId: t.arg({ type: 'BookId', required: true }),
+    },
+    resolve: (_root, args, context) =>
+      FriendshipUseCase.book(context.userId, args.userId, args.bookId),
   }),
 }))

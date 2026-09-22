@@ -69,6 +69,9 @@ export type NewBook = {
   publishedCoverUrl?: CoverUrl
   status?: ReadingStatus
   hidden?: boolean
+  /** Who put the book in the reader's hands — a friend whose shelf it was
+   *  copied from. */
+  recommendation?: Recommendation
   /** When the reading ended, for a book catalogued as already read. An import
    *  knows it and a scan does not: without it, a decade of Audible listening
    *  would land on today's date and rewrite every reading statistic. Ignored
@@ -153,6 +156,7 @@ export namespace BookCommand {
       // the only status that is true of every book the moment it is catalogued.
       status: input.status ?? 'to-read',
       hidden: input.hidden ?? false,
+      recommendation: storedRecommendation(input.recommendation),
       addedAt,
       updatedAt: now,
       // The status was set when the date it implies says so — finished, else

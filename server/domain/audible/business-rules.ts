@@ -6,6 +6,7 @@ import type {
   AudibleConnection,
   ImportableBook,
 } from '~/domain/audible/types'
+import { shelfKeyOf, shelfKeysOf } from '~/domain/book/business-rules'
 import type { NewBook } from '~/domain/book/command'
 import {
   BookLanguageValue,
@@ -28,7 +29,6 @@ import type { VolumeNumber as VolumeNumberValue } from '~/domain/series/types'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import type { AuthorName as AuthorNameValue, UserId } from '~/domain/shared/types'
 import { isPresent, optionally } from '~/utils/input'
-import { slugify } from '~/utils/slug'
 
 /** What one Audible title becomes in a Shiori library.
  *
@@ -313,22 +313,9 @@ export const plainTextOf = (html: string | undefined): string | undefined => {
   )
 }
 
-/** What counts as "the reader already has this one".
- *
- *  Title and first author, folded the way series keys are folded, rather than an
- *  identifier: matching on the text means a title the reader scanned from the
- *  printed edition is recognized too, which the ASIN now kept on imported records
- *  would never have caught.
- *
- *  The two answer different questions and both are needed. The shelf key asks
- *  "does the reader already own this story", loosely and across editions, which
- *  is what a duplicate check wants. The ASIN asks "which record is this exact
- *  Audible title", and only it is precise enough to write a status into. */
-export const shelfKeyOf = (title: string, author: string | undefined): string =>
-  `${slugify(title)}--${slugify(author ?? '')}`
-
-export const shelfKeysOf = (books: readonly Book[]): Set<string> =>
-  new Set(books.map((book) => shelfKeyOf(book.title, book.authors[0])))
+// What counts as "the reader already has this one" is the book domain's shelf
+// key, shared with the Kindle import and the friends' shelves.
+export { shelfKeyOf, shelfKeysOf }
 
 /** The Audible title each catalogued book stands for, for the books that have no
  *  ASIN on them yet.

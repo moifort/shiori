@@ -8,6 +8,7 @@ import type {
   MonthHours,
   MonthPages,
   SeriesProgress,
+  SharedShelf,
   TimeZone,
   Trend,
   YearCount,
@@ -39,7 +40,7 @@ const TOP_GENRES = 4
 /** Bumped whenever the view gains a figure or a rule changes, so a view stored
  *  by an older bundle is rebuilt on its next read instead of answering with a
  *  field it never computed. */
-export const VIEW_VERSION = 7
+export const VIEW_VERSION = 8
 
 // MARK: - Calendar
 
@@ -167,6 +168,39 @@ export const analyticsViewOf = (input: {
     audiobookCount: books.filter((book) => book.format === 'audiobook').length,
     printedBookCount: books.filter((book) => book.format !== 'audiobook').length,
     droppedCount: books.filter((book) => book.status === 'dropped').length,
+    shared: sharedShelfOf(books),
+  }
+}
+
+/** How many hearted books a friend's Découvrir tab can draw from one shelf. */
+const SHARED_FAVORITES_KEPT = 30
+
+/** The shelf as a friend sees it: the books marked "do not share" are dropped
+ *  first, so no count and no title here can betray them. */
+export const sharedShelfOf = (books: readonly Book[]): SharedShelf => {
+  const shown = books.filter((book) => !book.hidden)
+  const reading = shelvedOf(shown.filter((book) => book.status === 'reading'))
+  const favorites = shown
+    .filter((book) => book.favorite === true)
+    .sort(
+      (left, right) =>
+        (right.updatedAt ?? right.addedAt).getTime() - (left.updatedAt ?? left.addedAt).getTime(),
+    )
+  return {
+    favoriteCount: favorites.length,
+    readingCount: reading.length,
+    toReadCount: shown.filter((book) => book.status === 'to-read').length,
+    readingTitle: reading[0]?.title,
+    favorites: favorites.slice(0, SHARED_FAVORITES_KEPT).map((book) => ({
+      id: book.id,
+      title: book.title,
+      authors: book.authors,
+      format: book.format,
+      language: book.language,
+      series: book.series,
+      coverPath: book.coverPath,
+      publishedCoverUrl: book.publishedCoverUrl,
+    })),
   }
 }
 

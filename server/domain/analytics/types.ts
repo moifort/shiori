@@ -1,10 +1,13 @@
 import type { Brand } from 'ts-brand'
 import type {
+  BookFormat,
   BookId,
+  BookLanguage,
   CoverUrl,
   Genre,
   ListeningMinutes,
   PageCount,
+  SeriesMembership,
   StarRating,
 } from '~/domain/book/types'
 import type { SeriesId, SeriesName } from '~/domain/series/types'
@@ -102,6 +105,36 @@ export type AnalyticsView = {
   printedBookCount?: number
   /** Books the reader stopped because they did not like them. */
   droppedCount?: number
+  /** What the reader's friends may see of the shelf. Absent on a view stored
+   *  before friends saw counts. */
+  shared?: SharedShelf
+}
+
+/** The shelf as a friend sees it, counted apart from the dashboard's figures
+ *  because every figure above counts the books marked "do not share" too. Here
+ *  they are left out before anything is counted, so a friend can never tell
+ *  from a number that something is being kept from them. */
+export type SharedShelf = {
+  favoriteCount: number
+  readingCount: number
+  toReadCount: number
+  /** The book most recently started, for the friends list to name. */
+  readingTitle?: BookTitle
+  /** The hearted books, most recently touched first — what the Découvrir tab
+   *  offers to the reader's friends. */
+  favorites: SharedFavorite[]
+}
+
+/** A hearted book as a friend's Découvrir tab draws it. */
+export type SharedFavorite = {
+  id: BookId
+  title: BookTitle
+  authors: AuthorName[]
+  format: BookFormat
+  language?: BookLanguage
+  series?: SeriesMembership
+  coverPath?: ObjectPath
+  publishedCoverUrl?: CoverUrl
 }
 
 export type YearCount = { year: number; count: number }

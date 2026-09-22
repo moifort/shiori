@@ -1,13 +1,14 @@
 import {
   BookFormatEnum,
   BookLanguageEnum,
+  GenreEnum,
   ReadingStatusEnum,
 } from '~/domain/book/infrastructure/graphql/enums'
 import { SeriesMembershipType } from '~/domain/book/infrastructure/graphql/types'
-import type { BookView } from '~/domain/book/types'
 import type { Friend } from '~/domain/friendship/types'
-import type { FriendProfile, FriendSaga } from '~/domain/friendship/use-case'
+import type { FriendBook, FriendProfile, FriendSaga } from '~/domain/friendship/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
+import { Count } from '~/domain/shared/primitives'
 
 /** A book on somebody else's shelf.
  *
@@ -15,7 +16,7 @@ import { builder } from '~/domain/shared/graphql/builder'
  *  shelf, not a diary. There is no field here for the reading note, so no
  *  resolver can ever be added that leaks one, and none for `hidden`, because a
  *  book carrying it never reaches this type at all. */
-export const FriendBookType = builder.objectRef<BookView>('FriendBook').implement({
+export const FriendBookType = builder.objectRef<FriendBook>('FriendBook').implement({
   description:
     'A book as a friend sees it: what is on the shelf and what its owner makes ' +
     'of it, never their reading note.',
@@ -42,6 +43,39 @@ export const FriendBookType = builder.objectRef<BookView>('FriendBook').implemen
       resolve: (book) => book.rating ?? null,
     }),
     favorite: t.boolean({ resolve: (book) => book.favorite ?? false }),
+    inLibrary: t.boolean({
+      description:
+        'The reader already owns this story — same title and first author, ' +
+        'whatever the edition — so there is nothing to add.',
+      resolve: (book) => book.inLibrary,
+    }),
+    publisher: t.field({
+      type: 'Publisher',
+      nullable: true,
+      resolve: (book) => book.publisher ?? null,
+    }),
+    firstPublishedIn: t.field({
+      type: 'Year',
+      nullable: true,
+      resolve: (book) => book.firstPublishedIn ?? null,
+    }),
+    synopsis: t.field({
+      type: 'Synopsis',
+      nullable: true,
+      resolve: (book) => book.synopsis ?? null,
+    }),
+    genre: t.field({ type: GenreEnum, nullable: true, resolve: (book) => book.genre ?? null }),
+    subgenres: t.field({
+      type: ['Subgenre'],
+      resolve: (book) => book.subgenres.map(({ label }) => label),
+    }),
+    pageCount: t.field({
+      type: 'PageCount',
+      nullable: true,
+      resolve: (book) => book.pageCount ?? null,
+    }),
+    durationMinutes: t.int({ nullable: true, resolve: (book) => book.durationMinutes ?? null }),
+    narrators: t.field({ type: ['NarratorName'], resolve: (book) => book.narrators ?? [] }),
   }),
 })
 
@@ -84,6 +118,27 @@ export const FriendType = builder.objectRef<Friend>('Friend').implement({
       resolve: (friend) => friend.firstName ?? null,
     }),
     since: t.field({ type: 'DateTime', resolve: (friend) => friend.since }),
+    favoriteCount: t.field({
+      type: 'Count',
+      description: 'How many books they hearted, the ones they keep to themselves left out.',
+      resolve: (friend) => Count(friend.shelf?.favoriteCount ?? 0),
+    }),
+    readingCount: t.field({
+      type: 'Count',
+      description: 'How many books they are reading.',
+      resolve: (friend) => Count(friend.shelf?.readingCount ?? 0),
+    }),
+    toReadCount: t.field({
+      type: 'Count',
+      description: 'How many books wait on their pile.',
+      resolve: (friend) => Count(friend.shelf?.toReadCount ?? 0),
+    }),
+    readingTitle: t.field({
+      type: 'BookTitle',
+      nullable: true,
+      description: 'The book they started most recently, null when they are reading nothing.',
+      resolve: (friend) => friend.shelf?.readingTitle ?? null,
+    }),
   }),
 })
 

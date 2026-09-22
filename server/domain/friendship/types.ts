@@ -1,4 +1,5 @@
 import type { Brand } from 'ts-brand'
+import type { SharedShelf } from '~/domain/analytics/types'
 import type { UserId } from '~/domain/shared/types'
 
 /** The code that turns an invitation into a friendship. Short enough to read
@@ -36,4 +37,7 @@ export type Friend = {
   userId: UserId
   firstName?: string
   since: Date
+  /** Their shelf in figures, without the books they keep to themselves. Read
+   *  from their dashboard view, one document per friend, never their books. */
+  shelf?: SharedShelf
 }
