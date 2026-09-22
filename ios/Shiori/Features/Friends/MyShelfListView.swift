@@ -84,7 +84,7 @@ struct MyShelfListView: View {
             if !shelf.favoriteSagas.isEmpty {
                 Section("Séries") {
                     ForEach(shelf.favoriteSagas) { saga in
-                        SagaRow(saga: saga)
+                        SagaRow(saga: saga, showsCover: true)
                     }
                 }
             }
@@ -132,14 +132,20 @@ struct MyShelfListView: View {
     }
 }
 
-/// A saga on somebody's shelf: its name, author, genre, and how many of its
-/// volumes are on that shelf — never how many the saga has, since the
-/// catalogue is not something a friendship opens.
+/// A saga on somebody's shelf: its name, author and genre. Among the
+/// favourites it is drawn like a book, with the cover of its first volume;
+/// elsewhere it says how many of its volumes are on that shelf — never how
+/// many the saga has, since the catalogue is not something a friendship opens.
 struct SagaRow: View {
     let saga: FriendSaga
+    /// The favourites draw the cover in place of the volume count.
+    var showsCover = false
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
+            if showsCover {
+                BookCover(book: coverBook, showsFormatBadge: false)
+            }
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Text(saga.name).font(.body.weight(.medium))
@@ -163,12 +169,26 @@ struct SagaRow: View {
                 }
             }
             Spacer(minLength: 8)
-            Label("\(saga.ownedCount) tome(s)", systemImage: "books.vertical")
-                .labelStyle(.caption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.top, 2)
+            if !showsCover {
+                Label("\(saga.ownedCount) tome(s)", systemImage: "books.vertical")
+                    .labelStyle(.caption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 2)
+            }
         }
         .padding(.vertical, 2)
+    }
+
+    /// The saga as the cover view draws it: its first volume's cover, or the
+    /// typographic placeholder made from its name and author.
+    private var coverBook: Book {
+        Book(
+            id: saga.id,
+            title: saga.name,
+            authors: saga.author.map { [$0] } ?? [],
+            coverURL: saga.coverURL,
+            status: .read
+        )
     }
 }

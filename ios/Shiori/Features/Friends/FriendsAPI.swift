@@ -59,6 +59,8 @@ struct FriendSaga: Identifiable, Sendable {
     let favorite: Bool
     let genre: BookGenre?
     let subgenre: String?
+    /// The cover of its first volume on the shelf. Only a hearted saga has one.
+    var coverURL: URL?
 }
 
 /// A friend's shelf at a glance.
@@ -224,7 +226,8 @@ private extension FriendProfile {
                     ownedCount: $0.ownedCount,
                     favorite: $0.favorite,
                     genre: $0.genre?.asDomain,
-                    subgenre: $0.subgenre
+                    subgenre: $0.subgenre,
+                    coverURL: $0.coverUrl.flatMap(URL.init(string:))
                 )
             }
         )
