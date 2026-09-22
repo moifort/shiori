@@ -483,21 +483,18 @@ struct SeriesView: View {
         return (read.count, published.count)
     }
 
-    /// The three calls leave together and land together: assigned one by one,
-    /// the catalogue drew first with placeholder covers and no genre row, and
-    /// the reader's own volumes filled it in a moment later.
+    /// One request for the whole screen: assigned one by one, the catalogue
+    /// drew first with placeholder covers and no genre row, and the reader's own
+    /// volumes filled it in a moment later. The owned volumes come from the saga
+    /// alone — reading the whole library to keep a handful of rows signed every
+    /// cover in it, and the screen slowed down as the library grew.
     private func load() async {
         isLoading = true
         do {
-            async let catalogue = SeriesAPI.series(id: seriesId, language: language)
-            async let reading = SeriesAPI.opinion(seriesId: seriesId)
-            async let mine = LibraryAPI.library()
-            let (fetchedSeries, fetchedOpinion, library) = try await (catalogue, reading, mine)
-            series = fetchedSeries
-            opinion = fetchedOpinion
-            owned = library
-                .filter { $0.seriesId == seriesId && (language == nil || $0.language == language) }
-                .flatMap(\.books)
+            let screen = try await SeriesAPI.screen(id: seriesId, language: language)
+            series = screen.series
+            opinion = screen.opinion
+            owned = screen.owned
         } catch {
             errorMessage = reportError(error)
         }

@@ -120,6 +120,13 @@ type AudibleAccount {
 
   """Null until the first import, then moved by every nightly sync."""
   lastImportedAt: DateTime
+
+  """
+  The whole Audible library, as `audibleLibrary` answers it, read in the same request as the connection: the import screen draws both, and a reader who never connected has no account here, so no library to fail on.
+  
+  Fails with `AUDIBLE_UNAVAILABLE` when Amazon refuses the call.
+  """
+  library: [ImportableBook!]!
   marketplace: AudibleMarketplace!
 }
 
@@ -1443,6 +1450,19 @@ type Query {
     offset: Int = 0
     state: SeriesState
   ): FollowedSeriesPage!
+
+  """
+  The volumes of one saga the reader holds, in the order the saga runs: what the saga screen draws beside `series` and `seriesOpinion`, all three in one request.
+  
+  Covers are signed for these volumes only. The screen used to read the whole `library` to keep a handful of rows, which signed every cover of the library and made a saga open slower the bigger the library grew. Empty when the reader holds no volume of the saga.
+  """
+  mySeriesVolumes(
+    """
+    The edition the reader opened, for a saga held in more than one language. Absent, every edition answers.
+    """
+    language: BookLanguage
+    seriesId: SeriesId!
+  ): [Book!]!
 
   """
   This month’s scan allowance for the signed-in account. The scan screen reads it to show what is left, and the paywall to explain what a subscription lifts.

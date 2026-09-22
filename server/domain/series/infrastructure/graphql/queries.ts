@@ -199,6 +199,34 @@ builder.queryFields((t) => ({
       SeriesUseCase.describe(userId, args.id, languageOf(event), args.language ?? undefined),
   }),
 
+  mySeriesVolumes: t.field({
+    type: [BookType],
+    description:
+      'The volumes of one saga the reader holds, in the order the saga runs: what ' +
+      'the saga screen draws beside `series` and `seriesOpinion`, all three in one ' +
+      'request.\n\n' +
+      'Covers are signed for these volumes only. The screen used to read the whole ' +
+      '`library` to keep a handful of rows, which signed every cover of the library ' +
+      'and made a saga open slower the bigger the library grew. Empty when the ' +
+      'reader holds no volume of the saga.',
+    args: {
+      seriesId: t.arg({ type: 'SeriesId', required: true }),
+      language: t.arg({
+        type: BookLanguageEnum,
+        required: false,
+        description:
+          'The edition the reader opened, for a saga held in more than one language. ' +
+          'Absent, every edition answers.',
+      }),
+    },
+    resolve: async (_root, args, { userId }) => {
+      const held = await BookQuery.bySeries(userId, args.seriesId)
+      const edition = args.language ?? undefined
+      const kept = edition ? held.filter((book) => book.language === edition) : held
+      return BookQuery.withSignedCovers(inSagaOrder(kept))
+    },
+  }),
+
   mySeriesPage: t.field({
     type: FollowedSeriesPageType,
     description:

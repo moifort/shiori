@@ -159,6 +159,65 @@ describe('a saga held in more than one language', () => {
   })
 })
 
+describe('the volumes a reader holds of one saga', () => {
+  const volumesOf = async (language?: string) => {
+    const result = await execute(
+      `{ mySeriesVolumes(seriesId: "dune--frank-herbert"${language ? `, language: ${language}` : ''}) { title coverUrl } }`,
+    )
+    expect(result.errors).toBeUndefined()
+    return (result.data as { mySeriesVolumes: { title: string }[] }).mySeriesVolumes
+  }
+
+  test("answers with the saga's volumes only, in the order the saga runs", async () => {
+    await addVolume('Le Messie de Dune', 2)
+    await addVolume('Dune', 1)
+    const standalone = await execute(
+      'mutation { addBook(input: { title: "Hypérion", authors: ["Dan Simmons"] }) { id } }',
+    )
+    expect(standalone.errors).toBeUndefined()
+
+    expect((await volumesOf()).map((volume) => volume.title)).toEqual(['Dune', 'Le Messie de Dune'])
+  })
+
+  test('keeps one edition when the reader opened it', async () => {
+    await addVolume('Dune', 1, { language: 'FR' })
+    await addVolume('Dune (EN)', 1, { language: 'EN' })
+
+    expect((await volumesOf('EN')).map((volume) => volume.title)).toEqual(['Dune (EN)'])
+    expect(await volumesOf()).toHaveLength(2)
+  })
+
+  test('answers with nothing for a saga the reader holds no volume of', async () => {
+    expect(await volumesOf()).toEqual([])
+  })
+
+  // The saga screen draws from three root fields; one request carries them all,
+  // so the screen pays one round trip rather than three.
+  test('opens the whole saga screen in a single request', async () => {
+    await addVolume('Dune', 1)
+    answers = [
+      {
+        name: 'Dune',
+        author: 'Frank Herbert',
+        volumes: [{ kind: 'main', number: 1, title: 'Dune', publishedIn: 1965 }],
+      },
+    ]
+
+    const result = await execute(`{
+      series(id: "dune--frank-herbert") { name }
+      seriesOpinion(seriesId: "dune--frank-herbert") { rating }
+      mySeriesVolumes(seriesId: "dune--frank-herbert") { title }
+    }`)
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data).toEqual({
+      series: { name: 'Dune' },
+      seriesOpinion: null,
+      mySeriesVolumes: [{ title: 'Dune' }],
+    })
+  })
+})
+
 describe('opening a saga nobody has catalogued', () => {
   const aCatalogue = {
     name: 'Dune',

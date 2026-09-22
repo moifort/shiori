@@ -8,19 +8,29 @@ enum SeriesAPI {
     /// reads the stored catalogue and answers at once.
     private static let firstOpeningTimeout: TimeInterval = 120
 
-    /// The full catalogue of one saga — owned volumes and unowned alike. Nil
-    /// only when the server could not build it: the catalogue call failed, or
-    /// the model found no volumes. The next opening tries again.
+    /// Everything the saga screen draws, in one request: the catalogue, the
+    /// reader's opinion, and the volumes they hold.
     ///
-    /// `language` is the edition the reader opened: a catalogue built on this
-    /// opening titles its volumes as that edition does.
-    static func series(id: String, language: BookLanguage? = nil) async throws -> BookSeries? {
+    /// The catalogue is nil only when the server could not build it — the
+    /// catalogue call failed, or the model found no volumes; the next opening
+    /// tries again. The opinion is nil until the reader says something about the
+    /// saga. `language` is the edition the reader opened: a catalogue built on
+    /// this opening titles its volumes as that edition does, and only that
+    /// edition's volumes come back as owned.
+    static func screen(
+        id: String,
+        language: BookLanguage? = nil
+    ) async throws -> (series: BookSeries?, opinion: SeriesOpinion?, owned: [Book]) {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.SeriesQuery(id: id, language: graphQLLanguage(language)),
+            query: ShioriGraphQL.SeriesScreenQuery(id: id, language: graphQLLanguage(language)),
             requestTimeout: firstOpeningTimeout
         )
-        return data.series.map { BookSeries(catalogue: $0.fragments.seriesCatalogue) }
+        return (
+            series: data.series.map { BookSeries(catalogue: $0.fragments.seriesCatalogue) },
+            opinion: data.seriesOpinion?.fragments.seriesOpinionFields.asOpinion,
+            owned: data.mySeriesVolumes.map { $0.fragments.bookSummary.asBook }
+        )
     }
 
     /// Asks the world about the saga again: a fresh catalogue replaces the
@@ -112,16 +122,6 @@ enum SeriesAPI {
             )
         )
         return data.deleteSeries
-    }
-
-    /// What the reader makes of one saga. Nil until they say something about it:
-    /// an opinion with neither a rating nor a heart is not stored.
-    static func opinion(seriesId: String) async throws -> SeriesOpinion? {
-        let data = try await GraphQLHelpers.fetch(
-            GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.SeriesOpinionQuery(seriesId: seriesId)
-        )
-        return data.seriesOpinion?.fragments.seriesOpinionFields.asOpinion
     }
 
     /// Rate the saga itself. Leaves every volume rating alone — the two say
