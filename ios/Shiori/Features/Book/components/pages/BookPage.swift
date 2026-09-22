@@ -60,15 +60,26 @@ struct BookPage: View {
             HStack(alignment: .top, spacing: 12) {
                 BookCover(book: book, width: 64)
                 VStack(alignment: .leading, spacing: 2) {
-                    // The volume before the title, beside the cover, as the
-                    // library row says it: "Tome 3" is how a reader names a
-                    // book of a saga before its title.
-                    if let series = book.series {
-                        Text(series.label)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
+                    // The pills share the first line only: beside a whole
+                    // column they squeezed the title, the author and the
+                    // reader into half the width the row has.
+                    HStack(alignment: .center, spacing: 8) {
+                        // The volume before the title, beside the cover, as
+                        // the library row says it: "Tome 3" is how a reader
+                        // names a book of a saga before its title.
+                        if let series = book.series {
+                            Text(series.label)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text(book.title).font(.headline)
+                        }
+                        Spacer(minLength: 0)
+                        badges
                     }
-                    Text(book.title).font(.headline)
+                    if book.series != nil {
+                        Text(book.title).font(.headline)
+                    }
                     Text(book.authorLine).font(.subheadline).foregroundStyle(.secondary)
                     // Who reads a recording is as much a reason to pick it as
                     // who wrote it, so it sits with the author rather than down
@@ -80,42 +91,7 @@ struct BookPage: View {
                             .padding(.top, 1)
                     }
                 }
-                Spacer(minLength: 8)
-                // How long a recording runs, as a pill in the corner: the one
-                // number a listener weighs before starting. That it is a
-                // recording is said by the pill on the cover; a drawn story
-                // keeps its format glyph here, a prose book needs none.
-                // A dropped book says so here too: the picker above has no
-                // segment for it.
-                HStack(spacing: 6) {
-                    if book.status == .dropped {
-                        ReadingStatusBadge(status: .dropped)
-                            .scaleEffect(1.2)
-                            .accessibilityElement(children: .ignore)
-                            .accessibilityLabel(Text(book.status.label))
-                            .accessibilityIdentifier("book-dropped")
-                    }
-                    // How far the Audible player got, while the recording is
-                    // under way only: before, there is nothing to tell, and
-                    // once it is over the status says it.
-                    if book.status == .reading, let progress = book.listeningProgressLabel {
-                        // In the colour of "En cours", which it measures.
-                        Pill(text: progress, tint: ReadingStatus.reading.tint)
-                            .accessibilityLabel(Text("Écouté à \(progress)"))
-                            .accessibilityIdentifier("book-listening-progress")
-                    }
-                    if let durationLabel = book.durationLabel {
-                        Pill(text: durationLabel, systemImage: "clock")
-                            .accessibilityIdentifier("book-duration")
-                    }
-                    if book.format != .book && book.format != .audiobook {
-                        Image(systemName: book.format.symbol)
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                            .accessibilityLabel(Text(book.format.label))
-                            .accessibilityIdentifier("book-format")
-                    }
-                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .padding(.vertical, 2)
             .copyable([
@@ -162,6 +138,43 @@ struct BookPage: View {
                     Image(systemName: "barcode").foregroundStyle(.secondary)
                 }
                 .copyable(isbn)
+            }
+        }
+    }
+
+    /// How long a recording runs, as a pill in the corner: the one number a
+    /// listener weighs before starting. That it is a recording is said by the
+    /// pill on the cover; a drawn story keeps its format glyph here, a prose
+    /// book needs none. A dropped book says so here too: the picker above has
+    /// no segment for it.
+    private var badges: some View {
+        HStack(spacing: 6) {
+            if book.status == .dropped {
+                ReadingStatusBadge(status: .dropped)
+                    .scaleEffect(1.2)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text(book.status.label))
+                    .accessibilityIdentifier("book-dropped")
+            }
+            // How far the Audible player got, while the recording is
+            // under way only: before, there is nothing to tell, and
+            // once it is over the status says it.
+            if book.status == .reading, let progress = book.listeningProgressLabel {
+                // In the colour of "En cours", which it measures.
+                Pill(text: progress, tint: ReadingStatus.reading.tint)
+                    .accessibilityLabel(Text("Écouté à \(progress)"))
+                    .accessibilityIdentifier("book-listening-progress")
+            }
+            if let durationLabel = book.durationLabel {
+                Pill(text: durationLabel, systemImage: "clock")
+                    .accessibilityIdentifier("book-duration")
+            }
+            if book.format != .book && book.format != .audiobook {
+                Image(systemName: book.format.symbol)
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(Text(book.format.label))
+                    .accessibilityIdentifier("book-format")
             }
         }
     }

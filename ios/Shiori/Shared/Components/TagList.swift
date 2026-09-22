@@ -30,6 +30,9 @@ struct Pill: View {
             }
             Text(text)
         }
+        // A pill is one short fact: "7 h 37" split over two lines reads as two.
+        .lineLimit(1)
+        .fixedSize()
         .font(.caption)
         .padding(.horizontal, 10)
         .padding(.vertical, 4)
