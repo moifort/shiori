@@ -91,7 +91,7 @@ struct SeriesView: View {
                         // Only over a catalogue: with none, the screen's own
                         // retry button already asks the world about the saga.
                         if series != nil {
-                            Button("Mettre à jour le catalogue", systemImage: "arrow.clockwise") {
+                            Button("Mettre à jour", systemImage: "arrow.clockwise") {
                                 Task { await refreshCatalogue() }
                             }
                             .accessibilityIdentifier("series-refresh")
@@ -99,7 +99,7 @@ struct SeriesView: View {
                         // The count is the reader's own: they can correct it
                         // for as long as it is what the screen is drawn from.
                         if series?.isProvisional == true {
-                            Button("Modifier le nombre de tomes", systemImage: "number") {
+                            Button("Nombre de tomes", systemImage: "number") {
                                 isDeclaringVolumeCount = true
                             }
                             .accessibilityIdentifier("series-volume-count")
@@ -107,17 +107,17 @@ struct SeriesView: View {
                         // Only the saga is set aside: its volumes keep their
                         // own statuses in the library.
                         if isFollowed {
-                            Button("Ne plus suivre la série", systemImage: "bell.slash") {
+                            Button("Ne plus suivre", systemImage: "bell.slash") {
                                 Task { await setFollowed(false) }
                             }
                             .accessibilityIdentifier("series-unfollow")
                         } else {
-                            Button("Suivre la série", systemImage: "bell") {
+                            Button("Suivre", systemImage: "bell") {
                                 Task { await setFollowed(true) }
                             }
                             .accessibilityIdentifier("series-follow")
                         }
-                        Button("Supprimer la série", systemImage: "trash", role: .destructive) {
+                        Button("Supprimer", systemImage: "trash", role: .destructive) {
                             confirmDelete = true
                         }
                         .accessibilityIdentifier("series-delete")
@@ -323,7 +323,7 @@ struct SeriesView: View {
         } footer: {
             VStack(alignment: .leading, spacing: 6) {
                 if series.isProvisional {
-                    Text("Catalogue provisoire, dessiné d'après le nombre de tomes que vous avez indiqué. « Mettre à jour le catalogue » demande le vrai.")
+                    Text("Catalogue provisoire, dessiné d'après le nombre de tomes que vous avez indiqué. « Mettre à jour » demande le vrai.")
                 }
                 if !owned.isEmpty {
                     Text("Le genre et les sous-genres s'appliquent à tous les tomes de la série dans votre bibliothèque.")
