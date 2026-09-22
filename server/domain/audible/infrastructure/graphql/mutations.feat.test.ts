@@ -172,6 +172,28 @@ describe('listing the Audible library through the API', () => {
     expect(library.data?.library).toEqual([])
   })
 
+  // The import screen reads the connection and the library together: one
+  // request, and a reader who never connected gets no library and no error.
+  test('rides the account, in the same request', async () => {
+    await connect()
+    items = [anItem()]
+
+    const result = await execute('query { audibleAccount { marketplace library { asin } } }')
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.audibleAccount).toEqual({
+      marketplace: 'FR',
+      library: [{ asin: 'B002V1OF70' }],
+    })
+  })
+
+  test('is simply absent, with no error, for a reader who never connected', async () => {
+    const result = await execute('query { audibleAccount { library { asin } } }')
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.audibleAccount).toBeNull()
+  })
+
   // Amazon refuses for reasons this server cannot tell apart — a revoked device,
   // a changed password, an outage. The app's answer to all of them is the same.
   test('reports one error when Amazon refuses the call', async () => {
@@ -320,6 +342,21 @@ describe('asking for a pass right now', () => {
       imported: 2,
       updated: 0,
       account: { lastImportedAt: expect.any(String) },
+    })
+  })
+
+  test('answers with the library as it stands after the pass', async () => {
+    await connect()
+    items = [anItem()]
+
+    const result = await execute(
+      'mutation { syncAudibleNow { imported account { library { asin alreadyInLibrary } } } }',
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.syncAudibleNow).toEqual({
+      imported: 1,
+      account: { library: [{ asin: 'B002V1OF70', alreadyInLibrary: true }] },
     })
   })
 

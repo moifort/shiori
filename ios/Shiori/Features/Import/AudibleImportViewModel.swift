@@ -59,9 +59,10 @@ final class AudibleImportViewModel {
         errorMessage = nil
         lastSyncOutcome = nil
         do {
-            account = try await ImportAPI.account()
-            books = account == nil ? [] : try await ImportAPI.library()
-            hasReadLibrary = account != nil
+            let connection = try await ImportAPI.connection()
+            account = connection?.account
+            books = connection?.library ?? []
+            hasReadLibrary = connection != nil
             // Everything not already catalogued starts ticked: a reader who
             // opens this wants their library, and unticking a handful beats
             // ticking three hundred.
@@ -167,12 +168,12 @@ final class AudibleImportViewModel {
         errorMessage = nil
         defer { isSyncing = false }
         do {
-            let (outcome, synced) = try await ImportAPI.syncNow()
+            let (outcome, synced, library) = try await ImportAPI.syncNow(withLibrary: true)
             account = synced
-            books = try await ImportAPI.library()
+            books = library ?? []
             selected = Set(importable.map(\.asin))
-            // Set last: `load()` clears it, and the library read above goes
-            // through the same API, not through it.
+            // Set last: `load()` clears it, and the library above rides the
+            // sync's own answer, not a call through it.
             lastSyncOutcome = outcome
         } catch {
             errorMessage = reportError(error)

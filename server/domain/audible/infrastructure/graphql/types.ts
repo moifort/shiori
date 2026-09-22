@@ -1,10 +1,13 @@
+import { match } from 'ts-pattern'
 import { AudibleMarketplaceEnum } from '~/domain/audible/infrastructure/graphql/enums'
+import { audibleUnavailable, notConnected } from '~/domain/audible/infrastructure/graphql/errors'
 import type {
   AudibleLogin,
   ConnectedAccount,
   ImportableBook,
   LibrarySync,
 } from '~/domain/audible/types'
+import { AudibleUseCase } from '~/domain/audible/use-case'
 import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { builder } from '~/domain/shared/graphql/builder'
 
@@ -65,6 +68,22 @@ export const AudibleAccountType = builder.objectRef<ConnectedAccount>('AudibleAc
         'without asking. Ratings, notes and hidden books are never touched. Turn ' +
         'it off with `setAudibleAutoSync` to go back to importing by hand.',
       resolve: (account) => account.autoSync !== false,
+    }),
+    library: t.field({
+      type: [ImportableBookType],
+      description:
+        'The whole Audible library, as `audibleLibrary` answers it, read in the same ' +
+        'request as the connection: the import screen draws both, and a reader who ' +
+        'never connected has no account here, so no library to fail on.\n\n' +
+        'Fails with `AUDIBLE_UNAVAILABLE` when Amazon refuses the call.',
+      resolve: async (_account, _args, context) => {
+        const result = await AudibleUseCase.importableBooks(context.userId).catch(
+          audibleUnavailable,
+        )
+        return match(result)
+          .with('not-connected', notConnected)
+          .otherwise((books) => books)
+      },
     }),
   }),
 })

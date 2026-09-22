@@ -13,12 +13,19 @@ enum ImportAPI {
     /// 504 rather than both sides giving up at the same instant.
     private static let importTimeout: TimeInterval = 190
 
-    static func account() async throws -> AudibleAccount? {
+    /// The connection and its library, in one request. Nil when the reader never
+    /// connected — there is then no library to read, and no error either.
+    static func connection() async throws -> (account: AudibleAccount, library: [ImportableBook])? {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.AudibleAccountQuery()
+            query: ShioriGraphQL.AudibleImportQuery()
         )
-        return data.audibleAccount?.fragments.audibleAccountSummary.asDomain
+        return data.audibleAccount.map { account in
+            (
+                account: account.fragments.audibleAccountSummary.asDomain,
+                library: account.library.map { $0.fragments.importableAudibleBook.asDomain }
+            )
+        }
     }
 
     static func startSignIn(on marketplace: AudibleMarketplace) async throws -> AudibleLogin {
@@ -55,28 +62,6 @@ enum ImportAPI {
     /// The whole Audible library as books the reader could catalogue. Saves
     /// nothing and costs no scan credit. Throws
     /// `APIError.domain(code: "AUDIBLE_NOT_CONNECTED")` with no account linked.
-    static func library() async throws -> [ImportableBook] {
-        let data = try await GraphQLHelpers.fetch(
-            GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.AudibleLibraryQuery()
-        )
-        return data.audibleLibrary.map { item in
-            ImportableBook(
-                asin: item.asin,
-                title: item.title,
-                authors: item.authors,
-                narrators: item.narrators,
-                durationMinutes: item.durationMinutes,
-                coverURL: item.coverUrl.flatMap(URL.init(string:)),
-                seriesName: item.seriesName,
-                volume: item.volume,
-                status: item.status.asDomain,
-                finishedAt: item.finishedAt.flatMap(GraphQLHelpers.parseISO8601),
-                alreadyInLibrary: item.alreadyInLibrary
-            )
-        }
-    }
-
     /// Catalogues the ticked titles and returns the books created. The server
     /// re-reads the library rather than trusting these identifiers, and skips a
     /// title already catalogued — so a retry after a timeout creates no
@@ -106,16 +91,23 @@ enum ImportAPI {
     ///
     /// Reads the whole Audible library and can write a whole shelf, so it is
     /// given the import's timeout rather than the session's own.
-    static func syncNow() async throws -> (outcome: AudibleSyncOutcome, account: AudibleAccount) {
+    ///
+    /// `withLibrary` brings the library back as the pass left it, in the same
+    /// request, for the screen that lists it. The background refresh draws
+    /// nothing and leaves it out: it would cost Amazon a second call.
+    static func syncNow(
+        withLibrary: Bool = false
+    ) async throws -> (outcome: AudibleSyncOutcome, account: AudibleAccount, library: [ImportableBook]?) {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.SyncAudibleNowMutation(),
+            mutation: ShioriGraphQL.SyncAudibleNowMutation(withLibrary: withLibrary),
             requestTimeout: importTimeout
         )
         let sync = data.syncAudibleNow
         return (
             AudibleSyncOutcome(imported: sync.imported, updated: sync.updated),
-            sync.account.fragments.audibleAccountSummary.asDomain
+            sync.account.fragments.audibleAccountSummary.asDomain,
+            sync.account.library?.map { $0.fragments.importableAudibleBook.asDomain }
         )
     }
 
@@ -169,6 +161,24 @@ extension ShioriGraphQL.AudibleAccountSummary {
             connectedAt: GraphQLHelpers.parseISO8601(connectedAt),
             lastImportedAt: lastImportedAt.flatMap(GraphQLHelpers.parseISO8601),
             autoSync: autoSync
+        )
+    }
+}
+
+private extension ShioriGraphQL.ImportableAudibleBook {
+    var asDomain: ImportableBook {
+        ImportableBook(
+            asin: asin,
+            title: title,
+            authors: authors,
+            narrators: narrators,
+            durationMinutes: durationMinutes,
+            coverURL: coverUrl.flatMap(URL.init(string:)),
+            seriesName: seriesName,
+            volume: volume,
+            status: status.asDomain,
+            finishedAt: finishedAt.flatMap(GraphQLHelpers.parseISO8601),
+            alreadyInLibrary: alreadyInLibrary
         )
     }
 }
