@@ -4,9 +4,9 @@ import SwiftUI
 /// out, which keeps everything, and deleting, which keeps nothing.
 struct ProfileSettingsView: View {
     @Environment(AuthSession.self) private var authSession
+    /// Read at launch with the routing flags: this screen asks the server nothing.
+    @Environment(\.accountFirstName) private var firstName
 
-    @State private var firstName: String?
-    @State private var loadError: String?
     @State private var signOutError: String?
     @State private var deleteError: String?
     @State private var showDeleteConfirmation = false
@@ -27,10 +27,6 @@ struct ProfileSettingsView: View {
                 LabeledInfoRow(title: "Identifiant", value: shortUid, icon: "key.fill")
             } header: {
                 Text("Compte")
-            } footer: {
-                if let loadError {
-                    Text(loadError).foregroundStyle(.red)
-                }
             }
 
             Section {
@@ -74,21 +70,12 @@ struct ProfileSettingsView: View {
         }
         .navigationTitle("Profil")
         .navigationBarTitleDisplayMode(.inline)
-        .task { await loadFirstName() }
     }
 
     /// The first eight characters: enough to name the account in a support
     /// message, short enough to read aloud.
     private var shortUid: String {
         String((authSession.user?.uid ?? "").prefix(8))
-    }
-
-    private func loadFirstName() async {
-        do {
-            firstName = try await OnboardingAPI.loadMe().firstName
-        } catch {
-            loadError = reportError(error)
-        }
     }
 
     private func signOut() {

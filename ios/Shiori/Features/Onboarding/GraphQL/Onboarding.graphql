@@ -1,8 +1,10 @@
 # Everything a signed-in launch needs, in one request: the wizard or the app,
-# the admin surfaces, and the plan and allowance the subscription store starts
-# from.
+# the admin surfaces, the first name the profile settings show, and the plan and
+# allowance the subscription store starts from. The first name sits on the
+# account document the routing flags are read from, so it costs no extra read.
 query Launch {
   me {
+    firstName
     onboardingCompleted
     isAdmin
   }
@@ -11,16 +13,6 @@ query Launch {
   }
   quota {
     ...QuotaFields
-  }
-}
-
-# The account alone, for the profile settings to prefill the first name.
-query Me {
-  me {
-    userId
-    firstName
-    onboardingCompleted
-    isAdmin
   }
 }
 

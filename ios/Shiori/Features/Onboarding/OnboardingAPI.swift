@@ -1,16 +1,10 @@
 import Foundation
 
-/// The signed-in user's onboarding state, read at launch to decide routing.
-/// `isAdmin` rides the same query so the admin surfaces cost no extra call.
-struct MeState {
-    let firstName: String?
-    let onboardingCompleted: Bool
-    let isAdmin: Bool
-}
-
-/// What a signed-in launch reads, in one request: where to route, and the plan
-/// and allowance the subscription store starts from.
+/// What a signed-in launch reads, in one request: where to route, the first
+/// name the profile shows, and the plan and allowance the subscription store
+/// starts from.
 struct LaunchState {
+    let firstName: String?
     let onboardingCompleted: Bool
     let isAdmin: Bool
     let entitlement: EntitlementState
@@ -24,22 +18,11 @@ enum OnboardingAPI {
             query: ShioriGraphQL.LaunchQuery()
         )
         return LaunchState(
+            firstName: data.me.firstName,
             onboardingCompleted: data.me.onboardingCompleted,
             isAdmin: data.me.isAdmin,
             entitlement: data.entitlement.fragments.entitlementFields.asState,
             quota: data.quota.fragments.quotaFields.asState
-        )
-    }
-
-    static func loadMe() async throws -> MeState {
-        let data = try await GraphQLHelpers.fetch(
-            GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.MeQuery()
-        )
-        return MeState(
-            firstName: data.me.firstName,
-            onboardingCompleted: data.me.onboardingCompleted,
-            isAdmin: data.me.isAdmin
         )
     }
 

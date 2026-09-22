@@ -34,6 +34,7 @@ struct AuthRoot: View {
         .environment(session)
         .environment(subscriptions)
         .environment(\.isAdmin, gate.isAdmin)
+        .environment(\.accountFirstName, gate.firstName)
         .task { await supportGate.check() }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { Task { await supportGate.check() } }
@@ -62,7 +63,7 @@ struct AuthRoot: View {
         case .loading:
             StartupLoadingView()
         case .required:
-            OnboardingView(onCompleted: { gate.markCompleted() })
+            OnboardingView(onCompleted: { gate.markCompleted(firstName: $0) })
         case .ready:
             ContentView(invitation: $invitationRequest)
         case .failed(let message):

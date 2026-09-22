@@ -8,7 +8,9 @@ import SwiftUI
 /// it does — it grants the welcome scans — and because the welcome step is the
 /// one place to say what the app is for before asking for anything.
 struct OnboardingView: View {
-    var onCompleted: () -> Void
+    /// Handed the first name the reader gave, so the app knows it without
+    /// asking the server.
+    var onCompleted: (String) -> Void
 
     @State private var step: Step = .welcome
     @State private var firstName = ""
@@ -113,7 +115,7 @@ struct OnboardingView: View {
     /// draws until the library is ready to be shown.
     private func enterApp() {
         LibraryPreparation.shared.begin()
-        onCompleted()
+        onCompleted(firstName.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
     private func complete() async {
@@ -135,5 +137,5 @@ struct OnboardingView: View {
 }
 
 #Preview {
-    OnboardingView(onCompleted: {})
+    OnboardingView(onCompleted: { _ in })
 }

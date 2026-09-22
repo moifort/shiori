@@ -18,6 +18,9 @@ final class OnboardingGate {
     /// launch `me` query, so non-admins cost no extra call: the banner and the
     /// settings row are simply absent for them.
     private(set) var isAdmin = false
+    /// The reader's first name, riding the same launch request: the profile
+    /// settings draw it from here rather than asking the server again.
+    private(set) var firstName: String?
 
     /// Reads where to route, and hands the plan and allowance that ride the same
     /// request to the subscription store: a launch costs one round trip.
@@ -26,6 +29,7 @@ final class OnboardingGate {
         do {
             let launch = try await OnboardingAPI.launch()
             isAdmin = launch.isAdmin
+            firstName = launch.firstName
             state = launch.onboardingCompleted ? .ready : .required
             await subscriptions.start(with: launch.entitlement, quota: launch.quota)
         } catch {
@@ -33,8 +37,10 @@ final class OnboardingGate {
         }
     }
 
-    /// Called by the wizard on success to enter the app without a re-fetch.
-    func markCompleted() {
+    /// Called by the wizard on success to enter the app without a re-fetch,
+    /// with the first name the reader just gave.
+    func markCompleted(firstName: String) {
+        self.firstName = firstName
         state = .ready
     }
 
@@ -43,5 +49,6 @@ final class OnboardingGate {
     func reset() {
         state = .loading
         isAdmin = false
+        firstName = nil
     }
 }
