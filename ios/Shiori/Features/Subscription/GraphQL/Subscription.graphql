@@ -9,7 +9,9 @@ query SubscriptionState {
   }
 }
 
-# The allowance alone, re-read after a scan so the counter shows the server's.
+# The allowance alone, re-read once a purchase or a restore made the account
+# Premium. Nothing re-reads it after a scan: the only screen that draws the
+# counter is the subscription sheet, which reads it afresh on opening.
 query Quota {
   quota {
     ...QuotaFields

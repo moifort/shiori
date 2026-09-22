@@ -79,8 +79,9 @@ final class SubscriptionStore {
         await syncCurrentEntitlements()
     }
 
-    /// Re-read only the allowance. What the scan screen calls after a scan, so
-    /// the counter it shows is the server's, never one kept in the app.
+    /// Re-read only the allowance, once a purchase or a restore made the account
+    /// Premium, so the counter the sheet shows is the server's, never one kept
+    /// in the app.
     func refreshQuota() async {
         quota = try? await SubscriptionAPI.quota()
     }
