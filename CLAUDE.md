@@ -58,8 +58,11 @@ Domains live in `server/domain/{domain}/` with `types.ts`, `primitives.ts`, `com
 - **Storage** — native Firestore via `db()` from `server/system/firebase.ts`, only inside
   `infrastructure/repository.ts`. Helpers in `server/utils/firestore.ts`.
 - **Naming** — function names carry the business concept, not the technical pattern.
-- **Observability** — never `console.*`; log via `createLogger(tag)`. Sentry activates only in
-  a built bundle with `NITRO_SENTRY_DSN` set.
+- **Observability** — never `console.*`; log via `createLogger(tag)`. Every `warn` and `error`
+  is reported to Sentry, so a caught-and-recovered failure is logged, never swallowed. Keep the
+  message constant and pass the rest apart — `logger.warn('cover lookup failed', { error,
+  isbn13 })` — so Sentry groups one problem into one issue and keeps the stack. Sentry
+  activates only in a built bundle with `NITRO_SENTRY_DSN` set.
 - **Formatter** — Biome: spaces, single quotes, no semicolons, line width 100.
 
 ### What is private and what is shared
