@@ -432,10 +432,14 @@ private struct DateField: View {
     let range: ClosedRange<Date>
 
     var body: some View {
-        Label {
-            DatePicker(title, selection: $date, in: range, displayedComponents: .date)
-        } icon: {
-            Image(systemName: icon).foregroundStyle(.secondary)
+        // The icon inside the picker's label, not beside the whole picker: its
+        // taller date button pushed an outer icon up off the label's line.
+        DatePicker(selection: $date, in: range, displayedComponents: .date) {
+            Label {
+                Text(title)
+            } icon: {
+                Image(systemName: icon).foregroundStyle(.secondary)
+            }
         }
     }
 }
