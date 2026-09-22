@@ -6,6 +6,9 @@ import type { UserId as UserIdType } from '~/domain/shared/types'
 import type {
   AdminToken as AdminTokenType,
   ApiToken as ApiTokenType,
+  ApnsKeyId as ApnsKeyIdType,
+  ApnsPrivateKey as ApnsPrivateKeyType,
+  ApnsTeamId as ApnsTeamIdType,
   AscIssuerId as AscIssuerIdType,
   AscKeyId as AscKeyIdType,
   AscPrivateKey as AscPrivateKeyType,
@@ -123,4 +126,25 @@ export const AudibleKey = (value: unknown) => {
 export const PublicBaseUrl = (value: unknown) => {
   const v = z.string().url().parse(value)
   return make<PublicBaseUrlType>()(v)
+}
+
+export const ApnsKeyId = (value: unknown) => {
+  const v = z
+    .string()
+    .regex(/^[A-Z0-9]{10}$/)
+    .parse(value)
+  return make<ApnsKeyIdType>()(v)
+}
+
+export const ApnsPrivateKey = (value: unknown) => {
+  const v = z.string().min(1).parse(value)
+  return make<ApnsPrivateKeyType>()(v)
+}
+
+export const ApnsTeamId = (value: unknown) => {
+  const v = z
+    .string()
+    .regex(/^[A-Z0-9]{10}$/)
+    .parse(value)
+  return make<ApnsTeamIdType>()(v)
 }

@@ -75,6 +75,12 @@ import '~/domain/friendship/infrastructure/graphql/types'
 import '~/domain/friendship/infrastructure/graphql/queries'
 import '~/domain/friendship/infrastructure/graphql/mutations'
 
+// Notification (push alerts about books coming out)
+import '~/domain/notification/infrastructure/graphql/enums'
+import '~/domain/notification/infrastructure/graphql/types'
+import '~/domain/notification/infrastructure/graphql/queries'
+import '~/domain/notification/infrastructure/graphql/mutations'
+
 // Changelog (application release notes)
 import '~/domain/changelog/infrastructure/graphql/types'
 import '~/domain/changelog/infrastructure/graphql/queries'

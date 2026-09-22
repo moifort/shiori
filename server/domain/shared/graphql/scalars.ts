@@ -16,6 +16,7 @@ import {
   Subgenre,
   Synopsis,
 } from '~/domain/book/primitives'
+import { DeviceToken } from '~/domain/notification/primitives'
 import { SeriesDescription, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import {
   AuthorName,
@@ -257,4 +258,12 @@ builder.scalarType('AudibleAsin', {
     '`importAudibleBooks` to say which titles to catalogue. Example: "B002V1OF70".',
   serialize: (value) => value as string,
   parseValue: validatedParse('AudibleAsin', AudibleAsin),
+})
+
+builder.scalarType('DeviceToken', {
+  description:
+    'The token APNs hands a device for this app, in hexadecimal, as the app ' +
+    'receives it on registering for remote notifications.',
+  serialize: (value) => value as string,
+  parseValue: validatedParse('DeviceToken', DeviceToken),
 })

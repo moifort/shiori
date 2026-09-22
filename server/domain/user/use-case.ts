@@ -4,6 +4,7 @@ import { coverPrefixOf } from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
 import { EntitlementCommand } from '~/domain/entitlement/command'
 import { FriendshipCommand } from '~/domain/friendship/command'
+import { NotificationCommand } from '~/domain/notification/command'
 import { QuotaCommand } from '~/domain/quota/command'
 import { SeriesOpinionCommand } from '~/domain/series-opinion/command'
 import type { PersonName, UserId } from '~/domain/shared/types'
@@ -61,6 +62,7 @@ export namespace UserUseCase {
       AudibleCommand.deleteForUser(userId),
       SeriesOpinionCommand.deleteAllForUser(userId),
       FriendshipCommand.deleteAllForUser(userId),
+      NotificationCommand.deleteForUser(userId),
     ])
     await objectStore().removeByPrefix(coverPrefixOf(userId))
     await UserCommand.deleteProfile(userId)

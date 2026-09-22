@@ -148,3 +148,18 @@ variable "quota_project_id" {
   type        = string
   default     = ""
 }
+
+# Push notifications — optional: blank leaves the release alerts logged, never
+# sent. The key is its own Apple key with the APNs service enabled, not the
+# Sign in with Apple key; the team is the one `apple_team_id` names.
+variable "apns_key_id" {
+  description = "Id of the Apple key with the APNs service enabled (matches the .p8 filename)"
+  type        = string
+  default     = ""
+}
+
+variable "apns_private_key_path" {
+  description = "Path to the APNs .p8 private key. Blank disables push notifications."
+  type        = string
+  default     = ""
+}

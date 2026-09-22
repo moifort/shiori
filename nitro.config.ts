@@ -57,6 +57,12 @@ export default defineNitroConfig({
     // Seals the Amazon device credentials an Audible connection is made of, so a
     // Firestore export does not hand out standing access to readers' accounts.
     audibleKey: '',
+    // Push notifications through APNs: a key with the APNs service enabled, its
+    // id, and the team that owns it. Any of them blank and the alerts are only
+    // logged, never sent.
+    apnsKeyId: '',
+    apnsPrivateKey: '',
+    apnsTeamId: '',
     // Dev only: the origin the local object store points its URLs at, so the
     // simulator downloads an attachment from the same server it queried.
     publicBaseUrl: 'http://127.0.0.1:3000',

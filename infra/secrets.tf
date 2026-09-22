@@ -23,12 +23,16 @@ locals {
   # The App Store Connect API key, read from disk like the Apple Sign-In key.
   asc_private_key_value = var.asc_private_key_path != "" ? file(var.asc_private_key_path) : ""
 
+  # The APNs key, read from disk the same way. An empty file means no push.
+  apns_private_key_value = var.apns_private_key_path != "" ? file(var.apns_private_key_path) : ""
+
   secret_values = {
-    google-api-key  = var.google_api_key
-    admin-token     = local.admin_token_value
-    sentry-dsn      = var.sentry_dsn
-    asc-private-key = local.asc_private_key_value
-    audible-key     = random_bytes.audible_key.base64
+    google-api-key   = var.google_api_key
+    admin-token      = local.admin_token_value
+    sentry-dsn       = var.sentry_dsn
+    asc-private-key  = local.asc_private_key_value
+    audible-key      = random_bytes.audible_key.base64
+    apns-private-key = local.apns_private_key_value
   }
 
   # Secret Manager rejects empty payloads, so we drive iteration off a
@@ -42,6 +46,7 @@ locals {
     "audible-key",
     nonsensitive(var.sentry_dsn) != "" ? "sentry-dsn" : "",
     local.asc_private_key_value != "" ? "asc-private-key" : "",
+    local.apns_private_key_value != "" ? "apns-private-key" : "",
   ]))
 }
 

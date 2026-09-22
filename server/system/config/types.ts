@@ -21,6 +21,12 @@ export type AttachmentsBucket = Brand<string, 'AttachmentsBucket'>
 /** The 256-bit key, base64-encoded, the Audible device credentials are sealed
  *  with before they reach Firestore. */
 export type AudibleKey = Brand<string, 'AudibleKey'>
+/** The id of the Apple key with the APNs service enabled (10 characters). */
+export type ApnsKeyId = Brand<string, 'ApnsKeyId'>
+/** That key's .p8 PEM content, which signs the provider tokens. */
+export type ApnsPrivateKey = Brand<string, 'ApnsPrivateKey'>
+/** The Apple developer team the key belongs to. */
+export type ApnsTeamId = Brand<string, 'ApnsTeamId'>
 /** Development only: the origin this server is reachable at, used to address the
  *  local object store from the simulator. */
 export type PublicBaseUrl = Brand<string, 'PublicBaseUrl'>

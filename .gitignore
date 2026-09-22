@@ -80,6 +80,8 @@ infra/*.auto.tfvars
 infra/*.auto.tfvars.json
 infra/AuthKey_*.p8
 infra/apple.p8
+infra/asc.p8
+infra/apns.p8
 
 # Build artifact uploaded to GCS by Terraform
 .output/server-source.zip

@@ -126,6 +126,11 @@ jobs:
           printf '%s' "${{ secrets.ASC_KEY_P8 }}" > infra/asc.p8
           chmod 600 infra/asc.p8
 
+          # APNs .p8, for the release alerts. An empty file leaves push off:
+          # the alerts are then only logged.
+          printf '%s' "${{ secrets.APNS_KEY_P8 }}" > infra/apns.p8
+          chmod 600 infra/apns.p8
+
           cat > infra/terraform.tfvars <<EOF
           project_id             = "${{ vars.GCP_PROJECT_ID }}"
           billing_account_id     = "${{ secrets.GCP_BILLING_ACCOUNT }}"
@@ -146,6 +151,8 @@ jobs:
           asc_private_key_path   = "./asc.p8"
           asc_vendor_number      = "${{ vars.ASC_VENDOR_NUMBER }}"
           gcp_billing_table      = "${{ vars.GCP_BILLING_TABLE }}"
+          apns_key_id            = "${{ secrets.APNS_KEY_ID }}"
+          apns_private_key_path  = "./apns.p8"
           EOF
 
       - name: Terraform init + apply

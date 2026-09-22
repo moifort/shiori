@@ -17,6 +17,7 @@ import type {
   Subgenre,
   Synopsis,
 } from '~/domain/book/types'
+import type { DeviceToken } from '~/domain/notification/types'
 import type { SeriesDescription, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type {
   AuthorName,
@@ -81,6 +82,7 @@ export const builder = new SchemaBuilder<{
     CoverUrl: { Input: CoverUrl; Output: CoverUrl | SignedUrl }
     TimeZone: { Input: TimeZone; Output: TimeZone }
     AudibleAsin: { Input: AudibleAsin; Output: AudibleAsin }
+    DeviceToken: { Input: DeviceToken; Output: DeviceToken }
   }
 }>({
   defaultFieldNullability: false,

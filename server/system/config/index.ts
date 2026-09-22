@@ -1,6 +1,9 @@
 import {
   AdminToken,
   ApiToken,
+  ApnsKeyId,
+  ApnsPrivateKey,
+  ApnsTeamId,
   AppleEnvironment,
   AscIssuerId,
   AscKeyId,
@@ -47,6 +50,11 @@ export const config = () => {
       ? AttachmentsBucket(runtimeConfig.attachmentsBucket)
       : undefined,
     audibleKey: runtimeConfig.audibleKey ? AudibleKey(runtimeConfig.audibleKey) : undefined,
+    apnsKeyId: runtimeConfig.apnsKeyId ? ApnsKeyId(runtimeConfig.apnsKeyId) : undefined,
+    apnsPrivateKey: runtimeConfig.apnsPrivateKey
+      ? ApnsPrivateKey(runtimeConfig.apnsPrivateKey)
+      : undefined,
+    apnsTeamId: runtimeConfig.apnsTeamId ? ApnsTeamId(runtimeConfig.apnsTeamId) : undefined,
     publicBaseUrl: PublicBaseUrl(runtimeConfig.publicBaseUrl),
   }
 }

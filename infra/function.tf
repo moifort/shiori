@@ -113,6 +113,10 @@ resource "google_cloudfunctions2_function" "server" {
       NITRO_ASC_KEY_ID        = var.asc_key_id
       NITRO_ASC_VENDOR_NUMBER = var.asc_vendor_number
       NITRO_GCP_BILLING_TABLE = var.gcp_billing_table
+      # Push notifications: the key id and its team are identifiers; the .p8
+      # rides the secret_environment_variables block below.
+      NITRO_APNS_KEY_ID  = var.apns_key_id
+      NITRO_APNS_TEAM_ID = var.apns_key_id != "" ? var.apple_team_id : ""
       # The private bucket holding wine attachments (see storage.tf).
       NITRO_ATTACHMENTS_BUCKET = google_storage_bucket.attachments.name
     }
