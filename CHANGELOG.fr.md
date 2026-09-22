@@ -6,6 +6,13 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 - Les sélecteurs de genre listent les genres par ordre alphabétique, « Autre » en dernier,
   plutôt que dans l’ordre du serveur.
+- Le catalogue d’une saga titre ses tomes comme l’édition possédée : une saga possédée en
+  français revenait avec les titres anglais de ses suites, même depuis une app en français.
+  Une saga possédée en deux langues est cataloguée dans la langue de la ligne ouverte.
+- L’écran d’une saga peut reconstituer son catalogue à la demande, depuis le menu « Plus
+  d’actions » : pour un tome annoncé depuis sa constitution, ou un catalogue constitué dans
+  la mauvaise langue. Le nouveau catalogue remplace le catalogue partagé ; s’il ne peut pas
+  être reconstitué, l’ancien reste et l’écran le dit.
 - Une saga possédée en deux langues s’ouvre sur l’édition touchée : la ligne française de
   l’onglet Séries, ou un tome français, affichait les couvertures anglaises quand les deux
   éditions étaient dans la bibliothèque, le catalogue étant partagé entre elles.

@@ -13,10 +13,13 @@ mock.module('~/system/object-store', () => ({
  *  what is asserted is what a screen does with an answer. */
 let answers: unknown[] = []
 const calls: string[] = []
+/** The text each step was prompted with, keyed by step. */
+const prompts: Record<string, string> = {}
 
 mock.module('~/domain/scan/gemini', () => ({
-  generate: async ({ step }: { step: string }) => {
+  generate: async ({ step, parts }: { step: string; parts: { text?: string }[] }) => {
     calls.push(step)
+    prompts[step] = parts.map((part) => part.text ?? '').join('')
     const value = answers.shift()
     if (value === undefined) throw new Error(`no queued answer for step "${step}"`)
     if (value instanceof Error) throw value
@@ -237,6 +240,99 @@ describe('opening a saga nobody has catalogued', () => {
 
     expect(await openSeries()).toBeNull()
     expect(fake.snapshot('series').size).toBe(0)
+  })
+
+  // The defect: a French reader opened a saga they hold in French and got the
+  // English titles of its volumes. The catalogue is asked in the language of
+  // the edition on the shelf, which is what the reader will look for — and
+  // here the request itself carries no language at all, so it answers English.
+  test('asks for the catalogue in the language of the edition the reader holds', async () => {
+    await addVolume('Le Messie de Dune', 2, { language: 'FR' })
+    answers = [aCatalogue]
+
+    await openSeries()
+
+    expect(prompts.catalogue).toContain('Édition : en français.')
+  })
+
+  // A saga held in two languages has two rows in the Series tab, and the row
+  // the reader opened says which edition they want described.
+  test('asks in the language of the edition the reader opened', async () => {
+    await addVolume('Dune', 1, { language: 'EN' })
+    await addVolume('Dune', 1, { language: 'FR' })
+    answers = [aCatalogue]
+
+    const result = await execute('{ series(id: "dune--frank-herbert", language: FR) { name } }')
+
+    expect(result.errors).toBeUndefined()
+    expect(prompts.catalogue).toContain('Édition : en français.')
+  })
+})
+
+describe('refreshing a saga catalogue', () => {
+  const stale = {
+    name: 'Dune',
+    author: 'Frank Herbert',
+    volumes: [{ kind: 'main', number: 1, title: 'Dune', publishedIn: 1965 }],
+  }
+  const fresh = {
+    ...stale,
+    volumes: [
+      ...stale.volumes,
+      { kind: 'main', number: 2, title: 'Le Messie de Dune', publishedIn: 1969 },
+    ],
+  }
+
+  const spineOf = async () => {
+    const result = await execute('{ series(id: "dune--frank-herbert") { spine { title } } }')
+    expect(result.errors).toBeUndefined()
+    return (result.data?.series as { spine: { title: string }[] } | null)?.spine
+  }
+
+  const refresh = async () => {
+    const result = await execute(
+      'mutation { refreshSeries(seriesId: "dune--frank-herbert") { spine { title } } }',
+    )
+    expect(result.errors).toBeUndefined()
+    return result.data?.refreshSeries as { spine: { title: string }[] } | null
+  }
+
+  // A catalogue is written once and read by everyone, so a volume announced
+  // after that first call never appears — nor does a wrong-language catalogue
+  // ever get another chance. The reader can ask the world again.
+  test('replaces the stored catalogue with a fresh model call', async () => {
+    await addVolume('Dune', 1, { language: 'FR' })
+    answers = [stale]
+    await spineOf()
+
+    answers = [fresh]
+    expect(await refresh()).toEqual({
+      spine: [{ title: 'Dune' }, { title: 'Le Messie de Dune' }],
+    })
+
+    expect(calls).toEqual(['catalogue', 'catalogue'])
+    expect(await spineOf()).toEqual([{ title: 'Dune' }, { title: 'Le Messie de Dune' }])
+    expect(prompts.catalogue).toContain('Édition : en français.')
+  })
+
+  // A failed refresh must not cost the reader the catalogue they had: the
+  // screen keeps showing it, and says the refresh did not go through.
+  test('keeps the previous catalogue when the model fails or finds nothing', async () => {
+    await addVolume('Dune', 1)
+    answers = [stale]
+    await spineOf()
+
+    answers = [new Error('grounding is down')]
+    expect(await refresh()).toBeNull()
+    answers = [{ ...stale, volumes: [] }]
+    expect(await refresh()).toBeNull()
+
+    expect(await spineOf()).toEqual([{ title: 'Dune' }])
+  })
+
+  test('refreshes nothing for a saga the reader holds no volume of', async () => {
+    expect(await refresh()).toBeNull()
+    expect(calls).toEqual([])
   })
 })
 

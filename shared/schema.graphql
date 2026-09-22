@@ -1025,6 +1025,13 @@ type Mutation {
   ): [KindleBook!]!
 
   """
+  Ask the world about a saga again: one fresh web-grounded model call, whose catalogue replaces the stored one for every reader of the saga. For a volume announced since the catalogue was built, or a catalogue built in the wrong language.
+  
+  Built as `series` builds a first catalogue: from a volume the reader holds, titled as the edition on the shelf titles it, `language` naming that edition when the saga is held in more than one. Takes a few seconds. Null when the reader holds no volume of the saga, and when the model failed or found no volumes — the previous catalogue is then kept as it was.
+  """
+  refreshSeries(language: BookLanguage, seriesId: SeriesId!): Series
+
+  """
   Take a rating back. The book stays read, with its reading dates: withdrawing a judgment is not saying the reading never happened.
   """
   removeBookRating(id: BookId!): Book!
@@ -1410,9 +1417,16 @@ type Query {
   
   Everything the reader does not own is a proposal: nothing enters a library until they add it.
   
-  Built on first sight when nobody has catalogued the saga yet — an Audible import names sagas without describing them — from the name and author of a volume the reader holds, with one web-grounded model call in the language of `Accept-Language`. That first opening takes a few seconds; every later one, by anyone, reads the stored catalogue. Null when the reader holds no volume of the saga, or when the model found nothing to say.
+  Built on first sight when nobody has catalogued the saga yet — an Audible import names sagas without describing them — from the name and author of a volume the reader holds, with one web-grounded model call: the volumes are titled as the edition on the shelf titles them, the rest is written in the language of `Accept-Language`. That first opening takes a few seconds; every later one, by anyone, reads the stored catalogue. Null when the reader holds no volume of the saga, or when the model found nothing to say.
   """
-  series(id: SeriesId!): Series
+  series(
+    id: SeriesId!
+
+    """
+    The edition the reader opened, for a saga held in more than one language: a catalogue built on this opening titles its volumes as that edition does. Absent, the edition of whichever volume they hold answers.
+    """
+    language: BookLanguage
+  ): Series
 
   """
   What the reader makes of one saga. Null until they say something about it — an opinion with neither a rating nor a heart is not stored.

@@ -12,6 +12,13 @@ the release tag is pushed.
 
 - The genre pickers list genres alphabetically, with "Other" last, rather than in the
   server's own order.
+- A saga's catalogue titles its volumes as the edition on the shelf does: a saga held in
+  French came back with the English titles of its sequels, even from a French app. A saga
+  held in two languages is catalogued in the language of the row the reader opened.
+- A saga's screen can rebuild its catalogue on demand, from the "More actions" menu: for a
+  volume announced since it was built, or a catalogue built in the wrong language. The
+  fresh catalogue replaces the shared one; when it cannot be rebuilt, the old one stays and
+  the screen says so.
 - A saga held in two languages opens on the edition the reader tapped: the French row of the
   Series tab, or a French volume, showed the English covers when both editions were in the
   library, since the catalogue is shared between them.

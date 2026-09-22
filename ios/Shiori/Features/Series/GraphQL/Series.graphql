@@ -1,17 +1,31 @@
 # The full catalogue of one saga. Everything the reader does not own comes back
-# here as a proposal: the library query never returns these rows.
-query Series($id: SeriesId!) {
-  series(id: $id) {
-    id
-    name
-    author
-    description
-    spine {
-      ...VolumeEntry
-    }
-    relatedWorks {
-      ...VolumeEntry
-    }
+# here as a proposal: the library query never returns these rows. The language
+# is the edition the reader opened: a catalogue built on this opening titles
+# its volumes as that edition does.
+query Series($id: SeriesId!, $language: BookLanguage) {
+  series(id: $id, language: $language) {
+    ...SeriesCatalogue
+  }
+}
+
+# Ask the world about the saga again. The fresh catalogue replaces the stored
+# one for everyone; null means it could not be rebuilt and the old one stands.
+mutation RefreshSeries($seriesId: SeriesId!, $language: BookLanguage) {
+  refreshSeries(seriesId: $seriesId, language: $language) {
+    ...SeriesCatalogue
+  }
+}
+
+fragment SeriesCatalogue on Series {
+  id
+  name
+  author
+  description
+  spine {
+    ...VolumeEntry
+  }
+  relatedWorks {
+    ...VolumeEntry
   }
 }
 

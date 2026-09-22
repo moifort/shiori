@@ -1,3 +1,4 @@
+import type { BookLanguage } from '~/domain/book/types'
 import type { ScanLanguage, ScanResult } from '~/domain/scan/types'
 import { VOLUME_KINDS } from '~/domain/series/types'
 
@@ -68,9 +69,6 @@ Renseigne :
 
 Toutes les valeurs textuelles doivent être en ${LANGUAGE_NAMES[language]}.`
 
-/** Step 3 — the saga's catalogue. Runs once per series for the whole app, not
- *  once per reader, which is what makes it affordable to ask for the complete
- *  list rather than just the next volume. */
 /** A title the reader typed is not a title read off a cover: it can be
  *  approximate, partial, or misspelt, and the model has nothing else to go on.
  *  Said up front, so it looks for the most likely book rather than the exact
@@ -79,20 +77,37 @@ const TYPED_TITLE_PREFACE = `Le titre ci-dessous a été saisi de mémoire par l
 
 `
 
-export const cataloguePrompt = (seriesName: string, author: string, language: ScanLanguage) =>
-  `Recherche sur le web la liste COMPLÈTE des volumes de cette série et renseigne son catalogue.
+/** Step 3 — the saga's catalogue. Runs once per series for the whole app, not
+ *  once per reader, which is what makes it affordable to ask for the complete
+ *  list rather than just the next volume.
+ *
+ *  The volumes are titled as the edition on the shelf titles them: a reader
+ *  holding a saga in French looks for the French titles of its sequels, and
+ *  asked for "French text" alone the model kept the original English ones as
+ *  if they were names. The edition is the one read off the cover or held in
+ *  the library; the reader's own language stands in when it is unknown. */
+export const cataloguePrompt = (
+  seriesName: string,
+  author: string,
+  language: ScanLanguage,
+  editionLanguage?: BookLanguage,
+) => {
+  const edition = languageNames.of(editionLanguage ?? language)
+  return `Recherche sur le web la liste COMPLÈTE des volumes de cette série et renseigne son catalogue.
 
 Série : « ${seriesName} » de ${author}
+Édition : en ${edition}. C'est de CETTE édition que parle le catalogue : le nom de la série et les titres des volumes sont ceux sous lesquels ils sont publiés en ${edition} — les titres traduits, jamais les titres originaux d'une autre langue. Un volume pas encore traduit garde son titre original.
 
 Renseigne :
 - name et author : le nom de la série et son auteur principal.
 - description : 2 à 3 phrases présentant la série, SANS révéler le dénouement.
 - volumes : TOUS les volumes publiés ou annoncés, dans l'ordre de PUBLICATION. Pour chacun :
   - number : le numéro du tome dans l'histoire principale, ou null pour tout ce qui est hors numérotation.
-  - title : le titre du volume.
+  - title : le titre du volume dans l'édition en ${edition}.
   - publishedIn : l'année de parution. Pour un volume annoncé mais pas encore paru, indique l'année annoncée — c'est une information utile, ne l'omets pas.
   - kind : ${VOLUME_KINDS.map((kind) => `'${kind}'`).join(', ')}. 'main' pour un tome numéroté de l'histoire principale, 'prequel' pour une préquelle, 'spin-off' pour un récit dérivé, 'novella' pour un texte court, 'companion' pour un guide, un atlas ou un artbook.
 
 N'invente pas de volumes pour compléter une série : si tu n'en connais que quatre, n'en liste que quatre. Une série inexistante ou introuvable doit revenir avec un tableau volumes vide.
 
-Toutes les valeurs textuelles doivent être en ${LANGUAGE_NAMES[language]}.`
+En dehors des titres, toutes les valeurs textuelles doivent être en ${LANGUAGE_NAMES[language]}.`
+}

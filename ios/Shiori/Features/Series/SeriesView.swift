@@ -34,6 +34,9 @@ struct SeriesView: View {
     /// A rating, a heart or the removal is on its way to the server.
     @State private var isSaving = false
     @State private var confirmDelete = false
+    /// The refresh came back with nothing: the catalogue on screen is the old one.
+    @State private var refreshFailed = false
+    @State private var isRefreshing = false
     /// The owned volume the reader tapped, opened over the list.
     @State private var selectedBook: Book?
 
@@ -75,6 +78,14 @@ struct SeriesView: View {
             if !owned.isEmpty {
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
+                        // Only over a catalogue: with none, the screen's own
+                        // retry button already asks the world about the saga.
+                        if series != nil {
+                            Button("Mettre à jour le catalogue", systemImage: "arrow.clockwise") {
+                                Task { await refreshCatalogue() }
+                            }
+                            .accessibilityIdentifier("series-refresh")
+                        }
                         Button("Supprimer la série", systemImage: "trash", role: .destructive) {
                             confirmDelete = true
                         }
@@ -97,13 +108,26 @@ struct SeriesView: View {
         } message: {
             Text("Les \(owned.count) livres de cette série dans votre bibliothèque seront supprimés avec elle, ainsi que votre note. Cette action est définitive.")
         }
+        .alert("Catalogue non mis à jour", isPresented: $refreshFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Shiori n'a pas réussi à reconstituer le catalogue de cette série. L'ancien est conservé ; réessayez plus tard.")
+        }
         // The stars commit on the tap and the control cannot show the call
         // itself, so the wait is made visible by a scrim, as on the book sheet.
+        // A refresh is one grounded model call and takes a while, so its scrim
+        // says what it is waiting on.
         .overlay {
             if isSaving {
                 ZStack {
                     Color.black.opacity(0.1).ignoresSafeArea()
-                    ProgressView()
+                    if isRefreshing {
+                        ProgressView("Mise à jour du catalogue…")
+                            .padding()
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    } else {
+                        ProgressView()
+                    }
                 }
             }
         }
@@ -388,7 +412,7 @@ struct SeriesView: View {
     private func load() async {
         isLoading = true
         do {
-            series = try await SeriesAPI.series(id: seriesId)
+            series = try await SeriesAPI.series(id: seriesId, language: language)
             opinion = try await SeriesAPI.opinion(seriesId: seriesId)
             let mine = try await LibraryAPI.library()
             owned = mine
@@ -423,6 +447,27 @@ struct SeriesView: View {
         defer { isSaving = false }
         do {
             opinion = try await SeriesAPI.setFavorite(seriesId: seriesId, favorite: favorite)
+        } catch {
+            errorMessage = reportError(error)
+        }
+    }
+
+    /// Asks the world about the saga again. The fresh catalogue replaces the one
+    /// on screen; when it could not be rebuilt the old one stays, and the
+    /// reader is told rather than left wondering whether anything happened.
+    private func refreshCatalogue() async {
+        isSaving = true
+        isRefreshing = true
+        defer {
+            isSaving = false
+            isRefreshing = false
+        }
+        do {
+            if let refreshed = try await SeriesAPI.refresh(seriesId: seriesId, language: language) {
+                series = refreshed
+            } else {
+                refreshFailed = true
+            }
         } catch {
             errorMessage = reportError(error)
         }

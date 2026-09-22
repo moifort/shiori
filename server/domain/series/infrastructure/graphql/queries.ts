@@ -176,13 +176,25 @@ builder.queryFields((t) => ({
       'until they add it.\n\n' +
       'Built on first sight when nobody has catalogued the saga yet — an Audible ' +
       'import names sagas without describing them — from the name and author of ' +
-      'a volume the reader holds, with one web-grounded model call in the ' +
-      'language of `Accept-Language`. That first opening takes a few seconds; ' +
-      'every later one, by anyone, reads the stored catalogue. Null when the ' +
-      'reader holds no volume of the saga, or when the model found nothing to say.',
-    args: { id: t.arg({ type: 'SeriesId', required: true }) },
+      'a volume the reader holds, with one web-grounded model call: the volumes ' +
+      'are titled as the edition on the shelf titles them, the rest is written ' +
+      'in the language of `Accept-Language`. That first opening takes a few ' +
+      'seconds; every later one, by anyone, reads the stored catalogue. Null when ' +
+      'the reader holds no volume of the saga, or when the model found nothing ' +
+      'to say.',
+    args: {
+      id: t.arg({ type: 'SeriesId', required: true }),
+      language: t.arg({
+        type: BookLanguageEnum,
+        required: false,
+        description:
+          'The edition the reader opened, for a saga held in more than one ' +
+          'language: a catalogue built on this opening titles its volumes as ' +
+          'that edition does. Absent, the edition of whichever volume they hold answers.',
+      }),
+    },
     resolve: (_root, args, { userId, event }) =>
-      SeriesUseCase.describe(userId, args.id, languageOf(event)),
+      SeriesUseCase.describe(userId, args.id, languageOf(event), args.language ?? undefined),
   }),
 
   mySeriesPage: t.field({

@@ -9,6 +9,7 @@ import {
   Subgenre,
   Synopsis,
 } from '~/domain/book/primitives'
+import type { BookLanguage } from '~/domain/book/types'
 import { generate } from '~/domain/scan/gemini'
 import * as repository from '~/domain/scan/infrastructure/repository'
 import { hashImage } from '~/domain/scan/primitives'
@@ -217,13 +218,23 @@ export namespace Scan {
     const seriesId = seriesKeyOf(series.name, result.authors[0])
     if (await SeriesQuery.byId(seriesId)) return undefined
 
-    const { usage } = await catalogueSeries(seriesId, series.name, result.authors[0], language)
+    const { usage } = await catalogueSeries(
+      seriesId,
+      series.name,
+      result.authors[0],
+      language,
+      result.language,
+    )
     return usage
   }
 
-  /** The catalogue call on its own, for a saga named but never described. The
-   *  scan runs it as its third step; the series screen runs it for a saga an
-   *  Audible import named, since an import describes nothing.
+  /** The catalogue call on its own, for a saga named but never described — or
+   *  described once and asked again. The scan runs it as its third step; the
+   *  series screen runs it for a saga an Audible import named, since an import
+   *  describes nothing, and again when the reader asks for a fresh catalogue.
+   *
+   *  `editionLanguage` is the edition on the shelf, which titles the volumes;
+   *  absent, the reader's language stands in.
    *
    *  Never throws: a failed catalogue must not fail the scan that asked for it.
    *  The reader still gets their book, and the saga is catalogued by the next
@@ -236,11 +247,12 @@ export namespace Scan {
     name: SeriesNameValue,
     author: AuthorNameValue,
     language: ScanLanguage,
+    editionLanguage?: BookLanguage,
   ): Promise<{ series?: Series; usage?: AiStepUsage }> => {
     try {
       const { value, usage } = await generate<CatalogueOutput>({
         step: 'catalogue',
-        parts: [{ text: cataloguePrompt(name, author, language) }],
+        parts: [{ text: cataloguePrompt(name, author, language, editionLanguage) }],
         responseSchema: CATALOGUE_SCHEMA,
         grounded: true,
       })

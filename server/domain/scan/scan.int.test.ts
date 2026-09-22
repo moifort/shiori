@@ -344,6 +344,26 @@ describe('surviving what the model invents', () => {
 })
 
 describe('cataloguing a saga', () => {
+  // The defect: a French edition scanned from a French app came back with the
+  // English titles of its sequels. The edition read off the cover says which
+  // titles the reader will look for, and the prompt names it.
+  test('asks for the volume titles of the edition read off the cover', async () => {
+    answers = [{ ...aCover, language: 'en' }, anEnrichment, aCatalogue]
+
+    await Scan.scanWithCache(image, 'fr')
+
+    expect(prompts.catalogue).toContain('Édition : en anglais.')
+    expect(prompts.catalogue).toContain('doivent être en français')
+  })
+
+  test('falls back to the reader language when the cover does not settle the edition', async () => {
+    answers = [aCover, anEnrichment, aCatalogue]
+
+    await Scan.scanWithCache(image, 'fr')
+
+    expect(prompts.catalogue).toContain('Édition : en français.')
+  })
+
   test('skips the third call when the saga is already catalogued', async () => {
     answers = [aCover, anEnrichment, aCatalogue]
     await Scan.scanWithCache(image, 'fr')

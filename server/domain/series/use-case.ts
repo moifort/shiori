@@ -3,6 +3,7 @@ import { AnalyticsCommand } from '~/domain/analytics/command'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import { BookCommand } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
+import type { BookLanguage } from '~/domain/book/types'
 import { Scan } from '~/domain/scan'
 import type { ScanLanguage } from '~/domain/scan/types'
 import { SeriesQuery } from '~/domain/series/query'
@@ -41,6 +42,10 @@ export namespace SeriesUseCase {
    *  everyone, and only for sagas somebody actually opens — an import of a whole
    *  library must not pay one call per saga inside a single request.
    *
+   *  `edition` is the language of the row the reader opened, for a saga they
+   *  hold in more than one: the catalogue titles its volumes as that edition
+   *  does. Absent, the edition of whichever volume they hold answers.
+   *
    *  Null when the reader holds no volume of the saga, since there is then
    *  nothing to ask about, and when the model fails or finds no volumes: the
    *  next opening tries again. */
@@ -48,13 +53,45 @@ export namespace SeriesUseCase {
     userId: UserId,
     seriesId: SeriesId,
     language: ScanLanguage,
+    edition?: BookLanguage,
   ): Promise<Series | null> => {
     const known = await SeriesQuery.byId(seriesId)
     if (known) return known
+    return catalogueFromLibrary(userId, seriesId, language, edition)
+  }
 
-    const volume = (await BookQuery.bySeries(userId, seriesId)).find(
+  /** The catalogue asked of the world again, replacing the stored one.
+   *
+   *  A catalogue is written once and read by everyone, so a volume announced
+   *  after that call never showed, and a catalogue built in the wrong language
+   *  never got another chance. The reader asks for a fresh one; the write
+   *  replaces the stale list for everyone, as the command allows.
+   *
+   *  Null when the reader holds no volume of the saga, and when the model fails
+   *  or finds no volumes — the previous catalogue is then left untouched, so a
+   *  refresh never costs the reader what they had. */
+  export const recatalogue = async (
+    userId: UserId,
+    seriesId: SeriesId,
+    language: ScanLanguage,
+    edition?: BookLanguage,
+  ): Promise<Series | null> => catalogueFromLibrary(userId, seriesId, language, edition)
+
+  const catalogueFromLibrary = async (
+    userId: UserId,
+    seriesId: SeriesId,
+    language: ScanLanguage,
+    edition: BookLanguage | undefined,
+  ): Promise<Series | null> => {
+    const held = (await BookQuery.bySeries(userId, seriesId)).filter(
       (book) => book.series && book.authors.length > 0,
     )
+    // The edition the reader opened first, then any volume that says its
+    // language, then whatever they hold.
+    const volume =
+      held.find((book) => edition !== undefined && book.language === edition) ??
+      held.find((book) => book.language !== undefined) ??
+      held[0]
     if (!volume?.series) return null
 
     const { series, usage } = await Scan.catalogueSeries(
@@ -62,6 +99,7 @@ export namespace SeriesUseCase {
       volume.series.name,
       volume.authors[0],
       language,
+      volume.language,
     )
     // Telemetry: the catalogue is already built, so a failed counter write is
     // logged rather than turned into an error the reader has to read.

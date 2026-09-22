@@ -11,21 +11,38 @@ enum SeriesAPI {
     /// The full catalogue of one saga — owned volumes and unowned alike. Nil
     /// only when the server could not build it: the catalogue call failed, or
     /// the model found no volumes. The next opening tries again.
-    static func series(id: String) async throws -> BookSeries? {
+    ///
+    /// `language` is the edition the reader opened: a catalogue built on this
+    /// opening titles its volumes as that edition does.
+    static func series(id: String, language: BookLanguage? = nil) async throws -> BookSeries? {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.SeriesQuery(id: id),
+            query: ShioriGraphQL.SeriesQuery(id: id, language: graphQLLanguage(language)),
             requestTimeout: firstOpeningTimeout
         )
-        guard let series = data.series else { return nil }
-        return BookSeries(
-            id: series.id,
-            name: series.name,
-            author: series.author,
-            description: series.description,
-            spine: series.spine.map { $0.fragments.volumeEntry.asVolume },
-            relatedWorks: series.relatedWorks.map { $0.fragments.volumeEntry.asVolume }
+        return data.series.map { BookSeries(catalogue: $0.fragments.seriesCatalogue) }
+    }
+
+    /// Asks the world about the saga again: a fresh catalogue replaces the
+    /// stored one, for everyone. Nil when it could not be rebuilt — the model
+    /// failed or found nothing — in which case the previous catalogue stands.
+    /// One grounded model call, so it waits as long as a first opening does.
+    static func refresh(seriesId: String, language: BookLanguage? = nil) async throws -> BookSeries? {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.RefreshSeriesMutation(
+                seriesId: seriesId,
+                language: graphQLLanguage(language)
+            ),
+            requestTimeout: firstOpeningTimeout
         )
+        return data.refreshSeries.map { BookSeries(catalogue: $0.fragments.seriesCatalogue) }
+    }
+
+    private static func graphQLLanguage(
+        _ language: BookLanguage?
+    ) -> GraphQLNullable<GraphQLEnum<ShioriGraphQL.BookLanguage>> {
+        language.map { .some(LibraryAPI.graphQLLanguage($0)) } ?? .none
     }
 
     /// Every saga the reader owns a volume of, alphabetically.
@@ -125,6 +142,19 @@ enum SeriesAPI {
             mutation: ShioriGraphQL.SetSeriesFavoriteMutation(seriesId: seriesId, favorite: favorite)
         )
         return data.setSeriesFavorite.fragments.seriesOpinionFields.asOpinion
+    }
+}
+
+private extension BookSeries {
+    init(catalogue: ShioriGraphQL.SeriesCatalogue) {
+        self.init(
+            id: catalogue.id,
+            name: catalogue.name,
+            author: catalogue.author,
+            description: catalogue.description,
+            spine: catalogue.spine.map { $0.fragments.volumeEntry.asVolume },
+            relatedWorks: catalogue.relatedWorks.map { $0.fragments.volumeEntry.asVolume }
+        )
     }
 }
 
