@@ -10,8 +10,7 @@ the release tag is pushed.
 
 ## Unreleased
 
-- Opening a saga no longer fails one time in three with no catalogue: the call that searches
-  the web for its volumes, and the one that completes a scanned book, now always get an answer.
+- Fixed loading errors when generating a series page.
 - A book can record who recommended it, as a wine can in Vinarium: "Recommended by a friend"
   in the book's menu takes a name, typed or picked from the contacts, and what they said of
   it. The recommendation shows on the book's page, where a tap corrects or removes it, and

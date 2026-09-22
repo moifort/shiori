@@ -4,9 +4,7 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
-- Ouvrir une série n’échoue plus une fois sur trois sans catalogue : l’appel qui cherche ses
-  tomes sur le web, et celui qui complète la fiche d’un livre scanné, obtiennent toujours une
-  réponse.
+- Correction des erreurs de chargement lors de la génération de la fiche d’une série.
 - Un livre garde la trace de qui l’a conseillé, comme un vin dans Vinarium : « Conseillé par
   un ami », dans le menu du livre, prend un nom, saisi ou choisi dans les contacts, et ce
   qu’on vous en a dit. Le conseil s’affiche sur la fiche du livre, où un toucher le corrige
