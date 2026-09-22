@@ -4,6 +4,13 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Un livre audio importé d’Audible affiche où en est le lecteur, en pourcentage : en barre sur
+  la fiche du livre, sur sa ligne de bibliothèque pendant l’écoute, et sous sa couverture
+  dans l’étagère « En cours » de l’accueil. L’import et la synchronisation de nuit le tiennent
+  à jour d’après la position du lecteur lui-même.
+- Un titre arrêté par le lecteur Audible à trois minutes ou moins de la fin est terminé :
+  Audible le garde « non terminé » pendant le générique, et le livre passe désormais en
+  « Lu », daté du jour où le lecteur s’est arrêté.
 - Une saga peut être mise de côté depuis son écran, avec « Ne plus suivre la série » dans le
   menu « Plus d’actions ». Elle est alors « Non suivie », quoi que disent ses tomes : hors des
   sagas en cours et des terminées, absente des « Séries en cours » de l’accueil, et dernière

@@ -156,7 +156,8 @@ struct LibraryPage: View {
                     subgenre: book.subgenres.first,
                     language: book.language,
                     isFavorite: book.favorite,
-                    isHidden: book.hidden
+                    isHidden: book.hidden,
+                    listeningProgress: book.status == .reading ? book.listeningProgressLabel : nil
                 )
             }
             .tint(.primary)

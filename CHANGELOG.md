@@ -10,6 +10,13 @@ the release tag is pushed.
 
 ## Unreleased
 
+- An audiobook imported from Audible shows how far the player got, as a percentage: on the
+  book screen as a bar, on its library row while it is being listened to, and under its
+  cover on the dashboard's "Reading" shelf. The import and the nightly sync keep it current
+  from the player's own position.
+- A title the Audible player stopped within three minutes of its end is finished: Audible
+  keeps it "unfinished" through the closing credits, and the book now moves to "Read",
+  dated on the day the player stopped.
 - A saga can be set aside from its screen, with "Stop following the series" in the "More
   actions" menu. It is then "Not followed", whatever its volumes say: out of the sagas in
   progress and the finished ones, off the dashboard's "Series in progress", and last in the

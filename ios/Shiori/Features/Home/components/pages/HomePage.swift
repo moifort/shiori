@@ -127,7 +127,12 @@ struct HomePage: View {
         .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 20))
     }
 
+    /// A recording says how far the player got; a book says how long it has
+    /// been open, since nobody tracks its pages.
     private static func startedCaption(_ book: Book) -> String {
+        if let progress = book.listeningProgressLabel {
+            return String(localized: "\(progress) écouté")
+        }
         guard let startedAt = book.startedAt else { return book.authorLine }
         let days = startedAt.daysAgo()
         return days == 0

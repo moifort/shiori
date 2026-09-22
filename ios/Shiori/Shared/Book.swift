@@ -239,6 +239,9 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
     /// Who reads the recording. Empty on anything but an audiobook, and empty on
     /// an audiobook no Audible import ever named.
     var narrators: [String] = []
+    /// How far into the recording the Audible player last stopped, in whole
+    /// percent. Nil on anything but an audiobook the player opened.
+    var listeningProgress: Int?
     var isbn13: String?
     /// The language of this edition. Nil on every book catalogued before the scan
     /// started reading it off the cover, and on any edition in a language the
@@ -294,6 +297,12 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
         if hours == 0 { return String(localized: "\(minutes) min") }
         if minutes == 0 { return String(localized: "\(hours) h") }
         return String(localized: "\(hours) h \(minutes)")
+    }
+
+    /// The listening progress as a reader says it — "42 %" — in the device's
+    /// own percent format. Nil where there is no progress to tell.
+    var listeningProgressLabel: String? {
+        listeningProgress.map { (Double($0) / 100).formatted(.percent.precision(.fractionLength(0))) }
     }
 
     /// Authors as one line. Falls back to a placeholder rather than an empty

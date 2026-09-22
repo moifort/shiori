@@ -35,6 +35,9 @@ struct BookRow: View {
     var language: BookLanguage?
     var isFavorite: Bool = false
     var isHidden: Bool = false
+    /// How far into a recording the player got, already formatted — "42 %".
+    /// Passed only for a recording under way.
+    var listeningProgress: String?
 
     /// Between the card's edges and the row's content — the list's own inset
     /// on an iPhone, stated here so the separator can span it.
@@ -69,6 +72,13 @@ struct BookRow: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+
+                if let listeningProgress {
+                    Label(listeningProgress, systemImage: "headphones")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel(Text("Écouté à \(listeningProgress)"))
+                }
 
                 // Where it sits in a saga: a fact about this copy, ahead of
                 // what the book is.

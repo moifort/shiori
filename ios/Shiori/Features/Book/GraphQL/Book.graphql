@@ -62,6 +62,7 @@ fragment BookDetail on Book {
   subgenres
   pageCount
   durationMinutes
+  listeningProgress
   narrators
   language
   isbn13
