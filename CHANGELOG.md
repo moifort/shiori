@@ -294,3 +294,6 @@ the release tag is pushed.
 - A scanned book's published cover is now looked up on Amazon first, then on Open Library
   when Amazon has none. Amazon nearly always has the exact edition where Open Library often
   missed a recent French one, or filed a stale cover under it.
+- A series opens in one request, and no longer reads the whole library to show its own
+  volumes: it used to open slower the bigger the library grew. Launching the app, the Audible
+  import screen and saving a book's edits each cost one round trip too.

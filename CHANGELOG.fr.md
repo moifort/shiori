@@ -313,3 +313,7 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   Open Library quand Amazon n’en a pas. Amazon a presque toujours l’édition exacte, là où Open
   Library manquait souvent une édition française récente, ou rangeait dessous une couverture
   périmée.
+- Une série s’ouvre en une seule requête et ne lit plus toute la bibliothèque pour afficher
+  ses propres tomes : elle s’ouvrait d’autant plus lentement que la bibliothèque grossissait.
+  Le lancement de l’app, l’écran d’import Audible et l’enregistrement d’un livre modifié ne
+  coûtent plus, eux aussi, qu’un seul aller-retour.
