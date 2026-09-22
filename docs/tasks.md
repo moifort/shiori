@@ -87,6 +87,19 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       off `owned`, which arrives with the last call — so the genre and subgenres pop in a
       moment later. Run the three calls concurrently (`async let`) and assign them together,
       or keep the loader up until all three have settled.
+- [ ] **Dashboard, the "En cours" shelf in the Library tab's order.** The shelf sorts its
+      books by start date, else date added, with no tie-break (`reading` in the analytics
+      business rules), while the Library tab orders on `shelfDateOf` — finished, else started,
+      else added — and breaks ties on the title (`shelvedOf`). A book back in progress with
+      an old finish date, or two started the same day, land in different places on the two
+      screens. Sort the shelf with `shelvedOf` so the first cover of the dashboard is the
+      first row of the library.
+- [ ] **Series tab, the title takes the whole width up to the first mark on its right.**
+      The row lays the name and author in a `VStack` next to a `Spacer(minLength: 8)` and the
+      marks (`SeriesListView.row`), but a long name such as "Dungeon Crawler Carl" is not
+      given the room: let the title stretch and wrap until it meets the first pill — the
+      language tag, the state or the heart — with the marks hugging their own width and
+      never shrinking.
 
 ## Medium
 
@@ -254,6 +267,17 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       `progressOf` already uses. On the phone, `SeriesView.finishedAt` demands every owned
       volume read, related works included, and must apply the same rule. Derived, never
       stored: no migration.
+- [ ] **Series screen, the covers of the edition the reader tapped, not the other one.**
+      A saga held in two languages — Dungeon Crawler Carl in French and in English — makes
+      two rows of the Series tab, each keyed by saga and language, and each strip draws its
+      own covers correctly. Tapping the French row opens a screen that shows the English
+      covers: `SeriesView` takes the `seriesId` alone, which the catalogue shares between
+      both editions since it is keyed by name and author, and `load()` filters the library on
+      that id only, so both editions' books land in `owned` and `volumeRow` takes the first
+      that matches a volume's number, whichever language it is in. Pass the row's language
+      into the screen and keep only that edition's books; the dates, the progress and the
+      genre row read off `owned` and follow. The same applies wherever else the screen is
+      opened, from the library section header and the dashboard's series card.
 
 ## Large
 
