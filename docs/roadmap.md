@@ -32,8 +32,7 @@ quality — publication dates are unreliable outside Google Books and Open Libra
 It depends on batch 2: a forthcoming volume is already an identified row in the series
 catalogue, which is what an alert attaches to.
 
-Built, pending the APNs key and the provisioning profile it needs (see
-[tasks.md](tasks.md)); until the key is deployed the alerts are logged, not sent. The data
+Built and deployed with its APNs key. The data
 quality problem has its answer: a date is kept as precisely as it was announced — a year, a
 month or a day — and only a day ever fires an alert.
 

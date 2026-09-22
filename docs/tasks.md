@@ -357,10 +357,8 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       `group.com.polyforms.shiori.app` container, and the app picks it up on every return to
       the front. The extension carries no session of its own. The page reader is not
       site-by-site: only the `<title>` is read and the shop's own name stripped off it, which
-      survives a redesign. **Apple Developer portal work is outstanding** — an App ID for
-      `com.polyforms.shiori.app.share`, the App Groups capability on both App IDs, and a
-      "Shiori Share App Store" provisioning profile, stored as the
-      `IOS_SHARE_PROVISION_PROFILE` secret the release workflow now expects.
+      survives a redesign. The portal side is done: both App IDs carry App Groups, and the
+      "Shiori Share App Store" profile is stored as `IOS_SHARE_PROVISION_PROFILE`.
 - [x] **An invitation link opens the app, not a web page.** Tapping an invitation on an
       iPhone with Shiori installed opens the app on the invitation itself, with one tap to
       accept. A universal link: the API serves `/.well-known/apple-app-site-association`
@@ -370,8 +368,7 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       that swallowed the universal link — and offers `shiori://invite/<CODE>` to reopen the
       app, since a universal link cannot re-trigger from the page it already landed on.
       Accepting is never automatic: the link comes from somewhere the reader does not control.
-      **Outstanding**: the Associated Domains capability on the App ID, and a rebuilt
-      "Shiori App Store" profile carrying it.
+      The App ID carries Associated Domains, and the "Shiori App Store" profile has it.
 - [x] **Share a profile with friends.** A new screen lists the reader's friends; opening one
       shows their books in progress and series in progress, their favourites, and their pile.
       Decided: friendship is symmetric — accepting an invitation opens both libraries at once,
@@ -420,10 +417,9 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       Audible release in a followed series, a new book from a loved author. Every alert
       below depends on this.
       Built: the `notification` domain and an HTTP/2 APNs client, optional end to end like the
-      App Store Connect key. **Outstanding outside this repository**: an Apple key with the APNs
-      service, stored as the `APNS_KEY_ID` and `APNS_KEY_P8` secrets; the Push Notifications
-      capability on the App ID; and the "Shiori App Store" profile rebuilt with it — the app now
-      carries `aps-environment`, so a release cannot be signed with the old profile.
+      App Store Connect key. Deployed with its key: the "shiori apns" key (Sandbox & Production,
+      team scoped) is stored as `APNS_KEY_ID` and `APNS_KEY_P8`, the App ID has Push
+      Notifications, and "Shiori App Store" was generated with it as `IOS_PROVISION_PROFILE`.
 - [x] **Découvrir tab, first wave: the signals that cost nothing.** A new root tab, a feed of
       horizontal shelves in the dashboard's style, filtered by chips (Pour vous, À paraître,
       Primés, Hors piste, Amis). Every suggestion says why in one line. This wave ships the
