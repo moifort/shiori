@@ -35,9 +35,6 @@ struct BookPage: View {
             statusSection
             header
             readingSection
-            if let recommendation = book.recommendation {
-                recommendationSection(recommendation)
-            }
             if let synopsis = book.synopsis { synopsisSection(synopsis) }
         }
         .listStyle(.insetGrouped)
@@ -266,6 +263,10 @@ struct BookPage: View {
                 )
             }
 
+            if let recommendation = book.recommendation {
+                recommendationRows(recommendation)
+            }
+
             Toggle(isOn: Binding(get: { book.hidden }, set: { _ in onToggleHidden() })) {
                 Label {
                     Text("Ne pas partager")
@@ -283,33 +284,33 @@ struct BookPage: View {
 
     /// Who pressed the book on the reader, as in Vinarium's wine sheet. Only
     /// drawn once there is one: the menu's "Conseillé par…" is how a
-    /// reader adds it, and a tap here corrects it.
-    private func recommendationSection(_ recommendation: BookRecommendation) -> some View {
-        Section("Conseillé") {
-            Button(action: onEditRecommendation) {
-                Label {
-                    if let name = recommendation.recommenderName {
-                        LabeledContent("Conseillé par") {
-                            Text(name).foregroundStyle(.tint)
-                        }
-                    } else {
-                        Text("Livre conseillé")
+    /// reader adds it, and a tap here corrects it. Part of the reading rather
+    /// than a section of its own: one row did not earn a heading.
+    @ViewBuilder
+    private func recommendationRows(_ recommendation: BookRecommendation) -> some View {
+        Button(action: onEditRecommendation) {
+            Label {
+                if let name = recommendation.recommenderName {
+                    LabeledContent("Conseillé par") {
+                        Text(name).foregroundStyle(.tint)
                     }
-                } icon: {
-                    Image(systemName: "person.badge.star").foregroundStyle(.secondary)
+                } else {
+                    Text("Livre conseillé")
                 }
+            } icon: {
+                Image(systemName: "person.badge.plus").foregroundStyle(.secondary)
             }
-            .tint(.primary)
-            .accessibilityIdentifier("book-recommendation")
+        }
+        .tint(.primary)
+        .accessibilityIdentifier("book-recommendation")
 
-            if let comment = recommendation.comment {
-                Label {
-                    Text(comment).font(.callout)
-                } icon: {
-                    Image(systemName: "text.quote").foregroundStyle(.secondary)
-                }
-                .copyable(comment)
+        if let comment = recommendation.comment {
+            Label {
+                Text(comment).font(.callout)
+            } icon: {
+                Image(systemName: "text.quote").foregroundStyle(.secondary)
             }
+            .copyable(comment)
         }
     }
 
