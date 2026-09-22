@@ -4,6 +4,10 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Un livre scanné garde la langue de son édition, que le scan lisait sur la couverture et
+  que l’app perdait en chemin. Un tome ajouté depuis l’écran d’une saga rejoint l’édition de
+  cette ligne : sans langue propre, il ouvrait une seconde ligne de la même saga dans
+  l’onglet Séries, à côté de celle qu’il devait rejoindre.
 - L’onglet Séries et l’accueil se redessinent à la fermeture de l’écran d’une saga : un
   catalogue constitué à la première ouverture apparaît aussitôt dans la bande de couvertures
   de la ligne et dans les barres de progression, et non à la prochaine visite de l’onglet.

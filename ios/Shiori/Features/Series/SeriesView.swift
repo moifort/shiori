@@ -560,8 +560,12 @@ struct SeriesView: View {
             draft.format = format
         }
         // Filed here whatever the lookup answered: the catalogue is what says
-        // which volume this is, and the row it fills.
+        // which volume this is, and the row it fills. In the edition of this
+        // row, too: the Series tab shelves a saga once per language, and a
+        // volume added without one would open a second row beside the saga
+        // it was meant to join.
         draft.series = membership
+        draft.language = language ?? owned.first?.language
         draft.status = .toRead
         do {
             _ = try await BookAPI.add(draft)

@@ -10,6 +10,10 @@ the release tag is pushed.
 
 ## Unreleased
 
+- A scanned book keeps the language of its edition, which the scan read off the cover and
+  the app dropped on the way. A volume added from a saga screen joins the edition of that
+  row: without a language of its own, it opened a second row of the same saga on the Series
+  tab, beside the one it was meant to join.
 - The Series tab and the dashboard redraw when a saga screen is closed: a catalogue built
   on a saga's first opening now shows at once in the row's cover strip and in the progress
   bars, rather than on the next visit to the tab.
