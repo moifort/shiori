@@ -177,6 +177,9 @@ struct SeriesView: View {
             ) { count in
                 do {
                     opinion = try await SeriesAPI.declareVolumeCount(seriesId: seriesId, count: count)
+                    // Read again on purpose: the provisional catalogue the
+                    // count gives rise to is drawn by the server, and the
+                    // mutation answers with the opinion alone.
                     await load()
                     return nil
                 } catch {
@@ -186,12 +189,20 @@ struct SeriesView: View {
         }
         .sheet(isPresented: $isEditingGenre) {
             if let volume = owned.first {
-                // Saved on one volume; the server carries a genre to every
-                // volume of the saga, so the whole shelf follows.
+                // Saved on one volume; the server carries what was edited to
+                // every volume of the saga, so the whole shelf follows. The
+                // answer says what the saga now carries, and every volume on
+                // screen takes it, field by field as the server does: a genre
+                // changed alone leaves each volume's subgenres its own.
                 GenreEditSheet(book: volume) { correction in
                     do {
-                        _ = try await BookAPI.update(id: volume.id, correction: correction)
-                        await load()
+                        let updated = try await BookAPI.update(id: volume.id, correction: correction)
+                        owned = owned.map { book in
+                            var book = book
+                            if correction.genre != nil { book.genre = updated.genre }
+                            if correction.subgenres != nil { book.subgenres = updated.subgenres }
+                            return book
+                        }
                         return nil
                     } catch {
                         return reportError(error)
@@ -618,9 +629,11 @@ struct SeriesView: View {
         draft.language = language ?? owned.first?.language
         draft.status = .toRead
         do {
-            _ = try await BookAPI.add(draft)
+            // The new volume is the answer: it joins the shelf on screen, and
+            // the catalogue and the opinion it is drawn against are unchanged.
+            let added = try await BookAPI.add(draft)
             track(.bookAdded(source: .series))
-            await load()
+            owned.append(added)
         } catch {
             errorMessage = reportError(error)
         }

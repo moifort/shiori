@@ -151,7 +151,10 @@ struct FriendsView: View {
         do {
             let friend = try await FriendsAPI.accept(code: code)
             accepted = friend.displayName
-            await load()
+            // The answer is the new row: filed where the server files it, by
+            // first name, rather than read back with the whole list.
+            friends = (friends.filter { $0.userId != friend.userId } + [friend])
+                .sorted { ($0.firstName ?? "").localizedCompare($1.firstName ?? "") == .orderedAscending }
         } catch {
             errorMessage = reportError(error)
         }
@@ -161,7 +164,7 @@ struct FriendsView: View {
         removing = nil
         do {
             try await FriendsAPI.remove(userId: friend.userId)
-            await load()
+            friends.removeAll { $0.userId == friend.userId }
         } catch {
             errorMessage = reportError(error)
         }
