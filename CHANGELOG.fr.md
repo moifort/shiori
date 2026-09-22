@@ -4,6 +4,22 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Chaque carte et chaque tuile de l’accueil ouvre la liste qu’elle compte : « En cours »
+  ouvre la bibliothèque sur les livres en cours, la pile et les suggestions sur les livres
+  à lire, la note moyenne sur les livres notés, et « Séries en cours » ouvre l’onglet Séries
+  filtré sur les sagas en cours.
+- La bibliothèque a une troisième vue, « Notés » : tous les livres qui portent des étoiles,
+  les meilleurs d’abord, sectionnés par nombre d’étoiles.
+- Une saga notée dans son ensemble prête sa note à chacun de ses tomes que le lecteur n’a
+  pas notés. Les étoiles prêtées sont grises, et l’écran du livre dit qu’elles viennent de
+  la série ; la note donnée au livre lui-même l’emporte toujours. La note moyenne et le
+  nombre de livres notés de l’accueil comptent la note prêtée une fois par tome terminé.
+- Pour une saga que Shiori n’a pas pu cataloguer, le lecteur peut indiquer combien de tomes
+  elle compte. L’écran de la saga les liste alors tous — les siens avec leur titre et leur
+  couverture, ceux qui manquent par leur numéro — et l’onglet Séries comme l’accueil
+  mesurent la saga sur ce nombre. Ce décompte est le sien et n’entre jamais dans le
+  catalogue partagé ; le vrai catalogue le remplace dès que « Mettre à jour le catalogue »
+  ou le scan d’un de ses tomes le constitue.
 - Les sélecteurs de genre listent les genres par ordre alphabétique, « Autre » en dernier,
   plutôt que dans l’ordre du serveur.
 - Le catalogue d’une saga titre ses tomes comme l’édition possédée : une saga possédée en

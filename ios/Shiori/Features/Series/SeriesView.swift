@@ -39,6 +39,9 @@ struct SeriesView: View {
     @State private var isRefreshing = false
     /// The owned volume the reader tapped, opened over the list.
     @State private var selectedBook: Book?
+    /// The sheet asking how many volumes the saga has, for a saga nobody has
+    /// catalogued.
+    @State private var isDeclaringVolumeCount = false
 
     private var currentYear: Int { Calendar.current.component(.year, from: .now) }
 
@@ -52,11 +55,18 @@ struct SeriesView: View {
             } else if let series {
                 catalogue(series)
             } else {
+                // The world could not describe the saga: the reader can count
+                // its volumes themselves and have their screen drawn from that.
                 EmptyStateView(
                     systemImage: "square.stack.3d.up.slash",
                     title: "Série non cataloguée",
                     verbatim: errorMessage ?? String(localized: "Shiori n'a pas réussi à constituer le catalogue de cette série. Réessayez plus tard, ou scannez la couverture d'un de ses tomes."),
-                    primary: .init("Réessayer", systemImage: "arrow.clockwise") { await load() }
+                    primary: .init("Réessayer", systemImage: "arrow.clockwise") { await load() },
+                    secondary: owned.isEmpty
+                        ? nil
+                        : .init("Indiquer le nombre de tomes", systemImage: "number") {
+                            isDeclaringVolumeCount = true
+                        }
                 )
             }
         }
@@ -85,6 +95,14 @@ struct SeriesView: View {
                                 Task { await refreshCatalogue() }
                             }
                             .accessibilityIdentifier("series-refresh")
+                        }
+                        // The count is the reader's own: they can correct it
+                        // for as long as it is what the screen is drawn from.
+                        if series?.isProvisional == true {
+                            Button("Modifier le nombre de tomes", systemImage: "number") {
+                                isDeclaringVolumeCount = true
+                            }
+                            .accessibilityIdentifier("series-volume-count")
                         }
                         Button("Supprimer la série", systemImage: "trash", role: .destructive) {
                             confirmDelete = true
@@ -138,6 +156,20 @@ struct SeriesView: View {
                 onChanged: { _ in Task { await load() } },
                 onDeleted: { _ in Task { await load() } }
             )
+        }
+        .sheet(isPresented: $isDeclaringVolumeCount) {
+            VolumeCountSheet(
+                seriesName: series?.name ?? owned.first?.series?.name ?? "",
+                count: opinion?.volumeCount ?? max(highestOwnedVolume, 1)
+            ) { count in
+                do {
+                    opinion = try await SeriesAPI.declareVolumeCount(seriesId: seriesId, count: count)
+                    await load()
+                    return nil
+                } catch {
+                    return reportError(error)
+                }
+            }
         }
         .sheet(isPresented: $isEditingGenre) {
             if let volume = owned.first {
@@ -195,6 +227,11 @@ struct SeriesView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .padding(.top, 2)
+                        if series.isProvisional {
+                            Text("d'après votre décompte")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                        }
                     }
                     Spacer(minLength: 0)
                 }
@@ -249,11 +286,20 @@ struct SeriesView: View {
                 )
             }
         } footer: {
-            if !owned.isEmpty {
-                Text("Le genre et les sous-genres s'appliquent à tous les tomes de la série dans votre bibliothèque.")
+            VStack(alignment: .leading, spacing: 6) {
+                if series.isProvisional {
+                    Text("Catalogue provisoire, dessiné d'après le nombre de tomes que vous avez indiqué. « Mettre à jour le catalogue » demande le vrai.")
+                }
+                if !owned.isEmpty {
+                    Text("Le genre et les sous-genres s'appliquent à tous les tomes de la série dans votre bibliothèque.")
+                }
             }
         }
     }
+
+    /// The highest number among the volumes the reader holds: where the count
+    /// sheet starts, since the saga has at least that many.
+    private var highestOwnedVolume: Int { owned.compactMap(\.series?.volume).max() ?? 0 }
 
     /// The genre and its subgenres on one tappable row, as on the book screen.
     private var genreRow: some View {
@@ -504,7 +550,10 @@ struct SeriesView: View {
             kind: volume.kind
         )
         var draft = BookDraft(title: volume.title, authors: [author], format: format)
-        if let found = try? await ScanAPI.lookUp(title: "\(volume.title) — \(author)"), found.recognized {
+        // A provisional volume is titled after its saga and has no title to
+        // look up: it is added bare, at its number, and described later.
+        let canLookUp = series?.isProvisional != true
+        if canLookUp, let found = try? await ScanAPI.lookUp(title: "\(volume.title) — \(author)"), found.recognized {
             draft = found.asDraft
             if draft.title.isEmpty { draft.title = volume.title }
             if draft.authors.isEmpty { draft.authors = [author] }

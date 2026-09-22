@@ -230,6 +230,6 @@ extension ShioriGraphQL.VolumeEntry {
 
 extension ShioriGraphQL.SeriesOpinionFields {
     var asOpinion: SeriesOpinion {
-        SeriesOpinion(seriesId: seriesId, rating: rating, favorite: favorite)
+        SeriesOpinion(seriesId: seriesId, rating: rating, favorite: favorite, volumeCount: volumeCount)
     }
 }

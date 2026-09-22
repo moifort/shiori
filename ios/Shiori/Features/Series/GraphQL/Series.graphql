@@ -21,6 +21,7 @@ fragment SeriesCatalogue on Series {
   name
   author
   description
+  provisional
   spine {
     ...VolumeEntry
   }
@@ -127,8 +128,17 @@ mutation SetSeriesFavorite($seriesId: SeriesId!, $favorite: Boolean!) {
   }
 }
 
+# How many volumes the saga has, by the reader's own count, for a saga nobody
+# has catalogued. The server draws a provisional catalogue from it.
+mutation DeclareSeriesVolumeCount($seriesId: SeriesId!, $count: VolumeNumber!) {
+  declareSeriesVolumeCount(seriesId: $seriesId, count: $count) {
+    ...SeriesOpinionFields
+  }
+}
+
 fragment SeriesOpinionFields on SeriesOpinion {
   seriesId
   rating
   favorite
+  volumeCount
 }

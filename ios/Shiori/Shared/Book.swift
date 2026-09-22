@@ -409,6 +409,11 @@ struct BookSeries: Identifiable, Sendable {
     var spine: [Volume] = []
     /// Prequels, spin-offs, novellas and companions — everything off the spine.
     var relatedWorks: [Volume] = []
+    /// Drawn from the reader's own count of the volumes rather than from the
+    /// world: nobody has catalogued the saga, and they said how many volumes it
+    /// has. Their volumes sit at their numbers and the saga's name stands in
+    /// for the rest, with no year and no description.
+    var isProvisional = false
 }
 
 /// What one reader makes of one saga — never part of the shared catalogue, which
@@ -425,6 +430,9 @@ struct SeriesOpinion: Sendable, Equatable, Codable {
     let seriesId: String
     var rating: Int?
     var favorite: Bool = false
+    /// How many volumes the saga has by the reader's own count, for a saga
+    /// nobody has catalogued. Nil until they say.
+    var volumeCount: Int?
 }
 
 /// A saga the reader follows. Its identity comes from their own books, not from

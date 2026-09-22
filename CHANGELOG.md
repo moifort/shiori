@@ -10,6 +10,21 @@ the release tag is pushed.
 
 ## Unreleased
 
+- Every card and tile of the dashboard opens the list it counts: "Reading" opens the
+  library on the books in progress, the pile and the suggestions on the books to read, the
+  average rating on the rated books, and "Series in progress" opens the Series tab filtered
+  on the sagas in progress.
+- The library has a third view, "Rated": every book that shows stars, best first, sectioned
+  by number of stars.
+- A saga rated as a whole lends its rating to every volume the reader left unrated. The
+  lent stars are grey, and the book screen says they come from the series; rating the book
+  itself always wins. The average rating and the rated count on the dashboard count the
+  lent rating once per finished volume.
+- For a saga Shiori could not catalogue, the reader can say how many volumes it has. The
+  saga screen then lists them all — theirs by their title and cover, the missing ones by
+  their number — and the Series tab and the dashboard measure the saga against that count.
+  The count is the reader's own and never enters the shared catalogue; the real catalogue
+  replaces it as soon as "Update the catalogue" or a scan of one of its volumes builds it.
 - The genre pickers list genres alphabetically, with "Other" last, rather than in the
   server's own order.
 - A saga's catalogue titles its volumes as the edition on the shelf does: a saga held in

@@ -136,6 +136,17 @@ enum SeriesAPI {
         return data.removeSeriesRating.fragments.seriesOpinionFields.asOpinion
     }
 
+    /// Says how many volumes the saga has, for a saga nobody has catalogued:
+    /// the next opening draws a provisional catalogue from the count. Kept on
+    /// the reader's own opinion, never written into the shared catalogue.
+    static func declareVolumeCount(seriesId: String, count: Int) async throws -> SeriesOpinion {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.DeclareSeriesVolumeCountMutation(seriesId: seriesId, count: count)
+        )
+        return data.declareSeriesVolumeCount.fragments.seriesOpinionFields.asOpinion
+    }
+
     static func setFavorite(seriesId: String, favorite: Bool) async throws -> SeriesOpinion {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
@@ -153,7 +164,8 @@ private extension BookSeries {
             author: catalogue.author,
             description: catalogue.description,
             spine: catalogue.spine.map { $0.fragments.volumeEntry.asVolume },
-            relatedWorks: catalogue.relatedWorks.map { $0.fragments.volumeEntry.asVolume }
+            relatedWorks: catalogue.relatedWorks.map { $0.fragments.volumeEntry.asVolume },
+            isProvisional: catalogue.provisional
         )
     }
 }
