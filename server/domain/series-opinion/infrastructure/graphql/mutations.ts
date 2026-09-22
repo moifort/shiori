@@ -26,6 +26,29 @@ builder.mutationFields((t) => ({
       SeriesOpinionUseCase.rate(context.userId, args.seriesId, undefined),
   }),
 
+  declareSeriesVolumeCount: t.field({
+    type: SeriesOpinionType,
+    description:
+      'Say how many volumes a saga has, for a saga nobody has catalogued: `series` ' +
+      'then answers with a provisional catalogue drawn from the count — the ' +
+      "reader's volumes at their numbers, the saga's name standing in for the " +
+      'rest — and the Series tab and the dashboard measure the saga against it.\n\n' +
+      "Kept on the reader's own opinion, never written into the shared catalogue: " +
+      'a count typed by one reader is not a fact about the world. It stops ' +
+      'mattering the day a catalogue exists — a scan of one of its volumes, or ' +
+      '`refreshSeries`, builds one.',
+    args: {
+      seriesId: t.arg({ type: 'SeriesId', required: true }),
+      count: t.arg({
+        type: 'VolumeNumber',
+        required: true,
+        description: 'The number the last volume carries.',
+      }),
+    },
+    resolve: (_root, args, context) =>
+      SeriesOpinionUseCase.declareVolumeCount(context.userId, args.seriesId, args.count),
+  }),
+
   setSeriesFavorite: t.field({
     type: SeriesOpinionType,
     description: 'Keep a saga close, or stop. Leaves the rating alone.',

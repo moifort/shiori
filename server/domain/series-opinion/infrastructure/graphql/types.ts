@@ -22,5 +22,14 @@ export const SeriesOpinionType = builder.objectRef<SeriesOpinion>('SeriesOpinion
       description: 'A saga the reader keeps close. Independent of the rating.',
       resolve: (opinion) => opinion.favorite ?? false,
     }),
+    volumeCount: t.field({
+      type: 'VolumeNumber',
+      nullable: true,
+      description:
+        "How many volumes the saga has by the reader's own count, set with " +
+        '`declareSeriesVolumeCount`. Null until they say. Only read while nobody ' +
+        'has catalogued the saga.',
+      resolve: (opinion) => opinion.volumeCount ?? null,
+    }),
   }),
 })

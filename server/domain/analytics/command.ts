@@ -4,6 +4,7 @@ import * as repository from '~/domain/analytics/infrastructure/repository'
 import { TimeZone } from '~/domain/analytics/primitives'
 import type { AnalyticsView, TimeZone as TimeZoneValue } from '~/domain/analytics/types'
 import { BookQuery } from '~/domain/book/query'
+import { cataloguesOf } from '~/domain/series/business-rules'
 import { SeriesQuery } from '~/domain/series/query'
 import type { SeriesId } from '~/domain/series/types'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
@@ -29,8 +30,12 @@ export namespace AnalyticsCommand {
     const zone = timeZone ?? (await repository.findByUser(userId))?.timeZone ?? DEFAULT_TIME_ZONE
     const books = await BookQuery.all(userId)
     const seriesIds = [...new Set(books.flatMap((book) => (book.series ? [book.series.id] : [])))]
-    const catalogues = await SeriesQuery.byIds(seriesIds as SeriesId[])
     const opinions = await SeriesOpinionQuery.all(userId)
+    // The world's catalogues, and the reader's own count where the world has
+    // none: a saga they counted themselves has a bar on the dashboard too.
+    const catalogues = [
+      ...cataloguesOf(books, await SeriesQuery.byIds(seriesIds as SeriesId[]), opinions).values(),
+    ]
     return repository.save(
       analyticsViewOf({ userId, books, catalogues, opinions, timeZone: zone, now }),
     )

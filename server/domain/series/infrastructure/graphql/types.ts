@@ -36,7 +36,9 @@ export const SeriesType = builder.objectRef<Series>('Series').implement({
     'which is what lets a single AI call pay for the whole saga. It is never ' +
     'exposed through library sharing, which shows books only.\n\n' +
     'Volumes are stored in publication order, which is verifiable. Reading order ' +
-    'differs on many sagas and is an opinion.',
+    'differs on many sagas and is an opinion.\n\n' +
+    "A `provisional` catalogue is the exception: the reader's own count of the " +
+    'volumes, drawn on the fly for a saga nobody has described, and never stored.',
   fields: (t) => ({
     id: t.field({ type: 'SeriesId', resolve: (series) => series.id }),
     name: t.field({ type: 'SeriesName', resolve: (series) => series.name }),
@@ -65,5 +67,14 @@ export const SeriesType = builder.objectRef<Series>('Series').implement({
       resolve: (series) => splitBySpine(series).relatedWorks,
     }),
     catalogedAt: t.field({ type: 'DateTime', resolve: (series) => series.catalogedAt }),
+    provisional: t.boolean({
+      description:
+        "Drawn from the reader's own count of the volumes rather than from the " +
+        'world: nobody has catalogued the saga, and they said how many volumes it ' +
+        "has with `declareSeriesVolumeCount`. The reader's volumes sit at their " +
+        "numbers and the saga's name stands in for the rest, with no year and no " +
+        'description. `refreshSeries` asks the world for the real one.',
+      resolve: (series) => series.provisional === true,
+    }),
   }),
 })

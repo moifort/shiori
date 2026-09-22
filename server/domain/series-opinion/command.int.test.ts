@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import { StarRating } from '~/domain/book/primitives'
-import { SeriesId } from '~/domain/series/primitives'
+import { SeriesId, VolumeNumber } from '~/domain/series/primitives'
 import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
 
@@ -43,6 +43,26 @@ describe('what a reader makes of a saga', () => {
     await SeriesOpinionCommand.rate(reader, dune, undefined)
 
     expect(await SeriesOpinionQuery.of(reader, dune)).toMatchObject({ favorite: true })
+  })
+
+  // How many volumes the reader says the saga has, when nobody has catalogued
+  // it: theirs alone, never written into the shared catalogue.
+  test('keeps the number of volumes the reader declared', async () => {
+    await SeriesOpinionCommand.declareVolumeCount(reader, dune, VolumeNumber(6))
+
+    expect(await SeriesOpinionQuery.of(reader, dune)).toMatchObject({
+      volumeCount: VolumeNumber(6),
+    })
+  })
+
+  test('a declared count alone keeps the opinion stored', async () => {
+    await SeriesOpinionCommand.rate(reader, dune, StarRating(5))
+    await SeriesOpinionCommand.declareVolumeCount(reader, dune, VolumeNumber(6))
+    await SeriesOpinionCommand.rate(reader, dune, undefined)
+
+    expect(await SeriesOpinionQuery.of(reader, dune)).toMatchObject({
+      volumeCount: VolumeNumber(6),
+    })
   })
 
   // A document saying "no rating, not a favourite" says what an absent document

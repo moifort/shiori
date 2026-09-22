@@ -1,5 +1,5 @@
 import type { StarRating } from '~/domain/book/types'
-import type { SeriesId } from '~/domain/series/types'
+import type { SeriesId, VolumeNumber } from '~/domain/series/types'
 import type { UserId } from '~/domain/shared/types'
 
 /** What one reader makes of one saga.
@@ -21,4 +21,10 @@ export type SeriesOpinion = {
   seriesId: SeriesId
   rating?: StarRating
   favorite?: boolean
+  /** How many volumes the saga has, by the reader's own count, for a saga
+   *  nobody has catalogued: what their screen draws the missing volumes from
+   *  until the model describes it. Theirs alone — the shared catalogue is a
+   *  fact about the world and a reader's guess is not written into it. As a
+   *  `VolumeNumber`, since it is the number the last volume carries. */
+  volumeCount?: VolumeNumber
 }

@@ -950,6 +950,17 @@ type Mutation {
   ): Me!
 
   """
+  Say how many volumes a saga has, for a saga nobody has catalogued: `series` then answers with a provisional catalogue drawn from the count — the reader's volumes at their numbers, the saga's name standing in for the rest — and the Series tab and the dashboard measure the saga against it.
+  
+  Kept on the reader's own opinion, never written into the shared catalogue: a count typed by one reader is not a fact about the world. It stops mattering the day a catalogue exists — a scan of one of its volumes, or `refreshSeries`, builds one.
+  """
+  declareSeriesVolumeCount(
+    """The number the last volume carries."""
+    count: VolumeNumber!
+    seriesId: SeriesId!
+  ): SeriesOpinion!
+
+  """
   Permanently delete the signed-in account and all of its data.
   
   Irreversible. Erases the library, the cover images, the scan allowance and the stored entitlement, drops the profile, and deletes the Firebase Auth user. Does NOT cancel an active App Store subscription: Apple owns that lifecycle, so a subscriber must cancel separately in the App Store. The shared series catalogue is untouched — it belongs to no one and serves every other reader. Always returns `true`.
@@ -1589,6 +1600,8 @@ The shared catalogue of a saga.
 A public fact with no reference to any reader: one document serves everyone, which is what lets a single AI call pay for the whole saga. It is never exposed through library sharing, which shows books only.
 
 Volumes are stored in publication order, which is verifiable. Reading order differs on many sagas and is an opinion.
+
+A `provisional` catalogue is the exception: the reader's own count of the volumes, drawn on the fly for a saga nobody has described, and never stored.
 """
 type Series {
   author: AuthorName!
@@ -1596,6 +1609,11 @@ type Series {
   description: SeriesDescription
   id: SeriesId!
   name: SeriesName!
+
+  """
+  Drawn from the reader's own count of the volumes rather than from the world: nobody has catalogued the saga, and they said how many volumes it has with `declareSeriesVolumeCount`. The reader's volumes sit at their numbers and the saga's name stands in for the rest, with no year and no description. `refreshSeries` asks the world for the real one.
+  """
+  provisional: Boolean!
 
   """
   Prequels, spin-offs, novellas and companions — everything off the spine.
@@ -1666,6 +1684,11 @@ type SeriesOpinion {
   """
   rating: StarRating
   seriesId: SeriesId!
+
+  """
+  How many volumes the saga has by the reader's own count, set with `declareSeriesVolumeCount`. Null until they say. Only read while nobody has catalogued the saga.
+  """
+  volumeCount: VolumeNumber
 }
 
 """

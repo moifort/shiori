@@ -1,11 +1,13 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  cataloguesOf,
   followedSagasOf,
   followedStateOf,
   genreOf,
   inCatalogueOrder,
   inTabOrder,
   progressOf,
+  provisionalCatalogueOf,
   splitBySpine,
   stateOf,
   withoutDuplicateVolumes,
@@ -267,5 +269,127 @@ describe('withoutDuplicateVolumes', () => {
       volume({ title: 'Le Loup', kind: 'companion' }),
     ])
     expect(folded.map((entry) => entry.kind)).toEqual(['novella', 'companion'])
+  })
+})
+
+describe('provisionalCatalogueOf', () => {
+  const owned = (title: string, number: number) => ({
+    title: BookTitle(title),
+    authors: [AuthorName('Patrick Rothfuss')],
+    series: {
+      id: SeriesId('kingkiller--rothfuss'),
+      name: SeriesName('Kingkiller'),
+      volume: VolumeNumber(number),
+      kind: 'main' as const,
+    },
+  })
+  const saga = {
+    id: SeriesId('kingkiller--rothfuss'),
+    name: SeriesName('Kingkiller'),
+    author: AuthorName('Patrick Rothfuss'),
+  }
+
+  // What the reader declared, drawn as a spine: their own volumes at their
+  // numbers, and the saga's name standing in for every volume they lack.
+  test('lays out the declared number of volumes, the owned ones by their title', () => {
+    const catalogue = provisionalCatalogueOf(saga, [owned('La Peur du sage', 2)], VolumeNumber(3))
+
+    expect(catalogue).toMatchObject({
+      id: saga.id,
+      name: saga.name,
+      author: saga.author,
+      provisional: true,
+      volumes: [
+        { number: VolumeNumber(1), title: BookTitle('Kingkiller'), kind: 'main' },
+        { number: VolumeNumber(2), title: BookTitle('La Peur du sage'), kind: 'main' },
+        { number: VolumeNumber(3), title: BookTitle('Kingkiller'), kind: 'main' },
+      ],
+    })
+    expect(catalogue.description).toBeUndefined()
+    expect(catalogue.volumes.every((volume) => volume.publishedIn === undefined)).toBe(true)
+  })
+
+  // A count below a volume on the shelf would make that volume vanish from
+  // its own saga: the spine runs at least as far as what the reader holds.
+  test('runs the spine up to the highest owned volume when the count falls short', () => {
+    const catalogue = provisionalCatalogueOf(saga, [owned('Book Five', 5)], VolumeNumber(3))
+
+    expect(catalogue.volumes.map((volume) => Number(volume.number))).toEqual([1, 2, 3, 4, 5])
+    expect(catalogue.volumes[4]?.title).toBe(BookTitle('Book Five'))
+  })
+
+  test('leaves an unnumbered owned volume off the spine', () => {
+    const novella = {
+      ...owned('The Slow Regard', 1),
+      series: {
+        ...owned('The Slow Regard', 1).series,
+        volume: undefined,
+        kind: 'novella' as const,
+      },
+    }
+
+    const catalogue = provisionalCatalogueOf(saga, [novella], VolumeNumber(2))
+
+    expect(catalogue.volumes.map((volume) => String(volume.title))).toEqual([
+      'Kingkiller',
+      'Kingkiller',
+    ])
+  })
+})
+
+describe('cataloguesOf', () => {
+  const kingkiller = SeriesId('kingkiller--rothfuss')
+  const dune = SeriesId('dune--herbert')
+  const volume = (seriesId: Series['id'], name: string, title: string, number: number) => ({
+    title: BookTitle(title),
+    authors: [AuthorName('Someone')],
+    series: {
+      id: seriesId,
+      name: SeriesName(name),
+      volume: VolumeNumber(number),
+      kind: 'main' as const,
+    },
+  })
+  const known: Series = {
+    id: dune,
+    name: SeriesName('Dune'),
+    author: AuthorName('Frank Herbert'),
+    volumes: [],
+    catalogedAt: new Date('2026-01-01'),
+  }
+
+  // The world's catalogue when there is one, the reader's own count when
+  // there is not, and nothing for a saga nobody described or counted.
+  test('answers the stored catalogue first, then the declared count, then nothing', () => {
+    const catalogues = cataloguesOf(
+      [
+        volume(dune, 'Dune', 'Dune', 1),
+        volume(kingkiller, 'Kingkiller', 'The Name of the Wind', 1),
+        volume(SeriesId('other'), 'Other', 'Other', 1),
+      ],
+      [known],
+      [
+        { seriesId: dune, volumeCount: VolumeNumber(9) },
+        { seriesId: kingkiller, volumeCount: VolumeNumber(3) },
+      ],
+    )
+
+    expect(catalogues.get(dune)).toBe(known)
+    expect(catalogues.get(kingkiller)).toMatchObject({ provisional: true, author: 'Someone' })
+    expect(catalogues.get(kingkiller)?.volumes).toHaveLength(3)
+    expect(catalogues.has(SeriesId('other'))).toBe(false)
+  })
+
+  test('draws one provisional catalogue for a saga held in two languages', () => {
+    const catalogues = cataloguesOf(
+      [
+        { ...volume(kingkiller, 'Kingkiller', 'Le Nom du vent', 1), language: 'fr' as const },
+        { ...volume(kingkiller, 'Kingkiller', 'The Name of the Wind', 1), language: 'en' as const },
+      ],
+      [],
+      [{ seriesId: kingkiller, volumeCount: VolumeNumber(2) }],
+    )
+
+    expect([...catalogues.keys()]).toEqual([kingkiller])
   })
 })

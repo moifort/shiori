@@ -45,14 +45,15 @@ const execute = (source: string) => graphql({ schema, source, contextValue: { ev
 const addVolume = async (
   title: string,
   volume: number,
-  options: { author?: string; language?: string } = {},
+  options: { author?: string; language?: string; status?: string } = {},
 ) => {
-  const { author = 'Frank Herbert', language } = options
+  const { author = 'Frank Herbert', language, status } = options
   const result = await execute(
     `mutation { addBook(input: {
       title: "${title}"
       authors: ["${author}"]
       ${language ? `language: ${language}` : ''}
+      ${status ? `status: ${status}` : ''}
       series: { id: "dune--frank-herbert", name: "Dune", volume: ${volume}, kind: MAIN }
     }) { id } }`,
   )
@@ -456,5 +457,111 @@ describe('removing a saga from the library', () => {
   test('removes nothing from a saga the reader holds no volume of', async () => {
     const removed = await execute('mutation { deleteSeries(seriesId: "dune--frank-herbert") }')
     expect(removed.data?.deleteSeries).toBe(0)
+  })
+})
+
+describe('a saga the reader counted themselves', () => {
+  const DUNE = 'dune--frank-herbert'
+  const aCatalogue = {
+    name: 'Dune',
+    author: 'Frank Herbert',
+    volumes: [
+      { kind: 'main', number: 1, title: 'Dune', publishedIn: 1965 },
+      { kind: 'main', number: 2, title: 'Le Messie de Dune', publishedIn: 1969 },
+    ],
+  }
+
+  const declare = async (count: number) => {
+    const result = await execute(
+      `mutation { declareSeriesVolumeCount(seriesId: "${DUNE}", count: ${count}) { volumeCount } }`,
+    )
+    expect(result.errors).toBeUndefined()
+    return result.data?.declareSeriesVolumeCount
+  }
+
+  const openSeries = async () => {
+    const result = await execute(
+      `{ series(id: "${DUNE}") { name author provisional spine { number title } } }`,
+    )
+    expect(result.errors).toBeUndefined()
+    return result.data?.series
+  }
+
+  // The model failed or was never asked, and the reader knows the saga has
+  // three volumes: their screen draws those three, theirs by their titles, the
+  // rest by the saga's name — without a model call on every opening.
+  test('draws the declared count as a catalogue, without asking the model', async () => {
+    await addVolume('Le Messie de Dune', 2)
+
+    expect(await declare(3)).toEqual({ volumeCount: 3 })
+    expect(await openSeries()).toEqual({
+      name: 'Dune',
+      author: 'Frank Herbert',
+      provisional: true,
+      spine: [
+        { number: 1, title: 'Dune' },
+        { number: 2, title: 'Le Messie de Dune' },
+        { number: 3, title: 'Dune' },
+      ],
+    })
+    expect(calls).toEqual([])
+  })
+
+  test('never writes the count into the shared catalogue', async () => {
+    await addVolume('Dune', 1)
+
+    await declare(3)
+    await openSeries()
+
+    expect(fake.data('series', DUNE)).toBeNull()
+  })
+
+  test('measures the saga against the declared count on the Series tab', async () => {
+    await addVolume('Dune', 1, { status: 'READ' })
+    await declare(3)
+
+    const result = await execute(
+      '{ mySeries { state progress { readCount totalCount } catalogue { provisional } } }',
+    )
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.mySeries).toEqual([
+      {
+        state: 'IN_PROGRESS',
+        progress: { readCount: 1, totalCount: 3 },
+        catalogue: { provisional: true },
+      },
+    ])
+  })
+
+  test('measures the saga against the declared count on the dashboard', async () => {
+    await addVolume('Dune', 1, { status: 'READ' })
+    await declare(3)
+
+    const result = await execute(
+      '{ dashboard(timeZone: "Europe/Paris") { series { name readCount totalCount } } }',
+    )
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.dashboard).toEqual({
+      series: [{ name: 'Dune', readCount: 1, totalCount: 3 }],
+    })
+  })
+
+  // The count is a stopgap: the world's own catalogue wins the day it is asked.
+  test('gives way to the catalogue the model builds on demand', async () => {
+    await addVolume('Le Messie de Dune', 2)
+    await declare(3)
+    answers = [aCatalogue]
+
+    const refreshed = await execute(
+      `mutation { refreshSeries(seriesId: "${DUNE}") { provisional spine { number } } }`,
+    )
+    expect(refreshed.errors).toBeUndefined()
+    expect(refreshed.data?.refreshSeries).toEqual({
+      provisional: false,
+      spine: [{ number: 1 }, { number: 2 }],
+    })
+
+    expect(await openSeries()).toMatchObject({ provisional: false })
+    expect(calls).toEqual(['catalogue'])
   })
 })

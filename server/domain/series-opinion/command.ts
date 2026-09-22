@@ -1,6 +1,6 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
 import type { StarRating } from '~/domain/book/types'
-import type { SeriesId } from '~/domain/series/types'
+import type { SeriesId, VolumeNumber } from '~/domain/series/types'
 import * as repository from '~/domain/series-opinion/infrastructure/repository'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import type { UserId } from '~/domain/shared/types'
@@ -26,6 +26,17 @@ export namespace SeriesOpinionCommand {
   ) =>
     write(userId, seriesId, (opinion) => ({ ...opinion, favorite: favorite || undefined }), batch)
 
+  /** How many volumes the reader says the saga has. Kept on their opinion,
+   *  never on the shared catalogue: a count typed by one reader is not a fact
+   *  about the world, and it stops mattering the day the model describes the
+   *  saga. */
+  export const declareVolumeCount = (
+    userId: UserId,
+    seriesId: SeriesId,
+    volumeCount: VolumeNumber,
+    batch?: WriteBatch,
+  ) => write(userId, seriesId, (opinion) => ({ ...opinion, volumeCount }), batch)
+
   /** Forget what the reader made of a saga they no longer hold. */
   export const forget = (userId: UserId, seriesId: SeriesId, batch?: WriteBatch): Promise<void> =>
     repository.remove(userId, seriesId, batch)
@@ -35,8 +46,9 @@ export namespace SeriesOpinionCommand {
 }
 
 // Read, change, and then either store or erase. An opinion holding neither a
-// rating nor a heart says exactly what an absent document already says, so it is
-// deleted rather than kept as a row that costs a read and answers nothing.
+// rating, nor a heart, nor a count says exactly what an absent document already
+// says, so it is deleted rather than kept as a row that costs a read and
+// answers nothing.
 const write = async (
   userId: UserId,
   seriesId: SeriesId,
@@ -45,7 +57,7 @@ const write = async (
 ): Promise<SeriesOpinion> => {
   const current = (await repository.findBy(userId, seriesId)) ?? { userId, seriesId }
   const next = change(current)
-  if (next.rating === undefined && next.favorite === undefined) {
+  if (next.rating === undefined && next.favorite === undefined && next.volumeCount === undefined) {
     await repository.remove(userId, seriesId, batch)
     return next
   }

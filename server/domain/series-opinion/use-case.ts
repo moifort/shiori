@@ -2,7 +2,7 @@ import type { WriteBatch } from 'firebase-admin/firestore'
 import { AnalyticsCommand } from '~/domain/analytics/command'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import type { StarRating } from '~/domain/book/types'
-import type { SeriesId } from '~/domain/series/types'
+import type { SeriesId, VolumeNumber } from '~/domain/series/types'
 import { SeriesOpinionCommand } from '~/domain/series-opinion/command'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import type { UserId } from '~/domain/shared/types'
@@ -19,6 +19,17 @@ export namespace SeriesOpinionUseCase {
   export const setFavorite = (userId: UserId, seriesId: SeriesId, favorite: boolean) =>
     withAnalytics(userId, (batch) =>
       SeriesOpinionCommand.setFavorite(userId, seriesId, favorite, batch),
+    )
+
+  /** The dashboard measures a saga against this count when nobody has
+   *  catalogued it, so the count reaches the view as a heart does. */
+  export const declareVolumeCount = (
+    userId: UserId,
+    seriesId: SeriesId,
+    volumeCount: VolumeNumber,
+  ) =>
+    withAnalytics(userId, (batch) =>
+      SeriesOpinionCommand.declareVolumeCount(userId, seriesId, volumeCount, batch),
     )
 }
 

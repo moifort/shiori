@@ -6,8 +6,9 @@ import type {
   SeriesState,
   Volume,
   VolumeKind,
+  VolumeNumber,
 } from '~/domain/series/types'
-import type { AuthorName, Year } from '~/domain/shared/types'
+import type { AuthorName, BookTitle, Year } from '~/domain/shared/types'
 import { slugify } from '~/utils/slug'
 
 /** A volume the reader could still be waiting for. Announced volumes are kept in
@@ -56,6 +57,106 @@ export const progressOf = (
   if (spine.length === 0) return null
   const readCount = spine.filter((volume) => readVolumeNumbers.has(Number(volume.number))).length
   return { readCount, totalCount: spine.length }
+}
+
+/** A catalogue drawn from what the reader knows, for a saga nobody has
+ *  described: the number of volumes they declared, laid out as a numbered spine
+ *  with their own volumes at their numbers and the saga's name standing in for
+ *  every volume they lack. Marked provisional, and never stored.
+ *
+ *  The spine runs at least as far as the highest volume on the shelf: a count
+ *  below it would make that volume vanish from its own saga. Unnumbered owned
+ *  volumes are left off, as an unnumbered entry has no place on a spine. */
+export const provisionalCatalogueOf = (
+  saga: { id: SeriesId; name: SeriesName; author: AuthorName },
+  owned: readonly { title: BookTitle; series?: { volume?: VolumeNumber; kind: VolumeKind } }[],
+  volumeCount: VolumeNumber,
+  now = new Date(),
+): Series => {
+  const titles = new Map<number, BookTitle>()
+  for (const book of owned)
+    if (book.series?.kind === 'main' && book.series.volume !== undefined)
+      titles.set(book.series.volume, book.title)
+  const length = Math.max(Number(volumeCount), ...titles.keys())
+  return {
+    id: saga.id,
+    name: saga.name,
+    author: saga.author,
+    volumes: Array.from({ length }, (_, index) => {
+      const number = (index + 1) as VolumeNumber
+      return {
+        number,
+        title: titles.get(number) ?? (saga.name as string as BookTitle),
+        kind: 'main',
+      }
+    }),
+    catalogedAt: now,
+    provisional: true,
+  }
+}
+
+/** The catalogue each of the reader's sagas is drawn from, keyed by saga: the
+ *  world's when somebody has described it, else the one the reader's own count
+ *  makes, else none. One entry per saga whatever the number of languages it is
+ *  held in — a count is about the work, not an edition, and the provisional
+ *  spine takes its titles from whichever volumes the reader holds.
+ *
+ *  What every surface that measures a saga — the saga screen, the Series tab,
+ *  the dashboard — reads its catalogue through, so a declared count reaches all
+ *  three at once and none of them can forget it. */
+export const cataloguesOf = (
+  books: readonly {
+    title: BookTitle
+    authors: AuthorName[]
+    language?: BookLanguage
+    series?: { id: SeriesId; name: SeriesName; volume?: VolumeNumber; kind: VolumeKind }
+  }[],
+  known: readonly Series[],
+  opinions: readonly { seriesId: SeriesId; volumeCount?: VolumeNumber }[],
+): Map<SeriesId, Series> => {
+  const stored = new Map(known.map((series) => [series.id, series]))
+  const counts = new Map(
+    opinions.flatMap((opinion) =>
+      opinion.volumeCount === undefined ? [] : [[opinion.seriesId, opinion.volumeCount] as const],
+    ),
+  )
+  const catalogues = new Map<SeriesId, Series>()
+  for (const saga of followedSagasOf(books)) {
+    if (catalogues.has(saga.id)) {
+      // Another edition of a saga already counted: its volumes fill the spine too.
+      const drawn = catalogues.get(saga.id)
+      const count = counts.get(saga.id)
+      if (drawn?.provisional && count !== undefined)
+        catalogues.set(
+          saga.id,
+          provisionalCatalogueOf(
+            drawn,
+            books.filter((book) => book.series?.id === saga.id),
+            count,
+            drawn.catalogedAt,
+          ),
+        )
+      continue
+    }
+    const series = stored.get(saga.id)
+    if (series) {
+      catalogues.set(saga.id, series)
+      continue
+    }
+    const count = counts.get(saga.id)
+    if (count === undefined) continue
+    catalogues.set(
+      saga.id,
+      provisionalCatalogueOf(
+        // A saga no owned volume names an author for is catalogued under none:
+        // the count still deserves its spine.
+        { id: saga.id, name: saga.name, author: saga.author ?? ('' as AuthorName) },
+        saga.books,
+        count,
+      ),
+    )
+  }
+  return catalogues
 }
 
 /** The genre a saga is shelved under: the one most of its owned volumes carry.

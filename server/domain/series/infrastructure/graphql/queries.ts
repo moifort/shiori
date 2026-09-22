@@ -4,6 +4,7 @@ import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
 import type { Book, BookLanguage, Genre } from '~/domain/book/types'
 import {
+  cataloguesOf,
   compareWithinSeries,
   followedSagasOf,
   followedStateOf,
@@ -243,14 +244,18 @@ builder.queryFields((t) => ({
 /** Every saga the reader follows, one row per saga and language: what both
  *  the whole list and a page of it are cut from. */
 const followedSeriesOf = async (userId: UserId): Promise<FollowedSeries[]> => {
-  const sagas = followedSagasOf(await BookQuery.all(userId))
+  const books = await BookQuery.all(userId)
+  const sagas = followedSagasOf(books)
   // One scan of the reader's opinions for the whole tab, rather than a
   // lookup per row: a reader with forty sagas would otherwise pay forty.
-  const opinions = new Map(
-    (await SeriesOpinionQuery.all(userId)).map((opinion) => [opinion.seriesId, opinion]),
-  )
-  const catalogued = new Map(
-    (await SeriesQuery.byIds(sagas.map((saga) => saga.id))).map((series) => [series.id, series]),
+  const held = await SeriesOpinionQuery.all(userId)
+  const opinions = new Map(held.map((opinion) => [opinion.seriesId, opinion]))
+  // The world's catalogues, and the reader's own count where the world has
+  // none: a saga they counted themselves is measured like any other.
+  const catalogued = cataloguesOf(
+    books,
+    await SeriesQuery.byIds(sagas.map((saga) => saga.id)),
+    held,
   )
   const currentYear = Year(new Date().getUTCFullYear())
   return sagas.map((saga) => {

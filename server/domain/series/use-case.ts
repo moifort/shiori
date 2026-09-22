@@ -6,9 +6,11 @@ import { BookQuery } from '~/domain/book/query'
 import type { BookLanguage } from '~/domain/book/types'
 import { Scan } from '~/domain/scan'
 import type { ScanLanguage } from '~/domain/scan/types'
+import { cataloguesOf } from '~/domain/series/business-rules'
 import { SeriesQuery } from '~/domain/series/query'
 import type { Series, SeriesId } from '~/domain/series/types'
 import { SeriesOpinionCommand } from '~/domain/series-opinion/command'
+import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
 import { atomically } from '~/utils/firestore'
@@ -46,6 +48,10 @@ export namespace SeriesUseCase {
    *  hold in more than one: the catalogue titles its volumes as that edition
    *  does. Absent, the edition of whichever volume they hold answers.
    *
+   *  A saga the reader counted themselves answers with a provisional catalogue
+   *  drawn from that count, and the model is not asked: `recatalogue` is how
+   *  they ask for the world's.
+   *
    *  Null when the reader holds no volume of the saga, since there is then
    *  nothing to ask about, and when the model fails or finds no volumes: the
    *  next opening tries again. */
@@ -57,6 +63,18 @@ export namespace SeriesUseCase {
   ): Promise<Series | null> => {
     const known = await SeriesQuery.byId(seriesId)
     if (known) return known
+    // The reader counted the volumes themselves: their spine is drawn from
+    // that, and the world is only asked again when they ask for it — every
+    // opening would otherwise wait on a model call that already failed once.
+    const opinion = await SeriesOpinionQuery.of(userId, seriesId)
+    if (opinion?.volumeCount !== undefined) {
+      const provisional = cataloguesOf(
+        await BookQuery.bySeries(userId, seriesId),
+        [],
+        [opinion],
+      ).get(seriesId)
+      if (provisional) return provisional
+    }
     return catalogueFromLibrary(userId, seriesId, language, edition)
   }
 

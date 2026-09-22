@@ -33,6 +33,11 @@ export type Series = {
    *  and is an opinion the model restitutes inconsistently. */
   volumes: Volume[]
   catalogedAt: Date
+  /** Drawn on the fly from a reader's own count of the volumes, for a saga
+   *  nobody has catalogued: their volumes at their numbers, the saga's name
+   *  standing in for the rest. Never stored — the shared catalogue holds what
+   *  the world says, and a guess typed by one reader is not that. */
+  provisional?: true
 }
 
 /** Where the reader stands on a saga: not started, working through it, or done
