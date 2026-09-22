@@ -284,7 +284,7 @@ struct BookPage: View {
     }
 
     /// Who pressed the book on the reader, as in Vinarium's wine sheet. Only
-    /// drawn once there is one: the menu's "Conseillé par un ami" is how a
+    /// drawn once there is one: the menu's "Conseillé par…" is how a
     /// reader adds it, and a tap here corrects it.
     private func recommendationSection(_ recommendation: BookRecommendation) -> some View {
         Section("Conseillé") {

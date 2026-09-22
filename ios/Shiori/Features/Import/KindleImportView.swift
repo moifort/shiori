@@ -41,7 +41,7 @@ struct KindleImportView: View {
                             Menu {
                                 Button("Tout sélectionner", action: selectAll)
                                 Button("Tout désélectionner") { selected = [] }
-                                Button("Choisir un autre fichier") { showFileImporter = true }
+                                Button("Autre fichier") { showFileImporter = true }
                             } label: {
                                 Label("Options", systemImage: "ellipsis.circle")
                             }

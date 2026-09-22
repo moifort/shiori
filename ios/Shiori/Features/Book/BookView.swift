@@ -166,7 +166,7 @@ struct BookView: View {
             // As in Vinarium: who pressed the book on the reader, picked from
             // their contacts. Once recorded, it is also corrected from its own
             // section on the page.
-            Button("Conseillé par un ami", systemImage: "person.badge.plus") {
+            Button("Conseillé par…", systemImage: "person.badge.plus") {
                 showRecommendation = true
             }
             .accessibilityIdentifier("book-recommend")
@@ -174,12 +174,12 @@ struct BookView: View {
             // Not on the segmented picker, which holds the states a book moves
             // through: dropping one is an ending, chosen once, from here.
             if book.status == .dropped {
-                Button("Reprendre la lecture", systemImage: "arrow.uturn.backward") {
+                Button("Reprendre", systemImage: "arrow.uturn.backward") {
                     run { await viewModel.setStatus(.reading) }
                 }
                 .accessibilityIdentifier("book-resume")
             } else {
-                Button("Abandonné", systemImage: "hand.thumbsdown") {
+                Button("Abandonner", systemImage: "hand.thumbsdown") {
                     run { await viewModel.setStatus(.dropped) }
                 }
                 .accessibilityIdentifier("book-drop")
