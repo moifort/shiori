@@ -191,6 +191,68 @@ describe('cataloguing through the API', () => {
   })
 })
 
+describe('recording who recommended a book through the API', () => {
+  test('stores the recommendation, reads it back, and clears it on null', async () => {
+    const book = await addBook('Le Nom du vent')
+
+    const recommended = await execute(
+      `mutation { setBookRecommendation(id: "${book.id}", recommendation: { recommenderName: "Marie Curie", comment: "Lis-le cet été." }) { recommendation { recommenderName comment } } }`,
+    )
+    expect(recommended.errors).toBeUndefined()
+    expect(recommended.data?.setBookRecommendation).toEqual({
+      recommendation: { recommenderName: 'Marie Curie', comment: 'Lis-le cet été.' },
+    })
+
+    const read = await execute(`{ book(id: "${book.id}") { recommendation { recommenderName } } }`)
+    expect(read.data?.book).toEqual({ recommendation: { recommenderName: 'Marie Curie' } })
+
+    const cleared = await execute(
+      `mutation { setBookRecommendation(id: "${book.id}", recommendation: null) { recommendation { recommenderName } } }`,
+    )
+    expect(cleared.errors).toBeUndefined()
+    expect(cleared.data?.setBookRecommendation).toEqual({ recommendation: null })
+  })
+
+  test('clears the recommendation when it names nobody and says nothing', async () => {
+    const book = await addBook('Le Nom du vent')
+    await execute(
+      `mutation { setBookRecommendation(id: "${book.id}", recommendation: { recommenderName: "Marie" }) { id } }`,
+    )
+
+    const emptied = await execute(
+      `mutation { setBookRecommendation(id: "${book.id}", recommendation: {}) { recommendation { recommenderName } } }`,
+    )
+
+    expect(emptied.errors).toBeUndefined()
+    expect(emptied.data?.setBookRecommendation).toEqual({ recommendation: null })
+  })
+
+  test('refuses a blank name as bad input', async () => {
+    const book = await addBook('Le Nom du vent')
+
+    const result = await execute(
+      `mutation { setBookRecommendation(id: "${book.id}", recommendation: { recommenderName: "  " }) { id } }`,
+    )
+
+    expect(result.errors?.[0]?.extensions?.code).toBe('BAD_USER_INPUT')
+  })
+
+  test('reports a book the reader does not own as NOT_FOUND', async () => {
+    const result = await execute(
+      'mutation { setBookRecommendation(id: "nope", recommendation: { recommenderName: "Marie" }) { id } }',
+    )
+
+    expect(result.errors?.[0]?.extensions?.code).toBe('NOT_FOUND')
+  })
+
+  // The friend's shelf is its own, smaller type: who pressed a book on the
+  // reader is theirs to know, like the note.
+  test('never shows the recommendation on a friend shelf', () => {
+    const friendBook = schema.getType('FriendBook') as { getFields: () => Record<string, unknown> }
+    expect(Object.keys(friendBook.getFields())).not.toContain('recommendation')
+  })
+})
+
 describe('rating through the API', () => {
   test('marks the book read and stamps both reading dates', async () => {
     const book = await addBook('Le Nom du vent')

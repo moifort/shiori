@@ -9,6 +9,7 @@ import {
   retaggedAfterEdit,
   statusAfterRating,
   statusStampAfterChange,
+  storedRecommendation,
 } from '~/domain/book/business-rules'
 import * as repository from '~/domain/book/infrastructure/repository'
 import { BookId as BookIdOf } from '~/domain/book/primitives'
@@ -26,6 +27,7 @@ import type {
   Publisher,
   ReadingNote,
   ReadingStatus,
+  Recommendation,
   SeriesMembership,
   SeriesPlacement,
   StarRating,
@@ -337,6 +339,23 @@ export namespace BookCommand {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
     return repository.save({ ...book, note, updatedAt: now }, batch)
+  }
+
+  /** Record who recommended the book, or forget it: passing none — or one that
+   *  names nobody and says nothing — clears it. */
+  export const recommend = async (
+    userId: UserId,
+    bookId: BookId,
+    recommendation: Recommendation | undefined,
+    now = new Date(),
+    batch?: WriteBatch,
+  ): Promise<Book | 'not-found'> => {
+    const book = await repository.findById(userId, bookId)
+    if (!book) return 'not-found'
+    return repository.save(
+      { ...book, recommendation: storedRecommendation(recommendation), updatedAt: now },
+      batch,
+    )
   }
 
   /** A heart is five stars: giving it rates the book five — which marks it read,

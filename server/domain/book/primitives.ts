@@ -13,6 +13,7 @@ import type {
   Publisher as PublisherType,
   ReadingNote as ReadingNoteType,
   ReadingStatus,
+  RecommendationComment as RecommendationCommentType,
   StarRating as StarRatingType,
   Subgenre as SubgenreType,
   Synopsis as SynopsisType,
@@ -178,6 +179,11 @@ export const StarRating = (value: unknown) => {
 export const ReadingNote = (value: unknown) => {
   const v = z.string().trim().min(1).max(10000).parse(value)
   return make<ReadingNoteType>()(v)
+}
+
+export const RecommendationComment = (value: unknown) => {
+  const v = z.string().trim().min(1).max(2000).parse(value)
+  return make<RecommendationCommentType>()(v)
 }
 
 export const ReadingStatusValue = (value: unknown): ReadingStatus =>

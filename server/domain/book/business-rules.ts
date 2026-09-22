@@ -5,6 +5,7 @@ import type {
   BookView,
   LibrarySection,
   ReadingStatus,
+  Recommendation,
   SeriesMembership,
   SeriesPlacement,
   ShelfVocabulary,
@@ -235,6 +236,21 @@ export const datesAfterStatusChange = (
  *  and silently leaving such a book in `to-read` would be a lie the library then
  *  repeats in every filter. A dropped book keeps its status: one star is often
  *  exactly why it was dropped. */
+/** The recommendation to store: the one given, unless it says nothing. A
+ *  reader who empties both the name and the words has taken the recommendation
+ *  back, and an empty map on the record would draw a blank section. */
+export const storedRecommendation = (
+  recommendation: Recommendation | undefined,
+): Recommendation | undefined =>
+  recommendation?.recommenderName || recommendation?.comment
+    ? {
+        ...(recommendation.recommenderName
+          ? { recommenderName: recommendation.recommenderName }
+          : {}),
+        ...(recommendation.comment ? { comment: recommendation.comment } : {}),
+      }
+    : undefined
+
 export const statusAfterRating = (current: ReadingStatus): ReadingStatus =>
   current === 'dropped' ? 'dropped' : 'read'
 

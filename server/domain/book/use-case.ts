@@ -2,7 +2,13 @@ import type { WriteBatch } from 'firebase-admin/firestore'
 import { AnalyticsCommand } from '~/domain/analytics/command'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import { BookCommand, type BookEdit, type NewBook } from '~/domain/book/command'
-import type { BookId, ReadingNote, ReadingStatus, StarRating } from '~/domain/book/types'
+import type {
+  BookId,
+  ReadingNote,
+  ReadingStatus,
+  Recommendation,
+  StarRating,
+} from '~/domain/book/types'
 import type { UserId } from '~/domain/shared/types'
 import { atomically } from '~/utils/firestore'
 
@@ -33,6 +39,15 @@ export namespace BookUseCase {
 
   export const annotate = (userId: UserId, bookId: BookId, note: ReadingNote | undefined) =>
     withAnalytics(userId, (batch) => BookCommand.annotate(userId, bookId, note, undefined, batch))
+
+  export const recommend = (
+    userId: UserId,
+    bookId: BookId,
+    recommendation: Recommendation | undefined,
+  ) =>
+    withAnalytics(userId, (batch) =>
+      BookCommand.recommend(userId, bookId, recommendation, undefined, batch),
+    )
 
   export const setFavorite = (userId: UserId, bookId: BookId, favorite: boolean) =>
     withAnalytics(userId, (batch) =>

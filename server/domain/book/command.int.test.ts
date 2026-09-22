@@ -8,7 +8,10 @@ const { BookCommand } = await import('~/domain/book/command')
 const { BookQuery } = await import('~/domain/book/query')
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
 const { SeriesId, SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
-const { StarRating, ReadingNote, Publisher, PageCount } = await import('~/domain/book/primitives')
+const { StarRating, ReadingNote, Publisher, PageCount, RecommendationComment } = await import(
+  '~/domain/book/primitives'
+)
+const { PersonName } = await import('~/domain/shared/primitives')
 
 const reader = 'reader-1' as UserId
 const NOW = new Date('2026-09-14T10:00:00.000Z')
@@ -342,6 +345,76 @@ describe('a heart is five stars', () => {
 
     if (rated === 'not-found') throw new Error('unreachable')
     expect(rated.favorite).toBeUndefined()
+  })
+})
+
+describe('recording who recommended a book', () => {
+  test('stores the name and the words, and forgets them when none is passed', async () => {
+    const book = await add('Le Nom du vent')
+
+    const recommended = await BookCommand.recommend(
+      reader,
+      book.id,
+      { recommenderName: PersonName('Marie'), comment: RecommendationComment('Lis-le cet été.') },
+      NOW,
+    )
+    if (recommended === 'not-found') throw new Error('unreachable')
+    expect(recommended.recommendation).toEqual({
+      recommenderName: PersonName('Marie'),
+      comment: RecommendationComment('Lis-le cet été.'),
+    })
+    expect(fake.data('books', book.id)?.recommendation).toEqual({
+      recommenderName: 'Marie',
+      comment: 'Lis-le cet été.',
+    })
+
+    const cleared = await BookCommand.recommend(reader, book.id, undefined, NOW)
+    if (cleared === 'not-found') throw new Error('unreachable')
+    expect(cleared.recommendation).toBeUndefined()
+    expect(Object.hasOwn(fake.data('books', book.id) as object, 'recommendation')).toBe(false)
+  })
+
+  test('replaces the whole recommendation rather than merging it', async () => {
+    const book = await add('Le Nom du vent')
+    await BookCommand.recommend(
+      reader,
+      book.id,
+      { recommenderName: PersonName('Marie'), comment: RecommendationComment('Superbe.') },
+      NOW,
+    )
+
+    const replaced = await BookCommand.recommend(
+      reader,
+      book.id,
+      { recommenderName: PersonName('Paul') },
+      NOW,
+    )
+
+    if (replaced === 'not-found') throw new Error('unreachable')
+    expect(replaced.recommendation).toEqual({ recommenderName: PersonName('Paul') })
+  })
+
+  test('costs one document read and no query', async () => {
+    const book = await add('Le Nom du vent')
+    const before = { docs: fake.docReads, queries: fake.queryReads }
+
+    await BookCommand.recommend(reader, book.id, { recommenderName: PersonName('Marie') }, NOW)
+
+    expect(fake.docReads - before.docs).toBe(1)
+    expect(fake.queryReads - before.queries).toBe(0)
+  })
+
+  test("answers not-found for another reader's book", async () => {
+    const book = await add('Le Nom du vent')
+
+    const result = await BookCommand.recommend(
+      'someone-else' as UserId,
+      book.id,
+      { recommenderName: PersonName('Marie') },
+      NOW,
+    )
+
+    expect(result).toBe('not-found')
   })
 })
 

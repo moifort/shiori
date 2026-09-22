@@ -14,14 +14,21 @@ import {
   statusAfterRating,
   statusChangedAtOf,
   statusStampAfterChange,
+  storedRecommendation,
   subgenresOf,
   vocabularyOf,
 } from '~/domain/book/business-rules'
-import { BookId, ListeningMinutes, StarRating, Subgenre } from '~/domain/book/primitives'
+import {
+  BookId,
+  ListeningMinutes,
+  RecommendationComment,
+  StarRating,
+  Subgenre,
+} from '~/domain/book/primitives'
 import type { Book, BookLanguage, BookView, Genre } from '~/domain/book/types'
 import { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import type { VolumeKind } from '~/domain/series/types'
-import { AuthorName, BookTitle, UserId } from '~/domain/shared/primitives'
+import { AuthorName, BookTitle, PersonName, UserId } from '~/domain/shared/primitives'
 import { slugify } from '~/utils/slug'
 
 const NOW = new Date('2026-09-14T10:00:00.000Z')
@@ -708,5 +715,31 @@ describe('placing a book in a saga by hand', () => {
 
   test('refuses a new saga for a book with no author to key it with', () => {
     expect(membershipFor({ name: SeriesName('Dune') }, [], undefined, [])).toBe('no-author')
+  })
+})
+
+describe('storedRecommendation', () => {
+  test('keeps a recommendation that names someone or says something', () => {
+    expect(storedRecommendation({ recommenderName: PersonName('Marie') })).toEqual({
+      recommenderName: PersonName('Marie'),
+    })
+    expect(storedRecommendation({ comment: RecommendationComment('Superbe.') })).toEqual({
+      comment: RecommendationComment('Superbe.'),
+    })
+  })
+
+  test('stores nothing for a recommendation that names nobody and says nothing', () => {
+    expect(storedRecommendation({})).toBeUndefined()
+    expect(storedRecommendation(undefined)).toBeUndefined()
+  })
+
+  // Firestore refuses undefined values: an absent half is left out, not kept
+  // as a key with nothing in it.
+  test('leaves out the half that is missing', () => {
+    const stored = storedRecommendation({
+      recommenderName: PersonName('Marie'),
+      comment: undefined,
+    })
+    expect(Object.keys(stored ?? {})).toEqual(['recommenderName'])
   })
 })

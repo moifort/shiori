@@ -279,6 +279,9 @@ type Book {
   """One to five whole stars. Null until the reader rates it."""
   rating: StarRating
 
+  """Who recommended the book to the reader. Null when nobody was recorded."""
+  recommendation: Recommendation
+
   """Null for a standalone book."""
   series: SeriesMembership
 
@@ -1158,6 +1161,11 @@ type Mutation {
   setBookNote(id: BookId!, note: ReadingNote): Book!
 
   """
+  Record who recommended the book and what they said of it, replacing any recommendation already there. Passing null, or a recommendation with neither a name nor a comment, clears it.
+  """
+  setBookRecommendation(id: BookId!, recommendation: RecommendationInput): Book!
+
+  """
   Move a book along the pile. The reading dates follow from the move and are never typed: going back to TO_READ clears them.
   """
   setReadingStatus(id: BookId!, status: ReadingStatus!): Book!
@@ -1284,7 +1292,7 @@ scalar PageCount
 scalar Percentage
 
 """
-The reader's own first name, 1 to 200 characters, collected once during onboarding so the app can address them. Distinct from `AuthorName`, which names someone who wrote a book. Example: "Thibaut".
+A person the reader knows, by name, 1 to 200 characters: the reader themselves, asked once during onboarding so the app can address them, or the friend who recommended a book, as the contact picker spelled it. Distinct from `AuthorName`, which names someone who wrote a book. Example: "Thibaut".
 """
 scalar PersonName
 
@@ -1586,6 +1594,34 @@ enum ReadingStatus {
 
   """On the pile. Clears any reading date it had."""
   TO_READ
+}
+
+"""
+Who recommended a book to the reader, and what they said of it. Either field may be null, never both: a recommendation that says nothing is not kept.
+
+Private like the note: a friend browsing the library never sees it.
+"""
+type Recommendation {
+  """What they said of it."""
+  comment: RecommendationComment
+
+  """Who recommended the book, as the reader recorded them."""
+  recommenderName: PersonName
+}
+
+"""
+What the friend who recommended a book said of it, 1 to 2000 characters. Example: "The best heist story you will ever read."
+"""
+scalar RecommendationComment
+
+"""
+Who recommended a book and what they said of it. Both fields are optional; leaving both out clears the recommendation.
+"""
+input RecommendationInput {
+  comment: RecommendationComment
+
+  """Who recommended the book, typically picked from the contacts."""
+  recommenderName: PersonName
 }
 
 """

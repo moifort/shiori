@@ -39,6 +39,21 @@ export const SeriesPlacementInput = builder.inputType('SeriesPlacementInput', {
   }),
 })
 
+/** Who recommended a book, as the reader records it from the book's sheet. */
+export const RecommendationInput = builder.inputType('RecommendationInput', {
+  description:
+    'Who recommended a book and what they said of it. Both fields are optional; ' +
+    'leaving both out clears the recommendation.',
+  fields: (t) => ({
+    recommenderName: t.field({
+      type: 'PersonName',
+      required: false,
+      description: 'Who recommended the book, typically picked from the contacts.',
+    }),
+    comment: t.field({ type: 'RecommendationComment', required: false }),
+  }),
+})
+
 /** What a book can be created with by hand, with no photo and no AI call. Only a
  *  title is required: a book added from a half-remembered recommendation is still
  *  a book, and demanding an author would push the reader back to a notes app. */

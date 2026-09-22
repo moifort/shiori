@@ -11,6 +11,7 @@ import {
   PageCount,
   Publisher,
   ReadingNote,
+  RecommendationComment,
   StarRating,
   Subgenre,
   Synopsis,
@@ -83,9 +84,10 @@ builder.scalarType('AuthorName', {
 
 builder.scalarType('PersonName', {
   description:
-    "The reader's own first name, 1 to 200 characters, collected once during " +
-    'onboarding so the app can address them. Distinct from `AuthorName`, which ' +
-    'names someone who wrote a book. Example: "Thibaut".',
+    'A person the reader knows, by name, 1 to 200 characters: the reader themselves, ' +
+    'asked once during onboarding so the app can address them, or the friend who ' +
+    'recommended a book, as the contact picker spelled it. Distinct from ' +
+    '`AuthorName`, which names someone who wrote a book. Example: "Thibaut".',
   serialize: (value) => value as string,
   parseValue: validatedParse('PersonName', PersonName),
 })
@@ -159,6 +161,14 @@ builder.scalarType('ReadingNote', {
     'it rather than storing an empty string.',
   serialize: (value) => value as string,
   parseValue: validatedParse('ReadingNote', ReadingNote),
+})
+
+builder.scalarType('RecommendationComment', {
+  description:
+    'What the friend who recommended a book said of it, 1 to 2000 characters. ' +
+    'Example: "The best heist story you will ever read."',
+  serialize: (value) => value as string,
+  parseValue: validatedParse('RecommendationComment', RecommendationComment),
 })
 
 builder.scalarType('SeriesId', {

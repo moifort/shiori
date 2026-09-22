@@ -2,7 +2,11 @@ import { match } from 'ts-pattern'
 import { taggedIn } from '~/domain/book/business-rules'
 import type { BookEdit } from '~/domain/book/command'
 import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
-import { BookEditInput, NewBookInput } from '~/domain/book/infrastructure/graphql/inputs'
+import {
+  BookEditInput,
+  NewBookInput,
+  RecommendationInput,
+} from '~/domain/book/infrastructure/graphql/inputs'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import { MAX_NARRATORS, MAX_SUBGENRES } from '~/domain/book/primitives'
 import { BookQuery } from '~/domain/book/query'
@@ -188,6 +192,33 @@ builder.mutationFields((t) => ({
     },
     resolve: async (_root, args, context) => {
       const result = await BookUseCase.annotate(context.userId, args.id, args.note ?? undefined)
+      return match(result)
+        .with('not-found', () => notFound('Book not found'))
+        .otherwise((book) => readBack(context.userId, book.id))
+    },
+  }),
+
+  setBookRecommendation: t.field({
+    type: BookType,
+    description:
+      'Record who recommended the book and what they said of it, replacing any ' +
+      'recommendation already there. Passing null, or a recommendation with neither ' +
+      'a name nor a comment, clears it.',
+    args: {
+      id: t.arg({ type: 'BookId', required: true }),
+      recommendation: t.arg({ type: RecommendationInput, required: false }),
+    },
+    resolve: async (_root, args, context) => {
+      const result = await BookUseCase.recommend(
+        context.userId,
+        args.id,
+        args.recommendation
+          ? {
+              recommenderName: args.recommendation.recommenderName ?? undefined,
+              comment: args.recommendation.comment ?? undefined,
+            }
+          : undefined,
+      )
       return match(result)
         .with('not-found', () => notFound('Book not found'))
         .otherwise((book) => readBack(context.userId, book.id))

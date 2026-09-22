@@ -1,7 +1,7 @@
 import type { Brand } from 'ts-brand'
 import type { AudibleAsin } from '~/domain/audible/types'
 import type { SeriesId, SeriesName, VolumeKind, VolumeNumber } from '~/domain/series/types'
-import type { AuthorName, BookTitle, UserId, Year } from '~/domain/shared/types'
+import type { AuthorName, BookTitle, PersonName, UserId, Year } from '~/domain/shared/types'
 import type { ObjectPath, SignedUrl } from '~/system/object-store/types'
 
 export type BookId = Brand<string, 'BookId'>
@@ -30,6 +30,9 @@ export type NarratorName = Brand<string, 'NarratorName'>
  *  discernment, and shrink the touch target. */
 export type StarRating = Brand<number, 'StarRating'>
 export type ReadingNote = Brand<string, 'ReadingNote'>
+/** What the friend who recommended a book said of it: why they pressed it on
+ *  the reader, in their words or the reader's recollection of them. */
+export type RecommendationComment = Brand<string, 'RecommendationComment'>
 /** Where the app loads a cover image from: the reader's own photo behind a signed
  *  URL, or the publisher's cover found by ISBN. Always HTTPS — iOS refuses to load
  *  anything else. */
@@ -130,6 +133,17 @@ export type SeriesPlacement = {
   volume?: VolumeNumber
 }
 
+/** Who recommended a book to the reader, and what they said of it — as in
+ *  Vinarium, where a wine can be marked as recommended by a friend. Either half
+ *  may be missing: a reader remembers who without the words, or the words
+ *  without who. A recommendation with neither is no recommendation, and is not
+ *  stored. The name is copied from the reader's contacts, never linked to them:
+ *  the friend need not be a Shiori reader, and the record stays the reader's. */
+export type Recommendation = {
+  recommenderName?: PersonName
+  comment?: RecommendationComment
+}
+
 /** A book as one reader holds it. Private, owned by exactly one user, never
  *  merged with anyone else's: two readers who scan the same novel keep two
  *  independent records. Public facts and personal judgment live side by side,
@@ -191,6 +205,9 @@ export type Book = {
    *  of the scale, given with them and taken back with them. */
   favorite?: boolean
   note?: ReadingNote
+  /** Who recommended the book, when the reader recorded it. Private like the
+   *  note: a friend browsing the library never sees it. */
+  recommendation?: Recommendation
   /** Excluded from any shared view. Built now, used when sharing ships, because
    *  adding a boolean to records already in production costs a migration. */
   hidden: boolean

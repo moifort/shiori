@@ -8,6 +8,7 @@ import {
 import type {
   BookView,
   LibrarySection,
+  Recommendation,
   SeriesMembership,
   ShelfVocabulary,
 } from '~/domain/book/types'
@@ -15,6 +16,27 @@ import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import { builder } from '~/domain/shared/graphql/builder'
 import { Percentage } from '~/domain/shared/primitives'
+
+export const RecommendationType = builder.objectRef<Recommendation>('Recommendation').implement({
+  description:
+    'Who recommended a book to the reader, and what they said of it. Either field ' +
+    'may be null, never both: a recommendation that says nothing is not kept.\n\n' +
+    'Private like the note: a friend browsing the library never sees it.',
+  fields: (t) => ({
+    recommenderName: t.field({
+      type: 'PersonName',
+      nullable: true,
+      description: 'Who recommended the book, as the reader recorded them.',
+      resolve: (recommendation) => recommendation.recommenderName ?? null,
+    }),
+    comment: t.field({
+      type: 'RecommendationComment',
+      nullable: true,
+      description: 'What they said of it.',
+      resolve: (recommendation) => recommendation.comment ?? null,
+    }),
+  }),
+})
 
 export const SeriesMembershipType = builder
   .objectRef<SeriesMembership>('SeriesMembership')
@@ -168,6 +190,12 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
       type: 'ReadingNote',
       nullable: true,
       resolve: (book) => book.note ?? null,
+    }),
+    recommendation: t.field({
+      type: RecommendationType,
+      nullable: true,
+      description: 'Who recommended the book to the reader. Null when nobody was recorded.',
+      resolve: (book) => book.recommendation ?? null,
     }),
     favorite: t.boolean({
       description:
