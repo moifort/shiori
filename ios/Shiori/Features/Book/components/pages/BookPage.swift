@@ -95,6 +95,14 @@ struct BookPage: View {
                             .accessibilityLabel(Text(book.status.label))
                             .accessibilityIdentifier("book-dropped")
                     }
+                    // How far the Audible player got, while the recording is
+                    // under way only: before, there is nothing to tell, and
+                    // once it is over the status says it.
+                    if book.status == .reading, let progress = book.listeningProgressLabel {
+                        Pill(text: progress)
+                            .accessibilityLabel(Text("Écouté à \(progress)"))
+                            .accessibilityIdentifier("book-listening-progress")
+                    }
                     if let durationLabel = book.durationLabel {
                         Pill(text: durationLabel, systemImage: "clock")
                             .accessibilityIdentifier("book-duration")
@@ -109,19 +117,6 @@ struct BookPage: View {
                 }
             }
             .padding(.vertical, 2)
-
-            // How far the Audible player got, while the recording is under way:
-            // once it is read, the status says more than a bar would.
-            if let progress = book.listeningProgress, let label = book.listeningProgressLabel,
-                book.status != .read
-            {
-                VStack(alignment: .leading, spacing: 6) {
-                    LabeledContent("Écoute", value: label)
-                    ProgressView(value: Double(progress), total: 100)
-                }
-                .accessibilityElement(children: .combine)
-                .accessibilityIdentifier("book-listening-progress")
-            }
 
             if let series = book.series {
                 Button(action: onOpenSeries) {

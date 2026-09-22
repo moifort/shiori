@@ -36,7 +36,8 @@ struct BookRow: View {
     var isFavorite: Bool = false
     var isHidden: Bool = false
     /// How far into a recording the player got, already formatted — "42 %".
-    /// Passed only for a recording under way.
+    /// Passed only for a recording under way, and drawn as a chip beside the
+    /// status, in its colour.
     var listeningProgress: String?
 
     /// Between the card's edges and the row's content — the list's own inset
@@ -73,12 +74,6 @@ struct BookRow: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
 
-                if let listeningProgress {
-                    Label(listeningProgress, systemImage: "headphones")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .accessibilityLabel(Text("Écouté à \(listeningProgress)"))
-                }
 
                 // Where it sits in a saga: a fact about this copy, ahead of
                 // what the book is.
@@ -161,6 +156,13 @@ struct BookRow: View {
                 font: .caption,
                 ratingIsInherited: ratingIsInherited
             )
+            // How far into a recording, beside where the reader stands: the
+            // two say the same thing, one more precisely.
+            if let listeningProgress {
+                chip(listeningProgress, tint: ReadingStatus.reading.tint)
+                    .font(.caption2)
+                    .accessibilityLabel(Text("Écouté à \(listeningProgress)"))
+            }
             // Where the reader stands, in the corner the eye returns to on
             // every row. A recording says what it is on its cover instead.
             if let statusTag {
