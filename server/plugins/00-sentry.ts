@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/node'
 import { instrumentDomains } from '#domain-instrumentation'
 import { config } from '~/system/config/index'
+import { flushReports } from '~/system/logger'
 
 export default defineNitroPlugin((nitroApp) => {
   // Mirrors the iOS `#if DEBUG` gate in ShioriApp.startSentry: only the deployed
@@ -38,10 +39,17 @@ export default defineNitroPlugin((nitroApp) => {
         Sentry.startSpan(
           { name: `${event.method} ${event.path}`, op: 'http.server' },
           async (span) => {
-            const result = await originalHandler(event)
-            const route = event.context.matchedRoute?.path
-            if (route) span.updateName(`${event.method} ${route}`)
-            return result
+            try {
+              const result = await originalHandler(event)
+              const route = event.context.matchedRoute?.path
+              if (route) span.updateName(`${event.method} ${route}`)
+              return result
+            } finally {
+              // What the loggers reported while serving — a model call that
+              // failed and was recovered from — leaves before the response
+              // does, since Cloud Functions throttles the CPU right after.
+              await flushReports()
+            }
           },
         ),
     )) as typeof originalHandler

@@ -44,15 +44,17 @@ export const amazonCoverOf = async (isbn13: Isbn13): Promise<CoverUrlType | unde
       method: 'HEAD',
       signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
     })
+    // A 404 is a cover Amazon does not have, which is an answer, not a failure.
     if (!response.ok) {
-      logger.warn(`cover lookup for ${isbn13} answered ${response.status}`)
+      if (response.status !== 404)
+        logger.warn('Amazon cover lookup failed', { isbn13, status: response.status })
       return undefined
     }
     return response.headers.get('content-type')?.startsWith('image/jpeg')
       ? CoverUrl(url)
       : undefined
   } catch (error) {
-    logger.warn(`cover lookup for ${isbn13} failed: ${error}`)
+    logger.warn('Amazon cover lookup failed', { error, isbn13 })
     return undefined
   }
 }

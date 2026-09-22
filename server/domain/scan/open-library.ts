@@ -37,10 +37,10 @@ export const openLibraryCoverOf = async (isbn13: Isbn13): Promise<CoverUrlType |
     if (response.status === 404) return undefined
     if (response.ok || (response.status >= 300 && response.status < 400))
       return CoverUrl(`${url}?default=false`)
-    logger.warn(`cover lookup for ${isbn13} answered ${response.status}`)
+    logger.warn('Open Library cover lookup failed', { isbn13, status: response.status })
     return undefined
   } catch (error) {
-    logger.warn(`cover lookup for ${isbn13} failed: ${error}`)
+    logger.warn('Open Library cover lookup failed', { error, isbn13 })
     return undefined
   }
 }

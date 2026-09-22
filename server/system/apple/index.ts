@@ -75,7 +75,7 @@ const verifyAcrossEnvironments = async <T>(
       refusals.push(`${environment}: ${refusalOf(error)}`)
     }
   }
-  logger.warn(`Apple signed data verified by no environment (${refusals.join(', ')})`)
+  logger.warn('Apple signed data verified by no environment', { refusals })
   return 'invalid-signature'
 }
 

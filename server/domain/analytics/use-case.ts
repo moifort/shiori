@@ -34,7 +34,7 @@ export namespace AnalyticsUseCase {
     try {
       await AnalyticsCommand.refresh(userId)
     } catch (error) {
-      logger.warn(`refresh failed for ${userId}, left stale: ${error}`)
+      logger.warn('dashboard refresh failed, left stale', { error, userId })
     }
   }
 }

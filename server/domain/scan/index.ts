@@ -110,7 +110,7 @@ export namespace Scan {
     // Best-effort cache: a failed write only costs a re-scan on the next hit.
     repository
       .save({ imageHash, language, result, cachedAt: new Date() })
-      .catch((error) => logger.warn(`cache write failed: ${error}`))
+      .catch((error) => logger.warn('scan cache write failed', { error }))
 
     const catalogue = await catalogueSeriesIfNeeded(result, language)
     return { result, cacheHit: false, usage: { vision, enrichment, catalogue } }
@@ -270,7 +270,7 @@ export namespace Scan {
       } satisfies Series)
       return { series, usage }
     } catch (error) {
-      logger.warn(`catalogue failed for "${name}": ${error}`)
+      logger.error('series catalogue generation failed', { error, series: name })
       return {}
     }
   }
@@ -285,8 +285,10 @@ export namespace Scan {
         number: optional(raw.number, VolumeNumber),
         publishedIn: optional(raw.publishedIn, Year),
       }
-    } catch {
-      // One malformed volume drops out rather than losing the whole catalogue.
+    } catch (error) {
+      // One malformed volume drops out rather than losing the whole catalogue,
+      // and the model output that produced it is reported.
+      logger.warn('malformed catalogue volume dropped', { error, volume: raw })
       return undefined
     }
   }

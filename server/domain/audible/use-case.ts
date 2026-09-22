@@ -83,7 +83,7 @@ export namespace AudibleUseCase {
     try {
       await AnalyticsCommand.refresh(userId)
     } catch (error) {
-      logger.warn(`dashboard rebuild failed after import for ${userId}, left stale: ${error}`)
+      logger.warn('dashboard rebuild failed after import, left stale', { error, userId })
     }
     return imported
   }
@@ -163,7 +163,7 @@ export namespace AudibleUseCase {
       try {
         await AnalyticsCommand.refresh(userId)
       } catch (error) {
-        logger.warn(`dashboard rebuild failed after sync for ${userId}, left stale: ${error}`)
+        logger.warn('dashboard rebuild failed after sync, left stale', { error, userId })
       }
     }
     return {
@@ -195,7 +195,10 @@ export namespace AudibleUseCase {
     for (const [index, userId] of readers.entries()) {
       if (Date.now() - startedAt > budgetMs) {
         const deferred = readers.length - index
-        logger.warn(`sync budget spent after ${index} readers, ${deferred} left for tomorrow`)
+        logger.warn('nightly sync budget spent, readers left for tomorrow', {
+          synced: index,
+          deferred,
+        })
         return { synced, failed, deferred }
       }
       try {
@@ -203,7 +206,7 @@ export namespace AudibleUseCase {
         if (typeof outcome === 'object') synced += 1
       } catch (error) {
         failed += 1
-        logger.warn(`nightly Audible sync failed for ${userId}: ${error}`)
+        logger.warn('nightly Audible sync failed', { error, userId })
       }
     }
     return { synced, failed, deferred: 0 }
@@ -233,7 +236,7 @@ const fetchLibrary = async (userId: UserId) => {
   // the app then offers to connect again, which is the one thing that works.
   const credentials = opened(account.credentials)
   if (!credentials) {
-    logger.warn(`unreadable Audible credentials for ${userId}, connection dropped`)
+    logger.warn('unreadable Audible credentials, connection dropped', { userId })
     await AudibleCommand.disconnect(userId)
     return 'not-connected' as const
   }

@@ -68,7 +68,7 @@ export namespace AdminCommand {
       if (!sales) return last
       return { month, proceedsEur: Eur(sales.proceedsEur), grossEur: Eur(sales.grossEur) }
     } catch (error) {
-      logger.error('App Store revenue refresh failed, keeping the last figure', error)
+      logger.error('App Store revenue refresh failed, keeping the last figure', { error })
       return last
     }
   }
@@ -79,7 +79,7 @@ export namespace AdminCommand {
       if (cost === undefined) return last
       return { month, gcpCostEur: Eur(cost) }
     } catch (error) {
-      logger.error('GCP billing refresh failed, keeping the last figure', error)
+      logger.error('GCP billing refresh failed, keeping the last figure', { error })
       return last
     }
   }

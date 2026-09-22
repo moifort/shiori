@@ -43,7 +43,7 @@ export namespace GcpBilling {
       },
     )
     if (!response.ok) {
-      logger.error(`BigQuery query answered ${response.status}`)
+      logger.error('BigQuery query failed', { status: response.status })
       throw new Error(`BigQuery billing query answered ${response.status}`)
     }
     const result = (await response.json()) as {

@@ -73,7 +73,7 @@ export namespace AppStoreConnect {
     })
     if (response.status === 404) return undefined
     if (!response.ok) {
-      logger.error(`salesReports ${day} answered ${response.status}`)
+      logger.error('salesReports request failed', { day, status: response.status })
       throw new Error(`App Store Connect salesReports answered ${response.status}`)
     }
     return gunzipSync(Buffer.from(await response.arrayBuffer())).toString('utf8')

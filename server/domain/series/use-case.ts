@@ -137,7 +137,7 @@ export namespace SeriesUseCase {
     // logged rather than turned into an error the reader has to read.
     if (usage)
       await AdminCommand.recordCatalogueUsage(usage).catch((error) =>
-        logger.warn(`AI usage not recorded: ${error}`),
+        logger.warn('AI usage not recorded', { error }),
       )
     // The dashboard measures a saga against its catalogue, and this saga had
     // none until now: rebuilt here, or the progress bar would wait for the next

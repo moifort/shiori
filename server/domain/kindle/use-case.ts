@@ -66,7 +66,7 @@ export namespace KindleUseCase {
     try {
       await AnalyticsCommand.refresh(userId)
     } catch (error) {
-      logger.warn(`dashboard rebuild failed after import for ${userId}, left stale: ${error}`)
+      logger.warn('dashboard rebuild failed after import, left stale', { error, userId })
     }
     return imported
   }

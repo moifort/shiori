@@ -52,7 +52,7 @@ export const pageTitleOf = async (url: string): Promise<string | undefined> => {
     const head = (await response.text()).slice(0, MAX_BYTES)
     return cleanedTitleOf(head)
   } catch (error) {
-    logger.warn(`page title lookup failed for ${parsed.host}: ${error}`)
+    logger.warn('page title lookup failed', { error, host: parsed.host })
     return undefined
   }
 }

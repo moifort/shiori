@@ -48,10 +48,12 @@ builder.mutationField('scanLink', (t) =>
         const { result, usage } = await Scan.lookUpTitle(BookTitle(title), language)
         await QuotaCommand.record(userId, plan)
         await AdminCommand.recordAiUsage({ cacheHit: false, usage }).catch((error) =>
-          logger.warn(`AI usage not recorded: ${error}`),
+          logger.warn('AI usage not recorded', { error }),
         )
         return result
       } catch (error) {
+        // The reader is told the scan failed; we are told why.
+        logger.error('shared link lookup failed', { error, userId })
         const message = error instanceof Error ? error.message : 'Lookup failed'
         return domainError('SCAN_FAILED', message)
       }
@@ -90,10 +92,12 @@ builder.mutationField('scanTitle', (t) =>
         const { result, usage } = await Scan.lookUpTitle(title, language)
         await QuotaCommand.record(userId, plan)
         await AdminCommand.recordAiUsage({ cacheHit: false, usage }).catch((error) =>
-          logger.warn(`AI usage not recorded: ${error}`),
+          logger.warn('AI usage not recorded', { error }),
         )
         return result
       } catch (error) {
+        // The reader is told the scan failed; we are told why.
+        logger.error('title lookup failed', { error, userId })
         const message = error instanceof Error ? error.message : 'Lookup failed'
         return domainError('SCAN_FAILED', message)
       }
@@ -152,10 +156,12 @@ builder.mutationField('scanBook', (t) =>
         // already succeeded, so a failed counter write is logged and swallowed
         // rather than turned into an error the reader has to read.
         await AdminCommand.recordAiUsage({ cacheHit, usage }).catch((error) =>
-          logger.warn(`AI usage not recorded: ${error}`),
+          logger.warn('AI usage not recorded', { error }),
         )
         return result
       } catch (error) {
+        // The reader is told the scan failed; we are told why.
+        logger.error('cover scan failed', { error, userId })
         const message = error instanceof Error ? error.message : 'Scan failed'
         return domainError('SCAN_FAILED', message)
       }
