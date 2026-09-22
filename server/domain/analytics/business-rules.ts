@@ -12,7 +12,7 @@ import type {
   Trend,
   YearCount,
 } from '~/domain/analytics/types'
-import { readVolumeNumbersOf } from '~/domain/book/business-rules'
+import { readVolumeNumbersOf, shelvedOf } from '~/domain/book/business-rules'
 import type { Book, Genre } from '~/domain/book/types'
 import { publishedVolumes, stateOf } from '~/domain/series/business-rules'
 import type { Series } from '~/domain/series/types'
@@ -32,7 +32,7 @@ const TOP_GENRES = 4
 /** Bumped whenever the view gains a figure or a rule changes, so a view stored
  *  by an older bundle is rebuilt on its next read instead of answering with a
  *  field it never computed. */
-export const VIEW_VERSION = 2
+export const VIEW_VERSION = 3
 
 // MARK: - Calendar
 
@@ -101,13 +101,9 @@ export const analyticsViewOf = (input: {
     }
   })
 
-  const reading = books
-    .filter((book) => book.status === 'reading')
-    .sort(
-      (left, right) =>
-        (right.startedAt ?? right.addedAt).getTime() - (left.startedAt ?? left.addedAt).getTime(),
-    )
-    .map(cardOf)
+  // Shelved as the Library tab shelves them, so the first cover of the
+  // dashboard is the first row of the library.
+  const reading = shelvedOf(books.filter((book) => book.status === 'reading')).map(cardOf)
 
   const toRead = books
     .filter((book) => book.status === 'to-read')

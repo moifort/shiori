@@ -7,6 +7,9 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 - Une saga possédée en deux langues s’ouvre sur l’édition touchée : la ligne française de
   l’onglet Séries, ou un tome français, affichait les couvertures anglaises quand les deux
   éditions étaient dans la bibliothèque, le catalogue étant partagé entre elles.
+- L’étagère « En cours » de l’accueil suit l’ordre de l’onglet Bibliothèque : un livre repris
+  qui gardait une ancienne date de fin, ou deux livres commencés le même jour, ne se
+  plaçaient pas au même endroit sur les deux écrans.
 - Un import Audible distingue un titre en cours d’écoute d’un titre jamais ouvert d’après
   l’endroit où le lecteur s’est arrêté, et non d’après le pourcentage de la bibliothèque,
   qui affiche 0 sur un titre entamé depuis des heures. Un titre arrêté après plus de cinq

@@ -371,6 +371,28 @@ describe('building the view', () => {
     expect(view.version).toBe(VIEW_VERSION)
   })
 
+  // The dashboard shelf and the Library tab must agree on where a book sits:
+  // the first cover on the dashboard is the first row of the library.
+  test('shelves the books in progress as the library does', () => {
+    const view = analyticsViewOf({
+      userId: reader,
+      timeZone: paris,
+      now: new Date('2026-09-15T10:00:00.000Z'),
+      catalogues: [],
+      books: [
+        book('beta', { status: 'reading', startedAt: new Date('2026-08-01') }),
+        book('alpha', { status: 'reading', startedAt: new Date('2026-08-01') }),
+        book('reread', {
+          status: 'reading',
+          startedAt: new Date('2026-07-01'),
+          finishedAt: new Date('2026-09-01'),
+        }),
+      ],
+    })
+
+    expect(view.reading.map(({ id }) => String(id))).toEqual(['reread', 'alpha', 'beta'])
+  })
+
   // A saga is hearted once whatever the number of its volumes on the shelf, so
   // its heart is counted beside the books' rather than through them.
   test('counts the hearted books and sagas, and the recordings', () => {

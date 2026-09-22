@@ -87,7 +87,7 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       off `owned`, which arrives with the last call — so the genre and subgenres pop in a
       moment later. Run the three calls concurrently (`async let`) and assign them together,
       or keep the loader up until all three have settled.
-- [ ] **Dashboard, the "En cours" shelf in the Library tab's order.** The shelf sorts its
+- [x] **Dashboard, the "En cours" shelf in the Library tab's order.** The shelf sorts its
       books by start date, else date added, with no tie-break (`reading` in the analytics
       business rules), while the Library tab orders on `shelfDateOf` — finished, else started,
       else added — and breaks ties on the title (`shelvedOf`). A book back in progress with
