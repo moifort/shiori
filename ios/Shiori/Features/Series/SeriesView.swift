@@ -247,12 +247,16 @@ struct SeriesView: View {
                                 .font(.caption)
                                 .foregroundStyle(.tertiary)
                         }
-                        if !isFollowed {
-                            SeriesStateLabel(state: .unfollowed)
-                                .padding(.top, 2)
-                        }
                     }
                     Spacer(minLength: 0)
+                }
+                // In the corner, as on the Series tab row: the crossed-out
+                // bell says the saga is set aside.
+                .overlay(alignment: .topTrailing) {
+                    if !isFollowed {
+                        SeriesStateLabel(state: .unfollowed)
+                            .accessibilityIdentifier("series-unfollowed")
+                    }
                 }
                 if let description = series.description {
                     Text(description)

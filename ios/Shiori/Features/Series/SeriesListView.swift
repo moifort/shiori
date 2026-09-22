@@ -293,6 +293,18 @@ struct SeriesStateLabel: View {
     }
 
     var body: some View {
+        // A saga set aside says so by the crossed-out bell alone: the word
+        // shouted a choice the reader already made.
+        if state == .unfollowed {
+            Image(systemName: state.symbol)
+                .foregroundStyle(.secondary)
+                .accessibilityLabel(Text(state.label))
+        } else {
+            label
+        }
+    }
+
+    private var label: some View {
         Text(state.label)
             .font(.caption2.weight(.semibold))
             .foregroundStyle(tint)

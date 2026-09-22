@@ -33,7 +33,7 @@ enum ReadingStatus: String, Codable, CaseIterable, Identifiable, Sendable {
         case .toRead: "bookmark.fill"
         case .reading: "book.fill"
         case .read: "checkmark"
-        case .dropped: "xmark"
+        case .dropped: "hand.thumbsdown.fill"
         }
     }
 }
