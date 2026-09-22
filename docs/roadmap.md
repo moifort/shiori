@@ -9,11 +9,11 @@ are recorded here so their constraints are not forgotten while the foundation is
 |---|---|---|
 | 1 | Cover scan, enriched record, library, three reading statuses, five-star rating, note | **specified** |
 | 2 | Series: shared catalogue, library grouping, series screen, related works | **specified** |
-| 3 | Sharing a library with other people, `hidden` books excluded | planned |
-| 4 | Release alerts for forthcoming volumes | planned |
+| 3 | Sharing a library with other people, `hidden` books excluded | **built** |
+| 4 | Release alerts: forthcoming volumes, loved authors, French translations, Audible | planned |
 | 5 | Audible import | **built** |
 | 6 | Kindle import | planned |
-| 7 | AI reading suggestions | planned |
+| 7 | The Découvrir tab: friends, awards, public ratings, AI suggestions | planned |
 
 ## Batch 3 — Sharing
 
@@ -31,6 +31,12 @@ quality — publication dates are unreliable outside Google Books and Open Libra
 
 It depends on batch 2: a forthcoming volume is already an identified row in the series
 catalogue, which is what an alert attaches to.
+
+Four alerts, each switched on by the reader: a volume of a followed series, a new book from a
+loved author, a new Audible release in a followed series, and, for a book read in English,
+its French translation in print or on Audible. The forthcoming releases are also listed in
+the Découvrir tab of batch 7, so the date lookup serves both. Broken down in
+[tasks.md](tasks.md).
 
 ## Batch 5 — Audible import
 
@@ -78,8 +84,14 @@ Kindle.
 
 ## Batch 7 — AI reading suggestions
 
-Suggestions drawn from followed series and highly rated books. Depends on accumulated signal,
-so it comes last. Batch 2 already delivers the zero-cost half of it: the recommendations
+Grown into a tab of its own, Découvrir, meant to be what sets Shiori apart: it pushes the
+reader to discover and to read more. A feed of shelves, each suggestion with its reason —
+the friends' favourites, new Audible releases, what is coming out, award winners and the
+books readers worldwide rate highest in the reader's genres, "because you loved X", and
+genres the reader has never tried reached through one they love. Shipped in three waves,
+the free signals first and the AI shelves last, since those depend on accumulated signal;
+the waves are in [tasks.md](tasks.md). Computed weekly, with the shared parts (award lists,
+public ratings) keyed like the series catalogue so they are paid for once. Batch 2 already delivers the zero-cost half of it: the recommendations
 section on a book screen, listing the other volumes of its series.
 
 ## Deferred on purpose

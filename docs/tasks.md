@@ -281,6 +281,41 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       Built: the Series tab and the book screen open the saga in their own edition; the
       dashboard's series card knows no edition and keeps showing every one.
 
+- [ ] **Tab bar: Accueil, Bibliothèque, Découvrir, Partagé, then the scan button.** The
+      Series tab goes, folded into the Library tab below. Découvrir and Partagé are new tabs,
+      specified in the tasks that follow. Every place that switches to the Series tab today
+      (the dashboard's series card, `SeriesRequest`) opens the Library tab on its series view
+      instead.
+- [ ] **Library tab hosts books and series, switched by a floating capsule.** A "Livres |
+      Séries" segmented control drawn as a centred Liquid Glass capsule just above the tab
+      bar, through `safeAreaInset(edge: .bottom)` on the Library tab itself, so it exists in
+      that tab only; the list scrolls beneath it. The two lists keep their own toolbars
+      (everything or the favourites, the status filters) and their own `SnapshotCache`, and
+      the chosen segment survives a relaunch.
+      Decided against `tabViewBottomAccessory`, the native bar above the tab bar: it is
+      app-wide by design, hiding it per tab needs `isEnabled:` and so iOS 26.1 while the app
+      targets 26.0, and Apple's forums report an empty container once hidden and crashes
+      when it is rendered conditionally under `TabView(selection:)`, which is this app's
+      case. The trade-off is that the capsule does not collapse into the tab bar on scroll.
+- [ ] **Partagé tab: the friends list, out of Settings.** `FriendsView` becomes a root tab
+      and leaves `SettingsHomeView`. Each row shows the friend's name, three counts — their
+      favourites, their books in progress, their pile — and the title they are reading.
+      Invite and accept an invitation move into the toolbar, with the same sheets. The
+      counts come from each friend's `analytics/{userId}` document, one read per friend,
+      never from their books: add a read-budget test. The empty state invites to invite.
+- [ ] **A friend's book opens a read-only page, with "Ajouter à ma pile".** `FriendProfileView`
+      is read-only by decision and stays so: tapping one of their books opens a page with no
+      control that writes (no status, rating, note or menu), showing the cover, the
+      summary, the series and their heart, never their reading note. It offers "Ajouter à ma
+      pile à lire" and "Je l'ai déjà lu", and the friend's profile gets the same quick
+      "+ Pile" on every row. A book the reader already owns carries a "Chez vous" badge
+      instead, matched on title plus first author with the shelf key the Audible import uses.
+      A new mutation takes the friend's book id only: the server checks the friendship and
+      the `hidden` flag, re-reads the book and copies its catalogue fields, as the imports
+      never trust the client. The copy is filed with the recommendation of
+      [53bf9e1](https://github.com/moifort/shiori/commit/53bf9e1) pre-filled as "Conseillé
+      par <friend>", editable afterwards.
+
 ## Large
 
 - [x] **Subgenres and tags in the app's language, the scan's included.** A subgenre is free
@@ -368,3 +403,40 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       - The volume list drawn with the rows and style of the library list, each row opening
         the reader's own book.
       - Delete a series, with an alert that says every book of the series is deleted with it.
+
+- [ ] **Push notifications, the foundation.** Shiori has none yet, and Vinarium has none to
+      transpose (see [roadmap.md](roadmap.md#batch-4--release-alerts)). APNs from the
+      server, the device token registered on sign-in and dropped on sign-out and account
+      deletion, the permission asked the first time the reader turns an alert on rather than
+      at launch, and a "Notifications" screen in Settings with one switch per alert type:
+      a volume of a followed series, the French translation of a book read in English, a new
+      Audible release in a followed series, a new book from a loved author. Every alert
+      below depends on this.
+- [ ] **Découvrir tab, first wave: the signals that cost nothing.** A new root tab, a feed of
+      horizontal shelves in the dashboard's style, filtered by chips (Pour vous, À paraître,
+      Primés, Hors piste, Amis). Every suggestion says why in one line. This wave ships the
+      two shelves drawn from data already held: **"Les coups de cœur de vos amis"** — the
+      friends' hearted books the reader does not own, with who hearted them — and
+      **"Nouveau sur Audible"** — a new audiobook in a saga the reader follows, read from the
+      Audible catalogue through the connection batch 5 built. Tapping a suggestion opens the
+      read-only page of the Partagé task, with "Ajouter à ma pile", "Déjà lu" and "Pas pour
+      moi"; a dismissed suggestion never comes back.
+- [ ] **Découvrir, second wave: what is coming out, and the alerts.** A "Bientôt dans vos
+      séries" list, dated, with a bell per row: the next volumes of followed sagas, the next
+      book of an author the reader hearted or rated five stars, and **for a book read in
+      English, its French translation** — printed and Audible alike, since the reader may
+      follow either. Needs a scheduled job polling for publication dates, attached to the
+      shared series catalogue so the lookup is paid once for every reader, and a real answer
+      to the date quality problem the roadmap records. Each release fires the matching alert
+      of the notifications task.
+- [ ] **Découvrir, third wave: the AI shelves.** The shelves that make the tab: **"Parce que
+      vous avez aimé X"** from the reader's hearts and five-star books; **"Primés dans vos
+      genres"** — Hugo, Nebula, Locus, Grand Prix de l'Imaginaire and the like — with the
+      award as a pill on the cover; **"Plébiscités"**, what readers worldwide rate highest in
+      the reader's genres, with the public rating and review count; and **"Hors piste"**, a
+      genre the reader has never touched reached through one they love, with the bridge
+      written out (Cradle and progression fantasy lead to LitRPG and Dungeon Crawler Carl),
+      one of them as the hero card of the week. Computed per reader once a week, never on
+      opening the tab; the award lists and the public ratings are shared documents keyed like
+      the series catalogue, so the grounded call behind them is paid once. "Pas pour moi"
+      and "Déjà lu" feed the next computation.
