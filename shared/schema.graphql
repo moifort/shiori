@@ -1176,7 +1176,7 @@ type Mutation {
   setBookRecommendation(id: BookId!, recommendation: RecommendationInput): Book!
 
   """
-  Move a book along the pile. The reading dates follow from the move and are never typed: going back to TO_READ clears them.
+  Move a book along the pile. The reading dates are stamped by the move, and only corrected afterwards through updateBook: going back to TO_READ clears them.
   """
   setReadingStatus(id: BookId!, status: ReadingStatus!): Book!
 
@@ -1597,7 +1597,7 @@ scalar ReadingNote
 """
 Where a book stands for its reader.
 
-`TO_READ` is where every book lands when catalogued, `READING` is where it spends most of its life, `READ` is the end, `DROPPED` the end of a book not finished. Moving between them stamps the reading dates: those follow from the move and are never typed by the reader.
+`TO_READ` is where every book lands when catalogued, `READING` is where it spends most of its life, `READ` is the end, `DROPPED` the end of a book not finished. Moving between them stamps the reading dates, which the reader may then correct through updateBook.
 """
 enum ReadingStatus {
   """

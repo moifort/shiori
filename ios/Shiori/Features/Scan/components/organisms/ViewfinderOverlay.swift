@@ -3,8 +3,10 @@ import SwiftUI
 struct ViewfinderOverlay: View {
     var body: some View {
         GeometryReader { geo in
-            let width = geo.size.width * 0.8
-            let height = geo.size.height * 0.45
+            // Shaped like a cover (2:3) and as large as the screen allows, while
+            // leaving the shutter below it uncovered.
+            let width = geo.size.width * 0.88
+            let height = min(width * 1.5, geo.size.height * 0.64)
             let x = (geo.size.width - width) / 2
             let y = (geo.size.height - height) / 2
 

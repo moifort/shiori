@@ -145,8 +145,8 @@ builder.mutationFields((t) => ({
   setReadingStatus: t.field({
     type: BookType,
     description:
-      'Move a book along the pile. The reading dates follow from the move and are ' +
-      'never typed: going back to TO_READ clears them.',
+      'Move a book along the pile. The reading dates are stamped by the move, and ' +
+      'only corrected afterwards through updateBook: going back to TO_READ clears them.',
     args: {
       id: t.arg({ type: 'BookId', required: true }),
       status: t.arg({ type: ReadingStatusEnum, required: true }),
