@@ -4,7 +4,7 @@ import type { SeriesId } from '~/domain/series/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
-import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
+import { deleteInBatches, genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 
 // One flat collection for every reader, never a subcollection: a book carries its
 // owner in `userId`, and a library is an equality query on that field, which the
@@ -55,10 +55,10 @@ export const remove = async (userId: UserId, bookId: BookId, batch?: WriteBatch)
   evictFromRequestCache(allCacheKey(userId))
 }
 
+// In batches of a few hundred: a library imported from Audible easily runs past
+// the 500 writes one batch accepts.
 export const removeAllByUser = async (userId: UserId): Promise<void> => {
   const snapshot = await ownedBy(userId).get()
-  const batch = db().batch()
-  for (const doc of snapshot.docs) batch.delete(doc.ref)
-  await batch.commit()
+  await deleteInBatches(snapshot.docs.map((doc) => doc.ref))
   evictFromRequestCache(allCacheKey(userId))
 }

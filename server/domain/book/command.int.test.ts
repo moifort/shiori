@@ -411,4 +411,12 @@ describe('deleting', () => {
 
     expect(await BookQuery.all(reader)).toHaveLength(0)
   })
+
+  test('wipes a library larger than one batch can carry', async () => {
+    for (let index = 0; index < 650; index++) await add(`Tome ${index}`)
+
+    await BookCommand.deleteAllForUser(reader)
+
+    expect(await BookQuery.all(reader)).toHaveLength(0)
+  })
 })

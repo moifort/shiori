@@ -3,7 +3,7 @@ import type { Friendship, Invitation, InvitationCode } from '~/domain/friendship
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
-import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
+import { deleteInBatches, genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 
 // Flat, like every other collection. The code IS the document id: an invitation
 // is looked up by the only thing the person holding it knows.
@@ -72,10 +72,10 @@ export const removeAllForUser = async (userId: UserId): Promise<void> => {
     findAllByUser(userId),
     invitations().where('userId', '==', userId).get(),
   ])
-  const batch = db().batch()
-  for (const friendship of mine) batch.delete(friendships().doc(friendship.id))
-  for (const doc of invited.docs) batch.delete(doc.ref)
-  await batch.commit()
+  await deleteInBatches([
+    ...mine.map((friendship) => friendships().doc(friendship.id)),
+    ...invited.docs.map((doc) => doc.ref),
+  ])
   for (const friendship of mine) {
     for (const member of friendship.userIds) evictFromRequestCache(friendsCacheKey(member))
   }

@@ -277,6 +277,9 @@ export const createFakeFirestore = () => {
       },
       commit: async () => {
         if (commitError) throw commitError
+        // Firestore refuses a batch of more than 500 writes outright.
+        if (ops.length > 500)
+          throw new Error(`INVALID_ARGUMENT: ${ops.length} writes in one batch, 500 at most`)
         for (const op of ops) {
           if (op.type === 'set') docsOf(op.ref.collectionPath).set(op.ref.id, op.data)
           else if (op.type === 'merge') {

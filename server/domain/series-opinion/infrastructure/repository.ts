@@ -4,7 +4,7 @@ import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
-import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
+import { deleteInBatches, genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 
 // Flat, like every other collection, and keyed by the pair rather than given a
 // random id: one reader holds exactly one opinion of one saga, so the pair IS
@@ -53,8 +53,6 @@ export const remove = async (
 
 export const removeAllByUser = async (userId: UserId): Promise<void> => {
   const snapshot = await opinions().where('userId', '==', userId).get()
-  const batch = db().batch()
-  for (const doc of snapshot.docs) batch.delete(doc.ref)
-  await batch.commit()
+  await deleteInBatches(snapshot.docs.map((doc) => doc.ref))
   evictFromRequestCache(allCacheKey(userId))
 }

@@ -122,3 +122,14 @@ describe('what a reader makes of a saga', () => {
     expect(fake.docReads).toBe(0)
   })
 })
+
+describe('deleting an account', () => {
+  test('forgets more opinions than one batch can carry', async () => {
+    for (let index = 0; index < 520; index++)
+      await SeriesOpinionCommand.rate(reader, SeriesId(`saga-${index}`), StarRating(3))
+
+    await SeriesOpinionCommand.deleteAllForUser(reader)
+
+    expect(await SeriesOpinionQuery.all(reader)).toHaveLength(0)
+  })
+})
