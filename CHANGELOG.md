@@ -10,6 +10,9 @@ the release tag is pushed.
 
 ## Unreleased
 
+- Favourites now open on what is new: the series and books hearted in the last thirty days,
+  on your list and on your friends' shelves alike, and the rest follows the most recently
+  hearted first. A series among your favourites opens on its page.
 - The library no longer lists abandoned books by default; the "Abandoned" filter still shows them.
 - Switching between views of the library or the series no longer shows a spinner above the list.
 - A new Discover tab proposes what to read next, each book with the reason it was picked

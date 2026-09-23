@@ -17,6 +17,22 @@ export const lastActivityOf = (
     ),
   )
 
+/** The favourites newest first: the most recently hearted leads, so a friend
+ *  who comes back finds what is new at the top rather than the same list. A
+ *  heart given before its date was kept ranks on the book's last activity,
+ *  which is always older than any dated heart. */
+export const newestFavoritesFirst = <
+  Favorite extends Pick<
+    Book,
+    'favoritedAt' | 'addedAt' | 'updatedAt' | 'statusChangedAt' | 'startedAt'
+  >,
+>(
+  favorites: readonly Favorite[],
+): Favorite[] => {
+  const heartedAt = (book: Favorite) => (book.favoritedAt ?? lastActivityOf(book)).getTime()
+  return [...favorites].sort((left, right) => heartedAt(right) - heartedAt(left))
+}
+
 /** The hearted books that are not already shown through a hearted saga.
  *
  *  A favourite saga stands for its volumes: listing one of them again among the

@@ -337,6 +337,7 @@ export namespace BookCommand {
         ...book,
         rating,
         favorite: favoriteAfterRating(book.favorite, rating),
+        favoritedAt: favoriteAfterRating(book.favorite, rating) ? book.favoritedAt : undefined,
         status,
         ...datesAfterStatusChange(book, status, now),
         ...statusStampAfterChange(book, status, now),
@@ -358,7 +359,7 @@ export namespace BookCommand {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
     return repository.save(
-      { ...book, rating: undefined, favorite: undefined, updatedAt: now },
+      { ...book, rating: undefined, favorite: undefined, favoritedAt: undefined, updatedAt: now },
       batch,
     )
   }
@@ -409,7 +410,13 @@ export namespace BookCommand {
     if (!book) return 'not-found'
     if (!favorite)
       return repository.save(
-        { ...book, favorite: undefined, rating: undefined, updatedAt: now },
+        {
+          ...book,
+          favorite: undefined,
+          favoritedAt: undefined,
+          rating: undefined,
+          updatedAt: now,
+        },
         batch,
       )
     const status = statusAfterRating(book.status)
@@ -417,6 +424,8 @@ export namespace BookCommand {
       {
         ...book,
         favorite: true,
+        // Hearting it again is not news: the date stays that of the first heart.
+        favoritedAt: book.favorite === true ? book.favoritedAt : now,
         rating: HEART_RATING,
         status,
         ...datesAfterStatusChange(book, status, now),

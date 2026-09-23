@@ -21,6 +21,10 @@ export type SeriesOpinion = {
   seriesId: SeriesId
   rating?: StarRating
   favorite?: boolean
+  /** When the heart was given, for a friend to see what is new among the
+   *  favourites. Present only beside `favorite`, and absent on hearts given
+   *  before the field existed. */
+  favoritedAt?: Date
   /** How many volumes the saga has, by the reader's own count, for a saga
    *  nobody has catalogued: what their screen draws the missing volumes from
    *  until the model describes it. Theirs alone — the shared catalogue is a

@@ -43,6 +43,14 @@ export const FriendBookType = builder.objectRef<FriendBook>('FriendBook').implem
       resolve: (book) => book.rating ?? null,
     }),
     favorite: t.boolean({ resolve: (book) => book.favorite ?? false }),
+    favoritedAt: t.field({
+      type: 'DateTime',
+      nullable: true,
+      description:
+        'When its owner hearted it: what is new among their favourites. Null ' +
+        'on a book not hearted, and on a heart given before the date was kept.',
+      resolve: (book) => book.favoritedAt ?? null,
+    }),
     inLibrary: t.boolean({
       description:
         'The reader already owns this story — same title and first author, ' +
@@ -89,6 +97,11 @@ export const FriendSagaType = builder.objectRef<FriendSaga>('FriendSaga').implem
     id: t.exposeString('id', {
       description: 'The saga and the language together: two shelves of one saga are two rows.',
     }),
+    seriesId: t.field({
+      type: 'SeriesId',
+      description: 'The saga alone, whatever the language: what its page is opened on.',
+      resolve: (saga) => saga.seriesId,
+    }),
     name: t.field({ type: 'SeriesName', resolve: (saga) => saga.name }),
     author: t.field({
       type: 'AuthorName',
@@ -110,6 +123,14 @@ export const FriendSagaType = builder.objectRef<FriendSaga>('FriendSaga').implem
         'Hearted by its owner. Its hearted volumes are then left out of the ' +
         'favourite books, which the saga already stands for.',
       resolve: (saga) => saga.favorite,
+    }),
+    favoritedAt: t.field({
+      type: 'DateTime',
+      nullable: true,
+      description:
+        'When its owner hearted it. Null on a saga not hearted, and on a heart ' +
+        'given before the date was kept.',
+      resolve: (saga) => saga.favoritedAt ?? null,
     }),
     genre: t.field({
       type: GenreEnum,
@@ -190,8 +211,8 @@ export const FriendProfileType = builder.objectRef<FriendProfile>('FriendProfile
     favorites: t.field({
       type: [FriendBookType],
       description:
-        'The books they keep close, less the volumes of a saga they hearted: ' +
-        'that saga, among `sagas`, stands for them.',
+        'The books they keep close, most recently hearted first, less the ' +
+        'volumes of a saga they hearted: that saga, among `sagas`, stands for them.',
       resolve: (profile) => profile.favorites,
     }),
     sagas: t.field({

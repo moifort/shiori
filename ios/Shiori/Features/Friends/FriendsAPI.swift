@@ -31,6 +31,9 @@ struct FriendBook: Identifiable, Hashable, Sendable {
     var id: String { book.id }
     var book: Book
     var inLibrary: Bool
+    /// When its owner hearted it. Nil on a book not hearted, and on a heart
+    /// given before the date was kept.
+    var favoritedAt: Date?
 }
 
 /// Where a book taken from somebody else's shelf lands on the reader's own.
@@ -50,6 +53,8 @@ enum CopiedStatus: Sendable {
 /// and never how many the saga has.
 struct FriendSaga: Identifiable, Sendable {
     let id: String
+    /// The saga alone, whatever the language: what its page opens on.
+    let seriesId: String
     let name: String
     let author: String?
     let language: BookLanguage?
@@ -57,6 +62,9 @@ struct FriendSaga: Identifiable, Sendable {
     /// Hearted by its owner. It then stands for its volumes among the
     /// favourites, which do not list them again one by one.
     let favorite: Bool
+    /// When its owner hearted it. Nil on a saga not hearted, and on a heart
+    /// given before the date was kept.
+    var favoritedAt: Date?
     let genre: BookGenre?
     let subgenre: String?
     /// Its volumes on the shelf, in reading order. Only a hearted saga carries
@@ -75,7 +83,30 @@ struct FriendProfile: Sendable {
     var favorites: [FriendBook]
     let sagas: [FriendSaga]
 
-    var favoriteSagas: [FriendSaga] { sagas.filter(\.favorite) }
+    /// The hearted sagas, the most recently hearted first; those hearted
+    /// before the date was kept follow in alphabetical order.
+    var favoriteSagas: [FriendSaga] {
+        let hearted = sagas.filter(\.favorite)
+        return hearted.filter { $0.favoritedAt != nil }
+            .sorted { ($0.favoritedAt ?? .distantPast) > ($1.favoritedAt ?? .distantPast) }
+            + hearted.filter { $0.favoritedAt == nil }
+    }
+
+    /// What is new among the favourites: the sagas and books hearted in the
+    /// last thirty days, newest first. What a friend coming back looks for,
+    /// rather than the same list as last time.
+    func recentFavorites(now: Date = .now) -> [RecentFavorite] {
+        let since = now.addingTimeInterval(-RecentFavorite.window)
+        let sagas = favoriteSagas.compactMap { saga in
+            saga.favoritedAt.map { RecentFavorite.saga(saga, at: $0) }
+        }
+        let books = favorites.compactMap { entry in
+            entry.favoritedAt.map { RecentFavorite.book(entry, at: $0) }
+        }
+        return (sagas + books)
+            .filter { $0.date >= since }
+            .sorted { $0.date > $1.date }
+    }
 
     var displayName: String {
         firstName ?? String(localized: "Un lecteur")
@@ -83,6 +114,28 @@ struct FriendProfile: Sendable {
 
     var isEmpty: Bool {
         reading.isEmpty && pile.isEmpty && favorites.isEmpty && sagas.isEmpty
+    }
+}
+
+/// A saga or a book hearted lately, with the day of the heart.
+enum RecentFavorite: Identifiable, Sendable {
+    case saga(FriendSaga, at: Date)
+    case book(FriendBook, at: Date)
+
+    /// How far back "lately" goes.
+    static let window: TimeInterval = 30 * 24 * 3600
+
+    var id: String {
+        switch self {
+        case let .saga(saga, _): "saga-\(saga.id)"
+        case let .book(entry, _): "book-\(entry.id)"
+        }
+    }
+
+    var date: Date {
+        switch self {
+        case let .saga(_, date), let .book(_, date): date
+        }
     }
 }
 
@@ -221,11 +274,13 @@ private extension FriendProfile {
             sagas: shelf.sagas.map {
                 FriendSaga(
                     id: $0.id,
+                    seriesId: $0.seriesId,
                     name: $0.name,
                     author: $0.author,
                     language: $0.language?.asDomain,
                     ownedCount: $0.ownedCount,
                     favorite: $0.favorite,
+                    favoritedAt: $0.favoritedAt.flatMap(GraphQLHelpers.parseISO8601),
                     genre: $0.genre?.asDomain,
                     subgenre: $0.subgenre,
                     volumes: $0.volumes.map { Book(row: $0.fragments.friendBookRow) }
@@ -237,7 +292,11 @@ private extension FriendProfile {
 
 private extension FriendBook {
     init(row: ShioriGraphQL.FriendBookRow) {
-        self.init(book: Book(row: row), inLibrary: row.inLibrary)
+        self.init(
+            book: Book(row: row),
+            inLibrary: row.inLibrary,
+            favoritedAt: row.favoritedAt.flatMap(GraphQLHelpers.parseISO8601)
+        )
     }
 }
 

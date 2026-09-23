@@ -311,6 +311,19 @@ describe('a heart is five stars', () => {
     expect(Number(loved.rating)).toBe(5)
     expect(loved.status).toBe('read')
     expect(loved.finishedAt).toEqual(NOW)
+    expect(loved.favoritedAt).toEqual(NOW)
+  })
+
+  // Hearting it again is not news for a friend.
+  test('hearting a book again keeps the date of the first heart', async () => {
+    const book = await add('Le Nom du vent')
+    await BookCommand.setFavorite(reader, book.id, true, NOW)
+
+    const later = new Date(NOW.getTime() + 86_400_000)
+    const again = await BookCommand.setFavorite(reader, book.id, true, later)
+
+    if (again === 'not-found') throw new Error('unreachable')
+    expect(again.favoritedAt).toEqual(NOW)
   })
 
   // Dropping a book is an ending the reader chose: a heart does not undo it.
@@ -332,6 +345,7 @@ describe('a heart is five stars', () => {
 
     if (unloved === 'not-found') throw new Error('unreachable')
     expect(unloved.favorite).toBeUndefined()
+    expect(unloved.favoritedAt).toBeUndefined()
     expect(unloved.rating).toBeUndefined()
     expect(unloved.status).toBe('read')
   })
@@ -346,6 +360,7 @@ describe('a heart is five stars', () => {
     if (rated === 'not-found') throw new Error('unreachable')
     expect(Number(rated.rating)).toBe(3)
     expect(rated.favorite).toBeUndefined()
+    expect(rated.favoritedAt).toBeUndefined()
   })
 
   test('removing the rating takes the heart back', async () => {

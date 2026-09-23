@@ -209,6 +209,10 @@ export type Book = {
   /** A book the reader keeps close. Always on five stars: the heart is the top
    *  of the scale, given with them and taken back with them. */
   favorite?: boolean
+  /** When the heart was given, for a friend to see what is new among the
+   *  favourites. Present only beside `favorite`, and absent on hearts given
+   *  before the field existed. */
+  favoritedAt?: Date
   note?: ReadingNote
   /** Who recommended the book, when the reader recorded it. Private like the
    *  note: a friend browsing the library never sees it. */

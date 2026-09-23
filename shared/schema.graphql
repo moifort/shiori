@@ -759,6 +759,11 @@ type FriendBook {
   coverUrl: String
   durationMinutes: Int
   favorite: Boolean!
+
+  """
+  When its owner hearted it: what is new among their favourites. Null on a book not hearted, and on a heart given before the date was kept.
+  """
+  favoritedAt: DateTime
   firstPublishedIn: Year
   format: BookFormat!
   genre: Genre
@@ -816,7 +821,7 @@ A book marked "do not share" is absent from every list here, and thirty of each 
 """
 type FriendProfile {
   """
-  The books they keep close, less the volumes of a saga they hearted: that saga, among `sagas`, stands for them.
+  The books they keep close, most recently hearted first, less the volumes of a saga they hearted: that saga, among `sagas`, stands for them.
   """
   favorites: [FriendBook!]!
   firstName: String
@@ -845,6 +850,11 @@ type FriendSaga {
   """
   favorite: Boolean!
 
+  """
+  When its owner hearted it. Null on a saga not hearted, and on a heart given before the date was kept.
+  """
+  favoritedAt: DateTime
+
   """The genre most of the volumes on their shelf carry."""
   genre: Genre
 
@@ -857,6 +867,9 @@ type FriendSaga {
 
   """How many volumes of the saga are on their shelf."""
   ownedCount: Count!
+
+  """The saga alone, whatever the language: what its page is opened on."""
+  seriesId: SeriesId!
 
   """The leading subgenre of a volume of that genre."""
   subgenre: Subgenre

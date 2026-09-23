@@ -2,10 +2,12 @@ import SwiftUI
 
 /// One list of the reader's own shelf, as a box of the Partagé tab opens it.
 ///
-/// The favourites list the hearted sagas first and then the hearted books a
-/// saga does not already stand for, and carry the share button: the whole list
-/// as text, for a mail, a message, or the clipboard. A row opens the book on
-/// its own page, where it can be changed like anywhere else in the library.
+/// The favourites open on what is new — the sagas and books hearted in the
+/// last thirty days — then list the hearted sagas and the hearted books a saga
+/// does not already stand for, each the most recently hearted first, and carry
+/// the share button: the whole list as text, for a mail, a message, or the
+/// clipboard. A book row opens the book on its own page, a saga row the saga's,
+/// where either can be changed like anywhere else in the library.
 struct MyShelfListView: View {
     let list: MyShelfList
     let shelf: FriendProfile
@@ -81,10 +83,34 @@ struct MyShelfListView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         } else {
+            let recent = shelf.recentFavorites()
+            if !recent.isEmpty {
+                Section("Récemment") {
+                    ForEach(recent) { favorite in
+                        switch favorite {
+                        case let .saga(saga, _):
+                            NavigationLink {
+                                SeriesView(seriesId: saga.seriesId, language: saga.language)
+                            } label: {
+                                RecentFavoriteRow(favorite: favorite)
+                            }
+                        case let .book(entry, _):
+                            RecentFavoriteRow(favorite: favorite)
+                                .contentShape(.rect)
+                                .onTapGesture { openBook = entry.book }
+                        }
+                    }
+                }
+            }
             if !shelf.favoriteSagas.isEmpty {
                 Section("Séries") {
                     ForEach(shelf.favoriteSagas) { saga in
-                        SagaRow(saga: saga, showsCovers: true)
+                        NavigationLink {
+                            SeriesView(seriesId: saga.seriesId, language: saga.language)
+                        } label: {
+                            SagaRow(saga: saga, showsCovers: true)
+                        }
+                        .accessibilityIdentifier("my-shelf-saga-row")
                     }
                 }
             }
@@ -203,6 +229,54 @@ struct SagaRow: View {
             }
         }
         .padding(.vertical, 2)
+    }
+}
+
+/// One favourite hearted lately: its cover, its title, what it is, and how
+/// long ago the heart was given.
+struct RecentFavoriteRow: View {
+    let favorite: RecentFavorite
+
+    var body: some View {
+        HStack(spacing: 12) {
+            BookCover(book: cover, width: 36, showsFormatBadge: false)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.subheadline.weight(.medium)).lineLimit(2)
+                Text(detail).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            }
+            Spacer(minLength: 8)
+            Text(favorite.date, format: .relative(presentation: .named))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize()
+        }
+        .padding(.vertical, 2)
+        .accessibilityIdentifier("recent-favorite-row")
+    }
+
+    private var cover: Book {
+        switch favorite {
+        case let .saga(saga, _): saga.coverBook
+        case let .book(entry, _): entry.book
+        }
+    }
+
+    private var title: String {
+        switch favorite {
+        case let .saga(saga, _): saga.name
+        case let .book(entry, _): entry.book.title
+        }
+    }
+
+    /// A saga says it is one — its name alone could be a book's — and a book
+    /// names its author.
+    private var detail: String {
+        switch favorite {
+        case let .saga(saga, _):
+            [String(localized: "Série"), saga.author].compactMap(\.self).joined(separator: " · ")
+        case let .book(entry, _):
+            entry.book.authorLine
+        }
     }
 }
 

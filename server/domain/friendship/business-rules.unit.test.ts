@@ -4,6 +4,7 @@ import {
   favoritesOutsideSagas,
   inReadingOrder,
   lastActivityOf,
+  newestFavoritesFirst,
   subgenreOf,
 } from '~/domain/friendship/business-rules'
 import { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
@@ -26,6 +27,30 @@ describe('lastActivityOf', () => {
 
   test('falls back to the day it was added on a record with no other stamp', () => {
     expect(lastActivityOf({ addedAt: day(2) })).toEqual(day(2))
+  })
+})
+
+describe('newestFavoritesFirst', () => {
+  test('puts the most recently hearted first', () => {
+    const favorites = [
+      { title: 'old', addedAt: day(1), favoritedAt: day(2) },
+      { title: 'new', addedAt: day(1), favoritedAt: day(8) },
+    ]
+    expect(newestFavoritesFirst(favorites).map(({ title }) => title)).toEqual(['new', 'old'])
+  })
+
+  // A heart given before the date was kept is older than any dated heart.
+  test('ranks an undated heart on the book last activity, after a dated one', () => {
+    const favorites = [
+      { title: 'undated', addedAt: day(1), updatedAt: day(5) },
+      { title: 'dated', addedAt: day(1), favoritedAt: day(9) },
+      { title: 'older undated', addedAt: day(1), updatedAt: day(3) },
+    ]
+    expect(newestFavoritesFirst(favorites).map(({ title }) => title)).toEqual([
+      'dated',
+      'undated',
+      'older undated',
+    ])
   })
 })
 

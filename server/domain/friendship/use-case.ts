@@ -15,12 +15,13 @@ import {
   favoritesOutsideSagas,
   inReadingOrder,
   lastActivityOf,
+  newestFavoritesFirst,
   subgenreOf,
 } from '~/domain/friendship/business-rules'
 import { FriendshipQuery } from '~/domain/friendship/query'
 import type { Friend } from '~/domain/friendship/types'
 import { followedSagasOf, genreOf } from '~/domain/series/business-rules'
-import type { SeriesName } from '~/domain/series/types'
+import type { SeriesId, SeriesName } from '~/domain/series/types'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import { Count, PersonName } from '~/domain/shared/primitives'
 import type { AuthorName, Count as CountValue, UserId } from '~/domain/shared/types'
@@ -40,6 +41,8 @@ const SHELF_SHOWN = 30
  *  Dune", never "four of fourteen". */
 export type FriendSaga = {
   id: string
+  /** The saga alone, for the reader's own shelf to open it on its page. */
+  seriesId: SeriesId
   name: SeriesName
   author?: AuthorName
   language?: BookLanguage
@@ -47,6 +50,9 @@ export type FriendSaga = {
   /** Hearted by its owner. A hearted saga stands for its volumes among the
    *  favourites, which then do not list them again one by one. */
   favorite: boolean
+  /** When its owner hearted it. Absent on a saga not hearted, and on a heart
+   *  given before the date was kept. */
+  favoritedAt?: Date
   genre?: Genre
   subgenre?: TaggedSubgenre
   /** Its volumes on the shelf, in reading order, for the favourites to draw
@@ -201,9 +207,12 @@ const sharedShelfOf = async (
     SeriesOpinionQuery.all(ownerId),
     UserQuery.namesOf([ownerId]),
   ])
-  const favoriteSagaIds = new Set(
-    opinions.filter((opinion) => opinion.favorite).map((opinion) => opinion.seriesId),
+  const favoriteSagas = new Map(
+    opinions
+      .filter((opinion) => opinion.favorite)
+      .map((opinion) => [opinion.seriesId, opinion.favoritedAt]),
   )
+  const favoriteSagaIds = new Set(favoriteSagas.keys())
   const reading = books
     .filter((book) => book.status === 'reading')
     .sort((left, right) => lastActivityOf(right).getTime() - lastActivityOf(left).getTime())
@@ -212,9 +221,11 @@ const sharedShelfOf = async (
     .filter((book) => book.status === 'to-read')
     .sort((left, right) => right.addedAt.getTime() - left.addedAt.getTime())
     .slice(0, shown)
-  const favorites = favoritesOutsideSagas(
-    books.filter((book) => book.favorite === true),
-    favoriteSagaIds,
+  const favorites = newestFavoritesFirst(
+    favoritesOutsideSagas(
+      books.filter((book) => book.favorite === true),
+      favoriteSagaIds,
+    ),
   ).slice(0, shown)
 
   const sagas = followedSagasOf(books)
@@ -243,11 +254,13 @@ const sharedShelfOf = async (
       const genre = genreOf(saga.books)
       return {
         id: `${saga.id}\u0000${saga.language ?? ''}`,
+        seriesId: saga.id,
         name: saga.name,
         author: saga.author,
         language: saga.language,
         ownedCount: Count(saga.books.length),
         favorite: favoriteSagaIds.has(saga.id),
+        favoritedAt: favoriteSagas.get(saga.id),
         genre,
         subgenre: subgenreOf(saga.books, genre),
         volumes: unmarked(signedVolumes[index] ?? []),

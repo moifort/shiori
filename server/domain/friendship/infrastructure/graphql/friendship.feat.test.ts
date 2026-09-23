@@ -255,6 +255,37 @@ describe("the reader's own shelf, as friends see it", () => {
     })
   })
 
+  // What a friend coming back looks for is what is new: the last heart leads.
+  test('lists the favourites most recently hearted first, with the date of the heart', async () => {
+    const first = await addBook(alice, 'title: "Piranesi", status: READ')
+    const second = await addBook(alice, 'title: "Hypérion", status: READ')
+    await addBook(alice, dune(1))
+    try {
+      setSystemTime(new Date('2026-09-01T10:00:00Z'))
+      await as(alice)(`mutation { setBookFavorite(id: "${first}", favorite: true) { id } }`)
+      setSystemTime(new Date('2026-09-10T10:00:00Z'))
+      await as(alice)(`mutation { setBookFavorite(id: "${second}", favorite: true) { id } }`)
+      await as(alice)(
+        'mutation { setSeriesFavorite(seriesId: "dune--frank-herbert", favorite: true) { favorite } }',
+      )
+    } finally {
+      setSystemTime()
+    }
+
+    const result = await as(alice)(
+      '{ myShelf { favorites { title favoritedAt } sagas { seriesId favoritedAt } } }',
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.myShelf).toEqual({
+      favorites: [
+        { title: 'Hypérion', favoritedAt: '2026-09-10T10:00:00.000Z' },
+        { title: 'Piranesi', favoritedAt: '2026-09-01T10:00:00.000Z' },
+      ],
+      sagas: [{ seriesId: 'dune--frank-herbert', favoritedAt: '2026-09-10T10:00:00.000Z' }],
+    })
+  })
+
   test('is what a friend sees: hidden books left out, hearted sagas shown to them too', async () => {
     await addBook(alice, dune(1))
     const secret = await addBook(alice, 'title: "Un secret", status: READING')

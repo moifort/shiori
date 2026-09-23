@@ -28,12 +28,23 @@ describe('what a reader makes of a saga', () => {
   // The heart is the top of the scale, as on a book.
   test('giving the heart rates the saga five', async () => {
     await SeriesOpinionCommand.rate(reader, dune, StarRating(2))
-    await SeriesOpinionCommand.setFavorite(reader, dune, true)
+    const now = new Date(Date.UTC(2026, 8, 20))
+    await SeriesOpinionCommand.setFavorite(reader, dune, true, undefined, now)
 
     expect(await SeriesOpinionQuery.of(reader, dune)).toMatchObject({
       rating: StarRating(5),
       favorite: true,
+      favoritedAt: now,
     })
+  })
+
+  // Hearting it again is not news for a friend.
+  test('hearting a saga again keeps the date of the first heart', async () => {
+    const first = new Date(Date.UTC(2026, 8, 20))
+    await SeriesOpinionCommand.setFavorite(reader, dune, true, undefined, first)
+    await SeriesOpinionCommand.setFavorite(reader, dune, true, undefined, new Date())
+
+    expect((await SeriesOpinionQuery.of(reader, dune))?.favoritedAt).toEqual(first)
   })
 
   // Heart and stars gone together leave nothing: the opinion is erased.
@@ -51,6 +62,7 @@ describe('what a reader makes of a saga', () => {
     const opinion = await SeriesOpinionQuery.of(reader, dune)
     expect(opinion?.rating).toBe(StarRating(4))
     expect(opinion?.favorite).toBeUndefined()
+    expect(opinion?.favoritedAt).toBeUndefined()
   })
 
   test('taking the rating back takes the heart back', async () => {

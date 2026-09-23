@@ -72,6 +72,24 @@ struct FriendProfileView: View {
                 .listRowBackground(Color.clear)
             }
             shelf("En cours", books: profile.reading, empty: "Aucune lecture en cours.", showsSeries: true)
+            // What is new among the favourites, so a friend coming back finds
+            // what changed rather than the same list. A saga is not opened:
+            // the catalogue is not something a friendship opens.
+            let recent = profile.recentFavorites()
+            if !recent.isEmpty {
+                Section("Récemment dans ses favoris") {
+                    ForEach(recent) { favorite in
+                        switch favorite {
+                        case .saga:
+                            RecentFavoriteRow(favorite: favorite)
+                        case let .book(entry, _):
+                            RecentFavoriteRow(favorite: favorite)
+                                .contentShape(.rect)
+                                .onTapGesture { openBook = entry }
+                        }
+                    }
+                }
+            }
             // A hearted saga stands for its volumes: the books below it are
             // the hearts it does not already cover.
             if !profile.favoriteSagas.isEmpty {

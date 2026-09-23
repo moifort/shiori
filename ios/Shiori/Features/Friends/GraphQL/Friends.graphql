@@ -47,11 +47,13 @@ fragment SharedShelf on FriendProfile {
   }
   sagas {
     id
+    seriesId
     name
     author
     language
     ownedCount
     favorite
+    favoritedAt
     genre
     subgenre
     volumes {
@@ -70,6 +72,7 @@ fragment FriendBookRow on FriendBook {
   status
   rating
   favorite
+  favoritedAt
   inLibrary
   genre
   subgenres

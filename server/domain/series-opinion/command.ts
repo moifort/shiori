@@ -26,6 +26,9 @@ export namespace SeriesOpinionCommand {
         ...opinion,
         rating,
         favorite: favoriteAfterRating(opinion.favorite, rating),
+        favoritedAt: favoriteAfterRating(opinion.favorite, rating)
+          ? opinion.favoritedAt
+          : undefined,
       }),
       batch,
     )
@@ -36,14 +39,21 @@ export namespace SeriesOpinionCommand {
     seriesId: SeriesId,
     favorite: boolean,
     batch?: WriteBatch,
+    now = new Date(),
   ) =>
     write(
       userId,
       seriesId,
       (opinion) =>
         favorite
-          ? { ...opinion, favorite: true, rating: HEART_RATING }
-          : { ...opinion, favorite: undefined, rating: undefined },
+          ? {
+              ...opinion,
+              favorite: true,
+              // Hearting it again is not news: the date stays that of the first heart.
+              favoritedAt: opinion.favorite === true ? opinion.favoritedAt : now,
+              rating: HEART_RATING,
+            }
+          : { ...opinion, favorite: undefined, favoritedAt: undefined, rating: undefined },
       batch,
     )
 
