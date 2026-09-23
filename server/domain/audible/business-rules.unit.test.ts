@@ -539,9 +539,9 @@ describe('following the listening', () => {
     expect(listeningChangesFor([linked({ status: 'read' })], items)).toEqual([])
   })
 
-  // Audible is authoritative in both directions, which is what was asked for: a
-  // title it says was never opened sends the book back to the pile.
-  test('sends a book Audible reports untouched back to the pile', () => {
+  // A book from before the status stamp has nothing of the reader's to weigh
+  // against Audible: a title it says was never opened sends it back to the pile.
+  test('sends an unstamped book Audible reports untouched back to the pile', () => {
     expect(listeningChangesFor([linked({ status: 'read' })], [anItem()])).toEqual([
       { bookId: bookId('book-1'), status: 'to-read', at: undefined },
     ])
@@ -572,6 +572,56 @@ describe('following the listening', () => {
     expect(listeningChangesFor([linked({ status: 'reading' })], items, [heard])).toEqual([
       { bookId: bookId('book-1'), status: 'read', at: heard.lastUpdatedAt },
     ])
+  })
+})
+
+describe('keeping the most recent word', () => {
+  const droppedOn = new Date('2026-09-01T00:00:00.000Z')
+  const dropped = (overrides: Partial<Book> = {}) =>
+    aBook({
+      audibleAsin: asin('B002V1OF70'),
+      status: 'dropped',
+      statusChangedAt: droppedOn,
+      listenedMinutes: ListeningMinutes(138),
+      ...overrides,
+    })
+
+  // What went wrong: a book the reader gave up on still sits half-heard in the
+  // Audible library, and every night put it back on "reading".
+  test('keeps a book the reader dropped after the player last moved', () => {
+    const heard = aPosition({
+      positionMs: 138 * 60 * 1000,
+      lastUpdatedAt: new Date('2026-08-15T00:00:00.000Z'),
+    })
+    expect(listeningChangesFor([dropped()], [anItem()], [heard])).toEqual([])
+  })
+
+  test('keeps a status the reader set against a title Audible reports untouched', () => {
+    expect(listeningChangesFor([dropped({ listenedMinutes: undefined })], [anItem()])).toEqual([])
+  })
+
+  test('starts the book again when the player went further overnight', () => {
+    const heard = aPosition({
+      positionMs: 200 * 60 * 1000,
+      lastUpdatedAt: new Date('2026-08-15T00:00:00.000Z'),
+    })
+    expect(listeningChangesFor([dropped()], [anItem()], [heard])).toEqual([
+      { bookId: bookId('book-1'), status: 'reading', at: heard.lastUpdatedAt },
+    ])
+  })
+
+  test("follows Audible when its date is later than the reader's change", () => {
+    const finishedAt = new Date('2026-09-10T00:00:00.000Z')
+    const items = [anItem({ listeningStatus: { isFinished: true, finishedAt } })]
+    expect(listeningChangesFor([dropped()], items)).toEqual([
+      { bookId: bookId('book-1'), status: 'read', at: finishedAt },
+    ])
+  })
+
+  test("keeps the reader's change when Audible finished the title before it", () => {
+    const finishedAt = new Date('2026-08-10T00:00:00.000Z')
+    const items = [anItem({ listeningStatus: { isFinished: true, finishedAt } })]
+    expect(listeningChangesFor([dropped()], items)).toEqual([])
   })
 })
 

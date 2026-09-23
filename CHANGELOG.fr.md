@@ -7,6 +7,7 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 - Les favoris s’ouvrent sur les nouveautés : les séries et livres ajoutés en favori ces
   trente derniers jours, sur votre liste comme chez vos amis, et le reste suit, le plus
   récent en premier. Une série de vos favoris s’ouvre sur sa page.
+- La synchronisation Audible ne défait plus un statut que vous avez choisi, comme un livre abandonné, sauf si vous l’avez écouté depuis.
 - La bibliothèque n’affiche plus les livres abandonnés par défaut ; le filtre « Abandonné » les montre toujours.
 - Changer de vue dans la bibliothèque ou les séries n’affiche plus de petit chargement au-dessus de la liste.
 - Un nouvel onglet Découvrir propose vos prochaines lectures, chaque livre avec la raison de

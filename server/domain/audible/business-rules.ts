@@ -354,10 +354,13 @@ export const audibleLinksFor = (
 /** The status moves that follow the listening, for books linked to a title the
  *  library still holds.
  *
- *  Audible is authoritative here, in both directions: a title it reports as
- *  finished marks the book read, and one it reports as untouched sends it back to
- *  the pile. A book whose status already agrees produces nothing, so a night that
- *  changed nothing writes nothing.
+ *  The most recent word wins. Audible moves a book when it has news: the player
+ *  got further than the last pass recorded, or its own date — the finish, the
+ *  last saved position — is later than the reader's last status change. A
+ *  status the reader set since, "dropped" above all, stands against a player
+ *  that has not moved: the title still sitting half-heard in the Audible library
+ *  is old news, not a reason to start it again. A book whose status already
+ *  agrees produces nothing, so a night that changed nothing writes nothing.
  *
  *  `at` is Audible's own finishing date for a finish, and for a start the day
  *  the player last saved a position: the sync learns of a start after the fact,
@@ -379,19 +382,29 @@ export const listeningChangesFor = (
     const position = heard.get(book.audibleAsin)
     const status = statusOf(item, position)
     if (status === book.status) return []
-    return [
-      {
-        bookId: book.id,
-        status,
-        at:
-          status === 'read'
-            ? (item.listeningStatus?.finishedAt ?? position?.lastUpdatedAt)
-            : status === 'reading'
-              ? position?.lastUpdatedAt
-              : undefined,
-      },
-    ]
+    const at =
+      status === 'read'
+        ? (item.listeningStatus?.finishedAt ?? position?.lastUpdatedAt)
+        : status === 'reading'
+          ? position?.lastUpdatedAt
+          : undefined
+    if (!audibleHasNews(book, position, at)) return []
+    return [{ bookId: book.id, status, at }]
   })
+}
+
+/** Whether Audible knows something about a book the reader's own status does
+ *  not already answer.
+ *
+ *  A book with no status stamp predates it, and has nothing of the reader's to
+ *  weigh against Audible. Otherwise either the player went further than the last
+ *  pass recorded — the reader listened, whatever they said before — or Audible's
+ *  date is later than the reader's last change. */
+const audibleHasNews = (book: Book, heard: LastPosition | undefined, at: Date | undefined) => {
+  if (!book.statusChangedAt) return true
+  const listened = listenedMinutesOf(heard)
+  if (listened !== undefined && listened > (book.listenedMinutes ?? 0)) return true
+  return at !== undefined && at > book.statusChangedAt
 }
 
 /** Where the player got to in each linked book, for those it moved since the

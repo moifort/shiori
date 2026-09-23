@@ -375,10 +375,14 @@ describe('asking for a pass right now', () => {
 
   test('moves a book already catalogued to the status Audible reports', async () => {
     await connect()
-    items = [anItem()]
+    // Bought before it was finished: the import files the book on the purchase,
+    // and the finish is the later word.
+    const dateAdded = new Date('2026-03-01T10:00:00.000Z')
+    items = [anItem({ dateAdded } as Partial<AudibleItem>)]
     await execute('mutation { importAudibleBooks(asins: ["B002V1OF70"]) { id } }')
     items = [
       anItem({
+        dateAdded,
         listeningStatus: {
           isFinished: true,
           percentComplete: 100,
