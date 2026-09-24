@@ -186,8 +186,8 @@ struct FriendProfileView: View {
                         } label: {
                             Label(
                                 profile.sagas.count == 1
-                                    ? "Voir sa série"
-                                    : "Voir ses \(profile.sagas.count) séries",
+                                    ? "1 série"
+                                    : "\(profile.sagas.count) séries",
                                 systemImage: "books.vertical"
                             )
                         }
@@ -204,8 +204,8 @@ struct FriendProfileView: View {
                         } label: {
                             Label(
                                 profile.bookCount == 1
-                                    ? "Voir son livre"
-                                    : "Voir ses \(profile.bookCount) livres",
+                                    ? "1 livre"
+                                    : "\(profile.bookCount) livres",
                                 systemImage: "book"
                             )
                         }
@@ -290,7 +290,7 @@ struct FriendProfileView: View {
                 Text(empty).font(.subheadline).foregroundStyle(.secondary)
             } else {
                 ForEach(books) { entry in
-                    HStack(spacing: 8) {
+                    HStack(alignment: .top, spacing: 8) {
                         BookRow(
                             title: entry.book.title,
                             authorLine: entry.book.authorLine,

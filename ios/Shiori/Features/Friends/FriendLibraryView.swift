@@ -102,7 +102,8 @@ struct FriendLibraryView: View {
 
     private func row(_ entry: FriendBook) -> some View {
         let book = entry.book
-        return HStack(spacing: 8) {
+        // The "+" on the first line, as on every row of a friend's shelf.
+        return HStack(alignment: .top, spacing: 8) {
             BookRow(
                 title: book.title,
                 authorLine: book.authorLine,
