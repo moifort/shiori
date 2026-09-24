@@ -420,11 +420,17 @@ describe('the nightly sync', () => {
     await connect()
     await AudibleCommand.recordImport(reader, NOW)
     const finishedAt = new Date('2026-09-24T00:00:00.000Z')
-    await BookCommand.add(reader, {
-      title: BookTitle('Le Nom du vent'),
-      authors: [AuthorName('Patrick Rothfuss')],
-      format: 'audiobook',
-    })
+    // Catalogued before the finish: added on the wall clock, the book's status
+    // stamp would overtake Audible's date the day the test runs past it.
+    await BookCommand.add(
+      reader,
+      {
+        title: BookTitle('Le Nom du vent'),
+        authors: [AuthorName('Patrick Rothfuss')],
+        format: 'audiobook',
+      },
+      NOW,
+    )
     items = [anItem({ listeningStatus: { isFinished: true, finishedAt } })]
 
     expect(await AudibleUseCase.syncLibrary(reader, LATER)).toEqual({
