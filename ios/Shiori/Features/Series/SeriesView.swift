@@ -86,7 +86,9 @@ struct SeriesView: View {
                     ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
                 }
             }
-            if let onNotInterested {
+            // In the "…" menu when the saga has one; in the corner otherwise, as
+            // on a book of Découvrir, which has no menu either.
+            if let onNotInterested, owned.isEmpty {
                 ToolbarItem(placement: .primaryAction) {
                     ToolbarIconButton(title: "Pas intéressé", systemImage: "eye.slash") {
                         onNotInterested()
@@ -147,6 +149,13 @@ struct SeriesView: View {
                                 Task { await setFollowed(true) }
                             }
                             .accessibilityIdentifier("series-follow")
+                        }
+                        if let onNotInterested {
+                            Button("Pas intéressé", systemImage: "eye.slash") {
+                                onNotInterested()
+                                dismiss()
+                            }
+                            .accessibilityIdentifier("series-not-interested")
                         }
                         Button("Supprimer", systemImage: "trash", role: .destructive) {
                             confirmDelete = true
