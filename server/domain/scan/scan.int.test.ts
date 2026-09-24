@@ -198,6 +198,17 @@ describe('naming the edition', () => {
     expect(prompts.enrichment).toContain("l'ISBN-13 de CETTE édition")
   })
 
+  // A special edition's own cover is often a 3D shot of the object; the regular
+  // edition is asked for only to borrow its flat cover.
+  test('asks for the regular edition of a special one', async () => {
+    answers = [aCover, anEnrichment, aCatalogue]
+
+    await ScanCommand.scanWithCache(image, 'fr')
+
+    expect(prompts.enrichment).toContain('regularEditionIsbn13')
+    expect(prompts.enrichment).toContain('collector')
+  })
+
   test('falls back to an edition in the reader language for a typed title', async () => {
     answers = [anEnrichment, aCatalogue]
 
@@ -252,6 +263,49 @@ describe('finding the cover', () => {
     await ScanCommand.scanWithCache(image, 'fr')
 
     expect(coverLookups).toEqual([])
+  })
+
+  // A collector edition is often filed with a 3D shot of the object rather than
+  // its cover, and every source serves the same shot. The regular edition's
+  // cover is the same artwork, drawn flat.
+  test('draws a special edition with the cover of its regular edition', async () => {
+    const regularCover = 'https://m.media-amazon.com/images/P/2070612759.01._SCLZZZZZZZ_.jpg'
+    covers = { '9782352943556': nameOfTheWindCover, '9782070612758': regularCover }
+    answers = [aCover, { ...anEnrichment, regularEditionIsbn13: '9782070612758' }, aCatalogue]
+
+    const { result } = await ScanCommand.scanWithCache(image, 'fr')
+
+    expect(String(result.coverUrl)).toBe(regularCover)
+    expect(String(result.isbn13)).toBe('9782352943556')
+    expect(coverLookups).toEqual(['9782070612758'])
+  })
+
+  test("keeps the special edition's own cover when the regular one has none", async () => {
+    covers = { '9782352943556': nameOfTheWindCover }
+    answers = [aCover, { ...anEnrichment, regularEditionIsbn13: '9782070612758' }, aCatalogue]
+
+    const { result } = await ScanCommand.scanWithCache(image, 'fr')
+
+    expect(String(result.coverUrl)).toBe(nameOfTheWindCover)
+    expect(coverLookups).toEqual(['9782070612758', '9782352943556'])
+  })
+
+  test('looks up a regular edition once when the model names the same ISBN twice', async () => {
+    covers = { '9782352943556': nameOfTheWindCover }
+    answers = [aCover, { ...anEnrichment, regularEditionIsbn13: '9782352943556' }, aCatalogue]
+
+    await ScanCommand.scanWithCache(image, 'fr')
+
+    expect(coverLookups).toEqual(['9782352943556'])
+  })
+
+  test('draws a typed special edition with the cover of its regular edition', async () => {
+    covers = { '9782070612758': nameOfTheWindCover }
+    answers = [{ ...anEnrichment, regularEditionIsbn13: '9782070612758' }, aCatalogue]
+
+    const { result } = await ScanCommand.lookUpTitle(BookTitle('Le Nom du vent'), 'fr')
+
+    expect(String(result.coverUrl)).toBe(nameOfTheWindCover)
   })
 
   test('serves the cover from the cache without looking it up again', async () => {

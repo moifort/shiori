@@ -86,7 +86,13 @@ export const ENRICHMENT_SCHEMA = {
     isbn13: {
       type: 'string',
       nullable: true,
-      description: "ISBN-13 d'une édition courante ; null plutôt qu'un ISBN incertain",
+      description: "ISBN-13 de cette édition précise ; null plutôt qu'un ISBN incertain",
+    },
+    regularEditionIsbn13: {
+      type: 'string',
+      nullable: true,
+      description:
+        "Si cette édition est spéciale (collector, limitée…), ISBN-13 de l'édition courante ; null sinon",
     },
     synopsis: { type: 'string', nullable: true, description: 'Résumé sans le dénouement' },
   },
@@ -102,6 +108,7 @@ export const ENRICHMENT_SCHEMA = {
     'subgenres',
     'pageCount',
     'isbn13',
+    'regularEditionIsbn13',
     'synopsis',
   ],
 } as const

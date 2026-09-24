@@ -4,6 +4,8 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Une édition collector ou limitée scannée affiche sa couverture à plat, et non plus une photo
+  du livre vu de biais.
 - Les onglets Accueil, Bibliothèque et Séries n’affichent plus de bouton « Réessayer » alors que rien n’a échoué.
 - La page d’un ami montre ses activités récentes, sur trente jours : le livre en cours de
   lecture et le dernier livre terminé, chacun avec sa série et toutes ses couvertures, et la

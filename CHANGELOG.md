@@ -10,6 +10,8 @@ the release tag is pushed.
 
 ## Unreleased
 
+- A scanned collector or limited edition shows its cover flat, instead of a photo of the book
+  seen from an angle.
 - The Home, Library and Series tabs no longer show a "Retry" button when nothing failed.
 - A friend's page shows their recent activity, from the last thirty days: the book they are
   reading and the last one they finished, each with its series and every cover, and the last

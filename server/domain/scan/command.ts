@@ -9,7 +9,7 @@ import {
   Subgenre,
   Synopsis,
 } from '~/domain/book/primitives'
-import type { BookLanguage } from '~/domain/book/types'
+import type { BookLanguage, Isbn13 as Isbn13Type } from '~/domain/book/types'
 import { generate } from '~/domain/scan/gemini'
 import * as repository from '~/domain/scan/infrastructure/repository'
 import { hashImage } from '~/domain/scan/primitives'
@@ -61,6 +61,7 @@ type EnrichmentOutput = {
   subgenres: string[]
   pageCount?: number | null
   isbn13?: string | null
+  regularEditionIsbn13?: string | null
   synopsis?: string | null
 }
 
@@ -101,10 +102,9 @@ export namespace ScanCommand {
     // fresh attempt on a better photo starts over rather than reusing a miss.
     if (!seen.recognized) return { result: seen, cacheHit: false, usage: { vision } }
 
-    const { result: enriched, usage: enrichment } = await enrich(seen, language)
+    const { result: enriched, regularEdition, usage: enrichment } = await enrich(seen, language)
     // Cached with the rest, so the same cover scanned again probes nothing.
-    const coverUrl = enriched.isbn13 ? await publishedCoverOf(enriched.isbn13) : undefined
-    const result = { ...enriched, coverUrl }
+    const result = { ...enriched, coverUrl: await coverOf(enriched.isbn13, regularEdition) }
 
     // Best-effort cache: a failed write only costs a re-scan on the next hit.
     repository
@@ -126,9 +126,12 @@ export namespace ScanCommand {
     if (import.meta.dev && config().scanStub) return { result: STUBBED_SCAN, usage: {} }
 
     const named: ScanResult = { recognized: true, title, authors: [], subgenres: [] }
-    const { result: enriched, usage: enrichment } = await enrich(named, language, 'typed')
-    const coverUrl = enriched.isbn13 ? await publishedCoverOf(enriched.isbn13) : undefined
-    const result = { ...enriched, coverUrl }
+    const {
+      result: enriched,
+      regularEdition,
+      usage: enrichment,
+    } = await enrich(named, language, 'typed')
+    const result = { ...enriched, coverUrl: await coverOf(enriched.isbn13, regularEdition) }
     const catalogue = await catalogueSeriesIfNeeded(result, language)
     return { result, usage: { enrichment, catalogue } }
   }
@@ -203,8 +206,26 @@ export namespace ScanCommand {
         isbn13: optional(value.isbn13, Isbn13),
         series: parsedSeries(value, authors.length > 0 ? authors : seen.authors),
       } satisfies ScanResult,
+      // Not part of the result: the book is the edition the reader holds, and
+      // this one only lends it a cover.
+      regularEdition: optional(value.regularEditionIsbn13, Isbn13),
       usage,
     }
+  }
+
+  /** The published cover of the edition the reader holds, drawn with its regular
+   *  edition's cover when it is a special one. A collector's own cover is often a
+   *  3D shot of the object, served identically by every source, where the regular
+   *  edition shows the same artwork flat. Its own cover stays the fallback. */
+  const coverOf = async (
+    isbn13: Isbn13Type | undefined,
+    regularEdition: Isbn13Type | undefined,
+  ) => {
+    if (regularEdition && regularEdition !== isbn13) {
+      const regularCover = await publishedCoverOf(regularEdition)
+      if (regularCover) return regularCover
+    }
+    return isbn13 ? await publishedCoverOf(isbn13) : undefined
   }
 
   /** Step 3, and only when it buys something: a standalone book or a saga
