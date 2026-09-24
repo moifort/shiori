@@ -125,9 +125,13 @@ struct FriendProfile: Sendable {
             + hearted.filter { $0.favoritedAt == nil }
     }
 
-    /// The hearted sagas, the one touched last first.
-    var favoriteSagasByActivity: [FriendSaga] {
-        favoriteSagas.sorted { ($0.lastActivityAt ?? .distantPast) > ($1.lastActivityAt ?? .distantPast) }
+    /// The hearted sagas in the Series tab's order: the one whose latest
+    /// volume was shelved last first, then by name.
+    var favoriteSagasByShelf: [FriendSaga] {
+        favoriteSagas.sorted {
+            let left = $0.shelvedAt ?? .distantPast, right = $1.shelvedAt ?? .distantPast
+            return left != right ? left > right : $0.name.localizedCompare($1.name) == .orderedAscending
+        }
     }
 
     /// The hearted books, the one touched last first.

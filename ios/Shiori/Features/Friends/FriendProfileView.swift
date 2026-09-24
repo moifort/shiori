@@ -145,7 +145,7 @@ struct FriendProfileView: View {
             // the hearts it does not already cover.
             if !profile.favoriteSagas.isEmpty {
                 Section {
-                    ForEach(profile.favoriteSagasByActivity) { saga in
+                    ForEach(profile.favoriteSagasByShelf) { saga in
                         HStack(alignment: .top, spacing: 8) {
                             SagaRow(saga: saga, showsCovers: true)
                             TakeButton(

@@ -56,6 +56,18 @@ struct FriendBookView: View {
 
     private func page(_ entry: FriendBook) -> some View {
         List {
+            // A warning before anything else: the page is about a book the
+            // reader already holds, and its "+" is greyed out for that.
+            if entry.inLibrary && added == nil {
+                Section {
+                    Label("Déjà dans votre bibliothèque", systemImage: "exclamationmark.triangle.fill")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.orange)
+                        .listRowBackground(Color.orange.opacity(0.15))
+                        .accessibilityIdentifier("friend-book-owned")
+                }
+            }
+
             ReadOnlyBookHeader(book: entry.book)
 
             Section {
@@ -98,11 +110,13 @@ struct FriendBookView: View {
                 ReadOnlySynopsisSection(synopsis: synopsis)
             }
 
-            Section {
-                status(entry)
-            } footer: {
-                if !entry.inLibrary && added == nil {
-                    Text("Le livre sera noté « Conseillé par \(friendName) ». Sa note de lecture reste privée.")
+            if !entry.inLibrary || added != nil {
+                Section {
+                    status(entry)
+                } footer: {
+                    if added == nil {
+                        Text("Le livre sera noté « Conseillé par \(friendName) ». Sa note de lecture reste privée.")
+                    }
                 }
             }
         }
@@ -110,8 +124,8 @@ struct FriendBookView: View {
         .labelStyle(.row)
     }
 
-    /// Where the book stands on the reader's own shelf: just added, already
-    /// there, or what the "+" in the corner will do.
+    /// Where the book stands on the reader's own shelf: just added, or what
+    /// the "+" in the corner will do. A book already there says so at the top.
     @ViewBuilder
     private func status(_ entry: FriendBook) -> some View {
         if let added {
@@ -121,10 +135,6 @@ struct FriendBookView: View {
             )
             .foregroundStyle(.green)
             .accessibilityIdentifier("friend-book-added")
-        } else if entry.inLibrary {
-            Label("Déjà dans votre bibliothèque", systemImage: "checkmark.circle")
-                .foregroundStyle(.secondary)
-                .accessibilityIdentifier("friend-book-owned")
         } else {
             Label("Pas encore dans votre bibliothèque", systemImage: "plus.circle")
                 .foregroundStyle(.secondary)
