@@ -42,14 +42,14 @@ import { optionally } from '~/utils/input'
 
 const logger = createLogger('discover')
 
-/** How many works one call looks up: past ten, the model starts answering the
- *  first ones well and the last ones not at all. */
-const WORKS_PER_CALL = 10
+/** One call per work: asked about several at once, the model runs a single
+ *  web search for all of them and misses translations that plainly exist. */
+const WORKS_PER_REFRESH = 20
 
-/** How many calls one refresh makes, side by side. A library read in English
- *  for years is caught up over a few days rather than in one request the
- *  function would not live through; the most recently read go first. */
-const CALLS_PER_REFRESH = 4
+/** How many of those calls run side by side. A library read in another
+ *  language for years is caught up over a few days rather than in one request
+ *  the function would not live through; the most recently read go first. */
+const CALLS_AT_ONCE = 5
 
 /** Two thirds of the function's 180s ceiling, as the Audible sync keeps: the
  *  budget is checked between readers, so a run overshoots by one reader. */
@@ -217,8 +217,8 @@ const recordUsage = async (usage: AiStepUsage | undefined) => {
 }
 
 /** The shared watches of the reader's works, the stale ones looked up again on
- *  the web — a few calls side by side, the most recently read works first. A
- *  call that fails leaves its works as they were. */
+ *  the web — one call per work, a few side by side, the most recently read
+ *  first. A call that fails leaves its work as it was. */
 const trackedWatches = async (
   works: readonly ForeignWork[],
   language: Language,
@@ -228,23 +228,19 @@ const trackedWatches = async (
   const stale = works
     .map((work) => ({ key: watchKeyOf(work, language), work }))
     .filter(({ key }) => watchIsStale(watches.get(key), now))
-    .slice(0, WORKS_PER_CALL * CALLS_PER_REFRESH)
-  const batches = Array.from({ length: Math.ceil(stale.length / WORKS_PER_CALL) }, (_, index) =>
-    stale.slice(index * WORKS_PER_CALL, (index + 1) * WORKS_PER_CALL),
-  )
-  await Promise.all(
-    batches.map(async (batch) => {
-      try {
-        const { value, usage } = await generate<TranslationsOutput>({
-          step: 'discover-translations',
-          parts: [{ text: translationsPrompt(batch, todayOf(now), language) }],
-          responseSchema: TRANSLATIONS_SCHEMA,
-          grounded: true,
-        })
-        await recordUsage(usage)
-        const answered = new Map((value.works ?? []).map((entry) => [entry.key, entry]))
-        for (const { key, work } of batch) {
-          const answer = answered.get(key)
+    .slice(0, WORKS_PER_REFRESH)
+  for (let start = 0; start < stale.length; start += CALLS_AT_ONCE) {
+    await Promise.all(
+      stale.slice(start, start + CALLS_AT_ONCE).map(async ({ key, work }) => {
+        try {
+          const { value, usage } = await generate<TranslationsOutput>({
+            step: 'discover-translations',
+            parts: [{ text: translationsPrompt([{ key, work }], todayOf(now), language) }],
+            responseSchema: TRANSLATIONS_SCHEMA,
+            grounded: true,
+          })
+          await recordUsage(usage)
+          const answer = (value.works ?? []).find((entry) => entry.key === key)
           const watch: TranslationWatch = {
             key,
             kind: work.kind,
@@ -259,12 +255,12 @@ const trackedWatches = async (
           }
           await DiscoverCommand.saveWatch(watch)
           watches.set(key, watch)
+        } catch (error) {
+          logger.warn('translation lookup failed', { error, work: work.key })
         }
-      } catch (error) {
-        logger.warn('translation lookup failed', { error, works: batch.length })
-      }
-    }),
-  )
+      }),
+    )
+  }
   return watches
 }
 

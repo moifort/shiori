@@ -222,7 +222,9 @@ describe('the Découvrir tab', () => {
     startFakeRequest()
     await DiscoverUseCase.refresh(other, 'fr', now)
 
-    expect(calls).toEqual(['discover-translations'])
+    // One call per work for the first reader — the saga and the novel — and
+    // none for the second.
+    expect(calls).toEqual(['discover-translations', 'discover-translations'])
   })
 
   test('never proposes again a work the reader is not interested in', async () => {

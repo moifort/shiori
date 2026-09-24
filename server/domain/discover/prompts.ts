@@ -8,7 +8,7 @@ const LANGUAGE_NAMES: Record<Language, string> = { fr: 'français', en: 'anglais
 const workLine = (key: string, work: ForeignWork) => {
   const author = work.author ? ` de ${work.author}` : ''
   return work.kind === 'series'
-    ? `- ${key} : la série « ${work.title} »${author}, lue en '${work.language}' — tous ses tomes.`
+    ? `- ${key} : la série « ${work.title} »${author}, lue en '${work.language}' — CHAQUE tome traduit, du tome 1 au dernier paru, puis ceux annoncés.`
     : `- ${key} : le livre « ${work.title} »${author}, lu en '${work.language}'.`
 }
 
@@ -24,7 +24,7 @@ ${works.map(({ key, work }) => workLine(key, work)).join('\n')}
 
 Renseigne works : une entrée par œuvre, avec sa clé exacte (key), translatedTitle et editions.
 - translatedTitle : le nom de la série, ou le titre du livre, en ${LANGUAGE_NAMES[language]}, ou null si l'œuvre n'est pas traduite.
-- editions : une entrée par tome et par format, la première édition en ${LANGUAGE_NAMES[language]} seulement. Pour chacune :
+- editions : une entrée par tome et par format, la première édition en ${LANGUAGE_NAMES[language]} seulement. Pour une série, n'en saute aucun : le tome 1 comme le dernier. Pour chacune :
   - title : son titre en ${LANGUAGE_NAMES[language]}.
   - volume : son numéro dans la série, ou null.
   - format : 'book' pour un livre (papier ou numérique), 'audiobook' pour un livre audio.
