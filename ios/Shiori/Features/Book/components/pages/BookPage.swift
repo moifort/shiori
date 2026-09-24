@@ -64,37 +64,16 @@ struct BookPage: View {
         }
     }
 
-    /// A book the reader does not hold: when it comes out, and adding it to the
-    /// pile — or saying it does not interest them.
+    /// A book the reader does not hold: when it comes out, at the top of the
+    /// page. Adding it and setting it aside are the sheet's corner buttons.
+    @ViewBuilder
     private func previewSection(_ preview: BookPreviewActions) -> some View {
-        Section {
-            if let date = preview.releaseDate, ReleaseDateText.isUpcoming(date) {
+        if let date = preview.releaseDate, ReleaseDateText.isUpcoming(date) {
+            Section {
                 Label(ReleaseDateText.coming(date), systemImage: "clock")
                     .foregroundStyle(.orange)
                     .fontWeight(.semibold)
                     .accessibilityIdentifier("book-preview-release")
-            }
-            Button(action: preview.onAdd) {
-                HStack {
-                    if preview.isAdding { ProgressView().tint(.white) }
-                    Label(
-                        preview.isAdded ? "Ajouté à lire" : "Ajouter à lire",
-                        systemImage: preview.isAdded ? "checkmark" : "plus"
-                    )
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 4)
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(preview.isAdding || preview.isAdded)
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets())
-            .accessibilityIdentifier("book-preview-add")
-            if let onDismiss = preview.onDismiss {
-                Button("Pas intéressé", systemImage: "eye.slash", role: .destructive, action: onDismiss)
-                    .frame(maxWidth: .infinity)
-                    .listRowBackground(Color.clear)
-                    .accessibilityIdentifier("book-preview-dismiss")
             }
         }
     }
@@ -381,15 +360,10 @@ struct BookPage: View {
     }
 }
 
-/// What a book the reader does not hold offers in place of their reading.
+/// What a book the reader does not hold shows in place of their reading.
 struct BookPreviewActions {
     /// When it comes out, as precisely as announced; nil for a book out.
     let releaseDate: String?
-    let isAdding: Bool
-    let isAdded: Bool
-    let onAdd: () -> Void
-    /// "Pas intéressé", where the book came from a list that can forget it.
-    let onDismiss: (() -> Void)?
 }
 
 #Preview {

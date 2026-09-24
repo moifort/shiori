@@ -5,9 +5,9 @@ import SwiftUI
 /// its record is built on the first opening — by anybody — as a saga's
 /// catalogue is, which takes a few seconds once, and nothing after.
 ///
-/// The page shows when it comes out in place of the reader's status, and adds
-/// it to the pile, in its edition's language and at its place in the saga, on
-/// one tap. Nothing enters the library without it.
+/// The page shows when it comes out at its top, in place of the reader's
+/// status; the corner adds it to the pile, in its edition's language and at its
+/// place in the saga, or sets it aside. Nothing enters the library without it.
 struct BookPreviewView: View {
     let release: Release
     let edition: ReleaseEdition
@@ -41,23 +41,37 @@ struct BookPreviewView: View {
                         },
                         onEditGenre: {},
                         onEditRecommendation: {},
-                        preview: BookPreviewActions(
-                            releaseDate: edition.date,
-                            isAdding: isAdding,
-                            isAdded: added,
-                            onAdd: { Task { await add() } },
-                            onDismiss: {
-                                onDismiss()
-                                close()
-                            }
-                        )
+                        preview: BookPreviewActions(releaseDate: edition.date)
                     )
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
+            // The corners of a book opened from the library: close on the
+            // left, what can be done with it on the right.
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("OK") { close() }
+                ToolbarItem(placement: .cancellationAction) {
+                    ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { close() }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    ToolbarIconButton(title: "Pas intéressé", systemImage: "eye.slash") {
+                        onDismiss()
+                        close()
+                    }
+                    .accessibilityIdentifier("book-preview-dismiss")
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    if isAdding {
+                        ProgressView()
+                    } else {
+                        ToolbarIconButton(
+                            title: added ? "Ajouté à lire" : "Ajouter à lire",
+                            systemImage: added ? "checkmark" : "plus"
+                        ) {
+                            Task { await add() }
+                        }
+                        .disabled(added || isLoading)
+                        .accessibilityIdentifier("book-preview-add")
+                    }
                 }
             }
             .navigationDestination(item: $openSeries) {

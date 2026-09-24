@@ -7,10 +7,12 @@ import SwiftUI
 ///
 /// Laid out as the Library tab is, so nothing here has to be learnt twice: the
 /// same "Livres | Séries" capsule above the tab bar, the Series tab's rows and
-/// the library's book rows, and a tap opens the very same screens — a saga's
-/// series screen, a book's page, built on the spot for a book the reader does
-/// not hold. Read through one format at a time, picked in the toolbar and kept
-/// between visits. Swiping a row away says "not interested" for good.
+/// the library's book rows, and a tap opens the very same screens as sheets,
+/// with the same corners — a saga's series screen, a book's page, built on the
+/// spot for a book the reader does not hold. Swiping a row left, or its sheet's
+/// crossed-out eye, sets it aside for good: its releases are no longer looked
+/// for. Read through one format at a time, picked in the toolbar and kept
+/// between visits.
 ///
 /// The server looks again every day. Until the first time, the tab offers to
 /// look now; after that, once a day at most.
@@ -19,7 +21,7 @@ struct DiscoverView: View {
     @State private var isLoading = true
     @State private var isPreparing = false
     @State private var errorMessage: String?
-    @State private var openSeries: SeriesDestination?
+    @State private var openSeries: OpenedSeries?
     @State private var openBook: OpenedEdition?
     @AppStorage("discover.format") private var format: ReleaseFormat = .book
     @AppStorage("discover-shelf") private var shelf: LibraryShelf = .series
@@ -30,8 +32,17 @@ struct DiscoverView: View {
                 .navigationTitle("Découvrir")
                 .toolbar { toolbar }
                 .libraryShelfPicker($shelf)
-                .navigationDestination(item: $openSeries) {
-                    SeriesView(seriesId: $0.seriesId, language: $0.language)
+                // A sheet, as a book opens from the library: the same corners
+                // on a saga as on a book.
+                .sheet(item: $openSeries) { opened in
+                    NavigationStack {
+                        SeriesView(
+                            seriesId: opened.seriesId,
+                            language: opened.release.language,
+                            isSheet: true,
+                            onNotInterested: { Task { await dismiss(opened.release) } }
+                        )
+                    }
                 }
                 .sheet(item: $openBook) { opened in
                     BookPreviewView(release: opened.release, edition: opened.edition) {
@@ -56,7 +67,7 @@ struct DiscoverView: View {
             List {
                 if feed.preparedAt == nil {
                     Section { prepareCard }
-                } else if feed.isEmpty {
+                } else if shown(feed.upcoming).isEmpty && shown(feed.maybe).isEmpty {
                     Section {
                         EmptyStateView(
                             systemImage: format == .audiobook ? "headphones" : "sparkles",
@@ -68,7 +79,7 @@ struct DiscoverView: View {
                     }
                     .listRowBackground(Color.clear)
                 }
-                if !feed.upcoming.isEmpty {
+                if !shown(feed.upcoming).isEmpty {
                     Section {
                         rows(feed.upcoming, upcoming: true)
                     } header: {
@@ -80,7 +91,7 @@ struct DiscoverView: View {
                         }
                     }
                 }
-                if !feed.maybe.isEmpty {
+                if !shown(feed.maybe).isEmpty {
                     Section("Vous intéresse peut-être") {
                         rows(feed.maybe, upcoming: false)
                     }
@@ -91,16 +102,22 @@ struct DiscoverView: View {
         }
     }
 
+    /// What the shelf on screen draws of a section: only the sagas on "Séries";
+    /// every book on "Livres", the volumes of a saga among them.
+    private func shown(_ releases: [Release]) -> [Release] {
+        shelf == .series ? releases.filter(\.isSeries) : releases
+    }
+
     /// One section of the shelf on screen: a saga per row on "Séries", as the
-    /// Series tab draws it; an edition per row on "Livres", as the library
-    /// draws a book — only the ones to come under "À venir", only the ones out
+    /// Series tab draws it, books on their own left to the other shelf; an
+    /// edition per row on "Livres", as the library draws a book — only the ones to come under "À venir", only the ones out
     /// under "Vous intéresse peut-être".
     @ViewBuilder
     private func rows(_ releases: [Release], upcoming: Bool) -> some View {
         switch shelf {
         case .series:
-            ForEach(releases) { release in
-                if release.isSeries, let entry = entry(of: release) {
+            ForEach(releases.filter(\.isSeries)) { release in
+                if let entry = entry(of: release) {
                     SeriesRow(entry: entry)
                         .contentShape(Rectangle())
                         // A tap rather than a button: a button would claim the
@@ -111,8 +128,6 @@ struct DiscoverView: View {
                         .accessibilityAction { open(release) }
                         .modifier(NotInterested { Task { await dismiss(release) } })
                         .accessibilityIdentifier("discover-series-row")
-                } else if let edition = release.editions.first(where: { $0.isUpcoming == upcoming }) {
-                    bookRow(release, edition)
                 }
             }
         case .books:
@@ -173,7 +188,7 @@ struct DiscoverView: View {
 
     private func open(_ release: Release) {
         guard let seriesId = release.seriesId else { return }
-        openSeries = SeriesDestination(seriesId: seriesId, language: release.language)
+        openSeries = OpenedSeries(seriesId: seriesId, release: release)
     }
 
     /// The two formats where the Library and Series tabs keep their views: icons
@@ -282,6 +297,13 @@ private struct OpenedEdition: Identifiable {
     let release: Release
     let edition: ReleaseEdition
     var id: String { "\(release.key)-\(edition.id)" }
+}
+
+/// A saga of the tab opened over it, with the release it came from.
+private struct OpenedSeries: Identifiable {
+    let seriesId: String
+    let release: Release
+    var id: String { release.key }
 }
 
 /// "Pas intéressé", by a swipe or a long press, on every row of the tab.

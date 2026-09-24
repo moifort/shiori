@@ -19,6 +19,12 @@ struct SeriesView: View {
     /// of the Series tab opened on the English covers. Nil where the caller
     /// knows no edition — the dashboard's series card — and every edition shows.
     var language: BookLanguage? = nil
+    /// Opened as a sheet — from Découvrir, as a book opens from the library —
+    /// rather than pushed: a close button in the corner.
+    var isSheet = false
+    /// "Pas intéressé", for a saga Découvrir proposed: it is set aside there
+    /// for good, and its next volumes are no longer looked for.
+    var onNotInterested: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
 
@@ -75,6 +81,20 @@ struct SeriesView: View {
         // In the corner even when the catalogue is missing: what a reader thinks
         // of a saga does not wait on the world having described it.
         .toolbar {
+            if isSheet {
+                ToolbarItem(placement: .cancellationAction) {
+                    ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
+                }
+            }
+            if let onNotInterested {
+                ToolbarItem(placement: .primaryAction) {
+                    ToolbarIconButton(title: "Pas intéressé", systemImage: "eye.slash") {
+                        onNotInterested()
+                        dismiss()
+                    }
+                    .accessibilityIdentifier("series-not-interested")
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 AsyncToolbarButton(
                     title: isFavorite ? "Retirer des favoris" : "Ajouter aux favoris",
@@ -457,7 +477,7 @@ struct SeriesView: View {
                     .lineLimit(2)
                 Group {
                     if forthcoming, let date = release?.date {
-                        Label(ReleaseDateText.coming(date), systemImage: "clock")
+                        Text(ReleaseDateText.coming(date))
                             .foregroundStyle(.orange)
                             .fontWeight(.medium)
                     } else if forthcoming, let year = volume.publishedIn {
@@ -482,8 +502,10 @@ struct SeriesView: View {
     @ViewBuilder
     private func action(_ volume: Volume, author: String) -> some View {
         if volume.isForthcoming(asOf: currentYear, in: language) {
+            // Orange once the edition has a date, as the date beside it is.
+            let dated = language.flatMap { volume.release(in: $0) } != nil
             Image(systemName: "clock")
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(dated ? AnyShapeStyle(.orange) : AnyShapeStyle(.tertiary))
                 .accessibilityLabel(Text("Pas encore paru"))
         } else if addingTitle == volume.title {
             ProgressView().controlSize(.small)

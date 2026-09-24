@@ -83,7 +83,7 @@ export namespace DiscoverUseCase {
       AudibleUseCase.marketplaceOf(userId),
     ])
     const feed = stored ?? (await DiscoverCommand.save(emptyFeed(userId, language)))
-    const works = watchedWorksOf(followed, books, feed.language)
+    const works = stillWanted(watchedWorksOf(followed, books, feed.language), feed)
     const watches = await watchesOf(works)
     const { upcoming, maybe } = releasesOf(
       works,
@@ -119,7 +119,9 @@ export namespace DiscoverUseCase {
       AudibleUseCase.marketplaceOf(userId),
     ])
     const previous = stored ?? emptyFeed(userId, language)
-    const works = watchedWorksOf(followed, books, language)
+    // A work the reader said they are not interested in is never searched
+    // again: its call would be paid for a row nobody will see.
+    const works = stillWanted(watchedWorksOf(followed, books, language), previous)
     const watches = await trackedWatches(works, now)
     const feed: DiscoverFeed = { ...previous, language, refreshedAt: now }
     const { upcoming, maybe } = releasesOf(
@@ -261,6 +263,11 @@ export namespace DiscoverUseCase {
 }
 
 // MARK: - The parts of a refresh
+
+const stillWanted = (works: readonly WatchedWork[], feed: Pick<DiscoverFeed, 'dismissed'>) => {
+  const dismissed = new Set(feed.dismissed)
+  return works.filter((work) => !dismissed.has(work.key))
+}
 
 const watchesOf = async (works: readonly WatchedWork[]): Promise<Map<string, ReleaseWatch>> =>
   new Map(

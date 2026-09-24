@@ -249,6 +249,17 @@ describe('the Découvrir tab', () => {
     ).toEqual(['en'])
   })
 
+  test('never searches again a work the reader is not interested in', async () => {
+    await stock(reader)
+    await DiscoverUseCase.discover(reader, 'fr', now)
+    await DiscoverUseCase.dismiss(reader, 'series--dungeon-crawler-carl--matt-dinniman--fr')
+
+    await DiscoverUseCase.refresh(reader, 'fr', now)
+
+    // The saga in English and the novel; not the saga in French.
+    expect(calls).toEqual(['discover-releases', 'discover-releases'])
+  })
+
   test('pushes an edition out today once, the alert being on by default', async () => {
     await stock(reader)
     await NotificationCommand.registerDevice(reader, DeviceToken('a'.repeat(64)), 'production')
