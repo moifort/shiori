@@ -337,14 +337,23 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
 enum SeriesStripItem: Identifiable, Hashable, Codable, Sendable {
     case owned(Book)
     /// A volume the reader lacks. `number` is its place along the spine, nil
-    /// for an unnumbered related work; `forthcoming` marks one announced for a
-    /// year that has not come yet.
-    case missing(key: String, number: Int?, title: String, forthcoming: Bool)
+    /// for an unnumbered related work; `forthcoming` marks one not out yet in
+    /// the row's edition, and `date` when it comes out there, as precisely as
+    /// it was announced. `title` and `coverURL` are the edition's own when the
+    /// release watch found them.
+    case missing(
+        key: String,
+        number: Int?,
+        title: String,
+        forthcoming: Bool,
+        date: String? = nil,
+        coverURL: URL? = nil
+    )
 
     var id: String {
         switch self {
         case let .owned(book): book.id
-        case let .missing(key, _, _, _): "missing-\(key)"
+        case let .missing(key, _, _, _, _, _): "missing-\(key)"
         }
     }
 
@@ -357,7 +366,12 @@ enum SeriesStripItem: Identifiable, Hashable, Codable, Sendable {
     /// the rest. Just the owned volumes when the saga has
     /// no catalogue yet — the saga screen is what builds it, and a scroll
     /// through the tab must not pay for one per row.
-    static func strip(owned: [Book], spine: [Volume], currentYear: Int) -> [SeriesStripItem] {
+    static func strip(
+        owned: [Book],
+        spine: [Volume],
+        currentYear: Int,
+        language: BookLanguage? = nil
+    ) -> [SeriesStripItem] {
         guard !spine.isEmpty else { return owned.map { .owned($0) } }
         var placed = Set<String>()
         var items: [SeriesStripItem] = []
@@ -367,11 +381,14 @@ enum SeriesStripItem: Identifiable, Hashable, Codable, Sendable {
                 items += books.map { .owned($0) }
                 placed.formUnion(books.map(\.id))
             } else {
+                let release = language.flatMap { volume.release(in: $0) }
                 items.append(.missing(
                     key: volume.id,
                     number: volume.number,
-                    title: volume.title,
-                    forthcoming: volume.isForthcoming(asOf: currentYear)
+                    title: release?.title ?? volume.title,
+                    forthcoming: volume.isForthcoming(asOf: currentYear, in: language),
+                    date: release?.date,
+                    coverURL: release?.coverURL
                 ))
             }
         }
@@ -388,12 +405,39 @@ struct Volume: Identifiable, Hashable, Sendable {
     let title: String
     let publishedIn: Int?
     let kind: VolumeKind
+    /// When the volume came out or comes out in each language the release
+    /// watch found it in, with its title and cover there.
+    var releases: [VolumeRelease] = []
 
-    /// A volume announced for a year that has not arrived yet. Kept in the
+    /// The volume in one edition's language, when the release watch found it.
+    func release(in language: BookLanguage) -> VolumeRelease? {
+        releases.first { $0.language == language }
+    }
+
+    /// The date that decides for an edition: its own, or without an edition,
+    /// the earliest announced to the day in any.
+    private func releaseDate(in language: BookLanguage?) -> String? {
+        if let language { return release(in: language)?.date }
+        return releases.map(\.date).filter { $0.count == 10 }.min()
+    }
+
+    /// A volume not out yet in that edition. The edition's own date decides
+    /// when the watch found one — a volume out in English can be months away in
+    /// French; otherwise the year of first publication does. Kept in the
     /// catalogue on purpose: it is what a release alert will attach to.
-    func isForthcoming(asOf year: Int) -> Bool {
+    func isForthcoming(asOf year: Int, in language: BookLanguage? = nil) -> Bool {
+        if let date = releaseDate(in: language) { return ReleaseDateText.isUpcoming(date) }
         guard let publishedIn else { return false }
         return publishedIn > year
+    }
+
+    /// Whether the volume counts in the saga the reader is measured on: out,
+    /// or announced to the day in their edition — a reader up to date whose
+    /// next volume comes out on October 8th is waiting for it, not done. The
+    /// server's rule, so the ring and the saga's state agree.
+    func counts(asOf year: Int, in language: BookLanguage? = nil) -> Bool {
+        guard isForthcoming(asOf: year, in: language) else { return true }
+        return releaseDate(in: language)?.count == 10
     }
 
     /// Whether the reader's book is this volume: the same kind at the same
@@ -405,6 +449,15 @@ struct Volume: Identifiable, Hashable, Sendable {
         return book.title.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
             == title.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
     }
+}
+
+/// A volume in one language, as the weekly release watch found it.
+struct VolumeRelease: Hashable, Sendable {
+    let language: BookLanguage
+    /// `YYYY`, `YYYY-MM` or `YYYY-MM-DD`: as precisely as it was announced.
+    let date: String
+    let title: String
+    let coverURL: URL?
 }
 
 /// The shared catalogue of a saga. A public fact with no reader in it, which is

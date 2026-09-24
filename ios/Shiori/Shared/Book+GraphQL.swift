@@ -230,7 +230,21 @@ extension ShioriGraphQL.BookDetail.Series {
 
 extension ShioriGraphQL.VolumeEntry {
     var asVolume: Volume {
-        Volume(number: number, title: title, publishedIn: publishedIn, kind: kind.asDomain)
+        Volume(
+            number: number,
+            title: title,
+            publishedIn: publishedIn,
+            kind: kind.asDomain,
+            releases: releases.compactMap { release in
+                guard let language = release.language.value?.asDomain else { return nil }
+                return VolumeRelease(
+                    language: language,
+                    date: release.date,
+                    title: release.title,
+                    coverURL: release.coverUrl.flatMap(URL.init(string:))
+                )
+            }
+        )
     }
 }
 

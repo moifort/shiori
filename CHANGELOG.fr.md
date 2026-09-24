@@ -8,12 +8,16 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   l’onglet Séries, la plus récemment lue d’abord, au lieu des mieux notées d’abord.
 - Les tendances de l’accueil comparent les livres lus cette année à la même période l’an
   dernier, au lieu des pages par jour et de la durée pour finir un livre.
-- L’onglet Découvrir montre désormais les livres que vous avez lus dans une autre langue et
-  qui sont sortis, ou vont sortir, dans la vôtre — en livre, et en livre audio si vous avez
-  connecté Audible — et vous permet de masquer ceux qui ne vous intéressent pas. Les autres
-  étagères disparaissent pour l’instant.
-- Une notification vous prévient le jour où l’une de ces traductions sort. Elle est active
-  sauf si vous la coupez ; les autres alertes de sortie disparaissent.
+- L’onglet Découvrir montre désormais la suite des séries que vous lisez, quelle que soit leur
+  langue, avec le jour de sa sortie — en livre, et en livre audio si vous avez connecté
+  Audible — et les traductions parues des livres que vous avez lus dans une autre langue. Il
+  passe des livres aux séries comme la Bibliothèque, et ouvre les mêmes fiches de livre et de
+  série. Vous pouvez masquer ce qui ne vous intéresse pas. Les autres étagères disparaissent
+  pour l’instant.
+- La fiche d’une série montre le jour de sortie de son prochain tome, et une série terminée
+  repasse en cours dès que son prochain tome a une date.
+- Une notification vous prévient le jour où l’un de ces livres sort. Elle est active sauf si
+  vous la coupez ; les autres alertes de sortie disparaissent.
 - Une édition collector ou limitée scannée affiche sa couverture à plat, et non plus une photo
   du livre vu de biais.
 - Les onglets Accueil, Bibliothèque et Séries n’affichent plus de bouton « Réessayer » alors que rien n’a échoué.

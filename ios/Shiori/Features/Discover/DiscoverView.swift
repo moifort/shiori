@@ -1,10 +1,16 @@
 import SwiftUI
 
-/// The Découvrir tab: the books the reader read in another language, now out
-/// or coming out in theirs — printed, and recorded for a reader connected to
-/// Audible. Read through one format at a time, picked in the toolbar and kept
-/// between visits. One row per saga or per book on its own; swiping one away
-/// says "not interested" for good.
+/// The Découvrir tab: what is coming next in the sagas the reader follows —
+/// in the language they read each in, and in the app's when that differs —
+/// and what may interest them, for now the translations out of what they read
+/// in another language.
+///
+/// Laid out as the Library tab is, so nothing here has to be learnt twice: the
+/// same "Livres | Séries" capsule above the tab bar, the Series tab's rows and
+/// the library's book rows, and a tap opens the very same screens — a saga's
+/// series screen, a book's page, built on the spot for a book the reader does
+/// not hold. Read through one format at a time, picked in the toolbar and kept
+/// between visits. Swiping a row away says "not interested" for good.
 ///
 /// The server looks again every day. Until the first time, the tab offers to
 /// look now; after that, once a day at most.
@@ -13,17 +19,23 @@ struct DiscoverView: View {
     @State private var isLoading = true
     @State private var isPreparing = false
     @State private var errorMessage: String?
-    @State private var openTranslation: Translation?
-    @AppStorage("discover.format") private var format: TranslationFormat = .book
+    @State private var openSeries: SeriesDestination?
+    @State private var openBook: OpenedEdition?
+    @AppStorage("discover.format") private var format: ReleaseFormat = .book
+    @AppStorage("discover-shelf") private var shelf: LibraryShelf = .series
 
     var body: some View {
         NavigationStack {
             content
                 .navigationTitle("Découvrir")
                 .toolbar { toolbar }
-                .sheet(item: $openTranslation) { translation in
-                    TranslationView(translation: translation, format: format) {
-                        Task { await dismiss(translation) }
+                .libraryShelfPicker($shelf)
+                .navigationDestination(item: $openSeries) {
+                    SeriesView(seriesId: $0.seriesId, language: $0.language)
+                }
+                .sheet(item: $openBook) { opened in
+                    BookPreviewView(release: opened.release, edition: opened.edition) {
+                        Task { await dismiss(opened.release) }
                     }
                 }
         }
@@ -47,20 +59,20 @@ struct DiscoverView: View {
                 } else if feed.isEmpty {
                     Section {
                         EmptyStateView(
-                            systemImage: format == .audiobook ? "headphones" : "character.book.closed",
-                            title: "Aucune traduction pour l'instant",
+                            systemImage: format == .audiobook ? "headphones" : "sparkles",
+                            title: "Rien à venir pour l'instant",
                             message: format == .audiobook
-                                ? "Les livres audio en français des livres que vous lisez dans une autre langue apparaîtront ici. Ils ne sont proposés que si vous avez connecté Audible."
-                                : "Les livres que vous lisez dans une autre langue apparaîtront ici dès qu'ils sortent, ou sont annoncés, en français."
+                                ? "Les prochains livres audio de vos séries apparaîtront ici. Ils ne sont proposés que si vous avez connecté Audible."
+                                : "Les prochains tomes de vos séries apparaîtront ici dès qu'ils sont annoncés."
                         )
                     }
                     .listRowBackground(Color.clear)
                 }
                 if !feed.upcoming.isEmpty {
                     Section {
-                        ForEach(feed.upcoming) { row($0) }
+                        rows(feed.upcoming, upcoming: true)
                     } header: {
-                        Text("Bientôt en français")
+                        Text("À venir")
                     } footer: {
                         HStack(alignment: .firstTextBaseline, spacing: 4) {
                             Image(systemName: "bell")
@@ -68,9 +80,9 @@ struct DiscoverView: View {
                         }
                     }
                 }
-                if !feed.available.isEmpty {
-                    Section("Déjà disponibles en français") {
-                        ForEach(feed.available) { row($0) }
+                if !feed.maybe.isEmpty {
+                    Section("Vous intéresse peut-être") {
+                        rows(feed.maybe, upcoming: false)
                     }
                 }
             }
@@ -79,12 +91,97 @@ struct DiscoverView: View {
         }
     }
 
+    /// One section of the shelf on screen: a saga per row on "Séries", as the
+    /// Series tab draws it; an edition per row on "Livres", as the library
+    /// draws a book — only the ones to come under "À venir", only the ones out
+    /// under "Vous intéresse peut-être".
+    @ViewBuilder
+    private func rows(_ releases: [Release], upcoming: Bool) -> some View {
+        switch shelf {
+        case .series:
+            ForEach(releases) { release in
+                if release.isSeries, let entry = entry(of: release) {
+                    SeriesRow(entry: entry)
+                        .contentShape(Rectangle())
+                        // A tap rather than a button: a button would claim the
+                        // drag that scrolls the cover strip.
+                        .onTapGesture { open(release) }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityAction { open(release) }
+                        .modifier(NotInterested { Task { await dismiss(release) } })
+                        .accessibilityIdentifier("discover-series-row")
+                } else if let edition = release.editions.first(where: { $0.isUpcoming == upcoming }) {
+                    bookRow(release, edition)
+                }
+            }
+        case .books:
+            ForEach(releases) { release in
+                ForEach(release.editions.filter { $0.isUpcoming == upcoming }) { edition in
+                    bookRow(release, edition)
+                }
+            }
+        }
+    }
+
+    private func bookRow(_ release: Release, _ edition: ReleaseEdition) -> some View {
+        let book = release.book(edition)
+        return Button {
+            openBook = OpenedEdition(release: release, edition: edition)
+        } label: {
+            HStack(alignment: .center, spacing: 8) {
+                BookRow(
+                    title: book.title,
+                    authorLine: book.authorLine,
+                    cover: book,
+                    status: .toRead,
+                    rating: nil,
+                    series: book.series,
+                    language: release.language
+                )
+                if edition.isUpcoming, let date = edition.date {
+                    ReleaseDateBadge(date: date)
+                }
+            }
+        }
+        .tint(.primary)
+        .modifier(NotInterested { Task { await dismiss(release) } })
+        .accessibilityIdentifier("discover-book-row")
+    }
+
+    /// A saga's row: the Series tab's own, its strip drawn from the catalogue
+    /// in that language. A saga nobody catalogued draws its strip from what the
+    /// web found instead, so the announced volume still shows with its date.
+    private func entry(of release: Release) -> FollowedSeries? {
+        guard var entry = release.series else { return nil }
+        if entry.strip.isEmpty && entry.volumes.isEmpty {
+            entry.strip = release.editions.compactMap { edition in
+                edition.volume.map { number in
+                    .missing(
+                        key: "\(release.key)-\(number)",
+                        number: number,
+                        title: edition.title,
+                        forthcoming: edition.isUpcoming,
+                        date: edition.date,
+                        coverURL: edition.coverURL
+                    )
+                }
+            }
+        }
+        return entry
+    }
+
+    private func open(_ release: Release) {
+        guard let seriesId = release.seriesId else { return }
+        openSeries = SeriesDestination(seriesId: seriesId, language: release.language)
+    }
+
     /// The two formats where the Library and Series tabs keep their views: icons
     /// on the right, the one picked in the tint.
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItemGroup {
-            ForEach(TranslationFormat.allCases) { item in
+            ForEach(ReleaseFormat.allCases) { item in
                 Button {
                     format = item
                 } label: {
@@ -114,8 +211,8 @@ struct DiscoverView: View {
 
     private var prepareCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("Vos lectures, en français", systemImage: "character.book.closed").font(.headline)
-            Text("Shiori cherche, pour chaque livre que vous avez lu dans une autre langue, sa traduction française : déjà parue ou annoncée, en livre, et en livre audio si vous avez connecté Audible. Cela prend une minute.")
+            Label("Les prochains tomes de vos séries", systemImage: "sparkles").font(.headline)
+            Text("Shiori cherche, pour chaque série que vous lisez, le prochain tome annoncé et sa date — dans la langue où vous la lisez, et en français quand vous la lisez dans une autre langue —, en livre, et en livre audio si vous avez connecté Audible. Cela prend une minute.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Button {
@@ -123,7 +220,7 @@ struct DiscoverView: View {
             } label: {
                 HStack {
                     if isPreparing { ProgressView().tint(.white) }
-                    Text(isPreparing ? "Recherche en cours…" : "Chercher les traductions")
+                    Text(isPreparing ? "Recherche en cours…" : "Chercher les sorties")
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 4)
@@ -133,30 +230,6 @@ struct DiscoverView: View {
             .accessibilityIdentifier("discover-prepare")
         }
         .padding(.vertical, 6)
-    }
-
-    private func row(_ translation: Translation) -> some View {
-        Button {
-            openTranslation = translation
-        } label: {
-            TranslationRow(translation: translation)
-        }
-        .buttonStyle(.plain)
-        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            Button(role: .destructive) {
-                Task { await dismiss(translation) }
-            } label: {
-                Label("Pas intéressé", systemImage: "eye.slash")
-            }
-        }
-        .contextMenu {
-            Button(role: .destructive) {
-                Task { await dismiss(translation) }
-            } label: {
-                Label("Pas intéressé", systemImage: "eye.slash")
-            }
-        }
-        .accessibilityIdentifier("discover-row")
     }
 
     // MARK: - Loading
@@ -193,10 +266,10 @@ struct DiscoverView: View {
         _ = await PushRegistrar.shared.requestPermission()
     }
 
-    private func dismiss(_ translation: Translation) async {
-        withAnimation { feed?.remove(key: translation.key) }
+    private func dismiss(_ release: Release) async {
+        withAnimation { feed?.remove(key: release.key) }
         do {
-            try await DiscoverAPI.dismiss(key: translation.key)
+            try await DiscoverAPI.dismiss(key: release.key)
         } catch {
             errorMessage = reportError(error)
             await load()
@@ -204,214 +277,32 @@ struct DiscoverView: View {
     }
 }
 
-/// One work on the tab. A book on its own: its cover, its French title, and
-/// when it comes out. A saga: its name over the same strip of covers as the
-/// Series tab, drawn from its French volumes — out, announced under a clock
-/// with their date, or read in the original and not announced yet, dimmed
-/// with their number. The marks sit at the top, level with the title.
-private struct TranslationRow: View {
-    let translation: Translation
-
-    var body: some View {
-        if translation.isSeries {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .top, spacing: 12) {
-                    heading
-                    trailing
-                }
-                strip
-            }
-            .padding(.vertical, 2)
-            .contentShape(.rect)
-        } else {
-            HStack(alignment: .top, spacing: 12) {
-                BookCover(book: translation.book, width: 44, showsFormatBadge: false)
-                heading
-                trailing
-            }
-            .padding(.vertical, 2)
-            .contentShape(.rect)
-        }
-    }
-
-    private var heading: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(translation.title).font(.subheadline.weight(.semibold)).lineLimit(2)
-            Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(2)
-            if let source = translation.source {
-                HStack(spacing: 3) {
-                    Image(systemName: source.symbol)
-                    Text(source.label)
-                }
-                .font(.caption2.weight(.medium))
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(.tint.opacity(0.12), in: .rect(cornerRadius: 6))
-                .foregroundStyle(.tint)
-                .padding(.top, 2)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    @ViewBuilder
-    private var trailing: some View {
-        if let next = translation.nextDate {
-            ReleaseDateBadge(date: next)
-        } else {
-            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary).padding(.top, 4)
-        }
-    }
-
-    private var strip: some View {
-        ScrollView(.horizontal) {
-            HStack(alignment: .top, spacing: 10) {
-                ForEach(translation.strip, id: \.number) { item in
-                    VStack(spacing: 2) {
-                        cover(item.number, item.edition)
-                        if let edition = item.edition, edition.isUpcoming, let date = edition.date {
-                            Text(verbatim: ReleaseDateText.short(date))
-                                .font(.system(size: 9, weight: .semibold))
-                                .foregroundStyle(.orange)
-                                .lineLimit(1)
-                                .fixedSize()
-                        }
-                    }
-                }
-            }
-        }
-        .scrollIndicators(.hidden)
-        .accessibilityHidden(true)
-    }
-
-    @ViewBuilder
-    private func cover(_ number: Int, _ edition: TranslatedEdition?) -> some View {
-        let book = Book(
-            id: "\(translation.key)-\(number)",
-            title: edition?.title ?? translation.title,
-            authors: translation.author.map { [$0] } ?? [],
-            status: .toRead
-        )
-        if let edition, !edition.isUpcoming {
-            BookCover(book: book, width: coverWidth, showsFormatBadge: false)
-        } else {
-            BookCover(book: book, width: coverWidth, showsFormatBadge: false)
-                .opacity(edition == nil ? 0.35 : 0.2)
-                .overlay(alignment: .bottom) {
-                    Text(verbatim: "\(number)")
-                        .font(.caption2.weight(.bold).monospacedDigit())
-                        .foregroundStyle(.secondary)
-                        .padding(.bottom, 4)
-                }
-                .overlay(alignment: .topTrailing) {
-                    if edition != nil {
-                        Image(systemName: "clock")
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.tertiary)
-                            .padding(4)
-                    }
-                }
-        }
-    }
-
-    private let coverWidth: CGFloat = 38
-
-    private var subtitle: String {
-        let language = translation.originalLanguage.label.lowercased()
-        if translation.isSeries {
-            let author = translation.author.map { "\($0) · " } ?? ""
-            guard let last = translation.volumesRead.max() else { return author + String(localized: "Lu en \(language)") }
-            return author + String(localized: "lu en \(language) jusqu'au tome \(last)")
-        }
-        return translation.title == translation.originalTitle
-            ? String(localized: "Lu en \(language)")
-            : String(localized: "Lu en \(language) : \(translation.originalTitle)")
-    }
+/// A book of the tab opened over it, with the release it belongs to.
+private struct OpenedEdition: Identifiable {
+    let release: Release
+    let edition: ReleaseEdition
+    var id: String { "\(release.key)-\(edition.id)" }
 }
 
-/// A release date in a sentence: "le 19 févr. 2027", "en mars 2027", "en
-/// 2027" — as precisely as it was announced.
-enum ReleaseDateText {
-    /// The last day a date can mean, to put "2027" after "2027-02-19".
-    static func lastDay(_ date: String) -> String {
-        switch date.count {
-        case 10: date
-        case 7: date + "-31"
-        default: date + "-12-31"
-        }
-    }
+/// "Pas intéressé", by a swipe or a long press, on every row of the tab.
+private struct NotInterested: ViewModifier {
+    let action: () -> Void
 
-    /// Under a cover: "19 févr.", "mars 2027", "2027".
-    static func short(_ date: String) -> String {
-        let parts = date.split(separator: "-").compactMap { Int($0) }
-        var components = DateComponents()
-        components.year = parts.first
-        components.month = parts.count > 1 ? parts[1] : 1
-        components.day = parts.count > 2 ? parts[2] : 1
-        guard let day = Calendar.current.date(from: components) else { return date }
-        switch parts.count {
-        case 3: return day.formatted(.dateTime.day().month(.abbreviated))
-        case 2: return day.formatted(.dateTime.month(.abbreviated).year())
-        default: return String(parts.first ?? 0)
-        }
-    }
-
-    static func phrase(_ date: String) -> String {
-        let parts = date.split(separator: "-").compactMap { Int($0) }
-        var components = DateComponents()
-        components.year = parts.first
-        components.month = parts.count > 1 ? parts[1] : 1
-        components.day = parts.count > 2 ? parts[2] : 1
-        guard let day = Calendar.current.date(from: components) else { return date }
-        switch parts.count {
-        case 3: return String(localized: "le \(day.formatted(.dateTime.day().month(.abbreviated).year()))")
-        case 2: return String(localized: "en \(day.formatted(.dateTime.month(.wide).year()))")
-        default: return String(localized: "en \(String(parts.first ?? 0))")
-        }
-    }
-}
-
-/// A release date as a small calendar leaf: the day over the month, or the
-/// month over the year, or the year alone — as precisely as it was announced.
-struct ReleaseDateBadge: View {
-    let date: String
-
-    var body: some View {
-        let parts = date.split(separator: "-").compactMap { Int($0) }
-        VStack(spacing: 0) {
-            Text(verbatim: top(parts)).font(.subheadline.weight(.semibold))
-            Text(verbatim: bottom(parts)).font(.caption2).foregroundStyle(.secondary)
-        }
-        .frame(width: 44)
-        .padding(.vertical, 4)
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary))
-    }
-
-    private func month(_ number: Int) -> String {
-        let symbols = Calendar.current.shortMonthSymbols
-        return (1...12).contains(number) ? symbols[number - 1] : ""
-    }
-
-    private func top(_ parts: [Int]) -> String {
-        switch parts.count {
-        case 3: "\(parts[2])"
-        case 2: month(parts[1])
-        default: parts.first.map(String.init) ?? ""
-        }
-    }
-
-    private func bottom(_ parts: [Int]) -> String {
-        switch parts.count {
-        case 3: month(parts[1])
-        case 2: String(parts[0])
-        default: ""
-        }
+    func body(content: Content) -> some View {
+        content
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                Button(role: .destructive, action: action) {
+                    Label("Pas intéressé", systemImage: "eye.slash")
+                }
+            }
+            .contextMenu {
+                Button(role: .destructive, action: action) {
+                    Label("Pas intéressé", systemImage: "eye.slash")
+                }
+            }
     }
 }
 
 #Preview {
     DiscoverView()
 }
-
-
-

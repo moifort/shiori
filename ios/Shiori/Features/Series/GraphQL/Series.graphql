@@ -112,11 +112,19 @@ fragment FollowedSeriesRow on FollowedSeries {
   }
 }
 
+# A volume of the catalogue, with when it comes out in each language the
+# release watch found it in: what decides, for one edition, whether it is out.
 fragment VolumeEntry on Volume {
   number
   title
   publishedIn
   kind
+  releases {
+    language
+    date
+    title
+    coverUrl
+  }
 }
 
 mutation RateSeries($seriesId: SeriesId!, $rating: StarRating!) {

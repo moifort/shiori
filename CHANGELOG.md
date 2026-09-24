@@ -14,11 +14,15 @@ the release tag is pushed.
   most recently read first, instead of the best rated first.
 - The Home trends compare the books read this year with the same time last year, instead of
   the pages per day and the days to finish a book.
-- The Discover tab now shows the books you read in another language that are out, or coming
-  out, in yours — as a book, and as an audiobook if you connected Audible — and lets you hide
-  the ones you are not interested in. Every other shelf is gone for now.
-- A notification tells you the day one of those translations comes out. It is on unless you
-  switch it off; the other release alerts are gone.
+- The Discover tab now shows what is coming next in the series you read, whatever their
+  language, with the day it comes out — as a book, and as an audiobook if you connected
+  Audible — and the translations out of the books you read in another language. It switches
+  between books and series like the Library, and opens the same book and series pages. You
+  can hide what does not interest you. Every other shelf is gone for now.
+- A series page shows the day its next volume comes out, and a finished series is in progress
+  again as soon as its next volume has a date.
+- A notification tells you the day one of those books comes out. It is on unless you switch it
+  off; the other release alerts are gone.
 - A scanned collector or limited edition shows its cover flat, instead of a photo of the book
   seen from an angle.
 - The Home, Library and Series tabs no longer show a "Retry" button when nothing failed.

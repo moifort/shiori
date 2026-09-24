@@ -42,6 +42,8 @@ enum AnalyticsEvent {
         case manual
         /// Added from a series catalogue, without a photo or an AI call.
         case series
+        /// Added from Découvrir, built from what the web announced.
+        case discover
     }
 }
 

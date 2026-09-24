@@ -433,22 +433,37 @@ struct SeriesView: View {
     /// placeholder cover dimmed, the number and title, when it came out, and
     /// what can be done about it.
     private func missingRow(_ volume: Volume, label: String, author: String) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            BookCover(book: Book(id: volume.id, title: volume.title, authors: [author], status: .toRead))
-                .opacity(0.45)
+        // The edition opened names it and dates it when the release watch
+        // found it there: the French volume 5 comes out on its own day.
+        let release = language.flatMap { volume.release(in: $0) }
+        let title = release?.title ?? volume.title
+        let forthcoming = volume.isForthcoming(asOf: currentYear, in: language)
+        return HStack(alignment: .top, spacing: 12) {
+            BookCover(book: Book(
+                id: volume.id,
+                title: title,
+                authors: [author],
+                coverURL: release?.coverURL,
+                status: .toRead
+            ))
+            .opacity(0.45)
             VStack(alignment: .leading, spacing: 3) {
                 Text(label)
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
-                Text(volume.title)
+                Text(title)
                     .font(.body.weight(.medium))
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
                 Group {
-                    if volume.isForthcoming(asOf: currentYear), let year = volume.publishedIn {
+                    if forthcoming, let date = release?.date {
+                        Label(ReleaseDateText.coming(date), systemImage: "clock")
+                            .foregroundStyle(.orange)
+                            .fontWeight(.medium)
+                    } else if forthcoming, let year = volume.publishedIn {
                         Text("à paraître en \(String(year))")
-                    } else if let year = volume.publishedIn {
-                        Text(verbatim: String(year))
+                    } else if let year = release.map({ String($0.date.prefix(4)) }) ?? volume.publishedIn.map(String.init) {
+                        Text(verbatim: year)
                     }
                 }
                 .font(.subheadline)
@@ -466,7 +481,7 @@ struct SeriesView: View {
     /// nothing yet when it is not out.
     @ViewBuilder
     private func action(_ volume: Volume, author: String) -> some View {
-        if volume.isForthcoming(asOf: currentYear) {
+        if volume.isForthcoming(asOf: currentYear, in: language) {
             Image(systemName: "clock")
                 .foregroundStyle(.tertiary)
                 .accessibilityLabel(Text("Pas encore paru"))
@@ -485,7 +500,7 @@ struct SeriesView: View {
 
     /// The volume a saga is started with: the first of the spine already out.
     private func firstVolume(of series: BookSeries) -> Volume? {
-        series.spine.first { !$0.isForthcoming(asOf: currentYear) }
+        series.spine.first { !$0.isForthcoming(asOf: currentYear, in: language) }
     }
 
     // MARK: - Dates
@@ -504,10 +519,12 @@ struct SeriesView: View {
         return main.compactMap(\.finishedAt).max()
     }
 
-    /// How far the reader is along the published spine. Announced volumes are
-    /// left out: they would make a finished saga look unfinished for years.
+    /// How far the reader is along the spine, in the edition opened: the volumes
+    /// out, and the ones announced to the day — the next one is then awaited,
+    /// and the ring says 4 of 5. A volume announced for a month or a year is
+    /// left out: it would make a finished saga look unfinished for years.
     private func progress(_ series: BookSeries) -> (read: Int, published: Int) {
-        let published = series.spine.filter { !$0.isForthcoming(asOf: currentYear) }
+        let published = series.spine.filter { $0.counts(asOf: currentYear, in: language) }
         // Read once any of its books is, as the server counts it: a part read
         // with the other still ahead, or one format of two, reads the volume.
         let read = published.filter { volume in

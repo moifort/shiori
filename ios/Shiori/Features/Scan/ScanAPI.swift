@@ -96,7 +96,7 @@ enum ScanAPI {
     }
 }
 
-private extension ScannedBook {
+extension ScannedBook {
     init(fields result: ShioriGraphQL.ScannedRecord) {
         self.init(
             recognized: result.recognized,

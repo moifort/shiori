@@ -1,8 +1,8 @@
 import Foundation
 
-/// How a translation reaches the reader, and the filter the tab is read
-/// through — kept between visits.
-enum TranslationFormat: String, Sendable, Hashable, CaseIterable, Identifiable {
+/// How an edition reaches the reader, and the filter the tab is read through —
+/// kept between visits.
+enum ReleaseFormat: String, Sendable, Hashable, CaseIterable, Identifiable {
     case book, audiobook
     var id: String { rawValue }
 
@@ -14,13 +14,6 @@ enum TranslationFormat: String, Sendable, Hashable, CaseIterable, Identifiable {
         }
     }
 
-    var label: String {
-        switch self {
-        case .book: String(localized: "Livre")
-        case .audiobook: String(localized: "Livre audio")
-        }
-    }
-
     var symbol: String {
         switch self {
         case .book: "book"
@@ -29,84 +22,80 @@ enum TranslationFormat: String, Sendable, Hashable, CaseIterable, Identifiable {
     }
 }
 
-/// One edition of a work in the app's language, out or announced.
-struct TranslatedEdition: Identifiable, Hashable, Sendable {
+/// One edition of a work in one language, out or announced.
+struct ReleaseEdition: Identifiable, Hashable, Sendable {
     let title: String
     let volume: Int?
-    let format: TranslationFormat
+    let format: ReleaseFormat
     /// `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Nil for an edition out on a date
     /// nobody found.
     let date: String?
+    let isbn13: String?
+    let coverURL: URL?
     /// For a recording, a search for its title on the reader's own Audible
     /// store: where the reader goes to find it.
     let audibleURL: URL?
 
     var id: String { "\(format)-\(volume.map(String.init) ?? title)" }
 
-    /// Whether it is still to come: a day after today, or a month or a year
-    /// not over yet — the server's rule, read on the phone's calendar.
-    var isUpcoming: Bool {
-        guard let date else { return false }
-        let today = Date.now.formatted(.iso8601.year().month().day())
-        return date.count == 10 ? date > today : String(today.prefix(date.count)) <= date
-    }
+    /// Whether it is still to come — the server's rule, on the phone's calendar.
+    var isUpcoming: Bool { date.map { ReleaseDateText.isUpcoming($0) } ?? false }
 }
 
-/// A saga or a book the reader read in another language, with what exists or
-/// is announced of it in the app's language.
-struct Translation: Identifiable, Hashable, Sendable {
+/// A saga the reader follows, or a book they read, in one language: what
+/// exists or is announced of it there. A saga read in English whose French
+/// translation is announced is two releases, as the Series tab makes two rows.
+struct Release: Identifiable, Sendable {
     let key: String
     var id: String { key }
     let isSeries: Bool
+    let seriesId: String?
+    /// The language of its editions.
+    let language: BookLanguage
+    /// The language the reader read it in.
+    let readIn: BookLanguage
     let title: String
-    let originalTitle: String
     let author: String?
-    let originalLanguage: BookLanguage
-    let volumesRead: [Int]
     let coverURL: URL?
     let nextDate: String?
-    let editions: [TranslatedEdition]
-
-    /// What the cover component draws.
-    var book: Book {
-        Book(
-            id: key,
-            title: title,
-            authors: author.map { [$0] } ?? [],
-            format: .book,
-            coverURL: coverURL,
-            status: .toRead
-        )
-    }
-
-    /// Where the editions are to be found, as the row's tag says it: Audible
-    /// for a recording.
-    var source: (label: String, symbol: String)? {
-        guard let format = editions.first?.format else { return nil }
-        if format == .audiobook, editions.contains(where: { $0.audibleURL != nil }) {
-            return (String(localized: "Audible"), format.symbol)
-        }
-        return (format.label, format.symbol)
-    }
-
-    /// The saga's volumes as the Series tab draws them: every one the reader
-    /// read in the original or that exists in French, in order, each with its
-    /// French edition when there is one.
-    var strip: [(number: Int, edition: TranslatedEdition?)] {
-        let numbers = Set(volumesRead).union(editions.compactMap(\.volume)).sorted()
-        return numbers.map { number in (number, editions.first { $0.volume == number }) }
-    }
+    let editions: [ReleaseEdition]
+    /// For a saga, its row as the Series tab draws it in that language.
+    let series: FollowedSeries?
 
     /// The work as one format shows it: only its editions in that format, and
     /// the soonest of those still to come. Nil when it has none.
-    func narrowed(to format: TranslationFormat) -> Translation? {
+    func narrowed(to format: ReleaseFormat) -> Release? {
         let kept = editions.filter { $0.format == format }
         guard !kept.isEmpty else { return nil }
-        let next = kept.filter(\.isUpcoming).compactMap(\.date).min { ReleaseDateText.lastDay($0) < ReleaseDateText.lastDay($1) }
-        return Translation(
-            key: key, isSeries: isSeries, title: title, originalTitle: originalTitle, author: author,
-            originalLanguage: originalLanguage, volumesRead: volumesRead, coverURL: coverURL,
-            nextDate: next, editions: kept
+        let next = kept.filter(\.isUpcoming).compactMap(\.date)
+            .min { ReleaseDateText.lastDay($0) < ReleaseDateText.lastDay($1) }
+        return Release(
+            key: key, isSeries: isSeries, seriesId: seriesId, language: language, readIn: readIn,
+            title: title, author: author, coverURL: coverURL, nextDate: next, editions: kept,
+            series: series
+        )
+    }
+
+    /// One edition drawn as a book of the library: its own title and cover,
+    /// its place in the saga, in the edition's language.
+    func book(_ edition: ReleaseEdition) -> Book {
+        Book(
+            id: "\(key)-\(edition.id)",
+            title: edition.title,
+            authors: author.map { [$0] } ?? [],
+            format: edition.format == .audiobook ? .audiobook : .book,
+            isbn13: edition.isbn13,
+            language: language,
+            series: seriesId.map { id in
+                SeriesMembership(
+                    id: id,
+                    name: series?.name ?? title,
+                    volume: edition.volume,
+                    kind: .main
+                )
+            },
+            coverURL: edition.coverURL ?? (edition.volume == nil ? coverURL : nil),
+            status: .toRead
         )
     }
 }
@@ -114,35 +103,38 @@ struct Translation: Identifiable, Hashable, Sendable {
 struct DiscoverFeed: Sendable {
     var preparedAt: Date?
     var canRefresh: Bool
-    var upcoming: [Translation]
-    var available: [Translation]
+    var upcoming: [Release]
+    var maybe: [Release]
 
-    var isEmpty: Bool { upcoming.isEmpty && available.isEmpty }
+    var isEmpty: Bool { upcoming.isEmpty && maybe.isEmpty }
 
-    /// The tab through one format: a work moves to "coming soon" only for an
+    /// The tab through one format: a work stays in "À venir" only for an
     /// edition of that format still to come, the soonest first.
-    func narrowed(to format: TranslationFormat) -> DiscoverFeed {
-        let works = (upcoming + available).compactMap { $0.narrowed(to: format) }
+    func narrowed(to format: ReleaseFormat) -> DiscoverFeed {
+        let coming = upcoming.compactMap { $0.narrowed(to: format) }
         return DiscoverFeed(
             preparedAt: preparedAt,
             canRefresh: canRefresh,
-            upcoming: works.filter { $0.nextDate != nil }.sorted {
+            upcoming: coming.filter { $0.nextDate != nil }.sorted {
                 ReleaseDateText.lastDay($0.nextDate ?? "") < ReleaseDateText.lastDay($1.nextDate ?? "")
             },
-            available: works.filter { $0.nextDate == nil }
+            maybe: maybe.compactMap { $0.narrowed(to: format) }
+                + coming.filter { $0.nextDate == nil && $0.language != $0.readIn }
         )
     }
 
     mutating func remove(key: String) {
         upcoming.removeAll { $0.key == key }
-        available.removeAll { $0.key == key }
+        maybe.removeAll { $0.key == key }
     }
 }
 
 enum DiscoverAPI {
-    /// A look runs web-searching model calls and an Audible search per
-    /// author: the request is given the server's whole ceiling plus a margin.
+    /// A look runs one web-searching model call per work: the request is given
+    /// the server's whole ceiling plus a margin.
     private static let refreshTimeout: TimeInterval = 200
+    /// Building a book nobody opened before is a grounded model call.
+    private static let previewTimeout: TimeInterval = 120
 
     static func feed() async throws -> DiscoverFeed {
         let data = try await GraphQLHelpers.fetch(
@@ -162,13 +154,25 @@ enum DiscoverAPI {
         return DiscoverFeed(fields: data.refreshDiscover.fragments.discoverFields)
     }
 
-    /// "Pas intéressé": the work never comes back, nor its alerts.
+    /// "Pas intéressé": the work never comes back in that language, nor its
+    /// alerts.
     static func dismiss(key: String) async throws {
         _ = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.DismissTranslationMutation(key: key),
+            mutation: ShioriGraphQL.DismissReleaseMutation(key: key),
             changesLibrary: false
         )
+    }
+
+    /// A book of the tab the reader does not hold, built whole. Nil when it
+    /// could not be.
+    static func preview(releaseKey: String, title: String) async throws -> ScannedBook? {
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.BookPreviewQuery(releaseKey: releaseKey, title: title),
+            requestTimeout: previewTimeout
+        )
+        return data.bookPreview.map { ScannedBook(fields: $0.fragments.scannedRecord) }
     }
 }
 
@@ -177,32 +181,42 @@ private extension DiscoverFeed {
         self.init(
             preparedAt: fields.preparedAt.flatMap(GraphQLHelpers.parseISO8601),
             canRefresh: fields.canRefresh,
-            upcoming: fields.upcoming.compactMap { Translation(fields: $0.fragments.translationFields) },
-            available: fields.available.compactMap { Translation(fields: $0.fragments.translationFields) }
+            upcoming: fields.upcoming.compactMap { Release(fields: $0.fragments.releaseFields) },
+            maybe: fields.maybe.compactMap { Release(fields: $0.fragments.releaseFields) }
         )
     }
 }
 
-private extension Translation {
-    init?(fields: ShioriGraphQL.TranslationFields) {
-        guard let language = fields.originalLanguage.value?.asDomain else { return nil }
+private extension Release {
+    init?(fields: ShioriGraphQL.ReleaseFields) {
+        guard let language = fields.language.value?.asDomain,
+              let readIn = fields.readIn.value?.asDomain else { return nil }
         self.init(
             key: fields.key,
             isSeries: fields.kind.value == .series,
+            seriesId: fields.seriesId,
+            language: language,
+            readIn: readIn,
             title: fields.title,
-            originalTitle: fields.originalTitle,
             author: fields.author,
-            originalLanguage: language,
-            volumesRead: fields.volumesRead,
             coverURL: fields.coverUrl.flatMap(URL.init(string:)),
             nextDate: fields.nextDate,
             editions: fields.editions.map { edition in
-                TranslatedEdition(
+                ReleaseEdition(
                     title: edition.title,
                     volume: edition.volume,
                     format: edition.format.value == .audiobook ? .audiobook : .book,
                     date: edition.date,
+                    isbn13: edition.isbn13,
+                    coverURL: edition.coverUrl.flatMap(URL.init(string:)),
                     audibleURL: edition.audibleUrl.flatMap(URL.init(string:))
+                )
+            },
+            series: fields.series.map { series in
+                SeriesAPI.followedRow(
+                    series.fragments.followedSeriesRow,
+                    volumes: series.volumes.map(\.fragments.followedVolume),
+                    spine: series.catalogue?.spine.map(\.fragments.volumeEntry)
                 )
             }
         )

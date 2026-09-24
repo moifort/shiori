@@ -105,7 +105,9 @@ enum SeriesAPI {
         }
     }
 
-    private static func followedRow(
+    /// A row of the Series tab as its fields came back — Découvrir draws its
+    /// sagas with the same.
+    static func followedRow(
         _ row: ShioriGraphQL.FollowedSeriesRow,
         volumes: [ShioriGraphQL.FollowedVolume],
         spine: [ShioriGraphQL.VolumeEntry]?
@@ -115,7 +117,8 @@ enum SeriesAPI {
         followed.strip = SeriesStripItem.strip(
             owned: followed.volumes,
             spine: spine?.map(\.asVolume) ?? [],
-            currentYear: Calendar.current.component(.year, from: .now)
+            currentYear: Calendar.current.component(.year, from: .now),
+            language: followed.language
         )
         return followed
     }

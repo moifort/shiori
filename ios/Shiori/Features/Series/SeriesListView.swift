@@ -146,7 +146,7 @@ struct SeriesListView: View {
                         // A tap rather than a button: a button would claim the
                         // drag that scrolls the cover strip and highlight the
                         // whole row on every swipe through it.
-                        row(entry)
+                        SeriesRow(entry: entry)
                             .contentShape(Rectangle())
                             .onTapGesture { openSeries = destination(of: entry) }
                             .accessibilityElement(children: .combine)
@@ -220,103 +220,6 @@ struct SeriesListView: View {
     private var sections: [MonthSection<FollowedSeries>] {
         MonthSection.cut(viewModel.followed, on: \.shelvedAt)
     }
-
-    /// Every mark on the first line, in the top corner — the edition's
-    /// language, where the reader stands, their heart or stars — so the eye
-    /// finds them in the same place on every row; the covers underneath. The
-    /// marks share that line only, as on the library rows: the author below
-    /// takes the whole width instead of being squeezed beside them.
-    private func row(_ entry: FollowedSeries) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
-                // On the title's baseline, so the taller tag does not push the
-                // author down.
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(entry.name).font(.body.weight(.medium)).lineLimit(2)
-                    Spacer(minLength: 0)
-                    marks(entry)
-                }
-                if let author = entry.author {
-                    Text(author).font(.subheadline).foregroundStyle(.secondary)
-                }
-            }
-            covers(entry)
-        }
-        .padding(.vertical, 2)
-    }
-
-    private func marks(_ entry: FollowedSeries) -> some View {
-        HStack(spacing: 6) {
-            if let language = entry.language, language.isForeign {
-                LanguageTag(language: language)
-            }
-            if let state = entry.state {
-                SeriesStateLabel(state: state)
-            }
-            OpinionMark(
-                rating: entry.opinion?.rating,
-                isFavorite: entry.opinion?.favorite == true,
-                font: .caption
-            )
-        }
-        .font(.caption)
-        .fixedSize()
-    }
-
-    /// Every volume of the cycle, in its order, as a cover: the owned ones with
-    /// their status pinned on, the missing ones dimmed with their number, the
-    /// announced ones fainter still under a clock, nothing off the cycle — the
-    /// reader's progress, and what they lack, read off the books themselves
-    /// rather than off a bar. No titles: the saga screen is a tap away.
-    private func covers(_ entry: FollowedSeries) -> some View {
-        ScrollView(.horizontal) {
-            LazyHStack(spacing: 10) {
-                ForEach(entry.strip.isEmpty ? entry.volumes.map { SeriesStripItem.owned($0) } : entry.strip) { item in
-                    switch item {
-                    case let .owned(volume):
-                        BookCover(book: volume, width: coverWidth, showsFormatBadge: false)
-                            .overlay(alignment: .topTrailing) {
-                                ReadingStatusBadge(status: volume.status)
-                                    .offset(x: 5, y: -5)
-                            }
-                    case let .missing(_, number, title, forthcoming):
-                        BookCover(
-                            book: Book(id: item.id, title: title, authors: entry.author.map { [$0] } ?? [], status: .toRead),
-                            width: coverWidth,
-                            showsFormatBadge: false
-                        )
-                        .opacity(forthcoming ? 0.2 : 0.35)
-                        .overlay(alignment: .bottom) {
-                            if let number {
-                                Text(verbatim: "\(number)")
-                                    .font(.caption2.weight(.bold).monospacedDigit())
-                                    .foregroundStyle(.secondary)
-                                    .padding(.bottom, 4)
-                            }
-                        }
-                        // Where an owned volume pins its status: an announced
-                        // one says it is not out yet.
-                        .overlay(alignment: .topTrailing) {
-                            if forthcoming {
-                                Image(systemName: "clock")
-                                    .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(.tertiary)
-                                    .padding(4)
-                            }
-                        }
-                    }
-                }
-            }
-            // Room for the badges, which overhang the covers' corners and the
-            // scroll view would otherwise clip.
-            .padding(.top, 6)
-            .padding(.trailing, 6)
-        }
-        .scrollIndicators(.hidden)
-        .accessibilityHidden(true)
-    }
-
-    private let coverWidth: CGFloat = 44
 }
 
 /// Where the reader stands on a saga, in words — "En cours", "Terminée",

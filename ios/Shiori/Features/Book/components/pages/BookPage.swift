@@ -13,6 +13,11 @@ import SwiftUI
 /// The other volumes of the saga are not listed here: that list belongs to the
 /// series screen, one tap away on the series row, which is the one place that
 /// knows the whole catalogue.
+///
+/// A book the reader does not hold — one Découvrir found — is drawn by the same
+/// page in preview: when it comes out and the way to add it take the place of
+/// the status, and the reader's own reading, which does not exist yet, is left
+/// out.
 struct BookPage: View {
     let book: Book
     let isSaving: Bool
@@ -22,6 +27,8 @@ struct BookPage: View {
     let onOpenSeries: () -> Void
     let onEditGenre: () -> Void
     let onEditRecommendation: () -> Void
+    /// Set for a book the reader does not hold.
+    var preview: BookPreviewActions? = nil
 
     /// Past this many words the summary folds, and a button unfolds it: an
     /// Audible blurb can run to a screenful, and the facts below it were
@@ -32,9 +39,13 @@ struct BookPage: View {
 
     var body: some View {
         List {
-            statusSection
+            if let preview {
+                previewSection(preview)
+            } else {
+                statusSection
+            }
             header
-            readingSection
+            if preview == nil { readingSection }
             if let synopsis = book.synopsis { synopsisSection(synopsis) }
         }
         .listStyle(.insetGrouped)
@@ -50,6 +61,41 @@ struct BookPage: View {
                 .accessibilityIdentifier("book-status")
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets())
+        }
+    }
+
+    /// A book the reader does not hold: when it comes out, and adding it to the
+    /// pile — or saying it does not interest them.
+    private func previewSection(_ preview: BookPreviewActions) -> some View {
+        Section {
+            if let date = preview.releaseDate, ReleaseDateText.isUpcoming(date) {
+                Label(ReleaseDateText.coming(date), systemImage: "clock")
+                    .foregroundStyle(.orange)
+                    .fontWeight(.semibold)
+                    .accessibilityIdentifier("book-preview-release")
+            }
+            Button(action: preview.onAdd) {
+                HStack {
+                    if preview.isAdding { ProgressView().tint(.white) }
+                    Label(
+                        preview.isAdded ? "Ajouté à lire" : "Ajouter à lire",
+                        systemImage: preview.isAdded ? "checkmark" : "plus"
+                    )
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 4)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(preview.isAdding || preview.isAdded)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets())
+            .accessibilityIdentifier("book-preview-add")
+            if let onDismiss = preview.onDismiss {
+                Button("Pas intéressé", systemImage: "eye.slash", role: .destructive, action: onDismiss)
+                    .frame(maxWidth: .infinity)
+                    .listRowBackground(Color.clear)
+                    .accessibilityIdentifier("book-preview-dismiss")
+            }
         }
     }
 
@@ -205,6 +251,8 @@ struct BookPage: View {
             }
         }
         .tint(.primary)
+        // A book the reader does not hold is not theirs to correct.
+        .disabled(preview != nil)
         .accessibilityIdentifier("book-genre")
     }
 
@@ -331,6 +379,17 @@ struct BookPage: View {
             }
         }
     }
+}
+
+/// What a book the reader does not hold offers in place of their reading.
+struct BookPreviewActions {
+    /// When it comes out, as precisely as announced; nil for a book out.
+    let releaseDate: String?
+    let isAdding: Bool
+    let isAdded: Bool
+    let onAdd: () -> Void
+    /// "Pas intéressé", where the book came from a list that can forget it.
+    let onDismiss: (() -> Void)?
 }
 
 #Preview {
