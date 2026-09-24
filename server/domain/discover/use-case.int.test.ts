@@ -34,6 +34,12 @@ let carlDate = '2027-02-19'
 mock.module('~/domain/scan/gemini', () => ({
   generate: async ({ step, parts }: { step: string; parts: { text: string }[] }) => {
     calls.push(step)
+    // The scan's grounded step, for a book preview.
+    if (step === 'enrichment')
+      return {
+        usage: { promptTokens: 1, outputTokens: 1, thinkingTokens: 0, searches: 1 },
+        value: { title: 'Carl 4', authors: ['Matt Dinniman'], synopsis: 'Le tome 4.' },
+      }
     const keys = [...(parts[0]?.text ?? '').matchAll(/^- (\S+) :/gm)].map((match) => match[1])
     const answers: Record<string, unknown> = {
       'series--dungeon-crawler-carl--matt-dinniman--fr': {
@@ -332,5 +338,52 @@ describe('the release watch and the catalogue', () => {
         [4, { fr: '2027-02-19' }],
       ],
     )
+  })
+})
+
+describe('a book preview', () => {
+  const carlFr = 'series--dungeon-crawler-carl--matt-dinniman--fr'
+
+  test('is built whole for an edition a watch found, then kept for every reader', async () => {
+    await stock(reader)
+    await DiscoverUseCase.refresh(reader, 'fr', now)
+    calls.length = 0
+
+    const first = await DiscoverUseCase.preview(carlFr, BookTitle('Carl 4'), 'fr', now)
+    startFakeRequest()
+    const again = await DiscoverUseCase.preview(carlFr, BookTitle('Carl 4'), 'fr', now)
+
+    expect(first).toMatchObject({
+      title: 'Carl 4',
+      authors: ['Matt Dinniman'],
+      synopsis: 'Le tome 4.',
+      language: 'fr',
+    })
+    expect(again).toEqual(first)
+    expect(calls).toEqual(['enrichment'])
+  })
+
+  test('is built again once the book it announced is out', async () => {
+    await stock(reader)
+    await DiscoverUseCase.refresh(reader, 'fr', now)
+    calls.length = 0
+
+    await DiscoverUseCase.preview(carlFr, BookTitle('Carl 4'), 'fr', now)
+    startFakeRequest()
+    await DiscoverUseCase.preview(carlFr, BookTitle('Carl 4'), 'fr', new Date('2027-02-21'))
+
+    expect(calls).toEqual(['enrichment', 'enrichment'])
+  })
+
+  test('is never a free scan of a title no watch found', async () => {
+    await stock(reader)
+    await DiscoverUseCase.refresh(reader, 'fr', now)
+    calls.length = 0
+
+    expect(await DiscoverUseCase.preview(carlFr, BookTitle('Anything'), 'fr', now)).toBeNull()
+    expect(
+      await DiscoverUseCase.preview('book--nope--fr', BookTitle('Carl 4'), 'fr', now),
+    ).toBeNull()
+    expect(calls).toEqual([])
   })
 })

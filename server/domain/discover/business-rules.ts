@@ -8,6 +8,7 @@ import type { BookTitle, UserId } from '~/domain/shared/types'
 import type { ObjectPath } from '~/system/object-store/types'
 import { slugify } from '~/utils/slug'
 import type {
+  BookPreview,
   DatedEdition,
   DiscoverFeed,
   Release,
@@ -262,6 +263,20 @@ export const releasesOf = (
       (release) => release.nextDate === undefined && release.language !== release.readIn,
     ),
   }
+}
+
+// MARK: - Book previews
+
+export const previewKeyOf = (title: string, author: string | undefined, language: Language) =>
+  `${shelfKeyOf(title, author)}--${language}`
+
+/** Whether a preview must be built: never built, or built before its book came
+ *  out and out since — an announcement lists less than a book on sale. */
+export const previewIsStale = (preview: BookPreview | undefined, today: string): boolean => {
+  if (!preview) return true
+  if (!preview.releaseDate) return false
+  const out = lastDayOf(preview.releaseDate)
+  return out < today && preview.builtAt.toISOString().slice(0, 10) <= out
 }
 
 // MARK: - Alerts

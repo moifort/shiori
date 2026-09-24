@@ -8,6 +8,7 @@ import {
   foundVolumesOf,
   isUpcoming,
   ownedEditionsOf,
+  previewIsStale,
   releasesOf,
   watchedWorksOf,
 } from '~/domain/discover/business-rules'
@@ -486,5 +487,23 @@ describe('reading an edition out of the model’s answer', () => {
       date: undefined,
       isbn13: undefined,
     })
+  })
+})
+
+describe('a book preview', () => {
+  const preview = (builtAt: string, releaseDate?: string) => ({
+    key: 'carl-4--matt-dinniman--fr',
+    book: { recognized: true, title: title('Carl 4'), authors: [], subgenres: [] },
+    builtAt: at(builtAt),
+    releaseDate: releaseDate ? ReleaseDate(releaseDate) : undefined,
+  })
+
+  test('is built once, and again only once the book it announced is out', () => {
+    expect(previewIsStale(undefined, '2026-09-24')).toBe(true)
+    expect(previewIsStale(preview('2026-01-01'), '2026-09-24')).toBe(false)
+    expect(previewIsStale(preview('2026-09-20', '2026-10-08'), '2026-09-24')).toBe(false)
+    expect(previewIsStale(preview('2026-09-20', '2026-10-08'), '2026-10-09')).toBe(true)
+    expect(previewIsStale(preview('2026-10-10', '2026-10-08'), '2026-10-11')).toBe(false)
+    expect(previewIsStale(preview('2026-09-20', '2026-10'), '2026-10-20')).toBe(false)
   })
 })

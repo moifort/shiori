@@ -1585,6 +1585,13 @@ type Query {
   book(id: BookId!): Book
 
   """
+  A book of the Découvrir tab the reader does not hold, built whole as a scan builds one — cover, summary, genre, publisher, pages — so the app draws it with the book screen itself. Works for a book not out yet, described from its announcement; what nobody knows before release is absent.
+  
+  Shared and kept: the first reader to open a book pays the model call, a few seconds, and every later opening is instant. Spends no scan of the allowance. Only for an edition a release watch found — `releaseKey` is the `Release.key` and `title` the `ReleaseEdition.title` — and null for any other, or when the model failed on a book never built.
+  """
+  bookPreview(releaseKey: String!, title: BookTitle!): ScanResult
+
+  """
   Application release notes, one entry per version, most recent first.
   
   Served from the published changelog asset in the caller's language (from `Accept-Language`, English fallback). Global (not user-scoped); the app uses it to show what changed in each release.

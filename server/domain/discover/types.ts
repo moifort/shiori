@@ -1,5 +1,6 @@
 import type { AudibleMarketplace } from '~/domain/audible/types'
 import type { Book, BookLanguage, CoverUrl, Isbn13 } from '~/domain/book/types'
+import type { ScanResult } from '~/domain/scan/types'
 import type { ReleaseDate, SeriesId, VolumeNumber } from '~/domain/series/types'
 import type { FollowedSeries } from '~/domain/series/use-case'
 import type { Language } from '~/domain/shared/language'
@@ -135,4 +136,18 @@ export type Discover = {
   /** Works the reader may want: for now, a translation already out of what
    *  they read in another language, the most recently read first. */
   maybe: Release[]
+}
+
+/** A book the reader does not hold, built as a scan builds one so its screen
+ *  looks like any book's — shared by every reader who opens it, holding no
+ *  reference to anybody, so the model is paid once per book and language. */
+export type BookPreview = {
+  /** `{shelfKey}--{language}`: the title and author, in the app's language the
+   *  record is written in. */
+  key: string
+  book: ScanResult
+  builtAt: Date
+  /** When the book comes out, for a book not out when it was built: once out,
+   *  its listing fills in and the preview is built again. */
+  releaseDate?: ReleaseDate
 }

@@ -9,7 +9,10 @@ import {
   dueEditions,
   emptyFeed,
   foundVolumesOf,
+  isUpcoming,
   ownedEditionsOf,
+  previewIsStale,
+  previewKeyOf,
   releasesOf,
   type UnsignedRelease,
   watchedWorksOf,
@@ -29,15 +32,16 @@ import type {
   WatchedWork,
 } from '~/domain/discover/types'
 import { NotificationUseCase } from '~/domain/notification/use-case'
+import { ScanCommand } from '~/domain/scan/command'
 import { generate } from '~/domain/scan/gemini'
 import { publishedCoverOf } from '~/domain/scan/published-cover'
-import type { AiStepUsage } from '~/domain/scan/types'
+import type { AiStepUsage, ScanResult } from '~/domain/scan/types'
 import { SeriesCommand } from '~/domain/series/command'
 import type { SeriesName } from '~/domain/series/types'
 import { type FollowedSeries, SeriesUseCase } from '~/domain/series/use-case'
 import type { Language } from '~/domain/shared/language'
 import { BookTitle, Count } from '~/domain/shared/primitives'
-import type { UserId } from '~/domain/shared/types'
+import type { BookTitle as BookTitleValue, UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
 import { objectStore } from '~/system/object-store'
 import { withRequestCacheScope } from '~/system/request-cache'
@@ -197,6 +201,54 @@ export namespace DiscoverUseCase {
       }
     }
     return { readers }
+  }
+
+  /** A book the reader does not hold, built whole as a scan builds one —
+   *  cover, summary, genre, publisher, pages — so its screen looks like any
+   *  book's, even for a book not out yet, described from its announcement.
+   *  Shared and kept: the first reader to open it pays the model, nobody else
+   *  does, and it spends no scan of anybody's allowance, since the reader is
+   *  only looking. Built again once the book is out.
+   *
+   *  Only for an edition a release watch found — the watch names its author
+   *  and date — so a preview is never a free scan of any title. Null for any
+   *  other, and when the model failed on a book never built. */
+  export const preview = async (
+    releaseKey: string,
+    title: BookTitleValue,
+    language: Language,
+    now = new Date(),
+  ): Promise<ScanResult | null> => {
+    const [watch] = await DiscoverQuery.watches([releaseKey])
+    const edition = watch?.editions.find((entry) => entry.title === title)
+    if (!watch || !edition) return null
+    const key = previewKeyOf(title, watch.author, language)
+    const cached = await DiscoverQuery.preview(key)
+    if (!previewIsStale(cached, todayOf(now))) return cached?.book ?? null
+    try {
+      const { result, usage } = await ScanCommand.lookUpTitle(
+        BookTitle(watch.author ? `${title} — ${watch.author}` : title),
+        language,
+      )
+      await AdminCommand.recordAiUsage({ cacheHit: false, usage }).catch((error) =>
+        logger.warn('AI usage not recorded', { error }),
+      )
+      const book: ScanResult = {
+        ...result,
+        title: result.title || title,
+        authors: result.authors.length > 0 ? result.authors : watch.author ? [watch.author] : [],
+        language: result.language ?? watch.language,
+        isbn13: result.isbn13 ?? edition.isbn13,
+        coverUrl: result.coverUrl ?? edition.coverUrl,
+      }
+      const releaseDate =
+        edition.date && isUpcoming(edition, todayOf(now)) ? edition.date : undefined
+      await DiscoverCommand.savePreview({ key, book, builtAt: now, releaseDate })
+      return book
+    } catch (error) {
+      logger.warn('book preview failed', { error, key })
+      return cached?.book ?? null
+    }
   }
 
   /** "Pas intéressé": never propose this work again. */

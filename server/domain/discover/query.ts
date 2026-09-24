@@ -1,5 +1,5 @@
 import * as repository from '~/domain/discover/infrastructure/repository'
-import type { DiscoverFeed, ReleaseWatch } from '~/domain/discover/types'
+import type { BookPreview, DiscoverFeed, ReleaseWatch } from '~/domain/discover/types'
 import type { UserId } from '~/domain/shared/types'
 
 export namespace DiscoverQuery {
@@ -12,4 +12,7 @@ export namespace DiscoverQuery {
 
   export const watches = (keys: readonly string[]): Promise<ReleaseWatch[]> =>
     repository.findWatches(keys)
+
+  export const preview = (key: string): Promise<BookPreview | undefined> =>
+    repository.findPreview(key)
 }

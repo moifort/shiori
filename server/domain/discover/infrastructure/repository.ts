@@ -1,4 +1,4 @@
-import type { DiscoverFeed, ReleaseWatch } from '~/domain/discover/types'
+import type { BookPreview, DiscoverFeed, ReleaseWatch } from '~/domain/discover/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
@@ -42,4 +42,17 @@ export const findWatches = async (keys: readonly string[]): Promise<ReleaseWatch
 
 export const saveWatch = async (watch: ReleaseWatch): Promise<void> => {
   await watches().doc(watch.key).set(withoutAbsentFields(watch))
+}
+
+// Shared too: a book built for whoever opens it first, keyed by the book and
+// the language its record is written in.
+const previews = () =>
+  db().collection('book-previews').withConverter(genericDataConverter<BookPreview>())
+
+export const findPreview = async (key: string): Promise<BookPreview | undefined> =>
+  (await previews().doc(key).get()).data()
+
+export const savePreview = async (preview: BookPreview): Promise<BookPreview> => {
+  await previews().doc(preview.key).set(withoutAbsentFields(preview))
+  return preview
 }
