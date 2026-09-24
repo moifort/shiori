@@ -115,30 +115,22 @@ struct FriendProfile: Sendable {
             + hearted.filter { $0.favoritedAt == nil }
     }
 
-    /// What moved on the shelf in the last thirty days, newest first: the
-    /// books in progress, the last book finished — that one alone — and the
-    /// sagas and books hearted. What a friend coming back looks for, rather
-    /// than the same lists as last time. A book appears once, on its latest
-    /// news.
+    /// What moved on the shelf in the last thirty days, one line of each
+    /// kind at most and each only when it is recent: the book in progress
+    /// touched last, the last book finished, the saga hearted last. What a
+    /// friend coming back looks for, rather than the same lists as last time.
     func recentActivity(now: Date = .now) -> [RecentActivity] {
         let since = now.addingTimeInterval(-RecentActivity.window)
-        let reading = self.reading.compactMap { entry in
+        let reading = self.reading.first.flatMap { entry in
             entry.lastActivityAt.map { RecentActivity.reading(entry, at: $0) }
         }
         let finished = lastFinished.flatMap { entry in
             entry.book.finishedAt.map { RecentActivity.finished(entry, at: $0) }
         }
-        let sagas = favoriteSagas.compactMap { saga in
+        let saga = favoriteSagas.first.flatMap { saga in
             saga.favoritedAt.map { RecentActivity.heartedSaga(saga, at: $0) }
         }
-        let books = favorites.compactMap { entry in
-            entry.favoritedAt.map { RecentActivity.heartedBook(entry, at: $0) }
-        }
-        var seen = Set<String>()
-        return (reading + [finished].compactMap(\.self) + sagas + books)
-            .filter { $0.date >= since }
-            .sorted { $0.date > $1.date }
-            .filter { seen.insert($0.subjectId).inserted }
+        return [reading, finished, saga].compactMap(\.self).filter { $0.date >= since }
     }
 
     var displayName: String {
@@ -151,12 +143,11 @@ struct FriendProfile: Sendable {
 }
 
 /// One thing that moved on a shelf lately, with its day: a book picked up or
-/// read on, the last book finished, a saga or a book hearted.
+/// read on, the last book finished, a saga hearted.
 enum RecentActivity: Identifiable, Sendable {
     case reading(FriendBook, at: Date)
     case finished(FriendBook, at: Date)
     case heartedSaga(FriendSaga, at: Date)
-    case heartedBook(FriendBook, at: Date)
 
     /// How far back "lately" goes.
     static let window: TimeInterval = 30 * 24 * 3600
@@ -166,30 +157,27 @@ enum RecentActivity: Identifiable, Sendable {
         case .reading: "reading-\(subjectId)"
         case .finished: "finished-\(subjectId)"
         case .heartedSaga: "saga-\(subjectId)"
-        case .heartedBook: "hearted-\(subjectId)"
         }
     }
 
-    /// The book or saga it is about, so that one thing shows once.
+    /// The book or saga it is about.
     var subjectId: String {
         switch self {
-        case let .reading(entry, _), let .finished(entry, _), let .heartedBook(entry, _): entry.id
+        case let .reading(entry, _), let .finished(entry, _): entry.id
         case let .heartedSaga(saga, _): saga.id
         }
     }
 
     var date: Date {
         switch self {
-        case let .reading(_, date), let .finished(_, date), let .heartedSaga(_, date),
-             let .heartedBook(_, date):
-            date
+        case let .reading(_, date), let .finished(_, date), let .heartedSaga(_, date): date
         }
     }
 
     /// The book it opens on, a saga opening nothing.
     var book: FriendBook? {
         switch self {
-        case let .reading(entry, _), let .finished(entry, _), let .heartedBook(entry, _): entry
+        case let .reading(entry, _), let .finished(entry, _): entry
         case .heartedSaga: nil
         }
     }

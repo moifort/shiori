@@ -82,22 +82,12 @@ struct FriendProfileView: View {
 
     private func shelves(_ profile: FriendProfile) -> some View {
         List {
-            Section {
-                HStack(spacing: 8) {
-                    tile(friend.favoriteCount, "Favoris", systemImage: "heart.fill", tint: .red)
-                    tile(friend.readingCount, "En cours", systemImage: "book.fill", tint: ReadingStatus.reading.tint)
-                    tile(friend.toReadCount, "À lire", systemImage: "bookmark.fill", tint: ReadingStatus.toRead.tint)
-                }
-                .listRowInsets(EdgeInsets())
-                .listRowBackground(Color.clear)
-            }
-            shelf("En cours", books: profile.reading, empty: "Aucune lecture en cours.", showsSeries: true)
-            // What moved lately, so a friend coming back finds what changed
-            // rather than the same lists. A saga is not opened: the catalogue
-            // is not something a friendship opens.
+            // What moved lately leads the page, so a friend coming back
+            // finds what changed rather than the same lists. A saga is not
+            // opened: the catalogue is not something a friendship opens.
             let recent = profile.recentActivity()
             if !recent.isEmpty {
-                Section("Récemment") {
+                Section("Activités récentes") {
                     ForEach(recent) { activity in
                         if let entry = activity.book {
                             RecentActivityRow(activity: activity)
@@ -109,6 +99,16 @@ struct FriendProfileView: View {
                     }
                 }
             }
+            Section {
+                HStack(spacing: 8) {
+                    tile(friend.favoriteCount, "Favoris", systemImage: "heart.fill", tint: .red)
+                    tile(friend.readingCount, "En cours", systemImage: "book.fill", tint: ReadingStatus.reading.tint)
+                    tile(friend.toReadCount, "À lire", systemImage: "bookmark.fill", tint: ReadingStatus.toRead.tint)
+                }
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+            }
+            shelf("En cours", books: profile.reading, empty: "Aucune lecture en cours.", showsSeries: true)
             // A hearted saga stands for its volumes: the books below it are
             // the hearts it does not already cover.
             if !profile.favoriteSagas.isEmpty {
