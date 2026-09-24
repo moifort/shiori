@@ -1,7 +1,35 @@
+import { BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
+import type { BookLanguage } from '~/domain/book/types'
 import { splitBySpine } from '~/domain/series/business-rules'
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
 import type { Series, Volume } from '~/domain/series/types'
 import { builder } from '~/domain/shared/graphql/builder'
+
+type VolumeRelease = { language: BookLanguage; volume: Volume }
+
+const VolumeReleaseType = builder.objectRef<VolumeRelease>('VolumeRelease').implement({
+  description: 'A volume in one language, as the weekly release watch found it: out, or announced.',
+  fields: (t) => ({
+    language: t.field({ type: BookLanguageEnum, resolve: ({ language }) => language }),
+    date: t.string({
+      description:
+        'When it came out or comes out in that language, as precisely as announced: ' +
+        '`YYYY`, `YYYY-MM` or `YYYY-MM-DD`.',
+      resolve: ({ language, volume }) => volume.releases?.[language] ?? '',
+    }),
+    title: t.field({
+      type: 'BookTitle',
+      description: 'Its title in that language.',
+      resolve: ({ language, volume }) => volume.titles?.[language] ?? volume.title,
+    }),
+    coverUrl: t.field({
+      type: 'CoverUrl',
+      nullable: true,
+      description: 'The publisher’s cover of that edition, found by its ISBN.',
+      resolve: ({ language, volume }) => volume.covers?.[language] ?? null,
+    }),
+  }),
+})
 
 export const VolumeType = builder.objectRef<Volume>('Volume').implement({
   description:
@@ -26,6 +54,20 @@ export const VolumeType = builder.objectRef<Volume>('Volume').implement({
       resolve: (volume) => volume.publishedIn ?? null,
     }),
     kind: t.field({ type: VolumeKindEnum, resolve: (volume) => volume.kind }),
+    releases: t.field({
+      type: [VolumeReleaseType],
+      description:
+        'When the volume came out or comes out in each language the release watch ' +
+        'found it in. What decides, for the reader holding one edition, whether the ' +
+        'volume is out: a volume out in English can be months away in French. A ' +
+        'volume announced to the day counts in the saga at once — a reader up to date ' +
+        'is then waiting for it, not done.',
+      resolve: (volume) =>
+        Object.keys(volume.releases ?? {}).map((language) => ({
+          language: language as BookLanguage,
+          volume,
+        })),
+    }),
   }),
 })
 

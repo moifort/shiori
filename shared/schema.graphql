@@ -2287,6 +2287,11 @@ type Volume {
   Publication year. A year in the future marks a volume that has been announced but has not shipped.
   """
   publishedIn: Year
+
+  """
+  When the volume came out or comes out in each language the release watch found it in. What decides, for the reader holding one edition, whether the volume is out: a volume out in English can be months away in French. A volume announced to the day counts in the saga at once — a reader up to date is then waiting for it, not done.
+  """
+  releases: [VolumeRelease!]!
   title: BookTitle!
 }
 
@@ -2318,6 +2323,23 @@ Position of a volume along the spine of its series, 1 to 200.
 Absent on anything that is not a numbered main volume: a spin-off or a companion has no place in the numbering. Example: 3.
 """
 scalar VolumeNumber
+
+"""
+A volume in one language, as the weekly release watch found it: out, or announced.
+"""
+type VolumeRelease {
+  """The publisher’s cover of that edition, found by its ISBN."""
+  coverUrl: CoverUrl
+
+  """
+  When it came out or comes out in that language, as precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`.
+  """
+  date: String!
+  language: BookLanguage!
+
+  """Its title in that language."""
+  title: BookTitle!
+}
 
 """
 A four-digit publication year, from 1450 to ten years out.

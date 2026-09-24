@@ -304,8 +304,11 @@ const described = async (
         read,
         currentYear,
         saga.unfollowed,
+        { language: saga.language },
       ),
-      progress: catalogue ? progressOf(catalogue, read, currentYear) : null,
+      progress: catalogue
+        ? progressOf(catalogue, read, currentYear, { language: saga.language })
+        : null,
       ownedCount: Count(saga.books.length),
       books: inSagaOrder(saga.books),
       shelvedAt: saga.shelvedAt,

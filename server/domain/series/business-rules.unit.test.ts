@@ -6,14 +6,16 @@ import {
   genreOf,
   inCatalogueOrder,
   inTabOrder,
+  isForthcoming,
   matchingFilter,
   progressOf,
   provisionalCatalogueOf,
   splitBySpine,
   stateOf,
   withoutDuplicateVolumes,
+  withReleases,
 } from '~/domain/series/business-rules'
-import { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
+import { ReleaseDate, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import type { Series, Volume } from '~/domain/series/types'
 import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
 
@@ -24,6 +26,7 @@ const volume = (partial: Omit<Partial<Volume>, 'title'> & { title: string }): Vo
   kind: partial.kind ?? 'main',
   number: partial.number,
   publishedIn: partial.publishedIn,
+  releases: partial.releases,
 })
 
 const saga = (volumes: Volume[]): Series => ({
@@ -440,5 +443,132 @@ describe('matchingFilter', () => {
 
   test('keeps a saga of unknown state with the complete ones', () => {
     expect(names(matchingFilter(sagas, { state: 'complete' }))).toEqual(['Fondation'])
+  })
+})
+
+describe('release dates per edition', () => {
+  const TODAY = '2026-09-24'
+  const announced = volume({
+    title: 'Five',
+    number: VolumeNumber(5),
+    publishedIn: Year(2024),
+    releases: { en: ReleaseDate('2024-03-01'), fr: ReleaseDate('2026-10-08') },
+  })
+
+  test('a volume out in English is still to come in French', () => {
+    expect(isForthcoming(announced, THIS_YEAR, { language: 'en', today: TODAY })).toBe(false)
+    expect(isForthcoming(announced, THIS_YEAR, { language: 'fr', today: TODAY })).toBe(true)
+  })
+
+  test('a month is to come until it is over', () => {
+    const month = volume({
+      title: 'Six',
+      number: VolumeNumber(6),
+      releases: { fr: ReleaseDate('2026-09') },
+    })
+    expect(isForthcoming(month, THIS_YEAR, { language: 'fr', today: TODAY })).toBe(true)
+    expect(isForthcoming(month, THIS_YEAR, { language: 'fr', today: '2026-10-01' })).toBe(false)
+  })
+
+  test('without a date in that language, the year decides', () => {
+    expect(isForthcoming(announced, THIS_YEAR, { language: 'de', today: TODAY })).toBe(false)
+  })
+
+  const four = [1, 2, 3, 4].map((number) =>
+    volume({ title: `V${number}`, number: VolumeNumber(number), publishedIn: Year(2020) }),
+  )
+  const readAll = new Set([1, 2, 3, 4])
+
+  test('a volume announced to the day reopens a finished saga', () => {
+    const series = saga([...four, { ...announced, releases: { fr: ReleaseDate('2026-10-08') } }])
+    expect(stateOf(series, readAll, THIS_YEAR, { language: 'fr', today: TODAY })).toBe(
+      'in-progress',
+    )
+    expect(progressOf(series, readAll, THIS_YEAR, { language: 'fr', today: TODAY })).toEqual({
+      readCount: 4,
+      totalCount: 5,
+    })
+  })
+
+  test('a volume announced for a month does not', () => {
+    const next = volume({
+      title: 'Five',
+      number: VolumeNumber(5),
+      releases: { fr: ReleaseDate('2026-11') },
+    })
+    expect(
+      stateOf(saga([...four, next]), readAll, THIS_YEAR, { language: 'fr', today: TODAY }),
+    ).toBe('complete')
+  })
+
+  test('another edition’s announcement does not reopen this one', () => {
+    const next = volume({
+      title: 'Five',
+      number: VolumeNumber(5),
+      publishedIn: Year(2027),
+      releases: { fr: ReleaseDate('2026-10-08') },
+    })
+    expect(
+      stateOf(saga([...four, next]), readAll, THIS_YEAR, { language: 'en', today: TODAY }),
+    ).toBe('complete')
+  })
+
+  test('with no edition named, any announcement to the day counts', () => {
+    const series = saga([...four, { ...announced, releases: { fr: ReleaseDate('2026-10-08') } }])
+    expect(stateOf(series, readAll, THIS_YEAR, { today: TODAY })).toBe('in-progress')
+  })
+})
+
+describe('withReleases', () => {
+  const series = saga([
+    volume({ title: 'One', number: VolumeNumber(1), publishedIn: Year(2020) }),
+    volume({ title: 'Side', kind: 'novella' }),
+  ])
+
+  test('dates, titles and covers land on their volume, in that language', () => {
+    const merged = withReleases(series, 'fr', [
+      {
+        volume: VolumeNumber(1),
+        title: BookTitle('Un'),
+        date: ReleaseDate('2021-05-02'),
+        coverUrl: 'https://covers/1.jpg' as never,
+      },
+    ])
+    expect(merged.volumes[0]).toMatchObject({
+      title: 'One',
+      releases: { fr: '2021-05-02' },
+      titles: { fr: 'Un' },
+      covers: { fr: 'https://covers/1.jpg' },
+    })
+  })
+
+  test('a volume the catalogue lacks joins the spine at its number', () => {
+    const merged = withReleases(series, 'fr', [
+      { volume: VolumeNumber(2), title: BookTitle('Deux'), date: ReleaseDate('2026-10-08') },
+    ])
+    expect(merged.volumes.map((entry) => entry.number as number | undefined)).toEqual([
+      1,
+      2,
+      undefined,
+    ])
+    expect(merged.volumes[1]).toMatchObject({
+      kind: 'main',
+      title: 'Deux',
+      publishedIn: 2026,
+      releases: { fr: '2026-10-08' },
+    })
+  })
+
+  test('nothing the catalogue holds is removed, and the same answer changes nothing', () => {
+    const once = withReleases(series, 'fr', [
+      { volume: VolumeNumber(1), title: BookTitle('One'), date: ReleaseDate('2021') },
+    ])
+    expect(once.volumes).toHaveLength(2)
+    expect(once.volumes[0].titles).toBeUndefined()
+    expect(
+      withReleases(once, 'fr', [
+        { volume: VolumeNumber(1), title: BookTitle('One'), date: ReleaseDate('2021') },
+      ]),
+    ).toBe(once)
   })
 })

@@ -1,14 +1,11 @@
-import type { Brand } from 'ts-brand'
 import type { AudibleMarketplace } from '~/domain/audible/types'
 import type { Book, BookLanguage, CoverUrl, Isbn13 } from '~/domain/book/types'
-import type { VolumeNumber } from '~/domain/series/types'
+import type { ReleaseDate, VolumeNumber } from '~/domain/series/types'
 import type { Language } from '~/domain/shared/language'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 import type { SignedUrl } from '~/system/object-store/types'
 
-/** When a book comes out, as precisely as anybody announced it: a year, a
- *  month, or a day. An alert only ever goes out on a day. */
-export type ReleaseDate = Brand<string, 'ReleaseDate'>
+export type { ReleaseDate } from '~/domain/series/types'
 
 /** What the reader read in a language other than the app's, and would want in
  *  the app's own: a saga as a whole, or one book on its own. Worked out from the

@@ -1,5 +1,6 @@
-import type { BookLanguage, Genre, ReadingStatus } from '~/domain/book/types'
+import type { BookLanguage, CoverUrl, Genre, ReadingStatus } from '~/domain/book/types'
 import type {
+  ReleaseDate,
   Series,
   SeriesId,
   SeriesName,
@@ -8,40 +9,96 @@ import type {
   VolumeKind,
   VolumeNumber,
 } from '~/domain/series/types'
-import type { AuthorName, BookTitle, Year } from '~/domain/shared/types'
+import { Year } from '~/domain/shared/primitives'
+import type { AuthorName, BookTitle, Year as YearValue } from '~/domain/shared/types'
 import { slugify } from '~/utils/slug'
 
+/** Which edition of a saga a rule is judged for, and on which day. Without a
+ *  language, the earliest announcement of any edition stands in; without a
+ *  day, today. */
+export type Edition = { language?: BookLanguage; today?: string }
+
+const todayOf = (edition: Edition) => edition.today ?? new Date().toISOString().slice(0, 10)
+
+/** The last day a date can mean: a book announced for "2027" may come out on
+ *  December 31st, and is not out before then. */
+const lastDayOf = (date: ReleaseDate): string =>
+  date.length === 10 ? date : date.length === 7 ? `${date}-31` : `${date}-12-31`
+
+/** When the volume comes out in that edition, as the release watch found it.
+ *  Without a language, the earliest date announced to the day in any. */
+export const releaseOf = (volume: Volume, language?: BookLanguage): ReleaseDate | undefined => {
+  if (language) return volume.releases?.[language]
+  return Object.values(volume.releases ?? {})
+    .filter((date): date is ReleaseDate => date !== undefined && date.length === 10)
+    .sort()[0]
+}
+
 /** A volume the reader could still be waiting for. Announced volumes are kept in
- *  the catalogue on purpose: they are what a release alert will attach to. */
-export const isForthcoming = (volume: Volume, currentYear: Year): boolean =>
-  volume.publishedIn !== undefined && volume.publishedIn > currentYear
+ *  the catalogue on purpose: they are what a release alert will attach to.
+ *
+ *  The edition's own date decides when the watch found one — a volume out in
+ *  English can be months away in French; otherwise the year of first
+ *  publication does. */
+export const isForthcoming = (
+  volume: Volume,
+  currentYear: YearValue,
+  edition: Edition = {},
+): boolean => {
+  const date = releaseOf(volume, edition.language)
+  if (date) {
+    const today = todayOf(edition)
+    return date.length === 10 ? date > today : lastDayOf(date) >= today
+  }
+  return volume.publishedIn !== undefined && volume.publishedIn > currentYear
+}
 
-export const publishedVolumes = (series: Series, currentYear: Year): Volume[] =>
-  series.volumes.filter((volume) => !isForthcoming(volume, currentYear))
+/** A volume announced to the day in that edition: close and certain enough to
+ *  count as part of the saga already, where a month or a year is a rumour. */
+const announcedToTheDay = (volume: Volume, currentYear: YearValue, edition: Edition): boolean =>
+  releaseOf(volume, edition.language)?.length === 10 && isForthcoming(volume, currentYear, edition)
 
-/** The volumes a saga is measured on: the numbered main volumes already out.
- *  Related works and announced volumes are left out — a novella the reader
- *  skipped, or book 15 due next year, would make a finished spine look
- *  unfinished. The one yardstick behind the saga's state, its ring and the
- *  dashboard's bars, so the three can never disagree. */
-export const publishedSpineOf = (series: Series, currentYear: Year): Volume[] =>
-  publishedVolumes(series, currentYear).filter(
-    (volume) => volume.kind === 'main' && volume.number !== undefined,
+export const publishedVolumes = (
+  series: Series,
+  currentYear: YearValue,
+  edition: Edition = {},
+): Volume[] => series.volumes.filter((volume) => !isForthcoming(volume, currentYear, edition))
+
+/** The volumes a saga is measured on: the numbered main volumes already out,
+ *  and the ones announced to the day in the reader's edition. Related works are
+ *  left out — a novella the reader skipped would make a finished spine look
+ *  unfinished — and so are volumes announced for a month or a year. A volume
+ *  due on a known day counts at once: a reader up to date on a saga whose next
+ *  volume comes out on October 8th is waiting for it, not done. The one
+ *  yardstick behind the saga's state, its ring and the dashboard's bars, so
+ *  the three can never disagree. */
+export const publishedSpineOf = (
+  series: Series,
+  currentYear: YearValue,
+  edition: Edition = {},
+): Volume[] =>
+  series.volumes.filter(
+    (volume) =>
+      volume.kind === 'main' &&
+      volume.number !== undefined &&
+      (!isForthcoming(volume, currentYear, edition) ||
+        announcedToTheDay(volume, currentYear, edition)),
   )
 
-/** A saga is complete once every volume of its published spine has been read.
- *  A reader who is up to date on a running saga has finished it as far as the
- *  world is concerned, and telling them otherwise because book 15 is announced
- *  for next year, or because a side novella is unread, would be wrong.
+/** A saga is complete once every volume of its measured spine has been read.
+ *  A reader up to date on a running saga has finished it as far as the world
+ *  is concerned while the next volume is only a year or a month away; once it
+ *  is announced to the day, the saga is in progress again, waiting for it.
  *
  *  A saga with no published spine at all is `in-progress`, not `complete`:
  *  "complete" would read as an achievement where nothing was achieved. */
 export const stateOf = (
   series: Series,
   readVolumeNumbers: ReadonlySet<number>,
-  currentYear: Year,
+  currentYear: YearValue,
+  edition: Edition = {},
 ): Exclude<SeriesState, 'not-started'> => {
-  const spine = publishedSpineOf(series, currentYear)
+  const spine = publishedSpineOf(series, currentYear, edition)
   if (spine.length === 0) return 'in-progress'
   const everyRead = spine.every((volume) => readVolumeNumbers.has(Number(volume.number)))
   return everyRead ? 'complete' : 'in-progress'
@@ -55,9 +112,10 @@ export const stateOf = (
 export const progressOf = (
   series: Series,
   readVolumeNumbers: ReadonlySet<number>,
-  currentYear: Year,
+  currentYear: YearValue,
+  edition: Edition = {},
 ): { readCount: number; totalCount: number } | null => {
-  const spine = publishedSpineOf(series, currentYear)
+  const spine = publishedSpineOf(series, currentYear, edition)
   if (spine.length === 0) return null
   const readCount = spine.filter((volume) => readVolumeNumbers.has(Number(volume.number))).length
   return { readCount, totalCount: spine.length }
@@ -178,14 +236,15 @@ export const followedStateOf = (
   statuses: readonly ReadingStatus[],
   catalogue: Series | null,
   readVolumeNumbers: ReadonlySet<number>,
-  currentYear: Year,
+  currentYear: YearValue,
   unfollowed = false,
+  edition: Edition = {},
 ): SeriesState | null => {
   // The reader's own choice, above whatever their volumes say: a saga set
   // aside is neither in progress nor done.
   if (unfollowed) return 'unfollowed'
   if (statuses.every((status) => status === 'to-read')) return 'not-started'
-  if (catalogue) return stateOf(catalogue, readVolumeNumbers, currentYear)
+  if (catalogue) return stateOf(catalogue, readVolumeNumbers, currentYear, edition)
   // A dropped volume is as done with as a read one: it holds nothing open.
   return statuses.some((status) => status !== 'read' && status !== 'dropped') ? 'in-progress' : null
 }
@@ -344,4 +403,87 @@ export const followedSagasOf = <
       ? byName
       : (left.language ?? '\uffff').localeCompare(right.language ?? '\uffff')
   })
+}
+
+/** One volume of a saga as the release watch found it in one language. */
+export type FoundVolume = {
+  volume: VolumeNumber
+  title: BookTitle
+  date?: ReleaseDate
+  coverUrl?: CoverUrl
+}
+
+/** The catalogue with what the release watch found of one edition written in:
+ *  each volume's date, title and cover in that language, and any numbered
+ *  volume the catalogue lacked — an announced volume 5 — appended to the spine.
+ *  Nothing is ever removed: a search that misses a volume does not unmake it.
+ *  The same catalogue, by reference, when nothing changed, so the caller can
+ *  skip the write. */
+export const withReleases = (
+  series: Series,
+  language: BookLanguage,
+  found: readonly FoundVolume[],
+): Series => {
+  let changed = false
+  const volumes = series.volumes.map((volume) => {
+    const match = found.find(
+      (entry) =>
+        volume.kind === 'main' && volume.number !== undefined && entry.volume === volume.number,
+    )
+    if (!match) return volume
+    const next = { ...volume }
+    if (match.date && volume.releases?.[language] !== match.date) {
+      next.releases = { ...volume.releases, [language]: match.date }
+      changed = true
+    }
+    if (match.title !== volume.title && volume.titles?.[language] !== match.title) {
+      next.titles = { ...volume.titles, [language]: match.title }
+      changed = true
+    }
+    if (match.coverUrl && volume.covers?.[language] !== match.coverUrl) {
+      next.covers = { ...volume.covers, [language]: match.coverUrl }
+      changed = true
+    }
+    return next
+  })
+  const known = new Set(
+    volumes.flatMap((volume) => (volume.kind === 'main' ? [volume.number] : [])),
+  )
+  for (const entry of found) {
+    if (known.has(entry.volume)) continue
+    known.add(entry.volume)
+    changed = true
+    volumes.push({
+      number: entry.volume,
+      title: entry.title,
+      kind: 'main',
+      publishedIn: entry.date ? Year(Number(entry.date.slice(0, 4))) : undefined,
+      releases: entry.date ? { [language]: entry.date } : undefined,
+      covers: entry.coverUrl ? { [language]: entry.coverUrl } : undefined,
+    })
+  }
+  if (!changed) return series
+  return { ...series, volumes: inCatalogueOrder(volumes) }
+}
+
+/** A catalogue built again keeps what the release watch wrote on it: the
+ *  model's fresh list knows nothing of dates per language. */
+export const keepingReleases = (fresh: Series, previous: Series | null): Series => {
+  if (!previous) return fresh
+  const sameVolume = (left: Volume, right: Volume) =>
+    left.kind === right.kind &&
+    (left.number !== undefined ? left.number === right.number : left.title === right.title)
+  return {
+    ...fresh,
+    volumes: fresh.volumes.map((volume) => {
+      const before = previous.volumes.find((entry) => sameVolume(entry, volume))
+      if (!before) return volume
+      return {
+        ...volume,
+        releases: before.releases ?? volume.releases,
+        titles: before.titles ?? volume.titles,
+        covers: before.covers ?? volume.covers,
+      }
+    }),
+  }
 }

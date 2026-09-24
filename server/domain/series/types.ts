@@ -1,10 +1,15 @@
 import type { Brand } from 'ts-brand'
+import type { BookLanguage, CoverUrl } from '~/domain/book/types'
 import type { AuthorName, BookTitle, Year } from '~/domain/shared/types'
 
 export type SeriesId = Brand<string, 'SeriesId'>
 export type SeriesName = Brand<string, 'SeriesName'>
 export type SeriesDescription = Brand<string, 'SeriesDescription'>
 export type VolumeNumber = Brand<number, 'VolumeNumber'>
+
+/** When a book comes out, as precisely as anybody announced it: a year, a
+ *  month, or a day. */
+export type ReleaseDate = Brand<string, 'ReleaseDate'>
 
 /** Where a volume sits in a saga. A `main` volume belongs to the reading spine and
  *  carries a number; everything else orbits it and often has none, which is why
@@ -18,6 +23,15 @@ export type Volume = {
   title: BookTitle
   publishedIn?: Year
   kind: VolumeKind
+  /** When this volume came out, or comes out, in each language the release
+   *  watch found it in — as precisely as it was announced. Written by the
+   *  watch, never by a reader: an edition language decides whether the volume
+   *  is out for the reader holding that edition. */
+  releases?: Partial<Record<BookLanguage, ReleaseDate>>
+  /** Its title in those languages, when it differs from `title`. */
+  titles?: Partial<Record<BookLanguage, BookTitle>>
+  /** The publisher's cover of that edition, found by its ISBN. */
+  covers?: Partial<Record<BookLanguage, CoverUrl>>
 }
 
 /** The public catalogue of a saga. It holds no reference to any user: it is a

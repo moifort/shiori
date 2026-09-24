@@ -222,8 +222,10 @@ export const seriesProgressOf = (
     const read = readVolumeNumbersOf(owned)
     // The saga's own state and ring: a saga the Series tab calls finished is
     // not one the dashboard still counts as in progress.
-    if (stateOf(series, read, Year(currentYear)) !== 'in-progress') continue
-    const measured = progressOf(series, read, Year(currentYear))
+    // Measured on the edition the reader holds, as the Series tab measures its row.
+    const edition = { language: owned.find((book) => book.language)?.language }
+    if (stateOf(series, read, Year(currentYear), edition) !== 'in-progress') continue
+    const measured = progressOf(series, read, Year(currentYear), edition)
     if (!measured) continue
     const { readCount, totalCount } = measured
     progress.push({
