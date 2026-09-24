@@ -237,7 +237,11 @@ struct FriendProfileView: View {
     @ViewBuilder
     private func takeButton(_ entry: FriendBook) -> some View {
         if isPreview {
-            pileButton(entry).disabled(true)
+            // Disabled alone leaves the plus in the accent colour: grey
+            // throughout, so it reads as inert at a glance.
+            pileButton(entry)
+                .foregroundStyle(.tertiary)
+                .disabled(true)
         } else if entry.inLibrary {
             Text("Chez vous")
                 .font(.caption.weight(.medium))
