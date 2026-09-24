@@ -235,7 +235,7 @@ struct FriendProfileView: View {
         // Books in progress name their saga: "Tome 3" of what, otherwise.
         showsSeries: Bool = false,
         // Every favourite is hearted: the heart, the status and the stars
-        // would say much the same on every row, so the genre takes the corner.
+        // would say much the same on every row, and are left out.
         asFavorites: Bool = false,
         // How many more books "Voir plus" would show.
         hidden: Int = 0
@@ -259,8 +259,7 @@ struct FriendProfileView: View {
                             genre: entry.book.genre,
                             subgenre: asFavorites ? nil : entry.book.subgenres.first,
                             language: entry.book.language,
-                            isFavorite: asFavorites ? false : entry.book.favorite,
-                            genreInCorner: asFavorites
+                            isFavorite: asFavorites ? false : entry.book.favorite
                         )
                         .contentShape(.rect)
                         .onTapGesture { openBook = entry }
