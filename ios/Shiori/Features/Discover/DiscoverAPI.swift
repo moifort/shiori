@@ -39,6 +39,8 @@ struct TranslatedEdition: Identifiable, Hashable, Sendable {
     let date: String?
     /// The recording's page on the reader's own Audible store.
     let audibleURL: URL?
+    /// The edition's own cover, when its store showed one.
+    var coverURL: URL? = nil
 
     var id: String { "\(format)-\(volume.map(String.init) ?? title)" }
 
@@ -76,6 +78,24 @@ struct Translation: Identifiable, Hashable, Sendable {
             coverURL: coverURL,
             status: .toRead
         )
+    }
+
+    /// Where the editions come from, as the row's tag says it: Audible for a
+    /// recording its store lists.
+    var source: (label: String, symbol: String)? {
+        guard let format = editions.first?.format else { return nil }
+        if format == .audiobook, editions.contains(where: { $0.audibleURL != nil }) {
+            return (String(localized: "Audible"), format.symbol)
+        }
+        return (format.label, format.symbol)
+    }
+
+    /// The saga's volumes as the Series tab draws them: every one the reader
+    /// read in the original or that exists in French, in order, each with its
+    /// French edition when there is one.
+    var strip: [(number: Int, edition: TranslatedEdition?)] {
+        let numbers = Set(volumesRead).union(editions.compactMap(\.volume)).sorted()
+        return numbers.map { number in (number, editions.first { $0.volume == number }) }
     }
 
     /// The work as one format shows it: only its editions in that format, and
@@ -183,7 +203,8 @@ private extension Translation {
                     volume: edition.volume,
                     format: edition.format.value == .audiobook ? .audiobook : .book,
                     date: edition.date,
-                    audibleURL: edition.audibleUrl.flatMap(URL.init(string:))
+                    audibleURL: edition.audibleUrl.flatMap(URL.init(string:)),
+                    coverURL: edition.coverUrl.flatMap(URL.init(string:))
                 )
             }
         )

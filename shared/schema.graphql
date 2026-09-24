@@ -2198,6 +2198,11 @@ type TranslatedEdition {
   audibleUrl: String
 
   """
+  The edition’s own cover, when its store showed one: Audible’s, for a recording.
+  """
+  coverUrl: CoverUrl
+
+  """
   When it came out or comes out, as precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Null for an edition out on a date nobody found.
   """
   date: String

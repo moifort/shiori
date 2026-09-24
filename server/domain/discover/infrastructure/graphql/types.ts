@@ -35,6 +35,12 @@ const TranslatedEditionType = builder.objectRef<EditionView>('TranslatedEdition'
       resolve: ({ edition }) => edition.volume ?? null,
     }),
     format: t.field({ type: TranslationFormatEnum, resolve: ({ edition }) => edition.format }),
+    coverUrl: t.field({
+      type: 'CoverUrl',
+      nullable: true,
+      description: 'The edition’s own cover, when its store showed one: Audible’s, for a recording.',
+      resolve: ({ edition }) => edition.coverUrl ?? null,
+    }),
     date: t.string({
       nullable: true,
       description:

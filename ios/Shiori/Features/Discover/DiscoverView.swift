@@ -62,7 +62,10 @@ struct DiscoverView: View {
                     } header: {
                         Text("Bientôt en français")
                     } footer: {
-                        Label("Vous recevrez une notification le jour de la sortie.", systemImage: "bell")
+                        HStack(alignment: .firstTextBaseline, spacing: 4) {
+                            Image(systemName: "bell")
+                            Text("Vous recevrez une notification le jour de la sortie.")
+                        }
                     }
                 }
                 if !feed.available.isEmpty {
@@ -76,11 +79,11 @@ struct DiscoverView: View {
         }
     }
 
-    /// The two formats as the Library tab lays out its views: icons on the
-    /// left, the one picked in the tint.
+    /// The two formats where the Library and Series tabs keep their views: icons
+    /// on the right, the one picked in the tint.
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        ToolbarItemGroup(placement: .topBarLeading) {
+        ToolbarItemGroup {
             ForEach(TranslationFormat.allCases) { item in
                 Button {
                     format = item
@@ -93,7 +96,8 @@ struct DiscoverView: View {
             }
         }
         if let feed, feed.preparedAt != nil, feed.canRefresh {
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarSpacer(.fixed)
+            ToolbarItem {
                 if isPreparing {
                     ProgressView()
                 } else {
@@ -200,41 +204,126 @@ struct DiscoverView: View {
     }
 }
 
-/// One work on the tab: its cover, its French title, what it is, and when the
-/// next edition comes out.
+/// One work on the tab. A book on its own: its cover, its French title, and
+/// when it comes out. A saga: its name over the same strip of covers as the
+/// Series tab, drawn from its French volumes — out, announced under a clock
+/// with their date, or read in the original and not announced yet, dimmed
+/// with their number. The marks sit at the top, level with the title.
 private struct TranslationRow: View {
     let translation: Translation
 
     var body: some View {
-        HStack(spacing: 12) {
-            BookCover(book: translation.book, width: 44, showsFormatBadge: false)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(translation.title).font(.subheadline.weight(.semibold)).lineLimit(2)
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
+        if translation.isSeries {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .top, spacing: 12) {
+                    heading
+                    trailing
+                }
+                strip
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            if let next = translation.nextDate {
-                ReleaseDateBadge(date: next)
-            } else {
-                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+            .padding(.vertical, 2)
+            .contentShape(.rect)
+        } else {
+            HStack(alignment: .top, spacing: 12) {
+                BookCover(book: translation.book, width: 44, showsFormatBadge: false)
+                heading
+                trailing
             }
+            .padding(.vertical, 2)
+            .contentShape(.rect)
         }
-        .padding(.vertical, 2)
-        .contentShape(.rect)
     }
 
-    private var subtitle: String {
-        if translation.isSeries {
-            if let next = translation.editions.first(where: \.isUpcoming) {
-                let volume = next.volume.map { String(localized: "Tome \($0)") } ?? next.title
-                return "\(volume), \(ReleaseDateText.phrase(next.date ?? ""))"
+    private var heading: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(translation.title).font(.subheadline.weight(.semibold)).lineLimit(2)
+            Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+            if let source = translation.source {
+                HStack(spacing: 3) {
+                    Image(systemName: source.symbol)
+                    Text(source.label)
+                }
+                .font(.caption2.weight(.medium))
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(.tint.opacity(0.12), in: .rect(cornerRadius: 6))
+                .foregroundStyle(.tint)
+                .padding(.top, 2)
             }
-            return TranslationView.availableVolumes(translation.editions)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var trailing: some View {
+        if let next = translation.nextDate {
+            ReleaseDateBadge(date: next)
+        } else {
+            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary).padding(.top, 4)
+        }
+    }
+
+    private var strip: some View {
+        ScrollView(.horizontal) {
+            HStack(alignment: .top, spacing: 10) {
+                ForEach(translation.strip, id: \.number) { item in
+                    VStack(spacing: 2) {
+                        cover(item.number, item.edition)
+                        if let edition = item.edition, edition.isUpcoming, let date = edition.date {
+                            Text(verbatim: ReleaseDateText.short(date))
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundStyle(.orange)
+                                .lineLimit(1)
+                                .fixedSize()
+                        }
+                    }
+                }
+            }
+        }
+        .scrollIndicators(.hidden)
+        .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private func cover(_ number: Int, _ edition: TranslatedEdition?) -> some View {
+        let book = Book(
+            id: "\(translation.key)-\(number)",
+            title: edition?.title ?? translation.title,
+            authors: translation.author.map { [$0] } ?? [],
+            coverURL: edition?.coverURL,
+            status: .toRead
+        )
+        if let edition, !edition.isUpcoming {
+            BookCover(book: book, width: coverWidth, showsFormatBadge: false)
+        } else {
+            BookCover(book: book, width: coverWidth, showsFormatBadge: false)
+                .opacity(edition == nil ? 0.35 : 0.2)
+                .overlay(alignment: .bottom) {
+                    Text(verbatim: "\(number)")
+                        .font(.caption2.weight(.bold).monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .padding(.bottom, 4)
+                }
+                .overlay(alignment: .topTrailing) {
+                    if edition != nil {
+                        Image(systemName: "clock")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                            .padding(4)
+                    }
+                }
+        }
+    }
+
+    private let coverWidth: CGFloat = 38
+
+    private var subtitle: String {
         let language = translation.originalLanguage.label.lowercased()
+        if translation.isSeries {
+            let author = translation.author.map { "\($0) · " } ?? ""
+            guard let last = translation.volumesRead.max() else { return author + String(localized: "Lu en \(language)") }
+            return author + String(localized: "lu en \(language) jusqu'au tome \(last)")
+        }
         return translation.title == translation.originalTitle
             ? String(localized: "Lu en \(language)")
             : String(localized: "Lu en \(language) : \(translation.originalTitle)")
@@ -250,6 +339,21 @@ enum ReleaseDateText {
         case 10: date
         case 7: date + "-31"
         default: date + "-12-31"
+        }
+    }
+
+    /// Under a cover: "19 févr.", "mars 2027", "2027".
+    static func short(_ date: String) -> String {
+        let parts = date.split(separator: "-").compactMap { Int($0) }
+        var components = DateComponents()
+        components.year = parts.first
+        components.month = parts.count > 1 ? parts[1] : 1
+        components.day = parts.count > 2 ? parts[2] : 1
+        guard let day = Calendar.current.date(from: components) else { return date }
+        switch parts.count {
+        case 3: return day.formatted(.dateTime.day().month(.abbreviated))
+        case 2: return day.formatted(.dateTime.month(.abbreviated).year())
+        default: return String(parts.first ?? 0)
         }
     }
 
@@ -309,5 +413,6 @@ struct ReleaseDateBadge: View {
 #Preview {
     DiscoverView()
 }
+
 
 
