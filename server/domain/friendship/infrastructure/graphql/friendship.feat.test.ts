@@ -357,6 +357,19 @@ describe("the reader's own shelf, as friends see it", () => {
     })
   })
 
+  // The last heart leads the recent activity too, its saga drawn under it.
+  test('carries the volumes of the saga of the book hearted last', async () => {
+    const first = await addBook(alice, dune(1).replace('status: READ', 'status: TO_READ'))
+    await addBook(alice, dune(2).replace('status: READ', 'status: TO_READ'))
+    await as(alice)(`mutation { setBookFavorite(id: "${first}", favorite: true) { id } }`)
+
+    const result = await as(alice)('{ myShelf { sagas { name volumes { title } } } }')
+
+    expect(result.data?.myShelf).toEqual({
+      sagas: [{ name: 'Dune', volumes: [{ title: 'Dune 1' }, { title: 'Dune 2' }] }],
+    })
+  })
+
   // "Voir ses N livres": the friend's whole library, drawn as the reader's own.
   test('pages through a friend library newest first, dropped and hidden books aside', async () => {
     setSystemTime(new Date('2026-09-01T00:00:00Z'))

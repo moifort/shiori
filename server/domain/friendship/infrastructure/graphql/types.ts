@@ -178,7 +178,8 @@ export const FriendSagaType = builder.objectRef<FriendSaga>('FriendSaga').implem
       description:
         'Its volumes on the shelf, in reading order, for a strip of covers. ' +
         'Carried by a hearted saga and by the sagas of the book in progress ' +
-        'touched last and of `lastFinished`, empty on any other, and never with ' +
+        'touched last, of `lastFinished` and of the last book hearted, empty on ' +
+        'any other, and never with ' +
         'a volume its owner keeps to themselves. On `friendSagaPage`, every saga ' +
         'carries them.',
       resolve: (saga) => saga.volumes,

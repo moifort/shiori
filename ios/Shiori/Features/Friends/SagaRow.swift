@@ -99,21 +99,22 @@ struct RecentActivityRow: View {
         return switch activity {
         case .reading: Text("En cours de lecture")
         case .finished: Text("Livre terminé \(when)")
-        case .heartedSaga: Text("Série ajoutée aux favoris \(when)")
+        case .heartedSaga, .heartedBook: Text("Ajouté en favori \(when)")
         }
     }
 
     private var cover: Book {
         switch activity {
         case let .heartedSaga(saga, _): saga.coverBook
-        case let .reading(entry, _), let .finished(entry, _): entry.book
+        case let .reading(entry, _), let .finished(entry, _), let .heartedBook(entry, _): entry.book
         }
     }
 
     private var title: String {
         switch activity {
         case let .heartedSaga(saga, _): saga.name
-        case let .reading(entry, _), let .finished(entry, _): entry.book.title
+        case let .reading(entry, _), let .finished(entry, _), let .heartedBook(entry, _):
+            entry.book.title
         }
     }
 
@@ -121,7 +122,7 @@ struct RecentActivityRow: View {
         switch activity {
         case let .heartedSaga(saga, _):
             saga.author
-        case let .reading(entry, _), let .finished(entry, _):
+        case let .reading(entry, _), let .finished(entry, _), let .heartedBook(entry, _):
             [entry.book.authorLine, entry.book.series?.label].compactMap(\.self)
                 .joined(separator: " · ")
         }

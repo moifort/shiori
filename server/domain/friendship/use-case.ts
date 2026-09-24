@@ -60,8 +60,9 @@ export type FriendSaga = {
   subgenre?: TaggedSubgenre
   /** Its volumes on the shelf, in reading order, for a strip of covers.
    *  Carried by a hearted saga and by the sagas of the book in progress
-   *  touched last and of the last book finished — the recent activity draws
-   *  those two — and empty on any other: each cover is a signed URL. On a
+   *  touched last, of the last book finished and of the last book hearted —
+   *  the recent activity draws those — and empty on any other: each cover is
+   *  a signed URL. On a
    *  page of their sagas, every saga carries them. */
   volumes: FriendBook[]
   /** The latest day one of its volumes was shelved on: what their sagas are
@@ -364,12 +365,16 @@ const sharedShelfOf = async (
   ).slice(0, shown)
 
   const finished = lastFinishedOf(books)
-  // The sagas drawn with their covers: the favourites, and those of the two
-  // books the recent activity leads with.
+  // The sagas drawn with their covers: the favourites, and those of the
+  // books the recent activity leads with — the one in progress, the last
+  // finished, the last hearted.
   const drawnSagaIds = new Set(
-    [...favoriteSagaIds, reading[0]?.series?.id, finished?.series?.id].filter(
-      (id): id is SeriesId => id !== undefined,
-    ),
+    [
+      ...favoriteSagaIds,
+      reading[0]?.series?.id,
+      finished?.series?.id,
+      favorites[0]?.series?.id,
+    ].filter((id): id is SeriesId => id !== undefined),
   )
 
   const sagas = followedSagasOf(books)
