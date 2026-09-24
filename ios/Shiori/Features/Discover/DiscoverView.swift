@@ -67,7 +67,7 @@ struct DiscoverView: View {
             // Never searched yet: the search starts on its own, and the tab
             // waits for it rather than asking the reader to start it.
             if isPreparing || errorMessage == nil {
-                ProgressView("Recherche des prochaines sorties…")
+                ScanningBookLoader(title: "Recherche des prochaines sorties…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .accessibilityIdentifier("discover-preparing")
             } else {
