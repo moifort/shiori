@@ -28,10 +28,6 @@ query Dashboard($timeZone: TimeZone!) {
       current
       previous
     }
-    monthlyListeningHours {
-      current
-      previous
-    }
     toReadCount
     readCount
     monthsToClearPile

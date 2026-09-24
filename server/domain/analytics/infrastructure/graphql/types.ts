@@ -186,17 +186,10 @@ export const DashboardType = builder.objectRef<Dashboard>('Dashboard').implement
     daysToFinish: t.field({
       type: TrendType,
       deprecationReason:
-        'The app compares the hours listened instead (`monthlyListeningHours`). Kept ' +
-        'for the builds that still ask for it.',
+        'The app no longer shows it: the trends compare the books read only. Kept for ' +
+        'the builds that still ask for it.',
       description: 'Median days from start to finish, both days included.',
       resolve: (dashboard) => dashboard.daysToFinish,
-    }),
-    monthlyListeningHours: t.field({
-      type: TrendType,
-      description:
-        'Hours listened per month on average, rounded to the hour. Null `current` ' +
-        'before the first audiobook of the year.',
-      resolve: (dashboard) => dashboard.monthlyListeningHours,
     }),
     toReadCount: t.exposeInt('toReadCount'),
     readCount: t.exposeInt('readCount', {

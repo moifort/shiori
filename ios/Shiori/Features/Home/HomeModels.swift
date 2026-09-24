@@ -67,7 +67,6 @@ struct Dashboard: Codable, Sendable {
     let suggestions: [Book]
     let lastFinished: Book?
     let booksRead: Trend
-    let monthlyListeningHours: Trend
     let toReadCount: Int
     /// Every book finished since the first, whatever the year.
     var readCount: Int = 0

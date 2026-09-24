@@ -1,10 +1,9 @@
 import SwiftUI
 
-/// This year against the same span of last year, with the Fitness app's arrows.
-/// Without last year there is no arrow, only this year's figure.
+/// The books read this year against the same span of last year, with the Fitness
+/// app's arrows. Without last year there is no arrow, only this year's figure.
 struct TrendsWidget: View {
     let booksRead: Dashboard.Trend
-    let monthlyListeningHours: Dashboard.Trend
 
     var body: some View {
         WidgetCard(title: "Tendances") {
@@ -12,28 +11,16 @@ struct TrendsWidget: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         } content: {
-            VStack(alignment: .leading, spacing: 14) {
-                if booksRead.current == nil, monthlyListeningHours.current == nil {
-                    WidgetEmptyMessage(text: "Terminez un livre cette année pour voir vos tendances.", placeholder: .rows)
-                }
-                if let books = booksRead.current {
-                    row(
-                        label: "Livres lus",
-                        value: Self.booksLabel(books),
-                        previous: booksRead.previous.map(Self.booksLabel),
-                        direction: booksRead.direction,
-                        color: DashboardPalette.books
-                    )
-                }
-                if let hours = monthlyListeningHours.current {
-                    row(
-                        label: "Heures écoutées par mois",
-                        value: String(localized: "\(hours) h"),
-                        previous: monthlyListeningHours.previous.map { String(localized: "\($0) h") },
-                        direction: monthlyListeningHours.direction,
-                        color: DashboardPalette.duration
-                    )
-                }
+            if let books = booksRead.current {
+                row(
+                    label: "Livres lus",
+                    value: Self.booksLabel(books),
+                    previous: booksRead.previous.map(Self.booksLabel),
+                    direction: booksRead.direction,
+                    color: DashboardPalette.books
+                )
+            } else {
+                WidgetEmptyMessage(text: "Terminez un livre cette année pour voir vos tendances.", placeholder: .rows)
             }
         }
         .accessibilityIdentifier("home-trends")
@@ -82,10 +69,7 @@ struct TrendsWidget: View {
 }
 
 #Preview {
-    TrendsWidget(
-        booksRead: .init(current: 18, previous: 14),
-        monthlyListeningHours: .init(current: 9, previous: 6)
-    )
+    TrendsWidget(booksRead: .init(current: 18, previous: 14))
     .padding()
     .background(Color(.systemGroupedBackground))
 }

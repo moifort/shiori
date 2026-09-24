@@ -10,7 +10,6 @@ import {
   hoursPerMonthOf,
   localDateOf,
   medianOf,
-  monthlyListeningHoursTrendOf,
   monthsToClearPileOf,
   pagesPerDayTrendOf,
   pagesPerMonthOf,
@@ -174,42 +173,6 @@ describe('the books read trend', () => {
     expect(
       booksReadTrendOf([finish('2025-01-01', '2025-01-10')], day('2026-09-15')).current,
     ).toBeUndefined()
-  })
-})
-
-describe('the monthly listening hours trend', () => {
-  test('spreads this year hours over the months elapsed, against the same span last year', () => {
-    const finishes = [
-      finish('2026-01-01', '2026-01-31', { minutes: 600 }),
-      finish('2025-01-01', '2025-01-31', { minutes: 300 }),
-    ]
-
-    // 31 days is 1.02 months: 10 hours make 10, 5 hours make 5.
-    expect(monthlyListeningHoursTrendOf(finishes, day('2026-01-31'))).toEqual({
-      current: 10,
-      previous: 5,
-    })
-  })
-
-  test('has no figure before the first audiobook of the year', () => {
-    const trend = monthlyListeningHoursTrendOf(
-      [finish('2026-01-01', '2026-01-10', { pages: 300 })],
-      day('2026-09-15'),
-    )
-
-    expect(trend).toEqual({ current: undefined, previous: undefined })
-  })
-
-  test('compares with zero when last year listened later in the year', () => {
-    const trend = monthlyListeningHoursTrendOf(
-      [
-        finish('2026-01-01', '2026-01-31', { minutes: 600 }),
-        finish('2025-11-01', '2025-11-30', { minutes: 600 }),
-      ],
-      day('2026-01-31'),
-    )
-
-    expect(trend.previous).toBe(0)
   })
 })
 
