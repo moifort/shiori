@@ -10,6 +10,7 @@ the release tag is pushed.
 
 ## Unreleased
 
+- The Home, Library and Series tabs no longer show a "Retry" button when nothing failed.
 - A friend's page shows their recent activity, from the last thirty days: the book they are
   reading and the last one they finished, each with its series and every cover, and the last
   series they hearted.

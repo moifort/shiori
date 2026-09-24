@@ -68,10 +68,10 @@ final class SeriesListViewModel {
         refreshFailed = false
         isRefreshing = !followed.isEmpty
         reloadTask = Task {
-            await load()
+            let failed = await load()
             guard isRefreshing, !Task.isCancelled else { return }
             isRefreshing = false
-            refreshFailed = !loaded
+            refreshFailed = failed
         }
     }
 
@@ -89,7 +89,11 @@ final class SeriesListViewModel {
     /// Loads the first page, or as many rows as the list already shows when
     /// `keepingDepth` is set: a reload after an edit far down the list must
     /// not cut it back to the first page and throw the reader to the top.
-    func load(keepingDepth: Bool = false) async {
+    ///
+    /// Says whether it failed. A load a newer one took over, or one called off,
+    /// did not: the rows are whatever the newer one brings.
+    @discardableResult
+    func load(keepingDepth: Bool = false) async -> Bool {
         generation += 1
         let requested = generation
         let wanted = keepingDepth ? max(followed.count, pageSize) : pageSize
@@ -107,23 +111,27 @@ final class SeriesListViewModel {
                     limit: min(wanted - fetched.count, maxPageSize), offset: fetched.count,
                     mode: mode, state: stateFilter
                 )
-                guard requested == generation else { return }
+                guard requested == generation else { return false }
                 fetched += page.items
                 more = page.hasMore && !page.items.isEmpty
             }
             followed = fetched
             hasMore = more
             loaded = true
+            // Fresh rows: whatever an earlier refresh said is no longer true.
+            refreshFailed = false
             let cache = cache(for: mode, stateFilter)
             let firstPage = Array(fetched.prefix(pageSize))
             Task.detached { cache.write(firstPage) }
-        } catch is CancellationError {
-            return
         } catch {
-            guard requested == generation else { return }
+            guard requested == generation else { return false }
+            isLoading = false
+            guard !isCancellation(error) else { return false }
             errorMessage = reportError(error)
+            return true
         }
         isLoading = false
+        return false
     }
 
     /// Loads the next page and appends it to the rows already loaded.
@@ -247,8 +255,8 @@ final class SeriesListViewModel {
     func refresh() async {
         isRefreshing = true
         refreshFailed = false
-        await load()
+        let failed = await load()
         isRefreshing = false
-        refreshFailed = !loaded
+        refreshFailed = failed
     }
 }

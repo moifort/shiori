@@ -136,10 +136,10 @@ final class LibraryViewModel {
         refreshFailed = false
         isRefreshing = !books.isEmpty
         reloadTask = Task {
-            await load()
+            let failed = await load()
             guard isRefreshing, !Task.isCancelled else { return }
             isRefreshing = false
-            refreshFailed = !loaded
+            refreshFailed = failed
         }
     }
 
@@ -147,7 +147,11 @@ final class LibraryViewModel {
     /// `keepingDepth` is set: a reload after an edit made on page three must
     /// not cut the list back to page one, or the reader lands far above the
     /// book they just saved and scrolls all the way down again.
-    func load(keepingDepth: Bool = false) async {
+    ///
+    /// Says whether it failed. A load a newer one took over, or one called off,
+    /// did not: the rows are whatever the newer one brings.
+    @discardableResult
+    func load(keepingDepth: Bool = false) async -> Bool {
         generation += 1
         let requested = generation
         let wanted = keepingDepth ? max(books.count, pageSize) : pageSize
@@ -165,25 +169,29 @@ final class LibraryViewModel {
                     mode: mode, status: statusFilter,
                     limit: min(wanted - fetched.count, maxPageSize), after: fetched.last?.id
                 )
-                guard requested == generation else { return }
+                guard requested == generation else { return false }
                 fetched += page.books
                 more = page.hasMore && !page.books.isEmpty
             }
             books = fetched
             hasMore = more
             loaded = true
+            // Fresh rows: whatever an earlier refresh said is no longer true.
+            refreshFailed = false
             let cache = cache(for: mode, statusFilter)
             let firstPage = Array(fetched.prefix(pageSize))
             Task.detached { cache.write(firstPage) }
-        } catch is CancellationError {
-            return
         } catch {
-            guard requested == generation else { return }
+            guard requested == generation else { return false }
+            isLoading = false
+            guard !isCancellation(error) else { return false }
             // The list keeps whatever it was showing: replacing a good library
             // with an empty one because a refresh failed reads as data loss.
             errorMessage = reportError(error)
+            return true
         }
         isLoading = false
+        return false
     }
 
     /// Loads the next page and appends it to the rows already loaded.
@@ -237,12 +245,12 @@ final class LibraryViewModel {
     func refresh() async {
         isRefreshing = true
         refreshFailed = false
-        await load()
+        let failed = await load()
         // A view or filter change took the list over meanwhile, and this
         // refresh no longer has anything to say.
         guard isRefreshing else { return }
         isRefreshing = false
-        refreshFailed = !loaded
+        refreshFailed = failed
     }
 
     /// Puts back a book the detail screen just changed, without asking the
