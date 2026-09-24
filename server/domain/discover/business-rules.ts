@@ -1,11 +1,10 @@
-import type { AudibleRelease } from '~/domain/audible/types'
+import type { AudibleMarketplace } from '~/domain/audible/types'
 import { shelfKeyOf } from '~/domain/book/business-rules'
 import type { Book } from '~/domain/book/types'
 import type { Language } from '~/domain/shared/language'
 import type { BookTitle, UserId } from '~/domain/shared/types'
 import type { ObjectPath } from '~/system/object-store/types'
 import { slugify } from '~/utils/slug'
-import { ReleaseDate } from './primitives'
 import type {
   DatedEdition,
   DiscoverFeed,
@@ -87,49 +86,6 @@ export const watchKeyOf = (work: ForeignWork, language: Language): string =>
 export const watchIsStale = (watch: TranslationWatch | undefined, now: Date): boolean =>
   !watch || now.getTime() - watch.checkedAt.getTime() > WATCH_EVERY_MS
 
-// MARK: - Audible
-
-/** The recordings of one work among what the reader's Audible marketplace
- *  lists for its author: the saga's volumes, matched on the saga's name, or
- *  the book itself, matched on its title — as the reader knows it, or as the
- *  web says it was translated. One recording per volume, the first listed. */
-export const audibleTranslationsOf = (
-  work: ForeignWork,
-  translatedTitle: BookTitle | undefined,
-  recordings: readonly AudibleRelease[],
-): TranslatedEdition[] => {
-  const names = new Set([
-    slugify(work.title),
-    ...(translatedTitle ? [slugify(translatedTitle)] : []),
-  ])
-  const author = work.author ? slugify(work.author) : undefined
-  const seen = new Set<string>()
-  return recordings.flatMap((recording): TranslatedEdition[] => {
-    if (author && !recording.authors.some((name) => slugify(name) === author)) return []
-    const matches =
-      work.kind === 'series'
-        ? recording.series !== undefined && names.has(slugify(recording.series.name))
-        : names.has(slugify(recording.title))
-    if (!matches) return []
-    const slot = String(recording.series?.volume ?? slugify(recording.title))
-    if (seen.has(slot)) return []
-    seen.add(slot)
-    return [
-      {
-        title: recording.title,
-        volume: work.kind === 'series' ? recording.series?.volume : undefined,
-        format: 'audiobook',
-        date: recording.releaseDate
-          ? ReleaseDate(recording.releaseDate.toISOString().slice(0, 10))
-          : undefined,
-        isbn13: recording.isbn13,
-        audibleAsin: recording.asin,
-        coverUrl: recording.coverUrl,
-      },
-    ]
-  })
-}
-
 // MARK: - What the reader sees
 
 /** The last day a date can mean: a book announced for "2027" may come out on
@@ -153,14 +109,13 @@ const byVolumeThenDate = (left: TranslatedEdition, right: TranslatedEdition) =>
   (left.date ?? '').localeCompare(right.date ?? '') ||
   left.format.localeCompare(right.format)
 
-/** A work's editions as this reader sees them. The web's, with Audible's own
- *  listing in place of the web's recordings for a reader connected to it — its
- *  dates are the ones the store keeps — and no recording at all for a reader
- *  who is not. Never an edition the reader already owns. */
+/** A work's editions as this reader sees them: no recording for a reader with
+ *  no Audible connection, one edition per volume and format, never one the
+ *  reader already owns. */
 export const editionsOf = (
   work: ForeignWork,
   watch: TranslationWatch | undefined,
-  audible: readonly TranslatedEdition[] | undefined,
+  recordings: boolean,
   owned: ReadonlySet<string>,
 ): TranslatedEdition[] => {
   // A book on its own has one edition per format; a saga, one per volume.
@@ -170,10 +125,9 @@ export const editionsOf = (
       : `${edition.format}--${edition.volume ?? slugify(edition.title)}`
   const merged = new Map<string, TranslatedEdition>()
   for (const edition of watch?.editions ?? []) {
-    if (edition.format === 'audiobook' && audible === undefined) continue
+    if (edition.format === 'audiobook' && !recordings) continue
     if (!merged.has(slotOf(edition))) merged.set(slotOf(edition), edition)
   }
-  for (const edition of audible ?? []) merged.set(slotOf(edition), edition)
   return [...merged.values()]
     .filter((edition) => !owned.has(shelfKeyOf(edition.title, work.author)))
     .sort(byVolumeThenDate)
@@ -190,7 +144,7 @@ const nextDateOf = (
     .sort((left, right) => lastDayOf(left).localeCompare(lastDayOf(right)))[0]
 
 /** A translation before its cover is signed: the reader's own photo of their
- *  copy is only drawn when no translated edition has a cover. */
+ *  copy, when they have no publisher's cover. */
 export type UnsignedTranslation = Translation & { coverPath?: ObjectPath }
 
 /** The tab: every work the reader read in another language that exists or is
@@ -200,24 +154,20 @@ export type UnsignedTranslation = Translation & { coverPath?: ObjectPath }
 export const translationsOf = (
   works: readonly ForeignWork[],
   watches: ReadonlyMap<string, TranslationWatch>,
-  feed: Pick<DiscoverFeed, 'language' | 'audible' | 'dismissed'>,
+  feed: Pick<DiscoverFeed, 'language' | 'dismissed'>,
+  marketplace: AudibleMarketplace | undefined,
   owned: ReadonlySet<string>,
   today: string,
 ): { upcoming: UnsignedTranslation[]; available: UnsignedTranslation[] } => {
   const dismissed = new Set(feed.dismissed)
-  const audibleByWork = feed.audible
-    ? new Map(feed.audible.works.map((entry) => [entry.workKey, entry.editions]))
-    : undefined
   const translations = works.flatMap((work): UnsignedTranslation[] => {
     if (dismissed.has(work.key)) return []
     const watch = watches.get(watchKeyOf(work, feed.language))
-    const audible = audibleByWork ? (audibleByWork.get(work.key) ?? []) : undefined
-    const editions = editionsOf(work, watch, audible, owned)
+    const editions = editionsOf(work, watch, marketplace !== undefined, owned)
     if (editions.length === 0) return []
     const translatedTitle =
       watch?.translatedTitle ?? (work.kind === 'book' ? editions[0].title : undefined)
-    const coverUrl =
-      editions.find((edition) => edition.coverUrl)?.coverUrl ?? work.cover.publishedCoverUrl
+    const coverUrl = work.cover.publishedCoverUrl
     return [
       {
         key: work.key,
@@ -231,7 +181,7 @@ export const translationsOf = (
         coverPath: coverUrl ? undefined : work.cover.coverPath,
         editions,
         nextDate: nextDateOf(editions, today),
-        audibleMarketplace: feed.audible?.marketplace,
+        audibleMarketplace: marketplace,
       },
     ]
   })

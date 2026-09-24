@@ -290,7 +290,6 @@ private struct TranslationRow: View {
             id: "\(translation.key)-\(number)",
             title: edition?.title ?? translation.title,
             authors: translation.author.map { [$0] } ?? [],
-            coverURL: edition?.coverURL,
             status: .toRead
         )
         if let edition, !edition.isUpcoming {

@@ -1,9 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import type { AudibleAsin, AudibleRelease } from '~/domain/audible/types'
 import type { Book, BookId, CoverUrl } from '~/domain/book/types'
 import {
   alertOf,
-  audibleTranslationsOf,
   datedEditionsOf,
   dueEditions,
   editionsOf,
@@ -73,19 +71,6 @@ const edition = (fields: Partial<TranslatedEdition>): TranslatedEdition => ({
   format: 'book',
   ...fields,
 })
-
-const recording = (fields: Partial<AudibleRelease>): AudibleRelease =>
-  ({
-    asin: 'B000000001' as AudibleAsin,
-    title: title('Untitled'),
-    authors: ['Matt Dinniman' as AuthorName],
-    narrators: [],
-    subgenres: [],
-    status: 'to-read',
-    alreadyInLibrary: false,
-    language: 'fr',
-    ...fields,
-  }) as AudibleRelease
 
 const watchOf = (work: ForeignWork, fields: Partial<TranslationWatch>): TranslationWatch => ({
   key: `${work.key}--fr`,
@@ -159,59 +144,6 @@ describe('what the reader read in another language', () => {
   })
 })
 
-describe('the recordings Audible lists for a work', () => {
-  test('are a saga’s volumes, under its own name or its translated one', () => {
-    const found = audibleTranslationsOf(carl, title('Carl, le donjon'), [
-      recording({
-        asin: 'B000000001' as AudibleAsin,
-        title: title('Carl, le donjon'),
-        series: {
-          id: 'x' as SeriesId,
-          name: 'Carl, le donjon' as SeriesName,
-          volume: volume(1),
-          kind: 'main',
-        },
-        releaseDate: at('2025-03-01'),
-      }),
-      recording({
-        asin: 'B000000002' as AudibleAsin,
-        title: title('Le Livre de recettes'),
-        series: {
-          id: 'x' as SeriesId,
-          name: 'Dungeon Crawler Carl' as SeriesName,
-          volume: volume(2),
-          kind: 'main',
-        },
-      }),
-      recording({ asin: 'B000000003' as AudibleAsin, title: title('Autre chose') }),
-      recording({
-        asin: 'B000000004' as AudibleAsin,
-        authors: ['Somebody Else' as AuthorName],
-        series: {
-          id: 'x' as SeriesId,
-          name: 'Dungeon Crawler Carl' as SeriesName,
-          volume: volume(3),
-          kind: 'main',
-        },
-      }),
-    ])
-
-    expect(found.map((found): unknown[] => [found.volume, found.audibleAsin, found.date])).toEqual([
-      [1, 'B000000001', '2025-03-01'],
-      [2, 'B000000002', undefined],
-    ])
-  })
-
-  test('are a book on its own, under its translated title', () => {
-    const found = audibleTranslationsOf(hailMary, title('Projet Dernière Chance'), [
-      recording({ title: title('Projet dernière chance'), authors: ['Andy Weir' as AuthorName] }),
-      recording({ title: title('Seul sur Mars'), authors: ['Andy Weir' as AuthorName] }),
-    ])
-
-    expect(found.map((found) => found.title as string)).toEqual(['Projet dernière chance'])
-  })
-})
-
 describe('the editions a reader is offered', () => {
   const watch = watchOf(carl, {
     editions: [
@@ -232,32 +164,23 @@ describe('the editions a reader is offered', () => {
   })
 
   test('hold no recording for a reader not connected to Audible', () => {
-    expect(editionsOf(carl, watch, undefined, new Set()).map((e) => e.format)).toEqual(['book'])
+    expect(editionsOf(carl, watch, false, new Set()).map((e) => e.format)).toEqual(['book'])
   })
 
-  test('take Audible’s recording over the web’s for the same volume', () => {
-    const audible = [
-      edition({
-        title: title('Carl 1'),
-        volume: volume(1),
-        format: 'audiobook',
-        audibleAsin: 'B1' as AudibleAsin,
-      }),
-    ]
+  test('hold every format, one per volume, for a reader connected to it', () => {
+    const editions = editionsOf(carl, watch, true, new Set())
 
-    const editions = editionsOf(carl, watch, audible, new Set())
-
-    expect(editions.map((e): unknown[] => [e.volume, e.format, e.audibleAsin])).toEqual([
-      [1, 'audiobook', 'B1'],
-      [1, 'book', undefined],
-      [4, 'audiobook', undefined],
+    expect(editions.map((e): unknown[] => [e.volume, e.format])).toEqual([
+      [1, 'book'],
+      [1, 'audiobook'],
+      [4, 'audiobook'],
     ])
   })
 
   test('never hold one the reader already owns', () => {
     const owned = new Set(['carl-1--matt-dinniman'])
 
-    expect(editionsOf(carl, watch, [], owned).map((e) => e.volume)).toEqual([volume(4)])
+    expect(editionsOf(carl, watch, true, owned).map((e) => e.volume)).toEqual([volume(4)])
   })
 })
 
@@ -302,6 +225,7 @@ describe('the tab', () => {
       [carl, hailMary],
       watches,
       feed,
+      undefined,
       new Set(),
       '2026-09-24',
     )
@@ -319,6 +243,7 @@ describe('the tab', () => {
       [carl, hailMary, { ...hailMary, key: 'book--untranslated--x' }],
       watches,
       { ...feed, dismissed: [carl.key] },
+      undefined,
       new Set(),
       '2026-09-24',
     )

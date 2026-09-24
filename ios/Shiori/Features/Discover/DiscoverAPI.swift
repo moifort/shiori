@@ -37,10 +37,9 @@ struct TranslatedEdition: Identifiable, Hashable, Sendable {
     /// `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Nil for an edition out on a date
     /// nobody found.
     let date: String?
-    /// The recording's page on the reader's own Audible store.
+    /// For a recording, a search for its title on the reader's own Audible
+    /// store: where the reader goes to find it.
     let audibleURL: URL?
-    /// The edition's own cover, when its store showed one.
-    var coverURL: URL? = nil
 
     var id: String { "\(format)-\(volume.map(String.init) ?? title)" }
 
@@ -80,8 +79,8 @@ struct Translation: Identifiable, Hashable, Sendable {
         )
     }
 
-    /// Where the editions come from, as the row's tag says it: Audible for a
-    /// recording its store lists.
+    /// Where the editions are to be found, as the row's tag says it: Audible
+    /// for a recording.
     var source: (label: String, symbol: String)? {
         guard let format = editions.first?.format else { return nil }
         if format == .audiobook, editions.contains(where: { $0.audibleURL != nil }) {
@@ -203,8 +202,7 @@ private extension Translation {
                     volume: edition.volume,
                     format: edition.format.value == .audiobook ? .audiobook : .book,
                     date: edition.date,
-                    audibleURL: edition.audibleUrl.flatMap(URL.init(string:)),
-                    coverURL: edition.coverUrl.flatMap(URL.init(string:))
+                    audibleURL: edition.audibleUrl.flatMap(URL.init(string:))
                 )
             }
         )

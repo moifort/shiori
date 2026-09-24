@@ -1,10 +1,8 @@
 import { AdminCommand } from '~/domain/admin/command'
 import { AudibleUseCase } from '~/domain/audible/use-case'
 import { BookQuery } from '~/domain/book/query'
-import type { BookLanguage } from '~/domain/book/types'
 import {
   alertOf,
-  audibleTranslationsOf,
   canRefresh,
   datedEditionsOf,
   dueEditions,
@@ -22,7 +20,6 @@ import { translationsPrompt } from '~/domain/discover/prompts'
 import { DiscoverQuery } from '~/domain/discover/query'
 import { TRANSLATIONS_SCHEMA, type TranslationsOutput } from '~/domain/discover/schemas'
 import type {
-  AudibleTranslations,
   Discover,
   DiscoverFeed,
   ForeignWork,
@@ -34,7 +31,7 @@ import { generate } from '~/domain/scan/gemini'
 import type { AiStepUsage } from '~/domain/scan/types'
 import type { Language } from '~/domain/shared/language'
 import { BookTitle } from '~/domain/shared/primitives'
-import type { AuthorName, UserId } from '~/domain/shared/types'
+import type { UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
 import { objectStore } from '~/system/object-store'
 import { withRequestCacheScope } from '~/system/request-cache'
@@ -59,15 +56,20 @@ const todayOf = (now: Date) => now.toISOString().slice(0, 10)
 
 export namespace DiscoverUseCase {
   /** The tab as the reader opens it: the works they read in another language,
-   *  with what the shared watches and their Audible marketplace know of them in
-   *  the app's language. Opening it the first time enrols the reader in the
-   *  daily refresh. */
+   *  with what the shared watches know of them in the app's language — the
+   *  recordings only for a reader connected to Audible, looked up now so a
+   *  disconnection shows at once. Opening it the first time enrols the reader
+   *  in the daily refresh. */
   export const discover = async (
     userId: UserId,
     language: Language,
     now = new Date(),
   ): Promise<Discover> => {
-    const [stored, books] = await Promise.all([DiscoverQuery.feed(userId), BookQuery.all(userId)])
+    const [stored, books, marketplace] = await Promise.all([
+      DiscoverQuery.feed(userId),
+      BookQuery.all(userId),
+      AudibleUseCase.marketplaceOf(userId),
+    ])
     const feed = stored ?? (await DiscoverCommand.save(emptyFeed(userId, language)))
     const works = foreignWorksOf(books, feed.language)
     const watches = await watchesOf(works, feed.language)
@@ -75,6 +77,7 @@ export namespace DiscoverUseCase {
       works,
       watches,
       feed,
+      marketplace,
       ownedInLanguage(books, feed.language),
       todayOf(now),
     )
@@ -86,29 +89,28 @@ export namespace DiscoverUseCase {
     }
   }
 
-  /** Look again: the web for the works whose watch is a week old, the reader's
-   *  Audible marketplace for all of them. A part that fails keeps what the last
-   *  refresh found rather than emptying the tab. */
+  /** Look again on the web for the works whose watch is a week old, and keep
+   *  the exact dates the alerts go out on. A lookup that fails keeps what the
+   *  last one found rather than emptying the tab. */
   export const refresh = async (
     userId: UserId,
     language: Language,
     now = new Date(),
   ): Promise<DiscoverFeed> => {
-    const [books, stored] = await Promise.all([BookQuery.all(userId), DiscoverQuery.feed(userId)])
+    const [books, stored, marketplace] = await Promise.all([
+      BookQuery.all(userId),
+      DiscoverQuery.feed(userId),
+      AudibleUseCase.marketplaceOf(userId),
+    ])
     const previous = stored ?? emptyFeed(userId, language)
     const works = foreignWorksOf(books, language)
     const watches = await trackedWatches(works, language, now)
-    const audible = await audibleTranslations(userId, works, watches, language)
-    const feed: DiscoverFeed = {
-      ...previous,
-      language,
-      refreshedAt: now,
-      audible: audible === 'failed' ? previous.audible : audible,
-    }
+    const feed: DiscoverFeed = { ...previous, language, refreshedAt: now }
     const { upcoming, available } = translationsOf(
       works,
       watches,
       feed,
+      marketplace,
       ownedInLanguage(books, language),
       todayOf(now),
     )
@@ -262,42 +264,6 @@ const trackedWatches = async (
     )
   }
   return watches
-}
-
-/** The recordings the reader's Audible marketplace lists for their works.
- *  Undefined for a reader with no Audible connection, `failed` when Amazon
- *  did. */
-const audibleTranslations = async (
-  userId: UserId,
-  works: readonly ForeignWork[],
-  watches: ReadonlyMap<string, TranslationWatch>,
-  language: Language,
-): Promise<DiscoverFeed['audible'] | 'failed'> => {
-  const authors = [
-    ...new Set(works.flatMap((work) => (work.author ? [work.author] : []))),
-  ] as AuthorName[]
-  try {
-    const found = await AudibleUseCase.recordingsInLanguage(
-      userId,
-      authors,
-      language as BookLanguage,
-    )
-    if (found === 'not-connected') return undefined
-    return {
-      marketplace: found.marketplace,
-      works: works.flatMap((work): AudibleTranslations[] => {
-        const editions = audibleTranslationsOf(
-          work,
-          watches.get(watchKeyOf(work, language))?.translatedTitle,
-          found.recordings,
-        )
-        return editions.length > 0 ? [{ workKey: work.key, editions }] : []
-      }),
-    }
-  } catch (error) {
-    logger.warn('discover Audible lookup failed', { error, userId })
-    return 'failed'
-  }
 }
 
 /** The reader's own photo of their copy is signed only when no translated

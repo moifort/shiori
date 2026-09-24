@@ -30,7 +30,6 @@ import type { VolumeNumber as VolumeNumberValue } from '~/domain/series/types'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import type { AuthorName as AuthorNameValue, UserId } from '~/domain/shared/types'
 import { isPresent, optionally } from '~/utils/input'
-import { slugify } from '~/utils/slug'
 
 /** What one Audible title becomes in a Shiori library.
  *
@@ -497,30 +496,8 @@ export const readersDueForSync = (connections: readonly AudibleConnection[]): Us
     )
     .map((connection) => connection.userId)
 
-/** How many authors one pass searches: each is one call to Amazon. */
-export const AUTHORS_SEARCHED = 30
-
-/** The Audible shelf a catalogue search for this author should look on: the
- *  one their books in the reader's library sit on, else the shelf the library
- *  fills most — Amazon refuses a search with no shelf at all. */
-export const shelfForAuthor = (
-  items: readonly AudibleItem[],
-  author: string,
-): string | undefined => {
-  const rootOf = (item: AudibleItem) => item.categories?.[0]?.categories?.[0]?.id
-  const wanted = slugify(author)
-  const own = items.find((item) => item.authors.some((name) => slugify(name) === wanted))
-  const ownShelf = own && rootOf(own)
-  if (ownShelf) return ownShelf
-  const counts = new Map<string, number>()
-  for (const item of items) {
-    const shelf = rootOf(item)
-    if (shelf) counts.set(shelf, (counts.get(shelf) ?? 0) + 1)
-  }
-  return [...counts.entries()].sort((left, right) => right[1] - left[1])[0]?.[0]
-}
-
-/** A title's page on the reader's own Audible store: every marketplace serves
- *  its catalogue at `audible.{marketplace}`, the one the account was opened on. */
-export const audibleProductUrlOf = (marketplace: AudibleMarketplace, asin: AudibleAsinValue) =>
-  `https://www.audible.${marketplace}/pd/${asin}`
+/** A search for a title on the reader's own Audible store: every marketplace
+ *  serves its catalogue at `audible.{marketplace}`, the one the account was
+ *  opened on. */
+export const audibleSearchUrlOf = (marketplace: AudibleMarketplace, keywords: string) =>
+  `https://www.audible.${marketplace}/search?keywords=${encodeURIComponent(keywords)}`

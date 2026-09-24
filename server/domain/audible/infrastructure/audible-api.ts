@@ -1,4 +1,4 @@
-import { AUDIBLE_LOCALES, catalog, lastPositions, library, login, register } from 'audible-api-ts'
+import { AUDIBLE_LOCALES, lastPositions, library, login, register } from 'audible-api-ts'
 import type { AudibleMarketplace } from '~/domain/audible/types'
 
 /** The whole surface of `audible-api-ts` this domain uses, behind one module.
@@ -7,7 +7,7 @@ import type { AudibleMarketplace } from '~/domain/audible/types'
  *  device key and would need a real account to answer. Tests replace this module
  *  and nothing else, so the mapping, the sealing and the write paths are all
  *  exercised for real. */
-export { catalog, lastPositions, library, login, register }
+export { lastPositions, library, login, register }
 
 /** Where Amazon sends the browser back once the reader has signed in. The
  *  authorization code rides on it as a query parameter, and the app watches for

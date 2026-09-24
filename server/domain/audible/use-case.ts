@@ -1,6 +1,5 @@
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import {
-  AUTHORS_SEARCHED,
   audibleLinksFor,
   bookFrom,
   boughtSince,
@@ -10,7 +9,6 @@ import {
   listeningChangesFor,
   purchaseDatesFor,
   seriesVolumesFor,
-  shelfForAuthor,
   shelfKeysOf,
 } from '~/domain/audible/business-rules'
 import { AudibleCommand } from '~/domain/audible/command'
@@ -20,7 +18,6 @@ import { AudibleQuery } from '~/domain/audible/query'
 import type {
   AudibleAsin,
   AudibleMarketplace,
-  AudibleRelease,
   ConnectedAccount,
   ImportableBook,
   LibrarySync,
@@ -28,8 +25,8 @@ import type {
 } from '~/domain/audible/types'
 import { BookCommand } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
-import type { Book, BookLanguage } from '~/domain/book/types'
-import type { AuthorName, UserId } from '~/domain/shared/types'
+import type { Book } from '~/domain/book/types'
+import type { UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
 import { withRequestCacheScope } from '~/system/request-cache'
 import { bulkSave } from '~/utils/firestore'
@@ -38,54 +35,10 @@ import { isPresent } from '~/utils/input'
 const logger = createLogger('audible')
 
 export namespace AudibleUseCase {
-  /** Every recording in `language` of these authors, out already or up for
-   *  preorder, as the reader's own Audible marketplace lists them — for the
-   *  Découvrir tab, which looks for the translation of what the reader read in
-   *  another language.
-   *
-   *  One library read, for the shelves a search needs, then one catalogue search
-   *  per author. An author whose search fails is skipped: one refusal from
-   *  Amazon must not cost the reader every other author. */
-  export const recordingsInLanguage = async (
-    userId: UserId,
-    authors: readonly AuthorName[],
-    language: BookLanguage,
-  ): Promise<
-    { marketplace: AudibleMarketplace; recordings: AudibleRelease[] } | 'not-connected'
-  > => {
-    const account = await AudibleQuery.accountOf(userId)
-    if (!account) return 'not-connected'
-    let credentials = opened(account.credentials)
-    if (!credentials) return 'not-connected'
-
-    const library = await api.library(credentials)
-    credentials = library.credentials
-    const nothingOwned = new Set<string>()
-
-    const recordings: AudibleRelease[] = []
-    for (const author of authors.slice(0, AUTHORS_SEARCHED)) {
-      const categoryId = shelfForAuthor(library.items, author)
-      if (!categoryId) continue
-      try {
-        const found = await api.catalog(credentials, {
-          categoryId,
-          author,
-          sortBy: '-ReleaseDate',
-          limit: 50,
-        })
-        credentials = found.credentials
-        for (const item of found.items) {
-          const book = importableFrom(item, nothingOwned)
-          if (book?.language === language)
-            recordings.push({ ...book, releaseDate: item.releaseDate })
-        }
-      } catch (error) {
-        logger.warn('Audible author search failed', { error, userId, author })
-      }
-    }
-    await AudibleCommand.rememberRotatedCredentials(userId, credentials)
-    return { marketplace: account.marketplace, recordings }
-  }
+  /** The store the reader's Audible account was opened on, or nothing for a
+   *  reader who never connected one — who is then offered no recording. */
+  export const marketplaceOf = async (userId: UserId): Promise<AudibleMarketplace | undefined> =>
+    (await AudibleQuery.accountOf(userId))?.marketplace
 
   /** The reader's Audible library, as books they could catalogue.
    *

@@ -2197,13 +2197,10 @@ scalar TimeZone
 One edition of a work in the app’s language, out or announced. A recording is only ever listed for a reader connected to Audible.
 """
 type TranslatedEdition {
-  """The recording’s page on the reader’s own Audible store."""
+  """
+  For a recording, a search for its title on the reader’s own Audible store — where the reader goes to find it; Shiori never reads the catalogue.
+  """
   audibleUrl: String
-
-  """
-  The edition’s own cover, when its store showed one: Audible’s, for a recording.
-  """
-  coverUrl: CoverUrl
 
   """
   When it came out or comes out, as precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Null for an edition out on a date nobody found.

@@ -3,6 +3,7 @@ import type { AudibleItem, LastPosition } from 'audible-api-ts'
 import { resolveGenreId } from 'audible-api-ts'
 import {
   audibleLinksFor,
+  audibleSearchUrlOf,
   bookFrom,
   boughtSince,
   importableFrom,
@@ -12,7 +13,6 @@ import {
   purchaseDatesFor,
   readersDueForSync,
   seriesVolumesFor,
-  shelfForAuthor,
   shelfKeyOf,
   shelfKeysOf,
   statusOf,
@@ -806,27 +806,10 @@ describe('choosing whose library to sync', () => {
   })
 })
 
-describe('the shelf an author is searched on', () => {
-  const shelved = (id: string, authors: string[]) =>
-    anItem({ authors, categories: [{ root: 'Genres', categories: [{ id, name: id }] }] })
-
-  test('is the shelf their own books sit on in the library', () => {
-    const library = [
-      shelved('fiction', ['Somebody']),
-      shelved('fiction', ['Somebody Else']),
-      shelved('sci-fi', ['Andy Weir']),
-    ]
-
-    expect(shelfForAuthor(library, 'andy weir')).toBe('sci-fi')
-  })
-
-  test('falls back on the shelf the library fills most for an author it lacks', () => {
-    const library = [shelved('fantasy', ['A']), shelved('fantasy', ['B']), shelved('crime', ['C'])]
-
-    expect(shelfForAuthor(library, 'Pierce Brown')).toBe('fantasy')
-  })
-
-  test('is nothing for an empty library', () => {
-    expect(shelfForAuthor([], 'Pierce Brown')).toBeUndefined()
+describe('a search on the reader’s Audible store', () => {
+  test('is on their marketplace, the title encoded', () => {
+    expect(audibleSearchUrlOf('fr', 'Nous sommes Légion')).toBe(
+      'https://www.audible.fr/search?keywords=Nous%20sommes%20L%C3%A9gion',
+    )
   })
 })

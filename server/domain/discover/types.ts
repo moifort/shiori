@@ -1,5 +1,5 @@
 import type { Brand } from 'ts-brand'
-import type { AudibleAsin, AudibleMarketplace } from '~/domain/audible/types'
+import type { AudibleMarketplace } from '~/domain/audible/types'
 import type { Book, BookLanguage, CoverUrl, Isbn13 } from '~/domain/book/types'
 import type { VolumeNumber } from '~/domain/series/types'
 import type { Language } from '~/domain/shared/language'
@@ -44,8 +44,6 @@ export type TranslatedEdition = {
    *  nobody found. */
   date?: ReleaseDate
   isbn13?: Isbn13
-  audibleAsin?: AudibleAsin
-  coverUrl?: CoverUrl
 }
 
 /** What exists or is announced of one work in one language, as the web says —
@@ -58,14 +56,11 @@ export type TranslationWatch = {
   author?: AuthorName
   language: Language
   checkedAt: Date
-  /** The saga's name or the book's title in that language, which is how
-   *  Audible's listing is matched to the work. Absent when untranslated. */
+  /** The saga's name or the book's title in that language. Absent when
+   *  untranslated. */
   translatedTitle?: BookTitle
   editions: TranslatedEdition[]
 }
-
-/** The recordings the reader's own Audible marketplace lists for one work. */
-export type AudibleTranslations = { workKey: string; editions: TranslatedEdition[] }
 
 /** An edition with an exact date, kept so the daily alert pass needs no model
  *  call and no library read. */
@@ -88,9 +83,6 @@ export type DiscoverFeed = {
   language: Language
   /** When the daily refresh last ran. Absent before the first. */
   refreshedAt?: Date
-  /** What the reader's Audible marketplace lists. Absent for a reader with no
-   *  Audible connection, who is never offered a recording. */
-  audible?: { marketplace: AudibleMarketplace; works: AudibleTranslations[] }
   /** The editions with an exact date, for the alerts. */
   dated: DatedEdition[]
   /** Work keys the reader is not interested in: never proposed again. */
@@ -115,7 +107,9 @@ export type Translation = {
   editions: TranslatedEdition[]
   /** The soonest edition still to come. */
   nextDate?: ReleaseDate
-  /** Where the reader's Audible marketplace sells a recording. */
+  /** The Audible store the reader's account was opened on, where a recording
+   *  is looked for. Absent for a reader with no Audible connection, who is
+   *  never offered a recording. */
   audibleMarketplace?: AudibleMarketplace
 }
 

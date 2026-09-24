@@ -83,10 +83,10 @@ struct TranslationView: View {
                 Button {
                     openURL(url)
                 } label: {
-                    Image(systemName: "arrow.up.forward.square")
+                    Image(systemName: "magnifyingglass")
                 }
                 .buttonStyle(.borderless)
-                .accessibilityLabel(Text("Ouvrir dans Audible"))
+                .accessibilityLabel(Text("Chercher sur Audible"))
             }
         }
     }

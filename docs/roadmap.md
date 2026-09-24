@@ -94,9 +94,11 @@ genres — then torn down on 2026-09-24 to be rebuilt one feature at a time.
 The first feature back: the books the reader read or is reading in another language than the
 app's, and what exists or is announced of them in the app's language. One row per saga or per
 book on its own, split into "coming soon" and "already out"; "Pas intéressé" hides a work for
-good. Printed editions are always offered, recordings only to a reader connected to Audible,
-from their own marketplace's catalogue. The web is searched once a week per work, in a shared
-document, and Audible once a day per reader. Batch 2 already delivers the zero-cost half of it: the recommendations
+good. Everything is found on the web, one grounded call per work, once a week, in a shared
+document; printed editions are always offered, recordings only to a reader connected to
+Audible, each with a search for its title on their own Audible store. Audible's catalogue API
+was tried and dropped: through `audible-api-ts` a name with a space is refused (the query is
+not URL-encoded), and once encoded the searches still miss French recordings that exist. Batch 2 already delivers the zero-cost half of it: the recommendations
 section on a book screen, listing the other volumes of its series.
 
 ## Deferred on purpose

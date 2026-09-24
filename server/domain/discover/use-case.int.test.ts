@@ -55,8 +55,6 @@ mock.module('~/domain/scan/gemini', () => ({
   },
 }))
 
-/** What the reader's Audible marketplace lists, per author searched. */
-let catalogue: Record<string, Partial<AudibleItem>[]> = {}
 const shelved = (item: Partial<AudibleItem>) =>
   ({
     narrators: [],
@@ -87,10 +85,6 @@ mock.module('~/domain/audible/infrastructure/audible-api', () => ({
   register: async () => credentials,
   library: async () => ({
     items: [shelved({ asin: 'B0OWNED001', title: 'Project Hail Mary', authors: ['Andy Weir'] })],
-    credentials,
-  }),
-  catalog: async (_credentials: unknown, options: { author?: string }) => ({
-    items: (catalogue[options.author ?? ''] ?? []).map(shelved),
     credentials,
   }),
   lastPositions: async () => ({ positions: [], credentials }),
@@ -150,7 +144,6 @@ beforeEach(() => {
   calls.length = 0
   pushed.length = 0
   carlDate = '2027-02-19'
-  catalogue = {}
 })
 
 describe('the Découvrir tab', () => {
@@ -182,33 +175,18 @@ describe('the Découvrir tab', () => {
     ])
   })
 
-  test('offers the recordings of the reader’s Audible store, with its dates', async () => {
+  test('offers the recordings the web found to a reader connected to Audible', async () => {
     await stock(reader)
     await connectAudible(reader)
-    catalogue = {
-      'Matt Dinniman': [
-        {
-          asin: 'B0CARL0004',
-          title: 'Carl 4',
-          authors: ['Matt Dinniman'],
-          language: 'french',
-          series: { name: 'Dungeon Crawler Carl', position: 4 },
-          releaseDate: new Date('2027-01-15'),
-        },
-      ],
-    }
 
     await DiscoverUseCase.refresh(reader, 'fr', now)
     const [carl] = (await DiscoverUseCase.discover(reader, 'fr', now)).upcoming
 
-    expect(carl.nextDate as string).toBe('2027-01-15')
     expect(carl.audibleMarketplace).toBe('fr')
-    expect(
-      carl.editions.map((e): unknown[] => [e.volume, e.format, e.date, e.audibleAsin]),
-    ).toEqual([
-      [1, 'book', '2024-05-02', undefined],
-      [4, 'audiobook', '2027-01-15', 'B0CARL0004'],
-      [4, 'book', '2027-02-19', undefined],
+    expect(carl.editions.map((e): unknown[] => [e.volume, e.format, e.date])).toEqual([
+      [1, 'book', '2024-05-02'],
+      [4, 'book', '2027-02-19'],
+      [4, 'audiobook', '2027-03'],
     ])
   })
 
@@ -283,8 +261,8 @@ describe('the Découvrir tab', () => {
 
     await DiscoverUseCase.discover(reader, 'fr', now)
 
-    // The library; the feed and one watch per work.
+    // The library; the feed, the Audible connection and one watch per work.
     expect(fake.queryReads - before.queries).toBe(1)
-    expect(fake.docReads - before.docs).toBe(3)
+    expect(fake.docReads - before.docs).toBe(4)
   })
 })

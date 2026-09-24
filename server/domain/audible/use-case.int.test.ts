@@ -23,9 +23,6 @@ const positionCalls: string[][] = []
  *  answers — which is how one reader's revoked device is staged without
  *  disturbing the other's. */
 const libraryRefusals: (Error | undefined)[] = []
-/** What a catalogue search answers, per author, and the searches made. */
-let catalogue: Record<string, AudibleItem[]> = {}
-const catalogCalls: { author?: string; categoryId?: string }[] = []
 
 mock.module('~/domain/audible/infrastructure/audible-api', () => ({
   login: async (marketplace: string) => ({
@@ -76,11 +73,6 @@ mock.module('~/domain/audible/infrastructure/audible-api', () => ({
       },
     }
   },
-  catalog: async (credentials: unknown, options: { author?: string; categoryId?: string }) => {
-    catalogCalls.push({ author: options.author, categoryId: options.categoryId })
-    if (options.author === 'Refused') throw new Error('503')
-    return { items: catalogue[options.author ?? ''] ?? [], credentials }
-  },
   landingUrlOf: (marketplace: string) => `https://www.amazon.${marketplace}/ap/maplanding`,
 }))
 
@@ -123,8 +115,6 @@ beforeEach(() => {
   libraryCalls.length = 0
   positionCalls.length = 0
   libraryRefusals.length = 0
-  catalogue = {}
-  catalogCalls.length = 0
 })
 
 const connect = async (who: UserId = reader) => {
@@ -685,74 +675,5 @@ describe('running the nightly job over every reader', () => {
       deferred: 2,
     })
     expect(libraryCalls).toHaveLength(0)
-  })
-})
-
-describe('the recordings of an author in one language', () => {
-  const shelved = (overrides: Partial<AudibleItem>) =>
-    anItem({
-      categories: [{ root: 'Genres', categories: [{ id: 'sf', name: 'SF' }] }],
-      ...overrides,
-    })
-
-  test('answers not-connected for a reader with no Audible account', async () => {
-    expect(await AudibleUseCase.recordingsInLanguage(reader, [AuthorName('Andy Weir')], 'fr')).toBe(
-      'not-connected',
-    )
-  })
-
-  test('keeps only the recordings in the language asked, on the author’s shelf', async () => {
-    await connect()
-    items = [shelved({ asin: 'B000000001', title: 'Project Hail Mary', authors: ['Andy Weir'] })]
-    catalogue = {
-      'Andy Weir': [
-        shelved({
-          asin: 'B000000002',
-          title: 'Projet Dernière Chance',
-          authors: ['Andy Weir'],
-          language: 'french',
-          releaseDate: new Date('2027-02-19'),
-        }),
-        shelved({
-          asin: 'B000000003',
-          title: 'Artemis',
-          authors: ['Andy Weir'],
-          language: 'english',
-        }),
-      ],
-    }
-
-    const found = await AudibleUseCase.recordingsInLanguage(reader, [AuthorName('Andy Weir')], 'fr')
-
-    expect(catalogCalls).toEqual([{ author: 'Andy Weir', categoryId: 'sf' }])
-    if (found === 'not-connected') throw new Error('connected')
-    expect(found.marketplace).toBe('fr')
-    expect(
-      found.recordings.map((recording) => [String(recording.title), recording.releaseDate]),
-    ).toEqual([['Projet Dernière Chance', new Date('2027-02-19')]])
-  })
-
-  test('skips an author Amazon refuses and goes on with the others', async () => {
-    await connect()
-    items = [shelved({})]
-    catalogue = {
-      'Pierce Brown': [
-        shelved({
-          asin: 'B000000004',
-          title: 'Red Rising',
-          authors: ['Pierce Brown'],
-          language: 'french',
-        }),
-      ],
-    }
-
-    const found = await AudibleUseCase.recordingsInLanguage(
-      reader,
-      [AuthorName('Refused'), AuthorName('Pierce Brown')],
-      'fr',
-    )
-
-    if (found === 'not-connected') throw new Error('connected')
-    expect(found.recordings.map((recording) => String(recording.title))).toEqual(['Red Rising'])
   })
 })

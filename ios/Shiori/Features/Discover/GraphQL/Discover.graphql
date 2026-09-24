@@ -44,6 +44,5 @@ fragment TranslationFields on Translation {
     format
     date
     audibleUrl
-    coverUrl
   }
 }

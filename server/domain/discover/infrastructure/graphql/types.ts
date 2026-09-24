@@ -1,4 +1,4 @@
-import { audibleProductUrlOf } from '~/domain/audible/business-rules'
+import { audibleSearchUrlOf } from '~/domain/audible/business-rules'
 import { BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
 import type { Discover, TranslatedEdition, Translation } from '~/domain/discover/types'
 import { builder } from '~/domain/shared/graphql/builder'
@@ -19,8 +19,8 @@ const TranslationKindEnum = builder.enumType('TranslationKind', {
   } as const,
 })
 
-/** An edition, with the Audible store it is sold on when it is a recording the
- *  reader's marketplace lists. */
+/** An edition, with the translation it belongs to, which knows the reader's
+ *  Audible store. */
 type EditionView = { edition: TranslatedEdition; translation: Translation }
 
 const TranslatedEditionType = builder.objectRef<EditionView>('TranslatedEdition').implement({
@@ -35,12 +35,6 @@ const TranslatedEditionType = builder.objectRef<EditionView>('TranslatedEdition'
       resolve: ({ edition }) => edition.volume ?? null,
     }),
     format: t.field({ type: TranslationFormatEnum, resolve: ({ edition }) => edition.format }),
-    coverUrl: t.field({
-      type: 'CoverUrl',
-      nullable: true,
-      description: 'The edition’s own cover, when its store showed one: Audible’s, for a recording.',
-      resolve: ({ edition }) => edition.coverUrl ?? null,
-    }),
     date: t.string({
       nullable: true,
       description:
@@ -50,10 +44,12 @@ const TranslatedEditionType = builder.objectRef<EditionView>('TranslatedEdition'
     }),
     audibleUrl: t.string({
       nullable: true,
-      description: 'The recording’s page on the reader’s own Audible store.',
+      description:
+        'For a recording, a search for its title on the reader’s own Audible store — ' +
+        'where the reader goes to find it; Shiori never reads the catalogue.',
       resolve: ({ edition, translation }) =>
-        edition.audibleAsin && translation.audibleMarketplace
-          ? audibleProductUrlOf(translation.audibleMarketplace, edition.audibleAsin)
+        edition.format === 'audiobook' && translation.audibleMarketplace
+          ? audibleSearchUrlOf(translation.audibleMarketplace, edition.title)
           : null,
     }),
   }),
