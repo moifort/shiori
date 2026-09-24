@@ -167,7 +167,7 @@ struct FriendProfileView: View {
                 shelf(
                     "Livres",
                     hearted: true,
-                    books: profile.favoritesByActivity,
+                    books: profile.favoritesByShelf,
                     empty: "",
                     asFavorites: true
                 )

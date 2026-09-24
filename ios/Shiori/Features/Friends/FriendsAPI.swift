@@ -134,9 +134,13 @@ struct FriendProfile: Sendable {
         }
     }
 
-    /// The hearted books, the one touched last first.
-    var favoritesByActivity: [FriendBook] {
-        favorites.sorted { ($0.lastActivityAt ?? .distantPast) > ($1.lastActivityAt ?? .distantPast) }
+    /// The hearted books in the Library tab's order: newest first on the day
+    /// each was shelved — finished, else started, else added — then by title.
+    var favoritesByShelf: [FriendBook] {
+        favorites.sorted {
+            let left = $0.book.shelvedAt ?? .distantPast, right = $1.book.shelvedAt ?? .distantPast
+            return left != right ? left > right : $0.book.title.localizedCompare($1.book.title) == .orderedAscending
+        }
     }
 
     /// What moved on the shelf in the last thirty days, one line of each
