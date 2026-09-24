@@ -26,8 +26,9 @@ struct FriendProfileView: View {
     /// The books being added from their row, each showing its own spinner.
     @State private var adding: Set<String> = []
     @State private var addFailed: String?
-    /// The books in progress past the first three, shown on "Voir plus".
-    @State private var showsAllReading = false
+    /// How many books in progress are shown: three at first, three more on
+    /// each "Voir plus".
+    @State private var readingShown = FriendProfileView.readingStep
     /// The sagas being added from their row, each showing its own spinner.
     @State private var addingSagas: Set<String> = []
 
@@ -124,18 +125,21 @@ struct FriendProfileView: View {
                 }
             }
             // The book the recent activity already leads with is not listed
-            // again: the rest, three at first, the one touched last first.
+            // again: the rest, the one touched last first — all of them up to
+            // four, else three and "Voir plus" for the next three. A last
+            // step that would hide a single book shows it instead.
             let leading = recent.first { if case .reading = $0 { true } else { false } }?.book?.id
             let reading = profile.reading.filter { $0.id != leading }
+            let shown = reading.count - readingShown <= 1 ? reading.count : readingShown
             if profile.reading.isEmpty {
                 shelf("En cours", books: [], empty: "Aucune lecture en cours.")
             } else if !reading.isEmpty {
                 shelf(
                     "En cours",
-                    books: showsAllReading ? reading : Array(reading.prefix(3)),
+                    books: Array(reading.prefix(shown)),
                     empty: "",
                     showsSeries: true,
-                    hidden: showsAllReading ? 0 : max(0, reading.count - 3)
+                    hidden: reading.count - shown
                 )
             }
             // A hearted saga stands for its volumes: the books below it are
@@ -270,7 +274,7 @@ struct FriendProfileView: View {
                 }
                 if hidden > 0 {
                     Button("Voir plus (\(hidden))") {
-                        withAnimation { showsAllReading = true }
+                        withAnimation { readingShown += Self.readingStep }
                     }
                     .edgeToEdgeSeparator()
                     .accessibilityIdentifier("friend-shelf-more")
@@ -331,6 +335,8 @@ struct FriendProfileView: View {
             .accessibilityIdentifier(owned ? "friend-book-owned" : "friend-book-add")
         }
     }
+
+    private static let readingStep = 3
 
     private func load() async {
         isLoading = true
