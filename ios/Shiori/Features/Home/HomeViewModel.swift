@@ -11,12 +11,8 @@ final class HomeViewModel {
     private(set) var isLoading = false
     private(set) var errorMessage: String?
 
-    /// The figures on screen are last session's and fresher ones are on their
-    /// way: a spinner leads the page. Never set by a pull-to-refresh, whose own
-    /// control spins.
-    private(set) var isRefreshing = false
-    /// That refresh failed: the figures are the ones from last time, and the
-    /// leading row offers to try again.
+    /// Bringing last session's figures up to date failed: the ones on screen
+    /// are from last time, and the leading row offers to try again.
     private(set) var refreshFailed = false
     /// The server has answered at least once, so what is on screen is no
     /// longer the snapshot.
@@ -60,10 +56,8 @@ final class HomeViewModel {
     /// Bring the snapshot on screen up to date without taking it away — and
     /// the retry when that failed.
     func refresh() async {
-        isRefreshing = true
         refreshFailed = false
         await load()
-        isRefreshing = false
         refreshFailed = !loaded
     }
 }

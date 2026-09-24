@@ -99,9 +99,6 @@ struct HomeView: View {
             // hold, and the scan prompt leads the page until the first book.
             HomePage(
                     dashboard: dashboard,
-                    // An Audible pass that outlasted the preparation screen is
-                    // still bringing books in: the leading spinner says so.
-                    isRefreshing: viewModel.isRefreshing || audibleSync.isSyncing,
                     refreshFailed: viewModel.refreshFailed,
                     onRetryRefresh: { await viewModel.refresh() },
                     onReadingTapped: { onShowLibrary(LibraryRequest(status: .reading)) },

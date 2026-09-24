@@ -15,7 +15,8 @@ the release tag is pushed.
   hearted first.
 - The Audible sync no longer undoes a status you set, such as an abandoned book, unless you listened to it since.
 - The library no longer lists abandoned books by default; the "Abandoned" filter still shows them.
-- Switching between views of the library or the series no longer shows a spinner above the list.
+- Switching between views of the library or the series no longer shows a spinner above the list,
+  and the home page no longer shows one at the top while it updates.
 - A new Discover tab proposes what to read next, each book with the reason it was picked
   for you: the next volumes of your series and when they come out, new Audible releases in
   the series you listen to, books in the vein of the ones you loved, award winners and the

@@ -9,7 +9,8 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   récent en premier.
 - La synchronisation Audible ne défait plus un statut que vous avez choisi, comme un livre abandonné, sauf si vous l’avez écouté depuis.
 - La bibliothèque n’affiche plus les livres abandonnés par défaut ; le filtre « Abandonné » les montre toujours.
-- Changer de vue dans la bibliothèque ou les séries n’affiche plus de petit chargement au-dessus de la liste.
+- Changer de vue dans la bibliothèque ou les séries n’affiche plus de petit chargement au-dessus de la liste,
+  et l’accueil n’en affiche plus en haut pendant sa mise à jour.
 - Un nouvel onglet Découvrir propose vos prochaines lectures, chaque livre avec la raison de
   son choix : les prochains tomes de vos séries et leur date de sortie, les nouveautés
   Audible des séries que vous écoutez, des livres dans la veine de ceux que vous avez
