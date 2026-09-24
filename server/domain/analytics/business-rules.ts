@@ -281,6 +281,7 @@ export const dashboardOf = (view: AnalyticsView, today: LocalDateValue): Dashboa
     booksRead: booksReadTrendOf(finishes, today),
     pagesPerDay: pagesPerDayTrendOf(finishes, today),
     daysToFinish: daysToFinishTrendOf(finishes, today),
+    monthlyListeningHours: monthlyListeningHoursTrendOf(finishes, today),
     toReadCount: view.toRead.length,
     readCount: finishes.length,
     monthsToClearPile: monthsToClearPileOf(finishes, view.toRead.length, today),
@@ -419,6 +420,34 @@ export const pagesPerDayTrendOf = (finishes: readonly Finish[], today: LocalDate
   return {
     current: perDay(current),
     previous: lastYearHasPages ? perDay(previous) : undefined,
+  }
+}
+
+/** Days in an average month, to turn a span of days into months. */
+const DAYS_PER_MONTH = 365.25 / 12
+
+/** Hours listened per month on average, this year to date against the same span
+ *  of last year. A span counts its months to the day, so mid-September divides
+ *  by eight and a half rather than nine. No figure without any audiobook this
+ *  year, no comparison when last year listened to nothing. */
+export const monthlyListeningHoursTrendOf = (
+  finishes: readonly Finish[],
+  today: LocalDateValue,
+): Trend => {
+  const perMonth = ({ from, to }: { from: number; to: number }) =>
+    Math.round(minutesListenedBetween(finishes, from, to) / 60 / ((to - from + 1) / DAYS_PER_MONTH))
+  const current = currentSpanOf(today)
+  const previousYear = yearOf(today) - 1
+  const listenedThisYear = minutesListenedBetween(finishes, current.from, current.to) > 0
+  const listenedLastYear =
+    minutesListenedBetween(
+      finishes,
+      dayNumberFrom(previousYear, 1, 1),
+      dayNumberFrom(previousYear, 12, 31),
+    ) > 0
+  return {
+    current: listenedThisYear ? perMonth(current) : undefined,
+    previous: listenedLastYear ? perMonth(previousSpanOf(today)) : undefined,
   }
 }
 

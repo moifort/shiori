@@ -18,7 +18,7 @@ enum HomeAPI {
             suggestions: dashboard.suggestions.map { $0.fragments.dashboardBookCard.asBook(status: .toRead) },
             lastFinished: dashboard.lastFinished?.fragments.dashboardBookCard.asBook(status: .read),
             booksRead: .init(current: dashboard.booksRead.current, previous: dashboard.booksRead.previous),
-            daysToFinish: .init(current: dashboard.daysToFinish.current, previous: dashboard.daysToFinish.previous),
+            monthlyListeningHours: .init(current: dashboard.monthlyListeningHours.current, previous: dashboard.monthlyListeningHours.previous),
             toReadCount: dashboard.toReadCount,
             readCount: dashboard.readCount,
             monthsToClearPile: dashboard.monthsToClearPile,

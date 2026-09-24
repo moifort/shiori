@@ -505,7 +505,7 @@ type Dashboard {
   currentYear: Int!
 
   """Median days from start to finish, both days included."""
-  daysToFinish: Trend!
+  daysToFinish: Trend! @deprecated(reason: "The app compares the hours listened instead (`monthlyListeningHours`). Kept for the builds that still ask for it.")
 
   """Books the reader dropped because they did not like them."""
   droppedCount: Int!
@@ -534,6 +534,11 @@ type Dashboard {
 
   """True when the reader has not catalogued a single book yet."""
   libraryIsEmpty: Boolean!
+
+  """
+  Hours listened per month on average, rounded to the hour. Null `current` before the first audiobook of the year.
+  """
+  monthlyListeningHours: Trend!
 
   """At the pace of the last twelve months. Null with no pile or no pace."""
   monthsToClearPile: Int

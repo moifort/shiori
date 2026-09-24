@@ -4,7 +4,7 @@ import SwiftUI
 /// Without last year there is no arrow, only this year's figure.
 struct TrendsWidget: View {
     let booksRead: Dashboard.Trend
-    let daysToFinish: Dashboard.Trend
+    let monthlyListeningHours: Dashboard.Trend
 
     var body: some View {
         WidgetCard(title: "Tendances") {
@@ -13,7 +13,7 @@ struct TrendsWidget: View {
                 .foregroundStyle(.secondary)
         } content: {
             VStack(alignment: .leading, spacing: 14) {
-                if booksRead.current == nil, daysToFinish.current == nil {
+                if booksRead.current == nil, monthlyListeningHours.current == nil {
                     WidgetEmptyMessage(text: "Terminez un livre cette année pour voir vos tendances.", placeholder: .rows)
                 }
                 if let books = booksRead.current {
@@ -25,12 +25,12 @@ struct TrendsWidget: View {
                         color: DashboardPalette.books
                     )
                 }
-                if let days = daysToFinish.current {
+                if let hours = monthlyListeningHours.current {
                     row(
-                        label: "Durée pour finir un livre",
-                        value: String(localized: "\(days) jours"),
-                        previous: daysToFinish.previous.map { String(localized: "\($0) jours") },
-                        direction: daysToFinish.direction,
+                        label: "Heures écoutées par mois",
+                        value: String(localized: "\(hours) h"),
+                        previous: monthlyListeningHours.previous.map { String(localized: "\($0) h") },
+                        direction: monthlyListeningHours.direction,
                         color: DashboardPalette.duration
                     )
                 }
@@ -84,7 +84,7 @@ struct TrendsWidget: View {
 #Preview {
     TrendsWidget(
         booksRead: .init(current: 18, previous: 14),
-        daysToFinish: .init(current: 11, previous: 14)
+        monthlyListeningHours: .init(current: 9, previous: 6)
     )
     .padding()
     .background(Color(.systemGroupedBackground))

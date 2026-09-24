@@ -28,7 +28,7 @@ query Dashboard($timeZone: TimeZone!) {
       current
       previous
     }
-    daysToFinish {
+    monthlyListeningHours {
       current
       previous
     }
