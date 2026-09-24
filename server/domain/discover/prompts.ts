@@ -21,6 +21,18 @@ const LANGUAGE_NAMES: Record<BookLanguage, string> = {
   ko: 'coréen',
 }
 
+/** The Audible store that sells recordings in each language: named in the
+ *  prompt so the model looks a recording up where it is listed, rather than
+ *  guessing from a general search that misses French ones. */
+const AUDIBLE_STORES: Partial<Record<BookLanguage, string>> = {
+  fr: 'audible.fr',
+  en: 'audible.com et audible.co.uk',
+  de: 'audible.de',
+  es: 'audible.es',
+  it: 'audible.it',
+  ja: 'audible.co.jp',
+}
+
 const workLine = (work: WatchedWork) => {
   const author = work.author ? ` de ${work.author}` : ''
   return work.kind === 'series'
@@ -46,6 +58,8 @@ Renseigne works : une entrée, avec sa clé exacte (key), translatedTitle et edi
   - date : la date de parution la plus précise connue, au format AAAA-MM-JJ, sinon AAAA-MM, sinon AAAA. Obligatoire pour une édition annoncée ; null pour une édition parue dont tu ne trouves pas la date.
   - language : la langue de cette édition, parmi ${BOOK_LANGUAGES.map((code) => `'${code}'`).join(', ')}.
   - isbn13 : son ISBN-13 si tu le trouves, sinon null. N'invente jamais un ISBN.
+
+Pour les livres audio, cherche tome par tome dans le catalogue Audible de cette langue (${AUDIBLE_STORES[work.language] ?? 'Audible'}) : un enregistrement y figure avec son titre en ${language}, son narrateur et sa date. Un livre audio peut exister sans édition papier récente, et l'inverse : vérifie les deux formats séparément, et ne conclus jamais de l'absence de l'un à l'absence de l'autre.
 
 Ne liste que des éditions en ${language} confirmées par une source (éditeur, libraire, Audible, annonce de l'auteur ou du traducteur). Une œuvre sans édition dans cette langue revient avec editions vide. N'invente rien.`
 }

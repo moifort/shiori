@@ -62,20 +62,31 @@ enum ReleaseDateText {
     }
 }
 
-/// A release date as a small calendar leaf: the day over the month, or the
-/// month over the year, or the year alone — as precisely as it was announced.
+/// A release date as a small calendar leaf, in the orange every announced
+/// date wears: the day over the month, or the month over the year, or the
+/// year alone — as precisely as it was announced. One size whatever it says,
+/// so the badges line up down a list.
 struct ReleaseDateBadge: View {
     let date: String
 
     var body: some View {
         let parts = date.split(separator: "-").compactMap { Int($0) }
-        VStack(spacing: 0) {
-            Text(verbatim: top(parts)).font(.subheadline.weight(.semibold))
-            Text(verbatim: bottom(parts)).font(.caption2).foregroundStyle(.secondary)
+        VStack(spacing: 1) {
+            Text(verbatim: top(parts))
+                .font(.subheadline.weight(.semibold))
+            if let bottom = bottom(parts) {
+                Text(verbatim: bottom)
+                    .font(.caption2.weight(.medium))
+                    .opacity(0.8)
+            }
         }
-        .frame(width: 44)
-        .padding(.vertical, 4)
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary))
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
+        .foregroundStyle(.orange)
+        .frame(width: 52, height: 44)
+        .background(.orange.opacity(0.15), in: .rect(cornerRadius: 10))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(ReleaseDateText.phrase(date)))
     }
 
     private func month(_ number: Int) -> String {
@@ -91,11 +102,11 @@ struct ReleaseDateBadge: View {
         }
     }
 
-    private func bottom(_ parts: [Int]) -> String {
+    private func bottom(_ parts: [Int]) -> String? {
         switch parts.count {
         case 3: month(parts[1])
         case 2: String(parts[0])
-        default: ""
+        default: nil
         }
     }
 }
