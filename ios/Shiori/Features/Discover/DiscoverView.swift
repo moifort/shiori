@@ -197,7 +197,10 @@ private struct TranslationRow: View {
                     .lineLimit(2)
                 HStack(spacing: 6) {
                     ForEach(translation.formats, id: \.self) { format in
-                        Label(format.label, systemImage: format.symbol)
+                        HStack(spacing: 3) {
+                            Image(systemName: format.symbol)
+                            Text(format.label)
+                        }
                             .font(.caption2.weight(.medium))
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
@@ -296,3 +299,4 @@ struct ReleaseDateBadge: View {
 #Preview {
     DiscoverView()
 }
+
