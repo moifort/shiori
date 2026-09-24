@@ -30,6 +30,7 @@ struct DiscoverView: View {
         NavigationStack {
             content
                 .navigationTitle("Découvrir")
+                .navigationSubtitle(lastSearch)
                 .toolbar { toolbar }
                 .libraryShelfPicker($shelf)
                 // A sheet, as a book opens from the library: the same corners
@@ -65,9 +66,6 @@ struct DiscoverView: View {
         } else if let whole = feed {
             let feed = whole.narrowed(to: format)
             List {
-                if let preparedAt = feed.preparedAt {
-                    lastSearch(preparedAt)
-                }
                 if feed.preparedAt == nil {
                     Section { prepareCard }
                 } else if shown(feed.upcoming).isEmpty && shown(feed.maybe).isEmpty {
@@ -227,20 +225,12 @@ struct DiscoverView: View {
         }
     }
 
-    /// When the web was last searched for what is new: the tab is only as fresh
-    /// as that, and the reader should not wonder why an announcement from this
-    /// morning is not there yet.
-    private func lastSearch(_ date: Date) -> some View {
-        Label {
-            Text("Nouveautés cherchées \(date.formatted(.relative(presentation: .named)))")
-        } icon: {
-            Image(systemName: "arrow.clockwise")
-        }
-        .font(.footnote)
-        .foregroundStyle(.secondary)
-        .listRowBackground(Color.clear)
-        .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
-        .accessibilityIdentifier("discover-last-search")
+    /// When the web was last searched for what is new, under the title: the
+    /// tab is only as fresh as that, and the reader should not wonder why an
+    /// announcement from this morning is not there yet.
+    private var lastSearch: String {
+        guard let preparedAt = feed?.preparedAt else { return "" }
+        return String(localized: "Nouveautés cherchées \(preparedAt.formatted(.relative(presentation: .named)))")
     }
 
     private var prepareCard: some View {
