@@ -17,7 +17,7 @@ enum HomeAPI {
             reading: dashboard.reading.map { $0.fragments.dashboardBookCard.asBook(status: .reading) },
             suggestions: dashboard.suggestions.map { $0.fragments.dashboardBookCard.asBook(status: .toRead) },
             lastFinished: dashboard.lastFinished?.fragments.dashboardBookCard.asBook(status: .read),
-            pagesPerDay: .init(current: dashboard.pagesPerDay.current, previous: dashboard.pagesPerDay.previous),
+            booksRead: .init(current: dashboard.booksRead.current, previous: dashboard.booksRead.previous),
             daysToFinish: .init(current: dashboard.daysToFinish.current, previous: dashboard.daysToFinish.previous),
             toReadCount: dashboard.toReadCount,
             readCount: dashboard.readCount,

@@ -3,7 +3,7 @@ import SwiftUI
 /// This year against the same span of last year, with the Fitness app's arrows.
 /// Without last year there is no arrow, only this year's figure.
 struct TrendsWidget: View {
-    let pagesPerDay: Dashboard.Trend
+    let booksRead: Dashboard.Trend
     let daysToFinish: Dashboard.Trend
 
     var body: some View {
@@ -13,16 +13,16 @@ struct TrendsWidget: View {
                 .foregroundStyle(.secondary)
         } content: {
             VStack(alignment: .leading, spacing: 14) {
-                if pagesPerDay.current == nil, daysToFinish.current == nil {
+                if booksRead.current == nil, daysToFinish.current == nil {
                     WidgetEmptyMessage(text: "Terminez un livre cette année pour voir vos tendances.", placeholder: .rows)
                 }
-                if let pages = pagesPerDay.current {
+                if let books = booksRead.current {
                     row(
-                        label: "Pages par jour",
-                        value: String(localized: "\(pages) p/j"),
-                        previous: pagesPerDay.previous.map { String(localized: "\($0) p/j") },
-                        direction: pagesPerDay.direction,
-                        color: DashboardPalette.pages
+                        label: "Livres lus",
+                        value: Self.booksLabel(books),
+                        previous: booksRead.previous.map(Self.booksLabel),
+                        direction: booksRead.direction,
+                        color: DashboardPalette.books
                     )
                 }
                 if let days = daysToFinish.current {
@@ -68,6 +68,10 @@ struct TrendsWidget: View {
         }
     }
 
+    private static func booksLabel(_ count: Int) -> String {
+        count == 1 ? String(localized: "1 livre") : String(localized: "\(count) livres")
+    }
+
     private func symbol(for direction: Dashboard.Trend.Direction?) -> String {
         switch direction {
         case .up: "arrow.up"
@@ -79,7 +83,7 @@ struct TrendsWidget: View {
 
 #Preview {
     TrendsWidget(
-        pagesPerDay: .init(current: 24, previous: 18),
+        booksRead: .init(current: 18, previous: 14),
         daysToFinish: .init(current: 11, previous: 14)
     )
     .padding()

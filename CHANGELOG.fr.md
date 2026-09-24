@@ -4,6 +4,8 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Les tendances de l’accueil comparent les livres lus cette année à la même période l’an
+  dernier, au lieu des pages par jour.
 - L’onglet Découvrir montre désormais les livres que vous avez lus dans une autre langue et
   qui sont sortis, ou vont sortir, dans la vôtre — en livre, et en livre audio si vous avez
   connecté Audible — et vous permet de masquer ceux qui ne vous intéressent pas. Les autres

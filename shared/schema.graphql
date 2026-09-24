@@ -499,6 +499,9 @@ type Dashboard {
 
   """From the first finished book to this year, nine years at most."""
   booksPerYear: [YearCount!]!
+
+  """Books finished this year to date. Null `current` before the first one."""
+  booksRead: Trend!
   currentYear: Int!
 
   """Median days from start to finish, both days included."""
@@ -534,7 +537,7 @@ type Dashboard {
 
   """At the pace of the last twelve months. Null with no pile or no pace."""
   monthsToClearPile: Int
-  pagesPerDay: Trend!
+  pagesPerDay: Trend! @deprecated(reason: "Pages per day read as an unclear figure: the app compares the books read instead (`booksRead`). Kept for the builds that still ask for it.")
 
   """The twelve months of the current year."""
   pagesPerMonth: [MonthPages!]!
@@ -1596,7 +1599,7 @@ type Query {
     dashboard(timeZone: "Europe/Paris") {
       booksPerYear { year count }
       reading { id title coverUrl startedAt }
-      pagesPerDay { current previous }
+      booksRead { current previous }
     }
   }
   ```

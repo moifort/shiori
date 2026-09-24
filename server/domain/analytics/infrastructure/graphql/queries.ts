@@ -13,7 +13,7 @@ builder.queryField('dashboard', (t) =>
       '  dashboard(timeZone: "Europe/Paris") {\n' +
       '    booksPerYear { year count }\n' +
       '    reading { id title coverUrl startedAt }\n' +
-      '    pagesPerDay { current previous }\n' +
+      '    booksRead { current previous }\n' +
       '  }\n' +
       '}\n' +
       '```',

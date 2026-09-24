@@ -278,6 +278,7 @@ export const dashboardOf = (view: AnalyticsView, today: LocalDateValue): Dashboa
     reading: view.reading.slice(0, READING_SHOWN),
     suggestions: shuffled(view.toRead, `${view.userId}:${today}`).slice(0, SUGGESTIONS_SHOWN),
     lastFinished: view.lastFinished,
+    booksRead: booksReadTrendOf(finishes, today),
     pagesPerDay: pagesPerDayTrendOf(finishes, today),
     daysToFinish: daysToFinishTrendOf(finishes, today),
     toReadCount: view.toRead.length,
@@ -386,6 +387,25 @@ const currentSpanOf = (today: LocalDateValue) => ({
   to: dayNumberOf(today),
 })
 
+const finishedWithin = (finishes: readonly Finish[], { from, to }: { from: number; to: number }) =>
+  finishes.filter((finish) => {
+    const day = dayNumberOf(finish.finishedOn)
+    return day >= from && day <= to
+  })
+
+/** Books finished this year to date, against the same span of last year. No
+ *  comparison when last year finished nothing at all: a reader who started in
+ *  the spring would otherwise see a rise from zero. */
+export const booksReadTrendOf = (finishes: readonly Finish[], today: LocalDateValue): Trend => {
+  const current = finishedWithin(finishes, currentSpanOf(today)).length
+  const previousYear = yearOf(today) - 1
+  const lastYearFinished = finishes.some((finish) => yearOf(finish.finishedOn) === previousYear)
+  return {
+    current: current > 0 ? current : undefined,
+    previous: lastYearFinished ? finishedWithin(finishes, previousSpanOf(today)).length : undefined,
+  }
+}
+
 export const pagesPerDayTrendOf = (finishes: readonly Finish[], today: LocalDateValue): Trend => {
   if (!finishes.some((finish) => finish.pageCount !== undefined)) return {}
   const current = currentSpanOf(today)
@@ -414,13 +434,8 @@ export const medianOf = (values: readonly number[]): number | undefined => {
 }
 
 export const daysToFinishTrendOf = (finishes: readonly Finish[], today: LocalDateValue): Trend => {
-  const within = ({ from, to }: { from: number; to: number }) =>
-    finishes
-      .filter((finish) => {
-        const day = dayNumberOf(finish.finishedOn)
-        return day >= from && day <= to
-      })
-      .map(daysToFinishOf)
+  const within = (span: { from: number; to: number }) =>
+    finishedWithin(finishes, span).map(daysToFinishOf)
   return {
     current: medianOf(within(currentSpanOf(today))),
     previous: medianOf(within(previousSpanOf(today))),

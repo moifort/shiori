@@ -3,6 +3,7 @@ import {
   analyticsViewOf,
   averageRatingOf,
   booksPerYearOf,
+  booksReadTrendOf,
   dashboardOf,
   daysToFinishTrendOf,
   genresOf,
@@ -138,6 +139,40 @@ describe('hours listened per month', () => {
     const hours = hoursPerMonthOf([finish('2026-03-01', '2026-03-01', { minutes: 20 })], 2026)
 
     expect(hours[2].hours).toBe(0)
+  })
+})
+
+describe('the books read trend', () => {
+  test('counts this year books against those finished by the same date last year', () => {
+    const finishes = [
+      finish('2026-01-01', '2026-02-10'),
+      finish('2026-03-01', '2026-03-20'),
+      finish('2025-01-01', '2025-02-01'),
+      finish('2025-11-01', '2025-11-30'),
+    ]
+
+    expect(booksReadTrendOf(finishes, day('2026-09-15'))).toEqual({ current: 2, previous: 1 })
+  })
+
+  test('compares with zero when last year finished its books later in the year', () => {
+    const trend = booksReadTrendOf(
+      [finish('2026-01-01', '2026-01-10'), finish('2025-10-01', '2025-10-20')],
+      day('2026-09-15'),
+    )
+
+    expect(trend).toEqual({ current: 1, previous: 0 })
+  })
+
+  test('draws no comparison when last year finished nothing', () => {
+    expect(
+      booksReadTrendOf([finish('2026-01-01', '2026-01-10')], day('2026-09-15')).previous,
+    ).toBeUndefined()
+  })
+
+  test('has no figure before the first book of the year', () => {
+    expect(
+      booksReadTrendOf([finish('2025-01-01', '2025-01-10')], day('2026-09-15')).current,
+    ).toBeUndefined()
   })
 })
 

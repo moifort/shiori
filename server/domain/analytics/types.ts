@@ -162,6 +162,7 @@ export type Dashboard<Card = DashboardBook> = {
   reading: Card[]
   suggestions: Card[]
   lastFinished?: Card
+  booksRead: Trend
   pagesPerDay: Trend
   daysToFinish: Trend
   toReadCount: number

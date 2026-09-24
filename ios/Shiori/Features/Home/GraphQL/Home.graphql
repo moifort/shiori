@@ -24,7 +24,7 @@ query Dashboard($timeZone: TimeZone!) {
     lastFinished {
       ...DashboardBookCard
     }
-    pagesPerDay {
+    booksRead {
       current
       previous
     }

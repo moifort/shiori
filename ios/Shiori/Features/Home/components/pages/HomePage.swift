@@ -77,7 +77,7 @@ struct HomePage: View {
 
                 LastFinishedCard(book: dashboard.lastFinished, onTapped: onBookTapped)
 
-                TrendsWidget(pagesPerDay: dashboard.pagesPerDay, daysToFinish: dashboard.daysToFinish)
+                TrendsWidget(booksRead: dashboard.booksRead, daysToFinish: dashboard.daysToFinish)
 
                 StatTilesRow(
                     toReadCount: dashboard.toReadCount,
@@ -175,7 +175,7 @@ extension Dashboard {
             id: "9", title: "Le Nom du vent", authors: ["Patrick Rothfuss"], status: .read, rating: 5,
             startedAt: .now.addingTimeInterval(-13 * 86400), finishedAt: .now.addingTimeInterval(-4 * 86400)
         ),
-        pagesPerDay: .init(current: 24, previous: 18),
+        booksRead: .init(current: 18, previous: 14),
         daysToFinish: .init(current: 11, previous: 14),
         toReadCount: 27,
         readCount: 142,
@@ -208,7 +208,7 @@ extension Dashboard {
         reading: [],
         suggestions: [Book(id: "1", title: "Dune", authors: ["Frank Herbert"], status: .toRead)],
         lastFinished: nil,
-        pagesPerDay: .init(current: nil, previous: nil),
+        booksRead: .init(current: nil, previous: nil),
         daysToFinish: .init(current: nil, previous: nil),
         toReadCount: 1,
         monthsToClearPile: nil,

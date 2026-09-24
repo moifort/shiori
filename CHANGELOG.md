@@ -10,6 +10,8 @@ the release tag is pushed.
 
 ## Unreleased
 
+- The Home trends compare the books read this year with the same time last year, instead of
+  pages per day.
 - The Discover tab now shows the books you read in another language that are out, or coming
   out, in yours — as a book, and as an audiobook if you connected Audible — and lets you hide
   the ones you are not interested in. Every other shelf is gone for now.

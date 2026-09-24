@@ -171,7 +171,18 @@ export const DashboardType = builder.objectRef<Dashboard>('Dashboard').implement
       nullable: true,
       resolve: (dashboard) => dashboard.lastFinished ?? null,
     }),
-    pagesPerDay: t.field({ type: TrendType, resolve: (dashboard) => dashboard.pagesPerDay }),
+    booksRead: t.field({
+      type: TrendType,
+      description: 'Books finished this year to date. Null `current` before the first one.',
+      resolve: (dashboard) => dashboard.booksRead,
+    }),
+    pagesPerDay: t.field({
+      type: TrendType,
+      deprecationReason:
+        'Pages per day read as an unclear figure: the app compares the books read ' +
+        'instead (`booksRead`). Kept for the builds that still ask for it.',
+      resolve: (dashboard) => dashboard.pagesPerDay,
+    }),
     daysToFinish: t.field({
       type: TrendType,
       description: 'Median days from start to finish, both days included.',
