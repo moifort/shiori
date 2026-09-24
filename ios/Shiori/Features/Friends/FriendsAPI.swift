@@ -25,6 +25,24 @@ struct Friend: Identifiable, Sendable {
     }
 }
 
+extension Friend {
+    /// The reader as their friends list them, drawn from their own shelf: the
+    /// counts are those of the lists the shelf shows, a hearted saga counting
+    /// once for its volumes.
+    init(seenByFriends shelf: FriendProfile) {
+        self.init(
+            userId: shelf.userId,
+            firstName: shelf.firstName,
+            since: .now,
+            favoriteCount: shelf.favorites.count + shelf.favoriteSagas.count,
+            readingCount: shelf.reading.count,
+            toReadCount: shelf.pile.count,
+            // Most recently active first, as the friends list picks it.
+            readingTitle: shelf.reading.first?.book.title
+        )
+    }
+}
+
 /// A book on a friend's shelf, and whether the reader already owns the story —
 /// same title and first author, whatever the edition.
 struct FriendBook: Identifiable, Hashable, Sendable {

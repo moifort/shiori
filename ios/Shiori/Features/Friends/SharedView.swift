@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// The Partagé tab: a line at the top opening the reader's own page exactly as
-/// their friends see it, then who the reader shares their library with, each friend
+/// The Partagé tab: the reader at the top, drawn as the row their friends see
+/// in their own list and opening on their page exactly as it is shown to them,
+/// then who the reader shares their library with, each friend
 /// with their shelf in figures — favourites, books in progress, pile — and the
 /// book they are reading. A friend opens on their shelf, where any book can be
 /// taken onto the reader's own.
@@ -105,12 +106,14 @@ struct SharedView: View {
             EmptyStateView.failure("Amis indisponibles", message: loadFailed) { await load() }
         } else {
             List {
-                if myShelf != nil {
+                if let myShelf {
                     Section {
                         NavigationLink(value: MyPagePreview()) {
-                            Label("Voir à quoi ressemble ma page favoris", systemImage: "eye")
+                            row(Friend(seenByFriends: myShelf))
                         }
                         .accessibilityIdentifier("shared-my-page")
+                    } header: {
+                        Text("Vous, chez vos amis")
                     }
                 }
                 if friends.isEmpty {

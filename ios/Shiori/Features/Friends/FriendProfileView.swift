@@ -35,15 +35,7 @@ struct FriendProfileView: View {
 
     /// The reader's own page as their friends see it.
     init(preview shelf: FriendProfile) {
-        friend = Friend(
-            userId: shelf.userId,
-            firstName: shelf.firstName,
-            since: .now,
-            favoriteCount: shelf.favorites.count + shelf.favoriteSagas.count,
-            readingCount: shelf.reading.count,
-            toReadCount: shelf.pile.count,
-            readingTitle: shelf.reading.first?.book.title
-        )
+        friend = Friend(seenByFriends: shelf)
         isPreview = true
         _profile = State(initialValue: shelf)
         _isLoading = State(initialValue: false)
