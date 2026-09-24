@@ -1,5 +1,5 @@
 import type { Book, Genre, TaggedSubgenre } from '~/domain/book/types'
-import type { SeriesId } from '~/domain/series/types'
+import type { SeriesId, SeriesState } from '~/domain/series/types'
 
 /** When the reader last did anything with a book: picked it up, moved its
  *  status, or had a sync move its listening position. What "most recently
@@ -80,3 +80,15 @@ export const inReadingOrder = <Volume extends Pick<Book, 'series'>>(
       (left.series?.volume ?? Number.POSITIVE_INFINITY) -
         (right.series?.volume ?? Number.POSITIVE_INFINITY),
   )
+
+/** Where a friend stands on a saga, read off the volumes on their shelf alone
+ *  — how many the saga has is the catalogue's, which a friendship does not
+ *  open: none opened is not started, every one read is complete, anything
+ *  else in progress. */
+export const friendSagaStateOf = (
+  volumes: readonly Pick<Book, 'status'>[],
+): Exclude<SeriesState, 'unfollowed'> => {
+  if (volumes.every((volume) => volume.status === 'to-read')) return 'not-started'
+  if (volumes.every((volume) => volume.status === 'read')) return 'complete'
+  return 'in-progress'
+}

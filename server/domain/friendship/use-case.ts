@@ -14,6 +14,7 @@ import { READING_STATUSES } from '~/domain/book/types'
 import { BookUseCase } from '~/domain/book/use-case'
 import {
   favoritesOutsideSagas,
+  friendSagaStateOf,
   inReadingOrder,
   lastActivityOf,
   lastFinishedOf,
@@ -23,7 +24,7 @@ import {
 import { FriendshipQuery } from '~/domain/friendship/query'
 import type { Friend } from '~/domain/friendship/types'
 import { type FollowedSaga, followedSagasOf, genreOf } from '~/domain/series/business-rules'
-import type { SeriesId, SeriesName } from '~/domain/series/types'
+import type { SeriesId, SeriesName, SeriesState } from '~/domain/series/types'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import { Count, PersonName } from '~/domain/shared/primitives'
 import type { AuthorName, Count as CountValue, UserId } from '~/domain/shared/types'
@@ -66,6 +67,8 @@ export type FriendSaga = {
   /** The latest day one of its volumes was shelved on: what their sagas are
    *  ordered and cut into months by, as the reader's own Series tab. */
   shelvedAt: Date
+  /** Where they stand on it, read off their own volumes. */
+  state: Exclude<SeriesState, 'unfollowed'>
 }
 
 /** A book on a friend's shelf, with whether the reader already owns the
@@ -213,6 +216,7 @@ export namespace FriendshipUseCase {
     viewerId: UserId,
     ownerId: UserId,
     page: { limit: number; after?: string },
+    view: { state?: SeriesState; favorite?: boolean } = {},
   ): Promise<FriendSagaPage | null> => {
     if (!(await canRead(viewerId, ownerId))) return null
     const [books, favoriteSagas, owned] = await Promise.all([
@@ -221,6 +225,11 @@ export namespace FriendshipUseCase {
       BookQuery.shelfKeys(viewerId),
     ])
     const sagas = followedSagasOf(books)
+      .filter(
+        (saga) =>
+          (!view.state || friendSagaStateOf(saga.books) === view.state) &&
+          (!view.favorite || favoriteSagas.has(saga.id)),
+      )
       .map((saga) => ({ saga, id: `${saga.id}\u0000${saga.language ?? ''}` }))
       .sort(
         (left, right) =>
@@ -313,6 +322,7 @@ const friendSagaOf = (
     subgenre: subgenreOf(saga.books, genre),
     volumes,
     shelvedAt: sagaShelvedAt(saga),
+    state: friendSagaStateOf(saga.books),
   }
 }
 

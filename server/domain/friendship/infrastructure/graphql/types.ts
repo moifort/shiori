@@ -15,6 +15,7 @@ import type {
   FriendSaga,
   FriendSagaPage,
 } from '~/domain/friendship/use-case'
+import { SeriesStateEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { builder } from '~/domain/shared/graphql/builder'
 import { Count } from '~/domain/shared/primitives'
 
@@ -188,6 +189,13 @@ export const FriendSagaType = builder.objectRef<FriendSaga>('FriendSaga').implem
         'The latest day one of its volumes was shelved on: what their sagas are ' +
         'ordered and cut into months by.',
       resolve: (saga) => saga.shelvedAt,
+    }),
+    state: t.field({
+      type: SeriesStateEnum,
+      description:
+        'Where they stand on it, read off the volumes on their shelf alone: none ' +
+        'opened, every one read, or in between. Never `UNFOLLOWED`.',
+      resolve: (saga) => saga.state,
     }),
   }),
 })

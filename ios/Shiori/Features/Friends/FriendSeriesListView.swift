@@ -16,6 +16,8 @@ struct FriendSeriesListView: View {
     var isPreview = false
 
     @State private var sagas: [FriendSaga] = []
+    @State private var mode: LibraryMode = .all
+    @State private var state: SeriesState?
     @State private var hasMore = false
     @State private var isLoading = true
     @State private var errorMessage: String?
@@ -33,7 +35,11 @@ struct FriendSeriesListView: View {
             } else if let errorMessage, sagas.isEmpty {
                 EmptyStateView.failure("Séries indisponibles", message: errorMessage) { await load() }
             } else if sagas.isEmpty {
-                Text("Aucune série n'a été ajoutée à cette bibliothèque.")
+                Text(
+                    state == nil && mode == .all
+                        ? "Aucune série n'a été ajoutée à cette bibliothèque."
+                        : "Aucune série ne correspond."
+                )
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding()
@@ -44,7 +50,8 @@ struct FriendSeriesListView: View {
         }
         .navigationTitle("Séries")
         .navigationSubtitle(friendName)
-        .task { await load() }
+        .toolbar { toolbar }
+        .task(id: "\(mode.rawValue)-\(state?.rawValue ?? "all")") { await load() }
         .navigationDestination(item: $openSaga) { saga in
             SeriesView(seriesId: saga.seriesId, language: saga.language)
         }
@@ -95,6 +102,41 @@ struct FriendSeriesListView: View {
         .refreshable { await load() }
     }
 
+    /// The same controls as the Series tab: the two views, the state filter
+    /// beside them — the saga set aside aside, a friend's state being read
+    /// off their volumes alone.
+    @ToolbarContentBuilder
+    private var toolbar: some ToolbarContent {
+        ToolbarItemGroup {
+            ForEach(LibraryMode.seriesViews) { item in
+                Button {
+                    mode = item
+                } label: {
+                    Label(item.label, systemImage: item.icon)
+                }
+                .labelStyle(.iconOnly)
+                .tint(mode == item ? .accentColor : .primary)
+                .accessibilityIdentifier("friend-series-mode-\(item.rawValue)")
+            }
+        }
+        ToolbarSpacer(.fixed)
+        ToolbarItemGroup {
+            Menu {
+                Picker("État", selection: $state) {
+                    Label("Toutes", systemImage: "tray.full").tag(SeriesState?.none)
+                    ForEach([SeriesState.inProgress, .notStarted, .complete]) { state in
+                        Label(state.shelfTitle, systemImage: state.symbol)
+                            .tag(SeriesState?.some(state))
+                    }
+                }
+            } label: {
+                Image(systemName: "line.3.horizontal.decrease")
+                    .symbolVariant(state != nil ? .fill : .none)
+            }
+            .accessibilityIdentifier("friend-series-filter")
+        }
+    }
+
     /// As on the Series tab: the name with its marks on the first line, the
     /// author under it, the covers underneath.
     private func row(_ saga: FriendSaga) -> some View {
@@ -106,6 +148,9 @@ struct FriendSeriesListView: View {
                     HStack(spacing: 6) {
                         if let language = saga.language, language.isForeign {
                             LanguageTag(language: language)
+                        }
+                        if let state = saga.state {
+                            SeriesStateLabel(state: state)
                         }
                         if saga.favorite {
                             Image(systemName: "heart.fill")
@@ -143,7 +188,9 @@ struct FriendSeriesListView: View {
         errorMessage = nil
         loadMoreFailed = false
         do {
-            let page = try await FriendsAPI.sagaPage(friendId: friendId, after: nil)
+            let page = try await FriendsAPI.sagaPage(
+                friendId: friendId, state: state, favorite: mode == .favorites, after: nil
+            )
             sagas = page.sagas
             hasMore = page.hasMore
         } catch {
@@ -155,7 +202,9 @@ struct FriendSeriesListView: View {
     private func loadMore() async {
         loadMoreFailed = false
         do {
-            let page = try await FriendsAPI.sagaPage(friendId: friendId, after: sagas.last?.id)
+            let page = try await FriendsAPI.sagaPage(
+                friendId: friendId, state: state, favorite: mode == .favorites, after: sagas.last?.id
+            )
             sagas.append(contentsOf: page.sagas.filter { new in !sagas.contains { $0.id == new.id } })
             hasMore = page.hasMore
         } catch {

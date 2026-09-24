@@ -7,6 +7,7 @@ import {
   FriendType,
 } from '~/domain/friendship/infrastructure/graphql/types'
 import { FriendshipUseCase } from '~/domain/friendship/use-case'
+import { SeriesStateEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { builder } from '~/domain/shared/graphql/builder'
 
 builder.queryFields((t) => ({
@@ -107,6 +108,15 @@ builder.queryFields((t) => ({
       'volume on the shelf as a cover. Null for a stranger.',
     args: {
       userId: t.arg({ type: 'UserId', required: true, description: 'The friend' }),
+      state: t.arg({
+        type: SeriesStateEnum,
+        required: false,
+        description: 'Keep only the sagas where they stand so. Omit for all of them.',
+      }),
+      favorite: t.arg.boolean({
+        required: false,
+        description: 'Keep only the sagas they hearted.',
+      }),
       limit: t.arg.int({ defaultValue: 30, description: 'Maximum sagas in the page' }),
       after: t.arg.string({
         required: false,
@@ -114,9 +124,11 @@ builder.queryFields((t) => ({
       }),
     },
     resolve: (_root, args, context) =>
-      FriendshipUseCase.sagaPage(context.userId, args.userId, {
-        limit: Math.max(1, Math.min(args.limit ?? 30, 100)),
-        after: args.after ?? undefined,
-      }),
+      FriendshipUseCase.sagaPage(
+        context.userId,
+        args.userId,
+        { limit: Math.max(1, Math.min(args.limit ?? 30, 100)), after: args.after ?? undefined },
+        { state: args.state ?? undefined, favorite: args.favorite ?? undefined },
+      ),
   }),
 }))

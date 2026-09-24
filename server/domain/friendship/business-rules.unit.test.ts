@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { Subgenre } from '~/domain/book/primitives'
 import {
   favoritesOutsideSagas,
+  friendSagaStateOf,
   inReadingOrder,
   lastActivityOf,
   lastFinishedOf,
@@ -28,6 +29,15 @@ describe('lastActivityOf', () => {
 
   test('falls back to the day it was added on a record with no other stamp', () => {
     expect(lastActivityOf({ addedAt: day(2) })).toEqual(day(2))
+  })
+})
+
+describe('friendSagaStateOf', () => {
+  test('reads not started, complete or in progress off the volumes on the shelf', () => {
+    expect(friendSagaStateOf([{ status: 'to-read' }, { status: 'to-read' }])).toBe('not-started')
+    expect(friendSagaStateOf([{ status: 'read' }, { status: 'read' }])).toBe('complete')
+    expect(friendSagaStateOf([{ status: 'read' }, { status: 'to-read' }])).toBe('in-progress')
+    expect(friendSagaStateOf([{ status: 'reading' }])).toBe('in-progress')
   })
 })
 

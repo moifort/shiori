@@ -120,7 +120,7 @@ enum SeriesAPI {
         return followed
     }
 
-    private static func graphQLState(_ state: SeriesState) -> ShioriGraphQL.SeriesState {
+    static func graphQLState(_ state: SeriesState) -> ShioriGraphQL.SeriesState {
         switch state {
         case .notStarted: .notStarted
         case .inProgress: .inProgress

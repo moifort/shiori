@@ -912,6 +912,11 @@ type FriendSaga {
   """
   shelvedAt: DateTime!
 
+  """
+  Where they stand on it, read off the volumes on their shelf alone: none opened, every one read, or in between. Never `UNFOLLOWED`.
+  """
+  state: SeriesState!
+
   """The leading subgenre of a volume of that genre."""
   subgenre: Subgenre
 
@@ -1726,8 +1731,14 @@ type Query {
     """Cursor: the id of the last saga of the previous page"""
     after: String
 
+    """Keep only the sagas they hearted."""
+    favorite: Boolean
+
     """Maximum sagas in the page"""
     limit: Int = 30
+
+    """Keep only the sagas where they stand so. Omit for all of them."""
+    state: SeriesState
 
     """The friend"""
     userId: UserId!

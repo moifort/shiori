@@ -97,6 +97,8 @@ struct FriendSaga: Identifiable, Sendable {
     var inLibrary = false
     /// The latest day one of its volumes was shelved on.
     var shelvedAt: Date?
+    /// Where they stand on it, read off their own volumes.
+    var state: SeriesState?
 }
 
 /// A friend's shelf at a glance.
@@ -274,12 +276,16 @@ enum FriendsAPI {
     /// One page of a friend's sagas, each with every volume as a cover.
     static func sagaPage(
         friendId: String,
+        state: SeriesState?,
+        favorite: Bool,
         after: String?
     ) async throws -> (sagas: [FriendSaga], hasMore: Bool) {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.FriendSagaPageQuery(
                 userId: friendId,
+                state: GraphQLHelpers.graphQLNullable(state.map { .case(SeriesAPI.graphQLState($0)) }),
+                favorite: favorite ? .some(true) : .none,
                 after: GraphQLHelpers.graphQLNullable(after)
             )
         )
@@ -402,7 +408,8 @@ private extension FriendSaga {
                 .compactMap { GraphQLHelpers.parseISO8601($0.fragments.friendBookRow.lastActivityAt) }
                 .max(),
             inLibrary: row.volumes.contains { $0.fragments.friendBookRow.inLibrary },
-            shelvedAt: GraphQLHelpers.parseISO8601(row.shelvedAt)
+            shelvedAt: GraphQLHelpers.parseISO8601(row.shelvedAt),
+            state: row.state.asDomain
         )
     }
 }

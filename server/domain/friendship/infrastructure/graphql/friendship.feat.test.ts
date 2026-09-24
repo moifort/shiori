@@ -416,6 +416,12 @@ describe("the reader's own shelf, as friends see it", () => {
       `{ friendSagaPage(userId: "alice", limit: 1, after: ${JSON.stringify(page.sagas[0]?.id)}) { sagas { name volumes { title } } hasMore } }`,
     )
     const stranger = await as(carol)('{ friendSagaPage(userId: "alice") { hasMore } }')
+    const unread = await as(bob)(
+      '{ friendSagaPage(userId: "alice", state: NOT_STARTED) { sagas { name state } } }',
+    )
+    const hearted = await as(bob)(
+      '{ friendSagaPage(userId: "alice", favorite: true) { sagas { name } } }',
+    )
 
     expect(first.errors).toBeUndefined()
     expect(first.data?.friendSagaPage).toEqual({
@@ -434,6 +440,13 @@ describe("the reader's own shelf, as friends see it", () => {
       hasMore: false,
     })
     expect(stranger.data?.friendSagaPage).toBeNull()
+    expect(unread.data?.friendSagaPage).toEqual({
+      sagas: [
+        { name: 'Dune', state: 'NOT_STARTED' },
+        { name: 'Hypérion', state: 'NOT_STARTED' },
+      ],
+    })
+    expect(hearted.data?.friendSagaPage).toEqual({ sagas: [] })
   })
 
   test('puts the book in progress touched most recently first', async () => {
