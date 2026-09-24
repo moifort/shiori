@@ -97,8 +97,8 @@ book on its own, split into "coming soon" and "already out"; "Pas intéressé" h
 good. Everything is found on the web, one grounded call per work, once a week, in a shared
 document; printed editions are always offered, recordings only to a reader connected to
 Audible, each with a search for its title on their own Audible store. Audible's catalogue API
-was tried and dropped: through `audible-api-ts` a name with a space is refused (the query is
-not URL-encoded), and once encoded the searches still miss French recordings that exist. Batch 2 already delivers the zero-cost half of it: the recommendations
+was tried and dropped: once `audible-api-ts` 0.4.1 stopped sending names unencoded (which
+Audible refused with a 403), its searches still missed French recordings that exist. Batch 2 already delivers the zero-cost half of it: the recommendations
 section on a book screen, listing the other volumes of its series.
 
 ## Deferred on purpose
