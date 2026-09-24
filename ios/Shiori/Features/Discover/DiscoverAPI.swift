@@ -1,81 +1,95 @@
 import Foundation
 
-/// A book the Découvrir tab proposes, with the line that says why.
-struct Suggestion: Identifiable, Hashable, Sendable {
-    /// What `dismiss` and `add` name it by.
-    let key: String
-    var id: String { key }
-    let book: Book
-    let reason: String
-    let award: String?
-    let publicRating: Double?
-    let ratingCount: Int?
-    /// `YYYY`, `YYYY-MM` or `YYYY-MM-DD`.
-    let releaseDate: String?
+/// How a translation reaches the reader.
+enum TranslationFormat: Sendable, Hashable {
+    case book, audiobook
+
+    var label: String {
+        switch self {
+        case .book: String(localized: "Livre")
+        case .audiobook: String(localized: "Livre audio")
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .book: "book"
+        case .audiobook: "headphones"
+        }
+    }
 }
 
-/// A book coming out that the reader has a reason to care about.
-struct Release: Identifiable, Hashable, Sendable {
-    let key: String
-    var id: String { key }
-    let kind: AlertKind
-    /// `YYYY`, `YYYY-MM` or `YYYY-MM-DD`.
-    let date: String
-    let suggestion: Suggestion
+/// One edition of a work in the app's language, out or announced.
+struct TranslatedEdition: Identifiable, Hashable, Sendable {
+    let title: String
+    let volume: Int?
+    let format: TranslationFormat
+    /// `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Nil for an edition out on a date
+    /// nobody found.
+    let date: String?
+    /// The recording's page on the reader's own Audible store.
+    let audibleURL: URL?
+
+    var id: String { "\(format)-\(volume.map(String.init) ?? title)" }
+
+    /// Whether it is still to come: a day after today, or a month or a year
+    /// not over yet — the server's rule, read on the phone's calendar.
+    var isUpcoming: Bool {
+        guard let date else { return false }
+        let today = Date.now.formatted(.iso8601.year().month().day())
+        return date.count == 10 ? date > today : String(today.prefix(date.count)) <= date
+    }
 }
 
-struct LovedShelf: Identifiable, Hashable, Sendable {
-    let anchor: String
-    var id: String { anchor }
-    let items: [Suggestion]
-}
-
-/// A book a friend hearted that the reader does not own. Opens as the friend's
-/// copy.
-struct FriendFavorite: Identifiable, Hashable, Sendable {
+/// A saga or a book the reader read in another language, with what exists or
+/// is announced of it in the app's language.
+struct Translation: Identifiable, Hashable, Sendable {
     let key: String
     var id: String { key }
-    let friendId: String
-    let bookId: String
-    let friendNames: [String]
-    let book: Book
+    let isSeries: Bool
+    let title: String
+    let originalTitle: String
+    let author: String?
+    let originalLanguage: BookLanguage
+    let volumesRead: [Int]
+    let coverURL: URL?
+    let nextDate: String?
+    let editions: [TranslatedEdition]
+
+    /// What the cover component draws.
+    var book: Book {
+        Book(
+            id: key,
+            title: title,
+            authors: author.map { [$0] } ?? [],
+            format: .book,
+            coverURL: coverURL,
+            status: .toRead
+        )
+    }
+
+    var formats: [TranslationFormat] {
+        [.book, .audiobook].filter { format in editions.contains { $0.format == format } }
+    }
 }
 
 struct DiscoverFeed: Sendable {
     var preparedAt: Date?
     var canRefresh: Bool
-    var friendsFavorites: [FriendFavorite]
-    var audible: [Suggestion]
-    var releases: [Release]
-    var becauseYouLoved: [LovedShelf]
-    var awards: [Suggestion]
-    var acclaimed: [Suggestion]
-    var offTrail: [Suggestion]
+    var upcoming: [Translation]
+    var available: [Translation]
 
-    /// Nothing to show at all: before the first preparation, for a reader with
-    /// no friend hearting anything.
-    var isEmpty: Bool {
-        friendsFavorites.isEmpty && audible.isEmpty && releases.isEmpty && becauseYouLoved.isEmpty
-            && awards.isEmpty && acclaimed.isEmpty && offTrail.isEmpty
-    }
+    var isEmpty: Bool { upcoming.isEmpty && available.isEmpty }
 
-    /// Forget a suggestion wherever it sits, once dismissed or taken.
     mutating func remove(key: String) {
-        friendsFavorites.removeAll { $0.key == key }
-        audible.removeAll { $0.key == key }
-        releases.removeAll { $0.key == key || $0.suggestion.key == key }
-        becauseYouLoved = becauseYouLoved
-            .map { LovedShelf(anchor: $0.anchor, items: $0.items.filter { $0.key != key }) }
-            .filter { !$0.items.isEmpty }
-        awards.removeAll { $0.key == key }
-        acclaimed.removeAll { $0.key == key }
-        offTrail.removeAll { $0.key == key }
+        upcoming.removeAll { $0.key == key }
+        available.removeAll { $0.key == key }
     }
 }
 
 enum DiscoverAPI {
-    /// Preparing the shelves runs several web-searching model calls: the
-    /// request is given the server's whole ceiling plus a margin.
+    /// A look runs web-searching model calls and an Audible search per
+    /// author: the request is given the server's whole ceiling plus a margin.
     private static let refreshTimeout: TimeInterval = 200
 
     static func feed() async throws -> DiscoverFeed {
@@ -96,21 +110,13 @@ enum DiscoverAPI {
         return DiscoverFeed(fields: data.refreshDiscover.fragments.discoverFields)
     }
 
+    /// "Pas intéressé": the work never comes back, nor its alerts.
     static func dismiss(key: String) async throws {
         _ = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.DismissSuggestionMutation(key: key),
+            mutation: ShioriGraphQL.DismissTranslationMutation(key: key),
             changesLibrary: false
         )
-    }
-
-    @discardableResult
-    static func add(key: String, status: CopiedStatus) async throws -> String {
-        let data = try await GraphQLHelpers.perform(
-            GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.AddSuggestionMutation(key: key, status: .case(status.graphQL))
-        )
-        return data.addSuggestion.id
     }
 }
 
@@ -119,72 +125,34 @@ private extension DiscoverFeed {
         self.init(
             preparedAt: fields.preparedAt.flatMap(GraphQLHelpers.parseISO8601),
             canRefresh: fields.canRefresh,
-            friendsFavorites: fields.friendsFavorites.map { favorite in
-                FriendFavorite(
-                    key: favorite.key,
-                    friendId: favorite.friendId,
-                    bookId: favorite.bookId,
-                    friendNames: favorite.friendNames,
-                    book: Book(
-                        id: favorite.bookId,
-                        title: favorite.title,
-                        authors: favorite.authors,
-                        format: favorite.format.asDomain,
-                        series: favorite.seriesName.map {
-                            SeriesMembership(id: $0, name: $0, volume: favorite.volume, kind: .main)
-                        },
-                        coverURL: favorite.coverUrl.flatMap(URL.init(string:)),
-                        status: .toRead
-                    )
-                )
-            },
-            audible: fields.audible.map { Suggestion(fields: $0.fragments.suggestionFields) },
-            releases: fields.releases.compactMap { release in
-                guard let kind = release.kind.value.flatMap(AlertKind.init(graphQL:)) else { return nil }
-                return Release(
-                    key: release.key,
-                    kind: kind,
-                    date: release.date,
-                    suggestion: Suggestion(fields: release.suggestion.fragments.suggestionFields)
-                )
-            },
-            becauseYouLoved: fields.becauseYouLoved.map { shelf in
-                LovedShelf(
-                    anchor: shelf.anchor,
-                    items: shelf.items.map { Suggestion(fields: $0.fragments.suggestionFields) }
-                )
-            },
-            awards: fields.awards.map { Suggestion(fields: $0.fragments.suggestionFields) },
-            acclaimed: fields.acclaimed.map { Suggestion(fields: $0.fragments.suggestionFields) },
-            offTrail: fields.offTrail.map { Suggestion(fields: $0.fragments.suggestionFields) }
+            upcoming: fields.upcoming.compactMap { Translation(fields: $0.fragments.translationFields) },
+            available: fields.available.compactMap { Translation(fields: $0.fragments.translationFields) }
         )
     }
 }
 
-private extension Suggestion {
-    init(fields: ShioriGraphQL.SuggestionFields) {
+private extension Translation {
+    init?(fields: ShioriGraphQL.TranslationFields) {
+        guard let language = fields.originalLanguage.value?.asDomain else { return nil }
         self.init(
             key: fields.key,
-            book: Book(
-                id: fields.key,
-                title: fields.title,
-                authors: fields.authors,
-                format: fields.format.asDomain,
-                firstPublishedIn: fields.firstPublishedIn,
-                synopsis: fields.synopsis,
-                genre: fields.genre?.asDomain,
-                language: fields.language?.asDomain,
-                series: fields.seriesName.map {
-                    SeriesMembership(id: $0, name: $0, volume: fields.volume, kind: .main)
-                },
-                coverURL: fields.coverUrl.flatMap(URL.init(string:)),
-                status: .toRead
-            ),
-            reason: fields.reason,
-            award: fields.award,
-            publicRating: fields.publicRating,
-            ratingCount: fields.ratingCount,
-            releaseDate: fields.releaseDate
+            isSeries: fields.kind.value == .series,
+            title: fields.title,
+            originalTitle: fields.originalTitle,
+            author: fields.author,
+            originalLanguage: language,
+            volumesRead: fields.volumesRead,
+            coverURL: fields.coverUrl.flatMap(URL.init(string:)),
+            nextDate: fields.nextDate,
+            editions: fields.editions.map { edition in
+                TranslatedEdition(
+                    title: edition.title,
+                    volume: edition.volume,
+                    format: edition.format.value == .audiobook ? .audiobook : .book,
+                    date: edition.date,
+                    audibleURL: edition.audibleUrl.flatMap(URL.init(string:))
+                )
+            }
         )
     }
 }

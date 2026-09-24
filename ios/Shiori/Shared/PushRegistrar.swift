@@ -2,16 +2,17 @@ import UIKit
 import UserNotifications
 
 extension Notification.Name {
-    /// A release alert was tapped: the app opens on the Découvrir tab.
+    /// A translation alert was tapped: the app opens on the Découvrir tab.
     static let shioriOpenDiscover = Notification.Name("ShioriOpenDiscover")
 }
 
 /// Where the app meets APNs: asking permission, handing the device token to
 /// the server, and opening the right tab when an alert is tapped.
 ///
-/// Permission is asked the first time the reader switches an alert on, never at
-/// launch: an app that asks before it has said anything worth hearing gets a
-/// no it can never take back.
+/// Permission is asked the first time the Découvrir tab has a release to
+/// announce, or the reader switches an alert on — never at launch: an app that
+/// asks before it has said anything worth hearing gets a no it can never take
+/// back.
 @MainActor
 final class PushRegistrar: NSObject, UNUserNotificationCenterDelegate {
     static let shared = PushRegistrar()

@@ -1,17 +1,16 @@
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import {
+  AUTHORS_SEARCHED,
   audibleLinksFor,
   bookFrom,
   boughtSince,
   heardByAsin,
   importableFrom,
   listenedMinutesFor,
-  listenedSagasOf,
   listeningChangesFor,
-  nextInSaga,
   purchaseDatesFor,
-  SAGAS_SEARCHED,
   seriesVolumesFor,
+  shelfForAuthor,
   shelfKeysOf,
 } from '~/domain/audible/business-rules'
 import { AudibleCommand } from '~/domain/audible/command'
@@ -20,6 +19,7 @@ import { openCredentials } from '~/domain/audible/infrastructure/credentials-vau
 import { AudibleQuery } from '~/domain/audible/query'
 import type {
   AudibleAsin,
+  AudibleMarketplace,
   AudibleRelease,
   ConnectedAccount,
   ImportableBook,
@@ -28,8 +28,8 @@ import type {
 } from '~/domain/audible/types'
 import { BookCommand } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
-import type { Book } from '~/domain/book/types'
-import type { UserId } from '~/domain/shared/types'
+import type { Book, BookLanguage } from '~/domain/book/types'
+import type { AuthorName, UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
 import { withRequestCacheScope } from '~/system/request-cache'
 import { bulkSave } from '~/utils/firestore'
@@ -38,15 +38,21 @@ import { isPresent } from '~/utils/input'
 const logger = createLogger('audible')
 
 export namespace AudibleUseCase {
-  /** The next recordings of the sagas the reader listens to — out already or
-   *  up for preorder — for the Découvrir tab and its alerts.
+  /** Every recording in `language` of these authors, out already or up for
+   *  preorder, as the reader's own Audible marketplace lists them — for the
+   *  Découvrir tab, which looks for the translation of what the reader read in
+   *  another language.
    *
-   *  One library read and one catalogue search per saga, the sagas bought most
-   *  recently first. A saga whose search fails is skipped: one refusal from
-   *  Amazon must not cost the reader every other saga. */
-  export const nextInListenedSagas = async (
+   *  One library read, for the shelves a search needs, then one catalogue search
+   *  per author. An author whose search fails is skipped: one refusal from
+   *  Amazon must not cost the reader every other author. */
+  export const recordingsInLanguage = async (
     userId: UserId,
-  ): Promise<AudibleRelease[] | 'not-connected'> => {
+    authors: readonly AuthorName[],
+    language: BookLanguage,
+  ): Promise<
+    { marketplace: AudibleMarketplace; recordings: AudibleRelease[] } | 'not-connected'
+  > => {
     const account = await AudibleQuery.accountOf(userId)
     if (!account) return 'not-connected'
     let credentials = opened(account.credentials)
@@ -54,31 +60,31 @@ export namespace AudibleUseCase {
 
     const library = await api.library(credentials)
     credentials = library.credentials
-    const owned = library.items
-    const ownedAsins = new Set(owned.map((item) => item.asin))
-    const ownedKeys = shelfKeysOf(await BookQuery.all(userId))
+    const nothingOwned = new Set<string>()
 
-    const releases: AudibleRelease[] = []
-    for (const saga of listenedSagasOf(owned).slice(0, SAGAS_SEARCHED)) {
+    const recordings: AudibleRelease[] = []
+    for (const author of authors.slice(0, AUTHORS_SEARCHED)) {
+      const categoryId = shelfForAuthor(library.items, author)
+      if (!categoryId) continue
       try {
         const found = await api.catalog(credentials, {
-          categoryId: saga.categoryId,
-          keywords: saga.name,
+          categoryId,
+          author,
           sortBy: '-ReleaseDate',
-          limit: 20,
+          limit: 50,
         })
         credentials = found.credentials
-        for (const item of nextInSaga(saga, found.items, ownedAsins)) {
-          const book = importableFrom(item, ownedKeys)
-          if (book && !book.alreadyInLibrary)
-            releases.push({ ...book, releaseDate: item.releaseDate })
+        for (const item of found.items) {
+          const book = importableFrom(item, nothingOwned)
+          if (book?.language === language)
+            recordings.push({ ...book, releaseDate: item.releaseDate })
         }
       } catch (error) {
-        logger.warn('Audible saga search failed', { error, userId, saga: saga.name })
+        logger.warn('Audible author search failed', { error, userId, author })
       }
     }
     await AudibleCommand.rememberRotatedCredentials(userId, credentials)
-    return releases
+    return { marketplace: account.marketplace, recordings }
   }
 
   /** The reader's Audible library, as books they could catalogue.

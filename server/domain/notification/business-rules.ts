@@ -1,5 +1,5 @@
 import type { PushEnvironment } from '~/system/apns'
-import type { AlertKind, DeviceToken, NotificationSettings } from './types'
+import { ALERT_KINDS, type AlertKind, type DeviceToken, type NotificationSettings } from './types'
 
 /** A reader signs in on a phone, an iPad, a new phone: a handful of devices,
  *  never more. The oldest goes when a new one arrives past the limit, since a
@@ -12,7 +12,7 @@ export const emptySettings = (
 ): NotificationSettings => ({
   userId,
   devices: [],
-  alerts: [],
+  alerts: [...ALERT_KINDS],
   updatedAt: now,
 })
 

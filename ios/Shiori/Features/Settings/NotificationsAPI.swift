@@ -1,43 +1,32 @@
 import Foundation
 
-/// The alerts a reader can switch on. Every one is about a book coming out.
+/// The alerts a reader can switch off; every one starts on. Every one is about
+/// a book coming out.
 enum AlertKind: CaseIterable, Identifiable, Sendable {
-    case seriesVolume, translation, audibleRelease, authorRelease
+    case translation
     var id: Self { self }
 
     var title: String {
         switch self {
-        case .seriesVolume: String(localized: "Nouveau tome d'une série suivie")
         case .translation: String(localized: "Traduction française d'un livre lu en VO")
-        case .audibleRelease: String(localized: "Nouveauté Audible dans une série suivie")
-        case .authorRelease: String(localized: "Nouveau livre d'un auteur adoré")
         }
     }
 
     var symbol: String {
         switch self {
-        case .seriesVolume: "square.stack"
         case .translation: "character.book.closed"
-        case .audibleRelease: "headphones"
-        case .authorRelease: "person.crop.square"
         }
     }
 
     var graphQL: ShioriGraphQL.AlertKind {
         switch self {
-        case .seriesVolume: .seriesVolume
         case .translation: .translation
-        case .audibleRelease: .audibleRelease
-        case .authorRelease: .authorRelease
         }
     }
 
     init?(graphQL kind: ShioriGraphQL.AlertKind) {
         switch kind {
-        case .seriesVolume: self = .seriesVolume
         case .translation: self = .translation
-        case .audibleRelease: self = .audibleRelease
-        case .authorRelease: self = .authorRelease
         }
     }
 }

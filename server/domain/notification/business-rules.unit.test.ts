@@ -58,19 +58,14 @@ describe('the devices a reader is reached on', () => {
 describe('whether an alert goes out', () => {
   const reachable = withDevice(emptySettings(reader, now), token('a'), 'production', now)
 
-  test('only for a kind the reader switched on', () => {
-    const on = withAlert(reachable, 'series-volume', true, now)
-
-    expect(wantsAlert(on, 'series-volume')).toBe(true)
-    expect(wantsAlert(on, 'translation')).toBe(false)
-    expect(wantsAlert(withAlert(on, 'series-volume', false, now), 'series-volume')).toBe(false)
+  test('by default, until the reader switches it off', () => {
+    expect(wantsAlert(reachable, 'translation')).toBe(true)
+    expect(wantsAlert(withAlert(reachable, 'translation', false, now), 'translation')).toBe(false)
   })
 
   test('never without a device to send it to', () => {
-    const noDevice = withAlert(emptySettings(reader, now), 'series-volume', true, now)
-
-    expect(wantsAlert(noDevice, 'series-volume')).toBe(false)
-    expect(wantsAlert(undefined, 'series-volume')).toBe(false)
+    expect(wantsAlert(emptySettings(reader, now), 'translation')).toBe(false)
+    expect(wantsAlert(undefined, 'translation')).toBe(false)
   })
 
   test('switching an alert on twice keeps it once', () => {

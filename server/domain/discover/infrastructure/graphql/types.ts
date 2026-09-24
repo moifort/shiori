@@ -1,209 +1,135 @@
-import {
-  BookFormatEnum,
-  BookLanguageEnum,
-  GenreEnum,
-} from '~/domain/book/infrastructure/graphql/enums'
-import type {
-  Discover,
-  FriendFavorite,
-  LovedShelf,
-  Release,
-  Suggestion,
-} from '~/domain/discover/types'
-import { AlertKindEnum } from '~/domain/notification/infrastructure/graphql/enums'
+import { audibleProductUrlOf } from '~/domain/audible/business-rules'
+import { BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
+import type { Discover, TranslatedEdition, Translation } from '~/domain/discover/types'
 import { builder } from '~/domain/shared/graphql/builder'
 
-export const SuggestionType = builder.objectRef<Suggestion>('Suggestion').implement({
+const TranslationFormatEnum = builder.enumType('TranslationFormat', {
+  description: 'How a translation reaches the reader.',
+  values: {
+    BOOK: { value: 'book', description: 'Printed or electronic.' },
+    AUDIOBOOK: { value: 'audiobook', description: 'Recorded.' },
+  } as const,
+})
+
+const TranslationKindEnum = builder.enumType('TranslationKind', {
+  description: 'Whether the reader read a whole saga or one book on its own.',
+  values: {
+    SERIES: { value: 'series' },
+    BOOK: { value: 'book' },
+  } as const,
+})
+
+/** An edition, with the Audible store it is sold on when it is a recording the
+ *  reader's marketplace lists. */
+type EditionView = { edition: TranslatedEdition; translation: Translation }
+
+const TranslatedEditionType = builder.objectRef<EditionView>('TranslatedEdition').implement({
   description:
-    'A book the Découvrir tab proposes, with the one line that says why. Never a ' +
-    'book the reader owns or dismissed.',
+    'One edition of a work in the app’s language, out or announced. A recording is ' +
+    'only ever listed for a reader connected to Audible.',
   fields: (t) => ({
-    key: t.string({
-      description:
-        'The title and first author folded: what `dismissSuggestion` and `addSuggestion` name.',
-      resolve: (item) => item.key,
-    }),
-    title: t.field({ type: 'BookTitle', resolve: (item) => item.title }),
-    authors: t.field({ type: ['AuthorName'], resolve: (item) => item.authors }),
-    firstPublishedIn: t.field({
-      type: 'Year',
-      nullable: true,
-      resolve: (item) => item.firstPublishedIn ?? null,
-    }),
-    language: t.field({
-      type: BookLanguageEnum,
-      nullable: true,
-      resolve: (item) => item.language ?? null,
-    }),
-    format: t.field({ type: BookFormatEnum, resolve: (item) => item.format }),
-    genre: t.field({ type: GenreEnum, nullable: true, resolve: (item) => item.genre ?? null }),
-    seriesName: t.field({
-      type: 'SeriesName',
-      nullable: true,
-      resolve: (item) => item.series?.name ?? null,
-    }),
+    title: t.field({ type: 'BookTitle', resolve: ({ edition }) => edition.title }),
     volume: t.field({
       type: 'VolumeNumber',
       nullable: true,
-      resolve: (item) => item.series?.volume ?? null,
+      resolve: ({ edition }) => edition.volume ?? null,
     }),
-    synopsis: t.field({
-      type: 'Synopsis',
-      nullable: true,
-      resolve: (item) => item.synopsis ?? null,
-    }),
-    coverUrl: t.field({
-      type: 'CoverUrl',
-      nullable: true,
-      resolve: (item) => item.coverUrl ?? null,
-    }),
-    reason: t.string({
-      description: 'Why this book, for this reader, in one line of their language.',
-      resolve: (item) => item.reason,
-    }),
-    award: t.string({
-      nullable: true,
-      description: 'The prize it won, e.g. "Hugo 2024".',
-      resolve: (item) => item.award ?? null,
-    }),
-    publicRating: t.float({
-      nullable: true,
-      description: 'What readers worldwide rate it, out of five, one decimal.',
-      resolve: (item) => item.publicRating ?? null,
-    }),
-    ratingCount: t.int({
-      nullable: true,
-      description: 'How many readers rated it.',
-      resolve: (item) => item.ratingCount ?? null,
-    }),
-    releaseDate: t.string({
-      nullable: true,
-      description:
-        'When it comes out, as precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`.',
-      resolve: (item) => item.releaseDate ?? null,
-    }),
-  }),
-})
-
-export const ReleaseType = builder.objectRef<Release>('Release').implement({
-  description: 'A book coming out that the reader has a reason to care about.',
-  fields: (t) => ({
-    key: t.string({
-      description: 'What `dismissSuggestion` names to hide it.',
-      resolve: (release) => release.key,
-    }),
-    suggestion: t.field({
-      type: SuggestionType,
-      description: 'The book itself; its key is what `addSuggestion` names.',
-      resolve: (release) => release,
-    }),
-    kind: t.field({
-      type: AlertKindEnum,
-      description: 'Which alert it would fire: a saga volume, a translation, a recording…',
-      resolve: (release) => release.kind,
-    }),
+    format: t.field({ type: TranslationFormatEnum, resolve: ({ edition }) => edition.format }),
     date: t.string({
-      description: '`YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Only a day ever fires an alert.',
-      resolve: (release) => release.date,
+      nullable: true,
+      description:
+        'When it came out or comes out, as precisely as announced: `YYYY`, `YYYY-MM` or ' +
+        '`YYYY-MM-DD`. Null for an edition out on a date nobody found.',
+      resolve: ({ edition }) => edition.date ?? null,
+    }),
+    audibleUrl: t.string({
+      nullable: true,
+      description: 'The recording’s page on the reader’s own Audible store.',
+      resolve: ({ edition, translation }) =>
+        edition.audibleAsin && translation.audibleMarketplace
+          ? audibleProductUrlOf(translation.audibleMarketplace, edition.audibleAsin)
+          : null,
     }),
   }),
 })
 
-const LovedShelfType = builder.objectRef<LovedShelf>('LovedShelf').implement({
-  description: '"Parce que vous avez aimé X": books in the vein of one the reader loved.',
-  fields: (t) => ({
-    anchor: t.field({ type: 'BookTitle', resolve: (shelf) => shelf.anchor }),
-    items: t.field({ type: [SuggestionType], resolve: (shelf) => shelf.items }),
-  }),
-})
-
-const FriendFavoriteType = builder.objectRef<FriendFavorite>('FriendFavorite').implement({
+const TranslationType = builder.objectRef<Translation>('Translation').implement({
   description:
-    'A book a friend hearted that the reader does not own. Opens as the friend’s ' +
-    'copy, through `friendBook(userId, bookId)`.',
+    'A saga or a book the reader read in another language, with what exists or is ' +
+    'announced of it in the app’s language.',
   fields: (t) => ({
-    key: t.exposeString('key'),
-    friendId: t.field({ type: 'UserId', resolve: (favorite) => favorite.friendId }),
-    bookId: t.field({ type: 'BookId', resolve: (favorite) => favorite.bookId }),
-    friendNames: t.stringList({
-      description: 'Every friend who hearted it, first names.',
-      resolve: (favorite) => favorite.friendNames,
+    key: t.string({
+      description: 'What `dismissTranslation` names.',
+      resolve: (translation) => translation.key,
     }),
-    title: t.field({ type: 'BookTitle', resolve: (favorite) => favorite.title }),
-    authors: t.field({ type: ['AuthorName'], resolve: (favorite) => favorite.authors }),
-    format: t.field({ type: BookFormatEnum, resolve: (favorite) => favorite.format }),
-    seriesName: t.field({
-      type: 'SeriesName',
-      nullable: true,
-      resolve: (favorite) => favorite.series?.name ?? null,
+    kind: t.field({ type: TranslationKindEnum, resolve: (translation) => translation.kind }),
+    title: t.field({
+      type: 'BookTitle',
+      description: 'Its title in the app’s language, else the one the reader knows.',
+      resolve: (translation) => translation.title,
     }),
-    volume: t.field({
-      type: 'VolumeNumber',
+    originalTitle: t.field({
+      type: 'BookTitle',
+      description: 'The saga’s name or the book’s title as the reader catalogued it.',
+      resolve: (translation) => translation.originalTitle,
+    }),
+    author: t.field({
+      type: 'AuthorName',
       nullable: true,
-      resolve: (favorite) => favorite.series?.volume ?? null,
+      resolve: (translation) => translation.author ?? null,
+    }),
+    originalLanguage: t.field({
+      type: BookLanguageEnum,
+      description: 'The language the reader read it in.',
+      resolve: (translation) => translation.originalLanguage,
+    }),
+    volumesRead: t.field({
+      type: ['VolumeNumber'],
+      description: 'The volumes of a saga the reader read or is reading.',
+      resolve: (translation) => translation.volumesRead,
     }),
     coverUrl: t.field({
       type: 'CoverUrl',
       nullable: true,
-      resolve: (favorite) => favorite.coverUrl ?? null,
+      resolve: (translation) => translation.coverUrl ?? null,
+    }),
+    nextDate: t.string({
+      nullable: true,
+      description: 'The soonest edition still to come, as precisely as announced.',
+      resolve: (translation) => translation.nextDate ?? null,
+    }),
+    editions: t.field({
+      type: [TranslatedEditionType],
+      description: 'Every edition, by volume then by date.',
+      resolve: (translation) => translation.editions.map((edition) => ({ edition, translation })),
     }),
   }),
 })
 
 export const DiscoverType = builder.objectRef<Discover>('Discover').implement({
   description:
-    'The Découvrir tab: shelves of books to read next, each suggestion with its ' +
-    'reason. The friends’ hearts are read live; the rest is what the weekly ' +
-    'refresh found.',
+    'The Découvrir tab: the books the reader read in another language, now out or ' +
+    'coming out in the app’s language.',
   fields: (t) => ({
     preparedAt: t.field({
       type: 'DateTime',
       nullable: true,
-      description:
-        'When the shelves were last prepared. Null before the first time: the app ' +
-        'then offers to prepare them with `refreshDiscover`.',
+      description: 'When the daily refresh last ran. Null before the first.',
       resolve: (discover) => discover.preparedAt ?? null,
     }),
-    canRefresh: t.exposeBoolean('canRefresh', {
-      description: 'Whether `refreshDiscover` would prepare a fresh set: once a day at most.',
+    canRefresh: t.boolean({
+      description: 'Whether `refreshDiscover` would look again now: once a day at most.',
+      resolve: (discover) => discover.canRefresh,
     }),
-    friendsFavorites: t.field({
-      type: [FriendFavoriteType],
-      description: 'Hearted by friends, not on the reader’s shelf; the most hearted first.',
-      resolve: (discover) => discover.friendsFavorites,
+    upcoming: t.field({
+      type: [TranslationType],
+      description: 'Works with at least one edition still to come, the soonest first.',
+      resolve: (discover) => discover.upcoming,
     }),
-    audible: t.field({
-      type: [SuggestionType],
-      description: 'The next recordings of the sagas the reader listens to on Audible.',
-      resolve: (discover) => discover.audible,
-    }),
-    releases: t.field({
-      type: [ReleaseType],
-      description:
-        'What comes out in the reader’s sagas, by their loved authors, and in ' +
-        'their language for books they read in another; the soonest first.',
-      resolve: (discover) => discover.releases,
-    }),
-    becauseYouLoved: t.field({
-      type: [LovedShelfType],
-      resolve: (discover) => discover.becauseYouLoved,
-    }),
-    awards: t.field({
-      type: [SuggestionType],
-      description: 'Prize winners in the reader’s leading genres.',
-      resolve: (discover) => discover.awards,
-    }),
-    acclaimed: t.field({
-      type: [SuggestionType],
-      description: 'The books readers worldwide rate highest in the reader’s genres.',
-      resolve: (discover) => discover.acclaimed,
-    }),
-    offTrail: t.field({
-      type: [SuggestionType],
-      description:
-        'Genres the reader never tried, reached through one they love; the first ' +
-        'is the hero of the week.',
-      resolve: (discover) => discover.offTrail,
+    available: t.field({
+      type: [TranslationType],
+      description: 'Works already out in the app’s language, the most recently read first.',
+      resolve: (discover) => discover.available,
     }),
   }),
 })

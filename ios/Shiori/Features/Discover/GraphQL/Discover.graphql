@@ -1,4 +1,5 @@
-# The Découvrir tab: shelves of books to read next, each with its reason.
+# The Découvrir tab: the books the reader read in another language, now out or
+# coming out in the app's language.
 
 query Discover {
   discover {
@@ -12,74 +13,36 @@ mutation RefreshDiscover {
   }
 }
 
-mutation DismissSuggestion($key: String!) {
-  dismissSuggestion(key: $key)
-}
-
-mutation AddSuggestion($key: String!, $status: CopiedStatus!) {
-  addSuggestion(key: $key, status: $status) {
-    id
-  }
+mutation DismissTranslation($key: String!) {
+  dismissTranslation(key: $key)
 }
 
 fragment DiscoverFields on Discover {
   preparedAt
   canRefresh
-  friendsFavorites {
-    key
-    friendId
-    bookId
-    friendNames
-    title
-    authors
-    format
-    seriesName
-    volume
-    coverUrl
+  upcoming {
+    ...TranslationFields
   }
-  audible {
-    ...SuggestionFields
-  }
-  releases {
-    key
-    kind
-    date
-    suggestion {
-      ...SuggestionFields
-    }
-  }
-  becauseYouLoved {
-    anchor
-    items {
-      ...SuggestionFields
-    }
-  }
-  awards {
-    ...SuggestionFields
-  }
-  acclaimed {
-    ...SuggestionFields
-  }
-  offTrail {
-    ...SuggestionFields
+  available {
+    ...TranslationFields
   }
 }
 
-fragment SuggestionFields on Suggestion {
+fragment TranslationFields on Translation {
   key
+  kind
   title
-  authors
-  firstPublishedIn
-  language
-  format
-  genre
-  seriesName
-  volume
-  synopsis
+  originalTitle
+  author
+  originalLanguage
+  volumesRead
   coverUrl
-  reason
-  award
-  publicRating
-  ratingCount
-  releaseDate
+  nextDate
+  editions {
+    title
+    volume
+    format
+    date
+    audibleUrl
+  }
 }

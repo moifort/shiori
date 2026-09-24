@@ -10,10 +10,10 @@ are recorded here so their constraints are not forgotten while the foundation is
 | 1 | Cover scan, enriched record, library, three reading statuses, five-star rating, note | **specified** |
 | 2 | Series: shared catalogue, library grouping, series screen, related works | **specified** |
 | 3 | Sharing a library with other people, `hidden` books excluded | **built** |
-| 4 | Release alerts: forthcoming volumes, loved authors, French translations, Audible | **built** |
+| 4 | Release alerts: the translation of a book read in another language | **built** |
 | 5 | Audible import | **built** |
 | 6 | Kindle import | planned |
-| 7 | The Découvrir tab: friends, awards, public ratings, AI suggestions | **built** |
+| 7 | The Découvrir tab: translations of what the reader read in another language | **rebuilding** |
 
 ## Batch 3 — Sharing
 
@@ -36,11 +36,10 @@ Built and deployed with its APNs key. The data
 quality problem has its answer: a date is kept as precisely as it was announced — a year, a
 month or a day — and only a day ever fires an alert.
 
-Four alerts, each switched on by the reader: a volume of a followed series, a new book from a
-loved author, a new Audible release in a followed series, and, for a book read in English,
-its French translation in print or on Audible. The forthcoming releases are also listed in
-the Découvrir tab of batch 7, so the date lookup serves both. Broken down in
-[tasks.md](tasks.md).
+One alert is left, on by default: a translation into the app's language of a book the reader
+read in another one, in print, or on Audible for a reader connected to it. The saga, author and
+Audible-release alerts went with the Découvrir redesign of batch 7, which holds the dates the
+alert reads.
 
 ## Batch 5 — Audible import
 
@@ -86,16 +85,18 @@ user's Amazon credentials and is not an option. Note that the Audible connection
 does NOT help here: it authenticates against Audible's own API, which knows nothing about
 Kindle.
 
-## Batch 7 — AI reading suggestions
+## Batch 7 — Découvrir
 
-Grown into a tab of its own, Découvrir, meant to be what sets Shiori apart: it pushes the
-reader to discover and to read more. A feed of shelves, each suggestion with its reason —
-the friends' favourites, new Audible releases, what is coming out, award winners and the
-books readers worldwide rate highest in the reader's genres, "because you loved X", and
-genres the reader has never tried reached through one they love. Shipped in three waves,
-the free signals first and the AI shelves last, since those depend on accumulated signal;
-the waves are in [tasks.md](tasks.md). Computed weekly, with the shared parts (award lists,
-public ratings) keyed like the series catalogue so they are paid for once. Batch 2 already delivers the zero-cost half of it: the recommendations
+First built as a feed of shelves — friends' favourites, new Audible releases, what is coming
+out in followed sagas, award winners, acclaimed books, "because you loved X", off-trail
+genres — then torn down on 2026-09-24 to be rebuilt one feature at a time.
+
+The first feature back: the books the reader read or is reading in another language than the
+app's, and what exists or is announced of them in the app's language. One row per saga or per
+book on its own, split into "coming soon" and "already out"; "Pas intéressé" hides a work for
+good. Printed editions are always offered, recordings only to a reader connected to Audible,
+from their own marketplace's catalogue. The web is searched once a week per work, in a shared
+document, and Audible once a day per reader. Batch 2 already delivers the zero-cost half of it: the recommendations
 section on a book screen, listing the other volumes of its series.
 
 ## Deferred on purpose

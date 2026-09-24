@@ -12,6 +12,7 @@ import {
   purchaseDatesFor,
   readersDueForSync,
   seriesVolumesFor,
+  shelfForAuthor,
   shelfKeyOf,
   shelfKeysOf,
   statusOf,
@@ -802,5 +803,30 @@ describe('choosing whose library to sync', () => {
       aConnection('never', {}),
     ])
     expect(order).toEqual(['never', 'stale', 'recent'] as UserId[])
+  })
+})
+
+describe('the shelf an author is searched on', () => {
+  const shelved = (id: string, authors: string[]) =>
+    anItem({ authors, categories: [{ root: 'Genres', categories: [{ id, name: id }] }] })
+
+  test('is the shelf their own books sit on in the library', () => {
+    const library = [
+      shelved('fiction', ['Somebody']),
+      shelved('fiction', ['Somebody Else']),
+      shelved('sci-fi', ['Andy Weir']),
+    ]
+
+    expect(shelfForAuthor(library, 'andy weir')).toBe('sci-fi')
+  })
+
+  test('falls back on the shelf the library fills most for an author it lacks', () => {
+    const library = [shelved('fantasy', ['A']), shelved('fantasy', ['B']), shelved('crime', ['C'])]
+
+    expect(shelfForAuthor(library, 'Pierce Brown')).toBe('fantasy')
+  })
+
+  test('is nothing for an empty library', () => {
+    expect(shelfForAuthor([], 'Pierce Brown')).toBeUndefined()
   })
 })

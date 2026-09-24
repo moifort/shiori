@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { randomBytes } from 'node:crypto'
+import type { AudibleItem } from 'audible-api-ts'
 import type { UserId } from '~/domain/shared/types'
 import {
   type FakeFirestore,
@@ -11,7 +13,8 @@ mock.module('~/system/firebase', () => ({ db: fakeDb }))
 mock.module('~/system/object-store', () => ({
   objectStore: () => ({ downloadUrl: async () => 'https://fake.store/cover' }),
 }))
-mock.module('~/domain/scan/published-cover', () => ({ publishedCoverOf: async () => undefined }))
+const audibleKey = randomBytes(32).toString('base64')
+mock.module('~/system/config', () => ({ config: () => ({ audibleKey }) }))
 
 const pushed: string[] = []
 mock.module('~/system/apns', () => ({
@@ -23,90 +26,78 @@ mock.module('~/system/apns', () => ({
   },
 }))
 
-/** Stands in for Gemini: one answer per step, and a count of the calls made,
- *  which is what the shared documents are there to save. */
+/** Stands in for Gemini: the French editions of every work it is asked about,
+ *  and a count of the calls made, which is what the shared watches save. */
 const calls: string[] = []
-let releaseDate = '2026-10-14'
+let carlDate = '2027-02-19'
 mock.module('~/domain/scan/gemini', () => ({
   generate: async ({ step, parts }: { step: string; parts: { text: string }[] }) => {
     calls.push(step)
-    const usage = { promptTokens: 1, outputTokens: 1, thinkingTokens: 0, searches: 1 }
-    if (step === 'discover-personal')
-      return {
-        usage,
-        value: {
-          becauseYouLoved: [
-            {
-              anchor: 'Cradle',
-              items: [
-                {
-                  title: 'Dungeon Crawler Carl',
-                  authors: ['Matt Dinniman'],
-                  reason: 'La même montée en puissance.',
-                },
-                { title: 'Dune', authors: ['Frank Herbert'], reason: 'Déjà lu, à écarter.' },
-              ],
-            },
-            { anchor: 'Not a loved book', items: [{ title: 'X', authors: ['Y'], reason: 'r' }] },
-          ],
-          offTrail: [
-            {
-              title: 'He Who Fights with Monsters',
-              authors: ['Shirtaloon'],
-              reason: 'Le LitRPG, cousin de Cradle.',
-            },
-          ],
-        },
-      }
-    if (step === 'discover-genre')
-      return {
-        usage,
-        value: {
-          awards: [
-            {
-              title: 'The Tainted Cup',
-              authors: ['Robert Jackson Bennett'],
-              award: 'Hugo 2025',
-              reason: 'r',
-            },
-            { title: 'No Award', authors: ['Nobody'], reason: 'dropped without an award' },
-          ],
-          acclaimed: [
-            {
-              title: 'Piranesi',
-              authors: ['Susanna Clarke'],
-              publicRating: 4.3,
-              ratingCount: 400000,
-              reason: 'r',
-            },
-          ],
-        },
-      }
-    const key = /- (series--[^ ]+) :/.exec(parts[0]?.text ?? '')?.[1]
-    return {
-      usage,
-      value: {
-        subjects: key
-          ? [
-              {
-                key,
-                releases: [
-                  {
-                    title: 'Cradle 13',
-                    authors: ['Will Wight'],
-                    volume: 13,
-                    date: releaseDate,
-                    format: 'book',
-                  },
-                ],
-              },
-            ]
-          : [],
+    const keys = [...(parts[0]?.text ?? '').matchAll(/^- (\S+) :/gm)].map((match) => match[1])
+    const answers: Record<string, unknown> = {
+      'series--dungeon-crawler-carl--matt-dinniman--fr': {
+        translatedTitle: 'Dungeon Crawler Carl',
+        editions: [
+          { title: 'Dungeon Crawler Carl', volume: 1, format: 'book', date: '2024-05-02' },
+          { title: 'Carl 4', volume: 4, format: 'book', date: carlDate },
+          { title: 'Carl 4', volume: 4, format: 'audiobook', date: '2027-03' },
+        ],
       },
+      'book--project-hail-mary--andy-weir--fr': {
+        translatedTitle: 'Projet Dernière Chance',
+        editions: [{ title: 'Projet Dernière Chance', format: 'book', date: '2021-10-06' }],
+      },
+    }
+    return {
+      usage: { promptTokens: 1, outputTokens: 1, thinkingTokens: 0, searches: 1 },
+      value: { works: keys.map((key) => ({ key, ...(answers[key] ?? { editions: [] }) })) },
     }
   },
 }))
 
+/** What the reader's Audible marketplace lists, per author searched. */
+let catalogue: Record<string, Partial<AudibleItem>[]> = {}
+const shelved = (item: Partial<AudibleItem>) =>
+  ({
+    narrators: [],
+    durationMinutes: 600,
+    categories: [{ root: 'Genres', categories: [{ id: 'sf', name: 'SF' }] }],
+    keywords: [],
+    relationships: [],
+    isAdultProduct: false,
+    productImages: {},
+    socialMediaImages: {},
+    ...item,
+  }) as AudibleItem
+const credentials = {
+  accessToken: 'access',
+  refreshToken: 'Atnr|refresh',
+  adpToken: '{enc:token}',
+  devicePrivateKey: 'key',
+  serial: 'SERIAL1',
+  locale: 'fr',
+  expiresAt: new Date('2027-01-01T00:00:00.000Z'),
+}
+mock.module('~/domain/audible/infrastructure/audible-api', () => ({
+  login: async (marketplace: string) => ({
+    loginUrl: `https://www.amazon.${marketplace}/ap/signin`,
+    session: { codeVerifier: 'v', serial: 'SERIAL1', marketplace, createdAt: new Date() },
+    cookies: [],
+  }),
+  register: async () => credentials,
+  library: async () => ({
+    items: [shelved({ asin: 'B0OWNED001', title: 'Project Hail Mary', authors: ['Andy Weir'] })],
+    credentials,
+  }),
+  catalog: async (_credentials: unknown, options: { author?: string }) => ({
+    items: (catalogue[options.author ?? ''] ?? []).map(shelved),
+    credentials,
+  }),
+  lastPositions: async () => ({ positions: [], credentials }),
+  landingUrlOf: (marketplace: string) => `https://www.amazon.${marketplace}/ap/maplanding`,
+}))
+
+const { AudibleCommand } = await import('~/domain/audible/command')
 const { BookUseCase } = await import('~/domain/book/use-case')
 const { DiscoverUseCase } = await import('~/domain/discover/use-case')
 const { DiscoverQuery } = await import('~/domain/discover/query')
@@ -117,40 +108,53 @@ const { seriesKeyOf } = await import('~/domain/series/primitives')
 
 const reader = 'reader' as UserId
 const other = 'other' as UserId
-const now = new Date('2026-09-22T08:00:00Z')
+const now = new Date('2026-09-24T08:00:00Z')
 let fake: FakeFirestore
 
+/** Two volumes of a saga and a novel read in English, and one French book. */
 const stock = async (userId: UserId) => {
-  const cradle = await BookUseCase.add(userId, {
-    title: BookTitle('Cradle'),
-    authors: [AuthorName('Will Wight')],
+  for (const volume of [1, 2])
+    await BookUseCase.add(userId, {
+      title: BookTitle(`Carl ${volume} (en)`),
+      authors: [AuthorName('Matt Dinniman')],
+      status: 'read',
+      language: 'en',
+      series: {
+        id: seriesKeyOf('Dungeon Crawler Carl', 'Matt Dinniman'),
+        name: 'Dungeon Crawler Carl' as never,
+        volume: volume as never,
+        kind: 'main',
+      },
+    })
+  await BookUseCase.add(userId, {
+    title: BookTitle('Project Hail Mary'),
+    authors: [AuthorName('Andy Weir')],
     status: 'read',
-    genre: 'fantasy',
-    series: {
-      id: seriesKeyOf('Cradle', 'Will Wight'),
-      name: 'Cradle' as never,
-      volume: 12 as never,
-      kind: 'main',
-    },
+    language: 'en',
   })
-  await BookUseCase.setFavorite(userId, cradle.id, true)
   await BookUseCase.add(userId, {
     title: BookTitle('Dune'),
     authors: [AuthorName('Frank Herbert')],
     status: 'read',
-    genre: 'science-fiction',
+    language: 'fr',
   })
+}
+
+const connectAudible = async (userId: UserId) => {
+  await AudibleCommand.startLogin(userId, 'fr', now)
+  await AudibleCommand.completeLogin(userId, 'the-code', now)
 }
 
 beforeEach(() => {
   fake = resetFakeFirestore()
   calls.length = 0
   pushed.length = 0
-  releaseDate = '2026-10-14'
+  carlDate = '2027-02-19'
+  catalogue = {}
 })
 
-describe('refreshing the Découvrir tab', () => {
-  test('stores the shelves, leaving out what the reader owns and loves nobody asked for', async () => {
+describe('the Découvrir tab', () => {
+  test('lists what is coming and what is out in French, without recordings for a reader off Audible', async () => {
     await stock(reader)
 
     await DiscoverUseCase.refresh(reader, 'fr', now)
@@ -158,22 +162,59 @@ describe('refreshing the Découvrir tab', () => {
 
     expect(tab.preparedAt).toEqual(now)
     expect(
-      tab.becauseYouLoved.map((shelf) => [
-        shelf.anchor as string,
-        shelf.items.map((s) => s.title as string),
+      tab.upcoming.map((t): unknown[] => [
+        t.title,
+        t.nextDate,
+        t.editions.map((e): unknown[] => [e.volume, e.format]),
       ]),
-    ).toEqual([['Cradle', ['Dungeon Crawler Carl']]])
-    expect(tab.offTrail.map((s) => s.title as string)).toEqual(['He Who Fights with Monsters'])
-    expect(tab.awards.map((s) => s.award)).toEqual(['Hugo 2025'])
-    expect(tab.acclaimed[0]).toMatchObject({ title: 'Piranesi', publicRating: 4.3 })
-    expect(
-      tab.releases.map((r) => [r.title as string, r.kind as string, r.date as string]),
-    ).toEqual([['Cradle 13', 'series-volume', '2026-10-14']])
+    ).toEqual([
+      [
+        'Dungeon Crawler Carl',
+        '2027-02-19',
+        [
+          [1, 'book'],
+          [4, 'book'],
+        ],
+      ],
+    ])
+    expect(tab.available.map((t): unknown[] => [t.title, t.originalTitle])).toEqual([
+      ['Projet Dernière Chance', 'Project Hail Mary'],
+    ])
   })
 
-  // The saga's release dates are a shared document: the second reader who
-  // follows it does not pay for the lookup again.
-  test('looks a saga up once for every reader who follows it', async () => {
+  test('offers the recordings of the reader’s Audible store, with its dates', async () => {
+    await stock(reader)
+    await connectAudible(reader)
+    catalogue = {
+      'Matt Dinniman': [
+        {
+          asin: 'B0CARL0004',
+          title: 'Carl 4',
+          authors: ['Matt Dinniman'],
+          language: 'french',
+          series: { name: 'Dungeon Crawler Carl', position: 4 },
+          releaseDate: new Date('2027-01-15'),
+        },
+      ],
+    }
+
+    await DiscoverUseCase.refresh(reader, 'fr', now)
+    const [carl] = (await DiscoverUseCase.discover(reader, 'fr', now)).upcoming
+
+    expect(carl.nextDate as string).toBe('2027-01-15')
+    expect(carl.audibleMarketplace).toBe('fr')
+    expect(
+      carl.editions.map((e): unknown[] => [e.volume, e.format, e.date, e.audibleAsin]),
+    ).toEqual([
+      [1, 'book', '2024-05-02', undefined],
+      [4, 'audiobook', '2027-01-15', 'B0CARL0004'],
+      [4, 'book', '2027-02-19', undefined],
+    ])
+  })
+
+  // The watches are shared documents: the second reader of the same books
+  // does not pay for the lookup again.
+  test('looks a work up once for every reader who read it', async () => {
     await stock(reader)
     await stock(other)
 
@@ -181,40 +222,43 @@ describe('refreshing the Découvrir tab', () => {
     startFakeRequest()
     await DiscoverUseCase.refresh(other, 'fr', now)
 
-    // Two genres and one watch list for the first reader; the second, who
-    // follows the same saga and authors in the same genres, pays only for
-    // their own shelves.
-    expect(calls.filter((step) => step === 'discover-genre')).toHaveLength(2)
-    expect(calls.filter((step) => step === 'discover-releases')).toHaveLength(1)
-    expect(calls.filter((step) => step === 'discover-personal')).toHaveLength(2)
+    expect(calls).toEqual(['discover-translations'])
   })
 
-  test('pushes a release out today, once, to a reader who switched the alert on', async () => {
+  test('never proposes again a work the reader is not interested in', async () => {
+    await stock(reader)
+    await DiscoverUseCase.refresh(reader, 'fr', now)
+
+    await DiscoverUseCase.dismiss(reader, 'series--dungeon-crawler-carl--matt-dinniman')
+
+    expect((await DiscoverUseCase.discover(reader, 'fr', now)).upcoming).toEqual([])
+  })
+
+  test('pushes an edition out today once, the alert being on by default', async () => {
     await stock(reader)
     await NotificationCommand.registerDevice(reader, DeviceToken('a'.repeat(64)), 'production')
-    await NotificationCommand.setAlert(reader, 'series-volume', true)
-    releaseDate = '2026-09-22'
+    carlDate = '2026-09-24'
 
     await DiscoverUseCase.refresh(reader, 'fr', now)
     await DiscoverUseCase.sendAlertsToEveryReader(now)
+    await DiscoverUseCase.sendAlertsToEveryReader(now)
 
-    expect(pushed).toEqual(["Cradle 13, tome 13 de Cradle, sort aujourd'hui."])
+    expect(pushed).toEqual(['« Carl 4 », tome 4, est disponible en français.'])
   })
 
-  test('refreshes on the hour only the readers whose tab is a week old', async () => {
+  test('refreshes on the hour only the readers whose tab is a day old', async () => {
     await stock(reader)
     await stock(other)
     await DiscoverUseCase.discover(reader, 'fr', now)
     await DiscoverUseCase.refresh(other, 'fr', now)
-    calls.length = 0
 
-    const run = await DiscoverUseCase.refreshDueReaders(new Date('2026-09-23T08:00:00Z'))
+    const run = await DiscoverUseCase.refreshDueReaders(new Date('2026-09-24T12:00:00Z'))
 
     expect(run).toEqual({ refreshed: 1, failed: 0, deferred: 0 })
     expect((await DiscoverQuery.feed(reader))?.refreshedAt).toBeDefined()
   })
 
-  test('grants a fresh set on demand once a day', async () => {
+  test('grants a fresh look on demand once a day', async () => {
     await stock(reader)
     await DiscoverUseCase.refreshOnDemand(reader, 'fr', now)
     const before = calls.length
@@ -222,39 +266,14 @@ describe('refreshing the Découvrir tab', () => {
     const again = await DiscoverUseCase.refreshOnDemand(
       reader,
       'fr',
-      new Date('2026-09-22T12:00:00Z'),
+      new Date('2026-09-24T12:00:00Z'),
     )
 
     expect(calls.length).toBe(before)
     expect(again.canRefresh).toBe(false)
   })
-})
 
-describe('acting on a suggestion', () => {
-  test('puts it on the pile from what the tab stored, and never proposes it again', async () => {
-    await stock(reader)
-    await DiscoverUseCase.refresh(reader, 'fr', now)
-
-    const book = await DiscoverUseCase.addSuggestion(reader, 'piranesi--susanna-clarke', 'to-read')
-    const tab = await DiscoverUseCase.discover(reader, 'fr', now)
-
-    expect(book).toMatchObject({ title: 'Piranesi', status: 'to-read' })
-    expect(tab.acclaimed).toEqual([])
-    expect(await DiscoverUseCase.addSuggestion(reader, 'piranesi--susanna-clarke', 'to-read')).toBe(
-      'already-owned',
-    )
-  })
-
-  test('dismisses it for good', async () => {
-    await stock(reader)
-    await DiscoverUseCase.refresh(reader, 'fr', now)
-
-    await DiscoverUseCase.dismiss(reader, 'he-who-fights-with-monsters--shirtaloon')
-
-    expect((await DiscoverUseCase.discover(reader, 'fr', now)).offTrail).toEqual([])
-  })
-
-  test('reads the tab with a handful of documents, never the friends libraries', async () => {
+  test('reads the tab with a handful of documents', async () => {
     await stock(reader)
     await DiscoverUseCase.refresh(reader, 'fr', now)
     startFakeRequest()
@@ -262,8 +281,8 @@ describe('acting on a suggestion', () => {
 
     await DiscoverUseCase.discover(reader, 'fr', now)
 
-    // The feed, the genre lists; the library and the friendships.
-    expect(fake.queryReads - before.queries).toBe(2)
+    // The library; the feed and one watch per work.
+    expect(fake.queryReads - before.queries).toBe(1)
     expect(fake.docReads - before.docs).toBe(3)
   })
 })

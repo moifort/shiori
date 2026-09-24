@@ -1,147 +1,139 @@
-import type { SharedShelf } from '~/domain/analytics/types'
 import type { AudibleRelease } from '~/domain/audible/types'
 import { shelfKeyOf } from '~/domain/book/business-rules'
-import type { Book, BookLanguage, Genre } from '~/domain/book/types'
-import type { AlertKind } from '~/domain/notification/types'
-import { followedSagasOf } from '~/domain/series/business-rules'
-import type { SeriesName } from '~/domain/series/types'
+import type { Book } from '~/domain/book/types'
 import type { Language } from '~/domain/shared/language'
-import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
+import type { BookTitle, UserId } from '~/domain/shared/types'
+import type { ObjectPath } from '~/system/object-store/types'
 import { slugify } from '~/utils/slug'
 import { ReleaseDate } from './primitives'
 import type {
+  DatedEdition,
   DiscoverFeed,
-  FriendFavorite,
-  Release,
+  ForeignWork,
   ReleaseDate as ReleaseDateValue,
-  ReleaseSubject,
-  ReleaseWatch,
-  Suggestion,
+  TranslatedEdition,
+  Translation,
+  TranslationWatch,
 } from './types'
 
-/** How often the weekly refresh runs for one reader, and how often they may
+/** How often the scheduled refresh runs for one reader — Audible is asked
+ *  every day, since a preorder can open any morning — and how often they may
  *  ask for it themselves. */
-export const REFRESH_EVERY_MS = 7 * 86_400_000
-export const ON_DEMAND_EVERY_MS = 86_400_000
-/** A genre's award list changes a few times a year: once a month is plenty. */
-export const GENRE_LIST_EVERY_MS = 30 * 86_400_000
-/** How long a release stays on the tab once out, and how late an alert may
- *  still go out for one the job missed. */
-const RECENT_RELEASE_DAYS = 60
+export const REFRESH_EVERY_MS = 86_400_000
+/** How often the web is searched again for one work: a publisher announces a
+ *  translation months ahead, and the call is the expensive part. */
+export const WATCH_EVERY_MS = 7 * 86_400_000
+/** How late an alert may still go out for an edition the job missed. */
 const ALERT_GRACE_DAYS = 14
-
-/** What the reader's library says about what they like. */
-export type Taste = {
-  /** Hearted or five-star books, most recently touched first. */
-  loved: Book[]
-  /** Their leading genres, among the books they read or are reading. */
-  genres: Genre[]
-  /** The sagas they are working through, most recently active first. */
-  sagas: { name: SeriesName; author?: AuthorName; language?: BookLanguage }[]
-  /** The authors of the books they loved, most loved first. */
-  authors: AuthorName[]
-  /** Books they read in a language other than the app's. */
-  foreignReads: Book[]
-}
-
-const LOVED_KEPT = 12
-const GENRES_KEPT = 2
-const SAGAS_KEPT = 8
-const AUTHORS_KEPT = 5
-const FOREIGN_KEPT = 6
 
 const touchedAt = (book: Book): number =>
   (book.finishedAt ?? book.startedAt ?? book.updatedAt ?? book.addedAt).getTime()
 
-const byRecent = (left: Book, right: Book) => touchedAt(right) - touchedAt(left)
+// MARK: - What the reader read in another language
 
-const topBy = <T>(values: readonly T[], keep: number): T[] => {
-  const counts = new Map<T, number>()
-  for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1)
-  return [...counts.entries()]
-    .sort((left, right) => right[1] - left[1])
-    .slice(0, keep)
-    .map(([value]) => value)
-}
-
-export const tasteOf = (books: readonly Book[], language: Language): Taste => {
-  const loved = books.filter((book) => book.favorite === true || book.rating === 5).sort(byRecent)
-  const engaged = books.filter((book) => book.status === 'read' || book.status === 'reading')
-  const sagas = followedSagasOf(books.filter((book) => book.status !== 'dropped'))
-    .map((saga) => ({ saga, lastActivity: Math.max(...saga.books.map(touchedAt)) }))
-    .sort((left, right) => right.lastActivity - left.lastActivity)
-    .slice(0, SAGAS_KEPT)
-    .map(({ saga }) => ({ name: saga.name, author: saga.author, language: saga.language }))
-  return {
-    loved: loved.slice(0, LOVED_KEPT),
-    genres: topBy(
-      engaged.flatMap((book) => (book.genre && book.genre !== 'other' ? [book.genre] : [])),
-      GENRES_KEPT,
-    ),
-    sagas,
-    authors: topBy(
-      loved.flatMap((book) => (book.authors[0] ? [book.authors[0]] : [])),
-      AUTHORS_KEPT,
-    ),
-    foreignReads: engaged
-      .filter((book) => book.language !== undefined && book.language !== language)
-      .sort(byRecent)
-      .slice(0, FOREIGN_KEPT),
+/** Every work the reader read, or is reading, in a language other than the
+ *  app's: one per saga, one per book outside a saga, the most recently touched
+ *  first. */
+export const foreignWorksOf = (books: readonly Book[], language: Language): ForeignWork[] => {
+  const works = new Map<string, ForeignWork>()
+  const read = books
+    .filter((book) => book.status === 'read' || book.status === 'reading')
+    .sort((left, right) => (left.series?.volume ?? 0) - (right.series?.volume ?? 0))
+  for (const book of read) {
+    if (book.language === undefined || book.language === language) continue
+    const key = book.series
+      ? `series--${book.series.id}`
+      : `book--${shelfKeyOf(book.title, book.authors[0])}`
+    const volume = book.series?.volume
+    const known = works.get(key)
+    if (known) {
+      if (volume !== undefined && !known.volumesRead.includes(volume))
+        known.volumesRead.push(volume)
+      known.lastActivity = Math.max(known.lastActivity, touchedAt(book))
+      if (!known.cover.coverPath && !known.cover.publishedCoverUrl)
+        known.cover = { coverPath: book.coverPath, publishedCoverUrl: book.publishedCoverUrl }
+      continue
+    }
+    works.set(key, {
+      key,
+      kind: book.series ? 'series' : 'book',
+      title: book.series ? (book.series.name as unknown as BookTitle) : book.title,
+      author: book.authors[0],
+      language: book.language,
+      volumesRead: volume === undefined ? [] : [volume],
+      cover: { coverPath: book.coverPath, publishedCoverUrl: book.publishedCoverUrl },
+      lastActivity: touchedAt(book),
+    })
   }
+  return [...works.values()].sort((left, right) => right.lastActivity - left.lastActivity)
 }
 
-// MARK: - Releases
+/** The books the reader already has in the app's language: a translation they
+ *  own is not one to propose. Only those — a French edition titled like the
+ *  English one ("Red Rising") must not pass for the copy the reader read. */
+export const ownedInLanguage = (books: readonly Book[], language: Language): Set<string> =>
+  new Set(
+    books
+      .filter((book) => book.language === language)
+      .map((book) => shelfKeyOf(book.title, book.authors[0])),
+  )
 
-export const subjectKeyOf = (subject: ReleaseSubject, language: Language): string => {
-  switch (subject.kind) {
-    case 'series':
-      return `series--${slugify(subject.name)}--${slugify(subject.author ?? '')}--${subject.language ?? ''}`
-    case 'author':
-      return `author--${slugify(subject.author)}`
-    case 'translation':
-      return `translation--${shelfKeyOf(subject.title, subject.author)}--${language}`
-  }
+// MARK: - The shared web watch
+
+export const watchKeyOf = (work: ForeignWork, language: Language): string =>
+  `${work.key}--${language}`
+
+/** Whether a work is due for another look on the web. */
+export const watchIsStale = (watch: TranslationWatch | undefined, now: Date): boolean =>
+  !watch || now.getTime() - watch.checkedAt.getTime() > WATCH_EVERY_MS
+
+// MARK: - Audible
+
+/** The recordings of one work among what the reader's Audible marketplace
+ *  lists for its author: the saga's volumes, matched on the saga's name, or
+ *  the book itself, matched on its title — as the reader knows it, or as the
+ *  web says it was translated. One recording per volume, the first listed. */
+export const audibleTranslationsOf = (
+  work: ForeignWork,
+  translatedTitle: BookTitle | undefined,
+  recordings: readonly AudibleRelease[],
+): TranslatedEdition[] => {
+  const names = new Set([
+    slugify(work.title),
+    ...(translatedTitle ? [slugify(translatedTitle)] : []),
+  ])
+  const author = work.author ? slugify(work.author) : undefined
+  const seen = new Set<string>()
+  return recordings.flatMap((recording): TranslatedEdition[] => {
+    if (author && !recording.authors.some((name) => slugify(name) === author)) return []
+    const matches =
+      work.kind === 'series'
+        ? recording.series !== undefined && names.has(slugify(recording.series.name))
+        : names.has(slugify(recording.title))
+    if (!matches) return []
+    const slot = String(recording.series?.volume ?? slugify(recording.title))
+    if (seen.has(slot)) return []
+    seen.add(slot)
+    return [
+      {
+        title: recording.title,
+        volume: work.kind === 'series' ? recording.series?.volume : undefined,
+        format: 'audiobook',
+        date: recording.releaseDate
+          ? ReleaseDate(recording.releaseDate.toISOString().slice(0, 10))
+          : undefined,
+        isbn13: recording.isbn13,
+        audibleAsin: recording.asin,
+        coverUrl: recording.coverUrl,
+      },
+    ]
+  })
 }
 
-/** Everything the release tracker should watch for this reader. */
-export const releaseSubjectsOf = (taste: Taste): ReleaseSubject[] => [
-  ...taste.sagas.map(
-    (saga): ReleaseSubject => ({
-      kind: 'series',
-      name: saga.name,
-      author: saga.author,
-      language: saga.language,
-    }),
-  ),
-  ...taste.authors.map((author): ReleaseSubject => ({ kind: 'author', author })),
-  ...taste.foreignReads
-    // A saga's translation is the saga's next volumes, in the reader's own
-    // language: watch the first book of it once, not every volume.
-    .filter(
-      (book, index, all) =>
-        !book.series || all.findIndex((other) => other.series?.id === book.series?.id) === index,
-    )
-    .map(
-      (book): ReleaseSubject => ({
-        kind: 'translation',
-        title: book.series ? (book.series.name as unknown as BookTitle) : book.title,
-        author: book.authors[0],
-      }),
-    ),
-]
-
-/** Whether a watch is due for another look. */
-export const watchIsStale = (watch: ReleaseWatch | undefined, now: Date): boolean =>
-  !watch || now.getTime() - watch.checkedAt.getTime() > REFRESH_EVERY_MS
-
-const KIND_OF_SUBJECT = {
-  series: 'series-volume',
-  author: 'author-release',
-  translation: 'translation',
-} as const satisfies Record<ReleaseSubject['kind'], AlertKind>
+// MARK: - What the reader sees
 
 /** The last day a date can mean: a book announced for "2027" may come out on
- *  December 31st, and is not over before then. */
+ *  December 31st, and is not out before then. */
 const lastDayOf = (date: ReleaseDateValue): string =>
   date.length === 10 ? date : date.length === 7 ? `${date}-31` : `${date}-12-31`
 
@@ -150,241 +142,188 @@ const dayMinus = (today: string, days: number): string => {
   return new Date(Date.UTC(year, month - 1, day) - days * 86_400_000).toISOString().slice(0, 10)
 }
 
-/** The releases one reader cares about, drawn from the watches of their
- *  subjects: upcoming or out in the last two months, never a book they own,
- *  the soonest first. */
-export const releasesOf = (
-  watches: readonly { subject: ReleaseSubject; watch: ReleaseWatch }[],
-  ownedKeys: ReadonlySet<string>,
-  today: string,
-  reasonOf: (subject: ReleaseSubject) => string,
-): Release[] => {
-  const since = dayMinus(today, RECENT_RELEASE_DAYS)
-  const seen = new Set<string>()
-  const releases: Release[] = []
-  for (const { subject, watch } of watches) {
-    for (const release of watch.releases) {
-      const key = shelfKeyOf(release.title, release.authors[0])
-      if (ownedKeys.has(key) || lastDayOf(release.date) < since) continue
-      const kind: AlertKind =
-        subject.kind === 'series' && release.format === 'audiobook'
-          ? 'audible-release'
-          : KIND_OF_SUBJECT[subject.kind]
-      const releaseKey = `${kind}--${key}--${release.format}--${release.language ?? ''}`
-      if (seen.has(releaseKey)) continue
-      seen.add(releaseKey)
-      releases.push({
-        key: releaseKey,
-        kind,
-        title: release.title,
-        authors: release.authors,
-        language: release.language,
-        format: release.format,
-        isbn13: release.isbn13,
-        series:
-          subject.kind === 'series' ? { name: subject.name, volume: release.volume } : undefined,
-        date: release.date,
-        releaseDate: release.date,
-        reason: reasonOf(subject),
-      })
-    }
+/** Whether an edition is still to come: a day after today, or a month or a
+ *  year not over yet. */
+export const isUpcoming = (edition: TranslatedEdition, today: string): boolean =>
+  edition.date !== undefined &&
+  (edition.date.length === 10 ? edition.date > today : lastDayOf(edition.date) >= today)
+
+const byVolumeThenDate = (left: TranslatedEdition, right: TranslatedEdition) =>
+  (left.volume ?? 0) - (right.volume ?? 0) ||
+  (left.date ?? '').localeCompare(right.date ?? '') ||
+  left.format.localeCompare(right.format)
+
+/** A work's editions as this reader sees them. The web's, with Audible's own
+ *  listing in place of the web's recordings for a reader connected to it — its
+ *  dates are the ones the store keeps — and no recording at all for a reader
+ *  who is not. Never an edition the reader already owns. */
+export const editionsOf = (
+  work: ForeignWork,
+  watch: TranslationWatch | undefined,
+  audible: readonly TranslatedEdition[] | undefined,
+  owned: ReadonlySet<string>,
+): TranslatedEdition[] => {
+  // A book on its own has one edition per format; a saga, one per volume.
+  const slotOf = (edition: TranslatedEdition) =>
+    work.kind === 'book'
+      ? edition.format
+      : `${edition.format}--${edition.volume ?? slugify(edition.title)}`
+  const merged = new Map<string, TranslatedEdition>()
+  for (const edition of watch?.editions ?? []) {
+    if (edition.format === 'audiobook' && audible === undefined) continue
+    if (!merged.has(slotOf(edition))) merged.set(slotOf(edition), edition)
   }
-  return releases.sort((left, right) => left.date.localeCompare(right.date))
+  for (const edition of audible ?? []) merged.set(slotOf(edition), edition)
+  return [...merged.values()]
+    .filter((edition) => !owned.has(shelfKeyOf(edition.title, work.author)))
+    .sort(byVolumeThenDate)
 }
 
-/** The Audible releases of the reader's sagas, as suggestions, and the ones
- *  still ahead of their date as releases too. */
-export const audibleShelvesOf = (
-  found: readonly AudibleRelease[],
-  language: Language,
-): { suggestions: Suggestion[]; releases: Release[] } => {
-  const suggestions = found.map((book): Suggestion => {
-    const date = book.releaseDate
-      ? ReleaseDate(book.releaseDate.toISOString().slice(0, 10))
-      : undefined
-    return {
-      key: shelfKeyOf(book.title, book.authors[0]),
-      title: book.title,
-      authors: book.authors,
-      language: book.language,
-      format: 'audiobook',
-      genre: book.genre,
-      series: book.series ? { name: book.series.name, volume: book.series.volume } : undefined,
-      synopsis: book.synopsis,
-      coverUrl: book.coverUrl,
-      isbn13: book.isbn13,
-      audibleAsin: book.asin,
-      releaseDate: date,
-      reason: audibleReasonOf(book, language),
-    }
+/** The soonest edition still to come, by the last day its date can mean. */
+const nextDateOf = (
+  editions: readonly TranslatedEdition[],
+  today: string,
+): ReleaseDateValue | undefined =>
+  editions
+    .filter((edition) => isUpcoming(edition, today))
+    .flatMap((edition) => (edition.date ? [edition.date] : []))
+    .sort((left, right) => lastDayOf(left).localeCompare(lastDayOf(right)))[0]
+
+/** A translation before its cover is signed: the reader's own photo of their
+ *  copy is only drawn when no translated edition has a cover. */
+export type UnsignedTranslation = Translation & { coverPath?: ObjectPath }
+
+/** The tab: every work the reader read in another language that exists or is
+ *  announced in theirs, except the ones they said they are not interested in.
+ *  A work with an edition still to come is upcoming, the soonest first; the
+ *  rest are available, the most recently read first. */
+export const translationsOf = (
+  works: readonly ForeignWork[],
+  watches: ReadonlyMap<string, TranslationWatch>,
+  feed: Pick<DiscoverFeed, 'language' | 'audible' | 'dismissed'>,
+  owned: ReadonlySet<string>,
+  today: string,
+): { upcoming: UnsignedTranslation[]; available: UnsignedTranslation[] } => {
+  const dismissed = new Set(feed.dismissed)
+  const audibleByWork = feed.audible
+    ? new Map(feed.audible.works.map((entry) => [entry.workKey, entry.editions]))
+    : undefined
+  const translations = works.flatMap((work): UnsignedTranslation[] => {
+    if (dismissed.has(work.key)) return []
+    const watch = watches.get(watchKeyOf(work, feed.language))
+    const audible = audibleByWork ? (audibleByWork.get(work.key) ?? []) : undefined
+    const editions = editionsOf(work, watch, audible, owned)
+    if (editions.length === 0) return []
+    const translatedTitle =
+      watch?.translatedTitle ?? (work.kind === 'book' ? editions[0].title : undefined)
+    const coverUrl =
+      editions.find((edition) => edition.coverUrl)?.coverUrl ?? work.cover.publishedCoverUrl
+    return [
+      {
+        key: work.key,
+        kind: work.kind,
+        title: translatedTitle ?? work.title,
+        originalTitle: work.title,
+        author: work.author,
+        originalLanguage: work.language,
+        volumesRead: [...work.volumesRead].sort((left, right) => left - right),
+        coverUrl,
+        coverPath: coverUrl ? undefined : work.cover.coverPath,
+        editions,
+        nextDate: nextDateOf(editions, today),
+        audibleMarketplace: feed.audible?.marketplace,
+      },
+    ]
   })
   return {
-    suggestions,
-    releases: suggestions.flatMap((suggestion): Release[] =>
-      suggestion.releaseDate
+    upcoming: translations
+      .filter((translation) => translation.nextDate !== undefined)
+      .sort((left, right) =>
+        lastDayOf(left.nextDate as ReleaseDateValue).localeCompare(
+          lastDayOf(right.nextDate as ReleaseDateValue),
+        ),
+      ),
+    available: translations.filter((translation) => translation.nextDate === undefined),
+  }
+}
+
+// MARK: - Alerts
+
+const editionKeyOf = (workKey: string, edition: TranslatedEdition): string =>
+  `${workKey}--${edition.format}--${edition.volume ?? slugify(edition.title)}`
+
+/** The editions an alert could still go out for: an exact day, no more than
+ *  the grace period ago. Kept on the feed so the daily pass reads nothing
+ *  else. */
+export const datedEditionsOf = (
+  translations: readonly Translation[],
+  today: string,
+): DatedEdition[] => {
+  const since = dayMinus(today, ALERT_GRACE_DAYS)
+  return translations.flatMap((translation) =>
+    translation.editions.flatMap((edition): DatedEdition[] =>
+      edition.date && edition.date.length === 10 && edition.date >= since
         ? [
             {
-              ...suggestion,
-              key: `audible-release--${suggestion.key}--audiobook--${suggestion.language ?? ''}`,
-              kind: 'audible-release',
-              date: suggestion.releaseDate,
+              key: editionKeyOf(translation.key, edition),
+              workKey: translation.key,
+              title: edition.title,
+              volume: edition.volume,
+              format: edition.format,
+              date: edition.date,
             },
           ]
         : [],
     ),
-  }
-}
-
-const audibleReasonOf = (book: AudibleRelease, language: Language): string => {
-  const volume = book.series?.volume
-  const saga = book.series?.name ?? ''
-  if (language === 'fr')
-    return volume !== undefined
-      ? `Tome ${volume} de ${saga}, la suite de ce que vous écoutez`
-      : `La suite de ${saga} sur Audible`
-  return volume !== undefined
-    ? `Book ${volume} of ${saga}, next after what you listened to`
-    : `More of ${saga} on Audible`
-}
-
-/** The releases whose alert is due today: out on a known day, today or in the
- *  last two weeks, and not pushed yet. */
-export const dueReleases = (
-  releases: readonly Release[],
-  notified: readonly string[],
-  today: string,
-): Release[] => {
-  const since = dayMinus(today, ALERT_GRACE_DAYS)
-  const already = new Set(notified)
-  return releases.filter(
-    (release) =>
-      release.date.length === 10 &&
-      release.date <= today &&
-      release.date >= since &&
-      !already.has(release.key),
   )
 }
 
-/** The alert for one release, in the reader's language. */
-export const alertOf = (release: Release, language: Language): { title: string; body: string } => {
-  const author = release.authors[0] ?? ''
-  const saga = release.series?.name
-  const volume = release.series?.volume
-  const fr = language === 'fr'
-  switch (release.kind) {
-    case 'series-volume':
-      return {
-        title: fr ? 'Nouveau tome' : 'New volume',
-        body: saga
-          ? fr
-            ? `${release.title}${volume !== undefined ? `, tome ${volume} de ${saga}` : ''}, sort aujourd'hui.`
-            : `${release.title}${volume !== undefined ? `, book ${volume} of ${saga}` : ''}, is out today.`
-          : fr
-            ? `${release.title} sort aujourd'hui.`
-            : `${release.title} is out today.`,
-      }
-    case 'translation':
-      return {
-        title: fr ? 'Enfin traduit' : 'Now translated',
-        body: fr
-          ? `${release.title} de ${author} paraît en français.`
-          : `${release.title} by ${author} is out in your language.`,
-      }
-    case 'audible-release':
-      return {
-        title: fr ? 'Nouveau sur Audible' : 'New on Audible',
-        body: fr
-          ? `${release.title}${saga ? ` (${saga})` : ''} est disponible en livre audio.`
-          : `${release.title}${saga ? ` (${saga})` : ''} is out as an audiobook.`,
-      }
-    case 'author-release':
-      return {
-        title: fr ? `Nouveau ${author}` : `New from ${author}`,
-        body: fr ? `${release.title} sort aujourd'hui.` : `${release.title} is out today.`,
-      }
-  }
+/** The editions whose alert is due today: out on a known day, today or in the
+ *  last two weeks, not pushed yet, of a work the reader still wants. */
+export const dueEditions = (
+  feed: Pick<DiscoverFeed, 'dated' | 'notified' | 'dismissed'>,
+  today: string,
+): DatedEdition[] => {
+  const since = dayMinus(today, ALERT_GRACE_DAYS)
+  const skipped = new Set([...feed.notified, ...feed.dismissed])
+  return feed.dated.filter(
+    (edition) =>
+      edition.date <= today &&
+      edition.date >= since &&
+      !skipped.has(edition.key) &&
+      !skipped.has(edition.workKey),
+  )
 }
 
-// MARK: - What the reader sees
-
-/** Leave out what the reader owns or dismissed, and anything proposed twice. */
-export const unseen = <T extends { key: string }>(
-  items: readonly T[],
-  ownedKeys: ReadonlySet<string>,
-  dismissed: readonly string[],
-): T[] => {
-  const skipped = new Set([...ownedKeys, ...dismissed])
-  const kept: T[] = []
-  for (const item of items) {
-    if (skipped.has(item.key)) continue
-    skipped.add(item.key)
-    kept.push(item)
-  }
-  return kept
-}
-
-/** How many of the friends' hearts the tab shows. */
-const FRIENDS_FAVORITES_SHOWN = 20
-
-/** A friend's heart before its cover is signed. */
-export type UnsignedFriendFavorite = Omit<FriendFavorite, 'coverUrl'> & {
-  cover: Pick<SharedShelf['favorites'][number], 'coverPath' | 'publishedCoverUrl'>
-}
-
-/** The books the reader's friends hearted and the reader does not own, the
- *  most hearted first, each with every friend who hearted it. */
-export const friendsFavoritesOf = (
-  shelves: ReadonlyMap<UserId, SharedShelf>,
-  names: ReadonlyMap<UserId, string>,
-  ownedKeys: ReadonlySet<string>,
-  dismissed: readonly string[],
-): UnsignedFriendFavorite[] => {
-  const skipped = new Set([...ownedKeys, ...dismissed])
-  const byKey = new Map<string, UnsignedFriendFavorite>()
-  for (const [friendId, shelf] of shelves) {
-    const name = names.get(friendId)
-    for (const favorite of shelf.favorites) {
-      const key = shelfKeyOf(favorite.title, favorite.authors[0])
-      if (skipped.has(key)) continue
-      const known = byKey.get(key)
-      if (known) {
-        if (name) known.friendNames.push(name)
-        continue
-      }
-      byKey.set(key, {
-        key,
-        friendId,
-        bookId: favorite.id,
-        friendNames: name ? [name] : [],
-        title: favorite.title,
-        authors: favorite.authors,
-        format: favorite.format,
-        series: favorite.series
-          ? { name: favorite.series.name, volume: favorite.series.volume }
-          : undefined,
-        cover: { coverPath: favorite.coverPath, publishedCoverUrl: favorite.publishedCoverUrl },
-      })
+/** The alert for one edition, in the reader's language. Worded for the day it
+ *  goes out, which may be a little after the edition did. */
+export const alertOf = (
+  edition: DatedEdition,
+  language: Language,
+): { title: string; body: string } => {
+  const audio = edition.format === 'audiobook'
+  if (language === 'fr')
+    return {
+      title: 'Enfin traduit',
+      body: `« ${edition.title} »${edition.volume !== undefined ? `, tome ${edition.volume},` : ''} est disponible en français${audio ? ' en livre audio' : ''}.`,
     }
+  return {
+    title: 'Now translated',
+    body: `"${edition.title}"${edition.volume !== undefined ? `, book ${edition.volume},` : ''} is out in English${audio ? ' as an audiobook' : ''}.`,
   }
-  return [...byKey.values()]
-    .sort((left, right) => right.friendNames.length - left.friendNames.length)
-    .slice(0, FRIENDS_FAVORITES_SHOWN)
 }
 
-/** Whether the reader may ask for a fresh set now. */
+// MARK: - The feed
+
+/** Whether the reader may ask for a fresh look now, and whether the scheduled
+ *  pass is due for them: the same day-old rule for both. */
 export const canRefresh = (feed: DiscoverFeed | undefined, now: Date): boolean =>
-  !feed?.refreshedAt || now.getTime() - feed.refreshedAt.getTime() > ON_DEMAND_EVERY_MS
+  !feed?.refreshedAt || now.getTime() - feed.refreshedAt.getTime() > REFRESH_EVERY_MS
 
 export const emptyFeed = (userId: UserId, language: Language): DiscoverFeed => ({
   userId,
   language,
-  audible: [],
-  releases: [],
-  becauseYouLoved: [],
-  offTrail: [],
-  genres: [],
+  dated: [],
   dismissed: [],
   notified: [],
 })
-
-export const genreListKeyOf = (genre: Genre, language: Language): string => `${genre}--${language}`

@@ -2,21 +2,13 @@ import { builder } from '~/domain/shared/graphql/builder'
 
 export const AlertKindEnum = builder.enumType('AlertKind', {
   description:
-    'An alert the reader can switch on. Every one is about a book coming out: ' +
-    'Shiori never pushes to bring a reader back.',
+    'An alert the reader can switch off; every one starts on. Every one is ' +
+    'about a book coming out: Shiori never pushes to bring a reader back.',
   values: {
-    SERIES_VOLUME: { value: 'series-volume', description: 'A new volume of a followed saga.' },
     TRANSLATION: {
       value: 'translation',
-      description: 'The French translation of a book the reader read in English.',
-    },
-    AUDIBLE_RELEASE: {
-      value: 'audible-release',
-      description: 'A new Audible recording in a followed saga.',
-    },
-    AUTHOR_RELEASE: {
-      value: 'author-release',
-      description: 'A new book by an author the reader hearted or rated five stars.',
+      description:
+        'A translation, into the app’s language, of a book the reader read in another one.',
     },
   } as const,
 })

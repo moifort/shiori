@@ -17,22 +17,17 @@ beforeEach(() => {
 })
 
 describe('the notification settings', () => {
-  test('start with every alert off and no device', async () => {
+  test('start with every alert on and no device', async () => {
     const result = await run('{ notificationSettings { alerts { kind enabled } deviceCount } }')
 
     expect(result.errors).toBeUndefined()
     expect(result.data?.notificationSettings).toEqual({
-      alerts: [
-        { kind: 'SERIES_VOLUME', enabled: false },
-        { kind: 'TRANSLATION', enabled: false },
-        { kind: 'AUDIBLE_RELEASE', enabled: false },
-        { kind: 'AUTHOR_RELEASE', enabled: false },
-      ],
+      alerts: [{ kind: 'TRANSLATION', enabled: true }],
       deviceCount: 0,
     })
   })
 
-  test('remember a device once and the alerts switched on', async () => {
+  test('remember a device once and the alerts switched off', async () => {
     await run(
       `mutation { registerDevice(token: "${token}", environment: PRODUCTION) { deviceCount } }`,
     )
@@ -40,12 +35,12 @@ describe('the notification settings', () => {
       `mutation { registerDevice(token: "${token}", environment: PRODUCTION) { deviceCount } }`,
     )
     const result = await run(
-      'mutation { setAlert(kind: TRANSLATION, enabled: true) { deviceCount alerts { kind enabled } } }',
+      'mutation { setAlert(kind: TRANSLATION, enabled: false) { deviceCount alerts { kind enabled } } }',
     )
 
     expect(result.data?.setAlert).toMatchObject({
       deviceCount: 1,
-      alerts: expect.arrayContaining([{ kind: 'TRANSLATION', enabled: true }]),
+      alerts: [{ kind: 'TRANSLATION', enabled: false }],
     })
   })
 

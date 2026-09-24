@@ -10,6 +10,11 @@ the release tag is pushed.
 
 ## Unreleased
 
+- The Discover tab now shows the books you read in another language that are out, or coming
+  out, in yours — as a book, and as an audiobook if you connected Audible — and lets you hide
+  the ones you are not interested in. Every other shelf is gone for now.
+- A notification tells you the day one of those translations comes out. It is on unless you
+  switch it off; the other release alerts are gone.
 - A scanned collector or limited edition shows its cover flat, instead of a photo of the book
   seen from an angle.
 - The Home, Library and Series tabs no longer show a "Retry" button when nothing failed.

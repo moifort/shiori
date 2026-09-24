@@ -110,19 +110,12 @@ type AiTokenUsage {
 }
 
 """
-An alert the reader can switch on. Every one is about a book coming out: Shiori never pushes to bring a reader back.
+An alert the reader can switch off; every one starts on. Every one is about a book coming out: Shiori never pushes to bring a reader back.
 """
 enum AlertKind {
-  """A new Audible recording in a followed saga."""
-  AUDIBLE_RELEASE
-
-  """A new book by an author the reader hearted or rated five stars."""
-  AUTHOR_RELEASE
-
-  """A new volume of a followed saga."""
-  SERIES_VOLUME
-
-  """The French translation of a book the reader read in English."""
+  """
+  A translation, into the app’s language, of a book the reader read in another one.
+  """
   TRANSLATION
 }
 
@@ -596,41 +589,20 @@ The token APNs hands a device for this app, in hexadecimal, as the app receives 
 scalar DeviceToken
 
 """
-The Découvrir tab: shelves of books to read next, each suggestion with its reason. The friends’ hearts are read live; the rest is what the weekly refresh found.
+The Découvrir tab: the books the reader read in another language, now out or coming out in the app’s language.
 """
 type Discover {
-  """The books readers worldwide rate highest in the reader’s genres."""
-  acclaimed: [Suggestion!]!
+  """Works already out in the app’s language, the most recently read first."""
+  available: [Translation!]!
 
-  """The next recordings of the sagas the reader listens to on Audible."""
-  audible: [Suggestion!]!
-
-  """Prize winners in the reader’s leading genres."""
-  awards: [Suggestion!]!
-  becauseYouLoved: [LovedShelf!]!
-
-  """
-  Whether `refreshDiscover` would prepare a fresh set: once a day at most.
-  """
+  """Whether `refreshDiscover` would look again now: once a day at most."""
   canRefresh: Boolean!
 
-  """Hearted by friends, not on the reader’s shelf; the most hearted first."""
-  friendsFavorites: [FriendFavorite!]!
-
-  """
-  Genres the reader never tried, reached through one they love; the first is the hero of the week.
-  """
-  offTrail: [Suggestion!]!
-
-  """
-  When the shelves were last prepared. Null before the first time: the app then offers to prepare them with `refreshDiscover`.
-  """
+  """When the daily refresh last ran. Null before the first."""
   preparedAt: DateTime
 
-  """
-  What comes out in the reader’s sagas, by their loved authors, and in their language for books they read in another; the soonest first.
-  """
-  releases: [Release!]!
+  """Works with at least one edition still to come, the soonest first."""
+  upcoming: [Translation!]!
 }
 
 """
@@ -798,24 +770,6 @@ type FriendBook {
   subgenres: [Subgenre!]!
   synopsis: Synopsis
   title: BookTitle!
-}
-
-"""
-A book a friend hearted that the reader does not own. Opens as the friend’s copy, through `friendBook(userId, bookId)`.
-"""
-type FriendFavorite {
-  authors: [AuthorName!]!
-  bookId: BookId!
-  coverUrl: CoverUrl
-  format: BookFormat!
-  friendId: UserId!
-
-  """Every friend who hearted it, first names."""
-  friendNames: [String!]!
-  key: String!
-  seriesName: SeriesName
-  title: BookTitle!
-  volume: VolumeNumber
 }
 
 """
@@ -1116,14 +1070,6 @@ An audiobook running time in whole minutes, 1 to 60000. Absent when unknown. Exa
 scalar ListeningMinutes
 
 """
-"Parce que vous avez aimé X": books in the vein of one the reader loved.
-"""
-type LovedShelf {
-  anchor: BookTitle!
-  items: [Suggestion!]!
-}
-
-"""
 The signed-in user: their identity and onboarding state.
 
 Always resolvable from the auth token, so `userId` is always present. Every other field is null until the onboarding wizard completes, which lets the app route a fresh account into onboarding.
@@ -1208,11 +1154,6 @@ type Mutation {
   ): Book!
 
   """
-  Put a suggestion on the reader’s shelf, on the pile or among the books read. The client names it by its key; the book is made from what the tab stored. Fails with `NOT_FOUND` for a key the tab does not hold and `ALREADY_IN_LIBRARY` for a story the reader owns.
-  """
-  addSuggestion(key: String!, status: CopiedStatus!): Book!
-
-  """
   Register the device with the authorization code the web view caught, and link the account.
   
   The credentials are sealed before they reach storage and never leave the server. Fails with `AUDIBLE_NO_PENDING_LOGIN` when no sign-in was started, `AUDIBLE_LOGIN_EXPIRED` past the thirty-minute window — start over in both cases — and `AUDIBLE_UNAVAILABLE` when Amazon refuses the registration.
@@ -1276,9 +1217,9 @@ type Mutation {
   disconnectAudible: Boolean!
 
   """
-  "Pas pour moi": never propose this book again, and let the next refresh know. Answers false before the tab was ever opened.
+  "Pas intéressé": never propose this work again, nor alert about it. Answers false before the tab was ever opened.
   """
-  dismissSuggestion(key: String!): Boolean!
+  dismissTranslation(key: String!): Boolean!
 
   """
   Catalogue the Audible titles the reader ticked, and return the books created.
@@ -1339,7 +1280,7 @@ type Mutation {
   ): [KindleBook!]!
 
   """
-  Prepare the Découvrir shelves now rather than waiting for the weekly refresh. Granted once a day; past that it answers the tab as it stands. Slow — several grounded model calls — so the app waits with a loader.
+  Look for translations now rather than waiting for the daily refresh. Granted once a day; past that it answers the tab as it stands. Slow — grounded model calls and an Audible search per author — so the app waits with a loader.
   """
   refreshDiscover: Discover!
 
@@ -1663,7 +1604,7 @@ type Query {
   dashboard(timeZone: TimeZone!): Dashboard!
 
   """
-  The Découvrir tab. Opening it the first time enrols the reader in the weekly refresh; until that has run, only the friends’ hearts are there.
+  The Découvrir tab. Opening it the first time enrols the reader in the daily refresh; until that has run, only what earlier readers of the same books already found is there.
   """
   discover: Discover!
 
@@ -1993,21 +1934,6 @@ input RecommendationInput {
   recommenderName: PersonName
 }
 
-"""A book coming out that the reader has a reason to care about."""
-type Release {
-  """`YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Only a day ever fires an alert."""
-  date: String!
-
-  """What `dismissSuggestion` names to hide it."""
-  key: String!
-
-  """Which alert it would fire: a saga volume, a translation, a recording…"""
-  kind: AlertKind!
-
-  """The book itself; its key is what `addSuggestion` names."""
-  suggestion: Suggestion!
-}
-
 """
 How far the reader is into a saga, on the numbered spine of published volumes: related works and announced volumes are not counted.
 """
@@ -2256,44 +2182,6 @@ One free label refining the genre, 1 to 100 characters, never translated: sent i
 """
 scalar Subgenre
 
-"""
-A book the Découvrir tab proposes, with the one line that says why. Never a book the reader owns or dismissed.
-"""
-type Suggestion {
-  authors: [AuthorName!]!
-
-  """The prize it won, e.g. "Hugo 2024"."""
-  award: String
-  coverUrl: CoverUrl
-  firstPublishedIn: Year
-  format: BookFormat!
-  genre: Genre
-
-  """
-  The title and first author folded: what `dismissSuggestion` and `addSuggestion` name.
-  """
-  key: String!
-  language: BookLanguage
-
-  """What readers worldwide rate it, out of five, one decimal."""
-  publicRating: Float
-
-  """How many readers rated it."""
-  ratingCount: Int
-
-  """Why this book, for this reader, in one line of their language."""
-  reason: String!
-
-  """
-  When it comes out, as precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`.
-  """
-  releaseDate: String
-  seriesName: SeriesName
-  synopsis: Synopsis
-  title: BookTitle!
-  volume: VolumeNumber
-}
-
 """The book summary, 1 to 4000 characters, in the caller language."""
 scalar Synopsis
 
@@ -2301,6 +2189,67 @@ scalar Synopsis
 An IANA time zone identifier known to the server, such as "Europe/Paris". Reading statistics count days, months and years in it.
 """
 scalar TimeZone
+
+"""
+One edition of a work in the app’s language, out or announced. A recording is only ever listed for a reader connected to Audible.
+"""
+type TranslatedEdition {
+  """The recording’s page on the reader’s own Audible store."""
+  audibleUrl: String
+
+  """
+  When it came out or comes out, as precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Null for an edition out on a date nobody found.
+  """
+  date: String
+  format: TranslationFormat!
+  title: BookTitle!
+  volume: VolumeNumber
+}
+
+"""
+A saga or a book the reader read in another language, with what exists or is announced of it in the app’s language.
+"""
+type Translation {
+  author: AuthorName
+  coverUrl: CoverUrl
+
+  """Every edition, by volume then by date."""
+  editions: [TranslatedEdition!]!
+
+  """What `dismissTranslation` names."""
+  key: String!
+  kind: TranslationKind!
+
+  """The soonest edition still to come, as precisely as announced."""
+  nextDate: String
+
+  """The language the reader read it in."""
+  originalLanguage: BookLanguage!
+
+  """The saga’s name or the book’s title as the reader catalogued it."""
+  originalTitle: BookTitle!
+
+  """Its title in the app’s language, else the one the reader knows."""
+  title: BookTitle!
+
+  """The volumes of a saga the reader read or is reading."""
+  volumesRead: [VolumeNumber!]!
+}
+
+"""How a translation reaches the reader."""
+enum TranslationFormat {
+  """Recorded."""
+  AUDIOBOOK
+
+  """Printed or electronic."""
+  BOOK
+}
+
+"""Whether the reader read a whole saga or one book on its own."""
+enum TranslationKind {
+  BOOK
+  SERIES
+}
 
 """A figure for this year to date, beside the same span of last year."""
 type Trend {

@@ -4,6 +4,7 @@ import { AudibleAsin } from '~/domain/audible/primitives'
 import type {
   AudibleAsin as AudibleAsinValue,
   AudibleConnection,
+  AudibleMarketplace,
   ImportableBook,
 } from '~/domain/audible/types'
 import { shelfKeyOf, shelfKeysOf } from '~/domain/book/business-rules'
@@ -496,70 +497,30 @@ export const readersDueForSync = (connections: readonly AudibleConnection[]): Us
     )
     .map((connection) => connection.userId)
 
-/** A saga the reader listens to, as their Audible library shows it: what to
- *  search the catalogue for, and how far they already are. */
-export type ListenedSaga = {
-  name: string
-  author?: string
-  /** The Audible shelf the saga sits on, which the catalogue search needs. */
-  categoryId: string
-  /** The highest volume number they own, when Audible numbers the saga. */
-  lastPosition?: number
-  /** The latest release date among what they own. */
-  lastReleasedAt?: Date
-  /** When they last bought a volume: the sagas bought most recently first. */
-  lastBoughtAt: number
-}
+/** How many authors one pass searches: each is one call to Amazon. */
+export const AUTHORS_SEARCHED = 30
 
-/** How many sagas one pass searches: each is one call to Amazon. */
-export const SAGAS_SEARCHED = 6
-
-/** The sagas of an Audible library, most recently bought first. */
-export const listenedSagasOf = (items: readonly AudibleItem[]): ListenedSaga[] => {
-  const sagas = new Map<string, ListenedSaga>()
+/** The Audible shelf a catalogue search for this author should look on: the
+ *  one their books in the reader's library sit on, else the shelf the library
+ *  fills most — Amazon refuses a search with no shelf at all. */
+export const shelfForAuthor = (
+  items: readonly AudibleItem[],
+  author: string,
+): string | undefined => {
+  const rootOf = (item: AudibleItem) => item.categories?.[0]?.categories?.[0]?.id
+  const wanted = slugify(author)
+  const own = items.find((item) => item.authors.some((name) => slugify(name) === wanted))
+  const ownShelf = own && rootOf(own)
+  if (ownShelf) return ownShelf
+  const counts = new Map<string, number>()
   for (const item of items) {
-    const name = item.series?.name
-    const categoryId = item.categories?.[0]?.categories?.[0]?.id
-    if (!name || !categoryId) continue
-    const key = slugify(name)
-    const known = sagas.get(key)
-    const position = item.series?.position
-    const boughtAt = (item.purchaseDate ?? item.dateAdded)?.getTime() ?? 0
-    sagas.set(key, {
-      name,
-      author: known?.author ?? item.authors[0],
-      categoryId: known?.categoryId ?? categoryId,
-      lastPosition:
-        position === undefined
-          ? known?.lastPosition
-          : Math.max(position, known?.lastPosition ?? Number.NEGATIVE_INFINITY),
-      lastReleasedAt: laterOf(known?.lastReleasedAt, item.releaseDate),
-      lastBoughtAt: Math.max(boughtAt, known?.lastBoughtAt ?? 0),
-    })
+    const shelf = rootOf(item)
+    if (shelf) counts.set(shelf, (counts.get(shelf) ?? 0) + 1)
   }
-  return [...sagas.values()].sort((left, right) => right.lastBoughtAt - left.lastBoughtAt)
+  return [...counts.entries()].sort((left, right) => right[1] - left[1])[0]?.[0]
 }
 
-const laterOf = (left: Date | undefined, right: Date | undefined): Date | undefined =>
-  !left ? right : !right ? left : left > right ? left : right
-
-/** The volumes of a saga the catalogue has that come after what the reader
- *  owns: numbered past their last volume, or, for a saga Audible does not
- *  number, released after the newest one they have. Preorders included — a
- *  release date in the future is exactly what the reader wants to know. */
-export const nextInSaga = (
-  saga: ListenedSaga,
-  found: readonly AudibleItem[],
-  ownedAsins: ReadonlySet<string>,
-): AudibleItem[] =>
-  found.filter((item) => {
-    if (ownedAsins.has(item.asin)) return false
-    if (!item.series || slugify(item.series.name) !== slugify(saga.name)) return false
-    if (saga.lastPosition !== undefined && item.series.position !== undefined)
-      return item.series.position > saga.lastPosition
-    return (
-      item.releaseDate !== undefined &&
-      saga.lastReleasedAt !== undefined &&
-      item.releaseDate > saga.lastReleasedAt
-    )
-  })
+/** A title's page on the reader's own Audible store: every marketplace serves
+ *  its catalogue at `audible.{marketplace}`, the one the account was opened on. */
+export const audibleProductUrlOf = (marketplace: AudibleMarketplace, asin: AudibleAsinValue) =>
+  `https://www.audible.${marketplace}/pd/${asin}`

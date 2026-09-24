@@ -4,6 +4,12 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- L’onglet Découvrir montre désormais les livres que vous avez lus dans une autre langue et
+  qui sont sortis, ou vont sortir, dans la vôtre — en livre, et en livre audio si vous avez
+  connecté Audible — et vous permet de masquer ceux qui ne vous intéressent pas. Les autres
+  étagères disparaissent pour l’instant.
+- Une notification vous prévient le jour où l’une de ces traductions sort. Elle est active
+  sauf si vous la coupez ; les autres alertes de sortie disparaissent.
 - Une édition collector ou limitée scannée affiche sa couverture à plat, et non plus une photo
   du livre vu de biais.
 - Les onglets Accueil, Bibliothèque et Séries n’affichent plus de bouton « Réessayer » alors que rien n’a échoué.

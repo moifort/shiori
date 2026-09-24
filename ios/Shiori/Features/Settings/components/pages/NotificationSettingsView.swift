@@ -1,8 +1,9 @@
 import SwiftUI
 import UserNotifications
 
-/// One switch per alert, every one of them about a book coming out. The system
-/// permission is asked the first time one is switched on; if the reader
+/// One switch per alert, every one of them about a book coming out and on by
+/// default. The system permission is asked the first time the Découvrir tab has
+/// a release to announce, or one is switched on here; if the reader
 /// refused it once, the screen says so and leads to the system settings, the
 /// only place it can be given back.
 struct NotificationSettingsView: View {
@@ -37,7 +38,7 @@ struct NotificationSettingsView: View {
             } header: {
                 Text("Me prévenir")
             } footer: {
-                Text("Shiori vous prévient le jour de la sortie, jamais pour vous faire revenir. Les dates viennent de l'onglet Découvrir, mis à jour chaque semaine.")
+                Text("Shiori vous prévient le jour de la sortie, jamais pour vous faire revenir. Les dates viennent de l'onglet Découvrir, mis à jour chaque jour.")
             }
         }
         .navigationTitle("Notifications")

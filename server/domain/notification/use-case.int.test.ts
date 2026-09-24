@@ -24,9 +24,9 @@ const { DeviceToken } = await import('~/domain/notification/primitives')
 const reader = 'reader' as UserId
 const phone = DeviceToken('a'.repeat(64))
 const alert = {
-  kind: 'series-volume' as const,
-  title: 'Stormlight, tome 6',
-  body: 'Sort le 14 octobre.',
+  kind: 'translation' as const,
+  title: 'Enfin traduit',
+  body: '« Projet Dernière Chance » est disponible en français.',
 }
 
 beforeEach(() => {
@@ -36,16 +36,16 @@ beforeEach(() => {
 })
 
 describe('pushing an alert', () => {
-  test('reaches every device of a reader who switched the alert on', async () => {
+  test('reaches every device of a reader, the alert being on by default', async () => {
     await NotificationCommand.registerDevice(reader, phone, 'production')
-    await NotificationCommand.setAlert(reader, 'series-volume', true)
 
     expect(await NotificationUseCase.notify(reader, alert)).toBe(true)
-    expect(sent).toEqual([{ token: phone, title: 'Stormlight, tome 6' }])
+    expect(sent).toEqual([{ token: phone, title: 'Enfin traduit' }])
   })
 
-  test('stays silent for an alert the reader left off', async () => {
+  test('stays silent for an alert the reader switched off', async () => {
     await NotificationCommand.registerDevice(reader, phone, 'production')
+    await NotificationCommand.setAlert(reader, 'translation', false)
 
     expect(await NotificationUseCase.notify(reader, alert)).toBe(false)
     expect(sent).toEqual([])
@@ -53,7 +53,6 @@ describe('pushing an alert', () => {
 
   test('forgets a device APNs says is gone', async () => {
     await NotificationCommand.registerDevice(reader, phone, 'production')
-    await NotificationCommand.setAlert(reader, 'series-volume', true)
     answer = 'unregistered'
 
     await NotificationUseCase.notify(reader, alert)

@@ -1,21 +1,26 @@
 import { describe, expect, test } from 'bun:test'
-import type { SharedShelf } from '~/domain/analytics/types'
-import type { AudibleRelease } from '~/domain/audible/types'
-import type { Book, BookId } from '~/domain/book/types'
+import type { AudibleAsin, AudibleRelease } from '~/domain/audible/types'
+import type { Book, BookId, CoverUrl } from '~/domain/book/types'
 import {
   alertOf,
-  audibleShelvesOf,
-  dueReleases,
-  friendsFavoritesOf,
-  releaseSubjectsOf,
-  releasesOf,
-  tasteOf,
-  unseen,
+  audibleTranslationsOf,
+  datedEditionsOf,
+  dueEditions,
+  editionsOf,
+  foreignWorksOf,
+  isUpcoming,
+  ownedInLanguage,
+  translationsOf,
 } from '~/domain/discover/business-rules'
-import { suggestionFrom } from '~/domain/discover/parsing'
+import { editionFrom } from '~/domain/discover/parsing'
 import { ReleaseDate } from '~/domain/discover/primitives'
-import type { Release, ReleaseSubject, ReleaseWatch } from '~/domain/discover/types'
-import type { SeriesId, SeriesName } from '~/domain/series/types'
+import type {
+  DatedEdition,
+  ForeignWork,
+  TranslatedEdition,
+  TranslationWatch,
+} from '~/domain/discover/types'
+import type { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 
 const at = (day: string) => new Date(`${day}T12:00:00Z`)
@@ -28,259 +33,379 @@ const book = (fields: Partial<Book>): Book => ({
   format: 'book',
   subgenres: [],
   narrators: [],
-  status: 'to-read',
+  status: 'read',
   hidden: false,
   addedAt: at('2026-01-01'),
   ...fields,
 })
 const saga = (name: string, volume: number) => ({
-  id: `${name.toLowerCase()}--x` as SeriesId,
+  id: `${name.toLowerCase().replace(/ /g, '-')}--x` as SeriesId,
   name: name as SeriesName,
-  volume: volume as never,
+  volume: volume as VolumeNumber,
   kind: 'main' as const,
 })
+const title = (value: string) => value as BookTitle
+const volume = (value: number) => value as VolumeNumber
 
-describe("the reader's taste", () => {
+const carl: ForeignWork = {
+  key: 'series--dungeon-crawler-carl--x',
+  kind: 'series',
+  title: title('Dungeon Crawler Carl'),
+  author: 'Matt Dinniman' as AuthorName,
+  language: 'en',
+  volumesRead: [volume(1), volume(2)],
+  cover: {},
+  lastActivity: at('2026-09-01').getTime(),
+}
+const hailMary: ForeignWork = {
+  key: 'book--project-hail-mary--andy-weir',
+  kind: 'book',
+  title: title('Project Hail Mary'),
+  author: 'Andy Weir' as AuthorName,
+  language: 'en',
+  volumesRead: [],
+  cover: { publishedCoverUrl: 'https://covers/phm.jpg' as CoverUrl },
+  lastActivity: at('2026-08-01').getTime(),
+}
+
+const edition = (fields: Partial<TranslatedEdition>): TranslatedEdition => ({
+  title: title('Untitled'),
+  format: 'book',
+  ...fields,
+})
+
+const recording = (fields: Partial<AudibleRelease>): AudibleRelease =>
+  ({
+    asin: 'B000000001' as AudibleAsin,
+    title: title('Untitled'),
+    authors: ['Matt Dinniman' as AuthorName],
+    narrators: [],
+    subgenres: [],
+    status: 'to-read',
+    alreadyInLibrary: false,
+    language: 'fr',
+    ...fields,
+  }) as AudibleRelease
+
+const watchOf = (work: ForeignWork, fields: Partial<TranslationWatch>): TranslationWatch => ({
+  key: `${work.key}--fr`,
+  kind: work.kind,
+  title: work.title,
+  author: work.author,
+  language: 'fr',
+  checkedAt: at('2026-09-20'),
+  editions: [],
+  ...fields,
+})
+
+describe('what the reader read in another language', () => {
   const library = [
     book({
-      title: 'Cradle' as BookTitle,
-      authors: ['Will Wight' as AuthorName],
-      favorite: true,
-      status: 'read',
-      genre: 'fantasy',
-      finishedAt: at('2026-05-01'),
-    }),
-    book({
-      title: 'Mistborn' as BookTitle,
-      authors: ['Brandon Sanderson' as AuthorName],
-      rating: 5 as never,
-      status: 'read',
-      genre: 'fantasy',
-      finishedAt: at('2026-04-01'),
-    }),
-    book({
-      title: 'Dune' as BookTitle,
-      authors: ['Frank Herbert' as AuthorName],
-      rating: 3 as never,
-      status: 'read',
-      genre: 'science-fiction',
+      title: title('Dungeon Crawler Carl'),
+      authors: ['Matt Dinniman' as AuthorName],
       language: 'en',
+      series: saga('Dungeon Crawler Carl', 2),
+      finishedAt: at('2026-09-01'),
     }),
     book({
-      title: 'The Way of Kings' as BookTitle,
-      authors: ['Brandon Sanderson' as AuthorName],
+      title: title('Carl’s Doomsday Scenario'),
+      authors: ['Matt Dinniman' as AuthorName],
+      language: 'en',
       status: 'reading',
-      genre: 'fantasy',
-      language: 'en',
-      series: saga('Stormlight', 1),
+      series: saga('Dungeon Crawler Carl', 1),
+      finishedAt: at('2026-08-01'),
     }),
-    book({ title: 'Abandonné' as BookTitle, status: 'dropped', series: saga('Dropped', 1) }),
+    book({
+      title: title('Project Hail Mary'),
+      authors: ['Andy Weir' as AuthorName],
+      language: 'en',
+      finishedAt: at('2026-07-01'),
+    }),
+    book({ title: title('Dune'), language: 'fr' }),
+    book({ title: title('Piranesi'), language: 'en', status: 'to-read' }),
+    book({ title: title('Sans langue') }),
   ]
-  const taste = tasteOf(library, 'fr')
 
-  test('loves the hearted and the five-star books, most recent first', () => {
-    expect(taste.loved.map((b) => b.title)).toEqual(['Cradle', 'Mistborn'] as BookTitle[])
-    expect(taste.authors).toEqual(['Will Wight', 'Brandon Sanderson'] as AuthorName[])
+  test('is one work per saga and per book on its own, the most recent first', () => {
+    const works = foreignWorksOf(library, 'fr')
+
+    expect(works.map((work): unknown[] => [work.key, work.kind, work.title as string])).toEqual([
+      ['series--dungeon-crawler-carl--x', 'series', 'Dungeon Crawler Carl'],
+      ['book--project-hail-mary--andy-weir', 'book', 'Project Hail Mary'],
+    ])
+    expect(works[0].volumesRead).toEqual([volume(1), volume(2)])
   })
 
-  test('leans on the genres of what it reads, fantasy first', () => {
-    expect(taste.genres).toEqual(['fantasy', 'science-fiction'])
+  test('leaves out the pile, the app’s language and a book of no known language', () => {
+    expect(foreignWorksOf(library, 'en')).toEqual([
+      expect.objectContaining({ title: 'Dune', language: 'fr' }),
+    ])
   })
 
-  test('follows the sagas it has not dropped, and notes the books read in another language', () => {
-    expect(taste.sagas.map((s) => s.name)).toEqual(['Stormlight'] as SeriesName[])
-    expect(taste.foreignReads.map((b) => b.title)).toContain('Dune' as BookTitle)
-  })
+  test('owns a translation only through a book in the app’s language', () => {
+    const owned = ownedInLanguage(
+      [
+        book({
+          title: title('Red Rising'),
+          authors: ['Pierce Brown' as AuthorName],
+          language: 'en',
+        }),
+        book({ title: title('Dune'), authors: ['Frank Herbert' as AuthorName], language: 'fr' }),
+      ],
+      'fr',
+    )
 
-  test('watches each saga, each loved author, and one translation per saga', () => {
-    const subjects = releaseSubjectsOf(taste)
-    expect(subjects.filter((s) => s.kind === 'series')).toHaveLength(1)
-    expect(subjects.filter((s) => s.kind === 'author')).toHaveLength(2)
-    expect(subjects.flatMap((s) => (s.kind === 'translation' ? [s.title] : [])).sort()).toEqual([
-      'Dune',
-      'Stormlight',
-    ] as BookTitle[])
+    expect([...owned]).toEqual(['dune--frank-herbert'])
   })
 })
 
-describe('the releases one reader cares about', () => {
-  const series: ReleaseSubject = {
-    kind: 'series',
-    name: 'Stormlight' as SeriesName,
-    author: 'Brandon Sanderson' as AuthorName,
-  }
-  const watch = (releases: ReleaseWatch['releases']): ReleaseWatch => ({
-    key: 'k',
-    subject: series,
-    checkedAt: at('2026-09-01'),
-    releases,
-  })
-  const release = (title: string, date: string, format: 'book' | 'audiobook' = 'book') => ({
-    title: title as BookTitle,
-    authors: ['Brandon Sanderson' as AuthorName],
-    date: ReleaseDate(date),
-    format,
+describe('the recordings Audible lists for a work', () => {
+  test('are a saga’s volumes, under its own name or its translated one', () => {
+    const found = audibleTranslationsOf(carl, title('Carl, le donjon'), [
+      recording({
+        asin: 'B000000001' as AudibleAsin,
+        title: title('Carl, le donjon'),
+        series: {
+          id: 'x' as SeriesId,
+          name: 'Carl, le donjon' as SeriesName,
+          volume: volume(1),
+          kind: 'main',
+        },
+        releaseDate: at('2025-03-01'),
+      }),
+      recording({
+        asin: 'B000000002' as AudibleAsin,
+        title: title('Le Livre de recettes'),
+        series: {
+          id: 'x' as SeriesId,
+          name: 'Dungeon Crawler Carl' as SeriesName,
+          volume: volume(2),
+          kind: 'main',
+        },
+      }),
+      recording({ asin: 'B000000003' as AudibleAsin, title: title('Autre chose') }),
+      recording({
+        asin: 'B000000004' as AudibleAsin,
+        authors: ['Somebody Else' as AuthorName],
+        series: {
+          id: 'x' as SeriesId,
+          name: 'Dungeon Crawler Carl' as SeriesName,
+          volume: volume(3),
+          kind: 'main',
+        },
+      }),
+    ])
+
+    expect(found.map((found): unknown[] => [found.volume, found.audibleAsin, found.date])).toEqual([
+      [1, 'B000000001', '2025-03-01'],
+      [2, 'B000000002', undefined],
+    ])
   })
 
-  test('keeps what is ahead or recent, drops what is long out and what the reader owns', () => {
-    const found = releasesOf(
+  test('are a book on its own, under its translated title', () => {
+    const found = audibleTranslationsOf(hailMary, title('Projet Dernière Chance'), [
+      recording({ title: title('Projet dernière chance'), authors: ['Andy Weir' as AuthorName] }),
+      recording({ title: title('Seul sur Mars'), authors: ['Andy Weir' as AuthorName] }),
+    ])
+
+    expect(found.map((found) => found.title as string)).toEqual(['Projet dernière chance'])
+  })
+})
+
+describe('the editions a reader is offered', () => {
+  const watch = watchOf(carl, {
+    editions: [
+      edition({ title: title('Carl 1'), volume: volume(1), format: 'book' }),
+      edition({
+        title: title('Carl 1'),
+        volume: volume(1),
+        format: 'audiobook',
+        date: ReleaseDate('2025-01'),
+      }),
+      edition({
+        title: title('Carl 4'),
+        volume: volume(4),
+        format: 'audiobook',
+        date: ReleaseDate('2027-05'),
+      }),
+    ],
+  })
+
+  test('hold no recording for a reader not connected to Audible', () => {
+    expect(editionsOf(carl, watch, undefined, new Set()).map((e) => e.format)).toEqual(['book'])
+  })
+
+  test('take Audible’s recording over the web’s for the same volume', () => {
+    const audible = [
+      edition({
+        title: title('Carl 1'),
+        volume: volume(1),
+        format: 'audiobook',
+        audibleAsin: 'B1' as AudibleAsin,
+      }),
+    ]
+
+    const editions = editionsOf(carl, watch, audible, new Set())
+
+    expect(editions.map((e): unknown[] => [e.volume, e.format, e.audibleAsin])).toEqual([
+      [1, 'audiobook', 'B1'],
+      [1, 'book', undefined],
+      [4, 'audiobook', undefined],
+    ])
+  })
+
+  test('never hold one the reader already owns', () => {
+    const owned = new Set(['carl-1--matt-dinniman'])
+
+    expect(editionsOf(carl, watch, [], owned).map((e) => e.volume)).toEqual([volume(4)])
+  })
+})
+
+describe('whether an edition is still to come', () => {
+  const today = '2026-09-24'
+
+  test('by the day, or until its month or year is over', () => {
+    expect(isUpcoming(edition({ date: ReleaseDate('2026-09-25') }), today)).toBe(true)
+    expect(isUpcoming(edition({ date: ReleaseDate('2026-09-24') }), today)).toBe(false)
+    expect(isUpcoming(edition({ date: ReleaseDate('2026-09') }), today)).toBe(true)
+    expect(isUpcoming(edition({ date: ReleaseDate('2026-08') }), today)).toBe(false)
+    expect(isUpcoming(edition({ date: ReleaseDate('2026') }), today)).toBe(true)
+    expect(isUpcoming(edition({}), today)).toBe(false)
+  })
+})
+
+describe('the tab', () => {
+  const watches = new Map([
+    [
+      `${carl.key}--fr`,
+      watchOf(carl, {
+        translatedTitle: title('Carl, le donjon'),
+        editions: [
+          edition({ title: title('Carl 1'), volume: volume(1) }),
+          edition({ title: title('Carl 4'), volume: volume(4), date: ReleaseDate('2027-02-19') }),
+        ],
+      }),
+    ],
+    [
+      `${hailMary.key}--fr`,
+      watchOf(hailMary, {
+        editions: [
+          edition({ title: title('Projet Dernière Chance'), date: ReleaseDate('2021-10-06') }),
+        ],
+      }),
+    ],
+  ])
+  const feed = { language: 'fr' as const, dismissed: [] as string[] }
+
+  test('puts a work with an edition to come in upcoming, the rest in available', () => {
+    const { upcoming, available } = translationsOf(
+      [carl, hailMary],
+      watches,
+      feed,
+      new Set(),
+      '2026-09-24',
+    )
+
+    expect(upcoming.map((t): unknown[] => [t.title as string, t.nextDate])).toEqual([
+      ['Carl, le donjon', '2027-02-19'],
+    ])
+    expect(
+      available.map((t): unknown[] => [t.title as string, t.originalTitle as string, t.coverUrl]),
+    ).toEqual([['Projet Dernière Chance', 'Project Hail Mary', 'https://covers/phm.jpg']])
+  })
+
+  test('leaves out a work the reader is not interested in, and one with nothing translated', () => {
+    const { upcoming, available } = translationsOf(
+      [carl, hailMary, { ...hailMary, key: 'book--untranslated--x' }],
+      watches,
+      { ...feed, dismissed: [carl.key] },
+      new Set(),
+      '2026-09-24',
+    )
+
+    expect([...upcoming, ...available].map((t) => t.key)).toEqual([hailMary.key])
+  })
+})
+
+describe('the alerts', () => {
+  const dated: DatedEdition = {
+    key: `${carl.key}--audiobook--4`,
+    workKey: carl.key,
+    title: title('Carl 4'),
+    volume: volume(4),
+    format: 'audiobook',
+    date: ReleaseDate('2027-02-19'),
+  }
+
+  test('keep the editions dated to the day, recent or to come', () => {
+    const kept = datedEditionsOf(
       [
         {
-          subject: series,
-          watch: watch([
-            release('Tome 6', '2026-10-14'),
-            release('Old', '2025-01-01'),
-            release('Owned', '2026-11-01'),
-          ]),
+          key: carl.key,
+          kind: 'series',
+          title: title('Carl'),
+          originalTitle: title('Carl'),
+          originalLanguage: 'en',
+          volumesRead: [],
+          editions: [
+            edition({
+              title: title('Carl 4'),
+              volume: volume(4),
+              format: 'audiobook',
+              date: ReleaseDate('2027-02-19'),
+            }),
+            edition({ title: title('Carl 5'), volume: volume(5), date: ReleaseDate('2027-06') }),
+            edition({ title: title('Carl 1'), volume: volume(1), date: ReleaseDate('2025-01-01') }),
+          ],
         },
       ],
-      new Set(['owned--brandon-sanderson']),
-      '2026-09-22',
-      () => 'reason',
+      '2026-09-24',
     )
-    expect(found.map((r) => r.title)).toEqual(['Tome 6'] as BookTitle[])
+
+    expect(kept).toEqual([dated])
   })
 
-  test('files a recording of a saga as an Audible release', () => {
-    const [found] = releasesOf(
-      [{ subject: series, watch: watch([release('Tome 6', '2026-10-14', 'audiobook')]) }],
-      new Set(),
-      '2026-09-22',
-      () => '',
-    )
-    expect(found?.kind).toBe('audible-release')
+  test('go out on the day, and up to two weeks late, once', () => {
+    const feed = { dated: [dated], notified: [], dismissed: [] }
+
+    expect(dueEditions(feed, '2027-02-18')).toEqual([])
+    expect(dueEditions(feed, '2027-02-19')).toEqual([dated])
+    expect(dueEditions(feed, '2027-03-04')).toEqual([dated])
+    expect(dueEditions(feed, '2027-03-06')).toEqual([])
+    expect(dueEditions({ ...feed, notified: [dated.key] }, '2027-02-19')).toEqual([])
+    expect(dueEditions({ ...feed, dismissed: [carl.key] }, '2027-02-19')).toEqual([])
   })
 
-  test('keeps a year-only announcement until the year is over', () => {
-    const found = releasesOf(
-      [{ subject: series, watch: watch([release('Someday', '2026')]) }],
-      new Set(),
-      '2026-09-22',
-      () => '',
+  test('say what came out, in the reader’s language', () => {
+    expect(alertOf(dated, 'fr')).toEqual({
+      title: 'Enfin traduit',
+      body: '« Carl 4 », tome 4, est disponible en français en livre audio.',
+    })
+    expect(alertOf({ ...dated, volume: undefined, format: 'book' }, 'en').body).toBe(
+      '"Carl 4" is out in English.',
     )
-    expect(found).toHaveLength(1)
   })
 })
 
-describe('the alerts due today', () => {
-  const release = (key: string, date: string): Release => ({
-    key,
-    kind: 'series-volume',
-    title: key as BookTitle,
-    authors: [],
-    format: 'book',
-    date: ReleaseDate(date),
-    reason: '',
+describe('reading an edition out of the model’s answer', () => {
+  test('refuses an edition in another language than the one asked', () => {
+    expect(editionFrom({ title: 'Project Hail Mary', format: 'book', language: 'en' }, 'fr')).toBe(
+      undefined,
+    )
   })
 
-  test('fire on the day, within two weeks after, once', () => {
-    const releases = [
-      release('today', '2026-09-22'),
-      release('late', '2026-09-10'),
-      release('stale', '2026-08-01'),
-      release('ahead', '2026-09-30'),
-      release('month', '2026-09'),
-      release('sent', '2026-09-21'),
-    ]
-    expect(dueReleases(releases, ['sent'], '2026-09-22').map((r) => r.key)).toEqual([
-      'today',
-      'late',
-    ])
-  })
-
-  test('speak the reader language', () => {
-    const volume = {
-      ...release('La Voie des rois', '2026-09-22'),
-      series: { name: 'Stormlight' as SeriesName, volume: 6 as never },
-    }
-    expect(alertOf(volume, 'fr')).toEqual({
-      title: 'Nouveau tome',
-      body: "La Voie des rois, tome 6 de Stormlight, sort aujourd'hui.",
+  test('keeps an edition whose date or ISBN does not hold, without them', () => {
+    expect(
+      editionFrom(
+        { title: 'Carl 4', format: 'audiobook', volume: 4, date: '2027-02-30', isbn13: 'nope' },
+        'fr',
+      ),
+    ).toEqual({
+      title: title('Carl 4'),
+      volume: volume(4),
+      format: 'audiobook',
+      date: undefined,
+      isbn13: undefined,
     })
-    expect(alertOf(volume, 'en').title).toBe('New volume')
-  })
-})
-
-describe('what the tab shows', () => {
-  test('leaves out what the reader owns, dismissed, or was proposed twice', () => {
-    const items = [{ key: 'a' }, { key: 'b' }, { key: 'a' }, { key: 'c' }]
-    expect(unseen(items, new Set(['b']), ['c'])).toEqual([{ key: 'a' }])
-  })
-
-  test('gathers the friends who hearted the same book, the most hearted first', () => {
-    const favorite = (title: string, id: string) => ({
-      id: id as BookId,
-      title: title as BookTitle,
-      authors: ['A' as AuthorName],
-      format: 'book' as const,
-    })
-    const shelf = (favorites: SharedShelf['favorites']): SharedShelf => ({
-      favoriteCount: favorites.length,
-      readingCount: 0,
-      toReadCount: 0,
-      favorites,
-    })
-    const shelves = new Map<UserId, SharedShelf>([
-      ['claire' as UserId, shelf([favorite('Solo', 's1'), favorite('Shared', 'x1')])],
-      ['julie' as UserId, shelf([favorite('Shared', 'x2')])],
-    ])
-    const names = new Map([
-      ['claire' as UserId, 'Claire'],
-      ['julie' as UserId, 'Julie'],
-    ])
-
-    const found = friendsFavoritesOf(shelves, names, new Set(), [])
-
-    expect(found.map((f) => [f.title as string, f.friendNames])).toEqual([
-      ['Shared', ['Claire', 'Julie']],
-      ['Solo', ['Claire']],
-    ])
-    expect(found[0]?.bookId).toBe('x1' as BookId)
-  })
-
-  test('turns a preordered Audible volume into a release as well as a suggestion', () => {
-    const next = {
-      asin: 'B0TESTASIN' as never,
-      title: 'Cradle 13' as BookTitle,
-      authors: ['Will Wight' as AuthorName],
-      narrators: [],
-      subgenres: [],
-      status: 'to-read',
-      alreadyInLibrary: false,
-      series: saga('Cradle', 13),
-      releaseDate: at('2026-11-02'),
-    } as unknown as AudibleRelease
-    const { suggestions, releases } = audibleShelvesOf([next], 'fr')
-    expect(suggestions[0]?.reason).toBe('Tome 13 de Cradle, la suite de ce que vous écoutez')
-    expect(releases[0]).toMatchObject({ kind: 'audible-release', date: '2026-11-02' })
-  })
-})
-
-describe('a model answer', () => {
-  test('keeps a good suggestion and drops a hallucinated ISBN on its own', () => {
-    const suggestion = suggestionFrom({
-      title: 'Dungeon Crawler Carl',
-      authors: ['Matt Dinniman'],
-      isbn13: '123',
-      reason: 'Parce que Cradle.',
-      publicRating: 4.62,
-      ratingCount: 210000,
-    })
-    expect(suggestion).toMatchObject({
-      key: 'dungeon-crawler-carl--matt-dinniman',
-      publicRating: 4.6,
-      ratingCount: 210000,
-    })
-    expect(suggestion?.isbn13).toBeUndefined()
-  })
-
-  test('drops a suggestion with no reason or no title', () => {
-    expect(suggestionFrom({ title: 'X', authors: [], reason: '' })).toBeUndefined()
-    expect(suggestionFrom({ title: '', authors: [], reason: 'r' })).toBeUndefined()
-  })
-
-  test('refuses a date that is not on the calendar', () => {
-    expect(() => ReleaseDate('2027-02-30')).toThrow()
-    expect(ReleaseDate('2027-02')).toBe(ReleaseDate('2027-02'))
   })
 })
