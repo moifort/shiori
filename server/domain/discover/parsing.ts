@@ -1,11 +1,11 @@
 import { BookLanguageValue, Isbn13 } from '~/domain/book/primitives'
+import type { BookLanguage } from '~/domain/book/types'
 import { VolumeNumber } from '~/domain/series/primitives'
-import type { Language } from '~/domain/shared/language'
 import { BookTitle } from '~/domain/shared/primitives'
 import { optionally } from '~/utils/input'
 import { ReleaseDate } from './primitives'
 import type { EditionOutput } from './schemas'
-import type { TranslatedEdition } from './types'
+import type { ReleaseEdition } from './types'
 
 /** One edition out of the model's answer, or nothing without a title, or in a
  *  language other than the one asked — a model that lists the original among
@@ -14,8 +14,8 @@ import type { TranslatedEdition } from './types'
  *  hallucinated ISBN must not cost the reader a real edition. */
 export const editionFrom = (
   raw: EditionOutput,
-  language: Language,
-): TranslatedEdition | undefined => {
+  language: BookLanguage,
+): ReleaseEdition | undefined => {
   const title = optionally(raw.title, BookTitle)
   if (!title) return undefined
   const stated = optionally(raw.language, BookLanguageValue)

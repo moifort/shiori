@@ -1,36 +1,42 @@
 import { AdminCommand } from '~/domain/admin/command'
 import { AudibleUseCase } from '~/domain/audible/use-case'
 import { BookQuery } from '~/domain/book/query'
+import type { Book } from '~/domain/book/types'
 import {
   alertOf,
   canRefresh,
   datedEditionsOf,
   dueEditions,
   emptyFeed,
-  foreignWorksOf,
-  ownedInLanguage,
-  translationsOf,
-  type UnsignedTranslation,
+  foundVolumesOf,
+  ownedEditionsOf,
+  releasesOf,
+  type UnsignedRelease,
+  watchedWorksOf,
   watchIsStale,
-  watchKeyOf,
 } from '~/domain/discover/business-rules'
 import { DiscoverCommand } from '~/domain/discover/command'
 import { editionFrom } from '~/domain/discover/parsing'
-import { translationsPrompt } from '~/domain/discover/prompts'
+import { releasesPrompt } from '~/domain/discover/prompts'
 import { DiscoverQuery } from '~/domain/discover/query'
-import { TRANSLATIONS_SCHEMA, type TranslationsOutput } from '~/domain/discover/schemas'
+import { RELEASES_SCHEMA, type ReleasesOutput } from '~/domain/discover/schemas'
 import type {
   Discover,
   DiscoverFeed,
-  ForeignWork,
-  Translation,
-  TranslationWatch,
+  Release,
+  ReleaseEdition,
+  ReleaseWatch,
+  WatchedWork,
 } from '~/domain/discover/types'
 import { NotificationUseCase } from '~/domain/notification/use-case'
 import { generate } from '~/domain/scan/gemini'
+import { publishedCoverOf } from '~/domain/scan/published-cover'
 import type { AiStepUsage } from '~/domain/scan/types'
+import { SeriesCommand } from '~/domain/series/command'
+import type { SeriesName } from '~/domain/series/types'
+import { type FollowedSeries, SeriesUseCase } from '~/domain/series/use-case'
 import type { Language } from '~/domain/shared/language'
-import { BookTitle } from '~/domain/shared/primitives'
+import { BookTitle, Count } from '~/domain/shared/primitives'
 import type { UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
 import { objectStore } from '~/system/object-store'
@@ -55,68 +61,74 @@ const SCHEDULED_BUDGET_MS = 120_000
 const todayOf = (now: Date) => now.toISOString().slice(0, 10)
 
 export namespace DiscoverUseCase {
-  /** The tab as the reader opens it: the works they read in another language,
-   *  with what the shared watches know of them in the app's language — the
-   *  recordings only for a reader connected to Audible, looked up now so a
-   *  disconnection shows at once. Opening it the first time enrols the reader
-   *  in the daily refresh. */
+  /** The tab as the reader opens it: what is coming of the sagas they follow,
+   *  in the language they read each in and in the app's, and the translations
+   *  out of what they read in another language — with what the shared watches
+   *  know, recordings only for a reader connected to Audible, looked up now so
+   *  a disconnection shows at once. Opening it the first time enrols the
+   *  reader in the daily refresh. */
   export const discover = async (
     userId: UserId,
     language: Language,
     now = new Date(),
   ): Promise<Discover> => {
-    const [stored, books, marketplace] = await Promise.all([
+    const [stored, books, followed, marketplace] = await Promise.all([
       DiscoverQuery.feed(userId),
       BookQuery.all(userId),
+      SeriesUseCase.followed(userId),
       AudibleUseCase.marketplaceOf(userId),
     ])
     const feed = stored ?? (await DiscoverCommand.save(emptyFeed(userId, language)))
-    const works = foreignWorksOf(books, feed.language)
-    const watches = await watchesOf(works, feed.language)
-    const { upcoming, available } = translationsOf(
+    const works = watchedWorksOf(followed, books, feed.language)
+    const watches = await watchesOf(works)
+    const { upcoming, maybe } = releasesOf(
       works,
       watches,
       feed,
       marketplace,
-      ownedInLanguage(books, feed.language),
+      ownedEditionsOf(books),
       todayOf(now),
     )
+    const rowOf = sagaRows(followed, watches)
+    const served = (release: UnsignedRelease) => signed({ ...release, series: rowOf(release) })
     return {
       preparedAt: feed.refreshedAt,
       canRefresh: canRefresh(feed, now),
-      upcoming: await Promise.all(upcoming.map(signed)),
-      available: await Promise.all(available.map(signed)),
+      upcoming: await Promise.all(upcoming.map(served)),
+      maybe: await Promise.all(maybe.map(served)),
     }
   }
 
-  /** Look again on the web for the works whose watch is a week old, and keep
-   *  the exact dates the alerts go out on. A lookup that fails keeps what the
-   *  last one found rather than emptying the tab. */
+  /** Look again on the web for the works whose watch is a week old, write what
+   *  was found of each saga into its catalogue, and keep the exact dates the
+   *  alerts go out on. A lookup that fails keeps what the last one found
+   *  rather than emptying the tab. */
   export const refresh = async (
     userId: UserId,
     language: Language,
     now = new Date(),
   ): Promise<DiscoverFeed> => {
-    const [books, stored, marketplace] = await Promise.all([
+    const [books, followed, stored, marketplace] = await Promise.all([
       BookQuery.all(userId),
+      SeriesUseCase.followed(userId),
       DiscoverQuery.feed(userId),
       AudibleUseCase.marketplaceOf(userId),
     ])
     const previous = stored ?? emptyFeed(userId, language)
-    const works = foreignWorksOf(books, language)
-    const watches = await trackedWatches(works, language, now)
+    const works = watchedWorksOf(followed, books, language)
+    const watches = await trackedWatches(works, now)
     const feed: DiscoverFeed = { ...previous, language, refreshedAt: now }
-    const { upcoming, available } = translationsOf(
+    const { upcoming, maybe } = releasesOf(
       works,
       watches,
       feed,
       marketplace,
-      ownedInLanguage(books, language),
+      ownedEditionsOf(books),
       todayOf(now),
     )
     return DiscoverCommand.save({
       ...feed,
-      dated: datedEditionsOf([...upcoming, ...available], todayOf(now)),
+      dated: datedEditionsOf([...upcoming, ...maybe], todayOf(now)),
     })
   }
 
@@ -181,7 +193,7 @@ export namespace DiscoverUseCase {
         )
         readers += 1
       } catch (error) {
-        logger.warn('translation alerts failed', { error, userId: feed.userId })
+        logger.warn('release alerts failed', { error, userId: feed.userId })
       }
     }
     return { readers }
@@ -198,15 +210,9 @@ export namespace DiscoverUseCase {
 
 // MARK: - The parts of a refresh
 
-const watchesOf = async (
-  works: readonly ForeignWork[],
-  language: Language,
-): Promise<Map<string, TranslationWatch>> =>
+const watchesOf = async (works: readonly WatchedWork[]): Promise<Map<string, ReleaseWatch>> =>
   new Map(
-    (await DiscoverQuery.watches(works.map((work) => watchKeyOf(work, language)))).map((watch) => [
-      watch.key,
-      watch,
-    ]),
+    (await DiscoverQuery.watches(works.map((work) => work.key))).map((watch) => [watch.key, watch]),
   )
 
 const recordUsage = async (usage: AiStepUsage | undefined) => {
@@ -218,57 +224,112 @@ const recordUsage = async (usage: AiStepUsage | undefined) => {
   }
 }
 
+/** Each printed edition's cover, found by its ISBN. One that cannot be found
+ *  goes without, as it would on a book. */
+const withCovers = (editions: readonly ReleaseEdition[]): Promise<ReleaseEdition[]> =>
+  Promise.all(
+    editions.map(async (edition) => {
+      if (edition.format !== 'book' || !edition.isbn13) return edition
+      try {
+        const coverUrl = await publishedCoverOf(edition.isbn13)
+        return coverUrl ? { ...edition, coverUrl } : edition
+      } catch (error) {
+        logger.warn('release cover lookup failed', { error, isbn13: edition.isbn13 })
+        return edition
+      }
+    }),
+  )
+
 /** The shared watches of the reader's works, the stale ones looked up again on
  *  the web — one call per work, a few side by side, the most recently read
- *  first. A call that fails leaves its work as it was. */
+ *  first — and what each saga's search found written into its catalogue, so
+ *  the series screen, the saga's state and the dashboard follow. A call that
+ *  fails leaves its work as it was. */
 const trackedWatches = async (
-  works: readonly ForeignWork[],
-  language: Language,
+  works: readonly WatchedWork[],
   now: Date,
-): Promise<Map<string, TranslationWatch>> => {
-  const watches = await watchesOf(works, language)
+): Promise<Map<string, ReleaseWatch>> => {
+  const watches = await watchesOf(works)
   const stale = works
-    .map((work) => ({ key: watchKeyOf(work, language), work }))
-    .filter(({ key }) => watchIsStale(watches.get(key), now))
+    .filter((work) => watchIsStale(watches.get(work.key), now))
     .slice(0, WORKS_PER_REFRESH)
+  const found: { work: WatchedWork; watch: ReleaseWatch }[] = []
   for (let start = 0; start < stale.length; start += CALLS_AT_ONCE) {
     await Promise.all(
-      stale.slice(start, start + CALLS_AT_ONCE).map(async ({ key, work }) => {
+      stale.slice(start, start + CALLS_AT_ONCE).map(async (work) => {
         try {
-          const { value, usage } = await generate<TranslationsOutput>({
-            step: 'discover-translations',
-            parts: [{ text: translationsPrompt([{ key, work }], todayOf(now), language) }],
-            responseSchema: TRANSLATIONS_SCHEMA,
+          const { value, usage } = await generate<ReleasesOutput>({
+            step: 'discover-releases',
+            parts: [{ text: releasesPrompt(work, todayOf(now)) }],
+            responseSchema: RELEASES_SCHEMA,
             grounded: true,
           })
           await recordUsage(usage)
-          const answer = (value.works ?? []).find((entry) => entry.key === key)
-          const watch: TranslationWatch = {
-            key,
+          const answer = (value.works ?? []).find((entry) => entry.key === work.key)
+          const watch: ReleaseWatch = {
+            key: work.key,
             kind: work.kind,
             title: work.title,
             author: work.author,
-            language,
+            language: work.language,
             checkedAt: now,
-            translatedTitle: optionally(answer?.translatedTitle, BookTitle),
-            editions: (answer?.editions ?? [])
-              .map((raw) => editionFrom(raw, language))
-              .filter((edition) => edition !== undefined),
+            localTitle: optionally(answer?.translatedTitle, BookTitle),
+            editions: await withCovers(
+              (answer?.editions ?? [])
+                .map((raw) => editionFrom(raw, work.language))
+                .filter((edition) => edition !== undefined),
+            ),
           }
           await DiscoverCommand.saveWatch(watch)
-          watches.set(key, watch)
+          watches.set(work.key, watch)
+          found.push({ work, watch })
         } catch (error) {
-          logger.warn('translation lookup failed', { error, work: work.key })
+          logger.warn('release lookup failed', { error, work: work.key })
         }
       }),
     )
   }
+  // One after the other: a saga searched in two languages side by side would
+  // otherwise have each write overwrite the other's from the same stale read.
+  for (const { work, watch } of found) {
+    if (!work.seriesId) continue
+    try {
+      await SeriesCommand.recordReleases(work.seriesId, work.language, foundVolumesOf(watch))
+    } catch (error) {
+      logger.warn('release dates not recorded', { error, work: work.key })
+    }
+  }
   return watches
 }
 
-/** The reader's own photo of their copy is signed only when no translated
- *  edition brought a cover of its own. */
-const signed = async ({ coverPath, ...translation }: UnsignedTranslation): Promise<Translation> =>
-  coverPath && !translation.coverUrl
-    ? { ...translation, coverUrl: await objectStore().downloadUrl(coverPath) }
-    : translation
+/** A saga's row as the Series tab draws it, in the language of the release:
+ *  the reader's own row when they hold that edition; otherwise a row with no
+ *  books of its own, named as that language names the saga, measured on the
+ *  same catalogue. */
+const sagaRows =
+  (followed: readonly FollowedSeries[], watches: ReadonlyMap<string, ReleaseWatch>) =>
+  (release: UnsignedRelease): FollowedSeries | undefined => {
+    if (release.kind !== 'series' || !release.seriesId) return undefined
+    const rows = followed.filter((row) => row.id === release.seriesId)
+    const own = rows.find((row) => row.language === release.language)
+    if (own) return own
+    const any = rows[0]
+    if (!any) return undefined
+    const localTitle = watches.get(release.key)?.localTitle
+    return {
+      ...any,
+      name: (localTitle ?? any.name) as unknown as SeriesName,
+      language: release.language,
+      state: null,
+      progress: null,
+      ownedCount: Count(0),
+      books: [] as Book[],
+    }
+  }
+
+/** The reader's own photo of their copy is signed only when no edition
+ *  brought a cover of its own. */
+const signed = async ({ coverPath, ...release }: UnsignedRelease): Promise<Release> =>
+  coverPath && !release.coverUrl
+    ? { ...release, coverUrl: await objectStore().downloadUrl(coverPath) }
+    : release

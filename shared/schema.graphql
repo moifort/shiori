@@ -592,20 +592,22 @@ The token APNs hands a device for this app, in hexadecimal, as the app receives 
 scalar DeviceToken
 
 """
-The Découvrir tab: the books the reader read in another language, now out or coming out in the app’s language.
+The Découvrir tab: what is coming next in the sagas the reader follows, in the language they read each in and in the app’s, and what may interest them.
 """
 type Discover {
-  """Works already out in the app’s language, the most recently read first."""
-  available: [Translation!]!
-
   """Whether `refreshDiscover` would look again now: once a day at most."""
   canRefresh: Boolean!
+
+  """
+  Works the reader may want. For now, a translation already out in the app’s language of what they read in another, the most recently read first.
+  """
+  maybe: [Release!]!
 
   """When the daily refresh last ran. Null before the first."""
   preparedAt: DateTime
 
-  """Works with at least one edition still to come, the soonest first."""
-  upcoming: [Translation!]!
+  """Works with an edition still to come, the soonest first."""
+  upcoming: [Release!]!
 }
 
 """
@@ -1220,9 +1222,9 @@ type Mutation {
   disconnectAudible: Boolean!
 
   """
-  "Pas intéressé": never propose this work again, nor alert about it. Answers false before the tab was ever opened.
+  "Pas intéressé": never propose this work in this language again, nor alert about it. Answers false before the tab was ever opened.
   """
-  dismissTranslation(key: String!): Boolean!
+  dismissRelease(key: String!): Boolean!
 
   """
   Catalogue the Audible titles the reader ticked, and return the books created.
@@ -1283,7 +1285,7 @@ type Mutation {
   ): [KindleBook!]!
 
   """
-  Look for translations now rather than waiting for the daily refresh. Granted once a day; past that it answers the tab as it stands. Slow — grounded model calls and an Audible search per author — so the app waits with a loader.
+  Look for releases now rather than waiting for the daily refresh. Granted once a day; past that it answers the tab as it stands. Slow — grounded model calls, one per work — so the app waits with a loader.
   """
   refreshDiscover: Discover!
 
@@ -1607,7 +1609,7 @@ type Query {
   dashboard(timeZone: TimeZone!): Dashboard!
 
   """
-  The Découvrir tab. Opening it the first time enrols the reader in the daily refresh; until that has run, only what earlier readers of the same books already found is there.
+  The Découvrir tab. Opening it the first time enrols the reader in the daily refresh; until that has run, only what earlier readers of the same sagas and books already found is there.
   """
   discover: Discover!
 
@@ -1938,6 +1940,76 @@ input RecommendationInput {
 }
 
 """
+A saga the reader follows, or a book they read, in one language: what exists or is announced of it there. A saga read in English whose French translation is announced makes two releases, one per language, as the Series tab makes two rows.
+"""
+type Release {
+  author: AuthorName
+  coverUrl: CoverUrl
+
+  """Every edition the reader does not own, by volume then by date."""
+  editions: [ReleaseEdition!]!
+
+  """What `dismissRelease` names."""
+  key: String!
+  kind: ReleaseKind!
+
+  """The language of its editions."""
+  language: BookLanguage!
+
+  """The soonest edition still to come, as precisely as announced."""
+  nextDate: String
+
+  """The language the reader read it in."""
+  readIn: BookLanguage!
+
+  """
+  For a saga, its row as the Series tab draws it in that language, the catalogue carrying the dates the release watch wrote. A language the reader holds nothing in answers a row with no volumes of its own and no state.
+  """
+  series: FollowedSeries
+  seriesId: SeriesId
+
+  """Its title in that language, else the one the reader knows."""
+  title: BookTitle!
+}
+
+"""
+One edition of a work in one language, out or announced. A recording is only ever listed for a reader connected to Audible.
+"""
+type ReleaseEdition {
+  """
+  For a recording, a search for its title on the reader’s own Audible store — where the reader goes to find it; Shiori never reads the catalogue.
+  """
+  audibleUrl: String
+
+  """The publisher’s cover of this edition, found by its ISBN."""
+  coverUrl: CoverUrl
+
+  """
+  When it came out or comes out, as precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Null for an edition out on a date nobody found.
+  """
+  date: String
+  format: ReleaseFormat!
+  isbn13: Isbn13
+  title: BookTitle!
+  volume: VolumeNumber
+}
+
+"""How an edition reaches the reader."""
+enum ReleaseFormat {
+  """Recorded."""
+  AUDIOBOOK
+
+  """Printed or electronic."""
+  BOOK
+}
+
+"""Whether the release is of a saga, or of one book on its own."""
+enum ReleaseKind {
+  BOOK
+  SERIES
+}
+
+"""
 How far the reader is into a saga, on the numbered spine of published volumes: related works and announced volumes are not counted.
 """
 type SagaProgress {
@@ -2192,69 +2264,6 @@ scalar Synopsis
 An IANA time zone identifier known to the server, such as "Europe/Paris". Reading statistics count days, months and years in it.
 """
 scalar TimeZone
-
-"""
-One edition of a work in the app’s language, out or announced. A recording is only ever listed for a reader connected to Audible.
-"""
-type TranslatedEdition {
-  """
-  For a recording, a search for its title on the reader’s own Audible store — where the reader goes to find it; Shiori never reads the catalogue.
-  """
-  audibleUrl: String
-
-  """
-  When it came out or comes out, as precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Null for an edition out on a date nobody found.
-  """
-  date: String
-  format: TranslationFormat!
-  title: BookTitle!
-  volume: VolumeNumber
-}
-
-"""
-A saga or a book the reader read in another language, with what exists or is announced of it in the app’s language.
-"""
-type Translation {
-  author: AuthorName
-  coverUrl: CoverUrl
-
-  """Every edition, by volume then by date."""
-  editions: [TranslatedEdition!]!
-
-  """What `dismissTranslation` names."""
-  key: String!
-  kind: TranslationKind!
-
-  """The soonest edition still to come, as precisely as announced."""
-  nextDate: String
-
-  """The language the reader read it in."""
-  originalLanguage: BookLanguage!
-
-  """The saga’s name or the book’s title as the reader catalogued it."""
-  originalTitle: BookTitle!
-
-  """Its title in the app’s language, else the one the reader knows."""
-  title: BookTitle!
-
-  """The volumes of a saga the reader read or is reading."""
-  volumesRead: [VolumeNumber!]!
-}
-
-"""How a translation reaches the reader."""
-enum TranslationFormat {
-  """Recorded."""
-  AUDIOBOOK
-
-  """Printed or electronic."""
-  BOOK
-}
-
-"""Whether the reader read a whole saga or one book on its own."""
-enum TranslationKind {
-  BOOK
-  SERIES
-}
 
 """A figure for this year to date, beside the same span of last year."""
 type Trend {

@@ -1,32 +1,33 @@
 import { audibleSearchUrlOf } from '~/domain/audible/business-rules'
 import { BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
-import type { Discover, TranslatedEdition, Translation } from '~/domain/discover/types'
+import type { Discover, Release, ReleaseEdition } from '~/domain/discover/types'
+import { FollowedSeriesType } from '~/domain/series/infrastructure/graphql/queries'
 import { builder } from '~/domain/shared/graphql/builder'
 
-const TranslationFormatEnum = builder.enumType('TranslationFormat', {
-  description: 'How a translation reaches the reader.',
+const ReleaseFormatEnum = builder.enumType('ReleaseFormat', {
+  description: 'How an edition reaches the reader.',
   values: {
     BOOK: { value: 'book', description: 'Printed or electronic.' },
     AUDIOBOOK: { value: 'audiobook', description: 'Recorded.' },
   } as const,
 })
 
-const TranslationKindEnum = builder.enumType('TranslationKind', {
-  description: 'Whether the reader read a whole saga or one book on its own.',
+const ReleaseKindEnum = builder.enumType('ReleaseKind', {
+  description: 'Whether the release is of a saga, or of one book on its own.',
   values: {
     SERIES: { value: 'series' },
     BOOK: { value: 'book' },
   } as const,
 })
 
-/** An edition, with the translation it belongs to, which knows the reader's
+/** An edition, with the release it belongs to, which knows the reader's
  *  Audible store. */
-type EditionView = { edition: TranslatedEdition; translation: Translation }
+type EditionView = { edition: ReleaseEdition; release: Release }
 
-const TranslatedEditionType = builder.objectRef<EditionView>('TranslatedEdition').implement({
+const ReleaseEditionType = builder.objectRef<EditionView>('ReleaseEdition').implement({
   description:
-    'One edition of a work in the app’s language, out or announced. A recording is ' +
-    'only ever listed for a reader connected to Audible.',
+    'One edition of a work in one language, out or announced. A recording is only ever ' +
+    'listed for a reader connected to Audible.',
   fields: (t) => ({
     title: t.field({ type: 'BookTitle', resolve: ({ edition }) => edition.title }),
     volume: t.field({
@@ -34,7 +35,7 @@ const TranslatedEditionType = builder.objectRef<EditionView>('TranslatedEdition'
       nullable: true,
       resolve: ({ edition }) => edition.volume ?? null,
     }),
-    format: t.field({ type: TranslationFormatEnum, resolve: ({ edition }) => edition.format }),
+    format: t.field({ type: ReleaseFormatEnum, resolve: ({ edition }) => edition.format }),
     date: t.string({
       nullable: true,
       description:
@@ -42,76 +43,97 @@ const TranslatedEditionType = builder.objectRef<EditionView>('TranslatedEdition'
         '`YYYY-MM-DD`. Null for an edition out on a date nobody found.',
       resolve: ({ edition }) => edition.date ?? null,
     }),
+    isbn13: t.field({
+      type: 'Isbn13',
+      nullable: true,
+      resolve: ({ edition }) => edition.isbn13 ?? null,
+    }),
+    coverUrl: t.field({
+      type: 'CoverUrl',
+      nullable: true,
+      description: 'The publisher’s cover of this edition, found by its ISBN.',
+      resolve: ({ edition }) => edition.coverUrl ?? null,
+    }),
     audibleUrl: t.string({
       nullable: true,
       description:
         'For a recording, a search for its title on the reader’s own Audible store — ' +
         'where the reader goes to find it; Shiori never reads the catalogue.',
-      resolve: ({ edition, translation }) =>
-        edition.format === 'audiobook' && translation.audibleMarketplace
-          ? audibleSearchUrlOf(translation.audibleMarketplace, edition.title)
+      resolve: ({ edition, release }) =>
+        edition.format === 'audiobook' && release.audibleMarketplace
+          ? audibleSearchUrlOf(release.audibleMarketplace, edition.title)
           : null,
     }),
   }),
 })
 
-const TranslationType = builder.objectRef<Translation>('Translation').implement({
+const ReleaseType = builder.objectRef<Release>('Release').implement({
   description:
-    'A saga or a book the reader read in another language, with what exists or is ' +
-    'announced of it in the app’s language.',
+    'A saga the reader follows, or a book they read, in one language: what exists or is ' +
+    'announced of it there. A saga read in English whose French translation is ' +
+    'announced makes two releases, one per language, as the Series tab makes two rows.',
   fields: (t) => ({
     key: t.string({
-      description: 'What `dismissTranslation` names.',
-      resolve: (translation) => translation.key,
+      description: 'What `dismissRelease` names.',
+      resolve: (release) => release.key,
     }),
-    kind: t.field({ type: TranslationKindEnum, resolve: (translation) => translation.kind }),
+    kind: t.field({ type: ReleaseKindEnum, resolve: (release) => release.kind }),
+    seriesId: t.field({
+      type: 'SeriesId',
+      nullable: true,
+      resolve: (release) => release.seriesId ?? null,
+    }),
+    language: t.field({
+      type: BookLanguageEnum,
+      description: 'The language of its editions.',
+      resolve: (release) => release.language,
+    }),
+    readIn: t.field({
+      type: BookLanguageEnum,
+      description: 'The language the reader read it in.',
+      resolve: (release) => release.readIn,
+    }),
     title: t.field({
       type: 'BookTitle',
-      description: 'Its title in the app’s language, else the one the reader knows.',
-      resolve: (translation) => translation.title,
-    }),
-    originalTitle: t.field({
-      type: 'BookTitle',
-      description: 'The saga’s name or the book’s title as the reader catalogued it.',
-      resolve: (translation) => translation.originalTitle,
+      description: 'Its title in that language, else the one the reader knows.',
+      resolve: (release) => release.title,
     }),
     author: t.field({
       type: 'AuthorName',
       nullable: true,
-      resolve: (translation) => translation.author ?? null,
-    }),
-    originalLanguage: t.field({
-      type: BookLanguageEnum,
-      description: 'The language the reader read it in.',
-      resolve: (translation) => translation.originalLanguage,
-    }),
-    volumesRead: t.field({
-      type: ['VolumeNumber'],
-      description: 'The volumes of a saga the reader read or is reading.',
-      resolve: (translation) => translation.volumesRead,
+      resolve: (release) => release.author ?? null,
     }),
     coverUrl: t.field({
       type: 'CoverUrl',
       nullable: true,
-      resolve: (translation) => translation.coverUrl ?? null,
+      resolve: (release) => release.coverUrl ?? null,
     }),
     nextDate: t.string({
       nullable: true,
       description: 'The soonest edition still to come, as precisely as announced.',
-      resolve: (translation) => translation.nextDate ?? null,
+      resolve: (release) => release.nextDate ?? null,
     }),
     editions: t.field({
-      type: [TranslatedEditionType],
-      description: 'Every edition, by volume then by date.',
-      resolve: (translation) => translation.editions.map((edition) => ({ edition, translation })),
+      type: [ReleaseEditionType],
+      description: 'Every edition the reader does not own, by volume then by date.',
+      resolve: (release) => release.editions.map((edition) => ({ edition, release })),
+    }),
+    series: t.field({
+      type: FollowedSeriesType,
+      nullable: true,
+      description:
+        'For a saga, its row as the Series tab draws it in that language, the catalogue ' +
+        'carrying the dates the release watch wrote. A language the reader holds nothing ' +
+        'in answers a row with no volumes of its own and no state.',
+      resolve: (release) => release.series ?? null,
     }),
   }),
 })
 
 export const DiscoverType = builder.objectRef<Discover>('Discover').implement({
   description:
-    'The Découvrir tab: the books the reader read in another language, now out or ' +
-    'coming out in the app’s language.',
+    'The Découvrir tab: what is coming next in the sagas the reader follows, in the ' +
+    'language they read each in and in the app’s, and what may interest them.',
   fields: (t) => ({
     preparedAt: t.field({
       type: 'DateTime',
@@ -124,14 +146,16 @@ export const DiscoverType = builder.objectRef<Discover>('Discover').implement({
       resolve: (discover) => discover.canRefresh,
     }),
     upcoming: t.field({
-      type: [TranslationType],
-      description: 'Works with at least one edition still to come, the soonest first.',
+      type: [ReleaseType],
+      description: 'Works with an edition still to come, the soonest first.',
       resolve: (discover) => discover.upcoming,
     }),
-    available: t.field({
-      type: [TranslationType],
-      description: 'Works already out in the app’s language, the most recently read first.',
-      resolve: (discover) => discover.available,
+    maybe: t.field({
+      type: [ReleaseType],
+      description:
+        'Works the reader may want. For now, a translation already out in the app’s ' +
+        'language of what they read in another, the most recently read first.',
+      resolve: (discover) => discover.maybe,
     }),
   }),
 })

@@ -7,16 +7,16 @@ builder.mutationFields((t) => ({
   refreshDiscover: t.field({
     type: DiscoverType,
     description:
-      'Look for translations now rather than waiting for the daily refresh. Granted ' +
+      'Look for releases now rather than waiting for the daily refresh. Granted ' +
       'once a day; past that it answers the tab as it stands. Slow — grounded model ' +
-      'calls and an Audible search per author — so the app waits with a loader.',
+      'calls, one per work — so the app waits with a loader.',
     resolve: (_root, _args, context) =>
       DiscoverUseCase.refreshOnDemand(context.userId, languageOf(context.event)),
   }),
 
-  dismissTranslation: t.boolean({
+  dismissRelease: t.boolean({
     description:
-      '"Pas intéressé": never propose this work again, nor alert about it. Answers ' +
+      '"Pas intéressé": never propose this work in this language again, nor alert about it. Answers ' +
       'false before the tab was ever opened.',
     args: { key: t.arg.string({ required: true }) },
     resolve: (_root, args, context) => DiscoverUseCase.dismiss(context.userId, args.key),

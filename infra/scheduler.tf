@@ -93,8 +93,8 @@ resource "google_cloud_scheduler_job" "refresh_discover" {
   depends_on = [google_project_service.apis]
 }
 
-# Pushes the translations that came out to the readers who left the alert on,
-# once a morning. No model call: the daily refresh already holds the dates, and
+# Pushes the releases that came out — next volumes and translations — to the
+# readers who left the alert on, once a morning. No model call: the daily refresh already holds the dates, and
 # an edition is pushed once, so a retry sends nothing twice.
 resource "google_cloud_scheduler_job" "send_release_alerts" {
   project   = google_project.this.project_id

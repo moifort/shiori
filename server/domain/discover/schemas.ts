@@ -1,6 +1,6 @@
 import { BOOK_LANGUAGES } from '~/domain/book/types'
 
-export const TRANSLATIONS_SCHEMA = {
+export const RELEASES_SCHEMA = {
   type: 'object',
   properties: {
     works: {
@@ -42,6 +42,6 @@ export type EditionOutput = {
   isbn13?: string | null
 }
 
-export type TranslationsOutput = {
+export type ReleasesOutput = {
   works?: { key?: string; translatedTitle?: string | null; editions?: EditionOutput[] }[]
 }

@@ -26,8 +26,9 @@ mock.module('~/system/apns', () => ({
   },
 }))
 
-/** Stands in for Gemini: the French editions of every work it is asked about,
- *  and a count of the calls made, which is what the shared watches save. */
+/** Stands in for Gemini: the editions of every work it is asked about in the
+ *  language asked, and a count of the calls made, which is what the shared
+ *  watches save. */
 const calls: string[] = []
 let carlDate = '2027-02-19'
 mock.module('~/domain/scan/gemini', () => ({
@@ -41,6 +42,12 @@ mock.module('~/domain/scan/gemini', () => ({
           { title: 'Dungeon Crawler Carl', volume: 1, format: 'book', date: '2024-05-02' },
           { title: 'Carl 4', volume: 4, format: 'book', date: carlDate },
           { title: 'Carl 4', volume: 4, format: 'audiobook', date: '2027-03' },
+        ],
+      },
+      'series--dungeon-crawler-carl--matt-dinniman--en': {
+        editions: [
+          { title: 'Carl 2 (en)', volume: 2, format: 'book', date: '2023-01-01' },
+          { title: 'Carl 3 (en)', volume: 3, format: 'book', date: '2027-01' },
         ],
       },
       'book--project-hail-mary--andy-weir--fr': {
@@ -147,7 +154,7 @@ beforeEach(() => {
 })
 
 describe('the Découvrir tab', () => {
-  test('lists what is coming and what is out in French, without recordings for a reader off Audible', async () => {
+  test('lists what is coming of a saga in each language, and a translation out, without recordings for a reader off Audible', async () => {
     await stock(reader)
 
     await DiscoverUseCase.refresh(reader, 'fr', now)
@@ -157,12 +164,15 @@ describe('the Découvrir tab', () => {
     expect(
       tab.upcoming.map((t): unknown[] => [
         t.title,
+        t.language,
         t.nextDate,
         t.editions.map((e): unknown[] => [e.volume, e.format]),
       ]),
     ).toEqual([
+      ['Dungeon Crawler Carl', 'en', '2027-01', [[3, 'book']]],
       [
         'Dungeon Crawler Carl',
+        'fr',
         '2027-02-19',
         [
           [1, 'book'],
@@ -170,9 +180,26 @@ describe('the Découvrir tab', () => {
         ],
       ],
     ])
-    expect(tab.available.map((t): unknown[] => [t.title, t.originalTitle])).toEqual([
-      ['Projet Dernière Chance', 'Project Hail Mary'],
+    expect(tab.maybe.map((t): unknown[] => [t.title, t.readIn])).toEqual([
+      ['Projet Dernière Chance', 'en'],
     ])
+  })
+
+  test('draws each saga release as the Series tab draws its row in that language', async () => {
+    await stock(reader)
+
+    await DiscoverUseCase.refresh(reader, 'fr', now)
+    const [english, french] = (await DiscoverUseCase.discover(reader, 'fr', now)).upcoming
+
+    expect(english.series).toMatchObject({ language: 'en', ownedCount: 2 })
+    expect(english.series?.books).toHaveLength(2)
+    expect(french.series).toMatchObject({
+      name: 'Dungeon Crawler Carl',
+      language: 'fr',
+      ownedCount: 0,
+      state: null,
+      books: [],
+    })
   })
 
   test('offers the recordings the web found to a reader connected to Audible', async () => {
@@ -180,7 +207,7 @@ describe('the Découvrir tab', () => {
     await connectAudible(reader)
 
     await DiscoverUseCase.refresh(reader, 'fr', now)
-    const [carl] = (await DiscoverUseCase.discover(reader, 'fr', now)).upcoming
+    const [, carl] = (await DiscoverUseCase.discover(reader, 'fr', now)).upcoming
 
     expect(carl.audibleMarketplace).toBe('fr')
     expect(carl.editions.map((e): unknown[] => [e.volume, e.format, e.date])).toEqual([
@@ -200,18 +227,20 @@ describe('the Découvrir tab', () => {
     startFakeRequest()
     await DiscoverUseCase.refresh(other, 'fr', now)
 
-    // One call per work for the first reader — the saga and the novel — and
-    // none for the second.
-    expect(calls).toEqual(['discover-translations', 'discover-translations'])
+    // One call per work for the first reader — the saga in English and in
+    // French, and the novel — and none for the second.
+    expect(calls).toEqual(['discover-releases', 'discover-releases', 'discover-releases'])
   })
 
   test('never proposes again a work the reader is not interested in', async () => {
     await stock(reader)
     await DiscoverUseCase.refresh(reader, 'fr', now)
 
-    await DiscoverUseCase.dismiss(reader, 'series--dungeon-crawler-carl--matt-dinniman')
+    await DiscoverUseCase.dismiss(reader, 'series--dungeon-crawler-carl--matt-dinniman--fr')
 
-    expect((await DiscoverUseCase.discover(reader, 'fr', now)).upcoming).toEqual([])
+    expect(
+      (await DiscoverUseCase.discover(reader, 'fr', now)).upcoming.map((t) => t.language),
+    ).toEqual(['en'])
   })
 
   test('pushes an edition out today once, the alert being on by default', async () => {
@@ -261,8 +290,47 @@ describe('the Découvrir tab', () => {
 
     await DiscoverUseCase.discover(reader, 'fr', now)
 
-    // The library; the feed, the Audible connection and one watch per work.
-    expect(fake.queryReads - before.queries).toBe(1)
-    expect(fake.docReads - before.docs).toBe(4)
+    // The library and the saga opinions; the feed, the Audible connection,
+    // the saga's catalogue in one getAll, and one watch per work — the saga in
+    // English and in French, and the novel.
+    expect(fake.queryReads - before.queries).toBe(2)
+    expect(fake.docReads - before.docs).toBe(6)
+  })
+})
+
+describe('the release watch and the catalogue', () => {
+  test('writes the dates it found into the saga’s catalogue, per language', async () => {
+    await stock(reader)
+    const { SeriesCommand } = await import('~/domain/series/command')
+    const { SeriesQuery } = await import('~/domain/series/query')
+    const { SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
+    const { Year } = await import('~/domain/shared/primitives')
+    const id = seriesKeyOf('Dungeon Crawler Carl', 'Matt Dinniman')
+    await SeriesCommand.catalogue({
+      id,
+      name: SeriesName('Dungeon Crawler Carl'),
+      author: AuthorName('Matt Dinniman'),
+      catalogedAt: now,
+      volumes: [1, 2].map((number) => ({
+        number: VolumeNumber(number),
+        title: BookTitle(`Carl ${number} (en)`),
+        kind: 'main' as const,
+        publishedIn: Year(2020),
+      })),
+    })
+    startFakeRequest()
+
+    await DiscoverUseCase.refresh(reader, 'fr', now)
+    startFakeRequest()
+
+    const catalogue = await SeriesQuery.byId(id)
+    expect(catalogue?.volumes.map((volume): unknown[] => [volume.number, volume.releases])).toEqual(
+      [
+        [1, { fr: '2024-05-02' }],
+        [2, { en: '2023-01-01' }],
+        [3, { en: '2027-01' }],
+        [4, { fr: '2027-02-19' }],
+      ],
+    )
   })
 })

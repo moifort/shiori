@@ -1,6 +1,7 @@
 import { heartsAreFiveStars } from '~/system/migration/migrations/004-hearts-are-five-stars'
 import { booksCarryTheirShelfDate } from '~/system/migration/migrations/005-books-carry-their-shelf-date'
 import { discoverIsTranslations } from '~/system/migration/migrations/006-discover-is-translations'
+import { discoverIsReleases } from '~/system/migration/migrations/007-discover-is-releases'
 import type { Migration } from '~/system/migration/types'
 
 // Forward-only, sequential, no rollback. Adding a new optional field or a new
@@ -14,4 +15,5 @@ export const migrations: Migration[] = [
   heartsAreFiveStars,
   booksCarryTheirShelfDate,
   discoverIsTranslations,
+  discoverIsReleases,
 ]

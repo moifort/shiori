@@ -1,4 +1,4 @@
-import type { DiscoverFeed, TranslationWatch } from '~/domain/discover/types'
+import type { DiscoverFeed, ReleaseWatch } from '~/domain/discover/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
@@ -7,10 +7,10 @@ import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 const feeds = () => db().collection('discover').withConverter(genericDataConverter<DiscoverFeed>())
 
 // Shared documents, holding no reference to any reader: keyed by the work and
-// the language, so every reader who read the same saga converges on one
+// the language, so every reader who follows the same saga converges on one
 // document and the call behind it is paid once.
 const watches = () =>
-  db().collection('translation-watches').withConverter(genericDataConverter<TranslationWatch>())
+  db().collection('release-watches').withConverter(genericDataConverter<ReleaseWatch>())
 
 export const findFeed = async (userId: UserId): Promise<DiscoverFeed | undefined> =>
   (await feeds().doc(userId).get()).data()
@@ -29,17 +29,17 @@ export const removeFeed = async (userId: UserId): Promise<void> => {
   await feeds().doc(userId).delete()
 }
 
-export const findWatches = async (keys: readonly string[]): Promise<TranslationWatch[]> => {
+export const findWatches = async (keys: readonly string[]): Promise<ReleaseWatch[]> => {
   const unique = [...new Set(keys)]
   if (unique.length === 0) return []
   const snapshots = await db().getAll(...unique.map((key) => watches().doc(key)))
   // Typed loosely by getAll, though each ref carries the converter.
   return snapshots.flatMap((snapshot) => {
-    const watch = snapshot.data() as TranslationWatch | undefined
+    const watch = snapshot.data() as ReleaseWatch | undefined
     return watch ? [watch] : []
   })
 }
 
-export const saveWatch = async (watch: TranslationWatch): Promise<void> => {
+export const saveWatch = async (watch: ReleaseWatch): Promise<void> => {
   await watches().doc(watch.key).set(withoutAbsentFields(watch))
 }

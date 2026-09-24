@@ -1,25 +1,28 @@
 import { describe, expect, test } from 'bun:test'
-import type { Book, BookId, CoverUrl } from '~/domain/book/types'
+import type { Book, BookId, BookLanguage, CoverUrl } from '~/domain/book/types'
 import {
   alertOf,
   datedEditionsOf,
   dueEditions,
   editionsOf,
-  foreignWorksOf,
+  foundVolumesOf,
   isUpcoming,
-  ownedInLanguage,
-  translationsOf,
+  ownedEditionsOf,
+  releasesOf,
+  watchedWorksOf,
 } from '~/domain/discover/business-rules'
 import { editionFrom } from '~/domain/discover/parsing'
 import { ReleaseDate } from '~/domain/discover/primitives'
 import type {
   DatedEdition,
-  ForeignWork,
-  TranslatedEdition,
-  TranslationWatch,
+  Release,
+  ReleaseEdition,
+  ReleaseWatch,
+  WatchedWork,
 } from '~/domain/discover/types'
-import type { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
-import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
+import type { SeriesId, SeriesName, SeriesState, VolumeNumber } from '~/domain/series/types'
+import type { FollowedSeries } from '~/domain/series/use-case'
+import type { AuthorName, BookTitle, Count, UserId } from '~/domain/shared/types'
 
 const at = (day: string) => new Date(`${day}T12:00:00Z`)
 let counter = 0
@@ -36,116 +39,153 @@ const book = (fields: Partial<Book>): Book => ({
   addedAt: at('2026-01-01'),
   ...fields,
 })
-const saga = (name: string, volume: number) => ({
-  id: `${name.toLowerCase().replace(/ /g, '-')}--x` as SeriesId,
-  name: name as SeriesName,
-  volume: volume as VolumeNumber,
-  kind: 'main' as const,
-})
 const title = (value: string) => value as BookTitle
 const volume = (value: number) => value as VolumeNumber
+const carlId = 'dungeon-crawler-carl--matt-dinniman' as SeriesId
 
-const carl: ForeignWork = {
-  key: 'series--dungeon-crawler-carl--x',
+const carlVolume = (number: number, language: BookLanguage = 'en') =>
+  book({
+    title: title(`Carl ${number}`),
+    authors: ['Matt Dinniman' as AuthorName],
+    language,
+    series: {
+      id: carlId,
+      name: 'Dungeon Crawler Carl' as SeriesName,
+      volume: volume(number),
+      kind: 'main',
+    },
+  })
+
+const row = (
+  language: BookLanguage,
+  state: SeriesState | null,
+  books: Book[] = [carlVolume(1, language), carlVolume(2, language)],
+): FollowedSeries => ({
+  id: carlId,
+  name: 'Dungeon Crawler Carl' as SeriesName,
+  author: 'Matt Dinniman' as AuthorName,
+  language,
+  catalogue: null,
+  opinion: null,
+  state,
+  progress: null,
+  ownedCount: books.length as Count,
+  books,
+  shelvedAt: at('2026-09-01'),
+})
+
+const work = (fields: Partial<WatchedWork>): WatchedWork => ({
+  key: `series--${carlId}--fr`,
   kind: 'series',
+  seriesId: carlId,
   title: title('Dungeon Crawler Carl'),
   author: 'Matt Dinniman' as AuthorName,
-  language: 'en',
+  language: 'fr',
+  readIn: 'en',
   volumesRead: [volume(1), volume(2)],
   cover: {},
   lastActivity: at('2026-09-01').getTime(),
-}
-const hailMary: ForeignWork = {
-  key: 'book--project-hail-mary--andy-weir',
+  ...fields,
+})
+const carlFr = work({})
+const carlEn = work({ key: `series--${carlId}--en`, language: 'en' })
+const hailMary = work({
+  key: 'book--project-hail-mary--andy-weir--fr',
   kind: 'book',
+  seriesId: undefined,
   title: title('Project Hail Mary'),
   author: 'Andy Weir' as AuthorName,
-  language: 'en',
   volumesRead: [],
   cover: { publishedCoverUrl: 'https://covers/phm.jpg' as CoverUrl },
   lastActivity: at('2026-08-01').getTime(),
-}
+})
 
-const edition = (fields: Partial<TranslatedEdition>): TranslatedEdition => ({
+const edition = (fields: Partial<ReleaseEdition>): ReleaseEdition => ({
   title: title('Untitled'),
   format: 'book',
   ...fields,
 })
 
-const watchOf = (work: ForeignWork, fields: Partial<TranslationWatch>): TranslationWatch => ({
-  key: `${work.key}--fr`,
-  kind: work.kind,
-  title: work.title,
-  author: work.author,
-  language: 'fr',
+const watchOf = (of: WatchedWork, fields: Partial<ReleaseWatch>): ReleaseWatch => ({
+  key: of.key,
+  kind: of.kind,
+  title: of.title,
+  author: of.author,
+  language: of.language,
   checkedAt: at('2026-09-20'),
   editions: [],
   ...fields,
 })
 
-describe('what the reader read in another language', () => {
-  const library = [
-    book({
-      title: title('Dungeon Crawler Carl'),
-      authors: ['Matt Dinniman' as AuthorName],
-      language: 'en',
-      series: saga('Dungeon Crawler Carl', 2),
-      finishedAt: at('2026-09-01'),
-    }),
-    book({
-      title: title('Carl’s Doomsday Scenario'),
-      authors: ['Matt Dinniman' as AuthorName],
-      language: 'en',
-      status: 'reading',
-      series: saga('Dungeon Crawler Carl', 1),
-      finishedAt: at('2026-08-01'),
-    }),
-    book({
-      title: title('Project Hail Mary'),
-      authors: ['Andy Weir' as AuthorName],
-      language: 'en',
-      finishedAt: at('2026-07-01'),
-    }),
-    book({ title: title('Dune'), language: 'fr' }),
-    book({ title: title('Piranesi'), language: 'en', status: 'to-read' }),
-    book({ title: title('Sans langue') }),
-  ]
+describe('what the reader follows', () => {
+  test('a saga read in English is watched in English and in French', () => {
+    const works = watchedWorksOf([row('en', 'complete')], [], 'fr')
 
-  test('is one work per saga and per book on its own, the most recent first', () => {
-    const works = foreignWorksOf(library, 'fr')
-
-    expect(works.map((work): unknown[] => [work.key, work.kind, work.title as string])).toEqual([
-      ['series--dungeon-crawler-carl--x', 'series', 'Dungeon Crawler Carl'],
-      ['book--project-hail-mary--andy-weir', 'book', 'Project Hail Mary'],
+    expect(works.map((entry): unknown[] => [entry.key, entry.language, entry.readIn])).toEqual([
+      [`series--${carlId}--en`, 'en', 'en'],
+      [`series--${carlId}--fr`, 'fr', 'en'],
     ])
     expect(works[0].volumesRead).toEqual([volume(1), volume(2)])
   })
 
-  test('leaves out the pile, the app’s language and a book of no known language', () => {
-    expect(foreignWorksOf(library, 'en')).toEqual([
-      expect.objectContaining({ title: 'Dune', language: 'fr' }),
+  test('a saga read in the app’s language, or held in it too, is watched once per edition', () => {
+    expect(watchedWorksOf([row('fr', 'in-progress')], [], 'fr').map((entry) => entry.key)).toEqual([
+      `series--${carlId}--fr`,
     ])
+    expect(
+      watchedWorksOf([row('en', 'in-progress'), row('fr', 'in-progress')], [], 'fr').map(
+        (entry) => entry.key,
+      ),
+    ).toEqual([`series--${carlId}--en`, `series--${carlId}--fr`])
   })
 
-  test('owns a translation only through a book in the app’s language', () => {
-    const owned = ownedInLanguage(
+  test('leaves out a saga set aside or not started', () => {
+    for (const state of ['unfollowed', 'not-started'] as const)
+      expect(watchedWorksOf([row('en', state)], [], 'fr')).toEqual([])
+  })
+
+  test('watches a saga nobody catalogued, whose next volume is exactly what is unknown', () => {
+    expect(watchedWorksOf([row('fr', null)], [], 'fr')).toHaveLength(1)
+  })
+
+  test('watches a book on its own read in another language for its translation', () => {
+    const works = watchedWorksOf(
+      [],
       [
         book({
-          title: title('Red Rising'),
-          authors: ['Pierce Brown' as AuthorName],
+          title: title('Project Hail Mary'),
+          authors: ['Andy Weir' as AuthorName],
           language: 'en',
         }),
-        book({ title: title('Dune'), authors: ['Frank Herbert' as AuthorName], language: 'fr' }),
+        book({ title: title('Dune'), language: 'fr' }),
+        book({ title: title('Piranesi'), language: 'en', status: 'to-read' }),
+        book({ title: title('Sans langue') }),
+        carlVolume(1),
       ],
       'fr',
     )
 
-    expect([...owned]).toEqual(['dune--frank-herbert'])
+    expect(works.map((entry): unknown[] => [entry.key, entry.kind, entry.readIn])).toEqual([
+      ['book--project-hail-mary--andy-weir--fr', 'book', 'en'],
+    ])
+  })
+
+  test('owns an edition only in its own language', () => {
+    const owned = ownedEditionsOf([
+      book({ title: title('Red Rising'), authors: ['Pierce Brown' as AuthorName], language: 'en' }),
+      carlVolume(3, 'fr'),
+    ])
+
+    expect([...owned]).toEqual([
+      'en|red-rising--pierce-brown',
+      'fr|carl-3--matt-dinniman',
+      `fr|${carlId}#3`,
+    ])
   })
 })
 
 describe('the editions a reader is offered', () => {
-  const watch = watchOf(carl, {
+  const watch = watchOf(carlFr, {
     editions: [
       edition({ title: title('Carl 1'), volume: volume(1), format: 'book' }),
       edition({
@@ -153,6 +193,11 @@ describe('the editions a reader is offered', () => {
         volume: volume(1),
         format: 'audiobook',
         date: ReleaseDate('2025-01'),
+      }),
+      edition({
+        title: title('Le Donjon'),
+        volume: volume(3),
+        format: 'book',
       }),
       edition({
         title: title('Carl 4'),
@@ -164,23 +209,31 @@ describe('the editions a reader is offered', () => {
   })
 
   test('hold no recording for a reader not connected to Audible', () => {
-    expect(editionsOf(carl, watch, false, new Set()).map((e) => e.format)).toEqual(['book'])
+    expect(editionsOf(carlFr, watch, false, new Set()).map((e) => e.format)).toEqual([
+      'book',
+      'book',
+    ])
   })
 
   test('hold every format, one per volume, for a reader connected to it', () => {
-    const editions = editionsOf(carl, watch, true, new Set())
+    const editions = editionsOf(carlFr, watch, true, new Set())
 
     expect(editions.map((e): unknown[] => [e.volume, e.format])).toEqual([
       [1, 'book'],
       [1, 'audiobook'],
+      [3, 'book'],
       [4, 'audiobook'],
     ])
   })
 
-  test('never hold one the reader already owns', () => {
-    const owned = new Set(['carl-1--matt-dinniman'])
+  test('never hold one the reader owns in that language, by title or by number', () => {
+    const owned = ownedEditionsOf([
+      book({ title: title('Carl 1'), authors: ['Matt Dinniman' as AuthorName], language: 'fr' }),
+      carlVolume(3, 'fr'),
+      carlVolume(4, 'en'),
+    ])
 
-    expect(editionsOf(carl, watch, true, owned).map((e) => e.volume)).toEqual([volume(4)])
+    expect(editionsOf(carlFr, watch, true, owned).map((e) => e.volume)).toEqual([volume(4)])
   })
 })
 
@@ -200,17 +253,31 @@ describe('whether an edition is still to come', () => {
 describe('the tab', () => {
   const watches = new Map([
     [
-      `${carl.key}--fr`,
-      watchOf(carl, {
-        translatedTitle: title('Carl, le donjon'),
+      carlFr.key,
+      watchOf(carlFr, {
+        localTitle: title('Carl, le donjon'),
         editions: [
           edition({ title: title('Carl 1'), volume: volume(1) }),
-          edition({ title: title('Carl 4'), volume: volume(4), date: ReleaseDate('2027-02-19') }),
+          edition({ title: title('Carl 4'), volume: volume(4), date: ReleaseDate('2026-10-08') }),
         ],
       }),
     ],
     [
-      `${hailMary.key}--fr`,
+      carlEn.key,
+      watchOf(carlEn, {
+        editions: [
+          edition({ title: title('Carl 3'), volume: volume(3), date: ReleaseDate('2024-01-01') }),
+          edition({
+            title: title('Carl 8'),
+            volume: volume(8),
+            date: ReleaseDate('2026-12'),
+            coverUrl: 'https://covers/carl8.jpg' as CoverUrl,
+          }),
+        ],
+      }),
+    ],
+    [
+      hailMary.key,
       watchOf(hailMary, {
         editions: [
           edition({ title: title('Projet Dernière Chance'), date: ReleaseDate('2021-10-06') }),
@@ -218,11 +285,11 @@ describe('the tab', () => {
       }),
     ],
   ])
-  const feed = { language: 'fr' as const, dismissed: [] as string[] }
+  const feed = { dismissed: [] as string[] }
 
-  test('puts a work with an edition to come in upcoming, the rest in available', () => {
-    const { upcoming, available } = translationsOf(
-      [carl, hailMary],
+  test('puts every edition with a volume to come in upcoming, whatever its language', () => {
+    const { upcoming, maybe } = releasesOf(
+      [carlEn, carlFr, hailMary],
       watches,
       feed,
       undefined,
@@ -230,48 +297,110 @@ describe('the tab', () => {
       '2026-09-24',
     )
 
-    expect(upcoming.map((t): unknown[] => [t.title as string, t.nextDate])).toEqual([
-      ['Carl, le donjon', '2027-02-19'],
-    ])
     expect(
-      available.map((t): unknown[] => [t.title as string, t.originalTitle as string, t.coverUrl]),
-    ).toEqual([['Projet Dernière Chance', 'Project Hail Mary', 'https://covers/phm.jpg']])
+      upcoming.map((release): unknown[] => [
+        release.title as string,
+        release.language,
+        release.nextDate,
+        release.coverUrl,
+      ]),
+    ).toEqual([
+      ['Carl, le donjon', 'fr', '2026-10-08', undefined],
+      ['Dungeon Crawler Carl', 'en', '2026-12', 'https://covers/carl8.jpg'],
+    ])
+    expect(maybe.map((release): unknown[] => [release.title as string, release.coverUrl])).toEqual([
+      ['Projet Dernière Chance', 'https://covers/phm.jpg'],
+    ])
   })
 
-  test('leaves out a work the reader is not interested in, and one with nothing translated', () => {
-    const { upcoming, available } = translationsOf(
-      [carl, hailMary, { ...hailMary, key: 'book--untranslated--x' }],
-      watches,
-      { ...feed, dismissed: [carl.key] },
+  test('proposes a translation out, never a volume out in the language already read', () => {
+    const noNext = new Map(watches)
+    noNext.set(
+      carlEn.key,
+      watchOf(carlEn, {
+        editions: [
+          edition({ title: title('Carl 3'), volume: volume(3), date: ReleaseDate('2024-01-01') }),
+        ],
+      }),
+    )
+    const { upcoming, maybe } = releasesOf(
+      [carlEn],
+      noNext,
+      feed,
       undefined,
       new Set(),
       '2026-09-24',
     )
 
-    expect([...upcoming, ...available].map((t) => t.key)).toEqual([hailMary.key])
+    expect([...upcoming, ...maybe]).toEqual([])
+  })
+
+  test('leaves out a work the reader is not interested in, and one with nothing found', () => {
+    const { upcoming, maybe } = releasesOf(
+      [carlFr, hailMary, { ...hailMary, key: 'book--untranslated--x--fr' }],
+      watches,
+      { dismissed: [carlFr.key] },
+      undefined,
+      new Set(),
+      '2026-09-24',
+    )
+
+    expect([...upcoming, ...maybe].map((release) => release.key)).toEqual([hailMary.key])
+  })
+})
+
+describe('what a saga’s watch writes into its catalogue', () => {
+  test('the numbered printed volumes, with their date and cover', () => {
+    const watch = watchOf(carlFr, {
+      editions: [
+        edition({
+          title: title('Carl 4'),
+          volume: volume(4),
+          date: ReleaseDate('2026-10-08'),
+          coverUrl: 'https://covers/4.jpg' as CoverUrl,
+        }),
+        edition({ title: title('Carl 4'), volume: volume(4), format: 'audiobook' }),
+        edition({ title: title('Hors-série') }),
+      ],
+    })
+
+    expect(foundVolumesOf(watch)).toEqual([
+      {
+        volume: volume(4),
+        title: title('Carl 4'),
+        date: ReleaseDate('2026-10-08'),
+        coverUrl: 'https://covers/4.jpg' as CoverUrl,
+      },
+    ])
   })
 })
 
 describe('the alerts', () => {
   const dated: DatedEdition = {
-    key: `${carl.key}--audiobook--4`,
-    workKey: carl.key,
+    key: `${carlFr.key}--audiobook--4`,
+    workKey: carlFr.key,
     title: title('Carl 4'),
     volume: volume(4),
     format: 'audiobook',
     date: ReleaseDate('2027-02-19'),
+    language: 'fr',
+    translation: true,
   }
+
+  const release = (fields: Partial<Release>): Release => ({
+    key: carlFr.key,
+    kind: 'series',
+    language: 'fr',
+    readIn: 'en',
+    title: title('Carl'),
+    editions: [],
+    ...fields,
+  })
 
   test('keep the editions dated to the day, recent or to come', () => {
     const kept = datedEditionsOf(
       [
-        {
-          key: carl.key,
-          kind: 'series',
-          title: title('Carl'),
-          originalTitle: title('Carl'),
-          originalLanguage: 'en',
-          volumesRead: [],
+        release({
           editions: [
             edition({
               title: title('Carl 4'),
@@ -282,12 +411,29 @@ describe('the alerts', () => {
             edition({ title: title('Carl 5'), volume: volume(5), date: ReleaseDate('2027-06') }),
             edition({ title: title('Carl 1'), volume: volume(1), date: ReleaseDate('2025-01-01') }),
           ],
-        },
+        }),
       ],
       '2026-09-24',
     )
 
     expect(kept).toEqual([dated])
+  })
+
+  test('know a next volume from a translation', () => {
+    const [next] = datedEditionsOf(
+      [
+        release({
+          key: carlEn.key,
+          language: 'en',
+          editions: [
+            edition({ title: title('Carl 8'), volume: volume(8), date: ReleaseDate('2026-12-01') }),
+          ],
+        }),
+      ],
+      '2026-09-24',
+    )
+
+    expect(next).toMatchObject({ language: 'en', translation: false })
   })
 
   test('go out on the day, and up to two weeks late, once', () => {
@@ -298,7 +444,7 @@ describe('the alerts', () => {
     expect(dueEditions(feed, '2027-03-04')).toEqual([dated])
     expect(dueEditions(feed, '2027-03-06')).toEqual([])
     expect(dueEditions({ ...feed, notified: [dated.key] }, '2027-02-19')).toEqual([])
-    expect(dueEditions({ ...feed, dismissed: [carl.key] }, '2027-02-19')).toEqual([])
+    expect(dueEditions({ ...feed, dismissed: [carlFr.key] }, '2027-02-19')).toEqual([])
   })
 
   test('say what came out, in the reader’s language', () => {
@@ -309,6 +455,14 @@ describe('the alerts', () => {
     expect(alertOf({ ...dated, volume: undefined, format: 'book' }, 'en').body).toBe(
       '"Carl 4" is out in English.',
     )
+    expect(alertOf({ ...dated, format: 'book', translation: false }, 'fr')).toEqual({
+      title: 'Nouveau tome',
+      body: '« Carl 4 », tome 4, est sorti.',
+    })
+    expect(alertOf({ ...dated, format: 'book', translation: false }, 'en')).toEqual({
+      title: 'New volume',
+      body: '"Carl 4", book 4, is out.',
+    })
   })
 })
 

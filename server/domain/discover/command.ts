@@ -1,5 +1,5 @@
 import * as repository from '~/domain/discover/infrastructure/repository'
-import type { DiscoverFeed, TranslationWatch } from '~/domain/discover/types'
+import type { DiscoverFeed, ReleaseWatch } from '~/domain/discover/types'
 import type { UserId } from '~/domain/shared/types'
 
 /** How many dismissed works and pushed editions a feed remembers. Past that
@@ -27,7 +27,7 @@ export namespace DiscoverCommand {
       notified: keys.reduce<string[]>((all, key) => remembered(all, key), feed.notified),
     })
 
-  export const saveWatch = (watch: TranslationWatch): Promise<void> => repository.saveWatch(watch)
+  export const saveWatch = (watch: ReleaseWatch): Promise<void> => repository.saveWatch(watch)
 
   export const deleteForUser = (userId: UserId): Promise<void> => repository.removeFeed(userId)
 }

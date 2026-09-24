@@ -28,7 +28,7 @@ const FollowedSeriesPageType = builder
     }),
   })
 
-const FollowedSeriesType = builder.objectRef<FollowedSeries>('FollowedSeries').implement({
+export const FollowedSeriesType = builder.objectRef<FollowedSeries>('FollowedSeries').implement({
   description: 'A saga the reader owns at least one volume of.',
   fields: (t) => ({
     id: t.field({ type: 'SeriesId', resolve: (followed) => followed.id }),

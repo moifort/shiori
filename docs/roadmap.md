@@ -10,10 +10,10 @@ are recorded here so their constraints are not forgotten while the foundation is
 | 1 | Cover scan, enriched record, library, three reading statuses, five-star rating, note | **specified** |
 | 2 | Series: shared catalogue, library grouping, series screen, related works | **specified** |
 | 3 | Sharing a library with other people, `hidden` books excluded | **built** |
-| 4 | Release alerts: the translation of a book read in another language | **built** |
+| 4 | Release alerts: the next volume of a followed saga, and translations | **built** |
 | 5 | Audible import | **built** |
 | 6 | Kindle import | planned |
-| 7 | The Découvrir tab: translations of what the reader read in another language | **rebuilding** |
+| 7 | The Découvrir tab: what is coming next in the sagas the reader follows | **rebuilding** |
 
 ## Batch 3 — Sharing
 
@@ -36,8 +36,9 @@ Built and deployed with its APNs key. The data
 quality problem has its answer: a date is kept as precisely as it was announced — a year, a
 month or a day — and only a day ever fires an alert.
 
-One alert is left, on by default: a translation into the app's language of a book the reader
-read in another one, in print, or on Audible for a reader connected to it. The saga, author and
+One alert is left, on by default: a release the Découvrir tab found — the next volume of a saga
+the reader follows, in the language they read it in, or a translation into the app's language of
+what they read in another one — in print, or on Audible for a reader connected to it. The saga, author and
 Audible-release alerts went with the Découvrir redesign of batch 7, which holds the dates the
 alert reads.
 
@@ -100,6 +101,16 @@ Audible, each with a search for its title on their own Audible store. Audible's 
 was tried and dropped: once `audible-api-ts` 0.4.1 stopped sending names unencoded (which
 Audible refused with a 403), its searches still missed French recordings that exist. Batch 2 already delivers the zero-cost half of it: the recommendations
 section on a book screen, listing the other volumes of its series.
+
+The second step, the same day, thinks by saga rather than by language
+([spec](superpowers/specs/2026-09-24-discover-by-series-design.md)): every saga the reader is
+reading or has finished is watched in the language they read it in — for its next volume — and
+in the app's when that differs — for its translation — one shared watch per saga and language.
+Each search writes the dates it found into the shared catalogue, per language, so the series
+screen, the saga's state and the dashboard follow: a volume announced to the day reopens a
+finished saga. The tab is laid out as the Library is — a "Livres | Séries" capsule, the Series
+tab's rows, the same book and series screens — in "À venir" and "Vous intéresse peut-être", the
+latter holding for now the translations already out.
 
 ## Deferred on purpose
 
