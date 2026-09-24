@@ -230,7 +230,7 @@ struct DiscoverView: View {
     /// announcement from this morning is not there yet.
     private var lastSearch: String {
         guard let preparedAt = feed?.preparedAt else { return "" }
-        return String(localized: "Nouveautés cherchées \(preparedAt.formatted(.relative(presentation: .named)))")
+        return String(localized: "Mis à jour \(preparedAt.formatted(.relative(presentation: .named)))")
     }
 
     private var prepareCard: some View {
