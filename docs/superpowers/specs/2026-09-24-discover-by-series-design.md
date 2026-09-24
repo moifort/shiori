@@ -42,8 +42,16 @@ trailing edge for an announced volume. Standalone books read in another language
 the app's appear in "Vous intéresse peut-être".
 
 A tap opens the same book screen as the Library, in preview: the book is not in the library,
-so its details are fetched on the tap, as a saga's catalogue is on its first opening. The
-screen offers "Ajouter à lire" and "Pas intéressé"; nothing enters the library without the
+so its record is **built** on the tap, as a saga's catalogue is on its first opening — the
+same web-grounded enrichment a scan runs (cover, synopsis, genre and subgenres, publisher,
+pages, ISBN, saga placement), so the screen looks exactly like a book the reader owns. This
+holds for a book not out yet: a volume due in a month is described from its announcement
+(publisher page, pre-order listings); what nobody knows before release, such as the page
+count, is simply absent, as it is on any record missing it.
+
+The screen is `BookPage` itself, not a lighter variant. Only what needs ownership changes:
+the reading status, rating and reading dates give way to the release date ("Sort le 8
+octobre 2026"), "Ajouter à lire" and "Pas intéressé". Nothing enters the library without the
 button.
 
 The preview lookup is shared and cached (keyed on ISBN-13, else title + author + language),
@@ -163,8 +171,9 @@ type Release {
 
 The Séries shelf groups `Release` by key; the Livres shelf flattens their editions. Book
 previews are served by a new `bookPreview(isbn13, title, author, language)` query returning a
-`Book` shape with no id, which the book screen draws in its read-only mode
-(`ReadOnlyBookHeader` and the sections that need no ownership).
+`Book` shape with no id and its release date, which `BookPage` draws in preview mode. The
+built record is cached shared, so the second reader to open it pays nothing; a cached preview
+of an announced book is rebuilt once it is out, since its listing then fills in.
 
 ## Tests
 
