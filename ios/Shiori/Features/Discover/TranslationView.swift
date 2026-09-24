@@ -1,9 +1,11 @@
 import SwiftUI
 
-/// One work in detail: what the reader read, then every edition in their
-/// language, one card per format, each out or dated.
+/// One work in detail, in the format the tab is filtered on: what the reader
+/// read, then every edition of that format in their language, each out or
+/// dated.
 struct TranslationView: View {
     let translation: Translation
+    let format: TranslationFormat
     let onDismiss: () -> Void
     @Environment(\.dismiss) private var close
     @Environment(\.openURL) private var openURL
@@ -28,14 +30,12 @@ struct TranslationView: View {
                     LabeledContent(translation.originalTitle, value: readLine)
                 }
 
-                ForEach(translation.formats, id: \.self) { format in
-                    Section {
-                        ForEach(translation.editions.filter { $0.format == format }) { edition in
-                            editionRow(edition)
-                        }
-                    } header: {
-                        Label("En français — \(format.label.lowercased())", systemImage: format.symbol)
+                Section {
+                    ForEach(translation.editions.filter { $0.format == format }) { edition in
+                        editionRow(edition)
                     }
+                } header: {
+                    Label("En français — \(format.label.lowercased())", systemImage: format.symbol)
                 }
 
                 Section {

@@ -1,8 +1,18 @@
 import Foundation
 
-/// How a translation reaches the reader.
-enum TranslationFormat: Sendable, Hashable {
+/// How a translation reaches the reader, and the filter the tab is read
+/// through — kept between visits.
+enum TranslationFormat: String, Sendable, Hashable, CaseIterable, Identifiable {
     case book, audiobook
+    var id: String { rawValue }
+
+    /// The toolbar's word for it: a recording is only ever offered from Audible.
+    var filterLabel: String {
+        switch self {
+        case .book: String(localized: "Livre")
+        case .audiobook: String(localized: "Audible")
+        }
+    }
 
     var label: String {
         switch self {
@@ -68,8 +78,17 @@ struct Translation: Identifiable, Hashable, Sendable {
         )
     }
 
-    var formats: [TranslationFormat] {
-        [.book, .audiobook].filter { format in editions.contains { $0.format == format } }
+    /// The work as one format shows it: only its editions in that format, and
+    /// the soonest of those still to come. Nil when it has none.
+    func narrowed(to format: TranslationFormat) -> Translation? {
+        let kept = editions.filter { $0.format == format }
+        guard !kept.isEmpty else { return nil }
+        let next = kept.filter(\.isUpcoming).compactMap(\.date).min { ReleaseDateText.lastDay($0) < ReleaseDateText.lastDay($1) }
+        return Translation(
+            key: key, isSeries: isSeries, title: title, originalTitle: originalTitle, author: author,
+            originalLanguage: originalLanguage, volumesRead: volumesRead, coverURL: coverURL,
+            nextDate: next, editions: kept
+        )
     }
 }
 
@@ -80,6 +99,20 @@ struct DiscoverFeed: Sendable {
     var available: [Translation]
 
     var isEmpty: Bool { upcoming.isEmpty && available.isEmpty }
+
+    /// The tab through one format: a work moves to "coming soon" only for an
+    /// edition of that format still to come, the soonest first.
+    func narrowed(to format: TranslationFormat) -> DiscoverFeed {
+        let works = (upcoming + available).compactMap { $0.narrowed(to: format) }
+        return DiscoverFeed(
+            preparedAt: preparedAt,
+            canRefresh: canRefresh,
+            upcoming: works.filter { $0.nextDate != nil }.sorted {
+                ReleaseDateText.lastDay($0.nextDate ?? "") < ReleaseDateText.lastDay($1.nextDate ?? "")
+            },
+            available: works.filter { $0.nextDate == nil }
+        )
+    }
 
     mutating func remove(key: String) {
         upcoming.removeAll { $0.key == key }

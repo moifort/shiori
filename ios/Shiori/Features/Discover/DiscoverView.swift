@@ -2,8 +2,9 @@ import SwiftUI
 
 /// The Découvrir tab: the books the reader read in another language, now out
 /// or coming out in theirs — printed, and recorded for a reader connected to
-/// Audible. One row per saga or per book on its own; swiping one away says
-/// "not interested" for good.
+/// Audible. Read through one format at a time, picked in the toolbar and kept
+/// between visits. One row per saga or per book on its own; swiping one away
+/// says "not interested" for good.
 ///
 /// The server looks again every day. Until the first time, the tab offers to
 /// look now; after that, once a day at most.
@@ -13,6 +14,7 @@ struct DiscoverView: View {
     @State private var isPreparing = false
     @State private var errorMessage: String?
     @State private var openTranslation: Translation?
+    @AppStorage("discover.format") private var format: TranslationFormat = .book
 
     var body: some View {
         NavigationStack {
@@ -20,7 +22,7 @@ struct DiscoverView: View {
                 .navigationTitle("Découvrir")
                 .toolbar { toolbar }
                 .sheet(item: $openTranslation) { translation in
-                    TranslationView(translation: translation) {
+                    TranslationView(translation: translation, format: format) {
                         Task { await dismiss(translation) }
                     }
                 }
@@ -37,16 +39,19 @@ struct DiscoverView: View {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let errorMessage, feed == nil {
             EmptyStateView.failure("Découvrir indisponible", message: errorMessage) { await load() }
-        } else if let feed {
+        } else if let whole = feed {
+            let feed = whole.narrowed(to: format)
             List {
                 if feed.preparedAt == nil {
                     Section { prepareCard }
                 } else if feed.isEmpty {
                     Section {
                         EmptyStateView(
-                            systemImage: "character.book.closed",
+                            systemImage: format == .audiobook ? "headphones" : "character.book.closed",
                             title: "Aucune traduction pour l'instant",
-                            message: "Les livres que vous lisez dans une autre langue apparaîtront ici dès qu'ils sortent, ou sont annoncés, en français."
+                            message: format == .audiobook
+                                ? "Les livres audio en français des livres que vous lisez dans une autre langue apparaîtront ici. Ils ne sont proposés que si vous avez connecté Audible."
+                                : "Les livres que vous lisez dans une autre langue apparaîtront ici dès qu'ils sortent, ou sont annoncés, en français."
                         )
                     }
                     .listRowBackground(Color.clear)
@@ -57,7 +62,7 @@ struct DiscoverView: View {
                     } header: {
                         Text("Bientôt en français")
                     } footer: {
-                        Label("Vous recevrez une notification le jour où chacune sort.", systemImage: "bell")
+                        Label("Vous recevrez une notification le jour de la sortie.", systemImage: "bell")
                     }
                 }
                 if !feed.available.isEmpty {
@@ -71,8 +76,22 @@ struct DiscoverView: View {
         }
     }
 
+    /// The two formats as the Library tab lays out its views: icons on the
+    /// left, the one picked in the tint.
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
+        ToolbarItemGroup(placement: .topBarLeading) {
+            ForEach(TranslationFormat.allCases) { item in
+                Button {
+                    format = item
+                } label: {
+                    Label(item.filterLabel, systemImage: item.symbol)
+                }
+                .labelStyle(.iconOnly)
+                .tint(format == item ? .accentColor : .primary)
+                .accessibilityIdentifier("discover-format-\(item.rawValue)")
+            }
+        }
         if let feed, feed.preparedAt != nil, feed.canRefresh {
             ToolbarItem(placement: .primaryAction) {
                 if isPreparing {
@@ -195,20 +214,6 @@ private struct TranslationRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
-                HStack(spacing: 6) {
-                    ForEach(translation.formats, id: \.self) { format in
-                        HStack(spacing: 3) {
-                            Image(systemName: format.symbol)
-                            Text(format.label)
-                        }
-                            .font(.caption2.weight(.medium))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(.tint.opacity(0.12), in: .rect(cornerRadius: 6))
-                            .foregroundStyle(.tint)
-                    }
-                }
-                .padding(.top, 2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             if let next = translation.nextDate {
@@ -223,14 +228,10 @@ private struct TranslationRow: View {
 
     private var subtitle: String {
         if translation.isSeries {
-            let coming = translation.formats.compactMap { format -> String? in
-                guard let next = translation.editions.first(where: { $0.format == format && $0.isUpcoming }) else {
-                    return nil
-                }
+            if let next = translation.editions.first(where: \.isUpcoming) {
                 let volume = next.volume.map { String(localized: "Tome \($0)") } ?? next.title
-                return "\(format.label) : \(volume), \(ReleaseDateText.phrase(next.date ?? ""))"
+                return "\(volume), \(ReleaseDateText.phrase(next.date ?? ""))"
             }
-            if !coming.isEmpty { return coming.joined(separator: " · ") }
             return TranslationView.availableVolumes(translation.editions)
         }
         let language = translation.originalLanguage.label.lowercased()
@@ -243,6 +244,15 @@ private struct TranslationRow: View {
 /// A release date in a sentence: "le 19 févr. 2027", "en mars 2027", "en
 /// 2027" — as precisely as it was announced.
 enum ReleaseDateText {
+    /// The last day a date can mean, to put "2027" after "2027-02-19".
+    static func lastDay(_ date: String) -> String {
+        switch date.count {
+        case 10: date
+        case 7: date + "-31"
+        default: date + "-12-31"
+        }
+    }
+
     static func phrase(_ date: String) -> String {
         let parts = date.split(separator: "-").compactMap { Int($0) }
         var components = DateComponents()
@@ -299,4 +309,5 @@ struct ReleaseDateBadge: View {
 #Preview {
     DiscoverView()
 }
+
 
