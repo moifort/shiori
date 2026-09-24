@@ -62,29 +62,24 @@ enum ReleaseDateText {
     }
 }
 
-/// A release date as a small calendar leaf, in the orange every announced
-/// date wears: the day over the month, or the month over the year, or the
-/// year alone — as precisely as it was announced. One size whatever it says,
-/// so the badges line up down a list.
+/// A release date as a small calendar leaf: the day over the month, or the
+/// month over the year, or the year alone — as precisely as it was announced.
+/// One square whatever it says, so the badges line up down a list.
 struct ReleaseDateBadge: View {
     let date: String
 
     var body: some View {
         let parts = date.split(separator: "-").compactMap { Int($0) }
-        VStack(spacing: 1) {
-            Text(verbatim: top(parts))
-                .font(.subheadline.weight(.semibold))
+        VStack(spacing: 0) {
+            Text(verbatim: top(parts)).font(.subheadline.weight(.semibold))
             if let bottom = bottom(parts) {
-                Text(verbatim: bottom)
-                    .font(.caption2.weight(.medium))
-                    .opacity(0.8)
+                Text(verbatim: bottom).font(.caption2).foregroundStyle(.secondary)
             }
         }
         .lineLimit(1)
         .minimumScaleFactor(0.8)
-        .foregroundStyle(.orange)
-        .frame(width: 52, height: 44)
-        .background(.orange.opacity(0.15), in: .rect(cornerRadius: 10))
+        .frame(width: 48, height: 48)
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(ReleaseDateText.phrase(date)))
     }
