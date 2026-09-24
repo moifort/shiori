@@ -88,9 +88,13 @@ struct FriendSaga: Identifiable, Sendable {
     var favoritedAt: Date?
     let genre: BookGenre?
     let subgenre: String?
-    /// Its volumes on the shelf, in reading order. Only a hearted saga carries
-    /// them: the favourites draw them as a strip of covers.
+    /// Its volumes on the shelf, in reading order, for a strip of covers:
+    /// carried by a hearted saga and by those of the recent activity.
     var volumes: [Book] = []
+    /// The last time its owner did anything with one of those volumes.
+    var lastActivityAt: Date?
+    /// The reader already holds a volume of it: nothing to take.
+    var inLibrary = false
 }
 
 /// A friend's shelf at a glance.
@@ -102,7 +106,7 @@ struct FriendProfile: Sendable {
     var pile: [FriendBook]
     /// The hearted books a hearted saga does not already stand for.
     var favorites: [FriendBook]
-    let sagas: [FriendSaga]
+    var sagas: [FriendSaga]
     /// The book they finished most recently, when one carries its date.
     var lastFinished: FriendBook?
 
@@ -113,6 +117,16 @@ struct FriendProfile: Sendable {
         return hearted.filter { $0.favoritedAt != nil }
             .sorted { ($0.favoritedAt ?? .distantPast) > ($1.favoritedAt ?? .distantPast) }
             + hearted.filter { $0.favoritedAt == nil }
+    }
+
+    /// The hearted sagas, the one touched last first.
+    var favoriteSagasByActivity: [FriendSaga] {
+        favoriteSagas.sorted { ($0.lastActivityAt ?? .distantPast) > ($1.lastActivityAt ?? .distantPast) }
+    }
+
+    /// The hearted books, the one touched last first.
+    var favoritesByActivity: [FriendBook] {
+        favorites.sorted { ($0.lastActivityAt ?? .distantPast) > ($1.lastActivityAt ?? .distantPast) }
     }
 
     /// What moved on the shelf in the last thirty days, one line of each
@@ -336,7 +350,11 @@ private extension FriendProfile {
                     favoritedAt: $0.favoritedAt.flatMap(GraphQLHelpers.parseISO8601),
                     genre: $0.genre?.asDomain,
                     subgenre: $0.subgenre,
-                    volumes: $0.volumes.map { Book(row: $0.fragments.friendBookRow) }
+                    volumes: $0.volumes.map { Book(row: $0.fragments.friendBookRow) },
+                    lastActivityAt: $0.volumes
+                        .compactMap { GraphQLHelpers.parseISO8601($0.fragments.friendBookRow.lastActivityAt) }
+                        .max(),
+                    inLibrary: $0.volumes.contains { $0.fragments.friendBookRow.inLibrary }
                 )
             },
             lastFinished: shelf.lastFinished.map { FriendBook(row: $0.fragments.friendBookRow) }

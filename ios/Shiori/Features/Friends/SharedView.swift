@@ -112,6 +112,7 @@ struct SharedView: View {
                             row(Friend(seenByFriends: myShelf), name: "Vous")
                         }
                         .navigationLinkIndicatorVisibility(.hidden)
+                        .edgeToEdgeSeparator()
                         .accessibilityIdentifier("shared-my-page")
                     }
                 }
@@ -124,6 +125,7 @@ struct SharedView: View {
                                 row(friend)
                             }
                             .navigationLinkIndicatorVisibility(.hidden)
+                            .edgeToEdgeSeparator()
                             .swipeActions {
                                 Button("Retirer", role: .destructive) { removing = friend }
                             }

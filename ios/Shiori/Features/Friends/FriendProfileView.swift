@@ -26,6 +26,10 @@ struct FriendProfileView: View {
     /// The books being added from their row, each showing its own spinner.
     @State private var adding: Set<String> = []
     @State private var addFailed: String?
+    /// The books in progress past the first three, shown on "Voir plus".
+    @State private var showsAllReading = false
+    /// The sagas being added from their row, each showing its own spinner.
+    @State private var addingSagas: Set<String> = []
 
     init(friend: Friend) {
         self.friend = friend
@@ -111,32 +115,56 @@ struct FriendProfileView: View {
                                     SagaRow(saga: saga, showsCovers: true)
                                 }
                             }
+                            .edgeToEdgeSeparator()
                         } else {
                             RecentActivityRow(activity: activity)
+                                .edgeToEdgeSeparator()
                         }
                     }
                 }
             }
-            shelf("En cours", books: profile.reading, empty: "Aucune lecture en cours.", showsSeries: true)
+            // The book the recent activity already leads with is not listed
+            // again: the rest, three at first, the one touched last first.
+            let leading = recent.first { if case .reading = $0 { true } else { false } }?.book?.id
+            let reading = profile.reading.filter { $0.id != leading }
+            if profile.reading.isEmpty {
+                shelf("En cours", books: [], empty: "Aucune lecture en cours.")
+            } else if !reading.isEmpty {
+                shelf(
+                    "En cours",
+                    books: showsAllReading ? reading : Array(reading.prefix(3)),
+                    empty: "",
+                    showsSeries: true,
+                    hidden: showsAllReading ? 0 : max(0, reading.count - 3)
+                )
+            }
             // A hearted saga stands for its volumes: the books below it are
             // the hearts it does not already cover.
             if !profile.favoriteSagas.isEmpty {
-                Section("Ses séries favorites") {
-                    ForEach(profile.favoriteSagas) { saga in
-                        SagaRow(saga: saga, showsCovers: true)
+                Section {
+                    ForEach(profile.favoriteSagasByActivity) { saga in
+                        HStack(alignment: .top, spacing: 8) {
+                            SagaRow(saga: saga, showsCovers: true)
+                            sagaTakeButton(saga)
+                        }
+                        .edgeToEdgeSeparator()
                     }
+                } header: {
+                    hearted("Séries")
                 }
             }
             shelf(
-                "Ses livres favoris",
-                books: profile.favorites,
+                "Livres",
+                hearted: true,
+                books: profile.favoritesByActivity,
                 empty: "Aucun livre favori.",
-                showsStatus: true
+                asFavorites: true
             )
             if !profile.sagas.isEmpty {
                 Section("Ses séries") {
                     ForEach(profile.sagas) { saga in
                         SagaRow(saga: saga)
+                            .edgeToEdgeSeparator()
                     }
                 }
             }
@@ -190,18 +218,29 @@ struct FriendProfileView: View {
         .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 14))
     }
 
+    /// A section heading followed by a red heart: the favourites' sections.
+    private func hearted(_ title: LocalizedStringKey) -> some View {
+        HStack(spacing: 4) {
+            Text(title)
+            Image(systemName: "heart.fill").foregroundStyle(.red)
+        }
+    }
+
     @ViewBuilder
     private func shelf(
         _ title: LocalizedStringKey,
+        hearted isHearted: Bool = false,
         books: [FriendBook],
         empty: LocalizedStringKey,
-        // Only the favourites mix statuses: the other shelves are one each,
-        // and their heading already says which.
-        showsStatus: Bool = false,
         // Books in progress name their saga: "Tome 3" of what, otherwise.
-        showsSeries: Bool = false
+        showsSeries: Bool = false,
+        // Every favourite is hearted: the heart, the status and the stars
+        // would say much the same on every row, so the genre takes the corner.
+        asFavorites: Bool = false,
+        // How many more books "Voir plus" would show.
+        hidden: Int = 0
     ) -> some View {
-        Section(title) {
+        Section {
             if books.isEmpty {
                 Text(empty).font(.subheadline).foregroundStyle(.secondary)
             } else {
@@ -212,22 +251,59 @@ struct FriendProfileView: View {
                             authorLine: entry.book.authorLine,
                             cover: entry.book,
                             status: entry.book.status,
-                            rating: entry.book.rating,
+                            // The stars and the genre together would squeeze
+                            // the title of a favourite to a few letters.
+                            rating: asFavorites ? nil : entry.book.rating,
                             volumeLabel: showsSeries ? nil : entry.book.series?.label,
                             series: showsSeries ? entry.book.series : nil,
-                            statusTag: showsStatus ? entry.book.status : nil,
                             genre: entry.book.genre,
-                            subgenre: entry.book.subgenres.first,
+                            subgenre: asFavorites ? nil : entry.book.subgenres.first,
                             language: entry.book.language,
-                            isFavorite: entry.book.favorite
+                            isFavorite: asFavorites ? false : entry.book.favorite,
+                            genreInCorner: asFavorites
                         )
                         .contentShape(.rect)
                         .onTapGesture { openBook = entry }
                         takeButton(entry)
                     }
+                    .edgeToEdgeSeparator()
                     .accessibilityIdentifier("friend-book-row")
                 }
+                if hidden > 0 {
+                    Button("Voir plus (\(hidden))") {
+                        withAnimation { showsAllReading = true }
+                    }
+                    .edgeToEdgeSeparator()
+                    .accessibilityIdentifier("friend-shelf-more")
+                }
             }
+        } header: {
+            if isHearted { hearted(title) } else { Text(title) }
+        }
+    }
+
+    /// "+" to take a saga: its first volume on the friend's shelf goes onto
+    /// the reader's pile, which makes it one of their sagas. Greyed out when
+    /// they already hold a volume of it — every saga of the preview.
+    @ViewBuilder
+    private func sagaTakeButton(_ saga: FriendSaga) -> some View {
+        if addingSagas.contains(saga.id) {
+            ProgressView().frame(width: 32)
+        } else {
+            let owned = saga.inLibrary || isPreview || saga.volumes.isEmpty
+            Button {
+                Task { await add(saga) }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.caption.weight(.semibold))
+            }
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.circle)
+            .controlSize(.small)
+            .foregroundStyle(owned ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.tint))
+            .disabled(owned)
+            .accessibilityLabel(Text(owned ? "Série déjà dans votre bibliothèque" : "Ajouter la série à mes séries"))
+            .accessibilityIdentifier(owned ? "friend-saga-owned" : "friend-saga-add")
         }
     }
 
@@ -274,6 +350,21 @@ struct FriendProfileView: View {
         do {
             try await FriendsAPI.addBook(friendId: friend.userId, bookId: entry.id, status: .toRead)
             markOwned(entry.id)
+        } catch {
+            addFailed = reportError(error)
+        }
+    }
+
+    private func add(_ saga: FriendSaga) async {
+        guard let first = saga.volumes.first else { return }
+        addingSagas.insert(saga.id)
+        defer { addingSagas.remove(saga.id) }
+        do {
+            try await FriendsAPI.addBook(friendId: friend.userId, bookId: first.id, status: .toRead)
+            markOwned(first.id)
+            if let index = profile?.sagas.firstIndex(where: { $0.id == saga.id }) {
+                profile?.sagas[index].inLibrary = true
+            }
         } catch {
             addFailed = reportError(error)
         }
