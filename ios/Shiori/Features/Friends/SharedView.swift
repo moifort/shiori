@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The Partagé tab: the reader's own shelf as their friends see it, in three
-/// boxes at the top, then who the reader shares their library with, each friend
+/// The Partagé tab: a line at the top opening the reader's own page exactly as
+/// their friends see it, then who the reader shares their library with, each friend
 /// with their shelf in figures — favourites, books in progress, pile — and the
 /// book they are reading. A friend opens on their shelf, where any book can be
 /// taken onto the reader's own.
@@ -34,9 +34,9 @@ struct SharedView: View {
                         FriendProfileView(friend: friend)
                     }
                 }
-                .navigationDestination(for: MyShelfList.self) { list in
+                .navigationDestination(for: MyPagePreview.self) { _ in
                     if let myShelf {
-                        MyShelfListView(list: list, shelf: myShelf)
+                        FriendProfileView(preview: myShelf)
                     }
                 }
         }
@@ -105,13 +105,12 @@ struct SharedView: View {
             EmptyStateView.failure("Amis indisponibles", message: loadFailed) { await load() }
         } else {
             List {
-                if let myShelf {
+                if myShelf != nil {
                     Section {
-                        MyShelfHeader(shelf: myShelf) { list in path.append(list) }
-                            .listRowInsets(EdgeInsets())
-                            .listRowBackground(Color.clear)
-                    } header: {
-                        Text("Ce que vos amis voient")
+                        NavigationLink(value: MyPagePreview()) {
+                            Label("Voir à quoi ressemble ma page favoris", systemImage: "eye")
+                        }
+                        .accessibilityIdentifier("shared-my-page")
                     }
                 }
                 if friends.isEmpty {
@@ -223,7 +222,7 @@ struct SharedView: View {
 
     private func load() async {
         isLoading = true
-        // The two reads are independent: the boxes still draw when the
+        // The two reads are independent: the preview still opens when the
         // friends list fails, and the other way round.
         async let shelf = FriendsAPI.myShelf()
         do {
@@ -275,6 +274,9 @@ struct SharedView: View {
         }
     }
 }
+
+/// The navigation value of the reader's own page, previewed.
+private struct MyPagePreview: Hashable {}
 
 extension FriendInvitation: Identifiable {
     var id: String { code }

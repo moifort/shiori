@@ -11,16 +11,43 @@ import SwiftUI
 ///
 /// Books they marked "do not share" are absent, and no reading note is drawn:
 /// a friend sees a shelf, not a diary.
+///
+/// The reader's own shelf opens on this very page, as a preview: drawn from
+/// the shelf they already hold, every "+ Pile" shown the way a friend who owns
+/// none of it would see it, greyed out, and no row opening anything.
 struct FriendProfileView: View {
     let friend: Friend
+    private let isPreview: Bool
 
     @State private var profile: FriendProfile?
-    @State private var isLoading = true
+    @State private var isLoading: Bool
     @State private var errorMessage: String?
     @State private var openBook: FriendBook?
     /// The books being added from their row, each showing its own spinner.
     @State private var adding: Set<String> = []
     @State private var addFailed: String?
+
+    init(friend: Friend) {
+        self.friend = friend
+        isPreview = false
+        _isLoading = State(initialValue: true)
+    }
+
+    /// The reader's own page as their friends see it.
+    init(preview shelf: FriendProfile) {
+        friend = Friend(
+            userId: shelf.userId,
+            firstName: shelf.firstName,
+            since: .now,
+            favoriteCount: shelf.favorites.count + shelf.favoriteSagas.count,
+            readingCount: shelf.reading.count,
+            toReadCount: shelf.pile.count,
+            readingTitle: shelf.reading.first?.book.title
+        )
+        isPreview = true
+        _profile = State(initialValue: shelf)
+        _isLoading = State(initialValue: false)
+    }
 
     var body: some View {
         Group {
@@ -41,7 +68,8 @@ struct FriendProfileView: View {
         }
         .navigationTitle(profile?.displayName ?? friend.displayName)
         .navigationBarTitleDisplayMode(.inline)
-        .task { await load() }
+        .task { if !isPreview { await load() } }
+        .toolbar { if isPreview { shareFavorites } }
         .navigationDestination(item: $openBook) { book in
             FriendBookView(
                 friendId: friend.userId,
@@ -85,7 +113,7 @@ struct FriendProfileView: View {
                         case let .book(entry, _):
                             RecentFavoriteRow(favorite: favorite)
                                 .contentShape(.rect)
-                                .onTapGesture { openBook = entry }
+                                .onTapGesture { if !isPreview { openBook = entry } }
                         }
                     }
                 }
@@ -115,7 +143,40 @@ struct FriendProfileView: View {
             shelf("Sa pile à lire", books: profile.pile, empty: "Sa pile est vide.")
         }
         .listStyle(.insetGrouped)
-        .refreshable { await load() }
+        .refreshable { if !isPreview { await load() } }
+    }
+
+    /// The preview keeps what the favourites list used to offer: the whole
+    /// list as text, for a mail, a message, or the clipboard. Copy has its own
+    /// entry: the system sheet does not always offer it for plain text.
+    @ToolbarContentBuilder
+    private var shareFavorites: some ToolbarContent {
+        if let profile, !(profile.favoriteSagas.isEmpty && profile.favorites.isEmpty) {
+            let text = FavoritesSharing.text(
+                sagas: profile.favoriteSagas,
+                books: profile.favorites.map(\.book)
+            )
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    ShareLink(
+                        item: text,
+                        subject: Text("Mes favoris"),
+                        preview: SharePreview(Text("Mes favoris"))
+                    ) {
+                        Label("Envoyer…", systemImage: "paperplane")
+                    }
+                    Button {
+                        UIPasteboard.general.string = text
+                    } label: {
+                        Label("Copier la liste", systemImage: "doc.on.doc")
+                    }
+                    .accessibilityIdentifier("my-shelf-copy-favorites")
+                } label: {
+                    Label("Partager mes favoris", systemImage: "square.and.arrow.up")
+                }
+                .accessibilityIdentifier("my-shelf-share-favorites")
+            }
+        }
     }
 
     private func tile(_ count: Int, _ label: LocalizedStringKey, systemImage: String, tint: Color) -> some View {
@@ -161,7 +222,7 @@ struct FriendProfileView: View {
                             isFavorite: entry.book.favorite
                         )
                         .contentShape(.rect)
-                        .onTapGesture { openBook = entry }
+                        .onTapGesture { if !isPreview { openBook = entry } }
                         takeButton(entry)
                     }
                     .accessibilityIdentifier("friend-book-row")
@@ -171,9 +232,13 @@ struct FriendProfileView: View {
     }
 
     /// "+ Pile" on a book the reader does not have, "Chez vous" on one they do.
+    /// The preview shows "+ Pile" on every row, greyed out: every book on the
+    /// shelf is the reader's own, and "Chez vous" is not what a friend sees.
     @ViewBuilder
     private func takeButton(_ entry: FriendBook) -> some View {
-        if entry.inLibrary {
+        if isPreview {
+            pileButton(entry).disabled(true)
+        } else if entry.inLibrary {
             Text("Chez vous")
                 .font(.caption.weight(.medium))
                 .foregroundStyle(.green)
@@ -184,18 +249,22 @@ struct FriendProfileView: View {
         } else if adding.contains(entry.id) {
             ProgressView().frame(width: 56)
         } else {
-            Button {
-                Task { await add(entry) }
-            } label: {
-                Label("Pile", systemImage: "plus")
-                    .font(.caption.weight(.medium))
-            }
-            .buttonStyle(.bordered)
-            .buttonBorderShape(.capsule)
-            .controlSize(.small)
-            .accessibilityLabel(Text("Ajouter à ma pile"))
-            .accessibilityIdentifier("friend-book-add")
+            pileButton(entry)
         }
+    }
+
+    private func pileButton(_ entry: FriendBook) -> some View {
+        Button {
+            Task { await add(entry) }
+        } label: {
+            Label("Pile", systemImage: "plus")
+                .font(.caption.weight(.medium))
+        }
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .controlSize(.small)
+        .accessibilityLabel(Text("Ajouter à ma pile"))
+        .accessibilityIdentifier("friend-book-add")
     }
 
     private func load() async {

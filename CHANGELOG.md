@@ -12,7 +12,7 @@ the release tag is pushed.
 
 - Favourites now open on what is new: the series and books hearted in the last thirty days,
   on your list and on your friends' shelves alike, and the rest follows the most recently
-  hearted first. A series among your favourites opens on its page.
+  hearted first.
 - The Audible sync no longer undoes a status you set, such as an abandoned book, unless you listened to it since.
 - The library no longer lists abandoned books by default; the "Abandoned" filter still shows them.
 - Switching between views of the library or the series no longer shows a spinner above the list.
@@ -30,9 +30,8 @@ the release tag is pushed.
 - A new Shared tab lists your friends with their favourites, books in progress and pile.
   Any book on a friend's shelf opens on its own page and goes on your pile in one tap,
   noted as recommended by that friend; a book you already own says so.
-- The Shared tab opens on your own shelf as your friends see it: your favourites, your pile
-  and your books in progress, the most recently active first and each with its series.
-  Your favourite series now show on your friends' view too, standing for their volumes
+- The Shared tab shows you your own page exactly as your friends see it, its buttons
+  greyed out. Your favourite series now show on your friends' view too, standing for their volumes
   rather than listing them again, each with its volumes as a strip of covers. Your favourites
   can be sent by mail or message, or copied, as a list of titles and authors grouped by
   genre.

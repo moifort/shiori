@@ -6,7 +6,7 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 - Les favoris s’ouvrent sur les nouveautés : les séries et livres ajoutés en favori ces
   trente derniers jours, sur votre liste comme chez vos amis, et le reste suit, le plus
-  récent en premier. Une série de vos favoris s’ouvre sur sa page.
+  récent en premier.
 - La synchronisation Audible ne défait plus un statut que vous avez choisi, comme un livre abandonné, sauf si vous l’avez écouté depuis.
 - La bibliothèque n’affiche plus les livres abandonnés par défaut ; le filtre « Abandonné » les montre toujours.
 - Changer de vue dans la bibliothèque ou les séries n’affiche plus de petit chargement au-dessus de la liste.
@@ -27,9 +27,8 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   leur pile. Chaque livre de leur bibliothèque s’ouvre sur sa propre fiche et rejoint
   votre pile d’un toucher, noté « Conseillé par » cet ami ; un livre que vous avez déjà
   le signale.
-- L’onglet Partagé s’ouvre sur votre propre bibliothèque telle que vos amis la voient : vos
-  favoris, votre pile et vos lectures en cours, les plus récemment actives d’abord et chacune
-  avec sa série. Vos séries favorites apparaissent désormais aussi chez vos amis, à la place
+- L’onglet Partagé vous montre votre propre page exactement telle que vos amis la voient,
+  ses boutons grisés. Vos séries favorites apparaissent désormais aussi chez vos amis, à la place
   de leurs tomes plutôt qu’en double, chacune avec la bande des couvertures de ses tomes. Vos
   favoris s’envoient par mail ou par message, ou se copient, en une liste de titres et
   d’auteurs regroupés par genre.
