@@ -273,8 +273,14 @@ struct FriendProfileView: View {
                     .accessibilityIdentifier("friend-book-row")
                 }
                 if hidden > 0 {
-                    Button("Voir plus (\(hidden))") {
+                    Button {
                         withAnimation { readingShown += Self.readingStep }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text("Voir plus")
+                            Image(systemName: "chevron.down").font(.caption.weight(.semibold))
+                        }
+                        .frame(maxWidth: .infinity)
                     }
                     .edgeToEdgeSeparator()
                     .accessibilityIdentifier("friend-shelf-more")
