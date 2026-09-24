@@ -109,11 +109,10 @@ struct SharedView: View {
                 if let myShelf {
                     Section {
                         NavigationLink(value: MyPagePreview()) {
-                            row(Friend(seenByFriends: myShelf))
+                            row(Friend(seenByFriends: myShelf), name: "Vous")
                         }
+                        .navigationLinkIndicatorVisibility(.hidden)
                         .accessibilityIdentifier("shared-my-page")
-                    } header: {
-                        Text("Vous, chez vos amis")
                     }
                 }
                 if friends.isEmpty {
@@ -124,6 +123,7 @@ struct SharedView: View {
                             NavigationLink(value: friend.userId) {
                                 row(friend)
                             }
+                            .navigationLinkIndicatorVisibility(.hidden)
                             .swipeActions {
                                 Button("Retirer", role: .destructive) { removing = friend }
                             }
@@ -192,7 +192,10 @@ struct SharedView: View {
         }
     }
 
-    private func row(_ friend: Friend) -> some View {
+    /// A friend as the list draws them: the name, their shelf in figures in
+    /// the top corner as a book row carries its marks, and the book they are
+    /// reading. `name` stands in for theirs on the reader's own row, "Vous".
+    private func row(_ friend: Friend, name: LocalizedStringKey? = nil) -> some View {
         HStack(spacing: 12) {
             Text(friend.initials)
                 .font(.subheadline.weight(.semibold))
@@ -200,18 +203,26 @@ struct SharedView: View {
                 .frame(width: 40, height: 40)
                 .background(.tint.opacity(0.15), in: .circle)
             VStack(alignment: .leading, spacing: 3) {
-                Text(friend.displayName).font(.body.weight(.medium))
-                HStack(spacing: 12) {
-                    Label("\(friend.favoriteCount)", systemImage: "heart")
-                        .accessibilityLabel(Text("\(friend.favoriteCount) favoris"))
-                    Label("\(friend.readingCount)", systemImage: "book")
-                        .accessibilityLabel(Text("\(friend.readingCount) en cours"))
-                    Label("\(friend.toReadCount)", systemImage: "books.vertical")
-                        .accessibilityLabel(Text("\(friend.toReadCount) à lire"))
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Group {
+                        if let name { Text(name) } else { Text(friend.displayName) }
+                    }
+                    .font(.body.weight(.medium))
+                    .lineLimit(1)
+                    Spacer(minLength: 0)
+                    HStack(spacing: 10) {
+                        Label("\(friend.favoriteCount)", systemImage: "heart")
+                            .accessibilityLabel(Text("\(friend.favoriteCount) favoris"))
+                        Label("\(friend.readingCount)", systemImage: "book")
+                            .accessibilityLabel(Text("\(friend.readingCount) en cours"))
+                        Label("\(friend.toReadCount)", systemImage: "books.vertical")
+                            .accessibilityLabel(Text("\(friend.toReadCount) à lire"))
+                    }
+                    .labelStyle(.caption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize()
                 }
-                .labelStyle(.caption)
-                .font(.caption)
-                .foregroundStyle(.secondary)
                 if let title = friend.readingTitle {
                     Text("Lit : \(title)")
                         .font(.caption)
