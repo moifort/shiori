@@ -64,29 +64,35 @@ struct SeriesRow: View {
                                     .offset(x: 5, y: -5)
                             }
                     case let .missing(_, number, title, forthcoming, date, coverURL):
-                        VStack(spacing: 3) {
-                            missing(
-                                id: item.id,
-                                number: number,
-                                title: title,
-                                forthcoming: forthcoming,
-                                coverURL: coverURL
-                            )
+                        missing(
+                            id: item.id,
+                            number: number,
+                            title: title,
+                            forthcoming: forthcoming,
+                            coverURL: coverURL
+                        )
+                        // Hung under the cover rather than stacked with it: a
+                        // lazy stack sizes itself on the covers it drew first,
+                        // and a line only some items carry was cut off.
+                        .overlay(alignment: .bottom) {
                             if forthcoming, let date {
                                 Text(verbatim: ReleaseDateText.short(date))
                                     .font(.caption2.weight(.semibold))
                                     .foregroundStyle(.orange)
                                     .lineLimit(1)
                                     .fixedSize()
+                                    .offset(y: dateLine)
                             }
                         }
                     }
                 }
             }
             // Room for the badges, which overhang the covers' corners and the
-            // scroll view would otherwise clip.
+            // scroll view would otherwise clip, and for the dates under the
+            // announced volumes.
             .padding(.top, 6)
             .padding(.trailing, 6)
+            .padding(.bottom, hasDates ? dateLine : 0)
         }
         .scrollIndicators(.hidden)
         .accessibilityHidden(true)
@@ -132,4 +138,12 @@ struct SeriesRow: View {
     }
 
     private let coverWidth: CGFloat = 44
+    private let dateLine: CGFloat = 16
+
+    /// Whether any announced volume of the strip has a date to show under it.
+    private var hasDates: Bool {
+        entry.strip.contains {
+            if case let .missing(_, _, _, forthcoming, date, _) = $0 { forthcoming && date != nil } else { false }
+        }
+    }
 }

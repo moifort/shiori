@@ -470,8 +470,21 @@ describe('release dates per edition', () => {
     expect(isForthcoming(month, THIS_YEAR, { language: 'fr', today: '2026-10-01' })).toBe(false)
   })
 
-  test('without a date in that language, the year decides', () => {
+  test('without a date in that language, the first date anywhere decides, else the year', () => {
     expect(isForthcoming(announced, THIS_YEAR, { language: 'de', today: TODAY })).toBe(false)
+    const english = volume({
+      title: 'Six',
+      number: VolumeNumber(6),
+      publishedIn: Year(2026),
+      releases: { en: ReleaseDate('2026-12-03') },
+    })
+    expect(isForthcoming(english, THIS_YEAR, { language: 'fr', today: TODAY })).toBe(true)
+    expect(
+      isForthcoming(volume({ title: 'Old', publishedIn: Year(2020) }), THIS_YEAR, {
+        language: 'fr',
+        today: TODAY,
+      }),
+    ).toBe(false)
   })
 
   const four = [1, 2, 3, 4].map((number) =>

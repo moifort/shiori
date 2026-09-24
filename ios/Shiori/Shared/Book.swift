@@ -423,10 +423,13 @@ struct Volume: Identifiable, Hashable, Sendable {
 
     /// A volume not out yet in that edition. The edition's own date decides
     /// when the watch found one — a volume out in English can be months away in
-    /// French; otherwise the year of first publication does. Kept in the
-    /// catalogue on purpose: it is what a release alert will attach to.
+    /// French; else the first date it comes out in any language — a volume not
+    /// out anywhere is not out in French either; otherwise the year of first
+    /// publication does. Kept in the catalogue on purpose: it is what a release
+    /// alert will attach to.
     func isForthcoming(asOf year: Int, in language: BookLanguage? = nil) -> Bool {
-        if let date = releaseDate(in: language) { return ReleaseDateText.isUpcoming(date) }
+        let earliest = releases.map(\.date).min { ReleaseDateText.lastDay($0) < ReleaseDateText.lastDay($1) }
+        if let date = releaseDate(in: language) ?? earliest { return ReleaseDateText.isUpcoming(date) }
         guard let publishedIn else { return false }
         return publishedIn > year
     }

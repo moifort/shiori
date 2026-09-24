@@ -38,14 +38,14 @@ export const releaseOf = (volume: Volume, language?: BookLanguage): ReleaseDate 
  *  the catalogue on purpose: they are what a release alert will attach to.
  *
  *  The edition's own date decides when the watch found one — a volume out in
- *  English can be months away in French; otherwise the year of first
- *  publication does. */
+ *  English can be months away in French; else the first date it comes out in
+ *  any language; otherwise the year of first publication does. */
 export const isForthcoming = (
   volume: Volume,
   currentYear: YearValue,
   edition: Edition = {},
 ): boolean => {
-  const date = releaseOf(volume, edition.language)
+  const date = releaseOf(volume, edition.language) ?? earliestRelease(volume)
   if (date) {
     const today = todayOf(edition)
     return date.length === 10 ? date > today : lastDayOf(date) >= today
@@ -53,8 +53,16 @@ export const isForthcoming = (
   return volume.publishedIn !== undefined && volume.publishedIn > currentYear
 }
 
+/** The first a volume comes out anywhere, as precisely as announced: a volume
+ *  not out in any language is not out in the reader's either. */
+const earliestRelease = (volume: Volume): ReleaseDate | undefined =>
+  Object.values(volume.releases ?? {})
+    .filter((date): date is ReleaseDate => date !== undefined)
+    .sort((left, right) => lastDayOf(left).localeCompare(lastDayOf(right)))[0]
+
 /** A volume announced to the day in that edition: close and certain enough to
- *  count as part of the saga already, where a month or a year is a rumour. */
+ *  count as part of the saga already, where a month or a year is a rumour — and
+ *  another edition's day says nothing of this one's. */
 const announcedToTheDay = (volume: Volume, currentYear: YearValue, edition: Edition): boolean =>
   releaseOf(volume, edition.language)?.length === 10 && isForthcoming(volume, currentYear, edition)
 
