@@ -56,11 +56,11 @@ struct FriendProfileView: View {
             } else if let errorMessage {
                 EmptyStateView.failure("Bibliothèque indisponible", message: errorMessage) { await load() }
             } else {
-                EmptyStateView(
-                    systemImage: "books.vertical",
-                    title: "Rien à voir pour l'instant",
-                    verbatim: String(localized: "\(friend.displayName) n'a encore rien à partager.")
-                )
+                Text("Aucun livre n'a été ajouté à cette bibliothèque.")
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .navigationTitle(profile?.displayName ?? friend.displayName)
@@ -131,9 +131,8 @@ struct FriendProfileView: View {
             let leading = recent.first { if case .reading = $0 { true } else { false } }?.book?.id
             let reading = profile.reading.filter { $0.id != leading }
             let shown = reading.count - readingShown <= 1 ? reading.count : readingShown
-            if profile.reading.isEmpty {
-                shelf("En cours", books: [], empty: "Aucune lecture en cours.")
-            } else if !reading.isEmpty {
+            // A section with nothing in it is not drawn at all.
+            if !reading.isEmpty {
                 shelf(
                     "En cours",
                     books: Array(reading.prefix(shown)),
@@ -149,7 +148,14 @@ struct FriendProfileView: View {
                     ForEach(profile.favoriteSagasByActivity) { saga in
                         HStack(alignment: .top, spacing: 8) {
                             SagaRow(saga: saga, showsCovers: true)
-                            sagaTakeButton(saga)
+                            TakeButton(
+                                owned: saga.inLibrary || isPreview || saga.volumes.isEmpty,
+                                isAdding: addingSagas.contains(saga.id),
+                                addLabel: "Ajouter la série à mes séries",
+                                ownedLabel: "Série déjà dans votre bibliothèque"
+                            ) {
+                                await add(saga)
+                            }
                         }
                         .edgeToEdgeSeparator()
                     }
@@ -157,22 +163,57 @@ struct FriendProfileView: View {
                     hearted("Séries")
                 }
             }
-            shelf(
-                "Livres",
-                hearted: true,
-                books: profile.favoritesByActivity,
-                empty: "Aucun livre favori.",
-                asFavorites: true
-            )
-            if !profile.sagas.isEmpty {
-                Section("Ses séries") {
-                    ForEach(profile.sagas) { saga in
-                        SagaRow(saga: saga)
-                            .edgeToEdgeSeparator()
+            if !profile.favorites.isEmpty {
+                shelf(
+                    "Livres",
+                    hearted: true,
+                    books: profile.favoritesByActivity,
+                    empty: "",
+                    asFavorites: true
+                )
+            }
+            // The rest of the shelf is a list of its own, drawn as the
+            // reader's own Series and Library tabs.
+            if !profile.sagas.isEmpty || profile.bookCount > 0 {
+                Section {
+                    if !profile.sagas.isEmpty {
+                        NavigationLink {
+                            FriendSeriesListView(
+                                friendId: friend.userId,
+                                friendName: friend.displayName,
+                                isPreview: isPreview
+                            )
+                        } label: {
+                            Label(
+                                profile.sagas.count == 1
+                                    ? "Voir sa série"
+                                    : "Voir ses \(profile.sagas.count) séries",
+                                systemImage: "books.vertical"
+                            )
+                        }
+                        .edgeToEdgeSeparator()
+                        .accessibilityIdentifier("friend-see-series")
+                    }
+                    if profile.bookCount > 0 {
+                        NavigationLink {
+                            FriendLibraryView(
+                                friendId: friend.userId,
+                                friendName: friend.displayName,
+                                isPreview: isPreview
+                            )
+                        } label: {
+                            Label(
+                                profile.bookCount == 1
+                                    ? "Voir son livre"
+                                    : "Voir ses \(profile.bookCount) livres",
+                                systemImage: "book"
+                            )
+                        }
+                        .edgeToEdgeSeparator()
+                        .accessibilityIdentifier("friend-see-library")
                     }
                 }
             }
-            shelf("Sa pile à lire", books: profile.pile, empty: "Sa pile est vide.")
         }
         .listStyle(.insetGrouped)
         .refreshable { if !isPreview { await load() } }
@@ -291,54 +332,11 @@ struct FriendProfileView: View {
         }
     }
 
-    /// "+" to take a saga: its first volume on the friend's shelf goes onto
-    /// the reader's pile, which makes it one of their sagas. Greyed out when
-    /// they already hold a volume of it — every saga of the preview.
-    @ViewBuilder
-    private func sagaTakeButton(_ saga: FriendSaga) -> some View {
-        if addingSagas.contains(saga.id) {
-            ProgressView().frame(width: 32)
-        } else {
-            let owned = saga.inLibrary || isPreview || saga.volumes.isEmpty
-            Button {
-                Task { await add(saga) }
-            } label: {
-                Image(systemName: "plus")
-                    .font(.caption.weight(.semibold))
-            }
-            .buttonStyle(.bordered)
-            .buttonBorderShape(.circle)
-            .controlSize(.small)
-            .foregroundStyle(owned ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.tint))
-            .disabled(owned)
-            .accessibilityLabel(Text(owned ? "Série déjà dans votre bibliothèque" : "Ajouter la série à mes séries"))
-            .accessibilityIdentifier(owned ? "friend-saga-owned" : "friend-saga-add")
-        }
-    }
-
     /// "+" to put a book on the reader's pile, greyed out on one they already
     /// own — every book of the preview, which is their own shelf.
-    @ViewBuilder
     private func takeButton(_ entry: FriendBook) -> some View {
-        if adding.contains(entry.id) {
-            ProgressView().frame(width: 32)
-        } else {
-            let owned = entry.inLibrary || isPreview
-            Button {
-                Task { await add(entry) }
-            } label: {
-                Image(systemName: "plus")
-                    .font(.caption.weight(.semibold))
-            }
-            .buttonStyle(.bordered)
-            .buttonBorderShape(.circle)
-            .controlSize(.small)
-            // Disabled alone leaves the plus in the accent colour: grey
-            // throughout, so it reads as inert at a glance.
-            .foregroundStyle(owned ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.tint))
-            .disabled(owned)
-            .accessibilityLabel(Text(owned ? "Déjà dans votre bibliothèque" : "Ajouter à ma pile"))
-            .accessibilityIdentifier(owned ? "friend-book-owned" : "friend-book-add")
+        TakeButton(owned: entry.inLibrary || isPreview, isAdding: adding.contains(entry.id)) {
+            await add(entry)
         }
     }
 

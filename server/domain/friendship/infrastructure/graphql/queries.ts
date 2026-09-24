@@ -1,6 +1,9 @@
+import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
 import {
   FriendBookType,
+  FriendLibraryPageType,
   FriendProfileType,
+  FriendSagaPageType,
   FriendType,
 } from '~/domain/friendship/infrastructure/graphql/types'
 import { FriendshipUseCase } from '~/domain/friendship/use-case'
@@ -58,5 +61,62 @@ builder.queryFields((t) => ({
     },
     resolve: (_root, args, context) =>
       FriendshipUseCase.book(context.userId, args.userId, args.bookId),
+  }),
+
+  friendLibraryPage: t.field({
+    type: FriendLibraryPageType,
+    nullable: true,
+    description:
+      "One page of a friend's library — or of the reader's own, previewing what " +
+      "their friends are shown — drawn as the Library tab draws the reader's: " +
+      'newest first on `shelvedAt`, the dropped books left out unless asked for. ' +
+      'A book marked "do not share" never appears. Null for a stranger.',
+    args: {
+      userId: t.arg({ type: 'UserId', required: true, description: 'The friend' }),
+      status: t.arg({
+        type: ReadingStatusEnum,
+        required: false,
+        description: 'Keep only books in this status. Omit for the whole library.',
+      }),
+      favorite: t.arg.boolean({
+        required: false,
+        description: 'Keep only the books they hearted.',
+      }),
+      limit: t.arg.int({ defaultValue: 60, description: 'Maximum books in the page' }),
+      after: t.arg({
+        type: 'BookId',
+        required: false,
+        description: 'Cursor: the last book of the previous page',
+      }),
+    },
+    resolve: (_root, args, context) =>
+      FriendshipUseCase.libraryPage(
+        context.userId,
+        args.userId,
+        { limit: Math.max(1, Math.min(args.limit ?? 60, 200)), after: args.after ?? undefined },
+        { status: args.status ?? undefined, favorite: args.favorite ?? undefined },
+      ),
+  }),
+
+  friendSagaPage: t.field({
+    type: FriendSagaPageType,
+    nullable: true,
+    description:
+      "One page of a friend's sagas — or of the reader's own, previewed — drawn " +
+      "as the Series tab draws the reader's: the saga shelved last first, every " +
+      'volume on the shelf as a cover. Null for a stranger.',
+    args: {
+      userId: t.arg({ type: 'UserId', required: true, description: 'The friend' }),
+      limit: t.arg.int({ defaultValue: 30, description: 'Maximum sagas in the page' }),
+      after: t.arg.string({
+        required: false,
+        description: 'Cursor: the id of the last saga of the previous page',
+      }),
+    },
+    resolve: (_root, args, context) =>
+      FriendshipUseCase.sagaPage(context.userId, args.userId, {
+        limit: Math.max(1, Math.min(args.limit ?? 30, 100)),
+        after: args.after ?? undefined,
+      }),
   }),
 }))

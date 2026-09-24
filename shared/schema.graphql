@@ -789,6 +789,11 @@ type FriendBook {
   publisher: Publisher
   rating: StarRating
   series: SeriesMembership
+
+  """
+  The day it is shelved on: finished, else started, else added. Their library is ordered and cut into months by it, as the reader's own.
+  """
+  shelvedAt: DateTime!
   status: ReadingStatus!
   subgenres: [Subgenre!]!
   synopsis: Synopsis
@@ -825,11 +830,27 @@ type FriendInvitation {
 }
 
 """
+One page of a friend's library. The id of its last book is the cursor for the next.
+"""
+type FriendLibraryPage {
+  """Newest first on `shelvedAt`, as the Library tab draws them."""
+  books: [FriendBook!]!
+
+  """Whether more books follow this page"""
+  hasMore: Boolean!
+}
+
+"""
 One friend's shelf at a glance: what they are reading, what is on their pile, what they keep close, and the sagas they are working through.
 
 A book marked "do not share" is absent from every list here, and thirty of each is the most any of them carries.
 """
 type FriendProfile {
+  """
+  How many books their library shows: every one they share, the dropped ones aside — what `friendLibraryPage` lists unfiltered.
+  """
+  bookCount: Count!
+
   """
   The books they keep close, most recently hearted first, less the volumes of a saga they hearted: that saga, among `sagas`, stands for them.
   """
@@ -886,13 +907,29 @@ type FriendSaga {
   """The saga alone, whatever the language: what its page is opened on."""
   seriesId: SeriesId!
 
+  """
+  The latest day one of its volumes was shelved on: what their sagas are ordered and cut into months by.
+  """
+  shelvedAt: DateTime!
+
   """The leading subgenre of a volume of that genre."""
   subgenre: Subgenre
 
   """
-  Its volumes on the shelf, in reading order, for a strip of covers. Carried by a hearted saga and by the sagas of the book in progress touched last and of `lastFinished`, empty on any other, and never with a volume its owner keeps to themselves.
+  Its volumes on the shelf, in reading order, for a strip of covers. Carried by a hearted saga and by the sagas of the book in progress touched last and of `lastFinished`, empty on any other, and never with a volume its owner keeps to themselves. On `friendSagaPage`, every saga carries them.
   """
   volumes: [FriendBook!]!
+}
+
+"""
+One page of a friend's sagas. The id of its last saga is the cursor for the next.
+"""
+type FriendSagaPage {
+  """Whether more sagas follow this page"""
+  hasMore: Boolean!
+
+  """The saga shelved last first, each with every volume on the shelf."""
+  sagas: [FriendSaga!]!
 }
 
 """
@@ -1654,6 +1691,26 @@ type Query {
   ): FriendBook
 
   """
+  One page of a friend's library — or of the reader's own, previewing what their friends are shown — drawn as the Library tab draws the reader's: newest first on `shelvedAt`, the dropped books left out unless asked for. A book marked "do not share" never appears. Null for a stranger.
+  """
+  friendLibraryPage(
+    """Cursor: the last book of the previous page"""
+    after: BookId
+
+    """Keep only the books they hearted."""
+    favorite: Boolean
+
+    """Maximum books in the page"""
+    limit: Int = 60
+
+    """Keep only books in this status. Omit for the whole library."""
+    status: ReadingStatus
+
+    """The friend"""
+    userId: UserId!
+  ): FriendLibraryPage
+
+  """
   One friend's shelf: what they are reading, their pile, their favourites and the sagas they are working through.
   
   Null for anybody the reader is not friends with, which is also the answer for an id that names nobody: a stranger must not be able to tell an account that refused them from one that does not exist.
@@ -1661,6 +1718,20 @@ type Query {
   A book marked "do not share" appears nowhere here, and no reading note is exposed at all.
   """
   friendProfile(userId: UserId!): FriendProfile
+
+  """
+  One page of a friend's sagas — or of the reader's own, previewed — drawn as the Series tab draws the reader's: the saga shelved last first, every volume on the shelf as a cover. Null for a stranger.
+  """
+  friendSagaPage(
+    """Cursor: the id of the last saga of the previous page"""
+    after: String
+
+    """Maximum sagas in the page"""
+    limit: Int = 30
+
+    """The friend"""
+    userId: UserId!
+  ): FriendSagaPage
 
   """
   Everybody the reader shares libraries with, by first name.

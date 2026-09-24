@@ -1,3 +1,4 @@
+import { shelfDateOf } from '~/domain/book/business-rules'
 import {
   BookFormatEnum,
   BookLanguageEnum,
@@ -7,7 +8,13 @@ import {
 import { SeriesMembershipType } from '~/domain/book/infrastructure/graphql/types'
 import { lastActivityOf } from '~/domain/friendship/business-rules'
 import type { Friend } from '~/domain/friendship/types'
-import type { FriendBook, FriendProfile, FriendSaga } from '~/domain/friendship/use-case'
+import type {
+  FriendBook,
+  FriendLibraryPage,
+  FriendProfile,
+  FriendSaga,
+  FriendSagaPage,
+} from '~/domain/friendship/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
 import { Count } from '~/domain/shared/primitives'
 
@@ -58,6 +65,13 @@ export const FriendBookType = builder.objectRef<FriendBook>('FriendBook').implem
         'When its owner last did anything with it — picked it up, moved its ' +
         'status, or had a listening sync move its position: what is recent on the shelf.',
       resolve: (book) => lastActivityOf(book),
+    }),
+    shelvedAt: t.field({
+      type: 'DateTime',
+      description:
+        'The day it is shelved on: finished, else started, else added. Their ' +
+        "library is ordered and cut into months by it, as the reader's own.",
+      resolve: (book) => shelfDateOf(book),
     }),
     finishedAt: t.field({
       type: 'DateTime',
@@ -164,8 +178,16 @@ export const FriendSagaType = builder.objectRef<FriendSaga>('FriendSaga').implem
         'Its volumes on the shelf, in reading order, for a strip of covers. ' +
         'Carried by a hearted saga and by the sagas of the book in progress ' +
         'touched last and of `lastFinished`, empty on any other, and never with ' +
-        'a volume its owner keeps to themselves.',
+        'a volume its owner keeps to themselves. On `friendSagaPage`, every saga ' +
+        'carries them.',
       resolve: (saga) => saga.volumes,
+    }),
+    shelvedAt: t.field({
+      type: 'DateTime',
+      description:
+        'The latest day one of its volumes was shelved on: what their sagas are ' +
+        'ordered and cut into months by.',
+      resolve: (saga) => saga.shelvedAt,
     }),
   }),
 })
@@ -242,6 +264,40 @@ export const FriendProfileType = builder.objectRef<FriendProfile>('FriendProfile
         'its finishing date.',
       resolve: (profile) => profile.lastFinished ?? null,
     }),
+    bookCount: t.field({
+      type: 'Count',
+      description:
+        'How many books their library shows: every one they share, the dropped ' +
+        'ones aside — what `friendLibraryPage` lists unfiltered.',
+      resolve: (profile) => profile.bookCount,
+    }),
+  }),
+})
+
+export const FriendLibraryPageType = builder
+  .objectRef<FriendLibraryPage>('FriendLibraryPage')
+  .implement({
+    description:
+      "One page of a friend's library. The id of its last book is the cursor for the next.",
+    fields: (t) => ({
+      books: t.field({
+        type: [FriendBookType],
+        description: 'Newest first on `shelvedAt`, as the Library tab draws them.',
+        resolve: (page) => page.books,
+      }),
+      hasMore: t.exposeBoolean('hasMore', { description: 'Whether more books follow this page' }),
+    }),
+  })
+
+export const FriendSagaPageType = builder.objectRef<FriendSagaPage>('FriendSagaPage').implement({
+  description: "One page of a friend's sagas. The id of its last saga is the cursor for the next.",
+  fields: (t) => ({
+    sagas: t.field({
+      type: [FriendSagaType],
+      description: 'The saga shelved last first, each with every volume on the shelf.',
+      resolve: (page) => page.sagas,
+    }),
+    hasMore: t.exposeBoolean('hasMore', { description: 'Whether more sagas follow this page' }),
   }),
 })
 

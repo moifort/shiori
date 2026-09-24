@@ -48,20 +48,46 @@ fragment SharedShelf on FriendProfile {
   lastFinished {
     ...FriendBookRow
   }
+  bookCount
   sagas {
-    id
-    seriesId
-    name
-    author
-    language
-    ownedCount
-    favorite
-    favoritedAt
-    genre
-    subgenre
-    volumes {
+    ...FriendSagaRow
+  }
+}
+
+fragment FriendSagaRow on FriendSaga {
+  id
+  seriesId
+  name
+  author
+  language
+  ownedCount
+  favorite
+  favoritedAt
+  genre
+  subgenre
+  shelvedAt
+  volumes {
+    ...FriendBookRow
+  }
+}
+
+# A friend's whole library, a page at a time, drawn as the reader's own.
+query FriendLibraryPage($userId: UserId!, $status: ReadingStatus, $after: BookId) {
+  friendLibraryPage(userId: $userId, status: $status, limit: 60, after: $after) {
+    books {
       ...FriendBookRow
     }
+    hasMore
+  }
+}
+
+# A friend's sagas, a page at a time, each with every volume as a cover.
+query FriendSagaPage($userId: UserId!, $after: String) {
+  friendSagaPage(userId: $userId, limit: 30, after: $after) {
+    sagas {
+      ...FriendSagaRow
+    }
+    hasMore
   }
 }
 
@@ -77,6 +103,7 @@ fragment FriendBookRow on FriendBook {
   favorite
   favoritedAt
   lastActivityAt
+  shelvedAt
   finishedAt
   inLibrary
   genre

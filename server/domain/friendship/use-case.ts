@@ -1,5 +1,5 @@
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
-import { shelfKeyOf } from '~/domain/book/business-rules'
+import { shelfDateOf, shelfKeyOf, shelfPageOf, shelvedOf } from '~/domain/book/business-rules'
 import { BookQuery } from '~/domain/book/query'
 import type {
   Book,
@@ -10,6 +10,7 @@ import type {
   ReadingStatus,
   TaggedSubgenre,
 } from '~/domain/book/types'
+import { READING_STATUSES } from '~/domain/book/types'
 import { BookUseCase } from '~/domain/book/use-case'
 import {
   favoritesOutsideSagas,
@@ -21,7 +22,7 @@ import {
 } from '~/domain/friendship/business-rules'
 import { FriendshipQuery } from '~/domain/friendship/query'
 import type { Friend } from '~/domain/friendship/types'
-import { followedSagasOf, genreOf } from '~/domain/series/business-rules'
+import { type FollowedSaga, followedSagasOf, genreOf } from '~/domain/series/business-rules'
 import type { SeriesId, SeriesName } from '~/domain/series/types'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import { Count, PersonName } from '~/domain/shared/primitives'
@@ -59,8 +60,12 @@ export type FriendSaga = {
   /** Its volumes on the shelf, in reading order, for a strip of covers.
    *  Carried by a hearted saga and by the sagas of the book in progress
    *  touched last and of the last book finished — the recent activity draws
-   *  those two — and empty on any other: each cover is a signed URL. */
+   *  those two — and empty on any other: each cover is a signed URL. On a
+   *  page of their sagas, every saga carries them. */
   volumes: FriendBook[]
+  /** The latest day one of its volumes was shelved on: what their sagas are
+   *  ordered and cut into months by, as the reader's own Series tab. */
+  shelvedAt: Date
 }
 
 /** A book on a friend's shelf, with whether the reader already owns the
@@ -79,7 +84,20 @@ export type FriendProfile = {
   sagas: FriendSaga[]
   /** The book they finished most recently, when one carries its date. */
   lastFinished?: FriendBook
+  /** How many books their library shows — every one they share, the
+   *  dropped ones aside, as the reader's own Library tab. */
+  bookCount: CountValue
 }
+
+/** One page of a friend's library or of their sagas, and whether more follow. */
+export type FriendLibraryPage = { books: FriendBook[]; hasMore: boolean }
+export type FriendSagaPage = { sagas: FriendSaga[]; hasMore: boolean }
+
+/** The statuses a library shows unfiltered: all but the dropped books, which
+ *  have their own filter — the reader's own Library tab does the same. */
+const SHELVED_STATUSES: readonly ReadingStatus[] = READING_STATUSES.filter(
+  (status) => status !== 'dropped',
+)
 
 /** The statuses a book copied from a friend may land in: on the pile, or
  *  straight among the books read, for a reader who had already read it. */
@@ -151,12 +169,79 @@ export namespace FriendshipUseCase {
     friendId: UserId,
     bookId: BookId,
   ): Promise<FriendBook | null> => {
-    if (userId !== friendId && !(await FriendshipQuery.areFriends(userId, friendId))) return null
+    if (!(await canRead(userId, friendId))) return null
     const [book, owned] = await Promise.all([
       BookQuery.sharedById(friendId, bookId),
       BookQuery.shelfKeys(userId),
     ])
     return book ? { ...book, inLibrary: ownsStory(owned, book) } : null
+  }
+
+  /** One page of a friend's library — or of the reader's own, previewed —
+   *  as their own Library tab draws it: newest first on the day each book was
+   *  shelved, the dropped books left out unless asked for, the ones marked "do
+   *  not share" never. Null for a stranger. */
+  export const libraryPage = async (
+    viewerId: UserId,
+    ownerId: UserId,
+    page: { limit: number; after?: BookId },
+    view: { status?: ReadingStatus; favorite?: boolean },
+  ): Promise<FriendLibraryPage | null> => {
+    if (!(await canRead(viewerId, ownerId))) return null
+    const [books, owned] = await Promise.all([
+      BookQuery.shared(ownerId),
+      BookQuery.shelfKeys(viewerId),
+    ])
+    const statuses = view.status ? [view.status] : view.favorite ? undefined : SHELVED_STATUSES
+    const kept = books.filter(
+      (book) =>
+        (!view.favorite || book.favorite === true) && (!statuses || statuses.includes(book.status)),
+    )
+    const { books: shown, hasMore } = shelfPageOf(shelvedOf(kept), page.limit, page.after)
+    const signed = await BookQuery.withSignedCovers(shown)
+    return {
+      books: signed.map((book) => ({ ...book, inLibrary: ownsStory(owned, book) })),
+      hasMore,
+    }
+  }
+
+  /** One page of a friend's sagas — or of the reader's own, previewed — as
+   *  their own Series tab draws them: the saga shelved last first, each with
+   *  every volume on the shelf as a cover. `after` is the id of the last saga
+   *  of the previous page. Null for a stranger. */
+  export const sagaPage = async (
+    viewerId: UserId,
+    ownerId: UserId,
+    page: { limit: number; after?: string },
+  ): Promise<FriendSagaPage | null> => {
+    if (!(await canRead(viewerId, ownerId))) return null
+    const [books, favoriteSagas, owned] = await Promise.all([
+      BookQuery.shared(ownerId),
+      favoriteSagasOf(ownerId),
+      BookQuery.shelfKeys(viewerId),
+    ])
+    const sagas = followedSagasOf(books)
+      .map((saga) => ({ saga, id: `${saga.id}\u0000${saga.language ?? ''}` }))
+      .sort(
+        (left, right) =>
+          sagaShelvedAt(right.saga).getTime() - sagaShelvedAt(left.saga).getTime() ||
+          left.saga.name.localeCompare(right.saga.name),
+      )
+    const start = page.after ? sagas.findIndex(({ id }) => id === page.after) + 1 : 0
+    const shown = sagas.slice(start, start + page.limit)
+    const volumes = await Promise.all(
+      shown.map(({ saga }) => BookQuery.withSignedCovers(inReadingOrder(saga.books))),
+    )
+    return {
+      sagas: shown.map(({ saga }, index) =>
+        friendSagaOf(
+          saga,
+          favoriteSagas,
+          (volumes[index] ?? []).map((book) => ({ ...book, inLibrary: ownsStory(owned, book) })),
+        ),
+      ),
+      hasMore: start + page.limit < sagas.length,
+    }
   }
 
   /** Put a friend's book on the reader's own shelf.
@@ -199,6 +284,46 @@ export namespace FriendshipUseCase {
   }
 }
 
+/** Whether `viewerId` may read `ownerId`'s shelf: a friend's, or their own,
+ *  previewed as their friends see it. */
+const canRead = async (viewerId: UserId, ownerId: UserId): Promise<boolean> =>
+  viewerId === ownerId || (await FriendshipQuery.areFriends(viewerId, ownerId))
+
+/** The latest day one of a saga's volumes was shelved on. */
+const sagaShelvedAt = (saga: FollowedSaga<Book>): Date =>
+  new Date(Math.max(...saga.books.map((book) => shelfDateOf(book).getTime())))
+
+/** A saga as a friend sees it, with the volumes signed for it, if any. */
+const friendSagaOf = (
+  saga: FollowedSaga<Book>,
+  favoriteSagas: ReadonlyMap<SeriesId, Date | undefined>,
+  volumes: FriendBook[],
+): FriendSaga => {
+  const genre = genreOf(saga.books)
+  return {
+    id: `${saga.id}\u0000${saga.language ?? ''}`,
+    seriesId: saga.id,
+    name: saga.name,
+    author: saga.author,
+    language: saga.language,
+    ownedCount: Count(saga.books.length),
+    favorite: favoriteSagas.has(saga.id),
+    favoritedAt: favoriteSagas.get(saga.id),
+    genre,
+    subgenre: subgenreOf(saga.books, genre),
+    volumes,
+    shelvedAt: sagaShelvedAt(saga),
+  }
+}
+
+/** The hearted sagas of a shelf, with the day of each heart. */
+const favoriteSagasOf = async (ownerId: UserId): Promise<Map<SeriesId, Date | undefined>> =>
+  new Map(
+    (await SeriesOpinionQuery.all(ownerId))
+      .filter((opinion) => opinion.favorite)
+      .map((opinion) => [opinion.seriesId, opinion.favoritedAt]),
+  )
+
 /** One reader's shelf as it is shared: what they are reading, most recently
  *  active first; their pile, newest first; their hearts; their sagas. At most
  *  `shown` of each list of books when given. Whether the viewer owns each
@@ -207,16 +332,11 @@ const sharedShelfOf = async (
   ownerId: UserId,
   shown = Number.POSITIVE_INFINITY,
 ): Promise<FriendProfile> => {
-  const [books, opinions, names] = await Promise.all([
+  const [books, favoriteSagas, names] = await Promise.all([
     BookQuery.shared(ownerId),
-    SeriesOpinionQuery.all(ownerId),
+    favoriteSagasOf(ownerId),
     UserQuery.namesOf([ownerId]),
   ])
-  const favoriteSagas = new Map(
-    opinions
-      .filter((opinion) => opinion.favorite)
-      .map((opinion) => [opinion.seriesId, opinion.favoritedAt]),
-  )
   const favoriteSagaIds = new Set(favoriteSagas.keys())
   const reading = books
     .filter((book) => book.status === 'reading')
@@ -267,22 +387,10 @@ const sharedShelfOf = async (
     pile: unmarked(signedPile),
     favorites: unmarked(signedFavorites),
     lastFinished: unmarked(signedFinished)[0],
-    sagas: sagas.map((saga, index) => {
-      const genre = genreOf(saga.books)
-      return {
-        id: `${saga.id}\u0000${saga.language ?? ''}`,
-        seriesId: saga.id,
-        name: saga.name,
-        author: saga.author,
-        language: saga.language,
-        ownedCount: Count(saga.books.length),
-        favorite: favoriteSagaIds.has(saga.id),
-        favoritedAt: favoriteSagas.get(saga.id),
-        genre,
-        subgenre: subgenreOf(saga.books, genre),
-        volumes: unmarked(signedVolumes[index] ?? []),
-      }
-    }),
+    sagas: sagas.map((saga, index) =>
+      friendSagaOf(saga, favoriteSagas, unmarked(signedVolumes[index] ?? [])),
+    ),
+    bookCount: Count(books.filter((book) => SHELVED_STATUSES.includes(book.status)).length),
   }
 }
 

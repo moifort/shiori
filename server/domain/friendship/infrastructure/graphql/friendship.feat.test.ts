@@ -357,6 +357,85 @@ describe("the reader's own shelf, as friends see it", () => {
     })
   })
 
+  // "Voir ses N livres": the friend's whole library, drawn as the reader's own.
+  test('pages through a friend library newest first, dropped and hidden books aside', async () => {
+    setSystemTime(new Date('2026-09-01T00:00:00Z'))
+    await addBook(alice, 'title: "Ancien", status: TO_READ')
+    setSystemTime(new Date('2026-09-02T00:00:00Z'))
+    await addBook(alice, 'title: "Abandonné", status: DROPPED')
+    setSystemTime(new Date('2026-09-03T00:00:00Z'))
+    const secret = await addBook(alice, 'title: "Un secret", status: TO_READ')
+    await as(alice)(`mutation { setBookHidden(id: "${secret}", hidden: true) { id } }`)
+    setSystemTime(new Date('2026-09-04T00:00:00Z'))
+    const recent = await addBook(alice, 'title: "Récent", status: READING')
+    setSystemTime()
+    await addBook(bob, 'title: "RÉCENT"')
+    await befriend()
+
+    const first = await as(bob)(
+      '{ friendLibraryPage(userId: "alice", limit: 1) { books { id title inLibrary shelvedAt } hasMore } }',
+    )
+    const next = await as(bob)(
+      `{ friendLibraryPage(userId: "alice", limit: 1, after: "${recent}") { books { title } hasMore } }`,
+    )
+    const dropped = await as(bob)(
+      '{ friendLibraryPage(userId: "alice", status: DROPPED) { books { title } } }',
+    )
+    const counted = await as(bob)('{ friendProfile(userId: "alice") { bookCount } }')
+
+    expect(first.errors).toBeUndefined()
+    expect(first.data?.friendLibraryPage).toEqual({
+      books: [
+        { id: recent, title: 'Récent', inLibrary: true, shelvedAt: '2026-09-04T00:00:00.000Z' },
+      ],
+      hasMore: true,
+    })
+    expect(next.data?.friendLibraryPage).toEqual({ books: [{ title: 'Ancien' }], hasMore: false })
+    expect(dropped.data?.friendLibraryPage).toEqual({ books: [{ title: 'Abandonné' }] })
+    expect(counted.data?.friendProfile).toEqual({ bookCount: 2 })
+  })
+
+  // "Voir ses N séries": every saga with all its covers, the one shelved last first.
+  test('pages through a friend sagas, each with every volume', async () => {
+    setSystemTime(new Date('2026-09-01T00:00:00Z'))
+    await addBook(
+      alice,
+      'title: "Hypérion", authors: ["Dan Simmons"], status: TO_READ, series: { id: "hyperion--dan-simmons", name: "Hypérion", volume: 1, kind: MAIN }',
+    )
+    setSystemTime(new Date('2026-09-05T00:00:00Z'))
+    await addBook(alice, dune(1).replace('status: READ', 'status: TO_READ'))
+    await addBook(alice, dune(2).replace('status: READ', 'status: TO_READ'))
+    setSystemTime()
+    await befriend()
+
+    const first = await as(bob)(
+      '{ friendSagaPage(userId: "alice", limit: 1) { sagas { id name shelvedAt volumes { title } } hasMore } }',
+    )
+    const page = first.data?.friendSagaPage as { sagas: { id: string }[] }
+    const next = await as(bob)(
+      `{ friendSagaPage(userId: "alice", limit: 1, after: ${JSON.stringify(page.sagas[0]?.id)}) { sagas { name volumes { title } } hasMore } }`,
+    )
+    const stranger = await as(carol)('{ friendSagaPage(userId: "alice") { hasMore } }')
+
+    expect(first.errors).toBeUndefined()
+    expect(first.data?.friendSagaPage).toEqual({
+      sagas: [
+        {
+          id: expect.any(String),
+          name: 'Dune',
+          shelvedAt: '2026-09-05T00:00:00.000Z',
+          volumes: [{ title: 'Dune 1' }, { title: 'Dune 2' }],
+        },
+      ],
+      hasMore: true,
+    })
+    expect(next.data?.friendSagaPage).toEqual({
+      sagas: [{ name: 'Hypérion', volumes: [{ title: 'Hypérion' }] }],
+      hasMore: false,
+    })
+    expect(stranger.data?.friendSagaPage).toBeNull()
+  })
+
   test('puts the book in progress touched most recently first', async () => {
     setSystemTime(new Date('2026-09-01T00:00:00Z'))
     await addBook(alice, 'title: "Ancien", status: READING')

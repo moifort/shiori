@@ -95,6 +95,8 @@ struct FriendSaga: Identifiable, Sendable {
     var lastActivityAt: Date?
     /// The reader already holds a volume of it: nothing to take.
     var inLibrary = false
+    /// The latest day one of its volumes was shelved on.
+    var shelvedAt: Date?
 }
 
 /// A friend's shelf at a glance.
@@ -109,6 +111,8 @@ struct FriendProfile: Sendable {
     var sagas: [FriendSaga]
     /// The book they finished most recently, when one carries its date.
     var lastFinished: FriendBook?
+    /// How many books their library shows, the dropped ones aside.
+    var bookCount = 0
 
     /// The hearted sagas, the most recently hearted first; those hearted
     /// before the date was kept follow in alphabetical order.
@@ -161,7 +165,7 @@ struct FriendProfile: Sendable {
     }
 
     var isEmpty: Bool {
-        reading.isEmpty && pile.isEmpty && favorites.isEmpty && sagas.isEmpty
+        reading.isEmpty && pile.isEmpty && favorites.isEmpty && sagas.isEmpty && bookCount == 0
     }
 }
 
@@ -246,6 +250,41 @@ enum FriendsAPI {
             query: ShioriGraphQL.MyShelfQuery()
         )
         return FriendProfile(shelf: data.myShelf.fragments.sharedShelf)
+    }
+
+    /// One page of a friend's library — or of the reader's own, previewed —
+    /// newest first on the day each book was shelved.
+    static func libraryPage(
+        friendId: String,
+        status: ReadingStatus?,
+        after: String?
+    ) async throws -> (books: [FriendBook], hasMore: Bool) {
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.FriendLibraryPageQuery(
+                userId: friendId,
+                status: GraphQLHelpers.graphQLNullable(status.map(LibraryAPI.graphQLStatus)),
+                after: GraphQLHelpers.graphQLNullable(after)
+            )
+        )
+        guard let page = data.friendLibraryPage else { return ([], false) }
+        return (page.books.map { FriendBook(row: $0.fragments.friendBookRow) }, page.hasMore)
+    }
+
+    /// One page of a friend's sagas, each with every volume as a cover.
+    static func sagaPage(
+        friendId: String,
+        after: String?
+    ) async throws -> (sagas: [FriendSaga], hasMore: Bool) {
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.FriendSagaPageQuery(
+                userId: friendId,
+                after: GraphQLHelpers.graphQLNullable(after)
+            )
+        )
+        guard let page = data.friendSagaPage else { return ([], false) }
+        return (page.sagas.map { FriendSaga(row: $0.fragments.friendSagaRow) }, page.hasMore)
     }
 
     /// One book of a friend's shelf, with everything the read-only page shows.
@@ -338,26 +377,32 @@ private extension FriendProfile {
             reading: shelf.reading.map { FriendBook(row: $0.fragments.friendBookRow) },
             pile: shelf.pile.map { FriendBook(row: $0.fragments.friendBookRow) },
             favorites: shelf.favorites.map { FriendBook(row: $0.fragments.friendBookRow) },
-            sagas: shelf.sagas.map {
-                FriendSaga(
-                    id: $0.id,
-                    seriesId: $0.seriesId,
-                    name: $0.name,
-                    author: $0.author,
-                    language: $0.language?.asDomain,
-                    ownedCount: $0.ownedCount,
-                    favorite: $0.favorite,
-                    favoritedAt: $0.favoritedAt.flatMap(GraphQLHelpers.parseISO8601),
-                    genre: $0.genre?.asDomain,
-                    subgenre: $0.subgenre,
-                    volumes: $0.volumes.map { Book(row: $0.fragments.friendBookRow) },
-                    lastActivityAt: $0.volumes
-                        .compactMap { GraphQLHelpers.parseISO8601($0.fragments.friendBookRow.lastActivityAt) }
-                        .max(),
-                    inLibrary: $0.volumes.contains { $0.fragments.friendBookRow.inLibrary }
-                )
-            },
-            lastFinished: shelf.lastFinished.map { FriendBook(row: $0.fragments.friendBookRow) }
+            sagas: shelf.sagas.map { FriendSaga(row: $0.fragments.friendSagaRow) },
+            lastFinished: shelf.lastFinished.map { FriendBook(row: $0.fragments.friendBookRow) },
+            bookCount: shelf.bookCount
+        )
+    }
+}
+
+private extension FriendSaga {
+    init(row: ShioriGraphQL.FriendSagaRow) {
+        self.init(
+            id: row.id,
+            seriesId: row.seriesId,
+            name: row.name,
+            author: row.author,
+            language: row.language?.asDomain,
+            ownedCount: row.ownedCount,
+            favorite: row.favorite,
+            favoritedAt: row.favoritedAt.flatMap(GraphQLHelpers.parseISO8601),
+            genre: row.genre?.asDomain,
+            subgenre: row.subgenre,
+            volumes: row.volumes.map { Book(row: $0.fragments.friendBookRow) },
+            lastActivityAt: row.volumes
+                .compactMap { GraphQLHelpers.parseISO8601($0.fragments.friendBookRow.lastActivityAt) }
+                .max(),
+            inLibrary: row.volumes.contains { $0.fragments.friendBookRow.inLibrary },
+            shelvedAt: GraphQLHelpers.parseISO8601(row.shelvedAt)
         )
     }
 }
@@ -397,7 +442,8 @@ private extension Book {
             status: row.status.asDomain,
             rating: row.rating,
             favorite: row.favorite,
-            finishedAt: row.finishedAt.flatMap(GraphQLHelpers.parseISO8601)
+            finishedAt: row.finishedAt.flatMap(GraphQLHelpers.parseISO8601),
+            shelvedAt: GraphQLHelpers.parseISO8601(row.shelvedAt)
         )
     }
 }

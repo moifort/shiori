@@ -9,6 +9,9 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   dernière série ajoutée en favori.
 - Sur la page d’un ami, chaque livre a un « + » pour le mettre dans votre pile, grisé si vous
   l’avez déjà, et sa fiche ouvre la série, que vous pouvez ajouter aux vôtres depuis là.
+- La page d’un ami se termine par « Voir ses séries » et « Voir ses livres », qui ouvrent toute
+  sa bibliothèque et toutes ses séries, présentées comme vos onglets Bibliothèque et Séries.
+  Les sections vides ne s’affichent plus.
   Ses favoris suivent, le plus récent en premier.
 - La synchronisation Audible ne défait plus un statut que vous avez choisi, comme un livre abandonné, sauf si vous l’avez écouté depuis.
 - La bibliothèque n’affiche plus les livres abandonnés par défaut ; le filtre « Abandonné » les montre toujours.
