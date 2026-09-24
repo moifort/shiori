@@ -68,7 +68,7 @@ struct AudibleLibraryPage: View {
     }
 
     private func row(_ book: ImportableBook) -> some View {
-        HStack(spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
             Image(systemName: tickSymbol(for: book))
                 .font(.title3)
                 .foregroundStyle(book.alreadyInLibrary ? Color.secondary : Color.accentColor)

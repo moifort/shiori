@@ -225,7 +225,7 @@ struct DiscoverView: View {
         WidgetCard(title: "Bientôt dans vos séries") {
             VStack(spacing: 0) {
                 ForEach(releases.prefix(8)) { release in
-                    HStack(spacing: 12) {
+                    HStack(alignment: .top, spacing: 12) {
                         ReleaseDateBadge(date: release.date)
                         VStack(alignment: .leading, spacing: 2) {
                             HStack(spacing: 4) {

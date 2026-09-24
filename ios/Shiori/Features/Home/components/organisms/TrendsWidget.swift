@@ -46,7 +46,7 @@ struct TrendsWidget: View {
         direction: Dashboard.Trend.Direction?,
         color: Color
     ) -> some View {
-        HStack(spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
             ZStack {
                 Circle().fill(color.opacity(0.18))
                 Image(systemName: symbol(for: direction))

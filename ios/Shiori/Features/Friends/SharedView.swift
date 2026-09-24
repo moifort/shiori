@@ -198,7 +198,7 @@ struct SharedView: View {
     /// the top corner as a book row carries its marks, and the book they are
     /// reading. `name` stands in for theirs on the reader's own row, "Vous".
     private func row(_ friend: Friend, name: LocalizedStringKey? = nil) -> some View {
-        HStack(spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
             Text(friend.initials)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.tint)
