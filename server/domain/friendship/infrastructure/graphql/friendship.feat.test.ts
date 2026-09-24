@@ -304,6 +304,38 @@ describe("the reader's own shelf, as friends see it", () => {
     expect(seen.data?.friendProfile).toEqual(own.data?.myShelf)
   })
 
+  // "Récemment" on the profile: the last book finished, and when each book in
+  // progress last moved.
+  test('names the book finished last, and dates the activity on each book', async () => {
+    const finish = async (id: string, finishedAt: string) => {
+      const result = await as(alice)(
+        `mutation { updateBook(id: "${id}", input: { finishedAt: "${finishedAt}" }) { id } }`,
+      )
+      expect(result.errors).toBeUndefined()
+    }
+    // Added before either finish, dated after both: a finish can neither
+    // precede the start nor lie in the future.
+    setSystemTime(new Date('2026-09-01T00:00:00Z'))
+    const piranesi = await addBook(alice, 'title: "Piranesi", status: READ')
+    const hyperion = await addBook(alice, 'title: "Hypérion", status: READ')
+    setSystemTime(new Date('2026-09-15T00:00:00Z'))
+    await finish(piranesi, '2026-09-05T00:00:00Z')
+    await finish(hyperion, '2026-09-12T00:00:00Z')
+    setSystemTime(new Date('2026-09-20T08:00:00Z'))
+    await addBook(alice, 'title: "Les Furtifs", status: READING')
+    setSystemTime()
+
+    const result = await as(alice)(
+      '{ myShelf { lastFinished { title finishedAt } reading { title lastActivityAt } } }',
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.myShelf).toEqual({
+      lastFinished: { title: 'Hypérion', finishedAt: '2026-09-12T00:00:00.000Z' },
+      reading: [{ title: 'Les Furtifs', lastActivityAt: '2026-09-20T08:00:00.000Z' }],
+    })
+  })
+
   test('puts the book in progress touched most recently first', async () => {
     setSystemTime(new Date('2026-09-01T00:00:00Z'))
     await addBook(alice, 'title: "Ancien", status: READING')

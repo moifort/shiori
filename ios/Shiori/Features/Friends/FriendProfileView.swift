@@ -92,20 +92,19 @@ struct FriendProfileView: View {
                 .listRowBackground(Color.clear)
             }
             shelf("En cours", books: profile.reading, empty: "Aucune lecture en cours.", showsSeries: true)
-            // What is new among the favourites, so a friend coming back finds
-            // what changed rather than the same list. A saga is not opened:
-            // the catalogue is not something a friendship opens.
-            let recent = profile.recentFavorites()
+            // What moved lately, so a friend coming back finds what changed
+            // rather than the same lists. A saga is not opened: the catalogue
+            // is not something a friendship opens.
+            let recent = profile.recentActivity()
             if !recent.isEmpty {
-                Section("Récemment dans ses favoris") {
-                    ForEach(recent) { favorite in
-                        switch favorite {
-                        case .saga:
-                            RecentFavoriteRow(favorite: favorite)
-                        case let .book(entry, _):
-                            RecentFavoriteRow(favorite: favorite)
+                Section("Récemment") {
+                    ForEach(recent) { activity in
+                        if let entry = activity.book {
+                            RecentActivityRow(activity: activity)
                                 .contentShape(.rect)
                                 .onTapGesture { if !isPreview { openBook = entry } }
+                        } else {
+                            RecentActivityRow(activity: activity)
                         }
                     }
                 }
@@ -297,6 +296,9 @@ struct FriendProfileView: View {
         }
         for index in profile.favorites.indices where profile.favorites[index].id == bookId {
             profile.favorites[index].inLibrary = true
+        }
+        if profile.lastFinished?.id == bookId {
+            profile.lastFinished?.inLibrary = true
         }
         self.profile = profile
     }

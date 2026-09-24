@@ -45,6 +45,9 @@ fragment SharedShelf on FriendProfile {
   favorites {
     ...FriendBookRow
   }
+  lastFinished {
+    ...FriendBookRow
+  }
   sagas {
     id
     seriesId
@@ -73,6 +76,8 @@ fragment FriendBookRow on FriendBook {
   rating
   favorite
   favoritedAt
+  lastActivityAt
+  finishedAt
   inLibrary
   genre
   subgenres

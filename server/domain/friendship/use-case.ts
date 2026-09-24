@@ -15,6 +15,7 @@ import {
   favoritesOutsideSagas,
   inReadingOrder,
   lastActivityOf,
+  lastFinishedOf,
   newestFavoritesFirst,
   subgenreOf,
 } from '~/domain/friendship/business-rules'
@@ -75,6 +76,8 @@ export type FriendProfile = {
   /** The hearted books a hearted saga does not already stand for. */
   favorites: FriendBook[]
   sagas: FriendSaga[]
+  /** The book they finished most recently, when one carries its date. */
+  lastFinished?: FriendBook
 }
 
 /** The statuses a book copied from a friend may land in: on the pile, or
@@ -228,19 +231,23 @@ const sharedShelfOf = async (
     ),
   ).slice(0, shown)
 
+  const finished = lastFinishedOf(books)
+
   const sagas = followedSagasOf(books)
-  const [signedReading, signedPile, signedFavorites, signedVolumes] = await Promise.all([
-    BookQuery.withSignedCovers(reading),
-    BookQuery.withSignedCovers(pile),
-    BookQuery.withSignedCovers(favorites),
-    Promise.all(
-      sagas.map((saga) =>
-        favoriteSagaIds.has(saga.id)
-          ? BookQuery.withSignedCovers(inReadingOrder(saga.books))
-          : Promise.resolve([]),
+  const [signedReading, signedPile, signedFavorites, signedVolumes, signedFinished] =
+    await Promise.all([
+      BookQuery.withSignedCovers(reading),
+      BookQuery.withSignedCovers(pile),
+      BookQuery.withSignedCovers(favorites),
+      Promise.all(
+        sagas.map((saga) =>
+          favoriteSagaIds.has(saga.id)
+            ? BookQuery.withSignedCovers(inReadingOrder(saga.books))
+            : Promise.resolve([]),
+        ),
       ),
-    ),
-  ])
+      BookQuery.withSignedCovers(finished ? [finished] : []),
+    ])
   const unmarked = (books: BookView[]): FriendBook[] =>
     books.map((book) => ({ ...book, inLibrary: false }))
 
@@ -250,6 +257,7 @@ const sharedShelfOf = async (
     reading: unmarked(signedReading),
     pile: unmarked(signedPile),
     favorites: unmarked(signedFavorites),
+    lastFinished: unmarked(signedFinished)[0],
     sagas: sagas.map((saga, index) => {
       const genre = genreOf(saga.books)
       return {
@@ -278,6 +286,7 @@ const marked = (shelf: FriendProfile, inLibrary: (book: FriendBook) => boolean):
     reading: mark(shelf.reading),
     pile: mark(shelf.pile),
     favorites: mark(shelf.favorites),
+    lastFinished: shelf.lastFinished && mark([shelf.lastFinished])[0],
     sagas: shelf.sagas.map((saga) => ({ ...saga, volumes: mark(saga.volumes) })),
   }
 }

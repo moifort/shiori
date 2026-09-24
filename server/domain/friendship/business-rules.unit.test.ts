@@ -4,6 +4,7 @@ import {
   favoritesOutsideSagas,
   inReadingOrder,
   lastActivityOf,
+  lastFinishedOf,
   newestFavoritesFirst,
   subgenreOf,
 } from '~/domain/friendship/business-rules'
@@ -27,6 +28,24 @@ describe('lastActivityOf', () => {
 
   test('falls back to the day it was added on a record with no other stamp', () => {
     expect(lastActivityOf({ addedAt: day(2) })).toEqual(day(2))
+  })
+})
+
+describe('lastFinishedOf', () => {
+  test('picks the book read with the latest finishing date', () => {
+    const books = [
+      { title: 'earlier', status: 'read' as const, finishedAt: day(3) },
+      { title: 'latest', status: 'read' as const, finishedAt: day(9) },
+      { title: 'in progress', status: 'reading' as const },
+    ]
+    expect(lastFinishedOf(books)?.title).toBe('latest')
+  })
+
+  // A book filed as read with no date says nothing about when.
+  test('answers nothing when no book read carries its date', () => {
+    expect(lastFinishedOf([{ status: 'read' as const }, { status: 'to-read' as const }])).toBe(
+      undefined,
+    )
   })
 })
 

@@ -52,6 +52,9 @@ struct FriendBook: Identifiable, Hashable, Sendable {
     /// When its owner hearted it. Nil on a book not hearted, and on a heart
     /// given before the date was kept.
     var favoritedAt: Date?
+    /// When its owner last did anything with it: picked it up, moved its
+    /// status, or had a listening sync move its position.
+    var lastActivityAt: Date?
 }
 
 /// Where a book taken from somebody else's shelf lands on the reader's own.
@@ -100,6 +103,8 @@ struct FriendProfile: Sendable {
     /// The hearted books a hearted saga does not already stand for.
     var favorites: [FriendBook]
     let sagas: [FriendSaga]
+    /// The book they finished most recently, when one carries its date.
+    var lastFinished: FriendBook?
 
     /// The hearted sagas, the most recently hearted first; those hearted
     /// before the date was kept follow in alphabetical order.
@@ -110,20 +115,30 @@ struct FriendProfile: Sendable {
             + hearted.filter { $0.favoritedAt == nil }
     }
 
-    /// What is new among the favourites: the sagas and books hearted in the
-    /// last thirty days, newest first. What a friend coming back looks for,
-    /// rather than the same list as last time.
-    func recentFavorites(now: Date = .now) -> [RecentFavorite] {
-        let since = now.addingTimeInterval(-RecentFavorite.window)
+    /// What moved on the shelf in the last thirty days, newest first: the
+    /// books in progress, the last book finished — that one alone — and the
+    /// sagas and books hearted. What a friend coming back looks for, rather
+    /// than the same lists as last time. A book appears once, on its latest
+    /// news.
+    func recentActivity(now: Date = .now) -> [RecentActivity] {
+        let since = now.addingTimeInterval(-RecentActivity.window)
+        let reading = self.reading.compactMap { entry in
+            entry.lastActivityAt.map { RecentActivity.reading(entry, at: $0) }
+        }
+        let finished = lastFinished.flatMap { entry in
+            entry.book.finishedAt.map { RecentActivity.finished(entry, at: $0) }
+        }
         let sagas = favoriteSagas.compactMap { saga in
-            saga.favoritedAt.map { RecentFavorite.saga(saga, at: $0) }
+            saga.favoritedAt.map { RecentActivity.heartedSaga(saga, at: $0) }
         }
         let books = favorites.compactMap { entry in
-            entry.favoritedAt.map { RecentFavorite.book(entry, at: $0) }
+            entry.favoritedAt.map { RecentActivity.heartedBook(entry, at: $0) }
         }
-        return (sagas + books)
+        var seen = Set<String>()
+        return (reading + [finished].compactMap(\.self) + sagas + books)
             .filter { $0.date >= since }
             .sorted { $0.date > $1.date }
+            .filter { seen.insert($0.subjectId).inserted }
     }
 
     var displayName: String {
@@ -135,24 +150,47 @@ struct FriendProfile: Sendable {
     }
 }
 
-/// A saga or a book hearted lately, with the day of the heart.
-enum RecentFavorite: Identifiable, Sendable {
-    case saga(FriendSaga, at: Date)
-    case book(FriendBook, at: Date)
+/// One thing that moved on a shelf lately, with its day: a book picked up or
+/// read on, the last book finished, a saga or a book hearted.
+enum RecentActivity: Identifiable, Sendable {
+    case reading(FriendBook, at: Date)
+    case finished(FriendBook, at: Date)
+    case heartedSaga(FriendSaga, at: Date)
+    case heartedBook(FriendBook, at: Date)
 
     /// How far back "lately" goes.
     static let window: TimeInterval = 30 * 24 * 3600
 
     var id: String {
         switch self {
-        case let .saga(saga, _): "saga-\(saga.id)"
-        case let .book(entry, _): "book-\(entry.id)"
+        case .reading: "reading-\(subjectId)"
+        case .finished: "finished-\(subjectId)"
+        case .heartedSaga: "saga-\(subjectId)"
+        case .heartedBook: "hearted-\(subjectId)"
+        }
+    }
+
+    /// The book or saga it is about, so that one thing shows once.
+    var subjectId: String {
+        switch self {
+        case let .reading(entry, _), let .finished(entry, _), let .heartedBook(entry, _): entry.id
+        case let .heartedSaga(saga, _): saga.id
         }
     }
 
     var date: Date {
         switch self {
-        case let .saga(_, date), let .book(_, date): date
+        case let .reading(_, date), let .finished(_, date), let .heartedSaga(_, date),
+             let .heartedBook(_, date):
+            date
+        }
+    }
+
+    /// The book it opens on, a saga opening nothing.
+    var book: FriendBook? {
+        switch self {
+        case let .reading(entry, _), let .finished(entry, _), let .heartedBook(entry, _): entry
+        case .heartedSaga: nil
         }
     }
 }
@@ -303,7 +341,8 @@ private extension FriendProfile {
                     subgenre: $0.subgenre,
                     volumes: $0.volumes.map { Book(row: $0.fragments.friendBookRow) }
                 )
-            }
+            },
+            lastFinished: shelf.lastFinished.map { FriendBook(row: $0.fragments.friendBookRow) }
         )
     }
 }
@@ -313,7 +352,8 @@ private extension FriendBook {
         self.init(
             book: Book(row: row),
             inLibrary: row.inLibrary,
-            favoritedAt: row.favoritedAt.flatMap(GraphQLHelpers.parseISO8601)
+            favoritedAt: row.favoritedAt.flatMap(GraphQLHelpers.parseISO8601),
+            lastActivityAt: GraphQLHelpers.parseISO8601(row.lastActivityAt)
         )
     }
 }
@@ -341,7 +381,8 @@ private extension Book {
             coverURL: row.coverUrl.flatMap(URL.init(string:)),
             status: row.status.asDomain,
             rating: row.rating,
-            favorite: row.favorite
+            favorite: row.favorite,
+            finishedAt: row.finishedAt.flatMap(GraphQLHelpers.parseISO8601)
         )
     }
 }

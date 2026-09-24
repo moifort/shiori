@@ -17,6 +17,22 @@ export const lastActivityOf = (
     ),
   )
 
+/** The book finished most recently: the one a friend coming back would ask
+ *  about. Only a book with a finishing date counts — one filed as read with no
+ *  date says nothing about when. */
+export const lastFinishedOf = <Finished extends Pick<Book, 'status' | 'finishedAt'>>(
+  books: readonly Finished[],
+): Finished | undefined =>
+  books
+    .filter((book) => book.status === 'read' && book.finishedAt !== undefined)
+    .reduce<Finished | undefined>(
+      (latest, book) =>
+        !latest || (book.finishedAt?.getTime() ?? 0) > (latest.finishedAt?.getTime() ?? 0)
+          ? book
+          : latest,
+      undefined,
+    )
+
 /** The favourites newest first: the most recently hearted leads, so a friend
  *  who comes back finds what is new at the top rather than the same list. A
  *  heart given before its date was kept ranks on the book's last activity,

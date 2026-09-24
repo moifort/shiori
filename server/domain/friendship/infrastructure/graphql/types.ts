@@ -5,6 +5,7 @@ import {
   ReadingStatusEnum,
 } from '~/domain/book/infrastructure/graphql/enums'
 import { SeriesMembershipType } from '~/domain/book/infrastructure/graphql/types'
+import { lastActivityOf } from '~/domain/friendship/business-rules'
 import type { Friend } from '~/domain/friendship/types'
 import type { FriendBook, FriendProfile, FriendSaga } from '~/domain/friendship/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
@@ -50,6 +51,19 @@ export const FriendBookType = builder.objectRef<FriendBook>('FriendBook').implem
         'When its owner hearted it: what is new among their favourites. Null ' +
         'on a book not hearted, and on a heart given before the date was kept.',
       resolve: (book) => book.favoritedAt ?? null,
+    }),
+    lastActivityAt: t.field({
+      type: 'DateTime',
+      description:
+        'When its owner last did anything with it — picked it up, moved its ' +
+        'status, or had a listening sync move its position: what is recent on the shelf.',
+      resolve: (book) => lastActivityOf(book),
+    }),
+    finishedAt: t.field({
+      type: 'DateTime',
+      nullable: true,
+      description: 'When its owner finished it. Null on a book not read, or read with no date.',
+      resolve: (book) => book.finishedAt ?? null,
     }),
     inLibrary: t.boolean({
       description:
@@ -218,6 +232,14 @@ export const FriendProfileType = builder.objectRef<FriendProfile>('FriendProfile
     sagas: t.field({
       type: [FriendSagaType],
       resolve: (profile) => profile.sagas,
+    }),
+    lastFinished: t.field({
+      type: FriendBookType,
+      nullable: true,
+      description:
+        'The book they finished most recently, null when no book read carries ' +
+        'its finishing date.',
+      resolve: (profile) => profile.lastFinished ?? null,
     }),
   }),
 })

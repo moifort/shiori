@@ -764,6 +764,11 @@ type FriendBook {
   When its owner hearted it: what is new among their favourites. Null on a book not hearted, and on a heart given before the date was kept.
   """
   favoritedAt: DateTime
+
+  """
+  When its owner finished it. Null on a book not read, or read with no date.
+  """
+  finishedAt: DateTime
   firstPublishedIn: Year
   format: BookFormat!
   genre: Genre
@@ -774,6 +779,11 @@ type FriendBook {
   """
   inLibrary: Boolean!
   language: BookLanguage
+
+  """
+  When its owner last did anything with it — picked it up, moved its status, or had a listening sync move its position: what is recent on the shelf.
+  """
+  lastActivityAt: DateTime!
   narrators: [NarratorName!]!
   pageCount: PageCount
   publisher: Publisher
@@ -825,6 +835,11 @@ type FriendProfile {
   """
   favorites: [FriendBook!]!
   firstName: String
+
+  """
+  The book they finished most recently, null when no book read carries its finishing date.
+  """
+  lastFinished: FriendBook
 
   """What they mean to read, most recently added first."""
   pile: [FriendBook!]!

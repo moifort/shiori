@@ -70,10 +70,11 @@ struct SagaRow: View {
     }
 }
 
-/// One favourite hearted lately: its cover, its title, what it is, and how
-/// long ago the heart was given.
-struct RecentFavoriteRow: View {
-    let favorite: RecentFavorite
+/// One thing that moved on a shelf lately: its cover, what it is, what
+/// happened to it, and how long ago. A volume in progress stands for its saga
+/// — the series being read is the news, not "Tome 3" on its own.
+struct RecentActivityRow: View {
+    let activity: RecentActivity
 
     var body: some View {
         HStack(spacing: 12) {
@@ -83,37 +84,44 @@ struct RecentFavoriteRow: View {
                 Text(detail).font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
             Spacer(minLength: 8)
-            Text(favorite.date, format: .relative(presentation: .named))
+            Text(activity.date, format: .relative(presentation: .named))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .fixedSize()
         }
         .padding(.vertical, 2)
-        .accessibilityIdentifier("recent-favorite-row")
+        .accessibilityIdentifier("recent-activity-row")
     }
 
     private var cover: Book {
-        switch favorite {
-        case let .saga(saga, _): saga.coverBook
-        case let .book(entry, _): entry.book
+        switch activity {
+        case let .heartedSaga(saga, _): saga.coverBook
+        case let .reading(entry, _), let .finished(entry, _), let .heartedBook(entry, _): entry.book
         }
     }
 
     private var title: String {
-        switch favorite {
-        case let .saga(saga, _): saga.name
-        case let .book(entry, _): entry.book.title
+        switch activity {
+        case let .heartedSaga(saga, _): saga.name
+        case let .reading(entry, _): entry.book.series?.name ?? entry.book.title
+        case let .finished(entry, _), let .heartedBook(entry, _): entry.book.title
         }
     }
 
-    /// A saga says it is one — its name alone could be a book's — and a book
-    /// names its author.
+    /// What happened, then what tells it apart: the volume for a saga being
+    /// read, the author otherwise.
     private var detail: String {
-        switch favorite {
-        case let .saga(saga, _):
-            [String(localized: "Série"), saga.author].compactMap(\.self).joined(separator: " · ")
-        case let .book(entry, _):
-            entry.book.authorLine
+        switch activity {
+        case let .heartedSaga(saga, _):
+            [String(localized: "Série ajoutée aux favoris"), saga.author].compactMap(\.self)
+                .joined(separator: " · ")
+        case let .reading(entry, _):
+            [String(localized: "En cours"), entry.book.series?.label ?? entry.book.authorLine]
+                .joined(separator: " · ")
+        case let .finished(entry, _):
+            [String(localized: "Terminé"), entry.book.authorLine].joined(separator: " · ")
+        case let .heartedBook(entry, _):
+            [String(localized: "Ajouté aux favoris"), entry.book.authorLine].joined(separator: " · ")
         }
     }
 }
