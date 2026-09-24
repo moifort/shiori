@@ -4,6 +4,8 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- La carte des séries de l’accueil devient « Séries en cours » et les range dans l’ordre de
+  l’onglet Séries, la plus récemment lue d’abord, au lieu des mieux notées d’abord.
 - Les tendances de l’accueil comparent les livres lus cette année à la même période l’an
   dernier, au lieu des pages par jour et de la durée pour finir un livre.
 - L’onglet Découvrir montre désormais les livres que vous avez lus dans une autre langue et

@@ -387,10 +387,9 @@ describe('building the view', () => {
     expect(seriesProgressOf([volume(1), volume(2)], [catalogue], 2026)).toEqual([])
   })
 
-  // The card leads with the sagas the reader thinks most of: their own rating
-  // of the saga, else what their rated volumes average, and the most recent
-  // activity among equals. An unrated saga comes after every rated one.
-  test('puts the best rated sagas in progress first, and shows six', () => {
+  // The card reads as the top of the Series tab: the saga whose latest volume
+  // was shelved most recently first, whatever the reader thinks of it.
+  test('puts the sagas in progress in the Series tab order, and shows six', () => {
     const sagaOf = (name: string): Series => ({
       ...catalogue,
       id: name as SeriesId,
@@ -410,10 +409,9 @@ describe('building the view', () => {
       timeZone: paris,
       now: new Date('2026-09-15T10:00:00.000Z'),
       catalogues: sagas,
+      // A hearted saga shelved long ago does not lift itself above the others.
       opinions: [
         { userId: reader, seriesId: 'b' as SeriesId, rating: StarRating(5), favorite: true },
-        // The saga's own rating wins over its volumes'.
-        { userId: reader, seriesId: 'c' as SeriesId, rating: StarRating(2) },
       ],
       books: [
         firstVolume(sagas[0], '2026-09-01'),
@@ -429,10 +427,9 @@ describe('building the view', () => {
 
     const series = dashboardOf(view, day('2026-09-15')).series
 
-    expect(series.map((entry) => entry.id)).toEqual(['b', 'e', 'd', 'c', 'a', 'h'] as SeriesId[])
+    expect(series.map((entry) => entry.id)).toEqual(['a', 'h', 'g', 'f', 'e', 'd'] as SeriesId[])
     // What the card draws beside each saga: the heart, else the stars.
-    expect(series[0]).toMatchObject({ rating: 5, favorite: true })
-    expect(series[1]).toMatchObject({ rating: 4, favorite: false })
+    expect(series[4]).toMatchObject({ id: 'e', rating: 4, favorite: false })
   })
 
   test('sorts the shelves and keeps the last finished book', () => {

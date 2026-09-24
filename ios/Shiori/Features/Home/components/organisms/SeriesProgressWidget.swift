@@ -5,7 +5,7 @@ struct SeriesProgressWidget: View {
     let onHeaderTapped: () -> Void
 
     var body: some View {
-        WidgetCard(title: "Meilleures séries en cours", action: onHeaderTapped) {
+        WidgetCard(title: "Séries en cours", action: onHeaderTapped) {
             if series.isEmpty {
                 WidgetEmptyMessage(text: "Aucune série en cours.", placeholder: .rings)
             }

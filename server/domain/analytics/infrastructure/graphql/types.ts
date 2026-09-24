@@ -215,8 +215,8 @@ export const DashboardType = builder.objectRef<Dashboard>('Dashboard').implement
     series: t.field({
       type: [SeriesProgressType],
       description:
-        'Sagas in progress, six at most: the best rated first, an unrated saga after ' +
-        'every rated one, the most recent activity among equals.',
+        "Sagas in progress, six at most, in the Series tab's order: the saga whose " +
+        'latest volume was shelved most recently first.',
       resolve: (dashboard) => dashboard.series,
     }),
     favoriteCount: t.exposeInt('favoriteCount', {

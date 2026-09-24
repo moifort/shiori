@@ -10,6 +10,8 @@ the release tag is pushed.
 
 ## Unreleased
 
+- The Home saga card is now "Series in progress" and lists them in the Series tab's order, the
+  most recently read first, instead of the best rated first.
 - The Home trends compare the books read this year with the same time last year, instead of
   the pages per day and the days to finish a book.
 - The Discover tab now shows the books you read in another language that are out, or coming

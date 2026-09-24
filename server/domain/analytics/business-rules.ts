@@ -17,6 +17,7 @@ import {
   listeningProgressOf,
   readVolumeNumbersOf,
   seriesRatingsOf,
+  shelfDateOf,
   shelvedOf,
   shownRatingOf,
 } from '~/domain/book/business-rules'
@@ -232,11 +233,7 @@ export const seriesProgressOf = (
       totalCount,
       rating: sagaRatingOf(series.id, owned, seriesRatings),
       favorite: hearted.has(series.id),
-      lastActivityAt: new Date(
-        Math.max(
-          ...owned.map((book) => (book.finishedAt ?? book.startedAt ?? book.addedAt).getTime()),
-        ),
-      ),
+      lastActivityAt: new Date(Math.max(...owned.map((book) => shelfDateOf(book).getTime()))),
     })
   }
   return progress
@@ -258,11 +255,11 @@ const sagaRatingOf = (
     : rated.reduce((sum, rating) => sum + rating, 0) / rated.length
 }
 
-// The best rated first, an unrated saga after every rated one, and the most
-// recent activity among equals.
+// The Series tab's order, so the card reads as the top of that tab: the saga
+// whose latest volume was shelved most recently first, then by name.
 const compareSeriesProgress = (left: SeriesProgress, right: SeriesProgress): number =>
-  (right.rating ?? 0) - (left.rating ?? 0) ||
-  right.lastActivityAt.getTime() - left.lastActivityAt.getTime()
+  right.lastActivityAt.getTime() - left.lastActivityAt.getTime() ||
+  (left.name < right.name ? -1 : left.name > right.name ? 1 : 0)
 
 // MARK: - Reading the view against today
 
