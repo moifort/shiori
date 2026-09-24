@@ -336,6 +336,27 @@ describe("the reader's own shelf, as friends see it", () => {
     })
   })
 
+  // The recent activity draws the saga of the book in progress with its
+  // covers, hearted or not; any other saga still carries none.
+  test('carries the volumes of the saga being read, and of no other unhearted saga', async () => {
+    await addBook(alice, dune(1).replace('status: READ', 'status: TO_READ'))
+    await addBook(alice, dune(2).replace('status: READ', 'status: READING'))
+    await addBook(
+      alice,
+      'title: "Hypérion", authors: ["Dan Simmons"], status: TO_READ, series: { id: "hyperion--dan-simmons", name: "Hypérion", volume: 1, kind: MAIN }',
+    )
+
+    const result = await as(alice)('{ myShelf { sagas { name favorite volumes { title } } } }')
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.myShelf).toEqual({
+      sagas: expect.arrayContaining([
+        { name: 'Dune', favorite: false, volumes: [{ title: 'Dune 1' }, { title: 'Dune 2' }] },
+        { name: 'Hypérion', favorite: false, volumes: [] },
+      ]),
+    })
+  })
+
   test('puts the book in progress touched most recently first', async () => {
     setSystemTime(new Date('2026-09-01T00:00:00Z'))
     await addBook(alice, 'title: "Ancien", status: READING')

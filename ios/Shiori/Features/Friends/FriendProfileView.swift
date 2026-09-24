@@ -82,23 +82,6 @@ struct FriendProfileView: View {
 
     private func shelves(_ profile: FriendProfile) -> some View {
         List {
-            // What moved lately leads the page, so a friend coming back
-            // finds what changed rather than the same lists. A saga is not
-            // opened: the catalogue is not something a friendship opens.
-            let recent = profile.recentActivity()
-            if !recent.isEmpty {
-                Section("Activités récentes") {
-                    ForEach(recent) { activity in
-                        if let entry = activity.book {
-                            RecentActivityRow(activity: activity)
-                                .contentShape(.rect)
-                                .onTapGesture { if !isPreview { openBook = entry } }
-                        } else {
-                            RecentActivityRow(activity: activity)
-                        }
-                    }
-                }
-            }
             Section {
                 HStack(spacing: 8) {
                     tile(friend.favoriteCount, "Favoris", systemImage: "heart.fill", tint: .red)
@@ -107,6 +90,29 @@ struct FriendProfileView: View {
                 }
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
+            }
+            // What moved lately, under the figures, so a friend coming back
+            // finds what changed rather than the same lists. A book read or
+            // finished brings its saga along, covers and all. A saga is not
+            // opened: the catalogue is not something a friendship opens.
+            let recent = profile.recentActivity()
+            if !recent.isEmpty {
+                Section("Activités récentes") {
+                    ForEach(recent) { activity in
+                        if let entry = activity.book {
+                            VStack(alignment: .leading, spacing: 12) {
+                                RecentActivityRow(activity: activity)
+                                    .contentShape(.rect)
+                                    .onTapGesture { if !isPreview { openBook = entry } }
+                                if let saga = profile.saga(of: entry.book) {
+                                    SagaRow(saga: saga, showsCovers: true)
+                                }
+                            }
+                        } else {
+                            RecentActivityRow(activity: activity)
+                        }
+                    }
+                }
             }
             shelf("En cours", books: profile.reading, empty: "Aucune lecture en cours.", showsSeries: true)
             // A hearted saga stands for its volumes: the books below it are

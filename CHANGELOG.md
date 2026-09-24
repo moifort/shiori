@@ -10,8 +10,9 @@ the release tag is pushed.
 
 ## Unreleased
 
-- A friend's page opens on their recent activity, from the last thirty days: the book or
-  series they are reading, the last book they finished, and the last series they hearted.
+- A friend's page shows their recent activity, from the last thirty days: the book they are
+  reading and the last one they finished, each with its series and every cover, and the last
+  series they hearted.
   Their favourites follow, the most recently hearted first.
 - The Audible sync no longer undoes a status you set, such as an abandoned book, unless you listened to it since.
 - The library no longer lists abandoned books by default; the "Abandoned" filter still shows them.

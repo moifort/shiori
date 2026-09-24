@@ -56,9 +56,10 @@ export type FriendSaga = {
   favoritedAt?: Date
   genre?: Genre
   subgenre?: TaggedSubgenre
-  /** Its volumes on the shelf, in reading order, for the favourites to draw
-   *  as a strip of covers. Empty on a saga that is not hearted: each cover is
-   *  a signed URL, and only the favourites draw them. */
+  /** Its volumes on the shelf, in reading order, for a strip of covers.
+   *  Carried by a hearted saga and by the sagas of the book in progress
+   *  touched last and of the last book finished — the recent activity draws
+   *  those two — and empty on any other: each cover is a signed URL. */
   volumes: FriendBook[]
 }
 
@@ -232,6 +233,13 @@ const sharedShelfOf = async (
   ).slice(0, shown)
 
   const finished = lastFinishedOf(books)
+  // The sagas drawn with their covers: the favourites, and those of the two
+  // books the recent activity leads with.
+  const drawnSagaIds = new Set(
+    [...favoriteSagaIds, reading[0]?.series?.id, finished?.series?.id].filter(
+      (id): id is SeriesId => id !== undefined,
+    ),
+  )
 
   const sagas = followedSagasOf(books)
   const [signedReading, signedPile, signedFavorites, signedVolumes, signedFinished] =
@@ -241,7 +249,7 @@ const sharedShelfOf = async (
       BookQuery.withSignedCovers(favorites),
       Promise.all(
         sagas.map((saga) =>
-          favoriteSagaIds.has(saga.id)
+          drawnSagaIds.has(saga.id)
             ? BookQuery.withSignedCovers(inReadingOrder(saga.books))
             : Promise.resolve([]),
         ),

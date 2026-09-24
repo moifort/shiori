@@ -71,8 +71,8 @@ struct SagaRow: View {
 }
 
 /// One thing that moved on a shelf lately: its cover, what it is, what
-/// happened to it, and how long ago. A volume in progress stands for its saga
-/// — the series being read is the news, not "Tome 3" on its own.
+/// happened to it, and how long ago. A volume says which one it is; its saga
+/// is drawn underneath by the section.
 struct RecentActivityRow: View {
     let activity: RecentActivity
 
@@ -103,8 +103,7 @@ struct RecentActivityRow: View {
     private var title: String {
         switch activity {
         case let .heartedSaga(saga, _): saga.name
-        case let .reading(entry, _): entry.book.series?.name ?? entry.book.title
-        case let .finished(entry, _): entry.book.title
+        case let .reading(entry, _), let .finished(entry, _): entry.book.title
         }
     }
 
@@ -119,7 +118,8 @@ struct RecentActivityRow: View {
             [String(localized: "En cours de lecture"), entry.book.series?.label ?? entry.book.authorLine]
                 .joined(separator: " · ")
         case let .finished(entry, _):
-            [String(localized: "Livre terminé"), entry.book.authorLine].joined(separator: " · ")
+            [String(localized: "Livre terminé"), entry.book.series?.label ?? entry.book.authorLine]
+                .joined(separator: " · ")
         }
     }
 }

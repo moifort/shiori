@@ -133,6 +133,15 @@ struct FriendProfile: Sendable {
         return [reading, finished, saga].compactMap(\.self).filter { $0.date >= since }
     }
 
+    /// The saga a book belongs to, when it carries its covers: the recent
+    /// activity draws it under the book. The edition in the book's language
+    /// first, a saga being filed per language.
+    func saga(of book: Book) -> FriendSaga? {
+        guard let seriesId = book.series?.id else { return nil }
+        let candidates = sagas.filter { $0.seriesId == seriesId && !$0.volumes.isEmpty }
+        return candidates.first { $0.language == book.language } ?? candidates.first
+    }
+
     var displayName: String {
         firstName ?? String(localized: "Un lecteur")
     }
