@@ -48,7 +48,8 @@ builder.queryFields((t) => ({
     type: FriendBookType,
     nullable: true,
     description:
-      "One book of a friend's shelf, for the read-only page a row opens.\n\n" +
+      "One book of a friend's shelf, for the read-only page a row opens — or " +
+      "of the reader's own, previewing what their friends are shown.\n\n" +
       'Null for a stranger, a book that does not exist and a book marked "do ' +
       'not share" alike — none of the three may be told apart.',
     args: {

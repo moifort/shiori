@@ -144,13 +144,14 @@ export namespace FriendshipUseCase {
 
   /** One book of a friend's shelf, for the read-only page a row opens. Null
    *  for a stranger's book, a book that does not exist and a book marked "do
-   *  not share" alike. */
+   *  not share" alike. The reader's own shelf opens the same page, previewing
+   *  what their friends are shown. */
   export const book = async (
     userId: UserId,
     friendId: UserId,
     bookId: BookId,
   ): Promise<FriendBook | null> => {
-    if (!(await FriendshipQuery.areFriends(userId, friendId))) return null
+    if (userId !== friendId && !(await FriendshipQuery.areFriends(userId, friendId))) return null
     const [book, owned] = await Promise.all([
       BookQuery.sharedById(friendId, bookId),
       BookQuery.shelfKeys(userId),

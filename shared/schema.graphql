@@ -1642,7 +1642,7 @@ type Query {
   entitlement: Entitlement!
 
   """
-  One book of a friend's shelf, for the read-only page a row opens.
+  One book of a friend's shelf, for the read-only page a row opens — or of the reader's own, previewing what their friends are shown.
   
   Null for a stranger, a book that does not exist and a book marked "do not share" alike — none of the three may be told apart.
   """

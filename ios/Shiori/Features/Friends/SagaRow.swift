@@ -70,27 +70,37 @@ struct SagaRow: View {
     }
 }
 
-/// One thing that moved on a shelf lately: its cover, what it is, what
-/// happened to it, and how long ago. A volume says which one it is; its saga
-/// is drawn underneath by the section.
+/// One thing that moved on a shelf lately, top-aligned beside its cover: what
+/// happened and when, then what it is, then who wrote it — and which volume,
+/// for a book of a saga, whose covers the section draws underneath.
 struct RecentActivityRow: View {
     let activity: RecentActivity
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
             BookCover(book: cover, width: 36, showsFormatBadge: false)
             VStack(alignment: .leading, spacing: 2) {
+                what.font(.caption).foregroundStyle(.secondary)
                 Text(title).font(.subheadline.weight(.medium)).lineLimit(2)
-                Text(detail).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                if let detail {
+                    Text(detail).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                }
             }
-            Spacer(minLength: 8)
-            Text(activity.date, format: .relative(presentation: .named))
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .fixedSize()
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
         .accessibilityIdentifier("recent-activity-row")
+    }
+
+    /// A book in progress is simply in progress; a finish and a heart say when.
+    private var what: Text {
+        let when = Text(activity.date, format: .relative(presentation: .named))
+        return switch activity {
+        case .reading: Text("En cours de lecture")
+        case .finished: Text("Livre terminé \(when)")
+        case .heartedSaga: Text("Série ajoutée aux favoris \(when)")
+        }
     }
 
     private var cover: Book {
@@ -107,18 +117,12 @@ struct RecentActivityRow: View {
         }
     }
 
-    /// What happened, then what tells it apart: the volume for a saga being
-    /// read, the author otherwise.
-    private var detail: String {
+    private var detail: String? {
         switch activity {
         case let .heartedSaga(saga, _):
-            [String(localized: "Série ajoutée aux favoris"), saga.author].compactMap(\.self)
-                .joined(separator: " · ")
-        case let .reading(entry, _):
-            [String(localized: "En cours de lecture"), entry.book.series?.label ?? entry.book.authorLine]
-                .joined(separator: " · ")
-        case let .finished(entry, _):
-            [String(localized: "Livre terminé"), entry.book.series?.label ?? entry.book.authorLine]
+            saga.author
+        case let .reading(entry, _), let .finished(entry, _):
+            [entry.book.authorLine, entry.book.series?.label].compactMap(\.self)
                 .joined(separator: " · ")
         }
     }

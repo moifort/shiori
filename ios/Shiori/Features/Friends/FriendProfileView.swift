@@ -6,15 +6,15 @@ import SwiftUI
 ///
 /// Read-only as far as the friend's library goes. A row opens the friend's
 /// book on a page with no control that writes to it; what it offers instead is
-/// to add the book to the reader's pile, which "+ Pile" does from the row
-/// itself. A book the reader already owns says "Chez vous" instead.
+/// to add the book to the reader's pile, which "+" does from the row itself,
+/// greyed out on a book the reader already owns.
 ///
 /// Books they marked "do not share" are absent, and no reading note is drawn:
 /// a friend sees a shelf, not a diary.
 ///
 /// The reader's own shelf opens on this very page, as a preview: drawn from
-/// the shelf they already hold, every "+ Pile" shown the way a friend who owns
-/// none of it would see it, greyed out, and no row opening anything.
+/// the shelf they already hold, every "+" greyed out since every book is
+/// theirs, and each row opening the page a friend would open.
 struct FriendProfileView: View {
     let friend: Friend
     private let isPreview: Bool
@@ -101,9 +101,12 @@ struct FriendProfileView: View {
                     ForEach(recent) { activity in
                         if let entry = activity.book {
                             VStack(alignment: .leading, spacing: 12) {
-                                RecentActivityRow(activity: activity)
-                                    .contentShape(.rect)
-                                    .onTapGesture { if !isPreview { openBook = entry } }
+                                HStack(alignment: .top, spacing: 8) {
+                                    RecentActivityRow(activity: activity)
+                                        .contentShape(.rect)
+                                        .onTapGesture { openBook = entry }
+                                    takeButton(entry)
+                                }
                                 if let saga = profile.saga(of: entry.book) {
                                     SagaRow(saga: saga, showsCovers: true)
                                 }
@@ -219,7 +222,7 @@ struct FriendProfileView: View {
                             isFavorite: entry.book.favorite
                         )
                         .contentShape(.rect)
-                        .onTapGesture { if !isPreview { openBook = entry } }
+                        .onTapGesture { openBook = entry }
                         takeButton(entry)
                     }
                     .accessibilityIdentifier("friend-book-row")
@@ -228,44 +231,30 @@ struct FriendProfileView: View {
         }
     }
 
-    /// "+ Pile" on a book the reader does not have, "Chez vous" on one they do.
-    /// The preview shows "+ Pile" on every row, greyed out: every book on the
-    /// shelf is the reader's own, and "Chez vous" is not what a friend sees.
+    /// "+" to put a book on the reader's pile, greyed out on one they already
+    /// own — every book of the preview, which is their own shelf.
     @ViewBuilder
     private func takeButton(_ entry: FriendBook) -> some View {
-        if isPreview {
+        if adding.contains(entry.id) {
+            ProgressView().frame(width: 32)
+        } else {
+            let owned = entry.inLibrary || isPreview
+            Button {
+                Task { await add(entry) }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.caption.weight(.semibold))
+            }
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.circle)
+            .controlSize(.small)
             // Disabled alone leaves the plus in the accent colour: grey
             // throughout, so it reads as inert at a glance.
-            pileButton(entry)
-                .foregroundStyle(.tertiary)
-                .disabled(true)
-        } else if entry.inLibrary {
-            Text("Chez vous")
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.green)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(.green.opacity(0.15), in: .capsule)
-                .accessibilityIdentifier("friend-book-owned")
-        } else if adding.contains(entry.id) {
-            ProgressView().frame(width: 56)
-        } else {
-            pileButton(entry)
+            .foregroundStyle(owned ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.tint))
+            .disabled(owned)
+            .accessibilityLabel(Text(owned ? "Déjà dans votre bibliothèque" : "Ajouter à ma pile"))
+            .accessibilityIdentifier(owned ? "friend-book-owned" : "friend-book-add")
         }
-    }
-
-    private func pileButton(_ entry: FriendBook) -> some View {
-        Button {
-            Task { await add(entry) }
-        } label: {
-            Label("Pile", systemImage: "plus")
-                .font(.caption.weight(.medium))
-        }
-        .buttonStyle(.bordered)
-        .buttonBorderShape(.capsule)
-        .controlSize(.small)
-        .accessibilityLabel(Text("Ajouter à ma pile"))
-        .accessibilityIdentifier("friend-book-add")
     }
 
     private func load() async {

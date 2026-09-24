@@ -474,6 +474,21 @@ describe("taking a book off a friend's shelf", () => {
     })
   })
 
+  // The preview of the reader's own page opens their books on the same page.
+  test("opens the reader's own shared book as a friend would, never a hidden one", async () => {
+    const dune = idOf(await addBook(alice, 'title: "Dune", authors: ["Frank Herbert"]'))
+    const secret = idOf(await addBook(alice, 'title: "Un secret"'))
+    await as(alice)(`mutation { setBookHidden(id: "${secret}", hidden: true) { id } }`)
+
+    const own = await as(alice)(
+      `{ friendBook(userId: "alice", bookId: "${dune}") { title inLibrary } }`,
+    )
+    const hidden = await as(alice)(`{ friendBook(userId: "alice", bookId: "${secret}") { title } }`)
+
+    expect(own.data?.friendBook).toEqual({ title: 'Dune', inLibrary: true })
+    expect(hidden.data?.friendBook).toBeNull()
+  })
+
   test('copies the catalogue facts, never what the friend made of the book', async () => {
     await nameAlice()
     const hyperion = idOf(

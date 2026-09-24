@@ -13,6 +13,8 @@ the release tag is pushed.
 - A friend's page shows their recent activity, from the last thirty days: the book they are
   reading and the last one they finished, each with its series and every cover, and the last
   series they hearted.
+- On a friend's page, every book has a "+" to put it on your pile, greyed out when you
+  already own it, and its page opens the series, which you can add to yours from there.
   Their favourites follow, the most recently hearted first.
 - The Audible sync no longer undoes a status you set, such as an abandoned book, unless you listened to it since.
 - The library no longer lists abandoned books by default; the "Abandoned" filter still shows them.

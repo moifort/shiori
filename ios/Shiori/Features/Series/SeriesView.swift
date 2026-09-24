@@ -85,6 +85,17 @@ struct SeriesView: View {
                 .tint(isFavorite ? .red : nil)
                 .accessibilityIdentifier("series-favorite")
             }
+            // A saga the reader holds nothing of — opened from a friend's
+            // book — joins their sagas with its first volume, on the pile.
+            if owned.isEmpty, let series, let first = firstVolume(of: series) {
+                ToolbarItem(placement: .primaryAction) {
+                    AsyncToolbarButton(title: "Ajouter à mes séries", systemImage: "plus") {
+                        await add(first, author: series.author)
+                    }
+                    .disabled(addingTitle != nil)
+                    .accessibilityIdentifier("series-add")
+                }
+            }
             if !owned.isEmpty {
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
@@ -470,6 +481,11 @@ struct SeriesView: View {
             .buttonStyle(.borderless)
             .accessibilityLabel(Text("Ajouter « \(volume.title) » à ma liste à lire"))
         }
+    }
+
+    /// The volume a saga is started with: the first of the spine already out.
+    private func firstVolume(of series: BookSeries) -> Volume? {
+        series.spine.first { !$0.isForthcoming(asOf: currentYear) }
     }
 
     // MARK: - Dates
