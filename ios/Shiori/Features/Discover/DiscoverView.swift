@@ -14,8 +14,8 @@ import SwiftUI
 /// for. Read through one format at a time, picked in the toolbar and kept
 /// between visits.
 ///
-/// The server looks again every day. Until the first time, the tab offers to
-/// look now; after that, once a day at most.
+/// The server looks again every day. The first opening looks at once, behind a
+/// loader; after that, the reader may ask again once a day at most.
 struct DiscoverView: View {
     @State private var feed: DiscoverFeed?
     @State private var isLoading = true
@@ -63,12 +63,23 @@ struct DiscoverView: View {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let errorMessage, feed == nil {
             EmptyStateView.failure("Découvrir indisponible", message: errorMessage) { await load() }
+        } else if let whole = feed, whole.preparedAt == nil {
+            // Never searched yet: the search starts on its own, and the tab
+            // waits for it rather than asking the reader to start it.
+            if isPreparing || errorMessage == nil {
+                ProgressView("Recherche des prochaines sorties…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .accessibilityIdentifier("discover-preparing")
+            } else {
+                EmptyStateView.failure(
+                    "Recherche impossible",
+                    message: errorMessage ?? String(localized: "La recherche des prochaines sorties n'a pas abouti.")
+                ) { await prepare() }
+            }
         } else if let whole = feed {
             let feed = whole.narrowed(to: format)
             List {
-                if feed.preparedAt == nil {
-                    Section { prepareCard }
-                } else if shown(feed.upcoming).isEmpty && shown(feed.maybe).isEmpty {
+                if shown(feed.upcoming).isEmpty && shown(feed.maybe).isEmpty {
                     Section {
                         EmptyStateView(
                             systemImage: format == .audiobook ? "headphones" : "sparkles",
@@ -233,29 +244,6 @@ struct DiscoverView: View {
         return String(localized: "Mis à jour \(preparedAt.formatted(.relative(presentation: .named)))")
     }
 
-    private var prepareCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label("Les prochains tomes de vos séries", systemImage: "sparkles").font(.headline)
-            Text("Shiori cherche, pour chaque série que vous lisez, le prochain tome annoncé et sa date — dans la langue où vous la lisez, et en français quand vous la lisez dans une autre langue —, en livre, et en livre audio si vous avez connecté Audible. Cela prend une minute.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Button {
-                Task { await prepare() }
-            } label: {
-                HStack {
-                    if isPreparing { ProgressView().tint(.white) }
-                    Text(isPreparing ? "Recherche en cours…" : "Chercher les sorties")
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 4)
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(isPreparing)
-            .accessibilityIdentifier("discover-prepare")
-        }
-        .padding(.vertical, 6)
-    }
-
     // MARK: - Loading
 
     private func load() async {
@@ -267,11 +255,18 @@ struct DiscoverView: View {
             errorMessage = reportError(error)
         }
         isLoading = false
+        // The first opening searches at once: a reader who came to see what is
+        // coming should not have to ask for it.
+        if let feed, feed.preparedAt == nil, !isPreparing {
+            await prepare()
+            return
+        }
         await askForAlertsIfWorthIt()
     }
 
     private func prepare() async {
         isPreparing = true
+        errorMessage = nil
         defer { isPreparing = false }
         do {
             feed = try await DiscoverAPI.refresh()
