@@ -67,6 +67,7 @@ const addVolume = async (
 type FollowedRow = {
   id: string
   name: string
+  audio?: boolean
   author?: string | null
   language?: string | null
   state?: string | null
@@ -115,6 +116,55 @@ describe('the sagas a reader follows', () => {
     expect(result.errors).toBeUndefined()
 
     expect(await mySeries()).toEqual([])
+  })
+})
+
+describe('a saga heard and a saga read', () => {
+  const addRecording = async (title: string, volume: number) => {
+    const result = await execute(
+      `mutation { addBook(input: {
+        title: "${title}"
+        authors: ["Frank Herbert"]
+        format: AUDIOBOOK
+        series: { id: "dune--frank-herbert", name: "Dune", volume: ${volume}, kind: MAIN }
+      }) { id } }`,
+    )
+    expect(result.errors).toBeUndefined()
+  }
+
+  // A recording trails its book, sometimes by years: the listener follows the
+  // saga recorded, not the saga printed.
+  test('follows them as two sagas', async () => {
+    await addVolume('Dune', 1)
+    await addRecording('Le Messie de Dune', 2)
+
+    const result = await execute('{ mySeries { id audio ownedCount } }')
+
+    expect(result.errors).toBeUndefined()
+    const rows = (result.data as { mySeries: Omit<FollowedRow, 'name'>[] }).mySeries
+    expect(rows.toSorted((a, b) => a.id.localeCompare(b.id))).toEqual([
+      { id: 'dune--frank-herbert', audio: false, ownedCount: 1 },
+      { id: 'dune--frank-herbert--audio', audio: true, ownedCount: 1 },
+    ])
+  })
+
+  test('catalogues the saga heard from its recordings', async () => {
+    await addRecording('Le Messie de Dune', 2)
+    answers = [
+      {
+        name: 'Dune',
+        author: 'Frank Herbert',
+        volumes: [{ kind: 'main', number: 1, title: 'Dune', publishedIn: 2021 }],
+      },
+    ]
+
+    const result = await execute(
+      '{ series(id: "dune--frank-herbert--audio") { audio spine { number } } }',
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.series).toEqual({ audio: true, spine: [{ number: 1 }] })
+    expect(prompts.catalogue).toContain('ENREGISTRÉS EN LIVRE AUDIO')
   })
 })
 

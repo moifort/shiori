@@ -202,8 +202,9 @@ export const heardByAsin = (
 ): ReadonlyMap<string, LastPosition> =>
   new Map(positions.map((position) => [position.asin, position]))
 
-/** The saga the title belongs to, keyed the same way a scan keys it, so an
- *  imported volume joins the very catalogue a scanned one built.
+/** The saga the title belongs to, keyed the way a scan keys a recording — the
+ *  saga heard, never the saga read — so an imported volume joins the very
+ *  catalogue a scanned audiobook built.
  *
  *  Without an author there is no stable key, so the membership is dropped rather
  *  than given an id nothing else shares — the same rule the scan applies. */
@@ -214,7 +215,7 @@ const seriesMembershipOf = (
   const name = optionally(item.series?.name, SeriesName)
   if (!name || authors.length === 0) return undefined
   return {
-    id: seriesKeyOf(name, authors[0]),
+    id: seriesKeyOf(name, authors[0], 'audiobook'),
     name,
     volume: volumeOf(item.series?.position),
     kind: 'main',

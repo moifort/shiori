@@ -130,7 +130,7 @@ describe('looking a title up', () => {
     expect(String(result.series?.name)).toBe('Chronique du tueur de roi')
     expect(calls).toEqual(['enrichment', 'catalogue'])
     expect(
-      await SeriesQuery.byId(seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss')),
+      await SeriesQuery.byId(seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book')),
     ).not.toBeNull()
   })
 })
@@ -391,7 +391,7 @@ describe('surviving what the model invents', () => {
     await ScanCommand.scanWithCache(image, 'fr')
 
     const series = await SeriesQuery.byId(
-      seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss'),
+      seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book'),
     )
     expect(series?.volumes).toHaveLength(3)
   })
@@ -416,6 +416,23 @@ describe('cataloguing a saga', () => {
     await ScanCommand.scanWithCache(image, 'fr')
 
     expect(prompts.catalogue).toContain('Édition : en français.')
+  })
+
+  // A recording trails its book: the saga heard is catalogued from what Audible
+  // lists, and a volume out in print only stays out of it.
+  test('catalogues the saga heard from the recordings of a cover read as an audiobook', async () => {
+    answers = [{ ...aCover, format: 'audiobook' }, anEnrichment, aCatalogue]
+
+    const { result } = await ScanCommand.scanWithCache(image, 'fr')
+
+    expect(String(result.series?.id)).toBe('chronique-du-tueur-de-roi--patrick-rothfuss--audio')
+    expect(prompts.catalogue).toContain('ENREGISTRÉS EN LIVRE AUDIO en français')
+    expect(prompts.catalogue).toContain('audible.fr')
+    expect(
+      await SeriesQuery.byId(
+        seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'audiobook'),
+      ),
+    ).not.toBeNull()
   })
 
   test('skips the third call when the saga is already catalogued', async () => {
@@ -458,7 +475,7 @@ describe('cataloguing a saga', () => {
     await ScanCommand.scanWithCache(image, 'fr')
 
     const series = await SeriesQuery.byId(
-      seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss'),
+      seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book'),
     )
     expect(series).toBeNull()
   })

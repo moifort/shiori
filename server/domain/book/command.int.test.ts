@@ -243,6 +243,40 @@ describe('placing a book in a saga by hand', () => {
   })
 })
 
+describe('a saga heard and a saga read', () => {
+  const bobiverse = (volume: number) => ({
+    id: SeriesId('bobiverse--dennis-e-taylor'),
+    name: SeriesName('Bobiverse'),
+    volume: VolumeNumber(volume),
+    kind: 'main' as const,
+  })
+
+  // The scan keyed the saga from the cover; the reader saved an audiobook.
+  test('files a book saved as an audiobook in the saga heard', async () => {
+    const book = await BookCommand.add(
+      reader,
+      { title: BookTitle('Nous sommes Bob'), format: 'audiobook', series: bobiverse(1) },
+      NOW,
+    )
+
+    expect(book.series?.id).toBe(SeriesId('bobiverse--dennis-e-taylor--audio'))
+    expect(fake.data('books', book.id)?.series).toEqual(book.series)
+  })
+
+  test('moves a book to the saga of the format the reader corrects it to', async () => {
+    const book = await BookCommand.add(
+      reader,
+      { title: BookTitle('Nous sommes Bob'), format: 'audiobook', series: bobiverse(1) },
+      NOW,
+    )
+
+    const printed = await BookCommand.edit(reader, book.id, { format: 'book' })
+
+    if (typeof printed === 'string') throw new Error('unreachable')
+    expect(printed.series).toEqual(bobiverse(1))
+  })
+})
+
 describe('rating a book', () => {
   // The reader is telling us they finished it. Leaving it on the pile would make
   // every status filter lie about the same book.

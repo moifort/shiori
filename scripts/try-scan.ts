@@ -30,7 +30,6 @@ resetFakeFirestore()
 
 const { ScanCommand } = await import('~/domain/scan/command')
 const { SeriesQuery } = await import('~/domain/series/query')
-const { seriesKeyOf } = await import('~/domain/series/primitives')
 
 const image = readFileSync(imagePath)
 process.stdout.write(`Scanning ${imagePath} (${image.byteLength} bytes) in ${language}\n\n`)
@@ -43,7 +42,7 @@ process.stdout.write(`cacheHit: ${cacheHit}\n`)
 process.stdout.write(`usage: ${JSON.stringify(usage)}\n`)
 process.stdout.write(`elapsed: ${((Date.now() - started) / 1000).toFixed(1)}s\n`)
 
-if (result.series && result.authors.length > 0) {
-  const series = await SeriesQuery.byId(seriesKeyOf(result.series.name, result.authors[0]))
+if (result.series) {
+  const series = await SeriesQuery.byId(result.series.id)
   process.stdout.write(`\ncatalogue: ${JSON.stringify(series, null, 2)}\n`)
 }

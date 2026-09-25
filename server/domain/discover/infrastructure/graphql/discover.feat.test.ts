@@ -67,7 +67,7 @@ describe('the Découvrir tab', () => {
 
 describe('a saga’s release', () => {
   test('comes with the Series tab’s row in its language, its catalogue dated', async () => {
-    const id = seriesKeyOf('System Universe', 'Dakota Krout')
+    const id = seriesKeyOf('System Universe', 'Dakota Krout', 'book')
     for (const volume of [1, 2])
       await BookUseCase.add(bob, {
         title: BookTitle(`System ${volume}`),

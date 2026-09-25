@@ -1,4 +1,5 @@
 import { BOOK_LANGUAGES, type BookLanguage } from '~/domain/book/types'
+import { AUDIBLE_STORES } from '~/domain/shared/audible-stores'
 import type { WatchedWork } from './types'
 
 /** Written into the prompt so the editions come back in the language asked. */
@@ -19,18 +20,6 @@ const LANGUAGE_NAMES: Record<BookLanguage, string> = {
   ja: 'japonais',
   zh: 'chinois',
   ko: 'coréen',
-}
-
-/** The Audible store that sells recordings in each language: named in the
- *  prompt so the model looks a recording up where it is listed, rather than
- *  guessing from a general search that misses French ones. */
-const AUDIBLE_STORES: Partial<Record<BookLanguage, string>> = {
-  fr: 'audible.fr',
-  en: 'audible.com et audible.co.uk',
-  de: 'audible.de',
-  es: 'audible.es',
-  it: 'audible.it',
-  ja: 'audible.co.jp',
 }
 
 const workLine = (work: WatchedWork) => {

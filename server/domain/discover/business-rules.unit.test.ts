@@ -216,14 +216,42 @@ describe('the editions a reader is offered', () => {
     ])
   })
 
-  test('hold every format, one per volume, for a reader connected to it', () => {
+  // The saga read and the saga heard are two sagas, each with its own row:
+  // offering both formats on each would announce every release twice.
+  test('hold the printed editions of a saga read, even for a reader connected to Audible', () => {
     const editions = editionsOf(carlFr, watch, true, new Set())
 
     expect(editions.map((e): unknown[] => [e.volume, e.format])).toEqual([
       [1, 'book'],
-      [1, 'audiobook'],
       [3, 'book'],
+    ])
+  })
+
+  test('hold the recordings of a saga heard, one per volume', () => {
+    const heard = work({
+      key: `series--${carlId}--audio--fr`,
+      seriesId: `${carlId}--audio` as SeriesId,
+    })
+
+    const editions = editionsOf(heard, watch, true, new Set())
+
+    expect(editions.map((e): unknown[] => [e.volume, e.format])).toEqual([
+      [1, 'audiobook'],
       [4, 'audiobook'],
+    ])
+  })
+
+  test('hold every format of a book on its own, for a reader connected to Audible', () => {
+    const own = watchOf(hailMary, {
+      editions: [
+        edition({ title: title('Projet Dernière Chance'), format: 'book' }),
+        edition({ title: title('Projet Dernière Chance'), format: 'audiobook' }),
+      ],
+    })
+
+    expect(editionsOf(hailMary, own, true, new Set()).map((e) => e.format)).toEqual([
+      'audiobook',
+      'book',
     ])
   })
 
@@ -231,10 +259,9 @@ describe('the editions a reader is offered', () => {
     const owned = ownedEditionsOf([
       book({ title: title('Carl 1'), authors: ['Matt Dinniman' as AuthorName], language: 'fr' }),
       carlVolume(3, 'fr'),
-      carlVolume(4, 'en'),
     ])
 
-    expect(editionsOf(carlFr, watch, true, owned).map((e) => e.volume)).toEqual([volume(4)])
+    expect(editionsOf(carlFr, watch, true, owned)).toEqual([])
   })
 })
 
@@ -365,13 +392,32 @@ describe('what a saga’s watch writes into its catalogue', () => {
       ],
     })
 
-    expect(foundVolumesOf(watch)).toEqual([
+    expect(foundVolumesOf(watch, carlId)).toEqual([
       {
         volume: volume(4),
         title: title('Carl 4'),
         date: ReleaseDate('2026-10-08'),
         coverUrl: 'https://covers/4.jpg' as CoverUrl,
       },
+    ])
+  })
+
+  // A recording trails its book: the saga heard is dated by its recordings.
+  test('the numbered recordings, for a saga heard', () => {
+    const watch = watchOf(carlFr, {
+      editions: [
+        edition({ title: title('Carl 4'), volume: volume(4), date: ReleaseDate('2026-10-08') }),
+        edition({
+          title: title('Carl 4'),
+          volume: volume(4),
+          format: 'audiobook',
+          date: ReleaseDate('2027-03-01'),
+        }),
+      ],
+    })
+
+    expect(foundVolumesOf(watch, `${carlId}--audio` as SeriesId)).toEqual([
+      { volume: volume(4), title: title('Carl 4'), date: ReleaseDate('2027-03-01') },
     ])
   })
 })

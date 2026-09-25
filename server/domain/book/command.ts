@@ -6,6 +6,7 @@ import {
   datesAfterStatusChange,
   membershipFor,
   retaggedAfterEdit,
+  seriesInFormat,
   statusAfterRating,
   statusStampAfterChange,
   storedRecommendation,
@@ -149,7 +150,9 @@ export namespace BookCommand {
       isbn13: input.isbn13,
       language: input.language,
       audibleAsin: input.audibleAsin,
-      series: input.series,
+      // The scan keyed the saga from the format it read off the cover; the
+      // reader may have saved another.
+      series: seriesInFormat(input.series, input.format ?? 'book'),
       coverPath: input.coverPath,
       publishedCoverUrl: input.publishedCoverUrl,
       // A book lands on the "to read" pile unless the reader says otherwise. It is
@@ -216,6 +219,7 @@ export namespace BookCommand {
         ? membershipFor(
             placement,
             facts.authors ?? book.authors,
+            facts.format ?? book.format,
             book.series,
             (await repository.findAllByUser(userId)).flatMap((other) =>
               other.series ? [other.series] : [],
@@ -224,6 +228,8 @@ export namespace BookCommand {
         : undefined
       if (placed === 'no-author') return 'no-author'
       membership = { series: placed }
+    } else if (facts.format && facts.format !== book.format) {
+      membership = { series: seriesInFormat(book.series, facts.format) }
     }
     // A genre is a fact about the saga, not about one of its volumes: the
     // reader who corrects it on one book expects the whole shelf to follow,

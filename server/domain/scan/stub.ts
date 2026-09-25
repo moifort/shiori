@@ -36,7 +36,7 @@ export const STUBBED_SCAN: ScanResult = {
   isbn13: Isbn13('9782352943556'),
   coverUrl: CoverUrl('https://covers.openlibrary.org/b/isbn/9782352943556-M.jpg?default=false'),
   series: {
-    id: seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss'),
+    id: seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book'),
     name: SeriesName('Chronique du tueur de roi'),
     volume: VolumeNumber(1),
     kind: 'main',

@@ -220,7 +220,7 @@ describe('importing the ticked titles', () => {
       publisher: 'Audiolib',
       status: 'read',
       finishedAt: new Date('2022-04-01T00:00:00.000Z'),
-      series: { id: 'chronique-du-tueur-de-roi--patrick-rothfuss', volume: 1, kind: 'main' },
+      series: { id: 'chronique-du-tueur-de-roi--patrick-rothfuss--audio', volume: 1, kind: 'main' },
     })
   })
 
@@ -516,7 +516,7 @@ describe('the nightly sync', () => {
         format: 'audiobook',
         audibleAsin: asin('B002V1OF70'),
         series: {
-          id: SeriesId('chronique-du-tueur-de-roi--patrick-rothfuss'),
+          id: SeriesId('chronique-du-tueur-de-roi--patrick-rothfuss--audio'),
           name: SeriesName('Chronique du Tueur de Roi'),
           kind: 'main',
         },

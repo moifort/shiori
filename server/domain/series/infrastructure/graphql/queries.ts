@@ -3,6 +3,7 @@ import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
 import { SeriesStateEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { SeriesType } from '~/domain/series/infrastructure/graphql/types'
+import { isAudioSeries } from '~/domain/series/primitives'
 import { type FollowedSeries, type SagaProgress, SeriesUseCase } from '~/domain/series/use-case'
 import { SeriesOpinionType } from '~/domain/series-opinion/infrastructure/graphql/types'
 import { builder } from '~/domain/shared/graphql/builder'
@@ -33,6 +34,13 @@ export const FollowedSeriesType = builder.objectRef<FollowedSeries>('FollowedSer
   fields: (t) => ({
     id: t.field({ type: 'SeriesId', resolve: (followed) => followed.id }),
     name: t.field({ type: 'SeriesName', resolve: (followed) => followed.name }),
+    audio: t.boolean({
+      description:
+        'The saga heard rather than read: its audiobooks, which follow the ' +
+        'recordings and not the printed books. A reader holding both formats ' +
+        'follows two sagas under two ids.',
+      resolve: (followed) => isAudioSeries(followed.id),
+    }),
     author: t.field({
       type: 'AuthorName',
       nullable: true,

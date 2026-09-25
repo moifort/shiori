@@ -2,6 +2,8 @@ import type { AudibleMarketplace } from '~/domain/audible/types'
 import { shelfKeyOf } from '~/domain/book/business-rules'
 import type { Book, BookLanguage } from '~/domain/book/types'
 import type { FoundVolume } from '~/domain/series/business-rules'
+import { isAudioSeries } from '~/domain/series/primitives'
+import type { SeriesId } from '~/domain/series/types'
 import type { FollowedSeries } from '~/domain/series/use-case'
 import type { Language } from '~/domain/shared/language'
 import type { BookTitle, UserId } from '~/domain/shared/types'
@@ -14,6 +16,7 @@ import type {
   Release,
   ReleaseDate as ReleaseDateValue,
   ReleaseEdition,
+  ReleaseFormat,
   ReleaseWatch,
   WatchedWork,
 } from './types'
@@ -130,12 +133,18 @@ export const ownedEditionsOf = (books: readonly Book[]): Set<string> =>
 export const watchIsStale = (watch: ReleaseWatch | undefined, now: Date): boolean =>
   !watch || now.getTime() - watch.checkedAt.getTime() > WATCH_EVERY_MS
 
-/** What a saga's watch writes into its catalogue: the volumes found in print,
- *  numbered, with their date, title and cover in that language. A recording
- *  says nothing the printed edition does not, and often comes later. */
-export const foundVolumesOf = (watch: ReleaseWatch): FoundVolume[] =>
+/** The editions a saga is made of: its recordings for the saga heard, its
+ *  printed books for the saga read. */
+const releaseFormatOf = (seriesId: SeriesId): ReleaseFormat =>
+  isAudioSeries(seriesId) ? 'audiobook' : 'book'
+
+/** What a saga's watch writes into its catalogue: the volumes found in the
+ *  saga's own format, numbered, with their date, title and cover in that
+ *  language. A recording often comes years after its book, so the saga heard is
+ *  dated by its recordings and the saga read by its books. */
+export const foundVolumesOf = (watch: ReleaseWatch, seriesId: SeriesId): FoundVolume[] =>
   watch.editions.flatMap((edition) =>
-    edition.format === 'book' && edition.volume !== undefined
+    edition.format === releaseFormatOf(seriesId) && edition.volume !== undefined
       ? [
           {
             volume: edition.volume,
@@ -171,8 +180,10 @@ const byVolumeThenDate = (left: ReleaseEdition, right: ReleaseEdition) =>
   left.format.localeCompare(right.format)
 
 /** A work's editions as this reader sees them: no recording for a reader with
- *  no Audible connection, one edition per volume and format, never one the
- *  reader already owns in that language. */
+ *  no Audible connection, only the saga's own format for a saga — the saga
+ *  heard and the saga read each have a row, and each announces its own — one
+ *  edition per volume and format, never one the reader already owns in that
+ *  language. */
 export const editionsOf = (
   work: WatchedWork,
   watch: ReleaseWatch | undefined,
@@ -187,6 +198,7 @@ export const editionsOf = (
   const merged = new Map<string, ReleaseEdition>()
   for (const edition of watch?.editions ?? []) {
     if (edition.format === 'audiobook' && !recordings) continue
+    if (work.seriesId && edition.format !== releaseFormatOf(work.seriesId)) continue
     if (!merged.has(slotOf(edition))) merged.set(slotOf(edition), edition)
   }
   const ownedHere = (edition: ReleaseEdition) =>

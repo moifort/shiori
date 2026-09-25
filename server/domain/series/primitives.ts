@@ -1,5 +1,6 @@
 import { make } from 'ts-brand'
 import { z } from 'zod'
+import type { BookFormat } from '~/domain/book/types'
 import type {
   ReleaseDate as ReleaseDateType,
   SeriesDescription as SeriesDescriptionType,
@@ -64,5 +65,22 @@ export const VolumeKindValue = (value: unknown): VolumeKind => z.enum(VOLUME_KIN
 // article removed, so "L'Assassin royal" and "Assassin Royal" converge. The author
 // is part of the key: series names collide across authors far more often than
 // titles do ("Chronicles", "The Saga").
-export const seriesKeyOf = (name: string, author: string): SeriesIdType =>
-  SeriesId(`${slugify(name)}--${slugify(author)}`)
+//
+// So is the way the saga is taken in. A recording trails its printed book,
+// sometimes by years, and some are never made: the saga heard on Audible has a
+// spine, a progress and release dates of its own, and is a saga of its own under
+// a key ending in `--audio`. Every other format reads the printed saga.
+export const seriesKeyOf = (name: string, author: string, format: BookFormat): SeriesIdType =>
+  seriesIdFor(SeriesId(`${slugify(name)}--${slugify(author)}`), format)
+
+const AUDIO_SUFFIX = '--audio'
+
+/** Whether a saga is the one heard rather than read. */
+export const isAudioSeries = (id: SeriesIdType): boolean => id.endsWith(AUDIO_SUFFIX)
+
+/** The same saga taken in another format: a book whose format changes moves to
+ *  the saga of its new format. */
+export const seriesIdFor = (id: SeriesIdType, format: BookFormat): SeriesIdType => {
+  const read = isAudioSeries(id) ? id.slice(0, -AUDIO_SUFFIX.length) : id
+  return SeriesId(format === 'audiobook' ? `${read}${AUDIO_SUFFIX}` : read)
+}

@@ -1,5 +1,6 @@
 import type {
   Book,
+  BookFormat,
   BookId,
   BookLanguage,
   BookView,
@@ -14,7 +15,7 @@ import type {
   TaggedSubgenre,
 } from '~/domain/book/types'
 import { compareWithinSeries } from '~/domain/series/business-rules'
-import { seriesKeyOf } from '~/domain/series/primitives'
+import { isAudioSeries, seriesIdFor, seriesKeyOf } from '~/domain/series/primitives'
 import type { SeriesId, SeriesName } from '~/domain/series/types'
 import type { AuthorName, UserId } from '~/domain/shared/types'
 import { ObjectPath } from '~/system/object-store/primitives'
@@ -376,19 +377,24 @@ export const retaggedAfterEdit = (
  *
  *  A joined saga keeps its name as the reader's shelves already show it. The
  *  volume kind survives when the book stays in its saga, and a book moved to
- *  another is a main volume. `'no-author'` when a new key is needed and the book
- *  has no author to build it from. */
+ *  another is a main volume. A saga of the other format is never joined, even
+ *  under the same name: the saga heard and the saga read are two sagas.
+ *  `'no-author'` when a new key is needed and the book has no author to build
+ *  it from. */
 export const membershipFor = (
   placement: SeriesPlacement,
   authors: readonly AuthorName[],
+  format: BookFormat,
   current: SeriesMembership | undefined,
   held: readonly SeriesMembership[],
 ): SeriesMembership | 'no-author' => {
-  const derived = authors[0] ? seriesKeyOf(placement.name, authors[0]) : undefined
+  const derived = authors[0] ? seriesKeyOf(placement.name, authors[0], format) : undefined
   const folded = slugify(placement.name)
+  // The saga heard and the saga read share a name and are still two sagas.
+  const heard = format === 'audiobook'
   const joined =
     held.find((series) => series.id === derived) ??
-    held.find((series) => slugify(series.name) === folded)
+    held.find((series) => isAudioSeries(series.id) === heard && slugify(series.name) === folded)
   const id = joined?.id ?? derived
   if (!id) return 'no-author'
   return {
@@ -398,6 +404,13 @@ export const membershipFor = (
     kind: current?.id === id ? current.kind : 'main',
   }
 }
+
+/** The saga a book belongs to in the format it is taken in: a book turned
+ *  audiobook leaves the saga read for the saga heard, and back. */
+export const seriesInFormat = (
+  series: SeriesMembership | undefined,
+  format: BookFormat,
+): SeriesMembership | undefined => series && { ...series, id: seriesIdFor(series.id, format) }
 
 /** The Library tab's order: newest first on the date that last moved each
  *  book, a flat list the app cuts into month sections wherever the month of

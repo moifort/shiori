@@ -127,7 +127,7 @@ const stock = async (userId: UserId) => {
       status: 'read',
       language: 'en',
       series: {
-        id: seriesKeyOf('Dungeon Crawler Carl', 'Matt Dinniman'),
+        id: seriesKeyOf('Dungeon Crawler Carl', 'Matt Dinniman', 'book'),
         name: 'Dungeon Crawler Carl' as never,
         volume: volume as never,
         kind: 'main',
@@ -208,7 +208,9 @@ describe('the Découvrir tab', () => {
     })
   })
 
-  test('offers the recordings the web found to a reader connected to Audible', async () => {
+  // The saga heard is a saga of its own, with its own row: the saga read
+  // announces its books only, whatever the web found recorded.
+  test('offers a saga read its printed editions, even to a reader connected to Audible', async () => {
     await stock(reader)
     await connectAudible(reader)
 
@@ -219,7 +221,6 @@ describe('the Découvrir tab', () => {
     expect(carl.editions.map((e): unknown[] => [e.volume, e.format, e.date])).toEqual([
       [1, 'book', '2024-05-02'],
       [4, 'book', '2027-02-19'],
-      [4, 'audiobook', '2027-03'],
     ])
   })
 
@@ -322,7 +323,7 @@ describe('the release watch and the catalogue', () => {
     const { SeriesQuery } = await import('~/domain/series/query')
     const { SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
     const { Year } = await import('~/domain/shared/primitives')
-    const id = seriesKeyOf('Dungeon Crawler Carl', 'Matt Dinniman')
+    const id = seriesKeyOf('Dungeon Crawler Carl', 'Matt Dinniman', 'book')
     await SeriesCommand.catalogue({
       id,
       name: SeriesName('Dungeon Crawler Carl'),

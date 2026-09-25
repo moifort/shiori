@@ -353,7 +353,11 @@ const trackedWatches = async (
   for (const { work, watch } of found) {
     if (!work.seriesId) continue
     try {
-      await SeriesCommand.recordReleases(work.seriesId, work.language, foundVolumesOf(watch))
+      await SeriesCommand.recordReleases(
+        work.seriesId,
+        work.language,
+        foundVolumesOf(watch, work.seriesId),
+      )
     } catch (error) {
       logger.warn('release dates not recorded', { error, work: work.key })
     }

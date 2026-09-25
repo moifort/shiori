@@ -353,14 +353,14 @@ describe('where the reader stands in a title', () => {
 })
 
 describe('the saga a title belongs to', () => {
-  test('keys it the way a scan keys it, so both land in one catalogue', () => {
+  test('keys it to the saga heard, the one a scanned recording joins', () => {
     const importable = importableFrom(
       anItem({ series: { name: 'Chronique du tueur de roi', position: 1 } }),
       noneOwned,
     )
 
     expect(importable?.series).toMatchObject({
-      id: 'chronique-du-tueur-de-roi--patrick-rothfuss',
+      id: 'chronique-du-tueur-de-roi--patrick-rothfuss--audio',
       name: 'Chronique du tueur de roi',
       volume: 1,
       kind: 'main',
@@ -705,7 +705,7 @@ describe('dating an import back to the day the title was bought', () => {
 
 describe('numbering an import made before split novels were numbered', () => {
   const saga = {
-    id: 'chronique-du-tueur-de-roi--patrick-rothfuss' as SeriesId,
+    id: 'chronique-du-tueur-de-roi--patrick-rothfuss--audio' as SeriesId,
     name: 'Chronique du Tueur de Roi' as SeriesName,
     kind: 'main' as const,
   }

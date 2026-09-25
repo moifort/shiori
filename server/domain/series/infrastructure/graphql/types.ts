@@ -2,6 +2,7 @@ import { BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
 import type { BookLanguage } from '~/domain/book/types'
 import { splitBySpine } from '~/domain/series/business-rules'
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
+import { isAudioSeries } from '~/domain/series/primitives'
 import type { Series, Volume } from '~/domain/series/types'
 import { builder } from '~/domain/shared/graphql/builder'
 
@@ -84,6 +85,13 @@ export const SeriesType = builder.objectRef<Series>('Series').implement({
   fields: (t) => ({
     id: t.field({ type: 'SeriesId', resolve: (series) => series.id }),
     name: t.field({ type: 'SeriesName', resolve: (series) => series.name }),
+    audio: t.boolean({
+      description:
+        'The saga heard rather than read: its volumes are the ones recorded as ' +
+        'audiobooks, dated by their recordings. The same saga in print is another ' +
+        'catalogue, under another id.',
+      resolve: (series) => isAudioSeries(series.id),
+    }),
     author: t.field({ type: 'AuthorName', resolve: (series) => series.author }),
     description: t.field({
       type: 'SeriesDescription',

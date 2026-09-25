@@ -13,7 +13,12 @@ import type { BookLanguage, Isbn13 as Isbn13Type } from '~/domain/book/types'
 import { generate } from '~/domain/scan/gemini'
 import * as repository from '~/domain/scan/infrastructure/repository'
 import { hashImage } from '~/domain/scan/primitives'
-import { cataloguePrompt, enrichmentPrompt, visionPrompt } from '~/domain/scan/prompts'
+import {
+  audioCataloguePrompt,
+  cataloguePrompt,
+  enrichmentPrompt,
+  visionPrompt,
+} from '~/domain/scan/prompts'
 import { publishedCoverOf } from '~/domain/scan/published-cover'
 import { CATALOGUE_SCHEMA, ENRICHMENT_SCHEMA, VISION_SCHEMA } from '~/domain/scan/schemas'
 import { STUBBED_SCAN } from '~/domain/scan/stub'
@@ -21,6 +26,7 @@ import type { AiStepUsage, ScanLanguage, ScanResult, ScanUsage } from '~/domain/
 import { withoutDuplicateVolumes } from '~/domain/series/business-rules'
 import { SeriesCommand } from '~/domain/series/command'
 import {
+  isAudioSeries,
   SeriesDescription,
   SeriesName,
   seriesKeyOf,
@@ -204,7 +210,7 @@ export namespace ScanCommand {
           .slice(0, MAX_SUBGENRES),
         pageCount: optional(value.pageCount, PageCount),
         isbn13: optional(value.isbn13, Isbn13),
-        series: parsedSeries(value, authors.length > 0 ? authors : seen.authors),
+        series: parsedSeries(value, authors.length > 0 ? authors : seen.authors, seen.format),
       } satisfies ScanResult,
       // Not part of the result: the book is the edition the reader holds, and
       // this one only lends it a cover.
@@ -235,11 +241,10 @@ export namespace ScanCommand {
     const series = result.series
     if (!series || result.authors.length === 0) return undefined
 
-    const seriesId = seriesKeyOf(series.name, result.authors[0])
-    if (await SeriesCommand.isCatalogued(seriesId)) return undefined
+    if (await SeriesCommand.isCatalogued(series.id)) return undefined
 
     const { usage } = await catalogueSeries(
-      seriesId,
+      series.id,
       series.name,
       result.authors[0],
       language,
@@ -272,7 +277,13 @@ export namespace ScanCommand {
     try {
       const { value, usage } = await generate<CatalogueOutput>({
         step: 'catalogue',
-        parts: [{ text: cataloguePrompt(name, author, language, editionLanguage) }],
+        parts: [
+          {
+            text: isAudioSeries(seriesId)
+              ? audioCataloguePrompt(name, author, language, editionLanguage)
+              : cataloguePrompt(name, author, language, editionLanguage),
+          },
+        ],
         responseSchema: CATALOGUE_SCHEMA,
         grounded: true,
       })
@@ -316,13 +327,16 @@ export namespace ScanCommand {
   const parsedSeries = (
     value: EnrichmentOutput,
     authors: ScanResult['authors'],
+    format: ScanResult['format'],
   ): ScanResult['series'] => {
     const name = optional(value.seriesName, SeriesName)
     // Without an author there is no stable key, so the saga cannot be catalogued
     // or rejoined later. Dropping it beats inventing an id nothing else shares.
     if (!name || authors.length === 0) return undefined
     return {
-      id: seriesKeyOf(name, authors[0]),
+      // A format the cover did not settle is a printed book, as `BookCommand.add`
+      // would file it; the reader's pick realigns the saga when the book is saved.
+      id: seriesKeyOf(name, authors[0], format ?? 'book'),
       name,
       volume: optional(value.volumeNumber, VolumeNumber),
       // A series the model found but could not classify is a main volume: it is

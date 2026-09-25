@@ -1,6 +1,7 @@
 import type { BookLanguage } from '~/domain/book/types'
 import type { ScanLanguage, ScanResult } from '~/domain/scan/types'
 import { VOLUME_KINDS } from '~/domain/series/types'
+import { AUDIBLE_STORES } from '~/domain/shared/audible-stores'
 
 /** The language name is written into the prompt so Gemini emits every free-text
  *  value in the caller's language — a French reader gets a French synopsis of an
@@ -109,6 +110,38 @@ Renseigne :
   - kind : ${VOLUME_KINDS.map((kind) => `'${kind}'`).join(', ')}. 'main' pour un tome numéroté de l'histoire principale, 'prequel' pour une préquelle, 'spin-off' pour un récit dérivé, 'novella' pour un texte court, 'companion' pour un guide, un atlas ou un artbook.
 
 N'invente pas de volumes pour compléter une série : si tu n'en connais que quatre, n'en liste que quatre. Une série inexistante ou introuvable doit revenir avec un tableau volumes vide.
+
+En dehors des titres, toutes les valeurs textuelles doivent être en ${LANGUAGE_NAMES[language]}.`
+}
+
+/** Step 3 for a saga heard rather than read: the volumes recorded, not the
+ *  volumes printed. A recording trails its book, sometimes by years, and some
+ *  are never made — so a volume out in print only is left out, and the saga's
+ *  spine is the one its listener can actually follow. The recordings are looked
+ *  up on the Audible store of the edition's language, where they are listed. */
+export const audioCataloguePrompt = (
+  seriesName: string,
+  author: string,
+  language: ScanLanguage,
+  editionLanguage?: BookLanguage,
+) => {
+  const code = editionLanguage ?? language
+  const edition = languageNames.of(code)
+  return `Recherche sur le web la liste des volumes de cette série ENREGISTRÉS EN LIVRE AUDIO en ${edition}, et renseigne son catalogue.
+
+Série : « ${seriesName} » de ${author}
+Édition : le livre audio en ${edition}. C'est de CET enregistrement que parle le catalogue, pas des livres imprimés : cherche tome par tome dans le catalogue Audible de cette langue (${AUDIBLE_STORES[code] ?? 'Audible'}). Le nom de la série et les titres des volumes sont ceux sous lesquels les enregistrements sont publiés en ${edition}.
+
+Renseigne :
+- name et author : le nom de la série et son auteur principal.
+- description : 2 à 3 phrases présentant la série, SANS révéler le dénouement.
+- volumes : les volumes enregistrés en livre audio en ${edition}, parus ou annoncés, dans l'ordre de PUBLICATION. Un tome paru en livre imprimé mais pas encore enregistré en ${edition} n'en fait PAS partie : ne le liste pas. Pour chacun :
+  - number : le numéro du tome dans l'histoire principale, ou null pour tout ce qui est hors numérotation.
+  - title : le titre de l'enregistrement en ${edition}.
+  - publishedIn : l'année de sortie du livre audio, pas celle du livre imprimé. Pour un enregistrement annoncé mais pas encore sorti, indique l'année annoncée.
+  - kind : ${VOLUME_KINDS.map((kind) => `'${kind}'`).join(', ')}. 'main' pour un tome numéroté de l'histoire principale, 'prequel' pour une préquelle, 'spin-off' pour un récit dérivé, 'novella' pour un texte court, 'companion' pour un guide, un atlas ou un artbook.
+
+Un livre audio découpé en plusieurs parties reste un seul volume. N'invente pas de volumes : si tu ne trouves que trois enregistrements, n'en liste que trois. Une série sans aucun enregistrement en ${edition} doit revenir avec un tableau volumes vide.
 
 En dehors des titres, toutes les valeurs textuelles doivent être en ${LANGUAGE_NAMES[language]}.`
 }

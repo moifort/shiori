@@ -10,6 +10,7 @@ import {
   readVolumeNumbersOf,
   retaggedAfterEdit,
   sagaNamesOf,
+  seriesInFormat,
   shelfPageOf,
   shelvedOf,
   shownRatingOf,
@@ -703,6 +704,7 @@ describe('how far into a recording the reader is', () => {
 
 describe('placing a book in a saga by hand', () => {
   const thilliez = [AuthorName('Franck Thilliez')]
+  const bob = [AuthorName('Dennis E. Taylor')]
   const held = (name: string, author: string, kind: VolumeKind = 'main') => ({
     id: SeriesId(`${slugify(name)}--${slugify(author)}`),
     name: SeriesName(name),
@@ -713,6 +715,7 @@ describe('placing a book in a saga by hand', () => {
     const placed = membershipFor(
       { name: SeriesName('Sharko et Henebelle'), volume: VolumeNumber(3) },
       thilliez,
+      'book',
       undefined,
       [],
     )
@@ -730,9 +733,13 @@ describe('placing a book in a saga by hand', () => {
   test('joins a saga the reader holds under the same name, whatever its author', () => {
     const shelf = held('Sharko et Henebelle', 'Franck Tillier')
 
-    const placed = membershipFor({ name: SeriesName('sharko et hénebelle') }, thilliez, undefined, [
-      shelf,
-    ])
+    const placed = membershipFor(
+      { name: SeriesName('sharko et hénebelle') },
+      thilliez,
+      'book',
+      undefined,
+      [shelf],
+    )
 
     expect(placed).toEqual({ id: shelf.id, name: SeriesName('Sharko et Henebelle'), kind: 'main' })
   })
@@ -741,7 +748,7 @@ describe('placing a book in a saga by hand', () => {
     const namesake = held('Chronicles', 'Someone Else')
     const own = held('Chronicles', 'Franck Thilliez')
 
-    const placed = membershipFor({ name: SeriesName('Chronicles') }, thilliez, undefined, [
+    const placed = membershipFor({ name: SeriesName('Chronicles') }, thilliez, 'book', undefined, [
       namesake,
       own,
     ])
@@ -755,6 +762,7 @@ describe('placing a book in a saga by hand', () => {
     const placed = membershipFor(
       { name: SeriesName('Dune'), volume: VolumeNumber(1) },
       [AuthorName('Frank Herbert')],
+      'book',
       prequel,
       [prequel],
     )
@@ -766,6 +774,7 @@ describe('placing a book in a saga by hand', () => {
     const placed = membershipFor(
       { name: SeriesName('Autre') },
       thilliez,
+      'book',
       held('Dune', 'Frank Herbert', 'prequel'),
       [],
     )
@@ -776,13 +785,60 @@ describe('placing a book in a saga by hand', () => {
   test('lets a book with no author join a saga the reader holds', () => {
     const shelf = held('Dune', 'Frank Herbert')
 
-    expect(membershipFor({ name: SeriesName('Dune') }, [], undefined, [shelf])).toMatchObject({
+    expect(
+      membershipFor({ name: SeriesName('Dune') }, [], 'book', undefined, [shelf]),
+    ).toMatchObject({
       id: shelf.id,
     })
   })
 
+  // A saga heard is not the saga read: the recordings trail the books, and the
+  // listener's spine is the recorded one.
+  test('keys an audiobook to the saga heard', () => {
+    const placed = membershipFor({ name: SeriesName('Bobiverse') }, bob, 'audiobook', undefined, [])
+
+    expect(placed).toMatchObject({ id: SeriesId('bobiverse--dennis-e-taylor--audio') })
+  })
+
+  test('never joins a namesake saga of the other format', () => {
+    const read = held('Bobiverse', 'Dennis Taylor')
+    const heard = {
+      ...held('Bobiverse', 'Dennis Taylor'),
+      id: SeriesId('bobiverse--dennis-taylor--audio'),
+    }
+
+    expect(
+      membershipFor({ name: SeriesName('Bobiverse') }, bob, 'audiobook', undefined, [read]),
+    ).toMatchObject({ id: SeriesId('bobiverse--dennis-e-taylor--audio') })
+    expect(
+      membershipFor({ name: SeriesName('Bobiverse') }, bob, 'audiobook', undefined, [read, heard]),
+    ).toMatchObject({ id: heard.id })
+    expect(
+      membershipFor({ name: SeriesName('Bobiverse') }, bob, 'book', undefined, [heard]),
+    ).toMatchObject({ id: SeriesId('bobiverse--dennis-e-taylor') })
+  })
+
   test('refuses a new saga for a book with no author to key it with', () => {
-    expect(membershipFor({ name: SeriesName('Dune') }, [], undefined, [])).toBe('no-author')
+    expect(membershipFor({ name: SeriesName('Dune') }, [], 'book', undefined, [])).toBe('no-author')
+  })
+})
+
+describe('a saga in the format of its book', () => {
+  const series = {
+    id: SeriesId('bobiverse--dennis-e-taylor'),
+    name: SeriesName('Bobiverse'),
+    volume: VolumeNumber(2),
+    kind: 'main' as const,
+  }
+
+  test('moves a book turned audiobook to the saga heard, and back', () => {
+    const heard = seriesInFormat(series, 'audiobook')
+    expect(heard).toEqual({ ...series, id: SeriesId('bobiverse--dennis-e-taylor--audio') })
+    expect(seriesInFormat(heard, 'ebook')).toEqual(series)
+  })
+
+  test('leaves a standalone book standalone', () => {
+    expect(seriesInFormat(undefined, 'audiobook')).toBeUndefined()
   })
 })
 
