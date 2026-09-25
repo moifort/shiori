@@ -20,6 +20,8 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 - Un auteur sur lequel Shiori n’a rien trouvé ne fait plus attendre à chaque ouverture de sa
   fiche ; vous pouvez demander à la mettre à jour.
 - Une série d’un auteur que vous n’avez pas encore s’ouvre sur sa fiche, comme les autres.
+- Sur la fiche d’un auteur, les livres et les séries que vous n’avez pas montrent leur
+  couverture, souvent celle de l’édition originale.
 - L’auteur d’un livre que vous scannez a sa fiche prête quand vous l’ouvrez.
 - La carte des séries de l’accueil devient « Séries en cours » et les range dans l’ordre de
   l’onglet Séries, la plus récemment lue d’abord, au lieu des mieux notées d’abord.

@@ -70,6 +70,9 @@ struct AuthorSeries: Identifiable, Sendable {
     let author: String
     let volumeCount: Int?
     let firstVolumeTitle: String?
+    /// The first volume's cover as Open Library shows the work, often the
+    /// original edition's. Nil draws the placeholder.
+    let coverURL: URL?
 
     /// How the saga screen names this saga, since the reader holds no volume of it.
     var proposal: SeriesProposal { SeriesProposal(name: name, author: author) }
@@ -80,4 +83,7 @@ struct AuthorWork: Identifiable, Sendable {
     var id: String { title }
     let title: String
     let publishedIn: Int?
+    /// Its cover as Open Library shows the work, often the original edition's.
+    /// Nil draws the placeholder.
+    let coverURL: URL?
 }

@@ -293,7 +293,7 @@ struct AuthorView: View {
                 HStack(spacing: 10) {
                     ForEach(1...max(1, min(saga.volumeCount ?? 1, 12)), id: \.self) { number in
                         BookCover(
-                            book: Book(id: "\(saga.id)-\(number)", title: saga.name, authors: [author], status: .toRead),
+                            book: placeholderVolume(of: saga, number: number, author: author),
                             width: 44,
                             showsFormatBadge: false
                         )
@@ -317,6 +317,14 @@ struct AuthorView: View {
         }
         .accessibilityAddTraits(.isButton)
         .accessibilityIdentifier("author-saga-not-held")
+    }
+
+    /// A volume of a saga the reader holds nothing of: the first one wears the
+    /// cover Open Library found, the others the placeholder.
+    private func placeholderVolume(of saga: AuthorSeries, number: Int, author: String) -> Book {
+        var book = Book(id: "\(saga.id)-\(number)", title: saga.name, authors: [author], status: .toRead)
+        if number == 1 { book.coverURL = saga.coverURL }
+        return book
     }
 
     // MARK: - Books
@@ -357,7 +365,11 @@ struct AuthorView: View {
 
     private func workNotHeld(_ work: AuthorWork, author: String, in format: AuthorShelfFormat) -> some View {
         HStack(alignment: .center, spacing: 12) {
-            BookCover(book: Book(id: work.id, title: work.title, authors: [author], status: .toRead))
+            BookCover(book: {
+                var book = Book(id: work.id, title: work.title, authors: [author], status: .toRead)
+                book.coverURL = work.coverURL
+                return book
+            }())
                 .opacity(0.45)
             VStack(alignment: .leading, spacing: 3) {
                 Text(work.title)

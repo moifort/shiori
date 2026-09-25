@@ -42,7 +42,11 @@ enum AuthorsAPI {
             printSagasNotHeld: page.printSagasNotHeld.map { AuthorSeries($0.fragments.authorSeriesFields) },
             audioSagasNotHeld: page.audioSagasNotHeld.map { AuthorSeries($0.fragments.authorSeriesFields) },
             books: page.books.map { $0.fragments.bookSummary.asBook },
-            booksNotHeld: page.booksNotHeld.map { AuthorWork(title: $0.title, publishedIn: $0.publishedIn) }
+            booksNotHeld: page.booksNotHeld.map { AuthorWork(
+                    title: $0.title,
+                    publishedIn: $0.publishedIn,
+                    coverURL: $0.coverUrl.flatMap(URL.init(string:))
+                ) }
         )
     }
 
@@ -99,7 +103,8 @@ private extension AuthorSeries {
             name: saga.name,
             author: saga.author,
             volumeCount: saga.volumeCount,
-            firstVolumeTitle: saga.firstVolumeTitle
+            firstVolumeTitle: saga.firstVolumeTitle,
+            coverURL: saga.coverUrl.flatMap(URL.init(string:))
         )
     }
 }
