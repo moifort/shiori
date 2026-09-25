@@ -1,19 +1,20 @@
 import SwiftUI
 
-/// The two shelves the Library tab holds.
+/// The shelves the Library tab holds.
 enum LibraryShelf: String, CaseIterable, Identifiable {
-    case books, series
+    case books, series, authors
     var id: String { rawValue }
 
     var label: String {
         switch self {
         case .books: String(localized: "Livres")
         case .series: String(localized: "Séries")
+        case .authors: String(localized: "Auteurs")
         }
     }
 }
 
-/// The Library tab: the books and the sagas, one at a time, switched by a
+/// The Library tab: the books, the sagas and the authors, one at a time, switched by a
 /// capsule floating just above the tab bar.
 ///
 /// The capsule belongs to this tab alone, which is why it is drawn here rather
@@ -35,6 +36,8 @@ struct LibraryTab: View {
                 LibraryView(onAdd: onAdd, requestedMode: $libraryRequest, shelf: $shelf)
             case .series:
                 SeriesListView(onScan: onAdd, requested: $seriesRequest, shelf: $shelf)
+            case .authors:
+                AuthorListView(onScan: onAdd, shelf: $shelf)
             }
         }
         // Another tab asking for a view of one shelf brings that shelf forward;
@@ -52,18 +55,20 @@ struct LibraryTab: View {
     }
 }
 
-/// The "Livres | Séries" capsule, in Liquid Glass, centred above the tab bar.
+/// The "Livres | Séries | Auteurs" capsule, in Liquid Glass, centred above the
+/// tab bar. `shelves` are the ones offered: Découvrir has no authors to show.
 struct LibraryShelfPicker: View {
     @Binding var shelf: LibraryShelf
+    var shelves: [LibraryShelf] = LibraryShelf.allCases
 
     var body: some View {
         Picker("Rayon", selection: $shelf) {
-            ForEach(LibraryShelf.allCases) { shelf in
+            ForEach(shelves) { shelf in
                 Text(shelf.label).tag(shelf)
             }
         }
         .pickerStyle(.segmented)
-        .frame(width: 220)
+        .frame(width: CGFloat(shelves.count) * 110)
         .padding(4)
         .glassEffect(.regular.interactive(), in: .capsule)
         .padding(.bottom, 8)
@@ -75,9 +80,12 @@ extension View {
     /// Float the shelf capsule over the bottom of a shelf's root screen. Only
     /// the root: a saga pushed over the list has no business switching shelves.
     @ViewBuilder
-    func libraryShelfPicker(_ shelf: Binding<LibraryShelf>?) -> some View {
+    func libraryShelfPicker(
+        _ shelf: Binding<LibraryShelf>?,
+        shelves: [LibraryShelf] = LibraryShelf.allCases
+    ) -> some View {
         if let shelf {
-            safeAreaInset(edge: .bottom) { LibraryShelfPicker(shelf: shelf) }
+            safeAreaInset(edge: .bottom) { LibraryShelfPicker(shelf: shelf, shelves: shelves) }
         } else {
             self
         }

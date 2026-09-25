@@ -86,6 +86,21 @@ export namespace SeriesUseCase {
     return row ?? null
   }
 
+  /** The rows of the sagas given, every edition of each, as the Series tab
+   *  draws them: what the Authors tab measures an author's sagas on. Only
+   *  those sagas' catalogues are read, in one getAll. */
+  export const followedAmong = async (
+    userId: UserId,
+    seriesIds: ReadonlySet<SeriesId>,
+  ): Promise<FollowedSeries[]> => {
+    if (seriesIds.size === 0) return []
+    const shelf = await shelfOf(userId)
+    return described(
+      shelf,
+      shelf.sagas.filter((saga) => seriesIds.has(saga.id)),
+    )
+  }
+
   /** One page of the Series tab, newest first on `shelvedAt`, narrowed to the
    *  hearted sagas or to one state.
    *

@@ -31,6 +31,10 @@ import '~/domain/series-opinion/infrastructure/graphql/types'
 import '~/domain/series-opinion/infrastructure/graphql/queries'
 import '~/domain/series-opinion/infrastructure/graphql/mutations'
 
+// Authors (the Library tab's third shelf, derived from the books). After series
+// and series-opinion: an author row shows a saga as the Series tab draws it.
+import '~/domain/author/infrastructure/graphql/queries'
+
 // Analytics (the home dashboard, read from a view the book writes keep fresh).
 // After book and series: it borrows their scalars and the Genre enum.
 import '~/domain/analytics/infrastructure/graphql/types'

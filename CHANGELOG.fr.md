@@ -4,6 +4,8 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- La Bibliothèque a une troisième étagère, Auteurs : tous les auteurs que vous lisez, vos
+  préférés d’abord, avec leurs livres et la série que vous lisez d’eux.
 - Vos favoris se partagent directement depuis l’onglet Partagé, sous votre nom.
 - Les listes et les couvertures ne clignotent plus en se mettant à jour : les nouveaux livres glissent à leur place.
 - L’onglet Séries affiche chaque série sous le même nom que sa fiche.

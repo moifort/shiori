@@ -32,7 +32,7 @@ struct DiscoverView: View {
                 .navigationTitle("Découvrir")
                 .navigationSubtitle(lastSearch)
                 .toolbar { toolbar }
-                .libraryShelfPicker($shelf)
+                .libraryShelfPicker($shelf, shelves: [.books, .series])
                 // A sheet, as a book opens from the library: the same corners
                 // on a saga as on a book.
                 .sheet(item: $openSeries) { opened in
@@ -142,7 +142,8 @@ struct DiscoverView: View {
                         .accessibilityIdentifier("discover-series-row")
                 }
             }
-        case .books:
+        // Découvrir offers no authors shelf: a stored one falls back to the books.
+        case .books, .authors:
             ForEach(releases) { release in
                 ForEach(release.editions.filter { $0.isUpcoming == upcoming }) { edition in
                     bookRow(release, edition)

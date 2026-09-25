@@ -1,0 +1,28 @@
+# One page of the authors the reader holds books of, the ones they love first:
+# most hearts, then the best mean of stars, then the most books. Each comes with
+# every book of theirs, covers signed for this page alone, and the one saga the
+# row shows under them — the latest in progress, else the latest finished —
+# measured as the Home dashboard measures one.
+query MyAuthorsPage($limit: Int, $offset: Int, $favorite: Boolean) {
+  myAuthorsPage(limit: $limit, offset: $offset, favorite: $favorite) {
+    hasMore
+    items {
+      key
+      name
+      bookCount
+      seriesCount
+      favoriteCount
+      averageRating
+      books {
+        ...FollowedVolume
+      }
+      saga {
+        readCount
+        totalCount
+        series {
+          ...FollowedSeriesRow
+        }
+      }
+    }
+  }
+}

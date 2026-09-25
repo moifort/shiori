@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql'
 import { ZodError } from 'zod'
 import { TimeZone } from '~/domain/analytics/primitives'
 import { AudibleAsin } from '~/domain/audible/primitives'
+import { AuthorKey } from '~/domain/author/primitives'
 import {
   BookId,
   CoverUrl,
@@ -81,6 +82,15 @@ builder.scalarType('AuthorName', {
   description: 'An author name as printed, 1 to 200 characters. Example: "Patrick Rothfuss".',
   serialize: (value) => value as string,
   parseValue: validatedParse('AuthorName', AuthorName),
+})
+
+builder.scalarType('AuthorKey', {
+  description:
+    'An author as the library folds their name: diacritics dropped, punctuation ' +
+    'collapsed, so two spellings of one name meet. Derived, never typed. ' +
+    'Example: "patrick-rothfuss".',
+  serialize: (value) => value as string,
+  parseValue: validatedParse('AuthorKey', AuthorKey),
 })
 
 builder.scalarType('PersonName', {
