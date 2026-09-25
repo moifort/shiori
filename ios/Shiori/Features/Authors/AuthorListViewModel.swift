@@ -2,22 +2,15 @@ import Foundation
 import SwiftUI
 
 /// Owns the Authors shelf: the authors the reader holds books of, the loved
-/// ones first, everything or the favourites, and the one in-flight load. Every
-/// view opens on the rows it last showed: a `SnapshotCache` per view hands them
-/// back from disk before a byte is asked of the network, and the fetch brings
-/// them up to date silently underneath.
+/// ones first, and the one in-flight load. The shelf opens on the rows it last
+/// showed: a `SnapshotCache` hands them back from disk before a byte is asked
+/// of the network, and the fetch brings them up to date silently underneath.
 @MainActor
 @Observable
 final class AuthorListViewModel {
     init() {
-        authors = cache(for: mode).read() ?? []
+        authors = cache.read() ?? []
     }
-
-    /// A change of view reloads the first page.
-    var mode: LibraryMode = .all {
-        didSet { if oldValue != mode { scheduleReload() } }
-    }
-    private var reloadTask: Task<Void, Never>?
 
     private(set) var authors: [FollowedAuthor] = []
     private(set) var isLoading = false
@@ -33,29 +26,9 @@ final class AuthorListViewModel {
     /// snapshot.
     private var loaded = false
 
-    /// Each view's authors on disk. Bump the version whenever `FollowedAuthor`
-    /// changes shape.
-    private func cache(for mode: LibraryMode) -> SnapshotCache<[FollowedAuthor]> {
-        SnapshotCache("authors-\(mode.rawValue)", version: 4)
-    }
-
-    /// Switching view: the new view's rows from its last visit at once, brought
-    /// up to date underneath.
-    private func scheduleReload() {
-        reloadTask?.cancel()
-        generation += 1
-        authors = cache(for: mode).read() ?? []
-        hasMore = false
-        loaded = false
-        refreshFailed = false
-        isRefreshing = !authors.isEmpty
-        reloadTask = Task {
-            let failed = await load()
-            guard isRefreshing, !Task.isCancelled else { return }
-            isRefreshing = false
-            refreshFailed = failed
-        }
-    }
+    /// The authors on disk. Bump the version whenever `FollowedAuthor` changes
+    /// shape.
+    private let cache = SnapshotCache<[FollowedAuthor]>("authors-all", version: 4)
 
     /// More rows follow the ones on screen.
     private(set) var hasMore = false
@@ -90,7 +63,7 @@ final class AuthorListViewModel {
             var more = true
             while more, fetched.count < wanted {
                 let page = try await AuthorsAPI.myAuthorsPage(
-                    limit: min(wanted - fetched.count, maxPageSize), offset: fetched.count, mode: mode
+                    limit: min(wanted - fetched.count, maxPageSize), offset: fetched.count
                 )
                 guard requested == generation else { return false }
                 fetched += page.items
@@ -106,7 +79,7 @@ final class AuthorListViewModel {
             loaded = true
             // Fresh rows: whatever an earlier refresh said is no longer true.
             refreshFailed = false
-            let cache = cache(for: mode)
+            let cache = cache
             let firstPage = Array(fetched.prefix(pageSize))
             Task.detached { cache.write(firstPage) }
         } catch {
@@ -127,9 +100,7 @@ final class AuthorListViewModel {
         isLoadingMore = true
         loadMoreFailed = false
         do {
-            let page = try await AuthorsAPI.myAuthorsPage(
-                limit: pageSize, offset: authors.count, mode: mode
-            )
+            let page = try await AuthorsAPI.myAuthorsPage(limit: pageSize, offset: authors.count)
             guard requested == generation else { return }
             authors.append(contentsOf: page.items)
             hasMore = page.hasMore

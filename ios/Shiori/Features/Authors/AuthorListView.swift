@@ -2,14 +2,14 @@ import SwiftUI
 
 /// The Authors shelf of the Library tab: every author the reader holds a book
 /// of, the ones they love first — most hearts, then the best stars, then the
-/// most books — everything or the favourites, switched from the toolbar as the
-/// other two shelves are.
+/// most books. No favourites view: the order already puts the loved authors
+/// first.
 ///
 /// The order comes from the server: the list is paginated, and ordered on the
 /// phone it would reshuffle every time a page landed. There are no month
 /// sections, since the list is not ordered by date.
 ///
-/// A row opens the author's page.
+/// A row opens the author's page, as a sheet.
 struct AuthorListView: View {
     /// Opens the add sheet, from the one button every empty state offers.
     var onScan: () -> Void = {}
@@ -33,28 +33,17 @@ struct AuthorListView: View {
                         await viewModel.load()
                     }
                 } else if viewModel.authors.isEmpty {
-                    if viewModel.mode == .favorites {
-                        EmptyStateView(
-                            systemImage: "heart",
-                            title: "Aucun auteur favori",
-                            message: "Touchez le cœur d'un livre ou d'une série pour retrouver son auteur ici.",
-                            primary: .init("Scanner un livre", systemImage: "camera") { onScan() }
-                        )
-                    } else {
-                        EmptyStateView(
-                            systemImage: "person.2",
-                            title: "Aucun auteur",
-                            message: "Scannez un livre et son auteur apparaîtra ici, avec tous ses livres.",
-                            primary: .init("Scanner un livre", systemImage: "camera") { onScan() }
-                        )
-                    }
+                    EmptyStateView(
+                        systemImage: "person.2",
+                        title: "Aucun auteur",
+                        message: "Scannez un livre et son auteur apparaîtra ici, avec tous ses livres.",
+                        primary: .init("Scanner un livre", systemImage: "camera") { onScan() }
+                    )
                 } else {
                     list
                 }
             }
             .navigationTitle("Auteurs")
-            .navigationSubtitle(subtitle)
-            .toolbar { toolbar }
             .libraryShelfPicker(shelf)
             // Over last session's snapshot when the disk had one: the rows show
             // at once and are brought up to date underneath.
@@ -72,13 +61,6 @@ struct AuthorListView: View {
         .onChange(of: openAuthor) { closed, opened in
             guard closed != nil, opened == nil else { return }
             Task { await viewModel.load(keepingDepth: true) }
-        }
-    }
-
-    private var subtitle: String {
-        switch viewModel.mode {
-        case .all: String(localized: "Vos préférés d'abord")
-        case .favorites: LibraryMode.favorites.subtitle
         }
     }
 
@@ -116,22 +98,11 @@ struct AuthorListView: View {
         }
         .listStyle(.insetGrouped)
         .refreshable { await viewModel.load() }
-        .navigationDestination(item: $openAuthor) { AuthorView(key: $0.key, name: $0.name) }
-    }
-
-    /// The same two views as the Library and Series shelves.
-    @ToolbarContentBuilder
-    private var toolbar: some ToolbarContent {
-        ToolbarItemGroup {
-            ForEach(LibraryMode.seriesViews) { item in
-                Button {
-                    viewModel.mode = item
-                } label: {
-                    Label(item.label, systemImage: item.icon)
-                }
-                .labelStyle(.iconOnly)
-                .tint(viewModel.mode == item ? .accentColor : .primary)
-                .accessibilityIdentifier("authors-mode-\(item.rawValue)")
+        // A sheet, as a book opens from the library and a saga from Découvrir:
+        // the same corners on an author. Its own stack, so a saga pushes inside it.
+        .sheet(item: $openAuthor) { opened in
+            NavigationStack {
+                AuthorView(key: opened.key, name: opened.name, isSheet: true)
             }
         }
     }
