@@ -152,6 +152,7 @@ struct SeriesListView: View {
                             .accessibilityElement(children: .combine)
                             .accessibilityAddTraits(.isButton)
                             .accessibilityAction { openSeries = destination(of: entry) }
+                            .edgeToEdgeSeparator()
                             .accessibilityIdentifier("series-row")
                             .onAppear { viewModel.prefetchIfNeeded(for: entry.id) }
                     }

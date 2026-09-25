@@ -85,6 +85,7 @@ struct AuthorListView: View {
             Section {
                 ForEach(viewModel.authors) { author in
                     AuthorRow(author: author)
+                        .edgeToEdgeSeparator()
                         .accessibilityIdentifier("author-row")
                         .onAppear { viewModel.prefetchIfNeeded(for: author.id) }
                 }
