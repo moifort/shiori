@@ -246,22 +246,6 @@ An author name as printed, 1 to 200 characters. Example: "Patrick Rothfuss".
 scalar AuthorName
 
 """
-The saga shown under an author: their latest in progress, else their latest finished. A saga not started or set aside is never shown.
-"""
-type AuthorSaga {
-  """
-  Volumes read: on the published spine when the saga is catalogued, else among the volumes owned.
-  """
-  readCount: Int!
-  series: FollowedSeries!
-
-  """
-  Volumes to read: the published spine when the saga is catalogued, else the volumes owned — which is the only count there is then.
-  """
-  totalCount: Int!
-}
-
-"""
 A book as one reader holds it.
 
 Private and owned by exactly one reader: two people who scan the same novel keep two independent records. Public facts (title, synopsis, series) and personal judgment (status, rating, note) sit side by side, because the record belongs to the reader rather than to the world.
@@ -684,11 +668,6 @@ type FollowedAuthor {
 
   """The spelling most of the reader’s books use."""
   name: AuthorName!
-
-  """
-  Their saga to show under the covers. Null when none is in progress or finished.
-  """
-  saga: AuthorSaga
 
   """Sagas those books belong to."""
   seriesCount: Count!
@@ -1811,7 +1790,7 @@ type Query {
   me: Me!
 
   """
-  One page of the authors in the library, the ones the reader loves first: most hearts, then the best mean of stars, then the most books, then by name. `favorite` keeps the authors with at least one heart. Offset-paginated: pass the number of rows already shown. Reads the catalogues of the page’s sagas only.
+  One page of the authors in the library, the ones the reader loves first: most hearts, then the best mean of stars, then the most books, then by name. `favorite` keeps the authors with at least one heart. Offset-paginated: pass the number of rows already shown. Reads no document beyond the library and the saga opinions.
   """
   myAuthorsPage(
     """Only the authors with a heart"""

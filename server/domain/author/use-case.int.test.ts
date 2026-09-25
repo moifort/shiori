@@ -38,9 +38,9 @@ const writeSagas = async (count: number) => {
 }
 
 describe('a page of the Authors tab', () => {
-  // The library and the opinions are one scan each; the catalogues are the
-  // heavy documents, and a page reads those of its own authors only.
-  test('reads the catalogues of its own authors’ sagas only', async () => {
+  // The library and the opinions are one scan each, and nothing else is read:
+  // no catalogue, however many sagas the page's authors wrote.
+  test('reads the library and the opinions, and no document', async () => {
     await writeSagas(12)
     const docReads = fake.docReads
     const queryReads = fake.queryReads
@@ -49,11 +49,11 @@ describe('a page of the Authors tab', () => {
 
     expect(items).toHaveLength(5)
     expect(hasMore).toBe(true)
-    expect(fake.docReads - docReads).toBe(5)
+    expect(fake.docReads - docReads).toBe(0)
     expect(fake.queryReads - queryReads).toBe(2)
   })
 
-  test('puts the author the reader loves first, with their saga measured', async () => {
+  test('puts the author the reader loves first', async () => {
     await writeSagas(3)
     await SeriesOpinionCommand.setFavorite(reader, SeriesId('saga-2'), true)
 
@@ -61,8 +61,6 @@ describe('a page of the Authors tab', () => {
 
     expect(items[0]?.name).toBe(AuthorName('Author 2'))
     expect(Number(items[0]?.favoriteCount)).toBe(1)
-    expect(items[0]?.saga?.series.id).toBe(SeriesId('saga-2'))
-    expect(items[0]?.saga).toMatchObject({ readCount: 1, totalCount: 3 })
   })
 
   test('keeps only the authors with a heart in the favourites', async () => {
@@ -89,18 +87,5 @@ describe('a page of the Authors tab', () => {
       whole.items.slice(2, 4).map((author) => author.key),
     )
     expect(second.hasMore).toBe(false)
-  })
-
-  test('reads no catalogue for an author who wrote no saga', async () => {
-    await BookCommand.add(reader, {
-      title: BookTitle('Standalone'),
-      authors: [AuthorName('Solo')],
-    })
-    const docReads = fake.docReads
-
-    const { items } = await AuthorUseCase.followedPage(reader, { limit: 10, offset: 0 }, {})
-
-    expect(items.map((author) => [String(author.name), author.saga])).toEqual([['Solo', null]])
-    expect(fake.docReads - docReads).toBe(0)
   })
 })

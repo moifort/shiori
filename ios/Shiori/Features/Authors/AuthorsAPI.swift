@@ -25,14 +25,7 @@ enum AuthorsAPI {
                     seriesCount: item.seriesCount,
                     favoriteCount: item.favoriteCount,
                     averageRating: item.averageRating,
-                    books: item.books.map(\.fragments.followedVolume.asBook),
-                    saga: item.saga.map {
-                        AuthorSaga(
-                            series: FollowedSeries(row: $0.series.fragments.followedSeriesRow),
-                            readCount: $0.readCount,
-                            totalCount: $0.totalCount
-                        )
-                    }
+                    books: item.books.map(\.fragments.followedVolume.asBook)
                 )
             },
             hasMore: data.myAuthorsPage.hasMore

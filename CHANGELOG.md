@@ -11,7 +11,7 @@ the release tag is pushed.
 ## Unreleased
 
 - The Library tab has a third shelf, Authors: every author you read, the ones you love first,
-  with their books and the series you are reading of theirs.
+  with all their books.
 - Your favourites can be shared straight from the Shared tab, under your name.
 - Lists and covers no longer flicker when they update: new books slide into place.
 - The Series tab shows each saga under the same name as its page.

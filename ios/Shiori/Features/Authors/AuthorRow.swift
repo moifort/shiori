@@ -4,9 +4,7 @@ import SwiftUI
 /// in Partagé: the avatar on the left, the name with what the reader made of
 /// them in the top corner, the books and sagas in figures underneath. Then every
 /// book of theirs as a cover, across the whole width of the row, each with its
-/// reading status pinned on; then the saga the reader is in with them, measured
-/// as the Home dashboard's "Séries en cours" measures one. A finished saga
-/// shows its full bar, so every row that has a saga has the same shape.
+/// reading status pinned on.
 struct AuthorRow: View {
     let author: FollowedAuthor
 
@@ -14,9 +12,6 @@ struct AuthorRow: View {
         VStack(alignment: .leading, spacing: 10) {
             header
             covers
-            if let saga = author.saga {
-                sagaProgress(saga)
-            }
         }
         .padding(.vertical, 2)
     }
@@ -103,25 +98,6 @@ struct AuthorRow: View {
         }
         .scrollIndicators(.hidden)
         .accessibilityHidden(true)
-    }
-
-    private func sagaProgress(_ saga: AuthorSaga) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(saga.series.name).font(.subheadline.weight(.medium)).lineLimit(1)
-                Spacer()
-                OpinionMark(
-                    rating: saga.series.opinion?.rating,
-                    isFavorite: saga.series.opinion?.favorite == true
-                )
-                Text(verbatim: "\(saga.readCount)/\(saga.totalCount)")
-                    .font(.subheadline.monospacedDigit())
-                    .foregroundStyle(.secondary)
-            }
-            ProgressView(value: Double(saga.readCount), total: Double(max(1, saga.totalCount)))
-                .tint(DashboardPalette.series)
-        }
-        .accessibilityElement(children: .combine)
     }
 
     private let coverWidth: CGFloat = 44

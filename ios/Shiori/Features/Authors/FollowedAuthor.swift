@@ -18,9 +18,6 @@ struct FollowedAuthor: Identifiable, Codable, Sendable {
     let averageRating: Double?
     /// Their books, newest shelved first, each with its cover and status.
     let books: [Book]
-    /// Their latest saga in progress, else their latest finished. Nil when
-    /// neither exists.
-    let saga: AuthorSaga?
 
     /// The author's initials, drawn in the avatar until the author has a
     /// portrait of their own: the first letter of the first and last words, so
@@ -30,12 +27,4 @@ struct FollowedAuthor: Identifiable, Codable, Sendable {
         let ends = words.count > 1 ? [words.first, words.last] : [words.first]
         return ends.compactMap { $0?.first }.map(String.init).joined().uppercased()
     }
-}
-
-/// The saga shown under an author, with how far the reader is into it: on the
-/// catalogue's published spine, or on the volumes owned when there is none.
-struct AuthorSaga: Codable, Sendable {
-    let series: FollowedSeries
-    let readCount: Int
-    let totalCount: Int
 }

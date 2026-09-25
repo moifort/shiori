@@ -1,9 +1,7 @@
 import { authorKeyOf } from '~/domain/author/primitives'
-import type { AuthorKey, FeaturedSaga, ShelvedAuthor } from '~/domain/author/types'
+import type { AuthorKey, ShelvedAuthor } from '~/domain/author/types'
 import { shelfDateOf } from '~/domain/book/business-rules'
-import type { ReadingStatus } from '~/domain/book/types'
-import type { SeriesId, SeriesState } from '~/domain/series/types'
-import type { FollowedSeries } from '~/domain/series/use-case'
+import type { SeriesId } from '~/domain/series/types'
 import { Count } from '~/domain/shared/primitives'
 import type { AuthorName } from '~/domain/shared/types'
 
@@ -92,37 +90,6 @@ export const matchingAuthorFilter = <Author extends { favoriteCount: number }>(
   filter: { favorite?: boolean },
 ): Author[] =>
   filter.favorite ? authors.filter((author) => author.favoriteCount > 0) : [...authors]
-
-/** The saga the tab shows under an author, among the rows of their sagas: the
- *  one in progress shelved most recently, else the finished one shelved most
- *  recently. A saga not started yet says nothing of how the reader gets on with
- *  the author, and one set aside is out of their way: neither is shown.
- *
- *  A saga of unknown state — every owned volume read, no catalogue to say more —
- *  is taken for finished, as the Series tab files it. */
-export const featuredSagaOf = (sagas: readonly FollowedSeries[]): FeaturedSaga | null => {
-  const latest = (state: SeriesState) =>
-    sagas
-      .filter((saga) => (saga.state ?? 'complete') === state)
-      .reduce<FollowedSeries | null>(
-        (best, saga) => (best && best.shelvedAt >= saga.shelvedAt ? best : saga),
-        null,
-      )
-  const series = latest('in-progress') ?? latest('complete')
-  if (!series) return null
-  return { series, ...progressOnShelf(series) }
-}
-
-/** How far the reader is into a saga: on the catalogue's published spine when
- *  there is one, else on the volumes they hold — the only count there is then. */
-const progressOnShelf = (saga: {
-  progress: { readCount: number; totalCount: number } | null
-  books: readonly { status: ReadingStatus }[]
-}): { readCount: number; totalCount: number } =>
-  saga.progress ?? {
-    readCount: saga.books.filter((book) => book.status === 'read').length,
-    totalCount: saga.books.length,
-  }
 
 const newestShelvedFirst = <Book extends AuthoredBook>(books: readonly Book[]): Book[] =>
   [...books].sort((left, right) => shelfDateOf(right).getTime() - shelfDateOf(left).getTime())

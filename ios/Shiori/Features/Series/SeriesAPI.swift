@@ -226,9 +226,7 @@ private extension BookSeries {
     }
 }
 
-extension FollowedSeries {
-    /// A saga as `FollowedSeriesRow` brings it back: the Authors tab draws the
-    /// saga under an author from the same fragment.
+private extension FollowedSeries {
     init(row followed: ShioriGraphQL.FollowedSeriesRow) {
         self.init(
             seriesId: followed.id,

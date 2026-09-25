@@ -1,15 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 import {
-  featuredSagaOf,
   inAuthorOrder,
   matchingAuthorFilter,
   shelvedAuthorsOf,
 } from '~/domain/author/business-rules'
 import { authorKeyOf } from '~/domain/author/primitives'
-import type { ReadingStatus } from '~/domain/book/types'
-import { SeriesId, SeriesName } from '~/domain/series/primitives'
-import type { SeriesState } from '~/domain/series/types'
-import type { FollowedSeries } from '~/domain/series/use-case'
+import { SeriesId } from '~/domain/series/primitives'
 import { AuthorName, Count } from '~/domain/shared/primitives'
 
 const day = (date: number) => new Date(Date.UTC(2026, 8, date))
@@ -125,53 +121,5 @@ describe('inAuthorOrder', () => {
     const kept = matchingAuthorFilter([author('Loved', 2), author('Read', 0)], { favorite: true })
 
     expect(kept.map((entry) => String(entry.name))).toEqual(['Loved'])
-  })
-})
-
-describe('featuredSagaOf', () => {
-  const saga = (
-    name: string,
-    state: SeriesState | null,
-    shelvedOn: number,
-    options: {
-      progress?: { readCount: number; totalCount: number }
-      statuses?: ReadingStatus[]
-    } = {},
-  ) =>
-    ({
-      id: SeriesId(name.toLowerCase()),
-      name: SeriesName(name),
-      state,
-      shelvedAt: day(shelvedOn),
-      progress: options.progress ?? null,
-      books: (options.statuses ?? []).map((status) => ({ status })),
-    }) as unknown as FollowedSeries
-
-  test('shows the saga in progress shelved last, over any finished one', () => {
-    const featured = featuredSagaOf([
-      saga('Done', 'complete', 20),
-      saga('Older', 'in-progress', 1),
-      saga('Newer', 'in-progress', 10, { progress: { readCount: 2, totalCount: 5 } }),
-    ])
-
-    expect(featured?.series.name).toBe(SeriesName('Newer'))
-    expect(featured).toMatchObject({ readCount: 2, totalCount: 5 })
-  })
-
-  test('falls back to the finished saga, a saga of unknown state among them', () => {
-    const featured = featuredSagaOf([
-      saga('Pile', 'not-started', 30),
-      saga('Aside', 'unfollowed', 30),
-      saga('Unknown', null, 12, { statuses: ['read', 'read'] }),
-      saga('Done', 'complete', 3),
-    ])
-
-    expect(featured?.series.name).toBe(SeriesName('Unknown'))
-    expect(featured).toMatchObject({ readCount: 2, totalCount: 2 })
-  })
-
-  test('shows nothing when no saga is in progress or finished', () => {
-    expect(featuredSagaOf([saga('Pile', 'not-started', 1)])).toBeNull()
-    expect(featuredSagaOf([])).toBeNull()
   })
 })

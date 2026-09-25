@@ -1,6 +1,5 @@
 import type { Brand } from 'ts-brand'
 import type { SeriesId } from '~/domain/series/types'
-import type { FollowedSeries } from '~/domain/series/use-case'
 import type { AuthorName, Count } from '~/domain/shared/types'
 
 /** An author as the reader's library knows them, folded the way series keys are
@@ -30,15 +29,3 @@ export type ShelvedAuthor<Book> = {
    *  of theirs is rated. */
   averageRating?: number
 }
-
-/** The one saga the Authors tab shows under an author: their latest in progress,
- *  else their latest finished, measured as the Home dashboard measures one —
- *  on the catalogue's published spine, or on the volumes owned when there is
- *  no catalogue. */
-export type FeaturedSaga = {
-  series: FollowedSeries
-  readCount: number
-  totalCount: number
-}
-
-export type FollowedAuthor<Book> = ShelvedAuthor<Book> & { saga: FeaturedSaga | null }

@@ -34,11 +34,6 @@ type AuthorRow = {
   favoriteCount: number
   averageRating: number | null
   books: { title: string; status: string }[]
-  saga: {
-    readCount: number
-    totalCount: number
-    series: { name: string; opinion: { rating: number | null; favorite: boolean } | null }
-  } | null
 }
 
 const myAuthorsPage = async (args = 'limit: 40, offset: 0') => {
@@ -46,7 +41,6 @@ const myAuthorsPage = async (args = 'limit: 40, offset: 0') => {
     `{ myAuthorsPage(${args}) { hasMore items {
       key name bookCount seriesCount favoriteCount averageRating
       books { title status }
-      saga { readCount totalCount series { name opinion { rating favorite } } }
     } } }`,
   )
   expect(result.errors).toBeUndefined()
@@ -54,7 +48,7 @@ const myAuthorsPage = async (args = 'limit: 40, offset: 0') => {
 }
 
 describe('the Authors tab', () => {
-  test('draws an author with their books, their sagas and their saga in progress', async () => {
+  test('draws an author with their books and what the reader made of them', async () => {
     fake.seed('series', 'dune--frank-herbert', {
       id: 'dune--frank-herbert',
       name: 'Dune',
@@ -87,11 +81,6 @@ describe('the Authors tab', () => {
         favoriteCount: 0,
         averageRating: 4,
         books: expect.any(Array),
-        saga: {
-          readCount: 1,
-          totalCount: 3,
-          series: { name: 'Dune', opinion: { rating: 4, favorite: false } },
-        },
       },
     ])
     expect(items[0]?.books.map((book) => book.status).sort()).toEqual([

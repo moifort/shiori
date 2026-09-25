@@ -1,32 +1,12 @@
-import type { FeaturedSaga, FollowedAuthor } from '~/domain/author/types'
+import type { ShelvedAuthor } from '~/domain/author/types'
 import { AuthorUseCase } from '~/domain/author/use-case'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
 import type { Book } from '~/domain/book/types'
-import { FollowedSeriesType } from '~/domain/series/infrastructure/graphql/queries'
 import { builder } from '~/domain/shared/graphql/builder'
 import { Count } from '~/domain/shared/primitives'
 
-const FeaturedSagaType = builder.objectRef<FeaturedSaga>('AuthorSaga').implement({
-  description:
-    'The saga shown under an author: their latest in progress, else their latest ' +
-    'finished. A saga not started or set aside is never shown.',
-  fields: (t) => ({
-    series: t.field({ type: FollowedSeriesType, resolve: (saga) => saga.series }),
-    readCount: t.exposeInt('readCount', {
-      description:
-        'Volumes read: on the published spine when the saga is catalogued, else ' +
-        'among the volumes owned.',
-    }),
-    totalCount: t.exposeInt('totalCount', {
-      description:
-        'Volumes to read: the published spine when the saga is catalogued, else ' +
-        'the volumes owned — which is the only count there is then.',
-    }),
-  }),
-})
-
-const FollowedAuthorType = builder.objectRef<FollowedAuthor<Book>>('FollowedAuthor').implement({
+const FollowedAuthorType = builder.objectRef<ShelvedAuthor<Book>>('FollowedAuthor').implement({
   description:
     'An author the reader holds at least one book of. Derived from the books on ' +
     'every request, never stored.',
@@ -66,18 +46,11 @@ const FollowedAuthorType = builder.objectRef<FollowedAuthor<Book>>('FollowedAuth
         'strip of covers. Covers are signed only for the rows that select this field.',
       resolve: (author) => BookQuery.withSignedCovers(author.books),
     }),
-    saga: t.field({
-      type: FeaturedSagaType,
-      nullable: true,
-      description:
-        'Their saga to show under the covers. Null when none is in progress or finished.',
-      resolve: (author) => author.saga,
-    }),
   }),
 })
 
 const FollowedAuthorPageType = builder
-  .objectRef<{ items: FollowedAuthor<Book>[]; hasMore: boolean }>('FollowedAuthorPage')
+  .objectRef<{ items: ShelvedAuthor<Book>[]; hasMore: boolean }>('FollowedAuthorPage')
   .implement({
     description: 'One page of the authors the reader holds books of, plus whether more follow.',
     fields: (t) => ({
@@ -93,8 +66,8 @@ builder.queryFields((t) => ({
       'One page of the authors in the library, the ones the reader loves first: ' +
       'most hearts, then the best mean of stars, then the most books, then by name. ' +
       '`favorite` keeps the authors with at least one heart. Offset-paginated: pass ' +
-      'the number of rows already shown. Reads the catalogues of the page’s sagas ' +
-      'only.',
+      'the number of rows already shown. Reads no document beyond the library and ' +
+      'the saga opinions.',
     args: {
       limit: t.arg.int({ defaultValue: 40, description: 'Maximum authors in the page' }),
       offset: t.arg.int({ defaultValue: 0, description: 'Rows to skip' }),
