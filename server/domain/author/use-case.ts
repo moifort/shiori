@@ -36,7 +36,7 @@ export type FollowedAuthor = ShelvedAuthor<Book> & { portraitUrl?: PortraitUrl }
 export type AuthorPage = {
   author: FollowedAuthor
   /** Null when the model could not describe the author: the page still shows
-   *  the reader's own books, and the next opening tries again. */
+   *  the reader's own books, and only a refresh asks again. */
   catalogue: Author | null
   /** The reader's sagas of this author, read into first. */
   sagas: FollowedSeries[]
@@ -107,12 +107,38 @@ export namespace AuthorUseCase {
     return shelvedAuthorsOf(books, opinions)
   }
 
+  /** The author's catalogue asked of the world again, at the reader's request:
+   *  a catalogue the model could not build on the first opening is never asked
+   *  for again otherwise, and one built thin can be rebuilt.
+   *
+   *  Null when the reader holds no book of the author, and when the model
+   *  failed or found nothing — the stored catalogue, if any, is then kept. */
+  export const recatalogue = async (
+    userId: UserId,
+    key: AuthorKey,
+    language: Language,
+  ): Promise<Author | null> => {
+    const shelved = (await shelvedAuthors(userId)).find((author) => author.key === key)
+    return shelved ? askTheWeb(shelved, language) : null
+  }
+
+  /** The stored catalogue, else one built now — unless the model already
+   *  failed on this author: every opening would otherwise wait on the same
+   *  grounded call. `recatalogue` asks regardless. */
   const catalogueOf = async (
     shelved: ShelvedAuthor<Book>,
     language: Language,
   ): Promise<Author | null> => {
     const known = await AuthorQuery.byKey(shelved.key)
     if (known) return known
+    if (await AuthorQuery.lastMiss(shelved.key)) return null
+    return askTheWeb(shelved, language)
+  }
+
+  const askTheWeb = async (
+    shelved: ShelvedAuthor<Book>,
+    language: Language,
+  ): Promise<Author | null> => {
     const { author, usage } = await AuthorCommand.catalogueFromWeb(
       shelved.key,
       shelved.name,

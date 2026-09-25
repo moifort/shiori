@@ -167,17 +167,67 @@ describe('an author’s page', () => {
     expect(page?.booksNotHeld.map((work) => String(work.title))).toEqual(['Warbreaker'])
   })
 
-  test('still shows the reader’s books when the model found nothing, and tries again', async () => {
+  // The defect: an author the model found nothing on made every opening of
+  // their page wait on the same grounded call. Now it is asked once, and only
+  // the reader's refresh asks again.
+  test('still shows the reader’s books when the model found nothing, and does not ask again', async () => {
     await holdSanderson()
-    answers = [{ name: 'Brandon Sanderson', series: [], books: [] }, sanderson]
+    answers = [{ name: 'Brandon Sanderson', series: [], books: [] }]
 
     const failed = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
-    const retried = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
+    const reopened = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
 
     expect(failed?.catalogue).toBeNull()
     expect(failed?.books).toHaveLength(1)
-    expect(retried?.catalogue).not.toBeNull()
+    expect(reopened?.catalogue).toBeNull()
+    expect(calls).toEqual(['author'])
+  })
+
+  test('does not ask again after a failed call either', async () => {
+    await holdSanderson()
+
+    await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
+    await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
+
+    expect(calls).toEqual(['author'])
+  })
+
+  test('is built again when the reader asks, after the model found nothing', async () => {
+    await holdSanderson()
+    answers = [{ name: 'Brandon Sanderson', series: [], books: [] }, sanderson]
+    await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
+
+    const refreshed = await AuthorUseCase.recatalogue(
+      reader,
+      authorKeyOf('Brandon Sanderson'),
+      'fr',
+    )
+    const page = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
+
+    expect(refreshed?.biography).toBeDefined()
+    expect(page?.catalogue?.biography).toBe(refreshed?.biography)
     expect(calls).toEqual(['author', 'author'])
+  })
+
+  test('keeps the stored catalogue when a refresh finds nothing', async () => {
+    await holdSanderson()
+    answers = [sanderson, { name: 'Brandon Sanderson', series: [], books: [] }]
+    const built = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
+
+    const refreshed = await AuthorUseCase.recatalogue(
+      reader,
+      authorKeyOf('Brandon Sanderson'),
+      'fr',
+    )
+    const page = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
+
+    expect(refreshed).toBeNull()
+    expect(page?.catalogue?.biography).toBe(built?.catalogue?.biography)
+  })
+
+  test('refreshes nothing for an author the reader holds no book of', async () => {
+    expect(await AuthorUseCase.recatalogue(reader, authorKeyOf('Nobody'), 'fr')).toBeNull()
+    expect(calls).toEqual([])
   })
 
   test('answers nothing for an author the reader holds no book of', async () => {

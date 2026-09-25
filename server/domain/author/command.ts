@@ -25,10 +25,12 @@ export namespace AuthorCommand {
    *  the facts and the bibliography, then Wikipedia for the portrait, on the page
    *  the model named.
    *
-   *  Never throws: a page that could not be built shows the reader's own books,
-   *  and the next opening tries again. Nothing is stored when the model found
-   *  nothing at all — an empty catalogue would mask the author as known. `usage`
-   *  says what the call cost whenever it answered, stored or not. */
+   *  Never throws: a page that could not be built shows the reader's own books.
+   *  A failure or an empty answer is remembered as a miss rather than stored as
+   *  a catalogue — an empty one would mask the author as known — and no later
+   *  opening asks again; the reader's refresh does. A catalogue already stored
+   *  is left as it was. `usage` says what the call cost whenever it answered,
+   *  stored or not. */
   export const catalogueFromWeb = async (
     key: AuthorKey,
     name: AuthorNameValue,
@@ -45,7 +47,10 @@ export namespace AuthorCommand {
       const biography = optionally(value.biography, AuthorBiography)
       const series = value.series.map(parsedSeries).filter(isPresent)
       const books = value.books.map(parsedWork).filter(isPresent)
-      if (!biography && series.length === 0 && books.length === 0) return { usage }
+      if (!biography && series.length === 0 && books.length === 0) {
+        await repository.saveMiss({ key, missedAt: new Date() })
+        return { usage }
+      }
 
       const author = await catalogue({
         key,
@@ -62,6 +67,9 @@ export namespace AuthorCommand {
       return { author, usage }
     } catch (error) {
       logger.error('author catalogue generation failed', { error, key })
+      await repository
+        .saveMiss({ key, missedAt: new Date() })
+        .catch((missError) => logger.warn('author miss not recorded', { error: missError, key }))
       return {}
     }
   }

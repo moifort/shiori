@@ -70,3 +70,11 @@ export type Author = {
   books: AuthorWork[]
   cataloguedAt: Date
 }
+
+/** An author the catalogue call could not describe — it failed or found
+ *  nothing. Remembered for good, so that no later opening waits on the same
+ *  grounded call: the reader asks for another attempt when they want one. */
+export type AuthorMiss = {
+  key: AuthorKey
+  missedAt: Date
+}

@@ -1,4 +1,4 @@
-import type { Author, AuthorKey } from '~/domain/author/types'
+import type { Author, AuthorKey, AuthorMiss } from '~/domain/author/types'
 import { db } from '~/system/firebase'
 import { evictFromRequestCache, isInRequestCache, memoizedPerRequest } from '~/system/request-cache'
 import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
@@ -44,4 +44,14 @@ export const save = async (entry: Author): Promise<Author> => {
   await authors().doc(entry.key).set(withoutAbsentFields(entry))
   evictFromRequestCache(cacheKey(entry.key))
   return entry
+}
+
+const misses = () =>
+  db().collection('author-misses').withConverter(genericDataConverter<AuthorMiss>())
+
+export const findMiss = async (key: AuthorKey): Promise<AuthorMiss | null> =>
+  (await misses().doc(key).get()).data() ?? null
+
+export const saveMiss = async (miss: AuthorMiss): Promise<void> => {
+  await misses().doc(miss.key).set(miss)
 }

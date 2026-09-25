@@ -268,6 +268,8 @@ export namespace ScanCommand {
 
     const key = authorKeyOf(name)
     if (await AuthorQuery.byKey(key)) return undefined
+    // The model already failed on this author: the reader's refresh asks again.
+    if (await AuthorQuery.lastMiss(key)) return undefined
 
     const { usage } = await AuthorCommand.catalogueFromWeb(key, name, language, result.language)
     return usage
