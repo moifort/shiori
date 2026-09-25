@@ -12,6 +12,8 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 - Vos favoris se partagent directement depuis l’onglet Partagé, sous votre nom.
 - Les listes et les couvertures ne clignotent plus en se mettant à jour : les nouveaux livres glissent à leur place.
 - Les onglets Découvrir et Partagé s'ouvrent aussitôt sur ce qu'ils montraient la dernière fois, puis se mettent à jour en place.
+- Une série ouverte pour la première fois affiche ses tomes manquants dans l’onglet Séries dès
+  le retour à la liste.
 - L’onglet Séries affiche chaque série sous le même nom que sa fiche.
 - La carte des séries de l’accueil devient « Séries en cours » et les range dans l’ordre de
   l’onglet Séries, la plus récemment lue d’abord, au lieu des mieux notées d’abord.

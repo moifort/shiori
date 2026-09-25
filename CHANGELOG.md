@@ -18,6 +18,8 @@ the release tag is pushed.
 - Your favourites can be shared straight from the Shared tab, under your name.
 - Lists and covers no longer flicker when they update: new books slide into place.
 - The Discover and Shared tabs open at once on what they showed last time, then update in place.
+- A saga opened for the first time shows its missing volumes in the Series tab as soon as you
+  come back to the list.
 - The Series tab shows each saga under the same name as its page.
 - The Home saga card is now "Series in progress" and lists them in the Series tab's order, the
   most recently read first, instead of the best rated first.
