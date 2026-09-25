@@ -13,6 +13,7 @@ import {
   followedStateOf,
   genreOf,
   inTabOrder,
+  isRecentMiss,
   matchingFilter,
   progressOf,
 } from '~/domain/series/business-rules'
@@ -177,8 +178,9 @@ export namespace SeriesUseCase {
    *  they ask for the world's.
    *
    *  Null when the reader holds no volume of the saga, since there is then
-   *  nothing to ask about, and when the model fails or finds no volumes: the
-   *  next opening tries again. */
+   *  nothing to ask about, and when the model fails or finds no volumes. A
+   *  failure is tried again on the next opening; an empty answer is not asked
+   *  again for a month, so a saga with nothing to find opens at once. */
   export const describe = async (
     userId: UserId,
     seriesId: SeriesId,
@@ -199,6 +201,10 @@ export namespace SeriesUseCase {
       ).get(seriesId)
       if (provisional) return provisional
     }
+    // The model found nothing on this saga lately — a saga heard that Audible
+    // lists no recording of: asking again would make every opening wait on the
+    // same empty answer. `recatalogue` asks regardless.
+    if (isRecentMiss(await SeriesQuery.lastMiss(seriesId), new Date())) return null
     return catalogueFromLibrary(userId, seriesId, language, edition)
   }
 

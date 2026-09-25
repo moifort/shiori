@@ -7,6 +7,7 @@ import {
   inCatalogueOrder,
   inTabOrder,
   isForthcoming,
+  isRecentMiss,
   matchingFilter,
   progressOf,
   provisionalCatalogueOf,
@@ -583,5 +584,23 @@ describe('withReleases', () => {
         { volume: VolumeNumber(1), title: BookTitle('One'), date: ReleaseDate('2021') },
       ]),
     ).toBe(once)
+  })
+})
+
+describe('an empty catalogue answer', () => {
+  const now = new Date('2026-09-25T12:00:00.000Z')
+  const missed = (daysAgo: number) => ({
+    id: SeriesId('dune--frank-herbert--audio'),
+    missedAt: new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000),
+  })
+
+  test('stands in for asking again for a month', () => {
+    expect(isRecentMiss(missed(0), now)).toBe(true)
+    expect(isRecentMiss(missed(29), now)).toBe(true)
+  })
+
+  test('lets the model be asked again after a month, or when there is none', () => {
+    expect(isRecentMiss(missed(30), now)).toBe(false)
+    expect(isRecentMiss(null, now)).toBe(false)
   })
 })

@@ -141,6 +141,8 @@ Renseigne :
   - publishedIn : l'année de sortie du livre audio, pas celle du livre imprimé. Pour un enregistrement annoncé mais pas encore sorti, indique l'année annoncée.
   - kind : ${VOLUME_KINDS.map((kind) => `'${kind}'`).join(', ')}. 'main' pour un tome numéroté de l'histoire principale, 'prequel' pour une préquelle, 'spin-off' pour un récit dérivé, 'novella' pour un texte court, 'companion' pour un guide, un atlas ou un artbook.
 
+Le nom de la série et les titres des volumes sont des titres d'œuvre, pas des intitulés de fiche Audible : retire-leur toute mention d'édition ou de format, comme « (French edition) », « (Édition française) », « (Unabridged) », « Version intégrale », « Livre audio », « Audiobook », ou le numéro de tome placé entre parenthèses à la suite du titre.
+
 Un livre audio découpé en plusieurs parties reste un seul volume. N'invente pas de volumes : si tu ne trouves que trois enregistrements, n'en liste que trois. Une série sans aucun enregistrement en ${edition} doit revenir avec un tableau volumes vide.
 
 En dehors des titres, toutes les valeurs textuelles doivent être en ${LANGUAGE_NAMES[language]}.`

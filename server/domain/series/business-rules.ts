@@ -3,6 +3,7 @@ import type {
   ReleaseDate,
   Series,
   SeriesId,
+  SeriesMiss,
   SeriesName,
   SeriesState,
   Volume,
@@ -111,6 +112,15 @@ export const stateOf = (
   const everyRead = spine.every((volume) => readVolumeNumbers.has(Number(volume.number)))
   return everyRead ? 'complete' : 'in-progress'
 }
+
+/** How long the catalogue call is not asked again about a saga it found
+ *  nothing on: long enough that reopening the saga is instant, short enough
+ *  that a recording published since is found without the reader asking. */
+const MISS_REMEMBERED_MS = 30 * 24 * 60 * 60 * 1000
+
+/** Whether an empty answer still stands in for asking the model again. */
+export const isRecentMiss = (miss: SeriesMiss | null, now: Date): boolean =>
+  miss !== null && now.getTime() - miss.missedAt.getTime() < MISS_REMEMBERED_MS
 
 /** How far the reader is into a saga, measured on its published spine — the
  *  same yardstick as its state and the home screen's progress bars.

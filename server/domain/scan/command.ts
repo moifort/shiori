@@ -265,7 +265,8 @@ export namespace ScanCommand {
    *  The reader still gets their book, and the saga is catalogued by the next
    *  scan or opening that touches it. An empty catalogue is not stored either:
    *  it would mask the saga as known and stop any later attempt with better
-   *  grounding. `usage` says what the call cost whenever it answered, stored or
+   *  grounding. The empty answer is remembered beside it instead, so the next
+   *  opening does not wait on the same call. `usage` says what the call cost whenever it answered, stored or
    *  not. */
   export const catalogueSeries = async (
     seriesId: SeriesId,
@@ -289,7 +290,10 @@ export namespace ScanCommand {
       })
 
       const volumes = withoutDuplicateVolumes(value.volumes.map(parsedVolume).filter(isPresent))
-      if (volumes.length === 0) return { usage }
+      if (volumes.length === 0) {
+        await SeriesCommand.recordNothingFound(seriesId, new Date())
+        return { usage }
+      }
 
       const series = await SeriesCommand.catalogue({
         id: seriesId,

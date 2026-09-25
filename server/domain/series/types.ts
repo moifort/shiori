@@ -54,6 +54,15 @@ export type Series = {
   provisional?: true
 }
 
+/** A saga the catalogue call answered with no volume at all — a saga heard that
+ *  Audible lists no recording of, most often. Remembered so that the next
+ *  opening does not wait on the same grounded call, and forgotten after a while
+ *  so that a recording published since is found. */
+export type SeriesMiss = {
+  id: SeriesId
+  missedAt: Date
+}
+
 /** Where the reader stands on a saga: not started, working through it, done
  *  with it, or set aside. Derived, never stored: it depends on which books the
  *  reader owns — and, for `unfollowed`, on their own choice to stop following

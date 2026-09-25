@@ -165,6 +165,9 @@ describe('a saga heard and a saga read', () => {
     expect(result.errors).toBeUndefined()
     expect(result.data?.series).toEqual({ audio: true, spine: [{ number: 1 }] })
     expect(prompts.catalogue).toContain('ENREGISTRÉS EN LIVRE AUDIO')
+    // An Audible listing titles a recording "Dune (French edition)": the
+    // catalogue keeps the work's title only.
+    expect(prompts.catalogue).toContain('« (French edition) »')
   })
 })
 
@@ -344,12 +347,47 @@ describe('opening a saga nobody has catalogued', () => {
 
   // Storing an empty catalogue would mark the saga as known and stop any later
   // opening from trying again with better grounding.
-  test('stores nothing when the model finds no volumes', async () => {
+  test('stores no catalogue when the model finds no volumes', async () => {
     await addVolume('Dune', 1)
     answers = [{ ...aCatalogue, volumes: [] }]
 
     expect(await openSeries()).toBeNull()
     expect(fake.snapshot('series').size).toBe(0)
+  })
+
+  // The defect: a saga heard that Audible lists no recording of came back
+  // empty, stored nothing, and made every later opening wait on the same
+  // grounded call. What the model found nothing on is remembered for a while.
+  test('does not ask again on the next opening when the model found nothing', async () => {
+    await addVolume('Dune', 1)
+    answers = [{ ...aCatalogue, volumes: [] }]
+
+    expect(await openSeries()).toBeNull()
+    expect(await openSeries()).toBeNull()
+
+    expect(calls).toEqual(['catalogue'])
+  })
+
+  test('asks again once the empty answer is a month old', async () => {
+    await addVolume('Le Messie de Dune', 2)
+    fake.seed('series-misses', 'dune--frank-herbert', {
+      id: 'dune--frank-herbert',
+      missedAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000),
+    })
+    answers = [aCatalogue]
+
+    expect(await openSeries()).toEqual(described)
+    expect(calls).toEqual(['catalogue'])
+  })
+
+  // A failed call says nothing about the saga: the next opening tries again.
+  test('asks again on the next opening after a failed call', async () => {
+    await addVolume('Le Messie de Dune', 2)
+    answers = [new Error('grounding is down'), aCatalogue]
+
+    expect(await openSeries()).toBeNull()
+    expect(await openSeries()).toEqual(described)
+    expect(calls).toEqual(['catalogue', 'catalogue'])
   })
 
   // The defect: a French reader opened a saga they hold in French and got the
@@ -437,6 +475,17 @@ describe('refreshing a saga catalogue', () => {
     answers = [{ ...stale, volumes: [] }]
     expect(await refresh()).toBeNull()
 
+    expect(await spineOf()).toEqual([{ title: 'Dune' }])
+  })
+
+  // The reader asking is what the remembered empty answer waits for.
+  test('asks the model even when it found nothing on the last opening', async () => {
+    await addVolume('Dune', 1)
+    answers = [{ ...stale, volumes: [] }]
+    expect(await spineOf()).toBeUndefined()
+
+    answers = [stale]
+    expect(await refresh()).toEqual({ spine: [{ title: 'Dune' }] })
     expect(await spineOf()).toEqual([{ title: 'Dune' }])
   })
 

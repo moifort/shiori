@@ -1,4 +1,4 @@
-import type { Series, SeriesId } from '~/domain/series/types'
+import type { Series, SeriesId, SeriesMiss } from '~/domain/series/types'
 import { db } from '~/system/firebase'
 import { evictFromRequestCache, isInRequestCache, memoizedPerRequest } from '~/system/request-cache'
 import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
@@ -51,4 +51,17 @@ export const save = async (entry: Series): Promise<Series> => {
   await series().doc(entry.id).set(withoutAbsentFields(entry))
   evictFromRequestCache(cacheKey(entry.id))
   return entry
+}
+
+// What the catalogue call found nothing on, beside the catalogues rather than in
+// them: an empty catalogue would mark the saga as known for good. Shared like a
+// catalogue, keyed like one, and holding no reference to any reader.
+const misses = () =>
+  db().collection('series-misses').withConverter(genericDataConverter<SeriesMiss>())
+
+export const findMiss = async (seriesId: SeriesId): Promise<SeriesMiss | null> =>
+  (await misses().doc(seriesId).get()).data() ?? null
+
+export const saveMiss = async (miss: SeriesMiss): Promise<void> => {
+  await misses().doc(miss.id).set(miss)
 }

@@ -29,6 +29,11 @@ export namespace SeriesCommand {
     return merged === current ? current : repository.save(merged)
   }
 
+  /** Remember that the catalogue call found no volume of this saga, so the
+   *  next opening answers at once rather than asking again. */
+  export const recordNothingFound = (seriesId: SeriesId, at: Date): Promise<void> =>
+    repository.saveMiss({ id: seriesId, missedAt: at })
+
   /** Whether the catalogue already holds this saga — what decides if the third
    *  Gemini call runs at all. A hit means the scan costs two calls, not three. */
   export const isCatalogued = async (seriesId: SeriesId): Promise<boolean> =>
