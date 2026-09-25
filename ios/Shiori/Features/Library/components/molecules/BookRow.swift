@@ -214,8 +214,15 @@ struct BookRow: View {
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel(Text(statusTag.label))
                 } else {
-                    chip(statusTag.shelfTitle, tint: statusTag.tint)
-                        .font(.caption2)
+                    // Led by the status's own symbol, the one the cover badge and
+                    // the library filter draw, so the tag and the rest of the app
+                    // speak one language.
+                    RowChip(
+                        text: statusTag.shelfTitle,
+                        tint: statusTag.tint,
+                        systemImage: statusTag.symbol
+                    )
+                    .font(.caption2)
                 }
             }
             if genreInCorner, let genre {
@@ -241,13 +248,21 @@ struct BookRow: View {
 struct RowChip: View {
     let text: String
     let tint: Color
+    var systemImage: String?
 
     var body: some View {
-        Text(text)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 1)
-            .foregroundStyle(tint)
-            .background(tint.opacity(0.15), in: Capsule())
+        HStack(spacing: 3) {
+            if let systemImage {
+                Image(systemName: systemImage)
+                    .imageScale(.small)
+                    .accessibilityHidden(true)
+            }
+            Text(text)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 1)
+        .foregroundStyle(tint)
+        .background(tint.opacity(0.15), in: Capsule())
     }
 }
 
