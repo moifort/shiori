@@ -249,14 +249,21 @@ struct SeriesStateLabel: View {
         }
     }
 
+    /// Led by the state's symbol — the reading status's own — so the tag reads
+    /// like the one on a book row.
     private var label: some View {
-        Text(state.label)
-            .font(.caption2.weight(.semibold))
-            .foregroundStyle(tint)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(tint.opacity(0.15), in: Capsule())
-            .fixedSize()
+        HStack(spacing: 3) {
+            Image(systemName: state.symbol)
+                .imageScale(.small)
+                .accessibilityHidden(true)
+            Text(state.label)
+        }
+        .font(.caption2.weight(.semibold))
+        .foregroundStyle(tint)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(tint.opacity(0.15), in: Capsule())
+        .fixedSize()
     }
 }
 
