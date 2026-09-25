@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// A view of the Series tab another screen asks it to open on: the dashboard's
 /// "series in progress" card opens it on the sagas in progress.
@@ -115,8 +116,12 @@ final class SeriesListViewModel {
                 fetched += page.items
                 more = page.hasMore && !page.items.isEmpty
             }
-            followed = fetched
-            hasMore = more
+            // Over rows already on screen, the new ones slide into place and
+            // push the others aside rather than the whole list redrawing at once.
+            withAnimation(followed.isEmpty ? nil : .smooth) {
+                followed = fetched
+                hasMore = more
+            }
             loaded = true
             // Fresh rows: whatever an earlier refresh said is no longer true.
             refreshFailed = false

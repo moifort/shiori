@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// The two ways the Library tab looks at the shelf, switched from the toolbar
 /// as Vinarium switches its wine list: everything, or the favourites. There is
@@ -173,8 +174,12 @@ final class LibraryViewModel {
                 fetched += page.books
                 more = page.hasMore && !page.books.isEmpty
             }
-            books = fetched
-            hasMore = more
+            // Over rows already on screen, the new ones slide into place and
+            // push the others aside rather than the whole list redrawing at once.
+            withAnimation(books.isEmpty ? nil : .smooth) {
+                books = fetched
+                hasMore = more
+            }
             loaded = true
             // Fresh rows: whatever an earlier refresh said is no longer true.
             refreshFailed = false

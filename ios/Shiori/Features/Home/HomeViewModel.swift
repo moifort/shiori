@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 @MainActor
 @Observable
@@ -32,7 +33,9 @@ final class HomeViewModel {
         errorMessage = nil
         do {
             let fetched = try await HomeAPI.dashboard()
-            dashboard = fetched
+            // Over figures already on screen, the cards change in place rather
+            // than the whole page redrawing at once.
+            withAnimation(dashboard == nil ? nil : .smooth) { dashboard = fetched }
             loaded = true
             // Fresh figures: whatever an earlier refresh said is no longer true.
             refreshFailed = false
