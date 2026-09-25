@@ -1,12 +1,17 @@
 import { describe, expect, test } from 'bun:test'
 import {
   inAuthorOrder,
+  inPageOrder,
+  mainLanguageOf,
   matchingAuthorFilter,
+  sagasNotHeldOf,
   shelvedAuthorsOf,
+  standaloneBooksOf,
+  worksNotHeldOf,
 } from '~/domain/author/business-rules'
 import { authorKeyOf } from '~/domain/author/primitives'
-import { SeriesId } from '~/domain/series/primitives'
-import { AuthorName, Count } from '~/domain/shared/primitives'
+import { SeriesId, SeriesName, seriesKeyOf } from '~/domain/series/primitives'
+import { AuthorName, BookTitle, Count } from '~/domain/shared/primitives'
 
 const day = (date: number) => new Date(Date.UTC(2026, 8, date))
 
@@ -121,5 +126,64 @@ describe('inAuthorOrder', () => {
     const kept = matchingAuthorFilter([author('Loved', 2), author('Read', 0)], { favorite: true })
 
     expect(kept.map((entry) => String(entry.name))).toEqual(['Loved'])
+  })
+})
+
+describe('the author page', () => {
+  const catalogue = {
+    name: AuthorName('Brandon Sanderson'),
+    series: [
+      { name: SeriesName('Les Archives de Roshar') },
+      { name: SeriesName('Fils-des-Brumes') },
+      { name: SeriesName('Skyward') },
+    ],
+    books: [{ title: BookTitle('Elantris') }, { title: BookTitle('Warbreaker') }],
+  }
+
+  test('offers the sagas the reader holds nothing of, keyed as their catalogue', () => {
+    const notHeld = sagasNotHeldOf(catalogue, [
+      { id: seriesKeyOf('Les Archives de Roshar', 'Brandon Sanderson'), name: 'x' },
+      // Filed under another spelling of the author: recognised by its name.
+      { id: SeriesId('fils-des-brumes--b-sanderson'), name: 'Fils des brumes' },
+    ])
+
+    expect(notHeld).toEqual([
+      { name: SeriesName('Skyward'), id: seriesKeyOf('Skyward', 'Brandon Sanderson') },
+    ])
+  })
+
+  test('offers the books the reader does not hold, matched on the folded title', () => {
+    expect(worksNotHeldOf(catalogue, [{ title: 'ÉLANTRIS' }])).toEqual([
+      { title: BookTitle('Warbreaker') },
+    ])
+  })
+
+  test('lists the books outside any saga, the read ones first', () => {
+    const books = standaloneBooksOf([
+      { title: 'Pile', status: 'to-read' as const },
+      { title: 'Volume', status: 'read' as const, series: { id: 'saga' } },
+      { title: 'Read', status: 'read' as const },
+    ])
+
+    expect(books.map((held) => held.title)).toEqual(['Read', 'Pile'])
+  })
+
+  test('lists the sagas read into first, then the pile, then those set aside', () => {
+    const sagas = inPageOrder([
+      { name: 'Aside', state: 'unfollowed' as const, shelvedAt: day(9) },
+      { name: 'Pile', state: 'not-started' as const, shelvedAt: day(8) },
+      { name: 'Old', state: 'complete' as const, shelvedAt: day(1) },
+      { name: 'New', state: 'in-progress' as const, shelvedAt: day(5) },
+      { name: 'Unknown', state: null, shelvedAt: day(3) },
+    ])
+
+    expect(sagas.map((saga) => saga.name)).toEqual(['New', 'Unknown', 'Old', 'Pile', 'Aside'])
+  })
+
+  test('titles the catalogue in the language most of the books are in', () => {
+    expect(mainLanguageOf([{ language: 'en' }, { language: 'fr' }, { language: 'fr' }, {}])).toBe(
+      'fr',
+    )
+    expect(mainLanguageOf([{}])).toBeUndefined()
   })
 })

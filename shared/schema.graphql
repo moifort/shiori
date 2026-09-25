@@ -236,6 +236,24 @@ type AudibleSync {
 }
 
 """
+What the world knows of an author, shared by every reader and built the first time somebody opens their page. Holds nothing of any reader.
+"""
+type Author {
+  biography: AuthorBiography
+  birthYear: Year
+  deathYear: Year
+  key: AuthorKey!
+  name: AuthorName!
+  nationality: Nationality
+  portraitUrl: PortraitUrl
+}
+
+"""
+A few sentences on who an author is, 1 to 2000 characters, written in the language of whoever opened their page first.
+"""
+scalar AuthorBiography
+
+"""
 An author as the library folds their name: diacritics dropped, punctuation collapsed, so two spellings of one name meet. Derived, never typed. Example: "patrick-rothfuss".
 """
 scalar AuthorKey
@@ -244,6 +262,55 @@ scalar AuthorKey
 An author name as printed, 1 to 200 characters. Example: "Patrick Rothfuss".
 """
 scalar AuthorName
+
+"""Everything an author’s page draws, in one answer."""
+type AuthorPage {
+  author: FollowedAuthor!
+
+  """The reader’s books of this author outside any saga, read ones first."""
+  books: [Book!]!
+
+  """
+  The author’s other books outside any saga, which the reader does not hold.
+  """
+  booksNotHeld: [AuthorWork!]!
+
+  """
+  Null when the model could not describe the author: the page still shows the reader’s own books, and the next opening tries again.
+  """
+  catalogue: Author
+
+  """
+  The reader’s sagas of this author as the Series tab draws them: the ones read into first, then those not started, then those set aside.
+  """
+  sagas: [FollowedSeries!]!
+
+  """The author’s other sagas, which the reader holds nothing of."""
+  sagasNotHeld: [AuthorSeries!]!
+}
+
+"""A saga the author wrote that the reader holds nothing of."""
+type AuthorSeries {
+  """What the saga is started with."""
+  firstVolumeTitle: BookTitle
+
+  """
+  The id its catalogue is keyed on: a volume added with this saga membership joins the saga the Series tab and the saga screen know.
+  """
+  id: SeriesId!
+  name: SeriesName!
+
+  """Main volumes out or announced."""
+  volumeCount: VolumeNumber
+}
+
+"""
+A book the author wrote outside any saga, that the reader does not hold.
+"""
+type AuthorWork {
+  publishedIn: Year
+  title: BookTitle!
+}
 
 """
 A book as one reader holds it.
@@ -668,6 +735,14 @@ type FollowedAuthor {
 
   """The spelling most of the reader’s books use."""
   name: AuthorName!
+
+  """
+  Their photograph, once somebody has opened their page and Wikipedia had one. Null until then: the app draws their initials.
+  """
+  portraitUrl: PortraitUrl
+
+  """Books of theirs the reader has read."""
+  readCount: Count!
 
   """Sagas those books belong to."""
   seriesCount: Count!
@@ -1507,6 +1582,11 @@ Who reads an audiobook aloud, 1 to 200 characters. Not an AuthorName: a narrator
 scalar NarratorName
 
 """
+Where an author comes from, as a demonym, 1 to 100 characters. Example: "Américain".
+"""
+scalar Nationality
+
+"""
 A book catalogued without a scan — typed by hand, or taken from a series catalogue. Consumes no scan credit.
 """
 input NewBookInput {
@@ -1594,6 +1674,11 @@ enum Plan {
 }
 
 """
+An author's photograph as Wikipedia serves it. Always HTTPS, never a URL a model wrote.
+"""
+scalar PortraitUrl
+
+"""
 The publisher of this edition, 1 to 200 characters. Example: "DAW Books".
 """
 scalar Publisher
@@ -1629,6 +1714,11 @@ type Query {
   Fails with `AUDIBLE_NOT_CONNECTED` when no account is linked, and `AUDIBLE_UNAVAILABLE` when Amazon refuses the call — a revoked device or a changed password lands here, and the fix is to connect again.
   """
   audibleLibrary: [ImportableBook!]!
+
+  """
+  One author’s page. Built on first sight when nobody has opened it yet: one web-grounded model call for the facts and the bibliography — titles as the edition the reader holds titles them, the rest in the language of `Accept-Language` — and Wikipedia for the portrait. That first opening takes a few seconds; every later one, by anyone, reads the stored catalogue. Null when the reader holds no book of the author.
+  """
+  authorPage(key: AuthorKey!): AuthorPage
 
   """One book of the reader library. Null when they do not own it."""
   book(id: BookId!): Book
@@ -1795,7 +1885,7 @@ type Query {
   me: Me!
 
   """
-  One page of the authors in the library, the ones the reader loves first: most hearts, then the best mean of stars, then the most books, then by name. `favorite` keeps the authors with at least one heart. Offset-paginated: pass the number of rows already shown. Reads no document beyond the library and the saga opinions.
+  One page of the authors in the library, the ones the reader loves first: most hearts, then the best mean of stars, then the most books, then by name. `favorite` keeps the authors with at least one heart. Offset-paginated: pass the number of rows already shown. Reads the page’s author catalogues, for their portraits, in one getAll.
   """
   myAuthorsPage(
     """Only the authors with a heart"""

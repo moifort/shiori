@@ -4,7 +4,23 @@ import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
 
+/** Queued Gemini answers, consumed in call order: nobody pays Google in a test. */
+let answers: unknown[] = []
+const calls: string[] = []
+mock.module('~/domain/scan/gemini', () => ({
+  generate: async ({ step }: { step: string }) => {
+    calls.push(step)
+    const value = answers.shift()
+    if (value === undefined) throw new Error(`no queued answer for step "${step}"`)
+    return { value, usage: { promptTokens: 10, outputTokens: 5, thinkingTokens: 20, searches: 1 } }
+  },
+}))
+mock.module('~/domain/author/infrastructure/wikipedia', () => ({
+  portraitOf: async (title: string) => `https://upload.wikimedia.org/${title}.jpg`,
+}))
+
 const { AuthorUseCase } = await import('~/domain/author/use-case')
+const { authorKeyOf } = await import('~/domain/author/primitives')
 const { BookCommand } = await import('~/domain/book/command')
 const { SeriesOpinionCommand } = await import('~/domain/series-opinion/command')
 const { SeriesId, SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
@@ -16,6 +32,8 @@ let fake = resetFakeFirestore()
 
 beforeEach(() => {
   fake = resetFakeFirestore()
+  answers = []
+  calls.length = 0
 })
 
 /** One author per saga, each saga catalogued with three volumes. */
@@ -38,9 +56,9 @@ const writeSagas = async (count: number) => {
 }
 
 describe('a page of the Authors tab', () => {
-  // The library and the opinions are one scan each, and nothing else is read:
-  // no catalogue, however many sagas the page's authors wrote.
-  test('reads the library and the opinions, and no document', async () => {
+  // The library and the opinions are one scan each; the page's own author
+  // catalogues are read in one getAll, for their portraits, and no saga's.
+  test('reads the library, the opinions and the page’s author catalogues', async () => {
     await writeSagas(12)
     const docReads = fake.docReads
     const queryReads = fake.queryReads
@@ -49,7 +67,7 @@ describe('a page of the Authors tab', () => {
 
     expect(items).toHaveLength(5)
     expect(hasMore).toBe(true)
-    expect(fake.docReads - docReads).toBe(0)
+    expect(fake.docReads - docReads).toBe(5)
     expect(fake.queryReads - queryReads).toBe(2)
   })
 
@@ -87,5 +105,85 @@ describe('a page of the Authors tab', () => {
       whole.items.slice(2, 4).map((author) => author.key),
     )
     expect(second.hasMore).toBe(false)
+  })
+})
+
+const sanderson = {
+  name: 'Brandon Sanderson',
+  nationality: 'Américain',
+  birthYear: 1975,
+  deathYear: null,
+  biography: 'Auteur de fantasy.',
+  wikipediaTitle: 'Brandon Sanderson',
+  series: [
+    { name: 'Saga 0', volumeCount: 3, firstVolumeTitle: 'Tome 1' },
+    { name: 'Skyward', volumeCount: 4, firstVolumeTitle: 'Skyward' },
+  ],
+  books: [
+    { title: 'Elantris', publishedIn: 2005 },
+    { title: 'Warbreaker', publishedIn: 2009 },
+  ],
+}
+
+describe('an author’s page', () => {
+  const holdSanderson = async () => {
+    const id = SeriesId('saga-0--brandon-sanderson')
+    await BookCommand.add(reader, {
+      title: BookTitle('Tome 1'),
+      authors: [AuthorName('Brandon Sanderson')],
+      status: 'read',
+      series: { id, name: SeriesName('Saga 0'), volume: VolumeNumber(1), kind: 'main' },
+    })
+    await BookCommand.add(reader, {
+      title: BookTitle('Elantris'),
+      authors: [AuthorName('Brandon Sanderson')],
+    })
+  }
+
+  test('is built on the first opening, portrait included, and read after', async () => {
+    await holdSanderson()
+    answers = [sanderson]
+
+    const first = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
+    const second = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
+
+    expect(calls).toEqual(['author'])
+    expect(String(first?.catalogue?.portraitUrl)).toBe(
+      'https://upload.wikimedia.org/Brandon Sanderson.jpg',
+    )
+    expect(second?.catalogue?.biography).toBe(first?.catalogue?.biography)
+    expect(String(second?.author.portraitUrl)).toBe(String(first?.catalogue?.portraitUrl))
+  })
+
+  test('sets what the reader holds apart from what they could add', async () => {
+    await holdSanderson()
+    answers = [sanderson]
+
+    const page = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
+
+    expect(page?.sagas.map((saga) => String(saga.name))).toEqual(['Saga 0'])
+    expect(page?.sagasNotHeld.map((saga) => [String(saga.name), String(saga.id)])).toEqual([
+      ['Skyward', 'skyward--brandon-sanderson'],
+    ])
+    expect(page?.books.map((book) => String(book.title))).toEqual(['Elantris'])
+    expect(page?.booksNotHeld.map((work) => String(work.title))).toEqual(['Warbreaker'])
+  })
+
+  test('still shows the reader’s books when the model found nothing, and tries again', async () => {
+    await holdSanderson()
+    answers = [{ name: 'Brandon Sanderson', series: [], books: [] }, sanderson]
+
+    const failed = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
+    const retried = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
+
+    expect(failed?.catalogue).toBeNull()
+    expect(failed?.books).toHaveLength(1)
+    expect(retried?.catalogue).not.toBeNull()
+    expect(calls).toEqual(['author', 'author'])
+  })
+
+  test('answers nothing for an author the reader holds no book of', async () => {
+    expect(await AuthorUseCase.page(reader, authorKeyOf('Nobody'), 'fr')).toBeNull()
+    expect(calls).toEqual([])
   })
 })

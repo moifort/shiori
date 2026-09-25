@@ -2,7 +2,7 @@ import { GraphQLError } from 'graphql'
 import { ZodError } from 'zod'
 import { TimeZone } from '~/domain/analytics/primitives'
 import { AudibleAsin } from '~/domain/audible/primitives'
-import { AuthorKey } from '~/domain/author/primitives'
+import { AuthorBiography, AuthorKey, Nationality, PortraitUrl } from '~/domain/author/primitives'
 import {
   BookId,
   CoverUrl,
@@ -91,6 +91,28 @@ builder.scalarType('AuthorKey', {
     'Example: "patrick-rothfuss".',
   serialize: (value) => value as string,
   parseValue: validatedParse('AuthorKey', AuthorKey),
+})
+
+builder.scalarType('AuthorBiography', {
+  description:
+    'A few sentences on who an author is, 1 to 2000 characters, written in the ' +
+    'language of whoever opened their page first.',
+  serialize: (value) => value as string,
+  parseValue: validatedParse('AuthorBiography', AuthorBiography),
+})
+
+builder.scalarType('Nationality', {
+  description:
+    'Where an author comes from, as a demonym, 1 to 100 characters. Example: "Américain".',
+  serialize: (value) => value as string,
+  parseValue: validatedParse('Nationality', Nationality),
+})
+
+builder.scalarType('PortraitUrl', {
+  description:
+    "An author's photograph as Wikipedia serves it. Always HTTPS, never a URL a " + 'model wrote.',
+  serialize: (value) => value as string,
+  parseValue: validatedParse('PortraitUrl', PortraitUrl),
 })
 
 builder.scalarType('PersonName', {

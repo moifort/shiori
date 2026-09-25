@@ -1,9 +1,18 @@
 import { authorKeyOf } from '~/domain/author/primitives'
-import type { AuthorKey, ShelvedAuthor } from '~/domain/author/types'
+import type {
+  Author,
+  AuthorKey,
+  AuthorSeries,
+  AuthorWork,
+  ShelvedAuthor,
+} from '~/domain/author/types'
 import { shelfDateOf } from '~/domain/book/business-rules'
-import type { SeriesId } from '~/domain/series/types'
+import type { BookLanguage, ReadingStatus } from '~/domain/book/types'
+import { seriesKeyOf } from '~/domain/series/primitives'
+import type { SeriesId, SeriesState } from '~/domain/series/types'
 import { Count } from '~/domain/shared/primitives'
 import type { AuthorName } from '~/domain/shared/types'
+import { slugify } from '~/utils/slug'
 
 type AuthoredBook = {
   authors: AuthorName[]
@@ -101,4 +110,72 @@ const mostUsedSpelling = (spellings: ReadonlyMap<AuthorName, number>): AuthorNam
     if (chosen === undefined || count > (spellings.get(chosen) ?? 0)) chosen = name
   if (chosen === undefined) throw new Error('an author is only ever made from a spelling')
   return chosen
+}
+
+/** The sagas of an author's catalogue the reader holds no volume of, each with
+ *  the id its catalogue would be keyed on, so a volume added from the author's
+ *  page files into the saga the Series tab and the saga screen know.
+ *
+ *  A saga the reader holds is recognised by that id, or by its folded name: a
+ *  saga filed under another spelling of the author keeps another id, and must
+ *  not come back as one to discover. */
+export const sagasNotHeldOf = (
+  catalogue: Pick<Author, 'name' | 'series'>,
+  held: readonly { id: SeriesId; name: string }[],
+): (AuthorSeries & { id: SeriesId })[] => {
+  const heldIds = new Set(held.map((saga) => saga.id))
+  const heldNames = new Set(held.map((saga) => slugify(saga.name)))
+  return catalogue.series
+    .map((saga) => ({ ...saga, id: seriesKeyOf(saga.name, catalogue.name) }))
+    .filter((saga) => !heldIds.has(saga.id) && !heldNames.has(slugify(saga.name)))
+}
+
+/** The books outside any saga of an author's catalogue the reader does not hold,
+ *  matched on the folded title against every book of theirs the reader has. */
+export const worksNotHeldOf = (
+  catalogue: Pick<Author, 'books'>,
+  held: readonly { title: string }[],
+): AuthorWork[] => {
+  const titles = new Set(held.map((book) => slugify(book.title)))
+  return catalogue.books.filter((work) => !titles.has(slugify(work.title)))
+}
+
+/** The reader's books of an author outside any saga: the read ones first, then
+ *  the others, each group keeping the order it came in. */
+export const standaloneBooksOf = <Book extends { series?: unknown; status: ReadingStatus }>(
+  books: readonly Book[],
+): Book[] => {
+  const standalone = books.filter((book) => !book.series)
+  return [
+    ...standalone.filter((book) => book.status === 'read'),
+    ...standalone.filter((book) => book.status !== 'read'),
+  ]
+}
+
+/** The reader's sagas of an author as the page lists them: the ones they have
+ *  read into first — in progress or finished — then the ones not started, then
+ *  the ones set aside; the most recently shelved first within each. */
+export const inPageOrder = <Saga extends { state: SeriesState | null; shelvedAt: Date }>(
+  sagas: readonly Saga[],
+): Saga[] => {
+  const rank = (state: SeriesState | null) =>
+    state === 'not-started' ? 1 : state === 'unfollowed' ? 2 : 0
+  return [...sagas].sort(
+    (left, right) =>
+      rank(left.state) - rank(right.state) || right.shelvedAt.getTime() - left.shelvedAt.getTime(),
+  )
+}
+
+/** The language most of the reader's books of an author are in: the edition the
+ *  author's catalogue titles their works for. Undefined when none records one. */
+export const mainLanguageOf = (
+  books: readonly { language?: BookLanguage }[],
+): BookLanguage | undefined => {
+  const counts = new Map<BookLanguage, number>()
+  for (const { language } of books)
+    if (language) counts.set(language, (counts.get(language) ?? 0) + 1)
+  let leading: BookLanguage | undefined
+  for (const [language, count] of counts)
+    if (leading === undefined || count > (counts.get(leading) ?? 0)) leading = language
+  return leading
 }

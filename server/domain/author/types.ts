@@ -1,6 +1,6 @@
 import type { Brand } from 'ts-brand'
-import type { SeriesId } from '~/domain/series/types'
-import type { AuthorName, Count } from '~/domain/shared/types'
+import type { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
+import type { AuthorName, BookTitle, Count, Year } from '~/domain/shared/types'
 
 /** An author as the reader's library knows them, folded the way series keys are
  *  folded — diacritics dropped, punctuation collapsed — so "Tolkien, J.R.R." on
@@ -28,4 +28,45 @@ export type ShelvedAuthor<Book> = {
   /** The mean of the stars given to their books and sagas. Absent when nothing
    *  of theirs is rated. */
   averageRating?: number
+}
+
+/** A few sentences on who the author is, written by the model in the language of
+ *  whoever opened their page first — as a saga's description is. */
+export type AuthorBiography = Brand<string, 'AuthorBiography'>
+/** Where the author comes from, as a demonym in the language of the biography:
+ *  "Américain", "Japonaise". */
+export type Nationality = Brand<string, 'Nationality'>
+/** The author's photograph as Wikipedia serves it. Always HTTPS, and never a URL
+ *  the model wrote: models invent image URLs that 404. */
+export type PortraitUrl = Brand<string, 'PortraitUrl'>
+
+/** A saga the author wrote, as the author catalogue lists it: enough to draw a
+ *  row for a saga the reader does not hold and to start it with its first volume. */
+export type AuthorSeries = {
+  name: SeriesName
+  volumeCount?: VolumeNumber
+  firstVolumeTitle?: BookTitle
+}
+
+/** A book the author wrote outside any saga. */
+export type AuthorWork = {
+  title: BookTitle
+  publishedIn?: Year
+}
+
+/** What the world knows of an author: a shared catalogue at `authors/{key}`,
+ *  holding no reference to any reader, built the first time somebody opens the
+ *  author's page and read by everyone after — the call that produced it is paid
+ *  once, as a saga's is. It is never exposed through library sharing. */
+export type Author = {
+  key: AuthorKey
+  name: AuthorName
+  nationality?: Nationality
+  birthYear?: Year
+  deathYear?: Year
+  biography?: AuthorBiography
+  portraitUrl?: PortraitUrl
+  series: AuthorSeries[]
+  books: AuthorWork[]
+  cataloguedAt: Date
 }

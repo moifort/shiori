@@ -3,7 +3,7 @@ import { GraphQLScalarType } from 'graphql'
 import type { H3Event } from 'h3'
 import type { TimeZone } from '~/domain/analytics/types'
 import type { AudibleAsin } from '~/domain/audible/types'
-import type { AuthorKey } from '~/domain/author/types'
+import type { AuthorBiography, AuthorKey, Nationality, PortraitUrl } from '~/domain/author/types'
 import type {
   BookId,
   CoverUrl,
@@ -62,6 +62,9 @@ export const builder = new SchemaBuilder<{
     BookTitle: { Input: BookTitle; Output: BookTitle }
     AuthorName: { Input: AuthorName; Output: AuthorName }
     AuthorKey: { Input: AuthorKey; Output: AuthorKey }
+    AuthorBiography: { Input: AuthorBiography; Output: AuthorBiography }
+    Nationality: { Input: Nationality; Output: Nationality }
+    PortraitUrl: { Input: PortraitUrl; Output: PortraitUrl }
     PersonName: { Input: PersonName; Output: PersonName }
     Publisher: { Input: Publisher; Output: Publisher }
     Isbn13: { Input: Isbn13; Output: Isbn13 }
