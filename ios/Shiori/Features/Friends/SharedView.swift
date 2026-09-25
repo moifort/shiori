@@ -11,12 +11,11 @@ import SwiftUI
 /// to be discovered: accepting an invitation opens both shelves at once, and
 /// either of the two can end it for both. There is nothing to approve on the
 /// other side and no half-state to explain.
+///
+/// The tab opens on what it last showed, brought up to date silently underneath.
 struct SharedView: View {
-    @State private var friends: [Friend] = []
-    @State private var myShelf: FriendProfile?
-    @State private var isLoading = true
+    @State private var viewModel = SharedViewModel()
     @State private var errorMessage: String?
-    @State private var loadFailed: String?
     @State private var invitation: FriendInvitation?
     @State private var showAccept = false
     @State private var pastedCode = ""
@@ -31,23 +30,23 @@ struct SharedView: View {
                 .navigationTitle("Partagé")
                 .toolbar { toolbar }
                 .navigationDestination(for: Friend.ID.self) { userId in
-                    if let friend = friends.first(where: { $0.userId == userId }) {
+                    if let friend = viewModel.friends.first(where: { $0.userId == userId }) {
                         FriendProfileView(friend: friend)
                     }
                 }
                 .navigationDestination(for: MyPagePreview.self) { _ in
-                    if let myShelf {
+                    if let myShelf = viewModel.myShelf {
                         FriendProfileView(preview: myShelf)
                     }
                 }
         }
-        .task { await load() }
-        .refreshable { await load() }
+        .task { await viewModel.loadOnAppear() }
+        .refreshable { await viewModel.load() }
         // A book taken from a friend changes what "Chez vous" says on their
         // shelves, and their counts move when they write: asked again on the
         // next look.
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
-            Task { await load() }
+            Task { await viewModel.load() }
         }
         // The invitation is shared the moment it comes back: the reader tapped
         // "invite", and a code sitting on screen with nothing to do is a step
@@ -99,14 +98,23 @@ struct SharedView: View {
 
     @ViewBuilder
     private var content: some View {
-        if isLoading && friends.isEmpty && myShelf == nil {
+        if let loadFailed = viewModel.loadFailed, viewModel.isEmpty, !viewModel.isLoading {
+            EmptyStateView.failure("Amis indisponibles", message: loadFailed) { await viewModel.load() }
+        } else if viewModel.isEmpty && !viewModel.loaded {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if let loadFailed, friends.isEmpty, myShelf == nil {
-            EmptyStateView.failure("Amis indisponibles", message: loadFailed) { await load() }
         } else {
             List {
-                if let myShelf {
+                // The snapshot on screen is brought up to date silently. Only a
+                // refresh that failed says so, since the rows are then last time's.
+                if viewModel.refreshFailed {
+                    RefreshRow(
+                        failed: viewModel.refreshFailed,
+                        loadingLabel: "Mise à jour de vos amis",
+                        onRetry: { await viewModel.refresh() }
+                    )
+                }
+                if let myShelf = viewModel.myShelf {
                     Section {
                         NavigationLink(value: MyPagePreview()) {
                             row(Friend(seenByFriends: myShelf))
@@ -131,11 +139,11 @@ struct SharedView: View {
                         Text("Vos amis vous voient ainsi dans leur liste. Touchez votre nom pour voir votre page telle qu'ils la voient.")
                     }
                 }
-                if friends.isEmpty {
+                if viewModel.friends.isEmpty {
                     invitePrompt
                 } else {
                     Section {
-                        ForEach(friends) { friend in
+                        ForEach(viewModel.friends) { friend in
                             NavigationLink(value: friend.userId) {
                                 row(friend)
                             }
@@ -256,25 +264,6 @@ struct SharedView: View {
         return FavoritesSharing.text(sagas: shelf.favoriteSagas, books: shelf.favorites.map(\.book))
     }
 
-    private func load() async {
-        isLoading = true
-        // The two reads are independent: the preview still opens when the
-        // friends list fails, and the other way round.
-        async let shelf = FriendsAPI.myShelf()
-        do {
-            friends = try await FriendsAPI.friends()
-            loadFailed = nil
-        } catch {
-            loadFailed = reportError(error)
-        }
-        do {
-            myShelf = try await shelf
-        } catch {
-            _ = reportError(error)
-        }
-        isLoading = false
-    }
-
     private func invite() async {
         isInviting = true
         defer { isInviting = false }
@@ -291,10 +280,8 @@ struct SharedView: View {
         do {
             let friend = try await FriendsAPI.accept(code: code)
             accepted = friend.displayName
-            // The answer is the new row: filed where the server files it, by
-            // first name, rather than read back with the whole list.
-            friends = (friends.filter { $0.userId != friend.userId } + [friend])
-                .sorted { ($0.firstName ?? "").localizedCompare($1.firstName ?? "") == .orderedAscending }
+            // The answer is the new row, rather than read back with the whole list.
+            viewModel.add(friend)
         } catch {
             errorMessage = reportError(error)
         }
@@ -304,7 +291,7 @@ struct SharedView: View {
         removing = nil
         do {
             try await FriendsAPI.remove(userId: friend.userId)
-            friends.removeAll { $0.userId == friend.userId }
+            viewModel.remove(friend)
         } catch {
             errorMessage = reportError(error)
         }

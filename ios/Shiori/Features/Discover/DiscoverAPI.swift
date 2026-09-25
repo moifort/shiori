@@ -2,7 +2,7 @@ import Foundation
 
 /// How an edition reaches the reader, and the filter the tab is read through —
 /// kept between visits.
-enum ReleaseFormat: String, Sendable, Hashable, CaseIterable, Identifiable {
+enum ReleaseFormat: String, Codable, Sendable, Hashable, CaseIterable, Identifiable {
     case book, audiobook
     var id: String { rawValue }
 
@@ -23,7 +23,7 @@ enum ReleaseFormat: String, Sendable, Hashable, CaseIterable, Identifiable {
 }
 
 /// One edition of a work in one language, out or announced.
-struct ReleaseEdition: Identifiable, Hashable, Sendable {
+struct ReleaseEdition: Identifiable, Hashable, Codable, Sendable {
     let title: String
     let volume: Int?
     let format: ReleaseFormat
@@ -45,7 +45,7 @@ struct ReleaseEdition: Identifiable, Hashable, Sendable {
 /// A saga the reader follows, or a book they read, in one language: what
 /// exists or is announced of it there. A saga read in English whose French
 /// translation is announced is two releases, as the Series tab makes two rows.
-struct Release: Identifiable, Sendable {
+struct Release: Identifiable, Codable, Sendable {
     let key: String
     var id: String { key }
     let isSeries: Bool
@@ -100,7 +100,7 @@ struct Release: Identifiable, Sendable {
     }
 }
 
-struct DiscoverFeed: Sendable {
+struct DiscoverFeed: Codable, Sendable {
     var preparedAt: Date?
     var canRefresh: Bool
     var upcoming: [Release]

@@ -15,12 +15,10 @@ import SwiftUI
 /// between visits.
 ///
 /// The server looks again every day. The first opening looks at once, behind a
-/// loader; after that, the reader may ask again once a day at most.
+/// loader; after that, the reader may ask again once a day at most. The tab
+/// opens on the feed it last showed, brought up to date silently underneath.
 struct DiscoverView: View {
-    @State private var feed: DiscoverFeed?
-    @State private var isLoading = true
-    @State private var isPreparing = false
-    @State private var errorMessage: String?
+    @State private var viewModel = DiscoverViewModel()
     @State private var openSeries: OpenedSeries?
     @State private var openBook: OpenedEdition?
     @AppStorage("discover.format") private var format: ReleaseFormat = .book
@@ -41,44 +39,56 @@ struct DiscoverView: View {
                             seriesId: opened.seriesId,
                             language: opened.release.language,
                             isSheet: true,
-                            onNotInterested: { Task { await dismiss(opened.release) } }
+                            onNotInterested: { Task { await viewModel.dismiss(opened.release) } }
                         )
                     }
                 }
                 .sheet(item: $openBook) { opened in
                     BookPreviewView(release: opened.release, edition: opened.edition) {
-                        Task { await dismiss(opened.release) }
+                        Task { await viewModel.dismiss(opened.release) }
                     }
                 }
         }
-        .task { await load() }
+        .task { await viewModel.loadOnAppear() }
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
-            Task { await load() }
+            Task { await viewModel.load() }
         }
     }
 
     @ViewBuilder
     private var content: some View {
-        if isLoading && feed == nil {
+        if viewModel.feed == nil, let errorMessage = viewModel.errorMessage, !viewModel.isLoading {
+            EmptyStateView.failure("Découvrir indisponible", message: errorMessage) {
+                await viewModel.load()
+            }
+        } else if viewModel.feed == nil {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if let errorMessage, feed == nil {
-            EmptyStateView.failure("Découvrir indisponible", message: errorMessage) { await load() }
-        } else if let whole = feed, whole.preparedAt == nil {
+        } else if let whole = viewModel.feed, whole.preparedAt == nil {
             // Never searched yet: the search starts on its own, and the tab
             // waits for it rather than asking the reader to start it.
-            if isPreparing || errorMessage == nil {
+            if viewModel.isPreparing || viewModel.errorMessage == nil {
                 ProgressView("Recherche des prochaines sorties…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .accessibilityIdentifier("discover-preparing")
             } else {
                 EmptyStateView.failure(
                     "Recherche impossible",
-                    message: errorMessage ?? String(localized: "La recherche des prochaines sorties n'a pas abouti.")
-                ) { await prepare() }
+                    message: viewModel.errorMessage
+                        ?? String(localized: "La recherche des prochaines sorties n'a pas abouti.")
+                ) { await viewModel.prepare() }
             }
-        } else if let whole = feed {
+        } else if let whole = viewModel.feed {
             let feed = whole.narrowed(to: format)
             List {
+                // The snapshot on screen is brought up to date silently. Only a
+                // refresh that failed says so, since the rows are then last time's.
+                if viewModel.refreshFailed {
+                    RefreshRow(
+                        failed: viewModel.refreshFailed,
+                        loadingLabel: "Mise à jour de Découvrir",
+                        onRetry: { await viewModel.refresh() }
+                    )
+                }
                 if shown(feed.upcoming).isEmpty && shown(feed.maybe).isEmpty {
                     Section {
                         EmptyStateView(
@@ -110,7 +120,7 @@ struct DiscoverView: View {
                 }
             }
             .listStyle(.insetGrouped)
-            .refreshable { await load() }
+            .refreshable { await viewModel.load() }
         }
     }
 
@@ -138,7 +148,7 @@ struct DiscoverView: View {
                         .accessibilityElement(children: .combine)
                         .accessibilityAddTraits(.isButton)
                         .accessibilityAction { open(release) }
-                        .modifier(NotInterested { Task { await dismiss(release) } })
+                        .modifier(NotInterested { Task { await viewModel.dismiss(release) } })
                         .accessibilityIdentifier("discover-series-row")
                 }
             }
@@ -173,7 +183,7 @@ struct DiscoverView: View {
             }
         }
         .tint(.primary)
-        .modifier(NotInterested { Task { await dismiss(release) } })
+        .modifier(NotInterested { Task { await viewModel.dismiss(release) } })
         .accessibilityIdentifier("discover-book-row")
     }
 
@@ -220,14 +230,14 @@ struct DiscoverView: View {
                 .accessibilityIdentifier("discover-format-\(item.rawValue)")
             }
         }
-        if let feed, feed.preparedAt != nil, feed.canRefresh {
+        if let feed = viewModel.feed, feed.preparedAt != nil, feed.canRefresh {
             ToolbarSpacer(.fixed)
             ToolbarItem {
-                if isPreparing {
+                if viewModel.isPreparing {
                     ProgressView()
                 } else {
                     Button {
-                        Task { await prepare() }
+                        Task { await viewModel.prepare() }
                     } label: {
                         Label("Chercher à nouveau", systemImage: "arrow.clockwise")
                     }
@@ -241,59 +251,8 @@ struct DiscoverView: View {
     /// tab is only as fresh as that, and the reader should not wonder why an
     /// announcement from this morning is not there yet.
     private var lastSearch: String {
-        guard let preparedAt = feed?.preparedAt else { return "" }
+        guard let preparedAt = viewModel.feed?.preparedAt else { return "" }
         return String(localized: "Mis à jour \(preparedAt.formatted(.relative(presentation: .named)))")
-    }
-
-    // MARK: - Loading
-
-    private func load() async {
-        isLoading = true
-        do {
-            feed = try await DiscoverAPI.feed()
-            errorMessage = nil
-        } catch {
-            errorMessage = reportError(error)
-        }
-        isLoading = false
-        // The first opening searches at once: a reader who came to see what is
-        // coming should not have to ask for it.
-        if let feed, feed.preparedAt == nil, !isPreparing {
-            await prepare()
-            return
-        }
-        await askForAlertsIfWorthIt()
-    }
-
-    private func prepare() async {
-        isPreparing = true
-        errorMessage = nil
-        defer { isPreparing = false }
-        do {
-            feed = try await DiscoverAPI.refresh()
-            errorMessage = nil
-        } catch {
-            errorMessage = reportError(error)
-        }
-        await askForAlertsIfWorthIt()
-    }
-
-    /// The alert is on by default, but the system asks once: the first time
-    /// the tab has a release to announce, which is when saying yes means
-    /// something. Asked once, the system never shows it again.
-    private func askForAlertsIfWorthIt() async {
-        guard let feed, !feed.upcoming.isEmpty else { return }
-        _ = await PushRegistrar.shared.requestPermission()
-    }
-
-    private func dismiss(_ release: Release) async {
-        withAnimation { feed?.remove(key: release.key) }
-        do {
-            try await DiscoverAPI.dismiss(key: release.key)
-        } catch {
-            errorMessage = reportError(error)
-            await load()
-        }
     }
 }
 

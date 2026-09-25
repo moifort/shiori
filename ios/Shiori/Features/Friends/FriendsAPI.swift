@@ -1,7 +1,7 @@
 import Foundation
 
 /// Somebody the reader shares libraries with.
-struct Friend: Identifiable, Sendable {
+struct Friend: Identifiable, Codable, Sendable {
     var id: String { userId }
     let userId: String
     /// Nil for an account that never finished its onboarding.
@@ -45,7 +45,7 @@ extension Friend {
 
 /// A book on a friend's shelf, and whether the reader already owns the story —
 /// same title and first author, whatever the edition.
-struct FriendBook: Identifiable, Hashable, Sendable {
+struct FriendBook: Identifiable, Hashable, Codable, Sendable {
     var id: String { book.id }
     var book: Book
     var inLibrary: Bool
@@ -72,7 +72,7 @@ enum CopiedStatus: Sendable {
 /// One saga a friend is working through, as their own books describe it. The
 /// shared catalogue is never exposed, so this says how many volumes they hold
 /// and never how many the saga has.
-struct FriendSaga: Identifiable, Sendable {
+struct FriendSaga: Identifiable, Codable, Sendable {
     let id: String
     /// The saga alone, whatever the language: what its page opens on.
     let seriesId: String
@@ -102,7 +102,7 @@ struct FriendSaga: Identifiable, Sendable {
 }
 
 /// A friend's shelf at a glance.
-struct FriendProfile: Sendable {
+struct FriendProfile: Codable, Sendable {
     let userId: String
     let firstName: String?
     /// Most recently active first.
