@@ -26,20 +26,15 @@ struct BookCover: View {
     var body: some View {
         Group {
             if let url = book.coverURL {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case let .success(image):
-                        image.resizable().scaledToFill()
-                    case .failure:
-                        // An expired signed photo, or a publisher cover that has
-                        // since vanished from Open Library (it answers 404, not a
-                        // blank image). Falling back beats a broken-image glyph.
-                        placeholder
-                    case .empty:
-                        Rectangle().fill(.quaternary)
-                    @unknown default:
-                        placeholder
-                    }
+                // Not AsyncImage: a photo's link is re-signed on every answer,
+                // and AsyncImage would fetch it again behind a grey frame.
+                // An expired link or a publisher cover that has since vanished
+                // from Open Library falls back to the placeholder, which beats
+                // a broken-image glyph.
+                CoverImage(url: url) {
+                    Rectangle().fill(.quaternary)
+                } fallback: {
+                    placeholder
                 }
             } else {
                 placeholder
