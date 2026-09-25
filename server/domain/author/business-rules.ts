@@ -118,21 +118,42 @@ const mostUsedSpelling = (spellings: ReadonlyMap<AuthorName, number>): AuthorNam
  *  the saga screen know. A saga read on paper and never heard is one to
  *  discover among the recordings: the saga heard is a saga of its own.
  *
- *  A saga the reader holds is recognised by that id, or by its folded name: a
- *  saga filed under another spelling of the author keeps another id, and must
- *  not come back as one to discover. */
+ *  A saga the reader holds is recognised by that id, by its folded name, by a
+ *  name folded into the other's ("Le Problème à trois corps" and "Trilogie du
+ *  Problème à trois corps"), or by its first volume on the reader's shelves: a
+ *  saga filed under another spelling of the author, or named otherwise by an
+ *  Audible import, keeps another id, and must not come back as one to discover. */
 export const sagasNotHeldOf = (
   catalogue: Pick<Author, 'name' | 'series'>,
-  held: readonly { id: SeriesId; name: string }[],
+  held: readonly { id: SeriesId; name: string; books?: readonly { title: string }[] }[],
   format: BookFormat,
 ): (AuthorSeries & { id: SeriesId })[] => {
   const heard = format === 'audiobook'
   const sameFormat = held.filter((saga) => isAudioSeries(saga.id) === heard)
   const heldIds = new Set(sameFormat.map((saga) => saga.id))
-  const heldNames = new Set(sameFormat.map((saga) => slugify(saga.name)))
+  const heldNames = sameFormat.map((saga) => slugify(saga.name))
+  const heldTitles = new Set(
+    sameFormat.flatMap((saga) => (saga.books ?? []).map((book) => slugify(book.title))),
+  )
+  const isHeld = (saga: AuthorSeries & { id: SeriesId }) => {
+    const name = slugify(saga.name)
+    return (
+      heldIds.has(saga.id) ||
+      heldNames.some((heldName) => namesMeet(name, heldName)) ||
+      (saga.firstVolumeTitle !== undefined && heldTitles.has(slugify(saga.firstVolumeTitle)))
+    )
+  }
   return catalogue.series
     .map((saga) => ({ ...saga, id: seriesKeyOf(saga.name, catalogue.name, format) }))
-    .filter((saga) => !heldIds.has(saga.id) && !heldNames.has(slugify(saga.name)))
+    .filter((saga) => !isHeld(saga))
+}
+
+/** Two folded saga names that are one saga: equal, or one standing whole-word
+ *  inside the other. */
+const namesMeet = (left: string, right: string): boolean => {
+  if (left === '' || right === '') return false
+  const within = (outer: string, inner: string) => `-${outer}-`.includes(`-${inner}-`)
+  return within(left, right) || within(right, left)
 }
 
 /** How many sagas an author's books belong to, a saga read and heard counting

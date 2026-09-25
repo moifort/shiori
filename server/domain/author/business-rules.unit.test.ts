@@ -163,6 +163,33 @@ describe('the author page', () => {
     ])
   })
 
+  test('recognises a saga held under another name, by its name or its first volume', () => {
+    const liu = {
+      name: AuthorName('Liu Cixin'),
+      series: [
+        {
+          name: SeriesName('Trilogie du Problème à trois corps'),
+          firstVolumeTitle: BookTitle('Le Problème à trois corps'),
+        },
+        {
+          name: SeriesName('Souvenirs du passé de la Terre'),
+          firstVolumeTitle: BookTitle('Le Problème à trois corps'),
+        },
+      ],
+      books: [],
+    }
+    const heldHeard = [
+      {
+        id: seriesKeyOf('Le Problème à trois corps', 'Liu Cixin', 'audiobook'),
+        name: 'Le Problème à trois corps',
+        books: [{ title: 'Le Problème à trois corps' }],
+      },
+    ]
+
+    expect(sagasNotHeldOf(liu, heldHeard, 'audiobook')).toEqual([])
+    expect(sagasNotHeldOf(liu, heldHeard, 'book')).toHaveLength(2)
+  })
+
   test('counts a saga read and heard once', () => {
     expect(
       sagaCountOf([SeriesId('dune--frank-herbert'), SeriesId('dune--frank-herbert--audio')]),
