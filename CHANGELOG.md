@@ -10,8 +10,8 @@ the release tag is pushed.
 
 ## Unreleased
 
-- The app opens on its icon with book covers drifting behind it, then lifts it away like a
-  curtain once everything is ready.
+- The app opens on its icon with book covers drifting behind it, then fades them away once
+  everything is ready.
 - A saga you listen to on Audible is now its own saga, marked with headphones: it only shows
   the volumes that exist as audiobooks, with their audio release dates, apart from the same
   saga in print.

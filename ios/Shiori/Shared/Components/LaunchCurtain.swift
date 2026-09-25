@@ -2,8 +2,8 @@ import SwiftUI
 
 /// The app opening: the icon in the middle, and behind it rows of covers
 /// drifting across the screen, alternately left and right, on a slant. It stays
-/// down while the app finds out where to open, then lifts away like a theatre
-/// curtain on whatever is ready underneath.
+/// down while the app finds out where to open, then fades away on whatever is
+/// ready underneath.
 ///
 /// The covers are the ones shipped in `LaunchCovers/` (see
 /// `scripts/launch-covers.ts`); with none, the icon stands on its own.
@@ -122,7 +122,7 @@ struct LaunchCurtain: View {
 }
 
 extension View {
-    /// Covers the view with the launch curtain until `ready`, then lifts it.
+    /// Covers the view with the launch curtain until `ready`, then fades it out.
     /// It stays down for at least the icon's entrance, so a fast launch still
     /// shows the ribbon land rather than flashing it.
     func launchCurtain(until ready: Bool) -> some View {
@@ -133,9 +133,8 @@ extension View {
 private struct LaunchCurtainModifier: ViewModifier {
     let ready: Bool
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var entranceOver = false
-    @State private var lifted = false
+    @State private var faded = false
     @State private var gone = false
 
     /// Long enough for the ribbon to drop and swing.
@@ -146,23 +145,17 @@ private struct LaunchCurtainModifier: ViewModifier {
             .overlay {
                 if !gone {
                     LaunchCurtain()
-                        // The curtain's hem, cast on what it uncovers.
-                        .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
-                        .visualEffect { [lifted, reduceMotion] view, proxy in
-                            view.offset(y: lifted && !reduceMotion ? -proxy.size.height - 60 : 0)
-                        }
-                        .opacity(lifted && reduceMotion ? 0 : 1)
+                        .opacity(faded ? 0 : 1)
                 }
             }
             .task {
                 try? await Task.sleep(for: Self.minimumShown)
                 entranceOver = true
             }
-            .onChange(of: ready && entranceOver, initial: true) { _, canLift in
-                guard canLift, !lifted else { return }
-                // Slow off the mark, like a curtain taking its weight, then away.
-                withAnimation(.timingCurve(0.6, 0, 0.25, 1, duration: 0.9)) {
-                    lifted = true
+            .onChange(of: ready && entranceOver, initial: true) { _, canFade in
+                guard canFade, !faded else { return }
+                withAnimation(.easeInOut(duration: 0.7)) {
+                    faded = true
                 } completion: {
                     gone = true
                 }
