@@ -34,18 +34,16 @@ struct AuthorRow: View {
         }
     }
 
-    /// What ranks the author here: their hearts when they have any, else the
-    /// mean of their stars.
+    /// What ranks the author here: a heart when the reader gave them any, else
+    /// the mean of their stars. The heart goes uncounted: how many sits on the
+    /// author's page.
     @ViewBuilder
     private var mark: some View {
         Group {
             if author.favoriteCount > 0 {
-                Label {
-                    Text(verbatim: "\(author.favoriteCount)")
-                } icon: {
-                    Image(systemName: "heart.fill").foregroundStyle(.red)
-                }
-                .accessibilityLabel(Text("\(author.favoriteCount) favoris"))
+                Image(systemName: "heart.fill")
+                    .foregroundStyle(.red)
+                    .accessibilityLabel(Text("Coup de cœur"))
             } else if let rating = author.averageRating {
                 Label {
                     Text(rating, format: .number.precision(.fractionLength(1)))
