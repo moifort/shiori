@@ -292,7 +292,9 @@ const described = async (
     const read = readVolumeNumbersOf(saga.books)
     return {
       id: saga.id,
-      name: saga.name,
+      // The saga screen shows the catalogue's name, which the world gave it;
+      // the books carry whatever a scan or an import wrote.
+      name: catalogue?.name ?? saga.name,
       author: saga.author,
       language: saga.language,
       genre: genreOf(saga.books),

@@ -79,6 +79,47 @@ describe('a page of the Series tab', () => {
   })
 })
 
+describe('the name of a row', () => {
+  // The catalogue names the saga as the world does, and the saga screen shows
+  // that name: the row must not keep the one a scan or an import wrote.
+  test("is the catalogue's once there is one", async () => {
+    const id = SeriesId('saga-0')
+    fake.seed('series', id, { id, name: 'The Saga', author: 'A', volumes: [] })
+    await BookCommand.add(
+      reader,
+      {
+        title: BookTitle('Saga, tome 1'),
+        series: { id, name: SeriesName('saga'), volume: VolumeNumber(1), kind: 'main' },
+      },
+      NOW,
+    )
+
+    const [row] = await SeriesUseCase.followed(reader)
+
+    expect(String(row?.name)).toBe('The Saga')
+  })
+
+  test("is the books' while nobody has catalogued the saga", async () => {
+    await BookCommand.add(
+      reader,
+      {
+        title: BookTitle('Saga, tome 1'),
+        series: {
+          id: SeriesId('saga-0'),
+          name: SeriesName('saga'),
+          volume: VolumeNumber(1),
+          kind: 'main',
+        },
+      },
+      NOW,
+    )
+
+    const [row] = await SeriesUseCase.followed(reader)
+
+    expect(String(row?.name)).toBe('saga')
+  })
+})
+
 describe('one row of the Series tab', () => {
   // What the tab asks after the reader edited a saga: the row it shows, and
   // only its catalogue — not a page of every saga to find it in.

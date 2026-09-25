@@ -10,6 +10,7 @@ the release tag is pushed.
 
 ## Unreleased
 
+- The Series tab shows each saga under the same name as its page.
 - The Home saga card is now "Series in progress" and lists them in the Series tab's order, the
   most recently read first, instead of the best rated first.
 - The Home trends compare the books read this year with the same time last year, instead of

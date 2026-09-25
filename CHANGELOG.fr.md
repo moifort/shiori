@@ -4,6 +4,7 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- L’onglet Séries affiche chaque série sous le même nom que sa fiche.
 - La carte des séries de l’accueil devient « Séries en cours » et les range dans l’ordre de
   l’onglet Séries, la plus récemment lue d’abord, au lieu des mieux notées d’abord.
 - Les tendances de l’accueil comparent les livres lus cette année à la même période l’an
