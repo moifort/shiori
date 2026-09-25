@@ -561,6 +561,10 @@ struct FollowedSeries: Identifiable, Codable, Sendable {
     /// order of the cycle — nothing off it. Just the owned volumes when no
     /// catalogue exists.
     var strip: [SeriesStripItem] = []
+    /// Whether the saga had a catalogue when the row was drawn. Without one the
+    /// strip is the owned volumes alone, and opening the saga is what builds
+    /// it: the tab then asks for the row again on the way back.
+    var isCatalogued = false
     /// Nil until the reader says something about the saga. The two rows of a
     /// saga held in two languages carry the same one.
     var opinion: SeriesOpinion?

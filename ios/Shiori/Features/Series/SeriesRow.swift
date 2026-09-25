@@ -88,6 +88,9 @@ struct SeriesRow: View {
                                     .offset(y: dateLine)
                             }
                         }
+                        // The volumes a freshly built catalogue brings grow in
+                        // between the owned ones, which step aside for them.
+                        .transition(.scale(scale: 0.6).combined(with: .opacity))
                     }
                 }
             }

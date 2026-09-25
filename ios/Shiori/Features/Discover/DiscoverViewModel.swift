@@ -29,7 +29,7 @@ final class DiscoverViewModel {
     /// The last feed on disk, every format together: the format is only a
     /// filter the screen reads it through. Bump the version whenever
     /// `DiscoverFeed` changes shape.
-    private let cache = SnapshotCache<DiscoverFeed>("discover", version: 1)
+    private let cache = SnapshotCache<DiscoverFeed>("discover", version: 2)
 
     /// Says whether it failed. One skipped because another was already on its
     /// way, or one called off, did not: the feed is whatever that other one

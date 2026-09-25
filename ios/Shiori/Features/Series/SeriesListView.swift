@@ -109,7 +109,10 @@ struct SeriesListView: View {
         .onChange(of: openSeries) { closed, opened in
             guard let closed, opened == nil else { return }
             let reloadAll = changedElsewhere
-            let refreshSaga = openSeriesChanged || !changedVolumes.isEmpty
+            // A saga opened for the first time came back with the catalogue
+            // its opening built: the row learns its missing volumes.
+            let refreshSaga =
+                openSeriesChanged || !changedVolumes.isEmpty || viewModel.lacksCatalogue(closed)
             let volumes = changedVolumes
             openSeriesChanged = false
             changedVolumes = []

@@ -114,6 +114,7 @@ enum SeriesAPI {
     ) -> FollowedSeries {
         var followed = FollowedSeries(row: row)
         followed.volumes = volumes.map(\.asBook)
+        followed.isCatalogued = spine != nil
         followed.strip = SeriesStripItem.strip(
             owned: followed.volumes,
             spine: spine?.map(\.asVolume) ?? [],

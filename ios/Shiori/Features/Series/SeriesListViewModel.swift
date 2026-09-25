@@ -55,7 +55,7 @@ final class SeriesListViewModel {
     /// Each view's sagas on disk. Bump the version whenever `FollowedSeries`
     /// changes shape.
     private func cache(for mode: LibraryMode, _ state: SeriesState?) -> SnapshotCache<[FollowedSeries]> {
-        SnapshotCache("series-\(mode.rawValue)-\(state?.rawValue ?? "all")", version: 8)
+        SnapshotCache("series-\(mode.rawValue)-\(state?.rawValue ?? "all")", version: 9)
     }
 
     /// Switching view: the new view's rows from its last visit at once, brought
@@ -177,6 +177,13 @@ final class SeriesListViewModel {
         return followed.first { $0.id == id }?.volumes.contains { $0.id == bookId } == true
     }
 
+    /// Whether the row of this edition was drawn without a catalogue: opening
+    /// the saga builds one, and the row is then worth asking for again.
+    func lacksCatalogue(_ destination: SeriesDestination) -> Bool {
+        let id = FollowedSeries.id(seriesId: destination.seriesId, language: destination.language)
+        return followed.first { $0.id == id }?.isCatalogued == false
+    }
+
     /// Asks the server again for one saga the reader just changed and puts its
     /// rows back, rather than reloading every page to find them: the edition
     /// that was open, and every other edition on screen, since the rating,
@@ -201,7 +208,11 @@ final class SeriesListViewModel {
                     seriesId: destination.seriesId, language: language
                 )
                 guard requested == generation else { return }
-                place(fresh, as: FollowedSeries.id(seriesId: destination.seriesId, language: language))
+                // The covers the catalogue brought slide into the strip rather
+                // than the row redrawing at once.
+                withAnimation(.smooth) {
+                    place(fresh, as: FollowedSeries.id(seriesId: destination.seriesId, language: language))
+                }
                 volumes.formUnion(fresh?.volumes.map(\.id) ?? [])
             }
         } catch is CancellationError {
