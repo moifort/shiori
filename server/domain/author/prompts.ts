@@ -23,10 +23,14 @@ Renseigne :
 - birthYear, deathYear : ses années de naissance et de mort, ou null.
 - biography : 2 à 3 phrases qui le présentent comme écrivain — ce qu'il écrit, ce qui l'a fait connaître. Rien sur sa vie privée.
 - wikipediaTitle : le titre EXACT de sa page sur Wikipédia en anglais (en.wikipedia.org), tel qu'il apparaît dans l'URL après /wiki/, ou null s'il n'en a pas. N'invente pas de page.
-- series : TOUTES ses séries publiées, dans l'ordre de publication. Pour chacune : name, son nom ; volumeCount, le nombre de tomes principaux parus ou annoncés ; firstVolumeTitle, le titre du premier tome.
-- books : ses livres publiés qui n'appartiennent à AUCUNE série, dans l'ordre de publication. Pour chacun : title et publishedIn, l'année de parution. Un tome d'une série n'est JAMAIS ici.
+- series : TOUTES ses séries et tous ses cycles publiés, dans l'ordre de publication. Pour chacune : name, son nom ; volumeCount, le nombre de tomes principaux parus ou annoncés ; firstVolumeTitle, le titre du premier tome.
+- books : TOUS ses livres publiés qui n'appartiennent à AUCUNE série, dans l'ordre de publication. Pour chacun : title et publishedIn, l'année de parution.
 
-N'invente rien pour compléter : un auteur dont tu ne connais que trois livres n'en a que trois. Un auteur introuvable revient avec des tableaux vides.
+La bibliographie est EXHAUSTIVE : c'est la fiche de référence de l'auteur, lue par tous ses lecteurs. Un auteur prolifique a des dizaines de livres — cite-les tous, pas seulement les plus connus. Consulte sa bibliographie complète (Wikipédia, sites d'éditeurs, bases bibliographiques) avant de répondre.
+- Ses œuvres de fiction : romans, novellas, recueils de nouvelles. Pour un auteur de fiction, ses essais, ouvrages de vulgarisation et anthologies qu'il a seulement dirigées n'y figurent pas ; pour un auteur qui écrit surtout des essais, ce sont ses essais.
+- Chaque livre apparaît UNE seule fois, sous un seul titre : un tome d'une série n'est JAMAIS dans books, même publié seul.
+
+N'invente rien : un titre dont tu n'es pas sûr qu'il existe est omis. Un auteur introuvable revient avec des tableaux vides.
 
 En dehors des titres, toutes les valeurs textuelles doivent être en ${languageNames.of(language)}.`
 }

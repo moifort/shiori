@@ -211,7 +211,7 @@ describe('an author’s page', () => {
         biography: 'Auteur.',
         wikipediaTitle: 'Frank Herbert',
         series: [],
-        books: [],
+        books: [{ title: 'Destination vide', publishedIn: 1966 }],
       },
     ]
 

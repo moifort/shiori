@@ -26,8 +26,8 @@ export namespace AuthorCommand {
    *  the model named.
    *
    *  Never throws: a page that could not be built shows the reader's own books.
-   *  A failure or an empty answer is remembered as a miss rather than stored as
-   *  a catalogue — an empty one would mask the author as known — and no later
+   *  A failure or an answer with no bibliography is remembered as a miss rather
+   *  than stored as a catalogue — one would mask the author as known — and no later
    *  opening asks again; the reader's refresh does. A catalogue already stored
    *  is left as it was. `usage` says what the call cost whenever it answered,
    *  stored or not. */
@@ -47,7 +47,9 @@ export namespace AuthorCommand {
       const biography = optionally(value.biography, AuthorBiography)
       const series = value.series.map(parsedSeries).filter(isPresent)
       const books = value.books.map(parsedWork).filter(isPresent)
-      if (!biography && series.length === 0 && books.length === 0) {
+      // A biography alone is no page: the bibliography is what the reader came
+      // for, and a catalogue stored without one would never be asked again.
+      if (series.length === 0 && books.length === 0) {
         await repository.saveMiss({ key, missedAt: new Date() })
         return { usage }
       }

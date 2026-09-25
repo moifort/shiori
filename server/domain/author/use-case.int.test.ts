@@ -183,6 +183,18 @@ describe('an author’s page', () => {
     expect(calls).toEqual(['author'])
   })
 
+  // The defect: Isaac Asimov's page came back with a biography and no book at
+  // all, was stored as known, and never showed more than the reader's shelf.
+  test('stores no catalogue whose bibliography came back empty, biography or not', async () => {
+    await holdSanderson()
+    answers = [{ ...sanderson, series: [], books: [] }]
+
+    const page = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
+
+    expect(page?.catalogue).toBeNull()
+    expect(fake.snapshot('authors').size).toBe(0)
+  })
+
   test('does not ask again after a failed call either', async () => {
     await holdSanderson()
 
