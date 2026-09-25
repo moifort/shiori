@@ -6,14 +6,17 @@ import SwiftUI
 /// is not something a friendship opens — with its genre, alone, in the top
 /// corner.
 /// Elsewhere it says it is hearted and how many of its volumes are on that
-/// shelf.
-struct SagaRow: View {
+/// shelf. `accessory` sits beside the name and author, so the strip of covers
+/// underneath still runs the full width of the row.
+struct SagaRow<Accessory: View>: View {
     let saga: FriendSaga
     /// The favourites draw the covers in place of the volume count.
     var showsCovers = false
+    @ViewBuilder var accessory: Accessory
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 8) {
             VStack(alignment: .leading, spacing: 3) {
                 // The marks in the top corner, as on a book row: the heart is
                 // left out among the favourites, where every saga has one, and
@@ -52,6 +55,8 @@ struct SagaRow: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            accessory
+            }
             // Covers only: where the reader stands on each volume is theirs
             // to read on the saga itself, not on a list of what they love.
             if showsCovers, !saga.volumes.isEmpty {
@@ -67,6 +72,12 @@ struct SagaRow: View {
             }
         }
         .padding(.vertical, 2)
+    }
+}
+
+extension SagaRow where Accessory == EmptyView {
+    init(saga: FriendSaga, showsCovers: Bool = false) {
+        self.init(saga: saga, showsCovers: showsCovers) { EmptyView() }
     }
 }
 

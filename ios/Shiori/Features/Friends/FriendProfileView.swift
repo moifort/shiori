@@ -146,8 +146,7 @@ struct FriendProfileView: View {
             if !profile.favoriteSagas.isEmpty {
                 Section {
                     ForEach(profile.favoriteSagasByShelf) { saga in
-                        HStack(alignment: .top, spacing: 8) {
-                            SagaRow(saga: saga, showsCovers: true)
+                        SagaRow(saga: saga, showsCovers: true) {
                             TakeButton(
                                 owned: saga.inLibrary || isPreview || saga.volumes.isEmpty,
                                 isAdding: addingSagas.contains(saga.id),
