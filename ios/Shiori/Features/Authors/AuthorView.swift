@@ -31,8 +31,9 @@ enum AuthorShelfFormat: String, CaseIterable, Identifiable {
 
 /// An author's page, laid out as a saga's is: who they are and what the reader
 /// made of them, then — through a Livre / Audio switch that filters everything
-/// below it, a saga heard being a saga of its own — their sagas and their books outside any saga, what the reader holds
-/// first and what they could add after, each with a `+` that puts it on the pile.
+/// below it, a saga heard being a saga of its own — their sagas and their books
+/// outside any saga, what the reader holds first. On the Livre side only, what
+/// they could add after, each with a `+` that puts it on the pile.
 ///
 /// The first opening, by anyone, builds the author's shared catalogue on the
 /// server, portrait included, which takes a few seconds; every later one reads it.
@@ -332,7 +333,8 @@ struct AuthorView: View {
     @ViewBuilder
     private func books(_ page: AuthorPage, in format: AuthorShelfFormat) -> some View {
         let held = page.books.filter(format.holds)
-        if !held.isEmpty || !page.booksNotHeld.isEmpty {
+        let notHeld = page.booksNotHeld(in: format)
+        if !held.isEmpty || !notHeld.isEmpty {
             Section("Livres") {
                 ForEach(held) { book in
                     Button { selectedBook = book } label: {
@@ -355,7 +357,7 @@ struct AuthorView: View {
                     .edgeToEdgeSeparator()
                     .accessibilityIdentifier("author-book")
                 }
-                ForEach(page.booksNotHeld) { work in
+                ForEach(notHeld) { work in
                     workNotHeld(work, author: page.author.name, in: format)
                         .edgeToEdgeSeparator()
                 }

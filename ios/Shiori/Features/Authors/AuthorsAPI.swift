@@ -40,7 +40,6 @@ enum AuthorsAPI {
                 )
             },
             printSagasNotHeld: page.printSagasNotHeld.map { AuthorSeries($0.fragments.authorSeriesFields) },
-            audioSagasNotHeld: page.audioSagasNotHeld.map { AuthorSeries($0.fragments.authorSeriesFields) },
             books: page.books.map { $0.fragments.bookSummary.asBook },
             booksNotHeld: page.booksNotHeld.map { AuthorWork(
                     title: $0.title,

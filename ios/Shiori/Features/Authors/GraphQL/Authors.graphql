@@ -56,9 +56,6 @@ query AuthorPage($key: AuthorKey!) {
     printSagasNotHeld: sagasNotHeld(audio: false) {
       ...AuthorSeriesFields
     }
-    audioSagasNotHeld: sagasNotHeld(audio: true) {
-      ...AuthorSeriesFields
-    }
     books {
       ...BookSummary
     }

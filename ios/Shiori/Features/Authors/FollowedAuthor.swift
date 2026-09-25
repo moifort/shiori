@@ -45,14 +45,18 @@ struct AuthorPage: Sendable {
     /// The reader's sagas of this author, read into first, as the Series tab
     /// draws them.
     let sagas: [FollowedSeries]
-    /// Their sagas the reader holds nothing of on paper, and heard: the saga
-    /// heard is a saga of its own, so one read and never heard is one to
-    /// discover among the recordings.
+    /// Their sagas the reader holds nothing of on paper. Nothing is offered
+    /// among the recordings: the catalogue does not know which titles were
+    /// recorded, and the Audio side showed the same offers as the Livre one.
     let printSagasNotHeld: [AuthorSeries]
-    let audioSagasNotHeld: [AuthorSeries]
 
     func sagasNotHeld(in format: AuthorShelfFormat) -> [AuthorSeries] {
-        format == .audio ? audioSagasNotHeld : printSagasNotHeld
+        format == .audio ? [] : printSagasNotHeld
+    }
+
+    /// Their other books outside any saga, offered on the Livre side only.
+    func booksNotHeld(in format: AuthorShelfFormat) -> [AuthorWork] {
+        format == .audio ? [] : booksNotHeld
     }
     /// The reader's books of theirs outside any saga, read ones first.
     let books: [Book]
