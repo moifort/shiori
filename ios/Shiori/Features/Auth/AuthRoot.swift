@@ -31,6 +31,9 @@ struct AuthRoot: View {
                 signedIn
             }
         }
+        // Down until the app knows where to open: the sign-in, or the account's
+        // own route once the launch request has answered, whatever it said.
+        .launchCurtain(until: session.user == nil || gate.state != .loading)
         .environment(session)
         .environment(subscriptions)
         .environment(\.isAdmin, gate.isAdmin)

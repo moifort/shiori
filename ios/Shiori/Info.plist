@@ -17,5 +17,12 @@
 			</array>
 		</dict>
 	</array>
+	<!-- The system's launch screen is only this colour, the one the opening
+	     curtain is painted on, so the curtain takes over without a flash. -->
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>LaunchBackground</string>
+	</dict>
 </dict>
 </plist>
