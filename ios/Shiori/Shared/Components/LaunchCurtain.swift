@@ -27,14 +27,20 @@ struct LaunchCurtain: View {
                     }
                 }
                 .opacity(coversShown ? 1 : 0)
-                // A pool of the background behind the icon, so it does not
-                // fight the covers for the eye.
-                RadialGradient(
-                    colors: [.launchBackground, .launchBackground.opacity(0.85), .clear],
-                    center: .center,
-                    startRadius: 0,
-                    endRadius: 220
-                )
+                // A dark blurred pool behind the icon, so the cream square
+                // stands out and does not fight the covers for the eye.
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .environment(\.colorScheme, .dark)
+                    .overlay(Color.black.opacity(0.35))
+                    .mask(
+                        RadialGradient(
+                            colors: [.black, .black.opacity(0.8), .clear],
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: 260
+                        )
+                    )
             }
             RibbonMark(motion: .once, size: 140)
         }
