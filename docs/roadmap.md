@@ -14,6 +14,7 @@ are recorded here so their constraints are not forgotten while the foundation is
 | 5 | Audible import | **built** |
 | 6 | Kindle import | planned |
 | 7 | The Découvrir tab: what is coming next in the sagas the reader follows | **rebuilding** |
+| 8 | Authors: a Library shelf, the author page, then an author release watch in Découvrir ([spec](superpowers/specs/2026-09-25-authors-design.md)) | **building** |
 
 ## Batch 3 — Sharing
 
