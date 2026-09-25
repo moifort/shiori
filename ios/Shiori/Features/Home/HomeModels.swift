@@ -50,6 +50,8 @@ struct Dashboard: Codable, Sendable {
     struct SeriesProgress: Identifiable, Hashable, Codable, Sendable {
         let id: String
         let name: String
+        /// The saga heard rather than read, measured on its recordings.
+        var isAudio: Bool = false
         let readCount: Int
         let totalCount: Int
         /// The reader's rating of the saga, else the average of the volumes

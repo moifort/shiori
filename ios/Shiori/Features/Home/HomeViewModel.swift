@@ -21,7 +21,7 @@ final class HomeViewModel {
 
     /// The last dashboard on disk. Bump the version whenever `Dashboard`
     /// changes shape.
-    private let cache = SnapshotCache<Dashboard>("dashboard", version: 2)
+    private let cache = SnapshotCache<Dashboard>("dashboard", version: 3)
 
     /// Says whether it failed. One skipped because another was already on its
     /// way, or one called off, did not: the figures are whatever that other

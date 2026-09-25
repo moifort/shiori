@@ -40,6 +40,7 @@ query Dashboard($timeZone: TimeZone!) {
     series {
       id
       name
+      audio
       readCount
       totalCount
       rating

@@ -479,6 +479,10 @@ struct BookSeries: Identifiable, Sendable {
     /// has. Their volumes sit at their numbers and the saga's name stands in
     /// for the rest, with no year and no description.
     var isProvisional = false
+    /// The saga heard rather than read: its volumes are the ones recorded as
+    /// audiobooks, dated by their recordings. The same saga in print is another
+    /// saga, under another id.
+    var isAudio = false
 }
 
 /// What one reader makes of one saga — never part of the shared catalogue, which
@@ -530,6 +534,9 @@ struct FollowedSeries: Identifiable, Codable, Sendable {
 
     let seriesId: String
     let name: String
+    /// The saga heard rather than read: a reader holding a saga in both formats
+    /// follows two sagas, and the headphones tell the two rows apart.
+    var isAudio = false
     /// Taken from a volume the reader owns, which is what answers for a saga the
     /// catalogue has never described.
     let author: String?

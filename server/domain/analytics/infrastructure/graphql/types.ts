@@ -9,6 +9,7 @@ import type {
   YearCount,
 } from '~/domain/analytics/types'
 import { GenreEnum } from '~/domain/book/infrastructure/graphql/enums'
+import { isAudioSeries } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
 import { Percentage } from '~/domain/shared/primitives'
 
@@ -117,6 +118,10 @@ const SeriesProgressType = builder.objectRef<SeriesProgress>('SeriesProgress').i
   fields: (t) => ({
     id: t.field({ type: 'SeriesId', resolve: (series) => series.id }),
     name: t.field({ type: 'SeriesName', resolve: (series) => series.name }),
+    audio: t.boolean({
+      description: 'The saga heard rather than read, measured on its recordings.',
+      resolve: (series) => isAudioSeries(series.id),
+    }),
     readCount: t.exposeInt('readCount'),
     totalCount: t.exposeInt('totalCount'),
     rating: t.float({

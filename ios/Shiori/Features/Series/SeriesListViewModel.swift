@@ -55,7 +55,7 @@ final class SeriesListViewModel {
     /// Each view's sagas on disk. Bump the version whenever `FollowedSeries`
     /// changes shape.
     private func cache(for mode: LibraryMode, _ state: SeriesState?) -> SnapshotCache<[FollowedSeries]> {
-        SnapshotCache("series-\(mode.rawValue)-\(state?.rawValue ?? "all")", version: 7)
+        SnapshotCache("series-\(mode.rawValue)-\(state?.rawValue ?? "all")", version: 8)
     }
 
     /// Switching view: the new view's rows from its last visit at once, brought

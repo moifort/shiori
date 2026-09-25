@@ -14,7 +14,9 @@ struct SeriesProgressWidget: View {
                     NavigationLink(value: HomeView.Destination.series(entry.id)) {
                         VStack(alignment: .leading, spacing: 6) {
                             HStack {
-                                Text(entry.name).font(.subheadline.weight(.medium)).lineLimit(1)
+                                SagaName(name: entry.name, isAudio: entry.isAudio)
+                                    .font(.subheadline.weight(.medium))
+                                    .lineLimit(1)
                                 Spacer()
                                 // What ranks the saga here: the heart, else
                                 // the stars.

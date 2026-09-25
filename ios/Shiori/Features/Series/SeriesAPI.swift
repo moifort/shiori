@@ -221,7 +221,8 @@ private extension BookSeries {
             description: catalogue.description,
             spine: catalogue.spine.map { $0.fragments.volumeEntry.asVolume },
             relatedWorks: catalogue.relatedWorks.map { $0.fragments.volumeEntry.asVolume },
-            isProvisional: catalogue.provisional
+            isProvisional: catalogue.provisional,
+            isAudio: catalogue.audio
         )
     }
 }
@@ -231,6 +232,7 @@ private extension FollowedSeries {
         self.init(
             seriesId: followed.id,
             name: followed.name,
+            isAudio: followed.audio,
             author: followed.author,
             language: followed.language?.asDomain,
             state: followed.state?.asDomain,

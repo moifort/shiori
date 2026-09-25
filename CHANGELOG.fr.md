@@ -4,6 +4,9 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Une série écoutée sur Audible devient une série à part, marquée d’un casque : elle ne montre
+  que les tomes qui existent en livre audio, avec leur date de sortie en audio, à côté de la
+  même série en papier.
 - La Bibliothèque a une troisième étagère, Auteurs : tous les auteurs que vous lisez, vos
   préférés d’abord, avec tous leurs livres.
 - Vos favoris se partagent directement depuis l’onglet Partagé, sous votre nom.

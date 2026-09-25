@@ -26,6 +26,7 @@ mutation RefreshSeries($seriesId: SeriesId!, $language: BookLanguage) {
 fragment SeriesCatalogue on Series {
   id
   name
+  audio
   author
   description
   provisional
@@ -101,6 +102,7 @@ mutation DeleteSeries($seriesId: SeriesId!, $language: BookLanguage) {
 fragment FollowedSeriesRow on FollowedSeries {
   id
   name
+  audio
   author
   language
   genre

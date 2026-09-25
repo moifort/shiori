@@ -28,6 +28,7 @@ enum HomeAPI {
                 .init(
                     id: $0.id,
                     name: $0.name,
+                    isAudio: $0.audio,
                     readCount: $0.readCount,
                     totalCount: $0.totalCount,
                     rating: $0.rating.map { Int($0.rounded()) },

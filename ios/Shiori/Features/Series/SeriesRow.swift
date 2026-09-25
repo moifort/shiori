@@ -15,7 +15,9 @@ struct SeriesRow: View {
                 // On the title's baseline, so the taller tag does not push the
                 // author down.
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(entry.name).font(.body.weight(.medium)).lineLimit(2)
+                    SagaName(name: entry.name, isAudio: entry.isAudio)
+                        .font(.body.weight(.medium))
+                        .lineLimit(2)
                     Spacer(minLength: 0)
                     marks
                 }

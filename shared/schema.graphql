@@ -685,6 +685,11 @@ type FollowedAuthorPage {
 """A saga the reader owns at least one volume of."""
 type FollowedSeries {
   """
+  The saga heard rather than read: its audiobooks, which follow the recordings and not the printed books. A reader holding both formats follows two sagas under two ids.
+  """
+  audio: Boolean!
+
+  """
   The author of a volume the reader owns, which is what answers for a saga the catalogue has never described.
   """
   author: AuthorName
@@ -2150,6 +2155,10 @@ Volumes are stored in publication order, which is verifiable. Reading order diff
 A `provisional` catalogue is the exception: the reader's own count of the volumes, drawn on the fly for a saga nobody has described, and never stored.
 """
 type Series {
+  """
+  The saga heard rather than read: its volumes are the ones recorded as audiobooks, dated by their recordings. The same saga in print is another catalogue, under another id.
+  """
+  audio: Boolean!
   author: AuthorName!
   catalogedAt: DateTime!
   description: SeriesDescription
@@ -2261,6 +2270,9 @@ input SeriesPlacementInput {
 How far the reader is through a saga in progress, on the numbered volumes already published.
 """
 type SeriesProgress {
+  """The saga heard rather than read, measured on its recordings."""
+  audio: Boolean!
+
   """The reader hearted the saga, which is five stars."""
   favorite: Boolean!
   id: SeriesId!

@@ -281,7 +281,7 @@ struct SeriesView: View {
                     SeriesRing(read: standing.read, total: standing.published)
                         .frame(width: 84, height: 84)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(series.name)
+                        SagaName(name: series.name, isAudio: series.isAudio)
                             .font(.title3.weight(.semibold))
                             .fixedSize(horizontal: false, vertical: true)
                             .copyable(series.name)
