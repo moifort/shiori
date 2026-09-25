@@ -23,10 +23,12 @@ struct FollowedAuthor: Identifiable, Codable, Sendable {
     let saga: AuthorSaga?
 
     /// The author's initials, drawn in the avatar until the author has a
-    /// portrait of their own: the first letter of the first two words, as a
-    /// friend's are.
+    /// portrait of their own: the first letter of the first and last words, so
+    /// a middle initial is skipped — "Ursula K. Le Guin" is UG, not UK.
     var initials: String {
-        name.split(separator: " ").prefix(2).compactMap(\.first).map(String.init).joined().uppercased()
+        let words = name.split(separator: " ")
+        let ends = words.count > 1 ? [words.first, words.last] : [words.first]
+        return ends.compactMap { $0?.first }.map(String.init).joined().uppercased()
     }
 }
 
