@@ -44,3 +44,40 @@ export const openLibraryCoverOf = async (isbn13: Isbn13): Promise<CoverUrlType |
     return undefined
   }
 }
+
+type SearchAnswer = { docs?: { cover_i?: number }[] }
+
+/** Open Library's cover for a work named by its title and author, or undefined
+ *  when the search finds none. For a book known by title alone — an author's
+ *  bibliography, which the model cannot give ISBNs for.
+ *
+ *  Asked with the ORIGINAL title: Open Library files a work under it, and finds
+ *  "The End of Eternity" where "La Fin de l'Éternité" finds nothing. The cover
+ *  is therefore the edition Open Library shows for the work, often the original
+ *  one rather than the reader's translation.
+ *
+ *  Never throws: a failed lookup is a book drawn with the placeholder. */
+export const openLibraryCoverByTitle = async (
+  title: string,
+  author: string,
+): Promise<CoverUrlType | undefined> => {
+  const query = new URLSearchParams({ title, author, fields: 'cover_i', limit: '1' })
+  try {
+    const response = await fetch(`https://openlibrary.org/search.json?${query}`, {
+      // Open Library asks every client to say who it is, and throttles those that don't.
+      headers: { 'user-agent': 'Shiori/1.0 (https://github.com/moifort/shiori)' },
+      signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
+    })
+    if (!response.ok) {
+      logger.warn('Open Library title search failed', { title, author, status: response.status })
+      return undefined
+    }
+    const coverId = ((await response.json()) as SearchAnswer).docs?.[0]?.cover_i
+    return coverId
+      ? CoverUrl(`https://covers.openlibrary.org/b/id/${coverId}-M.jpg?default=false`)
+      : undefined
+  } catch (error) {
+    logger.warn('Open Library title search failed', { error, title, author })
+    return undefined
+  }
+}

@@ -15,6 +15,16 @@ mock.module('~/domain/scan/gemini', () => ({
     return { value, usage: { promptTokens: 10, outputTokens: 5, thinkingTokens: 20, searches: 1 } }
   },
 }))
+/** Open Library's covers by original title; the titles it was asked for, in order. */
+const covers: Record<string, string> = {}
+const coverSearches: string[] = []
+mock.module('~/domain/scan/open-library', () => ({
+  openLibraryCoverOf: async () => undefined,
+  openLibraryCoverByTitle: async (title: string) => {
+    coverSearches.push(title)
+    return covers[title]
+  },
+}))
 mock.module('~/domain/author/infrastructure/wikipedia', () => ({
   portraitOf: async (title: string) => `https://upload.wikimedia.org/${title}.jpg`,
 }))
@@ -34,6 +44,8 @@ beforeEach(() => {
   fake = resetFakeFirestore()
   answers = []
   calls.length = 0
+  coverSearches.length = 0
+  for (const title of Object.keys(covers)) delete covers[title]
 })
 
 /** One author per saga, each saga catalogued with three volumes. */
@@ -153,6 +165,39 @@ describe('an author’s page', () => {
     )
     expect(second?.catalogue?.biography).toBe(first?.catalogue?.biography)
     expect(String(second?.author.portraitUrl)).toBe(String(first?.catalogue?.portraitUrl))
+  })
+
+  // French titles find nothing on Open Library; the original ones find the work.
+  test('finds each cover by the original title, once, when the page is built', async () => {
+    await holdSanderson()
+    covers['The Way of Kings'] = 'https://covers.openlibrary.org/b/id/1-M.jpg?default=false'
+    covers.Warbreaker = 'https://covers.openlibrary.org/b/id/2-M.jpg?default=false'
+    answers = [
+      {
+        ...sanderson,
+        series: [
+          {
+            name: 'Les Archives de Roshar',
+            firstVolumeTitle: 'La Voie des rois',
+            firstVolumeOriginalTitle: 'The Way of Kings',
+          },
+        ],
+        books: [
+          { title: 'Warbreaker', originalTitle: 'Warbreaker', publishedIn: 2009 },
+          { title: 'Le Rythme de la guerre', publishedIn: 2020 },
+        ],
+      },
+    ]
+
+    const first = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
+    await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
+
+    expect(coverSearches).toEqual(['The Way of Kings', 'Warbreaker', 'Le Rythme de la guerre'])
+    expect(String(first?.catalogue?.series[0]?.coverUrl)).toBe(covers['The Way of Kings'])
+    expect(first?.booksNotHeld.map((work) => work.coverUrl && String(work.coverUrl))).toEqual([
+      covers.Warbreaker,
+      undefined,
+    ])
   })
 
   test('sets what the reader holds apart from what they could add', async () => {

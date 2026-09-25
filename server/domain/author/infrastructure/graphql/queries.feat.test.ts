@@ -17,6 +17,10 @@ mock.module('~/domain/scan/gemini', () => ({
     return { value, usage: { promptTokens: 10, outputTokens: 5, thinkingTokens: 20, searches: 1 } }
   },
 }))
+mock.module('~/domain/scan/open-library', () => ({
+  openLibraryCoverOf: async () => undefined,
+  openLibraryCoverByTitle: async () => undefined,
+}))
 mock.module('~/domain/author/infrastructure/wikipedia', () => ({
   portraitOf: async () => 'https://upload.wikimedia.org/portrait.jpg',
 }))

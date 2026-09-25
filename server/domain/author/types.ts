@@ -1,4 +1,5 @@
 import type { Brand } from 'ts-brand'
+import type { CoverUrl } from '~/domain/book/types'
 import type { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { AuthorName, BookTitle, Count, Year } from '~/domain/shared/types'
 
@@ -46,12 +47,17 @@ export type AuthorSeries = {
   name: SeriesName
   volumeCount?: VolumeNumber
   firstVolumeTitle?: BookTitle
+  /** The first volume's cover, as Open Library shows the work. */
+  coverUrl?: CoverUrl
 }
 
 /** A book the author wrote outside any saga. */
 export type AuthorWork = {
   title: BookTitle
   publishedIn?: Year
+  /** Its cover, as Open Library shows the work: often the original edition's
+   *  rather than the reader's translation. */
+  coverUrl?: CoverUrl
 }
 
 /** What the world knows of an author: a shared catalogue at `authors/{key}`,

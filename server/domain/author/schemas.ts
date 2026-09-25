@@ -15,9 +15,10 @@ export const AUTHOR_SCHEMA = {
           name: { type: 'string' },
           volumeCount: { type: 'integer', nullable: true },
           firstVolumeTitle: { type: 'string', nullable: true },
+          firstVolumeOriginalTitle: { type: 'string', nullable: true },
         },
         required: ['name'],
-        propertyOrdering: ['name', 'volumeCount', 'firstVolumeTitle'],
+        propertyOrdering: ['name', 'volumeCount', 'firstVolumeTitle', 'firstVolumeOriginalTitle'],
       },
     },
     books: {
@@ -26,10 +27,11 @@ export const AUTHOR_SCHEMA = {
         type: 'object',
         properties: {
           title: { type: 'string' },
+          originalTitle: { type: 'string', nullable: true },
           publishedIn: { type: 'integer', nullable: true },
         },
         required: ['title'],
-        propertyOrdering: ['title', 'publishedIn'],
+        propertyOrdering: ['title', 'originalTitle', 'publishedIn'],
       },
     },
   },
@@ -53,6 +55,11 @@ export type AuthorOutput = {
   deathYear?: number | null
   biography?: string | null
   wikipediaTitle?: string | null
-  series: { name: string; volumeCount?: number | null; firstVolumeTitle?: string | null }[]
-  books: { title: string; publishedIn?: number | null }[]
+  series: {
+    name: string
+    volumeCount?: number | null
+    firstVolumeTitle?: string | null
+    firstVolumeOriginalTitle?: string | null
+  }[]
+  books: { title: string; originalTitle?: string | null; publishedIn?: number | null }[]
 }

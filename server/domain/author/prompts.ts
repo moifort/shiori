@@ -23,8 +23,8 @@ Renseigne :
 - birthYear, deathYear : ses années de naissance et de mort, ou null.
 - biography : 2 à 3 phrases qui le présentent comme écrivain — ce qu'il écrit, ce qui l'a fait connaître. Rien sur sa vie privée.
 - wikipediaTitle : le titre EXACT de sa page sur Wikipédia en anglais (en.wikipedia.org), tel qu'il apparaît dans l'URL après /wiki/, ou null s'il n'en a pas. N'invente pas de page.
-- series : TOUTES ses séries et tous ses cycles publiés, dans l'ordre de publication. Pour chacune : name, son nom ; volumeCount, le nombre de tomes principaux parus ou annoncés ; firstVolumeTitle, le titre du premier tome.
-- books : TOUS ses livres publiés qui n'appartiennent à AUCUNE série, dans l'ordre de publication. Pour chacun : title et publishedIn, l'année de parution.
+- series : TOUTES ses séries et tous ses cycles publiés, dans l'ordre de publication. Pour chacune : name, son nom ; volumeCount, le nombre de tomes principaux parus ou annoncés ; firstVolumeTitle, le titre du premier tome ; firstVolumeOriginalTitle, le titre du premier tome dans sa langue d'origine (identique à firstVolumeTitle pour un livre écrit en ${edition}).
+- books : TOUS ses livres publiés qui n'appartiennent à AUCUNE série, dans l'ordre de publication. Pour chacun : title ; originalTitle, son titre dans sa langue d'origine (identique à title pour un livre écrit en ${edition}) ; publishedIn, l'année de parution.
 
 La bibliographie est EXHAUSTIVE : c'est la fiche de référence de l'auteur, lue par tous ses lecteurs. Un auteur prolifique a des dizaines de livres — cite-les tous, pas seulement les plus connus. Consulte sa bibliographie complète (Wikipédia, sites d'éditeurs, bases bibliographiques) avant de répondre.
 - Ses œuvres de fiction : romans, novellas, recueils de nouvelles. Pour un auteur de fiction, ses essais, ouvrages de vulgarisation et anthologies qu'il a seulement dirigées n'y figurent pas ; pour un auteur qui écrit surtout des essais, ce sont ses essais.

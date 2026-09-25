@@ -98,6 +98,14 @@ const AuthorSeriesType = builder
         description: 'What the saga is started with.',
         resolve: (saga) => saga.firstVolumeTitle ?? null,
       }),
+      coverUrl: t.field({
+        type: 'CoverUrl',
+        nullable: true,
+        description:
+          'The first volume’s cover as Open Library shows the work, often the original ' +
+          'edition’s. Null when it has none: the app draws its placeholder.',
+        resolve: (saga) => saga.coverUrl ?? null,
+      }),
     }),
   })
 
@@ -109,6 +117,14 @@ const AuthorWorkType = builder.objectRef<AuthorWork>('AuthorWork').implement({
       type: 'Year',
       nullable: true,
       resolve: (work) => work.publishedIn ?? null,
+    }),
+    coverUrl: t.field({
+      type: 'CoverUrl',
+      nullable: true,
+      description:
+        'Its cover as Open Library shows the work, often the original edition’s. Null ' +
+        'when it has none: the app draws its placeholder.',
+      resolve: (work) => work.coverUrl ?? null,
     }),
   }),
 })

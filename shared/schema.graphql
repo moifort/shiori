@@ -298,6 +298,11 @@ type AuthorSeries {
   """
   author: AuthorName!
 
+  """
+  The first volume’s cover as Open Library shows the work, often the original edition’s. Null when it has none: the app draws its placeholder.
+  """
+  coverUrl: CoverUrl
+
   """What the saga is started with."""
   firstVolumeTitle: BookTitle
 
@@ -315,6 +320,10 @@ type AuthorSeries {
 A book the author wrote outside any saga, that the reader does not hold.
 """
 type AuthorWork {
+  """
+  Its cover as Open Library shows the work, often the original edition’s. Null when it has none: the app draws its placeholder.
+  """
+  coverUrl: CoverUrl
   publishedIn: Year
   title: BookTitle!
 }

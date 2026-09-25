@@ -39,6 +39,10 @@ mock.module('~/domain/scan/gemini', () => ({
 let covers: Record<string, string> = {}
 const coverLookups: string[] = []
 
+mock.module('~/domain/scan/open-library', () => ({
+  openLibraryCoverOf: async () => undefined,
+  openLibraryCoverByTitle: async () => undefined,
+}))
 mock.module('~/domain/author/infrastructure/wikipedia', () => ({
   portraitOf: async () => undefined,
 }))
