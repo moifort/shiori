@@ -44,6 +44,8 @@ enum AnalyticsEvent {
         case series
         /// Added from Découvrir, built from what the web announced.
         case discover
+        /// Added from an author's page: a saga's first volume, or a book of theirs.
+        case author
     }
 }
 

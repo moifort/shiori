@@ -1,6 +1,52 @@
 import Foundation
 
 enum AuthorsAPI {
+    /// How long the app waits for an author's page. The first opening, by
+    /// anyone, builds the author's catalogue with a web-grounded model call and
+    /// a Wikipedia lookup, which a cold function can stretch past the session's
+    /// 60 s; every later one reads it at once.
+    private static let firstOpeningTimeout: TimeInterval = 120
+
+    /// An author's page. Nil when the reader no longer holds a book of theirs.
+    static func page(key: String) async throws -> AuthorPage? {
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.AuthorPageQuery(key: key),
+            requestTimeout: firstOpeningTimeout
+        )
+        guard let page = data.authorPage else { return nil }
+        let author = page.author
+        return AuthorPage(
+            author: FollowedAuthor(
+                key: author.key,
+                name: author.name,
+                portraitURL: author.portraitUrl.flatMap(URL.init(string:)),
+                bookCount: author.bookCount,
+                seriesCount: author.seriesCount,
+                favoriteCount: author.favoriteCount,
+                averageRating: author.averageRating,
+                books: []
+            ),
+            readCount: author.readCount,
+            nationality: page.catalogue?.nationality,
+            birthYear: page.catalogue?.birthYear,
+            deathYear: page.catalogue?.deathYear,
+            biography: page.catalogue?.biography,
+            sagas: page.sagas.map { saga in
+                SeriesAPI.followedRow(
+                    saga.fragments.followedSeriesRow,
+                    volumes: saga.volumes.map(\.fragments.followedVolume),
+                    spine: saga.catalogue?.spine.map(\.fragments.volumeEntry)
+                )
+            },
+            sagasNotHeld: page.sagasNotHeld.map {
+                AuthorSeries(id: $0.id, name: $0.name, volumeCount: $0.volumeCount, firstVolumeTitle: $0.firstVolumeTitle)
+            },
+            books: page.books.map { $0.fragments.bookSummary.asBook },
+            booksNotHeld: page.booksNotHeld.map { AuthorWork(title: $0.title, publishedIn: $0.publishedIn) }
+        )
+    }
+
     /// One page of the authors the reader holds books of, the ones they love
     /// first, or only those with a heart.
     static func myAuthorsPage(
@@ -21,6 +67,7 @@ enum AuthorsAPI {
                 FollowedAuthor(
                     key: item.key,
                     name: item.name,
+                    portraitURL: item.portraitUrl.flatMap(URL.init(string:)),
                     bookCount: item.bookCount,
                     seriesCount: item.seriesCount,
                     favoriteCount: item.favoriteCount,

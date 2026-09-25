@@ -9,6 +9,9 @@ struct FollowedAuthor: Identifiable, Codable, Sendable {
     var id: String { key }
     /// The spelling most of the reader's books use.
     let name: String
+    /// Their photograph, once somebody has opened their page and Wikipedia had
+    /// one. Nil until then: the row draws their initials.
+    var portraitURL: URL?
     let bookCount: Int
     let seriesCount: Int
     /// Hearted books plus hearted sagas: what the tab is ranked on first.
@@ -27,4 +30,41 @@ struct FollowedAuthor: Identifiable, Codable, Sendable {
         let ends = words.count > 1 ? [words.first, words.last] : [words.first]
         return ends.compactMap { $0?.first }.map(String.init).joined().uppercased()
     }
+}
+
+/// Everything an author's page draws: who they are, what the reader holds and
+/// thinks of their work, and what they could add.
+struct AuthorPage: Sendable {
+    let author: FollowedAuthor
+    /// Books of theirs the reader has read.
+    let readCount: Int
+    let nationality: String?
+    let birthYear: Int?
+    let deathYear: Int?
+    let biography: String?
+    /// The reader's sagas of this author, read into first, as the Series tab
+    /// draws them.
+    let sagas: [FollowedSeries]
+    /// Their other sagas, which the reader holds nothing of.
+    let sagasNotHeld: [AuthorSeries]
+    /// The reader's books of theirs outside any saga, read ones first.
+    let books: [Book]
+    /// Their other books outside any saga, which the reader does not hold.
+    let booksNotHeld: [AuthorWork]
+}
+
+/// A saga the author wrote that the reader holds nothing of.
+struct AuthorSeries: Identifiable, Sendable {
+    /// The id its catalogue is keyed on: a volume added with it joins the saga.
+    let id: String
+    let name: String
+    let volumeCount: Int?
+    let firstVolumeTitle: String?
+}
+
+/// A book the author wrote outside any saga, that the reader does not hold.
+struct AuthorWork: Identifiable, Sendable {
+    var id: String { title }
+    let title: String
+    let publishedIn: Int?
 }

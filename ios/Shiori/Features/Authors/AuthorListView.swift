@@ -9,7 +9,7 @@ import SwiftUI
 /// phone it would reshuffle every time a page landed. There are no month
 /// sections, since the list is not ordered by date.
 ///
-/// A row opens nothing yet: the author's page comes next.
+/// A row opens the author's page.
 struct AuthorListView: View {
     /// Opens the add sheet, from the one button every empty state offers.
     var onScan: () -> Void = {}
@@ -17,6 +17,10 @@ struct AuthorListView: View {
     var shelf: Binding<LibraryShelf>? = nil
 
     @State private var viewModel = AuthorListViewModel()
+    /// The author being opened. A tap and a destination rather than a
+    /// navigation link, as on the Series tab: a link would claim the drag that
+    /// scrolls the covers, and draw a chevron on every row.
+    @State private var openAuthor: AuthorDestination?
 
     var body: some View {
         NavigationStack {
@@ -62,6 +66,13 @@ struct AuthorListView: View {
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
             Task { await viewModel.load(keepingDepth: true) }
         }
+        // An author's first opening builds their catalogue, portrait included,
+        // and nothing posts a change for that: the rows are asked again when
+        // the reader comes back, so the portrait replaces the initials.
+        .onChange(of: openAuthor) { closed, opened in
+            guard closed != nil, opened == nil else { return }
+            Task { await viewModel.load(keepingDepth: true) }
+        }
     }
 
     private var subtitle: String {
@@ -85,6 +96,11 @@ struct AuthorListView: View {
             Section {
                 ForEach(viewModel.authors) { author in
                     AuthorRow(author: author)
+                        .contentShape(Rectangle())
+                        .onTapGesture { openAuthor = AuthorDestination(author) }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityAction { openAuthor = AuthorDestination(author) }
                         .edgeToEdgeSeparator()
                         .accessibilityIdentifier("author-row")
                         .onAppear { viewModel.prefetchIfNeeded(for: author.id) }
@@ -100,6 +116,7 @@ struct AuthorListView: View {
         }
         .listStyle(.insetGrouped)
         .refreshable { await viewModel.load() }
+        .navigationDestination(item: $openAuthor) { AuthorView(key: $0.key, name: $0.name) }
     }
 
     /// The same two views as the Library and Series shelves.
@@ -117,5 +134,18 @@ struct AuthorListView: View {
                 .accessibilityIdentifier("authors-mode-\(item.rawValue)")
             }
         }
+    }
+}
+
+/// The author a row opens: the key the page is asked by, and the name its
+/// title shows while it loads.
+struct AuthorDestination: Hashable, Identifiable {
+    let key: String
+    let name: String
+    var id: String { key }
+
+    init(_ author: FollowedAuthor) {
+        key = author.key
+        name = author.name
     }
 }

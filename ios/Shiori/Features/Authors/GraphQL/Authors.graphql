@@ -7,6 +7,7 @@ query MyAuthorsPage($limit: Int, $offset: Int, $favorite: Boolean) {
     items {
       key
       name
+      portraitUrl
       bookCount
       seriesCount
       favoriteCount
@@ -14,6 +15,56 @@ query MyAuthorsPage($limit: Int, $offset: Int, $favorite: Boolean) {
       books {
         ...FollowedVolume
       }
+    }
+  }
+}
+
+# Everything an author's page draws, in one request. The first opening, by
+# anyone, builds the author's shared catalogue — a web-grounded model call and a
+# Wikipedia lookup for the portrait — so it can take a while; every later one
+# reads it. The sagas come as the Series tab draws them; the books outside any
+# saga with everything their row shows.
+query AuthorPage($key: AuthorKey!) {
+  authorPage(key: $key) {
+    author {
+      key
+      name
+      portraitUrl
+      bookCount
+      readCount
+      seriesCount
+      favoriteCount
+      averageRating
+    }
+    catalogue {
+      nationality
+      birthYear
+      deathYear
+      biography
+    }
+    sagas {
+      ...FollowedSeriesRow
+      volumes {
+        ...FollowedVolume
+      }
+      catalogue {
+        spine {
+          ...VolumeEntry
+        }
+      }
+    }
+    sagasNotHeld {
+      id
+      name
+      volumeCount
+      firstVolumeTitle
+    }
+    books {
+      ...BookSummary
+    }
+    booksNotHeld {
+      title
+      publishedIn
     }
   }
 }

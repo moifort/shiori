@@ -1,10 +1,10 @@
 import SwiftUI
 
 /// One author as the Authors shelf draws them, on the pattern of a friend's row
-/// in Partagé: the avatar on the left, the name with what the reader made of
-/// them in the top corner, the books and sagas in figures underneath. Then every
-/// book of theirs as a cover, across the whole width of the row, each with its
-/// reading status pinned on.
+/// in Partagé: the portrait, or the initials, on the left, the name with what
+/// the reader made of them in the top corner, the books and sagas in figures
+/// underneath. Then every book of theirs as a cover, across the whole width of
+/// the row, each with its reading status pinned on.
 struct AuthorRow: View {
     let author: FollowedAuthor
 
@@ -18,12 +18,7 @@ struct AuthorRow: View {
 
     private var header: some View {
         HStack(alignment: .center, spacing: 12) {
-            Text(author.initials)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.tint)
-                .frame(width: 40, height: 40)
-                .background(.tint.opacity(0.15), in: .circle)
-                .accessibilityHidden(true)
+            author.avatar
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(author.name)

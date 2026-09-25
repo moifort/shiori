@@ -36,7 +36,7 @@ final class AuthorListViewModel {
     /// Each view's authors on disk. Bump the version whenever `FollowedAuthor`
     /// changes shape.
     private func cache(for mode: LibraryMode) -> SnapshotCache<[FollowedAuthor]> {
-        SnapshotCache("authors-\(mode.rawValue)", version: 2)
+        SnapshotCache("authors-\(mode.rawValue)", version: 3)
     }
 
     /// Switching view: the new view's rows from its last visit at once, brought
