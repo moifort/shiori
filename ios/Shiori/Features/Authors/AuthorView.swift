@@ -164,11 +164,13 @@ struct AuthorView: View {
         }
     }
 
-    /// "Américain · né en 1975", "Française · 1903 – 1987".
+    /// "Américain · 1975", "Française · 1903 – 1987". The year alone rather
+    /// than "né en": the word would have to agree with an author the app does
+    /// not know the gender of.
     private func origin(_ page: AuthorPage) -> String? {
         let years: String? = switch (page.birthYear, page.deathYear) {
         case let (born?, died?): "\(String(born)) – \(String(died))"
-        case let (born?, nil): String(localized: "né en \(String(born))")
+        case let (born?, nil): String(born)
         default: nil
         }
         let parts = [page.nationality, years].compactMap(\.self)
@@ -203,7 +205,7 @@ struct AuthorView: View {
                 ForEach(page.sagas) { saga in
                     // A tap rather than a button, as on the Series tab: a
                     // button would claim the drag that scrolls the covers.
-                    SeriesRow(entry: filtered(saga, to: format))
+                    SeriesRow(entry: filtered(saga, to: format), showsAuthor: false)
                         .contentShape(Rectangle())
                         .onTapGesture { openSeries = SeriesDestination(seriesId: saga.seriesId, language: saga.language) }
                         .accessibilityElement(children: .combine)
@@ -288,7 +290,9 @@ struct AuthorView: View {
                     Button { selectedBook = book } label: {
                         BookRow(
                             title: book.title,
-                            authorLine: book.authorLine,
+                            // The page is the author's: their name on every
+                            // row would say nothing.
+                            authorLine: "",
                             cover: book,
                             status: book.status,
                             rating: book.shownRating,

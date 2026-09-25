@@ -8,6 +8,8 @@ import SwiftUI
 /// being squeezed beside them.
 struct SeriesRow: View {
     let entry: FollowedSeries
+    /// Off on the author's own page, where every row would repeat their name.
+    var showsAuthor = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -21,7 +23,7 @@ struct SeriesRow: View {
                     Spacer(minLength: 0)
                     marks
                 }
-                if let author = entry.author {
+                if showsAuthor, let author = entry.author {
                     Text(author).font(.subheadline).foregroundStyle(.secondary)
                 }
             }

@@ -85,12 +85,16 @@ struct BookRow: View {
                     titleText
                 }
                 // The year keeps its place when a long author line truncates.
+                // An empty author line — the author's own page — leaves the
+                // year alone.
                 HStack(spacing: 4) {
-                    Text(authorLine)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                    if !authorLine.isEmpty {
+                        Text(authorLine)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                     if let publishedIn {
-                        Text(verbatim: "· \(publishedIn)")
+                        Text(verbatim: authorLine.isEmpty ? "\(publishedIn)" : "· \(publishedIn)")
                             .foregroundStyle(.tertiary)
                             .fixedSize()
                     }
