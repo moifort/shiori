@@ -162,9 +162,7 @@ describe('an author’s page', () => {
     const page = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
 
     expect(page?.sagas.map((saga) => String(saga.name))).toEqual(['Saga 0'])
-    expect(page?.sagasNotHeld.map((saga) => [String(saga.name), String(saga.id)])).toEqual([
-      ['Skyward', 'skyward--brandon-sanderson'],
-    ])
+    expect(page?.catalogue?.series.map((saga) => String(saga.name))).toEqual(['Saga 0', 'Skyward'])
     expect(page?.books.map((book) => String(book.title))).toEqual(['Elantris'])
     expect(page?.booksNotHeld.map((work) => String(work.title))).toEqual(['Warbreaker'])
   })

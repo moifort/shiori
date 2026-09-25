@@ -53,11 +53,11 @@ query AuthorPage($key: AuthorKey!) {
         }
       }
     }
-    sagasNotHeld {
-      id
-      name
-      volumeCount
-      firstVolumeTitle
+    printSagasNotHeld: sagasNotHeld(audio: false) {
+      ...AuthorSeriesFields
+    }
+    audioSagasNotHeld: sagasNotHeld(audio: true) {
+      ...AuthorSeriesFields
     }
     books {
       ...BookSummary
@@ -67,4 +67,13 @@ query AuthorPage($key: AuthorKey!) {
       publishedIn
     }
   }
+}
+
+# A saga of the author the reader holds nothing of in one format, with the id
+# its catalogue is keyed on in that format: the saga heard is a saga of its own.
+fragment AuthorSeriesFields on AuthorSeries {
+  id
+  name
+  volumeCount
+  firstVolumeTitle
 }

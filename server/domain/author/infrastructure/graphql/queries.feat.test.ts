@@ -164,7 +164,8 @@ describe('an author’s page', () => {
         author { name portraitUrl bookCount readCount }
         catalogue { nationality birthYear deathYear biography portraitUrl }
         sagas { name }
-        sagasNotHeld { id name volumeCount firstVolumeTitle }
+        sagasNotHeld(audio: false) { id name volumeCount firstVolumeTitle }
+        heard: sagasNotHeld(audio: true) { id }
         books { title }
         booksNotHeld { title publishedIn }
       } }`,
@@ -195,6 +196,7 @@ describe('an author’s page', () => {
             firstVolumeTitle: null,
           },
         ],
+        heard: [{ id: 'dune--frank-herbert--audio' }, { id: 'consentiency--frank-herbert--audio' }],
         books: [{ title: 'Destination vide' }],
         booksNotHeld: [{ title: 'Les Yeux d’Heisenberg', publishedIn: null }],
       },

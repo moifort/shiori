@@ -1,3 +1,4 @@
+import { sagaCountOf, sagasNotHeldOf } from '~/domain/author/business-rules'
 import type { Author, AuthorSeries, AuthorWork } from '~/domain/author/types'
 import { type AuthorPage, AuthorUseCase, type FollowedAuthor } from '~/domain/author/use-case'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
@@ -39,8 +40,8 @@ const FollowedAuthorType = builder.objectRef<FollowedAuthor>('FollowedAuthor').i
     }),
     seriesCount: t.field({
       type: 'Count',
-      description: 'Sagas those books belong to.',
-      resolve: (author) => Count(author.seriesIds.length),
+      description: 'Sagas those books belong to, a saga both read and heard counting once.',
+      resolve: (author) => Count(sagaCountOf(author.seriesIds)),
     }),
     favoriteCount: t.field({
       type: 'Count',
@@ -152,8 +153,16 @@ const AuthorPageType = builder.objectRef<AuthorPage>('AuthorPage').implement({
     }),
     sagasNotHeld: t.field({
       type: [AuthorSeriesType],
-      description: 'The author’s other sagas, which the reader holds nothing of.',
-      resolve: (page) => page.sagasNotHeld,
+      description:
+        'The author’s sagas the reader holds nothing of in one format: on paper, or ' +
+        'heard when `audio` is set — the saga heard is a saga of its own, so one read ' +
+        'and never heard is one to discover among the recordings. Each with the id ' +
+        'its catalogue is keyed on in that format.',
+      args: { audio: t.arg.boolean({ required: true }) },
+      resolve: (page, args) =>
+        page.catalogue
+          ? sagasNotHeldOf(page.catalogue, page.sagas, args.audio ? 'audiobook' : 'book')
+          : [],
     }),
     books: t.field({
       type: [BookType],

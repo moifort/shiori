@@ -39,9 +39,8 @@ enum AuthorsAPI {
                     spine: saga.catalogue?.spine.map(\.fragments.volumeEntry)
                 )
             },
-            sagasNotHeld: page.sagasNotHeld.map {
-                AuthorSeries(id: $0.id, name: $0.name, volumeCount: $0.volumeCount, firstVolumeTitle: $0.firstVolumeTitle)
-            },
+            printSagasNotHeld: page.printSagasNotHeld.map { AuthorSeries($0.fragments.authorSeriesFields) },
+            audioSagasNotHeld: page.audioSagasNotHeld.map { AuthorSeries($0.fragments.authorSeriesFields) },
             books: page.books.map { $0.fragments.bookSummary.asBook },
             booksNotHeld: page.booksNotHeld.map { AuthorWork(title: $0.title, publishedIn: $0.publishedIn) }
         )
@@ -77,5 +76,11 @@ enum AuthorsAPI {
             },
             hasMore: data.myAuthorsPage.hasMore
         )
+    }
+}
+
+private extension AuthorSeries {
+    init(_ saga: ShioriGraphQL.AuthorSeriesFields) {
+        self.init(id: saga.id, name: saga.name, volumeCount: saga.volumeCount, firstVolumeTitle: saga.firstVolumeTitle)
     }
 }

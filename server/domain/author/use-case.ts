@@ -4,7 +4,6 @@ import {
   inPageOrder,
   mainLanguageOf,
   matchingAuthorFilter,
-  sagasNotHeldOf,
   shelvedAuthorsOf,
   standaloneBooksOf,
   worksNotHeldOf,
@@ -14,14 +13,12 @@ import { AuthorQuery } from '~/domain/author/query'
 import type {
   Author,
   AuthorKey,
-  AuthorSeries,
   AuthorWork,
   PortraitUrl,
   ShelvedAuthor,
 } from '~/domain/author/types'
 import { BookQuery } from '~/domain/book/query'
 import type { Book } from '~/domain/book/types'
-import type { SeriesId } from '~/domain/series/types'
 import { type FollowedSeries, SeriesUseCase } from '~/domain/series/use-case'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { Language } from '~/domain/shared/language'
@@ -43,8 +40,6 @@ export type AuthorPage = {
   catalogue: Author | null
   /** The reader's sagas of this author, read into first. */
   sagas: FollowedSeries[]
-  /** The catalogue's sagas the reader holds nothing of. */
-  sagasNotHeld: (AuthorSeries & { id: SeriesId })[]
   /** The reader's books of this author outside any saga, read first. */
   books: Book[]
   /** The catalogue's books outside any saga the reader does not hold. */
@@ -99,7 +94,6 @@ export namespace AuthorUseCase {
       author: { ...shelved, portraitUrl: catalogue?.portraitUrl },
       catalogue,
       sagas: inPageOrder(sagas),
-      sagasNotHeld: catalogue ? sagasNotHeldOf(catalogue, sagas) : [],
       books: standaloneBooksOf(shelved.books),
       booksNotHeld: catalogue ? worksNotHeldOf(catalogue, shelved.books) : [],
     }

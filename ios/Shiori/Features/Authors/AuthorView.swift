@@ -31,7 +31,7 @@ enum AuthorShelfFormat: String, CaseIterable, Identifiable {
 
 /// An author's page, laid out as a saga's is: who they are and what the reader
 /// made of them, then — through a Livre / Audio switch that filters everything
-/// below it — their sagas and their books outside any saga, what the reader holds
+/// below it, a saga heard being a saga of its own — their sagas and their books outside any saga, what the reader holds
 /// first and what they could add after, each with a `+` that puts it on the pile.
 ///
 /// The first opening, by anyone, builds the author's shared catalogue on the
@@ -198,14 +198,18 @@ struct AuthorView: View {
 
     // MARK: - Sagas
 
+    /// The sagas of the format on screen: the saga heard is a saga of its own,
+    /// with its own spine, so the switch shows one or the other whole.
     @ViewBuilder
     private func sagas(_ page: AuthorPage, in format: AuthorShelfFormat) -> some View {
-        if !page.sagas.isEmpty || !page.sagasNotHeld.isEmpty {
+        let held = page.sagas.filter { $0.isAudio == (format == .audio) }
+        let notHeld = page.sagasNotHeld(in: format)
+        if !held.isEmpty || !notHeld.isEmpty {
             Section("Séries") {
-                ForEach(page.sagas) { saga in
+                ForEach(held) { saga in
                     // A tap rather than a button, as on the Series tab: a
                     // button would claim the drag that scrolls the covers.
-                    SeriesRow(entry: filtered(saga, to: format), showsAuthor: false)
+                    SeriesRow(entry: saga, showsAuthor: false)
                         .contentShape(Rectangle())
                         .onTapGesture { openSeries = SeriesDestination(seriesId: saga.seriesId, language: saga.language) }
                         .accessibilityElement(children: .combine)
@@ -213,33 +217,12 @@ struct AuthorView: View {
                         .edgeToEdgeSeparator()
                         .accessibilityIdentifier("author-saga")
                 }
-                ForEach(page.sagasNotHeld) { saga in
+                ForEach(notHeld) { saga in
                     sagaNotHeld(saga, author: page.author.name, in: format)
                         .edgeToEdgeSeparator()
                 }
             }
         }
-    }
-
-    /// The saga with only the volumes held in this format; one held only in the
-    /// other format stands where it belongs as a volume the reader lacks here.
-    private func filtered(_ saga: FollowedSeries, to format: AuthorShelfFormat) -> FollowedSeries {
-        var shown = saga
-        let strip = saga.strip.isEmpty ? saga.volumes.map { SeriesStripItem.owned($0) } : saga.strip
-        let numbersHeld = Set(strip.compactMap { item -> Int? in
-            if case let .owned(book) = item, format.holds(book) { return book.series?.volume }
-            return nil
-        })
-        var placed: Set<Int> = []
-        shown.strip = strip.compactMap { item in
-            guard case let .owned(book) = item, !format.holds(book) else { return item }
-            guard let number = book.series?.volume else { return nil }
-            if numbersHeld.contains(number) || placed.contains(number) { return nil }
-            placed.insert(number)
-            return .missing(key: book.id, number: number, title: book.title, forthcoming: false)
-        }
-        shown.volumes = saga.volumes.filter(format.holds)
-        return shown
     }
 
     private func sagaNotHeld(_ saga: AuthorSeries, author: String, in format: AuthorShelfFormat) -> some View {

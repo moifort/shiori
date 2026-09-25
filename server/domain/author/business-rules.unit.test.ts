@@ -4,6 +4,7 @@ import {
   inPageOrder,
   mainLanguageOf,
   matchingAuthorFilter,
+  sagaCountOf,
   sagasNotHeldOf,
   shelvedAuthorsOf,
   standaloneBooksOf,
@@ -140,16 +141,32 @@ describe('the author page', () => {
     books: [{ title: BookTitle('Elantris') }, { title: BookTitle('Warbreaker') }],
   }
 
-  test('offers the sagas the reader holds nothing of, keyed as their catalogue', () => {
-    const notHeld = sagasNotHeldOf(catalogue, [
-      { id: seriesKeyOf('Les Archives de Roshar', 'Brandon Sanderson'), name: 'x' },
-      // Filed under another spelling of the author: recognised by its name.
-      { id: SeriesId('fils-des-brumes--b-sanderson'), name: 'Fils des brumes' },
-    ])
+  const held = [
+    { id: seriesKeyOf('Les Archives de Roshar', 'Brandon Sanderson', 'book'), name: 'x' },
+    // Filed under another spelling of the author: recognised by its name.
+    { id: SeriesId('fils-des-brumes--b-sanderson'), name: 'Fils des brumes' },
+  ]
 
-    expect(notHeld).toEqual([
-      { name: SeriesName('Skyward'), id: seriesKeyOf('Skyward', 'Brandon Sanderson') },
+  test('offers the sagas the reader holds nothing of, keyed as their catalogue', () => {
+    expect(sagasNotHeldOf(catalogue, held, 'book')).toEqual([
+      { name: SeriesName('Skyward'), id: seriesKeyOf('Skyward', 'Brandon Sanderson', 'book') },
     ])
+  })
+
+  test('offers a saga read and never heard among the recordings, keyed as heard', () => {
+    const heard = sagasNotHeldOf(catalogue, held, 'audiobook')
+
+    expect(heard.map((saga) => String(saga.id))).toEqual([
+      'archives-de-roshar--brandon-sanderson--audio',
+      'fils-des-brumes--brandon-sanderson--audio',
+      'skyward--brandon-sanderson--audio',
+    ])
+  })
+
+  test('counts a saga read and heard once', () => {
+    expect(
+      sagaCountOf([SeriesId('dune--frank-herbert'), SeriesId('dune--frank-herbert--audio')]),
+    ).toBe(1)
   })
 
   test('offers the books the reader does not hold, matched on the folded title', () => {

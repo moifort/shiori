@@ -285,8 +285,10 @@ type AuthorPage {
   """
   sagas: [FollowedSeries!]!
 
-  """The author’s other sagas, which the reader holds nothing of."""
-  sagasNotHeld: [AuthorSeries!]!
+  """
+  The author’s sagas the reader holds nothing of in one format: on paper, or heard when `audio` is set — the saga heard is a saga of its own, so one read and never heard is one to discover among the recordings. Each with the id its catalogue is keyed on in that format.
+  """
+  sagasNotHeld(audio: Boolean!): [AuthorSeries!]!
 }
 
 """A saga the author wrote that the reader holds nothing of."""
@@ -744,7 +746,7 @@ type FollowedAuthor {
   """Books of theirs the reader has read."""
   readCount: Count!
 
-  """Sagas those books belong to."""
+  """Sagas those books belong to, a saga both read and heard counting once."""
   seriesCount: Count!
 }
 

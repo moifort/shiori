@@ -62,9 +62,12 @@ One request: the catalogue (built if missing), and from the reader's library —
   saga's does, under "Chargement…".
 - Header: portrait (or initials), name, nationality and birth, "14 livres, 3 séries",
   biography; then hearts, mean stars, books read.
-- A **Livre / Audio** switch right under the header filters every section below it: the
-  volumes and books held in that format; what the reader does not hold has no format and
-  shows in both. It opens on the format the reader holds most of this author in.
+- A **Livre / Audio** switch right under the header filters every section below it. A saga
+  heard is a saga of its own (`{saga}--audio`), so the switch shows the sagas of its format
+  whole, and the sagas to discover are worked out per format: one read and never heard is
+  offered among the recordings, keyed as heard. Books outside a saga follow their own
+  format; the ones the reader does not hold show in both. It opens on the format the reader
+  holds most of this author in.
 - **Séries**: held sagas as `SeriesRow`, opening the saga screen; sagas not held as a row
   with dimmed placeholder covers and a `+`.
 - **Livres**: held books outside any saga, read first, then the others dimmed with a `+`.
