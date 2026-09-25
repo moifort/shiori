@@ -38,8 +38,8 @@ model call behind it is paid once.
 2. Otherwise the reader must hold a book of the author — nothing to ask about otherwise. One
    grounded Gemini call (`step: 'author'`) returns the fields above plus the title of the
    author's Wikipedia page.
-3. The portrait is read from Wikipedia's REST summary of that page (`originalimage`, else
-   `thumbnail`), never from a URL the model wrote. No page, no image: the initials stay.
+3. The portrait is read from Wikipedia's REST summary of that page (`thumbnail`, else
+   `originalimage`), never from a URL the model wrote. No page, no image: the initials stay.
 4. Stored, usage recorded. A failed call stores nothing and the next opening tries again.
 
 The Authors list reads the page's catalogues in one getAll and draws the portrait instead of

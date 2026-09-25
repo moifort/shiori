@@ -20,7 +20,9 @@ type Summary = {
  *  Read from the REST summary rather than asked of the model: a model writes
  *  image URLs that look right and 404. The page title is the model's, which is
  *  why a disambiguation page — a list of namesakes, not the author — is refused.
- *  The thumbnail stands in for a page whose original is missing.
+ *  The thumbnail first: 330 px wide, it fills an 84-point circle on a Retina
+ *  screen, where the original is the photographer's full file, megabytes of it.
+ *  The original stands in for a page with no thumbnail.
  *
  *  Never throws: a missing portrait is the initials, not a failed page. */
 export const portraitOf = async (pageTitle: string): Promise<PortraitUrlType | undefined> => {
@@ -38,7 +40,7 @@ export const portraitOf = async (pageTitle: string): Promise<PortraitUrlType | u
     }
     const summary = (await response.json()) as Summary
     if (summary.type === 'disambiguation') return undefined
-    const source = summary.originalimage?.source ?? summary.thumbnail?.source
+    const source = summary.thumbnail?.source ?? summary.originalimage?.source
     return source ? PortraitUrl(source) : undefined
   } catch (error) {
     logger.warn('Wikipedia summary lookup failed', { error, pageTitle })
