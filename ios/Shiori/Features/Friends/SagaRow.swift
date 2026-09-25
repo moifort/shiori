@@ -17,45 +17,45 @@ struct SagaRow<Accessory: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 8) {
-            VStack(alignment: .leading, spacing: 3) {
-                // The marks in the top corner, as on a book row: the heart is
-                // left out among the favourites, where every saga has one, and
-                // the genre takes its place.
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(saga.name).font(.body.weight(.medium)).lineLimit(2)
-                    if let language = saga.language, language.isForeign {
-                        LanguageTag(language: language)
-                    }
-                    Spacer(minLength: 0)
-                    HStack(spacing: 6) {
-                        if showsCovers {
-                            if let genre = saga.genre {
-                                RowChip(text: genre.label, tint: genre.tint)
-                            }
-                        } else {
-                            if saga.favorite {
-                                Image(systemName: "heart.fill")
-                                    .foregroundStyle(.red)
-                                    .accessibilityLabel(Text("Favori"))
-                            }
-                            Label("\(saga.ownedCount) tome(s)", systemImage: "books.vertical")
-                                .labelStyle(.caption)
-                                .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 3) {
+                    // The marks in the top corner, as on a book row: the heart is
+                    // left out among the favourites, where every saga has one, and
+                    // the genre takes its place.
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(saga.name).font(.body.weight(.medium)).lineLimit(2)
+                        if let language = saga.language, language.isForeign {
+                            LanguageTag(language: language)
                         }
+                        Spacer(minLength: 0)
+                        HStack(spacing: 6) {
+                            if showsCovers {
+                                if let genre = saga.genre {
+                                    RowChip(text: genre.label, tint: genre.tint)
+                                }
+                            } else {
+                                if saga.favorite {
+                                    Image(systemName: "heart.fill")
+                                        .foregroundStyle(.red)
+                                        .accessibilityLabel(Text("Favori"))
+                                }
+                                Label("\(saga.ownedCount) tome(s)", systemImage: "books.vertical")
+                                    .labelStyle(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .font(.caption2)
+                        .fixedSize()
                     }
-                    .font(.caption2)
-                    .fixedSize()
+                    if let author = saga.author {
+                        Text(author).font(.subheadline).foregroundStyle(.secondary)
+                    }
+                    if !showsCovers, let genre = saga.genre {
+                        Text([genre.label, saga.subgenre].compactMap(\.self).joined(separator: " · "))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
-                if let author = saga.author {
-                    Text(author).font(.subheadline).foregroundStyle(.secondary)
-                }
-                if !showsCovers, let genre = saga.genre {
-                    Text([genre.label, saga.subgenre].compactMap(\.self).joined(separator: " · "))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            accessory
+                accessory
             }
             // Covers only: where the reader stands on each volume is theirs
             // to read on the saga itself, not on a list of what they love.
