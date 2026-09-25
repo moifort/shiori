@@ -25,6 +25,9 @@ struct SeriesView: View {
     /// "Pas intéressé", for a saga Découvrir proposed: it is set aside there
     /// for good, and its next volumes are no longer looked for.
     var onNotInterested: (() -> Void)? = nil
+    /// The saga as an author's page names it, for a saga the reader holds
+    /// nothing of: the server catalogues it from this on the first opening.
+    var proposal: SeriesProposal? = nil
 
     @Environment(\.dismiss) private var dismiss
 
@@ -572,7 +575,7 @@ struct SeriesView: View {
     private func load() async {
         isLoading = true
         do {
-            let screen = try await SeriesAPI.screen(id: seriesId, language: language)
+            let screen = try await SeriesAPI.screen(id: seriesId, language: language, proposal: proposal)
             series = screen.series
             opinion = screen.opinion
             owned = screen.owned
@@ -769,6 +772,14 @@ struct SeriesRing: View {
 struct SeriesDestination: Identifiable, Hashable {
     let seriesId: String
     let language: BookLanguage?
+    var proposal: SeriesProposal? = nil
 
     var id: String { "\(seriesId)|\(language?.rawValue ?? "")" }
+}
+
+/// A saga the reader holds nothing of, as whoever offered it names it: what its
+/// catalogue is asked for with, since no volume of theirs can say.
+struct SeriesProposal: Hashable, Sendable {
+    let name: String
+    let author: String
 }

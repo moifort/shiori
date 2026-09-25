@@ -74,6 +74,16 @@ query AuthorPage($key: AuthorKey!) {
 fragment AuthorSeriesFields on AuthorSeries {
   id
   name
+  author
   volumeCount
   firstVolumeTitle
+}
+
+# Ask the world about the author again, when their page came out empty or thin.
+# The fresh catalogue replaces the stored one for everyone; null means it could
+# not be rebuilt and the old one stands.
+mutation RefreshAuthor($key: AuthorKey!) {
+  refreshAuthor(key: $key) {
+    key
+  }
 }

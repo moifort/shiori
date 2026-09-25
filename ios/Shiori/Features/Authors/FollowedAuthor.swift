@@ -65,8 +65,14 @@ struct AuthorSeries: Identifiable, Sendable {
     /// The id its catalogue is keyed on: a volume added with it joins the saga.
     let id: String
     let name: String
+    /// The author as the catalogue spells them, which the id was folded from:
+    /// with the name, what the saga screen catalogues the saga from.
+    let author: String
     let volumeCount: Int?
     let firstVolumeTitle: String?
+
+    /// How the saga screen names this saga, since the reader holds no volume of it.
+    var proposal: SeriesProposal { SeriesProposal(name: name, author: author) }
 }
 
 /// A book the author wrote outside any saga, that the reader does not hold.

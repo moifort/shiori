@@ -39,7 +39,11 @@ enum AuthorShelfFormat: String, CaseIterable, Identifiable {
 struct AuthorView: View {
     let key: String
     let name: String
+    /// Opened as a sheet — from the Authors shelf, as a book opens from the
+    /// library — rather than pushed: a close button in the corner.
+    var isSheet = false
 
+    @Environment(\.dismiss) private var dismiss
     @State private var page: AuthorPage?
     @State private var isLoading = true
     @State private var errorMessage: String?
@@ -47,6 +51,10 @@ struct AuthorView: View {
     @State private var adding: String?
     @State private var selectedBook: Book?
     @State private var openSeries: SeriesDestination?
+    /// The refresh is one grounded model call and takes a while.
+    @State private var isRefreshing = false
+    /// The refresh came back with nothing: the page on screen is the old one.
+    @State private var refreshFailed = false
 
     var body: some View {
         Group {
@@ -74,8 +82,50 @@ struct AuthorView: View {
             )
         }
         .navigationDestination(item: $openSeries) {
-            SeriesView(seriesId: $0.seriesId, language: $0.language)
+            SeriesView(seriesId: $0.seriesId, language: $0.language, proposal: $0.proposal)
         }
+        // Back from a saga, read again: a volume added there moves the saga
+        // among the reader's own, and a rating changes its row.
+        .onChange(of: openSeries) { _, destination in
+            if destination == nil { Task { await load() } }
+        }
+        .toolbar {
+            if isSheet {
+                ToolbarItem(placement: .cancellationAction) {
+                    ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
+                }
+            }
+            if page != nil {
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        Button("Mettre à jour la fiche", systemImage: "arrow.clockwise") {
+                            Task { await refreshCatalogue() }
+                        }
+                        .accessibilityIdentifier("author-refresh")
+                    } label: {
+                        Image(systemName: "ellipsis")
+                    }
+                    .accessibilityLabel(Text("Plus d'actions"))
+                    .accessibilityIdentifier("author-menu")
+                }
+            }
+        }
+        .alert("Fiche non mise à jour", isPresented: $refreshFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Shiori n'a rien trouvé de plus sur cet auteur. L'ancienne fiche est conservée ; réessayez plus tard.")
+        }
+        .overlay {
+            if isRefreshing {
+                ZStack {
+                    Color.black.opacity(0.1).ignoresSafeArea()
+                    ProgressView("Mise à jour de la fiche…")
+                        .padding()
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                }
+            }
+        }
+        .disabled(isRefreshing)
         .alert(
             "Une erreur est survenue",
             isPresented: .init(
@@ -225,6 +275,8 @@ struct AuthorView: View {
         }
     }
 
+    /// Opens on the saga screen, as a saga the reader holds does: the server
+    /// catalogues it there from the name and author the page gives.
     private func sagaNotHeld(_ saga: AuthorSeries, author: String, in format: AuthorShelfFormat) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -259,6 +311,11 @@ struct AuthorView: View {
             .accessibilityHidden(true)
         }
         .padding(.vertical, 2)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            openSeries = SeriesDestination(seriesId: saga.id, language: nil, proposal: saga.proposal)
+        }
+        .accessibilityAddTraits(.isButton)
         .accessibilityIdentifier("author-saga-not-held")
     }
 
@@ -373,6 +430,22 @@ struct AuthorView: View {
             _ = try await BookAPI.add(draft)
             track(.bookAdded(source: .author))
             await load()
+        } catch {
+            errorMessage = reportError(error)
+        }
+    }
+
+    /// Asks the world about the author again. The page is read afresh when the
+    /// catalogue was rebuilt; otherwise the reader is told the old one stands.
+    private func refreshCatalogue() async {
+        isRefreshing = true
+        defer { isRefreshing = false }
+        do {
+            if try await AuthorsAPI.refresh(key: key) {
+                await load()
+            } else {
+                refreshFailed = true
+            }
         } catch {
             errorMessage = reportError(error)
         }

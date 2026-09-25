@@ -19,11 +19,18 @@ enum SeriesAPI {
     /// edition's volumes come back as owned.
     static func screen(
         id: String,
-        language: BookLanguage? = nil
+        language: BookLanguage? = nil,
+        proposal: SeriesProposal? = nil
     ) async throws -> (series: BookSeries?, opinion: SeriesOpinion?, owned: [Book]) {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.SeriesScreenQuery(id: id, language: graphQLLanguage(language)),
+            query: ShioriGraphQL.SeriesScreenQuery(
+                id: id,
+                language: graphQLLanguage(language),
+                proposed: proposal.map {
+                    .some(ShioriGraphQL.ProposedSagaInput(author: $0.author, name: $0.name))
+                } ?? .none
+            ),
             requestTimeout: firstOpeningTimeout
         )
         return (

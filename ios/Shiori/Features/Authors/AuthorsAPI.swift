@@ -46,19 +46,32 @@ enum AuthorsAPI {
         )
     }
 
+    /// Asks the world about the author again, for a page that came out empty
+    /// or thin: the fresh catalogue replaces the stored one, for everyone.
+    /// False when it could not be rebuilt, in which case the old one stands.
+    /// One grounded model call, so it waits as long as a first opening does.
+    static func refresh(key: String) async throws -> Bool {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.RefreshAuthorMutation(key: key),
+            requestTimeout: firstOpeningTimeout,
+            changesLibrary: false
+        )
+        return data.refreshAuthor != nil
+    }
+
     /// One page of the authors the reader holds books of, the ones they love
-    /// first, or only those with a heart.
+    /// first.
     static func myAuthorsPage(
         limit: Int,
-        offset: Int,
-        mode: LibraryMode = .all
+        offset: Int
     ) async throws -> (items: [FollowedAuthor], hasMore: Bool) {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.MyAuthorsPageQuery(
                 limit: .some(Int32(limit)),
                 offset: .some(Int32(offset)),
-                favorite: mode == .favorites ? .some(true) : .none
+                favorite: .none
             )
         )
         return (
@@ -81,6 +94,12 @@ enum AuthorsAPI {
 
 private extension AuthorSeries {
     init(_ saga: ShioriGraphQL.AuthorSeriesFields) {
-        self.init(id: saga.id, name: saga.name, volumeCount: saga.volumeCount, firstVolumeTitle: saga.firstVolumeTitle)
+        self.init(
+            id: saga.id,
+            name: saga.name,
+            author: saga.author,
+            volumeCount: saga.volumeCount,
+            firstVolumeTitle: saga.firstVolumeTitle
+        )
     }
 }

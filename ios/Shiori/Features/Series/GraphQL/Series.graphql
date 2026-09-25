@@ -2,9 +2,11 @@
 # the reader does not own comes back as a proposal —, what they make of the
 # saga, and the volumes they hold, covers signed for those alone. The language
 # is the edition the reader opened: a catalogue built on this opening titles its
-# volumes as that edition does, and only that edition's volumes answer.
-query SeriesScreen($id: SeriesId!, $language: BookLanguage) {
-  series(id: $id, language: $language) {
+# volumes as that edition does, and only that edition's volumes answer. A saga
+# the reader holds nothing of — offered on an author's page — is catalogued from
+# the `proposed` name and author.
+query SeriesScreen($id: SeriesId!, $language: BookLanguage, $proposed: ProposedSagaInput) {
+  series(id: $id, language: $language, proposed: $proposed) {
     ...SeriesCatalogue
   }
   seriesOpinion(seriesId: $id) {
