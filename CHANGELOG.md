@@ -23,6 +23,7 @@ the release tag is pushed.
 - A saga opened for the first time shows its missing volumes in the Series tab as soon as you
   come back to the list.
 - The Series tab shows each saga under the same name as its page.
+- The author of a book you scan has their page ready by the time you open it.
 - The Home saga card is now "Series in progress" and lists them in the Series tab's order, the
   most recently read first, instead of the best rated first.
 - The Home trends compare the books read this year with the same time last year, instead of
