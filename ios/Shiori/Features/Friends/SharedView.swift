@@ -108,12 +108,16 @@ struct SharedView: View {
             List {
                 if let myShelf {
                     Section {
-                        NavigationLink(value: MyPagePreview()) {
-                            row(Friend(seenByFriends: myShelf), name: "Vous")
-                        }
-                        .navigationLinkIndicatorVisibility(.hidden)
-                        .edgeToEdgeSeparator()
-                        .accessibilityIdentifier("shared-my-page")
+                        // Tapped rather than linked, as a book row carrying its
+                        // "+": a link would swallow the share button's tap.
+                        row(Friend(seenByFriends: myShelf), name: "Vous", sharing: favoritesText(myShelf))
+                            .contentShape(.rect)
+                            .onTapGesture { path.append(MyPagePreview()) }
+                            .accessibilityAddTraits(.isButton)
+                            .edgeToEdgeSeparator()
+                            .accessibilityIdentifier("shared-my-page")
+                    } header: {
+                        Text("Vous")
                     }
                 }
                 if friends.isEmpty {
@@ -196,8 +200,14 @@ struct SharedView: View {
 
     /// A friend as the list draws them: the name, their shelf in figures in
     /// the top corner as a book row carries its marks, and the book they are
-    /// reading. `name` stands in for theirs on the reader's own row, "Vous".
-    private func row(_ friend: Friend, name: LocalizedStringKey? = nil) -> some View {
+    /// reading. `name` stands in for theirs on the reader's own row, "Vous",
+    /// which also carries in the bottom corner the favourites to share,
+    /// `sharing`, when there are any.
+    private func row(
+        _ friend: Friend,
+        name: LocalizedStringKey? = nil,
+        sharing favorites: String? = nil
+    ) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Text(friend.initials)
                 .font(.subheadline.weight(.semibold))
@@ -225,15 +235,44 @@ struct SharedView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize()
                 }
-                if let title = friend.readingTitle {
-                    Text("Lit : \(title)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                if friend.readingTitle != nil || favorites != nil {
+                    HStack(alignment: .center, spacing: 8) {
+                        if let title = friend.readingTitle {
+                            Text("Lit : \(title)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                        Spacer(minLength: 0)
+                        if let favorites { shareButton(favorites) }
+                    }
                 }
             }
         }
         .padding(.vertical, 2)
+    }
+
+    /// The favourites as text, as the preview page's toolbar sends them; nil
+    /// when nothing is hearted and there is nothing to send.
+    private func favoritesText(_ shelf: FriendProfile) -> String? {
+        guard !(shelf.favoriteSagas.isEmpty && shelf.favorites.isEmpty) else { return nil }
+        return FavoritesSharing.text(sagas: shelf.favoriteSagas, books: shelf.favorites.map(\.book))
+    }
+
+    /// The share icon drawn as a row's "+" is: a small circle in the accent
+    /// colour, opening the same entries as the preview page's toolbar.
+    private func shareButton(_ favorites: String) -> some View {
+        Menu {
+            FavoritesShareItems(text: favorites)
+        } label: {
+            Image(systemName: "square.and.arrow.up")
+                .font(.caption.weight(.semibold))
+        }
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.circle)
+        .controlSize(.small)
+        .accessibilityLabel(Text("Partager mes favoris"))
+        .accessibilityIdentifier("shared-share-favorites")
     }
 
     private func load() async {

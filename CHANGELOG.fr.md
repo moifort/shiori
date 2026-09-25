@@ -4,6 +4,7 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Vos favoris se partagent directement depuis l’onglet Partagé, sur votre propre ligne.
 - Les listes et les couvertures ne clignotent plus en se mettant à jour : les nouveaux livres glissent à leur place.
 - L’onglet Séries affiche chaque série sous le même nom que sa fiche.
 - La carte des séries de l’accueil devient « Séries en cours » et les range dans l’ordre de

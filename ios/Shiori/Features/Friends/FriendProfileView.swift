@@ -220,8 +220,7 @@ struct FriendProfileView: View {
     }
 
     /// The preview keeps what the favourites list used to offer: the whole
-    /// list as text, for a mail, a message, or the clipboard. Copy has its own
-    /// entry: the system sheet does not always offer it for plain text.
+    /// list as text, for a mail, a message, or the clipboard.
     @ToolbarContentBuilder
     private var shareFavorites: some ToolbarContent {
         if let profile, !(profile.favoriteSagas.isEmpty && profile.favorites.isEmpty) {
@@ -231,19 +230,7 @@ struct FriendProfileView: View {
             )
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    ShareLink(
-                        item: text,
-                        subject: Text("Mes favoris"),
-                        preview: SharePreview(Text("Mes favoris"))
-                    ) {
-                        Label("Envoyer…", systemImage: "paperplane")
-                    }
-                    Button {
-                        UIPasteboard.general.string = text
-                    } label: {
-                        Label("Copier la liste", systemImage: "doc.on.doc")
-                    }
-                    .accessibilityIdentifier("my-shelf-copy-favorites")
+                    FavoritesShareItems(text: text)
                 } label: {
                     Label("Partager mes favoris", systemImage: "square.and.arrow.up")
                 }
