@@ -13,6 +13,8 @@ the release tag is pushed.
 - A saga you listen to on Audible is now its own saga, marked with headphones: it only shows
   the volumes that exist as audiobooks, with their audio release dates, apart from the same
   saga in print.
+- A saga whose volumes could not be found no longer makes you wait every time you open it.
+- Audiobook saga and volume titles no longer carry mentions like "(French edition)".
 - The Library tab has a third shelf, Authors: every author you read, the ones you love first,
   with all their books.
 - Your favourites can be shared straight from the Shared tab, under your name.
