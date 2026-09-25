@@ -1,3 +1,6 @@
+import { AuthorCommand } from '~/domain/author/command'
+import { authorKeyOf } from '~/domain/author/primitives'
+import { AuthorQuery } from '~/domain/author/query'
 import {
   BookFormatValue,
   BookLanguageValue,
@@ -117,17 +120,21 @@ export namespace ScanCommand {
       .save({ imageHash, language, result, cachedAt: new Date() })
       .catch((error) => logger.warn('scan cache write failed', { error }))
 
-    const catalogue = await catalogueSeriesIfNeeded(result, language)
-    return { result, cacheHit: false, usage: { vision, enrichment, catalogue } }
+    const { catalogue, author } = await catalogueWhatOpensNext(result, language, true)
+    return { result, cacheHit: false, usage: { vision, enrichment, catalogue, author } }
   }
 
   /** A book named rather than photographed: the reader typed a title, and the
    *  grounded step does the rest, exactly as it does after a cover was read.
    *  Never cached — a typed string has no image to hash and is rarely typed
-   *  twice — and always metered as a real scan, since it always calls the model. */
+   *  twice — and always metered as a real scan, since it always calls the model.
+   *
+   *  `authorPage: false` leaves the author's page to its first opening, for a
+   *  lookup the reader did not ask for: a Découvrir preview only shows a book. */
   export const lookUpTitle = async (
     title: BookTitleValue,
     language: ScanLanguage,
+    { authorPage = true }: { authorPage?: boolean } = {},
   ): Promise<{ result: ScanResult; usage: ScanUsage }> => {
     if (import.meta.dev && config().scanStub) return { result: STUBBED_SCAN, usage: {} }
 
@@ -138,8 +145,8 @@ export namespace ScanCommand {
       usage: enrichment,
     } = await enrich(named, language, 'typed')
     const result = { ...enriched, coverUrl: await coverOf(enriched.isbn13, regularEdition) }
-    const catalogue = await catalogueSeriesIfNeeded(result, language)
-    return { result, usage: { enrichment, catalogue } }
+    const { catalogue, author } = await catalogueWhatOpensNext(result, language, authorPage)
+    return { result, usage: { enrichment, catalogue, author } }
   }
 
   /** Step 1. Not grounded: the answer is in the image, and letting the model
@@ -232,6 +239,38 @@ export namespace ScanCommand {
       if (regularCover) return regularCover
     }
     return isbn13 ? await publishedCoverOf(isbn13) : undefined
+  }
+
+  /** What the reader is likely to open next, built while they review the book
+   *  rather than when they tap it: the saga's page and the author's, both
+   *  shared, both paid once for everyone. The two calls run side by side, so
+   *  the author costs the scan no more time than the saga already did.
+   *
+   *  Only a scan asks: an Audible import names a whole library at once, and
+   *  its sagas and authors are built when somebody opens them. */
+  const catalogueWhatOpensNext = async (
+    result: ScanResult,
+    language: ScanLanguage,
+    authorPage: boolean,
+  ) => {
+    const [catalogue, author] = await Promise.all([
+      catalogueSeriesIfNeeded(result, language),
+      authorPage ? catalogueAuthorIfNeeded(result, language) : undefined,
+    ])
+    return { catalogue, author }
+  }
+
+  /** The first author's page, when nobody has opened it yet. A co-author's
+   *  waits for its first opening: one grounded call per scan is the budget. */
+  const catalogueAuthorIfNeeded = async (result: ScanResult, language: ScanLanguage) => {
+    const name = result.authors[0]
+    if (!name) return undefined
+
+    const key = authorKeyOf(name)
+    if (await AuthorQuery.byKey(key)) return undefined
+
+    const { usage } = await AuthorCommand.catalogueFromWeb(key, name, language, result.language)
+    return usage
   }
 
   /** Step 3, and only when it buys something: a standalone book or a saga

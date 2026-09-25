@@ -231,6 +231,7 @@ export namespace DiscoverUseCase {
       const { result, usage } = await ScanCommand.lookUpTitle(
         BookTitle(watch.author ? `${title} — ${watch.author}` : title),
         language,
+        { authorPage: false },
       )
       await AdminCommand.recordAiUsage({ cacheHit: false, usage }).catch((error) =>
         logger.warn('AI usage not recorded', { error }),

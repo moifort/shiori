@@ -13,6 +13,13 @@ const calls: string[] = []
 
 mock.module('~/domain/scan/gemini', () => ({
   generate: async ({ step }: { step: string }) => {
+    // The author's page runs beside the saga's and is covered by the scan's own
+    // tests: here it finds nothing, and stays out of the queue it would race for.
+    if (step === 'author')
+      return {
+        value: { series: [], books: [] },
+        usage: { promptTokens: 7, outputTokens: 3, thinkingTokens: 0, searches: 1 },
+      }
     calls.push(step)
     const value = answers.shift()
     if (value === undefined) throw new Error(`no queued answer for step "${step}"`)
@@ -56,6 +63,18 @@ describe('a metered scan', () => {
     expect(outcome).toMatchObject({ recognized: true, title: 'Le Nom du vent' })
     expect(spent()).toBe(1)
     expect(fake.data('ai-usage', monthOf(new Date()))).toMatchObject({ scans: 1 })
+  })
+
+  // The author's page is a catalogue like the saga's, and the admin screen
+  // counts both on one line.
+  test("counts the author's page with the catalogues", async () => {
+    answers = [aCover, anEnrichment]
+
+    await ScanUseCase.scanCover(reader, image, 'fr')
+
+    expect(fake.data('ai-usage', monthOf(new Date()))).toMatchObject({
+      catalogue: { promptTokens: 7, searches: 1 },
+    })
   })
 
   test('spends nothing on a cover already scanned', async () => {

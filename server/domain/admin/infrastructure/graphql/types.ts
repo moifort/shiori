@@ -127,8 +127,9 @@ export const AdminMetricsType = builder.objectRef<AdminMetricsView>('AdminMetric
     catalogue: t.field({
       type: AiTokenUsageType,
       description:
-        "The series-catalogue step's token consumption this month. Runs only for a saga no " +
-        'reader has catalogued yet, so it is the line that spikes on a new author.',
+        "The catalogue steps' token consumption this month, sagas and authors alike. Runs " +
+        'only for a saga or an author nobody has catalogued yet, so it is the line that ' +
+        'spikes on a new author.',
       resolve: (metrics) => metrics.catalogue,
     }),
     discovery: t.field({

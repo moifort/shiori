@@ -11,11 +11,23 @@ let answers: unknown[] = []
 const calls: string[] = []
 /** The text each step was prompted with, keyed by step. */
 const prompts: Record<string, string> = {}
+/** The author's page runs beside the saga's, so it answers apart from the queue,
+ *  whose order it would otherwise race for. */
+const authorCalls: string[] = []
+let authorAnswer: unknown
 
 mock.module('~/domain/scan/gemini', () => ({
   generate: async ({ step, parts }: { step: string; parts: { text?: string }[] }) => {
-    calls.push(step)
     prompts[step] = parts.map((part) => part.text ?? '').join('')
+    if (step === 'author') {
+      authorCalls.push(prompts[step])
+      if (authorAnswer instanceof Error) throw authorAnswer
+      return {
+        value: authorAnswer,
+        usage: { promptTokens: 7, outputTokens: 3, thinkingTokens: 0, searches: 1 },
+      }
+    }
+    calls.push(step)
     const value = answers.shift()
     if (value === undefined) throw new Error(`no queued answer for step "${step}"`)
     if (value instanceof Error) throw value
@@ -27,6 +39,10 @@ mock.module('~/domain/scan/gemini', () => ({
 let covers: Record<string, string> = {}
 const coverLookups: string[] = []
 
+mock.module('~/domain/author/infrastructure/wikipedia', () => ({
+  portraitOf: async () => undefined,
+}))
+
 mock.module('~/domain/scan/published-cover', () => ({
   publishedCoverOf: async (isbn13: string) => {
     coverLookups.push(isbn13)
@@ -35,6 +51,8 @@ mock.module('~/domain/scan/published-cover', () => ({
 }))
 
 const { ScanCommand } = await import('~/domain/scan/command')
+const { AuthorQuery } = await import('~/domain/author/query')
+const { authorKeyOf } = await import('~/domain/author/primitives')
 const { SeriesQuery } = await import('~/domain/series/query')
 const { seriesKeyOf } = await import('~/domain/series/primitives')
 const { BookTitle } = await import('~/domain/shared/primitives')
@@ -73,10 +91,23 @@ const aCatalogue = {
   ],
 }
 
+const anAuthor = {
+  name: 'Patrick Rothfuss',
+  nationality: 'américaine',
+  birthYear: 1973,
+  biography: 'Auteur américain de fantasy, connu pour la Chronique du tueur de roi.',
+  series: [
+    { name: 'Chronique du tueur de roi', volumeCount: 3, firstVolumeTitle: 'Le Nom du vent' },
+  ],
+  books: [],
+}
+
 beforeEach(() => {
   resetFakeFirestore()
   answers = []
   calls.length = 0
+  authorCalls.length = 0
+  authorAnswer = anAuthor
   covers = {}
   coverLookups.length = 0
 })
@@ -478,5 +509,65 @@ describe('cataloguing a saga', () => {
       seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book'),
     )
     expect(series).toBeNull()
+  })
+})
+
+describe("cataloguing the author's page", () => {
+  const rothfuss = authorKeyOf('Patrick Rothfuss')
+
+  // The page the reader is likely to open next is built while they review the
+  // book, so tapping the author does not wait on the model.
+  test('builds it for an author nobody has opened yet, in the edition read off the cover', async () => {
+    answers = [{ ...aCover, language: 'en' }, anEnrichment, aCatalogue]
+
+    const { usage } = await ScanCommand.scanWithCache(image, 'fr')
+
+    expect(authorCalls).toHaveLength(1)
+    expect(prompts.author).toContain('Patrick Rothfuss')
+    expect(prompts.author).toContain('Édition : en anglais.')
+    expect((await AuthorQuery.byKey(rothfuss))?.biography).toBeDefined()
+    expect(usage.author?.searches).toBe(1)
+  })
+
+  test('builds it for a typed title too', async () => {
+    answers = [anEnrichment, aCatalogue]
+
+    await ScanCommand.lookUpTitle(BookTitle('le nom du vent'), 'fr')
+
+    expect(await AuthorQuery.byKey(rothfuss)).not.toBeNull()
+  })
+
+  test('skips the call once the author is catalogued', async () => {
+    answers = [aCover, anEnrichment, aCatalogue]
+    await ScanCommand.scanWithCache(image, 'fr')
+
+    answers = [aCover, { ...anEnrichment, volumeNumber: 2 }]
+    authorCalls.length = 0
+    const { usage } = await ScanCommand.scanWithCache(Buffer.from('another cover'), 'fr')
+
+    expect(authorCalls).toHaveLength(0)
+    expect(usage.author).toBeUndefined()
+  })
+
+  // A standalone book has no saga page, but its author still has one.
+  test('builds it for a book outside any saga', async () => {
+    answers = [aCover, { ...anEnrichment, seriesName: null, volumeNumber: null, volumeKind: null }]
+
+    await ScanCommand.scanWithCache(image, 'fr')
+
+    expect(authorCalls).toHaveLength(1)
+  })
+
+  test('still returns the book, and its saga, when the author call fails', async () => {
+    answers = [aCover, anEnrichment, aCatalogue]
+    authorAnswer = new Error('grounding is down')
+
+    const { result } = await ScanCommand.scanWithCache(image, 'fr')
+
+    expect(String(result.title)).toBe('Le Nom du vent')
+    expect(await AuthorQuery.byKey(rothfuss)).toBeNull()
+    expect(
+      await SeriesQuery.byId(seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book')),
+    ).not.toBeNull()
   })
 })
