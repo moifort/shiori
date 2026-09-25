@@ -32,7 +32,7 @@ model call behind it is paid once.
 
 ### Built on the first opening
 
-`AuthorUseCase.describe(userId, key, language)`:
+`AuthorUseCase.page(userId, key, language)` builds the catalogue when it is missing:
 
 1. The stored catalogue, when there is one.
 2. Otherwise the reader must hold a book of the author — nothing to ask about otherwise. One
@@ -45,7 +45,7 @@ model call behind it is paid once.
 The Authors list reads the page's catalogues in one getAll and draws the portrait instead of
 the initials once an author has one.
 
-### The screen: `authorScreen(key)`
+### The screen: `authorPage(key)`
 
 One request: the catalogue (built if missing), and from the reader's library —
 
