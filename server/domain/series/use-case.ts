@@ -17,6 +17,7 @@ import {
   matchingFilter,
   progressOf,
 } from '~/domain/series/business-rules'
+import { isAudioSeries, seriesKeyOf } from '~/domain/series/primitives'
 import { SeriesQuery } from '~/domain/series/query'
 import type { Series, SeriesId, SeriesName, SeriesState } from '~/domain/series/types'
 import { editionUnfollowed } from '~/domain/series-opinion/business-rules'
@@ -177,15 +178,22 @@ export namespace SeriesUseCase {
    *  drawn from that count, and the model is not asked: `recatalogue` is how
    *  they ask for the world's.
    *
-   *  Null when the reader holds no volume of the saga, since there is then
-   *  nothing to ask about, and when the model fails or finds no volumes. A
-   *  failure is tried again on the next opening; an empty answer is not asked
-   *  again for a month, so a saga with nothing to find opens at once. */
+   *  A saga the reader holds nothing of — offered on an author's page — is
+   *  catalogued from the `proposed` name and author instead, provided they fold
+   *  into this very id: the catalogue is shared, and a pair naming another saga
+   *  must not write over it.
+   *
+   *  Null when the reader holds no volume of the saga and no proposal names it,
+   *  since there is then nothing to ask about, and when the model fails or
+   *  finds no volumes. A failure is tried again on the next opening; an empty
+   *  answer is not asked again for a month, so a saga with nothing to find
+   *  opens at once. */
   export const describe = async (
     userId: UserId,
     seriesId: SeriesId,
     language: ScanLanguage,
     edition?: BookLanguage,
+    proposed?: ProposedSaga,
   ): Promise<Series | null> => {
     const known = await SeriesQuery.byId(seriesId)
     if (known) return known
@@ -205,7 +213,7 @@ export namespace SeriesUseCase {
     // lists no recording of: asking again would make every opening wait on the
     // same empty answer. `recatalogue` asks regardless.
     if (isRecentMiss(await SeriesQuery.lastMiss(seriesId), new Date())) return null
-    return catalogueFromLibrary(userId, seriesId, language, edition)
+    return catalogueFromLibrary(userId, seriesId, language, edition, proposed)
   }
 
   /** The catalogue asked of the world again, replacing the stored one.
@@ -230,6 +238,7 @@ export namespace SeriesUseCase {
     seriesId: SeriesId,
     language: ScanLanguage,
     edition: BookLanguage | undefined,
+    proposed?: ProposedSaga,
   ): Promise<Series | null> => {
     const held = (await BookQuery.bySeries(userId, seriesId)).filter(
       (book) => book.series && book.authors.length > 0,
@@ -240,14 +249,19 @@ export namespace SeriesUseCase {
       held.find((book) => edition !== undefined && book.language === edition) ??
       held.find((book) => book.language !== undefined) ??
       held[0]
-    if (!volume?.series) return null
+    const source = volume?.series
+      ? { name: volume.series.name, author: volume.authors[0], edition: volume.language }
+      : proposed && namesSaga(proposed, seriesId)
+        ? { ...proposed, edition }
+        : undefined
+    if (!source) return null
 
     const { series, usage } = await ScanCommand.catalogueSeries(
       seriesId,
-      volume.series.name,
-      volume.authors[0],
+      source.name,
+      source.author,
       language,
-      volume.language,
+      source.edition,
     )
     // Telemetry: the catalogue is already built, so a failed counter write is
     // logged rather than turned into an error the reader has to read.
@@ -262,6 +276,15 @@ export namespace SeriesUseCase {
     return series ?? null
   }
 }
+
+/** A saga the reader holds nothing of, as whoever offered it names it: what
+ *  its catalogue is asked for with, since no volume of theirs can say. */
+export type ProposedSaga = { name: SeriesName; author: AuthorName }
+
+/** Whether a proposed name and author fold into this saga's key, in its format. */
+const namesSaga = (proposed: ProposedSaga, seriesId: SeriesId): boolean =>
+  seriesKeyOf(proposed.name, proposed.author, isAudioSeries(seriesId) ? 'audiobook' : 'book') ===
+  seriesId
 
 /** A saga as the books and the opinions describe it, before any catalogue is
  *  read: enough to filter and order the Series tab. */

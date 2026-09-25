@@ -129,6 +129,14 @@ export const FollowedSeriesType = builder.objectRef<FollowedSeries>('FollowedSer
   }),
 })
 
+const ProposedSagaInput = builder.inputType('ProposedSagaInput', {
+  description: 'A saga the reader holds nothing of, named as whoever offered it names it.',
+  fields: (t) => ({
+    name: t.field({ type: 'SeriesName', required: true }),
+    author: t.field({ type: 'AuthorName', required: true }),
+  }),
+})
+
 builder.queryFields((t) => ({
   series: t.field({
     type: SeriesType,
@@ -143,8 +151,8 @@ builder.queryFields((t) => ({
       'are titled as the edition on the shelf titles them, the rest is written ' +
       'in the language of `Accept-Language`. That first opening takes a few ' +
       'seconds; every later one, by anyone, reads the stored catalogue. Null when ' +
-      'the reader holds no volume of the saga, or when the model found nothing ' +
-      'to say.',
+      'the reader holds no volume of the saga and no `proposed` names it, or when ' +
+      'the model found nothing to say.',
     args: {
       id: t.arg({ type: 'SeriesId', required: true }),
       language: t.arg({
@@ -155,9 +163,23 @@ builder.queryFields((t) => ({
           'language: a catalogue built on this opening titles its volumes as ' +
           'that edition does. Absent, the edition of whichever volume they hold answers.',
       }),
+      proposed: t.arg({
+        type: ProposedSagaInput,
+        required: false,
+        description:
+          'The saga as an author’s page offers it, for a saga the reader holds nothing ' +
+          'of: its catalogue is asked for with this name and author. Ignored unless ' +
+          'they fold into `id`, and whenever the reader holds a volume.',
+      }),
     },
     resolve: (_root, args, { userId, event }) =>
-      SeriesUseCase.describe(userId, args.id, languageOf(event), args.language ?? undefined),
+      SeriesUseCase.describe(
+        userId,
+        args.id,
+        languageOf(event),
+        args.language ?? undefined,
+        args.proposed ?? undefined,
+      ),
   }),
 
   mySeriesVolumes: t.field({

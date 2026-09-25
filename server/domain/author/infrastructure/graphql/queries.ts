@@ -8,6 +8,7 @@ import type { SeriesId } from '~/domain/series/types'
 import { builder } from '~/domain/shared/graphql/builder'
 import { languageOf } from '~/domain/shared/language'
 import { Count } from '~/domain/shared/primitives'
+import type { AuthorName } from '~/domain/shared/types'
 
 const FollowedAuthorType = builder.objectRef<FollowedAuthor>('FollowedAuthor').implement({
   description:
@@ -66,7 +67,7 @@ const FollowedAuthorType = builder.objectRef<FollowedAuthor>('FollowedAuthor').i
 })
 
 const AuthorSeriesType = builder
-  .objectRef<AuthorSeries & { id: SeriesId }>('AuthorSeries')
+  .objectRef<AuthorSeries & { id: SeriesId; author: AuthorName }>('AuthorSeries')
   .implement({
     description: 'A saga the author wrote that the reader holds nothing of.',
     fields: (t) => ({
@@ -78,6 +79,13 @@ const AuthorSeriesType = builder
         resolve: (saga) => saga.id,
       }),
       name: t.field({ type: 'SeriesName', resolve: (saga) => saga.name }),
+      author: t.field({
+        type: 'AuthorName',
+        description:
+          'The author as the catalogue spells them: with `name`, what `series` needs ' +
+          'to describe a saga the reader holds nothing of.',
+        resolve: (saga) => saga.author,
+      }),
       volumeCount: t.field({
         type: 'VolumeNumber',
         nullable: true,
@@ -105,7 +113,7 @@ const AuthorWorkType = builder.objectRef<AuthorWork>('AuthorWork').implement({
   }),
 })
 
-const AuthorCatalogueType = builder.objectRef<Author>('Author').implement({
+export const AuthorCatalogueType = builder.objectRef<Author>('Author').implement({
   description:
     'What the world knows of an author, shared by every reader and built the first ' +
     'time somebody opens their page. Holds nothing of any reader.',
@@ -141,7 +149,7 @@ const AuthorPageType = builder.objectRef<AuthorPage>('AuthorPage').implement({
       nullable: true,
       description:
         'Null when the model could not describe the author: the page still shows the ' +
-        'reader’s own books, and the next opening tries again.',
+        'reader’s own books, and only `refreshAuthor` asks again.',
       resolve: (page) => page.catalogue,
     }),
     sagas: t.field({
@@ -159,9 +167,13 @@ const AuthorPageType = builder.objectRef<AuthorPage>('AuthorPage').implement({
         'and never heard is one to discover among the recordings. Each with the id ' +
         'its catalogue is keyed on in that format.',
       args: { audio: t.arg.boolean({ required: true }) },
-      resolve: (page, args) =>
-        page.catalogue
-          ? sagasNotHeldOf(page.catalogue, page.sagas, args.audio ? 'audiobook' : 'book')
+      resolve: ({ catalogue, sagas }, args) =>
+        catalogue
+          ? sagasNotHeldOf(catalogue, sagas, args.audio ? 'audiobook' : 'book').map((saga) => ({
+              ...saga,
+              // The spelling the saga's key was folded from.
+              author: catalogue.name,
+            }))
           : [],
     }),
     books: t.field({

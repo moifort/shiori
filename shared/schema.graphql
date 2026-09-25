@@ -276,7 +276,7 @@ type AuthorPage {
   booksNotHeld: [AuthorWork!]!
 
   """
-  Null when the model could not describe the author: the page still shows the reader’s own books, and the next opening tries again.
+  Null when the model could not describe the author: the page still shows the reader’s own books, and only `refreshAuthor` asks again.
   """
   catalogue: Author
 
@@ -293,6 +293,11 @@ type AuthorPage {
 
 """A saga the author wrote that the reader holds nothing of."""
 type AuthorSeries {
+  """
+  The author as the catalogue spells them: with `name`, what `series` needs to describe a saga the reader holds nothing of.
+  """
+  author: AuthorName!
+
   """What the saga is started with."""
   firstVolumeTitle: BookTitle
 
@@ -1411,6 +1416,13 @@ type Mutation {
   ): [KindleBook!]!
 
   """
+  Ask the world about an author again: one fresh web-grounded model call, whose catalogue replaces the stored one for every reader. An author the model could not describe on their first opening is never asked about again otherwise.
+  
+  Takes a few seconds. Null when the reader holds no book of the author, and when the model failed or found nothing — the previous catalogue is then kept.
+  """
+  refreshAuthor(key: AuthorKey!): Author
+
+  """
   Look for releases now rather than waiting for the daily refresh. Granted once a day; past that it answers the tab as it stands. Slow — grounded model calls, one per work — so the app waits with a loader.
   """
   refreshDiscover: Discover!
@@ -1679,6 +1691,14 @@ enum Plan {
 An author's photograph as Wikipedia serves it. Always HTTPS, never a URL a model wrote.
 """
 scalar PortraitUrl
+
+"""
+A saga the reader holds nothing of, named as whoever offered it names it.
+"""
+input ProposedSagaInput {
+  author: AuthorName!
+  name: SeriesName!
+}
 
 """
 The publisher of this edition, 1 to 200 characters. Example: "DAW Books".
@@ -1980,7 +2000,7 @@ type Query {
   
   Everything the reader does not own is a proposal: nothing enters a library until they add it.
   
-  Built on first sight when nobody has catalogued the saga yet — an Audible import names sagas without describing them — from the name and author of a volume the reader holds, with one web-grounded model call: the volumes are titled as the edition on the shelf titles them, the rest is written in the language of `Accept-Language`. That first opening takes a few seconds; every later one, by anyone, reads the stored catalogue. Null when the reader holds no volume of the saga, or when the model found nothing to say.
+  Built on first sight when nobody has catalogued the saga yet — an Audible import names sagas without describing them — from the name and author of a volume the reader holds, with one web-grounded model call: the volumes are titled as the edition on the shelf titles them, the rest is written in the language of `Accept-Language`. That first opening takes a few seconds; every later one, by anyone, reads the stored catalogue. Null when the reader holds no volume of the saga and no `proposed` names it, or when the model found nothing to say.
   """
   series(
     id: SeriesId!
@@ -1989,6 +2009,11 @@ type Query {
     The edition the reader opened, for a saga held in more than one language: a catalogue built on this opening titles its volumes as that edition does. Absent, the edition of whichever volume they hold answers.
     """
     language: BookLanguage
+
+    """
+    The saga as an author’s page offers it, for a saga the reader holds nothing of: its catalogue is asked for with this name and author. Ignored unless they fold into `id`, and whenever the reader holds a volume.
+    """
+    proposed: ProposedSagaInput
   ): Series
 
   """

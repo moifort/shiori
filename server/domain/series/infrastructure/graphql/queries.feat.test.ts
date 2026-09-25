@@ -336,6 +336,34 @@ describe('opening a saga nobody has catalogued', () => {
     expect(calls).toEqual([])
   })
 
+  // An author's page offers the sagas the reader holds nothing of, and opens
+  // them on this very screen: the page names the saga, since no volume can.
+  test('catalogues a saga the reader holds nothing of from the name proposed', async () => {
+    answers = [aCatalogue]
+
+    const result = await execute(
+      `{ series(id: "dune--frank-herbert", proposed: { name: "Dune", author: "Frank Herbert" })
+         { name author spine { number title } } }`,
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.series).toEqual(described)
+    expect(calls).toEqual(['catalogue'])
+  })
+
+  // The catalogue is shared: a name and an author folding into another key
+  // must not write over the saga asked for.
+  test('ignores a proposed saga that does not fold into the id', async () => {
+    const result = await execute(
+      `{ series(id: "dune--frank-herbert", proposed: { name: "Hyperion", author: "Dan Simmons" })
+         { name } }`,
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.series).toBeNull()
+    expect(calls).toEqual([])
+  })
+
   // The screen says the catalogue is missing rather than failing: the saga is
   // catalogued the next time it is opened, or by the next scan that touches it.
   test('answers with no catalogue, and no error, when the model call fails', async () => {
