@@ -10,6 +10,7 @@ the release tag is pushed.
 
 ## Unreleased
 
+- Lists and covers no longer flicker when they update: new books slide into place.
 - The Series tab shows each saga under the same name as its page.
 - The Home saga card is now "Series in progress" and lists them in the Series tab's order, the
   most recently read first, instead of the best rated first.
