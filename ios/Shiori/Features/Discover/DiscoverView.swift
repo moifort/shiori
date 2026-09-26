@@ -6,9 +6,10 @@ import SwiftUI
 ///
 /// Laid out as the Library tab is, so nothing here has to be learnt twice: the
 /// capsule above the tab bar, for now "Séries" alone; the Series tab's rows,
-/// their strip narrowed to the last volume held, the volumes to get ringed in
-/// the tint, and the next one with its date; a tap opens the saga screen as a
-/// sheet, where each volume can be added or bought. Read through one format at
+/// their strip narrowed to the last volume held, the volumes to get, and the
+/// next one with its date; a tap opens the saga screen as a sheet, where each
+/// volume can be added or bought. The announcements come first; the sagas with
+/// volumes out follow, five of them until the reader asks for the rest. Read through one format at
 /// a time — the saga read or the saga heard — picked in the toolbar and kept
 /// between visits.
 ///
@@ -19,6 +20,8 @@ import SwiftUI
 struct DiscoverView: View {
     @State private var viewModel = DiscoverViewModel()
     @State private var openSeries: SagaDiscovery?
+    /// Every saga with volumes out is listed, rather than the first few.
+    @State private var showsAllAvailable = false
     @AppStorage("discover.format") private var format: ReleaseFormat = .book
     @AppStorage("discover-shelf") private var shelf: LibraryShelf = .series
 
@@ -100,11 +103,6 @@ struct DiscoverView: View {
                 }
                 .listRowBackground(Color.clear)
             }
-            if !available.isEmpty {
-                Section("Disponibles") {
-                    ForEach(available) { row($0) }
-                }
-            }
             if !announced.isEmpty {
                 Section {
                     ForEach(announced) { row($0) }
@@ -117,10 +115,25 @@ struct DiscoverView: View {
                     }
                 }
             }
+            if !available.isEmpty {
+                Section("Disponibles") {
+                    let shown = showsAllAvailable ? available : Array(available.prefix(Self.availableShown))
+                    ForEach(shown) { row($0) }
+                    if available.count > shown.count {
+                        Button("Voir plus") {
+                            withAnimation(.smooth) { showsAllAvailable = true }
+                        }
+                        .accessibilityIdentifier("discover-show-more")
+                    }
+                }
+            }
         }
         .listStyle(.insetGrouped)
         .refreshable { await viewModel.load(format) }
     }
+
+    /// How many sagas with volumes out are listed before "Voir plus".
+    private static let availableShown = 5
 
     /// A saga's row: the Series tab's own, its strip narrowed to what matters
     /// here, and underneath what it has for the reader in a line, with the
@@ -129,7 +142,7 @@ struct DiscoverView: View {
         var entry = row.series
         entry.strip = row.strip
         return VStack(alignment: .leading, spacing: 8) {
-            SeriesRow(entry: entry, offersMissing: true)
+            SeriesRow(entry: entry)
                 .contentShape(Rectangle())
                 // A tap rather than a button: a button would claim the drag
                 // that scrolls the cover strip.
