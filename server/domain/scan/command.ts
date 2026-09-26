@@ -1,6 +1,7 @@
 import { AuthorCommand } from '~/domain/author/command'
 import { authorKeyOf } from '~/domain/author/primitives'
 import { AuthorQuery } from '~/domain/author/query'
+import { BookCommand } from '~/domain/book/command'
 import {
   BookFormatValue,
   BookLanguageValue,
@@ -344,10 +345,22 @@ export namespace ScanCommand {
         volumes,
         catalogedAt: new Date(),
       } satisfies Series)
+      await nameBooksAfter(series)
       return { series, usage }
     } catch (error) {
       logger.error('series catalogue generation failed', { error, series: name })
       return {}
+    }
+  }
+
+  /** Every reader's volumes of a saga just catalogued take the name the
+   *  catalogue gives it, as the saga screen shows it. A failure leaves them
+   *  named as they were, and the catalogue stands. */
+  const nameBooksAfter = async (series: Series) => {
+    try {
+      await BookCommand.nameSeries(series.id, series.name)
+    } catch (error) {
+      logger.warn('saga name not written into its books', { error, series: series.id })
     }
   }
 

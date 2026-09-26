@@ -96,6 +96,14 @@ export const findBySeries = async (userId: UserId, seriesId: SeriesId): Promise<
   return snapshot.docs.map((doc) => asBook(doc.data()))
 }
 
+// Every reader's volumes of one saga: what a saga renamed by its catalogue
+// writes its new name into. An equality on the saga alone, served by its
+// automatic single-field index.
+export const findInSeries = async (seriesId: SeriesId): Promise<Book[]> => {
+  const snapshot = await books().where('series.id', '==', seriesId).get()
+  return snapshot.docs.map((doc) => asBook(doc.data()))
+}
+
 // A direct write revises the memoized scan in place, so a read later in the same
 // request sees it without scanning the library again — a sync writing book after
 // book, then reading the shelf, does exactly that.

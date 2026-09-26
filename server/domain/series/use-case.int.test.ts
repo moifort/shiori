@@ -149,3 +149,55 @@ describe('one row of the Series tab', () => {
     expect((await SeriesUseCase.followedOne(reader, id))?.language).toBeUndefined()
   })
 })
+
+describe('the name a saga goes by', () => {
+  const redRising = SeriesId('red-rising-french-edition--pierre-brown--audio')
+  const volumeOf = (name: string, reader: UserId, volume: number) =>
+    BookCommand.add(
+      reader,
+      {
+        title: BookTitle(`Red Rising ${volume}`),
+        format: 'audiobook',
+        series: {
+          id: redRising,
+          name: SeriesName(name),
+          volume: VolumeNumber(volume),
+          kind: 'main',
+        },
+      },
+      NOW,
+    )
+
+  test('is the catalogue’s on a book about to be added', async () => {
+    fake.seed('series', redRising, { id: redRising, name: 'Red Rising', author: 'A', volumes: [] })
+    const book = {
+      title: BookTitle('Red Rising 2'),
+      format: 'audiobook' as const,
+      series: {
+        id: redRising,
+        name: SeriesName('Red Rising[French Edition]'),
+        volume: VolumeNumber(2),
+        kind: 'main' as const,
+      },
+    }
+    const standalone: { title: ReturnType<typeof BookTitle>; series?: undefined } = {
+      title: BookTitle('Seul'),
+    }
+
+    const [named, alone] = await SeriesUseCase.namedAfterCatalogues([book, standalone])
+
+    expect(named.series?.name).toBe(SeriesName('Red Rising'))
+    expect(alone).toEqual(standalone)
+  })
+
+  test('is written into every reader’s volumes once the saga is catalogued', async () => {
+    const first = await volumeOf('Red Rising[French Edition]', reader, 1)
+    const other = await volumeOf('Red Rising [French Edition]', 'reader-2' as UserId, 2)
+
+    expect(await BookCommand.nameSeries(redRising, SeriesName('Red Rising'))).toBe(2)
+
+    for (const book of [first, other])
+      expect(fake.data('books', book.id)?.series).toMatchObject({ name: 'Red Rising' })
+    expect(fake.data('books', first.id)?.updatedAt).toEqual(first.updatedAt)
+  })
+})

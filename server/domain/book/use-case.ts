@@ -8,6 +8,7 @@ import type {
   Recommendation,
   StarRating,
 } from '~/domain/book/types'
+import { SeriesUseCase } from '~/domain/series/use-case'
 import type { UserId } from '~/domain/shared/types'
 
 /** Every change a reader makes to their library, kept in step with the analytics
@@ -17,8 +18,11 @@ import type { UserId } from '~/domain/shared/types'
  *  The book and the view's stale flag land in one batch: the view can never look
  *  fresh while a book it does not reflect is already stored. */
 export namespace BookUseCase {
-  export const add = (userId: UserId, input: NewBook) =>
-    withAnalytics(userId, (batch) => BookCommand.add(userId, input, undefined, batch))
+  /** The saga is named as its catalogue names it, when it has one. */
+  export const add = async (userId: UserId, input: NewBook) => {
+    const [named] = await SeriesUseCase.namedAfterCatalogues([input])
+    return withAnalytics(userId, (batch) => BookCommand.add(userId, named, undefined, batch))
+  }
 
   export const edit = (userId: UserId, bookId: BookId, edit: BookEdit) =>
     withAnalytics(userId, (batch) => BookCommand.edit(userId, bookId, edit, undefined, batch))

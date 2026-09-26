@@ -4,6 +4,7 @@ import { BookQuery } from '~/domain/book/query'
 import type { Book } from '~/domain/book/types'
 import { bookFrom, importablesFrom } from '~/domain/kindle/business-rules'
 import type { ImportableKindleBook, UnreadableExport } from '~/domain/kindle/types'
+import { SeriesUseCase } from '~/domain/series/use-case'
 import type { UserId } from '~/domain/shared/types'
 import { bulkSave } from '~/utils/firestore'
 
@@ -51,12 +52,15 @@ export namespace KindleUseCase {
     )
 
     const imported: Book[] = []
-    if (chosen.length > 0)
+    if (chosen.length > 0) {
+      // Each saga named as its catalogue names it, not as Amazon titles it.
+      const named = await SeriesUseCase.namedAfterCatalogues(chosen.map(bookFrom))
       await AnalyticsUseCase.whileStale(userId, () =>
-        bulkSave(chosen, async (importable) => {
-          imported.push(await BookCommand.add(userId, bookFrom(importable)))
+        bulkSave(named, async (book) => {
+          imported.push(await BookCommand.add(userId, book))
         }),
       )
+    }
     return imported
   }
 }

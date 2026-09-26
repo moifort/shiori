@@ -26,6 +26,7 @@ import type {
 import { BookCommand } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
 import type { Book } from '~/domain/book/types'
+import { SeriesUseCase } from '~/domain/series/use-case'
 import type { UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
 import { withRequestCacheScope } from '~/system/request-cache'
@@ -79,12 +80,15 @@ export namespace AudibleUseCase {
     )
 
     const imported: Book[] = []
-    if (chosen.length > 0)
+    if (chosen.length > 0) {
+      // Each saga named as its catalogue names it, not as Audible titles it.
+      const named = await SeriesUseCase.namedAfterCatalogues(chosen.map(bookFrom))
       await AnalyticsUseCase.whileStale(userId, () =>
-        bulkSave(chosen, async (importable) => {
-          imported.push(await BookCommand.add(userId, bookFrom(importable)))
+        bulkSave(named, async (book) => {
+          imported.push(await BookCommand.add(userId, book))
         }),
       )
+    }
 
     await AudibleCommand.recordImport(userId)
     return imported
@@ -169,8 +173,8 @@ export namespace AudibleUseCase {
       await bulkSave(renumbers, async ({ bookId, volume }) =>
         BookCommand.numberInSeries(userId, bookId, volume, now),
       )
-      await bulkSave(bought, async (importable) =>
-        BookCommand.add(userId, bookFrom(importable), now),
+      await bulkSave(await SeriesUseCase.namedAfterCatalogues(bought.map(bookFrom)), async (book) =>
+        BookCommand.add(userId, book, now),
       )
     }
     // A night with nothing new leaves the dashboard as it was.

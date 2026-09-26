@@ -10,6 +10,8 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   déjà sortis que vous n’avez pas encore, avec un lien vers Amazon ou Audible, et le prochain
   annoncé avec sa date.
 - La page d’une série affiche ses prochaines sorties juste sous sa présentation.
+- Vos livres affichent leur série sous le même nom que sa page, sans mentions comme
+  « [French Edition] ».
 - L’étagère Auteurs classe vos auteurs par ordre alphabétique, comme vos contacts, avec l’alphabet
   sur le côté pour sauter à une lettre ; vos préférés d’abord restent à un geste.
 - Les fiches des séries et des auteurs s’ouvrent plus vite, quelle que soit la taille de votre bibliothèque.

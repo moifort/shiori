@@ -1,7 +1,7 @@
 import { AdminCommand } from '~/domain/admin/command'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import { inSagaOrder, readVolumeNumbersOf, shelfDateOf } from '~/domain/book/business-rules'
-import { BookCommand } from '~/domain/book/command'
+import { BookCommand, type NewBook } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
 import type { Book, BookLanguage, Genre } from '~/domain/book/types'
 import { ScanCommand } from '~/domain/scan/command'
@@ -17,7 +17,7 @@ import {
   matchingFilter,
   progressOf,
 } from '~/domain/series/business-rules'
-import { isAudioSeries, seriesKeyOf } from '~/domain/series/primitives'
+import { isAudioSeries, seriesIdFor, seriesKeyOf } from '~/domain/series/primitives'
 import { SeriesQuery } from '~/domain/series/query'
 import type { Series, SeriesId, SeriesName, SeriesState } from '~/domain/series/types'
 import { editionUnfollowed } from '~/domain/series-opinion/business-rules'
@@ -59,6 +59,27 @@ export type FollowedSeries = {
 export type SagaProgress = { readCount: number; totalCount: number }
 
 export namespace SeriesUseCase {
+  /** Books about to be added, each saga named as its catalogue names it — the
+   *  name the saga screen and the Series tab show — rather than as the scan or
+   *  the import wrote it. The catalogues in one getAll; a saga with none keeps
+   *  the name it came with. */
+  export const namedAfterCatalogues = async <Input extends Pick<NewBook, 'series' | 'format'>>(
+    inputs: readonly Input[],
+  ): Promise<Input[]> => {
+    const idOf = (input: Input) =>
+      input.series && seriesIdFor(input.series.id, input.format ?? 'book')
+    const ids = [...new Set(inputs.flatMap((input) => idOf(input) ?? []))]
+    if (ids.length === 0) return [...inputs]
+    const names = new Map(
+      (await SeriesQuery.byIds(ids)).map((catalogue) => [catalogue.id, catalogue.name]),
+    )
+    return inputs.map((input) => {
+      const id = idOf(input)
+      const name = id && names.get(id)
+      return input.series && name ? { ...input, series: { ...input.series, name } } : input
+    })
+  }
+
   /** Every saga the reader follows, one row per saga and language: a reader who
    *  holds Dune in French and in English follows two rows, because those are
    *  two sets of books.
