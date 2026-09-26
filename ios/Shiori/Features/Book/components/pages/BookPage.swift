@@ -5,7 +5,7 @@ import SwiftUI
 /// previewable.
 ///
 /// The status and sharing are switched in place; a tap on a fact — the
-/// rating, the publisher, a date — opens a small prompt to correct that one
+/// rating, the year, a date — opens a small prompt to correct that one
 /// value, as the genre and the recommendation open theirs. The title, the
 /// authors and the saga go through "Modifier" in the sheet's menu, which is
 /// also where removing the book lives, one deliberate step away.
@@ -121,7 +121,7 @@ struct BookPage: View {
             genreRow
 
             if let publisher = book.publisher {
-                editableRow(.publisher, value: publisher, icon: "building.2")
+                LabeledInfoRow(title: "Éditeur", value: publisher, icon: "building.2")
             }
             if let year = book.firstPublishedIn {
                 editableRow(.firstPublishedIn, value: String(year), icon: "calendar")

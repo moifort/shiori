@@ -3,7 +3,6 @@ import SwiftUI
 /// One fact of the book sheet that a tap on its row corrects in place, without
 /// going through the whole edit form.
 enum BookField: String, Identifiable {
-    case publisher
     case firstPublishedIn
     case pageCount
     case isbn13
@@ -15,7 +14,6 @@ enum BookField: String, Identifiable {
 
     var title: LocalizedStringKey {
         switch self {
-        case .publisher: "Éditeur"
         case .firstPublishedIn: "Première parution"
         case .pageCount: "Pages"
         case .isbn13: "ISBN"
@@ -31,7 +29,9 @@ enum BookField: String, Identifiable {
 }
 
 /// The small prompt behind a tapped row of the book sheet, as the rating has
-/// one: the value already there, ready to correct, and a check to save it.
+/// one: the value already there, ready to correct, and a check to save it. A
+/// date opens straight on the calendar, and the day tapped is the answer, as a
+/// star is for the rating.
 ///
 /// The same rules as the edit form hold: a text emptied is cleared, a number
 /// or an ISBN the server would refuse is said before the round trip, and a
@@ -53,7 +53,6 @@ struct FieldEditSheet: View {
         self.field = field
         self.onSave = onSave
         let text: String = switch field {
-        case .publisher: book.publisher ?? ""
         case .firstPublishedIn: book.firstPublishedIn.map(String.init) ?? ""
         case .pageCount: book.pageCount.map(String.init) ?? ""
         case .isbn13: book.isbn13 ?? ""
@@ -74,13 +73,14 @@ struct FieldEditSheet: View {
             VStack(spacing: 12) {
                 if field.isDate {
                     DatePicker("", selection: $date, in: dateRange, displayedComponents: .date)
+                        .datePickerStyle(.graphical)
                         .labelsHidden()
                         .accessibilityIdentifier("field-edit-date")
+                        .onChange(of: date) { Task { await save() } }
                 } else {
                     TextField(field.title, text: $text)
                         .textFieldStyle(.roundedBorder)
-                        .keyboardType(field == .publisher ? .default : .numberPad)
-                        .textInputAutocapitalization(field == .publisher ? .words : .never)
+                        .keyboardType(.numberPad)
                         .focused($isFocused)
                         .accessibilityIdentifier("field-edit-text")
                 }
@@ -102,10 +102,12 @@ struct FieldEditSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     ToolbarIconButton(title: "Annuler", systemImage: "xmark", role: .cancel) { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    AsyncToolbarButton(title: "Enregistrer", systemImage: "checkmark") { await save() }
-                        .disabled(correction.isEmpty || problem != nil)
-                        .accessibilityIdentifier("field-edit-save")
+                if !field.isDate {
+                    ToolbarItem(placement: .confirmationAction) {
+                        AsyncToolbarButton(title: "Enregistrer", systemImage: "checkmark") { await save() }
+                            .disabled(correction.isEmpty || problem != nil)
+                            .accessibilityIdentifier("field-edit-save")
+                    }
                 }
             }
             .onAppear { isFocused = true }
@@ -118,7 +120,7 @@ struct FieldEditSheet: View {
                 Text(errorMessage ?? "")
             }
         }
-        .presentationDetents([.height(200)])
+        .presentationDetents([.height(field.isDate ? 480 : 200)])
     }
 
     /// Bounded as the edit form bounds it: never finished before begun, nor on
@@ -158,8 +160,6 @@ struct FieldEditSheet: View {
         var correction = BookCorrection()
         let value = trimmed.isEmpty ? nil : trimmed
         switch field {
-        case .publisher:
-            correction.publisher = change(from: book.publisher, to: value)
         case .firstPublishedIn:
             correction.firstPublishedIn = change(from: book.firstPublishedIn, to: value.flatMap { Int($0) })
         case .pageCount:
@@ -193,8 +193,8 @@ struct FieldEditSheet: View {
 #Preview {
     Color.clear.sheet(isPresented: .constant(true)) {
         FieldEditSheet(
-            book: Book(id: "1", title: "Le Nom du vent", authors: ["Patrick Rothfuss"], publisher: "Bragelonne", status: .read),
-            field: .publisher,
+            book: Book(id: "1", title: "Le Nom du vent", authors: ["Patrick Rothfuss"], pageCount: 662, status: .read),
+            field: .pageCount,
             onSave: { _ in nil }
         )
     }

@@ -4,8 +4,8 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
-- Sur la fiche d’un livre, touchez une information — la note, l’éditeur, l’année, les pages,
-  l’ISBN ou une date de lecture — pour la corriger sur place.
+- Sur la fiche d’un livre, touchez une information — la note, l’année, les pages, l’ISBN
+  ou une date de lecture — pour la corriger sur place.
 - Découvrir est repensé autour de vos séries : pour chacune de celles que vous suivez, les tomes
   déjà sortis que vous n’avez pas encore, avec un lien vers Amazon ou Audible, et le prochain
   annoncé avec sa date.
