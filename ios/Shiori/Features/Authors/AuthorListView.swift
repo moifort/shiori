@@ -1,13 +1,14 @@
 import SwiftUI
 
 /// The Authors shelf of the Library tab: every author the reader holds a book
-/// of, the ones they love first — most hearts, then the best stars, then the
-/// most books. No favourites view: the order already puts the loved authors
-/// first.
+/// of, listed two ways from the toolbar. By name, as the Contacts app lists
+/// people: a section per letter of their surname and the alphabet down the
+/// side to jump to one. Or the ones they love first — most hearts, then the
+/// best stars, then the most books.
 ///
-/// The order comes from the server: the list is paginated, and ordered on the
-/// phone it would reshuffle every time a page landed. There are no month
-/// sections, since the list is not ordered by date.
+/// Both orders come from the server, which files an author under their
+/// surname the way a bookshop does. There are no month sections, since
+/// neither order is by date.
 ///
 /// A row opens the author's page, as a sheet.
 struct AuthorListView: View {
@@ -44,6 +45,8 @@ struct AuthorListView: View {
                 }
             }
             .navigationTitle("Auteurs")
+            .navigationSubtitle(viewModel.order.subtitle)
+            .toolbar { toolbar }
             .libraryShelfPicker(shelf)
             // Over last session's snapshot when the disk had one: the rows show
             // at once and are brought up to date underneath.
@@ -75,17 +78,17 @@ struct AuthorListView: View {
                     onRetry: { await viewModel.refresh() }
                 )
             }
-            Section {
-                ForEach(viewModel.authors) { author in
-                    AuthorRow(author: author)
-                        .contentShape(Rectangle())
-                        .onTapGesture { openAuthor = AuthorDestination(author) }
-                        .accessibilityElement(children: .combine)
-                        .accessibilityAddTraits(.isButton)
-                        .accessibilityAction { openAuthor = AuthorDestination(author) }
-                        .edgeToEdgeSeparator()
-                        .accessibilityIdentifier("author-row")
-                        .onAppear { viewModel.prefetchIfNeeded(for: author.id) }
+            switch viewModel.order {
+            case .name:
+                ForEach(letters, id: \.letter) { section in
+                    Section(section.letter) {
+                        ForEach(section.authors) { author in row(author) }
+                    }
+                    .sectionIndexLabel(section.letter)
+                }
+            case .loved:
+                Section {
+                    ForEach(viewModel.authors) { author in row(author) }
                 }
             }
             if viewModel.hasMore {
@@ -97,12 +100,56 @@ struct AuthorListView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .listSectionIndexVisibility(viewModel.order == .name ? .visible : .hidden)
         .refreshable { await viewModel.load() }
         // A sheet, as a book opens from the library and a saga from Découvrir:
         // the same corners on an author. Its own stack, so a saga pushes inside it.
         .sheet(item: $openAuthor) { opened in
             NavigationStack {
                 AuthorView(key: opened.key, name: opened.name, isSheet: true)
+            }
+        }
+    }
+
+    private func row(_ author: FollowedAuthor) -> some View {
+        AuthorRow(author: author)
+            .contentShape(Rectangle())
+            .onTapGesture { openAuthor = AuthorDestination(author) }
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { openAuthor = AuthorDestination(author) }
+            .edgeToEdgeSeparator()
+            .accessibilityIdentifier("author-row")
+            .onAppear { viewModel.prefetchIfNeeded(for: author.id) }
+    }
+
+    /// The authors cut where the letter they are filed under changes. The
+    /// server already hands them over in that order, "#" last.
+    private var letters: [(letter: String, authors: [FollowedAuthor])] {
+        var sections: [(letter: String, authors: [FollowedAuthor])] = []
+        for author in viewModel.authors {
+            if sections.last?.letter == author.indexLetter {
+                sections[sections.count - 1].authors.append(author)
+            } else {
+                sections.append((author.indexLetter, [author]))
+            }
+        }
+        return sections
+    }
+
+    /// The two orders, as the Books and Series shelves offer their two views.
+    @ToolbarContentBuilder
+    private var toolbar: some ToolbarContent {
+        ToolbarItemGroup {
+            ForEach(AuthorListOrder.allCases) { item in
+                Button {
+                    Task { await viewModel.show(item) }
+                } label: {
+                    Label(item.label, systemImage: item.icon)
+                }
+                .labelStyle(.iconOnly)
+                .tint(viewModel.order == item ? .accentColor : .primary)
+                .accessibilityIdentifier("authors-order-\(item.rawValue)")
             }
         }
     }

@@ -9,6 +9,10 @@ struct FollowedAuthor: Identifiable, Codable, Sendable {
     var id: String { key }
     /// The spelling most of the reader's books use.
     let name: String
+    /// The letter of the alphabet index they are filed under, as a bookshop
+    /// files them — Balzac under B, Le Guin under L — or "#". Filed by the
+    /// server, which orders the alphabetical list on the same rule.
+    let indexLetter: String
     /// Their photograph, once somebody has opened their page and Wikipedia had
     /// one. Nil until then: the row draws their initials.
     var portraitURL: URL?

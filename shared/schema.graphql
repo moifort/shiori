@@ -263,6 +263,19 @@ An author name as printed, 1 to 200 characters. Example: "Patrick Rothfuss".
 """
 scalar AuthorName
 
+"""How `myAuthorsPage` lists the authors."""
+enum AuthorOrder {
+  """
+  The ones the reader loves first: most hearts, then the best mean of stars, then the most books, then by name.
+  """
+  LOVED
+
+  """
+  Alphabetical, as a contact list: by surname (see `indexLetter`), the authors under `#` last.
+  """
+  NAME
+}
+
 """Everything an author’s page draws, in one answer."""
 type AuthorPage {
   author: FollowedAuthor!
@@ -747,6 +760,11 @@ type FollowedAuthor {
 
   """Hearted books plus hearted sagas: what the list is ranked on first."""
   favoriteCount: Count!
+
+  """
+  The letter of the alphabet index the author is filed under, as a bookshop files them: the surname’s first letter, accent stripped, a lowercase particle set aside — Balzac under B, Le Guin under L. `#` when it is no Latin letter. The sections of the list ordered by `NAME`.
+  """
+  indexLetter: String!
   key: AuthorKey!
 
   """The spelling most of the reader’s books use."""
@@ -1916,7 +1934,7 @@ type Query {
   me: Me!
 
   """
-  One page of the authors in the library, the ones the reader loves first: most hearts, then the best mean of stars, then the most books, then by name. `favorite` keeps the authors with at least one heart. Offset-paginated: pass the number of rows already shown. Reads the page’s author catalogues, for their portraits, in one getAll.
+  One page of the authors in the library, in the `order` asked — the ones the reader loves first unless told otherwise. `favorite` keeps the authors with at least one heart. Offset-paginated: pass the number of rows already shown. Reads the page’s author catalogues, for their portraits, in one getAll.
   """
   myAuthorsPage(
     """Only the authors with a heart"""
@@ -1927,6 +1945,9 @@ type Query {
 
     """Rows to skip"""
     offset: Int = 0
+
+    """Row order"""
+    order: AuthorOrder = LOVED
   ): FollowedAuthorPage!
 
   """

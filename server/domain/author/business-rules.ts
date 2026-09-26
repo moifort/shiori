@@ -93,6 +93,73 @@ export const inAuthorOrder = <Author extends ShelvedAuthor<unknown>>(
       left.name.localeCompare(right.name),
   )
 
+/** The words a surname can open with and still belong to it: "Le Guin",
+ *  "de La Fontaine", "van Vogt". */
+const particles = new Set([
+  'd',
+  'da',
+  'de',
+  'del',
+  'della',
+  'des',
+  'di',
+  'du',
+  'la',
+  'le',
+  'van',
+  'von',
+  'der',
+  'den',
+  'ten',
+  'ter',
+])
+
+/** The part of an author's name they are filed under, as a bookshop files them:
+ *  the surname, a lowercase particle set aside as French does it — Balzac under
+ *  B, but Le Guin under L and La Fontaine under L. A single name is its own
+ *  surname. */
+export const filingNameOf = (name: string): string => {
+  const words = name.trim().split(/\s+/)
+  let start = words.length - 1
+  while (start > 1 && particles.has(stripApostrophe(words[start - 1] ?? '').toLowerCase()))
+    start -= 1
+  const surname = words.slice(Math.max(start, 0))
+  while (surname.length > 1 && isLowercaseParticle(surname[0] ?? '')) surname.shift()
+  return surname.join(' ').replace(/^[dl]['’]/i, '')
+}
+
+const stripApostrophe = (word: string) => word.replace(/['’].*$/, '')
+
+const isLowercaseParticle = (word: string) =>
+  word === word.toLowerCase() && particles.has(stripApostrophe(word))
+
+/** The letter of the alphabet index an author sits under: the first letter of
+ *  their filing name, stripped of its accent, or "#" when it is no Latin letter. */
+export const indexLetterOf = (name: string): string => {
+  const first = filingNameOf(name)
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .charAt(0)
+    .toUpperCase()
+  return /^[A-Z]$/.test(first) ? first : '#'
+}
+
+/** The Authors tab in alphabetical order, as a contact list is: by filing name,
+ *  the authors under "#" last, then the whole name between two namesakes. */
+export const inNameOrder = <Author extends { name: string }>(
+  authors: readonly Author[],
+): Author[] =>
+  [...authors].sort((left, right) => {
+    const leftOther = indexLetterOf(left.name) === '#'
+    const rightOther = indexLetterOf(right.name) === '#'
+    if (leftOther !== rightOther) return leftOther ? 1 : -1
+    return (
+      filingNameOf(left.name).localeCompare(filingNameOf(right.name), 'fr', {
+        sensitivity: 'base',
+      }) || left.name.localeCompare(right.name, 'fr', { sensitivity: 'base' })
+    )
+  })
+
 /** The authors a view of the tab keeps: every one, or those with a heart. */
 export const matchingAuthorFilter = <Author extends { favoriteCount: number }>(
   authors: readonly Author[],

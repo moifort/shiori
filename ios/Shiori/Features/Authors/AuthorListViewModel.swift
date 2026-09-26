@@ -1,16 +1,49 @@
 import Foundation
 import SwiftUI
 
-/// Owns the Authors shelf: the authors the reader holds books of, the loved
-/// ones first, and the one in-flight load. The shelf opens on the rows it last
+/// The two ways the Authors shelf lists its rows, switched from the toolbar as
+/// the Books and Series shelves switch theirs: by name, as a contact list with
+/// its alphabet down the side, or the loved authors first.
+enum AuthorListOrder: String, CaseIterable, Identifiable {
+    case name, loved
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .name: String(localized: "Alphabétique")
+        case .loved: String(localized: "Favoris")
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .name: "textformat"
+        case .loved: "heart.fill"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .name: String(localized: "Par nom")
+        case .loved: String(localized: "Vos coups de cœur d'abord")
+        }
+    }
+}
+
+/// Owns the Authors shelf: the authors the reader holds books of, in the order
+/// the toolbar asks, and the one in-flight load. The shelf opens on the rows it last
 /// showed: a `SnapshotCache` hands them back from disk before a byte is asked
 /// of the network, and the fetch brings them up to date silently underneath.
 @MainActor
 @Observable
 final class AuthorListViewModel {
     init() {
-        authors = cache.read() ?? []
+        authors = Self.cache(for: .name).read() ?? []
     }
+
+    /// How the rows are listed. By name, every author is loaded at once: the
+    /// alphabet down the side must reach Z without waiting for a page.
+    private(set) var order: AuthorListOrder = .name
 
     private(set) var authors: [FollowedAuthor] = []
     private(set) var isLoading = false
@@ -26,9 +59,30 @@ final class AuthorListViewModel {
     /// snapshot.
     private var loaded = false
 
-    /// The authors on disk. Bump the version whenever `FollowedAuthor` changes
-    /// shape.
-    private let cache = SnapshotCache<[FollowedAuthor]>("authors-all", version: 4)
+    /// The authors on disk, one snapshot per order. Bump the version whenever
+    /// `FollowedAuthor` changes shape.
+    private var cache: SnapshotCache<[FollowedAuthor]> { Self.cache(for: order) }
+
+    private static func cache(for order: AuthorListOrder) -> SnapshotCache<[FollowedAuthor]> {
+        switch order {
+        case .name: SnapshotCache("authors-by-name", version: 5)
+        case .loved: SnapshotCache("authors-all", version: 5)
+        }
+    }
+
+    /// Lists the rows the other way: last session's snapshot of that order at
+    /// once, when the disk has one, brought up to date underneath.
+    func show(_ order: AuthorListOrder) async {
+        guard order != self.order else { return }
+        self.order = order
+        generation += 1
+        authors = cache.read() ?? []
+        hasMore = false
+        loaded = false
+        isLoading = false
+        errorMessage = nil
+        await loadOnAppear()
+    }
 
     /// More rows follow the ones on screen.
     private(set) var hasMore = false
@@ -51,7 +105,9 @@ final class AuthorListViewModel {
     func load(keepingDepth: Bool = false) async -> Bool {
         generation += 1
         let requested = generation
-        let wanted = keepingDepth ? max(authors.count, pageSize) : pageSize
+        let wanted = order == .name
+            ? Int.max
+            : keepingDepth ? max(authors.count, pageSize) : pageSize
         isLoading = true
         errorMessage = nil
         isLoadingMore = false
@@ -63,7 +119,8 @@ final class AuthorListViewModel {
             var more = true
             while more, fetched.count < wanted {
                 let page = try await AuthorsAPI.myAuthorsPage(
-                    limit: min(wanted - fetched.count, maxPageSize), offset: fetched.count
+                    limit: min(wanted - fetched.count, maxPageSize), offset: fetched.count,
+                    order: order
                 )
                 guard requested == generation else { return false }
                 fetched += page.items
@@ -79,9 +136,10 @@ final class AuthorListViewModel {
             loaded = true
             // Fresh rows: whatever an earlier refresh said is no longer true.
             refreshFailed = false
+            // By name the whole list is kept, as the whole list is drawn.
             let cache = cache
-            let firstPage = Array(fetched.prefix(pageSize))
-            Task.detached { cache.write(firstPage) }
+            let snapshot = order == .name ? fetched : Array(fetched.prefix(pageSize))
+            Task.detached { cache.write(snapshot) }
         } catch {
             guard requested == generation else { return false }
             isLoading = false
@@ -100,7 +158,9 @@ final class AuthorListViewModel {
         isLoadingMore = true
         loadMoreFailed = false
         do {
-            let page = try await AuthorsAPI.myAuthorsPage(limit: pageSize, offset: authors.count)
+            let page = try await AuthorsAPI.myAuthorsPage(
+                limit: pageSize, offset: authors.count, order: order
+            )
             guard requested == generation else { return }
             authors.append(contentsOf: page.items)
             hasMore = page.hasMore

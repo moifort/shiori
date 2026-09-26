@@ -1,6 +1,7 @@
 import { AdminCommand } from '~/domain/admin/command'
 import {
   inAuthorOrder,
+  inNameOrder,
   inPageOrder,
   mainLanguageOf,
   matchingAuthorFilter,
@@ -27,6 +28,9 @@ import { createLogger } from '~/system/logger'
 
 const logger = createLogger('author')
 
+/** How the Authors tab lists its rows: the loved ones first, or by name. */
+export type AuthorOrder = 'loved' | 'name'
+
 /** An author of the Authors tab: what the library says, and the portrait once
  *  somebody has opened their page. */
 export type FollowedAuthor = ShelvedAuthor<Book> & { portraitUrl?: PortraitUrl }
@@ -47,7 +51,8 @@ export type AuthorPage = {
 }
 
 export namespace AuthorUseCase {
-  /** One page of the Authors tab, the authors the reader loves first, narrowed
+  /** One page of the Authors tab, the authors the reader loves first — or in
+   *  alphabetical order, as a contact list, when `order` is `name` — narrowed
    *  to those with a heart when `favorite` is set.
    *
    *  Which authors a page holds depends on the books and the opinions alone —
@@ -57,8 +62,10 @@ export namespace AuthorUseCase {
     userId: UserId,
     page: { limit: number; offset: number },
     filter: { favorite?: boolean },
+    order: AuthorOrder = 'loved',
   ): Promise<{ items: FollowedAuthor[]; hasMore: boolean }> => {
-    const ranked = inAuthorOrder(matchingAuthorFilter(await shelvedAuthors(userId), filter))
+    const matching = matchingAuthorFilter(await shelvedAuthors(userId), filter)
+    const ranked = order === 'name' ? inNameOrder(matching) : inAuthorOrder(matching)
     const items = ranked.slice(page.offset, page.offset + page.limit)
     const portraits = new Map(
       (await AuthorQuery.byKeys(items.map((author) => author.key))).map((catalogue) => [

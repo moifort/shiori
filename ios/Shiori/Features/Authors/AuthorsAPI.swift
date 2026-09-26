@@ -20,6 +20,7 @@ enum AuthorsAPI {
             author: FollowedAuthor(
                 key: author.key,
                 name: author.name,
+                indexLetter: author.indexLetter,
                 portraitURL: author.portraitUrl.flatMap(URL.init(string:)),
                 bookCount: author.bookCount,
                 seriesCount: author.seriesCount,
@@ -63,18 +64,20 @@ enum AuthorsAPI {
         return data.refreshAuthor != nil
     }
 
-    /// One page of the authors the reader holds books of, the ones they love
-    /// first.
+    /// One page of the authors the reader holds books of, in the order the
+    /// shelf is drawn in.
     static func myAuthorsPage(
         limit: Int,
-        offset: Int
+        offset: Int,
+        order: AuthorListOrder
     ) async throws -> (items: [FollowedAuthor], hasMore: Bool) {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.MyAuthorsPageQuery(
                 limit: .some(Int32(limit)),
                 offset: .some(Int32(offset)),
-                favorite: .none
+                favorite: .none,
+                order: .some(.case(order == .name ? .name : .loved))
             )
         )
         return (
@@ -82,6 +85,7 @@ enum AuthorsAPI {
                 FollowedAuthor(
                     key: item.key,
                     name: item.name,
+                    indexLetter: item.indexLetter,
                     portraitURL: item.portraitUrl.flatMap(URL.init(string:)),
                     bookCount: item.bookCount,
                     seriesCount: item.seriesCount,

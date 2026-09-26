@@ -125,6 +125,24 @@ describe('the Authors tab', () => {
     expect(favorites.items.map((author) => author.name)).toEqual(['Ursula K. Le Guin'])
   })
 
+  test('lists the authors by surname, each with the letter it is filed under', async () => {
+    for (const author of ['Émile Zola', 'Ursula K. Le Guin', 'Honoré de Balzac'])
+      await addBook(`title: "${author}", authors: ["${author}"]`)
+
+    const result = await execute('{ myAuthorsPage(order: NAME) { items { name indexLetter } } }')
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data).toEqual({
+      myAuthorsPage: {
+        items: [
+          { name: 'Honoré de Balzac', indexLetter: 'B' },
+          { name: 'Ursula K. Le Guin', indexLetter: 'L' },
+          { name: 'Émile Zola', indexLetter: 'Z' },
+        ],
+      },
+    })
+  })
+
   test('cuts the pages from one order, with what follows', async () => {
     for (const name of ['A', 'B', 'C']) await addBook(`title: "${name}", authors: ["${name}"]`)
 

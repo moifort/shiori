@@ -1,4 +1,4 @@
-import { sagaCountOf, sagasNotHeldOf } from '~/domain/author/business-rules'
+import { indexLetterOf, sagaCountOf, sagasNotHeldOf } from '~/domain/author/business-rules'
 import type { Author, AuthorSeries, AuthorWork } from '~/domain/author/types'
 import { type AuthorPage, AuthorUseCase, type FollowedAuthor } from '~/domain/author/use-case'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
@@ -20,6 +20,14 @@ const FollowedAuthorType = builder.objectRef<FollowedAuthor>('FollowedAuthor').i
       type: 'AuthorName',
       description: 'The spelling most of the reader’s books use.',
       resolve: (author) => author.name,
+    }),
+    indexLetter: t.string({
+      description:
+        'The letter of the alphabet index the author is filed under, as a bookshop ' +
+        'files them: the surname’s first letter, accent stripped, a lowercase ' +
+        'particle set aside — Balzac under B, Le Guin under L. `#` when it is no ' +
+        'Latin letter. The sections of the list ordered by `NAME`.',
+      resolve: (author) => indexLetterOf(author.name),
     }),
     portraitUrl: t.field({
       type: 'PortraitUrl',
@@ -205,6 +213,24 @@ const AuthorPageType = builder.objectRef<AuthorPage>('AuthorPage').implement({
   }),
 })
 
+const AuthorOrderEnum = builder.enumType('AuthorOrder', {
+  description: 'How `myAuthorsPage` lists the authors.',
+  values: {
+    LOVED: {
+      value: 'loved',
+      description:
+        'The ones the reader loves first: most hearts, then the best mean of stars, ' +
+        'then the most books, then by name.',
+    },
+    NAME: {
+      value: 'name',
+      description:
+        'Alphabetical, as a contact list: by surname (see `indexLetter`), the ' +
+        'authors under `#` last.',
+    },
+  } as const,
+})
+
 const FollowedAuthorPageType = builder
   .objectRef<{ items: FollowedAuthor[]; hasMore: boolean }>('FollowedAuthorPage')
   .implement({
@@ -219,15 +245,15 @@ builder.queryFields((t) => ({
   myAuthorsPage: t.field({
     type: FollowedAuthorPageType,
     description:
-      'One page of the authors in the library, the ones the reader loves first: ' +
-      'most hearts, then the best mean of stars, then the most books, then by name. ' +
-      '`favorite` keeps the authors with at least one heart. Offset-paginated: pass ' +
+      'One page of the authors in the library, in the `order` asked — the ones the ' +
+      'reader loves first unless told otherwise. `favorite` keeps the authors with at least one heart. Offset-paginated: pass ' +
       'the number of rows already shown. Reads the page’s author catalogues, for ' +
       'their portraits, in one getAll.',
     args: {
       limit: t.arg.int({ defaultValue: 40, description: 'Maximum authors in the page' }),
       offset: t.arg.int({ defaultValue: 0, description: 'Rows to skip' }),
       favorite: t.arg.boolean({ required: false, description: 'Only the authors with a heart' }),
+      order: t.arg({ type: AuthorOrderEnum, defaultValue: 'loved', description: 'Row order' }),
     },
     resolve: (_root, args, context) =>
       AuthorUseCase.followedPage(
@@ -237,6 +263,7 @@ builder.queryFields((t) => ({
           offset: Math.max(0, args.offset ?? 0),
         },
         { favorite: args.favorite ?? undefined },
+        args.order ?? 'loved',
       ),
   }),
 

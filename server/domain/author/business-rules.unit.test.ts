@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  filingNameOf,
   inAuthorOrder,
+  indexLetterOf,
+  inNameOrder,
   inPageOrder,
   mainLanguageOf,
   matchingAuthorFilter,
@@ -127,6 +130,48 @@ describe('inAuthorOrder', () => {
     const kept = matchingAuthorFilter([author('Loved', 2), author('Read', 0)], { favorite: true })
 
     expect(kept.map((entry) => String(entry.name))).toEqual(['Loved'])
+  })
+})
+
+describe('the alphabetical order', () => {
+  test('files an author under their surname, a lowercase particle set aside', () => {
+    expect(filingNameOf('Frank Herbert')).toBe('Herbert')
+    expect(filingNameOf('J.R.R. Tolkien')).toBe('Tolkien')
+    expect(filingNameOf('Honoré de Balzac')).toBe('Balzac')
+    expect(filingNameOf('Ursula K. Le Guin')).toBe('Le Guin')
+    expect(filingNameOf('Jean de La Fontaine')).toBe('La Fontaine')
+    expect(filingNameOf('Valéry Giscard d’Estaing')).toBe('Estaing')
+    expect(filingNameOf('CLAMP')).toBe('CLAMP')
+  })
+
+  test('indexes an author under the unaccented first letter, or # outside the alphabet', () => {
+    expect(indexLetterOf('Émile Zola')).toBe('Z')
+    expect(indexLetterOf('Albert Écuyer')).toBe('E')
+    expect(indexLetterOf('Ursula K. Le Guin')).toBe('L')
+    expect(indexLetterOf('村上春樹')).toBe('#')
+    expect(indexLetterOf('Ray 451')).toBe('#')
+  })
+
+  test('orders by surname, accents ignored, the authors under # last', () => {
+    const ordered = inNameOrder(
+      [
+        '村上春樹',
+        'Émile Zola',
+        'Albert Écuyer',
+        'Honoré de Balzac',
+        'Frank Herbert',
+        'Ann Balzac',
+      ].map((name) => ({ name })),
+    )
+
+    expect(ordered.map((author) => author.name)).toEqual([
+      'Ann Balzac',
+      'Honoré de Balzac',
+      'Albert Écuyer',
+      'Frank Herbert',
+      'Émile Zola',
+      '村上春樹',
+    ])
   })
 })
 
