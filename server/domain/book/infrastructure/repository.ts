@@ -83,11 +83,18 @@ export const findById = async (userId: UserId, bookId: BookId): Promise<Book | n
   return book?.userId === userId ? asBook(book) : null
 }
 
-// Resolved from the memoized scan rather than a `where` query. A reader owns a
-// handful of volumes per saga out of a library already loaded in this request,
-// so filtering in memory costs nothing where a second query costs reads.
-export const findBySeries = async (userId: UserId, seriesId: SeriesId): Promise<Book[]> =>
-  (await findAllByUser(userId)).filter((book) => book.series?.id === seriesId)
+// The saga's volumes alone, by a query on the saga: the saga screen used to load
+// the whole library to keep a handful of rows. Taken from the library when this
+// request already holds it, where filtering in memory costs nothing.
+//
+// Equalities only, which Firestore serves by merging its automatic single-field
+// indexes: no composite index.
+export const findBySeries = async (userId: UserId, seriesId: SeriesId): Promise<Book[]> => {
+  if (isInRequestCache(allCacheKey(userId)))
+    return (await findAllByUser(userId)).filter((book) => book.series?.id === seriesId)
+  const snapshot = await ownedBy(userId).where('series.id', '==', seriesId).get()
+  return snapshot.docs.map((doc) => asBook(doc.data()))
+}
 
 // A direct write revises the memoized scan in place, so a read later in the same
 // request sees it without scanning the library again — a sync writing book after

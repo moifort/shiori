@@ -10,6 +10,7 @@ the release tag is pushed.
 
 ## Unreleased
 
+- Saga and author pages open faster, whatever the size of your library.
 - Adding a book by its title, or looking up a saga's new releases, no longer fails now and then.
 - The app opens on its icon with book covers drifting behind it, then fades them away once
   everything is ready.

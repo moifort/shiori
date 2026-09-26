@@ -182,12 +182,24 @@ export const createFakeFirestore = () => {
     startAfter?: { id: string; data: Doc | undefined }
   }
 
+  // A dotted field reaches into a map, as `where('series.id', ...)` does in Firestore.
+  const valueAt = (data: Doc, field: string): unknown =>
+    field
+      .split('.')
+      .reduce<unknown>(
+        (value, key) =>
+          value !== null && typeof value === 'object'
+            ? (value as Record<string, unknown>)[key]
+            : undefined,
+        data,
+      )
+
   // Only the operators production code actually uses — fail loudly otherwise.
   const matchesFilter = (data: Doc, [field, op, value]: Filter) => {
-    if (op === '==') return data[field] === value
-    if (op === '!=') return data[field] !== undefined && data[field] !== value
-    if (op === 'in') return Array.isArray(value) && value.includes(data[field])
-    const held = data[field]
+    const held = valueAt(data, field)
+    if (op === '==') return held === value
+    if (op === '!=') return held !== undefined && held !== value
+    if (op === 'in') return Array.isArray(value) && value.includes(held)
     if (op === 'array-contains') return Array.isArray(held) && held.includes(value)
     if (op === 'array-contains-any')
       return (

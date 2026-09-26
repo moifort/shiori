@@ -3,7 +3,7 @@ import type { SeriesId } from '~/domain/series/types'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
-import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
+import { evictFromRequestCache, isInRequestCache, memoizedPerRequest } from '~/system/request-cache'
 import { deleteInBatches, genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 
 // Flat, like every other collection, and keyed by the pair rather than given a
@@ -25,8 +25,13 @@ export const findAllByUser = (userId: UserId): Promise<SeriesOpinion[]> =>
     return snapshot.docs.map((doc) => doc.data())
   })
 
-export const findBy = async (userId: UserId, seriesId: SeriesId): Promise<SeriesOpinion | null> =>
-  (await findAllByUser(userId)).find((opinion) => opinion.seriesId === seriesId) ?? null
+// One document, read by its id: the saga screen used to read every opinion of
+// the reader to keep one. Taken from the scan when this request already holds it.
+export const findBy = async (userId: UserId, seriesId: SeriesId): Promise<SeriesOpinion | null> => {
+  if (isInRequestCache(allCacheKey(userId)))
+    return (await findAllByUser(userId)).find((opinion) => opinion.seriesId === seriesId) ?? null
+  return (await opinions().doc(documentId(userId, seriesId)).get()).data() ?? null
+}
 
 export const save = async (opinion: SeriesOpinion, batch?: WriteBatch): Promise<SeriesOpinion> => {
   const ref = opinions().doc(documentId(opinion.userId, opinion.seriesId))

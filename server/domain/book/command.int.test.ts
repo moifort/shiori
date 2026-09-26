@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { UserId } from '~/domain/shared/types'
-import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
+import { fakeDb, resetFakeFirestore, startFakeRequest } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
 
@@ -203,6 +203,34 @@ describe('placing a book in a saga by hand', () => {
     expect(fake.data('books', missed.id)?.series).toEqual(placed.series)
     expect(fake.docReads - before.docs).toBe(1)
     expect(fake.queryReads - before.queries).toBe(1)
+  })
+
+  // The saga screen: the saga's volumes by one query on the saga, never the
+  // whole library, and never another reader's copy of the same saga.
+  test('reads a saga’s volumes by a query on the saga', async () => {
+    const first = await scanned('Le Syndrome E', 1)
+    const second = await scanned('Gataca', 2)
+    await add('Le Nom du vent')
+    await BookCommand.add(
+      'reader-2' as UserId,
+      {
+        title: BookTitle('Le Syndrome E'),
+        authors: [AuthorName('Franck Tillier')],
+        series: first.series,
+      },
+      NOW,
+    )
+    startFakeRequest()
+    const before = { docs: fake.docReads, queries: fake.queryReads }
+
+    const volumes = await BookQuery.sagaVolumes(
+      reader,
+      SeriesId('sharko-et-henebelle--franck-tillier'),
+    )
+
+    expect(volumes.map((book) => book.id)).toEqual([first.id, second.id])
+    expect(fake.queryReads - before.queries).toBe(1)
+    expect(fake.docReads - before.docs).toBe(0)
   })
 
   test('takes a book out of its saga when the reader clears it', async () => {

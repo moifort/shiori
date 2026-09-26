@@ -5,14 +5,13 @@ import { config } from '~/system/config'
 // Side-effect import: the admin app must be initialized before getStorage().
 import '~/system/firebase'
 import { ByteSize, ContentType, ObjectPath, SignedUrl } from '~/system/object-store/primitives'
+import { DOWNLOAD_WINDOW_MS, reusingSignatures } from '~/system/object-store/signatures'
 import type {
   ContentType as ContentTypeValue,
   ObjectPath as ObjectPathValue,
   SignedUrl as SignedUrlValue,
   StoredObject,
 } from '~/system/object-store/types'
-
-const DOWNLOAD_WINDOW_MS = 60 * 60 * 1000
 
 // Where the cover bytes go. The bucket is private and its objects are never
 // public: every read goes through a URL this server signed, for one object, for
@@ -49,7 +48,7 @@ const gcs: ObjectStore = {
     await bucket().file(path).save(body, { contentType, resumable: false })
     return { contentType, size: ByteSize(body.byteLength) }
   },
-  downloadUrl: async (path) => {
+  downloadUrl: reusingSignatures(async (path) => {
     const [url] = await bucket()
       .file(path)
       .getSignedUrl({
@@ -58,7 +57,7 @@ const gcs: ObjectStore = {
         expires: Date.now() + DOWNLOAD_WINDOW_MS,
       })
     return SignedUrl(url)
-  },
+  }),
   stat: async (path) => {
     const file = bucket().file(path)
     const [exists] = await file.exists()
