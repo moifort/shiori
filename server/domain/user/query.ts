@@ -27,6 +27,11 @@ export namespace UserQuery {
       ]),
     )
 
+  /** Every account, for the scheduled passes that look after each reader. One
+   *  document per account, read once per run. */
+  export const allIds = async (): Promise<UserId[]> =>
+    (await repository.findAllProfiles()).map((profile) => profile.userId)
+
   // How many accounts completed onboarding — the admin metrics' user count.
   export const total = async (): Promise<CountType> => Count(await repository.countProfiles())
 }

@@ -30,6 +30,10 @@ export const findProfiles = async (userIds: readonly UserId[]): Promise<UserProf
   })
 }
 
+// Every profile, for the scheduled passes: a scan, read once per run.
+export const findAllProfiles = async (): Promise<UserProfile[]> =>
+  (await profiles().get()).docs.map((doc) => doc.data())
+
 // How many accounts have a profile — a Firestore count() aggregate, one billed
 // query round-trip however large the collection grows, never a scan.
 export const countProfiles = async (): Promise<number> => {

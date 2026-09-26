@@ -113,9 +113,7 @@ type AiTokenUsage {
 An alert the reader can switch off; every one starts on. Every one is about a book coming out: Shiori never pushes to bring a reader back.
 """
 enum AlertKind {
-  """
-  A translation, into the app’s language, of a book the reader read in another one.
-  """
+  """A new volume of a saga the reader follows, the day it comes out."""
   TRANSLATION
 }
 
@@ -693,22 +691,25 @@ The token APNs hands a device for this app, in hexadecimal, as the app receives 
 scalar DeviceToken
 
 """
-The Découvrir tab: what is coming next in the sagas the reader follows, in the language they read each in and in the app’s, and what may interest them.
+One volume of a saga the reader does not hold, out or announced, as the weekly web search found it in the language they follow the saga in.
 """
-type Discover {
-  """Whether `refreshDiscover` would look again now: once a day at most."""
-  canRefresh: Boolean!
+type DiscoveredVolume {
+  """The publisher’s cover, or the recording’s on Audible."""
+  coverUrl: CoverUrl
 
   """
-  Works the reader may want. For now, a translation already out in the app’s language of what they read in another, the most recently read first.
+  When it came out or comes out, as precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Null for a volume out on a date nobody found.
   """
-  maybe: [Release!]!
+  date: String
+  isbn13: Isbn13
+  number: VolumeNumber!
+  store: Store!
 
-  """When the daily refresh last ran. Null before the first."""
-  preparedAt: DateTime
-
-  """Works with an edition still to come, the soonest first."""
-  upcoming: [Release!]!
+  """
+  Where to get it: an Amazon search by its ISBN — which lands on the very edition — else by its title; the recording’s own Audible page once Audible confirmed it, else a search for its title.
+  """
+  storeUrl: String!
+  title: BookTitle!
 }
 
 """
@@ -1380,11 +1381,6 @@ type Mutation {
   disconnectAudible: Boolean!
 
   """
-  "Pas intéressé": never propose this work in this language again, nor alert about it. Answers false before the tab was ever opened.
-  """
-  dismissRelease(key: String!): Boolean!
-
-  """
   Catalogue the Audible titles the reader ticked, and return the books created.
   
   The library is read again from Amazon rather than trusted from the app: the client sends identifiers, every stored field comes from the source. An ASIN the library does not hold matches nothing, and a title already catalogued is skipped — so calling this twice with the same list creates no duplicates.
@@ -1448,11 +1444,6 @@ type Mutation {
   Takes a few seconds. Null when the reader holds no book of the author, and when the model failed or found nothing — the previous catalogue is then kept.
   """
   refreshAuthor(key: AuthorKey!): Author
-
-  """
-  Look for releases now rather than waiting for the daily refresh. Granted once a day; past that it answers the tab as it stands. Slow — grounded model calls, one per work — so the app waits with a loader.
-  """
-  refreshDiscover: Discover!
 
   """
   Ask the world about a saga again: one fresh web-grounded model call, whose catalogue replaces the stored one for every reader of the saga. For a volume announced since the catalogue was built, or a catalogue built in the wrong language.
@@ -1773,13 +1764,6 @@ type Query {
   book(id: BookId!): Book
 
   """
-  A book of the Découvrir tab the reader does not hold, built whole as a scan builds one — cover, summary, genre, publisher, pages — so the app draws it with the book screen itself. Works for a book not out yet, described from its announcement; what nobody knows before release is absent.
-  
-  Shared and kept: the first reader to open a book pays the model call, a few seconds, and every later opening is instant. Spends no scan of the allowance. Only for an edition a release watch found — `releaseKey` is the `Release.key` and `title` the `ReleaseEdition.title` — and null for any other, or when the model failed on a book never built.
-  """
-  bookPreview(releaseKey: String!, title: BookTitle!): ScanResult
-
-  """
   Application release notes, one entry per version, most recent first.
   
   Served from the published changelog asset in the caller's language (from `Accept-Language`, English fallback). Global (not user-scoped); the app uses it to show what changed in each release.
@@ -1804,9 +1788,11 @@ type Query {
   dashboard(timeZone: TimeZone!): Dashboard!
 
   """
-  The Découvrir tab. Opening it the first time enrols the reader in the daily refresh; until that has run, only what earlier readers of the same sagas and books already found is there.
+  The Découvrir tab: every saga the reader follows in that format — all but the ones they set aside — with the volumes out they do not hold and the next one announced. Sagas with volumes to get come first, then those with only an announcement, the soonest first; a saga with neither is left out.
+  
+  Read off shared watches a scheduled pass keeps a week fresh, so it answers at once. A saga followed since the last pass is looked up within the hour.
   """
-  discover: Discover!
+  discovery(format: ReleaseFormat!): [SagaDiscovery!]!
 
   """
   What the account is entitled to today, and the account token to start a purchase with. The app reads this before showing the subscription sheet.
@@ -2026,6 +2012,11 @@ type Query {
   quota: Quota!
 
   """
+  What the saga screen shows under its introduction: the volumes out the reader does not hold, and the next one announced, in the edition they opened. Empty for an edition nobody watched yet.
+  """
+  sagaReleases(language: BookLanguage!, seriesId: SeriesId!): SagaReleases!
+
+  """
   The full catalogue of one saga, owned volumes and unowned alike.
   
   Everything the reader does not own is a proposal: nothing enters a library until they add it.
@@ -2156,74 +2147,27 @@ input RecommendationInput {
   recommenderName: PersonName
 }
 
-"""
-A saga the reader follows, or a book they read, in one language: what exists or is announced of it there. A saga read in English whose French translation is announced makes two releases, one per language, as the Series tab makes two rows.
-"""
-type Release {
-  author: AuthorName
-  coverUrl: CoverUrl
-
-  """Every edition the reader does not own, by volume then by date."""
-  editions: [ReleaseEdition!]!
-
-  """What `dismissRelease` names."""
-  key: String!
-  kind: ReleaseKind!
-
-  """The language of its editions."""
-  language: BookLanguage!
-
-  """The soonest edition still to come, as precisely as announced."""
-  nextDate: String
-
-  """The language the reader read it in."""
-  readIn: BookLanguage!
-
-  """
-  For a saga, its row as the Series tab draws it in that language, the catalogue carrying the dates the release watch wrote. A language the reader holds nothing in answers a row with no volumes of its own and no state.
-  """
-  series: FollowedSeries
-  seriesId: SeriesId
-
-  """Its title in that language, else the one the reader knows."""
-  title: BookTitle!
-}
-
-"""
-One edition of a work in one language, out or announced. A recording is only ever listed for a reader connected to Audible.
-"""
-type ReleaseEdition {
-  """
-  For a recording, a search for its title on the reader’s own Audible store — where the reader goes to find it; Shiori never reads the catalogue.
-  """
-  audibleUrl: String
-
-  """The publisher’s cover of this edition, found by its ISBN."""
-  coverUrl: CoverUrl
-
-  """
-  When it came out or comes out, as precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Null for an edition out on a date nobody found.
-  """
-  date: String
-  format: ReleaseFormat!
-  isbn13: Isbn13
-  title: BookTitle!
-  volume: VolumeNumber
-}
-
-"""How an edition reaches the reader."""
+"""How a saga reaches the reader."""
 enum ReleaseFormat {
-  """Recorded."""
+  """Recorded: the saga heard."""
   AUDIOBOOK
 
-  """Printed or electronic."""
+  """Printed or electronic: the saga read."""
   BOOK
 }
 
-"""Whether the release is of a saga, or of one book on its own."""
-enum ReleaseKind {
-  BOOK
-  SERIES
+"""
+One row of the Découvrir tab: a saga the reader follows, and what it has for them.
+"""
+type SagaDiscovery {
+  """The volumes out the reader does not hold, in order."""
+  available: [DiscoveredVolume!]!
+
+  """The next volume announced."""
+  next: DiscoveredVolume
+
+  """The saga as the Series tab draws its row."""
+  series: FollowedSeries!
 }
 
 """
@@ -2235,6 +2179,15 @@ type SagaProgress {
 
   """Spine volumes published so far"""
   totalCount: Int!
+}
+
+"""What one saga has for the reader, in the edition they follow."""
+type SagaReleases {
+  """The volumes out the reader does not hold, in order."""
+  available: [DiscoveredVolume!]!
+
+  """The next volume announced, the soonest first."""
+  next: DiscoveredVolume
 }
 
 """
@@ -2475,6 +2428,15 @@ A reader rating, 1 to 5 whole stars.
 Whole stars only: half stars double the value space without adding discernment. Setting a rating also marks the book as read. Example: 4.
 """
 scalar StarRating
+
+"""Where the reader goes to get a volume."""
+enum Store {
+  """A bookshop, for a printed saga."""
+  AMAZON
+
+  """Audible, for a saga heard."""
+  AUDIBLE
+}
 
 """
 One free label refining the genre, 1 to 100 characters, never translated: sent in the language of `Accept-Language`, served as it was written. Example: "Dark fantasy".

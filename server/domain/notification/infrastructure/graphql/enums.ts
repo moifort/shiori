@@ -7,8 +7,7 @@ export const AlertKindEnum = builder.enumType('AlertKind', {
   values: {
     TRANSLATION: {
       value: 'translation',
-      description:
-        'A translation, into the app’s language, of a book the reader read in another one.',
+      description: 'A new volume of a saga the reader follows, the day it comes out.',
     },
   } as const,
 })

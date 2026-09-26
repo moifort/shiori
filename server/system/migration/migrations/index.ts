@@ -3,6 +3,7 @@ import { booksCarryTheirShelfDate } from '~/system/migration/migrations/005-book
 import { discoverIsTranslations } from '~/system/migration/migrations/006-discover-is-translations'
 import { discoverIsReleases } from '~/system/migration/migrations/007-discover-is-releases'
 import { audiobooksJoinTheSagaHeard } from '~/system/migration/migrations/008-audiobooks-join-the-saga-heard'
+import { discoveryReplacesDiscover } from '~/system/migration/migrations/009-discovery-replaces-discover'
 import type { Migration } from '~/system/migration/types'
 
 // Forward-only, sequential, no rollback. Adding a new optional field or a new
@@ -18,4 +19,5 @@ export const migrations: Migration[] = [
   discoverIsTranslations,
   discoverIsReleases,
   audiobooksJoinTheSagaHeard,
+  discoveryReplacesDiscover,
 ]

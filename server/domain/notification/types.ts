@@ -5,8 +5,8 @@ import type { PushEnvironment } from '~/system/apns'
 /** The alerts a reader can switch off, one switch each. Every one of them is
  *  about a book coming out: Shiori never pushes to bring a reader back. */
 export const ALERT_KINDS = [
-  /** A translation, into the app's language, of a book the reader read in
-   *  another one. */
+  /** A new volume of a saga the reader follows. Named for what it first
+   *  announced; the stored value stays, since renaming it costs a migration. */
   'translation',
 ] as const
 export type AlertKind = (typeof ALERT_KINDS)[number]
@@ -21,8 +21,8 @@ export type Device = {
 }
 
 /** One document per reader: where to reach them and what they want to hear
- *  about. Every alert starts switched on — the Découvrir tab only lists what
- *  the reader would want to hear of — and the permission is asked the first
+ *  about. Every alert starts switched on — it only announces volumes of sagas
+ *  the reader follows — and the permission is asked the first
  *  time the tab has a release to announce, never at launch. */
 export type NotificationSettings = {
   userId: UserId

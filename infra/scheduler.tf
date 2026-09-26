@@ -64,11 +64,11 @@ resource "google_cloud_scheduler_job" "sync_audible_libraries" {
   depends_on = [google_project_service.apis]
 }
 
-# Keeps every reader's Découvrir tab a day fresh: each hourly run refreshes the
-# readers whose tab is oldest until two minutes are spent, so the population is
-# spread across the day rather than paid for in one burst. Only readers who
-# opened the tab are refreshed. Answers 200 with the counts, like the Audible
-# sync, so a retry never re-runs everybody for one reader.
+# Keeps Découvrir and the sagas' release dates fresh: each hourly run reads again
+# the libraries last read a day ago, then looks up on the web the sagas anybody
+# follows whose watch is a week old, until two minutes are spent, so the work is
+# spread across the week rather than paid for in one burst. Answers 200 with the
+# counts, like the Audible sync, so a retry never re-runs everybody for one saga.
 resource "google_cloud_scheduler_job" "refresh_discover" {
   project   = google_project.this.project_id
   region    = var.region
@@ -93,9 +93,9 @@ resource "google_cloud_scheduler_job" "refresh_discover" {
   depends_on = [google_project_service.apis]
 }
 
-# Pushes the releases that came out — next volumes and translations — to the
-# readers who left the alert on, once a morning. No model call: the daily refresh already holds the dates, and
-# an edition is pushed once, so a retry sends nothing twice.
+# Pushes the volumes that came out to the readers who follow their saga and left
+# the alert on, once a morning. No model call: the hourly pass already holds the
+# dates, and a volume is pushed once, so a retry sends nothing twice.
 resource "google_cloud_scheduler_job" "send_release_alerts" {
   project   = google_project.this.project_id
   region    = var.region
