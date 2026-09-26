@@ -13,7 +13,7 @@ are recorded here so their constraints are not forgotten while the foundation is
 | 4 | Release alerts: the next volume of a followed saga, and translations | **built** |
 | 5 | Audible import | **built** |
 | 6 | Kindle import | planned |
-| 7 | The Découvrir tab: what is coming next in the sagas the reader follows | **rebuilding** |
+| 7 | The Découvrir tab: what is coming next in the sagas the reader follows | **rebuilt, sagas only** |
 | 8 | Authors: a Library shelf, the author page, then an author release watch in Découvrir ([spec](superpowers/specs/2026-09-25-authors-design.md)) | **building** |
 
 ## Batch 3 — Sharing
@@ -112,6 +112,18 @@ screen, the saga's state and the dashboard follow: a volume announced to the day
 finished saga. The tab is laid out as the Library is — a "Livres | Séries" capsule, the Series
 tab's rows, the same book and series screens — in "À venir" and "Vous intéresse peut-être", the
 latter holding for now the translations already out.
+
+Torn down again on 2026-09-26 and rebuilt as a domain of its own, `discovery`, around sagas
+alone: translations are no longer watched, nor books on their own, and "Pas intéressé" and the
+book previews went with them — setting a saga aside is "Ne plus suivre". Every saga the reader
+follows is watched in the language they read it in, one shared watch per saga and language,
+looked up on the web once a week by the hourly pass, which also reads each library once a day
+to know what is followed. The tab keeps its format filter and its capsule, "Séries" alone for
+now: one row per saga, the Series tab's, its strip narrowed to the last volume held, the
+volumes out the reader lacks ringed in the tint, and the next one with its date. A printed
+volume is offered on Amazon by its ISBN; a recording on its own Audible page once Audible's
+public catalogue API confirms the ASIN the model gave, else through a search. The saga screen
+shows the same, with the add button, in a "Prochaines sorties" section under its introduction.
 
 ## Deferred on purpose
 

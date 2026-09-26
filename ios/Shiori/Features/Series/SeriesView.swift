@@ -22,9 +22,6 @@ struct SeriesView: View {
     /// Opened as a sheet — from Découvrir, as a book opens from the library —
     /// rather than pushed: a close button in the corner.
     var isSheet = false
-    /// "Pas intéressé", for a saga Découvrir proposed: it is set aside there
-    /// for good, and its next volumes are no longer looked for.
-    var onNotInterested: (() -> Void)? = nil
     /// The saga as an author's page names it, for a saga the reader holds
     /// nothing of: the server catalogues it from this on the first opening.
     var proposal: SeriesProposal? = nil
@@ -51,6 +48,10 @@ struct SeriesView: View {
     /// The sheet asking how many volumes the saga has, for a saga nobody has
     /// catalogued.
     @State private var isDeclaringVolumeCount = false
+    /// What Découvrir found of the saga in the edition opened: the volumes out
+    /// the reader lacks and the next one announced. Last opening's at once,
+    /// brought up to date underneath.
+    @State private var releases: SagaReleases?
 
     private var currentYear: Int { Calendar.current.component(.year, from: .now) }
 
@@ -87,17 +88,6 @@ struct SeriesView: View {
             if isSheet {
                 ToolbarItem(placement: .cancellationAction) {
                     ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
-                }
-            }
-            // In the "…" menu when the saga has one; in the corner otherwise, as
-            // on a book of Découvrir, which has no menu either.
-            if let onNotInterested, owned.isEmpty {
-                ToolbarItem(placement: .primaryAction) {
-                    ToolbarIconButton(title: "Pas intéressé", systemImage: "eye.slash") {
-                        onNotInterested()
-                        dismiss()
-                    }
-                    .accessibilityIdentifier("series-not-interested")
                 }
             }
             ToolbarItem(placement: .primaryAction) {
@@ -152,13 +142,6 @@ struct SeriesView: View {
                                 Task { await setFollowed(true) }
                             }
                             .accessibilityIdentifier("series-follow")
-                        }
-                        if let onNotInterested {
-                            Button("Pas intéressé", systemImage: "eye.slash") {
-                                onNotInterested()
-                                dismiss()
-                            }
-                            .accessibilityIdentifier("series-not-interested")
                         }
                         Button("Supprimer", systemImage: "trash", role: .destructive) {
                             confirmDelete = true
@@ -254,11 +237,26 @@ struct SeriesView: View {
             }
         }
         .task { await load() }
+        .task { await loadReleases() }
     }
 
     private func catalogue(_ series: BookSeries) -> some View {
         List {
             mainSection(series)
+            if let releases {
+                SagaReleasesSection(
+                    releases: releases,
+                    author: series.author,
+                    held: heldNumbers,
+                    addButton: { found in
+                        // A saga heard is bought on Audible, not added by hand.
+                        guard !series.isAudio,
+                              let volume = series.spine.first(where: { $0.number == found.number })
+                        else { return nil }
+                        return AnyView(action(volume, author: series.author))
+                    }
+                )
+            }
             volumes("Tomes", volumes: series.spine, author: series.author, footer: nil)
             if !series.relatedWorks.isEmpty {
                 volumes(
@@ -583,6 +581,28 @@ struct SeriesView: View {
             errorMessage = reportError(error)
         }
         isLoading = false
+    }
+
+    /// What Découvrir found of the saga, for an edition the reader opened:
+    /// the dashboard's card names none, and has nothing to show here.
+    private func loadReleases() async {
+        guard let language else { return }
+        let key = "\(seriesId)|\(language.rawValue)"
+        if releases == nil { releases = SagaReleasesCache.entries[key] }
+        do {
+            let fetched = try await DiscoverAPI.sagaReleases(seriesId: seriesId, language: language)
+            withAnimation(releases == nil ? nil : .smooth) { releases = fetched }
+            SagaReleasesCache.entries[key] = fetched
+        } catch {
+            // The section is a bonus on this screen: without it the saga still
+            // reads, so the failure is reported rather than shown.
+            _ = reportError(error)
+        }
+    }
+
+    /// The numbers of the main volumes the reader holds.
+    private var heldNumbers: Set<Int> {
+        Set(owned.compactMap { $0.series?.kind == .main ? $0.series?.volume : nil })
     }
 
     private var isFavorite: Bool { opinion?.favorite == true }

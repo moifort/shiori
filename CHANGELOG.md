@@ -10,6 +10,9 @@ the release tag is pushed.
 
 ## Unreleased
 
+- Discover is rebuilt around your series: for each one you follow, the volumes already out that
+  you do not have yet, with a link to Amazon or Audible, and the next one announced with its date.
+- A series page shows its upcoming releases right under its introduction.
 - The Authors shelf lists your authors alphabetically, like your contacts, with the alphabet down
   the side to jump to a letter; your favourites first is one tap away.
 - Saga and author pages open faster, whatever the size of your library.

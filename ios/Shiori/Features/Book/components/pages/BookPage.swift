@@ -13,11 +13,6 @@ import SwiftUI
 /// The other volumes of the saga are not listed here: that list belongs to the
 /// series screen, one tap away on the series row, which is the one place that
 /// knows the whole catalogue.
-///
-/// A book the reader does not hold — one Découvrir found — is drawn by the same
-/// page in preview: when it comes out and the way to add it take the place of
-/// the status, and the reader's own reading, which does not exist yet, is left
-/// out.
 struct BookPage: View {
     let book: Book
     let isSaving: Bool
@@ -27,8 +22,6 @@ struct BookPage: View {
     let onOpenSeries: () -> Void
     let onEditGenre: () -> Void
     let onEditRecommendation: () -> Void
-    /// Set for a book the reader does not hold.
-    var preview: BookPreviewActions? = nil
 
     /// Past this many words the summary folds, and a button unfolds it: an
     /// Audible blurb can run to a screenful, and the facts below it were
@@ -39,13 +32,9 @@ struct BookPage: View {
 
     var body: some View {
         List {
-            if let preview {
-                previewSection(preview)
-            } else {
-                statusSection
-            }
+            statusSection
             header
-            if preview == nil { readingSection }
+            readingSection
             if let synopsis = book.synopsis { synopsisSection(synopsis) }
         }
         .listStyle(.insetGrouped)
@@ -61,20 +50,6 @@ struct BookPage: View {
                 .accessibilityIdentifier("book-status")
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets())
-        }
-    }
-
-    /// A book the reader does not hold: when it comes out, at the top of the
-    /// page. Adding it and setting it aside are the sheet's corner buttons.
-    @ViewBuilder
-    private func previewSection(_ preview: BookPreviewActions) -> some View {
-        if let date = preview.releaseDate, ReleaseDateText.isUpcoming(date) {
-            Section {
-                Label(ReleaseDateText.coming(date), systemImage: "clock")
-                    .foregroundStyle(.orange)
-                    .fontWeight(.semibold)
-                    .accessibilityIdentifier("book-preview-release")
-            }
         }
     }
 
@@ -230,8 +205,6 @@ struct BookPage: View {
             }
         }
         .tint(.primary)
-        // A book the reader does not hold is not theirs to correct.
-        .disabled(preview != nil)
         .accessibilityIdentifier("book-genre")
     }
 
@@ -358,12 +331,6 @@ struct BookPage: View {
             }
         }
     }
-}
-
-/// What a book the reader does not hold shows in place of their reading.
-struct BookPreviewActions {
-    /// When it comes out, as precisely as announced; nil for a book out.
-    let releaseDate: String?
 }
 
 #Preview {

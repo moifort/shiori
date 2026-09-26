@@ -10,6 +10,9 @@ struct SeriesRow: View {
     let entry: FollowedSeries
     /// Off on the author's own page, where every row would repeat their name.
     var showsAuthor = true
+    /// On Découvrir, where the volumes out the reader lacks are what the row is
+    /// for: drawn in full and ringed in the tint rather than dimmed.
+    var offersMissing = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -98,8 +101,9 @@ struct SeriesRow: View {
             // scroll view would otherwise clip, and for the dates under the
             // announced volumes.
             .padding(.top, 6)
+            .padding(.leading, offersMissing ? 3 : 0)
             .padding(.trailing, 6)
-            .padding(.bottom, hasDates ? dateLine : 0)
+            .padding(.bottom, hasDates ? dateLine : offersMissing ? 8 : 0)
         }
         .scrollIndicators(.hidden)
         .accessibilityHidden(true)
@@ -123,13 +127,29 @@ struct SeriesRow: View {
             width: coverWidth,
             showsFormatBadge: false
         )
-        .opacity(forthcoming ? 0.2 : 0.35)
+        .opacity(forthcoming ? 0.2 : offersMissing ? 1 : 0.35)
+        .overlay {
+            if offersMissing && !forthcoming {
+                RoundedRectangle(cornerRadius: 4)
+                    .strokeBorder(Color.accentColor, lineWidth: 2)
+                    .padding(-3)
+            }
+        }
         .overlay(alignment: .bottom) {
             if let number {
-                Text(verbatim: "\(number)")
-                    .font(.caption2.weight(.bold).monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .padding(.bottom, 4)
+                if offersMissing && !forthcoming {
+                    Text(verbatim: "\(number)")
+                        .font(.caption2.weight(.bold).monospacedDigit())
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 5)
+                        .background(Color.accentColor, in: .capsule)
+                        .offset(y: 6)
+                } else {
+                    Text(verbatim: "\(number)")
+                        .font(.caption2.weight(.bold).monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .padding(.bottom, 4)
+                }
             }
         }
         // Where an owned volume pins its status: an announced one says it is

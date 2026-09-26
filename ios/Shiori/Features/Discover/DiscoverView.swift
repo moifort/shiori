@@ -1,26 +1,22 @@
 import SwiftUI
 
-/// The Découvrir tab: what is coming next in the sagas the reader follows —
-/// in the language they read each in, and in the app's when that differs —
-/// and what may interest them, for now the translations out of what they read
-/// in another language.
+/// The Découvrir tab: every saga the reader follows — all but the ones they
+/// set aside — with the volumes out they do not hold, and the next one
+/// announced.
 ///
 /// Laid out as the Library tab is, so nothing here has to be learnt twice: the
-/// same "Livres | Séries" capsule above the tab bar, the Series tab's rows and
-/// the library's book rows, and a tap opens the very same screens as sheets,
-/// with the same corners — a saga's series screen, a book's page, built on the
-/// spot for a book the reader does not hold. Swiping a row left, or its sheet's
-/// crossed-out eye, sets it aside for good: its releases are no longer looked
-/// for. Read through one format at a time, picked in the toolbar and kept
+/// capsule above the tab bar, for now "Séries" alone; the Series tab's rows,
+/// their strip narrowed to the last volume held, the volumes to get ringed in
+/// the tint, and the next one with its date; a tap opens the saga screen as a
+/// sheet, where each volume can be added or bought. Read through one format at
+/// a time — the saga read or the saga heard — picked in the toolbar and kept
 /// between visits.
 ///
-/// The server looks again every day. The first opening looks at once, behind a
-/// loader; after that, the reader may ask again once a day at most. The tab
-/// opens on the feed it last showed, brought up to date silently underneath.
+/// The server looks the sagas up on the web once a week. The tab opens on the
+/// rows it last showed, brought up to date silently underneath.
 struct DiscoverView: View {
     @State private var viewModel = DiscoverViewModel()
-    @State private var openSeries: OpenedSeries?
-    @State private var openBook: OpenedEdition?
+    @State private var openSeries: SagaDiscovery?
     @AppStorage("discover.format") private var format: ReleaseFormat = .book
     @AppStorage("discover-shelf") private var shelf: LibraryShelf = .series
 
@@ -28,190 +24,114 @@ struct DiscoverView: View {
         NavigationStack {
             content
                 .navigationTitle("Découvrir")
-                .navigationSubtitle(lastSearch)
                 .toolbar { toolbar }
-                .libraryShelfPicker($shelf, shelves: [.books, .series])
-                // A sheet, as a book opens from the library: the same corners
-                // on a saga as on a book.
-                .sheet(item: $openSeries) { opened in
+                .libraryShelfPicker($shelf, shelves: [.series])
+                // A sheet, as a book opens from the library.
+                .sheet(item: $openSeries) { row in
                     NavigationStack {
                         SeriesView(
-                            seriesId: opened.seriesId,
-                            language: opened.release.language,
-                            isSheet: true,
-                            onNotInterested: { Task { await viewModel.dismiss(opened.release) } }
+                            seriesId: row.series.seriesId,
+                            language: row.series.language,
+                            isSheet: true
                         )
                     }
                 }
-                .sheet(item: $openBook) { opened in
-                    BookPreviewView(release: opened.release, edition: opened.edition) {
-                        Task { await viewModel.dismiss(opened.release) }
-                    }
-                }
         }
-        .task { await viewModel.loadOnAppear() }
+        .task(id: format) { await viewModel.loadOnAppear(format) }
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
-            Task { await viewModel.load() }
+            Task { await viewModel.reload() }
         }
     }
 
     @ViewBuilder
     private var content: some View {
-        if viewModel.feed == nil, let errorMessage = viewModel.errorMessage, !viewModel.isLoading {
+        if let rows = viewModel.rows(format) {
+            list(rows)
+        } else if let errorMessage = viewModel.errorMessage, !viewModel.isLoading {
             EmptyStateView.failure("Découvrir indisponible", message: errorMessage) {
-                await viewModel.load()
+                await viewModel.load(format)
             }
-        } else if viewModel.feed == nil {
+        } else {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if let whole = viewModel.feed, whole.preparedAt == nil {
-            // Never searched yet: the search starts on its own, and the tab
-            // waits for it rather than asking the reader to start it.
-            if viewModel.isPreparing || viewModel.errorMessage == nil {
-                ProgressView("Recherche des prochaines sorties…")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .accessibilityIdentifier("discover-preparing")
-            } else {
-                EmptyStateView.failure(
-                    "Recherche impossible",
-                    message: viewModel.errorMessage
-                        ?? String(localized: "La recherche des prochaines sorties n'a pas abouti.")
-                ) { await viewModel.prepare() }
-            }
-        } else if let whole = viewModel.feed {
-            let feed = whole.narrowed(to: format)
-            List {
-                // The snapshot on screen is brought up to date silently. Only a
-                // refresh that failed says so, since the rows are then last time's.
-                if viewModel.refreshFailed {
-                    RefreshRow(
-                        failed: viewModel.refreshFailed,
-                        loadingLabel: "Mise à jour de Découvrir",
-                        onRetry: { await viewModel.refresh() }
-                    )
-                }
-                if shown(feed.upcoming).isEmpty && shown(feed.maybe).isEmpty {
-                    Section {
-                        EmptyStateView(
-                            systemImage: format == .audiobook ? "headphones" : "sparkles",
-                            title: "Rien à venir pour l'instant",
-                            message: format == .audiobook
-                                ? "Les prochains livres audio de vos séries apparaîtront ici. Ils ne sont proposés que si vous avez connecté Audible."
-                                : "Les prochains tomes de vos séries apparaîtront ici dès qu'ils sont annoncés."
-                        )
-                    }
-                    .listRowBackground(Color.clear)
-                }
-                if !shown(feed.upcoming).isEmpty {
-                    Section {
-                        rows(feed.upcoming, upcoming: true)
-                    } header: {
-                        Text("À venir")
-                    } footer: {
-                        HStack(alignment: .firstTextBaseline, spacing: 4) {
-                            Image(systemName: "bell")
-                            Text("Vous recevrez une notification le jour de la sortie.")
-                        }
-                    }
-                }
-                if !shown(feed.maybe).isEmpty {
-                    Section("Vous intéresse peut-être") {
-                        rows(feed.maybe, upcoming: false)
-                    }
-                }
-            }
-            .listStyle(.insetGrouped)
-            .refreshable { await viewModel.load() }
         }
     }
 
-    /// What the shelf on screen draws of a section: only the sagas on "Séries";
-    /// every book on "Livres", the volumes of a saga among them.
-    private func shown(_ releases: [Release]) -> [Release] {
-        shelf == .series ? releases.filter(\.isSeries) : releases
-    }
-
-    /// One section of the shelf on screen: a saga per row on "Séries", as the
-    /// Series tab draws it, books on their own left to the other shelf; an
-    /// edition per row on "Livres", as the library draws a book — only the ones to come under "À venir", only the ones out
-    /// under "Vous intéresse peut-être".
-    @ViewBuilder
-    private func rows(_ releases: [Release], upcoming: Bool) -> some View {
-        switch shelf {
-        case .series:
-            ForEach(releases.filter(\.isSeries)) { release in
-                if let entry = entry(of: release) {
-                    SeriesRow(entry: entry)
-                        .contentShape(Rectangle())
-                        // A tap rather than a button: a button would claim the
-                        // drag that scrolls the cover strip.
-                        .onTapGesture { open(release) }
-                        .accessibilityElement(children: .combine)
-                        .accessibilityAddTraits(.isButton)
-                        .accessibilityAction { open(release) }
-                        .modifier(NotInterested { Task { await viewModel.dismiss(release) } })
-                        .accessibilityIdentifier("discover-series-row")
-                }
-            }
-        // Découvrir offers no authors shelf: a stored one falls back to the books.
-        case .books, .authors:
-            ForEach(releases) { release in
-                ForEach(release.editions.filter { $0.isUpcoming == upcoming }) { edition in
-                    bookRow(release, edition)
-                }
-            }
-        }
-    }
-
-    private func bookRow(_ release: Release, _ edition: ReleaseEdition) -> some View {
-        let book = release.book(edition)
-        return Button {
-            openBook = OpenedEdition(release: release, edition: edition)
-        } label: {
-            HStack(alignment: .center, spacing: 8) {
-                BookRow(
-                    title: book.title,
-                    authorLine: book.authorLine,
-                    cover: book,
-                    status: .toRead,
-                    rating: nil,
-                    series: book.series,
-                    language: release.language
+    private func list(_ rows: [SagaDiscovery]) -> some View {
+        let available = rows.filter { !$0.releases.available.isEmpty }
+        let announced = rows.filter { $0.releases.available.isEmpty }
+        return List {
+            // The snapshot on screen is brought up to date silently. Only a
+            // refresh that failed says so, since the rows are then last time's.
+            if viewModel.refreshFailed {
+                RefreshRow(
+                    failed: viewModel.refreshFailed,
+                    loadingLabel: "Mise à jour de Découvrir",
+                    onRetry: { await viewModel.refresh(format) }
                 )
-                if edition.isUpcoming, let date = edition.date {
-                    ReleaseDateBadge(date: date)
+            }
+            if rows.isEmpty {
+                Section {
+                    EmptyStateView(
+                        systemImage: format == .audiobook ? "headphones" : "sparkles",
+                        title: "Rien de neuf pour l'instant",
+                        message: format == .audiobook
+                            ? "Les tomes de vos séries audio que vous n'avez pas encore, et les prochains annoncés, apparaîtront ici."
+                            : "Les tomes de vos séries que vous n'avez pas encore, et les prochains annoncés, apparaîtront ici."
+                    )
+                }
+                .listRowBackground(Color.clear)
+            }
+            if !available.isEmpty {
+                Section("Disponibles") {
+                    ForEach(available) { row($0) }
+                }
+            }
+            if !announced.isEmpty {
+                Section {
+                    ForEach(announced) { row($0) }
+                } header: {
+                    Text("À venir")
+                } footer: {
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Image(systemName: "bell")
+                        Text("Vous recevrez une notification le jour de la sortie.")
+                    }
                 }
             }
         }
-        .tint(.primary)
-        .modifier(NotInterested { Task { await viewModel.dismiss(release) } })
-        .accessibilityIdentifier("discover-book-row")
+        .listStyle(.insetGrouped)
+        .refreshable { await viewModel.load(format) }
     }
 
-    /// A saga's row: the Series tab's own, its strip drawn from the catalogue
-    /// in that language. A saga nobody catalogued draws its strip from what the
-    /// web found instead, so the announced volume still shows with its date.
-    private func entry(of release: Release) -> FollowedSeries? {
-        guard var entry = release.series else { return nil }
-        if entry.strip.isEmpty && entry.volumes.isEmpty {
-            entry.strip = release.editions.compactMap { edition in
-                edition.volume.map { number in
-                    .missing(
-                        key: "\(release.key)-\(number)",
-                        number: number,
-                        title: edition.title,
-                        forthcoming: edition.isUpcoming,
-                        date: edition.date,
-                        coverURL: edition.coverURL
+    /// A saga's row: the Series tab's own, its strip narrowed to what matters
+    /// here, and underneath what it has for the reader in a line, with the
+    /// store the first volume to get is found in.
+    private func row(_ row: SagaDiscovery) -> some View {
+        var entry = row.series
+        entry.strip = row.strip
+        return VStack(alignment: .leading, spacing: 8) {
+            SeriesRow(entry: entry, offersMissing: true)
+                .contentShape(Rectangle())
+                // A tap rather than a button: a button would claim the drag
+                // that scrolls the cover strip.
+                .onTapGesture { openSeries = row }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { openSeries = row }
+            SagaReleasesSummary(releases: row.releases)
+        }
+        .contextMenu {
+            ForEach(row.releases.available) { volume in
+                Link(destination: volume.storeURL) {
+                    Label(
+                        String(localized: "Tome \(volume.number) sur \(volume.store.actionLabel)"),
+                        systemImage: volume.store == .audible ? "headphones" : "cart"
                     )
                 }
             }
+            Button("Ouvrir la série", systemImage: "books.vertical") { openSeries = row }
         }
-        return entry
-    }
-
-    private func open(_ release: Release) {
-        guard let seriesId = release.seriesId else { return }
-        openSeries = OpenedSeries(seriesId: seriesId, release: release)
+        .accessibilityIdentifier("discover-series-row")
     }
 
     /// The two formats where the Library and Series tabs keep their views: icons
@@ -230,63 +150,79 @@ struct DiscoverView: View {
                 .accessibilityIdentifier("discover-format-\(item.rawValue)")
             }
         }
-        if let feed = viewModel.feed, feed.preparedAt != nil, feed.canRefresh {
-            ToolbarSpacer(.fixed)
-            ToolbarItem {
-                if viewModel.isPreparing {
-                    ProgressView()
-                } else {
-                    Button {
-                        Task { await viewModel.prepare() }
-                    } label: {
-                        Label("Chercher à nouveau", systemImage: "arrow.clockwise")
-                    }
-                    .accessibilityIdentifier("discover-refresh")
+    }
+}
+
+/// What a saga has for the reader, in a line under its covers: how many
+/// volumes are out, in the tint, then the next one and when — and a button to
+/// the store the first volume out is found in.
+struct SagaReleasesSummary: View {
+    let releases: SagaReleases
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 8) {
+            Group {
+                if !releases.available.isEmpty, let next = releases.next {
+                    Text(availableCount).foregroundStyle(Color.accentColor)
+                        + Text(verbatim: " · ").foregroundStyle(.secondary)
+                        + Text(nextLine(next)).foregroundStyle(.secondary)
+                } else if !releases.available.isEmpty {
+                    Text(availableCount).foregroundStyle(Color.accentColor)
+                } else if let next = releases.next {
+                    Text(nextLine(next)).foregroundStyle(.orange)
                 }
+            }
+            .font(.footnote.weight(.medium))
+            .lineLimit(2)
+            Spacer(minLength: 0)
+            if let first = releases.available.first {
+                StoreLink(volume: first)
             }
         }
     }
 
-    /// When the web was last searched for what is new, under the title: the
-    /// tab is only as fresh as that, and the reader should not wonder why an
-    /// announcement from this morning is not there yet.
-    private var lastSearch: String {
-        guard let preparedAt = viewModel.feed?.preparedAt else { return "" }
-        return String(localized: "Mis à jour \(preparedAt.formatted(.relative(presentation: .named)))")
+    private var availableCount: AttributedString {
+        AttributedString(localized: "^[\(releases.available.count) tome disponible](inflect: true)")
+    }
+
+    private func nextLine(_ next: DiscoveredVolume) -> String {
+        if let date = next.date {
+            return String(localized: "Tome \(next.number) \(ReleaseDateText.phrase(date))")
+        }
+        return String(localized: "Tome \(next.number) annoncé")
     }
 }
 
-/// A book of the tab opened over it, with the release it belongs to.
-private struct OpenedEdition: Identifiable {
-    let release: Release
-    let edition: ReleaseEdition
-    var id: String { "\(release.key)-\(edition.id)" }
-}
+/// The button to the store a volume is found in: Amazon for a printed saga,
+/// Audible for a saga heard.
+struct StoreLink: View {
+    let volume: DiscoveredVolume
 
-/// A saga of the tab opened over it, with the release it came from.
-private struct OpenedSeries: Identifiable {
-    let seriesId: String
-    let release: Release
-    var id: String { release.key }
-}
-
-/// "Pas intéressé", by a swipe or a long press, on every row of the tab.
-private struct NotInterested: ViewModifier {
-    let action: () -> Void
-
-    func body(content: Content) -> some View {
-        content
-            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                Button(role: .destructive, action: action) {
-                    Label("Pas intéressé", systemImage: "eye.slash")
-                }
-            }
-            .contextMenu {
-                Button(role: .destructive, action: action) {
-                    Label("Pas intéressé", systemImage: "eye.slash")
-                }
-            }
+    var body: some View {
+        Link(destination: volume.storeURL) {
+            Label(volume.store.actionLabel, systemImage: "arrow.up.right")
+                .labelStyle(.titleTrailingIcon)
+                .font(.caption.weight(.semibold))
+        }
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .controlSize(.small)
+        .accessibilityIdentifier("discover-store-link")
     }
+}
+
+/// A label with its title first and its icon after, as a link out reads.
+private struct TitleTrailingIconLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 3) {
+            configuration.title
+            configuration.icon.imageScale(.small)
+        }
+    }
+}
+
+extension LabelStyle where Self == TitleTrailingIconLabelStyle {
+    fileprivate static var titleTrailingIcon: TitleTrailingIconLabelStyle { .init() }
 }
 
 #Preview {

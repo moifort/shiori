@@ -1,135 +1,93 @@
 import Foundation
 import SwiftUI
 
-/// Owns the Découvrir tab's feed, the search the reader may start again, and
-/// the one in-flight load. The tab opens on the feed it last showed: a
-/// `SnapshotCache` hands it back from disk before a byte is asked of the
-/// network, and the fetch brings it up to date silently underneath.
+/// Owns the Découvrir tab's rows, one list per format, and the one in-flight
+/// load. The tab opens on the rows it last showed: a `SnapshotCache` hands them
+/// back from disk before a byte is asked of the network, and the fetch brings
+/// them up to date silently underneath.
 @MainActor
 @Observable
 final class DiscoverViewModel {
     init() {
-        feed = cache.read()
+        feed = cache.read() ?? DiscoveryFeed()
     }
 
-    private(set) var feed: DiscoverFeed?
+    private(set) var feed: DiscoveryFeed
     private(set) var isLoading = false
-    /// The web is being searched again, behind the loader on a first opening
-    /// or the toolbar's spinner after that.
-    private(set) var isPreparing = false
     private(set) var errorMessage: String?
 
-    /// Bringing last session's feed up to date failed: the rows are the ones
+    /// Bringing last session's rows up to date failed: the rows are the ones
     /// from last time, and the leading row offers to try again.
     private(set) var refreshFailed = false
-    /// The server has answered at least once, so the feed is no longer the
-    /// snapshot.
-    private var loaded = false
+    /// The formats the server has answered for since launch, so their rows are
+    /// no longer the snapshot.
+    private var loaded: Set<ReleaseFormat> = []
 
-    /// The last feed on disk, every format together: the format is only a
-    /// filter the screen reads it through. Bump the version whenever
-    /// `DiscoverFeed` changes shape.
-    private let cache = SnapshotCache<DiscoverFeed>("discover", version: 2)
+    /// Bump the version whenever `DiscoveryFeed` changes shape.
+    private let cache = SnapshotCache<DiscoveryFeed>("discovery", version: 1)
+
+    /// The rows of a format, nil until they were ever loaded.
+    func rows(_ format: ReleaseFormat) -> [SagaDiscovery]? { feed.rows[format] }
 
     /// Says whether it failed. One skipped because another was already on its
-    /// way, or one called off, did not: the feed is whatever that other one
-    /// brings.
+    /// way, or one called off, did not.
     @discardableResult
-    func load() async -> Bool {
+    func load(_ format: ReleaseFormat) async -> Bool {
         guard !isLoading else { return false }
         isLoading = true
         errorMessage = nil
+        defer { isLoading = false }
         do {
-            let fetched = try await DiscoverAPI.feed()
-            show(fetched)
-            loaded = true
-            // Fresh rows: whatever an earlier refresh said is no longer true.
+            let fetched = try await DiscoverAPI.discovery(format: format)
+            show(fetched, in: format)
+            loaded.insert(format)
             refreshFailed = false
         } catch {
-            isLoading = false
             guard !isCancellation(error) else { return false }
-            // The last feed stays on screen: blanking good rows because a
+            // The last rows stay on screen: blanking good rows because a
             // refresh failed reads as data loss.
             errorMessage = reportError(error)
             return true
         }
-        isLoading = false
-        // The first opening searches at once: a reader who came to see what is
-        // coming should not have to ask for it.
-        if let feed, feed.preparedAt == nil, !isPreparing {
-            await prepare()
-            return false
-        }
-        await askForAlertsIfWorthIt()
+        await askForAlertsIfWorthIt(format)
         return false
     }
 
-    /// Search the web again for what is new.
-    func prepare() async {
-        isPreparing = true
-        errorMessage = nil
-        defer { isPreparing = false }
-        do {
-            show(try await DiscoverAPI.refresh())
-        } catch {
-            guard !isCancellation(error) else { return }
-            errorMessage = reportError(error)
-        }
-        await askForAlertsIfWorthIt()
+    /// The tab appeared, or its format changed: rows still showing last
+    /// session's snapshot are brought up to date, rows never loaded load.
+    /// Rows the server already answered ask nothing: every write posts the
+    /// change notice this tab listens to.
+    func loadOnAppear(_ format: ReleaseFormat) async {
+        guard !loaded.contains(format) else { return }
+        await refresh(format)
     }
 
-    /// The tab appeared: a feed still showing last session's snapshot refreshes
-    /// it, one never loaded loads. A feed the server already answered asks
-    /// nothing: every write posts the change notice this tab listens to.
-    func loadOnAppear() async {
-        guard !loaded, !isLoading else { return }
-        if feed != nil {
-            await refresh()
-        } else {
-            await load()
-        }
-    }
-
-    /// Bring the feed on screen up to date without taking it away — and the
+    /// Bring the rows on screen up to date without taking them away — and the
     /// retry when that failed.
-    func refresh() async {
+    func refresh(_ format: ReleaseFormat) async {
         refreshFailed = false
-        refreshFailed = await load()
+        refreshFailed = await load(format)
     }
 
-    /// Set a release aside for good: gone from the screen at once, and from the
-    /// snapshot, so a relaunch does not draw it back for a moment.
-    func dismiss(_ release: Release) async {
-        withAnimation { feed?.remove(key: release.key) }
-        do {
-            try await DiscoverAPI.dismiss(key: release.key)
-            if let feed { write(feed) }
-        } catch {
-            errorMessage = reportError(error)
-            await load()
-        }
+    /// The library changed: the formats already loaded are asked again.
+    func reload() async {
+        for format in loaded { await load(format) }
     }
 
     /// Over rows already on screen, the new ones slide into place and push the
     /// others aside rather than the whole list redrawing at once.
-    private func show(_ fetched: DiscoverFeed) {
-        withAnimation(feed == nil ? nil : .smooth) { feed = fetched }
-        write(fetched)
-    }
-
-    /// Only a feed the web was searched for is worth opening on: one never
-    /// searched is the loader the search starts behind anyway.
-    private func write(_ feed: DiscoverFeed) {
-        guard feed.preparedAt != nil else { return }
+    private func show(_ fetched: [SagaDiscovery], in format: ReleaseFormat) {
+        withAnimation(feed.rows[format] == nil ? nil : .smooth) { feed.rows[format] = fetched }
+        let snapshot = feed
         let cache = cache
-        Task.detached { cache.write(feed) }
+        Task.detached { cache.write(snapshot) }
     }
 
     /// The alert is on by default, but the system asks once: the first time
-    /// the tab has a release to announce, which is when saying yes means
+    /// the tab has a volume to announce, which is when saying yes means
     /// something. Asked once, the system never shows it again.
-    private func askForAlertsIfWorthIt() async {
-        guard let feed, !feed.upcoming.isEmpty else { return }
+    private func askForAlertsIfWorthIt(_ format: ReleaseFormat) async {
+        guard feed.rows[format]?.contains(where: { $0.releases.next != nil }) == true else { return }
         _ = await PushRegistrar.shared.requestPermission()
     }
 }
