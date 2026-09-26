@@ -15,6 +15,10 @@ final class DiscoverViewModel {
     private(set) var feed: DiscoveryFeed
     private(set) var isLoading = false
     private(set) var errorMessage: String?
+    /// The sagas never looked up are being looked up on the web, behind a
+    /// loader when the tab has nothing to show yet, a row above the others
+    /// otherwise.
+    private(set) var isLookingUp = false
 
     /// Bringing last session's rows up to date failed: the rows are the ones
     /// from last time, and the leading row offers to try again.
@@ -22,9 +26,13 @@ final class DiscoverViewModel {
     /// The formats the server has answered for since launch, so their rows are
     /// no longer the snapshot.
     private var loaded: Set<ReleaseFormat> = []
+    /// The formats already looked up this session: a lookup that left sagas
+    /// behind — out of budget, or failed — is not started again on every
+    /// look, and the hourly pass takes the rest.
+    private var lookedUp: Set<ReleaseFormat> = []
 
     /// Bump the version whenever `DiscoveryFeed` changes shape.
-    private let cache = SnapshotCache<DiscoveryFeed>("discovery", version: 1)
+    private let cache = SnapshotCache<DiscoveryFeed>("discovery", version: 2)
 
     /// The rows of a format, nil until they were ever loaded.
     func rows(_ format: ReleaseFormat) -> [SagaDiscovery]? { feed.rows[format] }
@@ -36,21 +44,41 @@ final class DiscoverViewModel {
         guard !isLoading else { return false }
         isLoading = true
         errorMessage = nil
-        defer { isLoading = false }
+        let page: DiscoveryPage
         do {
-            let fetched = try await DiscoverAPI.discovery(format: format)
-            show(fetched, in: format)
+            page = try await DiscoverAPI.discovery(format: format)
+            show(page.rows, in: format)
             loaded.insert(format)
             refreshFailed = false
         } catch {
+            isLoading = false
             guard !isCancellation(error) else { return false }
             // The last rows stay on screen: blanking good rows because a
             // refresh failed reads as data loss.
             errorMessage = reportError(error)
             return true
         }
+        isLoading = false
+        // Sagas nobody ever looked up are looked up now, rather than leaving
+        // the tab empty until the hourly pass.
+        if page.unwatched > 0, !lookedUp.contains(format) {
+            await lookUp(format)
+        }
         await askForAlertsIfWorthIt(format)
         return false
+    }
+
+    /// Look up on the web the sagas of that format never looked up.
+    private func lookUp(_ format: ReleaseFormat) async {
+        lookedUp.insert(format)
+        isLookingUp = true
+        defer { isLookingUp = false }
+        do {
+            show(try await DiscoverAPI.lookUp(format: format).rows, in: format)
+        } catch {
+            guard !isCancellation(error) else { return }
+            errorMessage = reportError(error)
+        }
     }
 
     /// The tab appeared, or its format changed: rows still showing last

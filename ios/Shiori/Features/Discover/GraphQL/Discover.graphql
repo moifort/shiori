@@ -4,6 +4,21 @@
 # built from the volumes held and the ones found, so no catalogue is asked for.
 query Discovery($format: ReleaseFormat!) {
   discovery(format: $format) {
+    ...DiscoveryFields
+  }
+}
+
+# The sagas of that format never looked up, looked up now: the first look at
+# the tab waits for it rather than for the hourly pass. Up to a minute and a half.
+mutation LookUpDiscovery($format: ReleaseFormat!) {
+  lookUpDiscovery(format: $format) {
+    ...DiscoveryFields
+  }
+}
+
+fragment DiscoveryFields on Discovery {
+  unwatched
+  sagas {
     series {
       ...FollowedSeriesRow
       volumes {
@@ -22,12 +37,24 @@ query Discovery($format: ReleaseFormat!) {
 # What the saga screen shows under its introduction, in the edition opened.
 query SagaReleases($seriesId: SeriesId!, $language: BookLanguage!) {
   sagaReleases(seriesId: $seriesId, language: $language) {
-    available {
-      ...DiscoveredVolumeFields
-    }
-    next {
-      ...DiscoveredVolumeFields
-    }
+    ...SagaReleasesFields
+  }
+}
+
+# The same, the saga looked up on the web first when nobody ever did.
+mutation LookUpSagaReleases($seriesId: SeriesId!, $language: BookLanguage!) {
+  lookUpSagaReleases(seriesId: $seriesId, language: $language) {
+    ...SagaReleasesFields
+  }
+}
+
+fragment SagaReleasesFields on SagaReleases {
+  watched
+  available {
+    ...DiscoveredVolumeFields
+  }
+  next {
+    ...DiscoveredVolumeFields
   }
 }
 

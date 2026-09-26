@@ -52,42 +52,54 @@ describe('the Découvrir tab', () => {
   test('answers a row per saga of the format asked, with what it has for the reader', async () => {
     const result = await run(`{
       discovery(format: BOOK) {
-        series { id name language ownedCount }
-        available { number title date store storeUrl }
-        next { number date }
+        unwatched
+        sagas {
+          series { id name language ownedCount }
+          available { number title date store storeUrl }
+          next { number date }
+        }
       }
     }`)
 
     expect(result.errors).toBeUndefined()
-    expect(result.data?.discovery).toEqual([
-      {
-        series: { id: carl, name: 'Dungeon Crawler Carl', language: 'FR', ownedCount: 1 },
-        available: [
-          {
-            number: 2,
-            title: 'Carl 2',
-            date: '2025-01-15',
-            store: 'AMAZON',
-            storeUrl: 'https://www.amazon.fr/s?k=9782226488176',
-          },
-        ],
-        next: { number: 4, date: '2099-02-12' },
-      },
-    ])
+    expect(result.data?.discovery).toEqual({
+      unwatched: 0,
+      sagas: [
+        {
+          series: { id: carl, name: 'Dungeon Crawler Carl', language: 'FR', ownedCount: 1 },
+          available: [
+            {
+              number: 2,
+              title: 'Carl 2',
+              date: '2025-01-15',
+              store: 'AMAZON',
+              storeUrl: 'https://www.amazon.fr/s?k=9782226488176',
+            },
+          ],
+          next: { number: 4, date: '2099-02-12' },
+        },
+      ],
+    })
   })
 
   test('answers nothing in the other format', async () => {
-    const result = await run('{ discovery(format: AUDIOBOOK) { series { id } } }')
-    expect(result.data?.discovery).toEqual([])
+    const result = await run(
+      '{ discovery(format: AUDIOBOOK) { unwatched sagas { series { id } } } }',
+    )
+    expect(result.data?.discovery).toEqual({ unwatched: 0, sagas: [] })
   })
 })
 
 describe('the saga screen', () => {
   test('says what the saga has for the reader in the edition opened', async () => {
     const result = await run(
-      `{ sagaReleases(seriesId: "${carl}", language: FR) { available { number } next { number } } }`,
+      `{ sagaReleases(seriesId: "${carl}", language: FR) { watched available { number } next { number } } }`,
     )
     expect(result.errors).toBeUndefined()
-    expect(result.data?.sagaReleases).toEqual({ available: [{ number: 2 }], next: { number: 4 } })
+    expect(result.data?.sagaReleases).toEqual({
+      watched: true,
+      available: [{ number: 2 }],
+      next: { number: 4 },
+    })
   })
 })

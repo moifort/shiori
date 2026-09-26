@@ -583,15 +583,22 @@ struct SeriesView: View {
         isLoading = false
     }
 
-    /// What Découvrir found of the saga, for an edition the reader opened:
-    /// the dashboard's card names none, and has nothing to show here.
+    /// What Découvrir found of the saga, for an edition the reader opened —
+    /// looked up on the spot when nobody ever did. The dashboard's card names
+    /// no edition, and has nothing to show here.
     private func loadReleases() async {
         guard let language else { return }
         let key = "\(seriesId)|\(language.rawValue)"
         if releases == nil { releases = SagaReleasesCache.entries[key] }
         do {
-            let fetched = try await DiscoverAPI.sagaReleases(seriesId: seriesId, language: language)
+            var fetched = try await DiscoverAPI.sagaReleases(seriesId: seriesId, language: language)
             withAnimation(releases == nil ? nil : .smooth) { releases = fetched }
+            // Nobody ever looked the saga up in this edition: it is looked up
+            // now, and the section slides in when the web has answered.
+            if !fetched.watched {
+                fetched = try await DiscoverAPI.lookUpSaga(seriesId: seriesId, language: language)
+                withAnimation(.smooth) { releases = fetched }
+            }
             SagaReleasesCache.entries[key] = fetched
         } catch {
             // The section is a bonus on this screen: without it the saga still

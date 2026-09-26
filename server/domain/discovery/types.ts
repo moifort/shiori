@@ -77,9 +77,20 @@ export type OfferedVolume = FoundVolume & { store: Store; storeUrl: string }
 /** What one saga has for the reader: the volumes out they do not hold, and the
  *  next one announced. */
 export type SagaReleases = {
+  /** Whether the saga was ever looked up in that language: until it is, it
+   *  has nothing to say, and opening it is what looks it up. */
+  watched: boolean
   available: OfferedVolume[]
   next?: OfferedVolume
 }
 
 /** One row of the Découvrir tab. */
 export type SagaDiscovery = SagaReleases & { series: FollowedSeries }
+
+/** The Découvrir tab in one format. */
+export type Discovery = {
+  sagas: SagaDiscovery[]
+  /** How many sagas the reader follows in that format were never looked up:
+   *  the app asks for them at once rather than wait for the hourly pass. */
+  unwatched: number
+}

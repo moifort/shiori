@@ -13,7 +13,9 @@ import SwiftUI
 /// between visits.
 ///
 /// The server looks the sagas up on the web once a week. The tab opens on the
-/// rows it last showed, brought up to date silently underneath.
+/// rows it last showed, brought up to date silently underneath; sagas nobody
+/// ever looked up — every saga, on the very first look — are looked up at once,
+/// behind a loader or a row above the others.
 struct DiscoverView: View {
     @State private var viewModel = DiscoverViewModel()
     @State private var openSeries: SagaDiscovery?
@@ -45,7 +47,13 @@ struct DiscoverView: View {
 
     @ViewBuilder
     private var content: some View {
-        if let rows = viewModel.rows(format) {
+        if viewModel.isLookingUp, viewModel.rows(format)?.isEmpty ?? true {
+            // The first look: the sagas are being looked up on the web, and
+            // there is nothing to show until they are.
+            ProgressView("Recherche des prochaines sorties…")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityIdentifier("discover-looking-up")
+        } else if let rows = viewModel.rows(format) {
             list(rows)
         } else if let errorMessage = viewModel.errorMessage, !viewModel.isLoading {
             EmptyStateView.failure("Découvrir indisponible", message: errorMessage) {
@@ -69,7 +77,18 @@ struct DiscoverView: View {
                     onRetry: { await viewModel.refresh(format) }
                 )
             }
-            if rows.isEmpty {
+            if viewModel.isLookingUp {
+                // Sagas followed since are being looked up: the rows already
+                // there stay, the new ones slide in when they are found.
+                Section {
+                    HStack(spacing: 10) {
+                        ProgressView()
+                        Text("Recherche des prochaines sorties…")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            if rows.isEmpty && !viewModel.isLookingUp {
                 Section {
                     EmptyStateView(
                         systemImage: format == .audiobook ? "headphones" : "sparkles",

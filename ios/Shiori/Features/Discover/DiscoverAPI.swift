@@ -60,6 +60,9 @@ struct DiscoveredVolume: Identifiable, Hashable, Codable, Sendable {
 /// What one saga has for the reader: the volumes out they do not hold, and the
 /// next one announced.
 struct SagaReleases: Codable, Sendable, Equatable {
+    /// Whether the saga was ever looked up in that language: until it is, the
+    /// saga screen asks for it.
+    var watched: Bool
     var available: [DiscoveredVolume]
     var next: DiscoveredVolume?
 
@@ -107,25 +110,34 @@ struct DiscoveryFeed: Codable, Sendable {
     var rows: [ReleaseFormat: [SagaDiscovery]] = [:]
 }
 
+/// The tab in one format, and how many of its sagas were never looked up.
+struct DiscoveryPage: Sendable {
+    let rows: [SagaDiscovery]
+    let unwatched: Int
+}
+
 enum DiscoverAPI {
-    static func discovery(format: ReleaseFormat) async throws -> [SagaDiscovery] {
+    /// A first look runs grounded model calls, a few side by side, for up to a
+    /// minute and a half: the request is given that and a margin.
+    private static let lookUpTimeout: TimeInterval = 150
+
+    static func discovery(format: ReleaseFormat) async throws -> DiscoveryPage {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.DiscoveryQuery(format: .case(format.graphQL))
         )
-        return data.discovery.map { row in
-            SagaDiscovery(
-                series: SeriesAPI.followedRow(
-                    row.series.fragments.followedSeriesRow,
-                    volumes: row.series.volumes.map(\.fragments.followedVolume),
-                    spine: nil
-                ),
-                releases: SagaReleases(
-                    available: row.available.compactMap { DiscoveredVolume(fields: $0.fragments.discoveredVolumeFields) },
-                    next: row.next.flatMap { DiscoveredVolume(fields: $0.fragments.discoveredVolumeFields) }
-                )
-            )
-        }
+        return DiscoveryPage(fields: data.discovery.fragments.discoveryFields)
+    }
+
+    /// Look up now the sagas of that format nobody ever looked up.
+    static func lookUp(format: ReleaseFormat) async throws -> DiscoveryPage {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.LookUpDiscoveryMutation(format: .case(format.graphQL)),
+            requestTimeout: lookUpTimeout,
+            changesLibrary: false
+        )
+        return DiscoveryPage(fields: data.lookUpDiscovery.fragments.discoveryFields)
     }
 
     /// What the saga screen shows under its introduction, in the edition
@@ -138,13 +150,52 @@ enum DiscoverAPI {
                 language: LibraryAPI.graphQLLanguage(language)
             )
         )
-        return SagaReleases(
-            available: data.sagaReleases.available.compactMap {
-                DiscoveredVolume(fields: $0.fragments.discoveredVolumeFields)
+        return SagaReleases(fields: data.sagaReleases.fragments.sagaReleasesFields)
+    }
+
+    /// The same, the saga looked up on the web first when nobody ever did.
+    static func lookUpSaga(seriesId: String, language: BookLanguage) async throws -> SagaReleases {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.LookUpSagaReleasesMutation(
+                seriesId: seriesId,
+                language: LibraryAPI.graphQLLanguage(language)
+            ),
+            requestTimeout: lookUpTimeout,
+            changesLibrary: false
+        )
+        return SagaReleases(fields: data.lookUpSagaReleases.fragments.sagaReleasesFields)
+    }
+}
+
+private extension DiscoveryPage {
+    init(fields: ShioriGraphQL.DiscoveryFields) {
+        self.init(
+            rows: fields.sagas.map { row in
+                SagaDiscovery(
+                    series: SeriesAPI.followedRow(
+                        row.series.fragments.followedSeriesRow,
+                        volumes: row.series.volumes.map(\.fragments.followedVolume),
+                        spine: nil
+                    ),
+                    releases: SagaReleases(
+                        watched: true,
+                        available: row.available.compactMap { DiscoveredVolume(fields: $0.fragments.discoveredVolumeFields) },
+                        next: row.next.flatMap { DiscoveredVolume(fields: $0.fragments.discoveredVolumeFields) }
+                    )
+                )
             },
-            next: data.sagaReleases.next.flatMap {
-                DiscoveredVolume(fields: $0.fragments.discoveredVolumeFields)
-            }
+            unwatched: fields.unwatched
+        )
+    }
+}
+
+private extension SagaReleases {
+    init(fields: ShioriGraphQL.SagaReleasesFields) {
+        self.init(
+            watched: fields.watched,
+            available: fields.available.compactMap { DiscoveredVolume(fields: $0.fragments.discoveredVolumeFields) },
+            next: fields.next.flatMap { DiscoveredVolume(fields: $0.fragments.discoveredVolumeFields) }
         )
     }
 }

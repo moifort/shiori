@@ -712,6 +712,19 @@ type DiscoveredVolume {
   title: BookTitle!
 }
 
+"""The Découvrir tab in one format."""
+type Discovery {
+  """
+  A row per saga with something to say: those with volumes to get first, then those with only an announcement, the soonest first.
+  """
+  sagas: [SagaDiscovery!]!
+
+  """
+  How many sagas the reader follows in that format were never looked up. Above zero, `lookUpDiscovery` looks them up at once rather than wait for the hourly pass.
+  """
+  unwatched: Int!
+}
+
 """
 What the account is entitled to, and what the App Store sold to get there.
 
@@ -1415,6 +1428,16 @@ type Mutation {
   inviteFriend: FriendInvitation!
 
   """
+  Look up now, on the web, every saga the reader follows in that format that was never looked up, rather than wait for the hourly pass — for the first look at the tab, and a saga followed since. Slow: grounded model calls, a few side by side, up to about ninety seconds; whatever is left goes to the hourly pass. Answers the tab.
+  """
+  lookUpDiscovery(format: ReleaseFormat!): Discovery!
+
+  """
+  Look a saga up on the web now in the edition opened, when nobody ever did — one grounded call, about ten seconds — and answer what it has for the reader. An edition already looked up is answered as it stands.
+  """
+  lookUpSagaReleases(language: BookLanguage!, seriesId: SeriesId!): SagaReleases!
+
+  """
   Give a book one to five stars. Rating marks it as read: the reader is saying they finished it, and leaving it on the pile would make every filter lie.
   """
   rateBook(id: BookId!, rating: StarRating!): Book!
@@ -1790,9 +1813,9 @@ type Query {
   """
   The Découvrir tab: every saga the reader follows in that format — all but the ones they set aside — with the volumes out they do not hold and the next one announced. Sagas with volumes to get come first, then those with only an announcement, the soonest first; a saga with neither is left out.
   
-  Read off shared watches a scheduled pass keeps a week fresh, so it answers at once. A saga followed since the last pass is looked up within the hour.
+  Read off shared watches a scheduled pass keeps a week fresh, so it answers at once. A saga never looked up is counted in `unwatched`, for `lookUpDiscovery`.
   """
-  discovery(format: ReleaseFormat!): [SagaDiscovery!]!
+  discovery(format: ReleaseFormat!): Discovery!
 
   """
   What the account is entitled to today, and the account token to start a purchase with. The app reads this before showing the subscription sheet.
@@ -2012,7 +2035,7 @@ type Query {
   quota: Quota!
 
   """
-  What the saga screen shows under its introduction: the volumes out the reader does not hold, and the next one announced, in the edition they opened. Empty for an edition nobody watched yet.
+  What the saga screen shows under its introduction: the volumes out the reader does not hold, and the next one announced, in the edition they opened. Empty, and not `watched`, for an edition nobody looked up yet: `lookUpSagaReleases` does.
   """
   sagaReleases(language: BookLanguage!, seriesId: SeriesId!): SagaReleases!
 
@@ -2188,6 +2211,11 @@ type SagaReleases {
 
   """The next volume announced, the soonest first."""
   next: DiscoveredVolume
+
+  """
+  Whether the saga was ever looked up in that language. False until it is: `lookUpSagaReleases` looks it up at once.
+  """
+  watched: Boolean!
 }
 
 """

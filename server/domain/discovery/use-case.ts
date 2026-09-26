@@ -23,6 +23,7 @@ import { releasesPrompt } from '~/domain/discovery/prompts'
 import { DiscoveryQuery } from '~/domain/discovery/query'
 import { RELEASES_SCHEMA, type ReleasesOutput } from '~/domain/discovery/schemas'
 import type {
+  Discovery,
   DiscoveryReader,
   FoundVolume,
   ReleaseFormat,
@@ -35,8 +36,9 @@ import { NotificationUseCase } from '~/domain/notification/use-case'
 import { generate } from '~/domain/scan/gemini'
 import { publishedCoverOf } from '~/domain/scan/published-cover'
 import { SeriesCommand } from '~/domain/series/command'
+import { SeriesQuery } from '~/domain/series/query'
 import type { SeriesId } from '~/domain/series/types'
-import { SeriesUseCase } from '~/domain/series/use-case'
+import { type FollowedSeries, SeriesUseCase } from '~/domain/series/use-case'
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 import { UserQuery } from '~/domain/user/query'
@@ -54,17 +56,22 @@ const CALLS_AT_ONCE = 5
  *  budget is checked between steps, so a run overshoots by one step. */
 const SCHEDULED_BUDGET_MS = 120_000
 
+/** What a first look at the tab may spend before answering: the app waits
+ *  behind a loader, and the request must live through it. */
+const ON_DEMAND_BUDGET_MS = 90_000
+
 export namespace DiscoveryUseCase {
   /** The tab as the reader opens it: every saga they follow in that format,
    *  with the volumes out they do not hold and the next one announced, as the
-   *  shared watches know them. Opening it tells the hourly pass at once which
-   *  sagas the reader follows now, and in which language to write to them. */
+   *  shared watches know them, and how many were never looked up. Opening it
+   *  tells the hourly pass at once which sagas the reader follows now, and in
+   *  which language to write to them. */
   export const discover = async (
     userId: UserId,
     language: Language,
     format: ReleaseFormat,
     now = new Date(),
-  ): Promise<SagaDiscovery[]> => {
+  ): Promise<Discovery> => {
     const [followed, reader] = await Promise.all([
       SeriesUseCase.followed(userId),
       DiscoveryQuery.reader(userId),
@@ -72,20 +79,38 @@ export namespace DiscoveryUseCase {
     const sagas = watchedSagasOf(followed)
     await rememberReader(userId, sagas, language, reader, now)
     const watches = await DiscoveryQuery.watches(sagas.map(watchKeyOf))
-    const today = todayOf(now)
-    const rows = followed.flatMap((series): SagaDiscovery[] => {
-      if (!series.language || series.state === 'unfollowed') return []
-      if (formatOf(series.id) !== format) return []
-      const watch = watches.get(watchKeyOf({ seriesId: series.id, language: series.language }))
-      const releases = releasesOf(series.books, watch, today)
-      return releases.available.length > 0 || releases.next ? [{ ...releases, series }] : []
-    })
-    return inDiscoveryOrder(rows)
+    return discoveryOf(followed, watches, format, now)
+  }
+
+  /** The first look at the tab: every saga the reader follows in that format
+   *  that was never looked up is looked up now, a few side by side, rather
+   *  than on the next hourly pass — within a budget the request lives
+   *  through; whatever is left goes to the hourly pass. Answers the tab. */
+  export const lookUpUnwatched = async (
+    userId: UserId,
+    language: Language,
+    format: ReleaseFormat,
+    now = new Date(),
+    budgetMs = ON_DEMAND_BUDGET_MS,
+    startedAt = Date.now(),
+  ): Promise<Discovery> => {
+    const [followed, reader] = await Promise.all([
+      SeriesUseCase.followed(userId),
+      DiscoveryQuery.reader(userId),
+    ])
+    const sagas = watchedSagasOf(followed)
+    await rememberReader(userId, sagas, language, reader, now)
+    const watches = await DiscoveryQuery.watches(sagas.map(watchKeyOf))
+    const unwatched = sagas.filter(
+      (saga) => formatOf(saga.seriesId) === format && !watches.has(watchKeyOf(saga)),
+    )
+    await lookUpAll(unwatched, watches, now, () => Date.now() - startedAt > budgetMs)
+    return discoveryOf(followed, watches, format, now)
   }
 
   /** What the saga screen shows under its introduction: the volumes out the
    *  reader does not hold, and the next one announced, in the edition they
-   *  opened. Nothing for an edition nobody watched yet. */
+   *  opened. Nothing for an edition nobody looked up yet. */
   export const sagaReleases = async (
     userId: UserId,
     seriesId: SeriesId,
@@ -101,6 +126,37 @@ export namespace DiscoveryUseCase {
       watches.get(watchKeyOf({ seriesId, language })),
       todayOf(now),
     )
+  }
+
+  /** A saga screen opened on an edition nobody looked up yet: it is looked up
+   *  now, one grounded call, and its section answered. An edition already
+   *  looked up is answered as it stands. A saga with neither a volume held
+   *  nor a catalogue has no name to search the web with. */
+  export const lookUpSaga = async (
+    userId: UserId,
+    seriesId: SeriesId,
+    language: BookLanguage,
+    now = new Date(),
+  ): Promise<SagaReleases> => {
+    const key = watchKeyOf({ seriesId, language })
+    const [books, watches, catalogue] = await Promise.all([
+      BookQuery.bySeries(userId, seriesId),
+      DiscoveryQuery.watches([key]),
+      SeriesQuery.byId(seriesId),
+    ])
+    const held = books.filter((book) => book.language === language)
+    if (!watches.has(key)) {
+      const name = held[0]?.series?.name ?? catalogue?.name
+      const author = held[0]?.authors[0] ?? catalogue?.author
+      if (name)
+        await lookUpAll(
+          [{ seriesId, language, name, ...(author ? { author } : {}) }],
+          watches,
+          now,
+          () => false,
+        )
+    }
+    return releasesOf(held, watches.get(key), todayOf(now))
   }
 
   /** The hourly pass. First every reader whose sagas were last worked out a
@@ -138,37 +194,8 @@ export namespace DiscoveryUseCase {
       everyone.flatMap((reader) => reader.sagas.map(watchKeyOf)),
     )
     const due = dueWatches(everyone, watches, now)
-    let watched = 0
-    for (let start = 0; start < due.length; start += CALLS_AT_ONCE) {
-      if (overBudget()) return { synced, watched, failed, deferred: due.length - start }
-      const found = await Promise.all(
-        due.slice(start, start + CALLS_AT_ONCE).map(async (saga) => {
-          try {
-            return await lookUp(saga, watches.get(watchKeyOf(saga)), now)
-          } catch (error) {
-            failed += 1
-            logger.warn('saga release lookup failed', { error, saga: watchKeyOf(saga) })
-            return undefined
-          }
-        }),
-      )
-      // One after the other: a saga followed in two languages would otherwise
-      // have each write overwrite the other's from the same stale read.
-      for (const watch of found) {
-        if (!watch) continue
-        watched += 1
-        try {
-          await SeriesCommand.recordReleases(
-            watch.seriesId,
-            watch.language,
-            catalogueVolumesOf(watch),
-          )
-        } catch (error) {
-          logger.warn('release dates not recorded', { error, saga: watch.key })
-        }
-      }
-    }
-    return { synced, watched, failed, deferred: 0 }
+    const looked = await lookUpAll(due, watches, now, overBudget)
+    return { synced, ...looked, failed: failed + looked.failed }
   }
 
   /** The morning pass: every volume that came out, pushed to the readers who
@@ -204,6 +231,73 @@ export namespace DiscoveryUseCase {
 }
 
 // MARK: - The parts of a pass
+
+/** The tab in one format out of the reader's sagas and the watches. */
+const discoveryOf = (
+  followed: readonly FollowedSeries[],
+  watches: ReadonlyMap<string, SagaWatch>,
+  format: ReleaseFormat,
+  now: Date,
+): Discovery => {
+  const today = todayOf(now)
+  let unwatched = 0
+  const rows = followed.flatMap((series): SagaDiscovery[] => {
+    if (!series.language || series.state === 'unfollowed') return []
+    if (formatOf(series.id) !== format) return []
+    const releases = releasesOf(
+      series.books,
+      watches.get(watchKeyOf({ seriesId: series.id, language: series.language })),
+      today,
+    )
+    if (!releases.watched) unwatched += 1
+    return releases.available.length > 0 || releases.next ? [{ ...releases, series }] : []
+  })
+  return { sagas: inDiscoveryOrder(rows), unwatched }
+}
+
+/** Look these sagas up on the web, a few side by side, until the budget is
+ *  spent, keeping each watch in `watches` and writing what was found into the
+ *  sagas' catalogues. A lookup that fails leaves its saga as it was. */
+const lookUpAll = async (
+  sagas: readonly WatchedSaga[],
+  watches: Map<string, SagaWatch>,
+  now: Date,
+  overBudget: () => boolean,
+): Promise<{ watched: number; failed: number; deferred: number }> => {
+  let watched = 0
+  let failed = 0
+  for (let start = 0; start < sagas.length; start += CALLS_AT_ONCE) {
+    if (overBudget()) return { watched, failed, deferred: sagas.length - start }
+    const found = await Promise.all(
+      sagas.slice(start, start + CALLS_AT_ONCE).map(async (saga) => {
+        try {
+          return await lookUp(saga, watches.get(watchKeyOf(saga)), now)
+        } catch (error) {
+          failed += 1
+          logger.warn('saga release lookup failed', { error, saga: watchKeyOf(saga) })
+          return undefined
+        }
+      }),
+    )
+    // One after the other: a saga followed in two languages would otherwise
+    // have each write overwrite the other's from the same stale read.
+    for (const watch of found) {
+      if (!watch) continue
+      watched += 1
+      watches.set(watch.key, watch)
+      try {
+        await SeriesCommand.recordReleases(
+          watch.seriesId,
+          watch.language,
+          catalogueVolumesOf(watch),
+        )
+      } catch (error) {
+        logger.warn('release dates not recorded', { error, saga: watch.key })
+      }
+    }
+  }
+  return { watched, failed, deferred: 0 }
+}
 
 /** Keep what the passes need to know of a reader, writing only when it moved:
  *  opening the tab every few minutes must not cost a write each time. */

@@ -136,7 +136,7 @@ describe('what a saga has for the reader', () => {
   })
 
   test('is nothing before the saga was ever looked up', () => {
-    expect(releasesOf(held(1), undefined, today)).toEqual({ available: [] })
+    expect(releasesOf(held(1), undefined, today)).toEqual({ watched: false, available: [] })
   })
 
   test('counts a volume announced for this month as still to come', () => {

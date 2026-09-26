@@ -1,4 +1,9 @@
-import type { OfferedVolume, SagaDiscovery, SagaReleases } from '~/domain/discovery/types'
+import type {
+  Discovery,
+  OfferedVolume,
+  SagaDiscovery,
+  SagaReleases,
+} from '~/domain/discovery/types'
 import { FollowedSeriesType } from '~/domain/series/infrastructure/graphql/queries'
 import { builder } from '~/domain/shared/graphql/builder'
 
@@ -53,6 +58,12 @@ const DiscoveredVolumeType = builder.objectRef<OfferedVolume>('DiscoveredVolume'
 export const SagaReleasesType = builder.objectRef<SagaReleases>('SagaReleases').implement({
   description: 'What one saga has for the reader, in the edition they follow.',
   fields: (t) => ({
+    watched: t.boolean({
+      description:
+        'Whether the saga was ever looked up in that language. False until it is: ' +
+        '`lookUpSagaReleases` looks it up at once.',
+      resolve: (releases) => releases.watched,
+    }),
     available: t.field({
       type: [DiscoveredVolumeType],
       description: 'The volumes out the reader does not hold, in order.',
@@ -85,6 +96,25 @@ export const SagaDiscoveryType = builder.objectRef<SagaDiscovery>('SagaDiscovery
       nullable: true,
       description: 'The next volume announced.',
       resolve: (row) => row.next ?? null,
+    }),
+  }),
+})
+
+export const DiscoveryType = builder.objectRef<Discovery>('Discovery').implement({
+  description: 'The Découvrir tab in one format.',
+  fields: (t) => ({
+    sagas: t.field({
+      type: [SagaDiscoveryType],
+      description:
+        'A row per saga with something to say: those with volumes to get first, then ' +
+        'those with only an announcement, the soonest first.',
+      resolve: (discovery) => discovery.sagas,
+    }),
+    unwatched: t.int({
+      description:
+        'How many sagas the reader follows in that format were never looked up. Above ' +
+        'zero, `lookUpDiscovery` looks them up at once rather than wait for the hourly pass.',
+      resolve: (discovery) => discovery.unwatched,
     }),
   }),
 })

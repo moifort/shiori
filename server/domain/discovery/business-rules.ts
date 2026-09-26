@@ -184,7 +184,7 @@ export const releasesOf = (
   watch: SagaWatch | undefined,
   today: string,
 ): SagaReleases => {
-  if (!watch) return { available: [] }
+  if (!watch) return { watched: false, available: [] }
   const held = heldNumbersOf(books)
   const available = watch.volumes
     .filter((volume) => !held.has(volume.number) && !isUpcoming(volume.date, today))
@@ -197,7 +197,9 @@ export const releasesOf = (
         lastDayOf(left.date as ReleaseDate).localeCompare(lastDayOf(right.date as ReleaseDate)) ||
         left.number - right.number,
     )[0]
-  return next ? { available, next: offered(next, watch) } : { available }
+  return next
+    ? { watched: true, available, next: offered(next, watch) }
+    : { watched: true, available }
 }
 
 /** The tab: every saga with something to say, those with volumes to get first

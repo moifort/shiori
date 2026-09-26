@@ -90,6 +90,7 @@ import '~/domain/notification/infrastructure/graphql/mutations'
 // After series: a row is a saga as the Series tab draws it.
 import '~/domain/discovery/infrastructure/graphql/types'
 import '~/domain/discovery/infrastructure/graphql/queries'
+import '~/domain/discovery/infrastructure/graphql/mutations'
 
 // Changelog (application release notes)
 import '~/domain/changelog/infrastructure/graphql/types'

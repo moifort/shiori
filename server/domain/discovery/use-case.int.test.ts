@@ -186,7 +186,10 @@ describe('the Découvrir tab', () => {
     await stock(reader)
     await DiscoveryUseCase.watchDueSagas(now)
 
-    const [row, ...rest] = await DiscoveryUseCase.discover(reader, 'fr', 'book', now)
+    const { sagas, unwatched } = await DiscoveryUseCase.discover(reader, 'fr', 'book', now)
+    const [row, ...rest] = sagas
+
+    expect(unwatched).toBe(0)
 
     expect(rest).toEqual([])
     expect(row.series.name).toBe(SeriesName('Dungeon Crawler Carl'))
@@ -201,11 +204,37 @@ describe('the Découvrir tab', () => {
     await stock(reader, 'audiobook')
     await DiscoveryUseCase.watchDueSagas(now)
 
-    expect(await DiscoveryUseCase.discover(reader, 'fr', 'book', now)).toEqual([])
-    const [heard] = await DiscoveryUseCase.discover(reader, 'fr', 'audiobook', now)
+    expect(await DiscoveryUseCase.discover(reader, 'fr', 'book', now)).toEqual({
+      sagas: [],
+      unwatched: 0,
+    })
+    const [heard] = (await DiscoveryUseCase.discover(reader, 'fr', 'audiobook', now)).sagas
     expect(heard.available.map((volume) => volume.storeUrl)).toEqual([
       'https://www.audible.fr/search?keywords=Carl%202%20Matt%20Dinniman',
     ])
+  })
+
+  test('counts the sagas never looked up, and looks them up on the first look', async () => {
+    await stock(reader)
+    await stock(reader, 'audiobook')
+
+    expect((await DiscoveryUseCase.discover(reader, 'fr', 'book', now)).unwatched).toBe(1)
+    const tab = await DiscoveryUseCase.lookUpUnwatched(reader, 'fr', 'book', now)
+
+    // The saga read only: the saga heard waits for its own tab, or the hour.
+    expect(calls).toEqual(['Dungeon Crawler Carl'])
+    expect(tab.unwatched).toBe(0)
+    expect(tab.sagas.map((row) => row.series.id)).toEqual([carl])
+    expect((await DiscoveryUseCase.discover(reader, 'fr', 'audiobook', now)).unwatched).toBe(1)
+  })
+
+  test('leaves the rest to the hourly pass once the budget is spent', async () => {
+    await stock(reader)
+
+    const tab = await DiscoveryUseCase.lookUpUnwatched(reader, 'fr', 'book', now, 0, 0)
+
+    expect(calls).toEqual([])
+    expect(tab.unwatched).toBe(1)
   })
 
   test('tells the hourly pass at once about a saga followed since', async () => {
@@ -243,7 +272,22 @@ describe('the saga screen', () => {
 
     expect(releases.available.map((volume) => volume.number)).toEqual([2, 3].map(VolumeNumber))
     expect(releases.next?.date).toBe('2027-02-12' as never)
-    expect(await DiscoveryUseCase.sagaReleases(reader, carl, 'en', now)).toEqual({ available: [] })
+    expect(await DiscoveryUseCase.sagaReleases(reader, carl, 'en', now)).toEqual({
+      watched: false,
+      available: [],
+    })
+  })
+
+  test('looks a saga never looked up up when it is opened, and only then', async () => {
+    await stock(reader)
+    expect((await DiscoveryUseCase.sagaReleases(reader, carl, 'fr', now)).watched).toBe(false)
+
+    const releases = await DiscoveryUseCase.lookUpSaga(reader, carl, 'fr', now)
+    await DiscoveryUseCase.lookUpSaga(reader, carl, 'fr', now)
+
+    expect(releases.watched).toBe(true)
+    expect(releases.next?.number).toBe(VolumeNumber(4))
+    expect(calls).toEqual(['Dungeon Crawler Carl'])
   })
 })
 

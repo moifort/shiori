@@ -124,6 +124,9 @@ volumes out the reader lacks ringed in the tint, and the next one with its date.
 volume is offered on Amazon by its ISBN; a recording on its own Audible page once Audible's
 public catalogue API confirms the ASIN the model gave, else through a search. The saga screen
 shows the same, with the add button, in a "Prochaines sorties" section under its introduction.
+A saga nobody ever looked up is looked up at once rather than on the next hourly pass: every
+saga of the format on the first look at the tab, behind a loader, within ninety seconds — the
+hourly pass takes the rest — and a single saga when its screen is opened.
 
 ## Deferred on purpose
 
