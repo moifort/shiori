@@ -52,8 +52,11 @@ struct FriendSeriesListView: View {
         .navigationSubtitle(friendName)
         .toolbar { toolbar }
         .task(id: "\(mode.rawValue)-\(state?.rawValue ?? "all")") { await load() }
-        .navigationDestination(item: $openSaga) { saga in
-            SeriesView(seriesId: saga.seriesId, language: saga.language)
+        // A sheet, as a saga opens from the reader's own Series tab.
+        .sheet(item: $openSaga) { saga in
+            NavigationStack {
+                SeriesView(seriesId: saga.seriesId, language: saga.language, isSheet: true)
+            }
         }
         .alert(
             "Ajout impossible",

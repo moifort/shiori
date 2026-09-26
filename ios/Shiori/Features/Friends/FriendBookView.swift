@@ -5,7 +5,10 @@ import SwiftUI
 /// offers is the reader's own shelf, from the "+" in the corner: to put the
 /// book on their pile, or among the books they read, with the friend recorded
 /// as who recommended it. The "+" is greyed out on a book the reader owns. The
-/// saga it belongs to opens on its own page.
+/// saga it belongs to opens on its own page, pushed inside the sheet.
+///
+/// Always opened as a sheet, as a book opens from the reader's own library:
+/// a close button in the corner.
 struct FriendBookView: View {
     let friendId: String
     let bookId: String
@@ -13,6 +16,8 @@ struct FriendBookView: View {
     /// Called once the book is on the reader's shelf, so the screen that
     /// opened this one can say "Chez vous" without asking again.
     var onAdded: () -> Void = {}
+
+    @Environment(\.dismiss) private var dismiss
 
     @State private var entry: FriendBook?
     @State private var isLoading = true
@@ -40,6 +45,9 @@ struct FriendBookView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task { await load() }
         .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
+            }
             if let entry {
                 ToolbarItem(placement: .primaryAction) { addMenu(entry) }
             }

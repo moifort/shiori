@@ -67,13 +67,17 @@ struct FriendProfileView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task { if !isPreview { await load() } }
         .toolbar { if isPreview { shareFavorites } }
-        .navigationDestination(item: $openBook) { book in
-            FriendBookView(
-                friendId: friend.userId,
-                bookId: book.id,
-                friendName: friend.displayName,
-                onAdded: { markOwned(book.id) }
-            )
+        // A sheet, as a book opens from the reader's own library: its own
+        // stack, so the saga pushes inside it.
+        .sheet(item: $openBook) { book in
+            NavigationStack {
+                FriendBookView(
+                    friendId: friend.userId,
+                    bookId: book.id,
+                    friendName: friend.displayName,
+                    onAdded: { markOwned(book.id) }
+                )
+            }
         }
         .alert(
             "Ajout impossible",

@@ -61,13 +61,17 @@ struct FriendLibraryView: View {
             }
         }
         .task(id: status) { await load() }
-        .navigationDestination(item: $openBook) { book in
-            FriendBookView(
-                friendId: friendId,
-                bookId: book.id,
-                friendName: friendName,
-                onAdded: { markOwned(book.id) }
-            )
+        // A sheet, as a book opens from the reader's own library: its own
+        // stack, so the saga pushes inside it.
+        .sheet(item: $openBook) { book in
+            NavigationStack {
+                FriendBookView(
+                    friendId: friendId,
+                    bookId: book.id,
+                    friendName: friendName,
+                    onAdded: { markOwned(book.id) }
+                )
+            }
         }
         .alert(
             "Ajout impossible",
