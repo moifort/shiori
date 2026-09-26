@@ -1,9 +1,10 @@
 import type { Book, BookLanguage } from '~/domain/book/types'
-import type { FoundVolume as CatalogueVolume } from '~/domain/series/business-rules'
+import { type FoundVolume as CatalogueVolume, isForthcoming } from '~/domain/series/business-rules'
 import { isAudioSeries } from '~/domain/series/primitives'
-import type { SeriesId } from '~/domain/series/types'
+import type { Series, SeriesId } from '~/domain/series/types'
 import type { FollowedSeries } from '~/domain/series/use-case'
 import { type Language, SUPPORTED_LANGUAGES } from '~/domain/shared/language'
+import { Year } from '~/domain/shared/primitives'
 import type {
   DiscoveryReader,
   FoundVolume,
@@ -176,27 +177,80 @@ const heldNumbersOf = (books: readonly Pick<Book, 'series'>[]): Set<number> =>
     ),
   )
 
+/** A volume of the saga in the watch's language, and whether it is still to
+ *  come. */
+type Candidate = { volume: FoundVolume; upcoming: boolean }
+
+/** Every numbered volume of the saga, as the Series tab lays it out: the
+ *  catalogue's spine — whose volumes the watch appends to — with what the watch
+ *  found of each laid over it, and any volume the watch found that the
+ *  catalogue does not hold yet. A volume in the catalogue is out or not by the
+ *  catalogue's rule, the one its strip is drawn by, so the two tabs count the
+ *  same volumes; a volume only the watch knows, by the watch's date. */
+const candidatesOf = (
+  watch: SagaWatch,
+  catalogue: Series | null | undefined,
+  today: string,
+): Candidate[] => {
+  const found = new Map(watch.volumes.map((volume) => [Number(volume.number), volume]))
+  const edition = { language: watch.language, today }
+  const currentYear = Year(Number(today.slice(0, 4)))
+  const candidates = new Map<number, Candidate>()
+  for (const entry of catalogue?.volumes ?? []) {
+    if (entry.kind !== 'main' || entry.number === undefined) continue
+    const number = Number(entry.number)
+    if (candidates.has(number)) continue
+    const title = entry.titles?.[watch.language] ?? entry.title
+    const date = entry.releases?.[watch.language]
+    const coverUrl = entry.covers?.[watch.language]
+    const known = found.get(number)
+    candidates.set(number, {
+      volume: {
+        number: entry.number,
+        title,
+        ...(date ? { date } : {}),
+        ...(coverUrl ? { coverUrl } : {}),
+        ...known,
+      },
+      upcoming: isForthcoming(entry, currentYear, edition),
+    })
+  }
+  for (const volume of watch.volumes) {
+    if (candidates.has(Number(volume.number))) continue
+    candidates.set(Number(volume.number), { volume, upcoming: isUpcoming(volume.date, today) })
+  }
+  return [...candidates.values()]
+}
+
 /** What a saga has for the reader: every volume out that they do not hold, in
  *  order, and the soonest one announced. `books` are the ones they hold of that
- *  saga in the watch's language. */
+ *  saga in the watch's language; `catalogue` the saga's catalogue, whose spine
+ *  the Series tab draws — Découvrir offers the same volumes it shows missing. */
 export const releasesOf = (
   books: readonly Pick<Book, 'series'>[],
   watch: SagaWatch | undefined,
+  catalogue: Series | null | undefined,
   today: string,
 ): SagaReleases => {
   if (!watch) return { watched: false, available: [] }
   const held = heldNumbersOf(books)
-  const available = watch.volumes
-    .filter((volume) => !held.has(volume.number) && !isUpcoming(volume.date, today))
+  const missing = candidatesOf(watch, catalogue, today).filter(
+    ({ volume }) => !held.has(volume.number),
+  )
+  const available = missing
+    .filter(({ upcoming }) => !upcoming)
+    .map(({ volume }) => volume)
     .sort((left, right) => left.number - right.number)
     .map((volume) => offered(volume, watch))
-  const next = watch.volumes
-    .filter((volume) => !held.has(volume.number) && isUpcoming(volume.date, today))
+  // The soonest to come out: a volume dated before one announced for a year
+  // only by the catalogue, which says less.
+  const whenOf = ({ volume }: Candidate) => (volume.date ? lastDayOf(volume.date) : '\uffff')
+  const next = missing
+    .filter(({ upcoming }) => upcoming)
     .sort(
       (left, right) =>
-        lastDayOf(left.date as ReleaseDate).localeCompare(lastDayOf(right.date as ReleaseDate)) ||
-        left.number - right.number,
-    )[0]
+        whenOf(left).localeCompare(whenOf(right)) || left.volume.number - right.volume.number,
+    )[0]?.volume
   return next
     ? { watched: true, available, next: offered(next, watch) }
     : { watched: true, available }

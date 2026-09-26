@@ -1,7 +1,8 @@
 # The Découvrir tab in one format: every saga the reader follows, with the
 # volumes out they do not hold and the next one announced. A row carries the
 # Series tab's selection, so it draws as the Series tab's rows do; its strip is
-# built from the volumes held and the ones found, so no catalogue is asked for.
+# built from the volumes held and the ones offered — the server lays the web's
+# findings over the catalogue's spine — so no catalogue is asked for.
 query Discovery($format: ReleaseFormat!) {
   discovery(format: $format) {
     ...DiscoveryFields

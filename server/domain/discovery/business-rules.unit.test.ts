@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { AudibleAsin } from '~/domain/audible/types'
-import type { Book, BookLanguage, Isbn13 } from '~/domain/book/types'
-import type { ReleaseDate, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
+import type { Book, BookLanguage, CoverUrl, Isbn13 } from '~/domain/book/types'
+import type { ReleaseDate, Series, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { FollowedSeries } from '~/domain/series/use-case'
 import type { BookTitle, UserId } from '~/domain/shared/types'
 import {
@@ -129,18 +129,21 @@ describe('what a saga has for the reader', () => {
       volume(5, '2027'),
       volume(4, '2027-02-12'),
     ])
-    const releases = releasesOf(held(1), watch, today)
+    const releases = releasesOf(held(1), watch, undefined, today)
     expect(releases.available.map((entry) => entry.number)).toEqual([2, 3] as VolumeNumber[])
     expect(releases.next?.number).toBe(4 as VolumeNumber)
     expect(releases.next?.date).toBe('2027-02-12' as ReleaseDate)
   })
 
   test('is nothing before the saga was ever looked up', () => {
-    expect(releasesOf(held(1), undefined, today)).toEqual({ watched: false, available: [] })
+    expect(releasesOf(held(1), undefined, undefined, today)).toEqual({
+      watched: false,
+      available: [],
+    })
   })
 
   test('counts a volume announced for this month as still to come', () => {
-    const releases = releasesOf([], watchOf(carl, [volume(4, '2026-09')]), today)
+    const releases = releasesOf([], watchOf(carl, [volume(4, '2026-09')]), undefined, today)
     expect(releases.available).toEqual([])
     expect(releases.next?.number).toBe(4 as VolumeNumber)
   })
@@ -150,7 +153,7 @@ describe('what a saga has for the reader', () => {
       volume(2, '2024-10-01', { isbn13: '9782226488176' as Isbn13 }),
       volume(3, '2025-01-01'),
     ])
-    const [second, third] = releasesOf([], watch, today).available
+    const [second, third] = releasesOf([], watch, undefined, today).available
     expect(second.store).toBe('amazon')
     expect(second.storeUrl).toBe('https://www.amazon.fr/s?k=9782226488176')
     expect(third.storeUrl).toBe('https://www.amazon.fr/s?k=Carl%203%20Matt%20Dinniman')
@@ -161,7 +164,7 @@ describe('what a saga has for the reader', () => {
       volume(1, '2024-11-22', { asin: 'B0DM67WR2V' as AudibleAsin }),
       volume(2, '2025-03-01'),
     ])
-    const [first, second] = releasesOf([], watch, today).available
+    const [first, second] = releasesOf([], watch, undefined, today).available
     expect(first.store).toBe('audible')
     expect(first.storeUrl).toBe('https://www.audible.fr/pd/B0DM67WR2V')
     expect(second.storeUrl).toBe(
@@ -169,11 +172,71 @@ describe('what a saga has for the reader', () => {
     )
   })
 
+  test('offers the volumes the catalogue shows missing, as the Series tab does', () => {
+    // The catalogue knows volume 3, which the web search missed; volume 6 is
+    // due next year by its first publication.
+    const catalogue = {
+      id: carl,
+      name: 'Dungeon Crawler Carl',
+      author: 'Matt Dinniman',
+      catalogedAt: new Date('2026-01-01'),
+      volumes: [
+        { number: 1, title: 'Carl 1', kind: 'main', publishedIn: 2020 },
+        { number: 2, title: 'Carl 2', kind: 'main', publishedIn: 2021 },
+        {
+          number: 3,
+          title: 'Carl 3',
+          kind: 'main',
+          publishedIn: 2022,
+          titles: { fr: 'Carl trois' },
+          covers: { fr: 'https://covers/carl3-fr.jpg' },
+        },
+        { number: 6, title: 'Carl 6', kind: 'main', publishedIn: 2027 },
+        { title: 'A Carl novella', kind: 'novella', publishedIn: 2023 },
+      ],
+    } as unknown as Series
+    const watch = watchOf(carl, [
+      volume(2, '2024-10-01', { coverUrl: 'https://covers/carl2.jpg' as CoverUrl }),
+      volume(4, '2025-01-01'),
+    ])
+    const releases = releasesOf(held(1), watch, catalogue, today)
+    expect(
+      releases.available.map((entry): unknown[] => [entry.number, entry.title, entry.coverUrl]),
+    ).toEqual([
+      [2, 'Carl 2', 'https://covers/carl2.jpg'],
+      [3, 'Carl trois', 'https://covers/carl3-fr.jpg'],
+      [4, 'Carl 4', undefined],
+    ])
+    expect(releases.available[1].storeUrl).toBe(
+      'https://www.amazon.fr/s?k=Carl%20trois%20Matt%20Dinniman',
+    )
+    expect(releases.next?.number).toBe(6 as VolumeNumber)
+  })
+
+  test('holds a volume back while the catalogue says it is not out in that edition', () => {
+    const catalogue = {
+      id: carl,
+      name: 'Dungeon Crawler Carl',
+      author: 'Matt Dinniman',
+      catalogedAt: new Date('2026-01-01'),
+      volumes: [{ number: 2, title: 'Carl 2', kind: 'main', releases: { fr: '2027-03-01' } }],
+    } as unknown as Series
+    const releases = releasesOf([], watchOf(carl, [volume(2)]), catalogue, today)
+    expect(releases.available).toEqual([])
+    expect(releases.next?.number).toBe(2 as VolumeNumber)
+  })
+
   test('sends English readers to the American stores', () => {
-    const [book] = releasesOf([], watchOf(carl, [volume(2, '2024-01-01')], 'en'), today).available
+    const [book] = releasesOf(
+      [],
+      watchOf(carl, [volume(2, '2024-01-01')], 'en'),
+      undefined,
+      today,
+    ).available
     const [heard] = releasesOf(
       [],
       watchOf(carlHeard, [volume(2, '2024-01-01')], 'en'),
+      undefined,
       today,
     ).available
     expect(book.storeUrl.startsWith('https://www.amazon.com/')).toBe(true)

@@ -129,13 +129,14 @@ enum DiscoverAPI {
         return DiscoveryPage(fields: data.discovery.fragments.discoveryFields)
     }
 
-    /// Look up now the sagas of that format nobody ever looked up.
+    /// Look up now the sagas of that format nobody ever looked up. What was
+    /// found is written into the sagas' catalogues, so the Series tab and the
+    /// dashboard are told, and draw the same volumes as here.
     static func lookUp(format: ReleaseFormat) async throws -> DiscoveryPage {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
             mutation: ShioriGraphQL.LookUpDiscoveryMutation(format: .case(format.graphQL)),
-            requestTimeout: lookUpTimeout,
-            changesLibrary: false
+            requestTimeout: lookUpTimeout
         )
         return DiscoveryPage(fields: data.lookUpDiscovery.fragments.discoveryFields)
     }
@@ -153,16 +154,17 @@ enum DiscoverAPI {
         return SagaReleases(fields: data.sagaReleases.fragments.sagaReleasesFields)
     }
 
-    /// The same, the saga looked up on the web first when nobody ever did.
+    /// The same, the saga looked up on the web first when nobody ever did —
+    /// which writes into its catalogue, so its row is asked again.
     static func lookUpSaga(seriesId: String, language: BookLanguage) async throws -> SagaReleases {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
+            concerning: .series(id: seriesId),
             mutation: ShioriGraphQL.LookUpSagaReleasesMutation(
                 seriesId: seriesId,
                 language: LibraryAPI.graphQLLanguage(language)
             ),
-            requestTimeout: lookUpTimeout,
-            changesLibrary: false
+            requestTimeout: lookUpTimeout
         )
         return SagaReleases(fields: data.lookUpSagaReleases.fragments.sagaReleasesFields)
     }

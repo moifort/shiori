@@ -117,13 +117,15 @@ export namespace DiscoveryUseCase {
     language: BookLanguage,
     now = new Date(),
   ): Promise<SagaReleases> => {
-    const [books, watches] = await Promise.all([
+    const [books, watches, catalogue] = await Promise.all([
       BookQuery.bySeries(userId, seriesId),
       DiscoveryQuery.watches([watchKeyOf({ seriesId, language })]),
+      SeriesQuery.byId(seriesId),
     ])
     return releasesOf(
       books.filter((book) => book.language === language),
       watches.get(watchKeyOf({ seriesId, language })),
+      catalogue,
       todayOf(now),
     )
   }
@@ -145,7 +147,8 @@ export namespace DiscoveryUseCase {
       SeriesQuery.byId(seriesId),
     ])
     const held = books.filter((book) => book.language === language)
-    if (!watches.has(key)) {
+    const lookingUp = !watches.has(key)
+    if (lookingUp) {
       const name = held[0]?.series?.name ?? catalogue?.name
       const author = held[0]?.authors[0] ?? catalogue?.author
       if (name)
@@ -156,7 +159,9 @@ export namespace DiscoveryUseCase {
           () => false,
         )
     }
-    return releasesOf(held, watches.get(key), todayOf(now))
+    // The catalogue as the lookup left it, the dates it found written in.
+    const written = lookingUp && watches.has(key) ? await SeriesQuery.byId(seriesId) : catalogue
+    return releasesOf(held, watches.get(key), written, todayOf(now))
   }
 
   /** The hourly pass. First every reader whose sagas were last worked out a
@@ -247,6 +252,7 @@ const discoveryOf = (
     const releases = releasesOf(
       series.books,
       watches.get(watchKeyOf({ seriesId: series.id, language: series.language })),
+      series.catalogue,
       today,
     )
     if (!releases.watched) unwatched += 1
