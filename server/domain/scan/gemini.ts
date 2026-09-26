@@ -61,8 +61,44 @@ type GenerateOptions = {
  *  `usage` is captured on every step so the allowance and the price can be
  *  recalibrated against measured tokens rather than an estimate — Vinarium's
  *  first costing was four times under for exactly the want of this.
+ *
+ *  An answer that cannot be read is asked for once more. A grounded step reads
+ *  its JSON out of free text, and now and then that text is not valid JSON — an
+ *  unescaped quote in a title, a string left open, the object said twice. It is
+ *  rare and does not repeat: eight grounded calls for the very work that failed
+ *  on September 25th 2026 all answered cleanly. One retry, not a loop: a second
+ *  unreadable answer is a prompt to look at, and its text travels in the error
+ *  so Sentry shows it. The unread answer was billed all the same, so its usage
+ *  is added to the one returned.
  */
 export const generate = async <T>(
+  options: GenerateOptions,
+): Promise<{ value: T; usage?: AiStepUsage }> => {
+  try {
+    return await answeredOnce<T>(options)
+  } catch (error) {
+    if (!(error instanceof UnreadableAnswer)) throw error
+    logger.warn('unreadable Gemini answer, asked again', { error, step: options.step })
+    const { value, usage } = await answeredOnce<T>(options)
+    return { value, usage: summedUsage(error.usage, usage) }
+  }
+}
+
+/** An answer with nothing in it, or nothing JSON can read. Kept apart from a
+ *  failed request, which asking again would not mend. */
+class UnreadableAnswer extends Error {
+  constructor(
+    step: string,
+    reason: string,
+    text: string,
+    readonly usage: AiStepUsage | undefined,
+  ) {
+    super(`${step}: ${reason}${text ? ` — ${text.slice(0, 2000)}` : ''}`)
+    this.name = 'UnreadableAnswer'
+  }
+}
+
+const answeredOnce = async <T>(
   options: GenerateOptions,
 ): Promise<{ value: T; usage?: AiStepUsage }> => {
   const { googleApiKey } = config()
@@ -72,15 +108,30 @@ export const generate = async <T>(
     headers: { 'content-type': 'application/json' },
     body: requestBodyOf(options),
   })
+  const usage = capturedUsage(options.step, response, options.grounded === true)
 
   const text = response.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('')
-  if (!text) throw new Error(`${options.step}: Gemini returned no content`)
+  if (!text) throw new UnreadableAnswer(options.step, 'Gemini returned no content', '', usage)
 
-  return {
-    value: answerOf(text) as T,
-    usage: capturedUsage(options.step, response, options.grounded === true),
+  try {
+    return { value: answerOf(text) as T, usage }
+  } catch (error) {
+    throw new UnreadableAnswer(options.step, (error as Error).message, text, usage)
   }
 }
+
+const summedUsage = (
+  first: AiStepUsage | undefined,
+  second: AiStepUsage | undefined,
+): AiStepUsage | undefined =>
+  first && second
+    ? {
+        promptTokens: first.promptTokens + second.promptTokens,
+        outputTokens: first.outputTokens + second.outputTokens,
+        thinkingTokens: first.thinkingTokens + second.thinkingTokens,
+        searches: first.searches + second.searches,
+      }
+    : (first ?? second)
 
 /** What is sent for one step.
  *

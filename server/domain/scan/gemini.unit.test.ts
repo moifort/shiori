@@ -1,5 +1,11 @@
-import { describe, expect, test } from 'bun:test'
-import { answerOf, billedSearches, type GeminiResponse, requestBodyOf } from '~/domain/scan/gemini'
+import { afterEach, describe, expect, mock, test } from 'bun:test'
+import {
+  answerOf,
+  billedSearches,
+  type GeminiResponse,
+  generate,
+  requestBodyOf,
+} from '~/domain/scan/gemini'
 
 const answered = (parts: Partial<GeminiResponse>): GeminiResponse => ({
   candidates: [{ content: { parts: [{ text: '{}' }] } }],
@@ -122,5 +128,73 @@ describe('reading the answer', () => {
 
   test('an answer with no object is an error, not an empty value', () => {
     expect(() => answerOf('Je ne trouve pas cette série.')).toThrow()
+  })
+})
+
+describe('an answer that cannot be read', () => {
+  const globals = globalThis as unknown as Record<string, unknown>
+  const saying = (...texts: string[]) => {
+    const calls = mock(async () => ({
+      candidates: [
+        {
+          content: {
+            parts: [{ text: texts[Math.min(calls.mock.calls.length, texts.length) - 1] }],
+          },
+        },
+      ],
+      usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 20, thoughtsTokenCount: 5 },
+    }))
+    globals.useRuntimeConfig = () => ({
+      googleApiKey: 'key',
+      premiumUserIds: '',
+      publicBaseUrl: 'https://shiori.test',
+    })
+    globals.$fetch = calls
+    return calls
+  }
+  const asked = {
+    step: 'discover-releases',
+    parts: [{ text: 'Cherche.' }],
+    responseSchema: {},
+    grounded: true,
+  }
+
+  afterEach(() => {
+    delete globals.useRuntimeConfig
+    delete globals.$fetch
+  })
+
+  test('is asked once more, and the second answer is the one kept', async () => {
+    const calls = saying('{"works":[{"title":"Tome "1""}]}', '{"works":[]}')
+    expect((await generate(asked)).value).toEqual({ works: [] })
+    expect(calls).toHaveBeenCalledTimes(2)
+  })
+
+  test('an empty answer is asked once more too', async () => {
+    const calls = saying('', '{"works":[]}')
+    expect((await generate(asked)).value).toEqual({ works: [] })
+    expect(calls).toHaveBeenCalledTimes(2)
+  })
+
+  test('is asked only once more, and then fails with the text it could not read', async () => {
+    const calls = saying('{"works":[{"title":"Tome "1""}]}')
+    await expect(generate(asked)).rejects.toThrow('Tome "1"')
+    expect(calls).toHaveBeenCalledTimes(2)
+  })
+
+  test('the unread answer is billed too, so its usage is added to the one kept', async () => {
+    saying('{"works":[{"title":"Tome "1""}]}', '{"works":[]}')
+    expect((await generate(asked)).usage).toEqual({
+      promptTokens: 200,
+      outputTokens: 40,
+      thinkingTokens: 10,
+      searches: 2,
+    })
+  })
+
+  test('a readable answer is never asked twice', async () => {
+    const calls = saying('{"works":[]}')
+    await generate(asked)
+    expect(calls).toHaveBeenCalledTimes(1)
   })
 })

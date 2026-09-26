@@ -10,6 +10,7 @@ the release tag is pushed.
 
 ## Unreleased
 
+- Adding a book by its title, or looking up a saga's new releases, no longer fails now and then.
 - The app opens on its icon with book covers drifting behind it, then fades them away once
   everything is ready.
 - A saga you listen to on Audible is now its own saga, marked with headphones: it only shows

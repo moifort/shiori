@@ -4,6 +4,7 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- Ajouter un livre par son titre, ou chercher les nouveautés d’une série, n’échoue plus de temps en temps.
 - L’app s’ouvre sur son icône, des couvertures de livres défilant derrière, puis tout s’efface en fondu
   une fois l’app prête.
 - Une série écoutée sur Audible devient une série à part, marquée d’un casque : elle ne montre
