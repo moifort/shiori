@@ -18,6 +18,7 @@ struct BookView: View {
     @State private var showSeriesJoin = false
     @State private var showRecommendation = false
     @State private var showRatingPrompt = false
+    @State private var editedField: BookField?
     @State private var confirmDelete = false
     @State private var openSeries: SeriesDestination?
     @Environment(\.dismiss) private var dismiss
@@ -45,7 +46,8 @@ struct BookView: View {
                             }
                         },
                         onEditGenre: { showGenreEditor = true },
-                        onEditRecommendation: { showRecommendation = true }
+                        onEditRecommendation: { showRecommendation = true },
+                        onEditField: { editedField = $0 }
                     )
                 } else if viewModel.isLoading {
                     ProgressView()
@@ -116,8 +118,19 @@ struct BookView: View {
                     }
                 }
             }
+            .sheet(item: $editedField) { field in
+                if let book = viewModel.book {
+                    FieldEditSheet(book: book, field: field) { correction in
+                        let saved = await viewModel.save(correction, rating: book.rating)
+                        if let book = viewModel.book { onChanged(book) }
+                        guard !saved else { return nil }
+                        defer { viewModel.dismissError() }
+                        return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
+                    }
+                }
+            }
             .sheet(isPresented: $showRatingPrompt) {
-                RatingPromptView { stars in
+                RatingPromptView(current: viewModel.book?.rating) { stars in
                     showRatingPrompt = false
                     run { await viewModel.rate(stars) }
                 }

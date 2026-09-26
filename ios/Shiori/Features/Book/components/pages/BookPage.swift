@@ -4,11 +4,11 @@ import SwiftUI
 /// what the book is, then the reader's own reading, then the summary. Pure and
 /// previewable.
 ///
-/// The page reads rather than edits. Only the things a reader flips often —
-/// the status, sharing, and the genre from its own row — are changed in place,
-/// and a missing rating gets a call to action. Every other correction goes
-/// through "Modifier" in the sheet's menu, which is also where removing the
-/// book lives, one deliberate step away.
+/// The status and sharing are switched in place; a tap on a fact — the
+/// rating, the publisher, a date — opens a small prompt to correct that one
+/// value, as the genre and the recommendation open theirs. The title, the
+/// authors and the saga go through "Modifier" in the sheet's menu, which is
+/// also where removing the book lives, one deliberate step away.
 ///
 /// The other volumes of the saga are not listed here: that list belongs to the
 /// series screen, one tap away on the series row, which is the one place that
@@ -22,6 +22,7 @@ struct BookPage: View {
     let onOpenSeries: () -> Void
     let onEditGenre: () -> Void
     let onEditRecommendation: () -> Void
+    let onEditField: (BookField) -> Void
 
     /// Past this many words the summary folds, and a button unfolds it: an
     /// Audible blurb can run to a screenful, and the facts below it were
@@ -120,23 +121,16 @@ struct BookPage: View {
             genreRow
 
             if let publisher = book.publisher {
-                LabeledInfoRow(title: "Éditeur", value: publisher, icon: "building.2")
+                editableRow(.publisher, value: publisher, icon: "building.2")
             }
             if let year = book.firstPublishedIn {
-                LabeledInfoRow(title: "Première parution", value: String(year), icon: "calendar")
+                editableRow(.firstPublishedIn, value: String(year), icon: "calendar")
             }
             if let pages = book.pageCount {
-                LabeledInfoRow(title: "Pages", value: String(pages), icon: "doc.plaintext")
+                editableRow(.pageCount, value: String(pages), icon: "doc.plaintext")
             }
             if let isbn = book.isbn13 {
-                Label {
-                    LabeledContent("ISBN") {
-                        Text(isbn).font(.callout.monospaced())
-                    }
-                } icon: {
-                    Image(systemName: "barcode").foregroundStyle(.secondary)
-                }
-                .copyable(isbn)
+                editableRow(.isbn13, value: isbn, icon: "barcode", font: .callout.monospaced())
             }
         }
     }
@@ -211,11 +205,14 @@ struct BookPage: View {
     private var readingSection: some View {
         Section {
             if let rating = book.rating {
-                Label {
-                    LabeledContent("Note") { StarRatingView(rating: rating) }
-                } icon: {
-                    Image(systemName: "star").foregroundStyle(.secondary)
+                Button(action: onRate) {
+                    Label {
+                        LabeledContent("Note") { StarRatingView(rating: rating) }
+                    } icon: {
+                        Image(systemName: "star").foregroundStyle(.secondary)
+                    }
                 }
+                .tint(.primary)
                 .accessibilityIdentifier("book-rating")
             } else if let seriesRating = book.seriesRating {
                 // The saga's stars, lent to this volume: grey, named as such,
@@ -242,25 +239,13 @@ struct BookPage: View {
             }
 
             if let added = book.addedAt {
-                LabeledInfoRow(
-                    title: "Ajouté le",
-                    value: added.formatted(date: .abbreviated, time: .omitted),
-                    icon: "tray.and.arrow.down"
-                )
+                editableRow(.addedAt, value: added.formatted(date: .abbreviated, time: .omitted), icon: "tray.and.arrow.down")
             }
             if let started = book.startedAt {
-                LabeledInfoRow(
-                    title: "Commencé le",
-                    value: started.formatted(date: .abbreviated, time: .omitted),
-                    icon: "calendar.badge.plus"
-                )
+                editableRow(.startedAt, value: started.formatted(date: .abbreviated, time: .omitted), icon: "calendar.badge.plus")
             }
             if let finished = book.finishedAt {
-                LabeledInfoRow(
-                    title: "Terminé le",
-                    value: finished.formatted(date: .abbreviated, time: .omitted),
-                    icon: "calendar.badge.checkmark"
-                )
+                editableRow(.finishedAt, value: finished.formatted(date: .abbreviated, time: .omitted), icon: "calendar.badge.checkmark")
             }
 
             if let recommendation = book.recommendation {
@@ -280,6 +265,23 @@ struct BookPage: View {
         } footer: {
             Text("Un livre non partagé n'apparaîtra jamais dans une bibliothèque partagée.")
         }
+    }
+
+    /// A fact drawn as the other rows draw theirs, that a tap opens for
+    /// correction and a long press still copies.
+    private func editableRow(_ field: BookField, value: String, icon: String, font: Font? = nil) -> some View {
+        Button { onEditField(field) } label: {
+            Label {
+                LabeledContent(field.title) {
+                    Text(value).font(font)
+                }
+            } icon: {
+                Image(systemName: icon).foregroundStyle(.secondary)
+            }
+        }
+        .tint(.primary)
+        .copyable(value)
+        .accessibilityIdentifier("book-\(field.rawValue)")
     }
 
     /// Who pressed the book on the reader, as in Vinarium's wine sheet. Only
@@ -360,7 +362,8 @@ struct BookPage: View {
             onToggleHidden: {},
             onOpenSeries: {},
             onEditGenre: {},
-            onEditRecommendation: {}
+            onEditRecommendation: {},
+            onEditField: { _ in }
         )
     }
 }

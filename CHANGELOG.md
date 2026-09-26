@@ -10,6 +10,8 @@ the release tag is pushed.
 
 ## Unreleased
 
+- On a book's page, tap a fact — the rating, the publisher, the year, the pages, the ISBN or a
+  reading date — to correct it right there.
 - Discover is rebuilt around your series: for each one you follow, the volumes already out that
   you do not have yet, with a link to Amazon or Audible, and the next one announced with its date.
 - A series page shows its upcoming releases right under its introduction.
