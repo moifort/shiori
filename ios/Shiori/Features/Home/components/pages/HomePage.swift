@@ -25,6 +25,8 @@ struct HomePage: View {
     /// Opens the add sheet from the prompt that leads an empty library.
     var onScan: () -> Void = {}
     let onBookTapped: (Book) -> Void
+    /// A row of the progress card: opens that saga.
+    var onSeriesOpened: (String) -> Void = { _ in }
 
     var body: some View {
         ScrollView {
@@ -99,7 +101,11 @@ struct HomePage: View {
                     onTapped: onGenresTapped
                 )
 
-                SeriesProgressWidget(series: dashboard.series, onHeaderTapped: onSeriesTapped)
+                SeriesProgressWidget(
+                    series: dashboard.series,
+                    onHeaderTapped: onSeriesTapped,
+                    onSeriesTapped: onSeriesOpened
+                )
             }
             .padding(.horizontal)
             .padding(.bottom, 24)

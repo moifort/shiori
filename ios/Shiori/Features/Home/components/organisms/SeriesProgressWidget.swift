@@ -3,6 +3,8 @@ import SwiftUI
 struct SeriesProgressWidget: View {
     let series: [Dashboard.SeriesProgress]
     let onHeaderTapped: () -> Void
+    /// Opens a saga as a sheet, as a book opens from the dashboard.
+    var onSeriesTapped: (String) -> Void = { _ in }
 
     var body: some View {
         WidgetCard(title: "Séries en cours", action: onHeaderTapped) {
@@ -11,7 +13,7 @@ struct SeriesProgressWidget: View {
             }
             VStack(spacing: 14) {
                 ForEach(series) { entry in
-                    NavigationLink(value: HomeView.Destination.series(entry.id)) {
+                    Button { onSeriesTapped(entry.id) } label: {
                         VStack(alignment: .leading, spacing: 6) {
                             HStack {
                                 SagaName(name: entry.name, isAudio: entry.isAudio)

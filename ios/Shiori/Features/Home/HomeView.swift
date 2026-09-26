@@ -6,10 +6,6 @@ import SwiftUI
 /// the reader for a page number every evening. The page figures spread each
 /// finished book over the days it was open instead.
 struct HomeView: View {
-    enum Destination: Hashable {
-        case series(String)
-    }
-
     /// Opens the Series tab on one of its views: the sagas in progress from
     /// the progress card.
     let onShowSeries: (SeriesRequest) -> Void
@@ -26,12 +22,11 @@ struct HomeView: View {
     @State private var audibleSync = AudibleBackgroundSync.shared
     /// The wait onboarding hands over to, drawn in place of the dashboard.
     @State private var preparation = LibraryPreparation.shared
-    /// The stack behind the dashboard: a saga is pushed onto it from its
-    /// progress row.
-    @State private var path = NavigationPath()
+    /// The saga opened from its progress row, as a sheet like a book.
+    @State private var openSeries: OpenedSeries?
 
     var body: some View {
-        NavigationStack(path: $path) {
+        NavigationStack {
             content
                 .navigationTitle("Accueil")
                 .toolbar {
@@ -46,20 +41,9 @@ struct HomeView: View {
                         .accessibilityIdentifier("home-settings")
                     }
                 }
-                .navigationDestination(for: Destination.self) { destination in
-                    switch destination {
-                    case let .series(id): SeriesView(seriesId: id)
-                    }
-                }
                 // The first time only: after that, writes made anywhere
                 // arrive through the change notice below.
                 .task { await viewModel.loadOnAppear() }
-        }
-        // A saga pushed from the progress card was popped: its first opening
-        // may have built the catalogue its bar is measured on, and reading a
-        // catalogue is no write, so no notice says so.
-        .onChange(of: path.count) { previous, current in
-            if current < previous { Task { await viewModel.load() } }
         }
         // And every time a write lands anywhere: the figures behind this screen
         // are rebuilt by the server on each one, and the tab may be showing.
@@ -84,6 +68,14 @@ struct HomeView: View {
         }
         // An import or a sync asked for from the settings posts the change
         // notice as it lands: nothing is left to reload on dismissal.
+        // A saga opened from the progress card was closed: its first opening
+        // may have built the catalogue its bar is measured on, and reading a
+        // catalogue is no write, so no notice says so.
+        .sheet(item: $openSeries, onDismiss: { Task { await viewModel.load() } }) { opened in
+            NavigationStack {
+                SeriesView(seriesId: opened.id, isSheet: true)
+            }
+        }
         .sheet(isPresented: $showSettings) {
             SettingsHomeView()
         }
@@ -110,7 +102,8 @@ struct HomeView: View {
                     onDroppedTapped: { onShowLibrary(LibraryRequest(status: .dropped)) },
                     onGenresTapped: { onShowLibrary(LibraryRequest()) },
                     onScan: onScan,
-                    onBookTapped: { selectedBook = $0 }
+                    onBookTapped: { selectedBook = $0 },
+                    onSeriesOpened: { openSeries = OpenedSeries(id: $0) }
                 )
                 .refreshable { await viewModel.load() }
         } else if let errorMessage = viewModel.errorMessage {
@@ -122,4 +115,9 @@ struct HomeView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
+}
+
+/// A saga opened from the dashboard, by its catalogue id.
+private struct OpenedSeries: Identifiable {
+    let id: String
 }

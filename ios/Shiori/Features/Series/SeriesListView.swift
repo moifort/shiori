@@ -73,12 +73,11 @@ struct SeriesListView: View {
             .navigationSubtitle(viewModel.mode.subtitle)
             .toolbar { toolbar }
             .libraryShelfPicker(shelf)
-            // On the content rather than on the stack: the stack stays put
-            // while a saga is pushed over it, the content comes back when the
-            // saga is popped — and comes back changed, since a saga's first
-            // opening is where the server builds its catalogue, which this
-            // list draws as the missing covers of the strip. Over last
-            // session's snapshot when the disk had one: the rows show at once
+            // Once, when the list first shows: a saga opens as a sheet over
+            // it, and the rows it changed are asked again when the sheet
+            // closes — a saga's first opening is where the server builds its
+            // catalogue, which this list draws as the missing covers of the
+            // strip. Over last session's snapshot when the disk had one: the rows show at once
             // and the spinner at the top says they are being brought up to date.
             .task {
                 takeRequested()
@@ -173,8 +172,12 @@ struct SeriesListView: View {
         }
         .listStyle(.insetGrouped)
         .refreshable { await viewModel.load() }
-        .navigationDestination(item: $openSeries) {
-            SeriesView(seriesId: $0.seriesId, language: $0.language)
+        // A sheet, as a book opens from the library: its own stack, so a
+        // volume or an author pushes inside it.
+        .sheet(item: $openSeries) { opened in
+            NavigationStack {
+                SeriesView(seriesId: opened.seriesId, language: opened.language, isSheet: true)
+            }
         }
     }
 
