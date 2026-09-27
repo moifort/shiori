@@ -1307,6 +1307,18 @@ type Mutation {
   ): Friend!
 
   """
+  Add one volume of a saga heard to the pile, catalogued from Audible — cover, summary, narrators, running time — through the reader's own account, on the store they buy on, whether or not they own the recording yet. The volume is filed under the saga at its number, in the edition given, as `TO_READ`; the nightly sync follows its listening once it is bought.
+  
+  The recording the weekly release watch confirmed is read by its ASIN; otherwise the store is searched for the saga, and the one in that language at that place is kept. Consumes no scan credit. Fails with `NOT_FOUND` when the saga has no catalogue or no such volume, or when Audible sells no recording of it there — add it by its title instead — and with `AUDIBLE_NOT_CONNECTED` and `AUDIBLE_UNAVAILABLE` like `audibleLibrary`.
+  """
+  addAudibleSeriesVolume(
+    """The edition the saga screen was opened on."""
+    language: BookLanguage!
+    seriesId: SeriesId!
+    volume: VolumeNumber!
+  ): Book!
+
+  """
   Catalogue a book without scanning it — typed by hand, or taken from a series catalogue. Consumes no scan credit.
   """
   addBook(input: NewBookInput!): Book!

@@ -23,6 +23,20 @@ const positionCalls: string[][] = []
  *  answers — which is how one reader's revoked device is staged without
  *  disturbing the other's. */
 const libraryRefusals: (Error | undefined)[] = []
+/** The store's catalogue, for a title the reader does not own, and what it was
+ *  asked. */
+let catalogue: AudibleItem[] = []
+const productCalls: string[] = []
+const searchCalls: unknown[] = []
+const rotated = {
+  accessToken: 'access-4',
+  refreshToken: 'Atnr|the-refresh-token',
+  adpToken: '{enc:token}',
+  devicePrivateKey: 'key',
+  serial: 'SERIAL1',
+  locale: 'fr',
+  expiresAt: new Date('2026-09-19T14:00:00.000Z'),
+}
 
 mock.module('~/domain/audible/infrastructure/audible-api', () => ({
   login: async (marketplace: string) => ({
@@ -73,6 +87,20 @@ mock.module('~/domain/audible/infrastructure/audible-api', () => ({
       },
     }
   },
+  product: async (_credentials: unknown, asin: string) => {
+    productCalls.push(asin)
+    return { item: catalogue.find((item) => item.asin === asin), credentials: rotated }
+  },
+  // Every title of the saga searched for, whatever the language: a store sells
+  // other languages' recordings too.
+  search: async (_credentials: unknown, options: { title?: string; keywords?: string }) => {
+    searchCalls.push(options)
+    const wanted = options.title ?? options.keywords ?? ''
+    return {
+      items: catalogue.filter((item) => item.series?.name === wanted || item.title === wanted),
+      credentials: rotated,
+    }
+  },
   landingUrlOf: (marketplace: string) => `https://www.amazon.${marketplace}/ap/maplanding`,
 }))
 
@@ -115,6 +143,9 @@ beforeEach(() => {
   libraryCalls.length = 0
   positionCalls.length = 0
   libraryRefusals.length = 0
+  catalogue = []
+  productCalls.length = 0
+  searchCalls.length = 0
 })
 
 const connect = async (who: UserId = reader) => {
@@ -675,5 +706,136 @@ describe('running the nightly job over every reader', () => {
       deferred: 2,
     })
     expect(libraryCalls).toHaveLength(0)
+  })
+})
+
+describe('adding a volume of a saga heard from its screen', () => {
+  const saga = SeriesId('chronique-du-tueur-de-roi--patrick-rothfuss--audio')
+  const recording = (overrides: Partial<AudibleItem>) =>
+    anItem({
+      language: 'french',
+      publisher: 'Audiolib',
+      series: { name: 'Chronique du tueur de roi', position: 2 },
+      asin: 'B00X57B4KE',
+      title: 'La Peur du sage',
+      ...overrides,
+    })
+  const catalogued = () =>
+    fake.seed('series', saga, {
+      id: saga,
+      name: 'Chronique du tueur de roi',
+      author: 'Patrick Rothfuss',
+      catalogedAt: NOW,
+      volumes: [
+        {
+          number: 1,
+          title: 'The Name of the Wind',
+          kind: 'main',
+          titles: { fr: 'Le Nom du vent' },
+        },
+        {
+          number: 2,
+          title: 'The Wise Man’s Fear',
+          kind: 'main',
+          titles: { fr: 'La Peur du sage' },
+        },
+      ],
+    })
+  const wanted = { seriesId: saga, volume: VolumeNumber(2), language: 'fr' as const }
+
+  test('says so when no account is connected', async () => {
+    catalogued()
+    expect(await AudibleUseCase.addSeriesVolume(reader, wanted)).toBe('not-connected')
+  })
+
+  test('reads the recording the release watch confirmed by its ASIN', async () => {
+    await connect()
+    catalogued()
+    fake.seed('saga-watches', `${saga}--fr`, {
+      key: `${saga}--fr`,
+      seriesId: saga,
+      name: 'Chronique du tueur de roi',
+      language: 'fr',
+      checkedAt: NOW,
+      volumes: [{ number: 2, title: 'La Peur du sage', asin: 'B0CONFIRM1' }],
+    })
+    catalogue = [recording({ asin: 'B0CONFIRM1', narrators: ['Bernard Gabay'] })]
+
+    const added = await AudibleUseCase.addSeriesVolume(reader, wanted)
+
+    expect(productCalls).toEqual(['B0CONFIRM1'])
+    expect(searchCalls).toEqual([])
+    expect(added).toMatchObject({
+      title: 'La Peur du sage',
+      format: 'audiobook',
+      status: 'to-read',
+      language: 'fr',
+      publisher: 'Audiolib',
+      narrators: ['Bernard Gabay'],
+      audibleAsin: 'B0CONFIRM1',
+      series: { id: saga, name: 'Chronique du tueur de roi', volume: 2, kind: 'main' },
+    })
+    expect((await BookQuery.all(reader)).map((book) => book.audibleAsin)).toEqual([
+      asin('B0CONFIRM1'),
+    ])
+  })
+
+  test('otherwise keeps the recording in the edition’s language at the volume’s place', async () => {
+    await connect()
+    catalogued()
+    catalogue = [
+      recording({ asin: 'B0ENGLISH2', language: 'english', title: 'The Wise Man’s Fear' }),
+      recording({ asin: 'B0FRENCH01', series: { name: 'Chronique du tueur de roi', position: 1 } }),
+      recording({ asin: 'B0FRENCH02' }),
+    ]
+
+    const added = await AudibleUseCase.addSeriesVolume(reader, wanted)
+
+    expect(searchCalls).toEqual([
+      { title: 'Chronique du tueur de roi', author: 'Patrick Rothfuss', limit: 50 },
+    ])
+    expect(added).toMatchObject({ audibleAsin: 'B0FRENCH02', status: 'to-read' })
+  })
+
+  test('carries nothing of a listening the reader never did', async () => {
+    await connect()
+    catalogued()
+    catalogue = [
+      recording({
+        listeningStatus: { isFinished: true, finishedAt: new Date('2022-04-01T00:00:00.000Z') },
+        purchaseDate: new Date('2020-01-01T00:00:00.000Z'),
+      }),
+    ]
+
+    const added = await AudibleUseCase.addSeriesVolume(reader, wanted)
+
+    expect(added).toMatchObject({ status: 'to-read' })
+    expect((added as { finishedAt?: Date }).finishedAt).toBeUndefined()
+  })
+
+  test('keeps the credentials the client rotated', async () => {
+    await connect()
+    catalogued()
+    catalogue = [recording({})]
+
+    await AudibleUseCase.addSeriesVolume(reader, wanted)
+
+    const account = await AudibleQuery.accountOf(reader)
+    expect(account?.credentials).not.toContain('access-4')
+  })
+
+  test('says it found nothing when Audible sells no recording of that volume', async () => {
+    await connect()
+    catalogued()
+    catalogue = [recording({ language: 'english' })]
+
+    expect(await AudibleUseCase.addSeriesVolume(reader, wanted)).toBe('not-found')
+    expect(await BookQuery.all(reader)).toEqual([])
+  })
+
+  test('says it found nothing for a saga with no catalogue', async () => {
+    await connect()
+    expect(await AudibleUseCase.addSeriesVolume(reader, wanted)).toBe('not-found')
+    expect(searchCalls).toEqual([])
   })
 })

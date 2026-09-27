@@ -9,9 +9,10 @@ import {
 } from '~/domain/audible/infrastructure/graphql/types'
 import { AudibleQuery } from '~/domain/audible/query'
 import { AudibleUseCase } from '~/domain/audible/use-case'
+import { BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import { builder } from '~/domain/shared/graphql/builder'
-import { badUserInput, domainError } from '~/domain/shared/graphql/errors'
+import { badUserInput, domainError, notFound } from '~/domain/shared/graphql/errors'
 
 builder.mutationFields((t) => ({
   startAudibleLogin: t.field({
@@ -99,6 +100,43 @@ builder.mutationFields((t) => ({
       // the one Audible supplied, and re-reading a whole library to learn that
       // would cost one document read per title.
       return books.map((book) => ({ ...book, coverUrl: book.publishedCoverUrl }))
+    },
+  }),
+
+  addAudibleSeriesVolume: t.field({
+    type: BookType,
+    description:
+      'Add one volume of a saga heard to the pile, catalogued from Audible — cover, ' +
+      "summary, narrators, running time — through the reader's own account, on the " +
+      'store they buy on, whether or not they own the recording yet. The volume is ' +
+      'filed under the saga at its number, in the edition given, as `TO_READ`; the ' +
+      'nightly sync follows its listening once it is bought.\n\n' +
+      'The recording the weekly release watch confirmed is read by its ASIN; ' +
+      'otherwise the store is searched for the saga, and the one in that language at ' +
+      'that place is kept. Consumes no scan credit. Fails with `NOT_FOUND` when the ' +
+      'saga has no catalogue or no such volume, or when Audible sells no recording ' +
+      'of it there — add it by its title instead — and with `AUDIBLE_NOT_CONNECTED` ' +
+      'and `AUDIBLE_UNAVAILABLE` like `audibleLibrary`.',
+    args: {
+      seriesId: t.arg({ type: 'SeriesId', required: true }),
+      volume: t.arg({ type: 'VolumeNumber', required: true }),
+      language: t.arg({
+        type: BookLanguageEnum,
+        required: true,
+        description: 'The edition the saga screen was opened on.',
+      }),
+    },
+    resolve: async (_root, args, context) => {
+      const result = await AudibleUseCase.addSeriesVolume(context.userId, args).catch(
+        audibleUnavailable,
+      )
+      const book = match(result)
+        .with('not-connected', notConnected)
+        .with('not-found', () => notFound('Audible sells no recording of that volume'))
+        .otherwise((added) => added)
+      // Read back by nothing, as an import is: the only cover a recording has is
+      // the one Audible supplied.
+      return { ...book, coverUrl: book.publishedCoverUrl }
     },
   }),
 

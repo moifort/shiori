@@ -1,3 +1,4 @@
+import type { AudibleItem } from 'audible-api-ts'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import {
   audibleLinksFor,
@@ -8,8 +9,10 @@ import {
   listenedMinutesFor,
   listeningChangesFor,
   purchaseDatesFor,
+  recordingOfVolume,
   seriesVolumesFor,
   shelfKeysOf,
+  volumeBookFrom,
 } from '~/domain/audible/business-rules'
 import { AudibleCommand } from '~/domain/audible/command'
 import * as api from '~/domain/audible/infrastructure/audible-api'
@@ -25,9 +28,14 @@ import type {
 } from '~/domain/audible/types'
 import { BookCommand } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
-import type { Book } from '~/domain/book/types'
+import type { Book, BookLanguage } from '~/domain/book/types'
+import { BookUseCase } from '~/domain/book/use-case'
+import { watchKeyOf } from '~/domain/discovery/business-rules'
+import { DiscoveryQuery } from '~/domain/discovery/query'
+import { SeriesQuery } from '~/domain/series/query'
+import type { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
 import { SeriesUseCase } from '~/domain/series/use-case'
-import type { UserId } from '~/domain/shared/types'
+import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
 import { withRequestCacheScope } from '~/system/request-cache'
 import { bulkSave } from '~/utils/firestore'
@@ -190,6 +198,53 @@ export namespace AudibleUseCase {
     }
   }
 
+  /** A volume of a saga heard, added from its saga screen with Audible's own
+   *  data — cover, summary, narrators, running time — read through the
+   *  reader's account, on the store they buy on, whether or not they own the
+   *  recording yet. The one the weekly release watch confirmed is read by its
+   *  ASIN; otherwise the store is searched for the saga, and the recording in
+   *  the edition's language at the volume's place is kept.
+   *
+   *  `not-found` when the saga has no catalogue or no such volume, or when
+   *  Audible sells no recording of it there. */
+  export const addSeriesVolume = async (
+    userId: UserId,
+    {
+      seriesId,
+      volume,
+      language,
+    }: { seriesId: SeriesId; volume: VolumeNumber; language: BookLanguage },
+  ): Promise<Book | 'not-connected' | 'not-found'> => {
+    const connected = await connectedCredentials(userId)
+    if (connected === 'not-connected') return connected
+    const [catalogue, watches] = await Promise.all([
+      SeriesQuery.byId(seriesId),
+      DiscoveryQuery.watches([watchKeyOf({ seriesId, language })]),
+    ])
+    const entry = catalogue?.volumes.find(
+      (candidate) => candidate.kind === 'main' && candidate.number === volume,
+    )
+    if (!catalogue || !entry) return 'not-found'
+    const confirmed = watches
+      .get(watchKeyOf({ seriesId, language }))
+      ?.volumes.find((found) => found.number === volume)?.asin
+
+    const { recording, credentials } = await recordingOf(connected.credentials, {
+      seriesId,
+      volume,
+      language,
+      asin: confirmed,
+      name: catalogue.name,
+      author: catalogue.author,
+      title: entry.titles?.[language] ?? entry.title,
+    })
+    await AudibleCommand.rememberRotatedCredentials(userId, credentials)
+    if (!recording) return 'not-found'
+
+    const membership = { id: seriesId, name: catalogue.name, volume, kind: 'main' as const }
+    return BookUseCase.add(userId, volumeBookFrom(recording, membership, language))
+  }
+
   /** The nightly job: every reader who left the sync on, staleest first.
    *
    *  Bounded by time rather than by a count, because what the run is really
@@ -245,19 +300,9 @@ const SYNC_BUDGET_MS = 120_000
  *  credentials back; storing them is what keeps the next import from paying for
  *  that refresh again. */
 const fetchLibrary = async (userId: UserId) => {
-  const account = await AudibleQuery.accountOf(userId)
-  if (!account) return 'not-connected' as const
-
-  // Credentials sealed with a key that no longer exists cannot be opened again,
-  // and never will be. That is a connection in name only, so it is dropped here
-  // rather than reported as an Amazon failure the reader could retry forever:
-  // the app then offers to connect again, which is the one thing that works.
-  const credentials = opened(account.credentials)
-  if (!credentials) {
-    logger.warn('unreadable Audible credentials, connection dropped', { userId })
-    await AudibleCommand.disconnect(userId)
-    return 'not-connected' as const
-  }
+  const connected = await connectedCredentials(userId)
+  if (connected === 'not-connected') return connected
+  const { account, credentials } = connected
 
   const { items, credentials: rotated } = await api.library(credentials)
   // Where the player last stopped in every title, in one pass: the library's
@@ -269,6 +314,24 @@ const fetchLibrary = async (userId: UserId) => {
   )
   await AudibleCommand.rememberRotatedCredentials(userId, rotatedAgain)
   return { items, positions, account }
+}
+
+/** The reader's account and its credentials, opened.
+ *
+ *  Credentials sealed with a key that no longer exists cannot be opened again,
+ *  and never will be. That is a connection in name only, so it is dropped here
+ *  rather than reported as an Amazon failure the reader could retry forever:
+ *  the app then offers to connect again, which is the one thing that works. */
+const connectedCredentials = async (userId: UserId) => {
+  const account = await AudibleQuery.accountOf(userId)
+  if (!account) return 'not-connected' as const
+  const credentials = opened(account.credentials)
+  if (!credentials) {
+    logger.warn('unreadable Audible credentials, connection dropped', { userId })
+    await AudibleCommand.disconnect(userId)
+    return 'not-connected' as const
+  }
+  return { account, credentials }
 }
 
 const opened = (sealed: ConnectedAccount['credentials']) => {
@@ -291,4 +354,46 @@ const toImportable = (
   return fetched.items
     .map((item) => importableFrom(item, ownedKeys, heard.get(item.asin)))
     .filter(isPresent)
+}
+
+type Credentials = Parameters<typeof api.search>[0]
+
+/** Every candidate turned into what it would be catalogued as, to be matched
+ *  on its language and its place in the saga. Nothing is owned here. */
+const importablesOf = (items: readonly AudibleItem[]) =>
+  items.map((item) => importableFrom(item, new Set())).filter(isPresent)
+
+/** The recording of one volume on the reader's store: by the ASIN the release
+ *  watch confirmed, then among the saga's recordings, then among a search for
+ *  the volume's own title — each step only when the one before found nothing. */
+const recordingOf = async (
+  credentials: Credentials,
+  wanted: {
+    seriesId: SeriesId
+    volume: VolumeNumber
+    language: BookLanguage
+    asin?: AudibleAsin
+    name: SeriesName
+    author: AuthorName
+    title: BookTitle
+  },
+): Promise<{ recording?: ImportableBook; credentials: Credentials }> => {
+  let current = credentials
+  if (wanted.asin) {
+    const { item, credentials: rotated } = await api.product(current, wanted.asin)
+    current = rotated
+    const [recording] = importablesOf(item ? [item] : [])
+    if (recording) return { recording, credentials: current }
+  }
+  const searches = [
+    { title: wanted.name, author: wanted.author, limit: 50 },
+    { keywords: wanted.title, author: wanted.author, limit: 20 },
+  ]
+  for (const options of searches) {
+    const { items, credentials: rotated } = await api.search(current, options)
+    current = rotated
+    const recording = recordingOfVolume(importablesOf(items), wanted)
+    if (recording) return { recording, credentials: current }
+  }
+  return { credentials: current }
 }

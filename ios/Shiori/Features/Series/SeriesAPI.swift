@@ -57,6 +57,27 @@ enum SeriesAPI {
         return data.refreshSeries.map { BookSeries(catalogue: $0.fragments.seriesCatalogue) }
     }
 
+    /// Adds a volume of a saga heard as Audible describes it, through the
+    /// reader's account, filed under the saga at its number in the edition
+    /// opened, on the pile. Throws `NOT_FOUND` when Audible sells no recording
+    /// of it and `AUDIBLE_NOT_CONNECTED` without an account.
+    static func addAudibleVolume(
+        seriesId: String,
+        volume: Int,
+        language: BookLanguage
+    ) async throws -> Book {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            concerning: .series(id: seriesId),
+            mutation: ShioriGraphQL.AddAudibleSeriesVolumeMutation(
+                seriesId: seriesId,
+                volume: volume,
+                language: LibraryAPI.graphQLLanguage(language)
+            )
+        )
+        return data.addAudibleSeriesVolume.fragments.bookDetail.asBook
+    }
+
     private static func graphQLLanguage(
         _ language: BookLanguage?
     ) -> GraphQLNullable<GraphQLEnum<ShioriGraphQL.BookLanguage>> {

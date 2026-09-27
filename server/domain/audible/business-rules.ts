@@ -22,11 +22,13 @@ import {
 import type {
   Book,
   BookId,
+  BookLanguage,
   ListeningMinutes as ListeningMinutesValue,
   ReadingStatus,
+  SeriesMembership,
 } from '~/domain/book/types'
 import { SeriesName, seriesKeyOf, VolumeNumber } from '~/domain/series/primitives'
-import type { VolumeNumber as VolumeNumberValue } from '~/domain/series/types'
+import type { SeriesId, VolumeNumber as VolumeNumberValue } from '~/domain/series/types'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import type { AuthorName as AuthorNameValue, UserId } from '~/domain/shared/types'
 import { isPresent, optionally } from '~/utils/input'
@@ -502,3 +504,40 @@ export const readersDueForSync = (connections: readonly AudibleConnection[]): Us
  *  opened on. */
 export const audibleSearchUrlOf = (marketplace: AudibleMarketplace, keywords: string) =>
   `https://www.audible.${marketplace}/search?keywords=${encodeURIComponent(keywords)}`
+
+/** The recording of one volume of a saga among what a catalogue search found:
+ *  in the edition's language — a store sells other languages' recordings too —
+ *  at the volume's place in the saga, filed under the saga itself rather than
+ *  one sharing its name, when Audible's name for it gives the same key. */
+export const recordingOfVolume = (
+  found: readonly ImportableBook[],
+  {
+    seriesId,
+    volume,
+    language,
+  }: { seriesId: SeriesId; volume: VolumeNumberValue; language: BookLanguage },
+): ImportableBook | undefined => {
+  const candidates = found.filter(
+    (importable) => importable.language === language && importable.series?.volume === volume,
+  )
+  return candidates.find((importable) => importable.series?.id === seriesId) ?? candidates[0]
+}
+
+/** The record a recording added from a saga screen writes: Audible's own data,
+ *  filed under the saga the reader added it from, at the volume's place, in
+ *  the edition's language, on the pile. Nothing of a listening is carried —
+ *  the reader does not own it yet, and the nightly sync takes it from there
+ *  once they do. */
+export const volumeBookFrom = (
+  recording: ImportableBook,
+  membership: SeriesMembership,
+  language: BookLanguage,
+): NewBook => ({
+  ...bookFrom(recording),
+  series: membership,
+  language,
+  status: 'to-read',
+  finishedAt: undefined,
+  addedAt: undefined,
+  listenedMinutes: undefined,
+})

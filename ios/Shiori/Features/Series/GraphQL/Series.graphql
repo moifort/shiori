@@ -17,6 +17,20 @@ query SeriesScreen($id: SeriesId!, $language: BookLanguage, $proposed: ProposedS
   }
 }
 
+# A volume of a saga heard, added to the pile with Audible's own data — cover,
+# summary, narrators, running time — read through the reader's account.
+# `NOT_FOUND` when Audible sells no recording of it, `AUDIBLE_NOT_CONNECTED`
+# without an account: the app then adds it by its title, as a book.
+mutation AddAudibleSeriesVolume(
+  $seriesId: SeriesId!
+  $volume: VolumeNumber!
+  $language: BookLanguage!
+) {
+  addAudibleSeriesVolume(seriesId: $seriesId, volume: $volume, language: $language) {
+    ...BookDetail
+  }
+}
+
 # Ask the world about the saga again. The fresh catalogue replaces the stored
 # one for everyone; null means it could not be rebuilt and the old one stands.
 mutation RefreshSeries($seriesId: SeriesId!, $language: BookLanguage) {

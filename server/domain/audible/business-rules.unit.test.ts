@@ -12,12 +12,17 @@ import {
   plainTextOf,
   purchaseDatesFor,
   readersDueForSync,
+  recordingOfVolume,
   seriesVolumesFor,
   shelfKeyOf,
   shelfKeysOf,
   statusOf,
 } from '~/domain/audible/business-rules'
-import type { AudibleAsin as AudibleAsinValue, AudibleConnection } from '~/domain/audible/types'
+import type {
+  AudibleAsin as AudibleAsinValue,
+  AudibleConnection,
+  ImportableBook,
+} from '~/domain/audible/types'
 import { ListeningMinutes } from '~/domain/book/primitives'
 import type { Book, BookId } from '~/domain/book/types'
 import type { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
@@ -811,5 +816,46 @@ describe('a search on the reader’s Audible store', () => {
     expect(audibleSearchUrlOf('fr', 'Nous sommes Légion')).toBe(
       'https://www.audible.fr/search?keywords=Nous%20sommes%20L%C3%A9gion',
     )
+  })
+})
+
+describe('the recording of one volume of a saga', () => {
+  const saga = 'chronique-du-tueur-de-roi--patrick-rothfuss--audio' as SeriesId
+  const found = (asin: string, overrides: Partial<AudibleItem>) =>
+    importableFrom(
+      anItem({
+        asin,
+        language: 'french',
+        series: { name: 'Chronique du tueur de roi', position: 2 },
+        ...overrides,
+      }),
+      new Set(),
+    ) as ImportableBook
+  const wanted = { seriesId: saga, volume: 2 as VolumeNumber, language: 'fr' as const }
+
+  test('is the one in the edition’s language at the volume’s place', () => {
+    const recordings = [
+      found('B0ENGLISH2', { language: 'english' }),
+      found('B0FRENCH01', { series: { name: 'Chronique du tueur de roi', position: 1 } }),
+      found('B0FRENCH02', {}),
+    ]
+    expect(recordingOfVolume(recordings, wanted)?.asin).toBe('B0FRENCH02' as AudibleAsinValue)
+  })
+
+  test('is the saga’s own over another at the same place', () => {
+    const recordings = [
+      found('B0OTHERSAG', { series: { name: 'Chroniques du tueur', position: 2 } }),
+      found('B0FRENCH02', {}),
+    ]
+    expect(recordingOfVolume(recordings, wanted)?.asin).toBe('B0FRENCH02' as AudibleAsinValue)
+  })
+
+  test('is nothing when no recording sits at that place', () => {
+    expect(
+      recordingOfVolume(
+        [found('B0FRENCH03', { series: { name: 'Chronique du tueur de roi', position: 3 } })],
+        wanted,
+      ),
+    ).toBeUndefined()
   })
 })

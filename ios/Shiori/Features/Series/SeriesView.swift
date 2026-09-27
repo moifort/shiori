@@ -695,6 +695,25 @@ struct SeriesView: View {
     private func add(_ volume: Volume, author: String) async {
         addingTitle = volume.title
         defer { addingTitle = nil }
+        // A saga heard takes Audible's own record of the recording — cover,
+        // narrators, running time — read through the reader's account. Without
+        // an account, or a recording Audible does not sell, the volume is added
+        // by its title below, as a book is.
+        if series?.isAudio == true, volume.kind == .main, let number = volume.number, let language {
+            do {
+                let added = try await SeriesAPI.addAudibleVolume(
+                    seriesId: seriesId,
+                    volume: number,
+                    language: language
+                )
+                track(.bookAdded(source: .series))
+                owned.append(added)
+                return
+            } catch {
+                let code = (error as? APIError)?.domainCode
+                if code != "NOT_FOUND" && code != "AUDIBLE_NOT_CONNECTED" { _ = reportError(error) }
+            }
+        }
         // Another volume of a manga is a manga: the saga shares its format.
         let format = owned.first?.format ?? .book
         let membership = SeriesMembership(
