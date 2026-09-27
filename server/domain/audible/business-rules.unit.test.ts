@@ -27,7 +27,7 @@ import type {
 import { ListeningMinutes } from '~/domain/book/primitives'
 import type { Book, BookId } from '~/domain/book/types'
 import type { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
-import type { BookTitle, UserId } from '~/domain/shared/types'
+import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 
 const anItem = (overrides: Partial<AudibleItem> = {}): AudibleItem =>
   ({
@@ -840,7 +840,13 @@ describe('the recording of one volume of a saga', () => {
       }),
       new Set(),
     ) as ImportableBook
-  const wanted = { seriesId: saga, volume: 2 as VolumeNumber, language: 'fr' as const }
+  const wanted = {
+    seriesId: saga,
+    volume: 2 as VolumeNumber,
+    language: 'fr' as const,
+    title: 'La Peur du sage' as BookTitle,
+    author: 'Patrick Rothfuss' as AuthorName,
+  }
 
   test('is the one in the edition’s language at the volume’s place', () => {
     const recordings = [
@@ -857,6 +863,32 @@ describe('the recording of one volume of a saga', () => {
       found('B0FRENCH02', {}),
     ]
     expect(recordingOfVolume(recordings, wanted)?.asin).toBe('B0FRENCH02' as AudibleAsinValue)
+  })
+
+  // Audible files some new recordings under no saga at all — "La Route du
+  // diable", fourth of Caleb Traskman, came out that way. The volume's own
+  // title by the saga's author is then the only thing left to know it by.
+  test('is the one bearing the volume’s title when Audible files it under no saga', () => {
+    const recordings = [
+      found('B0NOSAGA01', { series: undefined, title: 'Le Nom du vent' }),
+      found('B0NOSAGA02', { series: undefined, title: 'La peur du sage' }),
+    ]
+    expect(recordingOfVolume(recordings, wanted)?.asin).toBe('B0NOSAGA02' as AudibleAsinValue)
+  })
+
+  test('is not a title by another author, nor one filed at another place', () => {
+    const recordings = [
+      found('B0STRANGER', {
+        series: undefined,
+        authors: ['Someone Else'],
+        title: 'La Peur du sage',
+      }),
+      found('B0FRENCH03', {
+        series: { name: 'Chronique du tueur de roi', position: 3 },
+        title: 'La Peur du sage',
+      }),
+    ]
+    expect(recordingOfVolume(recordings, wanted)).toBeUndefined()
   })
 
   test('is nothing when no recording sits at that place', () => {

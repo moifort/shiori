@@ -514,19 +514,38 @@ export const audibleProductUrlOf = (marketplace: AudibleMarketplace, asin: Audib
 /** The recording of one volume of a saga among what a catalogue search found:
  *  in the edition's language — a store sells other languages' recordings too —
  *  at the volume's place in the saga, filed under the saga itself rather than
- *  one sharing its name, when Audible's name for it gives the same key. */
+ *  one sharing its name, when Audible's name for it gives the same key.
+ *
+ *  Audible files some recordings under no saga at all, new ones especially. One
+ *  of those is taken when it bears the volume's own title by the saga's author;
+ *  a recording filed at another place, even under that title, is another volume. */
 export const recordingOfVolume = (
   found: readonly ImportableBook[],
   {
     seriesId,
     volume,
     language,
-  }: { seriesId: SeriesId; volume: VolumeNumberValue; language: BookLanguage },
+    title,
+    author,
+  }: {
+    seriesId: SeriesId
+    volume: VolumeNumberValue
+    language: BookLanguage
+    title: string
+    author: string
+  },
 ): ImportableBook | undefined => {
-  const candidates = found.filter(
-    (importable) => importable.language === language && importable.series?.volume === volume,
+  const inLanguage = found.filter((importable) => importable.language === language)
+  const candidates = inLanguage.filter((importable) => importable.series?.volume === volume)
+  const wanted = shelfKeyOf(title, author)
+  return (
+    candidates.find((importable) => importable.series?.id === seriesId) ??
+    candidates[0] ??
+    inLanguage.find(
+      (importable) =>
+        !importable.series && shelfKeyOf(importable.title, importable.authors[0]) === wanted,
+    )
   )
-  return candidates.find((importable) => importable.series?.id === seriesId) ?? candidates[0]
 }
 
 /** The record a recording added from a saga screen writes: Audible's own data,
