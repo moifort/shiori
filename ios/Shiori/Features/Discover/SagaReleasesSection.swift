@@ -28,7 +28,7 @@ struct SagaReleasesSection: View {
     }
 
     private func row(_ volume: DiscoveredVolume) -> some View {
-        HStack(alignment: .center, spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
             BookCover(book: Book(
                 id: "release-\(volume.number)",
                 title: volume.title,

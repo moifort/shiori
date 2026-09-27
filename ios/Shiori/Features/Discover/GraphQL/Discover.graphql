@@ -28,6 +28,7 @@ fragment DiscoveryFields on Discovery {
     next {
       ...DiscoveredVolumeFields
     }
+    missing
   }
 }
 

@@ -60,6 +60,13 @@ export const SagaDiscoveryType = builder.objectRef<SagaDiscovery>('SagaDiscovery
       description: 'The saga as the Series tab draws its row.',
       resolve: (row) => row.series,
     }),
+    missing: t.field({
+      type: ['VolumeNumber'],
+      description:
+        'The numbers of the volumes out the reader has not added, in order — the ones the ' +
+        'Series tab draws missing, which the saga screen adds.',
+      resolve: (row) => row.missing,
+    }),
     next: t.field({
       type: DiscoveredVolumeType,
       nullable: true,

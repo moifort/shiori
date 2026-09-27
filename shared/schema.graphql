@@ -2189,6 +2189,11 @@ enum ReleaseFormat {
 One row of the Découvrir tab: a saga the reader follows, and what it has for them.
 """
 type SagaDiscovery {
+  """
+  The numbers of the volumes out the reader has not added, in order — the ones the Series tab draws missing, which the saga screen adds.
+  """
+  missing: [VolumeNumber!]!
+
   """The next volume announced."""
   next: DiscoveredVolume
 

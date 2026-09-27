@@ -56,6 +56,8 @@ struct SagaReleases: Codable, Sendable, Equatable {
 struct SagaDiscovery: Identifiable, Codable, Sendable {
     var series: FollowedSeries
     let releases: SagaReleases
+    /// The numbers of the volumes out the reader has not added yet, in order.
+    var missing: [Int] = []
 
     var id: String { series.id }
 
@@ -156,7 +158,8 @@ private extension DiscoveryPage {
                     releases: SagaReleases(
                         watched: true,
                         next: row.next.map { DiscoveredVolume(fields: $0.fragments.discoveredVolumeFields) }
-                    )
+                    ),
+                    missing: row.missing
                 )
             },
             unwatched: fields.unwatched

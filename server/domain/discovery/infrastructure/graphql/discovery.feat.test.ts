@@ -56,6 +56,7 @@ describe('the Découvrir tab', () => {
         sagas {
           series { id name language ownedCount }
           next { number date }
+          missing
         }
       }
     }`)
@@ -67,6 +68,7 @@ describe('the Découvrir tab', () => {
         {
           series: { id: carl, name: 'Dungeon Crawler Carl', language: 'FR', ownedCount: 1 },
           next: { number: 4, date: '2099-02-12' },
+          missing: [2],
         },
       ],
     })

@@ -10,6 +10,7 @@ import {
   inDiscoveryOrder,
   likelyLanguageOf,
   mergedVolumes,
+  missingVolumesOf,
   readerIsStale,
   releasesOf,
   todayOf,
@@ -249,14 +250,12 @@ const discoveryOf = (
   const rows = followed.flatMap((series): SagaDiscovery[] => {
     if (!series.language || series.state === 'unfollowed') return []
     if (formatOf(series.id) !== format) return []
-    const releases = releasesOf(
-      series.books,
-      watches.get(watchKeyOf({ seriesId: series.id, language: series.language })),
-      series.catalogue,
-      today,
-    )
+    const watch = watches.get(watchKeyOf({ seriesId: series.id, language: series.language }))
+    const releases = releasesOf(series.books, watch, series.catalogue, today)
     if (!releases.watched) unwatched += 1
-    return releases.next ? [{ ...releases, series }] : []
+    if (!releases.next) return []
+    const missing = missingVolumesOf(series.books, watch, series.catalogue, today)
+    return [{ ...releases, series, missing }]
   })
   return { sagas: inDiscoveryOrder(rows), unwatched }
 }

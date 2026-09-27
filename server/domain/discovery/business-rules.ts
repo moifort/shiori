@@ -1,7 +1,7 @@
 import type { Book } from '~/domain/book/types'
 import { type FoundVolume as CatalogueVolume, isForthcoming } from '~/domain/series/business-rules'
 import { isAudioSeries } from '~/domain/series/primitives'
-import type { Series, SeriesId } from '~/domain/series/types'
+import type { Series, SeriesId, VolumeNumber } from '~/domain/series/types'
 import type { FollowedSeries } from '~/domain/series/use-case'
 import { type Language, SUPPORTED_LANGUAGES } from '~/domain/shared/language'
 import { Year } from '~/domain/shared/primitives'
@@ -195,6 +195,23 @@ export const releasesOf = (
         whenOf(left).localeCompare(whenOf(right)) || left.volume.number - right.volume.number,
     )[0]?.volume
   return next ? { watched: true, next } : { watched: true }
+}
+
+/** The numbers of the volumes out that the reader does not hold, in order, by
+ *  the same rule the Series tab's strip draws them missing: what Découvrir says
+ *  can be added. Nothing before the saga was ever looked up. */
+export const missingVolumesOf = (
+  books: readonly Pick<Book, 'series'>[],
+  watch: SagaWatch | undefined,
+  catalogue: Series | null | undefined,
+  today: string,
+): VolumeNumber[] => {
+  if (!watch) return []
+  const held = heldNumbersOf(books)
+  return candidatesOf(watch, catalogue, today)
+    .filter(({ volume, upcoming }) => !upcoming && !held.has(volume.number))
+    .map(({ volume }) => volume.number)
+    .sort((left, right) => left - right)
 }
 
 /** The tab: every saga with a volume announced for a known date, the soonest

@@ -77,8 +77,9 @@ export type SagaReleases = {
   next?: FoundVolume
 }
 
-/** One row of the Découvrir tab. */
-export type SagaDiscovery = SagaReleases & { series: FollowedSeries }
+/** One row of the Découvrir tab: what the saga has for the reader, and the
+ *  numbers of the volumes out they have not added yet. */
+export type SagaDiscovery = SagaReleases & { series: FollowedSeries; missing: VolumeNumber[] }
 
 /** The Découvrir tab in one format. */
 export type Discovery = {

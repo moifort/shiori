@@ -102,7 +102,7 @@ struct DiscoverView: View {
                 Section {
                     ForEach(rows) { row($0) }
                 } header: {
-                    Text("À venir")
+                    Text("À découvrir")
                 } footer: {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Image(systemName: "bell")
@@ -129,7 +129,7 @@ struct DiscoverView: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isButton)
                 .accessibilityAction { openSeries = row }
-            SagaReleasesSummary(releases: row.releases)
+            SagaReleasesSummary(releases: row.releases, missing: row.missing)
         }
         .contextMenu {
             Button("Ouvrir la série", systemImage: "books.vertical") { openSeries = row }
@@ -156,24 +156,31 @@ struct DiscoverView: View {
     }
 }
 
-/// The next volume of a saga and when it comes out, in a line under its covers.
+/// What a saga has for the reader, in a line under its covers: the next volume
+/// announced — its date already hangs under its cover — and the volumes out
+/// they have not added yet.
 struct SagaReleasesSummary: View {
     let releases: SagaReleases
+    let missing: [Int]
 
     var body: some View {
-        if let next = releases.next {
-            Text(nextLine(next))
+        let parts = [comingPart, availablePart].compactMap { $0 }
+        if !parts.isEmpty {
+            Text(verbatim: parts.joined(separator: " · "))
                 .foregroundStyle(.orange)
                 .font(.footnote.weight(.medium))
                 .lineLimit(2)
         }
     }
 
-    private func nextLine(_ next: DiscoveredVolume) -> String {
-        if let date = next.date {
-            return String(localized: "Tome \(next.number) \(ReleaseDateText.phrase(date))")
-        }
-        return String(localized: "Tome \(next.number) annoncé")
+    private var comingPart: String? {
+        releases.next.map { String(localized: "À venir : Tome \($0.number)") }
+    }
+
+    private var availablePart: String? {
+        guard !missing.isEmpty else { return nil }
+        let numbers = missing.map(String.init).joined(separator: ", ")
+        return String(localized: "Disponible : Tome \(numbers)")
     }
 }
 

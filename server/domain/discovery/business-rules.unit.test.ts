@@ -11,6 +11,7 @@ import {
   inDiscoveryOrder,
   likelyLanguageOf,
   mergedVolumes,
+  missingVolumesOf,
   releasesOf,
   watchedSagasOf,
 } from './business-rules'
@@ -185,11 +186,29 @@ describe('what a saga has for the reader', () => {
   })
 })
 
+describe('the volumes a saga has out for the reader', () => {
+  test('are the numbers of the volumes out they do not hold, in order', () => {
+    const watch = watchOf(carl, [
+      volume(3, '2025-01-01'),
+      volume(1, '2024-05-02'),
+      volume(2, '2024-10-01'),
+      volume(4, '2027-02-12'),
+    ])
+    expect(missingVolumesOf(held(2), watch, undefined, today)).toEqual([1, 3] as VolumeNumber[])
+  })
+
+  test('are none before the saga was ever looked up', () => {
+    expect(missingVolumesOf([], undefined, undefined, today)).toEqual([])
+  })
+})
+
 describe('the tab', () => {
   const row = (name: string, next?: string): SagaDiscovery =>
     ({
       series: saga({ name: name as SeriesName }),
+      watched: true,
       next: next ? volume(9, next) : undefined,
+      missing: [],
     }) as SagaDiscovery
 
   test('lists the dated announcements, the soonest first, and drops the rest', () => {

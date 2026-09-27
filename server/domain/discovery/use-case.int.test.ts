@@ -184,7 +184,7 @@ describe('the hourly pass', () => {
 })
 
 describe('the Découvrir tab', () => {
-  test('offers the next volume announced, and none of the ones out', async () => {
+  test('offers the next volume announced, and names the ones out', async () => {
     await stock(reader)
     await DiscoveryUseCase.watchDueSagas(now)
 
@@ -195,8 +195,8 @@ describe('the Découvrir tab', () => {
 
     expect(rest).toEqual([])
     expect(row.series.name).toBe(SeriesName('Dungeon Crawler Carl'))
-    expect(row).not.toHaveProperty('available')
     expect(row.next?.number).toBe(VolumeNumber(4))
+    expect(row.missing).toEqual([2, 3].map(VolumeNumber))
   })
 
   test('shows only the sagas of the format asked', async () => {
