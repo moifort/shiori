@@ -2,15 +2,19 @@ import SwiftUI
 import UserNotifications
 
 /// One switch per alert, every one of them about a book coming out and on by
-/// default. The system permission is asked the first time the Découvrir tab has
-/// a release to announce, or one is switched on here; if the reader
-/// refused it once, the screen says so and leads to the system settings, the
-/// only place it can be given back.
+/// default, and one that silences them all. Shown from the settings, and as a
+/// sheet from the bell in Découvrir. The system permission is asked the first
+/// time an alert is switched on; if the reader refused it once, the screen
+/// says so and leads to the system settings, the only place it can be given
+/// back.
 struct NotificationSettingsView: View {
+    /// Set when shown as a sheet, which then closes on "OK".
+    var onDone: (() -> Void)?
+
     @State private var settings: NotificationSettings?
     @State private var authorization: UNAuthorizationStatus = .notDetermined
     @State private var errorMessage: String?
-    @State private var saving: Set<AlertKind> = []
+    @State private var saving = false
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -20,15 +24,18 @@ struct NotificationSettingsView: View {
                     Label("Les notifications de Shiori sont désactivées dans les réglages de l'iPhone.", systemImage: "bell.slash")
                         .foregroundStyle(.secondary)
                     Button("Ouvrir les réglages") {
-                        if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                        if let url = URL(string: UIApplication.openNotificationSettingsURLString) { openURL(url) }
                     }
                 }
             }
 
             Section {
                 if let settings {
-                    ForEach(AlertKind.allCases) { kind in
-                        toggle(kind, enabled: settings.enabled.contains(kind))
+                    ForEach([AlertKind.digest, .translation]) { kind in
+                        Toggle(isOn: binding(kind, in: settings)) {
+                            Label(kind.title, systemImage: kind.symbol)
+                        }
+                        .accessibilityIdentifier("notification-toggle-\(kind)")
                     }
                 } else if let errorMessage {
                     Text(errorMessage).foregroundStyle(.secondary)
@@ -38,20 +45,44 @@ struct NotificationSettingsView: View {
             } header: {
                 Text("Me prévenir")
             } footer: {
-                Text("Shiori vous prévient le dimanche des tomes nouvellement annoncés, et le jour de leur sortie, jamais pour vous faire revenir. Les dates viennent de l'onglet Découvrir.")
+                Text("Le dimanche soir, les tomes nouvellement annoncés dans vos séries ; puis le jour de leur sortie. Jamais pour vous faire revenir.")
+            }
+
+            if let settings {
+                Section {
+                    Toggle(isOn: allOff(in: settings)) {
+                        Label("Tout désactiver", systemImage: "bell.slash")
+                    }
+                    .accessibilityIdentifier("notification-toggle-all-off")
+                }
             }
         }
+        .disabled(saving)
         .navigationTitle("Notifications")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if let onDone {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("OK", action: onDone)
+                }
+            }
+        }
         .task { await load() }
     }
 
-    private func toggle(_ kind: AlertKind, enabled: Bool) -> some View {
-        Toggle(isOn: .init(get: { enabled }, set: { value in Task { await set(kind, value) } })) {
-            Label(kind.title, systemImage: kind.symbol)
-        }
-        .disabled(saving.contains(kind))
-        .accessibilityIdentifier("notification-toggle")
+    private func binding(_ kind: AlertKind, in settings: NotificationSettings) -> Binding<Bool> {
+        Binding(
+            get: { settings.enabled.contains(kind) },
+            set: { value in Task { await set([kind], enabled: value) } }
+        )
+    }
+
+    /// On while no alert is: switching it off turns every alert back on.
+    private func allOff(in settings: NotificationSettings) -> Binding<Bool> {
+        Binding(
+            get: { settings.enabled.isEmpty },
+            set: { value in Task { await set(AlertKind.allCases, enabled: !value) } }
+        )
     }
 
     private func load() async {
@@ -63,9 +94,15 @@ struct NotificationSettingsView: View {
         }
     }
 
-    private func set(_ kind: AlertKind, _ enabled: Bool) async {
-        saving.insert(kind)
-        defer { saving.remove(kind) }
+    /// Moves the switches at once and puts them back with a message if the
+    /// server refuses.
+    private func set(_ kinds: [AlertKind], enabled: Bool) async {
+        guard let before = settings else { return }
+        let changed = kinds.filter { before.enabled.contains($0) != enabled }
+        guard !changed.isEmpty else { return }
+        settings?.enabled = enabled ? before.enabled.union(changed) : before.enabled.subtracting(changed)
+        saving = true
+        defer { saving = false }
         // Switching on is when permission is worth asking for: the reader has
         // just said what they want to hear about.
         if enabled {
@@ -73,8 +110,11 @@ struct NotificationSettingsView: View {
             authorization = await PushRegistrar.shared.authorizationStatus()
         }
         do {
-            settings = try await NotificationsAPI.setAlert(kind, enabled: enabled)
+            for kind in changed {
+                settings = try await NotificationsAPI.setAlert(kind, enabled: enabled)
+            }
         } catch {
+            settings = before
             errorMessage = reportError(error)
         }
     }

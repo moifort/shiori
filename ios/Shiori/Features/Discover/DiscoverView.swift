@@ -142,7 +142,7 @@ struct DiscoverView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
-            DiscoverAlertsMenu()
+            DiscoverAlertsButton()
         }
         ToolbarItemGroup {
             ForEach(ReleaseFormat.allCases) { item in

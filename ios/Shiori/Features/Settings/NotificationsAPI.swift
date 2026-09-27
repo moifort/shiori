@@ -12,8 +12,8 @@ enum AlertKind: CaseIterable, Identifiable, Sendable {
 
     var title: String {
         switch self {
-        case .translation: String(localized: "Le jour de la sortie")
-        case .digest: String(localized: "Récapitulatif du dimanche")
+        case .translation: String(localized: "Nouvelle sortie")
+        case .digest: String(localized: "Nouveauté hebdomadaire")
         }
     }
 
