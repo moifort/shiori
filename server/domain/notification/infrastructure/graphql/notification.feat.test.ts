@@ -22,7 +22,10 @@ describe('the notification settings', () => {
 
     expect(result.errors).toBeUndefined()
     expect(result.data?.notificationSettings).toEqual({
-      alerts: [{ kind: 'TRANSLATION', enabled: true }],
+      alerts: [
+        { kind: 'TRANSLATION', enabled: true },
+        { kind: 'DIGEST', enabled: true },
+      ],
       deviceCount: 0,
     })
   })
@@ -40,7 +43,10 @@ describe('the notification settings', () => {
 
     expect(result.data?.setAlert).toMatchObject({
       deviceCount: 1,
-      alerts: [{ kind: 'TRANSLATION', enabled: false }],
+      alerts: [
+        { kind: 'TRANSLATION', enabled: false },
+        { kind: 'DIGEST', enabled: true },
+      ],
     })
   })
 

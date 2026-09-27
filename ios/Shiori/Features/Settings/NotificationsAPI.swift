@@ -3,30 +3,38 @@ import Foundation
 /// The alerts a reader can switch off; every one starts on. Every one is about
 /// a book coming out.
 enum AlertKind: CaseIterable, Identifiable, Sendable {
+    /// Stored as `translation` for what it first announced: a new volume of a
+    /// saga the reader follows, the day it comes out.
     case translation
+    /// The Sunday digest of the volumes newly announced.
+    case digest
     var id: Self { self }
 
     var title: String {
         switch self {
-        case .translation: String(localized: "Traduction française d'un livre lu en VO")
+        case .translation: String(localized: "Le jour de la sortie")
+        case .digest: String(localized: "Récapitulatif du dimanche")
         }
     }
 
     var symbol: String {
         switch self {
-        case .translation: "character.book.closed"
+        case .translation: "book.closed"
+        case .digest: "calendar"
         }
     }
 
     var graphQL: ShioriGraphQL.AlertKind {
         switch self {
         case .translation: .translation
+        case .digest: .digest
         }
     }
 
     init?(graphQL kind: ShioriGraphQL.AlertKind) {
         switch kind {
         case .translation: self = .translation
+        case .digest: self = .digest
         }
     }
 }

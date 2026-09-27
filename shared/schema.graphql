@@ -113,6 +113,11 @@ type AiTokenUsage {
 An alert the reader can switch off; every one starts on. Every one is about a book coming out: Shiori never pushes to bring a reader back.
 """
 enum AlertKind {
+  """
+  The Sunday digest of the volumes newly announced in the sagas the reader follows.
+  """
+  DIGEST
+
   """A new volume of a saga the reader follows, the day it comes out."""
   TRANSLATION
 }

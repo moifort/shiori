@@ -260,7 +260,7 @@ export namespace DiscoveryUseCase {
         const due = newAnnouncementsOf(followed, watches, new Set(reader.announced ?? []), today)
         if (due.length === 0) continue
         await NotificationUseCase.notify(reader.userId, {
-          kind: 'translation',
+          kind: 'digest',
           ...digestOf(due, reader.language, today),
           link: 'shiori://discover',
         })

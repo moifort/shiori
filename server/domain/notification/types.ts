@@ -8,6 +8,9 @@ export const ALERT_KINDS = [
   /** A new volume of a saga the reader follows. Named for what it first
    *  announced; the stored value stays, since renaming it costs a migration. */
   'translation',
+  /** The Sunday digest of the volumes newly announced in the sagas the reader
+   *  follows. */
+  'digest',
 ] as const
 export type AlertKind = (typeof ALERT_KINDS)[number]
 

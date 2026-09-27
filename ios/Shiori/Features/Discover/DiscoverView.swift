@@ -141,6 +141,9 @@ struct DiscoverView: View {
     /// on the right, the one picked in the tint.
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            DiscoverAlertsMenu()
+        }
         ToolbarItemGroup {
             ForEach(ReleaseFormat.allCases) { item in
                 Button {

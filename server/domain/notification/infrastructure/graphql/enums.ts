@@ -9,6 +9,11 @@ export const AlertKindEnum = builder.enumType('AlertKind', {
       value: 'translation',
       description: 'A new volume of a saga the reader follows, the day it comes out.',
     },
+    DIGEST: {
+      value: 'digest',
+      description:
+        'The Sunday digest of the volumes newly announced in the sagas the reader follows.',
+    },
   } as const,
 })
 

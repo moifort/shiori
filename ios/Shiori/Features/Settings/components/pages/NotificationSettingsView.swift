@@ -38,7 +38,7 @@ struct NotificationSettingsView: View {
             } header: {
                 Text("Me prévenir")
             } footer: {
-                Text("Shiori vous prévient le jour de la sortie, jamais pour vous faire revenir. Les dates viennent de l'onglet Découvrir, mis à jour chaque jour.")
+                Text("Shiori vous prévient le dimanche des tomes nouvellement annoncés, et le jour de leur sortie, jamais pour vous faire revenir. Les dates viennent de l'onglet Découvrir.")
             }
         }
         .navigationTitle("Notifications")

@@ -6,6 +6,7 @@ import { audiobooksJoinTheSagaHeard } from '~/system/migration/migrations/008-au
 import { discoveryReplacesDiscover } from '~/system/migration/migrations/009-discovery-replaces-discover'
 import { booksCarryTheirSagaName } from '~/system/migration/migrations/010-books-carry-their-saga-name'
 import { watchesOlderThanTheirCatalogue } from '~/system/migration/migrations/011-watches-older-than-their-catalogue'
+import { digestAlertStartsOn } from '~/system/migration/migrations/012-digest-alert-starts-on'
 import type { Migration } from '~/system/migration/types'
 
 // Forward-only, sequential, no rollback. Adding a new optional field or a new
@@ -24,4 +25,5 @@ export const migrations: Migration[] = [
   discoveryReplacesDiscover,
   booksCarryTheirSagaName,
   watchesOlderThanTheirCatalogue,
+  digestAlertStartsOn,
 ]

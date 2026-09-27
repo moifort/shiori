@@ -76,6 +76,6 @@ describe('whether an alert goes out', () => {
       now,
     )
 
-    expect(twice.alerts).toEqual(['translation'])
+    expect(twice.alerts).toEqual(['translation', 'digest'])
   })
 })
