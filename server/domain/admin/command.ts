@@ -39,6 +39,13 @@ export namespace AdminCommand {
     })
   }
 
+  // A shelf photo read for its books. No scan is spent on it — each book the
+  // reader keeps is its own scan — so only the tokens move, on the vision line,
+  // since it is the same kind of call. Telemetry like the above.
+  export const recordShelfUsage = async (vision: AiStepUsage) => {
+    await repository.recordUsage(monthOf(new Date()), { scans: 0, cacheHits: 0, vision })
+  }
+
   // A Découvrir call — suggestions, an award list, release dates. Telemetry
   // like the above: the caller logs and swallows a failure.
   export const recordDiscoveryUsage = async (discovery: AiStepUsage) => {

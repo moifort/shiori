@@ -3,8 +3,9 @@ import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
+let premiumUserIds: string[] = []
 mock.module('~/system/config', () => ({
-  config: () => ({ googleApiKey: 'test-key', premiumUserIds: [] }),
+  config: () => ({ googleApiKey: 'test-key', premiumUserIds }),
 }))
 
 /** Queued Gemini answers, consumed in call order. An Error is thrown. */
@@ -35,7 +36,8 @@ mock.module('~/domain/scan/page-title', () => ({ pageTitleOf: async () => pageTi
 
 const { ScanUseCase } = await import('~/domain/scan/use-case')
 const { monthOf } = await import('~/domain/quota/business-rules')
-const { BookTitle } = await import('~/domain/shared/primitives')
+const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
+const { BookCommand } = await import('~/domain/book/command')
 
 const reader = 'reader-1' as UserId
 const image = Buffer.from('a cover photo')
@@ -49,6 +51,7 @@ beforeEach(() => {
   answers = []
   calls.length = 0
   pageTitle = undefined
+  premiumUserIds = []
 })
 
 const quotaDoc = () => `${reader}_${monthOf(new Date())}`
@@ -154,5 +157,80 @@ describe('a shared link', () => {
     expect(outcome).toMatchObject({ recognized: true, title: 'Le Nom du vent' })
     expect(calls).toEqual(['enrichment'])
     expect(spent()).toBe(1)
+  })
+})
+
+describe('a shelf photo', () => {
+  const shelf = {
+    books: [
+      { box_2d: [100, 500, 900, 560], title: 'Fondation', authors: ['Isaac Asimov'] },
+      { box_2d: [120, 100, 880, 150], title: 'Dune', authors: ['Frank Herbert'], volumeNumber: 1 },
+      { box_2d: [110, 300, 900, 340], title: null, authors: [] },
+      { box_2d: [0, 0, 0, 0], title: 'Sans cadre', authors: [] },
+    ],
+  }
+
+  test('answers each book in reading order, owned ones flagged, and spends nothing', async () => {
+    premiumUserIds = [reader]
+    await BookCommand.add(reader, {
+      title: BookTitle('Fondation'),
+      authors: [AuthorName('Isaac Asimov')],
+    })
+    answers = [shelf]
+
+    const outcome = await ScanUseCase.detectBooks(reader, image, 'fr')
+
+    expect(outcome).toMatchObject([
+      { title: 'Dune', authors: ['Frank Herbert'], volume: 1, owned: false },
+      { authors: [], owned: false, box: { x: 0.3, y: 0.11, width: 0.04, height: 0.79 } },
+      { title: 'Fondation', owned: true },
+    ])
+    expect((outcome as unknown[])[1]).not.toHaveProperty('title')
+    expect(calls).toEqual(['shelf'])
+    expect(spent()).toBe(0)
+    expect(fake.data('ai-usage', monthOf(new Date()))).toMatchObject({
+      scans: 0,
+      vision: { promptTokens: 10 },
+    })
+  })
+
+  test('is refused to a free account before the model is called', async () => {
+    expect(await ScanUseCase.detectBooks(reader, image, 'fr')).toBe('premium-required')
+    expect(calls).toHaveLength(0)
+  })
+
+  test('is refused once the allowance is used up', async () => {
+    premiumUserIds = [reader]
+    fake.seed('ai-quotas', quotaDoc(), { userId: reader, month: monthOf(new Date()), scans: 100 })
+
+    expect(await ScanUseCase.detectBooks(reader, image, 'fr')).toBe('quota-exhausted')
+    expect(calls).toHaveLength(0)
+  })
+
+  test('keeps the thirty books read first', async () => {
+    premiumUserIds = [reader]
+    answers = [
+      {
+        books: Array.from({ length: 35 }, (_, index) => ({
+          box_2d: [100, index * 28, 900, index * 28 + 20],
+          title: `Livre ${index}`,
+          authors: [],
+        })),
+      },
+    ]
+
+    const outcome = (await ScanUseCase.detectBooks(reader, image, 'fr')) as { title: string }[]
+
+    expect(outcome).toHaveLength(30)
+    expect(outcome[29].title).toBe('Livre 29')
+  })
+
+  test('says why the model failed', async () => {
+    premiumUserIds = [reader]
+    answers = [new Error('model unavailable')]
+
+    expect(await ScanUseCase.detectBooks(reader, image, 'fr')).toEqual({
+      failed: 'model unavailable',
+    })
   })
 })

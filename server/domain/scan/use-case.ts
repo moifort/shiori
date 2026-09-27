@@ -1,10 +1,18 @@
 import { AdminCommand } from '~/domain/admin/command'
+import { shelfKeyOf } from '~/domain/book/business-rules'
+import { BookQuery } from '~/domain/book/query'
 import { exhausted } from '~/domain/quota/business-rules'
 import { QuotaCommand } from '~/domain/quota/command'
 import { QuotaQuery } from '~/domain/quota/query'
 import { ScanCommand } from '~/domain/scan/command'
 import { pageTitleOf } from '~/domain/scan/page-title'
-import type { ScanLanguage, ScanResult, ScanUsage, TitleCandidate } from '~/domain/scan/types'
+import type {
+  DetectedBook,
+  ScanLanguage,
+  ScanResult,
+  ScanUsage,
+  TitleCandidate,
+} from '~/domain/scan/types'
 import { BookTitle } from '~/domain/shared/primitives'
 import type { BookTitle as BookTitleValue, Plan, UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
@@ -13,6 +21,13 @@ const logger = createLogger('scan')
 
 /** What a metered scan answers: the record to review, or why there is none. */
 export type ScanOutcome = ScanResult | 'quota-exhausted' | { failed: string }
+
+/** What a shelf photo answers: its books, or why there are none. */
+export type ShelfOutcome =
+  | DetectedBook[]
+  | 'premium-required'
+  | 'quota-exhausted'
+  | { failed: string }
 
 /** Every way a reader asks the model for a book — a cover, a typed title, a
  *  shared link — metered the same way: the allowance is checked before the
@@ -61,6 +76,38 @@ export namespace ScanUseCase {
     } catch (error) {
       logger.error('title search failed', { error, userId })
       return { failed: error instanceof Error ? error.message : 'Search failed' }
+    }
+  }
+
+  /** The books of a shelf photo, each flagged when the reader already owns it.
+   *  Premium only, and asked before anything else so a free reader is told
+   *  what would open it rather than that they ran out. Spends nothing — every
+   *  book kept is its own scan — but refused once the allowance is used up,
+   *  since those scans would be. */
+  export const detectBooks = async (
+    userId: UserId,
+    image: Buffer,
+    language: ScanLanguage,
+  ): Promise<ShelfOutcome> => {
+    const { plan, quota, credit } = await QuotaQuery.allowanceOf(userId)
+    if (plan !== 'premium') return 'premium-required'
+    if (exhausted(plan, quota, credit)) return 'quota-exhausted'
+    try {
+      const [{ books, usage }, owned] = await Promise.all([
+        ScanCommand.detectBooks(image, language),
+        BookQuery.shelfKeys(userId),
+      ])
+      if (usage)
+        await AdminCommand.recordShelfUsage(usage).catch((error) =>
+          logger.warn('AI usage not recorded', { error }),
+        )
+      return books.map((book) => ({
+        ...book,
+        owned: book.title !== undefined && owned.has(shelfKeyOf(book.title, book.authors[0])),
+      }))
+    } catch (error) {
+      logger.error('shelf detection failed', { error, userId })
+      return { failed: error instanceof Error ? error.message : 'Detection failed' }
     }
   }
 

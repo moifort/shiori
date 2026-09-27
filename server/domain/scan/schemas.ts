@@ -175,3 +175,48 @@ export const CANDIDATES_SCHEMA = {
   },
   required: ['candidates'],
 } as const
+
+/** A shelf photo: every book in it, each with its frame. Ungrounded like the
+ *  cover's vision step, whose field descriptions it reuses — a spine prints the
+ *  same things a cover does, only fewer of them. */
+export const SHELF_SCHEMA = {
+  type: 'object',
+  properties: {
+    books: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          box_2d: {
+            type: 'array',
+            items: { type: 'integer' },
+            description: 'Cadre du livre dans la photo : [ymin, xmin, ymax, xmax] de 0 à 1000',
+          },
+          title: {
+            type: 'string',
+            nullable: true,
+            description: 'Titre tel qu’imprimé, null si illisible',
+          },
+          authors: VISION_SCHEMA.properties.authors,
+          format: VISION_SCHEMA.properties.format,
+          publisher: VISION_SCHEMA.properties.publisher,
+          language: VISION_SCHEMA.properties.language,
+          seriesName: VISION_SCHEMA.properties.seriesName,
+          volumeNumber: VISION_SCHEMA.properties.volumeNumber,
+        },
+        required: ['box_2d', 'authors'],
+        propertyOrdering: [
+          'box_2d',
+          'title',
+          'authors',
+          'format',
+          'publisher',
+          'language',
+          'seriesName',
+          'volumeNumber',
+        ],
+      },
+    },
+  },
+  required: ['books'],
+} as const

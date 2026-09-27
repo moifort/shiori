@@ -6,7 +6,7 @@ import {
   Subgenre,
   Synopsis,
 } from '~/domain/book/primitives'
-import type { ScanResult } from '~/domain/scan/types'
+import type { ScanResult, SeenOnShelf } from '~/domain/scan/types'
 import { SeriesName, seriesKeyOf, VolumeNumber } from '~/domain/series/primitives'
 import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
 
@@ -42,3 +42,23 @@ export const STUBBED_SCAN: ScanResult = {
     kind: 'main',
   },
 }
+
+/** What a stubbed shelf photo answers: two books of one saga and a spine the
+ *  model could not read, so the checklist shows every kind of row. */
+export const STUBBED_SHELF: SeenOnShelf[] = [
+  {
+    title: BookTitle('Le Nom du vent'),
+    authors: [AuthorName('Patrick Rothfuss')],
+    seriesName: SeriesName('Chronique du tueur de roi'),
+    volume: VolumeNumber(1),
+    box: { x: 0.1, y: 0.1, width: 0.08, height: 0.8 },
+  },
+  {
+    title: BookTitle('La Peur du sage'),
+    authors: [AuthorName('Patrick Rothfuss')],
+    seriesName: SeriesName('Chronique du tueur de roi'),
+    volume: VolumeNumber(2),
+    box: { x: 0.2, y: 0.12, width: 0.09, height: 0.78 },
+  },
+  { authors: [], box: { x: 0.32, y: 0.1, width: 0.06, height: 0.8 } },
+]

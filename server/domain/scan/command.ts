@@ -14,6 +14,7 @@ import {
   Synopsis,
 } from '~/domain/book/primitives'
 import type { BookLanguage, Isbn13 as Isbn13Type } from '~/domain/book/types'
+import { boxOf, inReadingOrder, MAX_DETECTED_BOOKS } from '~/domain/scan/business-rules'
 import { generate } from '~/domain/scan/gemini'
 import * as repository from '~/domain/scan/infrastructure/repository'
 import { hashImage } from '~/domain/scan/primitives'
@@ -23,6 +24,7 @@ import {
   cataloguePrompt,
   enrichmentPrompt,
   MAX_CANDIDATES,
+  shelfPrompt,
   visionPrompt,
 } from '~/domain/scan/prompts'
 import { publishedCoverOf } from '~/domain/scan/published-cover'
@@ -30,14 +32,16 @@ import {
   CANDIDATES_SCHEMA,
   CATALOGUE_SCHEMA,
   ENRICHMENT_SCHEMA,
+  SHELF_SCHEMA,
   VISION_SCHEMA,
 } from '~/domain/scan/schemas'
-import { STUBBED_SCAN } from '~/domain/scan/stub'
+import { STUBBED_SCAN, STUBBED_SHELF } from '~/domain/scan/stub'
 import type {
   AiStepUsage,
   ScanLanguage,
   ScanResult,
   ScanUsage,
+  SeenOnShelf,
   TitleCandidate,
 } from '~/domain/scan/types'
 import { withoutDuplicateVolumes } from '~/domain/series/business-rules'
@@ -71,6 +75,19 @@ type VisionOutput = {
   language?: string | null
   seriesName?: string | null
   volumeNumber?: number | null
+}
+
+type ShelfOutput = {
+  books?: {
+    box_2d?: number[]
+    title?: string | null
+    authors?: string[]
+    format?: string | null
+    publisher?: string | null
+    language?: string | null
+    seriesName?: string | null
+    volumeNumber?: number | null
+  }[]
 }
 
 type EnrichmentOutput = {
@@ -188,6 +205,51 @@ export namespace ScanCommand {
     const { result: enriched, regularEdition, usage: enrichment } = await enrich(seen, language)
     const result = { ...enriched, coverUrl: await coverOf(enriched.isbn13, regularEdition) }
     return { result, usage: { enrichment } }
+  }
+
+  /** Every book of a shelf photo, read as the cover's first step reads one:
+   *  ungrounded, printed text only. Nothing is enriched here — the reader
+   *  first says which books they want, and only those are paid for. */
+  export const detectBooks = async (
+    image: Buffer,
+    language: ScanLanguage,
+  ): Promise<{ books: SeenOnShelf[]; usage?: AiStepUsage }> => {
+    if (import.meta.dev && config().scanStub) return { books: STUBBED_SHELF }
+
+    const { value, usage } = await generate<ShelfOutput>({
+      step: 'shelf',
+      parts: [
+        { inline_data: { mime_type: 'image/jpeg', data: image.toString('base64') } },
+        { text: shelfPrompt(language) },
+      ],
+      responseSchema: SHELF_SCHEMA,
+    })
+    const books = (value.books ?? []).map(parsedShelfBook).filter(isPresent)
+    return { books: inReadingOrder(books).slice(0, MAX_DETECTED_BOOKS), usage }
+  }
+
+  /** A book without a frame cannot be cropped or pointed at, so it is dropped;
+   *  a book without a title is kept, for the reader to name. */
+  const parsedShelfBook = (
+    raw: NonNullable<ShelfOutput['books']>[number],
+  ): SeenOnShelf | undefined => {
+    const box = boxOf(raw.box_2d ?? [])
+    if (!box) return undefined
+    const book: SeenOnShelf = {
+      title: optional(raw.title, BookTitle),
+      authors: parsedAuthors(raw.authors ?? []),
+      format: optional(raw.format, BookFormatValue),
+      publisher: optional(raw.publisher, Publisher),
+      language: optional(raw.language, BookLanguageValue),
+      seriesName: optional(raw.seriesName, SeriesName),
+      volume: optional(raw.volumeNumber, VolumeNumber),
+      box,
+    }
+    // A field the spine did not print is absent, not present-and-undefined:
+    // the checklist reads "no title" as a missing key.
+    return Object.fromEntries(
+      Object.entries(book).filter(([, value]) => value !== undefined),
+    ) as SeenOnShelf
   }
 
   /** The books a typed title may mean, for the reader to pick one before the

@@ -168,3 +168,23 @@ Un livre audio découpé en plusieurs parties reste un seul volume. N'invente pa
 
 En dehors des titres, toutes les valeurs textuelles doivent être en ${LANGUAGE_NAMES[language]}.`
 }
+
+/** A whole shelf in one photo: spines side by side, or covers laid out flat.
+ *  As narrow as `visionPrompt` — only what is printed — and just as honest about
+ *  what it cannot read: an unreadable spine is still a book, framed with no
+ *  title, so the reader can name it rather than lose it. */
+export const shelfPrompt = (language: ScanLanguage) =>
+  `Cette photo montre plusieurs livres : des tranches alignées sur une étagère, ou des couvertures posées à plat. Repère CHAQUE livre visible et relève uniquement ce qui y est IMPRIMÉ.
+
+Pour chaque livre :
+- box_2d : le cadre qui entoure ce livre seul (sa tranche ou sa couverture), [ymin, xmin, ymax, xmax] de 0 à 1000.
+- title : le titre tel qu'imprimé, sans le compléter ni le corriger. Mets null si tu ne peux pas le lire avec certitude — ne devine jamais un titre.
+- authors : le ou les auteurs imprimés, hors traducteur, préfacier et illustrateur. Liste vide si aucun n'est lisible.
+- format : 'manga', 'bande-dessinee', 'comic', 'audiobook', 'ebook' ou 'book', selon les mêmes indices que pour une couverture ; null si tu hésites.
+- publisher : l'éditeur si son nom ou son logo est lisible, sinon null.
+- language : la langue de CETTE édition d'après les textes imprimés, null si rien ne permet de trancher.
+- seriesName et volumeNumber : seulement si la tranche ou la couverture les imprime (« Tome 3 », un numéro en bas de tranche). seriesName est le nom de la série seul, sans le numéro. Sinon null.
+
+Un livre partiellement caché compte s'il est identifiable. Un objet qui n'est pas un livre (serre-livres, bibelot, boîte) ne compte pas. Ne répète pas un livre.
+
+N'INVENTE RIEN. Les titres et les auteurs sont recopiés tels qu'imprimés ; toute autre valeur textuelle est en ${LANGUAGE_NAMES[language]}.`
