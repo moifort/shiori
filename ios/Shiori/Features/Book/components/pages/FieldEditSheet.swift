@@ -31,8 +31,9 @@ enum BookField: String, Identifiable {
 /// The small prompt behind a tapped row of the book sheet, as the rating has
 /// one: the value already there, ready to correct, and a check to save it. A
 /// date opens straight on the calendar, and the day tapped is the answer, as a
-/// star is for the rating: turning the months answers nothing, and the cross
-/// leaves without a change.
+/// star is for the rating: turning the months answers nothing, the check keeps
+/// the day already circled — today, for a date never set — and the cross leaves
+/// without a change.
 ///
 /// The same rules as the edit form hold: a text emptied is cleared, a number
 /// or an ISBN the server would refuse is said before the round trip, and a
@@ -103,12 +104,10 @@ struct FieldEditSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     ToolbarIconButton(title: "Annuler", systemImage: "xmark", role: .cancel) { dismiss() }
                 }
-                if !field.isDate {
-                    ToolbarItem(placement: .confirmationAction) {
-                        AsyncToolbarButton(title: "Enregistrer", systemImage: "checkmark") { await save() }
-                            .disabled(correction.isEmpty || problem != nil)
-                            .accessibilityIdentifier("field-edit-save")
-                    }
+                ToolbarItem(placement: .confirmationAction) {
+                    AsyncToolbarButton(title: "Enregistrer", systemImage: "checkmark") { await save() }
+                        .disabled(correction.isEmpty || problem != nil)
+                        .accessibilityIdentifier("field-edit-save")
                 }
             }
             .onAppear { isFocused = true }
