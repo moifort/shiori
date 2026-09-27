@@ -557,8 +557,9 @@ const withCover = async <Found extends Pick<FoundVolume, 'coverUrl' | 'isbn13'>>
 }
 
 /** A recording's ASIN kept only once Audible's catalogue answers for it — with
- *  its exact release day and cover, which Audible knows better than the web.
- *  An ASIN Audible does not know is dropped and the volume offered through a
+ *  its exact release day and cover, which Audible knows better than the web,
+ *  and the ASIN the reader's store sells it under, which the web often gets
+ *  from another store. An ASIN Audible does not know is dropped and the volume offered through a
  *  search; one Audible could not be asked about keeps the one confirmed last
  *  time, if any. */
 const confirmedOnAudible = async <
@@ -579,6 +580,7 @@ const confirmedOnAudible = async <
   }
   return {
     ...volume,
+    asin: product.asin,
     date: product.releaseDate ?? volume.date,
     coverUrl: product.coverUrl ?? volume.coverUrl,
   }

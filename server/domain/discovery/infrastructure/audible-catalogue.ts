@@ -67,7 +67,12 @@ type Product = {
 
 type ProductAnswer = { product?: Product }
 
-export type AudibleProduct = { releaseDate?: ReleaseDateType; coverUrl?: CoverUrlType }
+export type AudibleProduct = {
+  /** The ASIN the reader's store sells it under, which may not be the one named. */
+  asin: AudibleAsinType
+  releaseDate?: ReleaseDateType
+  coverUrl?: CoverUrlType
+}
 
 /** A recording as Audible's own catalogue describes it in that language, for
  *  its page before anybody holds it: who wrote and who reads it, its running
@@ -103,44 +108,122 @@ export const audibleRecordingOf = async (
   }
 }
 
-/** What Audible's own catalogue says of a recording a model named: its release
- *  day and cover, or `unknown` when no such recording exists in that language —
- *  an ASIN Audible does not know answers an empty product, never a 404 — or
- *  `unreachable` when Audible could not be asked. The product pages themselves
- *  answer robots with a 503, which is why the API is asked instead. */
+/** What Audible's own catalogue says of a recording a model named: the ASIN
+ *  the reader's store sells it under, its release day and cover, or `unknown`
+ *  when no such recording exists in that language — an ASIN Audible does not
+ *  know answers an empty product, never a 404 — or `unreachable` when Audible
+ *  could not be asked. The product pages themselves answer robots with a 503,
+ *  which is why the API is asked instead.
+ *
+ *  A model searching the web often names the audible.com ASIN of a French or
+ *  German recording, which the store of that language sells under another one
+ *  (Neuromancien: B09VY3W1FF on audible.com, B09VY5GXM7 on audible.fr). So an
+ *  ASIN the reader's store does not know is looked up on audible.com, and the
+ *  same recording — same title, language and release day — sought in the
+ *  reader's store. */
 export const audibleProductOf = async (
   asin: AudibleAsinType,
   language: BookLanguage,
 ): Promise<AudibleProduct | 'unknown' | 'unreachable'> => {
-  const domain = API_DOMAINS[language] ?? 'api.audible.com'
-  const url = `https://${domain}/1.0/catalog/products/${asin}?response_groups=product_desc,product_attrs,media&image_sizes=500`
+  const domain = API_DOMAINS[language] ?? US_API_DOMAIN
+  const product = await productOf(domain, asin, language)
+  if (product !== 'unknown' || domain === US_API_DOMAIN) return product
+  const elsewhere = await productOf(US_API_DOMAIN, asin, language)
+  if (elsewhere === 'unknown' || elsewhere === 'unreachable') return elsewhere
+  return sameRecordingIn(domain, elsewhere, language)
+}
+
+const US_API_DOMAIN = 'api.audible.com'
+
+const PRODUCT_GROUPS =
+  'response_groups=product_desc,product_attrs,contributors,media&image_sizes=500'
+
+type Described = AudibleProduct & { title: string; author?: string }
+
+/** One product as one store describes it, `unknown` when that store does not
+ *  sell it in that language. */
+const productOf = async (
+  domain: string,
+  asin: AudibleAsinType,
+  language: BookLanguage,
+): Promise<Described | 'unknown' | 'unreachable'> => {
+  const url = `https://${domain}/1.0/catalog/products/${asin}?${PRODUCT_GROUPS}`
   try {
     const response = await fetch(url, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) })
     if (response.status === 404) return 'unknown'
     if (!response.ok) {
-      logger.warn('Audible product lookup failed', { asin, status: response.status })
+      logger.warn('Audible product lookup failed', { asin, domain, status: response.status })
       return 'unreachable'
     }
     const { product } = (await response.json()) as ProductAnswer
-    if (!product?.title) return 'unknown'
-    const expected = AUDIBLE_LANGUAGES[language]
-    if (expected && product.language && product.language !== expected) return 'unknown'
-    return {
-      releaseDate: optionally(product.release_date, ReleaseDate),
-      coverUrl: optionally(product.product_images?.['500'], CoverUrl),
-    }
+    return (product && describedOf(product, language)) ?? 'unknown'
   } catch (error) {
-    logger.warn('Audible product lookup failed', { error, asin })
+    logger.warn('Audible product lookup failed', { error, asin, domain })
     return 'unreachable'
   }
 }
+
+/** The recording a store sells as the one described elsewhere: found by its
+ *  title and author, and kept only on the same title, language and release
+ *  day, so a different edition or reading is never taken for it. */
+const sameRecordingIn = async (
+  domain: string,
+  recording: Described,
+  language: BookLanguage,
+): Promise<AudibleProduct | 'unknown' | 'unreachable'> => {
+  if (!recording.releaseDate) return 'unknown'
+  const keywords = encodeURIComponent([recording.title, recording.author].filter(Boolean).join(' '))
+  const url = `https://${domain}/1.0/catalog/products?keywords=${keywords}&num_results=20&${PRODUCT_GROUPS}`
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) })
+    if (!response.ok) {
+      logger.warn('Audible product search failed', { domain, status: response.status })
+      return 'unreachable'
+    }
+    const { products } = (await response.json()) as { products?: Product[] }
+    const same = (products ?? [])
+      .map((product) => describedOf(product, language))
+      .find(
+        (found) =>
+          found &&
+          found.releaseDate === recording.releaseDate &&
+          comparable(found.title) === comparable(recording.title),
+      )
+    if (!same) return 'unknown'
+    const { title: _title, author: _author, ...product } = same
+    return product
+  } catch (error) {
+    logger.warn('Audible product search failed', { error, domain })
+    return 'unreachable'
+  }
+}
+
+/** A product in that language, with the ASIN, title and first author it
+ *  carries; nothing when it has no title or is recorded in another language. */
+const describedOf = (product: Product, language: BookLanguage): Described | undefined => {
+  const asin = optionally(product.asin, AudibleAsin)
+  if (!asin || !product.title) return undefined
+  const expected = AUDIBLE_LANGUAGES[language]
+  if (expected && product.language && product.language !== expected) return undefined
+  const releaseDate = optionally(product.release_date, ReleaseDate)
+  const coverUrl = optionally(product.product_images?.['500'], CoverUrl)
+  return {
+    asin,
+    title: product.title,
+    author: product.authors?.[0]?.name,
+    ...(releaseDate ? { releaseDate } : {}),
+    ...(coverUrl ? { coverUrl } : {}),
+  }
+}
+
+const comparable = (title: string) => title.normalize('NFC').trim().toLowerCase()
 
 /** Audible's answer to one catalogue request, or `unreachable`. */
 const askAudible = async <Answer>(
   language: BookLanguage,
   path: string,
 ): Promise<Answer | 'unreachable'> => {
-  const domain = API_DOMAINS[language] ?? 'api.audible.com'
+  const domain = API_DOMAINS[language] ?? US_API_DOMAIN
   try {
     const response = await fetch(`https://${domain}/1.0/catalog/${path}`, {
       signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),

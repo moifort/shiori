@@ -61,7 +61,7 @@ mock.module('~/domain/scan/gemini', () => ({
           ? [
               { number: 1, title: 'Carl 1', date: '2024-11', asin: 'B0DM67WR2V' },
               { number: 2, title: 'Carl 2', date: '2025-03-01', asin: 'B0FAKEFAKE' },
-              { number: 3, title: 'Carl 3', date: '2027-05-01' },
+              { number: 3, title: 'Carl 3', date: '2027-05-01', asin: 'B0USSTORE3' },
             ]
           : [
               { number: 1, title: 'Carl 1', date: '2024-05-02', isbn13: '9782226488176' },
@@ -74,15 +74,18 @@ mock.module('~/domain/scan/gemini', () => ({
   },
 }))
 
-/** Audible knows the first recording and not the second, and lists the
- *  series only when a test sets `audibleSeries`. */
+/** Audible knows the first recording and not the second, sells the third
+ *  under another ASIN than the one named, and lists the series only when a
+ *  test sets `audibleSeries`. */
 let audibleSeries: unknown[] | 'unknown' = 'unknown'
 const seriesAsked: string[] = []
 mock.module('~/domain/discovery/infrastructure/audible-catalogue', () => ({
   audibleProductOf: async (asin: string) =>
     asin === 'B0DM67WR2V'
-      ? { releaseDate: '2024-11-22', coverUrl: 'https://m.media-amazon.com/carl1.jpg' }
-      : 'unknown',
+      ? { asin, releaseDate: '2024-11-22', coverUrl: 'https://m.media-amazon.com/carl1.jpg' }
+      : asin === 'B0USSTORE3'
+        ? { asin: 'B0FRSTORE3' }
+        : 'unknown',
   audibleSeriesOf: async (asin: string) => {
     seriesAsked.push(asin)
     return audibleSeries
@@ -219,7 +222,7 @@ describe('the hourly pass', () => {
     )
   })
 
-  test('keeps a recording’s ASIN only once Audible confirms it, with Audible’s date', async () => {
+  test('keeps a recording’s ASIN only once Audible confirms it, with Audible’s date and ASIN', async () => {
     await stock(reader, 'audiobook')
 
     await DiscoveryUseCase.watchDueSagas(now)
@@ -234,7 +237,12 @@ describe('the hourly pass', () => {
         coverUrl: 'https://m.media-amazon.com/carl1.jpg' as never,
       },
       { number: VolumeNumber(2), title: BookTitle('Carl 2'), date: '2025-03-01' as never },
-      { number: VolumeNumber(3), title: BookTitle('Carl 3'), date: '2027-05-01' as never },
+      {
+        number: VolumeNumber(3),
+        title: BookTitle('Carl 3'),
+        date: '2027-05-01' as never,
+        asin: 'B0FRSTORE3' as never,
+      },
     ])
   })
 })
