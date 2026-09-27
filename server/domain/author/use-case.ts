@@ -1,5 +1,7 @@
+import { match } from 'ts-pattern'
 import { AdminCommand } from '~/domain/admin/command'
 import {
+  inActivityOrder,
   inAuthorOrder,
   inNameOrder,
   inPageOrder,
@@ -28,8 +30,9 @@ import { createLogger } from '~/system/logger'
 
 const logger = createLogger('author')
 
-/** How the Authors tab lists its rows: the loved ones first, or by name. */
-export type AuthorOrder = 'loved' | 'name'
+/** How the Authors tab lists its rows: the loved ones first, by name, or the
+ *  ones read most recently first. */
+export type AuthorOrder = 'loved' | 'name' | 'recent'
 
 /** An author of the Authors tab: what the library says, and the portrait once
  *  somebody has opened their page. */
@@ -52,7 +55,8 @@ export type AuthorPage = {
 
 export namespace AuthorUseCase {
   /** One page of the Authors tab, the authors the reader loves first — or in
-   *  alphabetical order, as a contact list, when `order` is `name` — narrowed
+   *  alphabetical order, as a contact list, when `order` is `name`, or the most
+   *  recently shelved first when it is `recent` — narrowed
    *  to those with a heart when `favorite` is set.
    *
    *  Which authors a page holds depends on the books and the opinions alone —
@@ -65,7 +69,11 @@ export namespace AuthorUseCase {
     order: AuthorOrder = 'loved',
   ): Promise<{ items: FollowedAuthor[]; hasMore: boolean }> => {
     const matching = matchingAuthorFilter(await shelvedAuthors(userId), filter)
-    const ranked = order === 'name' ? inNameOrder(matching) : inAuthorOrder(matching)
+    const ranked = match(order)
+      .with('name', () => inNameOrder(matching))
+      .with('recent', () => inActivityOrder(matching))
+      .with('loved', () => inAuthorOrder(matching))
+      .exhaustive()
     const items = ranked.slice(page.offset, page.offset + page.limit)
     const portraits = new Map(
       (await AuthorQuery.byKeys(items.map((author) => author.key))).map((catalogue) => [

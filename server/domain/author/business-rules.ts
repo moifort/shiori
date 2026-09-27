@@ -54,6 +54,8 @@ export const shelvedAuthorsOf = <Book extends AuthoredBook>(
     }
   }
   return [...byKey].map(([key, { books, spellings }]) => {
+    const newest = books[0]
+    if (!newest) throw new Error('an author is only ever made from a book')
     const seriesIds = [...new Set(books.flatMap((book) => (book.series ? [book.series.id] : [])))]
     const sagaOpinions = seriesIds.flatMap((id) => opinionOf.get(id) ?? [])
     const ratings = [...books, ...sagaOpinions].flatMap((judged) =>
@@ -64,6 +66,7 @@ export const shelvedAuthorsOf = <Book extends AuthoredBook>(
       name: mostUsedSpelling(spellings),
       books,
       seriesIds,
+      shelvedAt: shelfDateOf(newest),
       favoriteCount: Count(
         [...books, ...sagaOpinions].filter((judged) => judged.favorite === true).length,
       ),
@@ -91,6 +94,16 @@ export const inAuthorOrder = <Author extends ShelvedAuthor<unknown>>(
       (right.averageRating ?? 0) - (left.averageRating ?? 0) ||
       right.books.length - left.books.length ||
       left.name.localeCompare(right.name),
+  )
+
+/** The Authors tab by activity, as the Books and Series tabs are ordered: the
+ *  author whose newest book was shelved most recently first, then by name. */
+export const inActivityOrder = <Author extends { name: string; shelvedAt: Date }>(
+  authors: readonly Author[],
+): Author[] =>
+  [...authors].sort(
+    (left, right) =>
+      right.shelvedAt.getTime() - left.shelvedAt.getTime() || left.name.localeCompare(right.name),
   )
 
 /** The words a surname can open with and still belong to it: "Le Guin",

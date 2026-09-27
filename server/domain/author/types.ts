@@ -24,6 +24,9 @@ export type ShelvedAuthor<Book> = {
   books: Book[]
   /** The sagas those books belong to, each once. */
   seriesIds: SeriesId[]
+  /** The date their newest book is shelved on — finished, else started, else
+   *  added — which the list by activity is ordered on. */
+  shelvedAt: Date
   /** Hearted books plus hearted sagas: what the tab is ranked on first. */
   favoriteCount: Count
   /** The mean of the stars given to their books and sagas. Absent when nothing

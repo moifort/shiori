@@ -26,6 +26,7 @@ enum AuthorsAPI {
                 seriesCount: author.seriesCount,
                 favoriteCount: author.favoriteCount,
                 averageRating: author.averageRating,
+                shelvedAt: nil,
                 books: []
             ),
             readCount: author.readCount,
@@ -77,7 +78,7 @@ enum AuthorsAPI {
                 limit: .some(Int32(limit)),
                 offset: .some(Int32(offset)),
                 favorite: .none,
-                order: .some(.case(order == .name ? .name : .loved))
+                order: .some(.case(order.graphQL))
             )
         )
         return (
@@ -91,6 +92,7 @@ enum AuthorsAPI {
                     seriesCount: item.seriesCount,
                     favoriteCount: item.favoriteCount,
                     averageRating: item.averageRating,
+                    shelvedAt: GraphQLHelpers.parseISO8601(item.shelvedAt),
                     books: item.books.map(\.fragments.followedVolume.asBook)
                 )
             },

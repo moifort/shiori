@@ -64,6 +64,13 @@ const FollowedAuthorType = builder.objectRef<FollowedAuthor>('FollowedAuthor').i
         'as five. Null when nothing of theirs is rated.',
       resolve: (author) => author.averageRating ?? null,
     }),
+    shelvedAt: t.field({
+      type: 'DateTime',
+      description:
+        'The date their newest book is shelved on — finished, else started, else ' +
+        'added — which the list ordered by `RECENT` is sorted and cut into month sections by.',
+      resolve: (author) => author.shelvedAt,
+    }),
     books: t.field({
       type: [BookType],
       description:
@@ -227,6 +234,12 @@ const AuthorOrderEnum = builder.enumType('AuthorOrder', {
       description:
         'Alphabetical, as a contact list: by surname (see `indexLetter`), the ' +
         'authors under `#` last.',
+    },
+    RECENT: {
+      value: 'recent',
+      description:
+        'By activity, as the Books and Series lists: the author whose newest book is ' +
+        'shelved most recently first (see `shelvedAt`), then by name.',
     },
   } as const,
 })

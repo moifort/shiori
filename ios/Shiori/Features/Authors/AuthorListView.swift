@@ -3,12 +3,13 @@ import SwiftUI
 /// The Authors shelf of the Library tab: every author the reader holds a book
 /// of, listed two ways from the toolbar. By name, as the Contacts app lists
 /// people: a section per letter of their surname and the alphabet down the
-/// side to jump to one. Or the ones they love first — most hearts, then the
-/// best stars, then the most books.
+/// side to jump to one. By activity, as the Books and Series shelves are: the
+/// author whose newest book was shelved most recently first, cut into months.
+/// Or the ones they love first — most hearts, then the best stars, then the
+/// most books.
 ///
-/// Both orders come from the server, which files an author under their
-/// surname the way a bookshop does. There are no month sections, since
-/// neither order is by date.
+/// Every order comes from the server, which files an author under their
+/// surname the way a bookshop does; the phone only cuts the sections.
 ///
 /// A row opens the author's page, as a sheet.
 struct AuthorListView: View {
@@ -86,6 +87,12 @@ struct AuthorListView: View {
                     }
                     .sectionIndexLabel(section.letter)
                 }
+            case .recent:
+                ForEach(MonthSection.cut(viewModel.authors, on: \.shelvedAt)) { section in
+                    Section(section.title) {
+                        ForEach(section.rows) { author in row(author) }
+                    }
+                }
             case .loved:
                 Section {
                     ForEach(viewModel.authors) { author in row(author) }
@@ -137,7 +144,7 @@ struct AuthorListView: View {
         return sections
     }
 
-    /// The two orders, as the Books and Series shelves offer their two views.
+    /// The orders, as the Books and Series shelves offer their views.
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItemGroup {

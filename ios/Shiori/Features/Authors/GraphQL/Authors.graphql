@@ -13,6 +13,7 @@ query MyAuthorsPage($limit: Int, $offset: Int, $favorite: Boolean, $order: Autho
       seriesCount
       favoriteCount
       averageRating
+      shelvedAt
       books {
         ...FollowedVolume
       }

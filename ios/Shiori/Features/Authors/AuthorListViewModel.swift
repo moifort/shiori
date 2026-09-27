@@ -1,16 +1,18 @@
 import Foundation
 import SwiftUI
 
-/// The two ways the Authors shelf lists its rows, switched from the toolbar as
+/// The ways the Authors shelf lists its rows, switched from the toolbar as
 /// the Books and Series shelves switch theirs: by name, as a contact list with
-/// its alphabet down the side, or the loved authors first.
+/// its alphabet down the side; by activity, as the Books and Series shelves
+/// are ordered, cut into months; or the loved authors first.
 enum AuthorListOrder: String, CaseIterable, Identifiable {
-    case name, loved
+    case name, recent, loved
     var id: String { rawValue }
 
     var label: String {
         switch self {
         case .name: String(localized: "Alphabétique")
+        case .recent: String(localized: "Activité")
         case .loved: String(localized: "Favoris")
         }
     }
@@ -18,6 +20,7 @@ enum AuthorListOrder: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .name: "textformat"
+        case .recent: "clock"
         case .loved: "heart.fill"
         }
     }
@@ -25,7 +28,16 @@ enum AuthorListOrder: String, CaseIterable, Identifiable {
     var subtitle: String {
         switch self {
         case .name: String(localized: "Par nom")
+        case .recent: String(localized: "Par activité")
         case .loved: String(localized: "Vos coups de cœur d'abord")
+        }
+    }
+
+    var graphQL: ShioriGraphQL.AuthorOrder {
+        switch self {
+        case .name: .name
+        case .recent: .recent
+        case .loved: .loved
         }
     }
 }
@@ -65,8 +77,9 @@ final class AuthorListViewModel {
 
     private static func cache(for order: AuthorListOrder) -> SnapshotCache<[FollowedAuthor]> {
         switch order {
-        case .name: SnapshotCache("authors-by-name", version: 5)
-        case .loved: SnapshotCache("authors-all", version: 5)
+        case .name: SnapshotCache("authors-by-name", version: 6)
+        case .recent: SnapshotCache("authors-by-activity", version: 6)
+        case .loved: SnapshotCache("authors-all", version: 6)
         }
     }
 

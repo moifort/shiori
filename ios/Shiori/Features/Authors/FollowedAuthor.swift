@@ -23,6 +23,10 @@ struct FollowedAuthor: Identifiable, Codable, Sendable {
     /// The mean of the stars given to their books and sagas. Nil when nothing
     /// of theirs is rated.
     let averageRating: Double?
+    /// The date their newest book is shelved on — finished, else started, else
+    /// added — which the list by activity is ordered and cut into months by.
+    /// Nil where the server was not asked for it.
+    let shelvedAt: Date?
     /// Their books, newest shelved first, each with its cover and status.
     let books: [Book]
 

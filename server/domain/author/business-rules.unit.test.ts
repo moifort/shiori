@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
   filingNameOf,
+  inActivityOrder,
   inAuthorOrder,
   indexLetterOf,
   inNameOrder,
@@ -58,6 +59,7 @@ describe('shelvedAuthorsOf', () => {
     )
 
     expect(author?.books.map((held) => held.title)).toEqual(['New', 'Mid', 'Old'])
+    expect(author?.shelvedAt).toEqual(day(9))
   })
 
   test('names an author by the spelling most of their books use', () => {
@@ -102,6 +104,7 @@ describe('inAuthorOrder', () => {
     name: AuthorName(name),
     books: Array.from({ length: books }),
     seriesIds: [],
+    shelvedAt: day(1),
     favoriteCount: Count(favoriteCount),
     averageRating,
   })
@@ -130,6 +133,19 @@ describe('inAuthorOrder', () => {
     const kept = matchingAuthorFilter([author('Loved', 2), author('Read', 0)], { favorite: true })
 
     expect(kept.map((entry) => String(entry.name))).toEqual(['Loved'])
+  })
+})
+
+describe('inActivityOrder', () => {
+  test('ranks the most recently shelved first, then by name', () => {
+    const ranked = inActivityOrder([
+      { name: 'Old', shelvedAt: day(1) },
+      { name: 'Zed', shelvedAt: day(9) },
+      { name: 'Alpha', shelvedAt: day(9) },
+      { name: 'Middle', shelvedAt: day(5) },
+    ])
+
+    expect(ranked.map((entry) => entry.name)).toEqual(['Alpha', 'Zed', 'Middle', 'Old'])
   })
 })
 

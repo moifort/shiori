@@ -143,6 +143,32 @@ describe('the Authors tab', () => {
     })
   })
 
+  test('lists the authors whose newest book was shelved most recently first', async () => {
+    const shelve = async (author: string, on: string) => {
+      const id = await addBook(`title: "${author}", authors: ["${author}"]`)
+      const moved = await execute(
+        `mutation { updateBook(id: "${id}", input: { addedAt: "${on}" }) { id } }`,
+      )
+      expect(moved.errors).toBeUndefined()
+    }
+    await shelve('Frank Herbert', '2026-03-01T00:00:00.000Z')
+    await shelve('Ursula K. Le Guin', '2026-09-01T00:00:00.000Z')
+    await shelve('Émile Zola', '2026-06-01T00:00:00.000Z')
+
+    const result = await execute('{ myAuthorsPage(order: RECENT) { items { name shelvedAt } } }')
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data).toEqual({
+      myAuthorsPage: {
+        items: [
+          { name: 'Ursula K. Le Guin', shelvedAt: '2026-09-01T00:00:00.000Z' },
+          { name: 'Émile Zola', shelvedAt: '2026-06-01T00:00:00.000Z' },
+          { name: 'Frank Herbert', shelvedAt: '2026-03-01T00:00:00.000Z' },
+        ],
+      },
+    })
+  })
+
   test('cuts the pages from one order, with what follows', async () => {
     for (const name of ['A', 'B', 'C']) await addBook(`title: "${name}", authors: ["${name}"]`)
 
