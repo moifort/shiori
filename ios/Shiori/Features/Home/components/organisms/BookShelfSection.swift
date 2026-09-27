@@ -5,9 +5,6 @@ import SwiftUI
 /// shelf says what would fill it.
 struct BookShelfSection: View {
     let title: LocalizedStringKey
-    /// The symbol the book page marks the same thing with, in its colour.
-    var systemImage: String?
-    var iconTint: Color = .accentColor
     let books: [Book]
     let caption: (Book) -> String
     /// The captions' colour, when they say something the book page colours:
@@ -18,7 +15,7 @@ struct BookShelfSection: View {
     let onBookTapped: (Book) -> Void
 
     var body: some View {
-        WidgetCard(title: title, systemImage: systemImage, iconTint: iconTint, action: onHeaderTapped) {
+        WidgetCard(title: title, action: onHeaderTapped) {
             if books.isEmpty {
                 WidgetEmptyMessage(text: emptyMessage, placeholder: .covers)
             } else {

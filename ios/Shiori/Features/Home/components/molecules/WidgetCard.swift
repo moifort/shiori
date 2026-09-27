@@ -2,13 +2,9 @@ import SwiftUI
 
 /// The rounded card every dashboard widget sits in, titled the way the Fitness
 /// app titles its cards. A header with an action gets a chevron and becomes the
-/// tap target, so a reader learns which cards lead somewhere. A card about
-/// something the book page marks with a symbol carries that symbol, in its
-/// colour, so the reader learns it here and recognises it there.
+/// tap target, so a reader learns which cards lead somewhere.
 struct WidgetCard<Content: View, Accessory: View>: View {
     let title: LocalizedStringKey
-    var systemImage: String?
-    var iconTint: Color = .accentColor
     var action: (() -> Void)?
     @ViewBuilder let accessory: Accessory
     @ViewBuilder let content: Content
@@ -47,32 +43,14 @@ struct WidgetCard<Content: View, Accessory: View>: View {
         }
     }
 
-    @ViewBuilder
     private var titleText: some View {
-        if let systemImage {
-            Label {
-                Text(title)
-            } icon: {
-                Image(systemName: systemImage).foregroundStyle(iconTint)
-            }
-            .font(.headline)
-        } else {
-            Text(title).font(.headline)
-        }
+        Text(title).font(.headline)
     }
 }
 
 extension WidgetCard where Accessory == EmptyView {
-    init(
-        title: LocalizedStringKey,
-        systemImage: String? = nil,
-        iconTint: Color = .accentColor,
-        action: (() -> Void)? = nil,
-        @ViewBuilder content: () -> Content
-    ) {
+    init(title: LocalizedStringKey, action: (() -> Void)? = nil, @ViewBuilder content: () -> Content) {
         self.title = title
-        self.systemImage = systemImage
-        self.iconTint = iconTint
         self.action = action
         self.accessory = EmptyView()
         self.content = content()

@@ -71,8 +71,6 @@ struct HomePage: View {
 
                 BookShelfSection(
                     title: "En cours",
-                    systemImage: ReadingStatus.reading.symbol,
-                    iconTint: ReadingStatus.reading.tint,
                     books: dashboard.reading,
                     caption: Self.startedCaption,
                     emptyMessage: "Aucun livre en cours de lecture.",
@@ -83,8 +81,6 @@ struct HomePage: View {
 
                 BookShelfSection(
                     title: "Prochaines sorties",
-                    systemImage: "clock",
-                    iconTint: .orange,
                     books: releases.compactMap(Self.releaseTile),
                     caption: { tile in
                         releases.first { Self.releaseTile($0)?.id == tile.id }?.releases.next?.date
@@ -103,8 +99,6 @@ struct HomePage: View {
 
                 BookShelfSection(
                     title: "Nouveaux favoris de vos amis",
-                    systemImage: "heart.fill",
-                    iconTint: .red,
                     books: friendFavorites.map(\.tile),
                     caption: { tile in
                         friendFavorites.first { $0.tile.id == tile.id }?.friendDisplayName ?? ""
