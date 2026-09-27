@@ -175,8 +175,6 @@ export type Dashboard<Card = DashboardBook> = {
   reading: Card[]
   lastFinished?: Card
   booksRead: Trend
-  pagesPerDay: Trend
-  daysToFinish: Trend
   toReadCount: number
   /** Every book finished since the first, whatever the year. */
   readCount: number

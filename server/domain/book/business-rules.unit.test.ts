@@ -6,7 +6,6 @@ import {
   inSagaOrder,
   listeningProgressOf,
   membershipFor,
-  ratedShelfOf,
   readVolumeNumbersOf,
   retaggedAfterEdit,
   sagaNamesOf,
@@ -635,49 +634,6 @@ describe('the stars a book shows', () => {
 
   test('are none for an unrated standalone book', () => {
     expect(shownRatingOf({}, seriesRatings)).toBeUndefined()
-  })
-})
-
-describe('the rated shelf', () => {
-  const kingkiller = SeriesId('kingkiller--rothfuss')
-  const inSaga = { id: kingkiller, name: SeriesName('Kingkiller'), kind: 'main' as const }
-  const book = (title: string, overrides: Partial<Book>): Book => ({
-    id: BookId(title),
-    userId: UserId('reader'),
-    title: BookTitle(title),
-    authors: [],
-    format: 'book',
-    subgenres: [],
-    narrators: [],
-    status: 'read',
-    hidden: false,
-    addedAt: new Date('2026-01-01'),
-    ...overrides,
-  })
-
-  // Best first, and among equals the order of the shelf, so the view reads as
-  // the library does within each band of stars.
-  test('keeps the rated books, best first, then in shelf order', () => {
-    const shelf = ratedShelfOf(
-      [
-        book('unrated', { finishedAt: new Date('2026-05-01') }),
-        book('older-three', { rating: StarRating(3), finishedAt: new Date('2026-02-01') }),
-        book('five', { rating: StarRating(5), finishedAt: new Date('2026-01-01') }),
-        book('newer-three', { rating: StarRating(3), finishedAt: new Date('2026-03-01') }),
-      ],
-      new Map(),
-    )
-
-    expect(shelf.map((entry) => String(entry.id))).toEqual(['five', 'newer-three', 'older-three'])
-  })
-
-  test('ranks a volume on the rating its saga lends it', () => {
-    const shelf = ratedShelfOf(
-      [book('three', { rating: StarRating(3) }), book('volume', { series: inSaga })],
-      new Map([[kingkiller, StarRating(4)]]),
-    )
-
-    expect(shelf.map((entry) => String(entry.id))).toEqual(['volume', 'three'])
   })
 })
 

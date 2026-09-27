@@ -177,21 +177,6 @@ export const DashboardType = builder.objectRef<Dashboard>('Dashboard').implement
       description: 'Books finished this year to date. Null `current` before the first one.',
       resolve: (dashboard) => dashboard.booksRead,
     }),
-    pagesPerDay: t.field({
-      type: TrendType,
-      deprecationReason:
-        'Pages per day read as an unclear figure: the app compares the books read ' +
-        'instead (`booksRead`). Kept for the builds that still ask for it.',
-      resolve: (dashboard) => dashboard.pagesPerDay,
-    }),
-    daysToFinish: t.field({
-      type: TrendType,
-      deprecationReason:
-        'The app no longer shows it: the trends compare the books read only. Kept for ' +
-        'the builds that still ask for it.',
-      description: 'Median days from start to finish, both days included.',
-      resolve: (dashboard) => dashboard.daysToFinish,
-    }),
     toReadCount: t.exposeInt('toReadCount'),
     readCount: t.exposeInt('readCount', {
       description: 'Every book finished since the first, whatever the year.',

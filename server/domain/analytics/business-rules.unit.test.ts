@@ -5,13 +5,10 @@ import {
   booksPerYearOf,
   booksReadTrendOf,
   dashboardOf,
-  daysToFinishTrendOf,
   genresOf,
   hoursPerMonthOf,
   localDateOf,
-  medianOf,
   monthsToClearPileOf,
-  pagesPerDayTrendOf,
   pagesPerMonthOf,
   readPerYearOf,
   seriesProgressOf,
@@ -175,58 +172,6 @@ describe('the books read trend', () => {
     expect(
       booksReadTrendOf([finish('2025-01-01', '2025-01-10')], day('2026-09-15')).current,
     ).toBeUndefined()
-  })
-})
-
-describe('the pages per day trend', () => {
-  test('divides this year pages by the days elapsed, against the same span last year', () => {
-    const finishes = [
-      finish('2026-01-01', '2026-01-10', { pages: 100 }),
-      finish('2025-01-01', '2025-01-05', { pages: 50 }),
-    ]
-
-    expect(pagesPerDayTrendOf(finishes, day('2026-01-10'))).toEqual({ current: 10, previous: 5 })
-  })
-
-  test('draws no comparison when last year has no pages', () => {
-    const trend = pagesPerDayTrendOf(
-      [finish('2026-01-01', '2026-01-10', { pages: 100 })],
-      day('2026-01-10'),
-    )
-
-    expect(trend.previous).toBeUndefined()
-  })
-
-  test('has nothing to say without a single page count', () => {
-    expect(pagesPerDayTrendOf([finish('2026-01-01', '2026-01-10')], day('2026-01-10'))).toEqual({})
-  })
-})
-
-describe('the days to finish trend', () => {
-  test('is a median, so one book left open for months does not skew it', () => {
-    const finishes = [
-      finish('2026-02-01', '2026-02-05'),
-      finish('2026-03-01', '2026-03-05'),
-      finish('2026-01-01', '2026-07-01'),
-    ]
-
-    expect(daysToFinishTrendOf(finishes, day('2026-09-15')).current).toBe(5)
-  })
-
-  test('counts a book started and finished the same day as one day', () => {
-    expect(
-      daysToFinishTrendOf([finish('2026-02-01', '2026-02-01')], day('2026-09-15')).current,
-    ).toBe(1)
-  })
-
-  test('compares with books finished by the same date last year only', () => {
-    const finishes = [finish('2025-03-01', '2025-03-03'), finish('2025-11-01', '2025-11-30')]
-
-    expect(daysToFinishTrendOf(finishes, day('2026-09-15')).previous).toBe(3)
-  })
-
-  test('averages the two middle values of an even count', () => {
-    expect(medianOf([2, 4, 6, 9])).toBe(5)
   })
 })
 

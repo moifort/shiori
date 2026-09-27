@@ -1,8 +1,6 @@
 import {
   groupedBySeries,
   inSagaOrder,
-  ratedShelfOf,
-  seriesRatingsOf,
   shelfKeysOf,
   shelfPageOf,
   shelvedOf,
@@ -68,38 +66,31 @@ export namespace BookQuery {
    *  Read with a Firestore cursor, so a page costs its own rows rather than the
    *  whole library; covers are signed for the page only.
    *
-   *  The deprecated rated view — best first, a saga's rating standing in for
-   *  its unrated volumes — ranks on the saga opinions, which no index holds, so
-   *  it still sorts the whole library in memory. So does any view while its
-   *  index is still building after a deploy: slower, never wrong. */
+   *  While a view's index is still building after a deploy, the whole library
+   *  is sorted in memory instead: slower, never wrong. */
   export const libraryPage = async (
     userId: UserId,
     page: { limit: number; after?: BookId },
-    view: { favorite?: boolean; rated?: boolean; status?: ReadingStatus },
+    view: { favorite?: boolean; status?: ReadingStatus },
   ): Promise<{ books: BookView[]; hasMore: boolean }> => {
     const statuses = shownStatusesOf(view)
-    if (!view.rated) {
-      try {
-        const { books, hasMore } = await repository.findShelfPage(
-          userId,
-          { favorite: view.favorite, statuses },
-          page.limit,
-          page.after,
-        )
-        return { books: await withCovers(books), hasMore }
-      } catch (error) {
-        if (!missingIndex(error)) throw error
-        logger.warn('library page index missing, sorted in memory', { error, view })
-      }
+    try {
+      const { books, hasMore } = await repository.findShelfPage(
+        userId,
+        { favorite: view.favorite, statuses },
+        page.limit,
+        page.after,
+      )
+      return { books: await withCovers(books), hasMore }
+    } catch (error) {
+      if (!missingIndex(error)) throw error
+      logger.warn('library page index missing, sorted in memory', { error, view })
     }
     const kept = (await repository.findAllByUser(userId)).filter(
       (book) =>
         (!view.favorite || book.favorite === true) && (!statuses || statuses.includes(book.status)),
     )
-    const ordered = view.rated
-      ? ratedShelfOf(kept, seriesRatingsOf(await SeriesOpinionQuery.all(userId)))
-      : shelvedOf(kept)
-    const { books, hasMore } = shelfPageOf(ordered, page.limit, page.after)
+    const { books, hasMore } = shelfPageOf(shelvedOf(kept), page.limit, page.after)
     return { books: await withCovers(books), hasMore }
   }
 

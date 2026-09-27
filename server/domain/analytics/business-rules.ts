@@ -76,11 +76,6 @@ const yearOf = (date: LocalDateValue): number => Number(date.slice(0, 4))
 const dayNumberFrom = (year: number, month: number, day: number): number =>
   Date.UTC(year, month - 1, day) / DAY_MS
 
-/** Days a reading lasted, both ends included: a book started and finished the
- *  same day was read in one day, not zero. */
-export const daysToFinishOf = (finish: Pick<Finish, 'startedOn' | 'finishedOn'>): number =>
-  dayNumberOf(finish.finishedOn) - dayNumberOf(finish.startedOn) + 1
-
 // MARK: - Building the view
 
 /** Rebuild the whole view from the reader's books and the catalogues of the sagas
@@ -321,8 +316,6 @@ export const dashboardOf = (view: AnalyticsView, today: LocalDateValue): Dashboa
     reading: view.reading.slice(0, READING_SHOWN),
     lastFinished: view.lastFinished,
     booksRead: booksReadTrendOf(finishes, today),
-    pagesPerDay: pagesPerDayTrendOf(finishes, today),
-    daysToFinish: daysToFinishTrendOf(finishes, today),
     toReadCount: view.toRead.length,
     readCount: finishes.length,
     monthsToClearPile: monthsToClearPileOf(finishes, view.toRead.length, today),
@@ -445,42 +438,6 @@ export const booksReadTrendOf = (finishes: readonly Finish[], today: LocalDateVa
   return {
     current: current > 0 ? current : undefined,
     previous: lastYearFinished ? finishedWithin(finishes, previousSpanOf(today)).length : undefined,
-  }
-}
-
-export const pagesPerDayTrendOf = (finishes: readonly Finish[], today: LocalDateValue): Trend => {
-  if (!finishes.some((finish) => finish.pageCount !== undefined)) return {}
-  const current = currentSpanOf(today)
-  const previous = previousSpanOf(today)
-  const perDay = ({ from, to }: { from: number; to: number }) =>
-    Math.round(pagesBetween(finishes, from, to) / (to - from + 1))
-  const previousYear = yearOf(today) - 1
-  const lastYearHasPages =
-    pagesBetween(finishes, dayNumberFrom(previousYear, 1, 1), dayNumberFrom(previousYear, 12, 31)) >
-    0
-  return {
-    current: perDay(current),
-    previous: lastYearHasPages ? perDay(previous) : undefined,
-  }
-}
-
-/** Median rather than mean: one book left open for six months would drag a mean
- *  far from how long the reader usually takes. */
-export const medianOf = (values: readonly number[]): number | undefined => {
-  if (values.length === 0) return undefined
-  const sorted = [...values].sort((left, right) => left - right)
-  const middle = Math.floor(sorted.length / 2)
-  return sorted.length % 2 === 1
-    ? sorted[middle]
-    : Math.round((sorted[middle - 1] + sorted[middle]) / 2)
-}
-
-export const daysToFinishTrendOf = (finishes: readonly Finish[], today: LocalDateValue): Trend => {
-  const within = (span: { from: number; to: number }) =>
-    finishedWithin(finishes, span).map(daysToFinishOf)
-  return {
-    current: medianOf(within(currentSpanOf(today))),
-    previous: medianOf(within(previousSpanOf(today))),
   }
 }
 

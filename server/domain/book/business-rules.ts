@@ -185,19 +185,6 @@ export const seriesRatingsOf = (
     ),
   )
 
-/** The "Rated" view of the library: every book that shows stars, the best
- *  first, and within one band of stars in the order of the shelf. A volume
- *  rated through its saga ranks on that rating, since that is what it shows. */
-export const ratedShelfOf = <T extends Book>(
-  books: readonly T[],
-  seriesRatings: ReadonlyMap<SeriesId, StarRating>,
-): T[] =>
-  shelvedOf(books)
-    .map((book) => ({ book, rating: shownRatingOf(book, seriesRatings) }))
-    .filter((entry): entry is { book: T; rating: StarRating } => entry.rating !== undefined)
-    .sort((left, right) => right.rating - left.rating)
-    .map((entry) => entry.book)
-
 /** Which main volumes of a saga the reader has finished — what decides whether
  *  the saga reads as complete. Only `read` counts: a volume in progress is not
  *  done. Only the main spine counts: a related work carries its own numbering,
