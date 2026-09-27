@@ -98,7 +98,7 @@ enum SeriesAPI {
             query: ShioriGraphQL.MySeriesPageQuery(
                 limit: .some(Int32(limit)),
                 offset: .some(Int32(offset)),
-                favorite: mode == .favorites ? .some(true) : .none,
+                loved: mode == .favorites ? .some(true) : .none,
                 state: state.map { .some(.case(graphQLState($0))) } ?? .none
             )
         )

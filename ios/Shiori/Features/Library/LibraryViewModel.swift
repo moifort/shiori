@@ -2,8 +2,8 @@ import Foundation
 import SwiftUI
 
 /// The two ways the Library tab looks at the shelf, switched from the toolbar
-/// as Vinarium switches its wine list: everything, or the favourites. There is
-/// no rated view: a heart is five stars, so the favourites are the best rated.
+/// as Vinarium switches its wine list: everything, or the favourites — every
+/// book judged, the hearts first and then five stars down to one.
 enum LibraryMode: String, CaseIterable, Identifiable {
     case all, favorites
     var id: String { rawValue }
@@ -28,7 +28,7 @@ enum LibraryMode: String, CaseIterable, Identifiable {
     var subtitle: String {
         switch self {
         case .all: String(localized: "Par date")
-        case .favorites: String(localized: "Vos coups de cœur")
+        case .favorites: String(localized: "Cœurs, puis étoiles")
         }
     }
 }
@@ -125,9 +125,12 @@ final class LibraryViewModel {
     private var reloadTask: Task<Void, Never>?
 
     /// The rows cut into month headings, newest first, on the date the
-    /// server shelved each book on.
-    var sections: [MonthSection<Book>] {
-        MonthSection.cut(books, on: \.shelvedAt)
+    /// server shelved each book on — or, under the favourites, into the hearts
+    /// and then each count of stars, as the server ranked them.
+    var sections: [ListSection<Book>] {
+        mode == .favorites
+            ? ListSection.byRank(books, rank: \.lovedRank)
+            : ListSection.byMonth(books, on: \.shelvedAt)
     }
 
     /// Opens the view another screen asks for, as the dashboard does: the
@@ -279,7 +282,7 @@ final class LibraryViewModel {
     /// server again: the sheet already holds what the server answered. The
     /// row keeps the reader's place unless the edit moved it — a new status
     /// stamps a new reading date, and the book goes where the server would
-    /// now shelve it. One that no longer belongs in the view — unhearted
+    /// now shelve it. One that no longer belongs in the view — left unjudged
     /// under the favourites, given another status under a filter — leaves
     /// it, and one shelved past the last loaded row waits for its page.
     func apply(_ book: Book) {
@@ -288,12 +291,22 @@ final class LibraryViewModel {
         updated.shelvedAt = book.finishedAt ?? book.startedAt ?? book.addedAt
             ?? books[current].shelvedAt
         books.remove(at: current)
-        let belongs = (mode != .favorites || updated.favorite)
+        let belongs = (mode != .favorites || updated.lovedRank != nil)
             && (statusFilter == nil || statusFilter == updated.status)
         guard belongs else { return }
-        let index = books.firstIndex { Self.shelvesBefore(updated, $0) } ?? books.endIndex
+        let index = books.firstIndex { comesBefore(updated, $0) } ?? books.endIndex
         guard index < books.endIndex || !hasMore else { return }
         books.insert(updated, at: index)
+    }
+
+    /// The server's order: under the favourites the hearts first and then
+    /// five stars down to one, and within a rank as everywhere else.
+    private func comesBefore(_ left: Book, _ right: Book) -> Bool {
+        if mode == .favorites, let leftRank = left.lovedRank, let rightRank = right.lovedRank,
+           leftRank != rightRank {
+            return leftRank.order < rightRank.order
+        }
+        return Self.shelvesBefore(left, right)
     }
 
     /// The server's order: newest shelf date first, then by title.

@@ -6,6 +6,8 @@ import UIKit
 /// would fight the sheet on its way out.
 enum AddBookSource {
     case camera
+    /// A whole shelf in one photo, Premium only.
+    case shelf
     case photo(Data)
     case library
     case title(String)
@@ -23,12 +25,14 @@ enum AddBookSource {
 /// long lookup that follows runs on the right one.
 struct AddBookSheet: View {
     var onCamera: () -> Void = {}
+    var onShelf: () -> Void = {}
     var onAllPhotos: () -> Void = {}
     var onPickedPhoto: (Data) -> Void = { _ in }
     var onTitle: (String) -> Void = { _ in }
     var onManual: () -> Void = {}
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(SubscriptionStore.self) private var subscriptions
     @State private var recentPhotos = RecentPhotos()
     @State private var loadingPhotoId: String?
     @State private var title = ""
@@ -126,6 +130,7 @@ struct AddBookSheet: View {
                 if hasCamera {
                     cameraTile
                 }
+                shelfTile
                 switch recentPhotos.access {
                 case .pending:
                     ForEach(0 ..< 3, id: \.self) { _ in placeholderTile }
@@ -159,6 +164,37 @@ struct AddBookSheet: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("add-book-camera")
+    }
+
+    /// A shelf in one photo. Shown to everyone, badged for a free reader,
+    /// whose tap opens the offer rather than the camera. Offered without a
+    /// camera too: its own screen can pick a photo from the library.
+    private var shelfTile: some View {
+        Button { onShelf() } label: {
+            tileBackground {
+                VStack(spacing: 6) {
+                    Image(systemName: "books.vertical")
+                        .font(.title2)
+                    Text("Plusieurs livres")
+                        .font(.footnote)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.7)
+                        .multilineTextAlignment(.center)
+                    if subscriptions.isPremium == false {
+                        Text("Premium")
+                            .font(.caption2.weight(.semibold))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.purple.opacity(0.15), in: .capsule)
+                            .foregroundStyle(.purple)
+                    }
+                }
+                .padding(8)
+                .foregroundStyle(.primary)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("add-book-shelf")
     }
 
     private func photoTile(_ photo: RecentPhotos.Photo, at index: Int) -> some View {
@@ -410,5 +446,6 @@ struct AddBookSheet: View {
 #Preview {
     Color.clear.sheet(isPresented: .constant(true)) {
         AddBookSheet()
+            .environment(SubscriptionStore())
     }
 }

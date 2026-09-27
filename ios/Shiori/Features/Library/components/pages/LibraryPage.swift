@@ -12,7 +12,7 @@ import SwiftUI
 struct LibraryPage: View {
     @Binding var mode: LibraryMode
     @Binding var statusFilter: ReadingStatus?
-    let sections: [MonthSection<Book>]
+    let sections: [ListSection<Book>]
     /// Rows say their own status, unless a filter already says which.
     var showsStatus: Bool = false
     let isLoading: Bool
@@ -128,7 +128,7 @@ struct LibraryPage: View {
         .refreshable { await onRetry() }
     }
 
-    private func rows(of section: MonthSection<Book>) -> some View {
+    private func rows(of section: ListSection<Book>) -> some View {
         // A Button rather than a NavigationLink: the book opens as a sheet over
         // the list, so the row carries no disclosure chevron promising a push.
         ForEach(section.rows) { book in
@@ -183,7 +183,7 @@ struct LibraryPage: View {
         LibraryPage(
             mode: $mode,
             statusFilter: $statusFilter,
-            sections: MonthSection.cut(books, on: \.shelvedAt),
+            sections: ListSection.byMonth(books, on: \.shelvedAt),
             showsStatus: true,
             isLoading: false,
             errorMessage: nil,

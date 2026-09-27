@@ -96,6 +96,8 @@ struct FriendSaga: Identifiable, Codable, Sendable {
     /// When its owner hearted it. Nil on a saga not hearted, and on a heart
     /// given before the date was kept.
     var favoritedAt: Date?
+    /// Their stars for the saga as a whole. Nil on a saga they did not rate.
+    var rating: Int?
     let genre: BookGenre?
     let subgenre: String?
     /// Its volumes on the shelf, in reading order, for a strip of covers:
@@ -364,7 +366,7 @@ enum FriendsAPI {
     static func sagaPage(
         friendId: String,
         state: SeriesState?,
-        favorite: Bool,
+        loved: Bool,
         after: String?
     ) async throws -> (sagas: [FriendSaga], hasMore: Bool) {
         let data = try await GraphQLHelpers.fetch(
@@ -372,7 +374,7 @@ enum FriendsAPI {
             query: ShioriGraphQL.FriendSagaPageQuery(
                 userId: friendId,
                 state: GraphQLHelpers.graphQLNullable(state.map { .case(SeriesAPI.graphQLState($0)) }),
-                favorite: favorite ? .some(true) : .none,
+                loved: loved ? .some(true) : .none,
                 after: GraphQLHelpers.graphQLNullable(after)
             )
         )
@@ -499,6 +501,7 @@ private extension FriendSaga {
             ownedCount: row.ownedCount,
             favorite: row.favorite,
             favoritedAt: row.favoritedAt.flatMap(GraphQLHelpers.parseISO8601),
+            rating: row.rating,
             genre: row.genre?.asDomain,
             subgenre: row.subgenre,
             volumes: row.volumes.map { Book(row: $0.fragments.friendBookRow) },

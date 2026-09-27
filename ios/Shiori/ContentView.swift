@@ -48,6 +48,10 @@ struct ContentView: View {
     /// its way out.
     @State private var pendingSource: AddBookSource?
     @State private var scanStart: ScanStart?
+    @State private var shelfStart: ShelfStart?
+    /// The offer, for a free reader who chose the shelf import.
+    @State private var shelfPaywall = false
+    @Environment(SubscriptionStore.self) private var subscriptions
     @State private var showPhotoPicker = false
     @State private var pickedPhoto: PhotosPickerItem?
     @State private var showManualAdd = false
@@ -76,11 +80,18 @@ struct ContentView: View {
         let start: ScanView.Start
     }
 
+    /// The shelf import's opening step, boxed for the same reason.
+    private struct ShelfStart: Identifiable {
+        let id = UUID()
+        let start: ShelfImportView.Start
+    }
+
     var body: some View {
         tabs
             .sheet(isPresented: $showAddSheet, onDismiss: actOnPendingSource) {
                 AddBookSheet(
                     onCamera: { choose(.camera) },
+                    onShelf: { choose(.shelf) },
                     onAllPhotos: { choose(.library) },
                     onPickedPhoto: { choose(.photo($0)) },
                     onTitle: { choose(.title($0)) },
@@ -89,6 +100,12 @@ struct ContentView: View {
             }
             .fullScreenCover(item: $scanStart) { boxed in
                 ScanView(start: boxed.start, onDismiss: { scanStart = nil })
+            }
+            .fullScreenCover(item: $shelfStart) { boxed in
+                ShelfImportView(start: boxed.start, onDismiss: { shelfStart = nil })
+            }
+            .sheet(isPresented: $shelfPaywall) {
+                PremiumSheet(trigger: .shelfImport)
             }
             .photosPicker(isPresented: $showPhotoPicker, selection: $pickedPhoto, matching: .images)
             .onChange(of: pickedPhoto) { _, item in
@@ -220,6 +237,14 @@ struct ContentView: View {
         pendingSource = nil
         switch source {
         case .camera: scanStart = ScanStart(start: .camera)
+        // Unknown until the store has loaded: the flow opens, and the server's
+        // PREMIUM_REQUIRED brings the offer up for a free reader all the same.
+        case .shelf:
+            if subscriptions.isPremium == false {
+                shelfPaywall = true
+            } else {
+                shelfStart = ShelfStart(start: .camera)
+            }
         case let .photo(data): scanStart = ScanStart(start: .photo(data))
         case .library: showPhotoPicker = true
         case let .title(title): scanStart = ScanStart(start: .title(title))

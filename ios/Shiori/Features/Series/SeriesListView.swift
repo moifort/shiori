@@ -223,9 +223,12 @@ struct SeriesListView: View {
     }
 
     /// The sagas cut into months, as the Library tab cuts its books, on the
-    /// date the latest volume of each was shelved.
-    private var sections: [MonthSection<FollowedSeries>] {
-        MonthSection.cut(viewModel.followed, on: \.shelvedAt)
+    /// date the latest volume of each was shelved — or, under the favourites,
+    /// into the hearts and then each count of stars, as the server ranked them.
+    private var sections: [ListSection<FollowedSeries>] {
+        viewModel.mode == .favorites
+            ? ListSection.byRank(viewModel.followed, rank: \.lovedRank)
+            : ListSection.byMonth(viewModel.followed, on: \.shelvedAt)
     }
 }
 

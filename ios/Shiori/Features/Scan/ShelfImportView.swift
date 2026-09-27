@@ -1,3 +1,4 @@
+import PhotosUI
 import SwiftUI
 
 /// A shelf in one photo: the camera or a picked photo, the books found, the
@@ -15,6 +16,7 @@ struct ShelfImportView: View {
 
     @State private var viewModel = ShelfImportViewModel()
     @State private var shouldCapture = false
+    @State private var pickedPhoto: PhotosPickerItem?
 
     var body: some View {
         NavigationStack {
@@ -30,6 +32,14 @@ struct ShelfImportView: View {
         }
         .task {
             if case let .photo(data) = start { await detect(imageData: data) }
+        }
+        .onChange(of: pickedPhoto) { _, item in
+            guard let item else { return }
+            pickedPhoto = nil
+            Task {
+                guard let data = try? await item.loadTransferable(type: Data.self) else { return }
+                await detect(imageData: data)
+            }
         }
     }
 
@@ -86,6 +96,20 @@ struct ShelfImportView: View {
                 }
                 .accessibilityLabel(Text("Photographier les livres"))
                 .accessibilityIdentifier("shelf-shutter")
+                .frame(maxWidth: .infinity)
+                .overlay(alignment: .leading) {
+                    // A shelf already photographed, or a friend's.
+                    PhotosPicker(selection: $pickedPhoto, matching: .images) {
+                        Image(systemName: "photo.on.rectangle")
+                            .font(.title2)
+                            .foregroundStyle(.white)
+                            .frame(width: 52, height: 52)
+                            .background(.black.opacity(0.4), in: .circle)
+                    }
+                    .accessibilityLabel(Text("Choisir une photo"))
+                    .accessibilityIdentifier("shelf-library")
+                    .padding(.leading, 32)
+                }
                 .padding(.bottom, 48)
             }
         }

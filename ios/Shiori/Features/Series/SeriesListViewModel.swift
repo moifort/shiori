@@ -246,7 +246,7 @@ final class SeriesListViewModel {
     private func place(_ fresh: FollowedSeries?, as id: String) {
         followed.removeAll { $0.id == id }
         guard let fresh, belongs(fresh) else { return }
-        let index = followed.firstIndex { Self.shelvesBefore(fresh, $0) } ?? followed.endIndex
+        let index = followed.firstIndex { comesBefore(fresh, $0) } ?? followed.endIndex
         guard index < followed.endIndex || !hasMore else { return }
         followed.insert(fresh, at: index)
     }
@@ -254,10 +254,20 @@ final class SeriesListViewModel {
     /// The server's filter: a saga of unknown state counts as complete, and one
     /// set aside shows under its own filter only.
     private func belongs(_ saga: FollowedSeries) -> Bool {
-        if mode == .favorites, saga.opinion?.favorite != true { return false }
+        if mode == .favorites, saga.lovedRank == nil { return false }
         let state = saga.state ?? .complete
         guard let stateFilter else { return state != .unfollowed }
         return state == stateFilter
+    }
+
+    /// The server's order: under the favourites the hearts first and then
+    /// five stars down to one, and within a rank as everywhere else.
+    private func comesBefore(_ left: FollowedSeries, _ right: FollowedSeries) -> Bool {
+        if mode == .favorites, let leftRank = left.lovedRank, let rightRank = right.lovedRank,
+           leftRank != rightRank {
+            return leftRank.order < rightRank.order
+        }
+        return Self.shelvesBefore(left, right)
     }
 
     /// The server's order: the most recently shelved saga first, then by name.

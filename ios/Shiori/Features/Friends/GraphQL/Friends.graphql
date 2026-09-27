@@ -83,6 +83,7 @@ fragment FriendSagaRow on FriendSaga {
   ownedCount
   favorite
   favoritedAt
+  rating
   genre
   subgenre
   shelvedAt
@@ -103,8 +104,8 @@ query FriendLibraryPage($userId: UserId!, $status: ReadingStatus, $after: BookId
 }
 
 # A friend's sagas, a page at a time, each with every volume as a cover.
-query FriendSagaPage($userId: UserId!, $state: SeriesState, $favorite: Boolean, $after: String) {
-  friendSagaPage(userId: $userId, state: $state, favorite: $favorite, limit: 30, after: $after) {
+query FriendSagaPage($userId: UserId!, $state: SeriesState, $loved: Boolean, $after: String) {
+  friendSagaPage(userId: $userId, state: $state, loved: $loved, limit: 30, after: $after) {
     sagas {
       ...FriendSagaRow
     }

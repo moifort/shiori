@@ -70,7 +70,7 @@ struct FriendSeriesListView: View {
 
     private var list: some View {
         List {
-            ForEach(MonthSection.cut(sagas, on: \.shelvedAt)) { section in
+            ForEach(sections) { section in
                 Section(section.title) {
                     ForEach(section.rows) { saga in
                         HStack(alignment: .top, spacing: 8) {
@@ -158,11 +158,7 @@ struct FriendSeriesListView: View {
                         if let state = saga.state {
                             SeriesStateLabel(state: state)
                         }
-                        if saga.favorite {
-                            Image(systemName: "heart.fill")
-                                .foregroundStyle(.red)
-                                .accessibilityLabel(Text("Favori"))
-                        }
+                        OpinionMark(rating: saga.rating, isFavorite: saga.favorite, font: .caption)
                     }
                     .font(.caption)
                     .fixedSize()
@@ -189,13 +185,21 @@ struct FriendSeriesListView: View {
         .padding(.vertical, 2)
     }
 
+    /// Cut into months, as the Series tab is — or, under the favourites, into
+    /// the hearts and then each count of stars, as the server ranked them.
+    private var sections: [ListSection<FriendSaga>] {
+        mode == .favorites
+            ? ListSection.byRank(sagas, rank: \.lovedRank)
+            : ListSection.byMonth(sagas, on: \.shelvedAt)
+    }
+
     private func load() async {
         isLoading = true
         errorMessage = nil
         loadMoreFailed = false
         do {
             let page = try await FriendsAPI.sagaPage(
-                friendId: friendId, state: state, favorite: mode == .favorites, after: nil
+                friendId: friendId, state: state, loved: mode == .favorites, after: nil
             )
             sagas = page.sagas
             hasMore = page.hasMore
@@ -209,7 +213,7 @@ struct FriendSeriesListView: View {
         loadMoreFailed = false
         do {
             let page = try await FriendsAPI.sagaPage(
-                friendId: friendId, state: state, favorite: mode == .favorites, after: sagas.last?.id
+                friendId: friendId, state: state, loved: mode == .favorites, after: sagas.last?.id
             )
             sagas.append(contentsOf: page.sagas.filter { new in !sagas.contains { $0.id == new.id } })
             hasMore = page.hasMore
