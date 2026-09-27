@@ -22,7 +22,12 @@ import {
   shownRatingOf,
 } from '~/domain/book/business-rules'
 import type { Book, Genre, StarRating } from '~/domain/book/types'
-import { progressOf, stateOf } from '~/domain/series/business-rules'
+import {
+  followedSagasOf,
+  followedStateOf,
+  inTabOrder,
+  progressOf,
+} from '~/domain/series/business-rules'
 import type { Series, SeriesId } from '~/domain/series/types'
 import { editionUnfollowed } from '~/domain/series-opinion/business-rules'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
@@ -41,7 +46,7 @@ const TOP_GENRES = 4
 /** Bumped whenever the view gains a figure or a rule changes, so a view stored
  *  by an older bundle is rebuilt on its next read instead of answering with a
  *  field it never computed. */
-export const VIEW_VERSION = 9
+export const VIEW_VERSION = 10
 
 // MARK: - Calendar
 
@@ -205,10 +210,14 @@ export const sharedShelfOf = (books: readonly Book[]): SharedShelf => {
   }
 }
 
-/** The sagas still in progress, measured on their published spine as the saga
- *  screen measures them. A saga with no catalogue, or no numbered volume, has
- *  nothing to measure against and is left out; so is one none of whose volumes
- *  has been opened, which the Series tab calls not started. */
+/** The sagas the Series tab lists as in progress, measured on their published
+ *  spine as the saga screen measures them. Drawn from the tab's own rows — one
+ *  per saga and edition, in the state the tab gives it, dated on that
+ *  edition's books — so the card reads as the top of the tab filtered on
+ *  "in progress". A saga with no catalogue, or no numbered volume, has nothing
+ *  to measure against and is left out. A saga held in progress in two editions
+ *  shows once, as its most recently shelved edition: the card opens the saga,
+ *  not an edition. */
 export const seriesProgressOf = (
   books: readonly Book[],
   catalogues: readonly Series[],
@@ -216,27 +225,36 @@ export const seriesProgressOf = (
   seriesRatings: ReadonlyMap<SeriesId, StarRating> = new Map(),
   hearted: ReadonlySet<SeriesId> = new Set(),
 ): SeriesProgress[] => {
+  const catalogueOf = new Map(catalogues.map((series) => [series.id, series]))
+  const sagas = followedSagasOf(books).map((saga) => ({
+    ...saga,
+    shelvedAt: new Date(Math.max(...saga.books.map((book) => shelfDateOf(book).getTime()))),
+  }))
   const progress: SeriesProgress[] = []
-  for (const series of catalogues) {
-    const owned = books.filter((book) => book.series?.id === series.id)
-    if (owned.every((book) => book.status === 'to-read')) continue
-    const read = readVolumeNumbersOf(owned)
-    // The saga's own state and ring: a saga the Series tab calls finished is
-    // not one the dashboard still counts as in progress.
-    // Measured on the edition the reader holds, as the Series tab measures its row.
-    const edition = { language: owned.find((book) => book.language)?.language }
-    if (stateOf(series, read, Year(currentYear), edition) !== 'in-progress') continue
+  for (const saga of inTabOrder(sagas)) {
+    const series = catalogueOf.get(saga.id)
+    if (!series || progress.some((shown) => shown.id === saga.id)) continue
+    const read = readVolumeNumbersOf(saga.books)
+    const edition = { language: saga.language }
+    const state = followedStateOf(
+      saga.books.map((book) => book.status),
+      series,
+      read,
+      Year(currentYear),
+      false,
+      edition,
+    )
+    if (state !== 'in-progress') continue
     const measured = progressOf(series, read, Year(currentYear), edition)
     if (!measured) continue
-    const { readCount, totalCount } = measured
     progress.push({
       id: series.id,
       name: series.name,
-      readCount,
-      totalCount,
-      rating: sagaRatingOf(series.id, owned, seriesRatings),
+      readCount: measured.readCount,
+      totalCount: measured.totalCount,
+      rating: sagaRatingOf(series.id, saga.books, seriesRatings),
       favorite: hearted.has(series.id),
-      lastActivityAt: new Date(Math.max(...owned.map((book) => shelfDateOf(book).getTime()))),
+      lastActivityAt: saga.shelvedAt,
     })
   }
   return progress

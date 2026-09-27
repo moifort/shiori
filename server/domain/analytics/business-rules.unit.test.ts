@@ -416,6 +416,37 @@ describe('building the view', () => {
     expect(seriesProgressOf([volume(1), volume(2)], [catalogue], 2026)).toEqual([])
   })
 
+  // The Series tab holds each edition as its own row, dated on its own books:
+  // the edition in progress is the one the card shows, on its own date.
+  test('measures the edition in progress, dated on its own volumes', () => {
+    const volume = (language: 'fr' | 'en', status: 'read' | 'to-read', finishedAt?: string) =>
+      book(`${language}-1`, {
+        status,
+        language,
+        startedAt: finishedAt ? new Date(finishedAt) : undefined,
+        finishedAt: finishedAt ? new Date(finishedAt) : undefined,
+        series: { id: kingkiller, name: catalogue.name, volume: VolumeNumber(1), kind: 'main' },
+      })
+    const books = [
+      volume('en', 'read', '2026-09-01'),
+      book('en-2', {
+        status: 'read',
+        language: 'en',
+        startedAt: new Date('2026-09-05'),
+        finishedAt: new Date('2026-09-10'),
+        series: { id: kingkiller, name: catalogue.name, volume: VolumeNumber(2), kind: 'main' },
+      }),
+      volume('fr', 'read', '2026-03-01'),
+    ]
+
+    expect(seriesProgressOf(books, [catalogue], 2026)).toEqual([
+      expect.objectContaining({ id: kingkiller, readCount: 1, totalCount: 2 }),
+    ])
+    expect(seriesProgressOf(books, [catalogue], 2026)[0]?.lastActivityAt).toEqual(
+      new Date('2026-03-01'),
+    )
+  })
+
   // The card reads as the top of the Series tab: the saga whose latest volume
   // was shelved most recently first, whatever the reader thinks of it.
   test('puts the sagas in progress in the Series tab order, and shows six', () => {
