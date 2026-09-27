@@ -76,9 +76,9 @@ describe('the Découvrir tab', () => {
 
   test('answers nothing in the other format', async () => {
     const result = await run(
-      '{ discovery(format: AUDIOBOOK) { unwatched sagas { series { id } } } }',
+      '{ discovery(format: AUDIOBOOK) { unwatched followed sagas { series { id } } } }',
     )
-    expect(result.data?.discovery).toEqual({ unwatched: 0, sagas: [] })
+    expect(result.data?.discovery).toEqual({ unwatched: 0, followed: 0, sagas: [] })
   })
 
   // The row draws every cover the Series tab draws: the catalogue's spine

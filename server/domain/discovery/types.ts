@@ -93,4 +93,7 @@ export type Discovery = {
   /** How many sagas the reader follows in that format were never looked up:
    *  the app asks for them at once rather than wait for the hourly pass. */
   unwatched: number
+  /** How many sagas the reader follows in that format: none, and the app
+   *  opens on the other format. */
+  followed: number
 }

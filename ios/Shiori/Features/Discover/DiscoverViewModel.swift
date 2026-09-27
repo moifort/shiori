@@ -32,10 +32,13 @@ final class DiscoverViewModel {
     private var lookedUp: Set<ReleaseFormat> = []
 
     /// Bump the version whenever `DiscoveryFeed` changes shape.
-    private let cache = SnapshotCache<DiscoveryFeed>("discovery", version: 2)
+    private let cache = SnapshotCache<DiscoveryFeed>("discovery", version: 3)
 
     /// The rows of a format, nil until they were ever loaded.
     func rows(_ format: ReleaseFormat) -> [SagaDiscovery]? { feed.rows[format] }
+
+    /// How many sagas the reader follows in a format, nil until it was loaded.
+    func followed(_ format: ReleaseFormat) -> Int? { feed.followed[format] }
 
     /// Says whether it failed. One skipped because another was already on its
     /// way, or one called off, did not.
@@ -47,6 +50,7 @@ final class DiscoverViewModel {
         let page: DiscoveryPage
         do {
             page = try await DiscoverAPI.discovery(format: format)
+            feed.followed[format] = page.followed
             show(page.rows, in: format)
             loaded.insert(format)
             refreshFailed = false

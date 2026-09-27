@@ -253,11 +253,15 @@ describe('the Découvrir tab', () => {
     await stock(reader, 'audiobook')
     await DiscoveryUseCase.watchDueSagas(now)
 
+    // No saga read at all: the app opens on the sagas heard instead.
     expect(await DiscoveryUseCase.discover(reader, 'fr', 'book', now)).toEqual({
       sagas: [],
       unwatched: 0,
+      followed: 0,
     })
-    const [heard] = (await DiscoveryUseCase.discover(reader, 'fr', 'audiobook', now)).sagas
+    const heardTab = await DiscoveryUseCase.discover(reader, 'fr', 'audiobook', now)
+    expect(heardTab.followed).toBe(1)
+    const [heard] = heardTab.sagas
     expect(heard.series.id).toBe(carlHeard)
     expect(heard.next?.number).toBe(VolumeNumber(3))
   })

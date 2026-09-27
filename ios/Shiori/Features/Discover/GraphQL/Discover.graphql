@@ -18,6 +18,7 @@ mutation LookUpDiscovery($format: ReleaseFormat!) {
 
 fragment DiscoveryFields on Discovery {
   unwatched
+  followed
   sagas {
     series {
       ...FollowedSeriesRow

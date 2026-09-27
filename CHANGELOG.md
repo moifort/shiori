@@ -22,6 +22,7 @@ the release tag is pushed.
 - Discover shows again the next volume of a series you just opened for the first time.
 - Every Sunday evening, one notification lists the volumes newly announced in your series.
 - A bell in Discover opens your alerts: the weekly news, each new release, or none at all.
+- Discover opens on your audiobooks when you follow no printed series, and the other way round.
 - The Authors shelf lists your authors alphabetically, like your contacts, with the alphabet down
   the side to jump to a letter; your favourites first is one tap away.
 - Saga and author pages open faster, whatever the size of your library.

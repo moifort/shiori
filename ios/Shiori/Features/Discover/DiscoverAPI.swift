@@ -65,12 +65,16 @@ struct SagaDiscovery: Identifiable, Codable, Sendable {
 /// The tab as last shown, one list per format.
 struct DiscoveryFeed: Codable, Sendable {
     var rows: [ReleaseFormat: [SagaDiscovery]] = [:]
+    /// How many sagas the reader follows in each format.
+    var followed: [ReleaseFormat: Int] = [:]
 }
 
 /// The tab in one format, and how many of its sagas were never looked up.
 struct DiscoveryPage: Sendable {
     let rows: [SagaDiscovery]
     let unwatched: Int
+    /// How many sagas the reader follows in that format.
+    let followed: Int
 }
 
 enum DiscoverAPI {
@@ -144,7 +148,8 @@ private extension DiscoveryPage {
                     missing: row.missing
                 )
             },
-            unwatched: fields.unwatched
+            unwatched: fields.unwatched,
+            followed: fields.followed
         )
     }
 }

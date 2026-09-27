@@ -20,6 +20,9 @@ struct DiscoverView: View {
     @State private var openSeries: SagaDiscovery?
     @AppStorage("discover.format") private var format: ReleaseFormat = .book
     @AppStorage("discover-shelf") private var shelf: LibraryShelf = .series
+    /// The format was picked this session — by a tap, or once for the reader —
+    /// and is kept even when it holds no saga.
+    @State private var formatSettled = false
 
     var body: some View {
         NavigationStack {
@@ -38,7 +41,10 @@ struct DiscoverView: View {
                     }
                 }
         }
-        .task(id: format) { await viewModel.loadOnAppear(format) }
+        .task(id: format) {
+            await viewModel.loadOnAppear(format)
+            openOnAFollowedFormat()
+        }
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
             Task { await viewModel.reload() }
         }
@@ -134,6 +140,15 @@ struct DiscoverView: View {
         .accessibilityIdentifier("discover-series-row")
     }
 
+    /// A reader who follows no saga in the format on screen — every saga of
+    /// theirs heard, say — sees the other one instead, once a session: a
+    /// format they tapped stays, and two empty formats do not bounce.
+    private func openOnAFollowedFormat() {
+        guard !formatSettled, viewModel.followed(format) == 0 else { return }
+        formatSettled = true
+        format = ReleaseFormat.allCases.first { $0 != format } ?? format
+    }
+
     /// The two formats where the Library and Series tabs keep their views: icons
     /// on the right, the one picked in the tint.
     @ToolbarContentBuilder
@@ -144,6 +159,7 @@ struct DiscoverView: View {
         ToolbarItemGroup {
             ForEach(ReleaseFormat.allCases) { item in
                 Button {
+                    formatSettled = true
                     format = item
                 } label: {
                     Label(item.filterLabel, systemImage: item.symbol)

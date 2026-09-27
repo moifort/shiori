@@ -288,9 +288,11 @@ const discoveryOf = (
 ): Discovery => {
   const today = todayOf(now)
   let unwatched = 0
+  let followedCount = 0
   const rows = followed.flatMap((series): SagaDiscovery[] => {
     if (!series.language || series.state === 'unfollowed') return []
     if (formatOf(series.id) !== format) return []
+    followedCount += 1
     const watch = watches.get(watchKeyOf({ seriesId: series.id, language: series.language }))
     const releases = releasesOf(series.books, watch, series.catalogue, today)
     if (!releases.watched) unwatched += 1
@@ -298,7 +300,7 @@ const discoveryOf = (
     const missing = missingVolumesOf(series.books, watch, series.catalogue, today)
     return [{ ...releases, series, missing }]
   })
-  return { sagas: inDiscoveryOrder(rows), unwatched }
+  return { sagas: inDiscoveryOrder(rows), unwatched, followed: followedCount }
 }
 
 /** Look these sagas up on the web, a few side by side, until the budget is

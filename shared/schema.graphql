@@ -719,6 +719,11 @@ type DiscoveredVolume {
 """The Découvrir tab in one format."""
 type Discovery {
   """
+  How many sagas the reader follows in that format. Zero, and the app opens Découvrir on the other format.
+  """
+  followed: Int!
+
+  """
   A row per saga with a volume announced for a known date, the soonest first.
   """
   sagas: [SagaDiscovery!]!

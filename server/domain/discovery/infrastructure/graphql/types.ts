@@ -90,5 +90,11 @@ export const DiscoveryType = builder.objectRef<Discovery>('Discovery').implement
         'zero, `lookUpDiscovery` looks them up at once rather than wait for the hourly pass.',
       resolve: (discovery) => discovery.unwatched,
     }),
+    followed: t.int({
+      description:
+        'How many sagas the reader follows in that format. Zero, and the app opens ' +
+        'Découvrir on the other format.',
+      resolve: (discovery) => discovery.followed,
+    }),
   }),
 })
