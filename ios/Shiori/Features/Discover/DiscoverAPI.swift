@@ -103,7 +103,7 @@ struct AuthorDiscovery: Identifiable, Codable, Sendable {
 
 /// One volume of a saga, announced or just out, as the Books shelf lists it
 /// and its page opens.
-struct DiscoveryVolume: Identifiable {
+struct DiscoveryVolume: Identifiable, Codable, Sendable {
     let saga: SagaDiscovery
     let volume: DiscoveredVolume
 

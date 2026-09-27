@@ -29,7 +29,7 @@ struct HomeView: View {
     /// The saga opened from its progress row, as a sheet like a book.
     @State private var openSeries: OpenedSeries?
     /// The volume announced opened from the releases, as Découvrir opens it.
-    @State private var openRelease: SagaDiscovery?
+    @State private var openRelease: DiscoveryVolume?
     /// The friend's favourite opened, on its read-only page.
     @State private var openFavorite: FriendFavorite?
 
@@ -84,11 +84,9 @@ struct HomeView: View {
                 SeriesView(seriesId: opened.id, isSheet: true)
             }
         }
-        .sheet(item: $openRelease) { saga in
-            if let next = saga.releases.next {
-                NavigationStack {
-                    AnnouncedVolumeView(saga: saga, volume: next)
-                }
+        .sheet(item: $openRelease) { opened in
+            NavigationStack {
+                AnnouncedVolumeView(saga: opened.saga, volume: opened.volume)
             }
         }
         .sheet(item: $openFavorite) { favorite in

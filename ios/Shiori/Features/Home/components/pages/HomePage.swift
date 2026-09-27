@@ -5,8 +5,9 @@ import SwiftUI
 /// one with nothing to show yet says what will fill it.
 struct HomePage: View {
     let dashboard: Dashboard
-    /// The next volume announced of each saga followed, the soonest first.
-    var releases: [SagaDiscovery] = []
+    /// The volumes just out, the newest first, then the next one announced of
+    /// each saga followed, the soonest first.
+    var releases: [DiscoveryVolume] = []
     /// What the reader's friends hearted lately, the newest first.
     var friendFavorites: [FriendFavorite] = []
     /// Bringing last session's figures up to date failed: a retry row leads
@@ -33,8 +34,8 @@ struct HomePage: View {
     var onSeriesOpened: (String) -> Void = { _ in }
     /// The releases header: opens Découvrir.
     var onReleasesTapped: () -> Void = {}
-    /// A volume announced: opens its page.
-    var onReleaseTapped: (SagaDiscovery) -> Void = { _ in }
+    /// A volume just out or announced: opens its page.
+    var onReleaseTapped: (DiscoveryVolume) -> Void = { _ in }
     /// The friends' favourites header: opens Partagé.
     var onFriendFavoritesTapped: () -> Void = {}
     /// A friend's favourite: opens the book, or a saga's first volume.
@@ -83,19 +84,26 @@ struct HomePage: View {
                 // nothing to announce they are left out rather than sketched.
                 if !releases.isEmpty {
                     BookShelfSection(
-                        title: "Prochaines sorties",
-                        books: releases.compactMap(Self.releaseTile),
+                        title: "Nouveautés",
+                        books: releases.map(Self.releaseTile),
                         caption: { tile in
-                            releases.first { Self.releaseTile($0)?.id == tile.id }?.releases.next?.date
-                                .map(ReleaseDateText.short) ?? tile.authorLine
+                            guard let release = release(of: tile) else { return tile.authorLine }
+                            guard let date = release.volume.date, ReleaseDateText.isUpcoming(date) else {
+                                return String(localized: "Disponible")
+                            }
+                            return ReleaseDateText.short(date)
                         },
-                        captionTint: .orange,
+                        // Out already in green, still to come in the book
+                        // page's orange.
+                        captionTint: { tile in
+                            guard let release = release(of: tile) else { return nil }
+                            return release.volume.date.map { ReleaseDateText.isUpcoming($0) } ?? false
+                                ? .orange : .green
+                        },
                         emptyMessage: "",
                         onHeaderTapped: onReleasesTapped,
                         onBookTapped: { tile in
-                            if let saga = releases.first(where: { Self.releaseTile($0)?.id == tile.id }) {
-                                onReleaseTapped(saga)
-                            }
+                            if let release = release(of: tile) { onReleaseTapped(release) }
                         }
                     )
                     .accessibilityIdentifier("home-releases")
@@ -178,20 +186,25 @@ struct HomePage: View {
         .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 20))
     }
 
-    /// A volume announced drawn as a book, as Découvrir draws it: its saga as a
-    /// tag, the headphones on the cover of a recording.
-    private static func releaseTile(_ saga: SagaDiscovery) -> Book? {
-        guard let next = saga.releases.next else { return nil }
-        let series = saga.series
+    /// The volume a release tile draws.
+    private func release(of tile: Book) -> DiscoveryVolume? {
+        releases.first { Self.releaseTile($0).id == tile.id }
+    }
+
+    /// A volume just out or announced drawn as a book, as Découvrir draws it:
+    /// its saga as a tag, the headphones on the cover of a recording.
+    private static func releaseTile(_ release: DiscoveryVolume) -> Book {
+        let series = release.saga.series
+        let volume = release.volume
         return Book(
-            id: "release-\(series.id)-\(next.number)",
-            title: next.title,
+            id: "release-\(series.id)-\(volume.number)",
+            title: volume.title,
             authors: series.author.map { [$0] } ?? [],
             format: series.isAudio ? .audiobook : .book,
             genre: series.genre,
             language: series.language,
-            series: SeriesMembership(id: series.seriesId, name: series.name, volume: next.number, kind: .main),
-            coverURL: next.coverURL,
+            series: SeriesMembership(id: series.seriesId, name: series.name, volume: volume.number, kind: .main),
+            coverURL: volume.coverURL,
             status: .toRead
         )
     }

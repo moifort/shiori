@@ -7,9 +7,9 @@ struct BookShelfSection: View {
     let title: LocalizedStringKey
     let books: [Book]
     let caption: (Book) -> String
-    /// The captions' colour, when they say something the book page colours:
-    /// a release date is orange there.
-    var captionTint: Color?
+    /// A caption's colour, when it says something the book page colours: a
+    /// release date is orange there.
+    var captionTint: (Book) -> Color? = { _ in nil }
     let emptyMessage: LocalizedStringKey
     var onHeaderTapped: (() -> Void)?
     let onBookTapped: (Book) -> Void
@@ -26,7 +26,7 @@ struct BookShelfSection: View {
                     HStack(alignment: .top, spacing: 12) {
                         ForEach(books) { book in
                             Button { onBookTapped(book) } label: {
-                                CoverTile(book: book, caption: caption(book), captionTint: captionTint)
+                                CoverTile(book: book, caption: caption(book), captionTint: captionTint(book))
                             }
                             .buttonStyle(.plain)
                         }
