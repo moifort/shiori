@@ -66,6 +66,8 @@ const api = async (method: string, path: string, body?: object) => {
   if (!response.ok) {
     throw new Error(`${method} ${path} answered ${response.status}: ${await response.text()}`)
   }
+  // Linking a relationship (a build to a group) answers 204 with no body at all.
+  if (response.status === 204) return { data: [] as Resource[] }
   return (await response.json()) as { data: Resource[] | Resource }
 }
 
