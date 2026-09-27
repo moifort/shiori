@@ -8,9 +8,9 @@ struct CoverTile: View {
     /// Nil for the secondary grey.
     var captionTint: Color?
 
-    /// The headphones pill of a library row's cover, rather than one grown
+    /// The headphones pill, a touch above a library row's rather than grown
     /// with the shelf's larger cover.
-    static let formatBadgeSize: CGFloat = 18
+    static let formatBadgeSize: CGFloat = 20
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
