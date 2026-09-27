@@ -8,7 +8,7 @@ import UserNotifications
 /// says so and leads to the system settings, the only place it can be given
 /// back.
 struct NotificationSettingsView: View {
-    /// Set when shown as a sheet, which then closes on "OK".
+    /// Set when shown as a sheet, which then closes on its leading cross.
     var onDone: (() -> Void)?
 
     @State private var settings: NotificationSettings?
@@ -62,8 +62,8 @@ struct NotificationSettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if let onDone {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("OK", action: onDone)
+                ToolbarItem(placement: .cancellationAction) {
+                    ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel, action: onDone)
                 }
             }
         }
