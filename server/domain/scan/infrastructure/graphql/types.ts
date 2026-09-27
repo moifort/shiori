@@ -3,7 +3,7 @@ import {
   BookLanguageEnum,
   GenreEnum,
 } from '~/domain/book/infrastructure/graphql/enums'
-import type { ScannedSeries, ScanResult } from '~/domain/scan/types'
+import type { ScannedSeries, ScanResult, TitleCandidate } from '~/domain/scan/types'
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { builder } from '~/domain/shared/graphql/builder'
 
@@ -106,6 +106,34 @@ export const ScanResultType = builder.objectRef<ScanResult>('ScanResult').implem
       type: ScannedSeriesType,
       nullable: true,
       resolve: (result) => result.series ?? null,
+    }),
+  }),
+})
+
+export const TitleCandidateType = builder.objectRef<TitleCandidate>('TitleCandidate').implement({
+  description:
+    'One book a typed title may mean, offered for the reader to pick before the ' +
+    'full lookup runs. Just enough to tell two books apart: hand `title` and the ' +
+    'first author to `scanTitle` to build the record.',
+  fields: (t) => ({
+    title: t.field({ type: 'BookTitle', resolve: (candidate) => candidate.title }),
+    authors: t.field({ type: ['AuthorName'], resolve: (candidate) => candidate.authors }),
+    firstPublishedIn: t.field({
+      type: 'Year',
+      nullable: true,
+      description: 'Year the work first appeared.',
+      resolve: (candidate) => candidate.firstPublishedIn ?? null,
+    }),
+    seriesName: t.field({
+      type: 'SeriesName',
+      nullable: true,
+      description: 'The saga it belongs to, null for a standalone book.',
+      resolve: (candidate) => candidate.seriesName ?? null,
+    }),
+    volume: t.field({
+      type: 'VolumeNumber',
+      nullable: true,
+      resolve: (candidate) => candidate.volume ?? null,
     }),
   }),
 })

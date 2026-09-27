@@ -17,6 +17,10 @@ enum AddBookSource {
 /// shot a minute ago is one tap away instead of a trip through the picker —
 /// then the two ways in that need no photo: a title typed as remembered, which
 /// the AI looks up, and a record typed by hand.
+///
+/// A typed title is searched here before the sheet closes: a title that means
+/// several books lists them under the field for the reader to pick, so the
+/// long lookup that follows runs on the right one.
 struct AddBookSheet: View {
     var onCamera: () -> Void = {}
     var onAllPhotos: () -> Void = {}
@@ -29,6 +33,17 @@ struct AddBookSheet: View {
     @State private var loadingPhotoId: String?
     @State private var title = ""
     @FocusState private var titleFocused: Bool
+    @State private var search: TitleSearch = .idle
+
+    /// Where the typed title stands, between the arrow and the lookup.
+    private enum TitleSearch: Equatable {
+        case idle
+        case searching
+        /// Several books match: the reader picks one.
+        case candidates([TitleCandidate])
+        case noMatch
+        case failed(String)
+    }
 
     /// Scaled with the text: a tile whose label grows while its frame stays
     /// put is a tile whose label gets cut in half.
@@ -44,6 +59,13 @@ struct AddBookSheet: View {
         padding + closeSide + padding + tileSide + padding + rowHeight + 12 + rowHeight + padding + 34
     }
 
+    /// A list of books does not fit the compact sheet, so while one is shown the
+    /// sheet has only its full height to be at, and opens up to it.
+    private var detents: Set<PresentationDetent> {
+        if case .candidates = search { return [.large] }
+        return [.height(sheetHeight), .large]
+    }
+
     /// The camera is offered only where there is one: on a simulator the
     /// scanner would open on a black screen.
     private var hasCamera: Bool {
@@ -55,13 +77,18 @@ struct AddBookSheet: View {
             header
             strip
             titleRow
+            searchOutcome
             manualRow
         }
         .padding(padding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .presentationDetents([.height(sheetHeight), .large])
+        .presentationDetents(detents)
         .presentationDragIndicator(.visible)
         .task { await recentPhotos.load() }
+        // Editing the title makes the answer to the previous one stale.
+        .onChange(of: title) { _, _ in
+            if search != .searching { search = .idle }
+        }
     }
 
     private var header: some View {
@@ -203,8 +230,14 @@ struct AddBookSheet: View {
                 .focused($titleFocused)
                 .submitLabel(.search)
                 .onSubmit(submitTitle)
+                .disabled(search == .searching)
                 .accessibilityIdentifier("add-book-title")
-            if !trimmedTitle.isEmpty {
+            if search == .searching {
+                ProgressView()
+                    .frame(width: 28, height: 28)
+                    .accessibilityLabel("Recherche en cours")
+                    .accessibilityIdentifier("add-book-title-searching")
+            } else if !trimmedTitle.isEmpty {
                 Button(action: submitTitle) {
                     Image(systemName: "arrow.right.circle.fill")
                         .font(.title2)
@@ -222,6 +255,89 @@ struct AddBookSheet: View {
         .clipShape(.rect(cornerRadius: 18))
         .contentShape(.rect)
         .onTapGesture { titleFocused = true }
+    }
+
+    /// What the search answered, when it is not a book to open straight away.
+    @ViewBuilder
+    private var searchOutcome: some View {
+        switch search {
+        case .idle, .searching:
+            EmptyView()
+        case let .candidates(candidates):
+            candidateList(candidates)
+        case .noMatch:
+            searchMessage("Aucun livre trouvé, essayez un autre titre", systemImage: "magnifyingglass")
+        case let .failed(reason):
+            searchMessage(reason, systemImage: "exclamationmark.triangle")
+        }
+    }
+
+    private func candidateList(_ candidates: [TitleCandidate]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Plusieurs livres correspondent")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            VStack(spacing: 0) {
+                ForEach(Array(candidates.enumerated()), id: \.element.id) { index, candidate in
+                    if index > 0 { Divider().padding(.leading, 16) }
+                    candidateRow(candidate, at: index)
+                }
+            }
+            .background(Color(.secondarySystemBackground))
+            .clipShape(.rect(cornerRadius: 18))
+        }
+    }
+
+    private func candidateRow(_ candidate: TitleCandidate, at index: Int) -> some View {
+        Button { onTitle(candidate.lookUpQuery) } label: {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(candidate.title)
+                        .font(.body.weight(.medium))
+                        .lineLimit(2)
+                    if let byline = byline(of: candidate) {
+                        Text(byline)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    if let series = candidate.seriesName {
+                        Text(candidate.volume.map { "\(series) · Tome \($0)" } ?? series)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("add-book-candidate-\(index)")
+    }
+
+    /// The authors and the year, the two things that tell two books of the same
+    /// name apart.
+    private func byline(of candidate: TitleCandidate) -> String? {
+        let parts = [
+            candidate.authors.isEmpty ? nil : candidate.authors.joined(separator: ", "),
+            candidate.firstPublishedIn.map(String.init),
+        ].compactMap(\.self)
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    private func searchMessage(_ text: String, systemImage: String) -> some View {
+        Label(text, systemImage: systemImage)
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 16)
+            .accessibilityIdentifier("add-book-title-message")
     }
 
     private var manualRow: some View {
@@ -248,9 +364,32 @@ struct AddBookSheet: View {
         title.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// Searches the typed title while the sheet stays open. One match opens
+    /// straight away; several are listed for the reader to pick. A spent
+    /// allowance hands the title on as it was, so the scan flow shows the
+    /// paywall it already knows how to show.
     private func submitTitle() {
-        guard !trimmedTitle.isEmpty else { return }
-        onTitle(trimmedTitle)
+        let typed = trimmedTitle
+        guard !typed.isEmpty, search != .searching else { return }
+        titleFocused = false
+        search = .searching
+        Task {
+            do {
+                let candidates = try await ScanAPI.searchTitle(typed)
+                switch candidates.count {
+                case 0: search = .noMatch
+                case 1:
+                    search = .idle
+                    onTitle(candidates[0].lookUpQuery)
+                default: search = .candidates(candidates)
+                }
+            } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {
+                search = .idle
+                onTitle(typed)
+            } catch {
+                search = .failed(reportError(error))
+            }
+        }
     }
 
     /// The full-size photo is fetched on the tap and downscaled before it

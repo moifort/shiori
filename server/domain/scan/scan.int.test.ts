@@ -170,6 +170,83 @@ describe('looking a title up', () => {
   })
 })
 
+describe('searching a typed title', () => {
+  // The step before the lookup: which books the reader may mean. One quick
+  // call, and nothing is built or catalogued until one of them is picked.
+  test('lists the books the title may mean, most likely first', async () => {
+    answers = [
+      {
+        candidates: [
+          {
+            title: 'Fondation',
+            authors: ['Isaac Asimov'],
+            firstPublishedIn: 1951,
+            seriesName: 'Fondation',
+            volumeNumber: 1,
+          },
+          { title: 'Fondation et Empire', authors: ['Isaac Asimov'], firstPublishedIn: 1952 },
+        ],
+      },
+    ]
+
+    const { candidates } = await ScanCommand.findCandidates(BookTitle('fondation'), 'fr')
+
+    expect(candidates.map((candidate) => String(candidate.title))).toEqual([
+      'Fondation',
+      'Fondation et Empire',
+    ])
+    expect(candidates[0]).toMatchObject({ seriesName: 'Fondation', volume: 1 })
+    expect(candidates[1].seriesName).toBeUndefined()
+    expect(calls).toEqual(['candidates'])
+    expect(prompts.candidates).toContain('fondation')
+  })
+
+  test('lists an edition the model named twice only once', async () => {
+    answers = [
+      {
+        candidates: [
+          { title: 'Le Nom du vent', authors: ['Patrick Rothfuss'] },
+          { title: 'Le nom du Vent', authors: ['patrick rothfuss'] },
+        ],
+      },
+    ]
+
+    const { candidates } = await ScanCommand.findCandidates(BookTitle('nom du vent'), 'fr')
+
+    expect(candidates).toHaveLength(1)
+  })
+
+  test('drops an entry without a title and keeps five at most', async () => {
+    answers = [
+      {
+        candidates: [
+          { title: '', authors: ['Nobody'] },
+          ...['A', 'B', 'C', 'D', 'E', 'F'].map((letter) => ({
+            title: `Tome ${letter}`,
+            authors: ['Someone'],
+          })),
+        ],
+      },
+    ]
+
+    const { candidates } = await ScanCommand.findCandidates(BookTitle('tome'), 'fr')
+
+    expect(candidates.map((candidate) => String(candidate.title))).toEqual([
+      'Tome A',
+      'Tome B',
+      'Tome C',
+      'Tome D',
+      'Tome E',
+    ])
+  })
+
+  test('answers an empty list when nothing matched', async () => {
+    answers = [{ candidates: [] }]
+
+    expect((await ScanCommand.findCandidates(BookTitle('xqzv'), 'fr')).candidates).toEqual([])
+  })
+})
+
 describe('reading the format', () => {
   // Enrichment rebuilds the result from a web search that knows nothing of the
   // photo, so the format read off the cover has to survive it.

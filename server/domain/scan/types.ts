@@ -67,6 +67,17 @@ export type ScannedSeries = {
   kind: VolumeKind
 }
 
+/** One book a typed title may mean, offered for the reader to pick before the
+ *  full lookup runs. Just enough to tell two books apart — the record itself is
+ *  built by `lookUpTitle` once the reader chose. */
+export type TitleCandidate = {
+  title: BookTitle
+  authors: AuthorName[]
+  firstPublishedIn?: Year
+  seriesName?: SeriesName
+  volume?: VolumeNumber
+}
+
 /** A cached scan. Keyed by image AND language: the same cover scanned in two
  *  languages must not serve one language's synopsis to the other. */
 export type CachedScan = {

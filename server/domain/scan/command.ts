@@ -19,14 +19,27 @@ import * as repository from '~/domain/scan/infrastructure/repository'
 import { hashImage } from '~/domain/scan/primitives'
 import {
   audioCataloguePrompt,
+  candidatesPrompt,
   cataloguePrompt,
   enrichmentPrompt,
+  MAX_CANDIDATES,
   visionPrompt,
 } from '~/domain/scan/prompts'
 import { publishedCoverOf } from '~/domain/scan/published-cover'
-import { CATALOGUE_SCHEMA, ENRICHMENT_SCHEMA, VISION_SCHEMA } from '~/domain/scan/schemas'
+import {
+  CANDIDATES_SCHEMA,
+  CATALOGUE_SCHEMA,
+  ENRICHMENT_SCHEMA,
+  VISION_SCHEMA,
+} from '~/domain/scan/schemas'
 import { STUBBED_SCAN } from '~/domain/scan/stub'
-import type { AiStepUsage, ScanLanguage, ScanResult, ScanUsage } from '~/domain/scan/types'
+import type {
+  AiStepUsage,
+  ScanLanguage,
+  ScanResult,
+  ScanUsage,
+  TitleCandidate,
+} from '~/domain/scan/types'
 import { withoutDuplicateVolumes } from '~/domain/series/business-rules'
 import { SeriesCommand } from '~/domain/series/command'
 import {
@@ -73,6 +86,16 @@ type EnrichmentOutput = {
   isbn13?: string | null
   regularEditionIsbn13?: string | null
   synopsis?: string | null
+}
+
+type CandidatesOutput = {
+  candidates?: {
+    title: string
+    authors: string[]
+    firstPublishedIn?: number | null
+    seriesName?: string | null
+    volumeNumber?: number | null
+  }[]
 }
 
 type CatalogueOutput = {
@@ -149,6 +172,85 @@ export namespace ScanCommand {
     const { catalogue, author } = await catalogueWhatOpensNext(result, language, authorPage)
     return { result, usage: { enrichment, catalogue, author } }
   }
+
+  /** A book already named — its title, author, format and edition language
+   *  known, as a volume the release watch announced is — described as a
+   *  scanned one is: the grounded step fills in its summary, genre, pages and
+   *  ISBN, and its published cover is looked up. Nothing else is built: the
+   *  saga it belongs to is already known, and its author's page is left to its
+   *  first opening, since the reader is only looking. */
+  export const lookUpEdition = async (
+    seen: ScanResult,
+    language: ScanLanguage,
+  ): Promise<{ result: ScanResult; usage: ScanUsage }> => {
+    if (import.meta.dev && config().scanStub) return { result: STUBBED_SCAN, usage: {} }
+
+    const { result: enriched, regularEdition, usage: enrichment } = await enrich(seen, language)
+    const result = { ...enriched, coverUrl: await coverOf(enriched.isbn13, regularEdition) }
+    return { result, usage: { enrichment } }
+  }
+
+  /** The books a typed title may mean, for the reader to pick one before the
+   *  full lookup runs. One ungrounded call, so it answers in seconds; the book
+   *  picked is then looked up by `lookUpTitle` as "title — author", which names
+   *  it without ambiguity. An empty list is an ordinary answer: nothing matched. */
+  export const findCandidates = async (
+    title: BookTitleValue,
+    language: ScanLanguage,
+  ): Promise<{ candidates: TitleCandidate[]; usage?: AiStepUsage }> => {
+    if (import.meta.dev && config().scanStub)
+      return {
+        candidates: [
+          {
+            title: BookTitle(STUBBED_SCAN.title || 'Le Nom du vent'),
+            authors: STUBBED_SCAN.authors,
+            firstPublishedIn: STUBBED_SCAN.firstPublishedIn,
+            seriesName: STUBBED_SCAN.series?.name,
+            volume: STUBBED_SCAN.series?.volume,
+          },
+        ],
+      }
+
+    const { value, usage } = await generate<CandidatesOutput>({
+      step: 'candidates',
+      parts: [{ text: candidatesPrompt(title, language) }],
+      responseSchema: CANDIDATES_SCHEMA,
+    })
+    const candidates = (value.candidates ?? [])
+      .map(parsedCandidate)
+      .filter(isPresent)
+      // The prompt asks for one entry per work, and the model still lists an
+      // edition twice now and then: the same title by the same author is one book.
+      .filter(
+        (candidate, index, all) => all.findIndex((other) => sameBook(other, candidate)) === index,
+      )
+      .slice(0, MAX_CANDIDATES)
+    return { candidates, usage }
+  }
+
+  const parsedCandidate = (
+    raw: NonNullable<CandidatesOutput['candidates']>[number],
+  ): TitleCandidate | undefined => {
+    const title = optional(raw.title, BookTitle)
+    if (!title) return undefined
+    return {
+      title,
+      authors: parsedAuthors(raw.authors),
+      firstPublishedIn: optional(raw.firstPublishedIn, Year),
+      seriesName: optional(raw.seriesName, SeriesName),
+      volume: optional(raw.volumeNumber, VolumeNumber),
+    }
+  }
+
+  const folded = (text: string) =>
+    text
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .toLowerCase()
+      .trim()
+
+  const sameBook = (a: TitleCandidate, b: TitleCandidate) =>
+    folded(a.title) === folded(b.title) && folded(a.authors[0] ?? '') === folded(b.authors[0] ?? '')
 
   /** Step 1. Not grounded: the answer is in the image, and letting the model
    *  search here invites it to "correct" a cover it read correctly. */

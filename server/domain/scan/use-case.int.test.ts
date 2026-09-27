@@ -104,6 +104,38 @@ describe('a metered scan', () => {
   })
 })
 
+describe('a title search', () => {
+  // Picking between the books a title may mean is free: the scan is the lookup
+  // that follows.
+  test('lists the candidates and spends nothing', async () => {
+    answers = [{ candidates: [{ title: 'Dune', authors: ['Frank Herbert'] }] }]
+
+    const outcome = await ScanUseCase.searchTitle(reader, BookTitle('dune'), 'fr')
+
+    expect(outcome).toMatchObject([{ title: 'Dune', authors: ['Frank Herbert'] }])
+    expect(spent()).toBe(0)
+    expect(fake.data('ai-usage', monthOf(new Date()))).toMatchObject({
+      scans: 0,
+      enrichment: { promptTokens: 10 },
+    })
+  })
+
+  test('refuses before calling the model once the allowance is used up', async () => {
+    fake.seed('ai-quotas', quotaDoc(), { userId: reader, month: monthOf(new Date()), scans: 5 })
+
+    expect(await ScanUseCase.searchTitle(reader, BookTitle('Dune'), 'fr')).toBe('quota-exhausted')
+    expect(calls).toHaveLength(0)
+  })
+
+  test('says why the model failed', async () => {
+    answers = [new Error('model unavailable')]
+
+    expect(await ScanUseCase.searchTitle(reader, BookTitle('Dune'), 'fr')).toEqual({
+      failed: 'model unavailable',
+    })
+  })
+})
+
 describe('a shared link', () => {
   test('costs nothing when the page has no title', async () => {
     const outcome = await ScanUseCase.lookUpLink(reader, 'https://example.com', 'fr')

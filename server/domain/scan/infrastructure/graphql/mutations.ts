@@ -5,7 +5,7 @@ import { ScanUseCase } from '~/domain/scan/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
 import { domainError } from '~/domain/shared/graphql/errors'
 import { languageFrom } from '~/domain/shared/language'
-import { ScanResultType } from './types'
+import { ScanResultType, TitleCandidateType } from './types'
 
 const answered = (outcome: ScanOutcome) =>
   match(outcome)
@@ -65,6 +65,35 @@ builder.mutationField('scanTitle', (t) =>
           languageFrom(event && getHeader(event, 'accept-language')),
         ),
       ),
+  }),
+)
+
+builder.mutationField('searchTitle', (t) =>
+  t.field({
+    type: [TitleCandidateType],
+    description:
+      'List the books a typed title may mean, most likely first and five at most, ' +
+      'so the reader picks one before `scanTitle` builds its record.\n\n' +
+      'One model call without web search, so it answers in seconds. An empty list ' +
+      'means nothing matched; a single entry means the title was unambiguous.\n\n' +
+      'Spends nothing — the scan is the `scanTitle` that follows — but is refused ' +
+      'with `QUOTA_EXHAUSTED` once the allowance is used up, since that lookup ' +
+      'would be. Fails with `SCAN_FAILED` when the model call errors.',
+    args: {
+      title: t.arg({ type: 'BookTitle', required: true, description: 'The title as remembered' }),
+    },
+    resolve: async (_root, { title }, { userId, event }) =>
+      match(
+        await ScanUseCase.searchTitle(
+          userId,
+          title,
+          languageFrom(event && getHeader(event, 'accept-language')),
+        ),
+      )
+        .with('quota-exhausted', () => domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up'))
+        .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
+        .with(P.array(), (candidates) => candidates)
+        .exhaustive(),
   }),
 )
 

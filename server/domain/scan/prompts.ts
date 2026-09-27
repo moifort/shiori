@@ -79,6 +79,27 @@ const TYPED_TITLE_PREFACE = `Le titre ci-dessous a été saisi de mémoire par l
 
 `
 
+/** How many books the reader is offered at most: past five, the right one is
+ *  better found by typing a few more words. */
+export const MAX_CANDIDATES = 5
+
+/** The step before a typed title is looked up: which books the reader may mean.
+ *  Not grounded — the model's own knowledge tells "Fondation" the novel from
+ *  "Fondation" the cycle in a few seconds, and the grounded lookup that follows
+ *  checks the one picked against the web anyway. */
+export const candidatesPrompt = (title: string, language: ScanLanguage) =>
+  `Un lecteur a saisi de mémoire ce texte pour retrouver un livre : « ${title} »
+
+Le texte peut être approximatif, partiel ou mal orthographié, et peut contenir un nom d'auteur. Liste les livres DISTINCTS auxquels il peut correspondre, le plus probable en premier, ${MAX_CANDIDATES} au plus.
+
+- Ne propose que des livres qui existent réellement. N'invente rien.
+- Si le texte désigne sans ambiguïté un seul livre, ne renvoie que celui-là.
+- Deux éditions ou traductions d'une même œuvre sont UN SEUL livre : ne les liste pas séparément.
+- Des tomes différents d'une même série sont des livres distincts.
+- title : le titre exact, dans l'édition en ${LANGUAGE_NAMES[language]} si elle existe.
+- seriesName et volumeNumber : la série et le numéro de tome, sinon null.
+- Si aucun livre ne correspond, renvoie une liste vide.`
+
 /** Step 3 — the saga's catalogue. Runs once per series for the whole app, not
  *  once per reader, which is what makes it affordable to ask for the complete
  *  list rather than just the next volume.

@@ -147,3 +147,31 @@ export const CATALOGUE_SCHEMA = {
   required: ['name', 'author', 'volumes'],
   propertyOrdering: ['name', 'author', 'description', 'volumes'],
 } as const
+
+/** The books a typed title may mean. Titles and authors only: telling two books
+ *  apart takes no synopsis, and a short answer is what keeps the step quick. */
+export const CANDIDATES_SCHEMA = {
+  type: 'object',
+  properties: {
+    candidates: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Titre exact du livre' },
+          authors: { type: 'array', items: { type: 'string' } },
+          firstPublishedIn: { type: 'integer', nullable: true },
+          seriesName: {
+            type: 'string',
+            nullable: true,
+            description: 'Nom de la série seul, sans le numéro de tome',
+          },
+          volumeNumber: { type: 'integer', nullable: true },
+        },
+        required: ['title', 'authors'],
+        propertyOrdering: ['title', 'authors', 'firstPublishedIn', 'seriesName', 'volumeNumber'],
+      },
+    },
+  },
+  required: ['candidates'],
+} as const

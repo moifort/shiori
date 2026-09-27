@@ -47,6 +47,23 @@ struct ScannedBook {
     }
 }
 
+/// One book a typed title may mean, offered before the full lookup runs.
+struct TitleCandidate: Identifiable, Hashable {
+    let title: String
+    let authors: [String]
+    let firstPublishedIn: Int?
+    let seriesName: String?
+    let volume: Int?
+
+    var id: String { "\(title)|\(authors.joined(separator: ","))" }
+
+    /// What the full lookup is asked: the author beside the title names the
+    /// book without ambiguity, as the saga and author screens already ask it.
+    var lookUpQuery: String {
+        authors.first.map { "\(title) — \($0)" } ?? title
+    }
+}
+
 enum ScanAPI {
     /// How long the app waits for a scan: the function's own ceiling
     /// (`timeout_seconds` in infra/function.tf) plus a margin, so a request that
@@ -80,6 +97,27 @@ enum ScanAPI {
             changesLibrary: false
         )
         return ScannedBook(fields: data.scanLink.fragments.scannedRecord)
+    }
+
+    /// The books a typed title may mean, most likely first. Quick, and spends
+    /// no scan: the lookup that follows the reader's pick does. Throws
+    /// `APIError.domain(code: "QUOTA_EXHAUSTED")` once nothing is left.
+    static func searchTitle(_ title: String) async throws -> [TitleCandidate] {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.SearchTitleMutation(title: title),
+            // Nothing is built or saved: the reader only picks a book.
+            changesLibrary: false
+        )
+        return data.searchTitle.map { candidate in
+            TitleCandidate(
+                title: candidate.title,
+                authors: candidate.authors,
+                firstPublishedIn: candidate.firstPublishedIn,
+                seriesName: candidate.seriesName,
+                volume: candidate.volume
+            )
+        }
     }
 
     /// The same proposal from a title typed as remembered. Always spends one

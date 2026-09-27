@@ -28,6 +28,17 @@ export namespace AdminCommand {
     await repository.recordUsage(monthOf(new Date()), { scans: 0, cacheHits: 0, catalogue })
   }
 
+  // The books a typed title may mean, asked before the lookup itself. No scan
+  // is spent on it, so only the tokens move — on the enrichment line, the other
+  // text-only step a typed title runs. Telemetry like the above.
+  export const recordTitleSearchUsage = async (search: AiStepUsage) => {
+    await repository.recordUsage(monthOf(new Date()), {
+      scans: 0,
+      cacheHits: 0,
+      enrichment: search,
+    })
+  }
+
   // A Découvrir call — suggestions, an award list, release dates. Telemetry
   // like the above: the caller logs and swallows a failure.
   export const recordDiscoveryUsage = async (discovery: AiStepUsage) => {

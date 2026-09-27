@@ -4,7 +4,7 @@ import { QuotaCommand } from '~/domain/quota/command'
 import { QuotaQuery } from '~/domain/quota/query'
 import { ScanCommand } from '~/domain/scan/command'
 import { pageTitleOf } from '~/domain/scan/page-title'
-import type { ScanLanguage, ScanResult, ScanUsage } from '~/domain/scan/types'
+import type { ScanLanguage, ScanResult, ScanUsage, TitleCandidate } from '~/domain/scan/types'
 import { BookTitle } from '~/domain/shared/primitives'
 import type { BookTitle as BookTitleValue, Plan, UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
@@ -31,6 +31,38 @@ export namespace ScanUseCase {
       ...(await ScanCommand.lookUpTitle(title, language)),
       cacheHit: false,
     }))
+
+  /** Describe a book already named — a volume the release watch announced —
+   *  for the reader to look at before adding it. Never cached, so it always
+   *  spends one scan. */
+  export const lookUpEdition = (userId: UserId, seen: ScanResult, language: ScanLanguage) =>
+    metered(userId, 'edition lookup failed', async () => ({
+      ...(await ScanCommand.lookUpEdition(seen, language)),
+      cacheHit: false,
+    }))
+
+  /** The books a typed title may mean, for the reader to pick before
+   *  `lookUpTitle` runs. Refused once the allowance is used up, like every call
+   *  to the model, but spends nothing: the scan is the lookup that follows, and
+   *  a reader choosing between three books still pays for one. */
+  export const searchTitle = async (
+    userId: UserId,
+    title: BookTitleValue,
+    language: ScanLanguage,
+  ): Promise<TitleCandidate[] | 'quota-exhausted' | { failed: string }> => {
+    if (await isExhausted(userId)) return 'quota-exhausted'
+    try {
+      const { candidates, usage } = await ScanCommand.findCandidates(title, language)
+      if (usage)
+        await AdminCommand.recordTitleSearchUsage(usage).catch((error) =>
+          logger.warn('AI usage not recorded', { error }),
+        )
+      return candidates
+    } catch (error) {
+      logger.error('title search failed', { error, userId })
+      return { failed: error instanceof Error ? error.message : 'Search failed' }
+    }
+  }
 
   /** Look a book up from a page the reader shared. A page with no title falls
    *  back to an unrecognized result and costs nothing: a shared link is a

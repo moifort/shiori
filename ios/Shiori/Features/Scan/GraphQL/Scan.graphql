@@ -22,6 +22,18 @@ mutation LookUpTitle($title: BookTitle!) {
   }
 }
 
+# The books a typed title may mean, for the reader to pick before
+# `LookUpTitle` builds the record. Quick, and spends nothing.
+mutation SearchTitle($title: BookTitle!) {
+  searchTitle(title: $title) {
+    title
+    authors
+    firstPublishedIn
+    seriesName
+    volume
+  }
+}
+
 fragment ScannedRecord on ScanResult {
   recognized
   title

@@ -1578,6 +1578,18 @@ type Mutation {
     title: BookTitle!
   ): ScanResult!
 
+  """
+  List the books a typed title may mean, most likely first and five at most, so the reader picks one before `scanTitle` builds its record.
+  
+  One model call without web search, so it answers in seconds. An empty list means nothing matched; a single entry means the title was unambiguous.
+  
+  Spends nothing — the scan is the `scanTitle` that follows — but is refused with `QUOTA_EXHAUSTED` once the allowance is used up, since that lookup would be. Fails with `SCAN_FAILED` when the model call errors.
+  """
+  searchTitle(
+    """The title as remembered"""
+    title: BookTitle!
+  ): [TitleCandidate!]!
+
   """Switch one alert on or off."""
   setAlert(enabled: Boolean!, kind: AlertKind!): NotificationSettings!
 
@@ -2513,6 +2525,21 @@ scalar Synopsis
 An IANA time zone identifier known to the server, such as "Europe/Paris". Reading statistics count days, months and years in it.
 """
 scalar TimeZone
+
+"""
+One book a typed title may mean, offered for the reader to pick before the full lookup runs. Just enough to tell two books apart: hand `title` and the first author to `scanTitle` to build the record.
+"""
+type TitleCandidate {
+  authors: [AuthorName!]!
+
+  """Year the work first appeared."""
+  firstPublishedIn: Year
+
+  """The saga it belongs to, null for a standalone book."""
+  seriesName: SeriesName
+  title: BookTitle!
+  volume: VolumeNumber
+}
 
 """A figure for this year to date, beside the same span of last year."""
 type Trend {
