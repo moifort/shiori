@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, mock, setSystemTime, test } from 'bun:test'
 import { graphql } from 'graphql'
+import type { AudibleAsin } from '~/domain/audible/types'
+import type { BookId } from '~/domain/book/types'
 import type { UserId } from '~/domain/shared/types'
-import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
+import { fakeDb, resetFakeFirestore, startFakeRequest } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
 
@@ -12,6 +14,7 @@ mock.module('~/system/object-store', () => ({
 }))
 
 const { schema } = await import('~/domain/shared/graphql/schema')
+const { BookCommand } = await import('~/domain/book/command')
 
 const userId = 'reader-1' as UserId
 
@@ -737,5 +740,55 @@ describe('keeping a book to oneself', () => {
 
     expect(result.errors).toBeUndefined()
     expect(result.data?.setBookHidden).toEqual({ hidden: true })
+  })
+})
+
+describe('an audiobook imported from Audible', () => {
+  const importedAudiobook = async () => {
+    const created = await execute(
+      'mutation { addBook(input: { title: "Dune", format: AUDIOBOOK }) { id } }',
+    )
+    expect(created.errors).toBeUndefined()
+    const { id } = (created.data as { addBook: { id: BookId } }).addBook
+    await BookCommand.linkToAudible(userId, id, 'B002V1OF70' as AudibleAsin)
+    return id
+  }
+
+  const connectAudible = (marketplace: string) =>
+    fakeDb()
+      .collection('audible-connections')
+      .doc(userId)
+      .set({
+        userId,
+        account: { marketplace, connectedAt: new Date() },
+      })
+
+  test('links to its page on the reader’s Audible store', async () => {
+    const id = await importedAudiobook()
+    await connectAudible('fr')
+    startFakeRequest()
+
+    const read = await execute(`{ book(id: "${id}") { audibleUrl } }`)
+
+    expect(read.errors).toBeUndefined()
+    expect(read.data?.book).toEqual({ audibleUrl: 'https://www.audible.fr/pd/B002V1OF70' })
+  })
+
+  test('has no link once the account is unlinked', async () => {
+    const id = await importedAudiobook()
+    startFakeRequest()
+
+    const read = await execute(`{ book(id: "${id}") { audibleUrl } }`)
+
+    expect(read.data?.book).toEqual({ audibleUrl: null })
+  })
+
+  test('a book that never came from Audible has no link', async () => {
+    await connectAudible('fr')
+    const book = await addBook('Le Nom du vent')
+
+    const read = await execute(`{ book(id: "${book.id}") { audibleUrl } }`)
+
+    expect(read.data?.book).toEqual({ audibleUrl: null })
   })
 })

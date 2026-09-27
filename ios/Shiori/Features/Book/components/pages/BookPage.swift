@@ -132,6 +132,20 @@ struct BookPage: View {
             if let isbn = book.isbn13 {
                 editableRow(.isbn13, value: isbn, icon: "barcode", font: .callout.monospaced())
             }
+            // A universal link: iOS hands it to the Audible app when it is
+            // installed, on the title, and to the website otherwise.
+            if let audibleURL = book.audibleURL {
+                Link(destination: audibleURL) {
+                    Label {
+                        LabeledContent("Écouter sur Audible") {
+                            Image(systemName: "arrow.up.forward").font(.caption.weight(.semibold))
+                        }
+                    } icon: {
+                        Image(systemName: "headphones").foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityIdentifier("book-audible")
+            }
         }
     }
 
@@ -349,6 +363,7 @@ struct BookPage: View {
                 genre: .fantasy,
                 subgenres: ["Roman initiatique", "Aventure"],
                 pageCount: 662,
+                audibleURL: URL(string: "https://www.audible.fr/pd/B00X57B4KE"),
                 isbn13: "9782352943556",
                 series: SeriesMembership(id: "s1", name: "Chronique du tueur de roi", volume: 1, kind: .main),
                 status: .reading,

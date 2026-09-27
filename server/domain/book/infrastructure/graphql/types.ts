@@ -1,3 +1,4 @@
+import { AudibleQuery } from '~/domain/audible/query'
 import { listeningProgressOf, shelfDateOf, statusChangedAtOf } from '~/domain/book/business-rules'
 import {
   BookFormatEnum,
@@ -134,6 +135,19 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
         const progress = listeningProgressOf(book)
         return progress === undefined ? null : Percentage(progress)
       },
+    }),
+    audibleUrl: t.string({
+      nullable: true,
+      description:
+        "The recording's page on the owner's Audible store, `https://www.audible.{marketplace}/pd/{asin}`. " +
+        'Audible claims that path as a universal link: opened on an iPhone with the ' +
+        'Audible app, it lands in the app on the title rather than on the website. ' +
+        'Null on anything but an audiobook imported from Audible, and once the ' +
+        'account is unlinked — the ASIN belongs to a store no longer known.',
+      resolve: async (book) =>
+        book.audibleAsin
+          ? ((await AudibleQuery.recordingUrlOf(book.userId, book.audibleAsin)) ?? null)
+          : null,
     }),
     narrators: t.field({
       type: ['NarratorName'],

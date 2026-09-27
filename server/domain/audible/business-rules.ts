@@ -505,6 +505,12 @@ export const readersDueForSync = (connections: readonly AudibleConnection[]): Us
 export const audibleSearchUrlOf = (marketplace: AudibleMarketplace, keywords: string) =>
   `https://www.audible.${marketplace}/search?keywords=${encodeURIComponent(keywords)}`
 
+/** A recording's page on the reader's own Audible store. Audible claims
+ *  `/pd/{asin}` as a universal link, so on an iPhone with the Audible app it
+ *  opens the app on the title, and the website otherwise. */
+export const audibleProductUrlOf = (marketplace: AudibleMarketplace, asin: AudibleAsinValue) =>
+  `https://www.audible.${marketplace}/pd/${asin}`
+
 /** The recording of one volume of a saga among what a catalogue search found:
  *  in the edition's language — a store sells other languages' recordings too —
  *  at the volume's place in the saga, filed under the saga itself rather than

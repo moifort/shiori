@@ -3,6 +3,7 @@ import type { AudibleItem, LastPosition } from 'audible-api-ts'
 import { resolveGenreId } from 'audible-api-ts'
 import {
   audibleLinksFor,
+  audibleProductUrlOf,
   audibleSearchUrlOf,
   bookFrom,
   boughtSince,
@@ -815,6 +816,14 @@ describe('a search on the reader’s Audible store', () => {
   test('is on their marketplace, the title encoded', () => {
     expect(audibleSearchUrlOf('fr', 'Nous sommes Légion')).toBe(
       'https://www.audible.fr/search?keywords=Nous%20sommes%20L%C3%A9gion',
+    )
+  })
+})
+
+describe('a recording’s page on the reader’s Audible store', () => {
+  test('is the product path the Audible app opens, on their marketplace', () => {
+    expect(audibleProductUrlOf('co.uk', 'B002V1OF70' as AudibleAsinValue)).toBe(
+      'https://www.audible.co.uk/pd/B002V1OF70',
     )
   })
 })

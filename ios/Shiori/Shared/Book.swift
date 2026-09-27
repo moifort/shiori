@@ -250,6 +250,11 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
     /// How far into the recording the Audible player last stopped, in whole
     /// percent. Nil on anything but an audiobook the player opened.
     var listeningProgress: Int?
+    /// The recording's page on the reader's Audible store, which the Audible
+    /// app claims as a universal link. Nil on anything but an audiobook
+    /// imported from Audible, and once the account is unlinked. Only the
+    /// book's own screen carries it.
+    var audibleURL: URL?
     var isbn13: String?
     /// The language of this edition. Nil on every book catalogued before the scan
     /// started reading it off the cover, and on any edition in a language the

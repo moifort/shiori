@@ -347,6 +347,11 @@ Private and owned by exactly one reader: two people who scan the same novel keep
 type Book {
   addedAt: DateTime!
 
+  """
+  The recording's page on the owner's Audible store, `https://www.audible.{marketplace}/pd/{asin}`. Audible claims that path as a universal link: opened on an iPhone with the Audible app, it lands in the app on the title rather than on the website. Null on anything but an audiobook imported from Audible, and once the account is unlinked — the ASIN belongs to a store no longer known.
+  """
+  audibleUrl: String
+
   """Empty when nothing legible was found, never null."""
   authors: [AuthorName!]!
 

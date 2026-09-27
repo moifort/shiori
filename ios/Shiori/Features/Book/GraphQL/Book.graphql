@@ -89,6 +89,7 @@ fragment BookDetail on Book {
   durationMinutes
   listeningProgress
   narrators
+  audibleUrl
   language
   isbn13
   coverUrl
