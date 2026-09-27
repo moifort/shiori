@@ -156,6 +156,12 @@ mutation RemoveFriend($userId: UserId!) {
 }
 
 # One book of a friend's shelf, for the read-only page a row opens.
+# Whether a friend's book can be taken as an audiobook: Audible is asked for
+# a printed one, so the page asks only when it opens.
+query FriendBookAudio($userId: UserId!, $bookId: BookId!) {
+  friendBookAudio(userId: $userId, bookId: $bookId)
+}
+
 query FriendBook($userId: UserId!, $bookId: BookId!) {
   friendBook(userId: $userId, bookId: $bookId) {
     ...FriendBookRow

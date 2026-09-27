@@ -24,6 +24,9 @@ struct FriendBookView: View {
     @State private var errorMessage: String?
     @State private var addFailed: String?
     @State private var added: CopiedStatus?
+    /// Whether Audible sells the book, for a printed one: until it answers,
+    /// and when it cannot, the reader may still take it heard.
+    @State private var audio: AudioAvailability?
 
     var body: some View {
         Group {
@@ -44,6 +47,7 @@ struct FriendBookView: View {
         .navigationTitle(Text(verbatim: String(localized: "Chez \(friendName)")))
         .navigationBarTitleDisplayMode(.inline)
         .task { await load() }
+        .task { await loadAudio() }
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
@@ -151,11 +155,13 @@ struct FriendBookView: View {
 
     /// "+" in the corner: onto the pile, or among the books read, in print or
     /// as a recording — a reader who never listens takes a friend's recording
-    /// as a book. Greyed out once the book is the reader's.
+    /// as a book, and a printed book is offered heard once Audible confirms
+    /// it sells it. Greyed out once the book is the reader's.
     private func addMenu(_ entry: FriendBook) -> some View {
         let owned = entry.inLibrary || added != nil
+        let formats = entry.book.format.takenAs.filter { $0 != .audiobook || audio != .unavailable }
         return Menu {
-            ForEach(entry.book.format.takenAs, id: \.self) { format in
+            ForEach(formats, id: \.self) { format in
                 Section(format.label) {
                     Button("Ajouter à ma pile", systemImage: "bookmark.fill") {
                         Task { await add(.toRead, as: format) }
@@ -186,6 +192,14 @@ struct FriendBookView: View {
             errorMessage = reportError(error)
         }
         isLoading = false
+    }
+
+    private func loadAudio() async {
+        do {
+            audio = try await FriendsAPI.audio(friendId: friendId, bookId: bookId)
+        } catch {
+            _ = reportError(error)
+        }
     }
 
     private func add(_ status: CopiedStatus, as format: BookFormat) async {

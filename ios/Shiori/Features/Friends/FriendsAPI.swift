@@ -64,6 +64,13 @@ struct FriendBook: Identifiable, Hashable, Codable, Sendable {
     var lastActivityAt: Date?
 }
 
+/// Whether a friend's book can be taken as an audiobook: a recording is, a
+/// printed book is when Audible sells it in its language. Unknown when Audible
+/// could not be asked — the reader then decides, as before anybody asked.
+enum AudioAvailability: Sendable {
+    case available, unavailable, unknown
+}
+
 /// Where a book taken from somebody else's shelf lands on the reader's own.
 enum CopiedStatus: Sendable {
     case toRead, read
@@ -385,6 +392,65 @@ enum FriendsAPI {
     /// One book of a friend's shelf, with everything the read-only page shows.
     /// Nil for a book they keep to themselves, and for anybody who is not a
     /// friend.
+    /// "Coups de cœur de vos amis", for Découvrir: what the friends hearted
+    /// and the reader holds in no format.
+    static func picks() async throws -> FriendPicks {
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.FriendRecommendationsQuery()
+        )
+        let found = data.friendRecommendations
+        return FriendPicks(
+            books: found.books.map { row in
+                let lovers = row.fragments.friendLovedBookLovers
+                return LovedBook(
+                    book: FriendBook(row: row.book.fragments.friendBookRow),
+                    lovers: FriendLovers(
+                        friends: lovers.friends.map { .init(userId: $0.userId, firstName: $0.firstName) },
+                        lovedByMany: lovers.lovedByMany
+                    )
+                )
+            },
+            sagas: found.sagas.map { row in
+                let lovers = row.fragments.friendLovedSagaLovers
+                return LovedSaga(
+                    saga: FriendSaga(row: row.saga.fragments.friendSagaRow),
+                    lovers: FriendLovers(
+                        friends: lovers.friends.map { .init(userId: $0.userId, firstName: $0.firstName) },
+                        lovedByMany: lovers.lovedByMany
+                    )
+                )
+            },
+            authors: found.authors.map { row in
+                let lovers = row.fragments.friendLovedAuthorLovers
+                return LovedAuthor(
+                    key: row.author.key,
+                    name: row.author.name,
+                    portraitURL: row.author.portraitUrl.flatMap(URL.init(string:)),
+                    lovers: FriendLovers(
+                        friends: lovers.friends.map { .init(userId: $0.userId, firstName: $0.firstName) },
+                        lovedByMany: lovers.lovedByMany
+                    )
+                )
+            }
+        )
+    }
+
+    /// Whether the reader may take a friend's book as an audiobook. Nil for a
+    /// book that is not shared with them.
+    static func audio(friendId: String, bookId: String) async throws -> AudioAvailability? {
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.FriendBookAudioQuery(userId: friendId, bookId: bookId)
+        )
+        guard let answer = data.friendBookAudio else { return nil }
+        return switch answer.value {
+        case .available: .available
+        case .unavailable: .unavailable
+        case .unknown, nil: .unknown
+        }
+    }
+
     static func book(friendId: String, bookId: String) async throws -> FriendBook? {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,

@@ -112,3 +112,55 @@ fragment DiscoveredWorkFields on DiscoveredWork {
   seriesName
   volume
 }
+
+# What the reader's friends hearted and the reader holds in no format, above
+# every shelf: "Coups de cœur de vos amis". The books and the sagas carry the
+# copy of the friend who hearted them last, the sagas their first volume only.
+query FriendRecommendations {
+  friendRecommendations {
+    books {
+      book {
+        ...FriendBookRow
+      }
+      ...FriendLovedBookLovers
+    }
+    sagas {
+      saga {
+        ...FriendSagaRow
+      }
+      ...FriendLovedSagaLovers
+    }
+    authors {
+      author {
+        key
+        name
+        portraitUrl
+      }
+      ...FriendLovedAuthorLovers
+    }
+  }
+}
+
+fragment FriendLovedBookLovers on FriendLovedBook {
+  friends {
+    userId
+    firstName
+  }
+  lovedByMany
+}
+
+fragment FriendLovedSagaLovers on FriendLovedSaga {
+  friends {
+    userId
+    firstName
+  }
+  lovedByMany
+}
+
+fragment FriendLovedAuthorLovers on FriendLovedAuthor {
+  friends {
+    userId
+    firstName
+  }
+  lovedByMany
+}

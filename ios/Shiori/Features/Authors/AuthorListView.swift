@@ -173,4 +173,9 @@ struct AuthorDestination: Hashable, Identifiable {
         key = author.key
         name = author.name
     }
+
+    init(key: String, name: String) {
+        self.key = key
+        self.name = name
+    }
 }

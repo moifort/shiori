@@ -19,6 +19,11 @@ import SwiftUI
 /// Above what is announced, "Nouvelles parutions": the volumes out in the last
 /// week the reader can have now, read off the same weekly look.
 ///
+/// Above everything, "Coups de cœur de vos amis": what the friends hearted and
+/// the reader holds in no format, as a strip that scrolls sideways so it takes
+/// one row — covers on the Books shelf, sagas on the Series shelf, faces on the
+/// Authors shelf, the newest heart first. A flame marks what many of them love.
+///
 /// The server looks the sagas up on the web once a week. The tab opens on the
 /// rows it last showed, brought up to date silently underneath; sagas nobody
 /// ever looked up — every saga, on the very first look — are looked up at once,
@@ -29,6 +34,8 @@ struct DiscoverView: View {
     /// The volume whose page is open, announced or just out.
     @State private var openVolume: DiscoveryVolume?
     @State private var openAuthor: AuthorDestination?
+    @State private var openFriendBook: LovedBook?
+    @State private var openFriendSaga: LovedSaga?
     @Environment(\.openURL) private var openURL
     @AppStorage("discover.format") private var format: ReleaseFormat = .book
     @AppStorage("discover-shelf") private var shelf: LibraryShelf = .series
@@ -57,6 +64,24 @@ struct DiscoverView: View {
                         AnnouncedVolumeView(saga: opened.saga, volume: opened.volume)
                     }
                 }
+                .sheet(item: $openFriendBook) { loved in
+                    NavigationStack {
+                        FriendBookView(
+                            friendId: loved.lovers.first?.userId ?? "",
+                            bookId: loved.book.id,
+                            friendName: loved.lovers.first?.displayName ?? ""
+                        )
+                    }
+                }
+                .sheet(item: $openFriendSaga) { loved in
+                    NavigationStack {
+                        SeriesView(
+                            seriesId: loved.saga.seriesId,
+                            language: loved.saga.language,
+                            isSheet: true
+                        )
+                    }
+                }
                 // The Library's own author page, in its own stack so a saga
                 // pushes inside it.
                 .sheet(item: $openAuthor) { opened in
@@ -69,8 +94,12 @@ struct DiscoverView: View {
             await viewModel.loadOnAppear(format)
             openOnAFollowedFormat()
         }
+        .task { await viewModel.loadPicks() }
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
-            Task { await viewModel.reload() }
+            Task {
+                await viewModel.reload()
+                await viewModel.loadPicks()
+            }
         }
     }
 
@@ -115,6 +144,7 @@ struct DiscoverView: View {
                     }
                 }
             }
+            friendPicksSection
             if shelf == .authors {
                 authorSections
             } else {
@@ -122,7 +152,40 @@ struct DiscoverView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .refreshable { await viewModel.load(format) }
+        .refreshable {
+            async let picks: Void = viewModel.loadPicks()
+            await viewModel.load(format)
+            await picks
+        }
+    }
+
+    /// "Coups de cœur de vos amis", in the shape of the shelf on screen. Absent
+    /// when the friends love nothing the reader does not hold.
+    @ViewBuilder
+    private var friendPicksSection: some View {
+        let picks = viewModel.picks
+        let isEmpty = switch shelf {
+        case .books: picks.books.isEmpty
+        case .series: picks.sagas.isEmpty
+        case .authors: picks.authors.isEmpty
+        }
+        if !isEmpty {
+            Section {
+                switch shelf {
+                case .books:
+                    LovedBooksStrip(books: picks.books) { openFriendBook = $0 }
+                case .series:
+                    LovedSagasStrip(sagas: picks.sagas) { openFriendSaga = $0 }
+                case .authors:
+                    LovedAuthorsStrip(authors: picks.authors) {
+                        openAuthor = AuthorDestination(key: $0.key, name: $0.name)
+                    }
+                }
+            } header: {
+                Text("Coups de cœur de vos amis")
+            }
+            .accessibilityIdentifier("discover-friend-picks")
+        }
     }
 
     /// The Books and Series shelves: the sagas' volumes just out, then the

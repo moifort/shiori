@@ -99,6 +99,20 @@ final class DiscoverViewModel {
             .sorted { ($0.recent.first?.date ?? "") > ($1.recent.first?.date ?? "") }
     }
 
+    /// "Coups de cœur de vos amis", whatever the format: empty until loaded,
+    /// and last load's when a later one fails — the section is a suggestion,
+    /// not worth an error of its own.
+    private(set) var picks = FriendPicks()
+
+    func loadPicks() async {
+        do {
+            let found = try await FriendsAPI.picks()
+            withAnimation(.smooth) { picks = found }
+        } catch {
+            _ = reportError(error)
+        }
+    }
+
     /// How many sagas and authors the reader follows in a format, nil until it
     /// was loaded.
     func followed(_ format: ReleaseFormat) -> Int? { feed.followed[format] }
