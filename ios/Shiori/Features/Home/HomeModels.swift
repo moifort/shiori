@@ -66,7 +66,6 @@ struct Dashboard: Codable, Sendable {
     let pagesPerMonth: [MonthPages]
     let hoursPerMonth: [MonthHours]
     let reading: [Book]
-    let suggestions: [Book]
     let lastFinished: Book?
     let booksRead: Trend
     let toReadCount: Int

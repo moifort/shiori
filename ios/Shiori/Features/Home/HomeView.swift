@@ -14,6 +14,10 @@ struct HomeView: View {
     /// the rated books, the favourites, the dropped ones, the whole shelf.
     let onShowLibrary: (LibraryRequest) -> Void
     let onScan: () -> Void
+    /// Opens Découvrir, from the releases header.
+    var onShowDiscover: () -> Void = {}
+    /// Opens Partagé, from the friends' favourites header.
+    var onShowShared: () -> Void = {}
 
     @State private var viewModel = HomeViewModel()
     @State private var selectedBook: Book?
@@ -24,6 +28,10 @@ struct HomeView: View {
     @State private var preparation = LibraryPreparation.shared
     /// The saga opened from its progress row, as a sheet like a book.
     @State private var openSeries: OpenedSeries?
+    /// The volume announced opened from the releases, as Découvrir opens it.
+    @State private var openRelease: SagaDiscovery?
+    /// The friend's favourite opened, on its read-only page.
+    @State private var openFavorite: FriendFavorite?
 
     var body: some View {
         NavigationStack {
@@ -76,6 +84,24 @@ struct HomeView: View {
                 SeriesView(seriesId: opened.id, isSheet: true)
             }
         }
+        .sheet(item: $openRelease) { saga in
+            if let next = saga.releases.next {
+                NavigationStack {
+                    AnnouncedVolumeView(saga: saga, volume: next)
+                }
+            }
+        }
+        .sheet(item: $openFavorite) { favorite in
+            if let book = favorite.openedBook {
+                NavigationStack {
+                    FriendBookView(
+                        friendId: favorite.friendId,
+                        bookId: book.id,
+                        friendName: favorite.friendDisplayName
+                    )
+                }
+            }
+        }
         .sheet(isPresented: $showSettings) {
             SettingsHomeView()
         }
@@ -91,6 +117,8 @@ struct HomeView: View {
             // hold, and the scan prompt leads the page until the first book.
             HomePage(
                     dashboard: dashboard,
+                    releases: viewModel.releases,
+                    friendFavorites: viewModel.friendFavorites,
                     refreshFailed: viewModel.refreshFailed,
                     onRetryRefresh: { await viewModel.refresh() },
                     onReadingTapped: { onShowLibrary(LibraryRequest(status: .reading)) },
@@ -103,7 +131,11 @@ struct HomeView: View {
                     onGenresTapped: { onShowLibrary(LibraryRequest()) },
                     onScan: onScan,
                     onBookTapped: { selectedBook = $0 },
-                    onSeriesOpened: { openSeries = OpenedSeries(id: $0) }
+                    onSeriesOpened: { openSeries = OpenedSeries(id: $0) },
+                    onReleasesTapped: onShowDiscover,
+                    onReleaseTapped: { openRelease = $0 },
+                    onFriendFavoritesTapped: onShowShared,
+                    onFriendFavoriteTapped: { openFavorite = $0 }
                 )
                 .refreshable { await viewModel.load() }
         } else if let errorMessage = viewModel.errorMessage {

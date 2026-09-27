@@ -235,6 +235,44 @@ enum RecentActivity: Identifiable, Sendable {
     }
 }
 
+/// A heart one friend gave lately, as the dashboard shows it: a saga or a book,
+/// whose, and when.
+struct FriendFavorite: Identifiable, Codable, Sendable {
+    let friendId: String
+    /// Nil for an account that never finished its onboarding.
+    let friendName: String?
+    let favoritedAt: Date
+    var book: FriendBook?
+    /// Carries its first volume only, the cover its tile draws.
+    var saga: FriendSaga?
+
+    var id: String { "\(friendId)-\(book?.id ?? saga?.id ?? "")" }
+
+    var friendDisplayName: String {
+        friendName ?? String(localized: "Un lecteur")
+    }
+
+    /// The book a tap opens: the one hearted, or the first volume of the saga.
+    var openedBook: Book? { book?.book ?? saga?.volumes.first }
+
+    /// What its tile draws: the book, else the saga under its own name with
+    /// its first volume's cover.
+    var tile: Book {
+        if let book { return book.book }
+        let first = saga?.volumes.first
+        return Book(
+            id: saga?.id ?? id,
+            title: saga?.name ?? "",
+            authors: saga?.author.map { [$0] } ?? [],
+            format: saga?.isAudio == true ? .audiobook : .book,
+            language: saga?.language,
+            series: first?.series,
+            coverURL: first?.coverURL,
+            status: first?.status ?? .toRead
+        )
+    }
+}
+
 /// The invitation the reader passes on. One at a time: asking again answers the
 /// one already standing rather than leaving another key to their library out.
 struct FriendInvitation: Sendable {
@@ -254,6 +292,23 @@ enum FriendsAPI {
             query: ShioriGraphQL.FriendsQuery()
         )
         return data.friends.map { Friend(row: $0.fragments.friendRow) }
+    }
+
+    /// What every friend hearted in the last thirty days, the newest first.
+    static func recentFavorites() async throws -> [FriendFavorite] {
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.FriendFavoritesQuery()
+        )
+        return data.friendFavorites.map { row in
+            FriendFavorite(
+                friendId: row.friendId,
+                friendName: row.friendName,
+                favoritedAt: GraphQLHelpers.parseISO8601(row.favoritedAt) ?? .now,
+                book: row.book.map { FriendBook(row: $0.fragments.friendBookRow) },
+                saga: row.saga.map { FriendSaga(row: $0.fragments.friendSagaRow) }
+            )
+        }
     }
 
     /// Nil for anybody the reader is not friends with, which is also the answer

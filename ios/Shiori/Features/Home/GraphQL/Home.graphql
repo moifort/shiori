@@ -18,9 +18,6 @@ query Dashboard($timeZone: TimeZone!) {
     reading {
       ...DashboardBookCard
     }
-    suggestions {
-      ...DashboardBookCard
-    }
     lastFinished {
       ...DashboardBookCard
     }

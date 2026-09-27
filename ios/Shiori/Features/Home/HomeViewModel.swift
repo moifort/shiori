@@ -6,9 +6,16 @@ import SwiftUI
 final class HomeViewModel {
     init() {
         dashboard = cache.read()
+        releases = releasesCache.read() ?? []
+        friendFavorites = favoritesCache.read() ?? []
     }
 
     private(set) var dashboard: Dashboard?
+    /// The next volume announced of each saga followed, read or heard, the
+    /// soonest out first: Découvrir's own rows, both formats together.
+    private(set) var releases: [SagaDiscovery] = []
+    /// What the reader's friends hearted lately, the newest first.
+    private(set) var friendFavorites: [FriendFavorite] = []
     private(set) var isLoading = false
     private(set) var errorMessage: String?
 
@@ -21,7 +28,12 @@ final class HomeViewModel {
 
     /// The last dashboard on disk. Bump the version whenever `Dashboard`
     /// changes shape.
-    private let cache = SnapshotCache<Dashboard>("dashboard", version: 3)
+    private let cache = SnapshotCache<Dashboard>("dashboard", version: 4)
+    private let releasesCache = SnapshotCache<[SagaDiscovery]>("dashboard-releases", version: 1)
+    private let favoritesCache = SnapshotCache<[FriendFavorite]>("dashboard-friend-favorites", version: 1)
+
+    /// How many releases the dashboard lines up; the rest are Découvrir's.
+    private static let releasesShown = 10
 
     /// Says whether it failed. One skipped because another was already on its
     /// way, or one called off, did not: the figures are whatever that other
@@ -31,6 +43,10 @@ final class HomeViewModel {
         guard !isLoading else { return false }
         isLoading = true
         errorMessage = nil
+        // Side by side with the figures, and never in their way: a section
+        // that could not be brought up to date keeps what it last showed.
+        async let releases = Self.fetchReleases()
+        async let favorites = try? FriendsAPI.recentFavorites()
         do {
             let fetched = try await HomeAPI.dashboard()
             // Over figures already on screen, the cards change in place rather
@@ -42,6 +58,7 @@ final class HomeViewModel {
             let cache = cache
             Task.detached { cache.write(fetched) }
         } catch {
+            keep(releases: await releases, favorites: await favorites)
             isLoading = false
             guard !isCancellation(error) else { return false }
             // The last dashboard stays on screen: blanking good figures because a
@@ -49,8 +66,40 @@ final class HomeViewModel {
             errorMessage = reportError(error)
             return true
         }
+        keep(releases: await releases, favorites: await favorites)
         isLoading = false
         return false
+    }
+
+    /// A section that came back replaces the one on screen, and is kept for
+    /// the next launch.
+    private func keep(releases: [SagaDiscovery]?, favorites: [FriendFavorite]?) {
+        if let releases {
+            withAnimation(.smooth) { self.releases = releases }
+            let cache = releasesCache
+            Task.detached { cache.write(releases) }
+        }
+        if let favorites {
+            withAnimation(.smooth) { friendFavorites = favorites }
+            let cache = favoritesCache
+            Task.detached { cache.write(favorites) }
+        }
+    }
+
+    /// Découvrir's rows in both formats, the volumes still to come only, the
+    /// soonest first. Nil when either format could not be read.
+    private static func fetchReleases() async -> [SagaDiscovery]? {
+        async let books = try? DiscoverAPI.discovery(format: .book)
+        async let audiobooks = try? DiscoverAPI.discovery(format: .audiobook)
+        guard let books = await books, let audiobooks = await audiobooks else { return nil }
+        let upcoming = (books.rows + audiobooks.rows).compactMap { row -> (SagaDiscovery, String)? in
+            guard let date = row.releases.next?.date, ReleaseDateText.isUpcoming(date) else { return nil }
+            return (row, ReleaseDateText.lastDay(date))
+        }
+        return upcoming
+            .sorted { $0.1 != $1.1 ? $0.1 < $1.1 : $0.0.series.name.localizedStandardCompare($1.0.series.name) == .orderedAscending }
+            .prefix(releasesShown)
+            .map(\.0)
     }
 
     /// The tab appeared: a dashboard still showing last session's snapshot

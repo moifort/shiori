@@ -20,6 +20,22 @@ fragment FriendRow on Friend {
   readingTitle
 }
 
+# What every friend hearted in the last thirty days, sagas and books mixed,
+# the newest first: the dashboard's news from the people the reader shares with.
+query FriendFavorites {
+  friendFavorites {
+    friendId
+    friendName
+    favoritedAt
+    book {
+      ...FriendBookRow
+    }
+    saga {
+      ...FriendSagaRow
+    }
+  }
+}
+
 query FriendProfile($userId: UserId!) {
   friendProfile(userId: $userId) {
     ...SharedShelf

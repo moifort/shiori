@@ -170,7 +170,9 @@ struct ContentView: View {
                         libraryMode = request
                         selectedTab = .library
                     },
-                    onScan: { showAddSheet = true }
+                    onScan: { showAddSheet = true },
+                    onShowDiscover: { selectedTab = .discover },
+                    onShowShared: { selectedTab = .shared }
                 )
             }
             Tab(

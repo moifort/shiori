@@ -5,6 +5,10 @@ import SwiftUI
 /// one with nothing to show yet says what will fill it.
 struct HomePage: View {
     let dashboard: Dashboard
+    /// The next volume announced of each saga followed, the soonest first.
+    var releases: [SagaDiscovery] = []
+    /// What the reader's friends hearted lately, the newest first.
+    var friendFavorites: [FriendFavorite] = []
     /// Bringing last session's figures up to date failed: a retry row leads
     /// the page.
     var refreshFailed: Bool = false
@@ -27,6 +31,14 @@ struct HomePage: View {
     let onBookTapped: (Book) -> Void
     /// A row of the progress card: opens that saga.
     var onSeriesOpened: (String) -> Void = { _ in }
+    /// The releases header: opens Découvrir.
+    var onReleasesTapped: () -> Void = {}
+    /// A volume announced: opens its page.
+    var onReleaseTapped: (SagaDiscovery) -> Void = { _ in }
+    /// The friends' favourites header: opens Partagé.
+    var onFriendFavoritesTapped: () -> Void = {}
+    /// A friend's favourite: opens the book, or a saga's first volume.
+    var onFriendFavoriteTapped: (FriendFavorite) -> Void = { _ in }
 
     var body: some View {
         ScrollView {
@@ -68,14 +80,37 @@ struct HomePage: View {
                 .accessibilityIdentifier("home-reading")
 
                 BookShelfSection(
-                    title: "Vous aimerez peut-être lire",
-                    books: dashboard.suggestions,
-                    caption: { $0.authorLine },
-                    emptyMessage: "Ajoutez des livres à votre pile à lire pour en tirer quelques idées.",
-                    onHeaderTapped: onPileTapped,
-                    onBookTapped: onBookTapped
+                    title: "Prochaines sorties",
+                    books: releases.compactMap(Self.releaseTile),
+                    caption: { tile in
+                        releases.first { Self.releaseTile($0)?.id == tile.id }?.releases.next?.date
+                            .map(ReleaseDateText.short) ?? tile.authorLine
+                    },
+                    emptyMessage: "Les prochains tomes annoncés de vos séries apparaîtront ici.",
+                    onHeaderTapped: onReleasesTapped,
+                    onBookTapped: { tile in
+                        if let saga = releases.first(where: { Self.releaseTile($0)?.id == tile.id }) {
+                            onReleaseTapped(saga)
+                        }
+                    }
                 )
-                .accessibilityIdentifier("home-suggestions")
+                .accessibilityIdentifier("home-releases")
+
+                BookShelfSection(
+                    title: "Nouveaux favoris de vos amis",
+                    books: friendFavorites.map(\.tile),
+                    caption: { tile in
+                        friendFavorites.first { $0.tile.id == tile.id }?.friendDisplayName ?? ""
+                    },
+                    emptyMessage: "Les livres et les séries que vos amis ajoutent à leurs favoris apparaîtront ici.",
+                    onHeaderTapped: onFriendFavoritesTapped,
+                    onBookTapped: { tile in
+                        if let favorite = friendFavorites.first(where: { $0.tile.id == tile.id }) {
+                            onFriendFavoriteTapped(favorite)
+                        }
+                    }
+                )
+                .accessibilityIdentifier("home-friend-favorites")
 
                 LastFinishedCard(book: dashboard.lastFinished, onTapped: onBookTapped)
 
@@ -136,6 +171,24 @@ struct HomePage: View {
         .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 20))
     }
 
+    /// A volume announced drawn as a book, as Découvrir draws it: its saga as a
+    /// tag, the headphones on the cover of a recording.
+    private static func releaseTile(_ saga: SagaDiscovery) -> Book? {
+        guard let next = saga.releases.next else { return nil }
+        let series = saga.series
+        return Book(
+            id: "release-\(series.id)-\(next.number)",
+            title: next.title,
+            authors: series.author.map { [$0] } ?? [],
+            format: series.isAudio ? .audiobook : .book,
+            genre: series.genre,
+            language: series.language,
+            series: SeriesMembership(id: series.seriesId, name: series.name, volume: next.number, kind: .main),
+            coverURL: next.coverURL,
+            status: .toRead
+        )
+    }
+
     /// A recording says how far the player got; a book says how long it has
     /// been open, since nobody tracks its pages.
     private static func startedCaption(_ book: Book) -> String {
@@ -171,12 +224,6 @@ extension Dashboard {
             Book(id: "4", title: "Blacksad", authors: ["Juan Díaz Canales"], status: .reading,
                  startedAt: .now.addingTimeInterval(-5 * 86400)),
         ],
-        suggestions: [
-            Book(id: "5", title: "Hypérion", authors: ["Dan Simmons"], status: .toRead),
-            Book(id: "6", title: "Les Furtifs", authors: ["Alain Damasio"], status: .toRead),
-            Book(id: "7", title: "Vagabond", authors: ["Takehiko Inoue"], status: .toRead),
-            Book(id: "8", title: "Le Problème à trois corps", authors: ["Liu Cixin"], status: .toRead),
-        ],
         lastFinished: Book(
             id: "9", title: "Le Nom du vent", authors: ["Patrick Rothfuss"], status: .read, rating: 5,
             startedAt: .now.addingTimeInterval(-13 * 86400), finishedAt: .now.addingTimeInterval(-4 * 86400)
@@ -211,7 +258,6 @@ extension Dashboard {
         pagesPerMonth: (1...12).map { .init(month: $0, pages: 0) },
         hoursPerMonth: (1...12).map { .init(month: $0, hours: 0) },
         reading: [],
-        suggestions: [Book(id: "1", title: "Dune", authors: ["Frank Herbert"], status: .toRead)],
         lastFinished: nil,
         booksRead: .init(current: nil, previous: nil),
         toReadCount: 1,
