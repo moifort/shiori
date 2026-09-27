@@ -19,6 +19,7 @@ import {
   watchKeyOf,
 } from '~/domain/discovery/business-rules'
 import { DiscoveryCommand } from '~/domain/discovery/command'
+import { amazonEditionOf } from '~/domain/discovery/infrastructure/amazon-catalogue'
 import {
   audibleProductOf,
   audibleSeriesOf,
@@ -413,13 +414,14 @@ const lookUp = async (
     grounded: true,
   })
   await recordUsage(usage)
-  const found = await Promise.all(
-    volumesFrom(value.volumes ?? []).map((volume) =>
-      audio
-        ? confirmedOnAudible(volume, known.get(volume.number), saga.language)
-        : withCover(withoutAsin(volume), known.get(volume.number)),
-    ),
-  )
+  const volumes = volumesFrom(value.volumes ?? [])
+  const found = audio
+    ? await Promise.all(
+        volumes.map((volume) =>
+          confirmedOnAudible(volume, known.get(volume.number), saga.language),
+        ),
+      )
+    : await datedOnAmazon(volumes.map(withoutAsin), known, saga.language)
   const confirmed = found.find((volume) => volume.asin)?.asin
   const listed =
     audio && confirmed && confirmed !== entry
@@ -446,6 +448,38 @@ const keepWatch = async (
   }
   await DiscoveryCommand.saveWatch(watch)
   return watch
+}
+
+/** A printed saga's volumes as Amazon dates them, one page after the other so
+ *  Amazon sees a reader browsing rather than a crawler, each with its cover. */
+const datedOnAmazon = async (
+  volumes: readonly FoundVolume[],
+  known: ReadonlyMap<number, FoundVolume>,
+  language: BookLanguage,
+): Promise<FoundVolume[]> => {
+  const dated: FoundVolume[] = []
+  for (const volume of volumes)
+    dated.push(await withCover(await confirmedOnAmazon(volume, language), known.get(volume.number)))
+  return dated
+}
+
+/** A printed volume dated as Amazon's page for its ISBN dates it: a book is out
+ *  once Amazon sells it, not when the web says another edition came out. An
+ *  ISBN Amazon knows no book of in that language is dropped; a page that could
+ *  not be read leaves the web's date. */
+const confirmedOnAmazon = async (
+  volume: FoundVolume,
+  language: BookLanguage,
+): Promise<FoundVolume> => {
+  const { isbn13, ...rest } = volume
+  if (!isbn13) return volume
+  const edition = await amazonEditionOf(isbn13, language)
+  if (edition === 'unreachable') return volume
+  if (edition === 'unknown') {
+    logger.warn('Amazon ISBN not confirmed', { isbn13, title: volume.title })
+    return rest
+  }
+  return edition.releaseDate ? { ...volume, date: edition.releaseDate } : volume
 }
 
 /** A printed saga's volumes are bought in a bookshop: an ASIN the model gave

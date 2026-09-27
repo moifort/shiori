@@ -42,7 +42,7 @@ mock.module('~/domain/scan/gemini', () => ({
           : [
               { number: 1, title: 'Carl 1', date: '2024-05-02', isbn13: '9782226488176' },
               { number: 2, title: 'Carl 2', date: '2025-01-15' },
-              { number: 3, title: 'Carl 3', date: '2026-09-26' },
+              { number: 3, title: 'Carl 3', date: '2026-09-26', isbn13: '9782226488190' },
               { number: 4, title: 'Carl 4', date: '2027-02-12' },
             ],
       },
@@ -63,6 +63,11 @@ mock.module('~/domain/discovery/infrastructure/audible-catalogue', () => ({
     seriesAsked.push(asin)
     return audibleSeries
   },
+}))
+/** Amazon dates the third French volume a day before the web did. */
+mock.module('~/domain/discovery/infrastructure/amazon-catalogue', () => ({
+  amazonEditionOf: async (isbn13: string) =>
+    isbn13 === '9782226488190' ? { releaseDate: '2026-09-25' } : 'unreachable',
 }))
 mock.module('~/domain/scan/published-cover', () => ({
   publishedCoverOf: async () => 'https://covers.example/carl1.jpg',
@@ -143,7 +148,7 @@ describe('the hourly pass', () => {
     expect(calls).toEqual([])
   })
 
-  test('writes the dates it found into the saga’s catalogue', async () => {
+  test('writes the dates it found into the saga’s catalogue, Amazon’s over the web’s', async () => {
     await stock(reader)
     await SeriesCommand.catalogue({
       id: carl,
@@ -166,7 +171,7 @@ describe('the hourly pass', () => {
       [
         [1, { fr: '2024-05-02' }],
         [2, { fr: '2025-01-15' }],
-        [3, { fr: '2026-09-26' }],
+        [3, { fr: '2026-09-25' }],
         [4, { fr: '2027-02-12' }],
       ],
     )
