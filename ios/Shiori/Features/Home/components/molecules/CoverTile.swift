@@ -8,9 +8,13 @@ struct CoverTile: View {
     /// Nil for the secondary grey.
     var captionTint: Color?
 
+    /// The headphones pill of a library row's cover, rather than one grown
+    /// with the shelf's larger cover.
+    static let formatBadgeSize: CGFloat = 18
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            BookCover(book: book, width: width)
+            BookCover(book: book, width: width, formatBadgeSize: Self.formatBadgeSize)
             Text(book.title)
                 .font(.caption.weight(.medium))
                 .lineLimit(1)

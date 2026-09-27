@@ -15,7 +15,7 @@ struct BookShelfSection: View {
     let onBookTapped: (Book) -> Void
 
     /// What the headphones overhang a tile's cover by: a third of the badge.
-    private static let badgeRoom: CGFloat = 10
+    private static let badgeRoom = (CoverTile.formatBadgeSize / 3).rounded(.up)
 
     var body: some View {
         WidgetCard(title: title, action: onHeaderTapped) {

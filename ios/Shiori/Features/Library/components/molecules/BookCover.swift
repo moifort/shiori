@@ -13,6 +13,9 @@ struct BookCover: View {
     /// list and on the book screen alike: nothing else on a cover says it is
     /// listened to rather than read. Off where the corner holds something else.
     var showsFormatBadge: Bool = true
+    /// The headphones pill's diameter. Nil follows the cover's width, which on
+    /// a shelf's larger covers draws it too big beside the title under it.
+    var formatBadgeSize: CGFloat?
     /// Dims the cover of a volume the reader does not hold. The headphones pill
     /// stays whole: dimmed with it, the cover showed through it.
     var coverOpacity: Double = 1
@@ -54,7 +57,7 @@ struct BookCover: View {
         // rather than printed on it.
         .overlay(alignment: .topTrailing) {
             if showsFormatBadge && book.format == .audiobook {
-                let size = max(16, width * 0.32)
+                let size = formatBadgeSize ?? max(16, width * 0.32)
                 AudiobookBadge(size: size)
                     .offset(x: size * 0.3, y: -size * 0.3)
             }
