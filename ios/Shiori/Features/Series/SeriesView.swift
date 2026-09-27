@@ -153,18 +153,21 @@ struct SeriesView: View {
                     }
                     .accessibilityLabel(Text("Plus d'actions"))
                     .accessibilityIdentifier("series-menu")
+                    // Attached to the menu, as on the book sheet: the dialog
+                    // rises from the button that asked rather than the screen.
+                    .confirmationDialog(
+                        "Supprimer la série ?",
+                        isPresented: $confirmDelete,
+                        titleVisibility: .visible
+                    ) {
+                        Button("Supprimer", role: .destructive) { Task { await deleteSeries() } }
+                            .accessibilityIdentifier("choice-delete-series")
+                        Button("Annuler", role: .cancel) {}
+                    } message: {
+                        Text("Les \(owned.count) livres de cette série dans votre bibliothèque seront supprimés avec elle, ainsi que votre note. Cette action est définitive.")
+                    }
                 }
             }
-        }
-        .alert(
-            "Supprimer la série ?",
-            isPresented: $confirmDelete
-        ) {
-            Button("Supprimer", role: .destructive) { Task { await deleteSeries() } }
-                .accessibilityIdentifier("choice-delete-series")
-            Button("Annuler", role: .cancel) {}
-        } message: {
-            Text("Les \(owned.count) livres de cette série dans votre bibliothèque seront supprimés avec elle, ainsi que votre note. Cette action est définitive.")
         }
         .alert("Catalogue non mis à jour", isPresented: $refreshFailed) {
             Button("OK", role: .cancel) {}
