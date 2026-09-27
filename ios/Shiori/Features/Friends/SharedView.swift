@@ -52,7 +52,7 @@ struct SharedView: View {
         // "invite", and a code sitting on screen with nothing to do is a step
         // they did not ask for.
         .sheet(item: $invitation) { invitation in
-            InvitationSheet(invitation: invitation)
+            InvitationSheet(invitation: invitation, myShelf: viewModel.myShelf)
         }
         .alert("J'ai reçu une invitation", isPresented: $showAccept) {
             TextField("Code ou lien", text: $pastedCode)
@@ -117,7 +117,7 @@ struct SharedView: View {
                 if let myShelf = viewModel.myShelf {
                     Section {
                         NavigationLink(value: MyPagePreview()) {
-                            row(Friend(seenByFriends: myShelf))
+                            FriendRow(friend: Friend(seenByFriends: myShelf))
                         }
                         .navigationLinkIndicatorVisibility(.hidden)
                         .listRowInsets(.horizontal, 16)
@@ -145,7 +145,7 @@ struct SharedView: View {
                     Section {
                         ForEach(viewModel.friends) { friend in
                             NavigationLink(value: friend.userId) {
-                                row(friend)
+                                FriendRow(friend: friend)
                             }
                             .navigationLinkIndicatorVisibility(.hidden)
                             .edgeToEdgeSeparator()
@@ -217,46 +217,6 @@ struct SharedView: View {
         }
     }
 
-    /// A friend as the list draws them: the name, their shelf in figures in
-    /// the top corner as a book row carries its marks, and the book they are
-    /// reading.
-    private func row(_ friend: Friend) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Text(friend.initials)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.tint)
-                .frame(width: 40, height: 40)
-                .background(.tint.opacity(0.15), in: .circle)
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(friend.displayName)
-                        .font(.body.weight(.medium))
-                        .lineLimit(1)
-                    Spacer(minLength: 0)
-                    HStack(spacing: 10) {
-                        Label("\(friend.favoriteCount)", systemImage: "heart")
-                            .accessibilityLabel(Text("\(friend.favoriteCount) favoris"))
-                        Label("\(friend.readingCount)", systemImage: "book")
-                            .accessibilityLabel(Text("\(friend.readingCount) en cours"))
-                        Label("\(friend.toReadCount)", systemImage: "books.vertical")
-                            .accessibilityLabel(Text("\(friend.toReadCount) à lire"))
-                    }
-                    .labelStyle(.caption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize()
-                }
-                if let title = friend.readingTitle {
-                    Text("Lit : \(title)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-        }
-        .padding(.vertical, 2)
-    }
-
     /// The favourites as text, as the preview page's toolbar sends them; nil
     /// when nothing is hearted and there is nothing to send.
     private func favoritesText(_ shelf: FriendProfile) -> String? {
@@ -298,6 +258,71 @@ struct SharedView: View {
     }
 }
 
+/// A friend as the Partagé list draws them: the name, their shelf in figures
+/// in the top corner as a book row carries its marks, and the book they are
+/// reading. The invitation sheets draw the same row, so what is being shared
+/// reads the way it will be seen.
+struct FriendRow: View {
+    let friend: Friend
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(friend.initials)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.tint)
+                .frame(width: 40, height: 40)
+                .background(.tint.opacity(0.15), in: .circle)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(friend.displayName)
+                        .font(.body.weight(.medium))
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                    HStack(spacing: 10) {
+                        Label("\(friend.favoriteCount)", systemImage: "heart")
+                            .accessibilityLabel(Text("\(friend.favoriteCount) favoris"))
+                        Label("\(friend.readingCount)", systemImage: "book")
+                            .accessibilityLabel(Text("\(friend.readingCount) en cours"))
+                        Label("\(friend.toReadCount)", systemImage: "books.vertical")
+                            .accessibilityLabel(Text("\(friend.toReadCount) à lire"))
+                    }
+                    .labelStyle(.caption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize()
+                }
+                if let title = friend.readingTitle {
+                    Text("Lit : \(title)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+        }
+        .padding(.vertical, 2)
+    }
+}
+
+/// What an invitation shares, in one card: the row the other reader sees in
+/// their list, under a short heading when the sheet does not already say it.
+struct SharedSummary: View {
+    let friend: Friend
+    var heading: LocalizedStringKey? = "Ce que vous partagez"
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let heading {
+                Text(heading)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            FriendRow(friend: friend)
+                .padding(12)
+                .background(.quaternary, in: RoundedRectangle(cornerRadius: 14))
+        }
+    }
+}
+
 /// The navigation value of the reader's own page, previewed.
 private struct MyPagePreview: Hashable {}
 
@@ -311,6 +336,9 @@ extension FriendInvitation: Identifiable {
 /// reading down a phone.
 private struct InvitationSheet: View {
     let invitation: FriendInvitation
+    /// The reader's shelf as the friend will see it; nil while it has not
+    /// loaded yet, and the row is then left out.
+    let myShelf: FriendProfile?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -329,10 +357,9 @@ private struct InvitationSheet: View {
                     .textSelection(.enabled)
                     .accessibilityIdentifier("invitation-code")
 
-                Text("Envoyez ce lien. Celui qui l'ouvre verra votre bibliothèque, et vous verrez la sienne.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+                if let myShelf {
+                    SharedSummary(friend: Friend(seenByFriends: myShelf))
+                }
 
                 ShareLink(
                     item: invitation.url,
@@ -344,11 +371,6 @@ private struct InvitationSheet: View {
                         .padding(.vertical, 6)
                 }
                 .buttonStyle(.borderedProminent)
-
-                Text("Valable jusqu'au \(invitation.expiresAt.formatted(date: .long, time: .omitted)). Une seule personne peut l'utiliser.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
 
                 Spacer(minLength: 0)
             }

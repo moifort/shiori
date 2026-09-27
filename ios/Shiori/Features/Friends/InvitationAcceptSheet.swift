@@ -17,7 +17,9 @@ struct InvitationAcceptSheet: View {
     let onAccepted: () -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @State private var accepted: String?
+    /// The reader's shelf as the sender will see it: what accepting shares.
+    @State private var myShelf: FriendProfile?
+    @State private var accepted: Friend?
     @State private var errorMessage: String?
 
     var body: some View {
@@ -29,32 +31,21 @@ struct InvitationAcceptSheet: View {
                     .accessibilityHidden(true)
 
                 if let accepted {
-                    Text("Vous partagez vos bibliothèques")
+                    Text("Vous partagez maintenant vos livres")
                         .font(.title3.weight(.semibold))
                         .multilineTextAlignment(.center)
-                    Text("\(accepted) voit votre bibliothèque, et vous voyez la sienne.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
+                    SharedSummary(friend: accepted, heading: nil)
                     Spacer(minLength: 0)
                     Button("Parfait") { dismiss() }
                         .buttonStyle(.borderedProminent)
                         .frame(maxWidth: .infinity)
                 } else {
-                    Text("Une bibliothèque vous est ouverte")
+                    Text("Vous partagerez vos livres")
                         .font(.title3.weight(.semibold))
                         .multilineTextAlignment(.center)
-                    Text(request.code)
-                        .font(.system(.title2, design: .monospaced, weight: .bold))
-                        .kerning(5)
-                        .padding(.horizontal, 18)
-                        .padding(.vertical, 10)
-                        .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
-                        .accessibilityIdentifier("invitation-accept-code")
-                    Text("En acceptant, vous verrez ses lectures et il verra les vôtres. Vos notes de lecture et les livres marqués « ne pas partager » restent à vous.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
+                    if let myShelf {
+                        SharedSummary(friend: Friend(seenByFriends: myShelf), heading: nil)
+                    }
                     Spacer(minLength: 0)
                     AsyncButton("Accepter") { await accept() }
                         .buttonStyle(.borderedProminent)
@@ -87,12 +78,16 @@ struct InvitationAcceptSheet: View {
             }
         }
         .presentationDetents([.medium])
+        // The summary is a nicety: the invitation can be accepted without it.
+        .task { myShelf = try? await FriendsAPI.myShelf() }
     }
 
     private func accept() async {
         do {
-            let friend = try await FriendsAPI.accept(code: request.code)
-            accepted = friend.displayName
+            accepted = try await FriendsAPI.accept(code: request.code)
+            // The Partagé tab reloads on the notice, so the new friend is
+            // already in the list when the reader gets there.
+            NotificationCenter.default.post(name: .shioriDataDidChange, object: nil)
             onAccepted()
         } catch {
             errorMessage = reportError(error)
