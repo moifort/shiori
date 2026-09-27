@@ -219,6 +219,13 @@ export const FriendType = builder.objectRef<Friend>('Friend').implement({
       resolve: (friend) => friend.firstName ?? null,
     }),
     since: t.field({ type: 'DateTime', resolve: (friend) => friend.since }),
+    bookCount: t.field({
+      type: 'Count',
+      description:
+        'How many books they share: every one on their shelf, the dropped ones and ' +
+        'the ones they keep to themselves aside — what `FriendProfile.bookCount` says.',
+      resolve: (friend) => Count(friend.shelf?.bookCount ?? 0),
+    }),
     favoriteCount: t.field({
       type: 'Count',
       description: 'How many books they hearted, the ones they keep to themselves left out.',

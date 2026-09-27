@@ -117,6 +117,9 @@ export type AnalyticsView = {
  *  they are left out before anything is counted, so a friend can never tell
  *  from a number that something is being kept from them. */
 export type SharedShelf = {
+  /** Every book shared, the dropped ones aside: what their library lists
+   *  unfiltered. Absent on a view stored before the friends list showed it. */
+  bookCount?: number
   favoriteCount: number
   readingCount: number
   toReadCount: number

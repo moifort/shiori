@@ -3,7 +3,7 @@ import SwiftUI
 /// The Partagé tab: the reader at the top, drawn as the row their friends see
 /// in their own list and opening on their page exactly as it is shown to them,
 /// then who the reader shares their library with, each friend
-/// with their shelf in figures — favourites, books in progress, pile — and the
+/// with their shelf in figures — favourites, books in progress, books shared — and the
 /// book they are reading. A friend opens on their shelf, where any book can be
 /// taken onto the reader's own.
 ///
@@ -298,8 +298,8 @@ struct FriendRow: View {
                             .accessibilityLabel(Text("\(friend.favoriteCount) favoris"))
                         Label("\(friend.readingCount)", systemImage: "book")
                             .accessibilityLabel(Text("\(friend.readingCount) en cours"))
-                        Label("\(friend.toReadCount)", systemImage: "books.vertical")
-                            .accessibilityLabel(Text("\(friend.toReadCount) à lire"))
+                        Label("\(friend.bookCount)", systemImage: "books.vertical")
+                            .accessibilityLabel(Text("\(friend.bookCount) livres partagés"))
                     }
                     .labelStyle(.caption)
                     .font(.caption)

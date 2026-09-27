@@ -500,18 +500,20 @@ describe('the friends list in figures', () => {
 
   // The counts are what a friend may see: a hidden book in progress must not
   // show as a second book in progress, nor its title as the one being read.
-  test('counts their favourites, books in progress and pile, hidden books left out', async () => {
+  test('counts their books, favourites, books in progress and pile, hidden books left out', async () => {
     await stockAlice()
+    await addBook(alice, 'title: "Abandonné", status: DROPPED')
     await befriend()
 
     const result = await as(bob)(
-      '{ friends { userId favoriteCount readingCount toReadCount readingTitle } }',
+      '{ friends { userId bookCount favoriteCount readingCount toReadCount readingTitle } }',
     )
 
     expect(result.errors).toBeUndefined()
     expect(result.data?.friends).toEqual([
       {
         userId: 'alice',
+        bookCount: 4,
         favoriteCount: 1,
         readingCount: 1,
         toReadCount: 2,

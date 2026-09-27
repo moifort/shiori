@@ -8,6 +8,8 @@ struct Friend: Identifiable, Codable, Sendable {
     let firstName: String?
     let since: Date
     /// Their shelf in figures, the books they keep to themselves left out.
+    /// Every book they share, the dropped ones aside.
+    var bookCount = 0
     var favoriteCount = 0
     var readingCount = 0
     var toReadCount = 0
@@ -37,6 +39,7 @@ extension Friend {
             userId: shelf.userId,
             firstName: shelf.firstName,
             since: .now,
+            bookCount: shelf.bookCount,
             favoriteCount: shelf.favorites.count + shelf.favoriteSagas.count,
             readingCount: shelf.reading.count,
             toReadCount: shelf.pile.count,
@@ -458,6 +461,7 @@ private extension Friend {
             userId: row.userId,
             firstName: row.firstName,
             since: GraphQLHelpers.parseISO8601(row.since) ?? .now,
+            bookCount: row.bookCount,
             favoriteCount: row.favoriteCount,
             readingCount: row.readingCount,
             toReadCount: row.toReadCount,

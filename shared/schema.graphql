@@ -972,6 +972,11 @@ type FollowedSeriesPage {
 """Somebody whose library the reader can see, and who can see theirs."""
 type Friend {
   """
+  How many books they share: every one on their shelf, the dropped ones and the ones they keep to themselves aside — what `FriendProfile.bookCount` says.
+  """
+  bookCount: Count!
+
+  """
   How many books they hearted, the ones they keep to themselves left out.
   """
   favoriteCount: Count!
