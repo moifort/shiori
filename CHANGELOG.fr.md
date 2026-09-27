@@ -14,6 +14,7 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 - Vos livres affichent leur série sous le même nom que sa page, sans mentions comme
   « [French Edition] ».
 - Les séries en cours de l’accueil n’affichent plus une série que vous n’avez pas encore commencée.
+- Découvrir affiche de nouveau le prochain tome d’une série que vous venez d’ouvrir pour la première fois.
 - L’étagère Auteurs classe vos auteurs par ordre alphabétique, comme vos contacts, avec l’alphabet
   sur le côté pour sauter à une lettre ; vos préférés d’abord restent à un geste.
 - Les fiches des séries et des auteurs s’ouvrent plus vite, quelle que soit la taille de votre bibliothèque.

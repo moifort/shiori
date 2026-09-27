@@ -3,6 +3,7 @@ import {
   type FoundVolume as CatalogueVolume,
   editionOf,
   isForthcoming,
+  withReleases,
 } from '~/domain/series/business-rules'
 import { isAudioSeries } from '~/domain/series/primitives'
 import type { Series, SeriesId, VolumeNumber } from '~/domain/series/types'
@@ -148,10 +149,14 @@ type Candidate = { volume: FoundVolume; upcoming: boolean }
  *  same volumes; a volume only the watch knows, by the watch's date. */
 const candidatesOf = (
   watch: SagaWatch,
-  catalogue: Series | null | undefined,
+  stored: Series | null | undefined,
   today: string,
 ): Candidate[] => {
   const found = new Map(watch.volumes.map((volume) => [Number(volume.number), volume]))
+  // The catalogue as the watch leaves it once written in: one created after
+  // the watch last looked has none of its dates yet, and would take a volume
+  // announced to the day for one out since January.
+  const catalogue = stored && withReleases(stored, watch.language, catalogueVolumesOf(watch))
   const edition = catalogue
     ? editionOf(catalogue, { language: watch.language, today })
     : { language: watch.language, today }

@@ -174,6 +174,24 @@ describe('what a saga has for the reader', () => {
     expect(releasesOf(held(1), watch, catalogue, today).next?.number).toBe(6 as VolumeNumber)
   })
 
+  // A saga opened for the first time after its watch: the catalogue only
+  // knows the year, the watch knows the day.
+  test('reads the day the watch found over a catalogue written after it', () => {
+    const catalogue = {
+      id: carl,
+      name: 'Dungeon Crawler Carl',
+      author: 'Matt Dinniman',
+      catalogedAt: new Date('2026-09-27'),
+      volumes: [
+        { number: 4, title: 'Carl 4', kind: 'main', publishedIn: 2026 },
+        { number: 5, title: 'Carl 5', kind: 'main', publishedIn: 2026 },
+      ],
+    } as unknown as Series
+    const watch = watchOf(carl, [volume(4, '2026-05-01'), volume(5, '2026-10-08')])
+    expect(releasesOf(held(4), watch, catalogue, today).next).toEqual(volume(5, '2026-10-08'))
+    expect(missingVolumesOf(held(4), watch, catalogue, today)).toEqual([])
+  })
+
   test('holds a volume back while the catalogue says it is not out in that edition', () => {
     const catalogue = {
       id: carl,
