@@ -82,21 +82,27 @@ enum AuthorsAPI {
             )
         )
         return (
-            items: data.myAuthorsPage.items.map { item in
-                FollowedAuthor(
-                    key: item.key,
-                    name: item.name,
-                    indexLetter: item.indexLetter,
-                    portraitURL: item.portraitUrl.flatMap(URL.init(string:)),
-                    bookCount: item.bookCount,
-                    seriesCount: item.seriesCount,
-                    favoriteCount: item.favoriteCount,
-                    averageRating: item.averageRating,
-                    shelvedAt: GraphQLHelpers.parseISO8601(item.shelvedAt),
-                    books: item.books.map(\.fragments.followedVolume.asBook)
-                )
-            },
+            items: data.myAuthorsPage.items.map { FollowedAuthor(row: $0.fragments.followedAuthorRow) },
             hasMore: data.myAuthorsPage.hasMore
+        )
+    }
+}
+
+extension FollowedAuthor {
+    /// An author as the Authors shelf draws their row, in the Library and on
+    /// Découvrir alike.
+    init(row: ShioriGraphQL.FollowedAuthorRow) {
+        self.init(
+            key: row.key,
+            name: row.name,
+            indexLetter: row.indexLetter,
+            portraitURL: row.portraitUrl.flatMap(URL.init(string:)),
+            bookCount: row.bookCount,
+            seriesCount: row.seriesCount,
+            favoriteCount: row.favoriteCount,
+            averageRating: row.averageRating,
+            shelvedAt: GraphQLHelpers.parseISO8601(row.shelvedAt),
+            books: row.books.map(\.fragments.followedVolume.asBook)
         )
     }
 }

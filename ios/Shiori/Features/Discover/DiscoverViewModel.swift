@@ -32,7 +32,7 @@ final class DiscoverViewModel {
     private var lookedUp: Set<ReleaseFormat> = []
 
     /// Bump the version whenever `DiscoveryFeed` changes shape.
-    private let cache = SnapshotCache<DiscoveryFeed>("discovery", version: 4)
+    private let cache = SnapshotCache<DiscoveryFeed>("discovery", version: 5)
 
     /// The rows of a format, nil until they were ever loaded.
     func rows(_ format: ReleaseFormat) -> [SagaDiscovery]? { feed.rows[format] }
@@ -73,7 +73,34 @@ final class DiscoverViewModel {
             .sorted { ($0.recent.first?.date ?? "") > ($1.recent.first?.date ?? "") }
     }
 
-    /// How many sagas the reader follows in a format, nil until it was loaded.
+    /// The authors of a format with a work announced, for the Authors shelf:
+    /// the soonest out first, as the Books shelf orders its volumes. Nil until
+    /// the format was ever loaded.
+    func upcomingAuthors(_ format: ReleaseFormat) -> [AuthorDiscovery]? {
+        feed.authors[format]?
+            .filter { $0.next != nil }
+            .sorted { lhs, rhs in
+                let left = lhs.next?.date.map(ReleaseDateText.lastDay)
+                let right = rhs.next?.date.map(ReleaseDateText.lastDay)
+                guard left != right else {
+                    return lhs.author.name.localizedStandardCompare(rhs.author.name) == .orderedAscending
+                }
+                guard let left else { return false }
+                guard let right else { return true }
+                return left < right
+            }
+    }
+
+    /// The authors of a format with a work just out, for the Authors shelf:
+    /// the newest out first. Nil until the format was ever loaded.
+    func recentAuthors(_ format: ReleaseFormat) -> [AuthorDiscovery]? {
+        feed.authors[format]?
+            .filter { !$0.recent.isEmpty }
+            .sorted { ($0.recent.first?.date ?? "") > ($1.recent.first?.date ?? "") }
+    }
+
+    /// How many sagas and authors the reader follows in a format, nil until it
+    /// was loaded.
     func followed(_ format: ReleaseFormat) -> Int? { feed.followed[format] }
 
     /// Says whether it failed. One skipped because another was already on its
@@ -87,7 +114,7 @@ final class DiscoverViewModel {
         do {
             page = try await DiscoverAPI.discovery(format: format)
             feed.followed[format] = page.followed
-            show(page.rows, in: format)
+            show(page, in: format)
             loaded.insert(format)
             refreshFailed = false
         } catch {
@@ -114,7 +141,7 @@ final class DiscoverViewModel {
         isLookingUp = true
         defer { isLookingUp = false }
         do {
-            show(try await DiscoverAPI.lookUp(format: format).rows, in: format)
+            show(try await DiscoverAPI.lookUp(format: format), in: format)
         } catch {
             guard !isCancellation(error) else { return }
             errorMessage = reportError(error)
@@ -144,8 +171,11 @@ final class DiscoverViewModel {
 
     /// Over rows already on screen, the new ones slide into place and push the
     /// others aside rather than the whole list redrawing at once.
-    private func show(_ fetched: [SagaDiscovery], in format: ReleaseFormat) {
-        withAnimation(feed.rows[format] == nil ? nil : .smooth) { feed.rows[format] = fetched }
+    private func show(_ page: DiscoveryPage, in format: ReleaseFormat) {
+        withAnimation(feed.rows[format] == nil ? nil : .smooth) {
+            feed.rows[format] = page.rows
+            feed.authors[format] = page.authors
+        }
         let snapshot = feed
         let cache = cache
         Task.detached { cache.write(snapshot) }
@@ -159,3 +189,4 @@ final class DiscoverViewModel {
         _ = await PushRegistrar.shared.requestPermission()
     }
 }
+

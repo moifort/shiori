@@ -1,7 +1,9 @@
 # The Découvrir tab in one format: every saga the reader follows with a volume
 # announced they do not hold, or one just out they can have now. A row carries the Series tab's selection, the
 # catalogue's spine included, so it draws exactly as the Series tab's row does,
-# every cover of its strip.
+# every cover of its strip. And every author they hold in that format with a
+# work announced or just out outside those sagas, drawn as the Authors shelf
+# draws them.
 query Discovery($format: ReleaseFormat!) {
   discovery(format: $format) {
     ...DiscoveryFields
@@ -37,6 +39,17 @@ fragment DiscoveryFields on Discovery {
     missing
     recent {
       ...DiscoveredVolumeFields
+    }
+  }
+  authors {
+    author {
+      ...FollowedAuthorRow
+    }
+    next {
+      ...DiscoveredWorkFields
+    }
+    recent {
+      ...DiscoveredWorkFields
     }
   }
 }
@@ -88,4 +101,14 @@ fragment DiscoveredVolumeFields on DiscoveredVolume {
   isbn13
   coverUrl
   audibleUrl
+}
+
+fragment DiscoveredWorkFields on DiscoveredWork {
+  title
+  date
+  isbn13
+  coverUrl
+  audibleUrl
+  seriesName
+  volume
 }

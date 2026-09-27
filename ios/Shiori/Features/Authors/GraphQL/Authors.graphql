@@ -5,19 +5,25 @@ query MyAuthorsPage($limit: Int, $offset: Int, $favorite: Boolean, $order: Autho
   myAuthorsPage(limit: $limit, offset: $offset, favorite: $favorite, order: $order) {
     hasMore
     items {
-      key
-      name
-      indexLetter
-      portraitUrl
-      bookCount
-      seriesCount
-      favoriteCount
-      averageRating
-      shelvedAt
-      books {
-        ...FollowedVolume
-      }
+      ...FollowedAuthorRow
     }
+  }
+}
+
+# An author as the Authors shelf draws their row: in the Library, and on
+# Découvrir's Authors shelf.
+fragment FollowedAuthorRow on FollowedAuthor {
+  key
+  name
+  indexLetter
+  portraitUrl
+  bookCount
+  seriesCount
+  favoriteCount
+  averageRating
+  shelvedAt
+  books {
+    ...FollowedVolume
   }
 }
 

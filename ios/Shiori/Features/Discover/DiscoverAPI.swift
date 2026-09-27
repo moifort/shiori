@@ -69,6 +69,38 @@ struct SagaDiscovery: Identifiable, Codable, Sendable {
     var id: String { series.id }
 }
 
+/// A work of an author the reader does not hold, announced or just out,
+/// outside the sagas they hold, as the weekly web search found it.
+struct DiscoveredWork: Identifiable, Hashable, Codable, Sendable {
+    let title: String
+    /// `YYYY`, `YYYY-MM` or `YYYY-MM-DD`.
+    let date: String?
+    let isbn13: String?
+    let coverURL: URL?
+    /// The recording's page on the reader's Audible store. Nil on a printed
+    /// work, on a recording Audible never confirmed, and without an Audible
+    /// account.
+    var audibleURL: URL?
+    /// The new saga it opens, when it is a volume of one.
+    let seriesName: String?
+    let volume: Int?
+
+    var id: String { title }
+}
+
+/// One row of the Authors shelf: an author the reader holds, drawn as the
+/// Library's Authors shelf draws them, and what they have for the reader.
+struct AuthorDiscovery: Identifiable, Codable, Sendable {
+    let author: FollowedAuthor
+    /// The soonest work announced.
+    let next: DiscoveredWork?
+    /// The works out in the last week the reader can have now, the newest
+    /// first.
+    let recent: [DiscoveredWork]
+
+    var id: String { author.id }
+}
+
 /// One volume of a saga, announced or just out, as the Books shelf lists it
 /// and its page opens.
 struct DiscoveryVolume: Identifiable {
@@ -81,15 +113,18 @@ struct DiscoveryVolume: Identifiable {
 /// The tab as last shown, one list per format.
 struct DiscoveryFeed: Codable, Sendable {
     var rows: [ReleaseFormat: [SagaDiscovery]] = [:]
-    /// How many sagas the reader follows in each format.
+    var authors: [ReleaseFormat: [AuthorDiscovery]] = [:]
+    /// How many sagas and authors the reader follows in each format.
     var followed: [ReleaseFormat: Int] = [:]
 }
 
-/// The tab in one format, and how many of its sagas were never looked up.
+/// The tab in one format, and how many of its sagas and authors were never
+/// looked up.
 struct DiscoveryPage: Sendable {
     let rows: [SagaDiscovery]
+    let authors: [AuthorDiscovery]
     let unwatched: Int
-    /// How many sagas the reader follows in that format.
+    /// How many sagas and authors the reader follows in that format.
     let followed: Int
 }
 
@@ -207,8 +242,29 @@ private extension DiscoveryPage {
                     recent: row.recent.map { DiscoveredVolume(fields: $0.fragments.discoveredVolumeFields) }
                 )
             },
+            authors: fields.authors.map { row in
+                AuthorDiscovery(
+                    author: FollowedAuthor(row: row.author.fragments.followedAuthorRow),
+                    next: row.next.map { DiscoveredWork(fields: $0.fragments.discoveredWorkFields) },
+                    recent: row.recent.map { DiscoveredWork(fields: $0.fragments.discoveredWorkFields) }
+                )
+            },
             unwatched: fields.unwatched,
             followed: fields.followed
+        )
+    }
+}
+
+private extension DiscoveredWork {
+    init(fields: ShioriGraphQL.DiscoveredWorkFields) {
+        self.init(
+            title: fields.title,
+            date: fields.date,
+            isbn13: fields.isbn13,
+            coverURL: fields.coverUrl.flatMap(URL.init(string:)),
+            audibleURL: fields.audibleUrl.flatMap(URL.init(string:)),
+            seriesName: fields.seriesName,
+            volume: fields.volume
         )
     }
 }
