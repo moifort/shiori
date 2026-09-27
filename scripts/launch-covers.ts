@@ -4,7 +4,7 @@
  * Downloads each cover, shrinks it to the size the opening draws, and writes it
  * to `ios/Shiori/LaunchCovers/`, replacing whatever was there. The app picks up
  * every `launch-cover-*.jpg` it ships with, and gives every row of the opening
- * covers of its own, so the set wants forty or so.
+ * covers of its own, so the set wants forty or more.
  *
  * Only published covers are taken, never a reader's photo: whatever lands in the
  * folder ships to everyone who installs the app, and a photo shows a hand, a
@@ -37,12 +37,27 @@ const OWN_TITLES = [
   "La chute d'Hypérion",
   'Endymion',
   "L'éveil d'Endymion",
+  'Fondation',
+  'Fondation et Empire',
   'Seconde Fondation',
+  'Prélude à Fondation',
+  "L'Aube de Fondation",
+  'Fondation foudroyée',
+  'Terre et Fondation',
+  'Le problème à trois corps',
+  'La Forêt sombre',
+  'La mort immortelle',
+  "L'apprenti assassin",
+  "L'assassin du roi",
+  'La nef du crépuscule',
+  'Le poison de la vengeance',
+  'La voie magique',
+  'La reine solitaire',
   '1984',
   'Fahrenheit 451',
 ]
 
-/** The classics, each pinned to an Open Library cover picked by eye: a search
+/** The classics, and more Barjavel than the library holds, each pinned to an Open Library cover picked by eye: a search
  *  turns up study guides and blank bindings as readily as a real cover. */
 const CLASSICS: { title: string; coverId: number }[] = [
   { title: 'Germinal', coverId: 8236935 },
@@ -72,9 +87,14 @@ const CLASSICS: { title: string; coverId: number }[] = [
   { title: 'Frankenstein', coverId: 12356249 },
   { title: 'Dracula', coverId: 12216503 },
   { title: 'Dune', coverId: 980253 },
-  { title: 'Fondation', coverId: 14612610 },
   { title: 'Les Fleurs du mal', coverId: 3124316 },
   { title: 'Cyrano de Bergerac', coverId: 8236320 },
+  { title: 'Le Voyageur imprudent', coverId: 7267304 },
+  { title: 'Le Grand Secret', coverId: 979477 },
+  { title: 'Les Chemins de Katmandou', coverId: 979495 },
+  { title: 'Une rose au paradis', coverId: 11735213 },
+  { title: 'Tarendol', coverId: 11574864 },
+  { title: 'Colomb de la lune', coverId: 967446 },
 ]
 
 const [, , reader] = process.argv
