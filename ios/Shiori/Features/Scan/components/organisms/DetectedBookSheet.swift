@@ -31,7 +31,7 @@ struct DetectedBookSheet: View {
                         Image(uiImage: crop)
                             .resizable()
                             .scaledToFit()
-                            .frame(maxWidth: .infinity, maxHeight: 220)
+                            .frame(maxWidth: .infinity, maxHeight: 120)
                     }
                 }
                 Section("Titre") {
