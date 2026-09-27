@@ -37,6 +37,25 @@ final class DiscoverViewModel {
     /// The rows of a format, nil until they were ever loaded.
     func rows(_ format: ReleaseFormat) -> [SagaDiscovery]? { feed.rows[format] }
 
+    /// The sagas of a format with a volume announced, for the Books shelf: the
+    /// soonest out first, a year alone read as its last day so "2027" comes
+    /// after "2027-02-19", and the volumes nobody found a date for last. Nil
+    /// until the format was ever loaded.
+    func upcoming(_ format: ReleaseFormat) -> [SagaDiscovery]? {
+        rows(format)?
+            .filter { $0.releases.next != nil }
+            .sorted { lhs, rhs in
+                let left = lhs.releases.next?.date.map(ReleaseDateText.lastDay)
+                let right = rhs.releases.next?.date.map(ReleaseDateText.lastDay)
+                guard left != right else {
+                    return lhs.series.name.localizedStandardCompare(rhs.series.name) == .orderedAscending
+                }
+                guard let left else { return false }
+                guard let right else { return true }
+                return left < right
+            }
+    }
+
     /// How many sagas the reader follows in a format, nil until it was loaded.
     func followed(_ format: ReleaseFormat) -> Int? { feed.followed[format] }
 

@@ -48,6 +48,11 @@ struct BookRow: View {
     /// Passed only for a recording under way, and drawn as a chip beside the
     /// status, in its colour.
     var listeningProgress: String?
+    /// When a volume not out yet comes out, already formatted — "Sort le
+    /// 8 octobre 2026" — drawn under the author in the orange the saga screen
+    /// gives it. Passed only on Découvrir, for a volume the reader cannot hold
+    /// yet and so stands nowhere with.
+    var releaseLine: String?
 
     /// Between the card's edges and the row's content — the list's own inset
     /// on an iPhone, stated here so the separator can span it.
@@ -101,6 +106,11 @@ struct BookRow: View {
                 }
                 .font(.subheadline)
 
+                if let releaseLine {
+                    Text(releaseLine)
+                        .foregroundStyle(.orange)
+                        .font(.subheadline.weight(.medium))
+                }
 
                 // Where it sits in a saga: a fact about this copy, ahead of
                 // what the book is.
@@ -151,7 +161,8 @@ struct BookRow: View {
         .accessibilityElement(children: .combine)
         // Spoken even where no tag draws it: a heading above the row is not
         // read with it.
-        .accessibilityValue(shownStatusTag == nil ? Text(status.label) : Text(""))
+        // A volume not out yet has no status to speak.
+        .accessibilityValue(shownStatusTag == nil && releaseLine == nil ? Text(status.label) : Text(""))
     }
 
     /// The stars actually drawn. Stars lent by the saga only on a volume the

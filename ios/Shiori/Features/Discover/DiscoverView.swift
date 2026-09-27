@@ -6,10 +6,11 @@ import SwiftUI
 /// under "Tomes", with the button that adds them.
 ///
 /// Laid out as the Library tab is, so nothing here has to be learnt twice: the
-/// capsule above the tab bar, for now "Séries" alone; the Series tab's rows,
-/// every cover of their strip; a tap opens the saga screen as a sheet. Read through one format at a
-/// time — the saga read or the saga heard — picked in the toolbar and kept
-/// between visits.
+/// capsule above the tab bar switches between "Livres" — each volume announced
+/// drawn as the Books tab draws a book, the soonest out first — and "Séries" —
+/// the Series tab's rows, every cover of their strip; a tap opens the saga
+/// screen as a sheet. Read through one format at a time — the saga read or the
+/// saga heard — picked in the toolbar and kept between visits.
 ///
 /// The server looks the sagas up on the web once a week. The tab opens on the
 /// rows it last showed, brought up to date silently underneath; sagas nobody
@@ -29,7 +30,7 @@ struct DiscoverView: View {
             content
                 .navigationTitle("Découvrir")
                 .toolbar { toolbar }
-                .libraryShelfPicker($shelf, shelves: [.series])
+                .libraryShelfPicker($shelf, shelves: [.books, .series])
                 // A sheet, as a book opens from the library.
                 .sheet(item: $openSeries) { row in
                     NavigationStack {
@@ -91,7 +92,8 @@ struct DiscoverView: View {
                     }
                 }
             }
-            if rows.isEmpty && !viewModel.isLookingUp {
+            let shown = shelf == .books ? viewModel.upcoming(format) ?? [] : rows
+            if shown.isEmpty && !viewModel.isLookingUp {
                 Section {
                     EmptyStateView(
                         systemImage: format == .audiobook ? "headphones" : "sparkles",
@@ -103,9 +105,11 @@ struct DiscoverView: View {
                 }
                 .listRowBackground(Color.clear)
             }
-            if !rows.isEmpty {
+            if !shown.isEmpty {
                 Section {
-                    ForEach(rows) { row($0) }
+                    ForEach(shown) { saga in
+                        if shelf == .books { volumeRow(saga) } else { row(saga) }
+                    }
                 } header: {
                     Text("Prochaines sorties")
                 } footer: {
@@ -118,6 +122,50 @@ struct DiscoverView: View {
         }
         .listStyle(.insetGrouped)
         .refreshable { await viewModel.load(format) }
+    }
+
+    /// A volume announced, drawn as the Books tab draws a book: its saga as a
+    /// tag, and in the status's place when it comes out.
+    @ViewBuilder
+    private func volumeRow(_ saga: SagaDiscovery) -> some View {
+        if let next = saga.releases.next {
+            let series = saga.series
+            let membership = SeriesMembership(
+                id: series.seriesId,
+                name: series.name,
+                volume: next.number,
+                kind: .main
+            )
+            BookRow(
+                title: next.title,
+                authorLine: series.author ?? "",
+                cover: Book(
+                    id: "release-\(series.id)-\(next.number)",
+                    title: next.title,
+                    authors: series.author.map { [$0] } ?? [],
+                    format: series.isAudio ? .audiobook : .book,
+                    genre: series.genre,
+                    language: series.language,
+                    series: membership,
+                    coverURL: next.coverURL,
+                    status: .toRead
+                ),
+                status: .toRead,
+                rating: nil,
+                series: membership,
+                genre: series.genre,
+                language: series.language,
+                releaseLine: next.date.map(ReleaseDateText.coming) ?? String(localized: "Annoncé")
+            )
+            .contentShape(Rectangle())
+            .onTapGesture { openSeries = saga }
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { openSeries = saga }
+            .contextMenu {
+                Button("Ouvrir la série", systemImage: "books.vertical") { openSeries = saga }
+            }
+            .accessibilityIdentifier("discover-volume-row")
+        }
     }
 
     /// A saga's row: the Series tab's own, every cover of its strip, and
