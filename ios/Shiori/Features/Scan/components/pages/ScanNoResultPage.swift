@@ -4,6 +4,8 @@ import SwiftUI
 /// a photo of something that is not a cover. It costs no scan, and saying so is
 /// what keeps the reader trying again instead of assuming they were charged.
 struct ScanNoResultPage: View {
+    /// How to frame the next shot: a cover, or a whole shelf.
+    var hint: LocalizedStringKey = "Cadrez la couverture entière, bien éclairée et sans reflet. Ce scan n'a pas été décompté."
     let onRetake: () -> Void
     let onDismiss: () -> Void
 
@@ -11,7 +13,7 @@ struct ScanNoResultPage: View {
         ContentUnavailableView {
             Label("Aucun livre reconnu", systemImage: "book.closed")
         } description: {
-            Text("Cadrez la couverture entière, bien éclairée et sans reflet. Ce scan n'a pas été décompté.")
+            Text(hint)
         } actions: {
             Button("Reprendre une photo", action: onRetake)
                 .buttonStyle(.borderedProminent)

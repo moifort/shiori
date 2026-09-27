@@ -6,11 +6,13 @@ import SwiftUI
 enum PremiumTrigger {
     case scanAllowanceSpent
     case discover
+    case shelfImport
 
     var title: String {
         switch self {
         case .scanAllowanceSpent: return String(localized: "Scans épuisés")
         case .discover: return String(localized: "Shiori Premium")
+        case .shelfImport: return String(localized: "Plusieurs livres d'un coup")
         }
     }
 
@@ -19,6 +21,7 @@ enum PremiumTrigger {
         switch self {
         case .scanAllowanceSpent: return "scan_allowance_spent"
         case .discover: return "discover"
+        case .shelfImport: return "shelf_import"
         }
     }
 
@@ -30,6 +33,8 @@ enum PremiumTrigger {
             return String(localized: "Tous vos scans ont été utilisés. Passez en Premium pour scanner sans limite.")
         case .discover:
             return String(localized: "Photographiez une couverture : le livre rejoint votre bibliothèque avec son résumé et sa série. Passez en Premium pour scanner sans limite.")
+        case .shelfImport:
+            return String(localized: "Photographiez une étagère entière : chaque livre est reconnu, vous cochez ceux à ajouter. Réservé à Shiori Premium.")
         }
     }
 }
