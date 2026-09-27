@@ -374,8 +374,9 @@ struct SagaReleasesSummary: View {
 }
 
 /// What an author has for the reader, in a line under their covers, as the
-/// section they are in says: among the new releases, the books out; among the
-/// announcements, the next one and its date.
+/// section they are in says: among the new releases, the newest book out;
+/// among the announcements, the next one and its date. One title only: a few
+/// side by side would not fit.
 struct AuthorReleasesSummary: View {
     let works: [DiscoveredWork]
     let section: SagaReleasesSummary.Section
@@ -385,7 +386,7 @@ struct AuthorReleasesSummary: View {
             Text(verbatim: line)
                 .foregroundStyle(.orange)
                 .font(.footnote.weight(.medium))
-                .lineLimit(2)
+                .lineLimit(1)
         }
     }
 
@@ -396,8 +397,7 @@ struct AuthorReleasesSummary: View {
             guard let date = first.date else { return String(localized: "À venir : \(first.title)") }
             return String(localized: "À venir : \(first.title) · \(ReleaseDateText.short(date))")
         case .recent:
-            let titles = works.map(\.title).joined(separator: ", ")
-            return String(localized: "Disponible : \(titles)")
+            return String(localized: "Disponible : \(first.title)")
         }
     }
 }
