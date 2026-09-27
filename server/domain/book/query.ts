@@ -20,7 +20,6 @@ import type {
   ShelfVocabulary,
   Subgenre,
 } from '~/domain/book/types'
-import { READING_STATUSES } from '~/domain/book/types'
 import type { SeriesId } from '~/domain/series/types'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { UserId } from '~/domain/shared/types'
@@ -29,17 +28,11 @@ import { objectStore } from '~/system/object-store'
 
 const logger = createLogger('book')
 
-/** The statuses a view of the Library tab shows. The default view leaves the
- *  dropped books out: they are books the reader gave up on, and they have a
- *  filter of their own. The favourites show whatever was hearted. */
-const shownStatusesOf = (view: {
-  favorite?: boolean
-  status?: ReadingStatus
-}): readonly ReadingStatus[] | undefined => {
-  if (view.status) return [view.status]
-  if (view.favorite) return undefined
-  return READING_STATUSES.filter((status) => status !== 'dropped')
-}
+/** The statuses a view of the Library tab shows: the one it is narrowed to, or
+ *  every one — the dropped books included, since the list by date is the
+ *  whole shelf, and the favourites show whatever was hearted. */
+const shownStatusesOf = (view: { status?: ReadingStatus }): readonly ReadingStatus[] | undefined =>
+  view.status ? [view.status] : undefined
 
 export namespace BookQuery {
   export const byId = async (userId: UserId, bookId: BookId): Promise<BookView | null> => {

@@ -309,9 +309,9 @@ export const inTabOrder = <Saga extends { shelvedAt: Date }>(sagas: readonly Sag
  *  one state. A saga whose state is unknown — every owned volume read and no
  *  catalogue to say more — is kept with the complete ones it resembles.
  *
- *  A saga set aside shows only under its own filter: the reader put it out of
- *  their way, and every other list — everything, the favourites — leaves it
- *  out. */
+ *  A saga set aside is kept by every list that does not name a state — the
+ *  list by date is the whole shelf, as the Library tab keeps its dropped
+ *  books — and has a filter of its own. */
 export const matchingFilter = <Saga extends { state: SeriesState | null; favorite: boolean }>(
   sagas: readonly Saga[],
   filter: { favorite?: boolean; state?: SeriesState },
@@ -319,7 +319,7 @@ export const matchingFilter = <Saga extends { state: SeriesState | null; favorit
   sagas.filter((saga) => {
     const state = saga.state ?? 'complete'
     if (filter.favorite && !saga.favorite) return false
-    if (filter.state === undefined) return state !== 'unfollowed'
+    if (filter.state === undefined) return true
     return state === filter.state
   })
 

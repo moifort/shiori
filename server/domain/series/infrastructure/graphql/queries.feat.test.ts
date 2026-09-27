@@ -807,8 +807,8 @@ describe('a saga the reader stopped following', () => {
 
     expect(await unfollow()).toEqual({ followed: false })
 
-    // Out of the reader's way: only its own filter shows it.
-    expect(await states()).toEqual([])
+    // Still on the list by date, which is the whole shelf, and under its own filter.
+    expect(await states()).toEqual([{ name: 'Dune', state: 'UNFOLLOWED' }])
     expect(await states('(state: IN_PROGRESS)')).toEqual([])
     expect(await states('(state: UNFOLLOWED)')).toEqual([{ name: 'Dune', state: 'UNFOLLOWED' }])
   })
@@ -845,7 +845,10 @@ describe('a saga the reader stopped following', () => {
     }
 
     expect(await setEnglish(false)).toEqual({ followed: true, unfollowedLanguages: ['EN'] })
-    expect(await editions()).toEqual([{ language: 'FR', state: 'IN_PROGRESS' }])
+    expect(await editions()).toEqual([
+      { language: 'EN', state: 'UNFOLLOWED' },
+      { language: 'FR', state: 'IN_PROGRESS' },
+    ])
     expect(await editions('(state: UNFOLLOWED)')).toEqual([{ language: 'EN', state: 'UNFOLLOWED' }])
 
     expect(await setEnglish(true)).toEqual({ followed: true, unfollowedLanguages: [] })

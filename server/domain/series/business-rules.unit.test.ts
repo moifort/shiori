@@ -436,11 +436,11 @@ describe('matchingFilter', () => {
   ]
   const names = (kept: { name: string }[]) => kept.map((saga) => saga.name)
 
-  // A saga set aside is out of the reader's way: it shows only where they
-  // asked for the sagas set aside.
-  test('leaves the sagas set aside out of every list but their own', () => {
-    expect(names(matchingFilter(sagas, {}))).toEqual(['Dune', 'Fondation'])
-    expect(names(matchingFilter(sagas, { favorite: true }))).toEqual(['Dune'])
+  // The list by date is the whole shelf: a saga set aside stays on it, and
+  // has a filter of its own besides.
+  test('keeps the sagas set aside in every list that names no state', () => {
+    expect(names(matchingFilter(sagas, {}))).toEqual(['Dune', 'Hyperion', 'Fondation'])
+    expect(names(matchingFilter(sagas, { favorite: true }))).toEqual(['Dune', 'Hyperion'])
     expect(names(matchingFilter(sagas, { state: 'unfollowed' }))).toEqual(['Hyperion'])
   })
 
