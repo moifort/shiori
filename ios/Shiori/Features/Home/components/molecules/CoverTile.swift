@@ -5,6 +5,8 @@ struct CoverTile: View {
     let book: Book
     let caption: String
     var width: CGFloat = 84
+    /// Nil for the secondary grey.
+    var captionTint: Color?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -14,7 +16,7 @@ struct CoverTile: View {
                 .lineLimit(1)
             Text(caption)
                 .font(.caption2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(captionTint.map(AnyShapeStyle.init) ?? AnyShapeStyle(.secondary))
                 .lineLimit(1)
         }
         .frame(width: width, alignment: .leading)

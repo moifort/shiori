@@ -5,14 +5,20 @@ import SwiftUI
 /// shelf says what would fill it.
 struct BookShelfSection: View {
     let title: LocalizedStringKey
+    /// The symbol the book page marks the same thing with, in its colour.
+    var systemImage: String?
+    var iconTint: Color = .accentColor
     let books: [Book]
     let caption: (Book) -> String
+    /// The captions' colour, when they say something the book page colours:
+    /// a release date is orange there.
+    var captionTint: Color?
     let emptyMessage: LocalizedStringKey
     var onHeaderTapped: (() -> Void)?
     let onBookTapped: (Book) -> Void
 
     var body: some View {
-        WidgetCard(title: title, action: onHeaderTapped) {
+        WidgetCard(title: title, systemImage: systemImage, iconTint: iconTint, action: onHeaderTapped) {
             if books.isEmpty {
                 WidgetEmptyMessage(text: emptyMessage, placeholder: .covers)
             } else {
@@ -20,7 +26,7 @@ struct BookShelfSection: View {
                     HStack(alignment: .top, spacing: 12) {
                         ForEach(books) { book in
                             Button { onBookTapped(book) } label: {
-                                CoverTile(book: book, caption: caption(book))
+                                CoverTile(book: book, caption: caption(book), captionTint: captionTint)
                             }
                             .buttonStyle(.plain)
                         }
