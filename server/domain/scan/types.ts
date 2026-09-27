@@ -111,3 +111,25 @@ export type ScanUsage = {
   /** The author's page, built alongside the saga's when nobody had opened it. */
   author?: AiStepUsage
 }
+
+/** Where a book sits in the reader's photo, each side a fraction of the photo:
+ *  `x` and `y` are its top-left corner, `0...1` from the left and the top. */
+export type DetectedBox = { x: number; y: number; width: number; height: number }
+
+/** One book read off a shelf photo: only what its spine or cover prints, and
+ *  where it is. `title` is absent when the model could not read it — the
+ *  reader types it on the checklist. */
+export type SeenOnShelf = {
+  title?: BookTitle
+  authors: AuthorName[]
+  publisher?: Publisher
+  language?: BookLanguage
+  format?: BookFormat
+  seriesName?: SeriesName
+  volume?: VolumeNumber
+  box: DetectedBox
+}
+
+/** A book of the photo as the checklist shows it: whether the reader already
+ *  owns it decides whether it comes ticked. */
+export type DetectedBook = SeenOnShelf & { owned: boolean }
