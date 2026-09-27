@@ -13,6 +13,9 @@ struct BookCover: View {
     /// list and on the book screen alike: nothing else on a cover says it is
     /// listened to rather than read. Off where the corner holds something else.
     var showsFormatBadge: Bool = true
+    /// Dims the cover of a volume the reader does not hold. The headphones pill
+    /// stays whole: dimmed with it, the cover showed through it.
+    var coverOpacity: Double = 1
     /// Stretches the cover past its proportions, cropping the photo's sides, so
     /// a list row can bring its bottom level with the text beside it. Never
     /// shorter than the standard height.
@@ -46,6 +49,7 @@ struct BookCover: View {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .strokeBorder(.separator, lineWidth: 0.5)
         )
+        .opacity(coverOpacity)
         // Overhanging the corner, as the status badges do: pinned on the cover
         // rather than printed on it.
         .overlay(alignment: .topTrailing) {

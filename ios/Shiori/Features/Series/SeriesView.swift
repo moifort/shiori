@@ -497,6 +497,7 @@ struct SeriesView: View {
         let forthcoming = volume.isForthcoming(asOf: currentYear, in: language, datedUpTo: datedUpTo)
         let page = forthcoming ? announcedVolume(volume) : nil
         return HStack(alignment: .top, spacing: 12) {
+            // An announced volume opens on its page: its cover is drawn whole.
             BookCover(book: Book(
                 id: volume.id,
                 title: title,
@@ -504,9 +505,7 @@ struct SeriesView: View {
                 format: series?.isAudio == true ? .audiobook : .book,
                 coverURL: release?.coverURL,
                 status: .toRead
-            ))
-            // An announced volume opens on its page: its cover is drawn whole.
-            .opacity(page == nil ? 0.45 : 1)
+            ), coverOpacity: page == nil ? 0.45 : 1)
             VStack(alignment: .leading, spacing: 3) {
                 Text(label)
                     .font(.caption2.weight(.semibold))
