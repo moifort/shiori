@@ -14,6 +14,9 @@ struct BookShelfSection: View {
     var onHeaderTapped: (() -> Void)?
     let onBookTapped: (Book) -> Void
 
+    /// What the headphones overhang a tile's cover by: a third of the badge.
+    private static let badgeRoom: CGFloat = 10
+
     var body: some View {
         WidgetCard(title: title, action: onHeaderTapped) {
             if books.isEmpty {
@@ -29,8 +32,13 @@ struct BookShelfSection: View {
                         }
                     }
                     .padding(.horizontal, 16)
+                    // Room for the headphones, which overhang a recording's
+                    // corner and the scroll view would otherwise clip; taken
+                    // back outside so the covers stay where they were.
+                    .padding(.top, Self.badgeRoom)
                 }
                 .padding(.horizontal, -16)
+                .padding(.top, -Self.badgeRoom)
             }
         }
     }
