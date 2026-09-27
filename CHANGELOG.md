@@ -23,6 +23,9 @@ the release tag is pushed.
 - Every Sunday evening, one notification lists the volumes newly announced in your series.
 - A bell in Discover opens your alerts: the weekly news, each new release, or none at all.
 - Discover opens on your audiobooks when you follow no printed series, and the other way round.
+- Taking a book from a friend, you choose whether you take it as a book or as an audiobook.
+- An invitation shows what you share, the way your friends see you, and a friend you accept
+  appears in Shared straight away.
 - The Authors shelf lists your authors alphabetically, like your contacts, with the alphabet down
   the side to jump to a letter; your favourites first is one tap away.
 - Saga and author pages open faster, whatever the size of your library.
