@@ -234,3 +234,47 @@ describe('a shelf photo', () => {
     })
   })
 })
+
+describe('a book ticked on a shelf photo', () => {
+  const ticked = {
+    recognized: true,
+    title: BookTitle('Le Nom du vent'),
+    authors: [AuthorName('Patrick Rothfuss')],
+    subgenres: [],
+  }
+
+  test('is enriched and its saga catalogued as a scanned cover is, for one scan', async () => {
+    answers = [
+      {
+        ...anEnrichment,
+        seriesName: 'Chronique du tueur de roi',
+        volumeNumber: 1,
+        volumeKind: 'main',
+      },
+      {
+        name: 'Chronique du tueur de roi',
+        author: 'Patrick Rothfuss',
+        volumes: [{ kind: 'main', number: 1, title: 'Le Nom du vent' }],
+      },
+    ]
+
+    const outcome = await ScanUseCase.describeDetected(reader, ticked, 'fr')
+
+    expect(outcome).toMatchObject({
+      recognized: true,
+      title: 'Le Nom du vent',
+      series: { name: 'Chronique du tueur de roi', volume: 1 },
+    })
+    expect(calls).toEqual(['enrichment', 'catalogue'])
+    expect(spent()).toBe(1)
+  })
+
+  test('spends nothing when the model fails', async () => {
+    answers = [new Error('model unavailable')]
+
+    expect(await ScanUseCase.describeDetected(reader, ticked, 'fr')).toEqual({
+      failed: 'model unavailable',
+    })
+    expect(spent()).toBe(0)
+  })
+})

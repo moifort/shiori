@@ -56,6 +56,14 @@ export namespace ScanUseCase {
       cacheHit: false,
     }))
 
+  /** Describe a book the reader ticked on a shelf photo. Never cached, so it
+   *  always spends one scan — and only once the model answered. */
+  export const describeDetected = (userId: UserId, seen: ScanResult, language: ScanLanguage) =>
+    metered(userId, 'detected book lookup failed', async () => ({
+      ...(await ScanCommand.describeDetected(seen, language)),
+      cacheHit: false,
+    }))
+
   /** The books a typed title may mean, for the reader to pick before
    *  `lookUpTitle` runs. Refused once the allowance is used up, like every call
    *  to the model, but spends nothing: the scan is the lookup that follows, and

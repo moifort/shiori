@@ -207,6 +207,24 @@ export namespace ScanCommand {
     return { result, usage: { enrichment } }
   }
 
+  /** A book ticked on a shelf photo, described as a scanned cover is once it
+   *  was read: the grounded step, the published cover, and the saga's and
+   *  author's pages when nobody built them — what the reader opens next is the
+   *  same whether the book came alone or with its shelf. Unlike
+   *  `lookUpEdition`, whose saga the release watch already knows. Never cached:
+   *  there is no image of this one book to hash. */
+  export const describeDetected = async (
+    seen: ScanResult,
+    language: ScanLanguage,
+  ): Promise<{ result: ScanResult; usage: ScanUsage }> => {
+    if (import.meta.dev && config().scanStub) return { result: STUBBED_SCAN, usage: {} }
+
+    const { result: enriched, regularEdition, usage: enrichment } = await enrich(seen, language)
+    const result = { ...enriched, coverUrl: await coverOf(enriched.isbn13, regularEdition) }
+    const { catalogue, author } = await catalogueWhatOpensNext(result, language, true)
+    return { result, usage: { enrichment, catalogue, author } }
+  }
+
   /** Every book of a shelf photo, read as the cover's first step reads one:
    *  ungrounded, printed text only. Nothing is enriched here — the reader
    *  first says which books they want, and only those are paid for. */
