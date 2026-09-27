@@ -2,12 +2,16 @@
 import SwiftUI
 
 struct CameraView: UIViewControllerRepresentable {
+    /// The long side of the photo handed back. A cover reads fine at 800; a
+    /// shelf's spines need more pixels for their titles.
+    var maxDimension: CGFloat = 800
     let onCapture: @MainActor (Data) -> Void
     @Binding var shouldCapture: Bool
 
     func makeUIViewController(context: Context) -> CameraViewController {
         let controller = CameraViewController()
         controller.onCapture = onCapture
+        controller.maxDimension = maxDimension
         return controller
     }
 
@@ -28,6 +32,7 @@ struct CameraView: UIViewControllerRepresentable {
 @MainActor
 final class CameraViewController: UIViewController {
     var onCapture: (@MainActor (Data) -> Void)?
+    var maxDimension: CGFloat = 800
 
     private let captureSession = AVCaptureSession()
     private let photoOutput = AVCapturePhotoOutput()
@@ -77,6 +82,7 @@ final class CameraViewController: UIViewController {
         // was cut, or before it is up, is simply ignored.
         guard captureSession.isRunning else { return }
         let settings = AVCapturePhotoSettings()
+        delegateHandler.maxDimension = maxDimension
         photoOutput.capturePhoto(with: settings, delegate: delegateHandler)
     }
 
@@ -108,10 +114,11 @@ final class CameraViewController: UIViewController {
 
 final class PhotoCaptureDelegate: NSObject, AVCapturePhotoCaptureDelegate, @unchecked Sendable {
     @MainActor weak var viewController: CameraViewController?
+    var maxDimension: CGFloat = 800
 
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         guard let data = photo.fileDataRepresentation() else { return }
-        if let image = UIImage(data: data), let jpeg = image.resized(maxDimension: 800).jpegData(compressionQuality: 0.6) {
+        if let image = UIImage(data: data), let jpeg = image.resized(maxDimension: maxDimension).jpegData(compressionQuality: maxDimension > 800 ? 0.7 : 0.6) {
             Task { @MainActor in
                 self.viewController?.handleCapturedPhoto(jpeg)
             }

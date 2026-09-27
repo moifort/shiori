@@ -23,6 +23,8 @@ enum AnalyticsEvent {
     case scanFailed
     /// A scan was refused for want of allowance: where the wall is met.
     case scanBlockedByQuota
+    /// A shelf photo was read: how many books it held.
+    case shelfDetected(books: Int)
     /// The library crossed the bar of a shelf worth opening the app for. Fired
     /// once per install.
     case libraryStocked(books: Int)
@@ -46,6 +48,9 @@ enum AnalyticsEvent {
         case discover
         /// Added from an author's page: a saga's first volume, or a book of theirs.
         case author
+        /// Ticked on a shelf photo: a scan, counted apart to see what the
+        /// batch import is worth against one cover at a time.
+        case shelf
     }
 }
 
@@ -106,6 +111,7 @@ extension AnalyticsEvent {
         case .scanNoResult: "scan_no_result"
         case .scanFailed: "scan_failed"
         case .scanBlockedByQuota: "scan_blocked_quota"
+        case .shelfDetected: "shelf_detected"
         case .libraryStocked: "library_stocked"
         case .bookRated: "book_rated"
         case .seriesCatalogued: "series_catalogued"
@@ -118,6 +124,7 @@ extension AnalyticsEvent {
         switch self {
         case let .bookAdded(source): ["source": source.rawValue]
         case let .libraryStocked(books): ["books": books]
+        case let .shelfDetected(books): ["books": books]
         case let .bookRated(stars): ["stars": stars]
         case let .paywallShown(trigger): ["trigger": trigger]
         case let .purchaseCompleted(plan): ["plan": plan]
