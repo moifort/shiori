@@ -10,6 +10,15 @@ resource "google_project_iam_member" "function_firestore" {
   member  = "serviceAccount:${google_service_account.function.email}"
 }
 
+# Deleting an account ends with deleting its Firebase Auth user, which needs
+# Firebase Authentication admin rights: without them the wipe stops at its last
+# step with "insufficient permission", every trace of data already gone.
+resource "google_project_iam_member" "function_firebase_auth" {
+  project = google_project.this.project_id
+  role    = "roles/firebaseauth.admin"
+  member  = "serviceAccount:${google_service_account.function.email}"
+}
+
 # The admin metrics read actual GCP spend from the billing export dataset in
 # BigQuery: the function needs to run a query job and read that dataset. The
 # project holds no other BigQuery data, so project-scoped viewer is as narrow
