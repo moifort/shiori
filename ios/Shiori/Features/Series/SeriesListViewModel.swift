@@ -17,17 +17,33 @@ struct SeriesRequest: Equatable {
 @MainActor
 @Observable
 final class SeriesListViewModel {
+    /// Opens on the view and filter the reader last chose, as the Books shelf
+    /// does.
     init() {
+        let defaults = UserDefaults.standard
+        mode = defaults.string(forKey: Self.modeKey).flatMap(LibraryMode.init) ?? .all
+        stateFilter = defaults.string(forKey: Self.stateKey).flatMap(SeriesState.init)
         followed = cache(for: mode, stateFilter).read() ?? []
     }
 
+    private static let modeKey = "series.mode"
+    private static let stateKey = "series.state"
+
     /// Any change of view or filter reloads the first page.
     var mode: LibraryMode = .all {
-        didSet { if oldValue != mode { scheduleReload() } }
+        didSet {
+            guard oldValue != mode else { return }
+            UserDefaults.standard.set(mode.rawValue, forKey: Self.modeKey)
+            scheduleReload()
+        }
     }
     /// Narrows the list to one state; nil shows them all.
     var stateFilter: SeriesState? {
-        didSet { if oldValue != stateFilter { scheduleReload() } }
+        didSet {
+            guard oldValue != stateFilter else { return }
+            UserDefaults.standard.set(stateFilter?.rawValue, forKey: Self.stateKey)
+            scheduleReload()
+        }
     }
     private var reloadTask: Task<Void, Never>?
 

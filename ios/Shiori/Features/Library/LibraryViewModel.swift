@@ -52,9 +52,18 @@ struct LibraryRequest: Equatable {
 @MainActor
 @Observable
 final class LibraryViewModel {
+    /// Opens on the view and filter the reader last chose: switching shelf
+    /// rebuilds this model, and a relaunch too, and neither should hand them
+    /// back a list they have to narrow again.
     init() {
+        let defaults = UserDefaults.standard
+        mode = defaults.string(forKey: Self.modeKey).flatMap(LibraryMode.init) ?? .all
+        statusFilter = defaults.string(forKey: Self.statusKey).flatMap(ReadingStatus.init)
         books = cache(for: mode, statusFilter).read() ?? []
     }
+
+    private static let modeKey = "library.mode"
+    private static let statusKey = "library.status"
 
     private(set) var books: [Book] = []
     private(set) var isLoading = false
@@ -62,11 +71,19 @@ final class LibraryViewModel {
 
     /// Any change of view or filter reloads the first page.
     var mode: LibraryMode = .all {
-        didSet { if oldValue != mode { scheduleReload() } }
+        didSet {
+            guard oldValue != mode else { return }
+            UserDefaults.standard.set(mode.rawValue, forKey: Self.modeKey)
+            scheduleReload()
+        }
     }
     /// Narrows the list to one reading status; nil shows them all.
     var statusFilter: ReadingStatus? {
-        didSet { if oldValue != statusFilter { scheduleReload() } }
+        didSet {
+            guard oldValue != statusFilter else { return }
+            UserDefaults.standard.set(statusFilter?.rawValue, forKey: Self.statusKey)
+            scheduleReload()
+        }
     }
 
     /// The rows on screen are last session's and fresher ones are on their
