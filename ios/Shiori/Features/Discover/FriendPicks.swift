@@ -19,13 +19,13 @@ struct FriendLovers: Hashable, Codable, Sendable {
     /// The friend whose copy stands for it.
     var first: Lover? { friends.first }
 
-    /// "Marie", "Marie et Paul", "Marie et 3 autres".
+    /// "Marie", "Marie et Paul", "Marie +2": short enough for a tile's width.
     var caption: String {
         guard let first else { return "" }
         switch friends.count {
         case 1: return first.displayName
         case 2: return String(localized: "\(first.displayName) et \(friends[1].displayName)")
-        default: return String(localized: "\(first.displayName) et \(friends.count - 1) autres")
+        default: return "\(first.displayName) +\(friends.count - 1)"
         }
     }
 }
@@ -58,9 +58,11 @@ struct LovedAuthor: Identifiable, Hashable, Codable, Sendable {
 
     var id: String { key }
 
+    /// As the Authors shelf draws them: "Ursula K. Le Guin" is UG, not UK.
     var initials: String {
-        let letters = name.split(separator: " ").prefix(2).compactMap(\.first)
-        return String(letters).uppercased()
+        let words = name.split(separator: " ")
+        let ends = words.count > 1 ? [words.first, words.last] : [words.first]
+        return ends.compactMap { $0?.first }.map(String.init).joined().uppercased()
     }
 }
 
@@ -197,7 +199,7 @@ struct LovedAuthorsStrip: View {
                 }
             Text(loved.name)
                 .font(.caption.weight(.medium))
-                .lineLimit(2)
+                .lineLimit(2, reservesSpace: true)
                 .multilineTextAlignment(.center)
             Text(loved.lovers.caption)
                 .font(.caption2)
