@@ -1,0 +1,40 @@
+name: Schema
+
+# A field or an argument leaves the GraphQL schema only after it was deprecated:
+# builds on the App Store may still ask for anything else. See docs/api-evolution.md.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  breaking:
+    name: 🧬 No breaking change without deprecation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # the diff reads the schema at the base commit
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      # The base is what main held before this push, or the target of the pull request.
+      # A first push has no before (all zeros): there is nothing to compare against.
+      - name: Compare the schema with its base
+        env:
+          BEFORE: ${{ github.event.before }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          if [ -n "$BASE_REF" ]; then
+            base="origin/$BASE_REF"
+          elif [ -z "${BEFORE//0/}" ]; then
+            echo "No previous commit to compare with"
+            exit 0
+          else
+            base="$BEFORE"
+          fi
+          SCHEMA_BASE="$base" bun run schema:check

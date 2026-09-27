@@ -42,8 +42,8 @@ can never be made to update. It is already there.
 
 ### 1. Deprecate, in the commit where the app stops asking
 
-In one commit: the iOS operations (`ios/**/*.graphql`) stop selecting the field, argument or
-input field, and the server marks it `@deprecated(reason: "…")` (Pothos `deprecationReason`),
+In one commit: the iOS operations (`ios/**/*.graphql`) stop selecting the field or argument,
+and the server marks it `@deprecated(reason: "…")` (Pothos `deprecationReason`),
 naming what replaces it. The resolver keeps working. Nothing records a build number by hand:
 the build that stopped asking is derived from git in step 2.
 
@@ -64,7 +64,7 @@ How it decides, for each deprecated element:
 
 - **Still asked?** The iOS operations at `HEAD` are parsed with `graphql-js` against the schema
   and walked with `TypeInfo`, so a usage is matched on its exact coordinate (`Type.field`,
-  `Type.field(arg:)`, `Input.field`) — two types that share a field name are never confused.
+  `Type.field(arg:)`) — two types that share a field name are never confused.
   If an operation still uses it: **still asked by the app**, nothing else to compute.
 - **No longer asked since which build?** Walking back through the commits that touched
   `ios/**/*.graphql` (`git log --format=%H -- 'ios/**/*.graphql'`), newest first, the script
@@ -79,7 +79,8 @@ How it decides, for each deprecated element:
   - live build ≥ the element's build, but inside the fourteen days: **in grace until
     `<date>`**;
   - otherwise: **waiting for a release**.
-- **Anything it cannot place** — a deprecated enum value, a directive argument — is listed as
+- **Anything it cannot place** — a deprecated input field, which Swift fills through a
+  variable the operations never spell out, or a deprecated enum value — is listed as
   **check by hand**, with no build number. Removing a value from an output enum is harmless to
   old builds (they read unknown values leniently); an input enum value is for a person to judge.
 
@@ -116,8 +117,10 @@ and both are also runnable locally so a failure is never first seen in CI:
 
 - **No breaking change without deprecation.** `bun run schema:check` runs
   `graphql-inspector diff` between the schema at the push's base (`github.event.before`; locally,
-  `origin/main`) and `shared/schema.graphql`, with the rule `suppressRemovalOfDeprecatedField`.
-  Removing a field that was deprecated in the base passes; removing or renaming a live field,
+  `origin/main`) and `shared/schema.graphql`, with the rule `suppressRemovalOfDeprecatedField`
+  and a project rule (`scripts/deprecations/inspector-rule.ts`) that does the same for
+  arguments, which the built-in rule does not cover. Removing a field or an argument that was
+  deprecated in the base passes; removing or renaming a live field,
   changing a type, making an argument required fails the run. `schema:check` joins the pre-commit
   verification list in `CLAUDE.md`.
 - **The floor never outruns the App Store.** `bun scripts/deprecations.ts check-floor` fails if

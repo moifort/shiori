@@ -12,6 +12,8 @@
     "generate:assets": "bun scripts/generate-changelog-asset.ts",
     "generate:graphql": "bun scripts/export-graphql-schema.ts",
     "generate": "bun run generate:assets && bun run generate:graphql",
+    "deprecations": "bun scripts/deprecations.ts",
+    "schema:check": "graphql-inspector diff \"git:${SCHEMA_BASE:-origin/main}:shared/schema.graphql\" shared/schema.graphql --rule suppressRemovalOfDeprecatedField --rule ./scripts/deprecations/inspector-rule.ts",
     "bootstrap": "./scripts/bootstrap.sh",
     "destroy": "./scripts/teardown.sh",
     "infra:build": "bun install --frozen-lockfile && bunx nitro prepare && bun run generate:graphql && bun run build",
@@ -21,6 +23,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.13",
+    "@graphql-inspector/cli": "7.0.0",
     "@types/bun": "1.4.2",
     "@types/lodash-es": "4.17.12",
     "@types/node": "26.5.1",

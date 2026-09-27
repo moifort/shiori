@@ -6,10 +6,10 @@
  * floor are shown a blocking "update required" screen by the app (see
  * `GET /app-config` and `AppSupportGate.swift`).
  *
- * Bump it ONLY when shipping a breaking schema change, to the build of the iOS
- * release that ships alongside it (`git rev-list --count HEAD` + 1 before the
- * bump commit) — see docs/api-evolution.md for the full runbook. Users on older
- * builds stay blocked until that release clears App Store review.
+ * Raised only by the removal commit of the deprecation routine, to the value
+ * `bun run deprecations` proposes: a build that no longer asks for what is
+ * removed, on the App Store for two weeks. The Deploy workflow refuses a floor
+ * above the build on sale — see docs/api-evolution.md.
  */
 export const MINIMUM_SUPPORTED_IOS_BUILD = 1
 

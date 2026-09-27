@@ -85,6 +85,16 @@ jobs:
           bun run generate:graphql
           bun run build
 
+      # The update screen sends every build below the floor to the App Store: a floor
+      # above the build on sale would block readers with nothing to install. Checked
+      # before anything is applied, so a bad floor never reaches the server.
+      - name: Check the build floor is on the App Store
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: bun scripts/deprecations.ts check-floor
+
       - name: Upload the source maps to Sentry
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}

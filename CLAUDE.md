@@ -32,6 +32,8 @@ cut, from the commits since the previous one, under that release's version and d
 | Coverage | `bun test --coverage` |
 | Linter | `bunx biome check` / `bun run lint:fix` |
 | GraphQL schema | `bun run generate:graphql` (then `cd ios && apollo-ios-cli generate`) |
+| Schema compatibility | `bun run schema:check` (breaking changes against `origin/main`) |
+| Deprecations | `bun run deprecations` (what can be removed, and the build floor) |
 | Dev server | `bun run dev` |
 | Build | `bun run build` |
 
@@ -40,13 +42,22 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
 ## Workflow
 
 1. Verify the build before committing: `bunx nitro prepare && bunx tsc --noEmit`, `bun test`,
-   `bunx biome check`. CI is not a linter — a lint error must never be discovered from a red
+   `bunx biome check`, and `bun run schema:check` when the schema changed. CI is not a linter — a lint error must never be discovered from a red
    pipeline.
 2. Run `bunx nitro prepare` before `tsc` if routes changed.
 3. Commit freely, grouping changes as you see fit. Never touch `CHANGELOG.md` /
    `CHANGELOG.fr.md` in a feature or fix commit: they are written when an App Store release is
    cut, and only then.
 4. **Never push until the user explicitly says "push".**
+
+## API evolution
+
+The GraphQL schema is not versioned: installed builds keep asking for what they were built
+against. A field or an argument the app stops using is **deprecated in the same commit**, never
+removed there. At every App Store release, `bun run deprecations` lists what a build on sale for
+two weeks no longer asks for; one commit removes it and raises `MINIMUM_SUPPORTED_IOS_BUILD` to
+the proposed value, which sends older builds to the update screen. Never raise the floor by
+hand. The runbook is [docs/api-evolution.md](docs/api-evolution.md).
 
 ## Architecture
 
