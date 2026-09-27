@@ -76,27 +76,15 @@ struct AwaitedEditionsSection: View {
         if !awaited.isEmpty {
             Section {
                 ForEach(awaited) { edition in
-                    Button {
-                        if let url = edition.storeURL { openURL(url) }
-                    } label: {
-                        Label {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(edition.format.awaitedTitle)
-                                    .foregroundStyle(.primary)
-                                Text(edition.state == .unannounced
-                                    ? edition.stateLine
-                                    : "\(edition.title) · \(edition.stateLine)")
-                                    .font(.caption)
-                                    .foregroundStyle(edition.state == .available
-                                        ? AnyShapeStyle(.green)
-                                        : AnyShapeStyle(.secondary))
-                            }
-                        } icon: {
-                            Image(systemName: edition.format == .audiobook ? "headphones" : "character.book.closed")
-                                .foregroundStyle(Color.accentColor)
+                    Group {
+                        // A link once a store sells it; a plain line until then,
+                        // drawn at full strength rather than greyed as disabled.
+                        if let url = edition.storeURL {
+                            Button { openURL(url) } label: { line(edition) }
+                        } else {
+                            line(edition)
                         }
                     }
-                    .disabled(edition.storeURL == nil)
                     .contextMenu {
                         if let url = edition.storeURL {
                             Button(edition.format.storeLabel, systemImage: "arrow.up.right.square") {
@@ -112,6 +100,25 @@ struct AwaitedEditionsSection: View {
             } footer: {
                 Text("Vous serez prévenu le jour de sa sortie.")
             }
+        }
+    }
+
+    private func line(_ edition: AwaitedEdition) -> some View {
+        Label {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(edition.format.awaitedTitle)
+                    .foregroundStyle(.primary)
+                Text(edition.state == .unannounced
+                    ? edition.stateLine
+                    : "\(edition.title) · \(edition.stateLine)")
+                    .font(.caption)
+                    .foregroundStyle(edition.state == .available
+                        ? AnyShapeStyle(.green)
+                        : AnyShapeStyle(.secondary))
+            }
+        } icon: {
+            Image(systemName: edition.format == .audiobook ? "headphones" : "character.book.closed")
+                .foregroundStyle(Color.accentColor)
         }
     }
 }
