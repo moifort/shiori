@@ -38,6 +38,10 @@ struct DiscoveredVolume: Identifiable, Hashable, Codable, Sendable {
     let date: String?
     let isbn13: String?
     let coverURL: URL?
+    /// The recording's page on the reader's Audible store, which the Audible
+    /// app opens on the title. Nil on a saga read, on a recording Audible never
+    /// confirmed, and without an Audible account.
+    var audibleURL: URL?
 
     var id: Int { number }
 }
@@ -170,7 +174,8 @@ private extension DiscoveredVolume {
             title: fields.title,
             date: fields.date,
             isbn13: fields.isbn13,
-            coverURL: fields.coverUrl.flatMap(URL.init(string:))
+            coverURL: fields.coverUrl.flatMap(URL.init(string:)),
+            audibleURL: fields.audibleUrl.flatMap(URL.init(string:))
         )
     }
 }

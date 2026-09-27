@@ -109,6 +109,56 @@ describe('the Découvrir tab', () => {
   })
 })
 
+describe('an announced recording', () => {
+  const audioCarl = seriesKeyOf('Dungeon Crawler Carl', 'Matt Dinniman', 'audiobook')
+
+  beforeEach(async () => {
+    await BookUseCase.add(bob, {
+      title: BookTitle('Carl 1'),
+      authors: [AuthorName('Matt Dinniman')],
+      status: 'read',
+      format: 'audiobook',
+      language: 'fr',
+      series: {
+        id: audioCarl,
+        name: SeriesName('Dungeon Crawler Carl'),
+        volume: VolumeNumber(1),
+        kind: 'main',
+      },
+    })
+    fake.seed('saga-watches', `${audioCarl}--fr`, {
+      key: `${audioCarl}--fr`,
+      seriesId: audioCarl,
+      name: 'Dungeon Crawler Carl',
+      author: 'Matt Dinniman',
+      language: 'fr',
+      checkedAt: new Date(),
+      volumes: [{ number: 2, title: 'Carl 2', date: '2099-02-12', asin: 'B0DM67WR2V' }],
+    })
+  })
+
+  test('links to its page on the reader’s Audible store', async () => {
+    fake.seed('audible-connections', bob, {
+      userId: bob,
+      account: { marketplace: 'fr', connectedAt: new Date() },
+    })
+    startFakeRequest()
+
+    const result = await run('{ discovery(format: AUDIOBOOK) { sagas { next { audibleUrl } } } }')
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.discovery).toEqual({
+      sagas: [{ next: { audibleUrl: 'https://www.audible.fr/pd/B0DM67WR2V' } }],
+    })
+  })
+
+  test('has no link without an Audible account', async () => {
+    const result = await run('{ discovery(format: AUDIOBOOK) { sagas { next { audibleUrl } } } }')
+
+    expect(result.data?.discovery).toEqual({ sagas: [{ next: { audibleUrl: null } }] })
+  })
+})
+
 describe('the saga screen', () => {
   test('says what the saga has for the reader in the edition opened', async () => {
     const result = await run(

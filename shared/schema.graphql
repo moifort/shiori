@@ -709,6 +709,11 @@ scalar DeviceToken
 One volume of a saga the reader does not hold, announced, as the weekly web search found it in the language they follow the saga in.
 """
 type DiscoveredVolume {
+  """
+  The recording's page on the reader's Audible store, `https://www.audible.{marketplace}/pd/{asin}`, which the Audible app opens on the title. Null on a volume of a saga read, on a recording Audible never confirmed, and without an Audible account.
+  """
+  audibleUrl: String
+
   """The publisher’s cover, or the recording’s on Audible."""
   coverUrl: CoverUrl
 

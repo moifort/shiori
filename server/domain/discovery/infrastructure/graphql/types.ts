@@ -1,3 +1,4 @@
+import { AudibleQuery } from '~/domain/audible/query'
 import type { Discovery, FoundVolume, SagaDiscovery, SagaReleases } from '~/domain/discovery/types'
 import { FollowedSeriesType } from '~/domain/series/infrastructure/graphql/queries'
 import { builder } from '~/domain/shared/graphql/builder'
@@ -30,6 +31,15 @@ const DiscoveredVolumeType = builder.objectRef<FoundVolume>('DiscoveredVolume').
       nullable: true,
       description: 'The publisher’s cover, or the recording’s on Audible.',
       resolve: (volume) => volume.coverUrl ?? null,
+    }),
+    audibleUrl: t.string({
+      nullable: true,
+      description:
+        "The recording's page on the reader's Audible store, `https://www.audible.{marketplace}/pd/{asin}`, " +
+        'which the Audible app opens on the title. Null on a volume of a saga read, on a ' +
+        'recording Audible never confirmed, and without an Audible account.',
+      resolve: async (volume, _args, { userId }) =>
+        volume.asin ? ((await AudibleQuery.recordingUrlOf(userId, volume.asin)) ?? null) : null,
     }),
   }),
 })

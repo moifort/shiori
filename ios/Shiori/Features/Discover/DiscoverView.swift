@@ -7,9 +7,9 @@ import SwiftUI
 ///
 /// Laid out as the Library tab is, so nothing here has to be learnt twice: the
 /// capsule above the tab bar switches between "Livres" — each volume announced
-/// drawn as the Books tab draws a book, the soonest out first — and "Séries" —
-/// the Series tab's rows, every cover of their strip; a tap opens the saga
-/// screen as a sheet. Read through one format at a time — the saga read or the
+/// drawn as the Books tab draws a book, the soonest out first, a tap opening a
+/// recording's page on Audible — and "Séries" — the Series tab's rows, every
+/// cover of their strip; a tap opens the saga screen as a sheet. Read through one format at a time — the saga read or the
 /// saga heard — picked in the toolbar and kept between visits.
 ///
 /// The server looks the sagas up on the web once a week. The tab opens on the
@@ -19,6 +19,7 @@ import SwiftUI
 struct DiscoverView: View {
     @State private var viewModel = DiscoverViewModel()
     @State private var openSeries: SagaDiscovery?
+    @Environment(\.openURL) private var openURL
     @AppStorage("discover.format") private var format: ReleaseFormat = .book
     @AppStorage("discover-shelf") private var shelf: LibraryShelf = .series
     /// The format was picked this session — by a tap, or once for the reader —
@@ -122,6 +123,10 @@ struct DiscoverView: View {
     /// A volume announced, drawn as the Books tab draws a book: its saga as a
     /// tag, the headphones on the cover of a recording, and on the trailing
     /// edge the day it comes out. No genre: the saga already says what it is.
+    ///
+    /// A tap opens the recording's page on Audible — in the Audible app when it
+    /// is installed — where it can be preordered. A volume Audible has no page
+    /// for, a printed one especially, opens its saga instead.
     @ViewBuilder
     private func volumeRow(_ saga: SagaDiscovery) -> some View {
         if let next = saga.releases.next {
@@ -153,13 +158,24 @@ struct DiscoverView: View {
                 releaseDate: next.date
             )
             .contentShape(Rectangle())
-            .onTapGesture { openSeries = saga }
+            .onTapGesture { open(next, of: saga) }
             .accessibilityAddTraits(.isButton)
-            .accessibilityAction { openSeries = saga }
+            .accessibilityAction { open(next, of: saga) }
             .contextMenu {
+                if let audibleURL = next.audibleURL {
+                    Button("Ouvrir dans Audible", systemImage: "headphones") { openURL(audibleURL) }
+                }
                 Button("Ouvrir la série", systemImage: "books.vertical") { openSeries = saga }
             }
             .accessibilityIdentifier("discover-volume-row")
+        }
+    }
+
+    private func open(_ volume: DiscoveredVolume, of saga: SagaDiscovery) {
+        if let audibleURL = volume.audibleURL {
+            openURL(audibleURL)
+        } else {
+            openSeries = saga
         }
     }
 

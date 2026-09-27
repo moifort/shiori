@@ -65,4 +65,5 @@ fragment DiscoveredVolumeFields on DiscoveredVolume {
   date
   isbn13
   coverUrl
+  audibleUrl
 }
