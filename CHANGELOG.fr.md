@@ -7,10 +7,9 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 - À l’inscription, votre prénom est déjà rempli depuis votre compte Apple.
 - Sur la fiche d’un livre, touchez une information — la note, l’année, les pages, l’ISBN
   ou une date de lecture — pour la corriger sur place.
-- Découvrir est repensé autour de vos séries : pour chacune de celles que vous suivez, les tomes
-  déjà sortis que vous n’avez pas encore, avec un lien vers Amazon ou Audible, et le prochain
-  annoncé avec sa date.
-- La page d’une série affiche ses prochaines sorties juste sous sa présentation.
+- Découvrir est repensé autour de vos séries : pour chacune de celles que vous suivez, le prochain
+  tome annoncé, avec sa date.
+- La page d’une série affiche sa prochaine sortie juste sous sa présentation.
 - Vos livres affichent leur série sous le même nom que sa page, sans mentions comme
   « [French Edition] ».
 - Les séries en cours de l’accueil n’affichent plus une série que vous n’avez pas encore commencée.

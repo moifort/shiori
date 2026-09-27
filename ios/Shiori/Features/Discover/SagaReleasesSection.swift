@@ -1,46 +1,33 @@
 import SwiftUI
 
-/// What a saga has for the reader, just under its introduction on the saga
-/// screen: each volume out they do not hold, with the store it is found in and,
-/// for a printed saga, the button that adds it to the library; then the next
-/// one announced and its day. Drawn by the Découvrir domain, which looks the
-/// saga up on the web every week.
+/// The next volume of a saga announced, just under its introduction on the saga
+/// screen, and the day it comes out. The volumes already out are not repeated
+/// here: they are listed under "Tomes", with the button that adds them. Drawn
+/// by the Découvrir domain, which looks the saga up on the web every week.
 struct SagaReleasesSection: View {
     let releases: SagaReleases
     let author: String
-    /// The volume numbers the reader holds: a volume just added from here
+    /// The volume numbers the reader holds: a volume added ahead of its day
     /// leaves the section at once rather than on the next look.
     let held: Set<Int>
-    /// The add button of the saga screen for a volume, when it can be added —
-    /// nil for a saga heard, bought on Audible rather than added by hand.
-    let addButton: (DiscoveredVolume) -> AnyView?
 
     var body: some View {
-        let available = releases.available.filter { !held.contains($0.number) }
-        let next = releases.next.flatMap { held.contains($0.number) ? nil : $0 }
-        if !available.isEmpty || next != nil {
+        if let next = releases.next, !held.contains(next.number) {
             Section {
-                ForEach(available) { volume in
-                    row(volume, forthcoming: false)
-                }
-                if let next {
-                    row(next, forthcoming: true)
-                }
+                row(next)
             } header: {
                 Text("Prochaines sorties")
             } footer: {
-                if next != nil {
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Image(systemName: "bell")
-                        Text("Vous recevrez une notification le jour de la sortie.")
-                    }
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Image(systemName: "bell")
+                    Text("Vous recevrez une notification le jour de la sortie.")
                 }
             }
             .accessibilityIdentifier("series-releases")
         }
     }
 
-    private func row(_ volume: DiscoveredVolume, forthcoming: Bool) -> some View {
+    private func row(_ volume: DiscoveredVolume) -> some View {
         HStack(alignment: .center, spacing: 12) {
             BookCover(book: Book(
                 id: "release-\(volume.number)",
@@ -49,7 +36,7 @@ struct SagaReleasesSection: View {
                 coverURL: volume.coverURL,
                 status: .toRead
             ))
-            .opacity(forthcoming ? 0.45 : 1)
+            .opacity(0.45)
             VStack(alignment: .leading, spacing: 3) {
                 Text("Tome \(volume.number)")
                     .font(.caption2.weight(.semibold))
@@ -58,26 +45,18 @@ struct SagaReleasesSection: View {
                     .font(.body.weight(.medium))
                     .lineLimit(2)
                 Group {
-                    if forthcoming, let date = volume.date {
-                        Text(ReleaseDateText.coming(date)).foregroundStyle(.orange)
-                    } else if forthcoming {
-                        Text("Annoncé").foregroundStyle(.orange)
+                    if let date = volume.date {
+                        Text(ReleaseDateText.coming(date))
                     } else {
-                        Text("Disponible").foregroundStyle(Color.accentColor)
+                        Text("Annoncé")
                     }
                 }
+                .foregroundStyle(.orange)
                 .font(.subheadline.weight(.medium))
             }
             .accessibilityElement(children: .combine)
             Spacer(minLength: 8)
-            if forthcoming {
-                if let date = volume.date { ReleaseDateBadge(date: date) }
-            } else {
-                HStack(spacing: 10) {
-                    StoreLink(volume: volume)
-                    addButton(volume)
-                }
-            }
+            if let date = volume.date { ReleaseDateBadge(date: date) }
         }
         .padding(.vertical, 4)
     }

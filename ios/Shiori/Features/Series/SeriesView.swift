@@ -48,8 +48,8 @@ struct SeriesView: View {
     /// The sheet asking how many volumes the saga has, for a saga nobody has
     /// catalogued.
     @State private var isDeclaringVolumeCount = false
-    /// What Découvrir found of the saga in the edition opened: the volumes out
-    /// the reader lacks and the next one announced. Last opening's at once,
+    /// What Découvrir found of the saga in the edition opened: the next volume
+    /// announced the reader lacks. Last opening's at once,
     /// brought up to date underneath.
     @State private var releases: SagaReleases?
 
@@ -247,14 +247,7 @@ struct SeriesView: View {
                 SagaReleasesSection(
                     releases: releases,
                     author: series.author,
-                    held: heldNumbers,
-                    addButton: { found in
-                        // A saga heard is bought on Audible, not added by hand.
-                        guard !series.isAudio,
-                              let volume = series.spine.first(where: { $0.number == found.number })
-                        else { return nil }
-                        return AnyView(action(volume, author: series.author))
-                    }
+                    held: heldNumbers
                 )
             }
             volumes("Tomes", volumes: series.spine, author: series.author, footer: nil)

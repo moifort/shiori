@@ -28,45 +28,27 @@ enum ReleaseFormat: String, Codable, Sendable, Hashable, CaseIterable, Identifia
     }
 }
 
-/// Where the reader goes to get a volume.
-enum Store: String, Codable, Sendable, Hashable {
-    case amazon, audible
-
-    /// The button's words: where the tap leads.
-    var actionLabel: String {
-        switch self {
-        case .amazon: String(localized: "Amazon")
-        case .audible: String(localized: "Audible")
-        }
-    }
-}
-
-/// A volume of a saga the reader does not hold, out or announced, as the
-/// weekly web search found it.
+/// A volume of a saga the reader does not hold, announced, as the weekly web
+/// search found it.
 struct DiscoveredVolume: Identifiable, Hashable, Codable, Sendable {
     let number: Int
     let title: String
-    /// `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Nil for a volume out on a date
+    /// `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Nil for a volume announced for a date
     /// nobody found.
     let date: String?
     let isbn13: String?
     let coverURL: URL?
-    let store: Store
-    let storeURL: URL
 
     var id: Int { number }
 }
 
-/// What one saga has for the reader: the volumes out they do not hold, and the
-/// next one announced.
+/// What one saga has for the reader: the next volume announced they do not
+/// hold. The volumes out are the saga screen's own, read off its catalogue.
 struct SagaReleases: Codable, Sendable, Equatable {
     /// Whether the saga was ever looked up in that language: until it is, the
     /// saga screen asks for it.
     var watched: Bool
-    var available: [DiscoveredVolume]
     var next: DiscoveredVolume?
-
-    var isEmpty: Bool { available.isEmpty && next == nil }
 }
 
 /// One row of the tab: a saga the reader follows, drawn as the Series tab
@@ -78,19 +60,10 @@ struct SagaDiscovery: Identifiable, Codable, Sendable {
     var id: String { series.id }
 
     /// The row's cover strip, narrowed to what matters here: the last volume
-    /// the reader holds, to say where they stand; the volumes out they lack,
-    /// in full; the next one announced, with its date.
+    /// the reader holds, to say where they stand; the next one announced, with
+    /// its date.
     var strip: [SeriesStripItem] {
         let held = series.volumes.last.map { [SeriesStripItem.owned($0)] } ?? []
-        let out = releases.available.map { volume in
-            SeriesStripItem.missing(
-                key: "\(series.id)-\(volume.number)",
-                number: volume.number,
-                title: volume.title,
-                forthcoming: false,
-                coverURL: volume.coverURL
-            )
-        }
         let announced = releases.next.map { volume in
             [SeriesStripItem.missing(
                 key: "\(series.id)-\(volume.number)",
@@ -101,7 +74,7 @@ struct SagaDiscovery: Identifiable, Codable, Sendable {
                 coverURL: volume.coverURL
             )]
         } ?? []
-        return held + out + announced
+        return held + announced
     }
 }
 
@@ -182,8 +155,7 @@ private extension DiscoveryPage {
                     ),
                     releases: SagaReleases(
                         watched: true,
-                        available: row.available.compactMap { DiscoveredVolume(fields: $0.fragments.discoveredVolumeFields) },
-                        next: row.next.flatMap { DiscoveredVolume(fields: $0.fragments.discoveredVolumeFields) }
+                        next: row.next.map { DiscoveredVolume(fields: $0.fragments.discoveredVolumeFields) }
                     )
                 )
             },
@@ -196,23 +168,19 @@ private extension SagaReleases {
     init(fields: ShioriGraphQL.SagaReleasesFields) {
         self.init(
             watched: fields.watched,
-            available: fields.available.compactMap { DiscoveredVolume(fields: $0.fragments.discoveredVolumeFields) },
-            next: fields.next.flatMap { DiscoveredVolume(fields: $0.fragments.discoveredVolumeFields) }
+            next: fields.next.map { DiscoveredVolume(fields: $0.fragments.discoveredVolumeFields) }
         )
     }
 }
 
 private extension DiscoveredVolume {
-    init?(fields: ShioriGraphQL.DiscoveredVolumeFields) {
-        guard let storeURL = URL(string: fields.storeUrl) else { return nil }
+    init(fields: ShioriGraphQL.DiscoveredVolumeFields) {
         self.init(
             number: fields.number,
             title: fields.title,
             date: fields.date,
             isbn13: fields.isbn13,
-            coverURL: fields.coverUrl.flatMap(URL.init(string:)),
-            store: fields.store.value == .audible ? .audible : .amazon,
-            storeURL: storeURL
+            coverURL: fields.coverUrl.flatMap(URL.init(string:))
         )
     }
 }

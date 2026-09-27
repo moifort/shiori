@@ -55,7 +55,6 @@ describe('the Découvrir tab', () => {
         unwatched
         sagas {
           series { id name language ownedCount }
-          available { number title date store storeUrl }
           next { number date }
         }
       }
@@ -67,15 +66,6 @@ describe('the Découvrir tab', () => {
       sagas: [
         {
           series: { id: carl, name: 'Dungeon Crawler Carl', language: 'FR', ownedCount: 1 },
-          available: [
-            {
-              number: 2,
-              title: 'Carl 2',
-              date: '2025-01-15',
-              store: 'AMAZON',
-              storeUrl: 'https://www.amazon.fr/s?k=9782226488176',
-            },
-          ],
           next: { number: 4, date: '2099-02-12' },
         },
       ],
@@ -93,12 +83,11 @@ describe('the Découvrir tab', () => {
 describe('the saga screen', () => {
   test('says what the saga has for the reader in the edition opened', async () => {
     const result = await run(
-      `{ sagaReleases(seriesId: "${carl}", language: FR) { watched available { number } next { number } } }`,
+      `{ sagaReleases(seriesId: "${carl}", language: FR) { watched next { number } } }`,
     )
     expect(result.errors).toBeUndefined()
     expect(result.data?.sagaReleases).toEqual({
       watched: true,
-      available: [{ number: 2 }],
       next: { number: 4 },
     })
   })

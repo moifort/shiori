@@ -1,16 +1,15 @@
 import SwiftUI
 
 /// The Découvrir tab: every saga the reader follows — all but the ones they
-/// set aside — with the volumes out they do not hold, and the next one
-/// announced.
+/// set aside — with the next volume announced they do not hold, the soonest
+/// first. The volumes already out are not listed: the saga screen shows them
+/// under "Tomes", with the button that adds them.
 ///
 /// Laid out as the Library tab is, so nothing here has to be learnt twice: the
 /// capsule above the tab bar, for now "Séries" alone; the Series tab's rows,
-/// their strip narrowed to the last volume held, the volumes to get, and the
-/// next one with its date; a tap opens the saga screen as a sheet, where each
-/// volume can be added or bought. The announcements come first; the sagas with
-/// volumes out follow, five of them until the reader asks for the rest. Read through one format at
-/// a time — the saga read or the saga heard — picked in the toolbar and kept
+/// their strip narrowed to the last volume held and the next one with its
+/// date; a tap opens the saga screen as a sheet. Read through one format at a
+/// time — the saga read or the saga heard — picked in the toolbar and kept
 /// between visits.
 ///
 /// The server looks the sagas up on the web once a week. The tab opens on the
@@ -20,8 +19,6 @@ import SwiftUI
 struct DiscoverView: View {
     @State private var viewModel = DiscoverViewModel()
     @State private var openSeries: SagaDiscovery?
-    /// Every saga with volumes out is listed, rather than the first few.
-    @State private var showsAllAvailable = false
     @AppStorage("discover.format") private var format: ReleaseFormat = .book
     @AppStorage("discover-shelf") private var shelf: LibraryShelf = .series
 
@@ -68,9 +65,7 @@ struct DiscoverView: View {
     }
 
     private func list(_ rows: [SagaDiscovery]) -> some View {
-        let available = rows.filter { !$0.releases.available.isEmpty }
-        let announced = rows.filter { $0.releases.available.isEmpty }
-        return List {
+        List {
             // The snapshot on screen is brought up to date silently. Only a
             // refresh that failed says so, since the rows are then last time's.
             if viewModel.refreshFailed {
@@ -97,15 +92,15 @@ struct DiscoverView: View {
                         systemImage: format == .audiobook ? "headphones" : "sparkles",
                         title: "Rien de neuf pour l'instant",
                         message: format == .audiobook
-                            ? "Les tomes de vos séries audio que vous n'avez pas encore, et les prochains annoncés, apparaîtront ici."
-                            : "Les tomes de vos séries que vous n'avez pas encore, et les prochains annoncés, apparaîtront ici."
+                            ? "Les prochains tomes annoncés de vos séries audio apparaîtront ici."
+                            : "Les prochains tomes annoncés de vos séries apparaîtront ici."
                     )
                 }
                 .listRowBackground(Color.clear)
             }
-            if !announced.isEmpty {
+            if !rows.isEmpty {
                 Section {
-                    ForEach(announced) { row($0) }
+                    ForEach(rows) { row($0) }
                 } header: {
                     Text("À venir")
                 } footer: {
@@ -115,29 +110,13 @@ struct DiscoverView: View {
                     }
                 }
             }
-            if !available.isEmpty {
-                Section("Disponibles") {
-                    let shown = showsAllAvailable ? available : Array(available.prefix(Self.availableShown))
-                    ForEach(shown) { row($0) }
-                    if available.count > shown.count {
-                        Button("Voir plus") {
-                            withAnimation(.smooth) { showsAllAvailable = true }
-                        }
-                        .accessibilityIdentifier("discover-show-more")
-                    }
-                }
-            }
         }
         .listStyle(.insetGrouped)
         .refreshable { await viewModel.load(format) }
     }
 
-    /// How many sagas with volumes out are listed before "Voir plus".
-    private static let availableShown = 5
-
     /// A saga's row: the Series tab's own, its strip narrowed to what matters
-    /// here, and underneath what it has for the reader in a line, with the
-    /// store the first volume to get is found in.
+    /// here, and underneath the next volume and when it comes out.
     private func row(_ row: SagaDiscovery) -> some View {
         var entry = row.series
         entry.strip = row.strip
@@ -153,14 +132,6 @@ struct DiscoverView: View {
             SagaReleasesSummary(releases: row.releases)
         }
         .contextMenu {
-            ForEach(row.releases.available) { volume in
-                Link(destination: volume.storeURL) {
-                    Label(
-                        String(localized: "Tome \(volume.number) sur \(volume.store.actionLabel)"),
-                        systemImage: volume.store == .audible ? "headphones" : "cart"
-                    )
-                }
-            }
             Button("Ouvrir la série", systemImage: "books.vertical") { openSeries = row }
         }
         .accessibilityIdentifier("discover-series-row")
@@ -185,36 +156,17 @@ struct DiscoverView: View {
     }
 }
 
-/// What a saga has for the reader, in a line under its covers: how many
-/// volumes are out, in the tint, then the next one and when — and a button to
-/// the store the first volume out is found in.
+/// The next volume of a saga and when it comes out, in a line under its covers.
 struct SagaReleasesSummary: View {
     let releases: SagaReleases
 
     var body: some View {
-        HStack(alignment: .center, spacing: 8) {
-            Group {
-                if !releases.available.isEmpty, let next = releases.next {
-                    Text(availableCount).foregroundStyle(Color.accentColor)
-                        + Text(verbatim: " · ").foregroundStyle(.secondary)
-                        + Text(nextLine(next)).foregroundStyle(.secondary)
-                } else if !releases.available.isEmpty {
-                    Text(availableCount).foregroundStyle(Color.accentColor)
-                } else if let next = releases.next {
-                    Text(nextLine(next)).foregroundStyle(.orange)
-                }
-            }
-            .font(.footnote.weight(.medium))
-            .lineLimit(2)
-            Spacer(minLength: 0)
-            if let first = releases.available.first {
-                StoreLink(volume: first)
-            }
+        if let next = releases.next {
+            Text(nextLine(next))
+                .foregroundStyle(.orange)
+                .font(.footnote.weight(.medium))
+                .lineLimit(2)
         }
-    }
-
-    private var availableCount: AttributedString {
-        AttributedString(localized: "^[\(releases.available.count) tome disponible](inflect: true)")
     }
 
     private func nextLine(_ next: DiscoveredVolume) -> String {
@@ -223,38 +175,6 @@ struct SagaReleasesSummary: View {
         }
         return String(localized: "Tome \(next.number) annoncé")
     }
-}
-
-/// The button to the store a volume is found in: Amazon for a printed saga,
-/// Audible for a saga heard.
-struct StoreLink: View {
-    let volume: DiscoveredVolume
-
-    var body: some View {
-        Link(destination: volume.storeURL) {
-            Label(volume.store.actionLabel, systemImage: "arrow.up.right")
-                .labelStyle(.titleTrailingIcon)
-                .font(.caption.weight(.semibold))
-        }
-        .buttonStyle(.bordered)
-        .buttonBorderShape(.capsule)
-        .controlSize(.small)
-        .accessibilityIdentifier("discover-store-link")
-    }
-}
-
-/// A label with its title first and its icon after, as a link out reads.
-private struct TitleTrailingIconLabelStyle: LabelStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: 3) {
-            configuration.title
-            configuration.icon.imageScale(.small)
-        }
-    }
-}
-
-extension LabelStyle where Self == TitleTrailingIconLabelStyle {
-    fileprivate static var titleTrailingIcon: TitleTrailingIconLabelStyle { .init() }
 }
 
 #Preview {

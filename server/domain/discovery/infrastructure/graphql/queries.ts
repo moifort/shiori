@@ -13,9 +13,8 @@ builder.queryFields((t) => ({
     type: DiscoveryType,
     description:
       'The Découvrir tab: every saga the reader follows in that format — all but the ones ' +
-      'they set aside — with the volumes out they do not hold and the next one announced. ' +
-      'Sagas with volumes to get come first, then those with only an announcement, the ' +
-      'soonest first; a saga with neither is left out.\n\n' +
+      'they set aside — with the next volume announced they do not hold, the soonest ' +
+      'first; a saga with nothing announced is left out.\n\n' +
       'Read off shared watches a scheduled pass keeps a week fresh, so it answers at once. ' +
       'A saga never looked up is counted in `unwatched`, for `lookUpDiscovery`.',
     args: { format: t.arg({ type: ReleaseFormatEnum, required: true }) },
@@ -25,8 +24,8 @@ builder.queryFields((t) => ({
   sagaReleases: t.field({
     type: SagaReleasesType,
     description:
-      'What the saga screen shows under its introduction: the volumes out the reader does ' +
-      'not hold, and the next one announced, in the edition they opened. Empty, and not ' +
+      'What the saga screen shows under its introduction: the next volume announced the ' +
+      'reader does not hold, in the edition they opened. Empty, and not ' +
       '`watched`, for an edition nobody looked up yet: `lookUpSagaReleases` does.',
     args: {
       seriesId: t.arg({ type: 'SeriesId', required: true }),

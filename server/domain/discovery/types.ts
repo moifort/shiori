@@ -67,21 +67,14 @@ export type DiscoveryReader = {
   notified: string[]
 }
 
-/** Where the reader goes to get a volume: a bookshop for a printed saga, the
- *  recording's own page — or a search — on Audible for a saga heard. */
-export type Store = 'amazon' | 'audible'
-
-/** A volume as the reader is offered it. */
-export type OfferedVolume = FoundVolume & { store: Store; storeUrl: string }
-
-/** What one saga has for the reader: the volumes out they do not hold, and the
- *  next one announced. */
+/** What one saga has for the reader: the next volume announced they do not
+ *  hold. The volumes already out are the saga screen's own, drawn from its
+ *  catalogue. */
 export type SagaReleases = {
   /** Whether the saga was ever looked up in that language: until it is, it
    *  has nothing to say, and opening it is what looks it up. */
   watched: boolean
-  available: OfferedVolume[]
-  next?: OfferedVolume
+  next?: FoundVolume
 }
 
 /** One row of the Découvrir tab. */

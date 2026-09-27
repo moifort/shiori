@@ -1,8 +1,7 @@
-# The Découvrir tab in one format: every saga the reader follows, with the
-# volumes out they do not hold and the next one announced. A row carries the
-# Series tab's selection, so it draws as the Series tab's rows do; its strip is
-# built from the volumes held and the ones offered — the server lays the web's
-# findings over the catalogue's spine — so no catalogue is asked for.
+# The Découvrir tab in one format: every saga the reader follows with a volume
+# announced they do not hold. A row carries the Series tab's selection, so it
+# draws as the Series tab's rows do; its strip is built from the last volume
+# held and the one announced, so no catalogue is asked for.
 query Discovery($format: ReleaseFormat!) {
   discovery(format: $format) {
     ...DiscoveryFields
@@ -26,9 +25,6 @@ fragment DiscoveryFields on Discovery {
         ...FollowedVolume
       }
     }
-    available {
-      ...DiscoveredVolumeFields
-    }
     next {
       ...DiscoveredVolumeFields
     }
@@ -51,9 +47,6 @@ mutation LookUpSagaReleases($seriesId: SeriesId!, $language: BookLanguage!) {
 
 fragment SagaReleasesFields on SagaReleases {
   watched
-  available {
-    ...DiscoveredVolumeFields
-  }
   next {
     ...DiscoveredVolumeFields
   }
@@ -65,6 +58,4 @@ fragment DiscoveredVolumeFields on DiscoveredVolume {
   date
   isbn13
   coverUrl
-  store
-  storeUrl
 }

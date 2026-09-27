@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { AudibleAsin } from '~/domain/audible/types'
-import type { Book, BookLanguage, CoverUrl, Isbn13 } from '~/domain/book/types'
+import type { Book, BookLanguage } from '~/domain/book/types'
 import type { ReleaseDate, Series, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { FollowedSeries } from '~/domain/series/use-case'
 import type { BookTitle, UserId } from '~/domain/shared/types'
@@ -121,7 +121,7 @@ describe('the sagas watched for a reader', () => {
 })
 
 describe('what a saga has for the reader', () => {
-  test('is every volume out they do not hold, and the soonest one announced', () => {
+  test('is the soonest volume announced, never one already out', () => {
     const watch = watchOf(carl, [
       volume(1, '2024-05-02'),
       volume(2, '2024-10-01'),
@@ -130,51 +130,32 @@ describe('what a saga has for the reader', () => {
       volume(4, '2027-02-12'),
     ])
     const releases = releasesOf(held(1), watch, undefined, today)
-    expect(releases.available.map((entry) => entry.number)).toEqual([2, 3] as VolumeNumber[])
-    expect(releases.next?.number).toBe(4 as VolumeNumber)
-    expect(releases.next?.date).toBe('2027-02-12' as ReleaseDate)
+    expect(releases).toEqual({ watched: true, next: volume(4, '2027-02-12') })
   })
 
   test('is nothing before the saga was ever looked up', () => {
-    expect(releasesOf(held(1), undefined, undefined, today)).toEqual({
-      watched: false,
-      available: [],
+    expect(releasesOf(held(1), undefined, undefined, today)).toEqual({ watched: false })
+  })
+
+  test('is nothing but watched when nothing is announced', () => {
+    expect(releasesOf([], watchOf(carl, [volume(2, '2024-10-01')]), undefined, today)).toEqual({
+      watched: true,
     })
   })
 
   test('counts a volume announced for this month as still to come', () => {
     const releases = releasesOf([], watchOf(carl, [volume(4, '2026-09')]), undefined, today)
-    expect(releases.available).toEqual([])
     expect(releases.next?.number).toBe(4 as VolumeNumber)
   })
 
-  test('sends a printed volume to Amazon by its ISBN, else by its title', () => {
-    const watch = watchOf(carl, [
-      volume(2, '2024-10-01', { isbn13: '9782226488176' as Isbn13 }),
-      volume(3, '2025-01-01'),
-    ])
-    const [second, third] = releasesOf([], watch, undefined, today).available
-    expect(second.store).toBe('amazon')
-    expect(second.storeUrl).toBe('https://www.amazon.fr/s?k=9782226488176')
-    expect(third.storeUrl).toBe('https://www.amazon.fr/s?k=Carl%203%20Matt%20Dinniman')
+  test('skips an announced volume the reader already holds', () => {
+    const watch = watchOf(carl, [volume(4, '2027-02-12'), volume(5, '2027-09-01')])
+    expect(releasesOf(held(4), watch, undefined, today).next?.number).toBe(5 as VolumeNumber)
   })
 
-  test('sends a recording to its Audible page once confirmed, else to a search', () => {
-    const watch = watchOf(carlHeard, [
-      volume(1, '2024-11-22', { asin: 'B0DM67WR2V' as AudibleAsin }),
-      volume(2, '2025-03-01'),
-    ])
-    const [first, second] = releasesOf([], watch, undefined, today).available
-    expect(first.store).toBe('audible')
-    expect(first.storeUrl).toBe('https://www.audible.fr/pd/B0DM67WR2V')
-    expect(second.storeUrl).toBe(
-      'https://www.audible.fr/search?keywords=Carl%202%20Matt%20Dinniman',
-    )
-  })
-
-  test('offers the volumes the catalogue shows missing, as the Series tab does', () => {
-    // The catalogue knows volume 3, which the web search missed; volume 6 is
-    // due next year by its first publication.
+  test('reads what is announced off the catalogue the Series tab draws', () => {
+    // Volume 6 is due next year by its first publication, and only the
+    // catalogue knows it.
     const catalogue = {
       id: carl,
       name: 'Dungeon Crawler Carl',
@@ -183,34 +164,12 @@ describe('what a saga has for the reader', () => {
       volumes: [
         { number: 1, title: 'Carl 1', kind: 'main', publishedIn: 2020 },
         { number: 2, title: 'Carl 2', kind: 'main', publishedIn: 2021 },
-        {
-          number: 3,
-          title: 'Carl 3',
-          kind: 'main',
-          publishedIn: 2022,
-          titles: { fr: 'Carl trois' },
-          covers: { fr: 'https://covers/carl3-fr.jpg' },
-        },
         { number: 6, title: 'Carl 6', kind: 'main', publishedIn: 2027 },
-        { title: 'A Carl novella', kind: 'novella', publishedIn: 2023 },
+        { title: 'A Carl novella', kind: 'novella', publishedIn: 2027 },
       ],
     } as unknown as Series
-    const watch = watchOf(carl, [
-      volume(2, '2024-10-01', { coverUrl: 'https://covers/carl2.jpg' as CoverUrl }),
-      volume(4, '2025-01-01'),
-    ])
-    const releases = releasesOf(held(1), watch, catalogue, today)
-    expect(
-      releases.available.map((entry): unknown[] => [entry.number, entry.title, entry.coverUrl]),
-    ).toEqual([
-      [2, 'Carl 2', 'https://covers/carl2.jpg'],
-      [3, 'Carl trois', 'https://covers/carl3-fr.jpg'],
-      [4, 'Carl 4', undefined],
-    ])
-    expect(releases.available[1].storeUrl).toBe(
-      'https://www.amazon.fr/s?k=Carl%20trois%20Matt%20Dinniman',
-    )
-    expect(releases.next?.number).toBe(6 as VolumeNumber)
+    const watch = watchOf(carl, [volume(2, '2024-10-01'), volume(4, '2025-01-01')])
+    expect(releasesOf(held(1), watch, catalogue, today).next?.number).toBe(6 as VolumeNumber)
   })
 
   test('holds a volume back while the catalogue says it is not out in that edition', () => {
@@ -222,48 +181,27 @@ describe('what a saga has for the reader', () => {
       volumes: [{ number: 2, title: 'Carl 2', kind: 'main', releases: { fr: '2027-03-01' } }],
     } as unknown as Series
     const releases = releasesOf([], watchOf(carl, [volume(2)]), catalogue, today)
-    expect(releases.available).toEqual([])
     expect(releases.next?.number).toBe(2 as VolumeNumber)
-  })
-
-  test('sends English readers to the American stores', () => {
-    const [book] = releasesOf(
-      [],
-      watchOf(carl, [volume(2, '2024-01-01')], 'en'),
-      undefined,
-      today,
-    ).available
-    const [heard] = releasesOf(
-      [],
-      watchOf(carlHeard, [volume(2, '2024-01-01')], 'en'),
-      undefined,
-      today,
-    ).available
-    expect(book.storeUrl.startsWith('https://www.amazon.com/')).toBe(true)
-    expect(heard.storeUrl.startsWith('https://www.audible.com/')).toBe(true)
   })
 })
 
 describe('the tab', () => {
-  const row = (name: string, shelvedAt: string, available: number, next?: string): SagaDiscovery =>
+  const row = (name: string, next?: string): SagaDiscovery =>
     ({
-      series: saga({ name: name as SeriesName, shelvedAt: new Date(shelvedAt) }),
-      available: Array.from({ length: available }, (_, index) => volume(index + 1)),
+      series: saga({ name: name as SeriesName }),
       next: next ? volume(9, next) : undefined,
     }) as SagaDiscovery
 
-  test('puts sagas with volumes to get first, then the soonest announcements, and drops the rest', () => {
+  test('lists the dated announcements, the soonest first, and drops the rest', () => {
     const ordered = inDiscoveryOrder([
-      row('later', '2026-01-01', 0, '2027-06'),
-      row('older', '2025-01-01', 1),
-      row('sooner', '2026-01-01', 0, '2026-10-26'),
-      row('nothing', '2026-01-01', 0),
-      row('newer', '2026-05-01', 2, '2027-01-01'),
+      row('later', '2027-06'),
+      row('sooner', '2026-10-26'),
+      row('nothing'),
+      row('middle', '2027-01-01'),
     ])
     expect(ordered.map((entry) => entry.series.name)).toEqual([
-      'newer',
-      'older',
       'sooner',
+      'middle',
       'later',
     ] as SeriesName[])
   })

@@ -1,4 +1,4 @@
-import type { Book, BookLanguage } from '~/domain/book/types'
+import type { Book } from '~/domain/book/types'
 import { type FoundVolume as CatalogueVolume, isForthcoming } from '~/domain/series/business-rules'
 import { isAudioSeries } from '~/domain/series/primitives'
 import type { Series, SeriesId } from '~/domain/series/types'
@@ -8,7 +8,6 @@ import { Year } from '~/domain/shared/primitives'
 import type {
   DiscoveryReader,
   FoundVolume,
-  OfferedVolume,
   ReleaseDate,
   ReleaseFormat,
   SagaDiscovery,
@@ -118,55 +117,6 @@ export const lastDayOf = (date: ReleaseDate): string =>
 export const isUpcoming = (date: ReleaseDate | undefined, today: string): boolean =>
   date !== undefined && (date.length === 10 ? date > today : lastDayOf(date) >= today)
 
-// MARK: - Where to get a volume
-
-/** The Amazon store for each language a book is sold in; English and anything
- *  else goes to the American one. */
-const AMAZON_DOMAINS: Partial<Record<BookLanguage, string>> = {
-  fr: 'amazon.fr',
-  de: 'amazon.de',
-  es: 'amazon.es',
-  it: 'amazon.it',
-  nl: 'amazon.nl',
-  sv: 'amazon.se',
-  pl: 'amazon.pl',
-  tr: 'amazon.com.tr',
-  ja: 'amazon.co.jp',
-  pt: 'amazon.com.br',
-}
-
-/** The Audible store for each language a recording is sold in. */
-export const AUDIBLE_DOMAINS: Partial<Record<BookLanguage, string>> = {
-  fr: 'audible.fr',
-  de: 'audible.de',
-  es: 'audible.es',
-  it: 'audible.it',
-  ja: 'audible.co.jp',
-}
-
-const audibleDomainOf = (language: BookLanguage) => AUDIBLE_DOMAINS[language] ?? 'audible.com'
-
-/** A search on Amazon: by ISBN, which lands on the very edition, else by title
- *  and author. */
-export const amazonUrlOf = (volume: FoundVolume, watch: SagaWatch): string => {
-  const keywords = volume.isbn13 ?? [volume.title, watch.author].filter(Boolean).join(' ')
-  return `https://www.${AMAZON_DOMAINS[watch.language] ?? 'amazon.com'}/s?k=${encodeURIComponent(keywords)}`
-}
-
-/** The recording's own page on Audible, once Audible confirmed it; a search
- *  for its title otherwise. */
-export const audibleUrlOf = (volume: FoundVolume, watch: SagaWatch): string => {
-  const domain = audibleDomainOf(watch.language)
-  if (volume.asin) return `https://www.${domain}/pd/${volume.asin}`
-  const keywords = [volume.title, watch.author].filter(Boolean).join(' ')
-  return `https://www.${domain}/search?keywords=${encodeURIComponent(keywords)}`
-}
-
-const offered = (volume: FoundVolume, watch: SagaWatch): OfferedVolume =>
-  formatOf(watch.seriesId) === 'audiobook'
-    ? { ...volume, store: 'audible', storeUrl: audibleUrlOf(volume, watch) }
-    : { ...volume, store: 'amazon', storeUrl: amazonUrlOf(volume, watch) }
-
 // MARK: - What the reader sees
 
 /** The numbered volumes the reader holds of the saga, in its language. */
@@ -222,56 +172,41 @@ const candidatesOf = (
   return [...candidates.values()]
 }
 
-/** What a saga has for the reader: every volume out that they do not hold, in
- *  order, and the soonest one announced. `books` are the ones they hold of that
- *  saga in the watch's language; `catalogue` the saga's catalogue, whose spine
- *  the Series tab draws — Découvrir offers the same volumes it shows missing. */
+/** What a saga has for the reader: the soonest volume announced that they do
+ *  not hold. `books` are the ones they hold of that saga in the watch's
+ *  language; `catalogue` the saga's catalogue, whose spine the Series tab
+ *  draws — a volume counts as announced by the same rule its strip is drawn
+ *  by. */
 export const releasesOf = (
   books: readonly Pick<Book, 'series'>[],
   watch: SagaWatch | undefined,
   catalogue: Series | null | undefined,
   today: string,
 ): SagaReleases => {
-  if (!watch) return { watched: false, available: [] }
+  if (!watch) return { watched: false }
   const held = heldNumbersOf(books)
-  const missing = candidatesOf(watch, catalogue, today).filter(
-    ({ volume }) => !held.has(volume.number),
-  )
-  const available = missing
-    .filter(({ upcoming }) => !upcoming)
-    .map(({ volume }) => volume)
-    .sort((left, right) => left.number - right.number)
-    .map((volume) => offered(volume, watch))
   // The soonest to come out: a volume dated before one announced for a year
   // only by the catalogue, which says less.
   const whenOf = ({ volume }: Candidate) => (volume.date ? lastDayOf(volume.date) : '\uffff')
-  const next = missing
-    .filter(({ upcoming }) => upcoming)
+  const next = candidatesOf(watch, catalogue, today)
+    .filter(({ volume, upcoming }) => upcoming && !held.has(volume.number))
     .sort(
       (left, right) =>
         whenOf(left).localeCompare(whenOf(right)) || left.volume.number - right.volume.number,
     )[0]?.volume
-  return next
-    ? { watched: true, available, next: offered(next, watch) }
-    : { watched: true, available }
+  return next ? { watched: true, next } : { watched: true }
 }
 
-/** The tab: every saga with something to say, those with volumes to get first
- *  — the most recently shelved first — then those with only an announcement,
- *  the soonest first. */
-export const inDiscoveryOrder = (rows: readonly SagaDiscovery[]): SagaDiscovery[] => {
-  const withVolumes = rows
-    .filter((row) => row.available.length > 0)
-    .sort((left, right) => right.series.shelvedAt.getTime() - left.series.shelvedAt.getTime())
-  const announced = rows
-    .filter((row) => row.available.length === 0 && row.next?.date)
+/** The tab: every saga with a volume announced for a known date, the soonest
+ *  first. */
+export const inDiscoveryOrder = (rows: readonly SagaDiscovery[]): SagaDiscovery[] =>
+  rows
+    .filter((row) => row.next?.date)
     .sort((left, right) =>
       lastDayOf(left.next?.date as ReleaseDate).localeCompare(
         lastDayOf(right.next?.date as ReleaseDate),
       ),
     )
-  return [...withVolumes, ...announced]
-}
 
 // MARK: - Alerts
 

@@ -37,6 +37,7 @@ mock.module('~/domain/scan/gemini', () => ({
           ? [
               { number: 1, title: 'Carl 1', date: '2024-11', asin: 'B0DM67WR2V' },
               { number: 2, title: 'Carl 2', date: '2025-03-01', asin: 'B0FAKEFAKE' },
+              { number: 3, title: 'Carl 3', date: '2027-05-01' },
             ]
           : [
               { number: 1, title: 'Carl 1', date: '2024-05-02', isbn13: '9782226488176' },
@@ -177,12 +178,13 @@ describe('the hourly pass', () => {
         coverUrl: 'https://m.media-amazon.com/carl1.jpg' as never,
       },
       { number: VolumeNumber(2), title: BookTitle('Carl 2'), date: '2025-03-01' as never },
+      { number: VolumeNumber(3), title: BookTitle('Carl 3'), date: '2027-05-01' as never },
     ])
   })
 })
 
 describe('the Découvrir tab', () => {
-  test('offers the volumes out the reader does not hold, and the next one announced', async () => {
+  test('offers the next volume announced, and none of the ones out', async () => {
     await stock(reader)
     await DiscoveryUseCase.watchDueSagas(now)
 
@@ -193,10 +195,7 @@ describe('the Découvrir tab', () => {
 
     expect(rest).toEqual([])
     expect(row.series.name).toBe(SeriesName('Dungeon Crawler Carl'))
-    expect(row.available.map((volume): unknown[] => [volume.number, volume.storeUrl])).toEqual([
-      [2, 'https://www.amazon.fr/s?k=Carl%202%20Matt%20Dinniman'],
-      [3, 'https://www.amazon.fr/s?k=Carl%203%20Matt%20Dinniman'],
-    ])
+    expect(row).not.toHaveProperty('available')
     expect(row.next?.number).toBe(VolumeNumber(4))
   })
 
@@ -209,9 +208,8 @@ describe('the Découvrir tab', () => {
       unwatched: 0,
     })
     const [heard] = (await DiscoveryUseCase.discover(reader, 'fr', 'audiobook', now)).sagas
-    expect(heard.available.map((volume) => volume.storeUrl)).toEqual([
-      'https://www.audible.fr/search?keywords=Carl%202%20Matt%20Dinniman',
-    ])
+    expect(heard.series.id).toBe(carlHeard)
+    expect(heard.next?.number).toBe(VolumeNumber(3))
   })
 
   test('counts the sagas never looked up, and looks them up on the first look', async () => {
@@ -270,11 +268,12 @@ describe('the saga screen', () => {
 
     const releases = await DiscoveryUseCase.sagaReleases(reader, carl, 'fr', now)
 
-    expect(releases.available.map((volume) => volume.number)).toEqual([2, 3].map(VolumeNumber))
-    expect(releases.next?.date).toBe('2027-02-12' as never)
+    expect(releases).toEqual({
+      watched: true,
+      next: { number: VolumeNumber(4), title: BookTitle('Carl 4'), date: '2027-02-12' as never },
+    })
     expect(await DiscoveryUseCase.sagaReleases(reader, carl, 'en', now)).toEqual({
       watched: false,
-      available: [],
     })
   })
 

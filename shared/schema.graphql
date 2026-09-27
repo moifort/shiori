@@ -691,31 +691,25 @@ The token APNs hands a device for this app, in hexadecimal, as the app receives 
 scalar DeviceToken
 
 """
-One volume of a saga the reader does not hold, out or announced, as the weekly web search found it in the language they follow the saga in.
+One volume of a saga the reader does not hold, announced, as the weekly web search found it in the language they follow the saga in.
 """
 type DiscoveredVolume {
   """The publisher’s cover, or the recording’s on Audible."""
   coverUrl: CoverUrl
 
   """
-  When it came out or comes out, as precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Null for a volume out on a date nobody found.
+  When it comes out, as precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Null for a volume announced for a date nobody found.
   """
   date: String
   isbn13: Isbn13
   number: VolumeNumber!
-  store: Store!
-
-  """
-  Where to get it: an Amazon search by its ISBN — which lands on the very edition — else by its title; the recording’s own Audible page once Audible confirmed it, else a search for its title.
-  """
-  storeUrl: String!
   title: BookTitle!
 }
 
 """The Découvrir tab in one format."""
 type Discovery {
   """
-  A row per saga with something to say: those with volumes to get first, then those with only an announcement, the soonest first.
+  A row per saga with a volume announced for a known date, the soonest first.
   """
   sagas: [SagaDiscovery!]!
 
@@ -1811,7 +1805,7 @@ type Query {
   dashboard(timeZone: TimeZone!): Dashboard!
 
   """
-  The Découvrir tab: every saga the reader follows in that format — all but the ones they set aside — with the volumes out they do not hold and the next one announced. Sagas with volumes to get come first, then those with only an announcement, the soonest first; a saga with neither is left out.
+  The Découvrir tab: every saga the reader follows in that format — all but the ones they set aside — with the next volume announced they do not hold, the soonest first; a saga with nothing announced is left out.
   
   Read off shared watches a scheduled pass keeps a week fresh, so it answers at once. A saga never looked up is counted in `unwatched`, for `lookUpDiscovery`.
   """
@@ -2035,7 +2029,7 @@ type Query {
   quota: Quota!
 
   """
-  What the saga screen shows under its introduction: the volumes out the reader does not hold, and the next one announced, in the edition they opened. Empty, and not `watched`, for an edition nobody looked up yet: `lookUpSagaReleases` does.
+  What the saga screen shows under its introduction: the next volume announced the reader does not hold, in the edition they opened. Empty, and not `watched`, for an edition nobody looked up yet: `lookUpSagaReleases` does.
   """
   sagaReleases(language: BookLanguage!, seriesId: SeriesId!): SagaReleases!
 
@@ -2183,9 +2177,6 @@ enum ReleaseFormat {
 One row of the Découvrir tab: a saga the reader follows, and what it has for them.
 """
 type SagaDiscovery {
-  """The volumes out the reader does not hold, in order."""
-  available: [DiscoveredVolume!]!
-
   """The next volume announced."""
   next: DiscoveredVolume
 
@@ -2206,9 +2197,6 @@ type SagaProgress {
 
 """What one saga has for the reader, in the edition they follow."""
 type SagaReleases {
-  """The volumes out the reader does not hold, in order."""
-  available: [DiscoveredVolume!]!
-
   """The next volume announced, the soonest first."""
   next: DiscoveredVolume
 
@@ -2456,15 +2444,6 @@ A reader rating, 1 to 5 whole stars.
 Whole stars only: half stars double the value space without adding discernment. Setting a rating also marks the book as read. Example: 4.
 """
 scalar StarRating
-
-"""Where the reader goes to get a volume."""
-enum Store {
-  """A bookshop, for a printed saga."""
-  AMAZON
-
-  """Audible, for a saga heard."""
-  AUDIBLE
-}
 
 """
 One free label refining the genre, 1 to 100 characters, never translated: sent in the language of `Accept-Language`, served as it was written. Example: "Dark fantasy".

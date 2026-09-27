@@ -61,8 +61,8 @@ const SCHEDULED_BUDGET_MS = 120_000
 const ON_DEMAND_BUDGET_MS = 90_000
 
 export namespace DiscoveryUseCase {
-  /** The tab as the reader opens it: every saga they follow in that format,
-   *  with the volumes out they do not hold and the next one announced, as the
+  /** The tab as the reader opens it: every saga they follow in that format
+   *  with a volume announced they do not hold, as the
    *  shared watches know them, and how many were never looked up. Opening it
    *  tells the hourly pass at once which sagas the reader follows now, and in
    *  which language to write to them. */
@@ -108,9 +108,9 @@ export namespace DiscoveryUseCase {
     return discoveryOf(followed, watches, format, now)
   }
 
-  /** What the saga screen shows under its introduction: the volumes out the
-   *  reader does not hold, and the next one announced, in the edition they
-   *  opened. Nothing for an edition nobody looked up yet. */
+  /** What the saga screen shows under its introduction: the next volume
+   *  announced the reader does not hold, in the edition they opened. Nothing
+   *  for an edition nobody looked up yet. */
   export const sagaReleases = async (
     userId: UserId,
     seriesId: SeriesId,
@@ -256,7 +256,7 @@ const discoveryOf = (
       today,
     )
     if (!releases.watched) unwatched += 1
-    return releases.available.length > 0 || releases.next ? [{ ...releases, series }] : []
+    return releases.next ? [{ ...releases, series }] : []
   })
   return { sagas: inDiscoveryOrder(rows), unwatched }
 }
