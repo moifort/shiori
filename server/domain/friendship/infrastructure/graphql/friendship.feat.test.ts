@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, mock, setSystemTime, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, mock, setSystemTime, spyOn, test } from 'bun:test'
 import { graphql } from 'graphql'
 import type { UserId } from '~/domain/shared/types'
 import {
@@ -815,5 +815,190 @@ describe("the friends' new favourites, for the dashboard", () => {
 
     expect(result.errors).toBeUndefined()
     expect(result.data?.friendFavorites).toEqual([])
+  })
+})
+
+describe('what the friends love, for Découvrir', () => {
+  afterEach(() => {
+    setSystemTime()
+  })
+
+  const addBook = async (owner: UserId, fields: string) => {
+    const result = await as(owner)(`mutation { addBook(input: { ${fields} }) { id } }`)
+    expect(result.errors).toBeUndefined()
+    return (result.data as { addBook: { id: string } }).addBook.id
+  }
+  const heartAt = async (owner: UserId, id: string, at: string) => {
+    setSystemTime(new Date(at))
+    await as(owner)(`mutation { setBookFavorite(id: "${id}", favorite: true) { id } }`)
+  }
+  const query = `{
+    friendRecommendations {
+      books { book { title } friends { userId } lovedByMany }
+      sagas { saga { name ownedCount volumes { title } } friends { userId } lovedByMany }
+      authors { author { key name portraitUrl } friends { userId } lovedByMany }
+    }
+  }`
+
+  test('suggests the books, sagas and authors hearted that the reader does not hold', async () => {
+    const piranesi = await addBook(
+      alice,
+      'title: "Piranesi", authors: ["Susanna Clarke"], status: READ',
+    )
+    await addBook(
+      alice,
+      'title: "Dune 1", authors: ["Frank Herbert"], format: AUDIOBOOK, status: READ, series: { id: "dune--frank-herbert--audio", name: "Dune", volume: 1, kind: MAIN }',
+    )
+    await addBook(
+      alice,
+      'title: "Dune 2", authors: ["Frank Herbert"], format: AUDIOBOOK, status: READ, series: { id: "dune--frank-herbert--audio", name: "Dune", volume: 2, kind: MAIN }',
+    )
+    const held = await addBook(alice, 'title: "Hypérion", authors: ["Dan Simmons"], status: READ')
+    await heartAt(alice, piranesi, '2026-09-10T10:00:00Z')
+    await heartAt(alice, held, '2026-09-11T10:00:00Z')
+    setSystemTime(new Date('2026-09-12T10:00:00Z'))
+    await as(alice)(
+      'mutation { setSeriesFavorite(seriesId: "dune--frank-herbert--audio", favorite: true) { favorite } }',
+    )
+    await addBook(bob, 'title: "Hypérion", authors: ["Dan Simmons"], status: TO_READ')
+    await befriend()
+
+    setSystemTime(new Date('2026-09-20T10:00:00Z'))
+    const result = await as(bob)(query)
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.friendRecommendations).toEqual({
+      books: [{ book: { title: 'Piranesi' }, friends: [{ userId: 'alice' }], lovedByMany: false }],
+      sagas: [
+        {
+          saga: { name: 'Dune', ownedCount: 2, volumes: [{ title: 'Dune 1' }] },
+          friends: [{ userId: 'alice' }],
+          lovedByMany: false,
+        },
+      ],
+      authors: [
+        {
+          author: { key: 'frank-herbert', name: 'Frank Herbert', portraitUrl: null },
+          friends: [{ userId: 'alice' }],
+          lovedByMany: false,
+        },
+        {
+          author: { key: 'susanna-clarke', name: 'Susanna Clarke', portraitUrl: null },
+          friends: [{ userId: 'alice' }],
+          lovedByMany: false,
+        },
+      ],
+    })
+  })
+
+  // A shelf is only ever open to friends, and never what its owner hides.
+  test('leaves out the hidden books and the strangers', async () => {
+    const secret = await addBook(alice, 'title: "Un secret", status: READ')
+    const stranger = await addBook(carol, 'title: "Inconnu", status: READ')
+    await heartAt(alice, secret, '2026-09-15T10:00:00Z')
+    await heartAt(carol, stranger, '2026-09-15T10:00:00Z')
+    await as(alice)(`mutation { setBookHidden(id: "${secret}", hidden: true) { id } }`)
+    await befriend()
+
+    const result = await as(bob)(query)
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.friendRecommendations).toEqual({ books: [], sagas: [], authors: [] })
+  })
+
+  // One scan of the friendships, of the reader's library, and of each
+  // friend's books and saga opinions; then the friend's name and, in one
+  // batch, the three authors' catalogue documents for their faces.
+  test('reads each shelf once, whatever it suggests', async () => {
+    for (const title of ['Un', 'Deux', 'Trois']) {
+      const id = await addBook(
+        alice,
+        `title: "${title}", authors: ["${title} Auteur"], status: READ`,
+      )
+      await heartAt(alice, id, '2026-09-15T10:00:00Z')
+    }
+    await befriend()
+    await as(bob)(query)
+
+    startFakeRequest()
+    const before = { docs: fake.docReads, queries: fake.queryReads }
+    await as(bob)(query)
+
+    expect(fake.queryReads - before.queries).toBe(4)
+    expect(fake.docReads - before.docs).toBe(4)
+  })
+})
+
+describe("taking a friend's printed book as an audiobook", () => {
+  afterEach(() => {
+    ;(globalThis.fetch as unknown as { mockRestore?: () => void }).mockRestore?.()
+  })
+
+  /** Audible's French store, selling the recordings listed. */
+  const audibleSells = (products: Record<string, unknown>[]) =>
+    spyOn(globalThis, 'fetch').mockImplementation((async () =>
+      Response.json({ products })) as unknown as typeof fetch)
+
+  const hyperion = {
+    asin: 'B0HYPERION',
+    title: 'Hypérion',
+    language: 'french',
+    authors: [{ name: 'Dan Simmons' }],
+    narrators: [{ name: 'Jean-Christophe Lebert' }],
+    runtime_length_min: 1260,
+  }
+
+  const printedBook = async () => {
+    await befriend()
+    const added = await as(alice)(
+      'mutation { addBook(input: { title: "Hypérion", authors: ["Dan Simmons"], language: FR, status: READ }) { id } }',
+    )
+    expect(added.errors).toBeUndefined()
+    return (added.data as { addBook: { id: string } }).addBook.id
+  }
+  const audio = (bookId: string) =>
+    as(bob)(`{ friendBookAudio(userId: "alice", bookId: "${bookId}") }`)
+
+  test('says so when Audible sells it, and fills the copy from the recording', async () => {
+    const bookId = await printedBook()
+    audibleSells([hyperion])
+
+    expect((await audio(bookId)).data?.friendBookAudio).toBe('AVAILABLE')
+
+    const copied = await as(bob)(
+      `mutation { addFriendBook(userId: "alice", bookId: "${bookId}", status: TO_READ, format: AUDIOBOOK) { format narrators durationMinutes } }`,
+    )
+    expect(copied.errors).toBeUndefined()
+    expect(copied.data?.addFriendBook).toEqual({
+      format: 'AUDIOBOOK',
+      narrators: ['Jean-Christophe Lebert'],
+      durationMinutes: 1260,
+    })
+  })
+
+  test('says so when Audible sells no recording of it', async () => {
+    const bookId = await printedBook()
+    audibleSells([{ ...hyperion, authors: [{ name: 'Someone Else' }] }])
+
+    expect((await audio(bookId)).data?.friendBookAudio).toBe('UNAVAILABLE')
+  })
+
+  // The reader decides, as before anybody asked.
+  test('does not know when Audible cannot be asked', async () => {
+    const bookId = await printedBook()
+    spyOn(globalThis, 'fetch').mockImplementation(
+      (async () => new Response('', { status: 503 })) as unknown as typeof fetch,
+    )
+
+    expect((await audio(bookId)).data?.friendBookAudio).toBe('UNKNOWN')
+  })
+
+  test('answers nothing to a stranger', async () => {
+    const bookId = await printedBook()
+    audibleSells([hyperion])
+
+    const result = await as(carol)(`{ friendBookAudio(userId: "alice", bookId: "${bookId}") }`)
+
+    expect(result.data?.friendBookAudio).toBeNull()
   })
 })

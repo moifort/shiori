@@ -1,9 +1,11 @@
 import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
+import { AudioAvailabilityEnum } from '~/domain/friendship/infrastructure/graphql/enums'
 import {
   FriendBookType,
   FriendFavoriteType,
   FriendLibraryPageType,
   FriendProfileType,
+  FriendRecommendationsType,
   FriendSagaPageType,
   FriendType,
 } from '~/domain/friendship/infrastructure/graphql/types'
@@ -30,6 +32,17 @@ builder.queryFields((t) => ({
       'the reader shares with.\n\n' +
       'Only a dated heart counts. A book marked "do not share" is never among them.',
     resolve: (_root, _args, context) => FriendshipUseCase.recentFavorites(context.userId),
+  }),
+
+  friendRecommendations: t.field({
+    type: FriendRecommendationsType,
+    description:
+      'What the reader’s friends hearted and the reader does not hold, for Découvrir: ' +
+      'books, sagas and the authors of both, the newest heart first, twenty of each at ' +
+      'most. Held is judged on the story, whatever the format — a friend’s recording ' +
+      'is a story the reader may take on paper.\n\n' +
+      'A book marked "do not share" is never among them.',
+    resolve: (_root, _args, context) => FriendshipUseCase.recommendations(context.userId),
   }),
 
   friendProfile: t.field({
@@ -73,6 +86,23 @@ builder.queryFields((t) => ({
     },
     resolve: (_root, args, context) =>
       FriendshipUseCase.book(context.userId, args.userId, args.bookId),
+  }),
+
+  friendBookAudio: t.field({
+    type: AudioAvailabilityEnum,
+    nullable: true,
+    description:
+      "Whether the reader may take one book of a friend's shelf as an audiobook: a " +
+      'recording is, a printed book is when Audible sells it in its language under the ' +
+      'same title and author. Asks Audible, so a page asks it only when it opens.\n\n' +
+      'Null for a stranger, a book that does not exist and a book marked "do not ' +
+      'share" alike.',
+    args: {
+      userId: t.arg({ type: 'UserId', required: true, description: 'The friend' }),
+      bookId: t.arg({ type: 'BookId', required: true }),
+    },
+    resolve: (_root, args, context) =>
+      FriendshipUseCase.audio(context.userId, args.userId, args.bookId),
   }),
 
   friendLibraryPage: t.field({

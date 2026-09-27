@@ -34,6 +34,7 @@ import {
 import { DiscoveryCommand } from '~/domain/discovery/command'
 import { amazonEditionOf } from '~/domain/discovery/infrastructure/amazon-catalogue'
 import {
+  audibleEditionOf,
   audibleProductOf,
   audibleRecordingOf,
   audibleSeriesOf,
@@ -49,6 +50,7 @@ import {
 } from '~/domain/discovery/schemas'
 import type {
   AnnouncedVolumePreview,
+  AudibleRecording,
   AuthorDiscovery,
   AuthorWatch,
   Discovery,
@@ -72,7 +74,7 @@ import { SeriesQuery } from '~/domain/series/query'
 import type { SeriesId, VolumeNumber } from '~/domain/series/types'
 import { type FollowedSeries, SeriesUseCase } from '~/domain/series/use-case'
 import type { Language } from '~/domain/shared/language'
-import type { UserId } from '~/domain/shared/types'
+import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 import { UserQuery } from '~/domain/user/query'
 import { createLogger } from '~/system/logger'
 import { withRequestCacheScope } from '~/system/request-cache'
@@ -94,6 +96,16 @@ const SCHEDULED_BUDGET_MS = 120_000
 const ON_DEMAND_BUDGET_MS = 90_000
 
 export namespace DiscoveryUseCase {
+  /** The recording Audible sells of a book in its language, by its title and
+   *  first author: `unknown` when there is none, `unreachable` when Audible
+   *  could not be asked. */
+  export const audioEditionOf = (
+    title: BookTitle,
+    author: AuthorName | undefined,
+    language: BookLanguage,
+  ): Promise<AudibleRecording | 'unknown' | 'unreachable'> =>
+    audibleEditionOf(title, author, language)
+
   /** The tab as the reader opens it: every saga they follow in that format
    *  with a volume announced they do not hold or one just out, and every
    *  author they hold in that format with a work announced or just out outside

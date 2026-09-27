@@ -15,6 +15,7 @@ import type { ReleaseDate as ReleaseDateType } from '~/domain/series/types'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import { createLogger } from '~/system/logger'
 import { isPresent, optionally } from '~/utils/input'
+import { slugify } from '~/utils/slug'
 import type { AudibleRecording, FoundVolume } from '../types'
 
 const logger = createLogger('audible-catalogue')
@@ -87,11 +88,45 @@ export const audibleRecordingOf = async (
     `products/${asin}?response_groups=product_desc,product_attrs,contributors,media&image_sizes=500`,
   )
   if (answer === 'unreachable') return answer
-  const product = answer.product
-  const title = optionally(product?.title, BookTitle)
-  if (!product || !title) return 'unknown'
+  return (answer.product && recordingOf(answer.product, language)) ?? 'unknown'
+}
+
+/** The recording Audible sells of a book in its language, found by its title
+ *  and first author: whether a reader may take as an audiobook a story a
+ *  friend holds on paper. Kept only on the same title and an author of the
+ *  same name, folded as the shelf keys fold them, so a study of the book or a
+ *  namesake is never taken for it. `unknown` when Audible sells none in that
+ *  language, `unreachable` when it could not be asked. */
+export const audibleEditionOf = async (
+  title: string,
+  author: string | undefined,
+  language: BookLanguage,
+): Promise<AudibleRecording | 'unknown' | 'unreachable'> => {
+  const keywords = encodeURIComponent([title, author].filter(Boolean).join(' '))
+  const answer = await askAudible<{ products?: Product[] }>(
+    language,
+    `products?keywords=${keywords}&num_results=20&${PRODUCT_GROUPS}`,
+  )
+  if (answer === 'unreachable') return answer
+  const wanted = { title: slugify(title), author: author ? slugify(author) : undefined }
+  const found = (answer.products ?? [])
+    .map((product) => recordingOf(product, language))
+    .find(
+      (recording) =>
+        recording &&
+        slugify(recording.title) === wanted.title &&
+        (!wanted.author || recording.authors.some((name) => slugify(name) === wanted.author)),
+    )
+  return found ?? 'unknown'
+}
+
+/** A product described as a recording, when it has a title and is recorded in
+ *  that language. */
+const recordingOf = (product: Product, language: BookLanguage): AudibleRecording | undefined => {
+  const title = optionally(product.title, BookTitle)
+  if (!title) return undefined
   const expected = AUDIBLE_LANGUAGES[language]
-  if (expected && product.language && product.language !== expected) return 'unknown'
+  if (expected && product.language && product.language !== expected) return undefined
   const names = <Name>(contributors: Contributor[] | undefined, make: (value: unknown) => Name) =>
     (contributors ?? []).map((contributor) => optionally(contributor.name, make)).filter(isPresent)
   return {

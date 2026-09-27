@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
 import { AudibleAsin } from '~/domain/audible/primitives'
-import { audibleProductOf } from '~/domain/discovery/infrastructure/audible-catalogue'
+import {
+  audibleEditionOf,
+  audibleProductOf,
+} from '~/domain/discovery/infrastructure/audible-catalogue'
 
 const US_ASIN = AudibleAsin('B09VY3W1FF')
 const FR_ASIN = 'B09VY5GXM7'
@@ -80,5 +83,49 @@ describe('audibleProductOf', () => {
 
     expect(await audibleProductOf(US_ASIN, 'en')).toBe('unknown')
     expect(asked).toHaveLength(1)
+  })
+})
+
+describe('audibleEditionOf', () => {
+  test('finds the recording of a book by its title and author, in its language', async () => {
+    const asked = storesAnswer({
+      fr: {
+        search: [
+          neuromancien('B0STUDY', { title: 'Neuromancien : une étude' }),
+          neuromancien(FR_ASIN, {
+            narrators: [{ name: 'Nicolas Planchais' }],
+            runtime_length_min: 612,
+          }),
+        ],
+      },
+    })
+
+    const recording = await audibleEditionOf('Neuromancien', 'William Gibson', 'fr')
+
+    expect(recording).toMatchObject({ title: 'Neuromancien', narrators: ['Nicolas Planchais'] })
+    expect(recording).toMatchObject({ durationMinutes: 612 })
+    expect(asked[0]).toContain('api.audible.fr')
+  })
+
+  // A namesake, or the same title recorded in another language, is not it.
+  test('answers unknown when no recording carries that title, author and language', async () => {
+    storesAnswer({
+      fr: {
+        search: [
+          neuromancien('B01', { authors: [{ name: 'Someone Else' }] }),
+          neuromancien('B02', { language: 'english' }),
+        ],
+      },
+    })
+
+    expect(await audibleEditionOf('Neuromancien', 'William Gibson', 'fr')).toBe('unknown')
+  })
+
+  test('answers unreachable when Audible cannot be asked', async () => {
+    spyOn(globalThis, 'fetch').mockImplementation(
+      (async () => new Response('', { status: 503 })) as unknown as typeof fetch,
+    )
+
+    expect(await audibleEditionOf('Neuromancien', 'William Gibson', 'fr')).toBe('unreachable')
   })
 })

@@ -12,9 +12,13 @@ import type {
   FriendBook,
   FriendFavorite,
   FriendLibraryPage,
+  FriendLoved,
+  FriendLover,
   FriendProfile,
+  FriendRecommendations,
   FriendSaga,
   FriendSagaPage,
+  LovedAuthor,
 } from '~/domain/friendship/use-case'
 import { SeriesStateEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { isAudioSeries } from '~/domain/series/primitives'
@@ -384,5 +388,150 @@ export const FriendInvitationType = builder
         description: 'Eight characters, drawn to survive being read aloud.',
       }),
       expiresAt: t.field({ type: 'DateTime', resolve: (invitation) => invitation.expiresAt }),
+    }),
+  })
+
+export const FriendLoverType = builder.objectRef<FriendLover>('FriendLover').implement({
+  description: 'A friend who loves something Découvrir suggests.',
+  fields: (t) => ({
+    userId: t.field({ type: 'UserId', resolve: (lover) => lover.userId }),
+    firstName: t.string({
+      nullable: true,
+      description: 'Null for an account that never finished its onboarding.',
+      resolve: (lover) => lover.firstName ?? null,
+    }),
+  }),
+})
+
+const FRIENDS_DESCRIPTION =
+  'Every friend who hearted it, the newest heart first: the first is the one whose ' +
+  'copy stands for it.'
+const LOVED_AT_DESCRIPTION =
+  'The newest heart it was given — or, for a heart given before its date was kept, ' +
+  'the last activity on what was hearted: what the suggestions are ordered on.'
+const LOVED_BY_MANY_DESCRIPTION =
+  'Hearted by a third of the reader’s friends and by two of them at least: what ' +
+  'Découvrir flames.'
+
+export const FriendLovedBookType = builder
+  .objectRef<FriendLoved<FriendBook>>('FriendLovedBook')
+  .implement({
+    description:
+      'A book the reader’s friends hearted and the reader holds in no format, as ' +
+      'Découvrir suggests it.',
+    fields: (t) => ({
+      book: t.field({
+        type: FriendBookType,
+        description: 'The copy of the friend who hearted it last, for its page to open on.',
+        resolve: (loved) => loved.item,
+      }),
+      friends: t.field({
+        type: [FriendLoverType],
+        description: FRIENDS_DESCRIPTION,
+        resolve: (loved) => loved.friends,
+      }),
+      lovedAt: t.field({
+        type: 'DateTime',
+        description: LOVED_AT_DESCRIPTION,
+        resolve: (loved) => loved.lovedAt,
+      }),
+      lovedByMany: t.boolean({
+        description: LOVED_BY_MANY_DESCRIPTION,
+        resolve: (loved) => loved.lovedByMany,
+      }),
+    }),
+  })
+
+export const FriendLovedSagaType = builder
+  .objectRef<FriendLoved<FriendSaga>>('FriendLovedSaga')
+  .implement({
+    description:
+      'A saga the reader’s friends hearted, read or heard, and the reader holds no ' +
+      'volume of in either format, as Découvrir suggests it.',
+    fields: (t) => ({
+      saga: t.field({
+        type: FriendSagaType,
+        description:
+          'The saga of the friend who hearted it last. Carries its first volume only, ' +
+          'as the cover its tile draws; `ownedCount` is how many volumes that friend holds.',
+        resolve: (loved) => loved.item,
+      }),
+      friends: t.field({
+        type: [FriendLoverType],
+        description: FRIENDS_DESCRIPTION,
+        resolve: (loved) => loved.friends,
+      }),
+      lovedAt: t.field({
+        type: 'DateTime',
+        description: LOVED_AT_DESCRIPTION,
+        resolve: (loved) => loved.lovedAt,
+      }),
+      lovedByMany: t.boolean({
+        description: LOVED_BY_MANY_DESCRIPTION,
+        resolve: (loved) => loved.lovedByMany,
+      }),
+    }),
+  })
+
+export const LovedAuthorType = builder.objectRef<LovedAuthor>('LovedAuthor').implement({
+  description: 'An author as the friends’ hearts name them.',
+  fields: (t) => ({
+    key: t.field({
+      type: 'AuthorKey',
+      description: 'What their page is opened on.',
+      resolve: (author) => author.key,
+    }),
+    name: t.field({
+      type: 'AuthorName',
+      description: 'The spelling of the book hearted last.',
+      resolve: (author) => author.name,
+    }),
+    portraitUrl: t.field({
+      type: 'PortraitUrl',
+      nullable: true,
+      description:
+        'Their photograph, once somebody has opened their page and Wikipedia had ' +
+        'one. Null until then: the app draws their initials.',
+      resolve: (author) => author.portraitUrl ?? null,
+    }),
+  }),
+})
+
+export const FriendLovedAuthorType = builder
+  .objectRef<FriendLoved<LovedAuthor>>('FriendLovedAuthor')
+  .implement({
+    description:
+      'An author of a book or a saga the reader’s friends hearted, whom the reader ' +
+      'holds no book of, as Découvrir suggests them.',
+    fields: (t) => ({
+      author: t.field({ type: LovedAuthorType, resolve: (loved) => loved.item }),
+      friends: t.field({
+        type: [FriendLoverType],
+        description: FRIENDS_DESCRIPTION,
+        resolve: (loved) => loved.friends,
+      }),
+      lovedAt: t.field({
+        type: 'DateTime',
+        description: LOVED_AT_DESCRIPTION,
+        resolve: (loved) => loved.lovedAt,
+      }),
+      lovedByMany: t.boolean({
+        description: LOVED_BY_MANY_DESCRIPTION,
+        resolve: (loved) => loved.lovedByMany,
+      }),
+    }),
+  })
+
+export const FriendRecommendationsType = builder
+  .objectRef<FriendRecommendations>('FriendRecommendations')
+  .implement({
+    description:
+      'What the reader’s friends love and the reader does not hold, whatever the ' +
+      'format: the Découvrir shelves’ “Coups de cœur de vos amis”. Twenty of each at ' +
+      'most, the newest heart first.',
+    fields: (t) => ({
+      books: t.field({ type: [FriendLovedBookType], resolve: (found) => found.books }),
+      sagas: t.field({ type: [FriendLovedSagaType], resolve: (found) => found.sagas }),
+      authors: t.field({ type: [FriendLovedAuthorType], resolve: (found) => found.authors }),
     }),
   })

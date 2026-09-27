@@ -266,6 +266,20 @@ type AudibleSync {
   updated: Int!
 }
 
+"""Whether a friend's book can be taken as an audiobook."""
+enum AudioAvailability {
+  """A recording, or a printed book Audible sells in its language."""
+  AVAILABLE
+
+  """Audible sells no recording of it in its language."""
+  UNAVAILABLE
+
+  """
+  Audible could not be asked, or the book records no language: the reader decides.
+  """
+  UNKNOWN
+}
+
 """
 What the world knows of an author, shared by every reader and built the first time somebody opens their page. Holds nothing of any reader.
 """
@@ -1134,6 +1148,83 @@ type FriendLibraryPage {
 }
 
 """
+An author of a book or a saga the reader’s friends hearted, whom the reader holds no book of, as Découvrir suggests them.
+"""
+type FriendLovedAuthor {
+  author: LovedAuthor!
+
+  """
+  Every friend who hearted it, the newest heart first: the first is the one whose copy stands for it.
+  """
+  friends: [FriendLover!]!
+
+  """
+  The newest heart it was given — or, for a heart given before its date was kept, the last activity on what was hearted: what the suggestions are ordered on.
+  """
+  lovedAt: DateTime!
+
+  """
+  Hearted by a third of the reader’s friends and by two of them at least: what Découvrir flames.
+  """
+  lovedByMany: Boolean!
+}
+
+"""
+A book the reader’s friends hearted and the reader holds in no format, as Découvrir suggests it.
+"""
+type FriendLovedBook {
+  """The copy of the friend who hearted it last, for its page to open on."""
+  book: FriendBook!
+
+  """
+  Every friend who hearted it, the newest heart first: the first is the one whose copy stands for it.
+  """
+  friends: [FriendLover!]!
+
+  """
+  The newest heart it was given — or, for a heart given before its date was kept, the last activity on what was hearted: what the suggestions are ordered on.
+  """
+  lovedAt: DateTime!
+
+  """
+  Hearted by a third of the reader’s friends and by two of them at least: what Découvrir flames.
+  """
+  lovedByMany: Boolean!
+}
+
+"""
+A saga the reader’s friends hearted, read or heard, and the reader holds no volume of in either format, as Découvrir suggests it.
+"""
+type FriendLovedSaga {
+  """
+  Every friend who hearted it, the newest heart first: the first is the one whose copy stands for it.
+  """
+  friends: [FriendLover!]!
+
+  """
+  The newest heart it was given — or, for a heart given before its date was kept, the last activity on what was hearted: what the suggestions are ordered on.
+  """
+  lovedAt: DateTime!
+
+  """
+  Hearted by a third of the reader’s friends and by two of them at least: what Découvrir flames.
+  """
+  lovedByMany: Boolean!
+
+  """
+  The saga of the friend who hearted it last. Carries its first volume only, as the cover its tile draws; `ownedCount` is how many volumes that friend holds.
+  """
+  saga: FriendSaga!
+}
+
+"""A friend who loves something Découvrir suggests."""
+type FriendLover {
+  """Null for an account that never finished its onboarding."""
+  firstName: String
+  userId: UserId!
+}
+
+"""
 One friend's shelf at a glance: what they are reading, what is on their pile, what they keep close, and the sagas they are working through.
 
 A book marked "do not share" is absent from every list here, and thirty of each is the most any of them carries.
@@ -1169,6 +1260,15 @@ type FriendProfile {
   reading: [FriendBook!]!
   sagas: [FriendSaga!]!
   userId: UserId!
+}
+
+"""
+What the reader’s friends love and the reader does not hold, whatever the format: the Découvrir shelves’ “Coups de cœur de vos amis”. Twenty of each at most, the newest heart first.
+"""
+type FriendRecommendations {
+  authors: [FriendLovedAuthor!]!
+  books: [FriendLovedBook!]!
+  sagas: [FriendLovedSaga!]!
 }
 
 """
@@ -1419,6 +1519,20 @@ type LibrarySectionOpinion {
 An audiobook running time in whole minutes, 1 to 60000. Absent when unknown. Example: 870 for 14 h 30.
 """
 scalar ListeningMinutes
+
+"""An author as the friends’ hearts name them."""
+type LovedAuthor {
+  """What their page is opened on."""
+  key: AuthorKey!
+
+  """The spelling of the book hearted last."""
+  name: AuthorName!
+
+  """
+  Their photograph, once somebody has opened their page and Wikipedia had one. Null until then: the app draws their initials.
+  """
+  portraitUrl: PortraitUrl
+}
 
 """
 The signed-in user: their identity and onboarding state.
@@ -2075,6 +2189,18 @@ type Query {
   ): FriendBook
 
   """
+  Whether the reader may take one book of a friend's shelf as an audiobook: a recording is, a printed book is when Audible sells it in its language under the same title and author. Asks Audible, so a page asks it only when it opens.
+  
+  Null for a stranger, a book that does not exist and a book marked "do not share" alike.
+  """
+  friendBookAudio(
+    bookId: BookId!
+
+    """The friend"""
+    userId: UserId!
+  ): AudioAvailability
+
+  """
   What every friend hearted in the last thirty days, sagas and books mixed, the newest heart first, twelve at most: the news the dashboard shows from the people the reader shares with.
   
   Only a dated heart counts. A book marked "do not share" is never among them.
@@ -2109,6 +2235,13 @@ type Query {
   A book marked "do not share" appears nowhere here, and no reading note is exposed at all.
   """
   friendProfile(userId: UserId!): FriendProfile
+
+  """
+  What the reader’s friends hearted and the reader does not hold, for Découvrir: books, sagas and the authors of both, the newest heart first, twenty of each at most. Held is judged on the story, whatever the format — a friend’s recording is a story the reader may take on paper.
+  
+  A book marked "do not share" is never among them.
+  """
+  friendRecommendations: FriendRecommendations!
 
   """
   One page of a friend's sagas — or of the reader's own, previewed — drawn as the Series tab draws the reader's: the saga shelved last first, every volume on the shelf as a cover. Null for a stranger.

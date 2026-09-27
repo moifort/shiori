@@ -80,6 +80,7 @@ mock.module('~/domain/scan/gemini', () => ({
 let audibleSeries: unknown[] | 'unknown' = 'unknown'
 const seriesAsked: string[] = []
 mock.module('~/domain/discovery/infrastructure/audible-catalogue', () => ({
+  audibleEditionOf: async () => 'unknown',
   audibleProductOf: async (asin: string) =>
     asin === 'B0DM67WR2V'
       ? { asin, releaseDate: '2024-11-22', coverUrl: 'https://m.media-amazon.com/carl1.jpg' }

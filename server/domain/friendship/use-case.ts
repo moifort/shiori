@@ -1,4 +1,6 @@
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
+import { AuthorQuery } from '~/domain/author/query'
+import type { AuthorKey, PortraitUrl } from '~/domain/author/types'
 import {
   seriesRatingsOf,
   shelfDateOf,
@@ -20,8 +22,11 @@ import type {
 } from '~/domain/book/types'
 import { READING_STATUSES } from '~/domain/book/types'
 import { BookUseCase } from '~/domain/book/use-case'
+import { DiscoveryUseCase } from '~/domain/discovery/use-case'
 import {
+  type FriendPick,
   favoritesOutsideSagas,
+  friendPicksOf,
   friendSagaStateOf,
   inReadingOrder,
   lastActivityOf,
@@ -125,6 +130,34 @@ const FAVORITES_RECENT_MS = 30 * 24 * 60 * 60 * 1000
 
 /** How many of them the dashboard shows. */
 const FAVORITES_SHOWN = 12
+
+/** A friend who loves something, by first name. */
+export type FriendLover = { userId: UserId; firstName?: string }
+
+/** Something the reader's friends love, as Découvrir shows it: who loves it,
+ *  the newest heart first, and whether enough of them do to flame it. */
+export type FriendLoved<Item> = Omit<FriendPick<Item>, 'friendIds'> & { friends: FriendLover[] }
+
+/** An author the friends' hearts name, with their face when the author
+ *  catalogue has one. */
+export type LovedAuthor = { key: AuthorKey; name: AuthorName; portraitUrl?: PortraitUrl }
+
+/** What the reader's friends love and the reader does not hold: the books,
+ *  the sagas — each carrying its first volume, as the cover its tile draws —
+ *  and the authors. */
+export type FriendRecommendations = {
+  books: FriendLoved<FriendBook>[]
+  sagas: FriendLoved<FriendSaga>[]
+  authors: FriendLoved<LovedAuthor>[]
+}
+
+/** Whether a friend's book can be taken as an audiobook: Audible sells it in
+ *  its language, sells none, or could not be asked — in which case the reader
+ *  is left to decide, as before anybody asked. */
+export type AudioAvailability = 'available' | 'unavailable' | 'unknown'
+
+/** How many of each Découvrir shows. */
+const RECOMMENDATIONS_SHOWN = 20
 
 /** One page of a friend's library or of their sagas, and whether more follow. */
 export type FriendLibraryPage = { books: FriendBook[]; hasMore: boolean }
@@ -351,6 +384,100 @@ export namespace FriendshipUseCase {
     )
   }
 
+  /** What the reader's friends love that the reader does not hold, for
+   *  Découvrir: the books and sagas they hearted and the authors of both, the
+   *  newest heart first. Held is judged on the story, whatever the format. One
+   *  scan of the reader's library and of each friend's shelf and hearts; only
+   *  the covers drawn are signed, and the faces are one batched read of the
+   *  author catalogue. A book marked "do not share" is never among them. */
+  export const recommendations = async (userId: UserId): Promise<FriendRecommendations> => {
+    const friendIds = await FriendshipQuery.friendsOf(userId)
+    if (friendIds.length === 0) return { books: [], sagas: [], authors: [] }
+    const [names, held, shelves] = await Promise.all([
+      UserQuery.namesOf(friendIds),
+      BookQuery.all(userId),
+      Promise.all(
+        friendIds.map(async (friendId) => {
+          const [books, favoriteSagas, ratings] = await Promise.all([
+            BookQuery.shared(friendId),
+            favoriteSagasOf(friendId),
+            sagaRatingsOf(friendId),
+          ])
+          return { friendId, books, sagas: followedSagasOf(books), favoriteSagas, ratings }
+        }),
+      ),
+    ])
+    const picks = friendPicksOf(shelves, held, RECOMMENDATIONS_SHOWN)
+    const byFriend = new Map(shelves.map((shelf) => [shelf.friendId, shelf]))
+    const loved = <Item, Shown>(pick: FriendPick<Item>, item: Shown): FriendLoved<Shown> => {
+      const { friendIds, ...rest } = pick
+      return {
+        ...rest,
+        item,
+        friends: friendIds.map((id) => ({ userId: id, firstName: names.get(id) })),
+      }
+    }
+    const unowned = (books: BookView[]): FriendBook[] =>
+      books.map((book) => ({ ...book, inLibrary: false }))
+    const [books, sagas, catalogue] = await Promise.all([
+      BookQuery.withSignedCovers(picks.books.map((pick) => pick.item)),
+      Promise.all(
+        picks.sagas.map((pick) =>
+          BookQuery.withSignedCovers(inReadingOrder(pick.item.books).slice(0, 1)),
+        ),
+      ),
+      AuthorQuery.byKeys(picks.authors.map((pick) => pick.item.key)),
+    ])
+    const portraits = new Map(catalogue.map((author) => [author.key, author.portraitUrl]))
+    return {
+      books: picks.books.flatMap((pick, index) => {
+        const book = books[index]
+        return book ? [loved(pick, { ...book, inLibrary: false })] : []
+      }),
+      sagas: picks.sagas.map((pick, index) => {
+        const shelf = byFriend.get(pick.friendId)
+        return loved(
+          pick,
+          friendSagaOf(
+            pick.item,
+            shelf?.favoriteSagas ?? new Map(),
+            shelf?.ratings ?? new Map(),
+            unowned(sagas[index] ?? []),
+          ),
+        )
+      }),
+      authors: picks.authors.map((pick) => {
+        const portraitUrl = portraits.get(pick.item.key)
+        return loved(pick, { ...pick.item, ...(portraitUrl ? { portraitUrl } : {}) })
+      }),
+    }
+  }
+
+  /** Whether the reader may take a friend's book as an audiobook: a
+   *  recording is, and a printed book is when Audible sells it in its
+   *  language under the same title and author. Null for a stranger's book, a
+   *  book that does not exist and a book marked "do not share" alike. */
+  export const audio = async (
+    userId: UserId,
+    friendId: UserId,
+    bookId: BookId,
+  ): Promise<AudioAvailability | null> => {
+    const source = await book(userId, friendId, bookId)
+    if (!source) return null
+    if (source.format === 'audiobook') return 'available'
+    if (!source.language) return 'unknown'
+    const recording = await DiscoveryUseCase.audioEditionOf(
+      source.title,
+      source.authors[0],
+      source.language,
+    )
+    return recording === 'unreachable'
+      ? 'unknown'
+      : recording === 'unknown'
+        ? 'unavailable'
+        : 'available'
+  }
+
   /** Put a friend's book on the reader's own shelf.
    *
    *  Only the friend and the book are named: the record is re-read here and
@@ -364,7 +491,9 @@ export namespace FriendshipUseCase {
    *  friend does: a reader who never listens takes a friend's recording as a
    *  book. Across that line the facts of the other object are dropped — a
    *  running time and narrators say nothing of a printed book, a page count
-   *  nothing of a recording — and the volume moves to the saga of its format. */
+   *  nothing of a recording — and the volume moves to the saga of its format.
+   *  A printed book taken heard takes its narrators, running time and cover
+   *  from the recording Audible sells, when it sells one. */
   export const copyBook = async (
     userId: UserId,
     friendId: UserId,
@@ -375,10 +504,19 @@ export namespace FriendshipUseCase {
     const source = await book(userId, friendId, bookId)
     if (!source) return 'not-found'
     if (source.inLibrary) return 'already-owned'
-    const firstName = (await UserQuery.namesOf([friendId])).get(friendId)
     const taken = format ?? source.format
     const heard = taken === 'audiobook'
     const sameMedium = heard === (source.format === 'audiobook')
+    // A printed book taken heard is described by the recording Audible sells,
+    // when it sells one: who reads it, how long it runs, its square cover.
+    const [names, found] = await Promise.all([
+      UserQuery.namesOf([friendId]),
+      heard && !sameMedium && source.language
+        ? DiscoveryUseCase.audioEditionOf(source.title, source.authors[0], source.language)
+        : undefined,
+    ])
+    const firstName = names.get(friendId)
+    const recording = typeof found === 'object' ? found : undefined
     return BookUseCase.add(userId, {
       title: source.title,
       authors: source.authors,
@@ -389,12 +527,12 @@ export namespace FriendshipUseCase {
       genre: source.genre,
       subgenres: source.subgenres,
       pageCount: sameMedium ? source.pageCount : undefined,
-      durationMinutes: sameMedium ? source.durationMinutes : undefined,
-      narrators: sameMedium ? source.narrators : [],
+      durationMinutes: sameMedium ? source.durationMinutes : recording?.durationMinutes,
+      narrators: sameMedium ? source.narrators : (recording?.narrators ?? []),
       isbn13: source.isbn13,
       language: source.language,
       series: source.series,
-      publishedCoverUrl: source.publishedCoverUrl,
+      publishedCoverUrl: recording?.coverUrl ?? source.publishedCoverUrl,
       status,
       recommendation: firstName ? { recommenderName: PersonName(firstName) } : undefined,
     })

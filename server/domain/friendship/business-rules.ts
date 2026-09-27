@@ -1,6 +1,10 @@
+import { authorKeyOf } from '~/domain/author/primitives'
+import type { AuthorKey } from '~/domain/author/types'
+import { shelfKeyOf } from '~/domain/book/business-rules'
 import type { Book, Genre, TaggedSubgenre } from '~/domain/book/types'
+import { seriesIdFor } from '~/domain/series/primitives'
 import type { SeriesId, SeriesState } from '~/domain/series/types'
-import type { UserId } from '~/domain/shared/types'
+import type { AuthorName, UserId } from '~/domain/shared/types'
 
 /** When the reader last did anything with a book: picked it up, moved its
  *  status, or had a sync move its listening position. What "most recently
@@ -139,4 +143,146 @@ export const recentHeartsOf = <
   return hearts
     .sort((left, right) => right.favoritedAt.getTime() - left.favoritedAt.getTime())
     .slice(0, limit)
+}
+
+// MARK: - What the friends love that the reader does not hold
+
+/** Whether enough friends love one thing for Découvrir to flame it: a third of
+ *  them, and never fewer than two — one heart is a friend's taste, not a
+ *  trend, however few friends the reader has. */
+export const isLovedByMany = (lovers: number, friendCount: number): boolean =>
+  lovers >= Math.max(2, Math.ceil(friendCount / 3))
+
+/** One thing some friends hearted, folded across them: the copy of the friend
+ *  who hearted it last stands for it, and `friendIds` lists who loves it, the
+ *  newest heart first. */
+export type FriendPick<Item> = {
+  item: Item
+  friendId: UserId
+  friendIds: UserId[]
+  lovedAt: Date
+  lovedByMany: boolean
+}
+
+type Heart<Item> = { friendId: UserId; key: string; item: Item; lovedAt: Date }
+
+/** The hearts folded by what they are about, the newest heart first, leaving
+ *  out what the reader holds already. */
+const picksOf = <Item>(
+  hearts: readonly Heart<Item>[],
+  held: ReadonlySet<string>,
+  friendCount: number,
+  limit: number,
+): FriendPick<Item>[] => {
+  const picks = new Map<string, FriendPick<Item>>()
+  const newestFirst = [...hearts].sort(
+    (left, right) => right.lovedAt.getTime() - left.lovedAt.getTime(),
+  )
+  for (const heart of newestFirst) {
+    if (held.has(heart.key)) continue
+    const known = picks.get(heart.key)
+    if (!known) {
+      picks.set(heart.key, {
+        item: heart.item,
+        friendId: heart.friendId,
+        friendIds: [heart.friendId],
+        lovedAt: heart.lovedAt,
+        lovedByMany: false,
+      })
+    } else if (!known.friendIds.includes(heart.friendId)) {
+      known.friendIds.push(heart.friendId)
+    }
+  }
+  return [...picks.values()]
+    .slice(0, limit)
+    .map((pick) => ({ ...pick, lovedByMany: isLovedByMany(pick.friendIds.length, friendCount) }))
+}
+
+/** An author as the friends' hearts name them. */
+export type PickedAuthor = { key: AuthorKey; name: AuthorName }
+
+type PickedBook = Pick<
+  Book,
+  | 'title'
+  | 'authors'
+  | 'favorite'
+  | 'favoritedAt'
+  | 'series'
+  | 'addedAt'
+  | 'updatedAt'
+  | 'statusChangedAt'
+  | 'startedAt'
+>
+
+/** What the reader's friends love and the reader does not hold, for Découvrir:
+ *  the books they hearted, the sagas they hearted and the authors of both, each
+ *  the newest heart first, `limit` of each at most.
+ *
+ *  Held is judged on the story, never on the format: a book the reader owns in
+ *  any format, a saga they hold a volume of read or heard, an author they hold
+ *  any book of. A friend's recording is a story the reader may take on paper,
+ *  and the other way round. A heart given before its date was kept ranks on
+ *  the last activity of what it is on, older than any dated heart. */
+export const friendPicksOf = <
+  Favorite extends PickedBook,
+  Saga extends { id: SeriesId; books: readonly Favorite[] },
+>(
+  shelves: readonly {
+    friendId: UserId
+    books: readonly Favorite[]
+    sagas: readonly Saga[]
+    favoriteSagas: ReadonlyMap<SeriesId, Date | undefined>
+  }[],
+  held: readonly Pick<Book, 'title' | 'authors' | 'series'>[],
+  limit: number,
+): {
+  books: FriendPick<Favorite>[]
+  sagas: FriendPick<Saga>[]
+  authors: FriendPick<PickedAuthor>[]
+} => {
+  const heldStories = new Set(held.map((book) => shelfKeyOf(book.title, book.authors[0])))
+  const heldSagas = new Set(
+    held.flatMap((book) => (book.series ? [seriesIdFor(book.series.id, 'book')] : [])),
+  )
+  const heldAuthors = new Set<string>(held.flatMap((book) => book.authors.map(authorKeyOf)))
+
+  const bookHearts: Heart<Favorite>[] = []
+  const sagaHearts: Heart<Saga>[] = []
+  const authorHearts: Heart<PickedAuthor>[] = []
+  const loveAuthorsOf = (friendId: UserId, book: Favorite, lovedAt: Date) => {
+    for (const name of book.authors)
+      authorHearts.push({
+        friendId,
+        key: authorKeyOf(name),
+        item: { key: authorKeyOf(name), name },
+        lovedAt,
+      })
+  }
+  for (const { friendId, books, sagas, favoriteSagas } of shelves) {
+    for (const book of books) {
+      if (book.favorite !== true) continue
+      const lovedAt = book.favoritedAt ?? lastActivityOf(book)
+      bookHearts.push({
+        friendId,
+        key: shelfKeyOf(book.title, book.authors[0]),
+        item: book,
+        lovedAt,
+      })
+      loveAuthorsOf(friendId, book, lovedAt)
+    }
+    for (const saga of sagas) {
+      if (!favoriteSagas.has(saga.id) || saga.books.length === 0) continue
+      const lovedAt =
+        favoriteSagas.get(saga.id) ??
+        new Date(Math.max(...saga.books.map((book) => lastActivityOf(book).getTime())))
+      sagaHearts.push({ friendId, key: seriesIdFor(saga.id, 'book'), item: saga, lovedAt })
+      for (const book of saga.books) loveAuthorsOf(friendId, book, lovedAt)
+    }
+  }
+  const friendCount = shelves.length
+  return {
+    books: picksOf(bookHearts, heldStories, friendCount, limit),
+    sagas: picksOf(sagaHearts, heldSagas, friendCount, limit),
+    authors: picksOf(authorHearts, heldAuthors, friendCount, limit),
+  }
 }
