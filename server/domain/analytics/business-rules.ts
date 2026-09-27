@@ -46,7 +46,7 @@ const TOP_GENRES = 4
 /** Bumped whenever the view gains a figure or a rule changes, so a view stored
  *  by an older bundle is rebuilt on its next read instead of answering with a
  *  field it never computed. */
-export const VIEW_VERSION = 11
+export const VIEW_VERSION = 12
 
 // MARK: - Calendar
 
