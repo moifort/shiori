@@ -1,5 +1,5 @@
 # The Découvrir tab in one format: every saga the reader follows with a volume
-# announced they do not hold. A row carries the Series tab's selection, the
+# announced they do not hold, or one just out they can have now. A row carries the Series tab's selection, the
 # catalogue's spine included, so it draws exactly as the Series tab's row does,
 # every cover of its strip.
 query Discovery($format: ReleaseFormat!) {
@@ -35,6 +35,9 @@ fragment DiscoveryFields on Discovery {
       ...DiscoveredVolumeFields
     }
     missing
+    recent {
+      ...DiscoveredVolumeFields
+    }
   }
 }
 

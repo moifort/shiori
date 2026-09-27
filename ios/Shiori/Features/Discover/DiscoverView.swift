@@ -12,6 +12,9 @@ import SwiftUI
 /// cover of their strip; a tap opens the saga screen as a sheet. Read through one format at a time — the saga read or the
 /// saga heard — picked in the toolbar and kept between visits.
 ///
+/// Above what is announced, "Nouvelles parutions": the volumes out in the last
+/// week the reader can have now, read off the same weekly look.
+///
 /// The server looks the sagas up on the web once a week. The tab opens on the
 /// rows it last showed, brought up to date silently underneath; sagas nobody
 /// ever looked up — every saga, on the very first look — are looked up at once,
@@ -19,8 +22,8 @@ import SwiftUI
 struct DiscoverView: View {
     @State private var viewModel = DiscoverViewModel()
     @State private var openSeries: SagaDiscovery?
-    /// The saga whose next volume's page is open.
-    @State private var openVolume: SagaDiscovery?
+    /// The volume whose page is open, announced or just out.
+    @State private var openVolume: DiscoveryVolume?
     @Environment(\.openURL) private var openURL
     @AppStorage("discover.format") private var format: ReleaseFormat = .book
     @AppStorage("discover-shelf") private var shelf: LibraryShelf = .series
@@ -44,11 +47,9 @@ struct DiscoverView: View {
                         )
                     }
                 }
-                .sheet(item: $openVolume) { saga in
-                    if let next = saga.releases.next {
-                        NavigationStack {
-                            AnnouncedVolumeView(saga: saga, volume: next)
-                        }
+                .sheet(item: $openVolume) { opened in
+                    NavigationStack {
+                        AnnouncedVolumeView(saga: opened.saga, volume: opened.volume)
                     }
                 }
         }
@@ -102,23 +103,45 @@ struct DiscoverView: View {
                     }
                 }
             }
-            let shown = shelf == .books ? viewModel.upcoming(format) ?? [] : rows
-            if shown.isEmpty && !viewModel.isLookingUp {
+            let upcoming = shelf == .books
+                ? viewModel.upcoming(format) ?? []
+                : rows.filter { $0.releases.next != nil }
+            let recentVolumes = viewModel.recentVolumes(format) ?? []
+            let recentSagas = viewModel.recentSagas(format) ?? []
+            if upcoming.isEmpty && recentSagas.isEmpty && !viewModel.isLookingUp {
                 Section {
                     EmptyStateView(
                         systemImage: format == .audiobook ? "headphones" : "sparkles",
                         title: "Rien de neuf pour l'instant",
                         message: format == .audiobook
-                            ? "Les prochains tomes annoncés de vos séries audio apparaîtront ici."
-                            : "Les prochains tomes annoncés de vos séries apparaîtront ici."
+                            ? "Les nouveautés et les prochains tomes annoncés de vos séries audio apparaîtront ici."
+                            : "Les nouveautés et les prochains tomes annoncés de vos séries apparaîtront ici."
                     )
                 }
                 .listRowBackground(Color.clear)
             }
-            if !shown.isEmpty {
+            if !recentSagas.isEmpty {
                 Section {
-                    ForEach(shown) { saga in
-                        if shelf == .books { volumeRow(saga) } else { row(saga) }
+                    if shelf == .books {
+                        ForEach(recentVolumes) { volumeRow($0) }
+                    } else {
+                        ForEach(recentSagas) { row($0) }
+                    }
+                } header: {
+                    Text("Nouvelles parutions")
+                }
+                .accessibilityIdentifier("discover-recent")
+            }
+            if !upcoming.isEmpty {
+                Section {
+                    ForEach(upcoming) { saga in
+                        if shelf == .books {
+                            if let next = saga.releases.next {
+                                volumeRow(DiscoveryVolume(saga: saga, volume: next))
+                            }
+                        } else {
+                            row(saga)
+                        }
                     }
                 } header: {
                     Text("Prochaines sorties")
@@ -129,54 +152,54 @@ struct DiscoverView: View {
         .refreshable { await viewModel.load(format) }
     }
 
-    /// A volume announced, drawn as the Books tab draws a book: its saga as a
-    /// tag, the headphones on the cover of a recording, and on the trailing
-    /// edge the day it comes out. No genre: the saga already says what it is.
+    /// A volume announced or just out, drawn as the Books tab draws a book: its
+    /// saga as a tag, the headphones on the cover of a recording, and on the
+    /// trailing edge the day it comes or came out. No genre: the saga already
+    /// says what it is.
     ///
     /// A tap opens the volume's page, described on the spot for a scan; a long
     /// press offers its saga, and a recording's page on Audible.
-    @ViewBuilder
-    private func volumeRow(_ saga: SagaDiscovery) -> some View {
-        if let next = saga.releases.next {
-            let series = saga.series
-            let membership = SeriesMembership(
-                id: series.seriesId,
-                name: series.name,
-                volume: next.number,
-                kind: .main
-            )
-            BookRow(
-                title: next.title,
-                authorLine: series.author ?? "",
-                cover: Book(
-                    id: "release-\(series.id)-\(next.number)",
-                    title: next.title,
-                    authors: series.author.map { [$0] } ?? [],
-                    format: series.isAudio ? .audiobook : .book,
-                    genre: series.genre,
-                    language: series.language,
-                    series: membership,
-                    coverURL: next.coverURL,
-                    status: .toRead
-                ),
-                status: .toRead,
-                rating: nil,
-                series: membership,
+    private func volumeRow(_ opened: DiscoveryVolume) -> some View {
+        let saga = opened.saga
+        let volume = opened.volume
+        let series = saga.series
+        let membership = SeriesMembership(
+            id: series.seriesId,
+            name: series.name,
+            volume: volume.number,
+            kind: .main
+        )
+        return BookRow(
+            title: volume.title,
+            authorLine: series.author ?? "",
+            cover: Book(
+                id: "release-\(series.id)-\(volume.number)",
+                title: volume.title,
+                authors: series.author.map { [$0] } ?? [],
+                format: series.isAudio ? .audiobook : .book,
+                genre: series.genre,
                 language: series.language,
-                releaseDate: next.date
-            )
-            .contentShape(Rectangle())
-            .onTapGesture { openVolume = saga }
-            .accessibilityAddTraits(.isButton)
-            .accessibilityAction { openVolume = saga }
-            .contextMenu {
-                if let audibleURL = next.audibleURL {
-                    Button("Ouvrir dans Audible", systemImage: "headphones") { openURL(audibleURL) }
-                }
-                Button("Ouvrir la série", systemImage: "books.vertical") { openSeries = saga }
+                series: membership,
+                coverURL: volume.coverURL,
+                status: .toRead
+            ),
+            status: .toRead,
+            rating: nil,
+            series: membership,
+            language: series.language,
+            releaseDate: volume.date
+        )
+        .contentShape(Rectangle())
+        .onTapGesture { openVolume = opened }
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { openVolume = opened }
+        .contextMenu {
+            if let audibleURL = volume.audibleURL {
+                Button("Ouvrir dans Audible", systemImage: "headphones") { openURL(audibleURL) }
             }
-            .accessibilityIdentifier("discover-volume-row")
+            Button("Ouvrir la série", systemImage: "books.vertical") { openSeries = saga }
         }
+        .accessibilityIdentifier("discover-volume-row")
     }
 
     /// A saga's row: the Series tab's own, every cover of its strip, and

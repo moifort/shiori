@@ -32,7 +32,7 @@ final class DiscoverViewModel {
     private var lookedUp: Set<ReleaseFormat> = []
 
     /// Bump the version whenever `DiscoveryFeed` changes shape.
-    private let cache = SnapshotCache<DiscoveryFeed>("discovery", version: 3)
+    private let cache = SnapshotCache<DiscoveryFeed>("discovery", version: 4)
 
     /// The rows of a format, nil until they were ever loaded.
     func rows(_ format: ReleaseFormat) -> [SagaDiscovery]? { feed.rows[format] }
@@ -54,6 +54,23 @@ final class DiscoverViewModel {
                 guard let right else { return true }
                 return left < right
             }
+    }
+
+    /// Every volume just out of the sagas of a format, for the Books shelf,
+    /// each with its saga: the newest first. Nil until the format was ever
+    /// loaded.
+    func recentVolumes(_ format: ReleaseFormat) -> [DiscoveryVolume]? {
+        rows(format)?
+            .flatMap { saga in saga.recent.map { DiscoveryVolume(saga: saga, volume: $0) } }
+            .sorted { ($0.volume.date ?? "", $0.volume.number) > ($1.volume.date ?? "", $1.volume.number) }
+    }
+
+    /// The sagas of a format with a volume just out, for the Series shelf: the
+    /// newest out first. Nil until the format was ever loaded.
+    func recentSagas(_ format: ReleaseFormat) -> [SagaDiscovery]? {
+        rows(format)?
+            .filter { !$0.recent.isEmpty }
+            .sorted { ($0.recent.first?.date ?? "") > ($1.recent.first?.date ?? "") }
     }
 
     /// How many sagas the reader follows in a format, nil until it was loaded.

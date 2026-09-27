@@ -62,8 +62,20 @@ struct SagaDiscovery: Identifiable, Codable, Sendable {
     let releases: SagaReleases
     /// The numbers of the volumes out the reader has not added yet, in order.
     var missing: [Int] = []
+    /// The volumes out in the last week the reader can have now, the newest
+    /// first.
+    var recent: [DiscoveredVolume] = []
 
     var id: String { series.id }
+}
+
+/// One volume of a saga, announced or just out, as the Books shelf lists it
+/// and its page opens.
+struct DiscoveryVolume: Identifiable {
+    let saga: SagaDiscovery
+    let volume: DiscoveredVolume
+
+    var id: String { "\(saga.id)-\(volume.number)" }
 }
 
 /// The tab as last shown, one list per format.
@@ -191,7 +203,8 @@ private extension DiscoveryPage {
                         watched: true,
                         next: row.next.map { DiscoveredVolume(fields: $0.fragments.discoveredVolumeFields) }
                     ),
-                    missing: row.missing
+                    missing: row.missing,
+                    recent: row.recent.map { DiscoveredVolume(fields: $0.fragments.discoveredVolumeFields) }
                 )
             },
             unwatched: fields.unwatched,
