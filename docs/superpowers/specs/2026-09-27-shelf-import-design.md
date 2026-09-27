@@ -34,8 +34,9 @@ photos strip, and an import that survives the app being killed.
    - A book whose title could not be read comes **unticked**, labelled "Tranche illisible";
      tapping it opens the correction sheet.
    - Everything else comes ticked. Tapping a row highlights its frame on the photo.
-   - The button reads "Ajouter N livres · N scans", and turns into the paywall when the month's
-     allowance cannot cover N.
+   - The button reads "Ajouter N livres · N scans". When N exceeds what is left of the allowance,
+     tapping it says how many scans remain and asks the reader to untick books; the reader is
+     already premium, so there is no paywall to show.
 5. **Correction.** A sheet with the crop enlarged and two fields, title and authors. Correcting
    an unreadable book ticks it.
 6. **Adding.** One row per ticked book: waiting, in progress, added, failed with "Réessayer".
@@ -82,9 +83,11 @@ command so the app never sees the model's convention.
 
 ### Enriching a ticked book
 
-`describeDetectedBook(book: DetectedBookInput!): ScanResult`, a thin mutation over the existing
-`ScanUseCase.lookUpEdition`: the same web-grounded enrichment, published cover and series
-catalogue as a single scan, metered the same way — one scan, only on success. The input carries
+`describeDetectedBook(book: DetectedBookInput!): ScanResult` runs what a cover scan runs once the
+cover is read: the web-grounded enrichment, the published cover, and the saga's and author's
+catalogues when nobody built them yet. Not `lookUpEdition`, which skips both catalogues because
+the release watch already knows the saga. Metered as a scan is — one scan, only on success, never
+cached. The input carries
 what the checklist holds, corrections included. The app then saves with `addBook`, unchanged, so
 a book imported from a shelf is indistinguishable from one scanned alone.
 
