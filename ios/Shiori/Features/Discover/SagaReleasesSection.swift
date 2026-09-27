@@ -17,11 +17,6 @@ struct SagaReleasesSection: View {
                 row(next)
             } header: {
                 Text("Prochaines sorties")
-            } footer: {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Image(systemName: "bell")
-                    Text("Vous recevrez une notification le jour de la sortie.")
-                }
             }
             .accessibilityIdentifier("series-releases")
         }
