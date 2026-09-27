@@ -3,7 +3,13 @@ import {
   BookLanguageEnum,
   GenreEnum,
 } from '~/domain/book/infrastructure/graphql/enums'
-import type { ScannedSeries, ScanResult, TitleCandidate } from '~/domain/scan/types'
+import type {
+  DetectedBook,
+  DetectedBox,
+  ScannedSeries,
+  ScanResult,
+  TitleCandidate,
+} from '~/domain/scan/types'
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { builder } from '~/domain/shared/graphql/builder'
 
@@ -134,6 +140,68 @@ export const TitleCandidateType = builder.objectRef<TitleCandidate>('TitleCandid
       type: 'VolumeNumber',
       nullable: true,
       resolve: (candidate) => candidate.volume ?? null,
+    }),
+  }),
+})
+
+const DetectedBoxType = builder.objectRef<DetectedBox>('DetectedBox').implement({
+  description:
+    'Where a book sits in the photo, each side a fraction of it: `x` and `y` are the ' +
+    'top-left corner, from 0 at the left and top edges to 1 at the right and bottom. ' +
+    'Multiply by the size of the photo that was sent to crop the book out of it.',
+  fields: (t) => ({
+    x: t.exposeFloat('x'),
+    y: t.exposeFloat('y'),
+    width: t.exposeFloat('width'),
+    height: t.exposeFloat('height'),
+  }),
+})
+
+export const DetectedBookType = builder.objectRef<DetectedBook>('DetectedBook').implement({
+  description:
+    'One book found in a shelf photo, as printed on its spine or cover — nothing is ' +
+    'looked up yet. The reader ticks the ones to keep, and `describeDetectedBook` ' +
+    'builds the record of each.',
+  fields: (t) => ({
+    title: t.field({
+      type: 'BookTitle',
+      nullable: true,
+      description: 'Null when the spine could not be read: the reader types it.',
+      resolve: (book) => book.title ?? null,
+    }),
+    authors: t.field({ type: ['AuthorName'], resolve: (book) => book.authors }),
+    publisher: t.field({
+      type: 'Publisher',
+      nullable: true,
+      resolve: (book) => book.publisher ?? null,
+    }),
+    language: t.field({
+      type: BookLanguageEnum,
+      nullable: true,
+      resolve: (book) => book.language ?? null,
+    }),
+    format: t.field({
+      type: BookFormatEnum,
+      nullable: true,
+      resolve: (book) => book.format ?? null,
+    }),
+    seriesName: t.field({
+      type: 'SeriesName',
+      nullable: true,
+      description: 'Only when printed on the book.',
+      resolve: (book) => book.seriesName ?? null,
+    }),
+    volume: t.field({
+      type: 'VolumeNumber',
+      nullable: true,
+      resolve: (book) => book.volume ?? null,
+    }),
+    box: t.field({ type: DetectedBoxType, resolve: (book) => book.box }),
+    owned: t.boolean({
+      description:
+        'The reader already has this story, in any edition — the same title by the ' +
+        'same first author. Such a book comes unticked. Always false without a title.',
+      resolve: (book) => book.owned,
     }),
   }),
 })

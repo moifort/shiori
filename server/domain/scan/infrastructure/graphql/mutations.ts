@@ -1,11 +1,12 @@
 import { match, P } from 'ts-pattern'
+import { BookFormatEnum, BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { imageWithinSizeLimit } from '~/domain/scan/limits'
-import type { ScanOutcome } from '~/domain/scan/use-case'
+import type { ScanOutcome, ShelfOutcome } from '~/domain/scan/use-case'
 import { ScanUseCase } from '~/domain/scan/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
 import { domainError } from '~/domain/shared/graphql/errors'
 import { languageFrom } from '~/domain/shared/language'
-import { ScanResultType, TitleCandidateType } from './types'
+import { DetectedBookType, ScanResultType, TitleCandidateType } from './types'
 
 const answered = (outcome: ScanOutcome) =>
   match(outcome)
@@ -133,5 +134,93 @@ builder.mutationField('scanBook', (t) =>
         ),
       )
     },
+  }),
+)
+
+const DetectedBookInput = builder.inputType('DetectedBookInput', {
+  description:
+    'A book ticked on the shelf checklist, as the reader left it: what `detectBooks` ' +
+    'read, with any title or author they corrected.',
+  fields: (t) => ({
+    title: t.field({ type: 'BookTitle', required: true }),
+    authors: t.field({ type: ['AuthorName'], required: true }),
+    publisher: t.field({ type: 'Publisher' }),
+    language: t.field({ type: BookLanguageEnum }),
+    format: t.field({ type: BookFormatEnum }),
+  }),
+})
+
+const shelfAnswered = (outcome: ShelfOutcome) =>
+  match(outcome)
+    .with('premium-required', () =>
+      domainError('PREMIUM_REQUIRED', 'Importing a shelf is a Premium feature'),
+    )
+    .with('quota-exhausted', () => domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up'))
+    .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
+    .with(P.array(), (books) => books)
+    .exhaustive()
+
+builder.mutationField('detectBooks', (t) =>
+  t.field({
+    type: [DetectedBookType],
+    description:
+      'Find every book in one photo — spines on a shelf, or covers laid out flat — ' +
+      'and where each sits, for the reader to tick the ones to add.\n\n' +
+      'One model call without web search: only what is printed is read, and a spine ' +
+      'that cannot be read comes back with no title rather than a guess. At most 30 ' +
+      'books, left to right and top to bottom. Books the reader already owns are ' +
+      'flagged `owned`.\n\n' +
+      'Premium only: fails with `PREMIUM_REQUIRED` for a free account. Spends nothing ' +
+      '— each book kept costs its own `describeDetectedBook` — but fails with ' +
+      '`QUOTA_EXHAUSTED` once the allowance is used up, `IMAGE_TOO_LARGE` above the ' +
+      '10 MB limit, or `SCAN_FAILED` when the model call errors.',
+    args: {
+      imageBase64: t.arg.string({
+        required: true,
+        description: 'The photo as a base64-encoded JPEG (no data URL prefix), up to 10 MB',
+      }),
+    },
+    resolve: async (_root, { imageBase64 }, { userId, event }) => {
+      if (!imageWithinSizeLimit(imageBase64.length))
+        return domainError('IMAGE_TOO_LARGE', 'Image exceeds the 10 MB size limit')
+      return shelfAnswered(
+        await ScanUseCase.detectBooks(
+          userId,
+          Buffer.from(imageBase64, 'base64'),
+          languageFrom(event && getHeader(event, 'accept-language')),
+        ),
+      )
+    },
+  }),
+)
+
+builder.mutationField('describeDetectedBook', (t) =>
+  t.field({
+    type: ScanResultType,
+    description:
+      'Build the record of a book ticked on the shelf checklist, as `scanBook` does ' +
+      'once a cover is read: web-grounded enrichment, published cover, and the saga ' +
+      'and author catalogues when nobody built them yet. Nothing is saved; `addBook` ' +
+      'persists it.\n\n' +
+      'Never cached, and spends one scan of the allowance once the model answered. ' +
+      'Fails with `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` when the ' +
+      'model call errors.',
+    args: { book: t.arg({ type: DetectedBookInput, required: true }) },
+    resolve: async (_root, { book }, { userId, event }) =>
+      answered(
+        await ScanUseCase.describeDetected(
+          userId,
+          {
+            recognized: true,
+            title: book.title,
+            authors: book.authors,
+            publisher: book.publisher ?? undefined,
+            language: book.language ?? undefined,
+            format: book.format ?? undefined,
+            subgenres: [],
+          },
+          languageFrom(event && getHeader(event, 'accept-language')),
+        ),
+      ),
   }),
 )

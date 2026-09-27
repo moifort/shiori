@@ -739,6 +739,50 @@ On output a JavaScript `Date` is rendered as an ISO string; on input an ISO stri
 scalar DateTime
 
 """
+One book found in a shelf photo, as printed on its spine or cover — nothing is looked up yet. The reader ticks the ones to keep, and `describeDetectedBook` builds the record of each.
+"""
+type DetectedBook {
+  authors: [AuthorName!]!
+  box: DetectedBox!
+  format: BookFormat
+  language: BookLanguage
+
+  """
+  The reader already has this story, in any edition — the same title by the same first author. Such a book comes unticked. Always false without a title.
+  """
+  owned: Boolean!
+  publisher: Publisher
+
+  """Only when printed on the book."""
+  seriesName: SeriesName
+
+  """Null when the spine could not be read: the reader types it."""
+  title: BookTitle
+  volume: VolumeNumber
+}
+
+"""
+A book ticked on the shelf checklist, as the reader left it: what `detectBooks` read, with any title or author they corrected.
+"""
+input DetectedBookInput {
+  authors: [AuthorName!]!
+  format: BookFormat
+  language: BookLanguage
+  publisher: Publisher
+  title: BookTitle!
+}
+
+"""
+Where a book sits in the photo, each side a fraction of it: `x` and `y` are the top-left corner, from 0 at the left and top edges to 1 at the right and bottom. Multiply by the size of the photo that was sent to crop the book out of it.
+"""
+type DetectedBox {
+  height: Float!
+  width: Float!
+  x: Float!
+  y: Float!
+}
+
+"""
 The token APNs hands a device for this app, in hexadecimal, as the app receives it on registering for remote notifications.
 """
 scalar DeviceToken
@@ -1529,6 +1573,25 @@ type Mutation {
     language: BookLanguage
     seriesId: SeriesId!
   ): Int!
+
+  """
+  Build the record of a book ticked on the shelf checklist, as `scanBook` does once a cover is read: web-grounded enrichment, published cover, and the saga and author catalogues when nobody built them yet. Nothing is saved; `addBook` persists it.
+  
+  Never cached, and spends one scan of the allowance once the model answered. Fails with `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` when the model call errors.
+  """
+  describeDetectedBook(book: DetectedBookInput!): ScanResult!
+
+  """
+  Find every book in one photo — spines on a shelf, or covers laid out flat — and where each sits, for the reader to tick the ones to add.
+  
+  One model call without web search: only what is printed is read, and a spine that cannot be read comes back with no title rather than a guess. At most 30 books, left to right and top to bottom. Books the reader already owns are flagged `owned`.
+  
+  Premium only: fails with `PREMIUM_REQUIRED` for a free account. Spends nothing — each book kept costs its own `describeDetectedBook` — but fails with `QUOTA_EXHAUSTED` once the allowance is used up, `IMAGE_TOO_LARGE` above the 10 MB limit, or `SCAN_FAILED` when the model call errors.
+  """
+  detectBooks(
+    """The photo as a base64-encoded JPEG (no data URL prefix), up to 10 MB"""
+    imageBase64: String!
+  ): [DetectedBook!]!
 
   """
   Forget the Audible connection. Books already imported stay in the library.
