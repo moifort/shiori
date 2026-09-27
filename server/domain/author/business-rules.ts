@@ -6,7 +6,7 @@ import type {
   AuthorWork,
   ShelvedAuthor,
 } from '~/domain/author/types'
-import { shelfDateOf } from '~/domain/book/business-rules'
+import { shelfDateOf, shelfOrder, shelfTitleOrder } from '~/domain/book/business-rules'
 import type { BookFormat, BookLanguage, ReadingStatus } from '~/domain/book/types'
 import { isAudioSeries, seriesIdFor, seriesKeyOf } from '~/domain/series/primitives'
 import type { SeriesId, SeriesState } from '~/domain/series/types'
@@ -15,6 +15,7 @@ import type { AuthorName } from '~/domain/shared/types'
 import { slugify } from '~/utils/slug'
 
 type AuthoredBook = {
+  title: string
   authors: AuthorName[]
   series?: { id: SeriesId }
   rating?: number
@@ -97,13 +98,20 @@ export const inAuthorOrder = <Author extends ShelvedAuthor<unknown>>(
   )
 
 /** The Authors tab by activity, as the Books and Series tabs are ordered: the
- *  author whose newest book was shelved most recently first, then by name. */
-export const inActivityOrder = <Author extends { name: string; shelvedAt: Date }>(
+ *  author whose newest book was shelved most recently first. Two authors
+ *  shelved the same day rank as the Books tab ranks their newest books — by
+ *  title — so reading down one list reads down the other; then by name, for
+ *  the co-authors of one book. */
+export const inActivityOrder = <
+  Author extends { name: string; shelvedAt: Date; books: readonly { title: string }[] },
+>(
   authors: readonly Author[],
 ): Author[] =>
   [...authors].sort(
     (left, right) =>
-      right.shelvedAt.getTime() - left.shelvedAt.getTime() || left.name.localeCompare(right.name),
+      right.shelvedAt.getTime() - left.shelvedAt.getTime() ||
+      shelfTitleOrder(left.books[0]?.title ?? '', right.books[0]?.title ?? '') ||
+      left.name.localeCompare(right.name),
   )
 
 /** The words a surname can open with and still belong to it: "Le Guin",
@@ -181,7 +189,7 @@ export const matchingAuthorFilter = <Author extends { favoriteCount: number }>(
   filter.favorite ? authors.filter((author) => author.favoriteCount > 0) : [...authors]
 
 const newestShelvedFirst = <Book extends AuthoredBook>(books: readonly Book[]): Book[] =>
-  [...books].sort((left, right) => shelfDateOf(right).getTime() - shelfDateOf(left).getTime())
+  [...books].sort(shelfOrder)
 
 /** The spelling used most, the first met — the newest book — breaking a tie. */
 const mostUsedSpelling = (spellings: ReadonlyMap<AuthorName, number>): AuthorName => {

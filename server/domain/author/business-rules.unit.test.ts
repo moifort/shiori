@@ -62,6 +62,19 @@ describe('shelvedAuthorsOf', () => {
     expect(author?.shelvedAt).toEqual(day(9))
   })
 
+  test('orders an author’s books shelved the same day by title, as the Books tab does', () => {
+    const [author] = shelvedAuthorsOf(
+      [
+        book('Zed', ['A'], { on: 9 }),
+        book('Old', ['A'], { on: 1 }),
+        book('Alpha', ['A'], { on: 9 }),
+      ],
+      [],
+    )
+
+    expect(author?.books.map((held) => held.title)).toEqual(['Alpha', 'Zed', 'Old'])
+  })
+
   test('names an author by the spelling most of their books use', () => {
     const [author] = shelvedAuthorsOf(
       [
@@ -139,13 +152,26 @@ describe('inAuthorOrder', () => {
 describe('inActivityOrder', () => {
   test('ranks the most recently shelved first, then by name', () => {
     const ranked = inActivityOrder([
-      { name: 'Old', shelvedAt: day(1) },
-      { name: 'Zed', shelvedAt: day(9) },
-      { name: 'Alpha', shelvedAt: day(9) },
-      { name: 'Middle', shelvedAt: day(5) },
+      { name: 'Old', shelvedAt: day(1), books: [{ title: 'Same' }] },
+      { name: 'Zed', shelvedAt: day(9), books: [{ title: 'Same' }] },
+      { name: 'Alpha', shelvedAt: day(9), books: [{ title: 'Same' }] },
+      { name: 'Middle', shelvedAt: day(5), books: [{ title: 'Same' }] },
     ])
 
     expect(ranked.map((entry) => entry.name)).toEqual(['Alpha', 'Zed', 'Middle', 'Old'])
+  })
+
+  test('ranks two authors shelved the same day as the Books tab ranks their newest books', () => {
+    const authors = shelvedAuthorsOf(
+      [
+        book('Arrakis', ['Zed'], { on: 9 }),
+        book('Piranesi', ['Alpha'], { on: 9 }),
+        book('Older', ['Alpha'], { on: 1 }),
+      ],
+      [],
+    )
+
+    expect(inActivityOrder(authors).map((entry) => String(entry.name))).toEqual(['Zed', 'Alpha'])
   })
 })
 

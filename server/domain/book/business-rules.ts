@@ -417,12 +417,21 @@ export const seriesInFormat = (
  *  that date changes, so the server alone decides what sits where. Sagas are
  *  not gathered: a volume sits on its own date, and the Series tab is where a
  *  saga is read whole. */
-export const shelvedOf = <T extends Book>(books: readonly T[]): T[] =>
-  [...books].sort(
-    (left, right) =>
-      shelfDateOf(right).getTime() - shelfDateOf(left).getTime() ||
-      left.title.localeCompare(right.title),
-  )
+export const shelvedOf = <T extends Book>(books: readonly T[]): T[] => [...books].sort(shelfOrder)
+
+type ShelvedBook = { title: string } & Pick<Book, 'addedAt' | 'startedAt' | 'finishedAt'>
+
+/** Which of two books the Library tab shelves first: the newest on its shelf
+ *  date, then by title in code-point order — Firestore's own, which the tab's
+ *  index pages on, so every list that follows the tab ties the way it does. */
+export const shelfOrder = (left: ShelvedBook, right: ShelvedBook): number =>
+  shelfDateOf(right).getTime() - shelfDateOf(left).getTime() ||
+  shelfTitleOrder(left.title, right.title)
+
+/** How the Library tab ties two books shelved the same day: by title in
+ *  code-point order, as Firestore orders strings. */
+export const shelfTitleOrder = (left: string, right: string): number =>
+  left < right ? -1 : left > right ? 1 : 0
 
 /** The date a book is shelved on, whatever its status: the day it was
  *  finished, else the day it was started, else the day it was added. A record
