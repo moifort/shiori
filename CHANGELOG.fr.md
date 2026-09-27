@@ -4,6 +4,7 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 
 ## Unreleased
 
+- À l’inscription, votre prénom est déjà rempli depuis votre compte Apple.
 - Sur la fiche d’un livre, touchez une information — la note, l’année, les pages, l’ISBN
   ou une date de lecture — pour la corriger sur place.
 - Découvrir est repensé autour de vos séries : pour chacune de celles que vous suivez, les tomes

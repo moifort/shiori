@@ -1,8 +1,10 @@
 import AuthenticationServices
 import FirebaseAuth
+import FirebaseCore
 import SwiftUI
 
 struct LoginView: View {
+    @Environment(AuthSession.self) private var session
     @State private var nonce: String = ""
     @State private var error: String?
     @State private var isSigningIn = false
@@ -61,6 +63,9 @@ struct LoginView: View {
                 rawNonce: nonce,
                 fullName: credential.fullName
             )
+            // Before signing in: the session flips to signed-in the moment
+            // Firebase answers, and onboarding reads the name on appearing.
+            session.rememberAppleName(credential.fullName)
             _ = try await Auth.auth().signIn(with: oauth)
         } catch {
             self.error = (error as NSError).localizedDescription
@@ -69,5 +74,8 @@ struct LoginView: View {
 }
 
 #Preview {
-    LoginView()
+    // `AuthSession` reads `Auth.auth()` on init, which traps when Firebase was
+    // never configured: the canvas does not run `ShioriApp.init`.
+    if FirebaseApp.app() == nil { FirebaseApp.configure() }
+    return LoginView().environment(AuthSession())
 }

@@ -10,6 +10,7 @@ the release tag is pushed.
 
 ## Unreleased
 
+- When you sign up, your first name is already filled in from your Apple account.
 - On a book's page, tap a fact — the rating, the year, the pages, the ISBN or a reading
   date — to correct it right there.
 - Discover is rebuilt around your series: for each one you follow, the volumes already out that

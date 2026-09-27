@@ -1,3 +1,4 @@
+import FirebaseCore
 import SwiftUI
 
 /// The wizard shown once, before the library exists. Three steps, not Vinarium's
@@ -12,6 +13,7 @@ struct OnboardingView: View {
     /// asking the server.
     var onCompleted: (String) -> Void
 
+    @Environment(AuthSession.self) private var session
     @State private var step: Step = .welcome
     @State private var firstName = ""
     @State private var isSaving = false
@@ -82,7 +84,13 @@ struct OnboardingView: View {
         } message: {
             Text(errorMessage ?? "")
         }
-        .onAppear { track(.onboardingStarted) }
+        .onAppear {
+            track(.onboardingStarted)
+            // Proposed, not imposed: the field stays editable.
+            if firstName.isEmpty, let suggested = session.suggestedFirstName {
+                firstName = suggested
+            }
+        }
     }
 
     private func startAudibleSignIn() async {
@@ -137,5 +145,8 @@ struct OnboardingView: View {
 }
 
 #Preview {
-    OnboardingView(onCompleted: { _ in })
+    // `AuthSession` reads `Auth.auth()` on init, which traps when Firebase was
+    // never configured: the canvas does not run `ShioriApp.init`.
+    if FirebaseApp.app() == nil { FirebaseApp.configure() }
+    return OnboardingView(onCompleted: { _ in }).environment(AuthSession())
 }
