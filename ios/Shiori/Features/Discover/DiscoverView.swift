@@ -125,7 +125,8 @@ struct DiscoverView: View {
     }
 
     /// A volume announced, drawn as the Books tab draws a book: its saga as a
-    /// tag, and in the status's place when it comes out.
+    /// tag, the headphones on the cover of a recording, and on the trailing
+    /// edge the day it comes out. No genre: the saga already says what it is.
     @ViewBuilder
     private func volumeRow(_ saga: SagaDiscovery) -> some View {
         if let next = saga.releases.next {
@@ -153,9 +154,8 @@ struct DiscoverView: View {
                 status: .toRead,
                 rating: nil,
                 series: membership,
-                genre: series.genre,
                 language: series.language,
-                releaseLine: next.date.map(ReleaseDateText.coming) ?? String(localized: "Annoncé")
+                releaseDate: next.date
             )
             .contentShape(Rectangle())
             .onTapGesture { openSeries = saga }
