@@ -18,6 +18,7 @@ import {
   newAnnouncementsOf,
   onAudible,
   readerIsStale,
+  recentReleasesOf,
   releasesOf,
   todayOf,
   watchedSagasOf,
@@ -77,7 +78,7 @@ const ON_DEMAND_BUDGET_MS = 90_000
 
 export namespace DiscoveryUseCase {
   /** The tab as the reader opens it: every saga they follow in that format
-   *  with a volume announced they do not hold, as the
+   *  with a volume announced they do not hold or one just out, as the
    *  shared watches know them, and how many were never looked up. Opening it
    *  tells the hourly pass at once which sagas the reader follows now, and in
    *  which language to write to them. */
@@ -336,9 +337,10 @@ const discoveryOf = (
     const watch = watches.get(watchKeyOf({ seriesId: series.id, language: series.language }))
     const releases = releasesOf(series.books, watch, series.catalogue, today)
     if (!releases.watched) unwatched += 1
-    if (!releases.next) return []
+    const recent = recentReleasesOf(series.books, watch, series.catalogue, today)
+    if (!releases.next && recent.length === 0) return []
     const missing = missingVolumesOf(series.books, watch, series.catalogue, today)
-    return [{ ...releases, series, missing }]
+    return [{ ...releases, series, missing, recent }]
   })
   return { sagas: inDiscoveryOrder(rows), unwatched, followed: followedCount }
 }

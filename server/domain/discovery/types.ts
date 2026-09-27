@@ -92,9 +92,14 @@ export type SagaReleases = {
   next?: FoundVolume
 }
 
-/** One row of the Découvrir tab: what the saga has for the reader, and the
- *  numbers of the volumes out they have not added yet. */
-export type SagaDiscovery = SagaReleases & { series: FollowedSeries; missing: VolumeNumber[] }
+/** One row of the Découvrir tab: what the saga has for the reader, the
+ *  numbers of the volumes out they have not added yet, and the ones of those
+ *  just out that they can have now, the newest first. */
+export type SagaDiscovery = SagaReleases & {
+  series: FollowedSeries
+  missing: VolumeNumber[]
+  recent: FoundVolume[]
+}
 
 /** The Découvrir tab in one format. */
 export type Discovery = {

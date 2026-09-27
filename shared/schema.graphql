@@ -731,7 +731,7 @@ The token APNs hands a device for this app, in hexadecimal, as the app receives 
 scalar DeviceToken
 
 """
-One volume of a saga the reader does not hold, announced, as the weekly web search found it in the language they follow the saga in.
+One volume of a saga the reader does not hold, announced or just out, as the weekly web search found it in the language they follow the saga in.
 """
 type DiscoveredVolume {
   """
@@ -759,7 +759,7 @@ type Discovery {
   followed: Int!
 
   """
-  A row per saga with a volume announced for a known date, the soonest first.
+  A row per saga with a volume announced for a known date, the soonest first, then a row per saga with nothing announced but a volume just out, the newest first.
   """
   sagas: [SagaDiscovery!]!
 
@@ -1915,7 +1915,7 @@ type Query {
   dashboard(timeZone: TimeZone!): Dashboard!
 
   """
-  The Découvrir tab: every saga the reader follows in that format — all but the ones they set aside — with the next volume announced they do not hold, the soonest first; a saga with nothing announced is left out.
+  The Découvrir tab: every saga the reader follows in that format — all but the ones they set aside — with the next volume announced they do not hold, the soonest first, or a volume out in the last week they can have now; a saga with neither is left out.
   
   Read off shared watches a scheduled pass keeps a week fresh, so it answers at once. A saga never looked up is counted in `unwatched`, for `lookUpDiscovery`.
   """
@@ -2301,6 +2301,11 @@ type SagaDiscovery {
 
   """The next volume announced."""
   next: DiscoveredVolume
+
+  """
+  The volumes out in the last week, on a known day, that the reader does not hold and can have now — a recording Audible confirmed, a printed book with an ISBN Amazon did not turn down — the newest first. Read off the same weekly watch as `next`: a volume announced moves here on its day.
+  """
+  recent: [DiscoveredVolume!]!
 
   """The saga as the Series tab draws its row."""
   series: FollowedSeries!

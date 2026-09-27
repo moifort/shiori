@@ -20,7 +20,7 @@ export const ReleaseFormatEnum = builder.enumType('ReleaseFormat', {
 
 const DiscoveredVolumeType = builder.objectRef<FoundVolume>('DiscoveredVolume').implement({
   description:
-    'One volume of a saga the reader does not hold, announced, as the weekly web search ' +
+    'One volume of a saga the reader does not hold, announced or just out, as the weekly web search ' +
     'found it in the language they follow the saga in.',
   fields: (t) => ({
     number: t.field({ type: 'VolumeNumber', resolve: (volume) => volume.number }),
@@ -90,6 +90,15 @@ export const SagaDiscoveryType = builder.objectRef<SagaDiscovery>('SagaDiscovery
       description: 'The next volume announced.',
       resolve: (row) => row.next ?? null,
     }),
+    recent: t.field({
+      type: [DiscoveredVolumeType],
+      description:
+        'The volumes out in the last week, on a known day, that the reader does not hold and ' +
+        'can have now — a recording Audible confirmed, a printed book with an ISBN Amazon ' +
+        'did not turn down — the newest first. Read off the same weekly watch as `next`: a ' +
+        'volume announced moves here on its day.',
+      resolve: (row) => row.recent,
+    }),
   }),
 })
 
@@ -98,7 +107,9 @@ export const DiscoveryType = builder.objectRef<Discovery>('Discovery').implement
   fields: (t) => ({
     sagas: t.field({
       type: [SagaDiscoveryType],
-      description: 'A row per saga with a volume announced for a known date, the soonest first.',
+      description:
+        'A row per saga with a volume announced for a known date, the soonest first, then ' +
+        'a row per saga with nothing announced but a volume just out, the newest first.',
       resolve: (discovery) => discovery.sagas,
     }),
     unwatched: t.int({

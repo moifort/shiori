@@ -30,6 +30,9 @@ export const WATCH_EVERY_MS = 7 * 86_400_000
 /** How often the hourly pass reads a reader's library again to learn which
  *  sagas they follow. Opening the tab does it at once. */
 export const SYNC_EVERY_MS = 86_400_000
+/** How long a volume out stays among the new releases: a week, as often as
+ *  a saga is looked up again. */
+const RECENT_DAYS = 7
 /** How late an alert may still go out for a volume the morning pass missed. */
 const ALERT_GRACE_DAYS = 14
 
@@ -243,16 +246,61 @@ export const missingVolumesOf = (
     .sort((left, right) => left - right)
 }
 
+/** Whether a volume can be had now: a recording once Audible's own catalogue
+ *  confirmed it, a printed book once it has an ISBN Amazon did not turn
+ *  down. */
+const isAvailable = (volume: FoundVolume, format: ReleaseFormat): boolean =>
+  format === 'audiobook' ? volume.asin !== undefined : volume.isbn13 !== undefined
+
+/** The volumes the saga brought out in the last week that the reader does not
+ *  hold and can have now, the newest first: out on a known day — a month
+ *  alone does not say it was this week — as the same shared watch the next
+ *  volume is read off dates it. A volume announced moves here on its day,
+ *  with no new look on the web. */
+export const recentReleasesOf = (
+  books: readonly Pick<Book, 'series'>[],
+  watch: SagaWatch | undefined,
+  catalogue: Series | null | undefined,
+  today: string,
+): FoundVolume[] => {
+  if (!watch) return []
+  const held = heldNumbersOf(books)
+  const since = dayMinus(today, RECENT_DAYS)
+  const format = formatOf(watch.seriesId)
+  return candidatesOf(watch, catalogue, today)
+    .map(({ volume }) => volume)
+    .filter(
+      (volume) =>
+        volume.date?.length === 10 &&
+        volume.date <= today &&
+        volume.date > since &&
+        !held.has(volume.number) &&
+        isAvailable(volume, format),
+    )
+    .sort(
+      (left, right) =>
+        (right.date as string).localeCompare(left.date as string) || right.number - left.number,
+    )
+}
+
 /** The tab: every saga with a volume announced for a known date, the soonest
- *  first. */
-export const inDiscoveryOrder = (rows: readonly SagaDiscovery[]): SagaDiscovery[] =>
-  rows
+ *  first, then every saga with nothing announced but a volume just out, the
+ *  newest first. */
+export const inDiscoveryOrder = (rows: readonly SagaDiscovery[]): SagaDiscovery[] => {
+  const announced = rows
     .filter((row) => row.next?.date)
     .sort((left, right) =>
       lastDayOf(left.next?.date as ReleaseDate).localeCompare(
         lastDayOf(right.next?.date as ReleaseDate),
       ),
     )
+  const justOut = rows
+    .filter((row) => !row.next?.date && row.recent.length > 0)
+    .sort((left, right) =>
+      (right.recent[0].date as string).localeCompare(left.recent[0].date as string),
+    )
+  return [...announced, ...justOut]
+}
 
 // MARK: - Alerts
 

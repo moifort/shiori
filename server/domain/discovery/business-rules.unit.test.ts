@@ -24,6 +24,7 @@ import {
   missingVolumesOf,
   newAnnouncementsOf,
   onAudible,
+  recentReleasesOf,
   releasesOf,
   watchedSagasOf,
 } from './business-rules'
@@ -268,6 +269,53 @@ describe('the volumes a saga has out for the reader', () => {
   })
 })
 
+describe('the volumes a saga has just brought out', () => {
+  const isbn13 = '9782253000000' as never
+  const asin = 'B0TESTASIN' as AudibleAsin
+
+  test('are the volumes out on a day of the last week, the newest first', () => {
+    const watch = watchOf(carl, [
+      volume(3, '2026-09-19', { isbn13 }),
+      volume(4, '2026-09-20', { isbn13 }),
+      volume(5, '2026-09-24', { isbn13 }),
+      volume(6, '2026-09-26', { isbn13 }),
+      volume(7, '2026-09-27', { isbn13 }),
+    ])
+    expect(recentReleasesOf(held(), watch, undefined, today).map(({ number }) => number)).toEqual([
+      6, 5, 4,
+    ] as VolumeNumber[])
+  })
+
+  test('leave out a volume the reader holds', () => {
+    const watch = watchOf(carl, [volume(5, '2026-09-24', { isbn13 })])
+    expect(recentReleasesOf(held(5), watch, undefined, today)).toEqual([])
+  })
+
+  test('leave out a volume dated to the month only', () => {
+    const watch = watchOf(carl, [volume(5, '2026-09', { isbn13 })])
+    expect(recentReleasesOf(held(), watch, undefined, today)).toEqual([])
+  })
+
+  test('leave out a printed volume no ISBN places on Amazon', () => {
+    const watch = watchOf(carl, [volume(5, '2026-09-24')])
+    expect(recentReleasesOf(held(), watch, undefined, today)).toEqual([])
+  })
+
+  test('are, for a saga heard, the recordings Audible confirmed', () => {
+    const watch = watchOf(carlHeard, [
+      volume(4, '2026-09-22', { isbn13 }),
+      volume(5, '2026-09-24', { asin }),
+    ])
+    expect(recentReleasesOf(held(), watch, undefined, today)).toEqual([
+      volume(5, '2026-09-24', { asin }),
+    ])
+  })
+
+  test('are none before the saga was ever looked up', () => {
+    expect(recentReleasesOf([], undefined, undefined, today)).toEqual([])
+  })
+})
+
 describe('a saga heard', () => {
   test('is what Audible lists, and beyond it only what is announced', () => {
     const listed = [volume(1, '2025-01-16'), volume(5, '2026-10-08')]
@@ -281,12 +329,13 @@ describe('a saga heard', () => {
 })
 
 describe('the tab', () => {
-  const row = (name: string, next?: string): SagaDiscovery =>
+  const row = (name: string, next?: string, recent: FoundVolume[] = []): SagaDiscovery =>
     ({
       series: saga({ name: name as SeriesName }),
       watched: true,
       next: next ? volume(9, next) : undefined,
       missing: [],
+      recent,
     }) as SagaDiscovery
 
   test('lists the dated announcements, the soonest first, and drops the rest', () => {
@@ -300,6 +349,18 @@ describe('the tab', () => {
       'sooner',
       'middle',
       'later',
+    ] as SeriesName[])
+  })
+
+  test('keeps a saga with nothing announced but a volume just out, after the announcements', () => {
+    const ordered = inDiscoveryOrder([
+      row('just out', undefined, [volume(8, '2026-09-24')]),
+      row('nothing'),
+      row('sooner', '2026-10-26'),
+    ])
+    expect(ordered.map((entry) => entry.series.name)).toEqual([
+      'sooner',
+      'just out',
     ] as SeriesName[])
   })
 })

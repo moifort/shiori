@@ -262,6 +262,24 @@ describe('the Découvrir tab', () => {
     expect(row.series.name).toBe(SeriesName('Dungeon Crawler Carl'))
     expect(row.next?.number).toBe(VolumeNumber(4))
     expect(row.missing).toEqual([2, 3].map(VolumeNumber))
+    // Volume 3 came out yesterday, on Amazon under its ISBN; volume 2 has none.
+    expect(row.recent.map((volume) => volume.number)).toEqual([VolumeNumber(3)])
+  })
+
+  test('moves a volume announced among the new releases on its day, for a week', async () => {
+    await stock(reader)
+    await DiscoveryUseCase.watchDueSagas(now)
+    const tabOn = async (day: string) =>
+      (await DiscoveryUseCase.discover(reader, 'fr', 'book', new Date(day))).sagas[0]
+
+    const before = await tabOn('2026-09-24T08:00:00Z')
+    expect(before.next?.number).toBe(VolumeNumber(3))
+    expect(before.recent).toEqual([])
+    expect((await tabOn('2026-10-01T08:00:00Z')).recent.map(({ number }) => number)).toEqual([
+      VolumeNumber(3),
+    ])
+    expect((await tabOn('2026-10-02T08:00:00Z')).recent).toEqual([])
+    expect(calls).toEqual(['Dungeon Crawler Carl'])
   })
 
   test('shows only the sagas of the format asked', async () => {

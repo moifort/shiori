@@ -74,6 +74,41 @@ describe('the Découvrir tab', () => {
     })
   })
 
+  test('lists the volumes just out the reader can have, the newest first', async () => {
+    const daysAgo = (days: number) =>
+      new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10)
+    fake.seed('saga-watches', `${carl}--fr`, {
+      key: `${carl}--fr`,
+      seriesId: carl,
+      name: 'Dungeon Crawler Carl',
+      author: 'Matt Dinniman',
+      language: 'fr',
+      checkedAt: new Date(),
+      volumes: [
+        { number: 2, title: 'Carl 2', date: daysAgo(5), isbn13: '9782226488176' },
+        { number: 3, title: 'Carl 3', date: daysAgo(2), isbn13: '9782226488190' },
+        { number: 4, title: 'Carl 4', date: daysAgo(1) },
+      ],
+    })
+
+    const result = await run(
+      '{ discovery(format: BOOK) { sagas { next { number } recent { number isbn13 } } } }',
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.discovery).toEqual({
+      sagas: [
+        {
+          next: null,
+          recent: [
+            { number: 3, isbn13: '9782226488190' },
+            { number: 2, isbn13: '9782226488176' },
+          ],
+        },
+      ],
+    })
+  })
+
   test('answers nothing in the other format', async () => {
     const result = await run(
       '{ discovery(format: AUDIOBOOK) { unwatched followed sagas { series { id } } } }',
