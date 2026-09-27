@@ -107,7 +107,7 @@ struct DiscoverView: View {
                 Section {
                     ForEach(rows) { row($0) }
                 } header: {
-                    Text("À découvrir")
+                    Text("Prochaines sorties")
                 } footer: {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Image(systemName: "bell")
