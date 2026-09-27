@@ -10,6 +10,9 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 - Découvrir est repensé autour de vos séries : pour chacune de celles que vous suivez, le prochain
   tome annoncé, avec sa date.
 - La page d’une série affiche sa prochaine sortie juste sous sa présentation.
+- Dans la liste des séries, un tome que vous n’avez pas encore porte un + dans son coin, comme
+  le statut d’un livre : vous pouvez l’ajouter à votre bibliothèque. Un tome pas encore sorti
+  porte une horloge, avec sa date en dessous.
 - Vos livres affichent leur série sous le même nom que sa page, sans mentions comme
   « [French Edition] ».
 - Les séries en cours de l’accueil n’affichent plus une série que vous n’avez pas encore commencée.

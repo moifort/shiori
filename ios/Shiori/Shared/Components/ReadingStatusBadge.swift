@@ -7,13 +7,25 @@ struct ReadingStatusBadge: View {
     let status: ReadingStatus
 
     var body: some View {
-        Image(systemName: status.symbol)
+        CoverBadge(systemImage: status.symbol, tint: status.tint)
+    }
+}
+
+/// A disc pinned to a cover's corner: the reading status on a volume held, and
+/// on a volume the reader lacks, whether it can be added now or comes out
+/// later — one shape, so the eye reads every corner of a strip the same way.
+struct CoverBadge: View {
+    let systemImage: String
+    let tint: Color
+
+    var body: some View {
+        Image(systemName: systemImage)
             .font(.system(size: 7, weight: .bold))
             .foregroundStyle(.white)
             // Wider than the glyph needs, so the symbol sits in the disc with
             // air around it rather than filling it to the rim.
             .frame(width: 18, height: 18)
-            .background(status.tint, in: Circle())
+            .background(tint, in: Circle())
             // A ring in the row's own background lifts the badge off whatever
             // colour the cover happens to be under it.
             .overlay(Circle().strokeBorder(Color(.secondarySystemGroupedBackground), lineWidth: 1.5))

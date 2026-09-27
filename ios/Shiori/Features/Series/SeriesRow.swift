@@ -51,9 +51,9 @@ struct SeriesRow: View {
     }
 
     /// Every volume of the cycle, in its order, as a cover: the owned ones with
-    /// their status pinned on, the missing ones dimmed with their number, the
-    /// announced ones fainter still under a clock with the day they come out
-    /// beneath, nothing off the cycle — the reader's progress, and what they
+    /// their status pinned on, the missing ones dimmed with their number under
+    /// a plus, the announced ones fainter still under a clock with the day they
+    /// come out beneath, nothing off the cycle — the reader's progress, and what they
     /// lack, read off the books themselves rather than off a bar. No titles:
     /// the saga screen is a tap away.
     private var covers: some View {
@@ -132,15 +132,15 @@ struct SeriesRow: View {
                     .padding(.bottom, 4)
             }
         }
-        // Where an owned volume pins its status: an announced one says it is
-        // not out yet.
+        // Where an owned volume pins its status, in the same disc: a volume
+        // out says it can be added to the library, an announced one that it is
+        // not out yet — its day hangs underneath.
         .overlay(alignment: .topTrailing) {
-            if forthcoming {
-                Image(systemName: "clock")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-                    .padding(4)
-            }
+            CoverBadge(
+                systemImage: forthcoming ? "clock" : "plus",
+                tint: forthcoming ? .orange : .accentColor
+            )
+            .offset(x: 5, y: -5)
         }
     }
 
