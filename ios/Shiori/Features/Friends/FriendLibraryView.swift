@@ -124,8 +124,12 @@ struct FriendLibraryView: View {
             )
             .contentShape(.rect)
             .onTapGesture { openBook = entry }
-            TakeButton(owned: entry.inLibrary || isPreview, isAdding: adding.contains(entry.id)) {
-                await add(entry)
+            TakeButton(
+                owned: entry.inLibrary || isPreview,
+                isAdding: adding.contains(entry.id),
+                format: book.format
+            ) { format in
+                await add(entry, as: format)
             }
         }
         .edgeToEdgeSeparator()
@@ -158,11 +162,16 @@ struct FriendLibraryView: View {
         }
     }
 
-    private func add(_ entry: FriendBook) async {
+    private func add(_ entry: FriendBook, as format: BookFormat) async {
         adding.insert(entry.id)
         defer { adding.remove(entry.id) }
         do {
-            try await FriendsAPI.addBook(friendId: friendId, bookId: entry.id, status: .toRead)
+            try await FriendsAPI.addBook(
+                friendId: friendId,
+                bookId: entry.id,
+                status: .toRead,
+                format: format
+            )
             markOwned(entry.id)
         } catch {
             addFailed = reportError(error)

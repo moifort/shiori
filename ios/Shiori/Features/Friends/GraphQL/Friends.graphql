@@ -58,6 +58,7 @@ fragment FriendSagaRow on FriendSaga {
   id
   seriesId
   name
+  audio
   author
   language
   ownedCount
@@ -147,10 +148,15 @@ query FriendBook($userId: UserId!, $bookId: BookId!) {
   }
 }
 
-# Copy a friend's book onto the reader's shelf. The server re-reads it and
-# records the friend as the recommender.
-mutation AddFriendBook($userId: UserId!, $bookId: BookId!, $status: CopiedStatus!) {
-  addFriendBook(userId: $userId, bookId: $bookId, status: $status) {
+# Copy a friend's book onto the reader's shelf, in the format the reader takes
+# it in. The server re-reads it and records the friend as the recommender.
+mutation AddFriendBook(
+  $userId: UserId!
+  $bookId: BookId!
+  $status: CopiedStatus!
+  $format: BookFormat
+) {
+  addFriendBook(userId: $userId, bookId: $bookId, status: $status, format: $format) {
     id
   }
 }

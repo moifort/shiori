@@ -16,6 +16,7 @@ import type {
   FriendSagaPage,
 } from '~/domain/friendship/use-case'
 import { SeriesStateEnum } from '~/domain/series/infrastructure/graphql/enums'
+import { isAudioSeries } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
 import { Count } from '~/domain/shared/primitives'
 
@@ -132,6 +133,12 @@ export const FriendSagaType = builder.objectRef<FriendSaga>('FriendSaga').implem
       resolve: (saga) => saga.seriesId,
     }),
     name: t.field({ type: 'SeriesName', resolve: (saga) => saga.name }),
+    audio: t.boolean({
+      description:
+        'The saga heard rather than read: a friend holding it both ways shelves ' +
+        'two sagas under one name, and this tells them apart.',
+      resolve: (saga) => isAudioSeries(saga.seriesId),
+    }),
     author: t.field({
       type: 'AuthorName',
       nullable: true,

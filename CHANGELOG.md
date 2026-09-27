@@ -69,6 +69,8 @@ the release tag is pushed.
   series they hearted.
 - On a friend's page, every book has a "+" to put it on your pile, greyed out when you
   already own it, and its page opens the series, which you can add to yours from there.
+  The "+" asks whether you take it as a book or as an audiobook, whatever your friend's
+  format, and their audio series show the headphones, as yours do.
 - A friend's page ends with "See their series" and "See their books", which open their whole
   library and all their series, laid out like your own Library and Series tabs. Empty
   sections are no longer shown.

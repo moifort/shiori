@@ -628,6 +628,35 @@ describe("taking a book off a friend's shelf", () => {
     expect(result.data?.addFriendBook).toMatchObject({ status: 'READ' })
   })
 
+  // A reader who never listens takes a friend's recording as a book.
+  test("takes it in the reader's format, leaving the other medium's facts behind", async () => {
+    const heard = idOf(
+      await addBook(
+        alice,
+        'title: "Dune", authors: ["Frank Herbert"], format: AUDIOBOOK, narrators: ["Simon Vance"]',
+      ),
+    )
+    await befriend()
+
+    const result = await as(bob)(
+      `mutation { addFriendBook(userId: "alice", bookId: "${heard}", status: TO_READ, format: BOOK) { format narrators } }`,
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.addFriendBook).toEqual({ format: 'BOOK', narrators: [] })
+  })
+
+  test("keeps the friend's format when the reader names none", async () => {
+    const heard = idOf(await addBook(alice, 'title: "Dune", format: AUDIOBOOK'))
+    await befriend()
+
+    const result = await as(bob)(
+      `mutation { addFriendBook(userId: "alice", bookId: "${heard}", status: TO_READ) { format } }`,
+    )
+
+    expect(result.data?.addFriendBook).toEqual({ format: 'AUDIOBOOK' })
+  })
+
   test('refuses a story the reader already owns', async () => {
     const dune = idOf(await addBook(alice, 'title: "Dune", authors: ["Frank Herbert"]'))
     await addBook(bob, 'title: "Dune", authors: ["Frank Herbert"]')

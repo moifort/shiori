@@ -149,19 +149,27 @@ struct FriendBookView: View {
         }
     }
 
-    /// "+" in the corner: onto the pile, or among the books read. Greyed out
-    /// once the book is the reader's.
+    /// "+" in the corner: onto the pile, or among the books read, in print or
+    /// as a recording — a reader who never listens takes a friend's recording
+    /// as a book. Greyed out once the book is the reader's.
     private func addMenu(_ entry: FriendBook) -> some View {
         let owned = entry.inLibrary || added != nil
         return Menu {
-            Button("Ajouter à ma pile à lire", systemImage: "bookmark.fill") {
-                Task { await add(.toRead) }
+            ForEach(entry.book.format.takenAs, id: \.self) { format in
+                Section(format.label) {
+                    Button("Ajouter à ma pile", systemImage: "bookmark.fill") {
+                        Task { await add(.toRead, as: format) }
+                    }
+                    .accessibilityIdentifier("friend-book-add-pile-\(format.rawValue)")
+                    Button(
+                        format == .audiobook ? "Je l'ai déjà écouté" : "Je l'ai déjà lu",
+                        systemImage: "checkmark"
+                    ) {
+                        Task { await add(.read, as: format) }
+                    }
+                    .accessibilityIdentifier("friend-book-add-read-\(format.rawValue)")
+                }
             }
-            .accessibilityIdentifier("friend-book-add-pile")
-            Button("Je l'ai déjà lu", systemImage: "checkmark") {
-                Task { await add(.read) }
-            }
-            .accessibilityIdentifier("friend-book-add-read")
         } label: {
             Label("Ajouter à ma bibliothèque", systemImage: "plus")
         }
@@ -180,9 +188,14 @@ struct FriendBookView: View {
         isLoading = false
     }
 
-    private func add(_ status: CopiedStatus) async {
+    private func add(_ status: CopiedStatus, as format: BookFormat) async {
         do {
-            try await FriendsAPI.addBook(friendId: friendId, bookId: bookId, status: status)
+            try await FriendsAPI.addBook(
+                friendId: friendId,
+                bookId: bookId,
+                status: status,
+                format: format
+            )
             added = status
             onAdded()
         } catch {

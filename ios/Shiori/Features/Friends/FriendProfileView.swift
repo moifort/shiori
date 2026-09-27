@@ -154,10 +154,11 @@ struct FriendProfileView: View {
                             TakeButton(
                                 owned: saga.inLibrary || isPreview || saga.volumes.isEmpty,
                                 isAdding: addingSagas.contains(saga.id),
+                                format: saga.takenFormat,
                                 addLabel: "Ajouter la série à mes séries",
                                 ownedLabel: "Série déjà dans votre bibliothèque"
-                            ) {
-                                await add(saga)
+                            ) { format in
+                                await add(saga, as: format)
                             }
                         }
                         .edgeToEdgeSeparator()
@@ -325,8 +326,12 @@ struct FriendProfileView: View {
     /// "+" to put a book on the reader's pile, greyed out on one they already
     /// own — every book of the preview, which is their own shelf.
     private func takeButton(_ entry: FriendBook) -> some View {
-        TakeButton(owned: entry.inLibrary || isPreview, isAdding: adding.contains(entry.id)) {
-            await add(entry)
+        TakeButton(
+            owned: entry.inLibrary || isPreview,
+            isAdding: adding.contains(entry.id),
+            format: entry.book.format
+        ) { format in
+            await add(entry, as: format)
         }
     }
 
@@ -343,23 +348,33 @@ struct FriendProfileView: View {
         isLoading = false
     }
 
-    private func add(_ entry: FriendBook) async {
+    private func add(_ entry: FriendBook, as format: BookFormat) async {
         adding.insert(entry.id)
         defer { adding.remove(entry.id) }
         do {
-            try await FriendsAPI.addBook(friendId: friend.userId, bookId: entry.id, status: .toRead)
+            try await FriendsAPI.addBook(
+                friendId: friend.userId,
+                bookId: entry.id,
+                status: .toRead,
+                format: format
+            )
             markOwned(entry.id)
         } catch {
             addFailed = reportError(error)
         }
     }
 
-    private func add(_ saga: FriendSaga) async {
+    private func add(_ saga: FriendSaga, as format: BookFormat) async {
         guard let first = saga.volumes.first else { return }
         addingSagas.insert(saga.id)
         defer { addingSagas.remove(saga.id) }
         do {
-            try await FriendsAPI.addBook(friendId: friend.userId, bookId: first.id, status: .toRead)
+            try await FriendsAPI.addBook(
+                friendId: friend.userId,
+                bookId: first.id,
+                status: .toRead,
+                format: format
+            )
             markOwned(first.id)
             if let index = profile?.sagas.firstIndex(where: { $0.id == saga.id }) {
                 profile?.sagas[index].inLibrary = true

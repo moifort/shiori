@@ -1019,6 +1019,10 @@ A saga a friend is reading, as their own books describe it.
 Taken from the books and nothing else: the shared catalogue is never exposed here, so this says how many volumes they hold and never how many the saga has.
 """
 type FriendSaga {
+  """
+  The saga heard rather than read: a friend holding it both ways shelves two sagas under one name, and this tells them apart.
+  """
+  audio: Boolean!
   author: AuthorName
 
   """
@@ -1339,12 +1343,17 @@ type Mutation {
   addBook(input: NewBookInput!): Book!
 
   """
-  Put a friend's book on the reader's own shelf, on the pile or among the books read.
+  Put a friend's book on the reader's own shelf, on the pile or among the books read, in the format the reader takes it in.
   
   Only the friend and the book are named: the server re-reads the book and copies its catalogue facts, never what the friend made of it — no status, rating, heart or note. The copy records the friend as who recommended it. Fails with `NOT_FOUND` for a stranger, a missing book or one marked "do not share", and `ALREADY_IN_LIBRARY` when the reader owns the story.
   """
   addFriendBook(
     bookId: BookId!
+
+    """
+    How the reader takes it in. Defaults to the friend's own format. Across the line between a recording and a printed book, the running time, narrators and page count are left behind.
+    """
+    format: BookFormat
     status: CopiedStatus!
 
     """The friend"""

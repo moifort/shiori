@@ -1,4 +1,5 @@
 import { match } from 'ts-pattern'
+import { BookFormatEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
 import { FriendshipCommand } from '~/domain/friendship/command'
@@ -68,7 +69,7 @@ builder.mutationFields((t) => ({
     type: BookType,
     description:
       "Put a friend's book on the reader's own shelf, on the pile or among the " +
-      'books read.\n\n' +
+      'books read, in the format the reader takes it in.\n\n' +
       'Only the friend and the book are named: the server re-reads the book and ' +
       'copies its catalogue facts, never what the friend made of it — no status, ' +
       'rating, heart or note. The copy records the friend as who recommended it. ' +
@@ -78,6 +79,14 @@ builder.mutationFields((t) => ({
       userId: t.arg({ type: 'UserId', required: true, description: 'The friend' }),
       bookId: t.arg({ type: 'BookId', required: true }),
       status: t.arg({ type: CopiedStatusEnum, required: true }),
+      format: t.arg({
+        type: BookFormatEnum,
+        required: false,
+        description:
+          "How the reader takes it in. Defaults to the friend's own format. Across " +
+          'the line between a recording and a printed book, the running time, ' +
+          'narrators and page count are left behind.',
+      }),
     },
     resolve: async (_root, args, context) => {
       const outcome = await FriendshipUseCase.copyBook(
@@ -85,6 +94,7 @@ builder.mutationFields((t) => ({
         args.userId,
         args.bookId,
         args.status,
+        args.format ?? undefined,
       )
       return match(outcome)
         .with('not-found', () => notFound('Book not found'))

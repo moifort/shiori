@@ -3,6 +3,7 @@ import { shelfDateOf, shelfKeyOf, shelfPageOf, shelvedOf } from '~/domain/book/b
 import { BookQuery } from '~/domain/book/query'
 import type {
   Book,
+  BookFormat,
   BookId,
   BookLanguage,
   BookView,
@@ -261,29 +262,39 @@ export namespace FriendshipUseCase {
    *  do. What the friend made of it stays theirs — no status, rating, heart,
    *  note, nor their cover photo, which lives under their account. The copy
    *  remembers who it came from as its recommendation, which the reader can
-   *  correct afterwards like any other. */
+   *  correct afterwards like any other.
+   *
+   *  `format` is how the reader takes the story in, which need not be how the
+   *  friend does: a reader who never listens takes a friend's recording as a
+   *  book. Across that line the facts of the other object are dropped — a
+   *  running time and narrators say nothing of a printed book, a page count
+   *  nothing of a recording — and the volume moves to the saga of its format. */
   export const copyBook = async (
     userId: UserId,
     friendId: UserId,
     bookId: BookId,
     status: CopiedStatus,
+    format?: BookFormat,
   ): Promise<Book | 'not-found' | 'already-owned'> => {
     const source = await book(userId, friendId, bookId)
     if (!source) return 'not-found'
     if (source.inLibrary) return 'already-owned'
     const firstName = (await UserQuery.namesOf([friendId])).get(friendId)
+    const taken = format ?? source.format
+    const heard = taken === 'audiobook'
+    const sameMedium = heard === (source.format === 'audiobook')
     return BookUseCase.add(userId, {
       title: source.title,
       authors: source.authors,
-      format: source.format,
+      format: taken,
       publisher: source.publisher,
       firstPublishedIn: source.firstPublishedIn,
       synopsis: source.synopsis,
       genre: source.genre,
       subgenres: source.subgenres,
-      pageCount: source.pageCount,
-      durationMinutes: source.durationMinutes,
-      narrators: source.narrators,
+      pageCount: sameMedium ? source.pageCount : undefined,
+      durationMinutes: sameMedium ? source.durationMinutes : undefined,
+      narrators: sameMedium ? source.narrators : [],
       isbn13: source.isbn13,
       language: source.language,
       series: source.series,

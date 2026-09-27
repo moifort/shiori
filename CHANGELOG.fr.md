@@ -65,6 +65,8 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   dernière série ajoutée en favori.
 - Sur la page d’un ami, chaque livre a un « + » pour le mettre dans votre pile, grisé si vous
   l’avez déjà, et sa fiche ouvre la série, que vous pouvez ajouter aux vôtres depuis là.
+  Le « + » vous demande si vous le prenez en livre ou en livre audio, quel que soit le format
+  de votre ami, et ses séries audio affichent le casque, comme les vôtres.
 - La page d’un ami se termine par « Voir ses séries » et « Voir ses livres », qui ouvrent toute
   sa bibliothèque et toutes ses séries, présentées comme vos onglets Bibliothèque et Séries.
   Les sections vides ne s’affichent plus.

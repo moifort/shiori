@@ -22,7 +22,9 @@ struct SagaRow<Accessory: View>: View {
                     // left out among the favourites, where every saga has one, and
                     // the genre takes its place.
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text(saga.name).font(.body.weight(.medium)).lineLimit(2)
+                        SagaName(name: saga.name, isAudio: saga.isAudio)
+                            .font(.body.weight(.medium))
+                            .lineLimit(2)
                         if let language = saga.language, language.isForeign {
                             LanguageTag(language: language)
                         }

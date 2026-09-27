@@ -82,10 +82,11 @@ struct FriendSeriesListView: View {
                             TakeButton(
                                 owned: saga.inLibrary || isPreview || saga.volumes.isEmpty,
                                 isAdding: adding.contains(saga.id),
+                                format: saga.takenFormat,
                                 addLabel: "Ajouter la série à mes séries",
                                 ownedLabel: "Série déjà dans votre bibliothèque"
-                            ) {
-                                await add(saga)
+                            ) { format in
+                                await add(saga, as: format)
                             }
                         }
                         .edgeToEdgeSeparator()
@@ -146,7 +147,9 @@ struct FriendSeriesListView: View {
         VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(saga.name).font(.body.weight(.medium)).lineLimit(2)
+                    SagaName(name: saga.name, isAudio: saga.isAudio)
+                        .font(.body.weight(.medium))
+                        .lineLimit(2)
                     Spacer(minLength: 0)
                     HStack(spacing: 6) {
                         if let language = saga.language, language.isForeign {
@@ -216,12 +219,17 @@ struct FriendSeriesListView: View {
         }
     }
 
-    private func add(_ saga: FriendSaga) async {
+    private func add(_ saga: FriendSaga, as format: BookFormat) async {
         guard let first = saga.volumes.first else { return }
         adding.insert(saga.id)
         defer { adding.remove(saga.id) }
         do {
-            try await FriendsAPI.addBook(friendId: friendId, bookId: first.id, status: .toRead)
+            try await FriendsAPI.addBook(
+                friendId: friendId,
+                bookId: first.id,
+                status: .toRead,
+                format: format
+            )
             if let index = sagas.firstIndex(where: { $0.id == saga.id }) {
                 sagas[index].inLibrary = true
             }

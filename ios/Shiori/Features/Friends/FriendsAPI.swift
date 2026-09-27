@@ -77,6 +77,9 @@ struct FriendSaga: Identifiable, Codable, Sendable {
     /// The saga alone, whatever the language: what its page opens on.
     let seriesId: String
     let name: String
+    /// The saga heard rather than read: held both ways, it is two sagas under
+    /// one name, and the headphones tell them apart.
+    var isAudio = false
     let author: String?
     let language: BookLanguage?
     let ownedCount: Int
@@ -332,16 +335,23 @@ enum FriendsAPI {
         return friendBook
     }
 
-    /// Put a friend's book on the reader's shelf. The server copies it from the
-    /// friend's record and names them as who recommended it.
+    /// Put a friend's book on the reader's shelf, in the format the reader
+    /// takes it in. The server copies it from the friend's record and names
+    /// them as who recommended it.
     @discardableResult
-    static func addBook(friendId: String, bookId: String, status: CopiedStatus) async throws -> String {
+    static func addBook(
+        friendId: String,
+        bookId: String,
+        status: CopiedStatus,
+        format: BookFormat
+    ) async throws -> String {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
             mutation: ShioriGraphQL.AddFriendBookMutation(
                 userId: friendId,
                 bookId: bookId,
-                status: .case(status.graphQL)
+                status: .case(status.graphQL),
+                format: .some(LibraryAPI.graphQLFormat(format))
             )
         )
         return data.addFriendBook.id
@@ -416,6 +426,7 @@ private extension FriendSaga {
             id: row.id,
             seriesId: row.seriesId,
             name: row.name,
+            isAudio: row.audio,
             author: row.author,
             language: row.language?.asDomain,
             ownedCount: row.ownedCount,
