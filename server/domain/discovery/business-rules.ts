@@ -1,4 +1,4 @@
-import type { Book } from '~/domain/book/types'
+import type { Book, BookLanguage } from '~/domain/book/types'
 import type { ScanResult } from '~/domain/scan/types'
 import {
   type FoundVolume as CatalogueVolume,
@@ -50,13 +50,23 @@ export const watchKeyOf = ({ seriesId, language }: Pick<WatchedSaga, 'seriesId' 
 export const formatOf = (seriesId: SeriesId): ReleaseFormat =>
   isAudioSeries(seriesId) ? 'audiobook' : 'book'
 
+/** Whether Discover looks out for a saga's next volumes: not when the reader
+ *  set it aside, nor when they gave up on one of its volumes — a volume dropped
+ *  says the saga lost them. A saga of books that record no language cannot be
+ *  searched for. */
+export const isDiscoverable = <Saga extends Pick<FollowedSeries, 'language' | 'state' | 'books'>>(
+  saga: Saga,
+): saga is Saga & { language: BookLanguage } =>
+  saga.language !== undefined &&
+  saga.state !== 'unfollowed' &&
+  !saga.books.some((book) => book.status === 'dropped')
+
 /** Every saga the reader follows, in the language they hold it in: all of
- *  them but the ones they set aside. A saga of books that record no language
- *  cannot be searched for. */
+ *  them Discover looks out for. */
 export const watchedSagasOf = (followed: readonly FollowedSeries[]): WatchedSaga[] => {
   const sagas = new Map<string, WatchedSaga>()
   for (const saga of followed) {
-    if (!saga.language || saga.state === 'unfollowed') continue
+    if (!isDiscoverable(saga)) continue
     const language = saga.language
     const asin = isAudioSeries(saga.id)
       ? saga.books.find((book) => book.audibleAsin && book.language === language)?.audibleAsin
@@ -307,7 +317,7 @@ export const newAnnouncementsOf = (
 ): Announcement[] =>
   followed
     .flatMap((series): Announcement[] => {
-      if (!series.language || series.state === 'unfollowed') return []
+      if (!isDiscoverable(series)) return []
       const watch = watches.get(watchKeyOf({ seriesId: series.id, language: series.language }))
       if (!watch) return []
       const held = heldNumbersOf(series.books)

@@ -78,6 +78,10 @@ describe('the sagas watched for a reader', () => {
     const sagas = watchedSagasOf([
       saga({}),
       saga({ id: 'set-aside' as SeriesId, state: 'unfollowed' }),
+      saga({
+        id: 'given-up' as SeriesId,
+        books: [{ status: 'read' }, { status: 'dropped' }] as FollowedSeries['books'],
+      }),
       saga({ id: 'no-language' as SeriesId, language: undefined }),
       saga({ id: 'not-started' as SeriesId, state: 'not-started' }),
     ])
@@ -381,10 +385,21 @@ describe('the weekly digest', () => {
     ])
   })
 
-  test('leaves out a saga set aside, and one never looked up', () => {
+  test('leaves out a saga set aside, one given up on, and one never looked up', () => {
     expect(newAnnouncementsOf([saga({ state: 'unfollowed' })], watches, new Set(), today)).toEqual(
       [],
     )
+    const givenUp = held(1, 4).map((book, index) =>
+      index === 0 ? { ...book, status: 'dropped' } : book,
+    )
+    expect(
+      newAnnouncementsOf(
+        [saga({ books: givenUp as FollowedSeries['books'] })],
+        watches,
+        new Set(),
+        today,
+      ),
+    ).toEqual([])
     expect(newAnnouncementsOf(followed, new Map(), new Set(), today)).toEqual([])
   })
 

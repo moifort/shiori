@@ -11,6 +11,7 @@ import {
   dueWatches,
   formatOf,
   inDiscoveryOrder,
+  isDiscoverable,
   likelyLanguageOf,
   mergedVolumes,
   missingVolumesOf,
@@ -329,7 +330,7 @@ const discoveryOf = (
   let unwatched = 0
   let followedCount = 0
   const rows = followed.flatMap((series): SagaDiscovery[] => {
-    if (!series.language || series.state === 'unfollowed') return []
+    if (!isDiscoverable(series)) return []
     if (formatOf(series.id) !== format) return []
     followedCount += 1
     const watch = watches.get(watchKeyOf({ seriesId: series.id, language: series.language }))

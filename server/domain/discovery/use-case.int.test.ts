@@ -93,12 +93,16 @@ const carlHeard = seriesKeyOf('Dungeon Crawler Carl', 'Matt Dinniman', 'audioboo
 let fake: FakeFirestore
 
 /** An account, and the first volume of Dungeon Crawler Carl read in French. */
-const stock = async (userId: UserId, format: 'book' | 'audiobook' = 'book') => {
+const stock = async (
+  userId: UserId,
+  format: 'book' | 'audiobook' = 'book',
+  status: 'read' | 'dropped' = 'read',
+) => {
   fake.seed('users', userId, { userId, firstName: 'Bob' })
   await BookUseCase.add(userId, {
     title: BookTitle('Carl 1'),
     authors: [AuthorName('Matt Dinniman')],
-    status: 'read',
+    status,
     language: 'fr',
     format,
     series: {
@@ -143,6 +147,16 @@ describe('the hourly pass', () => {
   test('never looks up a saga the reader set aside', async () => {
     await stock(reader)
     await SeriesOpinionCommand.setFollowed(reader, carl, false, 'fr', ['fr'])
+
+    await DiscoveryUseCase.watchDueSagas(now)
+
+    expect(calls).toEqual([])
+  })
+
+  // A volume given up on says the saga lost the reader: its next ones are not
+  // worth a look.
+  test('never looks up a saga the reader gave up a volume of', async () => {
+    await stock(reader, 'book', 'dropped')
 
     await DiscoveryUseCase.watchDueSagas(now)
 
