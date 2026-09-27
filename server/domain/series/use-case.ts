@@ -12,6 +12,7 @@ import {
   followedSagasOf,
   followedStateOf,
   genreOf,
+  inLovedOrder,
   inTabOrder,
   isRecentMiss,
   matchingFilter,
@@ -125,7 +126,8 @@ export namespace SeriesUseCase {
   }
 
   /** One page of the Series tab, newest first on `shelvedAt`, narrowed to the
-   *  hearted sagas or to one state.
+   *  hearted sagas or to one state — or, `loved`, the sagas the reader judged,
+   *  hearts first and then five stars down to one.
    *
    *  Without a state filter, which sagas a page holds depends on the books and
    *  the opinions alone — a saga set aside is the reader's own flag — so only
@@ -134,7 +136,7 @@ export namespace SeriesUseCase {
   export const followedPage = async (
     userId: UserId,
     page: { limit: number; offset: number },
-    filter: { favorite?: boolean; state?: SeriesState },
+    filter: { favorite?: boolean; loved?: boolean; state?: SeriesState },
   ): Promise<{ items: FollowedSeries[]; hasMore: boolean }> => {
     const shelf = await shelfOf(userId)
     if (filter.state !== undefined) {
@@ -142,13 +144,14 @@ export namespace SeriesUseCase {
         ...saga,
         favorite: saga.opinion?.favorite === true,
       }))
-      return pageOf(inTabOrder(matchingFilter(all, filter)), page)
+      const kept = matchingFilter(all, filter)
+      return pageOf(filter.loved ? inLovedOrder(kept) : inTabOrder(kept), page)
     }
     const kept = matchingFilter(
       shelf.sagas.map((saga) => ({ ...saga, state: saga.unfollowed ? 'unfollowed' : null })),
       filter,
     )
-    const { items, hasMore } = pageOf(inTabOrder(kept), page)
+    const { items, hasMore } = pageOf(filter.loved ? inLovedOrder(kept) : inTabOrder(kept), page)
     return { items: await described(shelf, items), hasMore }
   }
 

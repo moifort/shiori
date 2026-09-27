@@ -11,7 +11,8 @@ import type {
   VolumeNumber,
 } from '~/domain/series/types'
 import { Year } from '~/domain/shared/primitives'
-import type { AuthorName, BookTitle, Year as YearValue } from '~/domain/shared/types'
+import { lovedFirst, lovedRankOf } from '~/domain/shared/rating'
+import type { AuthorName, BookTitle, StarRating, Year as YearValue } from '~/domain/shared/types'
 import { slugify } from '~/utils/slug'
 
 /** Which edition of a saga a rule is judged for, and on which day. Without a
@@ -304,6 +305,20 @@ export const followedStateOf = (
  *  ordered on the client, a page landing late would reshuffle what is drawn. */
 export const inTabOrder = <Saga extends { shelvedAt: Date }>(sagas: readonly Saga[]): Saga[] =>
   [...sagas].sort((left, right) => right.shelvedAt.getTime() - left.shelvedAt.getTime())
+
+/** The Series tab's favourites: the sagas the reader judged, hearts first,
+ *  then five stars down to one, each rank the saga shelved last first. A saga
+ *  borrows nothing from its volumes: its stars are a judgement of the whole. */
+export const inLovedOrder = <
+  Saga extends { shelvedAt: Date; opinion: { favorite?: boolean; rating?: StarRating } | null },
+>(
+  sagas: readonly Saga[],
+): Saga[] =>
+  lovedFirst(
+    sagas,
+    (saga) => lovedRankOf({ favorite: saga.opinion?.favorite, rating: saga.opinion?.rating }),
+    (left, right) => right.shelvedAt.getTime() - left.shelvedAt.getTime(),
+  )
 
 /** The sagas a filter of the Series tab keeps: the hearted ones, and those in
  *  one state. A saga whose state is unknown — every owned volume read and no

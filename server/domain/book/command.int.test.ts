@@ -12,6 +12,7 @@ const { StarRating, ReadingNote, Publisher, PageCount, RecommendationComment } =
   '~/domain/book/primitives'
 )
 const { PersonName } = await import('~/domain/shared/primitives')
+const { SeriesOpinionCommand } = await import('~/domain/series-opinion/command')
 
 const reader = 'reader-1' as UserId
 const NOW = new Date('2026-09-14T10:00:00.000Z')
@@ -661,6 +662,76 @@ describe('paging the Library tab', () => {
     const { books } = await BookQuery.libraryPage(reader, { limit: 10 }, {})
 
     expect(books[0]).not.toHaveProperty('shelvedAt')
+  })
+})
+
+describe('the favourites view of the Library tab', () => {
+  const dune = SeriesId('dune--frank-herbert')
+  const at = (minutes: number) => new Date(NOW.getTime() - minutes * 60_000)
+  const shelveIn = (title: string, minutes: number, status?: 'to-read' | 'read') =>
+    BookCommand.add(
+      reader,
+      {
+        title: BookTitle(title),
+        status,
+        series: { id: dune, name: SeriesName('Dune'), volume: VolumeNumber(1), kind: 'main' },
+      },
+      at(minutes),
+    )
+  const shelveAlone = (title: string, minutes: number) =>
+    BookCommand.add(reader, { title: BookTitle(title) }, at(minutes))
+  const titlesOf = (books: readonly { title: string }[]) => books.map((book) => String(book.title))
+
+  // Hearts, then the saga's heart lent to a volume read, then five stars down
+  // to one, each rank newest first; what nobody judged stays out.
+  test('ranks the hearts first, then the stars from five down to one', async () => {
+    const three = await shelveAlone('Trois', 1)
+    const fiveOld = await shelveAlone('Cinq ancien', 5)
+    const fiveNew = await shelveAlone('Cinq récent', 2)
+    const loved = await shelveAlone('Coup de cœur', 9)
+    await shelveAlone('Jamais noté', 0)
+    await BookCommand.rate(reader, three.id, StarRating(3), at(1))
+    await BookCommand.rate(reader, fiveOld.id, StarRating(5), at(5))
+    await BookCommand.rate(reader, fiveNew.id, StarRating(5), at(2))
+    await BookCommand.setFavorite(reader, loved.id, true, at(9))
+
+    const { books } = await BookQuery.libraryPage(reader, { limit: 10 }, { loved: true })
+
+    expect(titlesOf(books)).toEqual(['Coup de cœur', 'Cinq récent', 'Cinq ancien', 'Trois'])
+  })
+
+  test("lends the saga's stars to a volume read and left unrated", async () => {
+    await shelveIn('Dune', 3, 'read')
+    await shelveIn('Le Messie de Dune', 1, 'to-read')
+    const four = await shelveAlone('Quatre', 0)
+    await BookCommand.rate(reader, four.id, StarRating(4), at(0))
+    await SeriesOpinionCommand.rate(reader, dune, StarRating(5))
+
+    const { books } = await BookQuery.libraryPage(reader, { limit: 10 }, { loved: true })
+
+    // The volume still on the pile borrows nothing: a row would draw no mark.
+    expect(titlesOf(books)).toEqual(['Dune', 'Quatre'])
+  })
+
+  test('pages on the cursor through the ranks', async () => {
+    const rated = []
+    for (const [index, stars] of [5, 4, 3].entries()) {
+      const book = await shelveAlone(`Livre ${stars}`, index)
+      await BookCommand.rate(reader, book.id, StarRating(stars), at(index))
+      rated.push(book)
+    }
+
+    const first = await BookQuery.libraryPage(reader, { limit: 2 }, { loved: true })
+    const next = await BookQuery.libraryPage(
+      reader,
+      { limit: 2, after: first.books.at(-1)?.id },
+      { loved: true },
+    )
+
+    expect(titlesOf(first.books)).toEqual(['Livre 5', 'Livre 4'])
+    expect(first.hasMore).toBe(true)
+    expect(titlesOf(next.books)).toEqual(['Livre 3'])
+    expect(next.hasMore).toBe(false)
   })
 })
 

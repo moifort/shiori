@@ -211,14 +211,25 @@ builder.queryFields((t) => ({
     description:
       'One page of `mySeries`, for a list that draws as it scrolls: newest first on ' +
       '`shelvedAt`, which the app cuts into month sections as the Library tab does. ' +
-      '`favorite` keeps the hearted sagas, `state` one state ' +
+      '`loved` ranks the judged sagas instead, `state` keeps one state ' +
       '(COMPLETE also keeps the sagas of unknown state). With no `state`, the ' +
       'sagas set aside are there too. ' +
       'Offset-paginated: pass the number of rows already shown.',
     args: {
       limit: t.arg.int({ defaultValue: 40, description: 'Maximum sagas in the page' }),
       offset: t.arg.int({ defaultValue: 0, description: 'Rows to skip' }),
-      favorite: t.arg.boolean({ required: false, description: 'Only the hearted sagas' }),
+      favorite: t.arg.boolean({
+        required: false,
+        description: 'Only the hearted sagas',
+        deprecationReason: 'Use `loved`, which follows the hearts with the stars.',
+      }),
+      loved: t.arg.boolean({
+        required: false,
+        description:
+          'The favourites view: the sagas the reader hearted or rated, hearts first, ' +
+          'then five stars down to one, each rank newest on `shelvedAt` first. The app ' +
+          'cuts it into one section per rank rather than per month.',
+      }),
       state: t.arg({ type: SeriesStateEnum, required: false }),
     },
     resolve: (_root, args, context) =>
@@ -228,7 +239,11 @@ builder.queryFields((t) => ({
           limit: Math.max(1, Math.min(args.limit ?? 40, 200)),
           offset: Math.max(0, args.offset ?? 0),
         },
-        { favorite: args.favorite ?? undefined, state: args.state ?? undefined },
+        {
+          favorite: args.favorite ?? undefined,
+          loved: args.loved ?? undefined,
+          state: args.state ?? undefined,
+        },
       ),
   }),
 

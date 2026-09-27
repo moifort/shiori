@@ -1,7 +1,10 @@
 import {
   groupedBySeries,
   inSagaOrder,
+  lovedRankOfBook,
+  seriesRatingsOf,
   shelfKeysOf,
+  shelfOrder,
   shelfPageOf,
   shelvedOf,
   subgenresOf,
@@ -20,6 +23,7 @@ import type {
 } from '~/domain/book/types'
 import type { SeriesId } from '~/domain/series/types'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
+import { lovedFirst } from '~/domain/shared/rating'
 import type { UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
 import { objectStore } from '~/system/object-store'
@@ -67,13 +71,32 @@ export namespace BookQuery {
    *  whole library; covers are signed for the page only.
    *
    *  While a view's index is still building after a deploy, the whole library
-   *  is sorted in memory instead: slower, never wrong. */
+   *  is sorted in memory instead: slower, never wrong.
+   *
+   *  `loved` is the favourites view: every book judged, its own heart or stars
+   *  or its saga's, hearts first and then five stars down to one, each rank
+   *  newest on the shelf first. Ranked in memory, from the library and the saga
+   *  opinions: no index can order on stars a book borrows from its saga. */
   export const libraryPage = async (
     userId: UserId,
     page: { limit: number; after?: BookId },
-    view: { favorite?: boolean; status?: ReadingStatus },
+    view: { favorite?: boolean; loved?: boolean; status?: ReadingStatus },
   ): Promise<{ books: BookView[]; hasMore: boolean }> => {
     const statuses = shownStatusesOf(view)
+    if (view.loved) {
+      const [books, opinions] = await Promise.all([
+        repository.findAllByUser(userId),
+        SeriesOpinionQuery.all(userId),
+      ])
+      const seriesRatings = seriesRatingsOf(opinions)
+      const ranked = lovedFirst(
+        books.filter((book) => !statuses || statuses.includes(book.status)),
+        (book) => lovedRankOfBook(book, seriesRatings),
+        shelfOrder,
+      )
+      const { books: shown, hasMore } = shelfPageOf(ranked, page.limit, page.after)
+      return { books: await withCovers(shown), hasMore }
+    }
     try {
       const { books, hasMore } = await repository.findShelfPage(
         userId,

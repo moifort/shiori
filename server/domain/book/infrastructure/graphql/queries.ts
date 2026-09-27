@@ -42,6 +42,15 @@ builder.queryFields((t) => ({
       favorite: t.arg.boolean({
         required: false,
         description: 'Keep only the books the reader marked as favourites.',
+        deprecationReason: 'Use `loved`, which follows the hearts with the stars.',
+      }),
+      loved: t.arg.boolean({
+        required: false,
+        description:
+          'The favourites view: every book the reader judged — its own heart or ' +
+          "stars, else its saga's once it is read — hearts first, then five stars " +
+          'down to one, each rank newest on `shelvedAt` first. The app cuts it into ' +
+          'one section per rank rather than per month.',
       }),
       status: t.arg({
         type: ReadingStatusEnum,
@@ -61,6 +70,7 @@ builder.queryFields((t) => ({
         { limit: Math.max(1, Math.min(args.limit ?? 60, 200)), after: args.after ?? undefined },
         {
           favorite: args.favorite ?? undefined,
+          loved: args.loved ?? undefined,
           status: args.status ?? undefined,
         },
       ),

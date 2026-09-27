@@ -619,6 +619,26 @@ describe('the Series tab, newest first', () => {
     const complete = await execute('{ mySeriesPage(state: COMPLETE) { items { name } } }')
     expect(complete.data?.mySeriesPage).toEqual({ items: [{ name: 'Berserk' }] })
   })
+
+  test('ranks the favourites: hearts first, then five stars down to one', async () => {
+    await addSaga('Berserk', 'FANTASY')
+    await addSaga('Dune', 'SCIENCE_FICTION')
+    await addSaga('Wheel', 'FANTASY')
+    await addSaga('Hyperion', 'SCIENCE_FICTION')
+    await execute('mutation { rateSeries(seriesId: "berserk--auteur", rating: 3) { rating } }')
+    await execute('mutation { rateSeries(seriesId: "wheel--auteur", rating: 5) { rating } }')
+    await execute(
+      'mutation { setSeriesFavorite(seriesId: "dune--auteur", favorite: true) { favorite } }',
+    )
+
+    const loved = await execute('{ mySeriesPage(loved: true) { items { name } } }')
+
+    expect(loved.errors).toBeUndefined()
+    // Hyperion, never judged, stays out.
+    expect(loved.data?.mySeriesPage).toEqual({
+      items: [{ name: 'Dune' }, { name: 'Wheel' }, { name: 'Berserk' }],
+    })
+  })
 })
 
 describe('removing a saga from the library', () => {

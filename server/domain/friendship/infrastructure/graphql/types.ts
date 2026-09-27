@@ -169,6 +169,12 @@ export const FriendSagaType = builder.objectRef<FriendSaga>('FriendSaga').implem
         'given before the date was kept.',
       resolve: (saga) => saga.favoritedAt ?? null,
     }),
+    rating: t.field({
+      type: 'StarRating',
+      nullable: true,
+      description: 'Their stars for the saga as a whole. Null on a saga they did not rate.',
+      resolve: (saga) => saga.rating ?? null,
+    }),
     genre: t.field({
       type: GenreEnum,
       nullable: true,

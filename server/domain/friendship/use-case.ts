@@ -1,5 +1,11 @@
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
-import { shelfDateOf, shelfKeyOf, shelfPageOf, shelvedOf } from '~/domain/book/business-rules'
+import {
+  seriesRatingsOf,
+  shelfDateOf,
+  shelfKeyOf,
+  shelfPageOf,
+  shelvedOf,
+} from '~/domain/book/business-rules'
 import { BookQuery } from '~/domain/book/query'
 import type {
   Book,
@@ -9,6 +15,7 @@ import type {
   BookView,
   Genre,
   ReadingStatus,
+  StarRating,
   TaggedSubgenre,
 } from '~/domain/book/types'
 import { READING_STATUSES } from '~/domain/book/types'
@@ -29,6 +36,7 @@ import { type FollowedSaga, followedSagasOf, genreOf } from '~/domain/series/bus
 import type { SeriesId, SeriesName, SeriesState } from '~/domain/series/types'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import { Count, PersonName } from '~/domain/shared/primitives'
+import { lovedFirst, lovedRankOf } from '~/domain/shared/rating'
 import type { AuthorName, Count as CountValue, UserId } from '~/domain/shared/types'
 import { UserQuery } from '~/domain/user/query'
 
@@ -58,6 +66,8 @@ export type FriendSaga = {
   /** When its owner hearted it. Absent on a saga not hearted, and on a heart
    *  given before the date was kept. */
   favoritedAt?: Date
+  /** Its owner's stars for the saga as a whole. Absent on a saga not rated. */
+  rating?: StarRating
   genre?: Genre
   subgenre?: TaggedSubgenre
   /** Its volumes on the shelf, in reading order, for a strip of covers.
@@ -234,32 +244,40 @@ export namespace FriendshipUseCase {
 
   /** One page of a friend's sagas — or of the reader's own, previewed — as
    *  their own Series tab draws them: the saga shelved last first, each with
-   *  every volume on the shelf as a cover. `after` is the id of the last saga
-   *  of the previous page. Null for a stranger. */
+   *  every volume on the shelf as a cover — or, `loved`, the sagas they
+   *  hearted or rated, hearts first and then five stars down to one. `after`
+   *  is the id of the last saga of the previous page. Null for a stranger. */
   export const sagaPage = async (
     viewerId: UserId,
     ownerId: UserId,
     page: { limit: number; after?: string },
-    view: { state?: SeriesState; favorite?: boolean } = {},
+    view: { state?: SeriesState; favorite?: boolean; loved?: boolean } = {},
   ): Promise<FriendSagaPage | null> => {
     if (!(await canRead(viewerId, ownerId))) return null
-    const [books, favoriteSagas, owned] = await Promise.all([
+    const [books, favoriteSagas, ratings, owned] = await Promise.all([
       BookQuery.shared(ownerId),
       favoriteSagasOf(ownerId),
+      sagaRatingsOf(ownerId),
       BookQuery.shelfKeys(viewerId),
     ])
-    const sagas = followedSagasOf(books)
-      .filter(
-        (saga) =>
-          (!view.state || friendSagaStateOf(saga.books) === view.state) &&
-          (!view.favorite || favoriteSagas.has(saga.id)),
-      )
-      .map((saga) => ({ saga, id: `${saga.id}\u0000${saga.language ?? ''}` }))
-      .sort(
-        (left, right) =>
-          sagaShelvedAt(right.saga).getTime() - sagaShelvedAt(left.saga).getTime() ||
-          left.saga.name.localeCompare(right.saga.name),
-      )
+    const newestFirst = (left: FollowedSaga<Book>, right: FollowedSaga<Book>) =>
+      sagaShelvedAt(right).getTime() - sagaShelvedAt(left).getTime() ||
+      left.name.localeCompare(right.name)
+    const kept = followedSagasOf(books).filter(
+      (saga) =>
+        (!view.state || friendSagaStateOf(saga.books) === view.state) &&
+        (!view.favorite || favoriteSagas.has(saga.id)),
+    )
+    const sagas = (
+      view.loved
+        ? lovedFirst(
+            kept,
+            (saga) =>
+              lovedRankOf({ favorite: favoriteSagas.has(saga.id), rating: ratings.get(saga.id) }),
+            newestFirst,
+          )
+        : kept.sort(newestFirst)
+    ).map((saga) => ({ saga, id: `${saga.id}\u0000${saga.language ?? ''}` }))
     const start = page.after ? sagas.findIndex(({ id }) => id === page.after) + 1 : 0
     const shown = sagas.slice(start, start + page.limit)
     const volumes = await Promise.all(
@@ -270,6 +288,7 @@ export namespace FriendshipUseCase {
         friendSagaOf(
           saga,
           favoriteSagas,
+          ratings,
           (volumes[index] ?? []).map((book) => ({ ...book, inLibrary: ownsStory(owned, book) })),
         ),
       ),
@@ -293,11 +312,12 @@ export namespace FriendshipUseCase {
       BookQuery.shelfKeys(userId),
       Promise.all(
         friendIds.map(async (friendId) => {
-          const [books, favoriteSagas] = await Promise.all([
+          const [books, favoriteSagas, ratings] = await Promise.all([
             BookQuery.shared(friendId),
             favoriteSagasOf(friendId),
+            sagaRatingsOf(friendId),
           ])
-          return { friendId, books, sagas: followedSagasOf(books), favoriteSagas }
+          return { friendId, books, sagas: followedSagasOf(books), favoriteSagas, ratings }
         }),
       ),
     ])
@@ -307,6 +327,7 @@ export namespace FriendshipUseCase {
       FAVORITES_SHOWN,
     )
     const favoriteSagas = new Map(shelves.map((shelf) => [shelf.friendId, shelf.favoriteSagas]))
+    const ratings = new Map(shelves.map((shelf) => [shelf.friendId, shelf.ratings]))
     const mark = (book: BookView): FriendBook => ({ ...book, inLibrary: ownsStory(owned, book) })
     return Promise.all(
       hearts.map(async ({ friendId, favoritedAt, book, saga }): Promise<FriendFavorite> => {
@@ -319,7 +340,12 @@ export namespace FriendshipUseCase {
         const volumes = (await BookQuery.withSignedCovers(first)).map(mark)
         return {
           ...whose,
-          saga: friendSagaOf(saga, favoriteSagas.get(friendId) ?? new Map(), volumes),
+          saga: friendSagaOf(
+            saga,
+            favoriteSagas.get(friendId) ?? new Map(),
+            ratings.get(friendId) ?? new Map(),
+            volumes,
+          ),
         }
       }),
     )
@@ -388,6 +414,7 @@ const sagaShelvedAt = (saga: FollowedSaga<Book>): Date =>
 const friendSagaOf = (
   saga: FollowedSaga<Book>,
   favoriteSagas: ReadonlyMap<SeriesId, Date | undefined>,
+  ratings: ReadonlyMap<SeriesId, StarRating>,
   volumes: FriendBook[],
 ): FriendSaga => {
   const genre = genreOf(saga.books)
@@ -400,6 +427,7 @@ const friendSagaOf = (
     ownedCount: Count(saga.books.length),
     favorite: favoriteSagas.has(saga.id),
     favoritedAt: favoriteSagas.get(saga.id),
+    rating: ratings.get(saga.id),
     genre,
     subgenre: subgenreOf(saga.books, genre),
     volumes,
@@ -416,6 +444,11 @@ const favoriteSagasOf = async (ownerId: UserId): Promise<Map<SeriesId, Date | un
       .map((opinion) => [opinion.seriesId, opinion.favoritedAt]),
   )
 
+/** The stars a shelf's owner gave their sagas. The opinions are scanned once
+ *  per request, whichever of this and the hearts asks first. */
+const sagaRatingsOf = async (ownerId: UserId): Promise<Map<SeriesId, StarRating>> =>
+  seriesRatingsOf(await SeriesOpinionQuery.all(ownerId))
+
 /** One reader's shelf as it is shared: what they are reading, most recently
  *  active first; their pile, newest first; their hearts; their sagas. At most
  *  `shown` of each list of books when given. Whether the viewer owns each
@@ -424,9 +457,10 @@ const sharedShelfOf = async (
   ownerId: UserId,
   shown = Number.POSITIVE_INFINITY,
 ): Promise<FriendProfile> => {
-  const [books, favoriteSagas, names, figures] = await Promise.all([
+  const [books, favoriteSagas, ratings, names, figures] = await Promise.all([
     BookQuery.shared(ownerId),
     favoriteSagasOf(ownerId),
+    sagaRatingsOf(ownerId),
     UserQuery.namesOf([ownerId]),
     AnalyticsUseCase.sharedShelves([ownerId]),
   ])
@@ -485,7 +519,7 @@ const sharedShelfOf = async (
     favorites: unmarked(signedFavorites),
     lastFinished: unmarked(signedFinished)[0],
     sagas: sagas.map((saga, index) =>
-      friendSagaOf(saga, favoriteSagas, unmarked(signedVolumes[index] ?? [])),
+      friendSagaOf(saga, favoriteSagas, ratings, unmarked(signedVolumes[index] ?? [])),
     ),
     bookCount: Count(books.filter((book) => SHELVED_STATUSES.includes(book.status)).length),
     readThisYear: Count(figures.get(ownerId)?.readThisYear ?? 0),

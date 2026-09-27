@@ -127,6 +127,13 @@ builder.queryFields((t) => ({
       favorite: t.arg.boolean({
         required: false,
         description: 'Keep only the sagas they hearted.',
+        deprecationReason: 'Use `loved`, which follows the hearts with the stars.',
+      }),
+      loved: t.arg.boolean({
+        required: false,
+        description:
+          'The favourites view: the sagas they hearted or rated, hearts first, then ' +
+          'five stars down to one, each rank shelved last first.',
       }),
       limit: t.arg.int({ defaultValue: 30, description: 'Maximum sagas in the page' }),
       after: t.arg.string({
@@ -139,7 +146,11 @@ builder.queryFields((t) => ({
         context.userId,
         args.userId,
         { limit: Math.max(1, Math.min(args.limit ?? 30, 100)), after: args.after ?? undefined },
-        { state: args.state ?? undefined, favorite: args.favorite ?? undefined },
+        {
+          state: args.state ?? undefined,
+          favorite: args.favorite ?? undefined,
+          loved: args.loved ?? undefined,
+        },
       ),
   }),
 }))

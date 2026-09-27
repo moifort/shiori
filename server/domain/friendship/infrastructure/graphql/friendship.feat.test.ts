@@ -462,6 +462,37 @@ describe("the reader's own shelf, as friends see it", () => {
     expect(hearted.data?.friendSagaPage).toEqual({ sagas: [] })
   })
 
+  test("ranks a friend's favourite sagas, hearts first, then their stars", async () => {
+    await addBook(
+      alice,
+      'title: "Hypérion", authors: ["Dan Simmons"], status: TO_READ, series: { id: "hyperion--dan-simmons", name: "Hypérion", volume: 1, kind: MAIN }',
+    )
+    await addBook(
+      alice,
+      'title: "Berserk", authors: ["Kentaro Miura"], status: TO_READ, series: { id: "berserk--kentaro-miura", name: "Berserk", volume: 1, kind: MAIN }',
+    )
+    await addBook(alice, dune(1))
+    await as(alice)(
+      'mutation { rateSeries(seriesId: "hyperion--dan-simmons", rating: 4) { rating } }',
+    )
+    await as(alice)(
+      'mutation { setSeriesFavorite(seriesId: "dune--frank-herbert", favorite: true) { favorite } }',
+    )
+    await befriend()
+
+    const loved = await as(bob)(
+      '{ friendSagaPage(userId: "alice", loved: true) { sagas { name favorite rating } } }',
+    )
+
+    expect(loved.errors).toBeUndefined()
+    expect(loved.data?.friendSagaPage).toEqual({
+      sagas: [
+        { name: 'Dune', favorite: true, rating: 5 },
+        { name: 'Hypérion', favorite: false, rating: 4 },
+      ],
+    })
+  })
+
   test('puts the book in progress touched most recently first', async () => {
     setSystemTime(new Date('2026-09-01T00:00:00Z'))
     await addBook(alice, 'title: "Ancien", status: READING')

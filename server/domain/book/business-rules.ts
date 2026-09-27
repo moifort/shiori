@@ -17,6 +17,7 @@ import type {
 import { compareWithinSeries } from '~/domain/series/business-rules'
 import { isAudioSeries, seriesIdFor, seriesKeyOf } from '~/domain/series/primitives'
 import type { SeriesId, SeriesName } from '~/domain/series/types'
+import { lovedRankOf } from '~/domain/shared/rating'
 import type { AuthorName, UserId } from '~/domain/shared/types'
 import { ObjectPath } from '~/system/object-store/primitives'
 import type { ObjectPath as ObjectPathValue } from '~/system/object-store/types'
@@ -174,6 +175,20 @@ export const shownRatingOf = (
   seriesRatings: ReadonlyMap<SeriesId, StarRating>,
 ): StarRating | undefined =>
   book.rating ?? (book.series ? seriesRatings.get(book.series.id) : undefined)
+
+/** Where a book sits in the favourites view: its own heart or stars, else
+ *  those of its saga — lent only once the book is read, as a row draws them,
+ *  since on a book not yet judged they would pass for a verdict. */
+export const lovedRankOfBook = (
+  book: Pick<Book, 'favorite' | 'rating' | 'series' | 'status'>,
+  seriesRatings: ReadonlyMap<SeriesId, StarRating>,
+): number | undefined =>
+  lovedRankOf({
+    favorite: book.favorite,
+    rating: book.rating,
+    lentRating:
+      book.status === 'read' && book.series ? seriesRatings.get(book.series.id) : undefined,
+  })
 
 /** The reader's saga ratings, keyed by saga, from their opinions. */
 export const seriesRatingsOf = (
