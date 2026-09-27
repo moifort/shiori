@@ -74,15 +74,8 @@ export namespace AuthorUseCase {
       .with('recent', () => inActivityOrder(matching))
       .with('loved', () => inAuthorOrder(matching))
       .exhaustive()
-    const items = ranked.slice(page.offset, page.offset + page.limit)
-    const portraits = new Map(
-      (await AuthorQuery.byKeys(items.map((author) => author.key))).map((catalogue) => [
-        catalogue.key,
-        catalogue.portraitUrl,
-      ]),
-    )
     return {
-      items: items.map((author) => ({ ...author, portraitUrl: portraits.get(author.key) })),
+      items: await withPortraits(ranked.slice(page.offset, page.offset + page.limit)),
       hasMore: page.offset + page.limit < ranked.length,
     }
   }
@@ -114,12 +107,28 @@ export namespace AuthorUseCase {
     }
   }
 
-  const shelvedAuthors = async (userId: UserId) => {
+  /** Every author the reader holds a book of, with what they made of them:
+   *  what Découvrir watches. The books and the opinions, one scan each. */
+  export const shelvedAuthors = async (userId: UserId): Promise<ShelvedAuthor<Book>[]> => {
     const [books, opinions] = await Promise.all([
       BookQuery.all(userId),
       SeriesOpinionQuery.all(userId),
     ])
     return shelvedAuthorsOf(books, opinions)
+  }
+
+  /** These authors with their portraits, the catalogues read in one getAll:
+   *  only the rows about to be drawn should be passed. */
+  export const withPortraits = async (
+    authors: readonly ShelvedAuthor<Book>[],
+  ): Promise<FollowedAuthor[]> => {
+    const portraits = new Map(
+      (await AuthorQuery.byKeys(authors.map((author) => author.key))).map((catalogue) => [
+        catalogue.key,
+        catalogue.portraitUrl,
+      ]),
+    )
+    return authors.map((author) => ({ ...author, portraitUrl: portraits.get(author.key) }))
   }
 
   /** The author's catalogue asked of the world again, at the reader's request:

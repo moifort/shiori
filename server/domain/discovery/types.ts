@@ -1,4 +1,6 @@
 import type { AudibleAsin } from '~/domain/audible/types'
+import type { AuthorKey } from '~/domain/author/types'
+import type { FollowedAuthor } from '~/domain/author/use-case'
 import type {
   BookLanguage,
   CoverUrl,
@@ -80,6 +82,9 @@ export type DiscoveryReader = {
   /** `{watchKey}--{volume}`: a volume is named in one weekly digest only.
    *  Absent on a reader stored before the digest existed. */
   announced?: string[]
+  /** The authors they hold, in each format they hold them in. Absent on a
+   *  reader stored before authors were watched. */
+  authors?: WatchedAuthor[]
 }
 
 /** What one saga has for the reader: the next volume announced they do not
@@ -101,14 +106,70 @@ export type SagaDiscovery = SagaReleases & {
   recent: FoundVolume[]
 }
 
+/** An author in one format and one language, as one reader holds them: what
+ *  the web is searched for, and the key the shared watch is stored under. */
+export type WatchedAuthor = {
+  authorKey: AuthorKey
+  /** The spelling the reader's books use: what the web is searched with. */
+  name: AuthorName
+  format: ReleaseFormat
+  language: BookLanguage
+}
+
+/** One work of an author as the web found it in one language and format, out
+ *  lately or announced. */
+export type FoundWork = {
+  title: BookTitle
+  /** When it came out or comes out, as precisely as announced. */
+  date?: ReleaseDate
+  isbn13?: Isbn13
+  /** The recording on Audible, kept only once Audible's own catalogue answered
+   *  for it. */
+  asin?: AudibleAsin
+  coverUrl?: CoverUrl
+  /** The saga it belongs to, as the web names it: what tells a new standalone
+   *  from the next volume of a saga the reader already follows. */
+  seriesName?: SeriesName
+  volume?: VolumeNumber
+}
+
+/** What an author brought out lately or has announced in one language and
+ *  format, as the web says — shared by every reader who holds them, keyed on
+ *  the author rather than on anybody, so the grounded call behind it is paid
+ *  once a week. */
+export type AuthorWatch = {
+  /** `{authorKey}--{format}--{language}`. */
+  key: string
+  authorKey: AuthorKey
+  name: AuthorName
+  format: ReleaseFormat
+  language: BookLanguage
+  checkedAt: Date
+  works: FoundWork[]
+}
+
+/** One row of the Découvrir tab's Authors shelf: an author the reader holds,
+ *  drawn as the Library's Authors shelf draws them, and what they have for
+ *  the reader outside the sagas the reader already holds. */
+export type AuthorDiscovery = {
+  author: FollowedAuthor
+  /** The soonest work announced. */
+  next?: FoundWork
+  /** The works out in the last week the reader can have now, the newest
+   *  first. */
+  recent: FoundWork[]
+}
+
 /** The Découvrir tab in one format. */
 export type Discovery = {
   sagas: SagaDiscovery[]
-  /** How many sagas the reader follows in that format were never looked up:
-   *  the app asks for them at once rather than wait for the hourly pass. */
+  authors: AuthorDiscovery[]
+  /** How many sagas and authors the reader follows in that format were never
+   *  looked up: the app asks for them at once rather than wait for the hourly
+   *  pass. */
   unwatched: number
-  /** How many sagas the reader follows in that format: none, and the app
-   *  opens on the other format. */
+  /** How many sagas and authors the reader follows in that format: none, and
+   *  the app opens on the other format. */
   followed: number
 }
 

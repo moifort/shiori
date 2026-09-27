@@ -15,9 +15,10 @@ builder.queryFields((t) => ({
       'The Découvrir tab: every saga the reader follows in that format — all but the ones ' +
       'they set aside — with the next volume announced they do not hold, the soonest ' +
       'first, or a volume out in the last week they can have now; a saga with neither is ' +
-      'left out.\n\n' +
+      'left out. And every author they hold in that format with a work announced or just ' +
+      'out outside those sagas.\n\n' +
       'Read off shared watches a scheduled pass keeps a week fresh, so it answers at once. ' +
-      'A saga never looked up is counted in `unwatched`, for `lookUpDiscovery`.',
+      'A saga or an author never looked up is counted in `unwatched`, for `lookUpDiscovery`.',
     args: { format: t.arg({ type: ReleaseFormatEnum, required: true }) },
     resolve: (_root, { format }, context) =>
       DiscoveryUseCase.discover(context.userId, languageOf(context.event), format),

@@ -1,4 +1,6 @@
-import type { Book, BookLanguage } from '~/domain/book/types'
+import { mainLanguageOf } from '~/domain/author/business-rules'
+import type { ShelvedAuthor } from '~/domain/author/types'
+import type { Book, BookFormat, BookLanguage } from '~/domain/book/types'
 import type { ScanResult } from '~/domain/scan/types'
 import {
   type FoundVolume as CatalogueVolume,
@@ -11,16 +13,19 @@ import type { Series, SeriesId, VolumeNumber } from '~/domain/series/types'
 import type { FollowedSeries } from '~/domain/series/use-case'
 import { type Language, SUPPORTED_LANGUAGES } from '~/domain/shared/language'
 import { Year } from '~/domain/shared/primitives'
+import { slugify } from '~/utils/slug'
 import type {
   AnnouncedVolumePreview,
   AudibleRecording,
+  AuthorWatch,
   DiscoveryReader,
   FoundVolume,
+  FoundWork,
   ReleaseDate,
   ReleaseFormat,
-  SagaDiscovery,
   SagaReleases,
   SagaWatch,
+  WatchedAuthor,
   WatchedSaga,
 } from './types'
 
@@ -106,6 +111,61 @@ export const dueWatches = (
   const checkedAt = (saga: WatchedSaga) => watches.get(watchKeyOf(saga))?.checkedAt.getTime() ?? 0
   return [...sagas.values()]
     .filter((saga) => watchIsStale(watches.get(watchKeyOf(saga)), now))
+    .sort((left, right) => checkedAt(left) - checkedAt(right))
+}
+
+// MARK: - The authors watched
+
+export const authorWatchKeyOf = ({
+  authorKey,
+  format,
+  language,
+}: Pick<WatchedAuthor, 'authorKey' | 'format' | 'language'>) =>
+  `${authorKey}--${format}--${language}`
+
+/** The way a book reaches the reader, as Découvrir sorts them: heard, or read
+ *  on paper or on a screen. */
+export const releaseFormatOf = (format: BookFormat | undefined): ReleaseFormat =>
+  format === 'audiobook' ? 'audiobook' : 'book'
+
+type HeldBook = Pick<Book, 'format' | 'language' | 'status'>
+
+/** Every author the reader holds, in each format they hold them in and the
+ *  language most of those books are in: an author only heard is watched among
+ *  the recordings, one only read among the books, one both in both. Not an
+ *  author whose every book the reader gave up on, nor a format whose books
+ *  record no language — it cannot be searched for. */
+export const watchedAuthorsOf = (
+  authors: readonly Pick<ShelvedAuthor<HeldBook>, 'key' | 'name' | 'books'>[],
+): WatchedAuthor[] =>
+  authors.flatMap((author) => {
+    if (author.books.every((book) => book.status === 'dropped')) return []
+    return (['book', 'audiobook'] as const).flatMap((format): WatchedAuthor[] => {
+      const language = mainLanguageOf(
+        author.books.filter((book) => releaseFormatOf(book.format) === format),
+      )
+      return language ? [{ authorKey: author.key, name: author.name, format, language }] : []
+    })
+  })
+
+/** Whether an author is due for another look on the web. */
+export const authorWatchIsStale = (watch: AuthorWatch | undefined, now: Date): boolean =>
+  !watch || now.getTime() - watch.checkedAt.getTime() > WATCH_EVERY_MS
+
+/** The authors every reader holds, each once, the ones never looked up first,
+ *  then the longest unchecked. */
+export const dueAuthorWatches = (
+  readers: readonly DiscoveryReader[],
+  watches: ReadonlyMap<string, AuthorWatch>,
+  now: Date,
+): WatchedAuthor[] => {
+  const authors = new Map<string, WatchedAuthor>()
+  for (const reader of readers)
+    for (const author of reader.authors ?? []) authors.set(authorWatchKeyOf(author), author)
+  const checkedAt = (author: WatchedAuthor) =>
+    watches.get(authorWatchKeyOf(author))?.checkedAt.getTime() ?? 0
+  return [...authors.values()]
+    .filter((author) => authorWatchIsStale(watches.get(authorWatchKeyOf(author)), now))
     .sort((left, right) => checkedAt(left) - checkedAt(right))
 }
 
@@ -249,8 +309,10 @@ export const missingVolumesOf = (
 /** Whether a volume can be had now: a recording once Audible's own catalogue
  *  confirmed it, a printed book once it has an ISBN Amazon did not turn
  *  down. */
-const isAvailable = (volume: FoundVolume, format: ReleaseFormat): boolean =>
-  format === 'audiobook' ? volume.asin !== undefined : volume.isbn13 !== undefined
+const isAvailable = (
+  volume: Pick<FoundVolume, 'asin' | 'isbn13'>,
+  format: ReleaseFormat,
+): boolean => (format === 'audiobook' ? volume.asin !== undefined : volume.isbn13 !== undefined)
 
 /** The volumes the saga brought out in the last week that the reader does not
  *  hold and can have now, the newest first: out on a known day — a month
@@ -283,10 +345,14 @@ export const recentReleasesOf = (
     )
 }
 
-/** The tab: every saga with a volume announced for a known date, the soonest
- *  first, then every saga with nothing announced but a volume just out, the
- *  newest first. */
-export const inDiscoveryOrder = (rows: readonly SagaDiscovery[]): SagaDiscovery[] => {
+/** The tab: every row — a saga, or an author — with something announced for
+ *  a known date, the soonest first, then every row with nothing announced but
+ *  something just out, the newest first. */
+export const inDiscoveryOrder = <
+  Row extends { next?: { date?: ReleaseDate }; recent: readonly { date?: ReleaseDate }[] },
+>(
+  rows: readonly Row[],
+): Row[] => {
   const announced = rows
     .filter((row) => row.next?.date)
     .sort((left, right) =>
@@ -300,6 +366,47 @@ export const inDiscoveryOrder = (rows: readonly SagaDiscovery[]): SagaDiscovery[
       (right.recent[0].date as string).localeCompare(left.recent[0].date as string),
     )
   return [...announced, ...justOut]
+}
+
+/** What an author has for the reader in one format: the soonest work
+ *  announced, and the works out in the last week they can have now, the
+ *  newest first. Left out, a work the reader holds in that format — matched
+ *  on the folded title — and a volume of a saga they hold anything of, which
+ *  the Séries shelf already watches or which they set aside. A new saga's
+ *  first volume is the author's news. */
+export const authorReleasesOf = (
+  held: readonly Pick<Book, 'title' | 'format'>[],
+  sagaNames: ReadonlySet<string>,
+  watch: AuthorWatch | undefined,
+  today: string,
+): { next?: FoundWork; recent: FoundWork[] } => {
+  if (!watch) return { recent: [] }
+  const titles = new Set(
+    held
+      .filter((book) => releaseFormatOf(book.format) === watch.format)
+      .map((book) => slugify(book.title)),
+  )
+  const since = dayMinus(today, RECENT_DAYS)
+  const news = watch.works.filter(
+    (work) =>
+      !titles.has(slugify(work.title)) &&
+      !(work.seriesName && sagaNames.has(slugify(work.seriesName))),
+  )
+  const next = news
+    .filter((work) => isUpcoming(work.date, today))
+    .sort((left, right) =>
+      lastDayOf(left.date as ReleaseDate).localeCompare(lastDayOf(right.date as ReleaseDate)),
+    )[0]
+  const recent = news
+    .filter(
+      (work) =>
+        work.date?.length === 10 &&
+        work.date <= today &&
+        work.date > since &&
+        isAvailable(work, watch.format),
+    )
+    .sort((left, right) => (right.date as string).localeCompare(left.date as string))
+  return next ? { next, recent } : { recent }
 }
 
 // MARK: - Alerts
@@ -472,6 +579,39 @@ export const mergedVolumes = (
     })
   }
   return [...merged.values()].sort((left, right) => left.number - right.number)
+}
+
+/** How long a work out stays on an author's watch: past a year it is no
+ *  longer news, and the watch must not grow with every look. */
+const KEPT_DAYS = 365
+
+/** What a fresh search of an author found, laid over the last one, as
+ *  `mergedVolumes` does for a saga but matched on the folded title: a work
+ *  found again takes what was found of it now, keeping the cover and the
+ *  confirmed ASIN the new answer lacks; a work missed this time stays while it
+ *  is less than a year old. */
+export const mergedWorks = (
+  previous: readonly FoundWork[],
+  found: readonly FoundWork[],
+  today: string,
+): FoundWork[] => {
+  const since = dayMinus(today, KEPT_DAYS)
+  const merged = new Map(
+    previous
+      .filter((work) => work.date !== undefined && lastDayOf(work.date) > since)
+      .map((work) => [slugify(work.title), work]),
+  )
+  for (const work of found) {
+    const known = merged.get(slugify(work.title))
+    merged.set(slugify(work.title), {
+      ...work,
+      ...(work.coverUrl || !known?.coverUrl ? {} : { coverUrl: known.coverUrl }),
+      ...(work.asin || !known?.asin ? {} : { asin: known.asin }),
+    })
+  }
+  return [...merged.values()].sort((left, right) =>
+    (left.date ?? '').localeCompare(right.date ?? ''),
+  )
 }
 
 /** A saga heard as Audible lists it: every recording Audible sells or has on

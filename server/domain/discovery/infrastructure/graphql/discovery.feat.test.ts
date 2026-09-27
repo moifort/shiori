@@ -12,11 +12,14 @@ const { schema } = await import('~/domain/shared/graphql/schema')
 const { BookUseCase } = await import('~/domain/book/use-case')
 const { SeriesName, VolumeNumber, seriesKeyOf } = await import('~/domain/series/primitives')
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
+const { authorKeyOf } = await import('~/domain/author/primitives')
 
 const bob = 'bob' as UserId
 const run = (source: string) =>
   graphql({ schema, source, contextValue: { event: {}, userId: bob } })
 const carl = seriesKeyOf('Dungeon Crawler Carl', 'Matt Dinniman', 'book')
+const dinniman = authorKeyOf(AuthorName('Matt Dinniman'))
+const authorWatchKey = `${dinniman}--book--fr`
 
 let fake = resetFakeFirestore()
 
@@ -44,6 +47,18 @@ beforeEach(async () => {
     volumes: [
       { number: 2, title: 'Carl 2', date: '2025-01-15', isbn13: '9782226488176' },
       { number: 4, title: 'Carl 4', date: '2099-02-12' },
+    ],
+  })
+  fake.seed('author-watches', authorWatchKey, {
+    key: authorWatchKey,
+    authorKey: dinniman,
+    name: 'Matt Dinniman',
+    format: 'book',
+    language: 'fr',
+    checkedAt: new Date(),
+    works: [
+      { title: 'Kaiju Battlefield Surgeon', date: '2099-11-03' },
+      { title: 'Carl 9', date: '2099-12-01', seriesName: 'Dungeon Crawler Carl', volume: 9 },
     ],
   })
 })
@@ -104,6 +119,34 @@ describe('the Découvrir tab', () => {
             { number: 3, isbn13: '9782226488190' },
             { number: 2, isbn13: '9782226488176' },
           ],
+        },
+      ],
+    })
+  })
+
+  test('answers a row per author of the format asked, drawn as the Authors shelf draws them', async () => {
+    const result = await run(`{
+      discovery(format: BOOK) {
+        authors {
+          author { key name bookCount books { title } }
+          next { title date seriesName }
+          recent { title }
+        }
+      }
+    }`)
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.discovery).toEqual({
+      authors: [
+        {
+          author: {
+            key: dinniman,
+            name: 'Matt Dinniman',
+            bookCount: 1,
+            books: [{ title: 'Carl 1' }],
+          },
+          next: { title: 'Kaiju Battlefield Surgeon', date: '2099-11-03', seriesName: null },
+          recent: [],
         },
       ],
     })

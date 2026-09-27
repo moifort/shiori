@@ -1,4 +1,4 @@
-import type { DiscoveryReader, SagaWatch } from '~/domain/discovery/types'
+import type { AuthorWatch, DiscoveryReader, SagaWatch } from '~/domain/discovery/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
@@ -8,6 +8,11 @@ import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 // document and the call behind it is paid once.
 const watches = () =>
   db().collection('saga-watches').withConverter(genericDataConverter<SagaWatch>())
+
+// Shared as the saga watches are: keyed by the author, the format and the
+// language, holding no reference to any reader.
+const authorWatches = () =>
+  db().collection('author-watches').withConverter(genericDataConverter<AuthorWatch>())
 
 // One document per reader, keyed by the reader.
 const readers = () =>
@@ -26,6 +31,21 @@ export const findWatches = async (keys: readonly string[]): Promise<SagaWatch[]>
 
 export const saveWatch = async (watch: SagaWatch): Promise<void> => {
   await watches().doc(watch.key).set(withoutAbsentFields(watch))
+}
+
+export const findAuthorWatches = async (keys: readonly string[]): Promise<AuthorWatch[]> => {
+  const unique = [...new Set(keys)]
+  if (unique.length === 0) return []
+  const snapshots = await db().getAll(...unique.map((key) => authorWatches().doc(key)))
+  // Typed loosely by getAll, though each ref carries the converter.
+  return snapshots.flatMap((snapshot) => {
+    const watch = snapshot.data() as AuthorWatch | undefined
+    return watch ? [watch] : []
+  })
+}
+
+export const saveAuthorWatch = async (watch: AuthorWatch): Promise<void> => {
+  await authorWatches().doc(watch.key).set(withoutAbsentFields(watch))
 }
 
 export const findReader = async (userId: UserId): Promise<DiscoveryReader | undefined> =>

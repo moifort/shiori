@@ -285,6 +285,22 @@ A few sentences on who an author is, 1 to 2000 characters, written in the langua
 scalar AuthorBiography
 
 """
+One row of the Découvrir tab’s Authors shelf: an author the reader holds, and what they brought out lately or announced outside the sagas the reader holds.
+"""
+type AuthorDiscovery {
+  """The author as the Library’s Authors shelf draws their row."""
+  author: FollowedAuthor!
+
+  """The soonest work announced."""
+  next: DiscoveredWork
+
+  """
+  The works out in the last week, on a known day, that the reader can have now — a recording Audible confirmed, a printed book with an ISBN Amazon did not turn down — the newest first.
+  """
+  recent: [DiscoveredWork!]!
+}
+
+"""
 An author as the library folds their name: diacritics dropped, punctuation collapsed, so two spellings of one name meet. Derived, never typed. Example: "patrick-rothfuss".
 """
 scalar AuthorKey
@@ -751,10 +767,41 @@ type DiscoveredVolume {
   title: BookTitle!
 }
 
+"""
+One work of an author the reader does not hold, announced or just out, outside any saga they hold, as the weekly web search found it in the language and format they hold the author in.
+"""
+type DiscoveredWork {
+  """
+  The recording's page on the reader's Audible store. Null on a printed work, on a recording Audible never confirmed, and without an Audible account.
+  """
+  audibleUrl: String
+
+  """The publisher’s cover, or the recording’s on Audible."""
+  coverUrl: CoverUrl
+
+  """
+  When it comes out or came out, as precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`.
+  """
+  date: String
+  isbn13: Isbn13
+
+  """The new saga it opens, when it is a volume of one."""
+  seriesName: SeriesName
+  title: BookTitle!
+
+  """Its number in that saga."""
+  volume: VolumeNumber
+}
+
 """The Découvrir tab in one format."""
 type Discovery {
   """
-  How many sagas the reader follows in that format. Zero, and the app opens Découvrir on the other format.
+  A row per author the reader holds in that format — all but the ones whose every book they gave up on — with a work announced for a known date, the soonest first, then a row per author with nothing announced but a work just out, the newest first. The volumes of a saga the reader holds are left to `sagas`.
+  """
+  authors: [AuthorDiscovery!]!
+
+  """
+  How many sagas and authors the reader follows in that format. Zero, and the app opens Découvrir on the other format.
   """
   followed: Int!
 
@@ -764,7 +811,7 @@ type Discovery {
   sagas: [SagaDiscovery!]!
 
   """
-  How many sagas the reader follows in that format were never looked up. Above zero, `lookUpDiscovery` looks them up at once rather than wait for the hourly pass.
+  How many sagas and authors the reader follows in that format were never looked up. Above zero, `lookUpDiscovery` looks them up at once rather than wait for the hourly pass.
   """
   unwatched: Int!
 }
@@ -1513,7 +1560,7 @@ type Mutation {
   inviteFriend: FriendInvitation!
 
   """
-  Look up now, on the web, every saga the reader follows in that format that was never looked up, rather than wait for the hourly pass — for the first look at the tab, and a saga followed since. Slow: grounded model calls, a few side by side, up to about ninety seconds; whatever is left goes to the hourly pass. Answers the tab.
+  Look up now, on the web, every saga, then every author, the reader follows in that format that was never looked up, rather than wait for the hourly pass — for the first look at the tab, and a saga followed since. Slow: grounded model calls, a few side by side, up to about ninety seconds; whatever is left goes to the hourly pass. Answers the tab.
   """
   lookUpDiscovery(format: ReleaseFormat!): Discovery!
 
@@ -1915,9 +1962,9 @@ type Query {
   dashboard(timeZone: TimeZone!): Dashboard!
 
   """
-  The Découvrir tab: every saga the reader follows in that format — all but the ones they set aside — with the next volume announced they do not hold, the soonest first, or a volume out in the last week they can have now; a saga with neither is left out.
+  The Découvrir tab: every saga the reader follows in that format — all but the ones they set aside — with the next volume announced they do not hold, the soonest first, or a volume out in the last week they can have now; a saga with neither is left out. And every author they hold in that format with a work announced or just out outside those sagas.
   
-  Read off shared watches a scheduled pass keeps a week fresh, so it answers at once. A saga never looked up is counted in `unwatched`, for `lookUpDiscovery`.
+  Read off shared watches a scheduled pass keeps a week fresh, so it answers at once. A saga or an author never looked up is counted in `unwatched`, for `lookUpDiscovery`.
   """
   discovery(format: ReleaseFormat!): Discovery!
 

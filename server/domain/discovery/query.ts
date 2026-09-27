@@ -1,5 +1,5 @@
 import * as repository from '~/domain/discovery/infrastructure/repository'
-import type { DiscoveryReader, SagaWatch } from '~/domain/discovery/types'
+import type { AuthorWatch, DiscoveryReader, SagaWatch } from '~/domain/discovery/types'
 import type { UserId } from '~/domain/shared/types'
 
 export namespace DiscoveryQuery {
@@ -11,4 +11,8 @@ export namespace DiscoveryQuery {
   /** The watches under these keys, in one getAll, keyed by theirs. */
   export const watches = async (keys: readonly string[]): Promise<Map<string, SagaWatch>> =>
     new Map((await repository.findWatches(keys)).map((watch) => [watch.key, watch]))
+
+  /** The author watches under these keys, in one getAll, keyed by theirs. */
+  export const authorWatches = async (keys: readonly string[]): Promise<Map<string, AuthorWatch>> =>
+    new Map((await repository.findAuthorWatches(keys)).map((watch) => [watch.key, watch]))
 }

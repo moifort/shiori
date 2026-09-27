@@ -1,5 +1,5 @@
 import * as repository from '~/domain/discovery/infrastructure/repository'
-import type { DiscoveryReader, SagaWatch } from '~/domain/discovery/types'
+import type { AuthorWatch, DiscoveryReader, SagaWatch } from '~/domain/discovery/types'
 import type { UserId } from '~/domain/shared/types'
 
 /** How many pushed alerts a reader remembers. Past that the oldest go. */
@@ -36,6 +36,9 @@ export namespace DiscoveryCommand {
   }
 
   export const saveWatch = (watch: SagaWatch): Promise<void> => repository.saveWatch(watch)
+
+  export const saveAuthorWatch = (watch: AuthorWatch): Promise<void> =>
+    repository.saveAuthorWatch(watch)
 
   export const deleteForUser = (userId: UserId): Promise<void> => repository.removeReader(userId)
 }

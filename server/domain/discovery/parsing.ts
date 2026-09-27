@@ -1,12 +1,13 @@
 import { AudibleAsin } from '~/domain/audible/primitives'
 import { Isbn13 } from '~/domain/book/primitives'
 import type { BookLanguage } from '~/domain/book/types'
-import { ReleaseDate, VolumeNumber } from '~/domain/series/primitives'
+import { ReleaseDate, SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import type { ReleaseDate as ReleaseDateType } from '~/domain/series/types'
 import { BookTitle } from '~/domain/shared/primitives'
 import { optionally } from '~/utils/input'
-import type { VolumeOutput } from './schemas'
-import type { FoundVolume } from './types'
+import { slugify } from '~/utils/slug'
+import type { VolumeOutput, WorkOutput } from './schemas'
+import type { FoundVolume, FoundWork } from './types'
 
 /** Every volume of the model's answer, one per number — the first listed wins —
  *  or nothing without a title or a number. Every other field is dropped on its
@@ -27,6 +28,28 @@ export const volumesFrom = (raw: readonly VolumeOutput[]): FoundVolume[] => {
     })
   }
   return [...volumes.values()].sort((left, right) => left.number - right.number)
+}
+
+/** Every work of the model's answer, one per folded title — the first listed
+ *  wins — or nothing without a title. Every other field is dropped on its own
+ *  when it does not validate, as `volumesFrom` does. */
+export const worksFrom = (raw: readonly WorkOutput[]): FoundWork[] => {
+  const works = new Map<string, FoundWork>()
+  for (const entry of raw) {
+    const title = optionally(entry.title, BookTitle)
+    if (!title || works.has(slugify(title))) continue
+    const seriesName = optionally(entry.series, SeriesName)
+    const volume = optionally(entry.volume, VolumeNumber)
+    works.set(slugify(title), {
+      title,
+      date: optionally(entry.date, ReleaseDate),
+      isbn13: optionally(entry.isbn13, Isbn13),
+      asin: optionally(entry.asin, AudibleAsin),
+      ...(seriesName ? { seriesName } : {}),
+      ...(volume !== undefined ? { volume } : {}),
+    })
+  }
+  return [...works.values()]
 }
 
 /** Every month name an Amazon store writes a date with, lower-cased, to its

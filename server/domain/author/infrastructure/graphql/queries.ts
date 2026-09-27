@@ -10,7 +10,7 @@ import { languageOf } from '~/domain/shared/language'
 import { Count } from '~/domain/shared/primitives'
 import type { AuthorName } from '~/domain/shared/types'
 
-const FollowedAuthorType = builder.objectRef<FollowedAuthor>('FollowedAuthor').implement({
+export const FollowedAuthorType = builder.objectRef<FollowedAuthor>('FollowedAuthor').implement({
   description:
     'An author the reader holds at least one book of. Derived from the books on ' +
     'every request, never stored.',

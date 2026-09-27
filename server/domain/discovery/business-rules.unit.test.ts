@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { AudibleAsin } from '~/domain/audible/types'
+import type { AuthorKey } from '~/domain/author/types'
 import type {
   Book,
   BookLanguage,
@@ -15,20 +16,30 @@ import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 import {
   alertOf,
   announcedPreviewOf,
+  authorReleasesOf,
   digestOf,
   dueAlertsOf,
   dueWatches,
   inDiscoveryOrder,
   likelyLanguageOf,
   mergedVolumes,
+  mergedWorks,
   missingVolumesOf,
   newAnnouncementsOf,
   onAudible,
   recentReleasesOf,
   releasesOf,
+  watchedAuthorsOf,
   watchedSagasOf,
 } from './business-rules'
-import type { DiscoveryReader, FoundVolume, SagaDiscovery, SagaWatch } from './types'
+import type {
+  AuthorWatch,
+  DiscoveryReader,
+  FoundVolume,
+  FoundWork,
+  SagaDiscovery,
+  SagaWatch,
+} from './types'
 
 const carl = 'dungeon-crawler-carl--matt-dinniman' as SeriesId
 const carlHeard = 'dungeon-crawler-carl--matt-dinniman--audio' as SeriesId
@@ -590,5 +601,142 @@ describe('an announced volume’s page', () => {
       durationMinutes: 1200,
       asin: 'B0DM67WR2V',
     })
+  })
+})
+
+describe('the authors watched for a reader', () => {
+  const author = (...books: Pick<Book, 'format' | 'language' | 'status'>[]) => ({
+    key: 'matt-dinniman' as AuthorKey,
+    name: 'Matt Dinniman' as AuthorName,
+    books,
+  })
+
+  test('are watched only in the formats the reader holds them in', () => {
+    const printed = author({ format: 'book', language: 'fr', status: 'read' })
+    const heard = author({ format: 'audiobook', language: 'en', status: 'reading' })
+    const both = author(
+      { format: 'ebook', language: 'fr', status: 'read' },
+      { format: 'audiobook', language: 'en', status: 'read' },
+    )
+
+    expect(watchedAuthorsOf([printed]).map(({ format }) => format)).toEqual(['book'])
+    expect(watchedAuthorsOf([heard]).map(({ format }) => format)).toEqual(['audiobook'])
+    expect(watchedAuthorsOf([both]).map(({ format, language }) => [format, language])).toEqual([
+      ['book', 'fr'],
+      ['audiobook', 'en'],
+    ])
+  })
+
+  test('are watched in the language most of their books in that format are in', () => {
+    const watched = watchedAuthorsOf([
+      author(
+        { format: 'book', language: 'en', status: 'read' },
+        { format: 'book', language: 'fr', status: 'read' },
+        { format: 'book', language: 'fr', status: 'to-read' },
+      ),
+    ])
+
+    expect(watched.map(({ language }) => language)).toEqual(['fr'])
+  })
+
+  test('are not watched once the reader gave up on every book of theirs', () => {
+    const dropped = author(
+      { format: 'book', language: 'fr', status: 'dropped' },
+      { format: 'audiobook', language: 'fr', status: 'dropped' },
+    )
+    const halfway = author(
+      { format: 'book', language: 'fr', status: 'dropped' },
+      { format: 'book', language: 'fr', status: 'read' },
+    )
+
+    expect(watchedAuthorsOf([dropped])).toEqual([])
+    expect(watchedAuthorsOf([halfway])).toHaveLength(1)
+  })
+
+  test('are not watched in a format whose books record no language', () => {
+    expect(watchedAuthorsOf([author({ format: 'book', status: 'read' })])).toEqual([])
+  })
+})
+
+describe('what an author has for the reader', () => {
+  const work = (title: string, date: string, extra: Partial<FoundWork> = {}): FoundWork => ({
+    title: title as BookTitle,
+    date: date as ReleaseDate,
+    ...extra,
+  })
+  const authorWatch = (works: FoundWork[], format: 'book' | 'audiobook' = 'book'): AuthorWatch => ({
+    key: `matt-dinniman--${format}--fr`,
+    authorKey: 'matt-dinniman' as AuthorKey,
+    name: 'Matt Dinniman' as AuthorName,
+    format,
+    language: 'fr',
+    checkedAt: new Date('2026-09-20'),
+    works,
+  })
+  const today = '2026-09-26'
+  const sagas = new Set(['dungeon-crawler-carl'])
+  const heldBooks = [{ title: 'Kaiju' as BookTitle, format: 'book' as const }]
+
+  test('offers the soonest work announced, and the ones out this week it can have now', () => {
+    const watch = authorWatch([
+      work('Far', '2027'),
+      work('Soon', '2026-11-03'),
+      work('Out', '2026-09-24', { isbn13: '9782226488213' as never }),
+      work('Out without ISBN', '2026-09-25'),
+      work('Old', '2026-08-01', { isbn13: '9782226488220' as never }),
+    ])
+
+    const { next, recent } = authorReleasesOf(heldBooks, sagas, watch, today)
+
+    expect(next?.title).toBe('Soon' as BookTitle)
+    expect(recent.map(({ title }) => title)).toEqual(['Out' as BookTitle])
+  })
+
+  test('leaves out the volumes of a saga the reader holds, and the books they hold', () => {
+    const watch = authorWatch([
+      work('Carl 8', '2026-12-01', {
+        seriesName: 'Dungeon Crawler Carl' as SeriesName,
+        volume: 8 as VolumeNumber,
+      }),
+      work('Kaiju', '2026-12-02'),
+    ])
+
+    expect(authorReleasesOf(heldBooks, sagas, watch, today)).toEqual({ recent: [] })
+  })
+
+  test('offers the first volume of a saga the reader holds nothing of', () => {
+    const watch = authorWatch([
+      work('Tower 1', '2026-12-01', { seriesName: 'Tower' as SeriesName, volume: 1 as never }),
+    ])
+
+    expect(authorReleasesOf(heldBooks, sagas, watch, today).next?.title).toBe(
+      'Tower 1' as BookTitle,
+    )
+  })
+
+  test('offers the recording of a book the reader holds only on paper', () => {
+    const watch = authorWatch([work('Kaiju', '2026-12-02')], 'audiobook')
+
+    expect(authorReleasesOf(heldBooks, sagas, watch, today).next?.title).toBe('Kaiju' as BookTitle)
+  })
+
+  test('has nothing to say before the author was ever looked up', () => {
+    expect(authorReleasesOf(heldBooks, sagas, undefined, today)).toEqual({ recent: [] })
+  })
+})
+
+describe('a fresh look at an author', () => {
+  test('keeps what the last one found and this one missed, for a year', () => {
+    const previous: FoundWork[] = [
+      { title: 'Kaiju' as BookTitle, date: '2026-11-03' as ReleaseDate, coverUrl: 'c' as never },
+      { title: 'Ancient' as BookTitle, date: '2025-06-01' as ReleaseDate },
+      { title: 'Missed' as BookTitle, date: '2026-05-01' as ReleaseDate },
+    ]
+    const found: FoundWork[] = [{ title: 'KAIJU' as BookTitle, date: '2026-11-04' as ReleaseDate }]
+
+    expect(mergedWorks(previous, found, '2026-09-26')).toEqual([
+      { title: 'Missed' as BookTitle, date: '2026-05-01' as ReleaseDate },
+      { title: 'KAIJU' as BookTitle, date: '2026-11-04' as ReleaseDate, coverUrl: 'c' as never },
+    ])
   })
 })

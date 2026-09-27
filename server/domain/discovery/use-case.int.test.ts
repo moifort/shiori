@@ -23,13 +23,37 @@ mock.module('~/system/apns', () => ({
 }))
 
 /** Stands in for Gemini: every volume of the saga asked about, and a count of
- *  the calls made, which is what the shared watches save. */
+ *  the calls made, which is what the shared watches save. An author asked
+ *  about answers a book of their own, the first volume of a new saga, the next
+ *  volume of the saga the reader follows and a book the reader holds. */
 const calls: string[] = []
+const authorCalls: string[] = []
 mock.module('~/domain/scan/gemini', () => ({
   generate: async ({ parts }: { parts: { text: string }[] }) => {
     const text = parts[0]?.text ?? ''
-    calls.push(text.match(/« ([^»]+) »/)?.[1] ?? '?')
     const heard = text.includes('livre audio')
+    const author = text.match(/suit l'auteur (.+?) en /)?.[1]
+    if (author) {
+      authorCalls.push(`${author} (${heard ? 'audio' : 'livre'})`)
+      return {
+        usage: { promptTokens: 1, outputTokens: 1, thinkingTokens: 0, searches: 1 },
+        value: {
+          works: [
+            { title: 'Kaiju Battlefield Surgeon', date: '2026-11-03' },
+            {
+              title: 'La Tour 1',
+              date: '2026-09-24',
+              isbn13: '9782226488213',
+              series: 'La Tour',
+              volume: 1,
+            },
+            { title: 'Carl 8', date: '2026-12-01', series: 'Dungeon Crawler Carl', volume: 8 },
+            { title: 'Carl 1', date: '2024-05-02' },
+          ],
+        },
+      }
+    }
+    calls.push(text.match(/« ([^»]+) »/)?.[1] ?? '?')
     return {
       usage: { promptTokens: 1, outputTokens: 1, thinkingTokens: 0, searches: 1 },
       value: {
@@ -117,6 +141,7 @@ const stock = async (
 beforeEach(() => {
   fake = resetFakeFirestore()
   calls.length = 0
+  authorCalls.length = 0
   pushed.length = 0
   seriesAsked.length = 0
   audibleSeries = 'unknown'
@@ -129,8 +154,10 @@ describe('the hourly pass', () => {
 
     const result = await DiscoveryUseCase.watchDueSagas(now)
 
-    expect(result).toEqual({ synced: 2, watched: 1, failed: 0, deferred: 0 })
+    // The saga, and its author.
+    expect(result).toEqual({ synced: 2, watched: 2, failed: 0, deferred: 0 })
     expect(calls).toEqual(['Dungeon Crawler Carl'])
+    expect(authorCalls).toEqual(['Matt Dinniman (livre)'])
   })
 
   test('looks a saga up again only once its watch is a week old', async () => {
@@ -289,11 +316,13 @@ describe('the Découvrir tab', () => {
     // No saga read at all: the app opens on the sagas heard instead.
     expect(await DiscoveryUseCase.discover(reader, 'fr', 'book', now)).toEqual({
       sagas: [],
+      authors: [],
       unwatched: 0,
       followed: 0,
     })
     const heardTab = await DiscoveryUseCase.discover(reader, 'fr', 'audiobook', now)
-    expect(heardTab.followed).toBe(1)
+    // The saga heard, and its author heard.
+    expect(heardTab.followed).toBe(2)
     const [heard] = heardTab.sagas
     expect(heard.series.id).toBe(carlHeard)
     expect(heard.next?.number).toBe(VolumeNumber(3))
@@ -303,14 +332,16 @@ describe('the Découvrir tab', () => {
     await stock(reader)
     await stock(reader, 'audiobook')
 
-    expect((await DiscoveryUseCase.discover(reader, 'fr', 'book', now)).unwatched).toBe(1)
+    // The saga and its author, in each format.
+    expect((await DiscoveryUseCase.discover(reader, 'fr', 'book', now)).unwatched).toBe(2)
     const tab = await DiscoveryUseCase.lookUpUnwatched(reader, 'fr', 'book', now)
 
     // The saga read only: the saga heard waits for its own tab, or the hour.
     expect(calls).toEqual(['Dungeon Crawler Carl'])
+    expect(authorCalls).toEqual(['Matt Dinniman (livre)'])
     expect(tab.unwatched).toBe(0)
     expect(tab.sagas.map((row) => row.series.id)).toEqual([carl])
-    expect((await DiscoveryUseCase.discover(reader, 'fr', 'audiobook', now)).unwatched).toBe(1)
+    expect((await DiscoveryUseCase.discover(reader, 'fr', 'audiobook', now)).unwatched).toBe(2)
   })
 
   test('leaves the rest to the hourly pass once the budget is spent', async () => {
@@ -319,7 +350,7 @@ describe('the Découvrir tab', () => {
     const tab = await DiscoveryUseCase.lookUpUnwatched(reader, 'fr', 'book', now, 0, 0)
 
     expect(calls).toEqual([])
-    expect(tab.unwatched).toBe(1)
+    expect(tab.unwatched).toBe(2)
   })
 
   test('tells the hourly pass at once about a saga followed since', async () => {
@@ -342,9 +373,54 @@ describe('the Découvrir tab', () => {
     await DiscoveryUseCase.discover(reader, 'fr', 'book', now)
 
     // The library and the saga opinions; the reader's record, the saga's
-    // catalogue, and its watch.
+    // catalogue, its watch, the author's watch and their catalogue for the
+    // portrait.
     expect(fake.queryReads - before.queries).toBe(2)
-    expect(fake.docReads - before.docs).toBe(3)
+    expect(fake.docReads - before.docs).toBe(5)
+  })
+})
+
+describe('the Authors shelf', () => {
+  test('offers an author’s own book announced and the new saga just out, not the followed saga', async () => {
+    await stock(reader)
+    await DiscoveryUseCase.watchDueSagas(now)
+
+    const { authors } = await DiscoveryUseCase.discover(reader, 'fr', 'book', now)
+    const [row, ...rest] = authors
+
+    expect(rest).toEqual([])
+    expect(row.author.name).toBe(AuthorName('Matt Dinniman'))
+    expect(row.author.books.map((book) => book.title)).toEqual([BookTitle('Carl 1')])
+    expect(row.next?.title).toBe(BookTitle('Kaiju Battlefield Surgeon'))
+    expect(row.recent.map((work) => work.title)).toEqual([BookTitle('La Tour 1')])
+  })
+
+  test('watches an author only in the formats the reader holds them in', async () => {
+    await stock(reader, 'audiobook')
+
+    await DiscoveryUseCase.watchDueSagas(now)
+
+    expect(authorCalls).toEqual(['Matt Dinniman (audio)'])
+    expect((await DiscoveryUseCase.discover(reader, 'fr', 'book', now)).authors).toEqual([])
+  })
+
+  test('never looks up an author whose every book the reader gave up on', async () => {
+    await stock(reader, 'book', 'dropped')
+
+    await DiscoveryUseCase.watchDueSagas(now)
+
+    expect(authorCalls).toEqual([])
+  })
+
+  test('looks an author up once a week for every reader who holds them', async () => {
+    await stock(reader)
+    await stock(other)
+    await DiscoveryUseCase.watchDueSagas(now)
+    await DiscoveryUseCase.watchDueSagas(new Date('2026-09-30T08:00:00Z'))
+
+    expect(authorCalls).toEqual(['Matt Dinniman (livre)'])
+    await DiscoveryUseCase.watchDueSagas(new Date('2026-10-04T08:00:00Z'))
+    expect(authorCalls).toEqual(['Matt Dinniman (livre)', 'Matt Dinniman (livre)'])
   })
 })
 

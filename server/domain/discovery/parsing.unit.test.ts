@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { amazonDateOf, amazonEditionFrom } from './parsing'
+import { amazonDateOf, amazonEditionFrom, worksFrom } from './parsing'
 
 /** The book details carousel as an Amazon product page draws it. */
 const page = (date: string, language: string) =>
@@ -34,5 +34,21 @@ describe('an Amazon book page', () => {
 
   test('with no book details, a captcha, is unreadable', () => {
     expect(amazonEditionFrom('<form action="/errors/validateCaptcha">', 'fr')).toBe('unreadable')
+  })
+})
+
+describe('an author’s works as the model lists them', () => {
+  test('are kept once per title, each field dropped on its own when it does not validate', () => {
+    expect(
+      worksFrom([
+        { title: 'Kaiju', date: '2026-11-03', isbn13: 'not an isbn', series: null, volume: null },
+        { title: 'kaiju', date: '2027' },
+        { title: '' },
+        { title: 'Tower 1', date: 'soon', series: 'Tower', volume: 1 },
+      ]),
+    ).toEqual([
+      { title: 'Kaiju', date: '2026-11-03' },
+      { title: 'Tower 1', seriesName: 'Tower', volume: 1 },
+    ] as never)
   })
 })

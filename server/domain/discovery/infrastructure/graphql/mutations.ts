@@ -15,8 +15,8 @@ builder.mutationFields((t) => ({
   lookUpDiscovery: t.field({
     type: DiscoveryType,
     description:
-      'Look up now, on the web, every saga the reader follows in that format that was ' +
-      'never looked up, rather than wait for the hourly pass — for the first look at the ' +
+      'Look up now, on the web, every saga, then every author, the reader follows in that ' +
+      'format that was never looked up, rather than wait for the hourly pass — for the first look at the ' +
       'tab, and a saga followed since. Slow: grounded model calls, a few side by side, up ' +
       'to about ninety seconds; whatever is left goes to the hourly pass. Answers the tab.',
     args: { format: t.arg({ type: ReleaseFormatEnum, required: true }) },

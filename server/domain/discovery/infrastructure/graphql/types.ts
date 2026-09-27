@@ -1,8 +1,11 @@
 import { AudibleQuery } from '~/domain/audible/query'
+import { FollowedAuthorType } from '~/domain/author/infrastructure/graphql/queries'
 import type {
   AnnouncedVolumePreview,
+  AuthorDiscovery,
   Discovery,
   FoundVolume,
+  FoundWork,
   SagaDiscovery,
   SagaReleases,
 } from '~/domain/discovery/types'
@@ -102,6 +105,77 @@ export const SagaDiscoveryType = builder.objectRef<SagaDiscovery>('SagaDiscovery
   }),
 })
 
+const DiscoveredWorkType = builder.objectRef<FoundWork>('DiscoveredWork').implement({
+  description:
+    'One work of an author the reader does not hold, announced or just out, outside any saga ' +
+    'they hold, as the weekly web search found it in the language and format they hold the ' +
+    'author in.',
+  fields: (t) => ({
+    title: t.field({ type: 'BookTitle', resolve: (work) => work.title }),
+    date: t.string({
+      nullable: true,
+      description:
+        'When it comes out or came out, as precisely as announced: `YYYY`, `YYYY-MM` or ' +
+        '`YYYY-MM-DD`.',
+      resolve: (work) => work.date ?? null,
+    }),
+    isbn13: t.field({ type: 'Isbn13', nullable: true, resolve: (work) => work.isbn13 ?? null }),
+    coverUrl: t.field({
+      type: 'CoverUrl',
+      nullable: true,
+      description: 'The publisher’s cover, or the recording’s on Audible.',
+      resolve: (work) => work.coverUrl ?? null,
+    }),
+    audibleUrl: t.string({
+      nullable: true,
+      description:
+        "The recording's page on the reader's Audible store. Null on a printed work, on a " +
+        'recording Audible never confirmed, and without an Audible account.',
+      resolve: async (work, _args, { userId }) =>
+        work.asin ? ((await AudibleQuery.recordingUrlOf(userId, work.asin)) ?? null) : null,
+    }),
+    seriesName: t.field({
+      type: 'SeriesName',
+      nullable: true,
+      description: 'The new saga it opens, when it is a volume of one.',
+      resolve: (work) => work.seriesName ?? null,
+    }),
+    volume: t.field({
+      type: 'VolumeNumber',
+      nullable: true,
+      description: 'Its number in that saga.',
+      resolve: (work) => work.volume ?? null,
+    }),
+  }),
+})
+
+const AuthorDiscoveryType = builder.objectRef<AuthorDiscovery>('AuthorDiscovery').implement({
+  description:
+    'One row of the Découvrir tab’s Authors shelf: an author the reader holds, and what they ' +
+    'brought out lately or announced outside the sagas the reader holds.',
+  fields: (t) => ({
+    author: t.field({
+      type: FollowedAuthorType,
+      description: 'The author as the Library’s Authors shelf draws their row.',
+      resolve: (row) => row.author,
+    }),
+    next: t.field({
+      type: DiscoveredWorkType,
+      nullable: true,
+      description: 'The soonest work announced.',
+      resolve: (row) => row.next ?? null,
+    }),
+    recent: t.field({
+      type: [DiscoveredWorkType],
+      description:
+        'The works out in the last week, on a known day, that the reader can have now — a ' +
+        'recording Audible confirmed, a printed book with an ISBN Amazon did not turn down — ' +
+        'the newest first.',
+      resolve: (row) => row.recent,
+    }),
+  }),
+})
+
 export const DiscoveryType = builder.objectRef<Discovery>('Discovery').implement({
   description: 'The Découvrir tab in one format.',
   fields: (t) => ({
@@ -112,16 +186,26 @@ export const DiscoveryType = builder.objectRef<Discovery>('Discovery').implement
         'a row per saga with nothing announced but a volume just out, the newest first.',
       resolve: (discovery) => discovery.sagas,
     }),
+    authors: t.field({
+      type: [AuthorDiscoveryType],
+      description:
+        'A row per author the reader holds in that format — all but the ones whose every ' +
+        'book they gave up on — with a work announced for a known date, the soonest first, ' +
+        'then a row per author with nothing announced but a work just out, the newest ' +
+        'first. The volumes of a saga the reader holds are left to `sagas`.',
+      resolve: (discovery) => discovery.authors,
+    }),
     unwatched: t.int({
       description:
-        'How many sagas the reader follows in that format were never looked up. Above ' +
-        'zero, `lookUpDiscovery` looks them up at once rather than wait for the hourly pass.',
+        'How many sagas and authors the reader follows in that format were never looked ' +
+        'up. Above zero, `lookUpDiscovery` looks them up at once rather than wait for the ' +
+        'hourly pass.',
       resolve: (discovery) => discovery.unwatched,
     }),
     followed: t.int({
       description:
-        'How many sagas the reader follows in that format. Zero, and the app opens ' +
-        'Découvrir on the other format.',
+        'How many sagas and authors the reader follows in that format. Zero, and the app ' +
+        'opens Découvrir on the other format.',
       resolve: (discovery) => discovery.followed,
     }),
   }),

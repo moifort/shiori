@@ -1,19 +1,25 @@
 import { AdminCommand } from '~/domain/admin/command'
+import type { ShelvedAuthor } from '~/domain/author/types'
+import { AuthorUseCase } from '~/domain/author/use-case'
 import { BookQuery } from '~/domain/book/query'
-import type { BookLanguage } from '~/domain/book/types'
+import type { Book, BookLanguage } from '~/domain/book/types'
 import {
   alertOf,
   announcedEditionOf,
   announcedPreviewOf,
+  authorReleasesOf,
+  authorWatchKeyOf,
   catalogueVolumesOf,
   digestOf,
   dueAlertsOf,
+  dueAuthorWatches,
   dueWatches,
   formatOf,
   inDiscoveryOrder,
   isDiscoverable,
   likelyLanguageOf,
   mergedVolumes,
+  mergedWorks,
   missingVolumesOf,
   newAnnouncementsOf,
   onAudible,
@@ -21,6 +27,7 @@ import {
   recentReleasesOf,
   releasesOf,
   todayOf,
+  watchedAuthorsOf,
   watchedSagasOf,
   watchKeyOf,
 } from '~/domain/discovery/business-rules'
@@ -31,19 +38,28 @@ import {
   audibleRecordingOf,
   audibleSeriesOf,
 } from '~/domain/discovery/infrastructure/audible-catalogue'
-import { volumesFrom } from '~/domain/discovery/parsing'
-import { releasesPrompt } from '~/domain/discovery/prompts'
+import { volumesFrom, worksFrom } from '~/domain/discovery/parsing'
+import { authorReleasesPrompt, releasesPrompt } from '~/domain/discovery/prompts'
 import { DiscoveryQuery } from '~/domain/discovery/query'
-import { RELEASES_SCHEMA, type ReleasesOutput } from '~/domain/discovery/schemas'
+import {
+  AUTHOR_RELEASES_SCHEMA,
+  type AuthorReleasesOutput,
+  RELEASES_SCHEMA,
+  type ReleasesOutput,
+} from '~/domain/discovery/schemas'
 import type {
   AnnouncedVolumePreview,
+  AuthorDiscovery,
+  AuthorWatch,
   Discovery,
   DiscoveryReader,
   FoundVolume,
+  FoundWork,
   ReleaseFormat,
   SagaDiscovery,
   SagaReleases,
   SagaWatch,
+  WatchedAuthor,
   WatchedSaga,
 } from '~/domain/discovery/types'
 import { NotificationUseCase } from '~/domain/notification/use-case'
@@ -60,6 +76,7 @@ import type { UserId } from '~/domain/shared/types'
 import { UserQuery } from '~/domain/user/query'
 import { createLogger } from '~/system/logger'
 import { withRequestCacheScope } from '~/system/request-cache'
+import { slugify } from '~/utils/slug'
 
 const logger = createLogger('discovery')
 
@@ -78,30 +95,28 @@ const ON_DEMAND_BUDGET_MS = 90_000
 
 export namespace DiscoveryUseCase {
   /** The tab as the reader opens it: every saga they follow in that format
-   *  with a volume announced they do not hold or one just out, as the
-   *  shared watches know them, and how many were never looked up. Opening it
-   *  tells the hourly pass at once which sagas the reader follows now, and in
-   *  which language to write to them. */
+   *  with a volume announced they do not hold or one just out, and every
+   *  author they hold in that format with a work announced or just out outside
+   *  those sagas, as the shared watches know them, and how many were never
+   *  looked up. Opening it tells the hourly pass at once which sagas and
+   *  authors the reader follows now, and in which language to write to them. */
   export const discover = async (
     userId: UserId,
     language: Language,
     format: ReleaseFormat,
     now = new Date(),
   ): Promise<Discovery> => {
-    const [followed, reader] = await Promise.all([
-      SeriesUseCase.followed(userId),
-      DiscoveryQuery.reader(userId),
-    ])
-    const sagas = watchedSagasOf(followed)
-    await rememberReader(userId, sagas, language, reader, now)
-    const watches = await DiscoveryQuery.watches(sagas.map(watchKeyOf))
-    return discoveryOf(followed, watches, format, now)
+    const library = await libraryOf(userId)
+    await rememberReader(userId, library, language, now)
+    const { watches, authorWatches } = await watchesOf(library, format)
+    return discoveryOf(library, watches, authorWatches, format, now)
   }
 
-  /** The first look at the tab: every saga the reader follows in that format
-   *  that was never looked up is looked up now, a few side by side, rather
-   *  than on the next hourly pass — within a budget the request lives
-   *  through; whatever is left goes to the hourly pass. Answers the tab. */
+  /** The first look at the tab: every saga, then every author, the reader
+   *  follows in that format that was never looked up is looked up now, a few
+   *  side by side, rather than on the next hourly pass — within a budget the
+   *  request lives through; whatever is left goes to the hourly pass. Answers
+   *  the tab. */
   export const lookUpUnwatched = async (
     userId: UserId,
     language: Language,
@@ -110,18 +125,19 @@ export namespace DiscoveryUseCase {
     budgetMs = ON_DEMAND_BUDGET_MS,
     startedAt = Date.now(),
   ): Promise<Discovery> => {
-    const [followed, reader] = await Promise.all([
-      SeriesUseCase.followed(userId),
-      DiscoveryQuery.reader(userId),
-    ])
-    const sagas = watchedSagasOf(followed)
-    await rememberReader(userId, sagas, language, reader, now)
-    const watches = await DiscoveryQuery.watches(sagas.map(watchKeyOf))
-    const unwatched = sagas.filter(
+    const library = await libraryOf(userId)
+    await rememberReader(userId, library, language, now)
+    const { watches, authorWatches } = await watchesOf(library, format)
+    const overBudget = () => Date.now() - startedAt > budgetMs
+    const unwatched = library.sagas.filter(
       (saga) => formatOf(saga.seriesId) === format && !watches.has(watchKeyOf(saga)),
     )
-    await lookUpAll(unwatched, watches, now, () => Date.now() - startedAt > budgetMs)
-    return discoveryOf(followed, watches, format, now)
+    await lookUpAll(unwatched, watches, now, overBudget)
+    const unwatchedAuthors = library.authors.filter(
+      (author) => author.format === format && !authorWatches.has(authorWatchKeyOf(author)),
+    )
+    await lookUpAllAuthors(unwatchedAuthors, authorWatches, now, overBudget)
+    return discoveryOf(library, watches, authorWatches, format, now)
   }
 
   /** What the saga screen shows under its introduction: the next volume
@@ -214,11 +230,12 @@ export namespace DiscoveryUseCase {
     return announcedPreviewOf(watch, volume, recording, described)
   }
 
-  /** The hourly pass. First every reader whose sagas were last worked out a
-   *  day ago has their library read again; then every saga anybody follows
-   *  whose watch is a week old is looked up on the web — the ones never looked
-   *  up first — and what was found written into its catalogue. Both stop when
-   *  the budget is spent; whoever is not reached goes first next hour. */
+  /** The hourly pass. First every reader whose sagas and authors were last
+   *  worked out a day ago has their library read again; then every saga
+   *  anybody follows whose watch is a week old is looked up on the web — the
+   *  ones never looked up first — and what was found written into its
+   *  catalogue; then every author, the same way. All stop when the budget is
+   *  spent; whatever is not reached goes first next hour. */
   export const watchDueSagas = async (
     now = new Date(),
     budgetMs = SCHEDULED_BUDGET_MS,
@@ -234,10 +251,9 @@ export namespace DiscoveryUseCase {
       const reader = readers.get(userId)
       if (!readerIsStale(reader, now)) continue
       try {
-        const followed = await withRequestCacheScope(() => SeriesUseCase.followed(userId))
-        const sagas = watchedSagasOf(followed)
-        const language = reader?.language ?? likelyLanguageOf(sagas)
-        readers.set(userId, await rememberReader(userId, sagas, language, reader, now, true))
+        const library = await withRequestCacheScope(() => libraryOf(userId, reader))
+        const language = reader?.language ?? likelyLanguageOf(library.sagas)
+        readers.set(userId, await rememberReader(userId, library, language, now, true))
         synced += 1
       } catch (error) {
         failed += 1
@@ -245,12 +261,25 @@ export namespace DiscoveryUseCase {
       }
     }
     const everyone = [...readers.values()]
-    const watches = await DiscoveryQuery.watches(
-      everyone.flatMap((reader) => reader.sagas.map(watchKeyOf)),
+    const [watches, authorWatches] = await Promise.all([
+      DiscoveryQuery.watches(everyone.flatMap((reader) => reader.sagas.map(watchKeyOf))),
+      DiscoveryQuery.authorWatches(
+        everyone.flatMap((reader) => (reader.authors ?? []).map(authorWatchKeyOf)),
+      ),
+    ])
+    const sagas = await lookUpAll(dueWatches(everyone, watches, now), watches, now, overBudget)
+    const authors = await lookUpAllAuthors(
+      dueAuthorWatches(everyone, authorWatches, now),
+      authorWatches,
+      now,
+      overBudget,
     )
-    const due = dueWatches(everyone, watches, now)
-    const looked = await lookUpAll(due, watches, now, overBudget)
-    return { synced, ...looked, failed: failed + looked.failed }
+    return {
+      synced,
+      watched: sagas.watched + authors.watched,
+      failed: failed + sagas.failed + authors.failed,
+      deferred: sagas.deferred + authors.deferred,
+    }
   }
 
   /** The morning pass: every volume that came out, pushed to the readers who
@@ -320,17 +349,57 @@ export namespace DiscoveryUseCase {
 
 // MARK: - The parts of a pass
 
-/** The tab in one format out of the reader's sagas and the watches. */
-const discoveryOf = (
-  followed: readonly FollowedSeries[],
+/** What the tab is worked out from: the reader's sagas and authors, and which
+ *  of them are watched. */
+type Library = {
+  followed: FollowedSeries[]
+  shelved: ShelvedAuthor<Book>[]
+  sagas: WatchedSaga[]
+  authors: WatchedAuthor[]
+  known: DiscoveryReader | undefined
+}
+
+/** The reader's sagas and authors, and what the passes know of them. The
+ *  library is read once, shared by the sagas and the authors. */
+const libraryOf = async (userId: UserId, known?: DiscoveryReader): Promise<Library> => {
+  const [followed, shelved, reader] = await Promise.all([
+    SeriesUseCase.followed(userId),
+    AuthorUseCase.shelvedAuthors(userId),
+    known ? Promise.resolve(known) : DiscoveryQuery.reader(userId),
+  ])
+  return {
+    followed,
+    shelved,
+    sagas: watchedSagasOf(followed),
+    authors: watchedAuthorsOf(shelved),
+    known: reader,
+  }
+}
+
+/** The watches the tab needs: every saga's, and the authors' of that format
+ *  only — each in one getAll. */
+const watchesOf = async (library: Library, format: ReleaseFormat) => {
+  const [watches, authorWatches] = await Promise.all([
+    DiscoveryQuery.watches(library.sagas.map(watchKeyOf)),
+    DiscoveryQuery.authorWatches(
+      library.authors.filter((author) => author.format === format).map(authorWatchKeyOf),
+    ),
+  ])
+  return { watches, authorWatches }
+}
+
+/** The tab in one format out of the reader's library and the watches. */
+const discoveryOf = async (
+  library: Library,
   watches: ReadonlyMap<string, SagaWatch>,
+  authorWatches: ReadonlyMap<string, AuthorWatch>,
   format: ReleaseFormat,
   now: Date,
-): Discovery => {
+): Promise<Discovery> => {
   const today = todayOf(now)
   let unwatched = 0
   let followedCount = 0
-  const rows = followed.flatMap((series): SagaDiscovery[] => {
+  const rows = library.followed.flatMap((series): SagaDiscovery[] => {
     if (!isDiscoverable(series)) return []
     if (formatOf(series.id) !== format) return []
     followedCount += 1
@@ -342,7 +411,49 @@ const discoveryOf = (
     const missing = missingVolumesOf(series.books, watch, series.catalogue, today)
     return [{ ...releases, series, missing, recent }]
   })
-  return { sagas: inDiscoveryOrder(rows), unwatched, followed: followedCount }
+  const authors = await authorRowsOf(library, authorWatches, format, today)
+  return {
+    sagas: inDiscoveryOrder(rows),
+    authors: authors.rows,
+    unwatched: unwatched + authors.unwatched,
+    followed: followedCount + authors.followed,
+  }
+}
+
+/** The Authors shelf in one format: every author the reader holds in it with
+ *  a work announced or just out, outside any saga they hold — read or heard,
+ *  followed or set aside — in the tab's order, with their portraits. */
+const authorRowsOf = async (
+  library: Library,
+  watches: ReadonlyMap<string, AuthorWatch>,
+  format: ReleaseFormat,
+  today: string,
+): Promise<{ rows: AuthorDiscovery[]; unwatched: number; followed: number }> => {
+  const shelved = new Map(library.shelved.map((author) => [author.key, author]))
+  const sagaNames = new Set([
+    ...library.followed.map((series) => slugify(series.name)),
+    ...library.shelved.flatMap((author) =>
+      author.books.flatMap((book) => (book.series ? [slugify(book.series.name)] : [])),
+    ),
+  ])
+  const watched = library.authors.filter((author) => author.format === format)
+  let unwatched = 0
+  const rows = watched.flatMap((watchedAuthor) => {
+    const watch = watches.get(authorWatchKeyOf(watchedAuthor))
+    const author = shelved.get(watchedAuthor.authorKey)
+    if (!watch) unwatched += 1
+    if (!watch || !author) return []
+    const releases = authorReleasesOf(author.books, sagaNames, watch, today)
+    if (!releases.next && releases.recent.length === 0) return []
+    return [{ ...releases, author }]
+  })
+  const ordered = inDiscoveryOrder(rows)
+  const portrayed = await AuthorUseCase.withPortraits(ordered.map((row) => row.author))
+  return {
+    rows: ordered.map((row, index) => ({ ...row, author: portrayed[index] ?? row.author })),
+    unwatched,
+    followed: watched.length,
+  }
 }
 
 /** Look these sagas up on the web, a few side by side, until the budget is
@@ -393,9 +504,8 @@ const lookUpAll = async (
  *  opening the tab every few minutes must not cost a write each time. */
 const rememberReader = async (
   userId: UserId,
-  sagas: WatchedSaga[],
+  { sagas, authors, known }: Pick<Library, 'sagas' | 'authors' | 'known'>,
   language: Language,
-  known: DiscoveryReader | undefined,
   now: Date,
   force = false,
 ): Promise<DiscoveryReader> => {
@@ -403,12 +513,14 @@ const rememberReader = async (
     known !== undefined &&
     known.language === language &&
     JSON.stringify(known.sagas) === JSON.stringify(sagas) &&
+    JSON.stringify(known.authors ?? []) === JSON.stringify(authors) &&
     !readerIsStale(known, now)
   if (unchanged && !force) return known
   return DiscoveryCommand.saveReader({
     userId,
     language,
     sagas,
+    authors,
     syncedAt: now,
     notified: known?.notified ?? [],
     ...(known?.announced ? { announced: known.announced } : {}),
@@ -428,10 +540,10 @@ const recordUsage = async (
 
 /** A printed volume's cover, found by its ISBN, unless the last look already
  *  found it for that ISBN. One that cannot be found goes without. */
-const withCover = async (
-  volume: FoundVolume,
-  known: FoundVolume | undefined,
-): Promise<FoundVolume> => {
+const withCover = async <Found extends Pick<FoundVolume, 'coverUrl' | 'isbn13'>>(
+  volume: Found,
+  known: Found | undefined,
+): Promise<Found> => {
   if (volume.coverUrl || !volume.isbn13) return volume
   if (known?.coverUrl && known.isbn13 === volume.isbn13)
     return { ...volume, coverUrl: known.coverUrl }
@@ -449,19 +561,21 @@ const withCover = async (
  *  An ASIN Audible does not know is dropped and the volume offered through a
  *  search; one Audible could not be asked about keeps the one confirmed last
  *  time, if any. */
-const confirmedOnAudible = async (
-  volume: FoundVolume,
-  known: FoundVolume | undefined,
+const confirmedOnAudible = async <
+  Found extends Pick<FoundVolume, 'asin' | 'title' | 'date' | 'coverUrl'>,
+>(
+  volume: Found,
+  known: Found | undefined,
   language: BookLanguage,
-): Promise<FoundVolume> => {
-  const { asin, ...rest } = volume
+): Promise<Found> => {
+  const { asin } = volume
   if (!asin) return volume
   if (asin === known?.asin) return volume
   const product = await audibleProductOf(asin, language)
-  if (product === 'unreachable') return known?.asin ? { ...rest, asin: known.asin } : rest
+  if (product === 'unreachable') return { ...volume, asin: known?.asin }
   if (product === 'unknown') {
     logger.warn('Audible ASIN not confirmed', { asin, title: volume.title })
-    return rest
+    return { ...volume, asin: undefined }
   }
   return {
     ...volume,
@@ -547,21 +661,105 @@ const datedOnAmazon = async (
  *  once Amazon sells it, not when the web says another edition came out. An
  *  ISBN Amazon knows no book of in that language is dropped; a page that could
  *  not be read leaves the web's date. */
-const confirmedOnAmazon = async (
-  volume: FoundVolume,
+const confirmedOnAmazon = async <Found extends Pick<FoundVolume, 'isbn13' | 'title' | 'date'>>(
+  volume: Found,
   language: BookLanguage,
-): Promise<FoundVolume> => {
-  const { isbn13, ...rest } = volume
+): Promise<Found> => {
+  const { isbn13 } = volume
   if (!isbn13) return volume
   const edition = await amazonEditionOf(isbn13, language)
   if (edition === 'unreachable') return volume
   if (edition === 'unknown') {
     logger.warn('Amazon ISBN not confirmed', { isbn13, title: volume.title })
-    return rest
+    return { ...volume, isbn13: undefined }
   }
   return edition.releaseDate ? { ...volume, date: edition.releaseDate } : volume
 }
 
 /** A printed saga's volumes are bought in a bookshop: an ASIN the model gave
  *  anyway is not kept. */
-const withoutAsin = ({ asin: _, ...volume }: FoundVolume): FoundVolume => volume
+const withoutAsin = <Found extends { asin?: unknown }>(volume: Found): Found => ({
+  ...volume,
+  asin: undefined,
+})
+
+// MARK: - The authors
+
+/** How far back an author's works are asked for: enough for the week's
+ *  releases, with room for a date the web gets a little wrong. */
+const LOOKED_BACK_DAYS = 90
+
+/** Look these authors up on the web, a few side by side, until the budget is
+ *  spent, keeping each watch in `watches`. A lookup that fails leaves its
+ *  author as they were. */
+const lookUpAllAuthors = async (
+  authors: readonly WatchedAuthor[],
+  watches: Map<string, AuthorWatch>,
+  now: Date,
+  overBudget: () => boolean,
+): Promise<{ watched: number; failed: number; deferred: number }> => {
+  let watched = 0
+  let failed = 0
+  for (let start = 0; start < authors.length; start += CALLS_AT_ONCE) {
+    if (overBudget()) return { watched, failed, deferred: authors.length - start }
+    const found = await Promise.all(
+      authors.slice(start, start + CALLS_AT_ONCE).map(async (author) => {
+        try {
+          return await lookUpAuthor(author, watches.get(authorWatchKeyOf(author)), now)
+        } catch (error) {
+          failed += 1
+          logger.warn('author release lookup failed', { error, author: authorWatchKeyOf(author) })
+          return undefined
+        }
+      }),
+    )
+    for (const watch of found) {
+      if (!watch) continue
+      watched += 1
+      watches.set(watch.key, watch)
+    }
+  }
+  return { watched, failed, deferred: 0 }
+}
+
+/** Look one author up in one language and format and keep what was found:
+ *  a recording kept only once Audible confirms it, a printed book dated as
+ *  Amazon dates it and given its cover — as a saga's volumes are. */
+const lookUpAuthor = async (
+  author: WatchedAuthor,
+  previous: AuthorWatch | undefined,
+  now: Date,
+): Promise<AuthorWatch> => {
+  const today = todayOf(now)
+  const since = new Date(now.getTime() - LOOKED_BACK_DAYS * 86_400_000).toISOString().slice(0, 10)
+  const { value, usage } = await generate<AuthorReleasesOutput>({
+    step: 'discovery-author-releases',
+    parts: [{ text: authorReleasesPrompt(author, today, since) }],
+    responseSchema: AUTHOR_RELEASES_SCHEMA,
+    grounded: true,
+  })
+  await recordUsage(usage)
+  const known = new Map((previous?.works ?? []).map((work) => [slugify(work.title), work]))
+  const works = worksFrom(value.works ?? [])
+  const found: FoundWork[] = []
+  // One after the other, as a saga's volumes: Amazon sees a reader browsing.
+  for (const work of works) {
+    const before = known.get(slugify(work.title))
+    found.push(
+      author.format === 'audiobook'
+        ? await confirmedOnAudible(work, before, author.language)
+        : await withCover(await confirmedOnAmazon(withoutAsin(work), author.language), before),
+    )
+  }
+  const watch: AuthorWatch = {
+    key: authorWatchKeyOf(author),
+    authorKey: author.authorKey,
+    name: author.name,
+    format: author.format,
+    language: author.language,
+    checkedAt: now,
+    works: mergedWorks(previous?.works ?? [], found, today),
+  }
+  await DiscoveryCommand.saveAuthorWatch(watch)
+  return watch
+}
