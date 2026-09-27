@@ -694,3 +694,72 @@ describe('deleting an account', () => {
     expect((await as(bob)('{ friends { userId } }')).data?.friends).toEqual([])
   })
 })
+
+describe("the friends' new favourites, for the dashboard", () => {
+  afterEach(() => {
+    setSystemTime()
+  })
+
+  const addBook = async (owner: UserId, fields: string) => {
+    const result = await as(owner)(`mutation { addBook(input: { ${fields} }) { id } }`)
+    expect(result.errors).toBeUndefined()
+    return (result.data as { addBook: { id: string } }).addBook.id
+  }
+  const heartAt = async (owner: UserId, id: string, at: string) => {
+    setSystemTime(new Date(at))
+    await as(owner)(`mutation { setBookFavorite(id: "${id}", favorite: true) { id } }`)
+  }
+  const query =
+    '{ friendFavorites { friendId favoritedAt book { title } saga { name volumes { title } } } }'
+
+  test('mixes the sagas and books every friend hearted lately, the newest first', async () => {
+    const piranesi = await addBook(alice, 'title: "Piranesi", status: READ')
+    await addBook(
+      alice,
+      'title: "Dune 1", authors: ["Frank Herbert"], status: READ, series: { id: "dune--frank-herbert", name: "Dune", volume: 1, kind: MAIN }',
+    )
+    await heartAt(alice, piranesi, '2026-09-10T10:00:00Z')
+    setSystemTime(new Date('2026-09-12T10:00:00Z'))
+    await as(alice)(
+      'mutation { setSeriesFavorite(seriesId: "dune--frank-herbert", favorite: true) { favorite } }',
+    )
+    await befriend()
+
+    setSystemTime(new Date('2026-09-20T10:00:00Z'))
+    const result = await as(bob)(query)
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.friendFavorites).toEqual([
+      {
+        friendId: 'alice',
+        favoritedAt: '2026-09-12T10:00:00.000Z',
+        book: null,
+        saga: { name: 'Dune', volumes: [{ title: 'Dune 1' }] },
+      },
+      {
+        friendId: 'alice',
+        favoritedAt: '2026-09-10T10:00:00.000Z',
+        book: { title: 'Piranesi' },
+        saga: null,
+      },
+    ])
+  })
+
+  // News is recent, and a shelf is only ever open to friends.
+  test('leaves out the old hearts, the hidden books and the strangers', async () => {
+    const old = await addBook(alice, 'title: "Ancien", status: READ')
+    const secret = await addBook(alice, 'title: "Un secret", status: READ')
+    const stranger = await addBook(carol, 'title: "Inconnu", status: READ')
+    await heartAt(alice, old, '2026-07-01T10:00:00Z')
+    await heartAt(alice, secret, '2026-09-15T10:00:00Z')
+    await heartAt(carol, stranger, '2026-09-15T10:00:00Z')
+    await as(alice)(`mutation { setBookHidden(id: "${secret}", hidden: true) { id } }`)
+    await befriend()
+
+    setSystemTime(new Date('2026-09-20T10:00:00Z'))
+    const result = await as(bob)(query)
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.friendFavorites).toEqual([])
+  })
+})

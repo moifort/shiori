@@ -39,7 +39,6 @@ import type { LocalDate as LocalDateValue } from './types'
  *  readable on a phone, and fewer leaves one wide bar for a reader's first year. */
 const YEARS_SHOWN = 9
 const READING_SHOWN = 10
-const SUGGESTIONS_SHOWN = 6
 const SERIES_SHOWN = 6
 const TOP_GENRES = 4
 
@@ -294,7 +293,6 @@ export const dashboardOf = (view: AnalyticsView, today: LocalDateValue): Dashboa
     pagesPerMonth: pagesPerMonthOf(finishes, currentYear),
     hoursPerMonth: hoursPerMonthOf(finishes, currentYear),
     reading: view.reading.slice(0, READING_SHOWN),
-    suggestions: shuffled(view.toRead, `${view.userId}:${today}`).slice(0, SUGGESTIONS_SHOWN),
     lastFinished: view.lastFinished,
     booksRead: booksReadTrendOf(finishes, today),
     pagesPerDay: pagesPerDayTrendOf(finishes, today),
@@ -504,27 +502,4 @@ export const genresOf = (finishes: readonly Finish[]): GenreCount[] => {
   const others =
     ranked.slice(TOP_GENRES).reduce((sum, [, count]) => sum + count, 0) + (counts.get('other') ?? 0)
   return others > 0 ? [...top, { count: others }] : top
-}
-
-/** A shuffle that gives the same order all day for the same seed, so the
- *  suggestions do not reshuffle on every pull to refresh, and a new one the next
- *  day. FNV-1a seeds a mulberry32 generator driving a Fisher–Yates pass. */
-export const shuffled = <T>(items: readonly T[], seed: string): T[] => {
-  let state = 2166136261
-  for (let index = 0; index < seed.length; index += 1) {
-    state ^= seed.charCodeAt(index)
-    state = Math.imul(state, 16777619)
-  }
-  const random = () => {
-    state = (state + 0x6d2b79f5) | 0
-    let mixed = Math.imul(state ^ (state >>> 15), 1 | state)
-    mixed = (mixed + Math.imul(mixed ^ (mixed >>> 7), 61 | mixed)) ^ mixed
-    return ((mixed ^ (mixed >>> 14)) >>> 0) / 4294967296
-  }
-  const result = [...items]
-  for (let index = result.length - 1; index > 0; index -= 1) {
-    const other = Math.floor(random() * (index + 1))
-    ;[result[index], result[other]] = [result[other], result[index]]
-  }
-  return result
 }

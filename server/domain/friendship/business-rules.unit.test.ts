@@ -7,9 +7,11 @@ import {
   lastActivityOf,
   lastFinishedOf,
   newestFavoritesFirst,
+  recentHeartsOf,
   subgenreOf,
 } from '~/domain/friendship/business-rules'
 import { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
+import type { UserId } from '~/domain/shared/types'
 
 const day = (n: number) => new Date(Date.UTC(2026, 8, n))
 
@@ -146,5 +148,81 @@ describe('inReadingOrder', () => {
       'Sans numéro',
       'Une nouvelle',
     ])
+  })
+})
+
+describe('recentHeartsOf', () => {
+  const alice = 'alice' as UserId
+  const bob = 'bob' as UserId
+  const dune = SeriesId('dune')
+  const saga = (id: typeof dune) => ({ id })
+  const book = (title: string, favoritedAt?: Date, seriesId?: typeof dune) => ({
+    title,
+    favorite: true,
+    favoritedAt,
+    series: seriesId
+      ? { id: seriesId, name: SeriesName('Dune'), volume: VolumeNumber(1), kind: 'main' as const }
+      : undefined,
+  })
+
+  test("mixes every friend's sagas and books, the newest heart first, up to the limit", () => {
+    const hearts = recentHeartsOf(
+      [
+        {
+          friendId: alice,
+          books: [book('Hypérion', day(10)), book('Vagabond', day(20))],
+          sagas: [],
+          favoriteSagas: new Map(),
+        },
+        {
+          friendId: bob,
+          books: [],
+          sagas: [saga(dune)],
+          favoriteSagas: new Map([[dune, day(15)]]),
+        },
+      ],
+      day(1),
+      2,
+    )
+
+    expect(hearts.map((heart) => heart.book?.title ?? heart.saga?.id)).toEqual(['Vagabond', 'dune'])
+    expect(hearts[1]?.friendId).toBe(bob)
+  })
+
+  // A heart given before the window, or before its date was kept, is not news.
+  test('leaves out the hearts older than the window and the undated ones', () => {
+    const hearts = recentHeartsOf(
+      [
+        {
+          friendId: alice,
+          books: [book('Old', day(2)), book('Undated'), book('New', day(9))],
+          sagas: [saga(dune)],
+          favoriteSagas: new Map([[dune, undefined]]),
+        },
+      ],
+      day(5),
+      10,
+    )
+
+    expect(hearts.map((heart) => heart.book?.title)).toEqual(['New'])
+  })
+
+  // The hearted saga stands for its volumes, as on the friend's profile; and a
+  // saga held in two languages is one heart.
+  test('names a hearted saga once and none of its volumes', () => {
+    const hearts = recentHeartsOf(
+      [
+        {
+          friendId: alice,
+          books: [book('Dune', day(9), dune)],
+          sagas: [saga(dune), saga(dune)],
+          favoriteSagas: new Map([[dune, day(8)]]),
+        },
+      ],
+      day(1),
+      10,
+    )
+
+    expect(hearts).toEqual([{ friendId: alice, favoritedAt: day(8), saga: saga(dune) }])
   })
 })

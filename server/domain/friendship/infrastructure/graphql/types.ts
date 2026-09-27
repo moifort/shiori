@@ -10,6 +10,7 @@ import { lastActivityOf } from '~/domain/friendship/business-rules'
 import type { Friend } from '~/domain/friendship/types'
 import type {
   FriendBook,
+  FriendFavorite,
   FriendLibraryPage,
   FriendProfile,
   FriendSaga,
@@ -314,6 +315,32 @@ export const FriendSagaPageType = builder.objectRef<FriendSagaPage>('FriendSagaP
       resolve: (page) => page.sagas,
     }),
     hasMore: t.exposeBoolean('hasMore', { description: 'Whether more sagas follow this page' }),
+  }),
+})
+
+export const FriendFavoriteType = builder.objectRef<FriendFavorite>('FriendFavorite').implement({
+  description:
+    'A heart one friend gave lately: to a saga, or to a book no hearted saga of theirs ' +
+    'already stands for. Exactly one of `book` and `saga` is set.',
+  fields: (t) => ({
+    friendId: t.field({ type: 'UserId', resolve: (favorite) => favorite.friendId }),
+    friendName: t.string({
+      nullable: true,
+      description: 'Null for an account that never finished its onboarding.',
+      resolve: (favorite) => favorite.friendName ?? null,
+    }),
+    favoritedAt: t.field({ type: 'DateTime', resolve: (favorite) => favorite.favoritedAt }),
+    book: t.field({
+      type: FriendBookType,
+      nullable: true,
+      resolve: (favorite) => favorite.book ?? null,
+    }),
+    saga: t.field({
+      type: FriendSagaType,
+      nullable: true,
+      description: 'Carries its first volume only, as the cover its tile draws.',
+      resolve: (favorite) => favorite.saga ?? null,
+    }),
   }),
 })
 

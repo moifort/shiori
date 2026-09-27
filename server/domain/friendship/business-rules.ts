@@ -1,5 +1,6 @@
 import type { Book, Genre, TaggedSubgenre } from '~/domain/book/types'
 import type { SeriesId, SeriesState } from '~/domain/series/types'
+import type { UserId } from '~/domain/shared/types'
 
 /** When the reader last did anything with a book: picked it up, moved its
  *  status, or had a sync move its listening position. What "most recently
@@ -91,4 +92,51 @@ export const friendSagaStateOf = (
   if (volumes.every((volume) => volume.status === 'to-read')) return 'not-started'
   if (volumes.every((volume) => volume.status === 'read')) return 'complete'
   return 'in-progress'
+}
+
+/** A heart one friend gave lately: to a saga, or to a book no hearted saga of
+ *  theirs already stands for. */
+export type RecentHeart<Favorite, Saga> = { friendId: UserId; favoritedAt: Date } & (
+  | { book: Favorite; saga?: never }
+  | { saga: Saga; book?: never }
+)
+
+/** The hearts every friend gave since `since`, the newest first, `limit` at
+ *  most: what the dashboard shows as news from the people the reader shares
+ *  with. Only a dated heart counts — one given before the date was kept says
+ *  nothing about being new. A saga held in two languages is hearted once. */
+export const recentHeartsOf = <
+  Favorite extends Pick<Book, 'favorite' | 'favoritedAt' | 'series'>,
+  Saga extends { id: SeriesId },
+>(
+  shelves: readonly {
+    friendId: UserId
+    books: readonly Favorite[]
+    sagas: readonly Saga[]
+    favoriteSagas: ReadonlyMap<SeriesId, Date | undefined>
+  }[],
+  since: Date,
+  limit: number,
+): RecentHeart<Favorite, Saga>[] => {
+  const isRecent = (date: Date | undefined): date is Date =>
+    date !== undefined && date.getTime() >= since.getTime()
+  const hearts = shelves.flatMap(({ friendId, books, sagas, favoriteSagas }) => {
+    const seen = new Set<SeriesId>()
+    const sagaHearts = sagas.flatMap((saga): RecentHeart<Favorite, Saga>[] => {
+      const favoritedAt = favoriteSagas.get(saga.id)
+      if (!isRecent(favoritedAt) || seen.has(saga.id)) return []
+      seen.add(saga.id)
+      return [{ friendId, favoritedAt, saga }]
+    })
+    const bookHearts = favoritesOutsideSagas(
+      books.filter((book) => book.favorite === true),
+      new Set(favoriteSagas.keys()),
+    ).flatMap((book): RecentHeart<Favorite, Saga>[] =>
+      isRecent(book.favoritedAt) ? [{ friendId, favoritedAt: book.favoritedAt, book }] : [],
+    )
+    return [...sagaHearts, ...bookHearts]
+  })
+  return hearts
+    .sort((left, right) => right.favoritedAt.getTime() - left.favoritedAt.getTime())
+    .slice(0, limit)
 }

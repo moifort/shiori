@@ -695,9 +695,6 @@ type Dashboard {
   Sagas in progress, six at most, in the Series tab's order: the saga whose latest volume was shelved most recently first.
   """
   series: [SeriesProgress!]!
-
-  """Six books of the pile, drawn at random once a day."""
-  suggestions: [DashboardBook!]!
   toReadCount: Int!
 }
 
@@ -999,6 +996,21 @@ type FriendBook {
   subgenres: [Subgenre!]!
   synopsis: Synopsis
   title: BookTitle!
+}
+
+"""
+A heart one friend gave lately: to a saga, or to a book no hearted saga of theirs already stands for. Exactly one of `book` and `saga` is set.
+"""
+type FriendFavorite {
+  book: FriendBook
+  favoritedAt: DateTime!
+  friendId: UserId!
+
+  """Null for an account that never finished its onboarding."""
+  friendName: String
+
+  """Carries its first volume only, as the cover its tile draws."""
+  saga: FriendSaga
 }
 
 """
@@ -1936,6 +1948,13 @@ type Query {
     """The friend"""
     userId: UserId!
   ): FriendBook
+
+  """
+  What every friend hearted in the last thirty days, sagas and books mixed, the newest heart first, twelve at most: the news the dashboard shows from the people the reader shares with.
+  
+  Only a dated heart counts. A book marked "do not share" is never among them.
+  """
+  friendFavorites: [FriendFavorite!]!
 
   """
   One page of a friend's library — or of the reader's own, previewing what their friends are shown — drawn as the Library tab draws the reader's: newest first on `shelvedAt`, the dropped books left out unless asked for. A book marked "do not share" never appears. Null for a stranger.

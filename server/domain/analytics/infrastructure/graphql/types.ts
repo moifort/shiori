@@ -166,11 +166,6 @@ export const DashboardType = builder.objectRef<Dashboard>('Dashboard').implement
       description: 'Most recently started first, ten at most.',
       resolve: (dashboard) => dashboard.reading,
     }),
-    suggestions: t.field({
-      type: [DashboardBookType],
-      description: 'Six books of the pile, drawn at random once a day.',
-      resolve: (dashboard) => dashboard.suggestions,
-    }),
     lastFinished: t.field({
       type: DashboardBookType,
       nullable: true,

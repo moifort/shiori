@@ -20,6 +20,7 @@ import {
   lastActivityOf,
   lastFinishedOf,
   newestFavoritesFirst,
+  recentHeartsOf,
   subgenreOf,
 } from '~/domain/friendship/business-rules'
 import { FriendshipQuery } from '~/domain/friendship/query'
@@ -93,6 +94,24 @@ export type FriendProfile = {
    *  dropped ones aside, as the reader's own Library tab. */
   bookCount: CountValue
 }
+
+/** A heart one friend gave lately, as the dashboard shows it: a saga or a
+ *  book, whose, and when. */
+export type FriendFavorite = {
+  friendId: UserId
+  friendName?: string
+  favoritedAt: Date
+  book?: FriendBook
+  /** Carries its first volume only, as the cover its tile draws. */
+  saga?: FriendSaga
+}
+
+/** How far back a friend's heart is still news on the dashboard: the window
+ *  the recent activity of a profile keeps. */
+const FAVORITES_RECENT_MS = 30 * 24 * 60 * 60 * 1000
+
+/** How many of them the dashboard shows. */
+const FAVORITES_SHOWN = 12
 
 /** One page of a friend's library or of their sagas, and whether more follow. */
 export type FriendLibraryPage = { books: FriendBook[]; hasMore: boolean }
@@ -253,6 +272,54 @@ export namespace FriendshipUseCase {
       ),
       hasMore: start + page.limit < sagas.length,
     }
+  }
+
+  /** What every friend hearted in the last thirty days, sagas and books
+   *  mixed, the newest heart first: the news from the people the reader
+   *  shares with. One scan of each friend's shelf and hearts; only the covers
+   *  drawn are signed, a saga's first volume standing for it. A book marked
+   *  "do not share" is never among them. */
+  export const recentFavorites = async (
+    userId: UserId,
+    now = new Date(),
+  ): Promise<FriendFavorite[]> => {
+    const friendIds = await FriendshipQuery.friendsOf(userId)
+    if (friendIds.length === 0) return []
+    const [names, owned, shelves] = await Promise.all([
+      UserQuery.namesOf(friendIds),
+      BookQuery.shelfKeys(userId),
+      Promise.all(
+        friendIds.map(async (friendId) => {
+          const [books, favoriteSagas] = await Promise.all([
+            BookQuery.shared(friendId),
+            favoriteSagasOf(friendId),
+          ])
+          return { friendId, books, sagas: followedSagasOf(books), favoriteSagas }
+        }),
+      ),
+    ])
+    const hearts = recentHeartsOf(
+      shelves,
+      new Date(now.getTime() - FAVORITES_RECENT_MS),
+      FAVORITES_SHOWN,
+    )
+    const favoriteSagas = new Map(shelves.map((shelf) => [shelf.friendId, shelf.favoriteSagas]))
+    const mark = (book: BookView): FriendBook => ({ ...book, inLibrary: ownsStory(owned, book) })
+    return Promise.all(
+      hearts.map(async ({ friendId, favoritedAt, book, saga }): Promise<FriendFavorite> => {
+        const whose = { friendId, friendName: names.get(friendId), favoritedAt }
+        if (book) {
+          const [signed] = await BookQuery.withSignedCovers([book])
+          return { ...whose, ...(signed ? { book: mark(signed) } : {}) }
+        }
+        const first = inReadingOrder(saga.books).slice(0, 1)
+        const volumes = (await BookQuery.withSignedCovers(first)).map(mark)
+        return {
+          ...whose,
+          saga: friendSagaOf(saga, favoriteSagas.get(friendId) ?? new Map(), volumes),
+        }
+      }),
+    )
   }
 
   /** Put a friend's book on the reader's own shelf.

@@ -14,7 +14,6 @@ import {
   pagesPerDayTrendOf,
   pagesPerMonthOf,
   seriesProgressOf,
-  shuffled,
   VIEW_VERSION,
 } from '~/domain/analytics/business-rules'
 import { LocalDate, TimeZone } from '~/domain/analytics/primitives'
@@ -291,22 +290,6 @@ describe('the genres read', () => {
       { genre: 'fantasy', count: 2 },
       { genre: 'crime', count: 1 },
     ])
-  })
-})
-
-describe('the daily suggestions', () => {
-  const pile = Array.from({ length: 20 }, (_, index) => index)
-
-  test('come in the same order all day', () => {
-    expect(shuffled(pile, 'reader-1:2026-09-15')).toEqual(shuffled(pile, 'reader-1:2026-09-15'))
-  })
-
-  test('are drawn again the next day', () => {
-    expect(shuffled(pile, 'reader-1:2026-09-16')).not.toEqual(shuffled(pile, 'reader-1:2026-09-15'))
-  })
-
-  test('only reorder the pile', () => {
-    expect([...shuffled(pile, 'seed')].sort((left, right) => left - right)).toEqual(pile)
   })
 })
 

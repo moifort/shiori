@@ -1,6 +1,7 @@
 import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
 import {
   FriendBookType,
+  FriendFavoriteType,
   FriendLibraryPageType,
   FriendProfileType,
   FriendSagaPageType,
@@ -19,6 +20,16 @@ builder.queryFields((t) => ({
       'the same terms. Their books are a separate read — a list of six friends ' +
       'must not fetch six libraries.',
     resolve: (_root, _args, context) => FriendshipUseCase.friends(context.userId),
+  }),
+
+  friendFavorites: t.field({
+    type: [FriendFavoriteType],
+    description:
+      'What every friend hearted in the last thirty days, sagas and books mixed, the ' +
+      'newest heart first, twelve at most: the news the dashboard shows from the people ' +
+      'the reader shares with.\n\n' +
+      'Only a dated heart counts. A book marked "do not share" is never among them.',
+    resolve: (_root, _args, context) => FriendshipUseCase.recentFavorites(context.userId),
   }),
 
   friendProfile: t.field({

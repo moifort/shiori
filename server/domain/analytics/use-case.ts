@@ -119,12 +119,11 @@ const rebuild = async (
 // Signed here rather than stored: a signed URL expires. A dozen covers at most,
 // signed concurrently.
 const withCovers = async (dashboard: Dashboard<BookCard>): Promise<Dashboard> => {
-  const [reading, suggestions, lastFinished] = await Promise.all([
+  const [reading, lastFinished] = await Promise.all([
     Promise.all(dashboard.reading.map(withCover)),
-    Promise.all(dashboard.suggestions.map(withCover)),
     dashboard.lastFinished ? withCover(dashboard.lastFinished) : undefined,
   ])
-  return { ...dashboard, reading, suggestions, lastFinished }
+  return { ...dashboard, reading, lastFinished }
 }
 
 // The reader's own photo wins over the publisher's cover, as on the book itself.

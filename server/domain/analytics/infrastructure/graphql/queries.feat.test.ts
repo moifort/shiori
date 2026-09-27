@@ -38,7 +38,6 @@ describe('the dashboard through the API', () => {
       dashboard(timeZone: "Europe/Paris") {
         booksPerYear { year count }
         reading { title }
-        suggestions { title }
         lastFinished { title rating }
         toReadCount
         readCount
@@ -67,7 +66,6 @@ describe('the dashboard through the API', () => {
         { year, count: 1 },
       ],
       reading: [{ title: 'La Peur du sage' }],
-      suggestions: [{ title: 'Hypérion' }],
       lastFinished: { title: 'Le Nom du vent', rating: 5 },
       toReadCount: 1,
       readCount: 1,

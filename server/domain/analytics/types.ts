@@ -160,7 +160,6 @@ export type Dashboard<Card = DashboardBook> = {
   pagesPerMonth: MonthPages[]
   hoursPerMonth: MonthHours[]
   reading: Card[]
-  suggestions: Card[]
   lastFinished?: Card
   booksRead: Trend
   pagesPerDay: Trend
