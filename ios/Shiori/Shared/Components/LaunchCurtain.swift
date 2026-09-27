@@ -45,7 +45,7 @@ struct LaunchCurtain: View {
 
     /// Everything named `launch-cover-*.jpg` in the bundle, decoded now rather
     /// than on first draw — which would land in the middle of the ribbon's
-    /// drop — and shuffled, so the rows do not open on the same covers.
+    /// drop — and shuffled, so every launch deals the rows different covers.
     nonisolated private static func loadCovers() -> [CGImage] {
         Bundle.main.paths(forResourcesOfType: "jpg", inDirectory: nil)
             .filter { ($0 as NSString).lastPathComponent.hasPrefix("launch-cover-") }
@@ -102,6 +102,10 @@ private final class CoverDriftView: UIView {
     /// many enough that the turned band still covers every corner. Each row is
     /// one strip of covers, repeated end to end, slid by exactly one repeat and
     /// started over: the seam never shows.
+    ///
+    /// The covers are dealt out between the rows, so a cover drifting in one row
+    /// shows up in no other — only when there are fewer covers than rows do
+    /// rows have to share.
     private func build() {
         layer.sublayers?.forEach { $0.removeFromSuperlayer() }
 
@@ -110,13 +114,8 @@ private final class CoverDriftView: UIView {
         let pitch = size.height + Self.spacing
         let rowCount = Int((diagonal / pitch).rounded(.up)) + 1
         let step = size.width + Self.spacing
-        // One repeat is at least as wide as the diagonal, and a strip carries
-        // a repeat plus a screen's worth, so it covers the band all the way
-        // through its slide.
-        let perStrip = max(covers.count, Int((diagonal / step).rounded(.up)) + 1)
-        let repeatWidth = CGFloat(perStrip) * step
-        let perRow = perStrip + Int((diagonal / step).rounded(.up)) + 1
-        let strides = Self.strides(for: covers.count)
+        let hands = Self.deal(covers, into: rowCount)
+        let across = Int((diagonal / step).rounded(.up)) + 1
 
         let band = CALayer()
         band.bounds = CGRect(x: 0, y: 0, width: diagonal, height: CGFloat(rowCount) * pitch)
@@ -126,18 +125,22 @@ private final class CoverDriftView: UIView {
 
         let scale = window?.screen.scale ?? 3
         for row in 0..<rowCount {
+            let hand = hands[row % hands.count]
+            // One repeat is a whole number of turns through the row's covers,
+            // so the seam does not break their order, and at least as wide as
+            // the diagonal. A strip carries a repeat plus a screen's worth, so
+            // it covers the band all the way through its slide.
+            let perStrip = hand.count * Int((CGFloat(across) / CGFloat(hand.count)).rounded(.up))
+            let repeatWidth = CGFloat(perStrip) * step
+            let perRow = perStrip + across
+
             let strip = CALayer()
             strip.anchorPoint = .zero
             strip.bounds = CGRect(x: 0, y: 0, width: CGFloat(perRow) * step, height: size.height)
-            // Every row its own first cover and its own stride through them, so
-            // two rows never show the same run of neighbours. A stride sharing
-            // no factor with the count still visits every cover.
-            let firstCover = row * 5
-            let stride = strides[row % strides.count]
             for index in 0..<perRow {
                 let cover = CALayer()
                 cover.frame = CGRect(x: CGFloat(index) * step, y: 0, width: size.width, height: size.height)
-                cover.contents = covers[(firstCover + (index % perStrip) * stride) % covers.count]
+                cover.contents = hand[index % hand.count]
                 cover.contentsGravity = .resizeAspectFill
                 cover.contentsScale = scale
                 cover.cornerRadius = 5
@@ -165,10 +168,13 @@ private final class CoverDriftView: UIView {
         }
     }
 
-    /// The steps coprime with `count`, smallest first: 1 is always one.
-    private static func strides(for count: Int) -> [Int] {
-        func gcd(_ a: Int, _ b: Int) -> Int { b == 0 ? a : gcd(b, a % b) }
-        return (1...max(count - 1, 1)).filter { gcd($0, count) == 1 }
+    /// The covers dealt round like cards, one hand per row: as many hands as
+    /// rows, or as covers when there are fewer, and no cover in two hands.
+    private static func deal(_ covers: [CGImage], into rows: Int) -> [[CGImage]] {
+        let count = min(rows, covers.count)
+        return (0..<count).map { hand in
+            Swift.stride(from: hand, to: covers.count, by: count).map { covers[$0] }
+        }
     }
 }
 

@@ -1,7 +1,8 @@
 /**
  * Bundles a reader's favourite covers into the iOS app, for the covers that drift
  * behind the icon while the app opens. Reads the reader's favourites from
- * production Firestore, downloads each publisher's cover, shrinks it to the size
+ * production Firestore, topped up with their best-rated books: the opening gives
+ * every row covers of its own, so it wants more than a handful of hearts, then downloads each publisher's cover, shrinks it to the size
  * the opening draws, and writes it to `ios/Shiori/LaunchCovers/`, replacing
  * whatever was there. The app picks up every `launch-cover-*.jpg` it ships with.
  *
@@ -13,7 +14,7 @@
  * (`gcloud auth application-default login`). The reader is named by uid or by
  * the email of their account.
  *
- * Usage: bun scripts/launch-covers.ts <uid | email> [--limit 36]
+ * Usage: bun scripts/launch-covers.ts <uid | email> [--limit 48]
  */
 
 import { mkdir, readdir, rm } from 'node:fs/promises'
@@ -21,12 +22,15 @@ import { join } from 'node:path'
 import type { Book } from '../server/domain/book/types'
 
 process.env.GOOGLE_CLOUD_PROJECT ??= 'shiori-polyforms'
+// Looking a reader up by email goes through Identity Toolkit, which refuses user
+// credentials that name no project to bill.
+process.env.GOOGLE_CLOUD_QUOTA_PROJECT ??= 'shiori-polyforms'
 
 const [, , reader] = process.argv
 const limitFlag = process.argv.indexOf('--limit')
-const limit = limitFlag > 0 ? Number(process.argv[limitFlag + 1]) : 36
+const limit = limitFlag > 0 ? Number(process.argv[limitFlag + 1]) : 48
 if (!reader || !Number.isInteger(limit) || limit < 1) {
-  process.stderr.write('usage: bun scripts/launch-covers.ts <uid | email> [--limit 36]\n')
+  process.stderr.write('usage: bun scripts/launch-covers.ts <uid | email> [--limit 48]\n')
   process.exit(64)
 }
 
@@ -40,20 +44,21 @@ const { getAuth } = await import('firebase-admin/auth')
 
 const userId = reader.includes('@') ? (await getAuth().getUserByEmail(reader)).uid : reader
 
-const snapshot = await db()
-  .collection('books')
-  .where('userId', '==', userId)
-  .where('favorite', '==', true)
-  .get()
-const favourites = snapshot.docs
+const snapshot = await db().collection('books').where('userId', '==', userId).get()
+const books = snapshot.docs
   .map((doc) => doc.data() as Book)
   .filter((book) => book.publishedCoverUrl)
+const favourites = books
+  .filter((book) => book.favorite)
   // The latest hearts first, so a limit keeps what the reader loves now.
   .sort((a, b) => time(b.favoritedAt) - time(a.favoritedAt))
-  .slice(0, limit)
+const bestRated = books
+  .filter((book) => !book.favorite && book.rating)
+  .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+const picked = [...favourites, ...bestRated].slice(0, limit)
 
 process.stdout.write(
-  `${snapshot.size} favourites, ${favourites.length} with a published cover taken\n\n`,
+  `${favourites.length} favourites and ${bestRated.length} rated books with a published cover, ${picked.length} taken\n\n`,
 )
 
 await mkdir(target, { recursive: true })
@@ -61,7 +66,7 @@ for (const name of await readdir(target))
   if (name.startsWith('launch-cover-')) await rm(join(target, name))
 
 let written = 0
-for (const book of favourites) {
+for (const book of picked) {
   const response = await fetch(String(book.publishedCoverUrl))
   if (!response.ok) {
     process.stdout.write(`skipped ${response.status}  ${book.title}\n`)
