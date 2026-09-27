@@ -12,7 +12,7 @@ enum AuthorListOrder: String, CaseIterable, Identifiable {
     var label: String {
         switch self {
         case .name: String(localized: "Alphabétique")
-        case .recent: String(localized: "Activité")
+        case .recent: String(localized: "Date")
         case .loved: String(localized: "Favoris")
         }
     }
@@ -28,7 +28,7 @@ enum AuthorListOrder: String, CaseIterable, Identifiable {
     var subtitle: String {
         switch self {
         case .name: String(localized: "Par nom")
-        case .recent: String(localized: "Par activité")
+        case .recent: String(localized: "Par date")
         case .loved: String(localized: "Vos coups de cœur d'abord")
         }
     }
