@@ -3,18 +3,22 @@ import SwiftUI
 /// The next volume of a saga announced, just under its introduction on the saga
 /// screen, and the day it comes out. The volumes already out are not repeated
 /// here: they are listed under "Tomes", with the button that adds them. Drawn
-/// by the Découvrir domain, which looks the saga up on the web every week.
+/// by the Découvrir domain, which looks the saga up on the web every week. A
+/// tap opens the volume's page, as on Découvrir.
 struct SagaReleasesSection: View {
     let releases: SagaReleases
     let author: String
     /// The volume numbers the reader holds: a volume added ahead of its day
     /// leaves the section at once rather than on the next look.
     let held: Set<Int>
+    /// Opens the volume's page, as Découvrir opens it.
+    let open: (DiscoveredVolume) -> Void
 
     var body: some View {
         if let next = releases.next, !held.contains(next.number) {
             Section {
-                row(next)
+                Button { open(next) } label: { row(next) }
+                    .tint(.primary)
             } header: {
                 Text("Prochaines sorties")
             }

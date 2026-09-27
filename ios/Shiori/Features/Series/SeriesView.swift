@@ -53,6 +53,8 @@ struct SeriesView: View {
     /// announced the reader lacks. Last opening's at once,
     /// brought up to date underneath.
     @State private var releases: SagaReleases?
+    /// The announced volume whose page is open, as Découvrir opens it.
+    @State private var announced: DiscoveredVolume?
 
     private var currentYear: Int { Calendar.current.component(.year, from: .now) }
 
@@ -254,6 +256,14 @@ struct SeriesView: View {
                 }
             }
         }
+        // Added from its page, the volume takes its row back as the reader's.
+        .sheet(item: $announced, onDismiss: { Task { await load() } }) { volume in
+            if let saga = announcedSaga {
+                NavigationStack {
+                    AnnouncedVolumeView(saga: saga, volume: volume, linksToSaga: false)
+                }
+            }
+        }
         .task { await load() }
         .task { await loadReleases() }
     }
@@ -265,7 +275,8 @@ struct SeriesView: View {
                 SagaReleasesSection(
                     releases: releases,
                     author: series.author,
-                    held: heldNumbers
+                    held: heldNumbers,
+                    open: { announced = $0 }
                 )
             }
             volumes("Tomes", volumes: series.spine, author: series.author, footer: nil)
@@ -482,6 +493,7 @@ struct SeriesView: View {
         let release = language.flatMap { volume.release(in: $0) }
         let title = release?.title ?? volume.title
         let forthcoming = volume.isForthcoming(asOf: currentYear, in: language, datedUpTo: datedUpTo)
+        let page = forthcoming ? announcedVolume(volume) : nil
         return HStack(alignment: .top, spacing: 12) {
             BookCover(book: Book(
                 id: volume.id,
@@ -522,6 +534,45 @@ struct SeriesView: View {
                 .padding(.top, 2)
         }
         .padding(.vertical, 4)
+        .contentShape(Rectangle())
+        // Announced in the edition opened, it opens on its page as on Découvrir.
+        .onTapGesture { if let page { announced = page } }
+        .accessibilityAddTraits(page == nil ? [] : .isButton)
+    }
+
+    /// The page of a volume the release watch announced in the edition opened:
+    /// what Découvrir knows of it when it is the next one, with its Audible
+    /// link, else what the catalogue keeps of the announcement. Nil for a
+    /// volume the watch never found in that edition — the server describes
+    /// only those.
+    private func announcedVolume(_ volume: Volume) -> DiscoveredVolume? {
+        guard volume.kind == .main, let number = volume.number,
+              let release = language.flatMap({ volume.release(in: $0) })
+        else { return nil }
+        if let next = releases?.next, next.number == number { return next }
+        return DiscoveredVolume(
+            number: number,
+            title: release.title,
+            date: release.date,
+            isbn13: nil,
+            coverURL: release.coverURL
+        )
+    }
+
+    /// The saga as the announced volume's page reads it: the edition opened.
+    private var announcedSaga: SagaDiscovery? {
+        guard let series, let language else { return nil }
+        let followed = FollowedSeries(
+            seriesId: seriesId,
+            name: series.name,
+            isAudio: series.isAudio,
+            author: series.author,
+            language: language,
+            state: nil,
+            genre: owned.first?.genre,
+            ownedCount: owned.count
+        )
+        return SagaDiscovery(series: followed, releases: releases ?? SagaReleases(watched: true, next: nil))
     }
 
     /// What can be done with a volume the reader does not hold: add it, or

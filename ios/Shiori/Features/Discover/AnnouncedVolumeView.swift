@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// A volume announced on the Books shelf of Découvrir, opened as a book opens:
+/// A volume announced, opened as a book opens — from the Books shelf of
+/// Découvrir, or from its row on the saga screen:
 /// its page, before the reader holds it. The page is described on the spot — a
 /// printed volume by the model, a recording off Audible's catalogue and then
 /// by the model — which takes a few seconds and spends one scan. What the row
@@ -13,6 +14,9 @@ import SwiftUI
 struct AnnouncedVolumeView: View {
     let saga: SagaDiscovery
     let volume: DiscoveredVolume
+    /// Whether the page links to its saga. Not when it was opened from the saga
+    /// screen, which is right under it.
+    var linksToSaga = true
 
     @Environment(\.dismiss) private var dismiss
 
@@ -51,17 +55,8 @@ struct AnnouncedVolumeView: View {
                 }
             }
 
-            Section {
-                NavigationLink {
-                    SeriesView(seriesId: saga.series.seriesId, language: saga.series.language)
-                } label: {
-                    Label {
-                        LabeledContent(saga.series.name) { Text("Tome \(volume.number)") }
-                    } icon: {
-                        Image(systemName: "books.vertical").foregroundStyle(.secondary)
-                    }
-                }
-                .accessibilityIdentifier("announced-volume-series")
+            if linksToSaga {
+                sagaLink
             }
 
             if let synopsis = book.synopsis, !synopsis.isEmpty {
@@ -108,6 +103,22 @@ struct AnnouncedVolumeView: View {
             Text(addFailed ?? "")
         }
         .task { await describe() }
+    }
+
+    /// The saga the volume belongs to, at its number.
+    private var sagaLink: some View {
+        Section {
+            NavigationLink {
+                SeriesView(seriesId: saga.series.seriesId, language: saga.series.language)
+            } label: {
+                Label {
+                    LabeledContent(saga.series.name) { Text("Tome \(volume.number)") }
+                } icon: {
+                    Image(systemName: "books.vertical").foregroundStyle(.secondary)
+                }
+            }
+            .accessibilityIdentifier("announced-volume-series")
+        }
     }
 
     /// Where the description stands, while it is written or when it could not
