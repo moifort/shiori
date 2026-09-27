@@ -13,7 +13,10 @@ import {
   monthsToClearPileOf,
   pagesPerDayTrendOf,
   pagesPerMonthOf,
+  readPerYearOf,
   seriesProgressOf,
+  sharedShelfOf,
+  sharedShelfTodayOf,
   VIEW_VERSION,
 } from '~/domain/analytics/business-rules'
 import { LocalDate, TimeZone } from '~/domain/analytics/primitives'
@@ -693,5 +696,59 @@ describe('building the view', () => {
     })
 
     expect(view.reading[0]?.rating).toBe(StarRating(5))
+  })
+})
+
+describe('the reading challenge', () => {
+  const book = (id: string, overrides: Partial<Book>): Book => ({
+    id: BookId(id),
+    userId: 'reader-1' as UserId,
+    title: BookTitle(id),
+    authors: [],
+    format: 'book',
+    subgenres: [],
+    narrators: [],
+    status: 'read',
+    hidden: false,
+    addedAt: new Date('2025-01-01T10:00:00.000Z'),
+    ...overrides,
+  })
+
+  test('counts the books finished each year, in the reader time zone', () => {
+    const books = [
+      book('a', { finishedAt: new Date('2025-06-01T10:00:00.000Z') }),
+      // Late on December 31st in UTC is already the new year in Paris.
+      book('b', { finishedAt: new Date('2025-12-31T23:30:00.000Z') }),
+      book('c', { finishedAt: new Date('2026-03-01T10:00:00.000Z') }),
+      book('reading', { status: 'reading' }),
+      book('undated', {}),
+    ]
+
+    expect(readPerYearOf(books, paris)).toEqual([
+      { year: 2025, count: 1 },
+      { year: 2026, count: 2 },
+    ])
+  })
+
+  test('leaves the books kept to oneself out', () => {
+    const shelf = sharedShelfOf(
+      [
+        book('shared', { finishedAt: new Date('2026-03-01T10:00:00.000Z') }),
+        book('secret', { finishedAt: new Date('2026-04-01T10:00:00.000Z'), hidden: true }),
+      ],
+      paris,
+    )
+
+    expect(shelf.readPerYear).toEqual([{ year: 2026, count: 1 }])
+  })
+
+  test('reads this year off the shelf, and nothing on a year with no book', () => {
+    const shelf = sharedShelfOf(
+      [book('a', { finishedAt: new Date('2025-03-01T10:00:00.000Z') })],
+      paris,
+    )
+
+    expect(sharedShelfTodayOf(shelf, day('2025-09-27')).readThisYear).toBe(1)
+    expect(sharedShelfTodayOf(shelf, day('2026-01-01')).readThisYear).toBe(0)
   })
 })

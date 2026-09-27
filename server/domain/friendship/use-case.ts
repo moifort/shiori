@@ -93,6 +93,9 @@ export type FriendProfile = {
   /** How many books their library shows — every one they share, the
    *  dropped ones aside, as the reader's own Library tab. */
   bookCount: CountValue
+  /** How many books they finished since January 1st, as the friends list
+   *  counts them. */
+  readThisYear: CountValue
 }
 
 /** A heart one friend gave lately, as the dashboard shows it: a saga or a
@@ -421,10 +424,11 @@ const sharedShelfOf = async (
   ownerId: UserId,
   shown = Number.POSITIVE_INFINITY,
 ): Promise<FriendProfile> => {
-  const [books, favoriteSagas, names] = await Promise.all([
+  const [books, favoriteSagas, names, figures] = await Promise.all([
     BookQuery.shared(ownerId),
     favoriteSagasOf(ownerId),
     UserQuery.namesOf([ownerId]),
+    AnalyticsUseCase.sharedShelves([ownerId]),
   ])
   const favoriteSagaIds = new Set(favoriteSagas.keys())
   const reading = books
@@ -484,6 +488,7 @@ const sharedShelfOf = async (
       friendSagaOf(saga, favoriteSagas, unmarked(signedVolumes[index] ?? [])),
     ),
     bookCount: Count(books.filter((book) => SHELVED_STATUSES.includes(book.status)).length),
+    readThisYear: Count(figures.get(ownerId)?.readThisYear ?? 0),
   }
 }
 

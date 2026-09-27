@@ -18,6 +18,7 @@ fragment FriendRow on Friend {
   readingCount
   toReadCount
   readingTitle
+  readThisYear
 }
 
 # What every friend hearted in the last thirty days, sagas and books mixed,
@@ -65,6 +66,7 @@ fragment SharedShelf on FriendProfile {
     ...FriendBookRow
   }
   bookCount
+  readThisYear
   sagas {
     ...FriendSagaRow
   }

@@ -13,6 +13,9 @@ struct Friend: Identifiable, Codable, Sendable {
     var toReadCount = 0
     /// The book they started most recently.
     var readingTitle: String?
+    /// Books they finished since January 1st: what the reading challenge
+    /// ranks them by.
+    var readThisYear = 0
 
     var displayName: String {
         firstName ?? String(localized: "Un lecteur")
@@ -38,7 +41,8 @@ extension Friend {
             readingCount: shelf.reading.count,
             toReadCount: shelf.pile.count,
             // Most recently active first, as the friends list picks it.
-            readingTitle: shelf.reading.first?.book.title
+            readingTitle: shelf.reading.first?.book.title,
+            readThisYear: shelf.readThisYear
         )
     }
 }
@@ -118,6 +122,8 @@ struct FriendProfile: Codable, Sendable {
     var lastFinished: FriendBook?
     /// How many books their library shows, the dropped ones aside.
     var bookCount = 0
+    /// Books they finished since January 1st, as the friends list counts them.
+    var readThisYear = 0
 
     /// The hearted sagas, the most recently hearted first; those hearted
     /// before the date was kept follow in alphabetical order.
@@ -455,7 +461,8 @@ private extension Friend {
             favoriteCount: row.favoriteCount,
             readingCount: row.readingCount,
             toReadCount: row.toReadCount,
-            readingTitle: row.readingTitle
+            readingTitle: row.readingTitle,
+            readThisYear: row.readThisYear
         )
     }
 }
@@ -470,7 +477,8 @@ private extension FriendProfile {
             favorites: shelf.favorites.map { FriendBook(row: $0.fragments.friendBookRow) },
             sagas: shelf.sagas.map { FriendSaga(row: $0.fragments.friendSagaRow) },
             lastFinished: shelf.lastFinished.map { FriendBook(row: $0.fragments.friendBookRow) },
-            bookCount: shelf.bookCount
+            bookCount: shelf.bookCount,
+            readThisYear: shelf.readThisYear
         )
     }
 }

@@ -240,6 +240,13 @@ export const FriendType = builder.objectRef<Friend>('Friend').implement({
       description: 'The book they started most recently, null when they are reading nothing.',
       resolve: (friend) => friend.shelf?.readingTitle ?? null,
     }),
+    readThisYear: t.field({
+      type: 'Count',
+      description:
+        'How many books they finished since January 1st, in their own time zone, ' +
+        'the ones they keep to themselves left out: what the reading challenge ranks by.',
+      resolve: (friend) => Count(friend.shelf?.readThisYear ?? 0),
+    }),
   }),
 })
 
@@ -287,6 +294,13 @@ export const FriendProfileType = builder.objectRef<FriendProfile>('FriendProfile
         'How many books their library shows: every one they share, the dropped ' +
         'ones aside — what `friendLibraryPage` lists unfiltered.',
       resolve: (profile) => profile.bookCount,
+    }),
+    readThisYear: t.field({
+      type: 'Count',
+      description:
+        'How many books they finished since January 1st, in their own time zone, ' +
+        'the ones they keep to themselves left out — the figure `Friend` carries.',
+      resolve: (profile) => profile.readThisYear,
     }),
   }),
 })

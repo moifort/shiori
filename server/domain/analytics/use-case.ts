@@ -1,5 +1,10 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
-import { dashboardOf, localDateOf, VIEW_VERSION } from '~/domain/analytics/business-rules'
+import {
+  dashboardOf,
+  localDateOf,
+  sharedShelfTodayOf,
+  VIEW_VERSION,
+} from '~/domain/analytics/business-rules'
 import { AnalyticsCommand } from '~/domain/analytics/command'
 import { TimeZone } from '~/domain/analytics/primitives'
 import { AnalyticsQuery } from '~/domain/analytics/query'
@@ -8,7 +13,7 @@ import type {
   BookCard,
   Dashboard,
   DashboardBook,
-  SharedShelf,
+  SharedShelfToday,
   TimeZone as TimeZoneValue,
 } from '~/domain/analytics/types'
 import { BookQuery } from '~/domain/book/query'
@@ -72,11 +77,12 @@ export namespace AnalyticsUseCase {
    *  reader. One batched read of the views; a view that is missing, stale or
    *  built by an older rule set is rebuilt first, in the time zone it was last
    *  built in, so a friend is never shown a count their last write did not
-   *  reach. */
+   *  reach. The year of the reading challenge is each reader's own, in the
+   *  time zone their view was built in. */
   export const sharedShelves = async (
     userIds: readonly UserId[],
     now = new Date(),
-  ): Promise<Map<UserId, SharedShelf>> => {
+  ): Promise<Map<UserId, SharedShelfToday>> => {
     const stored = new Map((await AnalyticsQuery.views(userIds)).map((view) => [view.userId, view]))
     const views = await Promise.all(
       [...new Set(userIds)].map(async (userId) => {
@@ -86,7 +92,16 @@ export namespace AnalyticsUseCase {
       }),
     )
     return new Map(
-      views.flatMap((view) => (view.shared ? [[view.userId, view.shared] as const] : [])),
+      views.flatMap((view) =>
+        view.shared
+          ? [
+              [
+                view.userId,
+                sharedShelfTodayOf(view.shared, localDateOf(now, view.timeZone)),
+              ] as const,
+            ]
+          : [],
+      ),
     )
   }
 

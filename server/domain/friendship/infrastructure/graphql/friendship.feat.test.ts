@@ -545,6 +545,27 @@ describe('the friends list in figures', () => {
 
     expect(result.data?.friends).toEqual([{ toReadCount: 3 }])
   })
+  // The reading challenge: the friend and the reader counted the same way,
+  // this year only, a hidden book never showing through the number.
+  test('counts the books they finished this year, hidden ones left out', async () => {
+    setSystemTime(new Date('2025-05-01T00:00:00Z'))
+    await addBook(alice, 'title: "Fondation", status: READ')
+    setSystemTime(new Date('2026-09-01T00:00:00Z'))
+    await addBook(alice, 'title: "Dune", status: READ')
+    await addBook(alice, 'title: "Hypérion", status: READ')
+    const secret = idOf(await addBook(alice, 'title: "Un secret", status: READ'))
+    await as(alice)(`mutation { setBookHidden(id: "${secret}", hidden: true) { id } }`)
+    await befriend()
+
+    const friends = await as(bob)('{ friends { readThisYear } }')
+    const profile = await as(bob)('{ friendProfile(userId: "alice") { readThisYear } }')
+    const own = await as(alice)('{ myShelf { readThisYear } }')
+
+    expect(friends.errors).toBeUndefined()
+    expect(friends.data?.friends).toEqual([{ readThisYear: 2 }])
+    expect(profile.data?.friendProfile).toEqual({ readThisYear: 2 })
+    expect(own.data?.myShelf).toEqual({ readThisYear: 2 })
+  })
 })
 
 describe("taking a book off a friend's shelf", () => {

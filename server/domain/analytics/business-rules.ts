@@ -9,6 +9,7 @@ import type {
   MonthPages,
   SeriesProgress,
   SharedShelf,
+  SharedShelfToday,
   TimeZone,
   Trend,
   YearCount,
@@ -45,7 +46,7 @@ const TOP_GENRES = 4
 /** Bumped whenever the view gains a figure or a rule changes, so a view stored
  *  by an older bundle is rebuilt on its next read instead of answering with a
  *  field it never computed. */
-export const VIEW_VERSION = 10
+export const VIEW_VERSION = 11
 
 // MARK: - Calendar
 
@@ -173,7 +174,7 @@ export const analyticsViewOf = (input: {
     audiobookCount: books.filter((book) => book.format === 'audiobook').length,
     printedBookCount: books.filter((book) => book.format !== 'audiobook').length,
     droppedCount: books.filter((book) => book.status === 'dropped').length,
-    shared: sharedShelfOf(books),
+    shared: sharedShelfOf(books, timeZone),
   }
 }
 
@@ -182,7 +183,7 @@ const SHARED_FAVORITES_KEPT = 30
 
 /** The shelf as a friend sees it: the books marked "do not share" are dropped
  *  first, so no count and no title here can betray them. */
-export const sharedShelfOf = (books: readonly Book[]): SharedShelf => {
+export const sharedShelfOf = (books: readonly Book[], timeZone: TimeZone): SharedShelf => {
   const shown = books.filter((book) => !book.hidden)
   const reading = shelvedOf(shown.filter((book) => book.status === 'reading'))
   const favorites = shown
@@ -206,6 +207,30 @@ export const sharedShelfOf = (books: readonly Book[]): SharedShelf => {
       coverPath: book.coverPath,
       publishedCoverUrl: book.publishedCoverUrl,
     })),
+    readPerYear: readPerYearOf(shown, timeZone),
+  }
+}
+
+/** How many books were finished each year, oldest year first, the years with
+ *  none left out. */
+export const readPerYearOf = (books: readonly Book[], timeZone: TimeZone): YearCount[] => {
+  const counts = new Map<number, number>()
+  for (const book of books) {
+    if (book.status !== 'read' || book.finishedAt === undefined) continue
+    const year = yearOf(localDateOf(book.finishedAt, timeZone))
+    counts.set(year, (counts.get(year) ?? 0) + 1)
+  }
+  return [...counts]
+    .sort(([left], [right]) => left - right)
+    .map(([year, count]) => ({ year, count }))
+}
+
+/** The shared shelf read against the reader's today. */
+export const sharedShelfTodayOf = (shelf: SharedShelf, today: LocalDateValue): SharedShelfToday => {
+  const currentYear = yearOf(today)
+  return {
+    ...shelf,
+    readThisYear: shelf.readPerYear?.find((entry) => entry.year === currentYear)?.count ?? 0,
   }
 }
 

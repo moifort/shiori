@@ -139,6 +139,21 @@ struct SharedView: View {
                         Text("Vos amis vous voient ainsi dans leur liste. Touchez votre nom pour voir votre page telle qu'ils la voient.")
                     }
                 }
+                // Only a race once there is somebody to race against.
+                if let myShelf = viewModel.myShelf, !viewModel.friends.isEmpty {
+                    Section {
+                        ReadingChallengeCard(
+                            challenge: ReadingChallenge(
+                                me: Friend(seenByFriends: myShelf),
+                                friends: viewModel.friends
+                            )
+                        )
+                    } header: {
+                        Text("Défi lecture \(String(Calendar.current.component(.year, from: .now)))")
+                    } footer: {
+                        Text("Les livres terminés depuis le 1er janvier, par vous et vos amis.")
+                    }
+                }
                 if viewModel.friends.isEmpty {
                     invitePrompt
                 } else {

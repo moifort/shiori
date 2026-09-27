@@ -982,6 +982,11 @@ type Friend {
   """Null for an account that never finished its onboarding."""
   firstName: String
 
+  """
+  How many books they finished since January 1st, in their own time zone, the ones they keep to themselves left out: what the reading challenge ranks by.
+  """
+  readThisYear: Count!
+
   """How many books they are reading."""
   readingCount: Count!
 
@@ -1106,6 +1111,11 @@ type FriendProfile {
 
   """What they mean to read, most recently added first."""
   pile: [FriendBook!]!
+
+  """
+  How many books they finished since January 1st, in their own time zone, the ones they keep to themselves left out — the figure `Friend` carries.
+  """
+  readThisYear: Count!
 
   """
   Most recently active first: started, moved, or advanced by a listening sync.

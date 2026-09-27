@@ -123,6 +123,17 @@ export type SharedShelf = {
   /** The hearted books, most recently touched first — what the Découvrir tab
    *  offers to the reader's friends. */
   favorites: SharedFavorite[]
+  /** The books finished each year, in the reader's time zone, the years with
+   *  none left out: what the friends' reading challenge ranks them by. Absent
+   *  on a view stored before the challenge existed. */
+  readPerYear?: YearCount[]
+}
+
+/** The shared shelf read against today: the challenge's figure is derived at
+ *  read time, as every figure that depends on the calendar. */
+export type SharedShelfToday = SharedShelf & {
+  /** Books finished since January 1st, in the reader's own time zone. */
+  readThisYear: number
 }
 
 /** A hearted book as a friend's Découvrir tab draws it. */
