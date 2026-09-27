@@ -276,6 +276,7 @@ struct SeriesView: View {
                     releases: releases,
                     author: series.author,
                     held: heldNumbers,
+                    isAudio: series.isAudio,
                     open: { announced = $0 }
                 )
             }
@@ -485,7 +486,8 @@ struct SeriesView: View {
     }
 
     /// A volume the reader does not hold, in the library row's layout: the
-    /// placeholder cover dimmed, the number and title, when it came out, and
+    /// placeholder cover dimmed — whole for a volume announced, which opens on
+    /// its page — with the headphones of a recording, the number and title, when it came out, and
     /// what can be done about it.
     private func missingRow(_ volume: Volume, label: String, author: String) -> some View {
         // The edition opened names it and dates it when the release watch
@@ -499,10 +501,12 @@ struct SeriesView: View {
                 id: volume.id,
                 title: title,
                 authors: [author],
+                format: series?.isAudio == true ? .audiobook : .book,
                 coverURL: release?.coverURL,
                 status: .toRead
             ))
-            .opacity(0.45)
+            // An announced volume opens on its page: its cover is drawn whole.
+            .opacity(page == nil ? 0.45 : 1)
             VStack(alignment: .leading, spacing: 3) {
                 Text(label)
                     .font(.caption2.weight(.semibold))

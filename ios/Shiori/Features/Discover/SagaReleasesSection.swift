@@ -11,6 +11,8 @@ struct SagaReleasesSection: View {
     /// The volume numbers the reader holds: a volume added ahead of its day
     /// leaves the section at once rather than on the next look.
     let held: Set<Int>
+    /// A saga heard: the cover carries the headphones.
+    let isAudio: Bool
     /// Opens the volume's page, as Découvrir opens it.
     let open: (DiscoveredVolume) -> Void
 
@@ -32,10 +34,10 @@ struct SagaReleasesSection: View {
                 id: "release-\(volume.number)",
                 title: volume.title,
                 authors: [author],
+                format: isAudio ? .audiobook : .book,
                 coverURL: volume.coverURL,
                 status: .toRead
             ))
-            .opacity(0.45)
             VStack(alignment: .leading, spacing: 3) {
                 Text("Tome \(volume.number)")
                     .font(.caption2.weight(.semibold))
