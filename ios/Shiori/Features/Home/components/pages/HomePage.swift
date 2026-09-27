@@ -79,39 +79,45 @@ struct HomePage: View {
                 )
                 .accessibilityIdentifier("home-reading")
 
-                BookShelfSection(
-                    title: "Prochaines sorties",
-                    books: releases.compactMap(Self.releaseTile),
-                    caption: { tile in
-                        releases.first { Self.releaseTile($0)?.id == tile.id }?.releases.next?.date
-                            .map(ReleaseDateText.short) ?? tile.authorLine
-                    },
-                    captionTint: .orange,
-                    emptyMessage: "Les prochains tomes annoncés de vos séries apparaîtront ici.",
-                    onHeaderTapped: onReleasesTapped,
-                    onBookTapped: { tile in
-                        if let saga = releases.first(where: { Self.releaseTile($0)?.id == tile.id }) {
-                            onReleaseTapped(saga)
+                // Unlike the reader's own cards, these two are news: with
+                // nothing to announce they are left out rather than sketched.
+                if !releases.isEmpty {
+                    BookShelfSection(
+                        title: "Prochaines sorties",
+                        books: releases.compactMap(Self.releaseTile),
+                        caption: { tile in
+                            releases.first { Self.releaseTile($0)?.id == tile.id }?.releases.next?.date
+                                .map(ReleaseDateText.short) ?? tile.authorLine
+                        },
+                        captionTint: .orange,
+                        emptyMessage: "",
+                        onHeaderTapped: onReleasesTapped,
+                        onBookTapped: { tile in
+                            if let saga = releases.first(where: { Self.releaseTile($0)?.id == tile.id }) {
+                                onReleaseTapped(saga)
+                            }
                         }
-                    }
-                )
-                .accessibilityIdentifier("home-releases")
+                    )
+                    .accessibilityIdentifier("home-releases")
+                }
 
-                BookShelfSection(
-                    title: "Nouveaux favoris de vos amis",
-                    books: friendFavorites.map(\.tile),
-                    caption: { tile in
-                        friendFavorites.first { $0.tile.id == tile.id }?.friendDisplayName ?? ""
-                    },
-                    emptyMessage: "Les livres et les séries que vos amis ajoutent à leurs favoris apparaîtront ici.",
-                    onHeaderTapped: onFriendFavoritesTapped,
-                    onBookTapped: { tile in
-                        if let favorite = friendFavorites.first(where: { $0.tile.id == tile.id }) {
-                            onFriendFavoriteTapped(favorite)
+                if !friendFavorites.isEmpty {
+                    BookShelfSection(
+                        title: "Nouveaux favoris de vos amis",
+                        books: friendFavorites.map(\.tile),
+                        caption: { tile in
+                            friendFavorites.first { $0.tile.id == tile.id }?.friendDisplayName ?? ""
+                        },
+                        emptyMessage: "",
+                        onHeaderTapped: onFriendFavoritesTapped,
+                        onBookTapped: { tile in
+                            if let favorite = friendFavorites.first(where: { $0.tile.id == tile.id }) {
+                                onFriendFavoriteTapped(favorite)
+                            }
                         }
-                    }
-                )
-                .accessibilityIdentifier("home-friend-favorites")
+                    )
+                    .accessibilityIdentifier("home-friend-favorites")
+                }
 
                 LastFinishedCard(book: dashboard.lastFinished, onTapped: onBookTapped)
 
