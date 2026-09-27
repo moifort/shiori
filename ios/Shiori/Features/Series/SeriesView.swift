@@ -40,6 +40,7 @@ struct SeriesView: View {
     /// A rating, a heart or the removal is on its way to the server.
     @State private var isSaving = false
     @State private var confirmDelete = false
+    @State private var isRating = false
     /// The refresh came back with nothing: the catalogue on screen is the old one.
     @State private var refreshFailed = false
     @State private var isRefreshing = false
@@ -196,6 +197,20 @@ struct SeriesView: View {
                 onDeleted: { _ in Task { await load() } }
             )
         }
+        .sheet(isPresented: $isRating) {
+            RatingPromptView(
+                subject: .series,
+                current: opinion?.rating,
+                onRemove: {
+                    isRating = false
+                    Task { await rate(0) }
+                },
+                onRate: { stars in
+                    isRating = false
+                    Task { await rate(stars) }
+                }
+            )
+        }
         .sheet(isPresented: $isDeclaringVolumeCount) {
             VolumeCountSheet(
                 seriesName: series?.name ?? owned.first?.series?.name ?? "",
@@ -318,19 +333,22 @@ struct SeriesView: View {
             // can be worth more than its books — the shape only shows at the
             // end — or rather less, when three good ones are followed by four
             // that should not exist.
-            Label {
-                LabeledContent("Note") {
-                    InteractiveStarRating(
-                        rating: Binding(
-                            get: { opinion?.rating ?? 0 },
-                            set: { stars in Task { await rate(stars) } }
-                        ),
-                        allowsUnset: true
-                    )
-                    .accessibilityIdentifier("series-rating")
+            // Read-only stars and a prompt behind them, as on the book screen.
+            if let rating = opinion?.rating {
+                Button { isRating = true } label: {
+                    Label {
+                        LabeledContent("Note") { StarRatingView(rating: rating) }
+                    } icon: {
+                        Image(systemName: "star").foregroundStyle(.secondary)
+                    }
                 }
-            } icon: {
-                Image(systemName: "star").foregroundStyle(.secondary)
+                .tint(.primary)
+                .accessibilityIdentifier("series-rating")
+            } else {
+                Button { isRating = true } label: {
+                    Label("Noter cette série", systemImage: "star")
+                }
+                .accessibilityIdentifier("series-rate")
             }
 
             if let started = startedAt {
