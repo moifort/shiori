@@ -125,7 +125,7 @@ struct DiscoverView: View {
                     if shelf == .books {
                         ForEach(recentVolumes) { volumeRow($0) }
                     } else {
-                        ForEach(recentSagas) { row($0, announcing: false) }
+                        ForEach(recentSagas) { row($0, in: .recent) }
                     }
                 } header: {
                     Text("Nouvelles parutions")
@@ -140,7 +140,7 @@ struct DiscoverView: View {
                                 volumeRow(DiscoveryVolume(saga: saga, volume: next))
                             }
                         } else {
-                            row(saga)
+                            row(saga, in: .upcoming)
                         }
                     }
                 } header: {
@@ -203,10 +203,9 @@ struct DiscoverView: View {
     }
 
     /// A saga's row: the Series tab's own, every cover of its strip, and
-    /// underneath the next volume and when it comes out. Among the new
-    /// releases, `announcing` is off: the row says what is out, not what is
-    /// coming.
-    private func row(_ row: SagaDiscovery, announcing: Bool = true) -> some View {
+    /// underneath what the section it is in is about — the volumes out it has
+    /// among the new releases, the next one among the announcements.
+    private func row(_ row: SagaDiscovery, in section: SagaReleasesSummary.Section) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             SeriesRow(entry: row.series)
                 .contentShape(Rectangle())
@@ -216,7 +215,7 @@ struct DiscoverView: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isButton)
                 .accessibilityAction { openSeries = row }
-            SagaReleasesSummary(releases: row.releases, missing: row.missing, announcing: announcing)
+            SagaReleasesSummary(releases: row.releases, missing: row.missing, section: section)
         }
         .contextMenu {
             Button("Ouvrir la série", systemImage: "books.vertical") { openSeries = row }
@@ -256,19 +255,20 @@ struct DiscoverView: View {
     }
 }
 
-/// What a saga has for the reader, in a line under its covers: the next volume
-/// announced — its date already hangs under its cover — and the volumes out
-/// they have not added yet.
+/// What a saga has for the reader, in a line under its covers, as the section
+/// it is in says: among the new releases, the volumes out they have not added
+/// yet; among the announcements, the next volume — its date already hangs
+/// under its cover.
 struct SagaReleasesSummary: View {
+    enum Section { case recent, upcoming }
+
     let releases: SagaReleases
     let missing: [Int]
-    /// Whether the next volume announced is named: not among the new releases.
-    var announcing = true
+    let section: Section
 
     var body: some View {
-        let parts = [comingPart, availablePart].compactMap { $0 }
-        if !parts.isEmpty {
-            Text(verbatim: parts.joined(separator: " · "))
+        if let line = section == .recent ? availablePart : comingPart {
+            Text(verbatim: line)
                 .foregroundStyle(.orange)
                 .font(.footnote.weight(.medium))
                 .lineLimit(2)
@@ -276,8 +276,7 @@ struct SagaReleasesSummary: View {
     }
 
     private var comingPart: String? {
-        guard announcing else { return nil }
-        return releases.next.map { String(localized: "À venir : Tome \($0.number)") }
+        releases.next.map { String(localized: "À venir : Tome \($0.number)") }
     }
 
     private var availablePart: String? {
