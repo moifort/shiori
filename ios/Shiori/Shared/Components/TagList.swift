@@ -22,6 +22,9 @@ struct Pill: View {
     /// A pill that stands for a status takes that status's colour, as the
     /// library row's chips do. Nil draws the neutral grey of a plain fact.
     var tint: Color?
+    /// A glyph after the text rather than before it: the arrow of a pill that
+    /// leads out of the app reads after what it leads to.
+    var trailingSystemImage: String?
 
     var body: some View {
         HStack(spacing: 4) {
@@ -29,6 +32,9 @@ struct Pill: View {
                 Image(systemName: systemImage).imageScale(.small)
             }
             Text(text)
+            if let trailingSystemImage {
+                Image(systemName: trailingSystemImage).imageScale(.small)
+            }
         }
         // A pill is one short fact: "7 h 37" split over two lines reads as two.
         .lineLimit(1)

@@ -96,7 +96,7 @@ struct BookPage: View {
                     // a way out of Shiori, not a fact about the book.
                     if let audibleURL = book.audibleURL {
                         Link(destination: audibleURL) {
-                            Pill(text: "Audible", systemImage: "link")
+                            Pill(text: "Audible", trailingSystemImage: "arrow.up.right")
                         }
                         .buttonStyle(.borderless)
                         .frame(maxWidth: .infinity, alignment: .trailing)
