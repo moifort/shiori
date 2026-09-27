@@ -20,7 +20,7 @@ enum LibraryMode: String, CaseIterable, Identifiable {
 
     var icon: String {
         switch self {
-        case .all: "books.vertical"
+        case .all: "clock"
         case .favorites: "heart.fill"
         }
     }

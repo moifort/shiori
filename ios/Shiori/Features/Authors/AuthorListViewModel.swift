@@ -2,11 +2,11 @@ import Foundation
 import SwiftUI
 
 /// The ways the Authors shelf lists its rows, switched from the toolbar as
-/// the Books and Series shelves switch theirs: by name, as a contact list with
-/// its alphabet down the side; by activity, as the Books and Series shelves
-/// are ordered, cut into months; or the loved authors first.
+/// the Books and Series shelves switch theirs: by activity, as the Books and
+/// Series shelves are ordered, cut into months; by name, as a contact list
+/// with its alphabet down the side; or the loved authors first.
 enum AuthorListOrder: String, CaseIterable, Identifiable {
-    case name, recent, loved
+    case recent, name, loved
     var id: String { rawValue }
 
     var label: String {
