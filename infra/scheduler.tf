@@ -119,3 +119,30 @@ resource "google_cloud_scheduler_job" "send_release_alerts" {
 
   depends_on = [google_project_service.apis]
 }
+
+# Names, once a week, the volumes newly announced in the sagas each reader
+# follows, in one notification. No model call: the hourly pass already holds
+# the dates, and a volume is named once, so a retry sends nothing twice.
+resource "google_cloud_scheduler_job" "send_release_digest" {
+  project   = google_project.this.project_id
+  region    = var.region
+  name      = "send-release-digest"
+  schedule  = "0 18 * * 0"
+  time_zone = "Europe/Paris"
+
+  attempt_deadline = "180s"
+
+  retry_config {
+    retry_count = 1
+  }
+
+  http_target {
+    http_method = "POST"
+    uri         = "${google_cloudfunctions2_function.server.service_config[0].uri}/admin/send-release-digest"
+    headers = {
+      Authorization = "Bearer ${local.admin_token_value}"
+    }
+  }
+
+  depends_on = [google_project_service.apis]
+}

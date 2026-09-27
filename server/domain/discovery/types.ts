@@ -68,6 +68,9 @@ export type DiscoveryReader = {
   syncedAt: Date
   /** `{watchKey}--{volume}`: an alert goes out once. */
   notified: string[]
+  /** `{watchKey}--{volume}`: a volume is named in one weekly digest only.
+   *  Absent on a reader stored before the digest existed. */
+  announced?: string[]
 }
 
 /** What one saga has for the reader: the next volume announced they do not

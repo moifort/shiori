@@ -4,6 +4,7 @@ import type { BookLanguage } from '~/domain/book/types'
 import {
   alertOf,
   catalogueVolumesOf,
+  digestOf,
   dueAlertsOf,
   dueWatches,
   formatOf,
@@ -11,6 +12,7 @@ import {
   likelyLanguageOf,
   mergedVolumes,
   missingVolumesOf,
+  newAnnouncementsOf,
   onAudible,
   readerIsStale,
   releasesOf,
@@ -240,6 +242,39 @@ export namespace DiscoveryUseCase {
     }
     return { readers: reached }
   }
+
+  /** The Sunday digest: one notification per reader naming the volumes newly
+   *  announced for a known date in the sagas they follow, the ones they hold
+   *  left out, each named once. No model is called; each reader's library is
+   *  read to know what they hold. A reader with nothing new hears nothing. */
+  export const sendDigestToEveryReader = async (now = new Date()): Promise<{ readers: number }> => {
+    const readers = await DiscoveryQuery.allReaders()
+    const watches = await DiscoveryQuery.watches(
+      readers.flatMap((reader) => reader.sagas.map(watchKeyOf)),
+    )
+    const today = todayOf(now)
+    let reached = 0
+    for (const reader of readers) {
+      try {
+        const followed = await withRequestCacheScope(() => SeriesUseCase.followed(reader.userId))
+        const due = newAnnouncementsOf(followed, watches, new Set(reader.announced ?? []), today)
+        if (due.length === 0) continue
+        await NotificationUseCase.notify(reader.userId, {
+          kind: 'translation',
+          ...digestOf(due, reader.language, today),
+          link: 'shiori://discover',
+        })
+        await DiscoveryCommand.markAnnounced(
+          reader,
+          due.map((announcement) => announcement.key),
+        )
+        reached += 1
+      } catch (error) {
+        logger.warn('release digest failed', { error, userId: reader.userId })
+      }
+    }
+    return { readers: reached }
+  }
 }
 
 // MARK: - The parts of a pass
@@ -332,6 +367,7 @@ const rememberReader = async (
     sagas,
     syncedAt: now,
     notified: known?.notified ?? [],
+    ...(known?.announced ? { announced: known.announced } : {}),
   })
 }
 

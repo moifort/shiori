@@ -20,6 +20,7 @@ the release tag is pushed.
   "[French Edition]".
 - The home screen's series in progress no longer lists a series you have not started yet.
 - Discover shows again the next volume of a series you just opened for the first time.
+- Every Sunday evening, one notification lists the volumes newly announced in your series.
 - The Authors shelf lists your authors alphabetically, like your contacts, with the alphabet down
   the side to jump to a letter; your favourites first is one tap away.
 - Saga and author pages open faster, whatever the size of your library.

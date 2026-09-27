@@ -6,12 +6,14 @@ import type { FollowedSeries } from '~/domain/series/use-case'
 import type { BookTitle, UserId } from '~/domain/shared/types'
 import {
   alertOf,
+  digestOf,
   dueAlertsOf,
   dueWatches,
   inDiscoveryOrder,
   likelyLanguageOf,
   mergedVolumes,
   missingVolumesOf,
+  newAnnouncementsOf,
   onAudible,
   releasesOf,
   watchedSagasOf,
@@ -342,5 +344,74 @@ describe('alerts', () => {
     expect(alertOf({ ...due, watch: watchOf(carlHeard, []) }, 'en').body).toBe(
       '"Carl 3", book 3 of Dungeon Crawler Carl, is out as an audiobook.',
     )
+  })
+})
+
+describe('the weekly digest', () => {
+  const watches = new Map([
+    [
+      `${carl}--fr`,
+      watchOf(carl, [
+        volume(1, '2024-05-02'),
+        volume(2, '2026-10-08'),
+        volume(3, '2027'),
+        volume(4, '2026-11'),
+        volume(5, '2026-12-01'),
+        volume(6),
+      ]),
+    ],
+  ])
+  // Volume 5 was in last week's digest, and volume 4 is on the shelf already.
+  const announced = new Set([`${carl}--fr--5`])
+  const followed = [saga({ books: held(1, 4) as FollowedSeries['books'] })]
+
+  test('lists the volumes newly dated that the reader does not hold, the soonest first', () => {
+    expect(newAnnouncementsOf(followed, watches, announced, today).map(({ key }) => key)).toEqual([
+      `${carl}--fr--2`,
+      `${carl}--fr--3`,
+    ])
+  })
+
+  test('leaves out a saga set aside, and one never looked up', () => {
+    expect(newAnnouncementsOf([saga({ state: 'unfollowed' })], watches, new Set(), today)).toEqual(
+      [],
+    )
+    expect(newAnnouncementsOf(followed, new Map(), new Set(), today)).toEqual([])
+  })
+
+  test('is one notification, in the reader’s language, as precise as each date', () => {
+    const due = newAnnouncementsOf(followed, watches, announced, today)
+    expect(digestOf(due, 'fr', today)).toEqual({
+      title: 'Prochaines sorties',
+      body: 'Dungeon Crawler Carl, tome 2, le 8 octobre\nDungeon Crawler Carl, tome 3, en 2027',
+    })
+    expect(digestOf(due, 'en', today).body).toBe(
+      'Dungeon Crawler Carl, book 2, on October 8\nDungeon Crawler Carl, book 3, in 2027',
+    )
+  })
+
+  test('names four volumes, and counts the rest', () => {
+    const many = newAnnouncementsOf(
+      followed,
+      new Map([
+        [
+          `${carl}--fr`,
+          watchOf(
+            carl,
+            [2, 3, 5, 6, 7, 8].map((number) => volume(number, `2027-0${number - 1}-01`)),
+          ),
+        ],
+      ]),
+      new Set(),
+      today,
+    )
+    const { body } = digestOf(many, 'fr', today)
+    expect(body.split('\n')).toEqual([
+      'Dungeon Crawler Carl, tome 2, le 1er janvier 2027',
+      'Dungeon Crawler Carl, tome 3, le 1er février 2027',
+      'Dungeon Crawler Carl, tome 5, le 1er avril 2027',
+      'Dungeon Crawler Carl, tome 6, le 1er mai 2027',
+      'et 2 autres',
+    ])
   })
 })

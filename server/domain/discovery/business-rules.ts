@@ -285,6 +285,112 @@ export const alertOf = (
   }
 }
 
+// MARK: - The weekly digest
+
+/** How many volumes the digest names before it counts the rest. */
+const DIGEST_NAMED = 4
+
+export type Announcement = { key: string; watch: SagaWatch; volume: FoundVolume }
+
+/** The volumes to name in a reader's weekly digest: announced for a known
+ *  date — a day, a month or a year — by the rule Découvrir lists them by, of a
+ *  saga they follow, not held, and never named in a digest before. The
+ *  soonest first. */
+export const newAnnouncementsOf = (
+  followed: readonly FollowedSeries[],
+  watches: ReadonlyMap<string, SagaWatch>,
+  announced: ReadonlySet<string>,
+  today: string,
+): Announcement[] =>
+  followed
+    .flatMap((series): Announcement[] => {
+      if (!series.language || series.state === 'unfollowed') return []
+      const watch = watches.get(watchKeyOf({ seriesId: series.id, language: series.language }))
+      if (!watch) return []
+      const held = heldNumbersOf(series.books)
+      return candidatesOf(watch, series.catalogue, today).flatMap(({ volume, upcoming }) => {
+        const key = `${watch.key}--${volume.number}`
+        return upcoming && volume.date && !held.has(volume.number) && !announced.has(key)
+          ? [{ key, watch, volume }]
+          : []
+      })
+    })
+    .sort(
+      (left, right) =>
+        lastDayOf(left.volume.date as ReleaseDate).localeCompare(
+          lastDayOf(right.volume.date as ReleaseDate),
+        ) || left.volume.number - right.volume.number,
+    )
+
+const MONTHS: Record<Language, readonly string[]> = {
+  fr: [
+    'janvier',
+    'février',
+    'mars',
+    'avril',
+    'mai',
+    'juin',
+    'juillet',
+    'août',
+    'septembre',
+    'octobre',
+    'novembre',
+    'décembre',
+  ],
+  en: [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ],
+}
+
+/** When a volume comes out, as precisely as it was announced, the year left
+ *  out when it is this one: "le 8 octobre", "en novembre", "en 2027". */
+const whenOf = (date: ReleaseDate, language: Language, today: string): string => {
+  const [year, month, day] = date.split('-')
+  const thisYear = year === today.slice(0, 4)
+  const monthName = month ? MONTHS[language][Number(month) - 1] : undefined
+  if (language === 'fr') {
+    const suffix = thisYear ? '' : ` ${year}`
+    if (day) return `le ${Number(day) === 1 ? '1er' : Number(day)} ${monthName}${suffix}`
+    return monthName ? `en ${monthName}${suffix}` : `en ${year}`
+  }
+  const suffix = thisYear ? '' : `, ${year}`
+  if (day) return `on ${monthName} ${Number(day)}${suffix}`
+  return monthName ? `in ${monthName}${thisYear ? '' : ` ${year}`}` : `in ${year}`
+}
+
+/** The weekly digest: one notification naming the volumes newly announced,
+ *  one per line, the soonest first, and counting the ones past the fourth. */
+export const digestOf = (
+  announcements: readonly Announcement[],
+  language: Language,
+  today: string,
+): { title: string; body: string } => {
+  const named = announcements.slice(0, DIGEST_NAMED).map(({ watch, volume }) => {
+    const when = whenOf(volume.date as ReleaseDate, language, today)
+    return language === 'fr'
+      ? `${watch.name}, tome ${volume.number}, ${when}`
+      : `${watch.name}, book ${volume.number}, ${when}`
+  })
+  const rest = announcements.length - named.length
+  if (rest > 0)
+    named.push(language === 'fr' ? `et ${rest} autre${rest > 1 ? 's' : ''}` : `and ${rest} more`)
+  return {
+    title: language === 'fr' ? 'Prochaines sorties' : 'Coming soon',
+    body: named.join('\n'),
+  }
+}
+
 // MARK: - A fresh look
 
 /** What a fresh search found, laid over the last one: a volume found again

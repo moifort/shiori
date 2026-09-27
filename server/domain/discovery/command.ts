@@ -22,6 +22,19 @@ export namespace DiscoveryCommand {
       ),
     })
 
+  /** These volumes were named in a weekly digest, or were new while the alert
+   *  was off: either way, never named again. */
+  export const markAnnounced = (
+    reader: DiscoveryReader,
+    keys: readonly string[],
+  ): Promise<DiscoveryReader> => {
+    const known = reader.announced ?? []
+    return repository.saveReader({
+      ...reader,
+      announced: [...known.filter((key) => !keys.includes(key)), ...keys].slice(-REMEMBERED),
+    })
+  }
+
   export const saveWatch = (watch: SagaWatch): Promise<void> => repository.saveWatch(watch)
 
   export const deleteForUser = (userId: UserId): Promise<void> => repository.removeReader(userId)

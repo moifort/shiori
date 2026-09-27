@@ -352,3 +352,16 @@ describe('the morning alerts', () => {
     expect(pushed).toEqual(['« Carl 3 », tome 3 de Dungeon Crawler Carl, est sorti.'])
   })
 })
+
+describe('the Sunday digest', () => {
+  test('names the volumes newly announced in one notification, each once', async () => {
+    await stock(reader)
+    await NotificationCommand.registerDevice(reader, DeviceToken('ab'.repeat(32)), 'production')
+    await DiscoveryUseCase.watchDueSagas(now)
+
+    await DiscoveryUseCase.sendDigestToEveryReader(now)
+    await DiscoveryUseCase.sendDigestToEveryReader(now)
+
+    expect(pushed).toEqual(['Dungeon Crawler Carl, tome 4, le 12 février 2027'])
+  })
+})
