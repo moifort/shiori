@@ -231,15 +231,15 @@ struct SeriesListView: View {
 
 /// Where the reader stands on a saga, in words — "En cours", "Terminée",
 /// "À lire" — as a small tag in the colour of the reading-status badge it
-/// matches: blue for reading, green for read, grey for the pile.
+/// matches: blue for reading, green for read, orange for the pile.
 struct SeriesStateLabel: View {
     let state: SeriesState
 
     private var tint: Color {
         switch state {
-        case .notStarted: .gray
-        case .inProgress: .blue
-        case .complete: .green
+        case .notStarted: ReadingStatus.toRead.tint
+        case .inProgress: ReadingStatus.reading.tint
+        case .complete: ReadingStatus.read.tint
         case .unfollowed: .secondary
         }
     }
