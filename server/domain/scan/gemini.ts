@@ -64,7 +64,7 @@ type GenerateOptions = {
  *
  *  An answer that cannot be read is asked for once more. A grounded step reads
  *  its JSON out of free text, and now and then that text is not valid JSON — an
- *  unescaped quote in a title, a string left open, the object said twice. It is
+ *  unescaped quote in a title, a string left open, a stray word. It is
  *  rare and does not repeat: eight grounded calls for the very work that failed
  *  on September 25th 2026 all answered cleanly. One retry, not a loop: a second
  *  unreadable answer is a prompt to look at, and its text travels in the error
@@ -162,13 +162,33 @@ const answerShape = (schema: unknown) =>
 ${JSON.stringify(schema)}`
 
 /** The JSON object in an answer. JSON mode returns it bare; free text may fence
- *  it or say a word around it, so the object is taken from its first brace to
- *  its last. */
+ *  it, say a word around it, repeat it, or close it with one brace too many —
+ *  seen on September 27th 2026 — so the object read is the one that opens at
+ *  the first brace and closes where its own braces balance, whatever follows. */
 export const answerOf = (text: string): unknown => {
   const start = text.indexOf('{')
-  const end = text.lastIndexOf('}')
-  if (start === -1 || end < start) throw new Error('Gemini answered without a JSON object')
-  return JSON.parse(text.slice(start, end + 1))
+  if (start === -1) throw new Error('Gemini answered without a JSON object')
+  return JSON.parse(text.slice(start, closingBraceOf(text, start) + 1))
+}
+
+/** Where the object opening at `start` closes, braces inside strings aside;
+ *  the text's end when it never does, so that JSON.parse says what is wrong. */
+const closingBraceOf = (text: string, start: number): number => {
+  let depth = 0
+  let inString = false
+  for (let index = start; index < text.length; index += 1) {
+    const char = text[index]
+    if (inString) {
+      if (char === '\\') index += 1
+      else if (char === '"') inString = false
+    } else if (char === '"') inString = true
+    else if (char === '{') depth += 1
+    else if (char === '}') {
+      depth -= 1
+      if (depth === 0) return index
+    }
+  }
+  return text.length - 1
 }
 
 const capturedUsage = (

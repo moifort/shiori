@@ -126,6 +126,25 @@ describe('reading the answer', () => {
     })
   })
 
+  test('a stray closing brace after the object is ignored', () => {
+    expect(answerOf('{"title":"Tome 5","synopsis":"Un système {caché}."}}')).toEqual({
+      title: 'Tome 5',
+      synopsis: 'Un système {caché}.',
+    })
+  })
+
+  test('an object said twice is read once', () => {
+    expect(answerOf('{"works":[]}\n{"works":[]}')).toEqual({ works: [] })
+  })
+
+  test('a brace inside a string does not close the object', () => {
+    expect(answerOf('{"title":"L\\"} fin","n":1} merci')).toEqual({ title: 'L"} fin', n: 1 })
+  })
+
+  test('an object left open is still an error', () => {
+    expect(() => answerOf('{"works":[')).toThrow()
+  })
+
   test('an answer with no object is an error, not an empty value', () => {
     expect(() => answerOf('Je ne trouve pas cette série.')).toThrow()
   })
