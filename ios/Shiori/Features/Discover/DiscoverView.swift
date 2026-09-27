@@ -7,8 +7,8 @@ import SwiftUI
 ///
 /// Laid out as the Library tab is, so nothing here has to be learnt twice: the
 /// capsule above the tab bar switches between "Livres" — each volume announced
-/// drawn as the Books tab draws a book, the soonest out first, a tap opening a
-/// recording's page on Audible — and "Séries" — the Series tab's rows, every
+/// drawn as the Books tab draws a book, the soonest out first, a tap opening
+/// its page described on the spot — and "Séries" — the Series tab's rows, every
 /// cover of their strip; a tap opens the saga screen as a sheet. Read through one format at a time — the saga read or the
 /// saga heard — picked in the toolbar and kept between visits.
 ///
@@ -19,6 +19,8 @@ import SwiftUI
 struct DiscoverView: View {
     @State private var viewModel = DiscoverViewModel()
     @State private var openSeries: SagaDiscovery?
+    /// The saga whose next volume's page is open.
+    @State private var openVolume: SagaDiscovery?
     @Environment(\.openURL) private var openURL
     @AppStorage("discover.format") private var format: ReleaseFormat = .book
     @AppStorage("discover-shelf") private var shelf: LibraryShelf = .series
@@ -40,6 +42,13 @@ struct DiscoverView: View {
                             language: row.series.language,
                             isSheet: true
                         )
+                    }
+                }
+                .sheet(item: $openVolume) { saga in
+                    if let next = saga.releases.next {
+                        NavigationStack {
+                            AnnouncedVolumeView(saga: saga, volume: next)
+                        }
                     }
                 }
         }
@@ -124,9 +133,8 @@ struct DiscoverView: View {
     /// tag, the headphones on the cover of a recording, and on the trailing
     /// edge the day it comes out. No genre: the saga already says what it is.
     ///
-    /// A tap opens the recording's page on Audible — in the Audible app when it
-    /// is installed — where it can be preordered. A volume Audible has no page
-    /// for, a printed one especially, opens its saga instead.
+    /// A tap opens the volume's page, described on the spot for a scan; a long
+    /// press offers its saga, and a recording's page on Audible.
     @ViewBuilder
     private func volumeRow(_ saga: SagaDiscovery) -> some View {
         if let next = saga.releases.next {
@@ -158,9 +166,9 @@ struct DiscoverView: View {
                 releaseDate: next.date
             )
             .contentShape(Rectangle())
-            .onTapGesture { open(next, of: saga) }
+            .onTapGesture { openVolume = saga }
             .accessibilityAddTraits(.isButton)
-            .accessibilityAction { open(next, of: saga) }
+            .accessibilityAction { openVolume = saga }
             .contextMenu {
                 if let audibleURL = next.audibleURL {
                     Button("Ouvrir dans Audible", systemImage: "headphones") { openURL(audibleURL) }
@@ -168,14 +176,6 @@ struct DiscoverView: View {
                 Button("Ouvrir la série", systemImage: "books.vertical") { openSeries = saga }
             }
             .accessibilityIdentifier("discover-volume-row")
-        }
-    }
-
-    private func open(_ volume: DiscoveredVolume, of saga: SagaDiscovery) {
-        if let audibleURL = volume.audibleURL {
-            openURL(audibleURL)
-        } else {
-            openSeries = saga
         }
     }
 

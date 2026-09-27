@@ -63,6 +63,7 @@ mock.module('~/domain/discovery/infrastructure/audible-catalogue', () => ({
     seriesAsked.push(asin)
     return audibleSeries
   },
+  audibleRecordingOf: async () => 'unknown',
 }))
 /** Amazon dates the third French volume a day before the web did. */
 mock.module('~/domain/discovery/infrastructure/amazon-catalogue', () => ({

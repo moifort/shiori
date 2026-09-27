@@ -1,5 +1,14 @@
 import type { AudibleAsin } from '~/domain/audible/types'
-import type { BookLanguage, CoverUrl, Isbn13 } from '~/domain/book/types'
+import type {
+  BookLanguage,
+  CoverUrl,
+  Isbn13,
+  ListeningMinutes,
+  NarratorName,
+  Publisher,
+  Synopsis,
+} from '~/domain/book/types'
+import type { ScanResult } from '~/domain/scan/types'
 import type { ReleaseDate, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { FollowedSeries } from '~/domain/series/use-case'
 import type { Language } from '~/domain/shared/language'
@@ -96,4 +105,29 @@ export type Discovery = {
   /** How many sagas the reader follows in that format: none, and the app
    *  opens on the other format. */
   followed: number
+}
+
+/** A recording as Audible's own catalogue describes it, before anybody holds
+ *  it. */
+export type AudibleRecording = {
+  title: BookTitle
+  authors: AuthorName[]
+  narrators: NarratorName[]
+  publisher?: Publisher
+  synopsis?: Synopsis
+  durationMinutes?: ListeningMinutes
+  coverUrl?: CoverUrl
+}
+
+/** A volume announced, described for its page before the reader adds it: the
+ *  record a scan would propose, placed in its saga and edition, with what only
+ *  a recording has. */
+export type AnnouncedVolumePreview = {
+  book: ScanResult
+  narrators: NarratorName[]
+  durationMinutes?: ListeningMinutes
+  /** When it comes out, as precisely as announced. */
+  releaseDate?: ReleaseDate
+  /** The recording Audible confirmed, for its page on the reader's store. */
+  asin?: AudibleAsin
 }

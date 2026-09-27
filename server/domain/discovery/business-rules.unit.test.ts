@@ -1,11 +1,20 @@
 import { describe, expect, test } from 'bun:test'
 import type { AudibleAsin } from '~/domain/audible/types'
-import type { Book, BookLanguage } from '~/domain/book/types'
+import type {
+  Book,
+  BookLanguage,
+  CoverUrl,
+  ListeningMinutes,
+  NarratorName,
+  Synopsis,
+} from '~/domain/book/types'
+import { seriesKeyOf } from '~/domain/series/primitives'
 import type { ReleaseDate, Series, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { FollowedSeries } from '~/domain/series/use-case'
-import type { BookTitle, UserId } from '~/domain/shared/types'
+import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 import {
   alertOf,
+  announcedPreviewOf,
   digestOf,
   dueAlertsOf,
   dueWatches,
@@ -413,5 +422,97 @@ describe('the weekly digest', () => {
       'Dungeon Crawler Carl, tome 6, le 1er mai 2027',
       'et 2 autres',
     ])
+  })
+})
+
+describe('an announced volume’s page', () => {
+  const printed = seriesKeyOf('Dungeon Crawler Carl', 'Matt Dinniman', 'book')
+  const watchOf = (seriesId: string) => ({
+    key: `${seriesId}--fr`,
+    seriesId: seriesId as SeriesId,
+    name: 'Dungeon Crawler Carl' as SeriesName,
+    author: 'Matt Dinniman' as AuthorName,
+    language: 'fr' as BookLanguage,
+    checkedAt: new Date(),
+    volumes: [],
+  })
+  const described = {
+    recognized: true,
+    title: 'Carl, tome 4' as BookTitle,
+    authors: ['M. Dinniman' as AuthorName],
+    synopsis: 'Carl descend au quatrième étage.' as Synopsis,
+    genre: 'fantasy' as const,
+    subgenres: [],
+    pageCount: 612,
+    isbn13: '9782226000000',
+    coverUrl: 'https://covers.example/model.jpg' as CoverUrl,
+    series: { id: 'other' as SeriesId, name: 'Autre' as SeriesName, kind: 'main' as const },
+  } as never
+
+  test('keeps a printed volume where the watch found it, the model describing it', () => {
+    const preview = announcedPreviewOf(
+      watchOf(printed),
+      {
+        number: 4 as VolumeNumber,
+        title: 'Carl 4' as BookTitle,
+        date: '2027-02-12' as ReleaseDate,
+        isbn13: '9782226488190' as never,
+      },
+      undefined,
+      described,
+    )
+
+    expect(preview.book).toMatchObject({
+      title: 'Carl 4',
+      authors: ['Matt Dinniman'],
+      format: 'book',
+      language: 'fr',
+      synopsis: 'Carl descend au quatrième étage.',
+      pageCount: 612,
+      isbn13: '9782226488190',
+      coverUrl: 'https://covers.example/model.jpg',
+      series: {
+        id: printed,
+        name: 'Dungeon Crawler Carl',
+        volume: 4,
+        kind: 'main',
+      },
+    })
+    expect(preview.releaseDate).toBe('2027-02-12' as ReleaseDate)
+    expect(preview.narrators).toEqual([])
+  })
+
+  test('takes Audible’s facts about a recording, and the model’s summary over its blurb', () => {
+    const preview = announcedPreviewOf(
+      watchOf(seriesKeyOf('Dungeon Crawler Carl', 'Matt Dinniman', 'audiobook')),
+      {
+        number: 4 as VolumeNumber,
+        title: 'Carl 4' as BookTitle,
+        asin: 'B0DM67WR2V' as AudibleAsin,
+      },
+      {
+        title: 'Dungeon Crawler Carl 4' as BookTitle,
+        authors: ['Matt Dinniman' as AuthorName],
+        narrators: ['Jeff Hays' as NarratorName],
+        synopsis: 'Le livre audio événement !' as Synopsis,
+        durationMinutes: 1200 as ListeningMinutes,
+        coverUrl: 'https://m.media-amazon.com/carl4.jpg' as CoverUrl,
+      },
+      described,
+    )
+
+    expect(preview.book).toMatchObject({
+      title: 'Dungeon Crawler Carl 4',
+      format: 'audiobook',
+      synopsis: 'Carl descend au quatrième étage.',
+      coverUrl: 'https://m.media-amazon.com/carl4.jpg',
+    })
+    expect(preview.book.pageCount).toBeUndefined()
+    expect(preview.book.isbn13).toBeUndefined()
+    expect(preview).toMatchObject({
+      narrators: ['Jeff Hays'],
+      durationMinutes: 1200,
+      asin: 'B0DM67WR2V',
+    })
   })
 })

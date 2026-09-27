@@ -1,5 +1,12 @@
 import { AudibleQuery } from '~/domain/audible/query'
-import type { Discovery, FoundVolume, SagaDiscovery, SagaReleases } from '~/domain/discovery/types'
+import type {
+  AnnouncedVolumePreview,
+  Discovery,
+  FoundVolume,
+  SagaDiscovery,
+  SagaReleases,
+} from '~/domain/discovery/types'
+import { ScanResultType } from '~/domain/scan/infrastructure/graphql/types'
 import { FollowedSeriesType } from '~/domain/series/infrastructure/graphql/queries'
 import { builder } from '~/domain/shared/graphql/builder'
 
@@ -108,3 +115,44 @@ export const DiscoveryType = builder.objectRef<Discovery>('Discovery').implement
     }),
   }),
 })
+
+export const AnnouncedVolumePreviewType = builder
+  .objectRef<AnnouncedVolumePreview>('AnnouncedVolumePreview')
+  .implement({
+    description:
+      'A volume announced, described for its page before the reader adds it: the record a ' +
+      'scan would propose, and what only a recording has.',
+    fields: (t) => ({
+      book: t.field({
+        type: ScanResultType,
+        description:
+          'The record, placed in its saga at its number and in its edition’s language. ' +
+          'Hand it to `addBook` to add the volume.',
+        resolve: (preview) => preview.book,
+      }),
+      narrators: t.field({
+        type: ['NarratorName'],
+        description: 'Who reads the recording, as Audible lists them. Empty for a printed volume.',
+        resolve: (preview) => preview.narrators,
+      }),
+      durationMinutes: t.int({
+        nullable: true,
+        description: 'The recording’s running time, as Audible gives it.',
+        resolve: (preview) => preview.durationMinutes ?? null,
+      }),
+      releaseDate: t.string({
+        nullable: true,
+        description:
+          'When it comes out, as precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`.',
+        resolve: (preview) => preview.releaseDate ?? null,
+      }),
+      audibleUrl: t.string({
+        nullable: true,
+        description:
+          "The recording's page on the reader's Audible store. Null on a printed volume, " +
+          'on a recording Audible never confirmed, and without an Audible account.',
+        resolve: async (preview, _args, { userId }) =>
+          preview.asin ? ((await AudibleQuery.recordingUrlOf(userId, preview.asin)) ?? null) : null,
+      }),
+    }),
+  })

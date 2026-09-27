@@ -3,6 +3,8 @@ import { BookQuery } from '~/domain/book/query'
 import type { BookLanguage } from '~/domain/book/types'
 import {
   alertOf,
+  announcedEditionOf,
+  announcedPreviewOf,
   catalogueVolumesOf,
   digestOf,
   dueAlertsOf,
@@ -24,6 +26,7 @@ import { DiscoveryCommand } from '~/domain/discovery/command'
 import { amazonEditionOf } from '~/domain/discovery/infrastructure/amazon-catalogue'
 import {
   audibleProductOf,
+  audibleRecordingOf,
   audibleSeriesOf,
 } from '~/domain/discovery/infrastructure/audible-catalogue'
 import { volumesFrom } from '~/domain/discovery/parsing'
@@ -31,6 +34,7 @@ import { releasesPrompt } from '~/domain/discovery/prompts'
 import { DiscoveryQuery } from '~/domain/discovery/query'
 import { RELEASES_SCHEMA, type ReleasesOutput } from '~/domain/discovery/schemas'
 import type {
+  AnnouncedVolumePreview,
   Discovery,
   DiscoveryReader,
   FoundVolume,
@@ -43,9 +47,11 @@ import type {
 import { NotificationUseCase } from '~/domain/notification/use-case'
 import { generate } from '~/domain/scan/gemini'
 import { publishedCoverOf } from '~/domain/scan/published-cover'
+import type { ScanResult } from '~/domain/scan/types'
+import { type ScanOutcome, ScanUseCase } from '~/domain/scan/use-case'
 import { SeriesCommand } from '~/domain/series/command'
 import { SeriesQuery } from '~/domain/series/query'
-import type { SeriesId } from '~/domain/series/types'
+import type { SeriesId, VolumeNumber } from '~/domain/series/types'
 import { type FollowedSeries, SeriesUseCase } from '~/domain/series/use-case'
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
@@ -171,6 +177,39 @@ export namespace DiscoveryUseCase {
     // The catalogue as the lookup left it, the dates it found written in.
     const written = lookingUp && watches.has(key) ? await SeriesQuery.byId(seriesId) : catalogue
     return releasesOf(held, watches.get(key), written, todayOf(now))
+  }
+
+  /** A volume announced, described for its page before the reader adds it.
+   *  A printed one is described by the model from the title and author the
+   *  watch found; a recording Audible confirmed is read off Audible's own
+   *  catalogue first — cover, narrators, running time, blurb — and the model
+   *  adds what Audible does not say: summary, genre, first publication.
+   *
+   *  Spends one scan, as a typed title does, and is never kept. `not-found`
+   *  for a volume no watch announced in that edition, so it is never a free
+   *  lookup of any title. */
+  export const previewAnnouncedVolume = async (
+    userId: UserId,
+    {
+      seriesId,
+      language,
+      number,
+    }: { seriesId: SeriesId; language: BookLanguage; number: VolumeNumber },
+    appLanguage: Language,
+  ): Promise<AnnouncedVolumePreview | 'not-found' | Exclude<ScanOutcome, ScanResult>> => {
+    const key = watchKeyOf({ seriesId, language })
+    const watch = (await DiscoveryQuery.watches([key])).get(key)
+    const volume = watch?.volumes.find((found) => found.number === number)
+    if (!watch || !volume) return 'not-found'
+    const heard = volume.asin ? await audibleRecordingOf(volume.asin, language) : undefined
+    const recording = typeof heard === 'object' ? heard : undefined
+    const described = await ScanUseCase.lookUpEdition(
+      userId,
+      announcedEditionOf(watch, volume, recording),
+      appLanguage,
+    )
+    if (described === 'quota-exhausted' || 'failed' in described) return described
+    return announcedPreviewOf(watch, volume, recording, described)
   }
 
   /** The hourly pass. First every reader whose sagas were last worked out a

@@ -1,4 +1,5 @@
 import type { Book } from '~/domain/book/types'
+import type { ScanResult } from '~/domain/scan/types'
 import {
   type FoundVolume as CatalogueVolume,
   editionOf,
@@ -11,6 +12,8 @@ import type { FollowedSeries } from '~/domain/series/use-case'
 import { type Language, SUPPORTED_LANGUAGES } from '~/domain/shared/language'
 import { Year } from '~/domain/shared/primitives'
 import type {
+  AnnouncedVolumePreview,
+  AudibleRecording,
   DiscoveryReader,
   FoundVolume,
   ReleaseDate,
@@ -428,4 +431,57 @@ export const onAudible = (
     (volume) => !numbers.has(volume.number) && isUpcoming(volume.date, today),
   )
   return [...listed, ...announced].sort((left, right) => left.number - right.number)
+}
+
+/** What an announced volume's page is built from, before anything is
+ *  described: the title and author the watch found, the recording's own when
+ *  Audible sells it, in the saga's format and the edition's language. */
+export const announcedEditionOf = (
+  watch: SagaWatch,
+  volume: FoundVolume,
+  recording: AudibleRecording | undefined,
+): ScanResult => ({
+  recognized: true,
+  title: recording?.title ?? volume.title,
+  authors: recording?.authors.length ? recording.authors : watch.author ? [watch.author] : [],
+  format: formatOf(watch.seriesId),
+  publisher: recording?.publisher,
+  language: watch.language,
+  subgenres: [],
+})
+
+/** An announced volume's page: what the model described, over what the watch
+ *  and Audible already knew. Audible's facts about its own recording — cover,
+ *  narrators, running time, publisher — win over the model's; the model's
+ *  summary wins over Audible's blurb, which is marketing copy. The volume stays
+ *  where the watch found it, in its saga and edition, whatever the model says. */
+export const announcedPreviewOf = (
+  watch: SagaWatch,
+  volume: FoundVolume,
+  recording: AudibleRecording | undefined,
+  described: ScanResult,
+): AnnouncedVolumePreview => {
+  const seen = announcedEditionOf(watch, volume, recording)
+  const heard = seen.format === 'audiobook'
+  return {
+    book: {
+      ...described,
+      recognized: true,
+      title: seen.title,
+      authors: seen.authors.length > 0 ? seen.authors : described.authors,
+      format: seen.format,
+      publisher: recording?.publisher ?? described.publisher,
+      synopsis: described.synopsis ?? recording?.synopsis,
+      language: watch.language,
+      // A recording has no pages, and the ISBN the model finds is the print's.
+      pageCount: heard ? undefined : described.pageCount,
+      isbn13: heard ? undefined : (volume.isbn13 ?? described.isbn13),
+      coverUrl: recording?.coverUrl ?? volume.coverUrl ?? described.coverUrl,
+      series: { id: watch.seriesId, name: watch.name, volume: volume.number, kind: 'main' },
+    },
+    narrators: recording?.narrators ?? [],
+    durationMinutes: recording?.durationMinutes,
+    releaseDate: volume.date,
+    asin: volume.asin,
+  }
 }

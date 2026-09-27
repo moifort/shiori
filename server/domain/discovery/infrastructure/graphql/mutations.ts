@@ -1,11 +1,14 @@
+import { match, P } from 'ts-pattern'
 import { BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
 import {
+  AnnouncedVolumePreviewType,
   DiscoveryType,
   ReleaseFormatEnum,
   SagaReleasesType,
 } from '~/domain/discovery/infrastructure/graphql/types'
 import { DiscoveryUseCase } from '~/domain/discovery/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
+import { domainError, notFound } from '~/domain/shared/graphql/errors'
 import { languageOf } from '~/domain/shared/language'
 
 builder.mutationFields((t) => ({
@@ -32,5 +35,34 @@ builder.mutationFields((t) => ({
     },
     resolve: (_root, { seriesId, language }, context) =>
       DiscoveryUseCase.lookUpSaga(context.userId, seriesId, language),
+  }),
+  previewAnnouncedVolume: t.field({
+    type: AnnouncedVolumePreviewType,
+    description:
+      'Describe a volume the release watch announced, for its page before the reader adds ' +
+      'it. A printed volume is described by the web-grounded model; a recording Audible ' +
+      'confirmed is read off Audible’s catalogue first, and the model adds its summary, ' +
+      'genre and first publication. A few seconds. Nothing is saved.\n\n' +
+      'Spends one scan of the allowance, as a typed title does. Fails with `NOT_FOUND` for ' +
+      'a volume no watch announced in that edition, `QUOTA_EXHAUSTED` once nothing is left, ' +
+      'or `SCAN_FAILED` when the model call errors.',
+    args: {
+      seriesId: t.arg({ type: 'SeriesId', required: true }),
+      language: t.arg({ type: BookLanguageEnum, required: true }),
+      number: t.arg({ type: 'VolumeNumber', required: true }),
+    },
+    resolve: async (_root, { seriesId, language, number }, context) =>
+      match(
+        await DiscoveryUseCase.previewAnnouncedVolume(
+          context.userId,
+          { seriesId, language, number },
+          languageOf(context.event),
+        ),
+      )
+        .with('not-found', () => notFound('No such volume announced'))
+        .with('quota-exhausted', () => domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up'))
+        .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
+        .with({ book: P.any }, (preview) => preview)
+        .exhaustive(),
   }),
 }))

@@ -1,13 +1,21 @@
+import { plainTextOf } from '~/domain/audible/business-rules'
 import { AudibleAsin } from '~/domain/audible/primitives'
 import type { AudibleAsin as AudibleAsinType } from '~/domain/audible/types'
-import { CoverUrl } from '~/domain/book/primitives'
+import {
+  CoverUrl,
+  ListeningMinutes,
+  MAX_NARRATORS,
+  NarratorName,
+  Publisher,
+  Synopsis,
+} from '~/domain/book/primitives'
 import type { BookLanguage, CoverUrl as CoverUrlType } from '~/domain/book/types'
 import { ReleaseDate, VolumeNumber } from '~/domain/series/primitives'
 import type { ReleaseDate as ReleaseDateType } from '~/domain/series/types'
-import { BookTitle } from '~/domain/shared/primitives'
+import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import { createLogger } from '~/system/logger'
-import { optionally } from '~/utils/input'
-import type { FoundVolume } from '../types'
+import { isPresent, optionally } from '~/utils/input'
+import type { AudibleRecording, FoundVolume } from '../types'
 
 const logger = createLogger('audible-catalogue')
 
@@ -40,6 +48,8 @@ type Relationship = {
   sequence?: string
 }
 
+type Contributor = { name?: string }
+
 type Product = {
   asin?: string
   title?: string
@@ -47,11 +57,51 @@ type Product = {
   language?: string
   product_images?: Record<string, string>
   relationships?: Relationship[]
+  authors?: Contributor[]
+  narrators?: Contributor[]
+  publisher_name?: string
+  publisher_summary?: string
+  merchandising_summary?: string
+  runtime_length_min?: number
 }
 
 type ProductAnswer = { product?: Product }
 
 export type AudibleProduct = { releaseDate?: ReleaseDateType; coverUrl?: CoverUrlType }
+
+/** A recording as Audible's own catalogue describes it in that language, for
+ *  its page before anybody holds it: who wrote and who reads it, its running
+ *  time, its publisher and blurb, its cover. `unknown` when Audible does not
+ *  sell it in that language, `unreachable` when it could not be asked. */
+export const audibleRecordingOf = async (
+  asin: AudibleAsinType,
+  language: BookLanguage,
+): Promise<AudibleRecording | 'unknown' | 'unreachable'> => {
+  const answer = await askAudible<ProductAnswer>(
+    language,
+    `products/${asin}?response_groups=product_desc,product_attrs,contributors,media&image_sizes=500`,
+  )
+  if (answer === 'unreachable') return answer
+  const product = answer.product
+  const title = optionally(product?.title, BookTitle)
+  if (!product || !title) return 'unknown'
+  const expected = AUDIBLE_LANGUAGES[language]
+  if (expected && product.language && product.language !== expected) return 'unknown'
+  const names = <Name>(contributors: Contributor[] | undefined, make: (value: unknown) => Name) =>
+    (contributors ?? []).map((contributor) => optionally(contributor.name, make)).filter(isPresent)
+  return {
+    title,
+    authors: names(product.authors, AuthorName),
+    narrators: names(product.narrators, NarratorName).slice(0, MAX_NARRATORS),
+    publisher: optionally(product.publisher_name, Publisher),
+    synopsis: optionally(
+      plainTextOf(product.publisher_summary ?? product.merchandising_summary),
+      Synopsis,
+    ),
+    durationMinutes: optionally(product.runtime_length_min, ListeningMinutes),
+    coverUrl: optionally(product.product_images?.['500'], CoverUrl),
+  }
+}
 
 /** What Audible's own catalogue says of a recording a model named: its release
  *  day and cover, or `unknown` when no such recording exists in that language —

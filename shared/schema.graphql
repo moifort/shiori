@@ -129,6 +129,34 @@ type AlertSwitch {
 }
 
 """
+A volume announced, described for its page before the reader adds it: the record a scan would propose, and what only a recording has.
+"""
+type AnnouncedVolumePreview {
+  """
+  The recording's page on the reader's Audible store. Null on a printed volume, on a recording Audible never confirmed, and without an Audible account.
+  """
+  audibleUrl: String
+
+  """
+  The record, placed in its saga at its number and in its edition’s language. Hand it to `addBook` to add the volume.
+  """
+  book: ScanResult!
+
+  """The recording’s running time, as Audible gives it."""
+  durationMinutes: Int
+
+  """
+  Who reads the recording, as Audible lists them. Empty for a printed volume.
+  """
+  narrators: [NarratorName!]!
+
+  """
+  When it comes out, as precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`.
+  """
+  releaseDate: String
+}
+
+"""
 The reader's live link to Audible.
 
 The credentials themselves never leave the server. Disconnecting forgets our copy of them; the device stays registered on the Amazon side until the reader removes it there.
@@ -1481,6 +1509,13 @@ type Mutation {
   Look a saga up on the web now in the edition opened, when nobody ever did — one grounded call, about ten seconds — and answer what it has for the reader. An edition already looked up is answered as it stands.
   """
   lookUpSagaReleases(language: BookLanguage!, seriesId: SeriesId!): SagaReleases!
+
+  """
+  Describe a volume the release watch announced, for its page before the reader adds it. A printed volume is described by the web-grounded model; a recording Audible confirmed is read off Audible’s catalogue first, and the model adds its summary, genre and first publication. A few seconds. Nothing is saved.
+  
+  Spends one scan of the allowance, as a typed title does. Fails with `NOT_FOUND` for a volume no watch announced in that edition, `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` when the model call errors.
+  """
+  previewAnnouncedVolume(language: BookLanguage!, number: VolumeNumber!, seriesId: SeriesId!): AnnouncedVolumePreview!
 
   """
   Give a book one to five stars. Rating marks it as read: the reader is saying they finished it, and leaving it on the pile would make every filter lie.

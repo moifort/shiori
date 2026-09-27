@@ -81,10 +81,24 @@ struct DiscoveryPage: Sendable {
     let followed: Int
 }
 
+/// A volume announced, described for its page before the reader adds it: the
+/// record a scan would propose, placed in its saga and edition, with what only
+/// a recording has.
+struct AnnouncedVolumePreview {
+    let book: ScannedBook
+    let narrators: [String]
+    let durationMinutes: Int?
+    /// `YYYY`, `YYYY-MM` or `YYYY-MM-DD`.
+    let releaseDate: String?
+    let audibleURL: URL?
+}
+
 enum DiscoverAPI {
     /// A first look runs grounded model calls, a few side by side, for up to a
     /// minute and a half: the request is given that and a margin.
     private static let lookUpTimeout: TimeInterval = 150
+    /// A preview is a scan's grounded step: given what a scan is given.
+    private static let previewTimeout: TimeInterval = 190
 
     static func discovery(format: ReleaseFormat) async throws -> DiscoveryPage {
         let data = try await GraphQLHelpers.fetch(
@@ -104,6 +118,34 @@ enum DiscoverAPI {
             requestTimeout: lookUpTimeout
         )
         return DiscoveryPage(fields: data.lookUpDiscovery.fragments.discoveryFields)
+    }
+
+    /// Describes a volume announced for its page. Spends one scan: throws
+    /// `APIError.domain(code: "QUOTA_EXHAUSTED")` once nothing is left.
+    static func preview(
+        seriesId: String,
+        language: BookLanguage,
+        number: Int
+    ) async throws -> AnnouncedVolumePreview {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.PreviewAnnouncedVolumeMutation(
+                seriesId: seriesId,
+                language: LibraryAPI.graphQLLanguage(language),
+                number: number
+            ),
+            requestTimeout: previewTimeout,
+            // A page to look at: nothing reaches the library before `addBook`.
+            changesLibrary: false
+        )
+        let preview = data.previewAnnouncedVolume
+        return AnnouncedVolumePreview(
+            book: ScannedBook(fields: preview.book.fragments.scannedRecord),
+            narrators: preview.narrators,
+            durationMinutes: preview.durationMinutes,
+            releaseDate: preview.releaseDate,
+            audibleURL: preview.audibleUrl.flatMap(URL.init(string:))
+        )
     }
 
     /// What the saga screen shows under its introduction, in the edition

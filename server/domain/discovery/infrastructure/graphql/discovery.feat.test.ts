@@ -159,6 +159,15 @@ describe('an announced recording', () => {
   })
 })
 
+describe('an announced volume’s page', () => {
+  test('is refused for a volume no watch announced', async () => {
+    const result = await run(
+      `mutation { previewAnnouncedVolume(seriesId: "${carl}", language: FR, number: 9) { releaseDate } }`,
+    )
+    expect(result.errors?.[0]?.extensions?.code).toBe('NOT_FOUND')
+  })
+})
+
 describe('the saga screen', () => {
   test('says what the saga has for the reader in the edition opened', async () => {
     const result = await run(
