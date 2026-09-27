@@ -1,0 +1,63 @@
+# The editions the reader awaits in one format, for Découvrir's strip and the
+# full list: the ones out first, then the announced, then the rest.
+query AwaitedEditions($format: ReleaseFormat!) {
+  awaitedEditions(format: $format) {
+    ...AwaitedEditionFields
+  }
+}
+
+# What the page of one of the reader's own books offers to await.
+query BookEditionOffer($bookId: BookId!) {
+  bookEditionOffer(bookId: $bookId) {
+    ...EditionOfferFields
+  }
+}
+
+# What the page of a friend's book offers to await. Asks Audible for a printed
+# book in the app's language, so the page asks only when it opens.
+query FriendBookEditionOffer($userId: UserId!, $bookId: BookId!) {
+  friendBookEditionOffer(userId: $userId, bookId: $bookId) {
+    ...EditionOfferFields
+  }
+}
+
+# Await one of the reader's own books. Looks it up on the web at once when
+# nobody did: about ten seconds.
+mutation AwaitBookEdition($bookId: BookId!, $format: ReleaseFormat!) {
+  awaitBookEdition(bookId: $bookId, format: $format) {
+    ...AwaitedEditionFields
+  }
+}
+
+# Await a friend's book, the same way.
+mutation AwaitFriendBookEdition($userId: UserId!, $bookId: BookId!, $format: ReleaseFormat!) {
+  awaitFriendBookEdition(userId: $userId, bookId: $bookId, format: $format) {
+    ...AwaitedEditionFields
+  }
+}
+
+mutation StopAwaitingEdition($id: AwaitedEditionId!) {
+  stopAwaitingEdition(id: $id)
+}
+
+fragment EditionOfferFields on EditionOffer {
+  formats
+  awaited {
+    ...AwaitedEditionFields
+  }
+}
+
+fragment AwaitedEditionFields on AwaitedEdition {
+  id
+  format
+  state
+  title
+  originalTitle
+  originalLanguage
+  authors
+  date
+  coverUrl
+  storeUrl
+  bookId
+  ownerId
+}

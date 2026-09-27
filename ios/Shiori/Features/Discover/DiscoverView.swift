@@ -24,6 +24,11 @@ import SwiftUI
 /// one row — covers on the Books shelf, sagas on the Series shelf, faces on the
 /// Authors shelf, the newest heart first. A flame marks what many of them love.
 ///
+/// Under them, on the Books shelf, "Bientôt en audio" or "Bientôt en FR": the
+/// books the reader awaits in the app's language, in the format on screen, as
+/// a strip of covers, the ones out first — "Voir les livres guettés" opens the
+/// whole list, where a swipe gives one up.
+///
 /// The server looks the sagas up on the web once a week. The tab opens on the
 /// rows it last showed, brought up to date silently underneath; sagas nobody
 /// ever looked up — every saga, on the very first look — are looked up at once,
@@ -36,6 +41,10 @@ struct DiscoverView: View {
     @State private var openAuthor: AuthorDestination?
     @State private var openFriendBook: LovedBook?
     @State private var openFriendSaga: LovedSaga?
+    @State private var openAwaited: AwaitedEdition?
+    @State private var showAwaitedList = false
+    /// The edition opened from the full list, pushed inside it.
+    @State private var openListedAwaited: AwaitedEdition?
     @Environment(\.openURL) private var openURL
     @AppStorage("discover.format") private var format: ReleaseFormat = .book
     @AppStorage("discover-shelf") private var shelf: LibraryShelf = .series
@@ -82,6 +91,28 @@ struct DiscoverView: View {
                         )
                     }
                 }
+                .sheet(item: $openAwaited) { edition in
+                    NavigationStack {
+                        AwaitedEditionView(edition: edition) {
+                            Task { await viewModel.stopAwaiting(edition) }
+                        }
+                    }
+                }
+                .sheet(isPresented: $showAwaitedList) {
+                    NavigationStack {
+                        AwaitedEditionsListView(
+                            format: format,
+                            editions: viewModel.awaited(format),
+                            onOpen: { openListedAwaited = $0 },
+                            onStop: { edition in Task { await viewModel.stopAwaiting(edition) } }
+                        )
+                        .navigationDestination(item: $openListedAwaited) { edition in
+                            AwaitedEditionView(edition: edition) {
+                                Task { await viewModel.stopAwaiting(edition) }
+                            }
+                        }
+                    }
+                }
                 // The Library's own author page, in its own stack so a saga
                 // pushes inside it.
                 .sheet(item: $openAuthor) { opened in
@@ -95,6 +126,10 @@ struct DiscoverView: View {
             openOnAFollowedFormat()
         }
         .task { await viewModel.loadPicks() }
+        .task(id: format) { await viewModel.loadAwaited(format) }
+        .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
+            Task { await viewModel.reloadAwaited() }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
             Task {
                 await viewModel.reload()
@@ -145,6 +180,7 @@ struct DiscoverView: View {
                 }
             }
             friendPicksSection
+            if shelf == .books { awaitedSection }
             if shelf == .authors {
                 authorSections
             } else {
@@ -185,6 +221,29 @@ struct DiscoverView: View {
                 Text("Coups de cœur de vos amis")
             }
             .accessibilityIdentifier("discover-friend-picks")
+        }
+    }
+
+    /// "Bientôt en audio" or "Bientôt en FR": the editions the reader awaits in
+    /// the format on screen, as a strip like the friends' favourites, and the
+    /// way to the full list. Absent when none is awaited.
+    @ViewBuilder
+    private var awaitedSection: some View {
+        let editions = viewModel.awaited(format)
+        if !editions.isEmpty {
+            Section {
+                AwaitedEditionsStrip(editions: editions) { openAwaited = $0 }
+            } header: {
+                HStack {
+                    Text(format.awaitedTitle)
+                    Spacer()
+                    Button("Voir les livres guettés") { showAwaitedList = true }
+                        .font(.subheadline)
+                        .textCase(nil)
+                        .accessibilityIdentifier("discover-awaited-all")
+                }
+            }
+            .accessibilityIdentifier("discover-awaited")
         }
     }
 
@@ -377,7 +436,8 @@ struct DiscoverView: View {
     /// theirs heard, say — sees the other one instead, once a session: a
     /// format they tapped stays, and two empty formats do not bounce.
     private func openOnAFollowedFormat() {
-        guard !formatSettled, viewModel.followed(format) == 0 else { return }
+        guard !formatSettled, viewModel.followed(format) == 0, viewModel.awaited(format).isEmpty
+        else { return }
         formatSettled = true
         format = ReleaseFormat.allCases.first { $0 != format } ?? format
     }

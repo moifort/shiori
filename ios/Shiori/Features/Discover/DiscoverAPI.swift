@@ -20,7 +20,7 @@ enum ReleaseFormat: String, Codable, Sendable, Hashable, CaseIterable, Identifia
         }
     }
 
-    fileprivate var graphQL: ShioriGraphQL.ReleaseFormat {
+    var graphQL: ShioriGraphQL.ReleaseFormat {
         switch self {
         case .book: .book
         case .audiobook: .audiobook

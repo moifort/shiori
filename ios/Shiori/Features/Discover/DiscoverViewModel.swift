@@ -113,6 +113,40 @@ final class DiscoverViewModel {
         }
     }
 
+    /// The editions awaited in each format, the ones out first: empty until
+    /// loaded, and last load's when a later one fails, as the friends' picks.
+    private(set) var awaited: [ReleaseFormat: [AwaitedEdition]] = [:]
+
+    func awaited(_ format: ReleaseFormat) -> [AwaitedEdition] { awaited[format] ?? [] }
+
+    func loadAwaited(_ format: ReleaseFormat) async {
+        do {
+            let found = try await AwaitedAPI.awaited(format: format)
+            withAnimation(.smooth) { awaited[format] = found }
+        } catch {
+            guard !isCancellation(error) else { return }
+            _ = reportError(error)
+        }
+    }
+
+    /// Every format already shown is asked again.
+    func reloadAwaited() async {
+        for format in awaited.keys { await loadAwaited(format) }
+    }
+
+    /// Gives the wait up, taking the edition off at once and putting it back
+    /// if the server refused.
+    func stopAwaiting(_ edition: AwaitedEdition) async {
+        let before = awaited[edition.format]
+        withAnimation(.smooth) { awaited[edition.format]?.removeAll { $0.id == edition.id } }
+        do {
+            try await AwaitedAPI.stop(id: edition.id)
+        } catch {
+            withAnimation(.smooth) { awaited[edition.format] = before }
+            errorMessage = reportError(error)
+        }
+    }
+
     /// How many sagas and authors the reader follows in a format, nil until it
     /// was loaded.
     func followed(_ format: ReleaseFormat) -> Int? { feed.followed[format] }

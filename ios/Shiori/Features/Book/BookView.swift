@@ -21,6 +21,10 @@ struct BookView: View {
     @State private var editedField: BookField?
     @State private var confirmDelete = false
     @State private var openSeries: SeriesDestination?
+    /// What the page offers to await in the app's language, and what it awaits.
+    @State private var offer = EditionOffer()
+    @State private var isAwaiting = false
+    @State private var awaitFailed: String?
     @Environment(\.dismiss) private var dismiss
 
     init(bookId: String, onChanged: @escaping (Book) -> Void = { _ in }, onDeleted: @escaping (String) -> Void = { _ in }) {
@@ -47,7 +51,9 @@ struct BookView: View {
                         },
                         onEditGenre: { showGenreEditor = true },
                         onEditRecommendation: { showRecommendation = true },
-                        onEditField: { editedField = $0 }
+                        onEditField: { editedField = $0 },
+                        awaited: offer.awaited,
+                        onStopAwaiting: { edition in Task { await stopAwaiting(edition) } }
                     )
                 } else if viewModel.isLoading {
                     ProgressView()
@@ -65,7 +71,7 @@ struct BookView: View {
             // Toolbar actions close their menu before the mutation leaves, so the
             // call is made visible by a scrim rather than by the control itself.
             .overlay {
-                if viewModel.isSaving {
+                if viewModel.isSaving || isAwaiting {
                     ZStack {
                         Color.black.opacity(0.1).ignoresSafeArea()
                         ProgressView()
@@ -151,6 +157,51 @@ struct BookView: View {
             }
         }
         .task { await viewModel.load() }
+        .task { await loadOffer() }
+        .alert(
+            "Impossible de guetter ce livre",
+            isPresented: .init(get: { awaitFailed != nil }, set: { if !$0 { awaitFailed = nil } })
+        ) {
+            Button("OK", role: .cancel) { awaitFailed = nil }
+        } message: {
+            Text(awaitFailed ?? "")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
+            Task { await loadOffer() }
+        }
+    }
+
+    // MARK: - Awaited editions
+
+    private func loadOffer() async {
+        do {
+            offer = try await AwaitedAPI.offer(bookId: bookId) ?? EditionOffer()
+        } catch {
+            _ = reportError(error)
+        }
+    }
+
+    /// Awaits the book's edition in the app's language: the server looks it up
+    /// on the web at once, so the page says straight away where it stands.
+    private func awaitEdition(_ format: ReleaseFormat) async {
+        isAwaiting = true
+        defer { isAwaiting = false }
+        do {
+            let edition = try await AwaitedAPI.awaitEdition(bookId: bookId, format: format)
+            offer.awaited.removeAll { $0.format == format }
+            offer.awaited.append(edition)
+        } catch {
+            awaitFailed = reportError(error)
+        }
+    }
+
+    private func stopAwaiting(_ edition: AwaitedEdition) async {
+        do {
+            try await AwaitedAPI.stop(id: edition.id)
+            offer.awaited.removeAll { $0.id == edition.id }
+        } catch {
+            awaitFailed = reportError(error)
+        }
     }
 
     // MARK: - Toolbar
@@ -206,6 +257,21 @@ struct BookView: View {
                 showRecommendation = true
             }
             .accessibilityIdentifier("book-recommend")
+
+            // A book in another language: its French edition, translated or
+            // recorded, watched for and announced the day it is out. The
+            // recording only for a reader who listens to any.
+            ForEach(offer.awaitable) { format in
+                Button(format.awaitLabel, systemImage: format == .audiobook ? "headphones" : "character.book.closed") {
+                    Task { await awaitEdition(format) }
+                }
+                .accessibilityIdentifier("book-await-\(format.rawValue)")
+            }
+            ForEach(offer.awaited) { edition in
+                Button("Ne plus guetter \(edition.format == .audiobook ? "l'audio" : "la version française")", systemImage: "bell.slash") {
+                    Task { await stopAwaiting(edition) }
+                }
+            }
 
             // Not on the segmented picker, which holds the states a book moves
             // through: dropping one is an ending, chosen once, from here.

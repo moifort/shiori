@@ -27,6 +27,11 @@ struct FriendBookView: View {
     /// Whether Audible sells the book, for a printed one: until it answers,
     /// and when it cannot, the reader may still take it heard.
     @State private var audio: AudioAvailability?
+    /// What the page offers to await in the app's language — the translation,
+    /// the recording, or the recording Audible does not sell yet — and what
+    /// the reader awaits already.
+    @State private var offer = EditionOffer()
+    @State private var isAwaiting = false
 
     var body: some View {
         Group {
@@ -48,6 +53,15 @@ struct FriendBookView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task { await load() }
         .task { await loadAudio() }
+        .task { await loadOffer() }
+        .overlay {
+            if isAwaiting {
+                ZStack {
+                    Color.black.opacity(0.1).ignoresSafeArea()
+                    ProgressView()
+                }
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
@@ -118,6 +132,10 @@ struct FriendBookView: View {
                 }
             }
 
+            AwaitedEditionsSection(awaited: offer.awaited) { edition in
+                Task { await stopAwaiting(edition) }
+            }
+
             if let synopsis = entry.book.synopsis, !synopsis.isEmpty {
                 ReadOnlySynopsisSection(synopsis: synopsis)
             }
@@ -156,30 +174,47 @@ struct FriendBookView: View {
     /// "+" in the corner: onto the pile, or among the books read, in print or
     /// as a recording — a reader who never listens takes a friend's recording
     /// as a book, and a printed book is offered heard once Audible confirms
-    /// it sells it. Greyed out once the book is the reader's.
+    /// it sells it. Its French edition, translated or recorded, may be awaited
+    /// from here too — the recording in place of taking it heard, when Audible
+    /// does not sell it yet. Greyed out once nothing is left to do.
     private func addMenu(_ entry: FriendBook) -> some View {
         let owned = entry.inLibrary || added != nil
         let formats = entry.book.format.takenAs.filter { $0 != .audiobook || audio != .unavailable }
         return Menu {
-            ForEach(formats, id: \.self) { format in
-                Section(format.label) {
-                    Button("Ajouter à ma pile", systemImage: "bookmark.fill") {
-                        Task { await add(.toRead, as: format) }
+            if !owned {
+                ForEach(formats, id: \.self) { format in
+                    Section(format.label) {
+                        Button("Ajouter à ma pile", systemImage: "bookmark.fill") {
+                            Task { await add(.toRead, as: format) }
+                        }
+                        .accessibilityIdentifier("friend-book-add-pile-\(format.rawValue)")
+                        Button(
+                            format == .audiobook ? "Je l'ai déjà écouté" : "Je l'ai déjà lu",
+                            systemImage: "checkmark"
+                        ) {
+                            Task { await add(.read, as: format) }
+                        }
+                        .accessibilityIdentifier("friend-book-add-read-\(format.rawValue)")
                     }
-                    .accessibilityIdentifier("friend-book-add-pile-\(format.rawValue)")
-                    Button(
-                        format == .audiobook ? "Je l'ai déjà écouté" : "Je l'ai déjà lu",
-                        systemImage: "checkmark"
-                    ) {
-                        Task { await add(.read, as: format) }
+                }
+            }
+            if !offer.awaitable.isEmpty {
+                Section {
+                    ForEach(offer.awaitable) { format in
+                        Button(
+                            format.awaitLabel,
+                            systemImage: format == .audiobook ? "headphones" : "character.book.closed"
+                        ) {
+                            Task { await awaitEdition(format) }
+                        }
+                        .accessibilityIdentifier("friend-book-await-\(format.rawValue)")
                     }
-                    .accessibilityIdentifier("friend-book-add-read-\(format.rawValue)")
                 }
             }
         } label: {
             Label("Ajouter à ma bibliothèque", systemImage: "plus")
         }
-        .disabled(owned)
+        .disabled(owned && offer.awaitable.isEmpty)
         .accessibilityIdentifier("friend-book-add-menu")
     }
 
@@ -192,6 +227,41 @@ struct FriendBookView: View {
             errorMessage = reportError(error)
         }
         isLoading = false
+    }
+
+    private func loadOffer() async {
+        do {
+            offer = try await AwaitedAPI.offer(friendId: friendId, bookId: bookId) ?? EditionOffer()
+        } catch {
+            _ = reportError(error)
+        }
+    }
+
+    /// Awaits the book's edition in the app's language: the server looks it up
+    /// on the web at once, so the page says straight away where it stands.
+    private func awaitEdition(_ format: ReleaseFormat) async {
+        isAwaiting = true
+        defer { isAwaiting = false }
+        do {
+            let edition = try await AwaitedAPI.awaitEdition(
+                friendId: friendId,
+                bookId: bookId,
+                format: format
+            )
+            offer.awaited.removeAll { $0.format == format }
+            offer.awaited.append(edition)
+        } catch {
+            addFailed = reportError(error)
+        }
+    }
+
+    private func stopAwaiting(_ edition: AwaitedEdition) async {
+        do {
+            try await AwaitedAPI.stop(id: edition.id)
+            offer.awaited.removeAll { $0.id == edition.id }
+        } catch {
+            addFailed = reportError(error)
+        }
     }
 
     private func loadAudio() async {

@@ -23,6 +23,9 @@ struct BookPage: View {
     let onEditGenre: () -> Void
     let onEditRecommendation: () -> Void
     let onEditField: (BookField) -> Void
+    /// The editions of this book the reader awaits in the app's language.
+    var awaited: [AwaitedEdition] = []
+    var onStopAwaiting: (AwaitedEdition) -> Void = { _ in }
 
     /// Past this many words the summary folds, and a button unfolds it: an
     /// Audible blurb can run to a screenful, and the facts below it were
@@ -35,6 +38,7 @@ struct BookPage: View {
         List {
             statusSection
             header
+            AwaitedEditionsSection(awaited: awaited, onStop: onStopAwaiting)
             readingSection
             if let synopsis = book.synopsis { synopsisSection(synopsis) }
         }
