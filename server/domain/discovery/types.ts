@@ -20,6 +20,9 @@ export type WatchedSaga = {
    *  is searched with. */
   name: SeriesName
   author?: AuthorName
+  /** A recording of the saga heard the reader holds in that language: the way
+   *  into Audible's own listing of the series. */
+  asin?: AudibleAsin
 }
 
 /** One volume of a saga as the web found it in one language, out or announced. */

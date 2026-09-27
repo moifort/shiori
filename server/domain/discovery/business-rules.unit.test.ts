@@ -12,6 +12,7 @@ import {
   likelyLanguageOf,
   mergedVolumes,
   missingVolumesOf,
+  onAudible,
   releasesOf,
   watchedSagasOf,
 } from './business-rules'
@@ -231,6 +232,18 @@ describe('the volumes a saga has out for the reader', () => {
 
   test('are none before the saga was ever looked up', () => {
     expect(missingVolumesOf([], undefined, undefined, today)).toEqual([])
+  })
+})
+
+describe('a saga heard', () => {
+  test('is what Audible lists, and beyond it only what is announced', () => {
+    const listed = [volume(1, '2025-01-16'), volume(5, '2026-10-08')]
+    const found = [volume(5, '2024-03-01'), volume(6, '2027'), volume(7, '2025-01-01')]
+    expect(onAudible(listed, found, today)).toEqual([
+      volume(1, '2025-01-16'),
+      volume(5, '2026-10-08'),
+      volume(6, '2027'),
+    ])
   })
 })
 

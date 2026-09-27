@@ -53,11 +53,16 @@ export const watchedSagasOf = (followed: readonly FollowedSeries[]): WatchedSaga
   const sagas = new Map<string, WatchedSaga>()
   for (const saga of followed) {
     if (!saga.language || saga.state === 'unfollowed') continue
+    const language = saga.language
+    const asin = isAudioSeries(saga.id)
+      ? saga.books.find((book) => book.audibleAsin && book.language === language)?.audibleAsin
+      : undefined
     const watched: WatchedSaga = {
       seriesId: saga.id,
-      language: saga.language,
+      language,
       name: saga.name,
       ...(saga.author ? { author: saga.author } : {}),
+      ...(asin ? { asin } : {}),
     }
     sagas.set(watchKeyOf(watched), watched)
   }
@@ -295,4 +300,21 @@ export const mergedVolumes = (
     })
   }
   return [...merged.values()].sort((left, right) => left.number - right.number)
+}
+
+/** A saga heard as Audible lists it: every recording Audible sells or has on
+ *  preorder, with Audible's own day — a recording is out when Audible sells
+ *  it, not when the book or another language's recording came out. What the
+ *  web found beyond Audible's list is kept only while it is announced: nothing
+ *  Audible does not sell counts as out. */
+export const onAudible = (
+  listed: readonly FoundVolume[],
+  found: readonly FoundVolume[],
+  today: string,
+): FoundVolume[] => {
+  const numbers = new Set(listed.map((volume) => volume.number))
+  const announced = found.filter(
+    (volume) => !numbers.has(volume.number) && isUpcoming(volume.date, today),
+  )
+  return [...listed, ...announced].sort((left, right) => left.number - right.number)
 }

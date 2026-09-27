@@ -50,12 +50,19 @@ mock.module('~/domain/scan/gemini', () => ({
   },
 }))
 
-/** Audible knows the first recording and not the second. */
+/** Audible knows the first recording and not the second, and lists the
+ *  series only when a test sets `audibleSeries`. */
+let audibleSeries: unknown[] | 'unknown' = 'unknown'
+const seriesAsked: string[] = []
 mock.module('~/domain/discovery/infrastructure/audible-catalogue', () => ({
   audibleProductOf: async (asin: string) =>
     asin === 'B0DM67WR2V'
       ? { releaseDate: '2024-11-22', coverUrl: 'https://m.media-amazon.com/carl1.jpg' }
       : 'unknown',
+  audibleSeriesOf: async (asin: string) => {
+    seriesAsked.push(asin)
+    return audibleSeries
+  },
 }))
 mock.module('~/domain/scan/published-cover', () => ({
   publishedCoverOf: async () => 'https://covers.example/carl1.jpg',
@@ -101,6 +108,8 @@ beforeEach(() => {
   fake = resetFakeFirestore()
   calls.length = 0
   pushed.length = 0
+  seriesAsked.length = 0
+  audibleSeries = 'unknown'
 })
 
 describe('the hourly pass', () => {
@@ -180,6 +189,42 @@ describe('the hourly pass', () => {
       { number: VolumeNumber(2), title: BookTitle('Carl 2'), date: '2025-03-01' as never },
       { number: VolumeNumber(3), title: BookTitle('Carl 3'), date: '2027-05-01' as never },
     ])
+  })
+})
+
+describe('a saga heard', () => {
+  const listed = [
+    { number: 1, title: 'Carl 1', asin: 'B0DM67WR2V', date: '2024-11-22' },
+    { number: 2, title: 'Carl 2', asin: 'B0CARLTWO2', date: '2026-10-08' },
+  ]
+
+  test('takes Audible’s own listing of the series over the web’s dates', async () => {
+    audibleSeries = listed
+    await stock(reader, 'audiobook')
+
+    await DiscoveryUseCase.watchDueSagas(now)
+
+    const watch = (await DiscoveryQuery.watches([`${carlHeard}--fr`])).get(`${carlHeard}--fr`)
+    // Volume 2 is on preorder on Audible, whatever the web said; volume 3 is
+    // only announced, and kept as such.
+    expect(watch?.volumes.map((volume): unknown[] => [volume.number, volume.date])).toEqual([
+      [1, '2024-11-22'],
+      [2, '2026-10-08'],
+      [3, '2027-05-01'],
+    ])
+    expect(seriesAsked).toEqual(['B0DM67WR2V'])
+  })
+
+  test('asks Audible alone once a recording of the series is known', async () => {
+    audibleSeries = listed
+    await stock(reader, 'audiobook')
+    await DiscoveryUseCase.watchDueSagas(now)
+    calls.length = 0
+
+    await DiscoveryUseCase.watchDueSagas(new Date('2026-10-04T08:00:00Z'))
+
+    expect(calls).toEqual([])
+    expect(seriesAsked).toEqual(['B0DM67WR2V', 'B0DM67WR2V'])
   })
 })
 

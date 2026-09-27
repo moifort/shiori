@@ -11,6 +11,7 @@ import {
   likelyLanguageOf,
   mergedVolumes,
   missingVolumesOf,
+  onAudible,
   readerIsStale,
   releasesOf,
   todayOf,
@@ -18,7 +19,10 @@ import {
   watchKeyOf,
 } from '~/domain/discovery/business-rules'
 import { DiscoveryCommand } from '~/domain/discovery/command'
-import { audibleProductOf } from '~/domain/discovery/infrastructure/audible-catalogue'
+import {
+  audibleProductOf,
+  audibleSeriesOf,
+} from '~/domain/discovery/infrastructure/audible-catalogue'
 import { volumesFrom } from '~/domain/discovery/parsing'
 import { releasesPrompt } from '~/domain/discovery/prompts'
 import { DiscoveryQuery } from '~/domain/discovery/query'
@@ -152,9 +156,10 @@ export namespace DiscoveryUseCase {
     if (lookingUp) {
       const name = held[0]?.series?.name ?? catalogue?.name
       const author = held[0]?.authors[0] ?? catalogue?.author
+      const asin = held.find((book) => book.audibleAsin)?.audibleAsin
       if (name)
         await lookUpAll(
-          [{ seriesId, language, name, ...(author ? { author } : {}) }],
+          [{ seriesId, language, name, ...(author ? { author } : {}), ...(asin ? { asin } : {}) }],
           watches,
           now,
           () => false,
@@ -384,21 +389,30 @@ const confirmedOnAudible = async (
   }
 }
 
-/** Look one saga up on the web in one language and keep what was found. */
+/** Look one saga up in one language and keep what was found. A saga heard is
+ *  judged by Audible's own listing of its series: reached straight from a
+ *  recording already known, with no grounded call, else from one the web
+ *  search named and Audible confirmed. The web alone decides only when Audible
+ *  cannot be reached that way. */
 const lookUp = async (
   saga: WatchedSaga,
   previous: SagaWatch | undefined,
   now: Date,
 ): Promise<SagaWatch> => {
+  const today = todayOf(now)
+  const audio = formatOf(saga.seriesId) === 'audiobook'
+  const known = new Map((previous?.volumes ?? []).map((volume) => [volume.number, volume]))
+  const entry = saga.asin ?? previous?.volumes.find((volume) => volume.asin)?.asin
+  const direct = audio && entry ? await audibleSeriesOf(entry, saga.language) : undefined
+  if (Array.isArray(direct))
+    return keepWatch(saga, now, onAudible(direct, previous?.volumes ?? [], today))
   const { value, usage } = await generate<ReleasesOutput>({
     step: 'discovery-releases',
-    parts: [{ text: releasesPrompt({ ...saga }, todayOf(now)) }],
+    parts: [{ text: releasesPrompt({ ...saga }, today) }],
     responseSchema: RELEASES_SCHEMA,
     grounded: true,
   })
   await recordUsage(usage)
-  const known = new Map((previous?.volumes ?? []).map((volume) => [volume.number, volume]))
-  const audio = formatOf(saga.seriesId) === 'audiobook'
   const found = await Promise.all(
     volumesFrom(value.volumes ?? []).map((volume) =>
       audio
@@ -406,6 +420,21 @@ const lookUp = async (
         : withCover(withoutAsin(volume), known.get(volume.number)),
     ),
   )
+  const confirmed = found.find((volume) => volume.asin)?.asin
+  const listed =
+    audio && confirmed && confirmed !== entry
+      ? await audibleSeriesOf(confirmed, saga.language)
+      : undefined
+  if (Array.isArray(listed))
+    return keepWatch(saga, now, onAudible(listed, [...(previous?.volumes ?? []), ...found], today))
+  return keepWatch(saga, now, mergedVolumes(previous?.volumes ?? [], found))
+}
+
+const keepWatch = async (
+  saga: WatchedSaga,
+  now: Date,
+  volumes: FoundVolume[],
+): Promise<SagaWatch> => {
   const watch: SagaWatch = {
     key: watchKeyOf(saga),
     seriesId: saga.seriesId,
@@ -413,7 +442,7 @@ const lookUp = async (
     author: saga.author,
     language: saga.language,
     checkedAt: now,
-    volumes: mergedVolumes(previous?.volumes ?? [], found),
+    volumes,
   }
   await DiscoveryCommand.saveWatch(watch)
   return watch
