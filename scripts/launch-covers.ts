@@ -1,6 +1,8 @@
 /**
- * Bundles the covers that drift behind the icon while the app opens: a few of a
- * reader's own books, named by title, and the great classics, from Open Library.
+ * Bundles the covers that drift behind the icon while the app opens: a reader's
+ * own books, named by title, and the great classics, from Open Library. The
+ * reader's covers are recent editions, bright and drawn, and set the tone: an
+ * old binding or a plain type cover sinks into the background.
  * Downloads each cover, shrinks it to the size the opening draws, and writes it
  * to `ios/Shiori/LaunchCovers/`, replacing whatever was there. The app picks up
  * every `launch-cover-*.jpg` it ships with, and gives every row of the opening
@@ -27,12 +29,46 @@ process.env.GOOGLE_CLOUD_PROJECT ??= 'shiori-polyforms'
 process.env.GOOGLE_CLOUD_QUOTA_PROJECT ??= 'shiori-polyforms'
 
 /** The reader's books that make the cut, by title, with the cover their record
- *  carries. */
+ *  carries. A title shared by two books — an audiobook and its print edition —
+ *  takes both. */
 const OWN_TITLES = [
   'Dungeon Crawler Carl',
-  "L'ogive du jugement dernier",
-  'Ravage',
-  'La nuit des temps',
+  'Le Portail des dieux infernaux',
+  'L’ogive du jugement dernier',
+  'La Mascarade du boucher',
+  'This Inevitable Ruin',
+  'The Gate of the Feral Gods',
+  'Operation Bounce House',
+  'Red Rising',
+  'Red Mars',
+  'Métro 2033',
+  'Neuromancien',
+  'Projet Dernière chance',
+  'Le Vaisseau-monde Humilité',
+  'Vigilante 211',
+  'Lumière',
+  'Iron Prince (French Edition)',
+  'Tschaï',
+  "Chasseur d'épaves 1",
+  'Heretical Fishing: A Cozy Guide to Annoying the Cults, Outsmarting the Fish, and Alienating Oneself',
+  'Le secret de Sombre-bois',
+  'Fourth Wing (French Edition)',
+  'Défaillances Systèmes',
+  'Nous sommes Légion (nous sommes Bob)',
+  "L'Eveil du Léviathan",
+  'La Fin de tout',
+  'Le Vieil homme et la guerre',
+  'Ubik',
+  'Shibumi',
+  'Les Champs de la Lune',
+  'Un océan de rouille',
+  "La Légende des Firemane - L'intégrale",
+  'Le Déchronologue',
+  'Le Seigneur de la Tour',
+  "L'Empire caché",
+  'Les Guerriers du silence',
+  'Le meilleur des mondes',
+  'Dune - Livre premier et livre second',
   'Hypérion',
   "La chute d'Hypérion",
   'Endymion',
@@ -53,48 +89,37 @@ const OWN_TITLES = [
   'Le poison de la vengeance',
   'La voie magique',
   'La reine solitaire',
+  'Ravage',
+  'La nuit des temps',
   '1984',
   'Fahrenheit 451',
 ]
 
-/** The classics, and more Barjavel than the library holds, each pinned to an Open Library cover picked by eye: a search
+/** The classics, and more Barjavel than the library holds, each pinned to an
+ *  Open Library cover picked by eye for a recent, coloured edition: a search
  *  turns up study guides and blank bindings as readily as a real cover. */
 const CLASSICS: { title: string; coverId: number }[] = [
-  { title: 'Germinal', coverId: 8236935 },
-  { title: "L'Assommoir", coverId: 8243261 },
+  { title: 'Germinal', coverId: 2140542 },
+  { title: 'Nana', coverId: 3080747 },
+  { title: "L'Assommoir", coverId: 968643 },
+  { title: 'La Bête humaine', coverId: 968837 },
   { title: 'Au Bonheur des Dames', coverId: 8246183 },
-  { title: 'Nana', coverId: 8237804 },
-  { title: 'La Bête humaine', coverId: 979860 },
-  { title: 'Les Misérables', coverId: 10073294 },
   { title: 'Notre-Dame de Paris', coverId: 11849382 },
   { title: 'Le Comte de Monte-Cristo', coverId: 14560865 },
-  { title: 'Madame Bovary', coverId: 12993424 },
-  { title: 'Le Père Goriot', coverId: 8237944 },
-  { title: 'Le Rouge et le Noir', coverId: 8231413 },
-  { title: "L'Étranger", coverId: 13151269 },
   { title: 'La Peste', coverId: 13151272 },
-  { title: 'Vingt mille lieues sous les mers', coverId: 6573517 },
-  { title: 'Le Tour du monde en quatre-vingts jours', coverId: 6976035 },
+  { title: 'Vingt mille lieues sous les mers', coverId: 3076817 },
   { title: 'La Ferme des animaux', coverId: 11261770 },
-  { title: 'Le Meilleur des mondes', coverId: 8231823 },
   { title: 'Le Petit Prince', coverId: 10708272 },
   { title: 'Crime et Châtiment', coverId: 10562435 },
-  { title: 'Guerre et Paix', coverId: 12621906 },
   { title: 'La Métamorphose', coverId: 13302999 },
-  { title: 'Le Vieil Homme et la Mer', coverId: 967065 },
   { title: 'Des souris et des hommes', coverId: 14589084 },
   { title: 'Orgueil et Préjugés', coverId: 15092533 },
   { title: 'Frankenstein', coverId: 12356249 },
   { title: 'Dracula', coverId: 12216503 },
-  { title: 'Dune', coverId: 980253 },
-  { title: 'Les Fleurs du mal', coverId: 3124316 },
   { title: 'Cyrano de Bergerac', coverId: 8236320 },
-  { title: 'Le Voyageur imprudent', coverId: 7267304 },
   { title: 'Le Grand Secret', coverId: 979477 },
   { title: 'Les Chemins de Katmandou', coverId: 979495 },
   { title: 'Une rose au paradis', coverId: 11735213 },
-  { title: 'Tarendol', coverId: 11574864 },
-  { title: 'Colomb de la lune', coverId: 967446 },
 ]
 
 const [, , reader] = process.argv
@@ -115,11 +140,11 @@ const userId = reader.includes('@') ? (await getAuth().getUserByEmail(reader)).u
 
 const snapshot = await db().collection('books').where('userId', '==', userId).get()
 const books = snapshot.docs.map((doc) => doc.data() as Book)
-const own = OWN_TITLES.map((title) => {
-  const book = books.find((book) => same(book.title, title) && book.publishedCoverUrl)
-  if (!book) process.stdout.write(`not in the library with a cover: ${title}\n`)
-  return book && { title, url: String(book.publishedCoverUrl) }
-}).filter((cover) => cover !== undefined)
+const own = OWN_TITLES.flatMap((title) => {
+  const found = books.filter((book) => same(book.title, title) && book.publishedCoverUrl)
+  if (found.length === 0) process.stdout.write(`not in the library with a cover: ${title}\n`)
+  return found.map((book) => ({ title, url: String(book.publishedCoverUrl) }))
+})
 const classics = CLASSICS.map(({ title, coverId }) => ({
   title,
   url: `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`,
