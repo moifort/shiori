@@ -1,0 +1,27 @@
+# Every book in one shelf photo, with where it sits. Premium only; spends
+# nothing — each book kept is its own DescribeDetectedBook.
+mutation DetectBooks($imageBase64: String!) {
+  detectBooks(imageBase64: $imageBase64) {
+    title
+    authors
+    publisher
+    language
+    format
+    seriesName
+    volume
+    owned
+    box {
+      x
+      y
+      width
+      height
+    }
+  }
+}
+
+# The record of one ticked book, as a scanned cover's. Spends one scan.
+mutation DescribeDetectedBook($book: DetectedBookInput!) {
+  describeDetectedBook(book: $book) {
+    ...ScannedRecord
+  }
+}
