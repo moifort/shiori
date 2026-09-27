@@ -10,7 +10,7 @@ struct CoverTile: View {
 
     /// The headphones pill, a touch above a library row's rather than grown
     /// with the shelf's larger cover.
-    static let formatBadgeSize: CGFloat = 20
+    static let formatBadgeSize: CGFloat = 22
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
