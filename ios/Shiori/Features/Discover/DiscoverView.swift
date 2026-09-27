@@ -125,7 +125,7 @@ struct DiscoverView: View {
                     if shelf == .books {
                         ForEach(recentVolumes) { volumeRow($0) }
                     } else {
-                        ForEach(recentSagas) { row($0) }
+                        ForEach(recentSagas) { row($0, announcing: false) }
                     }
                 } header: {
                     Text("Nouvelles parutions")
@@ -203,8 +203,10 @@ struct DiscoverView: View {
     }
 
     /// A saga's row: the Series tab's own, every cover of its strip, and
-    /// underneath the next volume and when it comes out.
-    private func row(_ row: SagaDiscovery) -> some View {
+    /// underneath the next volume and when it comes out. Among the new
+    /// releases, `announcing` is off: the row says what is out, not what is
+    /// coming.
+    private func row(_ row: SagaDiscovery, announcing: Bool = true) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             SeriesRow(entry: row.series)
                 .contentShape(Rectangle())
@@ -214,7 +216,7 @@ struct DiscoverView: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isButton)
                 .accessibilityAction { openSeries = row }
-            SagaReleasesSummary(releases: row.releases, missing: row.missing)
+            SagaReleasesSummary(releases: row.releases, missing: row.missing, announcing: announcing)
         }
         .contextMenu {
             Button("Ouvrir la série", systemImage: "books.vertical") { openSeries = row }
@@ -260,6 +262,8 @@ struct DiscoverView: View {
 struct SagaReleasesSummary: View {
     let releases: SagaReleases
     let missing: [Int]
+    /// Whether the next volume announced is named: not among the new releases.
+    var announcing = true
 
     var body: some View {
         let parts = [comingPart, availablePart].compactMap { $0 }
@@ -272,7 +276,8 @@ struct SagaReleasesSummary: View {
     }
 
     private var comingPart: String? {
-        releases.next.map { String(localized: "À venir : Tome \($0.number)") }
+        guard announcing else { return nil }
+        return releases.next.map { String(localized: "À venir : Tome \($0.number)") }
     }
 
     private var availablePart: String? {
