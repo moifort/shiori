@@ -41,7 +41,7 @@ const TOP_GENRES = 4
 /** Bumped whenever the view gains a figure or a rule changes, so a view stored
  *  by an older bundle is rebuilt on its next read instead of answering with a
  *  field it never computed. */
-export const VIEW_VERSION = 8
+export const VIEW_VERSION = 9
 
 // MARK: - Calendar
 
@@ -207,7 +207,8 @@ export const sharedShelfOf = (books: readonly Book[]): SharedShelf => {
 
 /** The sagas still in progress, measured on their published spine as the saga
  *  screen measures them. A saga with no catalogue, or no numbered volume, has
- *  nothing to measure against and is left out. */
+ *  nothing to measure against and is left out; so is one none of whose volumes
+ *  has been opened, which the Series tab calls not started. */
 export const seriesProgressOf = (
   books: readonly Book[],
   catalogues: readonly Series[],
@@ -218,7 +219,7 @@ export const seriesProgressOf = (
   const progress: SeriesProgress[] = []
   for (const series of catalogues) {
     const owned = books.filter((book) => book.series?.id === series.id)
-    if (owned.length === 0) continue
+    if (owned.every((book) => book.status === 'to-read')) continue
     const read = readVolumeNumbersOf(owned)
     // The saga's own state and ring: a saga the Series tab calls finished is
     // not one the dashboard still counts as in progress.

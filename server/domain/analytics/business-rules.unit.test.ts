@@ -370,6 +370,35 @@ describe('building the view', () => {
     ])
   })
 
+  // The Series tab calls it not started: the saga has not begun, so it is not
+  // in progress either.
+  test('leaves out a saga none of whose volumes has been opened', () => {
+    const books = [
+      book('vol-1', {
+        series: { id: kingkiller, name: catalogue.name, volume: VolumeNumber(1), kind: 'main' },
+      }),
+      book('vol-2', {
+        series: { id: kingkiller, name: catalogue.name, volume: VolumeNumber(2), kind: 'main' },
+      }),
+    ]
+
+    expect(seriesProgressOf(books, [catalogue], 2026)).toEqual([])
+  })
+
+  test('keeps a saga whose first volume is being read', () => {
+    const books = [
+      book('vol-1', {
+        status: 'reading',
+        startedAt: new Date('2026-02-01'),
+        series: { id: kingkiller, name: catalogue.name, volume: VolumeNumber(1), kind: 'main' },
+      }),
+    ]
+
+    expect(seriesProgressOf(books, [catalogue], 2026)).toMatchObject([
+      { id: kingkiller, readCount: 0, totalCount: 2 },
+    ])
+  })
+
   test('leaves out a saga whose published volumes are all read', () => {
     const volume = (number: number) =>
       book(`vol-${number}`, {

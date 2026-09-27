@@ -18,6 +18,7 @@ the release tag is pushed.
 - A series page shows its upcoming releases right under its introduction.
 - Your books show their series under the same name as the series page, without mentions like
   "[French Edition]".
+- The home screen's series in progress no longer lists a series you have not started yet.
 - The Authors shelf lists your authors alphabetically, like your contacts, with the alphabet down
   the side to jump to a letter; your favourites first is one tap away.
 - Saga and author pages open faster, whatever the size of your library.
