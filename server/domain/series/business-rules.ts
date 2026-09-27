@@ -16,8 +16,23 @@ import { slugify } from '~/utils/slug'
 
 /** Which edition of a saga a rule is judged for, and on which day. Without a
  *  language, the earliest announcement of any edition stands in; without a
- *  day, today. */
-export type Edition = { language?: BookLanguage; today?: string }
+ *  day, today. `datedUpTo` is the highest volume that edition has a date for,
+ *  as `editionOf` reads it off the catalogue. */
+export type Edition = { language?: BookLanguage; today?: string; datedUpTo?: number }
+
+/** The edition as the saga's catalogue knows it: how far its release watch
+ *  dated it. A translation comes out in order, so a volume past that point is
+ *  not out in that language yet, however long ago it came out in another. */
+export const editionOf = (series: Series, edition: Edition = {}): Edition => {
+  const { language } = edition
+  if (!language) return edition
+  const dated = series.volumes.flatMap((volume) =>
+    volume.kind === 'main' && volume.number !== undefined && volume.releases?.[language]
+      ? [Number(volume.number)]
+      : [],
+  )
+  return dated.length > 0 ? { ...edition, datedUpTo: Math.max(...dated) } : edition
+}
 
 const todayOf = (edition: Edition) => edition.today ?? new Date().toISOString().slice(0, 10)
 
@@ -39,14 +54,23 @@ export const releaseOf = (volume: Volume, language?: BookLanguage): ReleaseDate 
  *  the catalogue on purpose: they are what a release alert will attach to.
  *
  *  The edition's own date decides when the watch found one — a volume out in
- *  English can be months away in French; else the first date it comes out in
- *  any language; otherwise the year of first publication does. */
+ *  English can be months away in French. A volume past the last one dated in
+ *  the edition is not translated yet: another edition's date never makes it
+ *  out there. Else the first date it comes out in any language; otherwise the
+ *  year of first publication does. */
 export const isForthcoming = (
   volume: Volume,
   currentYear: YearValue,
   edition: Edition = {},
 ): boolean => {
-  const date = releaseOf(volume, edition.language) ?? earliestRelease(volume)
+  const own = releaseOf(volume, edition.language)
+  const untranslated =
+    !own &&
+    edition.datedUpTo !== undefined &&
+    volume.number !== undefined &&
+    Number(volume.number) > edition.datedUpTo
+  if (untranslated) return true
+  const date = own ?? earliestRelease(volume)
   if (date) {
     const today = todayOf(edition)
     return date.length === 10 ? date > today : lastDayOf(date) >= today
@@ -71,7 +95,10 @@ export const publishedVolumes = (
   series: Series,
   currentYear: YearValue,
   edition: Edition = {},
-): Volume[] => series.volumes.filter((volume) => !isForthcoming(volume, currentYear, edition))
+): Volume[] => {
+  const known = editionOf(series, edition)
+  return series.volumes.filter((volume) => !isForthcoming(volume, currentYear, known))
+}
 
 /** The volumes a saga is measured on: the numbered main volumes already out,
  *  and the ones announced to the day in the reader's edition. Related works are
@@ -85,14 +112,15 @@ export const publishedSpineOf = (
   series: Series,
   currentYear: YearValue,
   edition: Edition = {},
-): Volume[] =>
-  series.volumes.filter(
+): Volume[] => {
+  const known = editionOf(series, edition)
+  return series.volumes.filter(
     (volume) =>
       volume.kind === 'main' &&
       volume.number !== undefined &&
-      (!isForthcoming(volume, currentYear, edition) ||
-        announcedToTheDay(volume, currentYear, edition)),
+      (!isForthcoming(volume, currentYear, known) || announcedToTheDay(volume, currentYear, known)),
   )
+}
 
 /** A saga is complete once every volume of its measured spine has been read.
  *  A reader up to date on a running saga has finished it as far as the world

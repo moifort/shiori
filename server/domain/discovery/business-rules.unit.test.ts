@@ -197,6 +197,38 @@ describe('the volumes a saga has out for the reader', () => {
     expect(missingVolumesOf(held(2), watch, undefined, today)).toEqual([1, 3] as VolumeNumber[])
   })
 
+  test('leave out a volume out in English but not yet in French', () => {
+    // System Universe: book 5 came out in English in 2024, the French
+    // translation only follows, and the French watch has not dated it yet.
+    const catalogue = {
+      id: carl,
+      name: 'Dungeon Crawler Carl',
+      author: 'Matt Dinniman',
+      catalogedAt: new Date('2026-01-01'),
+      volumes: [
+        ...[1, 2, 3, 4].map((number) => ({
+          number,
+          title: `Carl ${number}`,
+          kind: 'main',
+          publishedIn: 2022,
+          releases: { en: '2022-01-01', fr: `2025-0${number}-01` },
+        })),
+        {
+          number: 5,
+          title: 'Carl 5',
+          kind: 'main',
+          publishedIn: 2024,
+          releases: { en: '2024-03-01' },
+        },
+      ],
+    } as unknown as Series
+    const watch = watchOf(
+      carl,
+      [1, 2, 3, 4].map((number) => volume(number, `2025-0${number}-01`)),
+    )
+    expect(missingVolumesOf(held(1, 2), watch, catalogue, today)).toEqual([3, 4] as VolumeNumber[])
+  })
+
   test('are none before the saga was ever looked up', () => {
     expect(missingVolumesOf([], undefined, undefined, today)).toEqual([])
   })

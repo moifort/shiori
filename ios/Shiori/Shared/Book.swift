@@ -373,6 +373,7 @@ enum SeriesStripItem: Identifiable, Hashable, Codable, Sendable {
         language: BookLanguage? = nil
     ) -> [SeriesStripItem] {
         guard !spine.isEmpty else { return owned.map { .owned($0) } }
+        let datedUpTo = spine.datedUpTo(in: language)
         var placed = Set<String>()
         var items: [SeriesStripItem] = []
         for volume in spine {
@@ -386,7 +387,7 @@ enum SeriesStripItem: Identifiable, Hashable, Codable, Sendable {
                     key: volume.id,
                     number: volume.number,
                     title: release?.title ?? volume.title,
-                    forthcoming: volume.isForthcoming(asOf: currentYear, in: language),
+                    forthcoming: volume.isForthcoming(asOf: currentYear, in: language, datedUpTo: datedUpTo),
                     date: release?.date,
                     coverURL: release?.coverURL
                 ))
@@ -423,11 +424,16 @@ struct Volume: Identifiable, Hashable, Sendable {
 
     /// A volume not out yet in that edition. The edition's own date decides
     /// when the watch found one — a volume out in English can be months away in
-    /// French; else the first date it comes out in any language — a volume not
+    /// French. A volume past `datedUpTo`, the last one the edition has a date
+    /// for, is not translated yet: another edition's date never makes it out
+    /// there. Else the first date it comes out in any language — a volume not
     /// out anywhere is not out in French either; otherwise the year of first
     /// publication does. Kept in the catalogue on purpose: it is what a release
-    /// alert will attach to.
-    func isForthcoming(asOf year: Int, in language: BookLanguage? = nil) -> Bool {
+    /// alert will attach to. The server's rule.
+    func isForthcoming(asOf year: Int, in language: BookLanguage? = nil, datedUpTo: Int? = nil) -> Bool {
+        if language.flatMap({ release(in: $0) }) == nil, let datedUpTo, let number, number > datedUpTo {
+            return true
+        }
         let earliest = releases.map(\.date).min { ReleaseDateText.lastDay($0) < ReleaseDateText.lastDay($1) }
         if let date = releaseDate(in: language) ?? earliest { return ReleaseDateText.isUpcoming(date) }
         guard let publishedIn else { return false }
@@ -438,8 +444,8 @@ struct Volume: Identifiable, Hashable, Sendable {
     /// or announced to the day in their edition — a reader up to date whose
     /// next volume comes out on October 8th is waiting for it, not done. The
     /// server's rule, so the ring and the saga's state agree.
-    func counts(asOf year: Int, in language: BookLanguage? = nil) -> Bool {
-        guard isForthcoming(asOf: year, in: language) else { return true }
+    func counts(asOf year: Int, in language: BookLanguage? = nil, datedUpTo: Int? = nil) -> Bool {
+        guard isForthcoming(asOf: year, in: language, datedUpTo: datedUpTo) else { return true }
         return releaseDate(in: language)?.count == 10
     }
 
@@ -451,6 +457,16 @@ struct Volume: Identifiable, Hashable, Sendable {
         if let number { return book.series?.volume == number }
         return book.title.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
             == title.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+    }
+}
+
+extension [Volume] {
+    /// The highest volume the edition has a date for: how far its release
+    /// watch dated it. A translation comes out in order, so a volume past it
+    /// is not out in that language yet.
+    func datedUpTo(in language: BookLanguage?) -> Int? {
+        guard let language else { return nil }
+        return filter { $0.release(in: language) != nil }.compactMap(\.number).max()
     }
 }
 

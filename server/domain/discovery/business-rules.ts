@@ -1,5 +1,9 @@
 import type { Book } from '~/domain/book/types'
-import { type FoundVolume as CatalogueVolume, isForthcoming } from '~/domain/series/business-rules'
+import {
+  type FoundVolume as CatalogueVolume,
+  editionOf,
+  isForthcoming,
+} from '~/domain/series/business-rules'
 import { isAudioSeries } from '~/domain/series/primitives'
 import type { Series, SeriesId, VolumeNumber } from '~/domain/series/types'
 import type { FollowedSeries } from '~/domain/series/use-case'
@@ -143,7 +147,9 @@ const candidatesOf = (
   today: string,
 ): Candidate[] => {
   const found = new Map(watch.volumes.map((volume) => [Number(volume.number), volume]))
-  const edition = { language: watch.language, today }
+  const edition = catalogue
+    ? editionOf(catalogue, { language: watch.language, today })
+    : { language: watch.language, today }
   const currentYear = Year(Number(today.slice(0, 4)))
   const candidates = new Map<number, Candidate>()
   for (const entry of catalogue?.volumes ?? []) {

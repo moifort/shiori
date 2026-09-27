@@ -460,7 +460,7 @@ struct SeriesView: View {
         // found it there: the French volume 5 comes out on its own day.
         let release = language.flatMap { volume.release(in: $0) }
         let title = release?.title ?? volume.title
-        let forthcoming = volume.isForthcoming(asOf: currentYear, in: language)
+        let forthcoming = volume.isForthcoming(asOf: currentYear, in: language, datedUpTo: datedUpTo)
         return HStack(alignment: .top, spacing: 12) {
             BookCover(book: Book(
                 id: volume.id,
@@ -483,8 +483,11 @@ struct SeriesView: View {
                         Text(ReleaseDateText.coming(date))
                             .foregroundStyle(.orange)
                             .fontWeight(.medium)
-                    } else if forthcoming, let year = volume.publishedIn {
+                    } else if forthcoming, let year = volume.publishedIn, year > currentYear {
                         Text("à paraître en \(String(year))")
+                    } else if forthcoming {
+                        // Out in another language, not yet in this one.
+                        Text("Pas encore paru")
                     } else if let year = release.map({ String($0.date.prefix(4)) }) ?? volume.publishedIn.map(String.init) {
                         Text(verbatim: year)
                     }
@@ -504,7 +507,7 @@ struct SeriesView: View {
     /// nothing yet when it is not out.
     @ViewBuilder
     private func action(_ volume: Volume, author: String) -> some View {
-        if volume.isForthcoming(asOf: currentYear, in: language) {
+        if volume.isForthcoming(asOf: currentYear, in: language, datedUpTo: datedUpTo) {
             // Orange once the edition has a date, as the date beside it is.
             let dated = language.flatMap { volume.release(in: $0) } != nil
             Image(systemName: "clock")
@@ -523,9 +526,13 @@ struct SeriesView: View {
         }
     }
 
+    /// How far the edition opened was dated: past it, a volume out elsewhere
+    /// is not out in this language yet.
+    private var datedUpTo: Int? { series?.spine.datedUpTo(in: language) }
+
     /// The volume a saga is started with: the first of the spine already out.
     private func firstVolume(of series: BookSeries) -> Volume? {
-        series.spine.first { !$0.isForthcoming(asOf: currentYear, in: language) }
+        series.spine.first { !$0.isForthcoming(asOf: currentYear, in: language, datedUpTo: datedUpTo) }
     }
 
     // MARK: - Dates
@@ -549,7 +556,7 @@ struct SeriesView: View {
     /// and the ring says 4 of 5. A volume announced for a month or a year is
     /// left out: it would make a finished saga look unfinished for years.
     private func progress(_ series: BookSeries) -> (read: Int, published: Int) {
-        let published = series.spine.filter { $0.counts(asOf: currentYear, in: language) }
+        let published = series.spine.filter { $0.counts(asOf: currentYear, in: language, datedUpTo: datedUpTo) }
         // Read once any of its books is, as the server counts it: a part read
         // with the other still ahead, or one format of two, reads the volume.
         let read = published.filter { volume in

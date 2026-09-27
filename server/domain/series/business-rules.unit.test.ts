@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
   cataloguesOf,
+  editionOf,
   followedSagasOf,
   followedStateOf,
   genreOf,
@@ -11,6 +12,7 @@ import {
   matchingFilter,
   progressOf,
   provisionalCatalogueOf,
+  publishedVolumes,
   splitBySpine,
   stateOf,
   withoutDuplicateVolumes,
@@ -485,6 +487,38 @@ describe('release dates per edition', () => {
         language: 'fr',
         today: TODAY,
       }),
+    ).toBe(false)
+  })
+
+  test('a volume past the last one dated in that edition is not out there yet', () => {
+    const translated = [1, 2, 3, 4].map((number) =>
+      volume({
+        title: `V${number}`,
+        number: VolumeNumber(number),
+        publishedIn: Year(2022),
+        releases: { en: ReleaseDate('2022-01-01'), fr: ReleaseDate(`2025-0${number}-01`) },
+      }),
+    )
+    const fifth = volume({
+      title: 'Five',
+      number: VolumeNumber(5),
+      publishedIn: Year(2024),
+      releases: { en: ReleaseDate('2024-03-01') },
+    })
+    const series = saga([...translated, fifth])
+    const fr = editionOf(series, { language: 'fr', today: TODAY })
+    expect(isForthcoming(fifth, THIS_YEAR, fr)).toBe(true)
+    expect(isForthcoming(translated[3], THIS_YEAR, fr)).toBe(false)
+    expect(
+      isForthcoming(fifth, THIS_YEAR, editionOf(series, { language: 'en', today: TODAY })),
+    ).toBe(false)
+    expect(publishedVolumes(series, THIS_YEAR, { language: 'fr', today: TODAY })).toHaveLength(4)
+  })
+
+  test('an edition nobody dated yet falls back on the other editions', () => {
+    const series = saga([announced])
+    expect(
+      isForthcoming(announced, THIS_YEAR, editionOf(series, { language: 'de', today: TODAY })),
     ).toBe(false)
   })
 
