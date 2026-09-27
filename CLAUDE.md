@@ -17,8 +17,11 @@ Never mix languages in a commit message or a comment.
 
 `CHANGELOG.md` is the English source of truth, `CHANGELOG.fr.md` its translation, kept in
 lockstep. Version headings carry the App Store version and its release date
-(`## 1.0 (2026.10.01)`); a plain `## Unreleased` is allowed for pending work and must be
-versioned before a release tag is pushed. Only consequential changes are logged.
+(`## 1.0 (2026.10.01)`). Only consequential changes are logged.
+
+**The changelog is written at release time, never during development.** A feature, a fix or a
+push leaves both files untouched; they are updated only when an actual App Store release is
+cut, from the commits since the previous one, under that release's version and date.
 
 ## Commands
 
@@ -40,7 +43,9 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    `bunx biome check`. CI is not a linter — a lint error must never be discovered from a red
    pipeline.
 2. Run `bunx nitro prepare` before `tsc` if routes changed.
-3. Commit freely, grouping changes as you see fit.
+3. Commit freely, grouping changes as you see fit. Never touch `CHANGELOG.md` /
+   `CHANGELOG.fr.md` in a feature or fix commit: they are written when an App Store release is
+   cut, and only then.
 4. **Never push until the user explicitly says "push".**
 
 ## Architecture

@@ -23,9 +23,6 @@ the release tag is pushed.
 - Every Sunday evening, one notification lists the volumes newly announced in your series.
 - A bell in Discover opens your alerts: the weekly news, each new release, or none at all.
 - Discover opens on your audiobooks when you follow no printed series, and the other way round.
-- Taking a book from a friend, you choose whether you take it as a book or as an audiobook.
-- An invitation shows what you share, the way your friends see you, and a friend you accept
-  appears in Shared straight away.
 - The Authors shelf lists your authors alphabetically, like your contacts, with the alphabet down
   the side to jump to a letter; your favourites first is one tap away.
 - Saga and author pages open faster, whatever the size of your library.
@@ -72,8 +69,6 @@ the release tag is pushed.
   series they hearted.
 - On a friend's page, every book has a "+" to put it on your pile, greyed out when you
   already own it, and its page opens the series, which you can add to yours from there.
-  The "+" asks whether you take it as a book or as an audiobook, whatever your friend's
-  format, and their audio series show the headphones, as yours do.
 - A friend's page ends with "See their series" and "See their books", which open their whole
   library and all their series, laid out like your own Library and Series tabs. Empty
   sections are no longer shown.

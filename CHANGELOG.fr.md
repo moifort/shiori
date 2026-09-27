@@ -18,9 +18,6 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
 - Chaque dimanche soir, une notification regroupe les tomes nouvellement annoncés dans vos séries.
 - Une cloche dans Découvrir ouvre vos alertes : la nouveauté hebdomadaire, chaque nouvelle sortie, ou rien du tout.
 - Découvrir s’ouvre sur vos livres audio quand vous ne suivez aucune série papier, et inversement.
-- En prenant un livre chez un ami, vous choisissez de le prendre en livre ou en livre audio.
-- Une invitation montre ce que vous partagez, tel que vos amis vous voient, et un ami que vous
-  acceptez apparaît aussitôt dans Partagé.
 - L’étagère Auteurs classe vos auteurs par ordre alphabétique, comme vos contacts, avec l’alphabet
   sur le côté pour sauter à une lettre ; vos préférés d’abord restent à un geste.
 - Les fiches des séries et des auteurs s’ouvrent plus vite, quelle que soit la taille de votre bibliothèque.
@@ -68,8 +65,6 @@ Traduction française de `CHANGELOG.md`, qui fait foi. Les deux fichiers avancen
   dernière série ajoutée en favori.
 - Sur la page d’un ami, chaque livre a un « + » pour le mettre dans votre pile, grisé si vous
   l’avez déjà, et sa fiche ouvre la série, que vous pouvez ajouter aux vôtres depuis là.
-  Le « + » vous demande si vous le prenez en livre ou en livre audio, quel que soit le format
-  de votre ami, et ses séries audio affichent le casque, comme les vôtres.
 - La page d’un ami se termine par « Voir ses séries » et « Voir ses livres », qui ouvrent toute
   sa bibliothèque et toutes ses séries, présentées comme vos onglets Bibliothèque et Séries.
   Les sections vides ne s’affichent plus.
