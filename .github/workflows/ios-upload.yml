@@ -271,6 +271,8 @@ jobs:
   # all builds and the app declares no non-exempt encryption, so there is no compliance
   # question to answer. What is left is telling testers what changed: the commit subjects
   # since the previous upload, whose build number is the commit count it was made from.
+  # The external "Public" group only sees the builds added to it, so each one is added and
+  # submitted to Beta App Review once processed.
   notes:
     name: 📝 TestFlight notes
     needs: [check, upload]
@@ -304,3 +306,6 @@ jobs:
 
       - name: Set What to Test and wait for processing
         run: bun scripts/testflight.ts notes "$MARKETING" "$BUILD" "$RUNNER_TEMP/whats-new.txt"
+
+      - name: Share with the external Public group
+        run: bun scripts/testflight.ts share "$MARKETING" "$BUILD"

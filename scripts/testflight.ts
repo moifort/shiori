@@ -1,5 +1,5 @@
 /**
- * The two App Store Connect questions the iOS upload workflow asks, answered from a Linux
+ * The App Store Connect calls the iOS upload workflow makes, answered from a Linux
  * runner with the team API key rather than through fastlane.
  *
  *   bun scripts/testflight.ts check <marketing> <build>
@@ -12,6 +12,12 @@
  *     "What to Test", then waits for processing to finish so the run only turns green once
  *     testers can actually install it.
  *
+ *   bun scripts/testflight.ts share <marketing> <build>
+ *     Adds the processed build to the external "Public" group and submits it to Beta App
+ *     Review. An external group only ever sees the builds added to it, one by one; once a
+ *     version has passed review, Apple usually approves its later builds within minutes.
+ *     Safe to rerun: a build already submitted is left alone.
+ *
  * Reads ASC_KEY_ID, ASC_ISSUER_ID and ASC_KEY_P8 (the .p8 contents) from the environment.
  */
 
@@ -23,6 +29,7 @@ const BUNDLE_ID = 'com.polyforms.shiori.app'
 // in these two. Commit subjects are English, so both carry the same text.
 const LOCALES = ['fr-FR', 'en-US']
 const WHATS_NEW_MAX = 4000
+const EXTERNAL_GROUP = 'Public'
 
 const env = (name: string) => {
   const value = process.env[name]
@@ -136,8 +143,37 @@ const notes = async (marketing: string, build: string, file: string) => {
   process.stdout.write(`Build ${marketing} (${build}) is available in TestFlight\n`)
 }
 
+const share = async (marketing: string, build: string) => {
+  const app = await appId()
+  const found = await findBuild(app, marketing, build)
+  if (!found) throw new Error(`No build ${marketing} (${build}) on App Store Connect`)
+  const groups = await list(`/v1/apps/${app}/betaGroups?fields[betaGroups]=name`)
+  const group = groups.find((item) => item.attributes.name === EXTERNAL_GROUP)
+  if (!group) throw new Error(`No TestFlight group named ${EXTERNAL_GROUP}`)
+
+  await api('POST', `/v1/betaGroups/${group.id}/relationships/builds`, {
+    data: [{ type: 'builds', id: found.id }],
+  })
+  const detail = (await api('GET', `/v1/builds/${found.id}/buildBetaDetail`)).data as Resource
+  const state = detail.attributes.externalBuildState
+  if (state === 'READY_FOR_BETA_SUBMISSION') {
+    await api('POST', '/v1/betaAppReviewSubmissions', {
+      data: {
+        type: 'betaAppReviewSubmissions',
+        relationships: { build: { data: { type: 'builds', id: found.id } } },
+      },
+    })
+    process.stdout.write(`Build ${marketing} (${build}) submitted to Beta App Review\n`)
+  } else {
+    process.stdout.write(`Build ${marketing} (${build}) is already ${state}\n`)
+  }
+}
+
 const [command, marketing, build, file] = process.argv.slice(2)
-if (!marketing || !build) throw new Error('Usage: testflight.ts check|notes <marketing> <build>')
+if (!marketing || !build) {
+  throw new Error('Usage: testflight.ts check|notes|share <marketing> <build>')
+}
 if (command === 'check') await check(marketing, build)
 else if (command === 'notes' && file) await notes(marketing, build, file)
+else if (command === 'share') await share(marketing, build)
 else throw new Error(`Unknown command: ${command}`)

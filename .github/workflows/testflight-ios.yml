@@ -2,8 +2,9 @@ name: TestFlight
 
 # Every night, puts main on the internal TestFlight group ("Nightly" in App Store Connect,
 # which has access to every build), so a change can be tried on a phone without tagging a
-# release that is not one. Nothing is submitted for review. When main has not moved since
-# the last upload, the build already exists and ios-upload.yml stops before any macOS job.
+# release that is not one. The build also goes to the external "Public" group through Beta
+# App Review, never to App Review. When main has not moved since the last upload, the build
+# already exists and ios-upload.yml stops before any macOS job.
 
 on:
   schedule:
