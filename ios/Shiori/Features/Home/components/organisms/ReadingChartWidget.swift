@@ -145,7 +145,10 @@ struct ReadingChartWidget: View {
             .chartYAxis(.hidden)
         case .pages:
             // Numeric months rather than month letters: J, J and M, M would collide
-            // as category labels.
+            // as category labels. Each letter hangs under its own bar as an
+            // annotation rather than as an axis label: on a device the axis
+            // ignores its anchor and sets the letters a few points right of
+            // their columns, where an annotation stays centred like the count.
             Chart(pagesPerMonth) { entry in
                 BarMark(
                     x: .value("Mois", entry.month),
@@ -155,15 +158,13 @@ struct ReadingChartWidget: View {
                 .foregroundStyle(DashboardPalette.pages)
                 .cornerRadius(3)
                 .annotation(position: .top, spacing: 2) { countLabel(entry.pages) }
+                .annotation(position: .bottom, spacing: 4) { monthLabel(entry.month) }
             }
             .chartXScale(domain: 0.5...12.5)
             .chartYScale(domain: 0...scaleMax(pagesPerMonth.map(\.pages)))
-            .chartXAxis {
-                AxisMarks(values: Array(1...12)) { value in
-                    periodLabel(Text(monthLabel(for: value)))
-                }
-            }
+            .chartXAxis(.hidden)
             .chartYAxis(.hidden)
+            .chartPlotStyle(content: roomForMonths)
         case .hours:
             Chart(hoursPerMonth) { entry in
                 BarMark(
@@ -174,16 +175,20 @@ struct ReadingChartWidget: View {
                 .foregroundStyle(DashboardPalette.duration)
                 .cornerRadius(3)
                 .annotation(position: .top, spacing: 2) { countLabel(entry.hours) }
+                .annotation(position: .bottom, spacing: 4) { monthLabel(entry.month) }
             }
             .chartXScale(domain: 0.5...12.5)
             .chartYScale(domain: 0...scaleMax(hoursPerMonth.map(\.hours)))
-            .chartXAxis {
-                AxisMarks(values: Array(1...12)) { value in
-                    periodLabel(Text(monthLabel(for: value)))
-                }
-            }
+            .chartXAxis(.hidden)
             .chartYAxis(.hidden)
+            .chartPlotStyle(content: roomForMonths)
         }
+    }
+
+    /// The month letters hang below the plot, so the plot gives up the strip an
+    /// axis would have taken and the letters stay inside the chart's frame.
+    private func roomForMonths(_ plot: ChartPlotContent) -> some View {
+        plot.padding(.bottom, 16)
     }
 
     /// Its count above each bar, an empty period left bare rather than labelled
@@ -215,9 +220,10 @@ struct ReadingChartWidget: View {
 
     private func yearLabel(for value: AxisValue) -> String { value.as(String.self) ?? "" }
 
-    private func monthLabel(for value: AxisValue) -> String {
-        guard let month = value.as(Int.self) else { return "" }
-        return Calendar.current.veryShortStandaloneMonthSymbols[month - 1]
+    private func monthLabel(_ month: Int) -> some View {
+        Text(Calendar.current.veryShortStandaloneMonthSymbols[month - 1])
+            .font(.caption2)
+            .foregroundStyle(.tertiary)
     }
 
     private var booksThisYear: Int { booksPerYear.first { $0.year == currentYear }?.count ?? 0 }
