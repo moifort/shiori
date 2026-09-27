@@ -72,7 +72,9 @@ struct AuthorRow: View {
     }
 
     /// Every book of theirs as a cover, newest shelved first, with its status
-    /// pinned on as the Series tab pins it.
+    /// pinned on as the Series tab pins it. A foreign edition also carries its
+    /// language in the bottom corner: a translation and its original side by
+    /// side otherwise read as the same book shelved twice.
     private var covers: some View {
         ScrollView(.horizontal) {
             LazyHStack(alignment: .top, spacing: 10) {
@@ -82,11 +84,21 @@ struct AuthorRow: View {
                             ReadingStatusBadge(status: book.status)
                                 .offset(x: 5, y: -5)
                         }
+                        .overlay(alignment: .bottomTrailing) {
+                            if let language = book.language, language.isForeign {
+                                // On the page's own colour, so the tag reads as
+                                // it does beside a title rather than tinted by
+                                // the cover under it.
+                                LanguageTag(language: language)
+                                    .background(.background, in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+                                    .offset(x: 5, y: 5)
+                            }
+                        }
                 }
             }
             // Room for the badges, which overhang the covers' corners and the
             // scroll view would otherwise clip.
-            .padding(.top, 6)
+            .padding(.vertical, 6)
             .padding(.trailing, 6)
         }
         .scrollIndicators(.hidden)

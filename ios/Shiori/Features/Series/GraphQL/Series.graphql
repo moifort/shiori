@@ -103,6 +103,7 @@ fragment FollowedVolume on Book {
   coverUrl
   status
   format
+  language
   series {
     volume
     kind

@@ -282,6 +282,7 @@ extension ShioriGraphQL.FollowedVolume {
             title: title,
             authors: [],
             format: format.asDomain,
+            language: language?.asDomain,
             series: series.map {
                 SeriesMembership(id: "", name: "", volume: $0.volume, kind: $0.kind.asDomain)
             },
