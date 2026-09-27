@@ -97,8 +97,18 @@ struct ProfileSettingsView: View {
         deleteError = nil
         do {
             try await SettingsAPI.deleteAccount()
-            // The server has deleted the Firebase user; sign out locally to drop
-            // the now-invalid session and route back to the login screen.
+        } catch {
+            // The server may have finished and only its answer been lost — a
+            // timeout, the app sent to the background. If the account is gone,
+            // the deletion happened: sign out as if the answer had arrived.
+            if await AuthSession.dropSessionIfAccountIsGone() { return }
+            deleteError = reportError(error)
+            isDeletingAccount = false
+            return
+        }
+        // Everything is erased, the Firebase user last: drop the now-invalid
+        // session and route back to the login screen.
+        do {
             try authSession.signOut()
         } catch {
             deleteError = reportError(error)

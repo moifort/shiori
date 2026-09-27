@@ -31,8 +31,13 @@ final class AuthSession {
         report(user)
         handle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
             Task { @MainActor in
-                self?.user = user
-                self?.report(user)
+                guard let self else { return }
+                // However the session ended — the sign-out button, the account
+                // deleted, or a dead session dropped by the API client — the
+                // next reader starts clean.
+                if self.user != nil, user == nil { self.forgetAccount() }
+                self.user = user
+                self.report(user)
             }
         }
     }
@@ -58,11 +63,35 @@ final class AuthSession {
 
     func signOut() throws {
         try Auth.auth().signOut()
+    }
+
+    /// Whoever signs in next must not open on this account's library, nor be
+    /// handed the page the last reader shared.
+    private func forgetAccount() {
         appleGivenName = nil
-        // Whoever signs in next must not open on this account's library, nor be
-        // handed the page the last reader shared.
         SnapshotCaches.clear()
         CoverImages.clear()
         SharedIntake.clear()
+    }
+
+    /// Signs out when Firebase no longer knows the signed-in account: deleted,
+    /// or disabled. The ID token outlives the account by up to an hour, so a
+    /// deletion whose answer never reached the phone would otherwise leave it
+    /// on a session every request is refused for. Returns whether it did.
+    @discardableResult
+    nonisolated static func dropSessionIfAccountIsGone() async -> Bool {
+        guard let user = Auth.auth().currentUser else { return false }
+        do {
+            try await user.reload()
+            return false
+        } catch {
+            let nsError = error as NSError
+            guard nsError.domain == AuthErrorDomain,
+                  let code = AuthErrorCode(rawValue: nsError.code),
+                  [.userNotFound, .userDisabled, .userTokenExpired, .invalidUserToken].contains(code)
+            else { return false }
+            await MainActor.run { _ = try? Auth.auth().signOut() }
+            return true
+        }
     }
 }
