@@ -40,6 +40,11 @@ struct ShioriApp: App {
             options.tracesSampleRate = 0.1
             options.enableAutoSessionTracking = true
             options.enableTimeToFullDisplayTracing = true
+            // A watchdog termination is only inferred on the next launch, with
+            // no stack: the one on September 27th 2026 came with nothing to
+            // act on. MetricKit hands over the system's own diagnostics — the
+            // hangs, and the kills with the stack they happened on.
+            options.enableMetricKit = true
             // Attaches the trace headers to our GraphQL calls, and only to those,
             // so an error here and the backend error that caused it land in one
             // trace instead of two unrelated issues. Sampling does not affect it:
