@@ -24,6 +24,11 @@ final class AppSupportGate {
     }
 
     func check() async {
+        // A Debug build, from Xcode or scripts/install-device.sh, carries build 1:
+        // the first raised floor would lock the developer out of their own app.
+        #if DEBUG
+        return
+        #else
         guard let build = Self.currentBuild else { return }
         let url = APIClient.shared.baseURL.appendingPathComponent("app-config")
         // Bypass URLCache: a stale floor would defeat the foreground re-check.
@@ -34,6 +39,7 @@ final class AppSupportGate {
         state = build < config.minimumSupportedIOSBuild
             ? .updateRequired(appStoreURL: config.appStoreUrl)
             : .supported
+        #endif
     }
 
     /// `CFBundleVersion` is `git rev-list --count HEAD` at release time, so a
