@@ -116,6 +116,7 @@ export const analyticsViewOf = (input: {
     id: book.id,
     title: book.title,
     authors: book.authors,
+    format: book.format,
     coverPath: book.coverPath,
     publishedCoverUrl: book.publishedCoverUrl,
     rating: ratingOf(book),

@@ -51,6 +51,7 @@ private extension ShioriGraphQL.DashboardBookCard {
             id: id,
             title: title,
             authors: authors,
+            format: format.asDomain,
             listeningProgress: listeningProgress.map { Int($0) },
             coverURL: coverUrl.flatMap(URL.init(string:)),
             status: status,

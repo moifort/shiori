@@ -723,6 +723,7 @@ type DashboardBook {
   """Null without a photo or a published cover; draw the placeholder."""
   coverUrl: CoverUrl
   finishedAt: DateTime
+  format: BookFormat!
   id: BookId!
 
   """

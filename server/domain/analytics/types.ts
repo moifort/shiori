@@ -30,6 +30,8 @@ export type BookCard = {
   id: BookId
   title: BookTitle
   authors: AuthorName[]
+  /** A recording's cover carries the headphones, on the dashboard as anywhere. */
+  format: BookFormat
   coverPath?: ObjectPath
   publishedCoverUrl?: CoverUrl
   rating?: StarRating

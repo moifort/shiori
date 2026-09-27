@@ -55,6 +55,7 @@ fragment DashboardBookCard on DashboardBook {
   id
   title
   authors
+  format
   coverUrl
   rating
   listeningProgress

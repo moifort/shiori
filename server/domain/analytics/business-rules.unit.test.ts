@@ -697,6 +697,23 @@ describe('building the view', () => {
 
     expect(view.reading[0]?.rating).toBe(StarRating(5))
   })
+
+  test('tells a recording from a book on every card, so its cover carries the headphones', () => {
+    const view = analyticsViewOf({
+      userId: reader,
+      timeZone: paris,
+      now: new Date('2026-09-15T10:00:00.000Z'),
+      catalogues: [],
+      opinions: [],
+      books: [
+        book('heard', { status: 'reading', format: 'audiobook' }),
+        book('done', { status: 'read', format: 'audiobook', finishedAt: new Date('2026-09-10') }),
+      ],
+    })
+
+    expect(view.reading[0]?.format).toBe('audiobook')
+    expect(view.lastFinished?.format).toBe('audiobook')
+  })
 })
 
 describe('the reading challenge', () => {

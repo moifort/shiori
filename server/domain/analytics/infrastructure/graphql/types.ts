@@ -8,7 +8,7 @@ import type {
   Trend,
   YearCount,
 } from '~/domain/analytics/types'
-import { GenreEnum } from '~/domain/book/infrastructure/graphql/enums'
+import { BookFormatEnum, GenreEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { isAudioSeries } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
 import { Percentage } from '~/domain/shared/primitives'
@@ -19,6 +19,7 @@ const DashboardBookType = builder.objectRef<DashboardBook>('DashboardBook').impl
     id: t.field({ type: 'BookId', resolve: (book) => book.id }),
     title: t.field({ type: 'BookTitle', resolve: (book) => book.title }),
     authors: t.field({ type: ['AuthorName'], resolve: (book) => book.authors }),
+    format: t.field({ type: BookFormatEnum, resolve: (book) => book.format }),
     coverUrl: t.field({
       type: 'CoverUrl',
       nullable: true,
