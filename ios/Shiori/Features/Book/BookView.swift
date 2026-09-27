@@ -233,11 +233,11 @@ struct BookView: View {
         // Attached to the menu, as in Vinarium: a dialog hung on the sheet's root
         // would anchor to the whole screen instead of the button that asked.
         .confirmationDialog(
-            "Retirer ce livre de votre bibliothèque ?",
+            "Supprimer ce livre ?",
             isPresented: $confirmDelete,
             titleVisibility: .visible
         ) {
-            Button("Retirer", role: .destructive) {
+            Button("Supprimer", role: .destructive) {
                 Task {
                     if await viewModel.delete() {
                         onDeleted(bookId)
