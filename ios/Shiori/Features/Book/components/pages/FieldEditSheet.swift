@@ -31,7 +31,8 @@ enum BookField: String, Identifiable {
 /// The small prompt behind a tapped row of the book sheet, as the rating has
 /// one: the value already there, ready to correct, and a check to save it. A
 /// date opens straight on the calendar, and the day tapped is the answer, as a
-/// star is for the rating.
+/// star is for the rating: turning the months answers nothing, and the cross
+/// leaves without a change.
 ///
 /// The same rules as the edit form hold: a text emptied is cleared, a number
 /// or an ISBN the server would refuse is said before the round trip, and a
@@ -72,11 +73,11 @@ struct FieldEditSheet: View {
         NavigationStack {
             VStack(spacing: 12) {
                 if field.isDate {
-                    DatePicker("", selection: $date, in: dateRange, displayedComponents: .date)
-                        .datePickerStyle(.graphical)
-                        .labelsHidden()
-                        .accessibilityIdentifier("field-edit-date")
-                        .onChange(of: date) { Task { await save() } }
+                    CalendarDayPicker(date: date, range: dateRange) { day in
+                        date = day
+                        Task { await save() }
+                    }
+                    .accessibilityIdentifier("field-edit-date")
                 } else {
                     TextField(field.title, text: $text)
                         .textFieldStyle(.roundedBorder)
@@ -186,6 +187,67 @@ struct FieldEditSheet: View {
             errorMessage = failure
         } else {
             dismiss()
+        }
+    }
+}
+
+/// The calendar of Reminders: turning to another month or year only moves the
+/// page, and only a day tapped answers. SwiftUI's graphical `DatePicker` moves
+/// the selection along with the month, which a sheet saving on change took for
+/// an answer.
+private struct CalendarDayPicker: UIViewRepresentable {
+    let date: Date
+    let range: ClosedRange<Date>
+    let onPick: (Date) -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(picker: self)
+    }
+
+    func makeUIView(context: Context) -> UICalendarView {
+        let calendarView = UICalendarView()
+        calendarView.calendar = .current
+        calendarView.availableDateRange = DateInterval(start: range.lowerBound, end: range.upperBound)
+        let selection = UICalendarSelectionSingleDate(delegate: context.coordinator)
+        selection.selectedDate = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        calendarView.selectionBehavior = selection
+        calendarView.visibleDateComponents = Calendar.current.dateComponents([.year, .month], from: date)
+        return calendarView
+    }
+
+    func updateUIView(_ calendarView: UICalendarView, context: Context) {
+        context.coordinator.picker = self
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UICalendarView, context: Context) -> CGSize? {
+        let width = proposal.width ?? uiView.intrinsicContentSize.width
+        let fitting = uiView.systemLayoutSizeFitting(
+            CGSize(width: width, height: UIView.layoutFittingCompressedSize.height),
+            withHorizontalFittingPriority: .required,
+            verticalFittingPriority: .fittingSizeLevel
+        )
+        return CGSize(width: width, height: fitting.height)
+    }
+
+    final class Coordinator: NSObject, UICalendarSelectionSingleDateDelegate {
+        var picker: CalendarDayPicker
+
+        init(picker: CalendarDayPicker) {
+            self.picker = picker
+        }
+
+        /// The day tapped, at the time of day already stored, kept within the
+        /// range a boundary day could otherwise overstep by a few hours.
+        func dateSelection(_ selection: UICalendarSelectionSingleDate, didSelectDate dateComponents: DateComponents?) {
+            guard let dateComponents else { return }
+            let calendar = Calendar.current
+            let time = calendar.dateComponents([.hour, .minute, .second], from: picker.date)
+            var components = dateComponents
+            components.hour = time.hour
+            components.minute = time.minute
+            components.second = time.second
+            guard let day = calendar.date(from: components) else { return }
+            picker.onPick(min(max(day, picker.range.lowerBound), picker.range.upperBound))
         }
     }
 }
