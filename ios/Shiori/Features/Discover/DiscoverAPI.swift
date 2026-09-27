@@ -60,24 +60,6 @@ struct SagaDiscovery: Identifiable, Codable, Sendable {
     var missing: [Int] = []
 
     var id: String { series.id }
-
-    /// The row's cover strip, narrowed to what matters here: the last volume
-    /// the reader holds, to say where they stand; the next one announced, with
-    /// its date.
-    var strip: [SeriesStripItem] {
-        let held = series.volumes.last.map { [SeriesStripItem.owned($0)] } ?? []
-        let announced = releases.next.map { volume in
-            [SeriesStripItem.missing(
-                key: "\(series.id)-\(volume.number)",
-                number: volume.number,
-                title: volume.title,
-                forthcoming: true,
-                date: volume.date,
-                coverURL: volume.coverURL
-            )]
-        } ?? []
-        return held + announced
-    }
 }
 
 /// The tab as last shown, one list per format.
@@ -153,7 +135,7 @@ private extension DiscoveryPage {
                     series: SeriesAPI.followedRow(
                         row.series.fragments.followedSeriesRow,
                         volumes: row.series.volumes.map(\.fragments.followedVolume),
-                        spine: nil
+                        spine: row.series.catalogue?.spine.map(\.fragments.volumeEntry)
                     ),
                     releases: SagaReleases(
                         watched: true,

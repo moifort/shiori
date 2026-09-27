@@ -7,8 +7,7 @@ import SwiftUI
 ///
 /// Laid out as the Library tab is, so nothing here has to be learnt twice: the
 /// capsule above the tab bar, for now "Séries" alone; the Series tab's rows,
-/// their strip narrowed to the last volume held and the next one with its
-/// date; a tap opens the saga screen as a sheet. Read through one format at a
+/// every cover of their strip; a tap opens the saga screen as a sheet. Read through one format at a
 /// time — the saga read or the saga heard — picked in the toolbar and kept
 /// between visits.
 ///
@@ -115,13 +114,11 @@ struct DiscoverView: View {
         .refreshable { await viewModel.load(format) }
     }
 
-    /// A saga's row: the Series tab's own, its strip narrowed to what matters
-    /// here, and underneath the next volume and when it comes out.
+    /// A saga's row: the Series tab's own, every cover of its strip, and
+    /// underneath the next volume and when it comes out.
     private func row(_ row: SagaDiscovery) -> some View {
-        var entry = row.series
-        entry.strip = row.strip
-        return VStack(alignment: .leading, spacing: 8) {
-            SeriesRow(entry: entry)
+        VStack(alignment: .leading, spacing: 8) {
+            SeriesRow(entry: row.series)
                 .contentShape(Rectangle())
                 // A tap rather than a button: a button would claim the drag
                 // that scrolls the cover strip.

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import { graphql } from 'graphql'
 import type { UserId } from '~/domain/shared/types'
-import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
+import { fakeDb, resetFakeFirestore, startFakeRequest } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
 mock.module('~/system/object-store', () => ({
@@ -79,6 +79,33 @@ describe('the Découvrir tab', () => {
       '{ discovery(format: AUDIOBOOK) { unwatched sagas { series { id } } } }',
     )
     expect(result.data?.discovery).toEqual({ unwatched: 0, sagas: [] })
+  })
+
+  // The row draws every cover the Series tab draws: the catalogue's spine
+  // comes with it.
+  test('carries the catalogue spine the Series tab draws its strip from', async () => {
+    fake.seed('series', carl, {
+      id: carl,
+      name: 'Dungeon Crawler Carl',
+      author: 'Matt Dinniman',
+      catalogedAt: new Date(),
+      volumes: [1, 2, 3, 4].map((number) => ({
+        number,
+        title: `Carl ${number}`,
+        kind: 'main',
+        publishedIn: number === 4 ? 2099 : 2020,
+      })),
+    })
+    startFakeRequest()
+
+    const result = await run(
+      '{ discovery(format: BOOK) { sagas { series { catalogue { spine { number } } } } } }',
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.discovery).toEqual({
+      sagas: [{ series: { catalogue: { spine: [1, 2, 3, 4].map((number) => ({ number })) } } }],
+    })
   })
 })
 
