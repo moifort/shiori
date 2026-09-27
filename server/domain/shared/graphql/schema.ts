@@ -92,6 +92,14 @@ import '~/domain/discovery/infrastructure/graphql/types'
 import '~/domain/discovery/infrastructure/graphql/queries'
 import '~/domain/discovery/infrastructure/graphql/mutations'
 
+// Awaited editions (a book awaited in the app's language, in print or recorded).
+// After discovery, whose ReleaseFormat enum it borrows, and before friendship's
+// fields that await a friend's book — registered above, but only resolved once
+// the schema is built.
+import '~/domain/awaited-edition/infrastructure/graphql/types'
+import '~/domain/awaited-edition/infrastructure/graphql/queries'
+import '~/domain/awaited-edition/infrastructure/graphql/mutations'
+
 // Changelog (application release notes)
 import '~/domain/changelog/infrastructure/graphql/types'
 import '~/domain/changelog/infrastructure/graphql/queries'

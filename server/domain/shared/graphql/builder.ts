@@ -4,6 +4,7 @@ import type { H3Event } from 'h3'
 import type { TimeZone } from '~/domain/analytics/types'
 import type { AudibleAsin } from '~/domain/audible/types'
 import type { AuthorBiography, AuthorKey, Nationality, PortraitUrl } from '~/domain/author/types'
+import type { AwaitedEditionId } from '~/domain/awaited-edition/types'
 import type {
   BookId,
   CoverUrl,
@@ -88,6 +89,7 @@ export const builder = new SchemaBuilder<{
     TimeZone: { Input: TimeZone; Output: TimeZone }
     AudibleAsin: { Input: AudibleAsin; Output: AudibleAsin }
     DeviceToken: { Input: DeviceToken; Output: DeviceToken }
+    AwaitedEditionId: { Input: AwaitedEditionId; Output: AwaitedEditionId }
   }
 }>({
   defaultFieldNullability: false,

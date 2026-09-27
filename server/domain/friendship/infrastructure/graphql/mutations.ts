@@ -1,13 +1,20 @@
 import { match } from 'ts-pattern'
+import {
+  AWAIT_DESCRIPTION,
+  awaitedOrError,
+} from '~/domain/awaited-edition/infrastructure/graphql/mutations'
+import { AwaitedEditionType } from '~/domain/awaited-edition/infrastructure/graphql/types'
 import { BookFormatEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
+import { ReleaseFormatEnum } from '~/domain/discovery/infrastructure/graphql/types'
 import { FriendshipCommand } from '~/domain/friendship/command'
 import { CopiedStatusEnum } from '~/domain/friendship/infrastructure/graphql/enums'
 import { FriendInvitationType, FriendType } from '~/domain/friendship/infrastructure/graphql/types'
 import { FriendshipUseCase } from '~/domain/friendship/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
 import { badUserInput, domainError, notFound } from '~/domain/shared/graphql/errors'
+import { languageOf } from '~/domain/shared/language'
 
 builder.mutationFields((t) => ({
   inviteFriend: t.field({
@@ -63,6 +70,29 @@ builder.mutationFields((t) => ({
     args: { userId: t.arg({ type: 'UserId', required: true }) },
     resolve: async (_root, args, context) =>
       (await FriendshipCommand.remove(context.userId, args.userId)) === 'removed',
+  }),
+
+  awaitFriendBookEdition: t.field({
+    type: AwaitedEditionType,
+    description:
+      "Await a friend's book in the language of the app, in one format: translated " +
+      `into print, or recorded. ${AWAIT_DESCRIPTION} \`NOT_FOUND\` for a stranger, a ` +
+      'missing book or one marked "do not share".',
+    args: {
+      userId: t.arg({ type: 'UserId', required: true, description: 'The friend' }),
+      bookId: t.arg({ type: 'BookId', required: true }),
+      format: t.arg({ type: ReleaseFormatEnum, required: true }),
+    },
+    resolve: async (_root, args, context) =>
+      awaitedOrError(
+        await FriendshipUseCase.awaitEdition(
+          context.userId,
+          args.userId,
+          args.bookId,
+          args.format,
+          languageOf(context.event),
+        ),
+      ),
   }),
 
   addFriendBook: t.field({

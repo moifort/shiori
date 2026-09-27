@@ -1,3 +1,4 @@
+import { EditionOfferType } from '~/domain/awaited-edition/infrastructure/graphql/types'
 import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { AudioAvailabilityEnum } from '~/domain/friendship/infrastructure/graphql/enums'
 import {
@@ -12,6 +13,7 @@ import {
 import { FriendshipUseCase } from '~/domain/friendship/use-case'
 import { SeriesStateEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { builder } from '~/domain/shared/graphql/builder'
+import { languageOf } from '~/domain/shared/language'
 
 builder.queryFields((t) => ({
   friends: t.field({
@@ -103,6 +105,29 @@ builder.queryFields((t) => ({
     },
     resolve: (_root, args, context) =>
       FriendshipUseCase.audio(context.userId, args.userId, args.bookId),
+  }),
+
+  friendBookEditionOffer: t.field({
+    type: EditionOfferType,
+    nullable: true,
+    description:
+      "What the page of a friend's book offers to await in the app's language: its " +
+      'translation or its recording — and, for a printed book already in that ' +
+      'language, its recording once Audible is known not to sell it. Asks Audible for ' +
+      'that last case, so a page asks it only when it opens.\n\n' +
+      'Null for a stranger, a book that does not exist and a book marked "do not ' +
+      'share" alike.',
+    args: {
+      userId: t.arg({ type: 'UserId', required: true, description: 'The friend' }),
+      bookId: t.arg({ type: 'BookId', required: true }),
+    },
+    resolve: (_root, args, context) =>
+      FriendshipUseCase.editionOffer(
+        context.userId,
+        args.userId,
+        args.bookId,
+        languageOf(context.event),
+      ),
   }),
 
   friendLibraryPage: t.field({

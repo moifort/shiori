@@ -3,6 +3,7 @@ import { ZodError } from 'zod'
 import { TimeZone } from '~/domain/analytics/primitives'
 import { AudibleAsin } from '~/domain/audible/primitives'
 import { AuthorBiography, AuthorKey, Nationality, PortraitUrl } from '~/domain/author/primitives'
+import { AwaitedEditionId } from '~/domain/awaited-edition/primitives'
 import {
   BookId,
   CoverUrl,
@@ -67,6 +68,14 @@ builder.scalarType('BookId', {
     'unrelated ids. Example: "f9b1c2d0-4e3a-4c21-9f77-1a2b3c4d5e6f".',
   serialize: (value) => value as string,
   parseValue: validatedParse('BookId', BookId),
+})
+
+builder.scalarType('AwaitedEditionId', {
+  description:
+    'Identifier of one edition a reader awaits: the reader, the book, the format and ' +
+    'the language, joined. Opaque to the client.',
+  serialize: (value) => value as string,
+  parseValue: validatedParse('AwaitedEditionId', AwaitedEditionId),
 })
 
 builder.scalarType('BookTitle', {

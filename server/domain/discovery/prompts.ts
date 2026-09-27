@@ -5,7 +5,7 @@ import { formatOf } from './business-rules'
 import type { SagaWatch, WatchedAuthor } from './types'
 
 /** Written into the prompt so the volumes come back in the language asked. */
-const LANGUAGE_NAMES: Record<BookLanguage, string> = {
+export const LANGUAGE_NAMES: Record<BookLanguage, string> = {
   fr: 'français',
   en: 'anglais',
   es: 'espagnol',

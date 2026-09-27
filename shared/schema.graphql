@@ -408,6 +408,69 @@ type AuthorWork {
 }
 
 """
+A book the reader waits to see come out in the language of their app, in one format: translated into print, or recorded. The web is searched for it once a week, and an alert goes out the day it comes out. It stops being awaited on its own once the library holds it — the Audible sync bringing it in, or the reader adding it.
+"""
+type AwaitedEdition {
+  authors: [AuthorName!]!
+
+  """The book it was awaited from, on its owner’s shelf."""
+  bookId: BookId!
+
+  """
+  The edition’s own cover once found, else the cover of the book it was awaited from.
+  """
+  coverUrl: String
+
+  """
+  When it comes out or came out, as precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Null until found, and for an edition announced with no date.
+  """
+  date: String
+  format: ReleaseFormat!
+  id: AwaitedEditionId!
+
+  """The language it is awaited in: the app’s when the reader asked."""
+  language: BookLanguage!
+  originalLanguage: BookLanguage!
+
+  """The title of the book it was awaited from."""
+  originalTitle: BookTitle!
+
+  """Whose shelf that book is on: the reader’s, or a friend’s."""
+  ownerId: UserId!
+  state: AwaitedState!
+
+  """
+  Where to get it: the recording’s page on the reader’s Audible store, which the Audible app opens on the title, or the printed edition’s on Amazon. Null until a store confirmed it.
+  """
+  storeUrl: String
+
+  """Its title in the language awaited once found, else the original’s."""
+  title: BookTitle!
+
+  """Whether the web was ever searched for it."""
+  watched: Boolean!
+}
+
+"""
+Identifier of one edition a reader awaits: the reader, the book, the format and the language, joined. Opaque to the client.
+"""
+scalar AwaitedEditionId
+
+"""Where an edition the reader awaits stands."""
+enum AwaitedState {
+  """Found, but not out: announced for a date, or for none yet."""
+  ANNOUNCED
+
+  """
+  Out: a printed edition past its date, a recording once Audible confirmed it.
+  """
+  AVAILABLE
+
+  """The web has found nothing of it yet."""
+  UNANNOUNCED
+}
+
+"""
 A book as one reader holds it.
 
 Private and owned by exactly one reader: two people who scan the same novel keep two independent records. Public facts (title, synopsis, series) and personal judgment (status, rating, note) sit side by side, because the record belongs to the reader rather than to the world.
@@ -869,6 +932,19 @@ type Discovery {
   How many sagas and authors the reader follows in that format were never looked up. Above zero, `lookUpDiscovery` looks them up at once rather than wait for the hourly pass.
   """
   unwatched: Int!
+}
+
+"""
+What a book’s page offers to await: its edition in the language of the app, in each format it may be awaited in, and the ones the reader awaits already.
+"""
+type EditionOffer {
+  """The editions of this book the reader awaits already."""
+  awaited: [AwaitedEdition!]!
+
+  """
+  The formats it may be awaited in. None for a book already in the app’s language; a recording only for a reader whose library holds one — and, for a printed book in the app’s language, only once Audible is known not to sell it.
+  """
+  formats: [ReleaseFormat!]!
 }
 
 """
@@ -1636,6 +1712,22 @@ type Mutation {
   ): Book!
 
   """
+  Await one of the reader’s own books in the language of the app, in one format: translated into print, or recorded. Look it up on the web at once when nobody did — one grounded call, about ten seconds — so the answer says whether it is announced or already out. Awaiting it twice answers the first. Fails with `BAD_USER_INPUT` for a format the book’s page does not offer, and `TOO_MANY_AWAITED` past a hundred editions. `NOT_FOUND` for a book that is not theirs.
+  """
+  awaitBookEdition(bookId: BookId!, format: ReleaseFormat!): AwaitedEdition!
+
+  """
+  Await a friend's book in the language of the app, in one format: translated into print, or recorded. Look it up on the web at once when nobody did — one grounded call, about ten seconds — so the answer says whether it is announced or already out. Awaiting it twice answers the first. Fails with `BAD_USER_INPUT` for a format the book’s page does not offer, and `TOO_MANY_AWAITED` past a hundred editions. `NOT_FOUND` for a stranger, a missing book or one marked "do not share".
+  """
+  awaitFriendBookEdition(
+    bookId: BookId!
+    format: ReleaseFormat!
+
+    """The friend"""
+    userId: UserId!
+  ): AwaitedEdition!
+
+  """
   Register the device with the authorization code the web view caught, and link the account.
   
   The credentials are sealed before they reach storage and never leave the server. Fails with `AUDIBLE_NO_PENDING_LOGIN` when no sign-in was started, `AUDIBLE_LOGIN_EXPIRED` past the thirty-minute window — start over in both cases — and `AUDIBLE_UNAVAILABLE` when Amazon refuses the registration.
@@ -1932,6 +2024,11 @@ type Mutation {
   ): AudibleLogin!
 
   """
+  Stop awaiting an edition: no more searches for the reader, no alert. False when the reader awaits nothing by that id.
+  """
+  stopAwaitingEdition(id: AwaitedEditionId!): Boolean!
+
+  """
   Run a pass over the Audible library right now, without waiting for the night.
   
   The same pass the nightly job runs: titles bought since the last one are catalogued, and books already catalogued follow the listening — finished on Audible becomes `READ` here, with the date Audible reports rather than today's. Ratings, notes and hidden books are never touched.
@@ -2126,8 +2223,18 @@ type Query {
   """
   authorPage(key: AuthorKey!): AuthorPage
 
+  """
+  The editions the reader awaits in one format: the ones out first, the newest first; then the ones announced, the soonest first; then the ones not announced, the latest awaited first. One the library now holds is no longer awaited and is left out.
+  """
+  awaitedEditions(format: ReleaseFormat!): [AwaitedEdition!]!
+
   """One book of the reader library. Null when they do not own it."""
   book(id: BookId!): Book
+
+  """
+  What the page of one of the reader’s own books offers to await in the app’s language. Null for a book that is not theirs.
+  """
+  bookEditionOffer(bookId: BookId!): EditionOffer
 
   """
   Application release notes, one entry per version, most recent first.
@@ -2199,6 +2306,18 @@ type Query {
     """The friend"""
     userId: UserId!
   ): AudioAvailability
+
+  """
+  What the page of a friend's book offers to await in the app's language: its translation or its recording — and, for a printed book already in that language, its recording once Audible is known not to sell it. Asks Audible for that last case, so a page asks it only when it opens.
+  
+  Null for a stranger, a book that does not exist and a book marked "do not share" alike.
+  """
+  friendBookEditionOffer(
+    bookId: BookId!
+
+    """The friend"""
+    userId: UserId!
+  ): EditionOffer
 
   """
   What every friend hearted in the last thirty days, sagas and books mixed, the newest heart first, twelve at most: the news the dashboard shows from the people the reader shares with.

@@ -106,6 +106,28 @@ export namespace DiscoveryUseCase {
   ): Promise<AudibleRecording | 'unknown' | 'unreachable'> =>
     audibleEditionOf(title, author, language)
 
+  /** A recording the web named, kept as the release watches keep theirs: its
+   *  ASIN only once Audible's catalogue answers for it, with Audible's release
+   *  day and cover. */
+  export const confirmedRecording = <
+    Found extends Pick<FoundVolume, 'asin' | 'title' | 'date' | 'coverUrl'>,
+  >(
+    found: Found,
+    known: Found | undefined,
+    language: BookLanguage,
+  ): Promise<Found> => confirmedOnAudible(found, known, language)
+
+  /** A printed edition the web named, kept as the release watches keep theirs:
+   *  dated as Amazon dates its ISBN, an ISBN Amazon does not know dropped, and
+   *  given its publisher's cover. */
+  export const confirmedPrinting = async <
+    Found extends Pick<FoundVolume, 'asin' | 'isbn13' | 'title' | 'date' | 'coverUrl'>,
+  >(
+    found: Found,
+    known: Found | undefined,
+    language: BookLanguage,
+  ): Promise<Found> => withCover(await confirmedOnAmazon(withoutAsin(found), language), known)
+
   /** The tab as the reader opens it: every saga they follow in that format
    *  with a volume announced they do not hold or one just out, and every
    *  author they hold in that format with a work announced or just out outside

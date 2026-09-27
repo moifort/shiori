@@ -1,6 +1,8 @@
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import { AuthorQuery } from '~/domain/author/query'
 import type { AuthorKey, PortraitUrl } from '~/domain/author/types'
+import type { EditionOffer } from '~/domain/awaited-edition/types'
+import { AwaitedEditionUseCase, type AwaitOutcome } from '~/domain/awaited-edition/use-case'
 import {
   seriesRatingsOf,
   shelfDateOf,
@@ -22,6 +24,7 @@ import type {
 } from '~/domain/book/types'
 import { READING_STATUSES } from '~/domain/book/types'
 import { BookUseCase } from '~/domain/book/use-case'
+import type { ReleaseFormat } from '~/domain/discovery/types'
 import { DiscoveryUseCase } from '~/domain/discovery/use-case'
 import {
   type FriendPick,
@@ -40,6 +43,7 @@ import type { Friend } from '~/domain/friendship/types'
 import { type FollowedSaga, followedSagasOf, genreOf } from '~/domain/series/business-rules'
 import type { SeriesId, SeriesName, SeriesState } from '~/domain/series/types'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
+import type { Language } from '~/domain/shared/language'
 import { Count, PersonName } from '~/domain/shared/primitives'
 import { lovedFirst, lovedRankOf } from '~/domain/shared/rating'
 import type { AuthorName, Count as CountValue, UserId } from '~/domain/shared/types'
@@ -478,6 +482,44 @@ export namespace FriendshipUseCase {
         : 'available'
   }
 
+  /** What the page of a friend's book offers to await: its edition in the
+   *  app's language, translated or recorded — and, for a printed book already
+   *  in that language, its recording once Audible is known not to sell it.
+   *  Null for a stranger's book, a book that does not exist and a book marked
+   *  "do not share" alike. */
+  export const editionOffer = async (
+    userId: UserId,
+    friendId: UserId,
+    bookId: BookId,
+    appLanguage: Language,
+  ): Promise<EditionOffer | null> => {
+    const source = await book(userId, friendId, bookId)
+    if (!source) return null
+    const unrecorded = await isUnrecorded(source, appLanguage)
+    return AwaitedEditionUseCase.offerFor(userId, source, friendId, appLanguage, unrecorded)
+  }
+
+  /** Await a friend's book in the app's language, in one format. */
+  export const awaitEdition = async (
+    userId: UserId,
+    friendId: UserId,
+    bookId: BookId,
+    format: ReleaseFormat,
+    appLanguage: Language,
+  ): Promise<AwaitOutcome> => {
+    const source = await book(userId, friendId, bookId)
+    if (!source) return 'not-found'
+    const unrecorded = format === 'audiobook' && (await isUnrecorded(source, appLanguage))
+    return AwaitedEditionUseCase.awaitBook(
+      userId,
+      source,
+      friendId,
+      format,
+      appLanguage,
+      unrecorded,
+    )
+  }
+
   /** Put a friend's book on the reader's own shelf.
    *
    *  Only the friend and the book are named: the record is re-read here and
@@ -680,3 +722,19 @@ const marked = (shelf: FriendProfile, inLibrary: (book: FriendBook) => boolean):
 
 const ownsStory = (owned: ReadonlySet<string>, book: Pick<Book, 'title' | 'authors'>): boolean =>
   owned.has(shelfKeyOf(book.title, book.authors[0]))
+
+/** Whether a printed book in the app's language is one Audible does not sell
+ *  in that language: the one case a book in the reader's own language may be
+ *  awaited, as a recording. */
+const isUnrecorded = async (
+  source: Pick<FriendBook, 'format' | 'language' | 'title' | 'authors'>,
+  appLanguage: Language,
+): Promise<boolean> => {
+  if (source.format === 'audiobook' || source.language !== appLanguage) return false
+  const recording = await DiscoveryUseCase.audioEditionOf(
+    source.title,
+    source.authors[0],
+    source.language,
+  )
+  return recording === 'unknown'
+}
