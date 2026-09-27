@@ -90,6 +90,20 @@ struct BookPage: View {
                             .foregroundStyle(.secondary)
                             .padding(.top, 1)
                     }
+                    // A universal link: iOS hands it to the Audible app when
+                    // it is installed, on the title, and to the website
+                    // otherwise. A quiet tag in the corner rather than a row:
+                    // a way out of Shiori, not a fact about the book.
+                    if let audibleURL = book.audibleURL {
+                        Link(destination: audibleURL) {
+                            Pill(text: "Audible", systemImage: "link")
+                        }
+                        .buttonStyle(.borderless)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .padding(.top, 4)
+                        .accessibilityLabel(Text("Ouvrir dans Audible"))
+                        .accessibilityIdentifier("book-audible")
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -131,20 +145,6 @@ struct BookPage: View {
             }
             if let isbn = book.isbn13 {
                 editableRow(.isbn13, value: isbn, icon: "barcode", font: .callout.monospaced())
-            }
-            // A universal link: iOS hands it to the Audible app when it is
-            // installed, on the title, and to the website otherwise.
-            if let audibleURL = book.audibleURL {
-                Link(destination: audibleURL) {
-                    Label {
-                        LabeledContent("Écouter sur Audible") {
-                            Image(systemName: "arrow.up.forward").font(.caption.weight(.semibold))
-                        }
-                    } icon: {
-                        Image(systemName: "headphones").foregroundStyle(.secondary)
-                    }
-                }
-                .accessibilityIdentifier("book-audible")
             }
         }
     }
