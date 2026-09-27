@@ -13,12 +13,9 @@ the release tag is pushed.
 - When you sign up, your first name is already filled in from your Apple account.
 - On a book's page, tap a fact — the rating, the year, the pages, the ISBN or a reading
   date — to correct it right there.
-- Discover is rebuilt around your series: for each one you follow, the next volume announced,
-  with its date.
-- A series page shows its next release right under its introduction.
-- In the Series list, a volume you do not have yet carries a + in its corner, like a book's
-  status: you can add it to your library. A volume not out yet carries a clock, with its date
-  underneath.
+- Discover is rebuilt around your series: for each one you follow, the volumes already out that
+  you do not have yet, with a link to Amazon or Audible, and the next one announced with its date.
+- A series page shows its upcoming releases right under its introduction.
 - Your books show their series under the same name as the series page, without mentions like
   "[French Edition]".
 - The home screen's series in progress no longer lists a series you have not started yet.
