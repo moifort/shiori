@@ -60,7 +60,7 @@ final class LibraryViewModel {
 
     private(set) var books: [Book] = []
     /// The books whose edition in the app's language the reader awaits, in
-    /// either format: a bell on their row. Asked apart from the rows, which
+    /// either format: binoculars on their row. Asked apart from the rows, which
     /// an await does not change, and again whenever one is sent or given up.
     private(set) var awaitedBookIds: Set<String> = []
     private(set) var isLoading = false

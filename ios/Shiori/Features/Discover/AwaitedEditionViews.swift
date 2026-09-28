@@ -69,7 +69,7 @@ struct AwaitedEditionsStrip: View {
 /// found, drawn as a saga's next volume is on its page: the cover, the format
 /// awaited over the title, when it comes in orange — or "Disponible" in green —
 /// and the calendar leaf on the trailing edge. One not announced yet draws
-/// nothing: the bell in the corner of the page says it is awaited, and the
+/// nothing: the binoculars in the corner of the page say it is awaited, and the
 /// menu gives it up. A tap opens its page, as Découvrir opens it.
 struct AwaitedEditionsSection: View {
     let awaited: [AwaitedEdition]
