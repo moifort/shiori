@@ -26,7 +26,7 @@ struct AwaitedEditionRow: View {
                 }
                 Text(edition.stateLine)
                     .font(.caption.weight(.medium))
-                    .foregroundStyle(edition.state == .available ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
+                    .foregroundStyle(edition.stateTint.map(AnyShapeStyle.init) ?? AnyShapeStyle(.secondary))
             }
             Spacer(minLength: 0)
         }
@@ -37,7 +37,8 @@ struct AwaitedEditionRow: View {
 
 /// Découvrir's strip of the editions awaited in one format, drawn as the
 /// friends' favourites are: covers that scroll sideways, the ones out first
-/// with "Disponible" in green under them.
+/// with "Disponible" in green under them, the date of the ones announced in
+/// orange.
 struct AwaitedEditionsStrip: View {
     let editions: [AwaitedEdition]
     let onTapped: (AwaitedEdition) -> Void
@@ -50,7 +51,7 @@ struct AwaitedEditionsStrip: View {
                         CoverTile(
                             book: edition.cover,
                             caption: edition.caption,
-                            captionTint: edition.state == .available ? .green : nil
+                            captionTint: edition.stateTint
                         )
                     }
                     .buttonStyle(.plain)
@@ -112,9 +113,7 @@ struct AwaitedEditionsSection: View {
                     ? edition.stateLine
                     : "\(edition.title) · \(edition.stateLine)")
                     .font(.caption)
-                    .foregroundStyle(edition.state == .available
-                        ? AnyShapeStyle(.green)
-                        : AnyShapeStyle(.secondary))
+                    .foregroundStyle(edition.stateTint.map(AnyShapeStyle.init) ?? AnyShapeStyle(.secondary))
             }
         } icon: {
             Image(systemName: edition.format == .audiobook ? "headphones" : "character.book.closed")
@@ -123,53 +122,32 @@ struct AwaitedEditionsSection: View {
     }
 }
 
-/// One awaited edition, opened from Découvrir: what it is, where it stands,
-/// and — once out — where it is sold. The Audible sync brings a recording
-/// bought into the library by itself, which ends the wait.
+/// One awaited edition, opened from Découvrir, drawn as a volume announced
+/// is: where it stands on top — orange while announced, green once out —
+/// then the book's own header, the store once it sells it, and what it is a
+/// translation or a recording of. Only what is known is drawn. The Audible
+/// sync brings a recording bought into the library by itself, which ends the
+/// wait.
 struct AwaitedEditionView: View {
     let edition: AwaitedEdition
     let onStop: () -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.openURL) private var openURL
 
     var body: some View {
         List {
             Section {
-                HStack(alignment: .top, spacing: 16) {
-                    BookCover(book: edition.cover, width: 96)
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(edition.title).font(.title3.weight(.semibold))
-                        if !edition.authors.isEmpty {
-                            Text(edition.authors.joined(separator: ", "))
-                                .foregroundStyle(.secondary)
-                        }
-                        Text(edition.stateLine)
-                            .font(.subheadline.weight(.medium))
-                            .foregroundStyle(edition.state == .available
-                                ? AnyShapeStyle(.green)
-                                : AnyShapeStyle(.secondary))
-                    }
-                }
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets())
+                Label(edition.stateLine, systemImage: edition.state == .available ? "checkmark.circle" : "clock")
+                    .foregroundStyle(edition.stateTint.map(AnyShapeStyle.init) ?? AnyShapeStyle(.secondary))
+                    .fontWeight(.semibold)
+                    .accessibilityIdentifier("awaited-state")
             }
 
-            Section {
-                LabeledContent("Titre original", value: edition.originalTitle)
-                LabeledContent(
-                    "Guetté",
-                    value: edition.format == .audiobook
-                        ? String(localized: "En livre audio")
-                        : String(localized: "En livre")
-                )
-            }
+            ReadOnlyBookHeader(book: edition.cover)
 
             if let url = edition.storeURL {
                 Section {
-                    Button {
-                        openURL(url)
-                    } label: {
+                    Link(destination: url) {
                         Label(
                             edition.format.storeLabel,
                             systemImage: edition.format == .audiobook ? "headphones" : "cart"
@@ -183,15 +161,29 @@ struct AwaitedEditionView: View {
                 }
             }
 
+            if edition.title != edition.originalTitle {
+                Section {
+                    LabeledInfoRow(title: "Titre original", value: edition.originalTitle, icon: "character.book.closed")
+                }
+            }
+
             Section {
-                Button("Ne plus guetter", systemImage: "bell.slash", role: .destructive) {
+                Button(role: .destructive) {
                     onStop()
                     dismiss()
+                } label: {
+                    Label {
+                        Text("Ne plus guetter")
+                    } icon: {
+                        Image(systemName: "bell.slash").foregroundStyle(.red)
+                    }
                 }
+                .foregroundStyle(.red)
                 .accessibilityIdentifier("awaited-stop")
             }
         }
         .listStyle(.insetGrouped)
+        .labelStyle(.row)
         .navigationTitle(edition.format.awaitedTitle)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

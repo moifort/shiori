@@ -1,6 +1,7 @@
 import Apollo
 import ApolloAPI
 import Foundation
+import SwiftUI
 
 extension Notification.Name {
     /// An edition was awaited or no longer is: Découvrir's strip and a book's
@@ -66,6 +67,16 @@ struct AwaitedEdition: Identifiable, Hashable, Codable, Sendable {
             date.map(ReleaseDateText.coming) ?? String(localized: "Annoncé, sans date")
         case .unannounced:
             String(localized: "Pas encore annoncé")
+        }
+    }
+
+    /// Green once out, orange while announced — as Découvrir draws what is
+    /// coming — and the secondary grey while nothing is.
+    var stateTint: Color? {
+        switch state {
+        case .available: .green
+        case .announced: .orange
+        case .unannounced: nil
         }
     }
 
