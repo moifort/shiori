@@ -54,6 +54,12 @@ fragment DiscoveryFields on Discovery {
     awaited {
       ...AwaitedEditionFields
     }
+    sagas {
+      series {
+        id
+        language
+      }
+    }
   }
 }
 

@@ -157,9 +157,10 @@ struct WorkReleaseRow: View {
     }
 }
 
-/// One piece of an author's news on Découvrir: a work the web found, or an
-/// edition of theirs the reader awaits — drawn alike, the soonest to come or
-/// the newest out first.
+/// One piece of an author's news on Découvrir: a work the web found, an
+/// edition of theirs the reader awaits, or a volume of a saga of theirs the
+/// Books shelf lists — drawn alike, the soonest to come or the newest out
+/// first.
 struct AuthorNewsItem: Identifiable {
     let id: String
     let title: String
@@ -184,15 +185,26 @@ struct AuthorNewsItem: Identifiable {
         isComing = awaited.state != .available
     }
 
-    /// The works and editions awaited of one section of the shelf, in its
-    /// order: the soonest first while announced, the undated last; the newest
-    /// first once out.
+    init(volume: DiscoveryVolume, isComing: Bool) {
+        id = "volume-\(volume.id)"
+        title = volume.volume.title
+        date = volume.volume.date
+        coverURL = volume.volume.coverURL
+        self.isComing = isComing
+    }
+
+    /// The works, editions awaited and saga volumes of one section of the
+    /// shelf, in its order: the soonest first while announced, the undated
+    /// last; the newest first once out.
     static func ordered(
         works: [DiscoveredWork],
         awaited: [AwaitedEdition],
+        volumes: [DiscoveryVolume] = [],
         section: SagaReleasesSummary.Section
     ) -> [AuthorNewsItem] {
-        let items = works.map(AuthorNewsItem.init(work:)) + awaited.map(AuthorNewsItem.init(awaited:))
+        let items = works.map(AuthorNewsItem.init(work:))
+            + awaited.map(AuthorNewsItem.init(awaited:))
+            + volumes.map { AuthorNewsItem(volume: $0, isComing: section == .upcoming) }
         let day = { (item: AuthorNewsItem) in item.date.map(ReleaseDateText.lastDay) }
         switch section {
         case .upcoming:

@@ -11,8 +11,9 @@ import SwiftUI
 /// its page described on the spot — and "Séries" — the Series tab's rows, every
 /// cover of their strip; a tap opens the saga screen as a sheet — and
 /// "Auteurs" — the Authors shelf's rows, for the authors the reader holds with
-/// a book announced or just out outside the sagas they hold, or an edition of
-/// theirs they follow that is announced or out; a tap opens the
+/// a book announced or just out, an edition of theirs they follow that is
+/// announced or out, or a volume of one of their sagas the Books shelf lists;
+/// a tap opens the
 /// author's page as the Library opens it. Read through one format at a time —
 /// the saga read or the saga heard — picked in the toolbar and kept between
 /// visits: an author is watched only in the formats the reader holds them in.
@@ -27,7 +28,8 @@ import SwiftUI
 ///
 /// Under them, on the Books shelf, "Bientôt en audio" or "Bientôt en FR": the
 /// books the reader awaits in the app's language, in the format on screen, as
-/// a strip of covers, the ones out first.
+/// a strip of covers, the ones out first — "Voir les livres suivis" opens the
+/// whole list, where a swipe gives one up.
 ///
 /// The server looks the sagas up on the web once a week. The tab opens on
 /// everything it last showed — the rows, the friends' picks, the books awaited
@@ -44,6 +46,9 @@ struct DiscoverView: View {
     @State private var openFriendBook: LovedBook?
     @State private var openFriendSaga: LovedSaga?
     @State private var openAwaited: AwaitedEdition?
+    @State private var showAwaitedList = false
+    /// The edition opened from the full list, pushed inside it.
+    @State private var openListedAwaited: AwaitedEdition?
     @Environment(\.openURL) private var openURL
     @State private var format: ReleaseFormat
     @State private var shelf: LibraryShelf = .series
@@ -105,6 +110,21 @@ struct DiscoverView: View {
                     NavigationStack {
                         AwaitedEditionView(edition: edition) {
                             Task { await viewModel.stopAwaiting(edition) }
+                        }
+                    }
+                }
+                .sheet(isPresented: $showAwaitedList) {
+                    NavigationStack {
+                        AwaitedEditionsListView(
+                            format: format,
+                            editions: viewModel.awaited(format),
+                            onOpen: { openListedAwaited = $0 },
+                            onStop: { edition in Task { await viewModel.stopAwaiting(edition) } }
+                        )
+                        .navigationDestination(item: $openListedAwaited) { edition in
+                            AwaitedEditionView(edition: edition) {
+                                Task { await viewModel.stopAwaiting(edition) }
+                            }
                         }
                     }
                 }
@@ -212,8 +232,8 @@ struct DiscoverView: View {
     }
 
     /// "Bientôt en audio" or "Bientôt en FR": the editions the reader awaits in
-    /// the format on screen, as a strip like the friends' favourites. Absent
-    /// when none is awaited.
+    /// the format on screen, as a strip like the friends' favourites, and the
+    /// way to the full list. Absent when none is awaited.
     @ViewBuilder
     private var awaitedSection: some View {
         let editions = viewModel.awaited(format)
@@ -221,7 +241,14 @@ struct DiscoverView: View {
             Section {
                 AwaitedEditionsStrip(editions: editions) { openAwaited = $0 }
             } header: {
-                Text(format.awaitedTitle)
+                HStack {
+                    Text(format.awaitedTitle)
+                    Spacer()
+                    Button("Voir les livres suivis") { showAwaitedList = true }
+                        .font(.subheadline)
+                        .textCase(nil)
+                        .accessibilityIdentifier("discover-awaited-all")
+                }
             }
             .accessibilityIdentifier("discover-awaited")
         }
@@ -313,15 +340,18 @@ struct DiscoverView: View {
 
     /// An author's row: the Authors shelf's heading, then the covers of what
     /// the section it is in is about rather than the reader's own books — the
-    /// works the web found and the editions the reader awaits alike — and the
-    /// first in words. A tap opens the author's page, as the Library's Authors
+    /// works the web found, the editions the reader awaits and the volumes of
+    /// their sagas the Books shelf lists alike — and the first in words. A
+    /// long press opens one of those volumes. A tap opens the author's page, as the Library's Authors
     /// shelf does.
     private func authorRow(_ row: AuthorDiscovery, in section: SagaReleasesSummary.Section) -> some View {
         let destination = AuthorDestination(row.author)
         let works = section == .recent ? row.recent : (row.next.map { [$0] } ?? [])
+        let volumes = section == .recent ? row.sagaOut : row.sagaComing
         let items = AuthorNewsItem.ordered(
             works: works,
             awaited: section == .recent ? row.awaitedOut : row.awaitedComing,
+            volumes: volumes,
             section: section
         )
         return VStack(alignment: .leading, spacing: 8) {
@@ -343,6 +373,9 @@ struct DiscoverView: View {
                         openURL(audibleURL)
                     }
                 }
+            }
+            ForEach(volumes) { opened in
+                Button("Ouvrir « \(opened.volume.title) »", systemImage: "book") { openVolume = opened }
             }
             Button("Ouvrir l'auteur", systemImage: "person") { openAuthor = destination }
         }
@@ -510,6 +543,47 @@ struct AuthorReleasesSummary: View {
             return String(localized: "Disponible : \(first.title)")
         }
     }
+}
+
+extension AuthorDiscovery {
+    /// Matt Dinniman on the Authors shelf heard: a work of his own announced,
+    /// an edition followed, and the next volume of his saga the Books shelf
+    /// lists, just out and announced.
+    static let preview: AuthorDiscovery = {
+        var saga = SagaDiscovery.preview
+        saga.recent = [DiscoveredVolume(
+            number: 7,
+            title: "La Parade de Mondes",
+            date: "2026-09-24",
+            isbn13: nil,
+            coverURL: nil
+        )]
+        return AuthorDiscovery(
+            author: FollowedAuthor(
+                key: "matt-dinniman",
+                name: "Matt Dinniman",
+                indexLetter: "D",
+                portraitURL: nil,
+                bookCount: 7,
+                seriesCount: 1,
+                favoriteCount: 1,
+                averageRating: 4.5,
+                shelvedAt: nil,
+                books: []
+            ),
+            next: DiscoveredWork(
+                title: "Kaiju Battlefield Surgeon",
+                date: "2027-02-16",
+                isbn13: nil,
+                coverURL: nil,
+                seriesName: nil,
+                volume: nil
+            ),
+            recent: [],
+            awaited: [.preview],
+            sagas: [saga]
+        )
+    }()
 }
 
 #Preview {

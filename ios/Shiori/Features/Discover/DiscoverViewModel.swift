@@ -32,7 +32,7 @@ final class DiscoverViewModel {
     private var lookedUp: Set<ReleaseFormat> = []
 
     /// Bump the version whenever `DiscoveryFeed` changes shape.
-    private let cache = SnapshotCache<DiscoveryFeed>("discovery", version: 7)
+    private let cache = SnapshotCache<DiscoveryFeed>("discovery", version: 8)
 
     /// The rows of a format, nil until they were ever loaded.
     func rows(_ format: ReleaseFormat) -> [SagaDiscovery]? { feed.rows[format] }
@@ -73,12 +73,12 @@ final class DiscoverViewModel {
             .sorted { ($0.recent.first?.date ?? "") > ($1.recent.first?.date ?? "") }
     }
 
-    /// The authors of a format with a work announced, or an edition awaited
-    /// announced, for the Authors shelf: the soonest out first, as the Books
+    /// The authors of a format with a work announced, an edition awaited
+    /// announced or a saga's volume announced, for the Authors shelf: the soonest out first, as the Books
     /// shelf orders its volumes. Nil until the format was ever loaded.
     func upcomingAuthors(_ format: ReleaseFormat) -> [AuthorDiscovery]? {
         feed.authors[format]?
-            .filter { $0.next != nil || !$0.awaitedComing.isEmpty }
+            .filter { $0.next != nil || !$0.awaitedComing.isEmpty || !$0.sagaComing.isEmpty }
             .sorted { lhs, rhs in
                 let left = lhs.soonestComing
                 let right = rhs.soonestComing
@@ -91,12 +91,12 @@ final class DiscoverViewModel {
             }
     }
 
-    /// The authors of a format with a work just out, or an edition awaited
-    /// out, for the Authors shelf: the newest out first. Nil until the format
+    /// The authors of a format with a work just out, an edition awaited out or
+    /// a saga's volume just out, for the Authors shelf: the newest out first. Nil until the format
     /// was ever loaded.
     func recentAuthors(_ format: ReleaseFormat) -> [AuthorDiscovery]? {
         feed.authors[format]?
-            .filter { !$0.recent.isEmpty || !$0.awaitedOut.isEmpty }
+            .filter { !$0.recent.isEmpty || !$0.awaitedOut.isEmpty || !$0.sagaOut.isEmpty }
             .sorted { ($0.newestOut ?? "") > ($1.newestOut ?? "") }
     }
 
@@ -146,7 +146,7 @@ final class DiscoverViewModel {
             feed.authors[edition.format] = authorsBefore?.compactMap { row in
                 var row = row
                 row.awaited.removeAll { $0.id == edition.id }
-                return row.next == nil && row.recent.isEmpty && row.awaited.isEmpty ? nil : row
+                return row.isEmpty ? nil : row
             }
         }
         do {

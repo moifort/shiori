@@ -113,24 +113,40 @@ struct AuthorDiscovery: Identifiable, Codable, Sendable {
     /// The reader's own editions of them awaited in that format, announced or
     /// out, the ones out first.
     var awaited: [AwaitedEdition]
+    /// The sagas of theirs on the Books shelf, with a volume announced or
+    /// just out: those volumes are the author's news too.
+    var sagas: [SagaDiscovery] = []
 
     var id: String { author.id }
+
+    /// Whether the row has nothing left to show.
+    var isEmpty: Bool { next == nil && recent.isEmpty && awaited.isEmpty && sagas.isEmpty }
 
     /// The editions awaited that are out, for the "Nouvelles parutions" row.
     var awaitedOut: [AwaitedEdition] { awaited.filter { $0.state == .available } }
     /// The editions awaited still to come, for the "Prochaines sorties" row.
     var awaitedComing: [AwaitedEdition] { awaited.filter { $0.state == .announced } }
-
-    /// The last day of the soonest date announced, the work found or an
-    /// edition awaited. Nil when nothing announced is dated.
-    var soonestComing: String? {
-        ([next?.date] + awaitedComing.map(\.date)).compactMap { $0.map(ReleaseDateText.lastDay) }.min()
+    /// The next volume of each saga of theirs, for the "Prochaines sorties" row.
+    var sagaComing: [DiscoveryVolume] {
+        sagas.compactMap { saga in saga.releases.next.map { DiscoveryVolume(saga: saga, volume: $0) } }
+    }
+    /// The volumes of their sagas just out, for the "Nouvelles parutions" row.
+    var sagaOut: [DiscoveryVolume] {
+        sagas.flatMap { saga in saga.recent.map { DiscoveryVolume(saga: saga, volume: $0) } }
     }
 
-    /// The last day of the newest date out, the work found or an edition
-    /// awaited.
+    /// The last day of the soonest date announced, the work found, an edition
+    /// awaited or a saga's volume. Nil when nothing announced is dated.
+    var soonestComing: String? {
+        ([next?.date] + awaitedComing.map(\.date) + sagaComing.map(\.volume.date))
+            .compactMap { $0.map(ReleaseDateText.lastDay) }.min()
+    }
+
+    /// The last day of the newest date out, the work found, an edition
+    /// awaited or a saga's volume.
     var newestOut: String? {
-        (recent.map(\.date) + awaitedOut.map(\.date)).compactMap { $0.map(ReleaseDateText.lastDay) }.max()
+        (recent.map(\.date) + awaitedOut.map(\.date) + sagaOut.map(\.volume.date))
+            .compactMap { $0.map(ReleaseDateText.lastDay) }.max()
     }
 }
 
@@ -234,8 +250,7 @@ enum DiscoverAPI {
 
 private extension DiscoveryPage {
     init(fields: ShioriGraphQL.DiscoveryFields) {
-        self.init(
-            rows: fields.sagas.map { row in
+        let rows = fields.sagas.map { row in
                 SagaDiscovery(
                     series: SeriesAPI.followedRow(
                         row.series.fragments.followedSeriesRow,
@@ -249,13 +264,19 @@ private extension DiscoveryPage {
                     missing: row.missing,
                     recent: row.recent.map { DiscoveredVolume(fields: $0.fragments.discoveredVolumeFields) }
                 )
-            },
+            }
+        let sagas = Dictionary(rows.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        self.init(
+            rows: rows,
             authors: fields.authors.map { row in
                 AuthorDiscovery(
                     author: FollowedAuthor(row: row.author.fragments.followedAuthorRow),
                     next: row.next.map { DiscoveredWork(fields: $0.fragments.discoveredWorkFields) },
                     recent: row.recent.map { DiscoveredWork(fields: $0.fragments.discoveredWorkFields) },
-                    awaited: row.awaited.map { AwaitedEdition(fields: $0.fragments.awaitedEditionFields) }
+                    awaited: row.awaited.map { AwaitedEdition(fields: $0.fragments.awaitedEditionFields) },
+                    sagas: row.sagas.compactMap { saga in
+                        sagas[FollowedSeries.id(seriesId: saga.series.id, language: saga.series.language?.asDomain)]
+                    }
                 )
             },
             unwatched: fields.unwatched,
