@@ -31,8 +31,9 @@ enum BookField: String, Identifiable {
 /// The small prompt behind a tapped row of the book sheet, as the rating has
 /// one: the value already there, ready to correct, and a check to save it. A
 /// date opens straight on the calendar, and the day tapped is the answer, as a
-/// star is for the rating: turning the months answers nothing, the check keeps
-/// the day already circled — today, for a date never set — and the cross leaves
+/// star is for the rating. Turning to another month or year carries the day
+/// circled along — the 12th stays the 12th — for the check to save, so a
+/// wrong month is fixed without tapping the day again; the cross leaves
 /// without a change.
 ///
 /// The same rules as the edit form hold: a text emptied is cleared, a number
@@ -74,10 +75,15 @@ struct FieldEditSheet: View {
         NavigationStack {
             VStack(spacing: 12) {
                 if field.isDate {
-                    CalendarDayPicker(date: date, range: dateRange) { day in
-                        date = day
-                        Task { await save() }
-                    }
+                    CalendarDayPicker(
+                        date: date,
+                        range: dateRange,
+                        onMove: { date = $0 },
+                        onPick: { day in
+                            date = day
+                            Task { await save() }
+                        }
+                    )
                     .accessibilityIdentifier("field-edit-date")
                 } else {
                     TextField(field.title, text: $text)
@@ -190,13 +196,17 @@ struct FieldEditSheet: View {
     }
 }
 
-/// The calendar of Reminders: turning to another month or year only moves the
-/// page, and only a day tapped answers. SwiftUI's graphical `DatePicker` moves
-/// the selection along with the month, which a sheet saving on change took for
-/// an answer.
+/// The calendar of Reminders: a day tapped is an answer, and turning to
+/// another month or year moves the circled day along with the page, keeping its
+/// number — clipped to the month's last day and to the range — without
+/// answering. SwiftUI's graphical `DatePicker` offers no such difference
+/// between a move and an answer, which a sheet saving on change needs.
 private struct CalendarDayPicker: UIViewRepresentable {
     let date: Date
     let range: ClosedRange<Date>
+    /// The day carried to the month turned to: not an answer yet.
+    let onMove: (Date) -> Void
+    /// The day tapped: the answer.
     let onPick: (Date) -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -211,6 +221,8 @@ private struct CalendarDayPicker: UIViewRepresentable {
         selection.selectedDate = Calendar.current.dateComponents([.year, .month, .day], from: date)
         calendarView.selectionBehavior = selection
         calendarView.visibleDateComponents = Calendar.current.dateComponents([.year, .month], from: date)
+        context.coordinator.selection = selection
+        calendarView.delegate = context.coordinator
         return calendarView
     }
 
@@ -228,25 +240,49 @@ private struct CalendarDayPicker: UIViewRepresentable {
         return CGSize(width: width, height: fitting.height)
     }
 
-    final class Coordinator: NSObject, UICalendarSelectionSingleDateDelegate {
+    final class Coordinator: NSObject, UICalendarViewDelegate, UICalendarSelectionSingleDateDelegate {
         var picker: CalendarDayPicker
+        weak var selection: UICalendarSelectionSingleDate?
+        /// The day of the month the reader means, kept across the months turned
+        /// so that passing through February does not turn the 31st into the 28th.
+        private var day: Int
 
         init(picker: CalendarDayPicker) {
             self.picker = picker
+            day = Calendar.current.component(.day, from: picker.date)
         }
 
         /// The day tapped, at the time of day already stored, kept within the
         /// range a boundary day could otherwise overstep by a few hours.
         func dateSelection(_ selection: UICalendarSelectionSingleDate, didSelectDate dateComponents: DateComponents?) {
-            guard let dateComponents else { return }
+            guard let dateComponents, let picked = dated(dateComponents) else { return }
+            day = dateComponents.day ?? day
+            picker.onPick(picked)
+        }
+
+        /// The circled day follows the page to the month turned to.
+        func calendarView(_ calendarView: UICalendarView, didChangeVisibleDateComponentsFrom previous: DateComponents) {
+            let calendar = Calendar.current
+            var components = calendarView.visibleDateComponents
+            guard let firstOfMonth = calendar.date(from: DateComponents(year: components.year, month: components.month, day: 1)),
+                  let length = calendar.range(of: .day, in: .month, for: firstOfMonth)?.count
+            else { return }
+            components.day = min(day, length)
+            guard let moved = dated(components) else { return }
+            selection?.setSelected(calendar.dateComponents([.year, .month, .day], from: moved), animated: true)
+            picker.onMove(moved)
+        }
+
+        /// The day given, at the time of day already stored, within the range.
+        private func dated(_ dateComponents: DateComponents) -> Date? {
             let calendar = Calendar.current
             let time = calendar.dateComponents([.hour, .minute, .second], from: picker.date)
-            var components = dateComponents
+            var components = DateComponents(year: dateComponents.year, month: dateComponents.month, day: dateComponents.day)
             components.hour = time.hour
             components.minute = time.minute
             components.second = time.second
-            guard let day = calendar.date(from: components) else { return }
-            picker.onPick(min(max(day, picker.range.lowerBound), picker.range.upperBound))
+            guard let date = calendar.date(from: components) else { return nil }
+            return min(max(date, picker.range.lowerBound), picker.range.upperBound)
         }
     }
 }
