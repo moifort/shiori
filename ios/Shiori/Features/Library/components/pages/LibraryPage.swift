@@ -13,6 +13,8 @@ struct LibraryPage: View {
     @Binding var mode: LibraryMode
     @Binding var statusFilter: ReadingStatus?
     let sections: [ListSection<Book>]
+    /// The books whose edition in the app's language the reader awaits.
+    var awaitedBookIds: Set<String> = []
     /// Rows say their own status, unless a filter already says which.
     var showsStatus: Bool = false
     let isLoading: Bool
@@ -149,6 +151,7 @@ struct LibraryPage: View {
                     language: book.language,
                     isFavorite: book.favorite,
                     isHidden: book.hidden,
+                    isAwaited: awaitedBookIds.contains(book.id),
                     listeningProgress: book.status == .reading ? book.listeningProgressLabel : nil
                 )
             }

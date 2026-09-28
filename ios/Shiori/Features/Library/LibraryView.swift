@@ -23,6 +23,7 @@ struct LibraryView: View {
                 mode: $viewModel.mode,
                 statusFilter: $viewModel.statusFilter,
                 sections: viewModel.sections,
+                awaitedBookIds: viewModel.awaitedBookIds,
                 showsStatus: viewModel.statusFilter == nil,
                 isLoading: viewModel.isLoading,
                 refreshFailed: viewModel.refreshFailed,
@@ -54,7 +55,11 @@ struct LibraryView: View {
             takeRequestedMode()
             await viewModel.loadOnAppear()
         }
+        .task { await viewModel.loadAwaited() }
         .onChange(of: requestedMode) { takeRequestedMode() }
+        .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
+            Task { await viewModel.loadAwaited() }
+        }
         // A book added from the scanner lands in a section this list has not
         // drawn yet; a saga rated from a book's sheet lends its stars to every
         // volume. Either way the rows on screen are the old ones until the

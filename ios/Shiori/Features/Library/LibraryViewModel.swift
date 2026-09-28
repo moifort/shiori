@@ -59,6 +59,10 @@ final class LibraryViewModel {
     }
 
     private(set) var books: [Book] = []
+    /// The books whose edition in the app's language the reader awaits, in
+    /// either format: a bell on their row. Asked apart from the rows, which
+    /// an await does not change, and again whenever one is sent or given up.
+    private(set) var awaitedBookIds: Set<String> = []
     private(set) var isLoading = false
     private(set) var errorMessage: String?
 
@@ -208,6 +212,17 @@ final class LibraryViewModel {
         }
         isLoading = false
         return false
+    }
+
+    func loadAwaited() async {
+        do {
+            async let printed = AwaitedAPI.awaited(format: .book)
+            async let recorded = AwaitedAPI.awaited(format: .audiobook)
+            awaitedBookIds = Set(try await (printed + recorded).map(\.bookId))
+        } catch {
+            guard !isCancellation(error) else { return }
+            _ = reportError(error)
+        }
     }
 
     /// Loads the next page and appends it to the rows already loaded.

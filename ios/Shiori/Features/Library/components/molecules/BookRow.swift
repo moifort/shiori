@@ -44,6 +44,9 @@ struct BookRow: View {
     /// what tells them apart.
     var genreInCorner: Bool = false
     var isHidden: Bool = false
+    /// The reader awaits its edition in the app's language: a bell at the end
+    /// of the author line.
+    var isAwaited: Bool = false
     /// How far into a recording the player got, already formatted — "42 %".
     /// Passed only for a recording under way, and drawn as a chip beside the
     /// status, in its colour.
@@ -102,6 +105,9 @@ struct BookRow: View {
                         Text(verbatim: authorLine.isEmpty ? "\(publishedIn)" : "· \(publishedIn)")
                             .foregroundStyle(.tertiary)
                             .fixedSize()
+                    }
+                    if isAwaited {
+                        AwaitedMark()
                     }
                 }
                 .font(.subheadline)
@@ -254,6 +260,19 @@ struct BookRow: View {
     /// essays without reading a word.
     private func chip(_ text: String, tint: Color) -> some View {
         RowChip(text: text, tint: tint)
+    }
+}
+
+/// Says the reader awaits a book's edition in the app's language: a bell, in
+/// the orange of what is coming, at the end of its author line — on its row
+/// and on its page alike.
+struct AwaitedMark: View {
+    var body: some View {
+        Image(systemName: "bell.fill")
+            .imageScale(.small)
+            .foregroundStyle(.orange)
+            .fixedSize()
+            .accessibilityLabel(Text("Guetté"))
     }
 }
 
