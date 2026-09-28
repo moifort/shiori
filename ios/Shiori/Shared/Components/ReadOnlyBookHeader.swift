@@ -45,18 +45,20 @@ struct ReadOnlyBookHeader<Extra: View>: View {
                         }
                     }
                     .padding(.top, 2)
-                    if let storeLink {
-                        Link(destination: storeLink.url) {
-                            Pill(text: storeLink.name, trailingSystemImage: "arrow.up.right")
-                        }
-                        .buttonStyle(.borderless)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                        .padding(.top, 4)
-                        .accessibilityLabel(Text("Ouvrir dans \(storeLink.name)"))
-                        .accessibilityIdentifier("book-store-link")
-                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            // In the bottom corner, level with the foot of the cover: a way
+            // out of Shiori, kept apart from what the book is.
+            .overlay(alignment: .bottomTrailing) {
+                if let storeLink {
+                    Link(destination: storeLink.url) {
+                        Pill(text: storeLink.name, trailingSystemImage: "arrow.up.right")
+                    }
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel(Text("Ouvrir dans \(storeLink.name)"))
+                    .accessibilityIdentifier("book-store-link")
+                }
             }
             .padding(.vertical, 2)
             .copyable([
