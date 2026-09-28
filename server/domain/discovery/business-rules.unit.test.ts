@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { AudibleAsin } from '~/domain/audible/types'
+import { authorKeyOf } from '~/domain/author/primitives'
 import type { AuthorKey } from '~/domain/author/types'
 import type {
   Book,
@@ -29,6 +30,7 @@ import {
   onAudible,
   recentReleasesOf,
   releasesOf,
+  sagasByAuthorOf,
   watchedAuthorsOf,
   watchedSagasOf,
 } from './business-rules'
@@ -757,6 +759,29 @@ describe('what an author has for the reader', () => {
 
   test('has nothing to say before the author was ever looked up', () => {
     expect(authorReleasesOf(heldBooks, sagas, undefined, today)).toEqual({ recent: [] })
+  })
+})
+
+describe('the sagas of an author', () => {
+  const written = (...authors: string[]) => ({ authors }) as unknown as Book
+  const row = (seriesId: string, books: Book[], author?: string) => ({
+    series: saga({ id: seriesId as SeriesId, books, author: author as AuthorName | undefined }),
+  })
+
+  test('are read off the reader’s own volumes, a saga of two authors on both', () => {
+    const carlRow = row(carl, [written('Matt Dinniman')])
+    const shared = row('shared', [written('Matt Dinniman', 'Jane Doe'), written('Matt Dinniman')])
+
+    const byAuthor = sagasByAuthorOf([carlRow, shared])
+
+    expect(byAuthor.get(authorKeyOf('Matt Dinniman'))).toEqual([carlRow, shared])
+    expect(byAuthor.get(authorKeyOf('Jane Doe'))).toEqual([shared])
+  })
+
+  test('fall back on the saga’s author when its volumes name none', () => {
+    const bare = row(carl, [written()], 'Matt Dinniman')
+
+    expect(sagasByAuthorOf([bare]).get(authorKeyOf('Matt Dinniman'))).toEqual([bare])
   })
 })
 

@@ -1,5 +1,6 @@
 import { mainLanguageOf } from '~/domain/author/business-rules'
-import type { ShelvedAuthor } from '~/domain/author/types'
+import { authorKeyOf } from '~/domain/author/primitives'
+import type { AuthorKey, ShelvedAuthor } from '~/domain/author/types'
 import type { Book, BookFormat, BookLanguage } from '~/domain/book/types'
 import type { ScanResult } from '~/domain/scan/types'
 import {
@@ -366,6 +367,26 @@ export const inDiscoveryOrder = <
       (right.recent[0].date as string).localeCompare(left.recent[0].date as string),
     )
   return [...announced, ...justOut]
+}
+
+/** The saga rows of each author: an author's news carries the volumes
+ *  announced or just out of the sagas of theirs the Books shelf lists. Who
+ *  wrote a saga is read off the reader's own volumes — a saga of two authors
+ *  is on both — else off the saga itself. In the rows' order. */
+export const sagasByAuthorOf = <
+  Row extends { series: Pick<FollowedSeries, 'author'> & { books: Pick<Book, 'authors'>[] } },
+>(
+  rows: readonly Row[],
+): Map<AuthorKey, Row[]> => {
+  const byAuthor = new Map<AuthorKey, Row[]>()
+  for (const row of rows) {
+    const names = row.series.books.flatMap((book) => book.authors)
+    const keys = new Set(
+      (names.length > 0 ? names : row.series.author ? [row.series.author] : []).map(authorKeyOf),
+    )
+    for (const key of keys) byAuthor.set(key, [...(byAuthor.get(key) ?? []), row])
+  }
+  return byAuthor
 }
 
 /** How far back an author's works count as news, and are asked for: an author

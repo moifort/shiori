@@ -194,6 +194,14 @@ export const AuthorDiscoveryType = builder.objectRef<AuthorDiscovery>('AuthorDis
       description: recentWorksDescription,
       resolve: (row) => row.recent,
     }),
+    sagas: t.field({
+      type: [SagaDiscoveryType],
+      description:
+        'The rows of `sagas` that are theirs — who wrote a saga read off the reader’s own ' +
+        'volumes — in the same order: the volumes announced or just out the Books shelf ' +
+        'lists are their news too.',
+      resolve: (row) => row.sagas,
+    }),
   }),
 })
 
@@ -213,7 +221,9 @@ export const DiscoveryType = builder.objectRef<Discovery>('Discovery').implement
         'A row per author the reader holds in that format — all but the ones whose every ' +
         'book they gave up on — with a work announced for a known date, the soonest first, ' +
         'then a row per author with nothing announced but a work just out, the newest ' +
-        'first. The volumes of a saga the reader holds are left to `sagas`.',
+        'first, then the authors with nothing of their own but an edition awaited or a saga ' +
+        'among `sagas`. The volumes of a saga the reader holds stay in `sagas`, each author ' +
+        'naming theirs.',
       resolve: (discovery) => discovery.authors,
     }),
     unwatched: t.int({

@@ -166,6 +166,9 @@ export type AuthorReleases = {
 
 export type AuthorDiscovery = AuthorReleases & {
   author: FollowedAuthor
+  /** The sagas of theirs among the tab's rows, with a volume announced or
+   *  just out: the Books shelf's volumes are their news too. */
+  sagas: SagaDiscovery[]
 }
 
 /** The Découvrir tab in one format. */

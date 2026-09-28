@@ -30,6 +30,7 @@ import {
   readerIsStale,
   recentReleasesOf,
   releasesOf,
+  sagasByAuthorOf,
   todayOf,
   watchedAuthorsOf,
   watchedSagasOf,
@@ -509,9 +510,10 @@ const discoveryOf = async (
     const missing = missingVolumesOf(series.books, watch, series.catalogue, today)
     return [{ ...releases, series, missing, recent }]
   })
-  const authors = await authorRowsOf(library, authorWatches, awaited, format, today)
+  const sagas = inDiscoveryOrder(rows)
+  const authors = await authorRowsOf(library, authorWatches, awaited, sagas, format, today)
   return {
-    sagas: inDiscoveryOrder(rows),
+    sagas,
     authors: authors.rows,
     unwatched: unwatched + authors.unwatched,
     followed: followedCount + authors.followed,
@@ -526,6 +528,7 @@ const authorRowsOf = async (
   library: Library,
   watches: ReadonlyMap<string, AuthorWatch>,
   awaitedViews: readonly AwaitedEditionView[],
+  sagaRows: readonly SagaDiscovery[],
   format: ReleaseFormat,
   today: string,
 ): Promise<{ rows: AuthorDiscovery[]; unwatched: number; followed: number }> => {
@@ -541,26 +544,32 @@ const authorRowsOf = async (
     format,
     library.shelved.flatMap((author) => author.books),
   )
+  const sagasBy = sagasByAuthorOf(sagaRows)
   const watched = library.authors.filter((author) => author.format === format)
   let unwatched = 0
   const rows = watched.flatMap((watchedAuthor): AuthorDiscovery[] => {
     const watch = watches.get(authorWatchKeyOf(watchedAuthor))
     const author = shelved.get(watchedAuthor.authorKey)
     const awaited = awaitedBy.get(watchedAuthor.authorKey) ?? []
+    const sagas = sagasBy.get(watchedAuthor.authorKey) ?? []
     if (!watch) unwatched += 1
     if (!author) return []
     const releases = authorReleasesOf(author.books, sagaNames, watch, today, titlesOf(awaited))
-    if (!releases.next && releases.recent.length === 0 && awaited.length === 0) return []
-    return [{ ...releases, awaited, author }]
+    const quiet = !releases.next && releases.recent.length === 0
+    if (quiet && awaited.length === 0 && sagas.length === 0) return []
+    return [{ ...releases, awaited, sagas, author }]
   })
   // An author held only in the other format is on the shelf for what the
   // reader awaits of them in this one.
   const watchedKeys = new Set(watched.map((author) => author.authorKey))
   for (const [key, awaited] of awaitedBy) {
     const author = shelved.get(key)
-    if (author && !watchedKeys.has(key)) rows.push({ recent: [], awaited, author })
+    if (author && !watchedKeys.has(key)) {
+      rows.push({ recent: [], awaited, sagas: sagasBy.get(key) ?? [], author })
+    }
   }
-  // An author with nothing dated but an edition awaited closes the shelf.
+  // An author with nothing dated of their own — an edition awaited, a volume
+  // of a saga — closes the shelf.
   const dated = inDiscoveryOrder(rows)
   const ordered = [...dated, ...rows.filter((row) => !dated.includes(row))]
   const portrayed = await AuthorUseCase.withPortraits(ordered.map((row) => row.author))

@@ -317,6 +317,11 @@ type AuthorDiscovery {
   The works out in the last three months — dated to the day, or to a month over — the newest first, a recording Audible never confirmed included, without its `audibleUrl`.
   """
   recent: [DiscoveredWork!]!
+
+  """
+  The rows of `sagas` that are theirs — who wrote a saga read off the reader’s own volumes — in the same order: the volumes announced or just out the Books shelf lists are their news too.
+  """
+  sagas: [SagaDiscovery!]!
 }
 
 """
@@ -940,7 +945,7 @@ type DiscoveredWork {
 """The Découvrir tab in one format."""
 type Discovery {
   """
-  A row per author the reader holds in that format — all but the ones whose every book they gave up on — with a work announced for a known date, the soonest first, then a row per author with nothing announced but a work just out, the newest first. The volumes of a saga the reader holds are left to `sagas`.
+  A row per author the reader holds in that format — all but the ones whose every book they gave up on — with a work announced for a known date, the soonest first, then a row per author with nothing announced but a work just out, the newest first, then the authors with nothing of their own but an edition awaited or a saga among `sagas`. The volumes of a saga the reader holds stay in `sagas`, each author naming theirs.
   """
   authors: [AuthorDiscovery!]!
 

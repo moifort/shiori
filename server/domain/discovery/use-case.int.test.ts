@@ -439,6 +439,8 @@ describe('the Authors shelf', () => {
     expect(row.author.books.map((book) => book.title)).toEqual([BookTitle('Carl 1')])
     expect(row.next?.title).toBe(BookTitle('Kaiju Battlefield Surgeon'))
     expect(row.recent.map((work) => work.title)).toEqual([BookTitle('La Tour 1')])
+    // The followed saga's volumes, on the Books shelf, are the author's news too.
+    expect(row.sagas.map((saga) => saga.series.id)).toEqual([carl])
   })
 
   test('adds the editions awaited announced or out to the author’s row and page, not the ones not found', async () => {
