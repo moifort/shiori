@@ -65,60 +65,72 @@ struct AwaitedEditionsStrip: View {
     }
 }
 
-/// On a book's page, the editions of it the reader awaits: a row each, which
-/// opens where an edition out is sold, and gives up the wait from its menu.
+/// On a book's page, the editions of it the reader awaits that the web has
+/// found, drawn as a saga's next volume is on its page: the cover, the format
+/// awaited over the title, when it comes in orange — or "Disponible" in green —
+/// and the calendar leaf on the trailing edge. One not announced yet draws
+/// nothing: the bell in the corner of the page says it is awaited, and the
+/// menu gives it up. A tap opens its page, as Découvrir opens it.
 struct AwaitedEditionsSection: View {
     let awaited: [AwaitedEdition]
     let onStop: (AwaitedEdition) -> Void
 
     @Environment(\.openURL) private var openURL
+    @State private var opened: AwaitedEdition?
+
+    private var found: [AwaitedEdition] { awaited.filter { $0.state != .unannounced } }
 
     var body: some View {
-        if !awaited.isEmpty {
+        if !found.isEmpty {
             Section {
-                ForEach(awaited) { edition in
-                    Group {
-                        // A link once a store sells it; a plain line until then,
-                        // drawn at full strength rather than greyed as disabled.
-                        if let url = edition.storeURL {
-                            Button { openURL(url) } label: { line(edition) }
-                        } else {
-                            line(edition)
-                        }
-                    }
-                    .contextMenu {
-                        if let url = edition.storeURL {
-                            Button(edition.format.storeLabel, systemImage: "arrow.up.right.square") {
-                                openURL(url)
+                ForEach(found) { edition in
+                    Button { opened = edition } label: { row(edition) }
+                        .tint(.primary)
+                        .contextMenu {
+                            if let url = edition.storeURL {
+                                Button(edition.format.storeLabel, systemImage: "arrow.up.right.square") {
+                                    openURL(url)
+                                }
+                            }
+                            Button("Ne plus guetter", systemImage: "bell.slash", role: .destructive) {
+                                onStop(edition)
                             }
                         }
-                        Button("Ne plus guetter", systemImage: "bell.slash", role: .destructive) {
-                            onStop(edition)
-                        }
-                    }
-                    .accessibilityIdentifier("book-awaited-\(edition.format.rawValue)")
+                        .accessibilityIdentifier("book-awaited-\(edition.format.rawValue)")
                 }
-            } footer: {
-                Text("Vous serez prévenu le jour de sa sortie.")
+            } header: {
+                Text("Prochaines sorties")
+            }
+            .sheet(item: $opened) { edition in
+                NavigationStack {
+                    AwaitedEditionView(edition: edition) { onStop(edition) }
+                }
             }
         }
     }
 
-    private func line(_ edition: AwaitedEdition) -> some View {
-        Label {
-            VStack(alignment: .leading, spacing: 2) {
+    private func row(_ edition: AwaitedEdition) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            BookCover(book: edition.cover)
+            VStack(alignment: .leading, spacing: 3) {
                 Text(edition.format.awaitedTitle)
-                    .foregroundStyle(.primary)
-                Text(edition.state == .unannounced
-                    ? edition.stateLine
-                    : "\(edition.title) · \(edition.stateLine)")
-                    .font(.caption)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text(edition.title)
+                    .font(.body.weight(.medium))
+                    .lineLimit(2)
+                Text(edition.stateLine)
                     .foregroundStyle(edition.stateTint.map(AnyShapeStyle.init) ?? AnyShapeStyle(.secondary))
+                    .font(.subheadline.weight(.medium))
             }
-        } icon: {
-            Image(systemName: edition.format == .audiobook ? "headphones" : "character.book.closed")
-                .foregroundStyle(Color.accentColor)
+            .accessibilityElement(children: .combine)
+            Spacer(minLength: 8)
+            // Only what is still to come: once out, the green line says it.
+            if edition.state == .announced, let date = edition.date {
+                ReleaseDateBadge(date: date)
+            }
         }
+        .padding(.vertical, 4)
     }
 }
 
