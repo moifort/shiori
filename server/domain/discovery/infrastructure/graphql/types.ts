@@ -3,6 +3,7 @@ import { FollowedAuthorType } from '~/domain/author/infrastructure/graphql/queri
 import type {
   AnnouncedVolumePreview,
   AuthorDiscovery,
+  AuthorReleases,
   Discovery,
   FoundVolume,
   FoundWork,
@@ -149,6 +150,29 @@ const DiscoveredWorkType = builder.objectRef<FoundWork>('DiscoveredWork').implem
   }),
 })
 
+const recentWorksDescription =
+  'The works out in the last three months — dated to the day, or to a month over — the ' +
+  'newest first, a recording Audible never confirmed included, without its `audibleUrl`.'
+
+export const AuthorReleasesType = builder.objectRef<AuthorReleases>('AuthorReleases').implement({
+  description:
+    'What one author has for the reader in one format, outside the sagas they hold: the ' +
+    'author page’s "Prochaines sorties" and "Nouveautés".',
+  fields: (t) => ({
+    next: t.field({
+      type: DiscoveredWorkType,
+      nullable: true,
+      description: 'The soonest work announced, to the day, the month or the year.',
+      resolve: (releases) => releases.next ?? null,
+    }),
+    recent: t.field({
+      type: [DiscoveredWorkType],
+      description: recentWorksDescription,
+      resolve: (releases) => releases.recent,
+    }),
+  }),
+})
+
 const AuthorDiscoveryType = builder.objectRef<AuthorDiscovery>('AuthorDiscovery').implement({
   description:
     'One row of the Découvrir tab’s Authors shelf: an author the reader holds, and what they ' +
@@ -162,15 +186,12 @@ const AuthorDiscoveryType = builder.objectRef<AuthorDiscovery>('AuthorDiscovery'
     next: t.field({
       type: DiscoveredWorkType,
       nullable: true,
-      description: 'The soonest work announced.',
+      description: 'The soonest work announced, to the day, the month or the year.',
       resolve: (row) => row.next ?? null,
     }),
     recent: t.field({
       type: [DiscoveredWorkType],
-      description:
-        'The works out in the last week, on a known day, that the reader can have now — a ' +
-        'recording Audible confirmed, a printed book with an ISBN Amazon did not turn down — ' +
-        'the newest first.',
+      description: recentWorksDescription,
       resolve: (row) => row.recent,
     }),
   }),

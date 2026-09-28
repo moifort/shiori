@@ -1,5 +1,5 @@
 import { AdminCommand } from '~/domain/admin/command'
-import type { ShelvedAuthor } from '~/domain/author/types'
+import type { AuthorKey, ShelvedAuthor } from '~/domain/author/types'
 import { AuthorUseCase } from '~/domain/author/use-case'
 import { BookQuery } from '~/domain/book/query'
 import type { Book, BookLanguage } from '~/domain/book/types'
@@ -53,6 +53,7 @@ import type {
   AnnouncedVolumePreview,
   AudibleRecording,
   AuthorDiscovery,
+  AuthorReleases,
   AuthorWatch,
   Discovery,
   DiscoveryReader,
@@ -230,6 +231,36 @@ export namespace DiscoveryUseCase {
     // The catalogue as the lookup left it, the dates it found written in.
     const written = lookingUp && watches.has(key) ? await SeriesQuery.byId(seriesId) : catalogue
     return releasesOf(held, watches.get(key), written, todayOf(now))
+  }
+
+  /** What the author's page shows under its heading: the soonest work
+   *  announced and the ones out in the last three months, in that format,
+   *  outside the sagas the reader holds — as the Authors shelf of the tab
+   *  shows them. Nothing for an author the reader holds nothing of in that
+   *  format, nor one never looked up: the hourly pass will. */
+  export const authorReleases = async (
+    userId: UserId,
+    authorKey: AuthorKey,
+    format: ReleaseFormat,
+    now = new Date(),
+  ): Promise<AuthorReleases> => {
+    const shelved = (await AuthorUseCase.shelvedAuthors(userId)).find(
+      (author) => author.key === authorKey,
+    )
+    const watched = shelved
+      ? watchedAuthorsOf([shelved]).find((author) => author.format === format)
+      : undefined
+    if (!shelved || !watched) return { recent: [] }
+    const key = authorWatchKeyOf(watched)
+    const [watches, sagas] = await Promise.all([
+      DiscoveryQuery.authorWatches([key]),
+      SeriesUseCase.followedAmong(userId, new Set(shelved.seriesIds)),
+    ])
+    const sagaNames = new Set([
+      ...sagas.map((series) => slugify(series.name)),
+      ...shelved.books.flatMap((book) => (book.series ? [slugify(book.series.name)] : [])),
+    ])
+    return authorReleasesOf(shelved.books, sagaNames, watches.get(key), todayOf(now))
   }
 
   /** A volume announced, described for its page before the reader adds it.

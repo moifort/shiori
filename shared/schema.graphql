@@ -305,11 +305,11 @@ type AuthorDiscovery {
   """The author as the Library’s Authors shelf draws their row."""
   author: FollowedAuthor!
 
-  """The soonest work announced."""
+  """The soonest work announced, to the day, the month or the year."""
   next: DiscoveredWork
 
   """
-  The works out in the last week, on a known day, that the reader can have now — a recording Audible confirmed, a printed book with an ISBN Amazon did not turn down — the newest first.
+  The works out in the last three months — dated to the day, or to a month over — the newest first, a recording Audible never confirmed included, without its `audibleUrl`.
   """
   recent: [DiscoveredWork!]!
 }
@@ -368,6 +368,19 @@ type AuthorPage {
   The author’s sagas the reader holds nothing of in one format: on paper, or heard when `audio` is set — the saga heard is a saga of its own, so one read and never heard is one to discover among the recordings. Each with the id its catalogue is keyed on in that format.
   """
   sagasNotHeld(audio: Boolean!): [AuthorSeries!]!
+}
+
+"""
+What one author has for the reader in one format, outside the sagas they hold: the author page’s "Prochaines sorties" and "Nouveautés".
+"""
+type AuthorReleases {
+  """The soonest work announced, to the day, the month or the year."""
+  next: DiscoveredWork
+
+  """
+  The works out in the last three months — dated to the day, or to a month over — the newest first, a recording Audible never confirmed included, without its `audibleUrl`.
+  """
+  recent: [DiscoveredWork!]!
 }
 
 """A saga the author wrote that the reader holds nothing of."""
@@ -2225,6 +2238,11 @@ type Query {
   One author’s page. Built on first sight when nobody has opened it yet: one web-grounded model call for the facts and the bibliography — titles as the edition the reader holds titles them, the rest in the language of `Accept-Language` — and Wikipedia for the portrait. That first opening takes a few seconds; every later one, by anyone, reads the stored catalogue. Null when the reader holds no book of the author.
   """
   authorPage(key: AuthorKey!): AuthorPage
+
+  """
+  What the author page shows under its heading, in one format: the soonest work announced and the ones out in the last three months, outside the sagas the reader holds — the Découvrir Authors shelf’s row for that author. Empty for an author the reader holds nothing of in that format, or never looked up yet.
+  """
+  authorReleases(format: ReleaseFormat!, key: AuthorKey!): AuthorReleases!
 
   """
   The editions the reader awaits in one format: the ones out first, the newest first; then the ones announced, the soonest first; then the ones not announced, the latest awaited first. One the library now holds is no longer awaited and is left out.

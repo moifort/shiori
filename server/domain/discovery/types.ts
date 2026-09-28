@@ -151,13 +151,17 @@ export type AuthorWatch = {
 /** One row of the Découvrir tab's Authors shelf: an author the reader holds,
  *  drawn as the Library's Authors shelf draws them, and what they have for
  *  the reader outside the sagas the reader already holds. */
-export type AuthorDiscovery = {
-  author: FollowedAuthor
+/** What one author has for the reader in one format, outside the sagas they
+ *  hold. */
+export type AuthorReleases = {
   /** The soonest work announced. */
   next?: FoundWork
-  /** The works out in the last week the reader can have now, the newest
-   *  first. */
+  /** The works out in the last three months, the newest first. */
   recent: FoundWork[]
+}
+
+export type AuthorDiscovery = AuthorReleases & {
+  author: FollowedAuthor
 }
 
 /** The Découvrir tab in one format. */

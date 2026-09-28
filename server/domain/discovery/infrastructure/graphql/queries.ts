@@ -1,5 +1,6 @@
 import { BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
 import {
+  AuthorReleasesType,
   DiscoveryType,
   ReleaseFormatEnum,
   SagaReleasesType,
@@ -35,5 +36,19 @@ builder.queryFields((t) => ({
     },
     resolve: (_root, { seriesId, language }, context) =>
       DiscoveryUseCase.sagaReleases(context.userId, seriesId, language),
+  }),
+  authorReleases: t.field({
+    type: AuthorReleasesType,
+    description:
+      'What the author page shows under its heading, in one format: the soonest work ' +
+      'announced and the ones out in the last three months, outside the sagas the reader ' +
+      'holds — the Découvrir Authors shelf’s row for that author. Empty for an author the ' +
+      'reader holds nothing of in that format, or never looked up yet.',
+    args: {
+      key: t.arg({ type: 'AuthorKey', required: true }),
+      format: t.arg({ type: ReleaseFormatEnum, required: true }),
+    },
+    resolve: (_root, { key, format }, context) =>
+      DiscoveryUseCase.authorReleases(context.userId, key, format),
   }),
 }))

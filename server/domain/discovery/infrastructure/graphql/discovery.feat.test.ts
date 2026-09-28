@@ -258,3 +258,23 @@ describe('the saga screen', () => {
     })
   })
 })
+
+describe('the author page', () => {
+  test('says what the author has for the reader in the format asked, their sagas left out', async () => {
+    const result = await run(
+      `{ authorReleases(key: "${dinniman}", format: BOOK) { next { title date } recent { title } } }`,
+    )
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.authorReleases).toEqual({
+      next: { title: 'Kaiju Battlefield Surgeon', date: '2099-11-03' },
+      recent: [],
+    })
+  })
+
+  test('has nothing in a format the reader does not hold the author in', async () => {
+    const result = await run(
+      `{ authorReleases(key: "${dinniman}", format: AUDIOBOOK) { next { title } recent { title } } }`,
+    )
+    expect(result.data?.authorReleases).toEqual({ next: null, recent: [] })
+  })
+})
