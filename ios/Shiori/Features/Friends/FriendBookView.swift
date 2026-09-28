@@ -316,3 +316,28 @@ struct FriendBookPage: View {
         }
     }
 }
+
+extension FriendBook {
+    static let preview = FriendBook(
+        book: Book(
+            id: "preview",
+            title: "Le Nom du vent",
+            authors: ["Patrick Rothfuss"],
+            synopsis: "Kvothe raconte sa vie, de la troupe de comédiens où il a grandi à l'Université.",
+            genre: .fantasy,
+            series: SeriesMembership(id: "kkc", name: "Chronique du tueur de roi", volume: 1, kind: .main),
+            status: .read,
+            rating: 5,
+            favorite: true
+        ),
+        inLibrary: true
+    )
+}
+
+#Preview("Friend's book held already") {
+    NavigationStack {
+        FriendBookPage(entry: .preview, friendName: "Camille", added: nil, awaited: []) { _ in }
+            .navigationTitle("Chez Camille")
+            .navigationBarTitleDisplayMode(.inline)
+    }
+}

@@ -66,3 +66,26 @@ extension View {
             .listRowInsets(EdgeInsets())
     }
 }
+
+#Preview("Ribbons") {
+    List {
+        Section {} header: {
+            ReleaseRibbon(text: "Sort le 5 novembre 2026", systemImage: "clock", tint: .orange).ribbonRow()
+        }
+        Section {} header: {
+            ReleaseRibbon(text: "Sorti le 10 sept. 2026", systemImage: "checkmark.circle", tint: .green).ribbonRow()
+        }
+        Section {} header: {
+            ReleaseRibbon(text: "Annoncé", systemImage: "clock", tint: .gray).ribbonRow()
+        }
+        Section {} header: {
+            ReleaseRibbon(
+                text: "Déjà dans votre bibliothèque",
+                systemImage: "exclamationmark.triangle.fill",
+                tint: .orange
+            )
+            .ribbonRow()
+        }
+    }
+    .listStyle(.insetGrouped)
+}

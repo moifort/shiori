@@ -155,3 +155,34 @@ struct AnnouncedVolumeView: View {
         }
     }
 }
+
+extension SagaDiscovery {
+    static let preview = SagaDiscovery(
+        series: FollowedSeries(
+            seriesId: "dcc",
+            name: "Dungeon Crawler Carl",
+            isAudio: true,
+            author: "Matt Dinniman",
+            language: .fr,
+            state: .inProgress,
+            genre: .fantasy,
+            ownedCount: 7
+        ),
+        releases: SagaReleases(
+            watched: true,
+            next: DiscoveredVolume(
+                number: 8,
+                title: "Le Livre du Carnage",
+                date: "2026-11-05",
+                isbn13: nil,
+                coverURL: nil
+            )
+        )
+    )
+}
+
+#Preview("Announced volume") {
+    NavigationStack {
+        AnnouncedVolumeView(saga: .preview, volume: SagaDiscovery.preview.releases.next!)
+    }
+}

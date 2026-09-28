@@ -269,3 +269,27 @@ struct AwaitedEditionsListView: View {
         }
     }
 }
+
+extension AwaitedEdition {
+    static let preview = AwaitedEdition(
+        id: "preview",
+        format: .audiobook,
+        state: .announced,
+        title: "Opération Bounce House",
+        originalTitle: "Operation Bounce House",
+        originalLanguage: .en,
+        authors: ["Matt Dinniman"],
+        date: "2026-11-05",
+        coverURL: nil,
+        storeURL: nil,
+        awaitedAt: .now.addingTimeInterval(-3 * 86400),
+        bookId: "book",
+        ownerId: "me"
+    )
+}
+
+#Preview("Awaited edition") {
+    NavigationStack {
+        AwaitedEditionView(edition: .preview) {}
+    }
+}
