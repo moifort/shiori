@@ -15,9 +15,8 @@ final class DiscoverViewModel {
     private(set) var feed: DiscoveryFeed
     private(set) var isLoading = false
     private(set) var errorMessage: String?
-    /// The sagas never looked up are being looked up on the web, behind a
-    /// loader when the tab has nothing to show yet, a row above the others
-    /// otherwise.
+    /// The first look at a format: everything the reader follows in it is
+    /// being looked up on the web, and the tab has nothing to show until it is.
     private(set) var isLookingUp = false
 
     /// Bringing last session's rows up to date failed: the rows are the ones
@@ -174,13 +173,22 @@ final class DiscoverViewModel {
             return true
         }
         isLoading = false
-        // Sagas nobody ever looked up are looked up now, rather than leaving
-        // the tab empty until the hourly pass.
-        if page.unwatched > 0, !lookedUp.contains(format) {
-            await lookUp(format)
+        // The very first look, when nothing the reader follows in this format
+        // was ever looked up, is looked up now rather than leaving the tab
+        // empty until the hourly pass. A saga or an author followed since is
+        // left to that pass: it has rows to show meanwhile. Run apart from the
+        // view's task, so leaving the tab does not call the lookup off halfway.
+        if Self.isFirstLook(page), !lookedUp.contains(format) {
+            await Task { await lookUp(format) }.value
         }
         await askForAlertsIfWorthIt(format)
         return false
+    }
+
+    /// Whether the reader follows something in this format and none of it was
+    /// ever looked up.
+    static func isFirstLook(_ page: DiscoveryPage) -> Bool {
+        page.followed > 0 && page.unwatched == page.followed
     }
 
     /// Look up on the web the sagas of that format never looked up.

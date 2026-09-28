@@ -30,9 +30,10 @@ import SwiftUI
 /// whole list, where a swipe gives one up.
 ///
 /// The server looks the sagas up on the web once a week. The tab opens on the
-/// rows it last showed, brought up to date silently underneath; sagas nobody
-/// ever looked up — every saga, on the very first look — are looked up at once,
-/// behind a loader or a row above the others.
+/// rows it last showed, brought up to date silently underneath. On the very
+/// first look at a format, when nothing followed in it was ever looked up, it
+/// is all looked up at once behind a full-screen message; a saga or an author
+/// followed since waits for the hourly pass.
 struct DiscoverView: View {
     @State private var viewModel = DiscoverViewModel()
     @State private var openSeries: SagaDiscovery?
@@ -140,11 +141,10 @@ struct DiscoverView: View {
 
     @ViewBuilder
     private var content: some View {
-        if viewModel.isLookingUp, viewModel.rows(format)?.isEmpty ?? true {
-            // The first look: the sagas are being looked up on the web, and
-            // there is nothing to show until they are.
-            ProgressView("Recherche des prochaines sorties…")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        if viewModel.isLookingUp {
+            // The first look: everything followed is being looked up on the
+            // web, and there is nothing to show until it is.
+            DiscoverFirstLookView()
                 .accessibilityIdentifier("discover-looking-up")
         } else if let rows = viewModel.rows(format) {
             list(rows)
@@ -167,17 +167,6 @@ struct DiscoverView: View {
                     loadingLabel: "Mise à jour de Découvrir",
                     onRetry: { await viewModel.refresh(format) }
                 )
-            }
-            if viewModel.isLookingUp {
-                // Sagas followed since are being looked up: the rows already
-                // there stay, the new ones slide in when they are found.
-                Section {
-                    HStack(spacing: 10) {
-                        ProgressView()
-                        Text("Recherche des prochaines sorties…")
-                            .foregroundStyle(.secondary)
-                    }
-                }
             }
             friendPicksSection
             if shelf == .books { awaitedSection }
@@ -256,7 +245,7 @@ struct DiscoverView: View {
             : rows.filter { $0.releases.next != nil }
         let recentVolumes = viewModel.recentVolumes(format) ?? []
         let recentSagas = viewModel.recentSagas(format) ?? []
-        if upcoming.isEmpty && recentSagas.isEmpty && !viewModel.isLookingUp {
+        if upcoming.isEmpty && recentSagas.isEmpty {
             Section {
                 EmptyStateView(
                     systemImage: format == .audiobook ? "headphones" : "sparkles",
@@ -303,7 +292,7 @@ struct DiscoverView: View {
     private var authorSections: some View {
         let upcoming = viewModel.upcomingAuthors(format) ?? []
         let recent = viewModel.recentAuthors(format) ?? []
-        if upcoming.isEmpty && recent.isEmpty && !viewModel.isLookingUp {
+        if upcoming.isEmpty && recent.isEmpty {
             Section {
                 EmptyStateView(
                     systemImage: format == .audiobook ? "headphones" : "person.2",
