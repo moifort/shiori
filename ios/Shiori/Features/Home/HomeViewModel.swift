@@ -12,9 +12,10 @@ final class HomeViewModel {
 
     private(set) var dashboard: Dashboard?
     /// What is new in the sagas followed, read or heard: the volumes just out,
-    /// the newest first, then the next one announced of each saga, the soonest
-    /// first — Découvrir's two sections, both formats together.
-    private(set) var releases: [DiscoveryVolume] = []
+    /// the newest first, then what is announced, the soonest first — the next
+    /// volume of each saga, both formats together, and the recordings the
+    /// reader awaits once they have a date.
+    private(set) var releases: [HomeRelease] = []
     /// What the reader's friends hearted lately, the newest first.
     private(set) var friendFavorites: [FriendFavorite] = []
     private(set) var isLoading = false
@@ -30,7 +31,7 @@ final class HomeViewModel {
     /// The last dashboard on disk. Bump the version whenever `Dashboard`
     /// changes shape.
     private let cache = SnapshotCache<Dashboard>("dashboard", version: 4)
-    private let releasesCache = SnapshotCache<[DiscoveryVolume]>("dashboard-releases", version: 2)
+    private let releasesCache = SnapshotCache<[HomeRelease]>("dashboard-releases", version: 3)
     private let favoritesCache = SnapshotCache<[FriendFavorite]>("dashboard-friend-favorites", version: 1)
 
     /// How many releases the dashboard lines up; the rest are Découvrir's.
@@ -74,7 +75,7 @@ final class HomeViewModel {
 
     /// A section that came back replaces the one on screen, and is kept for
     /// the next launch.
-    private func keep(releases: [DiscoveryVolume]?, favorites: [FriendFavorite]?) {
+    private func keep(releases: [HomeRelease]?, favorites: [FriendFavorite]?) {
         if let releases {
             withAnimation(.smooth) { self.releases = releases }
             let cache = releasesCache
@@ -87,25 +88,40 @@ final class HomeViewModel {
         }
     }
 
+    /// The releases alone, when an edition was awaited or given up: the
+    /// figures around them have not moved.
+    func reloadReleases() async {
+        keep(releases: await Self.fetchReleases(), favorites: nil)
+    }
+
     /// Découvrir's rows in both formats: the volumes just out, the newest
-    /// first, then the volumes still to come, the soonest first. Nil when
-    /// either format could not be read.
-    private static func fetchReleases() async -> [DiscoveryVolume]? {
+    /// first, then the volumes still to come, the soonest first, among which
+    /// the recordings awaited that have a date. Nil when either format could
+    /// not be read; the awaited recordings are left out when they could not.
+    private static func fetchReleases() async -> [HomeRelease]? {
         async let books = try? DiscoverAPI.discovery(format: .book)
         async let audiobooks = try? DiscoverAPI.discovery(format: .audiobook)
+        async let awaited = try? AwaitedAPI.awaited(format: .audiobook)
         guard let books = await books, let audiobooks = await audiobooks else { return nil }
         let rows = books.rows + audiobooks.rows
         let recent = rows
             .flatMap { saga in saga.recent.map { DiscoveryVolume(saga: saga, volume: $0) } }
             .sorted { ($0.volume.date ?? "", $0.volume.number) > ($1.volume.date ?? "", $1.volume.number) }
-        let upcoming = rows.compactMap { row -> (DiscoveryVolume, String)? in
-            guard let next = row.releases.next, let date = next.date, ReleaseDateText.isUpcoming(date) else {
-                return nil
-            }
-            return (DiscoveryVolume(saga: row, volume: next), ReleaseDateText.lastDay(date))
+            .map(HomeRelease.volume)
+        let nextVolumes = rows.compactMap { row -> HomeRelease? in
+            guard let next = row.releases.next else { return nil }
+            return .volume(DiscoveryVolume(saga: row, volume: next))
         }
-        .sorted { $0.1 != $1.1 ? $0.1 < $1.1 : $0.0.saga.series.name.localizedStandardCompare($1.0.saga.series.name) == .orderedAscending }
-        .map(\.0)
+        let awaitedRecordings = (await awaited ?? [])
+            .filter { $0.state == .announced }
+            .map(HomeRelease.awaited)
+        let upcoming = (nextVolumes + awaitedRecordings)
+            .compactMap { release -> (HomeRelease, String)? in
+                guard let date = release.date, ReleaseDateText.isUpcoming(date) else { return nil }
+                return (release, ReleaseDateText.lastDay(date))
+            }
+            .sorted { $0.1 != $1.1 ? $0.1 < $1.1 : $0.0.name.localizedStandardCompare($1.0.name) == .orderedAscending }
+            .map(\.0)
         return Array((recent + upcoming).prefix(releasesShown))
     }
 
@@ -127,5 +143,35 @@ final class HomeViewModel {
     func refresh() async {
         refreshFailed = false
         refreshFailed = await load()
+    }
+}
+
+/// One tile of the dashboard's news: a volume of a saga followed, or a
+/// recording the reader awaits.
+enum HomeRelease: Identifiable, Codable, Sendable {
+    case volume(DiscoveryVolume)
+    case awaited(AwaitedEdition)
+
+    var id: String {
+        switch self {
+        case let .volume(release): release.id
+        case let .awaited(edition): "awaited-\(edition.id)"
+        }
+    }
+
+    /// `YYYY`, `YYYY-MM` or `YYYY-MM-DD`; nil for what is announced undated.
+    var date: String? {
+        switch self {
+        case let .volume(release): release.volume.date
+        case let .awaited(edition): edition.date
+        }
+    }
+
+    /// What orders two releases out the same day: the saga, or the title.
+    var name: String {
+        switch self {
+        case let .volume(release): release.saga.series.name
+        case let .awaited(edition): edition.title
+        }
     }
 }

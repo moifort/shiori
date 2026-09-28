@@ -30,6 +30,8 @@ struct HomeView: View {
     @State private var openSeries: OpenedSeries?
     /// The volume announced opened from the releases, as Découvrir opens it.
     @State private var openRelease: DiscoveryVolume?
+    /// The recording awaited opened from the releases, as Découvrir opens it.
+    @State private var openAwaited: AwaitedEdition?
     /// The friend's favourite opened, on its read-only page.
     @State private var openFavorite: FriendFavorite?
 
@@ -100,6 +102,19 @@ struct HomeView: View {
                 }
             }
         }
+        .sheet(item: $openAwaited) { edition in
+            NavigationStack {
+                AwaitedEditionView(edition: edition) {
+                    Task {
+                        do { try await AwaitedAPI.stop(id: edition.id) } catch { _ = reportError(error) }
+                    }
+                }
+            }
+        }
+        // A recording awaited or given up comes into the releases, or leaves.
+        .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
+            Task { await viewModel.reloadReleases() }
+        }
         .sheet(isPresented: $showSettings) {
             SettingsHomeView()
         }
@@ -131,7 +146,12 @@ struct HomeView: View {
                     onBookTapped: { selectedBook = $0 },
                     onSeriesOpened: { openSeries = OpenedSeries(id: $0) },
                     onReleasesTapped: onShowDiscover,
-                    onReleaseTapped: { openRelease = $0 },
+                    onReleaseTapped: { release in
+                        switch release {
+                        case let .volume(volume): openRelease = volume
+                        case let .awaited(edition): openAwaited = edition
+                        }
+                    },
                     onFriendFavoritesTapped: onShowShared,
                     onFriendFavoriteTapped: { openFavorite = $0 }
                 )
