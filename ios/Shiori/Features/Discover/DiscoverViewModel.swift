@@ -2,9 +2,10 @@ import Foundation
 import SwiftUI
 
 /// Owns the Découvrir tab's rows, one list per format, and the one in-flight
-/// load. The tab opens on the rows it last showed: a `SnapshotCache` hands them
-/// back from disk before a byte is asked of the network, and the fetch brings
-/// them up to date silently underneath.
+/// load. The tab opens on everything it last showed — the rows, the friends'
+/// picks and the editions awaited: a `SnapshotCache` hands them back from disk
+/// before a byte is asked of the network, and the fetches bring them up to
+/// date silently underneath, the new rows sliding into place.
 @MainActor
 @Observable
 final class DiscoverViewModel {
@@ -31,7 +32,7 @@ final class DiscoverViewModel {
     private var lookedUp: Set<ReleaseFormat> = []
 
     /// Bump the version whenever `DiscoveryFeed` changes shape.
-    private let cache = SnapshotCache<DiscoveryFeed>("discovery", version: 5)
+    private let cache = SnapshotCache<DiscoveryFeed>("discovery", version: 6)
 
     /// The rows of a format, nil until they were ever loaded.
     func rows(_ format: ReleaseFormat) -> [SagaDiscovery]? { feed.rows[format] }
@@ -98,30 +99,31 @@ final class DiscoverViewModel {
             .sorted { ($0.recent.first?.date ?? "") > ($1.recent.first?.date ?? "") }
     }
 
-    /// "Coups de cœur de vos amis", whatever the format: empty until loaded,
-    /// and last load's when a later one fails — the section is a suggestion,
-    /// not worth an error of its own.
-    private(set) var picks = FriendPicks()
+    /// "Coups de cœur de vos amis", whatever the format: last session's until
+    /// loaded, and last load's when a later one fails — the section is a
+    /// suggestion, not worth an error of its own.
+    var picks: FriendPicks { feed.picks }
 
     func loadPicks() async {
         do {
             let found = try await FriendsAPI.picks()
-            withAnimation(.smooth) { picks = found }
+            withAnimation(.smooth) { feed.picks = found }
+            saveSnapshot()
         } catch {
             _ = reportError(error)
         }
     }
 
-    /// The editions awaited in each format, the ones out first: empty until
-    /// loaded, and last load's when a later one fails, as the friends' picks.
-    private(set) var awaited: [ReleaseFormat: [AwaitedEdition]] = [:]
-
-    func awaited(_ format: ReleaseFormat) -> [AwaitedEdition] { awaited[format] ?? [] }
+    /// The editions awaited in a format, the ones out first: last session's
+    /// until loaded, and last load's when a later one fails, as the friends'
+    /// picks.
+    func awaited(_ format: ReleaseFormat) -> [AwaitedEdition] { feed.awaited[format] ?? [] }
 
     func loadAwaited(_ format: ReleaseFormat) async {
         do {
             let found = try await AwaitedAPI.awaited(format: format)
-            withAnimation(.smooth) { awaited[format] = found }
+            withAnimation(.smooth) { feed.awaited[format] = found }
+            saveSnapshot()
         } catch {
             guard !isCancellation(error) else { return }
             _ = reportError(error)
@@ -130,18 +132,19 @@ final class DiscoverViewModel {
 
     /// Every format already shown is asked again.
     func reloadAwaited() async {
-        for format in awaited.keys { await loadAwaited(format) }
+        for format in feed.awaited.keys { await loadAwaited(format) }
     }
 
     /// Gives the wait up, taking the edition off at once and putting it back
     /// if the server refused.
     func stopAwaiting(_ edition: AwaitedEdition) async {
-        let before = awaited[edition.format]
-        withAnimation(.smooth) { awaited[edition.format]?.removeAll { $0.id == edition.id } }
+        let before = feed.awaited[edition.format]
+        withAnimation(.smooth) { feed.awaited[edition.format]?.removeAll { $0.id == edition.id } }
         do {
             try await AwaitedAPI.stop(id: edition.id)
+            saveSnapshot()
         } catch {
-            withAnimation(.smooth) { awaited[edition.format] = before }
+            withAnimation(.smooth) { feed.awaited[edition.format] = before }
             errorMessage = reportError(error)
         }
     }
@@ -232,6 +235,11 @@ final class DiscoverViewModel {
             feed.rows[format] = page.rows
             feed.authors[format] = page.authors
         }
+        saveSnapshot()
+    }
+
+    /// Everything on screen goes to disk, for the next launch to open on.
+    private func saveSnapshot() {
         let snapshot = feed
         let cache = cache
         Task.detached { cache.write(snapshot) }

@@ -29,8 +29,9 @@ import SwiftUI
 /// a strip of covers, the ones out first — "Voir les livres guettés" opens the
 /// whole list, where a swipe gives one up.
 ///
-/// The server looks the sagas up on the web once a week. The tab opens on the
-/// rows it last showed, brought up to date silently underneath. On the very
+/// The server looks the sagas up on the web once a week. The tab opens on
+/// everything it last showed — the rows, the friends' picks, the books awaited
+/// — brought up to date silently underneath, as the Series tab is. On the very
 /// first look at a format, when nothing followed in it was ever looked up, it
 /// is all looked up at once behind a full-screen message; a saga or an author
 /// followed since waits for the hourly pass.

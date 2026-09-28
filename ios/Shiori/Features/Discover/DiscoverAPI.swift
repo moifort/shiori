@@ -126,6 +126,10 @@ struct DiscoveryFeed: Codable, Sendable {
     var authors: [ReleaseFormat: [AuthorDiscovery]] = [:]
     /// How many sagas and authors the reader follows in each format.
     var followed: [ReleaseFormat: Int] = [:]
+    /// "Coups de cœur de vos amis", whatever the format.
+    var picks = FriendPicks()
+    /// The editions awaited in each format, the ones out first.
+    var awaited: [ReleaseFormat: [AwaitedEdition]] = [:]
 }
 
 /// The tab in one format, and how many of its sagas and authors were never
