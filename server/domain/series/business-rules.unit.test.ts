@@ -17,6 +17,7 @@ import {
   stateOf,
   withoutDuplicateVolumes,
   withReleases,
+  withShelvedVolumes,
 } from '~/domain/series/business-rules'
 import { ReleaseDate, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import type { Series, Volume } from '~/domain/series/types'
@@ -382,7 +383,14 @@ describe('cataloguesOf', () => {
     id: dune,
     name: SeriesName('Dune'),
     author: AuthorName('Frank Herbert'),
-    volumes: [],
+    volumes: [
+      {
+        number: VolumeNumber(1),
+        title: BookTitle('Dune'),
+        publishedIn: Year(1965),
+        kind: 'main',
+      },
+    ],
     catalogedAt: new Date('2026-01-01'),
   }
 
@@ -424,6 +432,77 @@ describe('cataloguesOf', () => {
     expect(catalogues.get(kingkiller)?.volumes.map((volume) => String(volume.title))).toEqual([
       'Le Nom du vent',
       'Kingkiller',
+    ])
+  })
+
+  // A volume out after the saga was catalogued, filed by hand: the stored
+  // catalogue does not know it, and the reader's shelf must still show it.
+  test('adds to the stored catalogue the owned volumes it does not list', () => {
+    const catalogues = cataloguesOf(
+      [volume(dune, 'Dune', 'Dune', 1), volume(dune, 'Dune', 'Le Messie de Dune', 2)],
+      [known],
+      [],
+    )
+
+    expect(catalogues.get(dune)?.volumes.map((volume) => Number(volume.number))).toEqual([1, 2])
+  })
+})
+
+describe('withShelvedVolumes', () => {
+  const traskman: Series = {
+    id: SeriesId('caleb-traskman--franck-thilliez--audio'),
+    name: SeriesName('Caleb Traskman'),
+    author: AuthorName('Franck Thilliez'),
+    volumes: [
+      volume({ title: 'Le Manuscrit inachevé', number: VolumeNumber(1), publishedIn: Year(2018) }),
+      volume({ title: 'Il était deux fois', number: VolumeNumber(2), publishedIn: Year(2020) }),
+      volume({ title: 'Labyrinthes', number: VolumeNumber(3), publishedIn: Year(2022) }),
+      volume({ title: 'Hors-série', kind: 'novella' }),
+    ],
+    catalogedAt: new Date('2026-01-01'),
+  }
+  const shelved = (title: string, number: number | undefined, kind: Volume['kind'] = 'main') => ({
+    title: BookTitle(title),
+    series: { volume: number === undefined ? undefined : VolumeNumber(number), kind },
+  })
+
+  // The catalogue was written before the fourth volume came out: filed by
+  // hand, it vanished from its own saga's strip and the saga read as finished.
+  test('adds an owned numbered volume the catalogue does not list, as a main volume', () => {
+    const series = withShelvedVolumes(traskman, [
+      shelved('Labyrinthes', 3),
+      { ...shelved('La Route du diable', 4), firstPublishedIn: Year(2026) },
+    ])
+
+    expect(series.volumes.slice(3)).toEqual([
+      volume({ title: 'Hors-série', kind: 'novella' }),
+      {
+        number: VolumeNumber(4),
+        title: BookTitle('La Route du diable'),
+        publishedIn: Year(2026),
+        kind: 'main',
+      },
+    ])
+    expect(stateOf(series, new Set([1, 2, 3]), THIS_YEAR)).toBe('in-progress')
+  })
+
+  test('answers the catalogue itself when it lists every owned volume', () => {
+    expect(withShelvedVolumes(traskman, [shelved('Labyrinthes', 3)])).toBe(traskman)
+  })
+
+  // Only a number places a volume on the spine: an unnumbered or related book
+  // has nowhere to go, and a number held twice is one volume.
+  test('leaves out related works and unnumbered volumes, and adds a number once', () => {
+    const series = withShelvedVolumes(traskman, [
+      shelved('Une nouvelle', undefined, 'novella'),
+      shelved('Sans numéro', undefined),
+      shelved('Une préquelle', 5, 'prequel'),
+      shelved('La Route du diable', 4),
+      shelved('La Route du diable (audio)', 4),
+    ])
+
+    expect(series.volumes.slice(4).map((volume) => String(volume.title))).toEqual([
+      'La Route du diable',
     ])
   })
 })

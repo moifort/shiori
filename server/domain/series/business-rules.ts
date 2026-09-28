@@ -206,6 +206,45 @@ export const provisionalCatalogueOf = (
   }
 }
 
+/** A stored catalogue with the reader's own numbered volumes it does not list.
+ *
+ *  A catalogue is written once, so a volume out since — or one the model never
+ *  found, as an Audible original often is — is missing from it, and a reader
+ *  who files that volume by hand saw it vanish from its own saga: the strip,
+ *  the saga screen and the state all walk the catalogue's spine. The volume
+ *  takes its place there with the reader's title and year, as the provisional
+ *  catalogue lays out theirs. Answered to this reader only, never stored: the
+ *  shared catalogue holds what the world says. Related works and unnumbered
+ *  volumes have no place on a spine and are left off. The catalogue itself
+ *  when it already lists every owned number. */
+export const withShelvedVolumes = (
+  series: Series,
+  owned: readonly {
+    title: BookTitle
+    firstPublishedIn?: YearValue
+    series?: { volume?: VolumeNumber; kind: VolumeKind }
+  }[],
+): Series => {
+  const listed = new Set(
+    series.volumes.flatMap((volume) =>
+      volume.kind === 'main' && volume.number !== undefined ? [Number(volume.number)] : [],
+    ),
+  )
+  const shelved: Volume[] = []
+  for (const book of owned) {
+    const number = book.series?.volume
+    if (book.series?.kind !== 'main' || number === undefined || listed.has(Number(number))) continue
+    listed.add(Number(number))
+    shelved.push({
+      number,
+      title: book.title,
+      ...(book.firstPublishedIn !== undefined ? { publishedIn: book.firstPublishedIn } : {}),
+      kind: 'main',
+    })
+  }
+  return shelved.length === 0 ? series : { ...series, volumes: [...series.volumes, ...shelved] }
+}
+
 /** The catalogue each of the reader's sagas is drawn from, keyed by saga: the
  *  world's when somebody has described it, else the one the reader's own count
  *  makes, else none. One entry per saga whatever the number of languages it is
@@ -220,6 +259,7 @@ export const cataloguesOf = (
     title: BookTitle
     authors: AuthorName[]
     language?: BookLanguage
+    firstPublishedIn?: YearValue
     series?: { id: SeriesId; name: SeriesName; volume?: VolumeNumber; kind: VolumeKind }
   }[],
   known: readonly Series[],
@@ -238,7 +278,13 @@ export const cataloguesOf = (
     if (catalogues.has(saga.id)) continue
     const series = stored.get(saga.id)
     if (series) {
-      catalogues.set(saga.id, series)
+      catalogues.set(
+        saga.id,
+        withShelvedVolumes(
+          series,
+          books.filter((book) => book.series?.id === saga.id),
+        ),
+      )
       continue
     }
     const count = counts.get(saga.id)

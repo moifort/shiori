@@ -17,6 +17,7 @@ import {
   isRecentMiss,
   matchingFilter,
   progressOf,
+  withShelvedVolumes,
 } from '~/domain/series/business-rules'
 import { isAudioSeries, seriesIdFor, seriesKeyOf } from '~/domain/series/primitives'
 import { SeriesQuery } from '~/domain/series/query'
@@ -220,7 +221,7 @@ export namespace SeriesUseCase {
     proposed?: ProposedSaga,
   ): Promise<Series | null> => {
     const known = await SeriesQuery.byId(seriesId)
-    if (known) return known
+    if (known) return withShelvedVolumes(known, await BookQuery.bySeries(userId, seriesId))
     // The reader counted the volumes themselves: their spine is drawn from
     // that, and the world is only asked again when they ask for it — every
     // opening would otherwise wait on a model call that already failed once.
@@ -264,9 +265,8 @@ export namespace SeriesUseCase {
     edition: BookLanguage | undefined,
     proposed?: ProposedSaga,
   ): Promise<Series | null> => {
-    const held = (await BookQuery.bySeries(userId, seriesId)).filter(
-      (book) => book.series && book.authors.length > 0,
-    )
+    const shelf = await BookQuery.bySeries(userId, seriesId)
+    const held = shelf.filter((book) => book.series && book.authors.length > 0)
     // The edition the reader opened first, then any volume that says its
     // language, then whatever they hold.
     const volume =
@@ -297,7 +297,7 @@ export namespace SeriesUseCase {
     // none until now: flagged here, or the progress bar would wait for the next
     // unrelated book write to appear.
     if (series) await AnalyticsUseCase.markStale(userId)
-    return series ?? null
+    return series ? withShelvedVolumes(series, shelf) : null
   }
 }
 

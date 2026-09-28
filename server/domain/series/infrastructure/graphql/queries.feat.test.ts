@@ -119,6 +119,42 @@ describe('the sagas a reader follows', () => {
   })
 })
 
+describe('a volume the catalogue does not list', () => {
+  // The catalogue was written with three volumes; the fourth, out since, was
+  // filed by hand. It vanished from its saga's strip and screen, and the saga
+  // read as finished with it still unread.
+  test('sits on the spine of the saga screen and the Series tab, and keeps the saga open', async () => {
+    await addVolume('Dune', 1, { status: 'READ' })
+    answers = [
+      {
+        name: 'Dune',
+        author: 'Frank Herbert',
+        volumes: [{ kind: 'main', number: 1, title: 'Dune', publishedIn: 1965 }],
+      },
+    ]
+    expect((await execute('{ series(id: "dune--frank-herbert") { id } }')).errors).toBeUndefined()
+    await addVolume('Le Messie de Dune', 2)
+
+    const result = await execute(
+      `{
+        series(id: "dune--frank-herbert") { spine { number title } }
+        mySeries { state catalogue { spine { number } } }
+      }`,
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data).toEqual({
+      series: {
+        spine: [
+          { number: 1, title: 'Dune' },
+          { number: 2, title: 'Le Messie de Dune' },
+        ],
+      },
+      mySeries: [{ state: 'IN_PROGRESS', catalogue: { spine: [{ number: 1 }, { number: 2 }] } }],
+    })
+  })
+})
+
 describe('a saga heard and a saga read', () => {
   const addRecording = async (title: string, volume: number) => {
     const result = await execute(
@@ -163,7 +199,9 @@ describe('a saga heard and a saga read', () => {
     )
 
     expect(result.errors).toBeUndefined()
-    expect(result.data?.series).toEqual({ audio: true, spine: [{ number: 1 }] })
+    // The recording owned sits on the spine even though the catalogue found
+    // only the first volume.
+    expect(result.data?.series).toEqual({ audio: true, spine: [{ number: 1 }, { number: 2 }] })
     expect(prompts.catalogue).toContain('ENREGISTRÉS EN LIVRE AUDIO')
     // An Audible listing titles a recording "Dune (French edition)": the
     // catalogue keeps the work's title only.
