@@ -44,8 +44,8 @@ struct BookRow: View {
     /// what tells them apart.
     var genreInCorner: Bool = false
     var isHidden: Bool = false
-    /// The reader awaits its edition in the app's language: a bell at the end
-    /// of the author line.
+    /// The reader awaits its edition in the app's language: a bell in the
+    /// corner, beside the status.
     var isAwaited: Bool = false
     /// How far into a recording the player got, already formatted — "42 %".
     /// Passed only for a recording under way, and drawn as a chip beside the
@@ -105,9 +105,6 @@ struct BookRow: View {
                         Text(verbatim: authorLine.isEmpty ? "\(publishedIn)" : "· \(publishedIn)")
                             .foregroundStyle(.tertiary)
                             .fixedSize()
-                    }
-                    if isAwaited {
-                        AwaitedMark()
                     }
                 }
                 .font(.subheadline)
@@ -211,6 +208,9 @@ struct BookRow: View {
                     .foregroundStyle(.secondary)
                     .accessibilityLabel(Text("Non partagé"))
             }
+            if isAwaited {
+                AwaitedMark()
+            }
             OpinionMark(
                 rating: shownRating,
                 isFavorite: isFavorite,
@@ -263,14 +263,13 @@ struct BookRow: View {
     }
 }
 
-/// Says the reader awaits a book's edition in the app's language: a bell, in
-/// the orange of what is coming, at the end of its author line — on its row
+/// Says the reader awaits a book's edition in the app's language: a grey
+/// bell in the corner, beside the status, as the hidden eye is — on its row
 /// and on its page alike.
 struct AwaitedMark: View {
     var body: some View {
-        Image(systemName: "bell.fill")
-            .imageScale(.small)
-            .foregroundStyle(.orange)
+        Image(systemName: "bell")
+            .foregroundStyle(.secondary)
             .fixedSize()
             .accessibilityLabel(Text("Guetté"))
     }

@@ -82,10 +82,6 @@ struct BookPage: View {
                         if let series = book.series {
                             Text(verbatim: "· \(series.label)").fixedSize()
                         }
-                        if !awaited.isEmpty {
-                            AwaitedMark()
-                                .accessibilityIdentifier("book-awaited-mark")
-                        }
                     }
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -164,6 +160,10 @@ struct BookPage: View {
     /// no segment for it.
     private var badges: some View {
         HStack(spacing: 6) {
+            if !awaited.isEmpty {
+                AwaitedMark()
+                    .accessibilityIdentifier("book-awaited-mark")
+            }
             if book.status == .dropped {
                 ReadingStatusBadge(status: .dropped)
                     .scaleEffect(1.2)
