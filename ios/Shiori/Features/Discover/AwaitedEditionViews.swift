@@ -1,40 +1,5 @@
 import SwiftUI
 
-/// An awaited edition in a list: its cover, its title in the language awaited
-/// once found and the original's under it, and where it stands.
-struct AwaitedEditionRow: View {
-    let edition: AwaitedEdition
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            BookCover(book: edition.cover, width: 44)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(edition.title)
-                    .font(.body.weight(.medium))
-                    .lineLimit(2)
-                if !edition.authors.isEmpty {
-                    Text(edition.authors.joined(separator: ", "))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                if edition.title != edition.originalTitle {
-                    Text("Titre original : \(edition.originalTitle)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                Text(edition.stateLine)
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(edition.stateTint.map(AnyShapeStyle.init) ?? AnyShapeStyle(.secondary))
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.vertical, 2)
-        .accessibilityElement(children: .combine)
-    }
-}
-
 /// Découvrir's strip of the editions awaited in one format, drawn as the
 /// friends' favourites are: covers that scroll sideways, the ones out first
 /// with "Disponible" in green under them, the date of the ones announced in
@@ -213,64 +178,6 @@ struct AwaitedEditionView: View {
                     Button("Annuler", role: .cancel) {}
                 } message: {
                     Text("Vous ne serez plus prévenu de sa sortie.")
-                }
-            }
-        }
-    }
-}
-
-/// Every edition awaited in one format, as "Voir les livres suivis" opens
-/// them: the ones out, the ones announced, the ones not announced yet. A swipe
-/// gives one up.
-struct AwaitedEditionsListView: View {
-    let format: ReleaseFormat
-    let editions: [AwaitedEdition]
-    let onOpen: (AwaitedEdition) -> Void
-    let onStop: (AwaitedEdition) -> Void
-
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        List {
-            group("Disponibles", .available)
-            group("Annoncés", .announced)
-            group("Pas encore annoncés", .unannounced)
-        }
-        .listStyle(.insetGrouped)
-        .overlay {
-            if editions.isEmpty {
-                EmptyStateView(
-                    systemImage: format == .audiobook ? "headphones" : "character.book.closed",
-                    title: "Aucun livre suivi",
-                    message: "Suivez la version française d'un livre depuis sa fiche."
-                )
-            }
-        }
-        .navigationTitle("Livres suivis")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func group(_ title: LocalizedStringKey, _ state: AwaitedState) -> some View {
-        let shown = editions.filter { $0.state == state }
-        if !shown.isEmpty {
-            Section(title) {
-                ForEach(shown) { edition in
-                    AwaitedEditionRow(edition: edition)
-                        .contentShape(Rectangle())
-                        .onTapGesture { onOpen(edition) }
-                        .accessibilityAddTraits(.isButton)
-                        .swipeActions {
-                            Button("Ne plus suivre", systemImage: "bell.slash", role: .destructive) {
-                                onStop(edition)
-                            }
-                        }
-                        .accessibilityIdentifier("awaited-row")
                 }
             }
         }
