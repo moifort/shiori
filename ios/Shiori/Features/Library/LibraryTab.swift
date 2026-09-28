@@ -21,13 +21,13 @@ enum LibraryShelf: String, CaseIterable, Identifiable {
 /// than as the tab bar's native accessory: that bar is app-wide by design,
 /// hiding it for one tab needs iOS 26.1, and it misbehaves when shown
 /// conditionally under a selectable `TabView`. Each shelf keeps its own stack,
-/// toolbar and cache; the one last shown comes back on the next launch.
+/// toolbar and cache; a launch always opens on the books.
 struct LibraryTab: View {
     let onAdd: () -> Void
     @Binding var libraryRequest: LibraryRequest?
     @Binding var seriesRequest: SeriesRequest?
 
-    @AppStorage("library-shelf") private var shelf: LibraryShelf = .books
+    @State private var shelf: LibraryShelf = .books
 
     var body: some View {
         Group {

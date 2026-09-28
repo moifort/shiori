@@ -46,8 +46,8 @@ struct DiscoverView: View {
     /// The edition opened from the full list, pushed inside it.
     @State private var openListedAwaited: AwaitedEdition?
     @Environment(\.openURL) private var openURL
-    @AppStorage("discover.format") private var format: ReleaseFormat = .book
-    @AppStorage("discover-shelf") private var shelf: LibraryShelf = .series
+    @State private var format: ReleaseFormat = .book
+    @State private var shelf: LibraryShelf = .series
     /// The format was picked this session — by a tap, or once for the reader —
     /// and is kept even when it holds no saga.
     @State private var formatSettled = false

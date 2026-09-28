@@ -49,14 +49,10 @@ enum AuthorListOrder: String, CaseIterable, Identifiable {
 @MainActor
 @Observable
 final class AuthorListViewModel {
-    /// Opens on the order the reader last chose, as the Books shelf does.
+    /// Opens by name, as the Books shelf opens unfiltered.
     init() {
-        order = UserDefaults.standard.string(forKey: Self.orderKey)
-            .flatMap(AuthorListOrder.init) ?? .name
         authors = Self.cache(for: order).read() ?? []
     }
-
-    private static let orderKey = "authors.order"
 
     /// How the rows are listed. By name, every author is loaded at once: the
     /// alphabet down the side must reach Z without waiting for a page.
@@ -93,7 +89,6 @@ final class AuthorListViewModel {
     func show(_ order: AuthorListOrder) async {
         guard order != self.order else { return }
         self.order = order
-        UserDefaults.standard.set(order.rawValue, forKey: Self.orderKey)
         generation += 1
         authors = cache.read() ?? []
         hasMore = false
