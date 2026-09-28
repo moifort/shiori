@@ -1,9 +1,11 @@
 import SwiftUI
 
-/// Where a release stands, drawn as the app's icon draws its bookmark, laid
-/// on its side: a ribbon that comes out of the page's leading edge — the
-/// darker band where it is tucked in — and ends in the icon's notch, the words
-/// in white on the release's colour.
+/// The message on top of a book's page — where a release stands, a book
+/// already held — drawn as the app's icon draws its bookmark, laid on its
+/// side: a ribbon that comes out of the page's leading edge — the darker band
+/// where it is tucked in — and ends in the icon's notch, the words in white on
+/// the message's colour. Every page's top message wears it, a touch of the
+/// icon across the app.
 struct ReleaseRibbon: View {
     let text: String
     let systemImage: String

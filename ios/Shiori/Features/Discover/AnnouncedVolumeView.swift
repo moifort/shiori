@@ -26,7 +26,7 @@ struct AnnouncedVolumeView: View {
 
     var body: some View {
         List {
-            Section { stateLine }
+            Section {} header: { stateLine }
 
             ReadOnlyBookHeader(
                 book: book,
@@ -75,23 +75,19 @@ struct AnnouncedVolumeView: View {
         }
     }
 
-    /// When it comes out, or that it is out: a volume just out is opened from
-    /// "Nouvelles parutions".
-    @ViewBuilder
+    /// When it comes out, or that it is out, on a bookmark ribbon: a volume
+    /// just out is opened from "Nouvelles parutions".
     private var stateLine: some View {
         Group {
             if let date = volume.date, ReleaseDateText.isUpcoming(date) {
-                Label(ReleaseDateText.coming(date), systemImage: "clock")
-                    .foregroundStyle(.orange)
+                ReleaseRibbon(text: ReleaseDateText.coming(date), systemImage: "clock", tint: .orange)
             } else if let date = volume.date {
-                Label(ReleaseDateText.out(date), systemImage: "checkmark.circle")
-                    .foregroundStyle(.green)
+                ReleaseRibbon(text: ReleaseDateText.out(date), systemImage: "checkmark.circle", tint: .green)
             } else {
-                Label("Annoncé", systemImage: "clock")
-                    .foregroundStyle(.secondary)
+                ReleaseRibbon(text: String(localized: "Annoncé"), systemImage: "clock", tint: .gray)
             }
         }
-        .fontWeight(.semibold)
+        .ribbonRow()
         .accessibilityIdentifier("announced-volume-release")
     }
 

@@ -79,12 +79,14 @@ struct FriendBookView: View {
             // A warning before anything else: the page is about a book the
             // reader already holds, and its "+" is greyed out for that.
             if entry.inLibrary && added == nil {
-                Section {
-                    Label("Déjà dans votre bibliothèque", systemImage: "exclamationmark.triangle.fill")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.orange)
-                        .listRowBackground(Color.orange.opacity(0.15))
-                        .accessibilityIdentifier("friend-book-owned")
+                Section {} header: {
+                    ReleaseRibbon(
+                        text: String(localized: "Déjà dans votre bibliothèque"),
+                        systemImage: "exclamationmark.triangle.fill",
+                        tint: .orange
+                    )
+                    .ribbonRow()
+                    .accessibilityIdentifier("friend-book-owned")
                 }
             }
 
