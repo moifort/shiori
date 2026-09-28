@@ -135,12 +135,13 @@ struct AwaitedEditionsSection: View {
 }
 
 /// One awaited edition, opened from Découvrir, drawn as a volume announced
-/// is: where it stands on top — orange while announced, green once out —
-/// then the book's own section, with the store's tag in its corner once it
-/// sells it, what it is a translation or a recording of, and when it was
-/// awaited. Only what is known is drawn. "Ne plus guetter" sits in the corner,
-/// asked for twice as a saga's deletion is. The Audible sync brings a
-/// recording bought into the library by itself, which ends the wait.
+/// is: where it stands on top, on a bookmark ribbon — orange while announced,
+/// green once out — then the book's own section, with the store's tag in its
+/// corner once it sells it, what it is a translation or a recording of, and
+/// since when it is watched for. Only what is known is drawn. "Ne plus guetter"
+/// sits in the corner, asked for twice as a saga's deletion is. The Audible
+/// sync brings a recording bought into the library by itself, which ends the
+/// wait.
 struct AwaitedEditionView: View {
     let edition: AwaitedEdition
     let onStop: () -> Void
@@ -150,11 +151,14 @@ struct AwaitedEditionView: View {
 
     var body: some View {
         List {
-            Section {
-                Label(edition.stateLine, systemImage: edition.state == .available ? "checkmark.circle" : "clock")
-                    .foregroundStyle(edition.stateTint.map(AnyShapeStyle.init) ?? AnyShapeStyle(.secondary))
-                    .fontWeight(.semibold)
-                    .accessibilityIdentifier("awaited-state")
+            Section {} header: {
+                ReleaseRibbon(
+                    text: edition.stateLine,
+                    systemImage: edition.state == .available ? "checkmark.circle" : "clock",
+                    tint: edition.stateTint ?? .gray
+                )
+                .ribbonRow()
+                .accessibilityIdentifier("awaited-state")
             }
 
             ReadOnlyBookHeader(
@@ -166,9 +170,9 @@ struct AwaitedEditionView: View {
                 }
                 if let awaitedAt = edition.awaitedAt {
                     LabeledInfoRow(
-                        title: "Ajouté le",
+                        title: "Guetté depuis le",
                         value: awaitedAt.formatted(date: .abbreviated, time: .omitted),
-                        icon: "tray.and.arrow.down"
+                        icon: "binoculars"
                     )
                 }
             }
