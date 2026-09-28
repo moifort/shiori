@@ -36,7 +36,7 @@ import SwiftUI
 /// is all looked up at once behind a full-screen message; a saga or an author
 /// followed since waits for the hourly pass.
 struct DiscoverView: View {
-    @State private var viewModel = DiscoverViewModel()
+    @State private var viewModel: DiscoverViewModel
     @State private var openSeries: SagaDiscovery?
     /// The volume whose page is open, announced or just out.
     @State private var openVolume: DiscoveryVolume?
@@ -48,11 +48,22 @@ struct DiscoverView: View {
     /// The edition opened from the full list, pushed inside it.
     @State private var openListedAwaited: AwaitedEdition?
     @Environment(\.openURL) private var openURL
-    @State private var format: ReleaseFormat = .book
+    @State private var format: ReleaseFormat
     @State private var shelf: LibraryShelf = .series
     /// The format was picked this session — by a tap, or once for the reader —
     /// and is kept even when it holds no saga.
-    @State private var formatSettled = false
+    @State private var formatSettled: Bool
+
+    /// The tab opens on the format last session's snapshot says the reader
+    /// follows something in, so a reader of audio sagas alone never sees the
+    /// empty book format first, then the switch once the server has answered.
+    init() {
+        let viewModel = DiscoverViewModel()
+        let opensOnOther = viewModel.holdsNothing(in: .book)
+        _viewModel = State(initialValue: viewModel)
+        _format = State(initialValue: opensOnOther ? .audiobook : .book)
+        _formatSettled = State(initialValue: opensOnOther)
+    }
 
     var body: some View {
         NavigationStack {
@@ -428,8 +439,7 @@ struct DiscoverView: View {
     /// theirs heard, say — sees the other one instead, once a session: a
     /// format they tapped stays, and two empty formats do not bounce.
     private func openOnAFollowedFormat() {
-        guard !formatSettled, viewModel.followed(format) == 0, viewModel.awaited(format).isEmpty
-        else { return }
+        guard !formatSettled, viewModel.holdsNothing(in: format) else { return }
         formatSettled = true
         format = ReleaseFormat.allCases.first { $0 != format } ?? format
     }

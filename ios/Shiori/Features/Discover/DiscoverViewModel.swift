@@ -153,6 +153,12 @@ final class DiscoverViewModel {
     /// was loaded.
     func followed(_ format: ReleaseFormat) -> Int? { feed.followed[format] }
 
+    /// Whether last session's snapshot says the reader follows and awaits
+    /// nothing in a format, so the tab is better opened on the other one.
+    func holdsNothing(in format: ReleaseFormat) -> Bool {
+        followed(format) == 0 && awaited(format).isEmpty
+    }
+
     /// Says whether it failed. One skipped because another was already on its
     /// way, or one called off, did not.
     @discardableResult
