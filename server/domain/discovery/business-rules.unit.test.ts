@@ -698,6 +698,27 @@ describe('what an author has for the reader', () => {
     ])
   })
 
+  test('takes a date known only to the month: coming while the month lasts, out once over', () => {
+    const watch = authorWatch([
+      work('This month', '2026-09'),
+      work('Last month', '2026-08'),
+      work('Out in May', '2026-05'),
+    ])
+
+    const { next, recent } = authorReleasesOf(heldBooks, sagas, watch, today)
+
+    expect(next?.title).toBe('This month' as BookTitle)
+    expect(recent.map(({ title }) => title)).toEqual(['Last month' as BookTitle])
+  })
+
+  test('announces a work known only to the year while that year lasts', () => {
+    const watch = authorWatch([work('Some day', '2026')], 'audiobook')
+
+    expect(authorReleasesOf(heldBooks, sagas, watch, today).next?.title).toBe(
+      'Some day' as BookTitle,
+    )
+  })
+
   test('offers a recording out that Audible never confirmed', () => {
     const watch = authorWatch([work('Heard', '2026-09-23')], 'audiobook')
 

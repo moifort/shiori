@@ -374,8 +374,9 @@ export const inDiscoveryOrder = <
 export const AUTHOR_RECENT_DAYS = 90
 
 /** What an author has for the reader in one format: the soonest work
- *  announced, and the works out in the last three months, the newest first —
- *  a recording Audible never confirmed too, offered without its link. Left
+ *  announced, to the day, the month or the year, and the works out in the
+ *  last three months, the newest first — dated to the day or to a month over,
+ *  and a recording Audible never confirmed too, offered without its link. Left
  *  out, a work the reader holds in that format — matched
  *  on the folded title — and a volume of a saga they hold anything of, which
  *  the Séries shelf already watches or which they set aside. A new saga's
@@ -403,9 +404,19 @@ export const authorReleasesOf = (
     .sort((left, right) =>
       lastDayOf(left.date as ReleaseDate).localeCompare(lastDayOf(right.date as ReleaseDate)),
     )[0]
+  // A month over is out as surely as a day past; a year alone says nothing of
+  // the last three months, and one not over is still coming.
   const recent = news
-    .filter((work) => work.date?.length === 10 && work.date <= today && work.date > since)
-    .sort((left, right) => (right.date as string).localeCompare(left.date as string))
+    .filter(
+      (work) =>
+        work.date !== undefined &&
+        work.date.length >= 7 &&
+        !isUpcoming(work.date, today) &&
+        lastDayOf(work.date) > since,
+    )
+    .sort((left, right) =>
+      lastDayOf(right.date as ReleaseDate).localeCompare(lastDayOf(left.date as ReleaseDate)),
+    )
   return next ? { next, recent } : { recent }
 }
 
