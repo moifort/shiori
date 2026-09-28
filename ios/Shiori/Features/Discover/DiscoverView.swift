@@ -320,14 +320,15 @@ struct DiscoverView: View {
         }
     }
 
-    /// An author's row: the Authors shelf's own, and underneath what the
-    /// section it is in is about. A tap opens the author's page, as the
-    /// Library's Authors shelf does.
+    /// An author's row: the Authors shelf's heading, then the covers of what
+    /// the section it is in is about rather than the reader's own books, and
+    /// the newest in words. A tap opens the author's page, as the Library's
+    /// Authors shelf does.
     private func authorRow(_ row: AuthorDiscovery, in section: SagaReleasesSummary.Section) -> some View {
         let destination = AuthorDestination(row.author)
         let works = section == .recent ? row.recent : (row.next.map { [$0] } ?? [])
         return VStack(alignment: .leading, spacing: 8) {
-            AuthorRow(author: row.author)
+            AuthorRow(author: row.author, showsBooks: false)
                 .contentShape(Rectangle())
                 // A tap rather than a button: a button would claim the drag
                 // that scrolls the cover strip.
@@ -335,6 +336,7 @@ struct DiscoverView: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isButton)
                 .accessibilityAction { openAuthor = destination }
+            AuthorWorksStrip(works: works, author: row.author.name, isAudio: format == .audiobook)
             AuthorReleasesSummary(works: works, section: section)
         }
         .contextMenu {

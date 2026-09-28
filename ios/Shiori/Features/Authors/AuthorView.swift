@@ -27,6 +27,9 @@ enum AuthorShelfFormat: String, CaseIterable, Identifiable {
 
     /// What a book added from the page is catalogued as.
     var bookFormat: BookFormat { self == .audio ? .audiobook : .book }
+
+    /// The format Découvrir watches the author in.
+    var releaseFormat: ReleaseFormat { self == .audio ? .audiobook : .book }
 }
 
 /// An author's page, laid out as a saga's is: who they are and what the reader
@@ -46,6 +49,9 @@ struct AuthorView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var page: AuthorPage?
+    /// What the author has announced or brought out lately, in each format:
+    /// asked beside the page, and left out if it cannot be had.
+    @State private var releases: [ReleaseFormat: AuthorReleases] = [:]
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var format: AuthorShelfFormat?
@@ -154,6 +160,9 @@ struct AuthorView: View {
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets())
                 .accessibilityIdentifier("author-format")
+            }
+            if let shownReleases = releases[shown.releaseFormat], !shownReleases.isEmpty {
+                AuthorReleasesSection(releases: shownReleases, author: page.author.name, isAudio: shown == .audio)
             }
             sagas(page, in: shown)
             books(page, in: shown)
@@ -468,9 +477,14 @@ struct AuthorView: View {
     private func load() async {
         isLoading = true
         defer { isLoading = false }
+        async let found = try? DiscoverAPI.authorReleases(key: key)
         do {
             let fresh = try await AuthorsAPI.page(key: key)
-            withAnimation(page == nil ? nil : .smooth) { page = fresh }
+            let foundReleases = await found
+            withAnimation(page == nil ? nil : .smooth) {
+                page = fresh
+                if let foundReleases { releases = foundReleases }
+            }
             if fresh == nil { errorMessage = nil }
         } catch {
             guard !isCancellation(error) else { return }

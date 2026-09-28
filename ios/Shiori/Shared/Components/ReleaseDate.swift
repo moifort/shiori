@@ -60,6 +60,17 @@ enum ReleaseDateText {
         default: return String(localized: "Sort en \(String(date.prefix(4)))")
         }
     }
+
+    /// For a work already out: "Sorti le 16 septembre 2026", "Sorti en août
+    /// 2026", "Sorti en 2026".
+    static func out(_ date: String) -> String {
+        guard let (day, precision) = parts(date) else { return date }
+        switch precision {
+        case 3: return String(localized: "Sorti le \(day.formatted(.dateTime.day().month(.wide).year()))")
+        case 2: return String(localized: "Sorti en \(day.formatted(.dateTime.month(.wide).year()))")
+        default: return String(localized: "Sorti en \(String(date.prefix(4)))")
+        }
+    }
 }
 
 /// A release date as a small calendar leaf: the day over the month, or the

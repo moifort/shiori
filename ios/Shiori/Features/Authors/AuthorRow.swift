@@ -4,14 +4,16 @@ import SwiftUI
 /// in Partagé: the portrait, or the initials, on the left, the name with what
 /// the reader made of them in the top corner, the books and sagas in figures
 /// underneath. Then every book of theirs as a cover, across the whole width of
-/// the row, each with its reading status pinned on.
+/// the row, each with its reading status pinned on — left out where the row
+/// is about other books, as on Découvrir.
 struct AuthorRow: View {
     let author: FollowedAuthor
+    var showsBooks = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             header
-            covers
+            if showsBooks { covers }
         }
         .padding(.vertical, 2)
     }

@@ -88,14 +88,24 @@ struct DiscoveredWork: Identifiable, Hashable, Codable, Sendable {
     var id: String { title }
 }
 
+/// What one author has for the reader in one format, outside the sagas they
+/// hold: the author page's "Prochaines sorties" and "Nouveautés".
+struct AuthorReleases: Codable, Sendable {
+    /// The soonest work announced.
+    var next: DiscoveredWork?
+    /// The works out in the last three months, the newest first.
+    var recent: [DiscoveredWork] = []
+
+    var isEmpty: Bool { next == nil && recent.isEmpty }
+}
+
 /// One row of the Authors shelf: an author the reader holds, drawn as the
 /// Library's Authors shelf draws them, and what they have for the reader.
 struct AuthorDiscovery: Identifiable, Codable, Sendable {
     let author: FollowedAuthor
     /// The soonest work announced.
     let next: DiscoveredWork?
-    /// The works out in the last week the reader can have now, the newest
-    /// first.
+    /// The works out in the last three months, the newest first.
     let recent: [DiscoveredWork]
 
     var id: String { author.id }
@@ -208,6 +218,19 @@ enum DiscoverAPI {
         return SagaReleases(fields: data.sagaReleases.fragments.sagaReleasesFields)
     }
 
+    /// What the author page shows under its heading, in each format: read off
+    /// the weekly watches, so it answers at once.
+    static func authorReleases(key: String) async throws -> [ReleaseFormat: AuthorReleases] {
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.AuthorReleasesQuery(key: key)
+        )
+        return [
+            .book: AuthorReleases(fields: data.book.fragments.authorReleasesFields),
+            .audiobook: AuthorReleases(fields: data.audiobook.fragments.authorReleasesFields),
+        ]
+    }
+
     /// The same, the saga looked up on the web first when nobody ever did —
     /// which writes into its catalogue, so its row is asked again.
     static func lookUpSaga(seriesId: String, language: BookLanguage) async throws -> SagaReleases {
@@ -251,6 +274,15 @@ private extension DiscoveryPage {
             },
             unwatched: fields.unwatched,
             followed: fields.followed
+        )
+    }
+}
+
+private extension AuthorReleases {
+    init(fields: ShioriGraphQL.AuthorReleasesFields) {
+        self.init(
+            next: fields.next.map { DiscoveredWork(fields: $0.fragments.discoveredWorkFields) },
+            recent: fields.recent.map { DiscoveredWork(fields: $0.fragments.discoveredWorkFields) }
         )
     }
 }
