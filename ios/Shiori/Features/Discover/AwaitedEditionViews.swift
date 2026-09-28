@@ -92,7 +92,7 @@ struct AwaitedEditionsSection: View {
                                     openURL(url)
                                 }
                             }
-                            Button("Ne plus guetter", systemImage: "bell.slash", role: .destructive) {
+                            Button("Ne plus suivre", systemImage: "bell.slash", role: .destructive) {
                                 onStop(edition)
                             }
                         }
@@ -138,7 +138,7 @@ struct AwaitedEditionsSection: View {
 /// is: where it stands on top, on a bookmark ribbon — orange while announced,
 /// green once out — then the book's own section, with the store's tag in its
 /// corner once it sells it, what it is a translation or a recording of, and
-/// since when it is watched for. Only what is known is drawn. "Ne plus guetter"
+/// since when it is watched for. Only what is known is drawn. "Ne plus suivre"
 /// sits in the corner, asked for twice as a saga's deletion is. The Audible
 /// sync brings a recording bought into the library by itself, which ends the
 /// wait.
@@ -170,7 +170,7 @@ struct AwaitedEditionView: View {
                 }
                 if let awaitedAt = edition.awaitedAt {
                     LabeledInfoRow(
-                        title: "Guetté depuis le",
+                        title: "Suivi depuis le",
                         value: awaitedAt.formatted(date: .abbreviated, time: .omitted),
                         icon: "binoculars"
                     )
@@ -186,7 +186,7 @@ struct AwaitedEditionView: View {
                 ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
             }
             ToolbarItem(placement: .primaryAction) {
-                ToolbarIconButton(title: "Ne plus guetter", systemImage: "bell.slash") {
+                ToolbarIconButton(title: "Ne plus suivre", systemImage: "bell.slash") {
                     confirmStop = true
                 }
                 .tint(.red)
@@ -194,11 +194,11 @@ struct AwaitedEditionView: View {
                 // Attached to the button, as a saga's deletion is: the dialog
                 // rises from the control that asked.
                 .confirmationDialog(
-                    "Ne plus guetter ce livre ?",
+                    "Ne plus suivre ce livre ?",
                     isPresented: $confirmStop,
                     titleVisibility: .visible
                 ) {
-                    Button("Ne plus guetter", role: .destructive) {
+                    Button("Ne plus suivre", role: .destructive) {
                         onStop()
                         dismiss()
                     }
@@ -212,7 +212,7 @@ struct AwaitedEditionView: View {
     }
 }
 
-/// Every edition awaited in one format, as "Voir les livres guettés" opens
+/// Every edition awaited in one format, as "Voir les livres suivis" opens
 /// them: the ones out, the ones announced, the ones not announced yet. A swipe
 /// gives one up.
 struct AwaitedEditionsListView: View {
@@ -234,12 +234,12 @@ struct AwaitedEditionsListView: View {
             if editions.isEmpty {
                 EmptyStateView(
                     systemImage: format == .audiobook ? "headphones" : "character.book.closed",
-                    title: "Aucun livre guetté",
-                    message: "Guettez la version française d'un livre depuis sa fiche."
+                    title: "Aucun livre suivi",
+                    message: "Suivez la version française d'un livre depuis sa fiche."
                 )
             }
         }
-        .navigationTitle("Livres guettés")
+        .navigationTitle("Livres suivis")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -259,7 +259,7 @@ struct AwaitedEditionsListView: View {
                         .onTapGesture { onOpen(edition) }
                         .accessibilityAddTraits(.isButton)
                         .swipeActions {
-                            Button("Ne plus guetter", systemImage: "bell.slash", role: .destructive) {
+                            Button("Ne plus suivre", systemImage: "bell.slash", role: .destructive) {
                                 onStop(edition)
                             }
                         }

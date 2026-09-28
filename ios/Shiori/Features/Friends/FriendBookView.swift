@@ -40,7 +40,14 @@ struct FriendBookView: View {
             if isLoading && entry == nil {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let entry {
-                page(entry)
+                FriendBookPage(
+                    entry: entry,
+                    friendName: friendName,
+                    added: added,
+                    awaited: offer.awaited
+                ) { edition in
+                    Task { await stopAwaiting(edition) }
+                }
             } else if let errorMessage {
                 EmptyStateView.failure("Livre indisponible", message: errorMessage) { await load() }
             } else {
@@ -71,99 +78,6 @@ struct FriendBookView: View {
             Button("OK", role: .cancel) { addFailed = nil }
         } message: {
             Text(addFailed ?? "")
-        }
-    }
-
-    private func page(_ entry: FriendBook) -> some View {
-        List {
-            // A warning before anything else: the page is about a book the
-            // reader already holds, and its "+" is greyed out for that.
-            if entry.inLibrary && added == nil {
-                Section {} header: {
-                    ReleaseRibbon(
-                        text: String(localized: "Déjà dans votre bibliothèque"),
-                        systemImage: "exclamationmark.triangle.fill",
-                        tint: .orange
-                    )
-                    .ribbonRow()
-                    .accessibilityIdentifier("friend-book-owned")
-                }
-            }
-
-            ReadOnlyBookHeader(book: entry.book)
-
-            Section {
-                if entry.book.favorite {
-                    Label {
-                        Text("Coup de cœur de \(friendName)")
-                    } icon: {
-                        Image(systemName: "heart.fill").foregroundStyle(.red)
-                    }
-                } else if let rating = entry.book.rating {
-                    Label {
-                        LabeledContent("Note de \(friendName)") { StarRatingView(rating: rating) }
-                    } icon: {
-                        Image(systemName: "star").foregroundStyle(.secondary)
-                    }
-                }
-                Label {
-                    LabeledContent("Chez \(friendName)") { Text(entry.book.status.label) }
-                } icon: {
-                    Image(systemName: entry.book.status.symbol).foregroundStyle(entry.book.status.tint)
-                }
-            }
-
-            if let series = entry.book.series {
-                Section {
-                    NavigationLink {
-                        SeriesView(seriesId: series.id, language: entry.book.language)
-                    } label: {
-                        Label {
-                            LabeledContent(series.name) { Text(series.label) }
-                        } icon: {
-                            Image(systemName: "books.vertical").foregroundStyle(.secondary)
-                        }
-                    }
-                    .accessibilityIdentifier("friend-book-series")
-                }
-            }
-
-            AwaitedEditionsSection(awaited: offer.awaited) { edition in
-                Task { await stopAwaiting(edition) }
-            }
-
-            if let synopsis = entry.book.synopsis, !synopsis.isEmpty {
-                ReadOnlySynopsisSection(synopsis: synopsis)
-            }
-
-            if !entry.inLibrary || added != nil {
-                Section {
-                    status(entry)
-                } footer: {
-                    if added == nil {
-                        Text("Le livre sera noté « Conseillé par \(friendName) ». Sa note de lecture reste privée.")
-                    }
-                }
-            }
-        }
-        .listStyle(.insetGrouped)
-        .labelStyle(.row)
-    }
-
-    /// Where the book stands on the reader's own shelf: just added, or what
-    /// the "+" in the corner will do. A book already there says so at the top.
-    @ViewBuilder
-    private func status(_ entry: FriendBook) -> some View {
-        if let added {
-            Label(
-                added == .toRead ? "Ajouté à votre pile à lire" : "Ajouté à vos livres lus",
-                systemImage: "checkmark.circle.fill"
-            )
-            .foregroundStyle(.green)
-            .accessibilityIdentifier("friend-book-added")
-        } else {
-            Label("Pas encore dans votre bibliothèque", systemImage: "plus.circle")
-                .foregroundStyle(.secondary)
         }
     }
 
@@ -296,6 +210,109 @@ struct FriendBookView: View {
             onAdded()
         } catch {
             addFailed = reportError(error)
+        }
+    }
+}
+
+/// What a friend's book page draws once the book is known: the warning of a
+/// book the reader holds already, the book, what the friend made of it, its
+/// saga, the editions awaited, and where it stands on the reader's own shelf.
+struct FriendBookPage: View {
+    let entry: FriendBook
+    let friendName: String
+    /// What the reader just did with it from the "+" in the corner.
+    let added: CopiedStatus?
+    let awaited: [AwaitedEdition]
+    let onStopAwaiting: (AwaitedEdition) -> Void
+
+    var body: some View {
+        List {
+            // A warning before anything else: the page is about a book the
+            // reader already holds, and its "+" is greyed out for that.
+            if entry.inLibrary && added == nil {
+                Section {} header: {
+                    ReleaseRibbon(
+                        text: String(localized: "Déjà dans votre bibliothèque"),
+                        systemImage: "exclamationmark.triangle.fill",
+                        tint: .orange
+                    )
+                    .ribbonRow()
+                    .accessibilityIdentifier("friend-book-owned")
+                }
+            }
+
+            ReadOnlyBookHeader(book: entry.book)
+
+            Section {
+                if entry.book.favorite {
+                    Label {
+                        Text("Coup de cœur de \(friendName)")
+                    } icon: {
+                        Image(systemName: "heart.fill").foregroundStyle(.red)
+                    }
+                } else if let rating = entry.book.rating {
+                    Label {
+                        LabeledContent("Note de \(friendName)") { StarRatingView(rating: rating) }
+                    } icon: {
+                        Image(systemName: "star").foregroundStyle(.secondary)
+                    }
+                }
+                Label {
+                    LabeledContent("Chez \(friendName)") { Text(entry.book.status.label) }
+                } icon: {
+                    Image(systemName: entry.book.status.symbol).foregroundStyle(entry.book.status.tint)
+                }
+            }
+
+            if let series = entry.book.series {
+                Section {
+                    NavigationLink {
+                        SeriesView(seriesId: series.id, language: entry.book.language)
+                    } label: {
+                        Label {
+                            LabeledContent(series.name) { Text(series.label) }
+                        } icon: {
+                            Image(systemName: "books.vertical").foregroundStyle(.secondary)
+                        }
+                    }
+                    .accessibilityIdentifier("friend-book-series")
+                }
+            }
+
+            AwaitedEditionsSection(awaited: awaited, onStop: onStopAwaiting)
+
+            if let synopsis = entry.book.synopsis, !synopsis.isEmpty {
+                ReadOnlySynopsisSection(synopsis: synopsis)
+            }
+
+            if !entry.inLibrary || added != nil {
+                Section {
+                    status
+                } footer: {
+                    if added == nil {
+                        Text("Le livre sera noté « Conseillé par \(friendName) ». Sa note de lecture reste privée.")
+                    }
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .labelStyle(.row)
+    }
+
+    /// Where the book stands on the reader's own shelf: just added, or what
+    /// the "+" in the corner will do. A book already there says so at the top.
+    @ViewBuilder
+    private var status: some View {
+        if let added {
+            Label(
+                added == .toRead ? "Ajouté à votre pile à lire" : "Ajouté à vos livres lus",
+                systemImage: "checkmark.circle.fill"
+            )
+            .foregroundStyle(.green)
+            .accessibilityIdentifier("friend-book-added")
+        } else {
+            Label("Pas encore dans votre bibliothèque", systemImage: "plus.circle")
+                .foregroundStyle(.secondary)
         }
     }
 }

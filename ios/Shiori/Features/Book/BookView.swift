@@ -161,7 +161,7 @@ struct BookView: View {
         .task { await viewModel.load() }
         .task { await loadOffer() }
         .alert(
-            "Impossible de guetter ce livre",
+            "Impossible de suivre ce livre",
             isPresented: .init(get: { awaitFailed != nil }, set: { if !$0 { awaitFailed = nil } })
         ) {
             Button("OK", role: .cancel) { awaitFailed = nil }
@@ -286,7 +286,7 @@ struct BookView: View {
                 .accessibilityIdentifier("book-await-\(format.rawValue)")
             }
             ForEach(offer.awaited) { edition in
-                Button("Ne plus guetter \(edition.format == .audiobook ? "l'audio" : "la version française")", systemImage: "bell.slash") {
+                Button("Ne plus suivre \(edition.format == .audiobook ? "l'audio" : "la version française")", systemImage: "bell.slash") {
                     Task { await stopAwaiting(edition) }
                 }
             }

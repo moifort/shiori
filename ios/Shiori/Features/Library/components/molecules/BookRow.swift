@@ -271,7 +271,7 @@ struct AwaitedMark: View {
         Image(systemName: "binoculars")
             .foregroundStyle(.secondary)
             .fixedSize()
-            .accessibilityLabel(Text("Guetté"))
+            .accessibilityLabel(Text("Suivi"))
     }
 }
 

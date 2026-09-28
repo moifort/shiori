@@ -26,7 +26,7 @@ import SwiftUI
 ///
 /// Under them, on the Books shelf, "Bientôt en audio" or "Bientôt en FR": the
 /// books the reader awaits in the app's language, in the format on screen, as
-/// a strip of covers, the ones out first — "Voir les livres guettés" opens the
+/// a strip of covers, the ones out first — "Voir les livres suivis" opens the
 /// whole list, where a swipe gives one up.
 ///
 /// The server looks the sagas up on the web once a week. The tab opens on
@@ -238,7 +238,7 @@ struct DiscoverView: View {
                 HStack {
                     Text(format.awaitedTitle)
                     Spacer()
-                    Button("Voir les livres guettés") { showAwaitedList = true }
+                    Button("Voir les livres suivis") { showAwaitedList = true }
                         .font(.subheadline)
                         .textCase(nil)
                         .accessibilityIdentifier("discover-awaited-all")
