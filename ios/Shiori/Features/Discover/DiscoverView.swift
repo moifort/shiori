@@ -28,8 +28,7 @@ import SwiftUI
 ///
 /// Under them, on the Books shelf, "Bientôt en audio" or "Bientôt en FR": the
 /// books the reader awaits in the app's language, in the format on screen, as
-/// a strip of covers, the ones out first — "Voir les livres suivis" opens the
-/// whole list, where a swipe gives one up.
+/// a strip of covers, the ones out first.
 ///
 /// The server looks the sagas up on the web once a week. The tab opens on
 /// everything it last showed — the rows, the friends' picks, the books awaited
@@ -46,9 +45,6 @@ struct DiscoverView: View {
     @State private var openFriendBook: LovedBook?
     @State private var openFriendSaga: LovedSaga?
     @State private var openAwaited: AwaitedEdition?
-    @State private var showAwaitedList = false
-    /// The edition opened from the full list, pushed inside it.
-    @State private var openListedAwaited: AwaitedEdition?
     @Environment(\.openURL) private var openURL
     @State private var format: ReleaseFormat
     @State private var shelf: LibraryShelf = .series
@@ -110,21 +106,6 @@ struct DiscoverView: View {
                     NavigationStack {
                         AwaitedEditionView(edition: edition) {
                             Task { await viewModel.stopAwaiting(edition) }
-                        }
-                    }
-                }
-                .sheet(isPresented: $showAwaitedList) {
-                    NavigationStack {
-                        AwaitedEditionsListView(
-                            format: format,
-                            editions: viewModel.awaited(format),
-                            onOpen: { openListedAwaited = $0 },
-                            onStop: { edition in Task { await viewModel.stopAwaiting(edition) } }
-                        )
-                        .navigationDestination(item: $openListedAwaited) { edition in
-                            AwaitedEditionView(edition: edition) {
-                                Task { await viewModel.stopAwaiting(edition) }
-                            }
                         }
                     }
                 }
@@ -232,8 +213,8 @@ struct DiscoverView: View {
     }
 
     /// "Bientôt en audio" or "Bientôt en FR": the editions the reader awaits in
-    /// the format on screen, as a strip like the friends' favourites, and the
-    /// way to the full list. Absent when none is awaited.
+    /// the format on screen, as a strip like the friends' favourites. Absent
+    /// when none is awaited.
     @ViewBuilder
     private var awaitedSection: some View {
         let editions = viewModel.awaited(format)
@@ -241,14 +222,7 @@ struct DiscoverView: View {
             Section {
                 AwaitedEditionsStrip(editions: editions) { openAwaited = $0 }
             } header: {
-                HStack {
-                    Text(format.awaitedTitle)
-                    Spacer()
-                    Button("Voir les livres suivis") { showAwaitedList = true }
-                        .font(.subheadline)
-                        .textCase(nil)
-                        .accessibilityIdentifier("discover-awaited-all")
-                }
+                Text(format.awaitedTitle)
             }
             .accessibilityIdentifier("discover-awaited")
         }
