@@ -11,7 +11,8 @@ import SwiftUI
 /// its page described on the spot — and "Séries" — the Series tab's rows, every
 /// cover of their strip; a tap opens the saga screen as a sheet — and
 /// "Auteurs" — the Authors shelf's rows, for the authors the reader holds with
-/// a book announced or just out outside the sagas they hold; a tap opens the
+/// a book announced or just out outside the sagas they hold, or an edition of
+/// theirs they follow that is announced or out; a tap opens the
 /// author's page as the Library opens it. Read through one format at a time —
 /// the saga read or the saga heard — picked in the toolbar and kept between
 /// visits: an author is watched only in the formats the reader holds them in.
@@ -140,8 +141,12 @@ struct DiscoverView: View {
         }
         .task { await viewModel.loadPicks() }
         .task(id: format) { await viewModel.loadAwaited(format) }
+        // The Authors shelf carries the editions awaited too.
         .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
-            Task { await viewModel.reloadAwaited() }
+            Task {
+                await viewModel.reloadAwaited()
+                await viewModel.reload()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
             Task {
@@ -333,12 +338,18 @@ struct DiscoverView: View {
     }
 
     /// An author's row: the Authors shelf's heading, then the covers of what
-    /// the section it is in is about rather than the reader's own books, and
-    /// the newest in words. A tap opens the author's page, as the Library's
-    /// Authors shelf does.
+    /// the section it is in is about rather than the reader's own books — the
+    /// works the web found and the editions the reader awaits alike — and the
+    /// first in words. A tap opens the author's page, as the Library's Authors
+    /// shelf does.
     private func authorRow(_ row: AuthorDiscovery, in section: SagaReleasesSummary.Section) -> some View {
         let destination = AuthorDestination(row.author)
         let works = section == .recent ? row.recent : (row.next.map { [$0] } ?? [])
+        let items = AuthorNewsItem.ordered(
+            works: works,
+            awaited: section == .recent ? row.awaitedOut : row.awaitedComing,
+            section: section
+        )
         return VStack(alignment: .leading, spacing: 8) {
             AuthorRow(author: row.author, showsBooks: false)
                 .contentShape(Rectangle())
@@ -348,8 +359,8 @@ struct DiscoverView: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isButton)
                 .accessibilityAction { openAuthor = destination }
-            AuthorWorksStrip(works: works, author: row.author.name, isAudio: format == .audiobook)
-            AuthorReleasesSummary(works: works, section: section)
+            AuthorWorksStrip(items: items, author: row.author.name, isAudio: format == .audiobook)
+            AuthorReleasesSummary(items: items, section: section)
         }
         .contextMenu {
             ForEach(works.filter { $0.audibleURL != nil }) { work in
@@ -503,7 +514,7 @@ struct SagaReleasesSummary: View {
 /// among the announcements, the next one and its date. One title only: a few
 /// side by side would not fit.
 struct AuthorReleasesSummary: View {
-    let works: [DiscoveredWork]
+    let items: [AuthorNewsItem]
     let section: SagaReleasesSummary.Section
 
     var body: some View {
@@ -516,7 +527,7 @@ struct AuthorReleasesSummary: View {
     }
 
     private var line: String? {
-        guard let first = works.first else { return nil }
+        guard let first = items.first else { return nil }
         switch section {
         case .upcoming:
             guard let date = first.date else { return String(localized: "À venir : \(first.title)") }

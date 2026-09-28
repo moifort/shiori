@@ -89,14 +89,17 @@ struct DiscoveredWork: Identifiable, Hashable, Codable, Sendable {
 }
 
 /// What one author has for the reader in one format, outside the sagas they
-/// hold: the author page's "Prochaines sorties" and "Nouveautés".
+/// hold: the author page's "Annoncés" and "Nouveautés".
 struct AuthorReleases: Codable, Sendable {
     /// The soonest work announced.
     var next: DiscoveredWork?
     /// The works out in the last three months, the newest first.
     var recent: [DiscoveredWork] = []
+    /// The reader's own editions of them awaited in that format, announced or
+    /// out, the ones out first.
+    var awaited: [AwaitedEdition] = []
 
-    var isEmpty: Bool { next == nil && recent.isEmpty }
+    var isEmpty: Bool { next == nil && recent.isEmpty && awaited.isEmpty }
 }
 
 /// One row of the Authors shelf: an author the reader holds, drawn as the
@@ -107,8 +110,28 @@ struct AuthorDiscovery: Identifiable, Codable, Sendable {
     let next: DiscoveredWork?
     /// The works out in the last three months, the newest first.
     let recent: [DiscoveredWork]
+    /// The reader's own editions of them awaited in that format, announced or
+    /// out, the ones out first.
+    var awaited: [AwaitedEdition]
 
     var id: String { author.id }
+
+    /// The editions awaited that are out, for the "Nouvelles parutions" row.
+    var awaitedOut: [AwaitedEdition] { awaited.filter { $0.state == .available } }
+    /// The editions awaited still to come, for the "Prochaines sorties" row.
+    var awaitedComing: [AwaitedEdition] { awaited.filter { $0.state == .announced } }
+
+    /// The last day of the soonest date announced, the work found or an
+    /// edition awaited. Nil when nothing announced is dated.
+    var soonestComing: String? {
+        ([next?.date] + awaitedComing.map(\.date)).compactMap { $0.map(ReleaseDateText.lastDay) }.min()
+    }
+
+    /// The last day of the newest date out, the work found or an edition
+    /// awaited.
+    var newestOut: String? {
+        (recent.map(\.date) + awaitedOut.map(\.date)).compactMap { $0.map(ReleaseDateText.lastDay) }.max()
+    }
 }
 
 /// One volume of a saga, announced or just out, as the Books shelf lists it
@@ -231,7 +254,8 @@ private extension DiscoveryPage {
                 AuthorDiscovery(
                     author: FollowedAuthor(row: row.author.fragments.followedAuthorRow),
                     next: row.next.map { DiscoveredWork(fields: $0.fragments.discoveredWorkFields) },
-                    recent: row.recent.map { DiscoveredWork(fields: $0.fragments.discoveredWorkFields) }
+                    recent: row.recent.map { DiscoveredWork(fields: $0.fragments.discoveredWorkFields) },
+                    awaited: row.awaited.map { AwaitedEdition(fields: $0.fragments.awaitedEditionFields) }
                 )
             },
             unwatched: fields.unwatched,
@@ -244,7 +268,8 @@ private extension AuthorReleases {
     init(fields: ShioriGraphQL.AuthorReleasesFields) {
         self.init(
             next: fields.next.map { DiscoveredWork(fields: $0.fragments.discoveredWorkFields) },
-            recent: fields.recent.map { DiscoveredWork(fields: $0.fragments.discoveredWorkFields) }
+            recent: fields.recent.map { DiscoveredWork(fields: $0.fragments.discoveredWorkFields) },
+            awaited: fields.awaited.map { AwaitedEdition(fields: $0.fragments.awaitedEditionFields) }
         )
     }
 }

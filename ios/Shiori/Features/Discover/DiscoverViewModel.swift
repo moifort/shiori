@@ -32,7 +32,7 @@ final class DiscoverViewModel {
     private var lookedUp: Set<ReleaseFormat> = []
 
     /// Bump the version whenever `DiscoveryFeed` changes shape.
-    private let cache = SnapshotCache<DiscoveryFeed>("discovery", version: 6)
+    private let cache = SnapshotCache<DiscoveryFeed>("discovery", version: 7)
 
     /// The rows of a format, nil until they were ever loaded.
     func rows(_ format: ReleaseFormat) -> [SagaDiscovery]? { feed.rows[format] }
@@ -73,15 +73,15 @@ final class DiscoverViewModel {
             .sorted { ($0.recent.first?.date ?? "") > ($1.recent.first?.date ?? "") }
     }
 
-    /// The authors of a format with a work announced, for the Authors shelf:
-    /// the soonest out first, as the Books shelf orders its volumes. Nil until
-    /// the format was ever loaded.
+    /// The authors of a format with a work announced, or an edition awaited
+    /// announced, for the Authors shelf: the soonest out first, as the Books
+    /// shelf orders its volumes. Nil until the format was ever loaded.
     func upcomingAuthors(_ format: ReleaseFormat) -> [AuthorDiscovery]? {
         feed.authors[format]?
-            .filter { $0.next != nil }
+            .filter { $0.next != nil || !$0.awaitedComing.isEmpty }
             .sorted { lhs, rhs in
-                let left = lhs.next?.date.map(ReleaseDateText.lastDay)
-                let right = rhs.next?.date.map(ReleaseDateText.lastDay)
+                let left = lhs.soonestComing
+                let right = rhs.soonestComing
                 guard left != right else {
                     return lhs.author.name.localizedStandardCompare(rhs.author.name) == .orderedAscending
                 }
@@ -91,12 +91,13 @@ final class DiscoverViewModel {
             }
     }
 
-    /// The authors of a format with a work just out, for the Authors shelf:
-    /// the newest out first. Nil until the format was ever loaded.
+    /// The authors of a format with a work just out, or an edition awaited
+    /// out, for the Authors shelf: the newest out first. Nil until the format
+    /// was ever loaded.
     func recentAuthors(_ format: ReleaseFormat) -> [AuthorDiscovery]? {
         feed.authors[format]?
-            .filter { !$0.recent.isEmpty }
-            .sorted { ($0.recent.first?.date ?? "") > ($1.recent.first?.date ?? "") }
+            .filter { !$0.recent.isEmpty || !$0.awaitedOut.isEmpty }
+            .sorted { ($0.newestOut ?? "") > ($1.newestOut ?? "") }
     }
 
     /// "Coups de cœur de vos amis", whatever the format: last session's until
@@ -139,12 +140,23 @@ final class DiscoverViewModel {
     /// if the server refused.
     func stopAwaiting(_ edition: AwaitedEdition) async {
         let before = feed.awaited[edition.format]
-        withAnimation(.smooth) { feed.awaited[edition.format]?.removeAll { $0.id == edition.id } }
+        let authorsBefore = feed.authors[edition.format]
+        withAnimation(.smooth) {
+            feed.awaited[edition.format]?.removeAll { $0.id == edition.id }
+            feed.authors[edition.format] = authorsBefore?.compactMap { row in
+                var row = row
+                row.awaited.removeAll { $0.id == edition.id }
+                return row.next == nil && row.recent.isEmpty && row.awaited.isEmpty ? nil : row
+            }
+        }
         do {
             try await AwaitedAPI.stop(id: edition.id)
             saveSnapshot()
         } catch {
-            withAnimation(.smooth) { feed.awaited[edition.format] = before }
+            withAnimation(.smooth) {
+                feed.awaited[edition.format] = before
+                feed.authors[edition.format] = authorsBefore
+            }
             errorMessage = reportError(error)
         }
     }

@@ -247,7 +247,7 @@ enum AwaitedAPI {
     }
 }
 
-private extension AwaitedEdition {
+extension AwaitedEdition {
     init(fields: ShioriGraphQL.AwaitedEditionFields) {
         let state: AwaitedState = switch fields.state.value {
         case .available: .available

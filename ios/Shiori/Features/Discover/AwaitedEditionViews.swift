@@ -84,7 +84,7 @@ struct AwaitedEditionsSection: View {
         if !found.isEmpty {
             Section {
                 ForEach(found) { edition in
-                    Button { opened = edition } label: { row(edition) }
+                    Button { opened = edition } label: { AwaitedEditionReleaseRow(edition: edition) }
                         .tint(.primary)
                         .contextMenu {
                             if let url = edition.storeURL {
@@ -108,8 +108,15 @@ struct AwaitedEditionsSection: View {
             }
         }
     }
+}
 
-    private func row(_ edition: AwaitedEdition) -> some View {
+/// An awaited edition drawn as a saga's next volume is: the cover, the format
+/// awaited over the title, when it comes in orange — or "Disponible" in green —
+/// and the calendar leaf on the trailing edge while it is still to come.
+struct AwaitedEditionReleaseRow: View {
+    let edition: AwaitedEdition
+
+    var body: some View {
         HStack(alignment: .top, spacing: 12) {
             BookCover(book: edition.cover)
             VStack(alignment: .leading, spacing: 3) {

@@ -57,6 +57,7 @@ struct AuthorView: View {
     @State private var format: AuthorShelfFormat?
     @State private var adding: String?
     @State private var selectedBook: Book?
+    @State private var openAwaited: AwaitedEdition?
     @State private var openSeries: SeriesDestination?
     /// The refresh is one grounded model call and takes a while.
     @State private var isRefreshing = false
@@ -87,6 +88,16 @@ struct AuthorView: View {
                 onChanged: { _ in Task { await load() } },
                 onDeleted: { _ in Task { await load() } }
             )
+        }
+        .sheet(item: $openAwaited) { edition in
+            NavigationStack {
+                AwaitedEditionView(edition: edition) {
+                    Task { await stopAwaiting(edition) }
+                }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
+            Task { await load() }
         }
         .navigationDestination(item: $openSeries) {
             SeriesView(seriesId: $0.seriesId, language: $0.language, proposal: $0.proposal)
@@ -162,7 +173,13 @@ struct AuthorView: View {
                 .accessibilityIdentifier("author-format")
             }
             if let shownReleases = releases[shown.releaseFormat], !shownReleases.isEmpty {
-                AuthorReleasesSection(releases: shownReleases, author: page.author.name, isAudio: shown == .audio)
+                AuthorReleasesSection(
+                    releases: shownReleases,
+                    author: page.author.name,
+                    isAudio: shown == .audio,
+                    onOpenAwaited: { openAwaited = $0 },
+                    onStopAwaiting: { edition in Task { await stopAwaiting(edition) } }
+                )
             }
             sagas(page, in: shown)
             books(page, in: shown)
@@ -455,6 +472,20 @@ struct AuthorView: View {
             await load()
         } catch {
             errorMessage = reportError(error)
+        }
+    }
+
+    /// Gives up an edition awaited: gone from the page at once, and read
+    /// again if the server refused.
+    private func stopAwaiting(_ edition: AwaitedEdition) async {
+        for format in releases.keys {
+            withAnimation(.smooth) { releases[format]?.awaited.removeAll { $0.id == edition.id } }
+        }
+        do {
+            try await AwaitedAPI.stop(id: edition.id)
+        } catch {
+            errorMessage = reportError(error)
+            await load()
         }
     }
 

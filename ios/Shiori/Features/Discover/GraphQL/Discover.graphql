@@ -51,6 +51,9 @@ fragment DiscoveryFields on Discovery {
     recent {
       ...DiscoveredWorkFields
     }
+    awaited {
+      ...AwaitedEditionFields
+    }
   }
 }
 
@@ -102,6 +105,9 @@ fragment AuthorReleasesFields on AuthorReleases {
   }
   recent {
     ...DiscoveredWorkFields
+  }
+  awaited {
+    ...AwaitedEditionFields
   }
 }
 
