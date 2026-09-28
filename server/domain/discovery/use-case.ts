@@ -4,6 +4,7 @@ import { AuthorUseCase } from '~/domain/author/use-case'
 import { BookQuery } from '~/domain/book/query'
 import type { Book, BookLanguage } from '~/domain/book/types'
 import {
+  AUTHOR_RECENT_DAYS,
   alertOf,
   announcedEditionOf,
   announcedPreviewOf,
@@ -721,10 +722,6 @@ const withoutAsin = <Found extends { asin?: unknown }>(volume: Found): Found => 
 
 // MARK: - The authors
 
-/** How far back an author's works are asked for: enough for the week's
- *  releases, with room for a date the web gets a little wrong. */
-const LOOKED_BACK_DAYS = 90
-
 /** Look these authors up on the web, a few side by side, until the budget is
  *  spent, keeping each watch in `watches`. A lookup that fails leaves its
  *  author as they were. */
@@ -767,7 +764,7 @@ const lookUpAuthor = async (
   now: Date,
 ): Promise<AuthorWatch> => {
   const today = todayOf(now)
-  const since = new Date(now.getTime() - LOOKED_BACK_DAYS * 86_400_000).toISOString().slice(0, 10)
+  const since = new Date(now.getTime() - AUTHOR_RECENT_DAYS * 86_400_000).toISOString().slice(0, 10)
   const { value, usage } = await generate<AuthorReleasesOutput>({
     step: 'discovery-author-releases',
     parts: [{ text: authorReleasesPrompt(author, today, since) }],

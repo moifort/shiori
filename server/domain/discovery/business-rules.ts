@@ -368,9 +368,15 @@ export const inDiscoveryOrder = <
   return [...announced, ...justOut]
 }
 
+/** How far back an author's works count as news, and are asked for: an author
+ *  publishes a few times a year, so a week would leave the shelf empty on its
+ *  first look and most weeks after. */
+export const AUTHOR_RECENT_DAYS = 90
+
 /** What an author has for the reader in one format: the soonest work
- *  announced, and the works out in the last week they can have now, the
- *  newest first. Left out, a work the reader holds in that format — matched
+ *  announced, and the works out in the last three months, the newest first —
+ *  a recording Audible never confirmed too, offered without its link. Left
+ *  out, a work the reader holds in that format — matched
  *  on the folded title — and a volume of a saga they hold anything of, which
  *  the Séries shelf already watches or which they set aside. A new saga's
  *  first volume is the author's news. */
@@ -386,7 +392,7 @@ export const authorReleasesOf = (
       .filter((book) => releaseFormatOf(book.format) === watch.format)
       .map((book) => slugify(book.title)),
   )
-  const since = dayMinus(today, RECENT_DAYS)
+  const since = dayMinus(today, AUTHOR_RECENT_DAYS)
   const news = watch.works.filter(
     (work) =>
       !titles.has(slugify(work.title)) &&
@@ -398,13 +404,7 @@ export const authorReleasesOf = (
       lastDayOf(left.date as ReleaseDate).localeCompare(lastDayOf(right.date as ReleaseDate)),
     )[0]
   const recent = news
-    .filter(
-      (work) =>
-        work.date?.length === 10 &&
-        work.date <= today &&
-        work.date > since &&
-        isAvailable(work, watch.format),
-    )
+    .filter((work) => work.date?.length === 10 && work.date <= today && work.date > since)
     .sort((left, right) => (right.date as string).localeCompare(left.date as string))
   return next ? { next, recent } : { recent }
 }

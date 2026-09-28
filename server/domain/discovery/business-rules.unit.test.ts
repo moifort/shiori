@@ -677,19 +677,33 @@ describe('what an author has for the reader', () => {
   const sagas = new Set(['dungeon-crawler-carl'])
   const heldBooks = [{ title: 'Kaiju' as BookTitle, format: 'book' as const }]
 
-  test('offers the soonest work announced, and the ones out this week it can have now', () => {
+  test('offers the soonest work announced, and the ones out in the last three months', () => {
     const watch = authorWatch([
       work('Far', '2027'),
       work('Soon', '2026-11-03'),
       work('Out', '2026-09-24', { isbn13: '9782226488213' as never }),
       work('Out without ISBN', '2026-09-25'),
-      work('Old', '2026-08-01', { isbn13: '9782226488220' as never }),
+      work('Out in summer', '2026-07-01'),
+      work('Old', '2026-06-20', { isbn13: '9782226488220' as never }),
+      work('Out this year', '2026'),
     ])
 
     const { next, recent } = authorReleasesOf(heldBooks, sagas, watch, today)
 
     expect(next?.title).toBe('Soon' as BookTitle)
-    expect(recent.map(({ title }) => title)).toEqual(['Out' as BookTitle])
+    expect(recent.map(({ title }) => title)).toEqual([
+      'Out without ISBN' as BookTitle,
+      'Out' as BookTitle,
+      'Out in summer' as BookTitle,
+    ])
+  })
+
+  test('offers a recording out that Audible never confirmed', () => {
+    const watch = authorWatch([work('Heard', '2026-09-23')], 'audiobook')
+
+    expect(
+      authorReleasesOf(heldBooks, sagas, watch, today).recent.map(({ title }) => title),
+    ).toEqual(['Heard' as BookTitle])
   })
 
   test('leaves out the volumes of a saga the reader holds, and the books they hold', () => {
