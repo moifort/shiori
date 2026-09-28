@@ -172,12 +172,20 @@ struct BookDraft {
     /// and a hand-typed saga would be one no catalogue knows.
     var series: SeriesMembership?
     var status: ReadingStatus = .toRead
+    /// The reading dates the reader set on the scan review. Only those the
+    /// status carries are sent — a start from reading on, a finish once read —
+    /// and the server stamps now for any left unset.
+    var startedAt: Date?
+    var finishedAt: Date?
     var hidden = false
 
     var asInput: ShioriGraphQL.NewBookInput {
         ShioriGraphQL.NewBookInput(
             authors: GraphQLHelpers.graphQLNullable(authors.isEmpty ? nil : authors),
             coverUrl: GraphQLHelpers.graphQLNullable(coverURL?.absoluteString),
+            finishedAt: GraphQLHelpers.graphQLNullable(
+                status == .read ? finishedAt.map(GraphQLHelpers.iso8601) : nil
+            ),
             firstPublishedIn: GraphQLHelpers.graphQLNullable(firstPublishedIn),
             format: .some(LibraryAPI.graphQLFormat(format)),
             genre: GraphQLHelpers.graphQLNullable(genre.map(LibraryAPI.graphQLGenre)),
@@ -195,6 +203,9 @@ struct BookDraft {
                         volume: GraphQLHelpers.graphQLNullable(membership.volume)
                     )
                 }
+            ),
+            startedAt: GraphQLHelpers.graphQLNullable(
+                status == .toRead ? nil : startedAt.map(GraphQLHelpers.iso8601)
             ),
             status: .some(LibraryAPI.graphQLStatus(status)),
             subgenres: GraphQLHelpers.graphQLNullable(subgenres.isEmpty ? nil : subgenres),

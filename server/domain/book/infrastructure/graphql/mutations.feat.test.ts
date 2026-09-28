@@ -148,6 +148,30 @@ describe('cataloguing through the API', () => {
     })
   })
 
+  test('catalogues a book read with the dates the reader set', async () => {
+    const added = await execute(
+      'mutation { addBook(input: { title: "Gataca", status: READ, ' +
+        'startedAt: "2026-03-01T12:00:00.000Z", finishedAt: "2026-03-12T12:00:00.000Z" }) ' +
+        '{ status startedAt finishedAt } }',
+    )
+
+    expect(added.errors).toBeUndefined()
+    expect(added.data?.addBook).toEqual({
+      status: 'READ',
+      startedAt: '2026-03-01T12:00:00.000Z',
+      finishedAt: '2026-03-12T12:00:00.000Z',
+    })
+  })
+
+  test('refuses to catalogue a book on the pile with a start date', async () => {
+    const refused = await execute(
+      'mutation { addBook(input: { title: "Gataca", startedAt: "2026-03-01T12:00:00.000Z" }) ' +
+        '{ id } }',
+    )
+
+    expect(refused.errors?.[0]?.extensions?.code).toBe('BAD_USER_INPUT')
+  })
+
   test('refuses a finish date before the start', async () => {
     const book = await addBook('Gataca')
     await execute(`mutation { setReadingStatus(id: "${book.id}", status: READ) { id } }`)

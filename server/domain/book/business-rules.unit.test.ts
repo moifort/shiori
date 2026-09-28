@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import {
   datesAfterCorrection,
   datesAfterStatusChange,
+  datesOnArrival,
   groupedBySeries,
   inSagaOrder,
   listeningProgressOf,
@@ -321,6 +322,25 @@ describe('datesAfterStatusChange', () => {
     )
     expect(dates.startedAt).toBe(EARLIER)
     expect(dates.finishedAt).toBeUndefined()
+  })
+})
+
+describe('datesOnArrival', () => {
+  const march = new Date('2026-03-01T12:00:00.000Z')
+
+  test('keeps the dates the reader set on a book being saved', () => {
+    expect(datesOnArrival('read', { startedAt: EARLIER, finishedAt: march }, NOW)).toEqual({
+      startedAt: EARLIER,
+      finishedAt: march,
+    })
+    expect(datesOnArrival('reading', { startedAt: march }, NOW)).toEqual({ startedAt: march })
+  })
+
+  test('refuses dates that cannot be true of the status or of each other', () => {
+    expect(datesOnArrival('to-read', { startedAt: march }, NOW)).toBe('bad-dates')
+    expect(datesOnArrival('reading', { finishedAt: march }, NOW)).toBe('bad-dates')
+    expect(datesOnArrival('read', { startedAt: march, finishedAt: EARLIER }, NOW)).toBe('bad-dates')
+    expect(datesOnArrival('read', { finishedAt: new Date('2027-01-01') }, NOW)).toBe('bad-dates')
   })
 })
 

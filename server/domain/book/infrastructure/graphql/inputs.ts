@@ -105,6 +105,18 @@ export const NewBookInput = builder.inputType('NewBookInput', {
       required: false,
       description: 'Defaults to TO_READ, the only status true of every freshly catalogued book.',
     }),
+    startedAt: t.field({
+      type: 'DateTime',
+      required: false,
+      description:
+        'When the reading began. Only for a book in progress, read or dropped; defaults to ' +
+        'the finish, else now.',
+    }),
+    finishedAt: t.field({
+      type: 'DateTime',
+      required: false,
+      description: 'When the reading ended. Only for a read book; defaults to now.',
+    }),
     hidden: t.boolean({ required: false, description: 'Defaults to false.' }),
   }),
 })

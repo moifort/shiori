@@ -1720,7 +1720,7 @@ type Mutation {
   ): Book!
 
   """
-  Catalogue a book without scanning it — typed by hand, or taken from a series catalogue. Consumes no scan credit.
+  Catalogue a book without scanning it — typed by hand, or taken from a series catalogue. Consumes no scan credit. BAD_USER_INPUT when a reading date is in the future, precedes the start, or is one the status does not carry.
   """
   addBook(input: NewBookInput!): Book!
 
@@ -2122,6 +2122,9 @@ input NewBookInput {
   The publisher cover `scanBook` found by ISBN. Pass it back unchanged; omitted for a book typed by hand.
   """
   coverUrl: CoverUrl
+
+  """When the reading ended. Only for a read book; defaults to now."""
+  finishedAt: DateTime
   firstPublishedIn: Year
 
   """Defaults to BOOK."""
@@ -2146,6 +2149,11 @@ input NewBookInput {
   The saga this book belongs to, taken from a scan result. Omitted for a book typed by hand.
   """
   series: SeriesMembershipInput
+
+  """
+  When the reading began. Only for a book in progress, read or dropped; defaults to the finish, else now.
+  """
+  startedAt: DateTime
 
   """
   Defaults to TO_READ, the only status true of every freshly catalogued book.

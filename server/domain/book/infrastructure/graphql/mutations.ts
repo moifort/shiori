@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern'
-import { taggedIn } from '~/domain/book/business-rules'
+import { datesOnArrival, taggedIn } from '~/domain/book/business-rules'
 import type { BookEdit } from '~/domain/book/command'
 import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
 import {
@@ -38,10 +38,21 @@ builder.mutationFields((t) => ({
     type: BookType,
     description:
       'Catalogue a book without scanning it — typed by hand, or taken from a ' +
-      'series catalogue. Consumes no scan credit.',
+      'series catalogue. Consumes no scan credit. BAD_USER_INPUT when a reading ' +
+      'date is in the future, precedes the start, or is one the status does not carry.',
     args: { input: t.arg({ type: NewBookInput, required: true }) },
     resolve: async (_root, args, context) => {
+      const dates = datesOnArrival(
+        args.input.status ?? 'to-read',
+        {
+          ...(args.input.startedAt ? { startedAt: args.input.startedAt } : {}),
+          ...(args.input.finishedAt ? { finishedAt: args.input.finishedAt } : {}),
+        },
+        new Date(),
+      )
+      if (dates === 'bad-dates') return badUserInput('These reading dates cannot be true')
       const book = await BookUseCase.add(context.userId, {
+        ...dates,
         title: args.input.title,
         authors: args.input.authors ?? undefined,
         format: args.input.format ?? undefined,

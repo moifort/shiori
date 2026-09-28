@@ -91,6 +91,20 @@ describe('cataloguing a book', () => {
     expect(book.statusChangedAt).toEqual(PAST)
   })
 
+  test('keeps the reading dates the reader set on the scan review', async () => {
+    const FEBRUARY = new Date('2026-02-01T12:00:00.000Z')
+    const MARCH = new Date('2026-03-01T12:00:00.000Z')
+    const book = await BookCommand.add(
+      reader,
+      { title: BookTitle('Dune'), status: 'read', startedAt: FEBRUARY, finishedAt: MARCH },
+      NOW,
+    )
+
+    expect(book.startedAt).toEqual(FEBRUARY)
+    expect(book.finishedAt).toEqual(MARCH)
+    expect(book.statusChangedAt).toEqual(MARCH)
+  })
+
   test('stamps a start when it is catalogued as already being read', async () => {
     const book = await add('Le Nom du vent', 'reading')
 

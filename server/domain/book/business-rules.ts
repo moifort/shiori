@@ -270,6 +270,16 @@ export const datesAfterCorrection = (
   return { ...typed, ...(stamp ? { statusChangedAt: stamp } : {}) }
 }
 
+/** The reading dates a reader set on a book before saving it — on the scan
+ *  review — or `bad-dates` when they cannot be true, by the same measure as a
+ *  correction of a book catalogued a moment ago in that status. */
+export const datesOnArrival = (
+  status: ReadingStatus,
+  typed: Partial<Pick<Book, 'startedAt' | 'finishedAt'>>,
+  now: Date,
+): Partial<Pick<Book, 'startedAt' | 'finishedAt'>> | 'bad-dates' =>
+  datesAfterCorrection({ status, addedAt: now }, typed, now) === 'bad-dates' ? 'bad-dates' : typed
+
 /** Rating a book means having read it. The app lets a reader rate from anywhere,
  *  and silently leaving such a book in `to-read` would be a lie the library then
  *  repeats in every filter. A dropped book keeps its status: one star is often

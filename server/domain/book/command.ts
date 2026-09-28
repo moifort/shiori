@@ -78,6 +78,9 @@ export type NewBook = {
    *  would land on today's date and rewrite every reading statistic. Ignored
    *  unless the status says the book is read. */
   finishedAt?: Date
+  /** When the reading began, for a book catalogued as already being read or
+   *  read: the reader may say so on the scan review. Ignored on the pile. */
+  startedAt?: Date
   /** When the book entered the reader's hands, for a book catalogued from
    *  elsewhere. An Audible import knows the day the title was bought, and the
    *  library is cut into months on that date: without it, a decade of purchases
@@ -128,7 +131,11 @@ export namespace BookCommand {
     // end — which every statistic reads as a book finished before it was opened.
     // Failing that, the day the book arrived is the honest lower bound.
     const dates = datesAfterStatusChange(
-      { status: 'to-read', startedAt: input.finishedAt ?? addedAt, finishedAt: input.finishedAt },
+      {
+        status: 'to-read',
+        startedAt: input.startedAt ?? input.finishedAt ?? addedAt,
+        finishedAt: input.finishedAt,
+      },
       input.status ?? 'to-read',
       now,
     )

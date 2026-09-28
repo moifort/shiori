@@ -33,6 +33,40 @@ struct ScanReviewPage: View {
         draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// The finish that bounds the start: the one set on a read book, else today.
+    private var latestStart: Date {
+        draft.status == .read ? min(draft.finishedAt ?? .now, .now) : .now
+    }
+
+    /// The start as the server stamps it when left alone: the finish of a read
+    /// book, else today.
+    private var startedAt: Binding<Date> {
+        Binding(
+            get: { draft.startedAt.map { min($0, latestStart) } ?? latestStart },
+            set: { draft.startedAt = $0 }
+        )
+    }
+
+    private var finishedAt: Binding<Date> {
+        Binding(get: { draft.finishedAt ?? .now }, set: { draft.finishedAt = $0 })
+    }
+
+    /// A day picked on a row, as the edit form picks its dates: the calendar
+    /// opens on the day shown, and turning the month keeps that day.
+    private func readingDate(
+        _ title: LocalizedStringKey,
+        icon: String,
+        date: Binding<Date>,
+        range: ClosedRange<Date>
+    ) -> some View {
+        LabeledContent {
+            DatePicker("", selection: date, in: range, displayedComponents: .date)
+                .labelsHidden()
+        } label: {
+            Label(title, systemImage: icon)
+        }
+    }
+
     var body: some View {
         Form {
             Section {
@@ -68,6 +102,24 @@ struct ScanReviewPage: View {
                     ForEach(ReadingStatus.progression) { Text($0.label).tag($0) }
                 }
                 .pickerStyle(.segmented)
+                if draft.status != .toRead {
+                    readingDate(
+                        "Commencé le",
+                        icon: "calendar.badge.plus",
+                        date: startedAt,
+                        range: .distantPast...latestStart
+                    )
+                        .accessibilityIdentifier("review-started-at")
+                }
+                if draft.status == .read {
+                    readingDate(
+                        "Terminé le",
+                        icon: "calendar.badge.checkmark",
+                        date: finishedAt,
+                        range: startedAt.wrappedValue...max(startedAt.wrappedValue, .now)
+                    )
+                        .accessibilityIdentifier("review-finished-at")
+                }
             }
 
             if let synopsis = draft.synopsis {
@@ -117,6 +169,7 @@ struct ScanReviewPage: View {
                         .split(separator: ",")
                         .map { $0.trimmingCharacters(in: .whitespaces) }
                         .filter { !$0.isEmpty }
+                    approved.startedAt = draft.startedAt.map { min($0, latestStart) }
                     onSave(approved)
                 }
                 .disabled(trimmedTitle.isEmpty || isSaving)
