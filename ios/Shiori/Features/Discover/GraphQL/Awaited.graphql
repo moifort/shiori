@@ -58,6 +58,7 @@ fragment AwaitedEditionFields on AwaitedEdition {
   date
   coverUrl
   storeUrl
+  awaitedAt
   bookId
   ownerId
 }

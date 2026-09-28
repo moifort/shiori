@@ -413,6 +413,9 @@ A book the reader waits to see come out in the language of their app, in one for
 type AwaitedEdition {
   authors: [AuthorName!]!
 
+  """When the reader started awaiting it."""
+  awaitedAt: DateTime!
+
   """The book it was awaited from, on its owner’s shelf."""
   bookId: BookId!
 

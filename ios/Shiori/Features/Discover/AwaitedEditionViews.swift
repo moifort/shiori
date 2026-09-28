@@ -124,15 +124,17 @@ struct AwaitedEditionsSection: View {
 
 /// One awaited edition, opened from Découvrir, drawn as a volume announced
 /// is: where it stands on top — orange while announced, green once out —
-/// then the book's own header, the store once it sells it, and what it is a
-/// translation or a recording of. Only what is known is drawn. The Audible
-/// sync brings a recording bought into the library by itself, which ends the
-/// wait.
+/// then the book's own section, with the store's tag in its corner once it
+/// sells it, what it is a translation or a recording of, and when it was
+/// awaited. Only what is known is drawn. "Ne plus guetter" sits in the corner,
+/// asked for twice as a saga's deletion is. The Audible sync brings a
+/// recording bought into the library by itself, which ends the wait.
 struct AwaitedEditionView: View {
     let edition: AwaitedEdition
     let onStop: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @State private var confirmStop = false
 
     var body: some View {
         List {
@@ -143,43 +145,20 @@ struct AwaitedEditionView: View {
                     .accessibilityIdentifier("awaited-state")
             }
 
-            ReadOnlyBookHeader(book: edition.cover)
-
-            if let url = edition.storeURL {
-                Section {
-                    Link(destination: url) {
-                        Label(
-                            edition.format.storeLabel,
-                            systemImage: edition.format == .audiobook ? "headphones" : "cart"
-                        )
-                    }
-                    .accessibilityIdentifier("awaited-open-store")
-                } footer: {
-                    if edition.format == .audiobook {
-                        Text("Une fois acheté, la synchronisation Audible l'ajoute à votre bibliothèque et il n'est plus guetté.")
-                    }
-                }
-            }
-
-            if edition.title != edition.originalTitle {
-                Section {
+            ReadOnlyBookHeader(
+                book: edition.cover,
+                storeLink: edition.storeURL.map { .init(name: edition.format.storeName, url: $0) }
+            ) {
+                if edition.title != edition.originalTitle {
                     LabeledInfoRow(title: "Titre original", value: edition.originalTitle, icon: "character.book.closed")
                 }
-            }
-
-            Section {
-                Button(role: .destructive) {
-                    onStop()
-                    dismiss()
-                } label: {
-                    Label {
-                        Text("Ne plus guetter")
-                    } icon: {
-                        Image(systemName: "bell.slash").foregroundStyle(.red)
-                    }
+                if let awaitedAt = edition.awaitedAt {
+                    LabeledInfoRow(
+                        title: "Ajouté le",
+                        value: awaitedAt.formatted(date: .abbreviated, time: .omitted),
+                        icon: "tray.and.arrow.down"
+                    )
                 }
-                .foregroundStyle(.red)
-                .accessibilityIdentifier("awaited-stop")
             }
         }
         .listStyle(.insetGrouped)
@@ -189,6 +168,29 @@ struct AwaitedEditionView: View {
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                ToolbarIconButton(title: "Ne plus guetter", systemImage: "bell.slash") {
+                    confirmStop = true
+                }
+                .tint(.red)
+                .accessibilityIdentifier("awaited-stop")
+                // Attached to the button, as a saga's deletion is: the dialog
+                // rises from the control that asked.
+                .confirmationDialog(
+                    "Ne plus guetter ce livre ?",
+                    isPresented: $confirmStop,
+                    titleVisibility: .visible
+                ) {
+                    Button("Ne plus guetter", role: .destructive) {
+                        onStop()
+                        dismiss()
+                    }
+                    .accessibilityIdentifier("choice-stop-awaiting")
+                    Button("Annuler", role: .cancel) {}
+                } message: {
+                    Text("Vous ne serez plus prévenu de sa sortie.")
+                }
             }
         }
     }

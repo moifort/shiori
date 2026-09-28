@@ -42,6 +42,8 @@ struct AwaitedEdition: Identifiable, Hashable, Codable, Sendable {
     /// Where to get it: the recording on Audible, the printed edition on
     /// Amazon. Nil until a store confirmed it.
     let storeURL: URL?
+    /// When the reader started awaiting it.
+    let awaitedAt: Date?
     /// The book it was awaited from, on its owner's shelf.
     let bookId: String
     /// The reader's own id for their copy, a friend's for theirs.
@@ -120,6 +122,14 @@ extension ReleaseFormat {
         switch self {
         case .book: String(localized: "Bientôt en FR")
         case .audiobook: String(localized: "Bientôt en audio")
+        }
+    }
+
+    /// The store an edition out in this format is sold in, on its tag.
+    var storeName: String {
+        switch self {
+        case .book: "Amazon"
+        case .audiobook: "Audible"
         }
     }
 
@@ -232,6 +242,7 @@ private extension AwaitedEdition {
             date: fields.date,
             coverURL: fields.coverUrl.flatMap(URL.init(string:)),
             storeURL: fields.storeUrl.flatMap(URL.init(string:)),
+            awaitedAt: GraphQLHelpers.parseISO8601(fields.awaitedAt),
             bookId: fields.bookId,
             ownerId: fields.ownerId
         )

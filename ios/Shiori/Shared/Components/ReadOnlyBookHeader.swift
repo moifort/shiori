@@ -3,8 +3,19 @@ import SwiftUI
 /// A book somebody else holds, or nobody yet — a friend's copy, a suggestion —
 /// drawn the way the book page draws the reader's own, with nothing to tap:
 /// the cover, the title, the author and the saga, then the genre and its tags.
-struct ReadOnlyBookHeader: View {
+/// A page may add a way out to the store — a quiet tag in the corner with its
+/// arrow, as the book page draws Audible's — and rows of its own under the
+/// facts.
+struct ReadOnlyBookHeader<Extra: View>: View {
+    /// A store the book can be opened in: its name on the tag, and where.
+    struct StoreLink {
+        let name: String
+        let url: URL
+    }
+
     let book: Book
+    var storeLink: StoreLink?
+    @ViewBuilder var extra: Extra
 
     var body: some View {
         Section {
@@ -34,6 +45,16 @@ struct ReadOnlyBookHeader: View {
                         }
                     }
                     .padding(.top, 2)
+                    if let storeLink {
+                        Link(destination: storeLink.url) {
+                            Pill(text: storeLink.name, trailingSystemImage: "arrow.up.right")
+                        }
+                        .buttonStyle(.borderless)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .padding(.top, 4)
+                        .accessibilityLabel(Text("Ouvrir dans \(storeLink.name)"))
+                        .accessibilityIdentifier("book-store-link")
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -69,7 +90,14 @@ struct ReadOnlyBookHeader: View {
             if let pages = book.pageCount {
                 LabeledInfoRow(title: "Pages", value: String(pages), icon: "doc.plaintext")
             }
+            extra
         }
+    }
+}
+
+extension ReadOnlyBookHeader where Extra == EmptyView {
+    init(book: Book, storeLink: StoreLink? = nil) {
+        self.init(book: book, storeLink: storeLink) { EmptyView() }
     }
 }
 

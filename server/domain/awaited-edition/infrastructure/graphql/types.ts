@@ -89,6 +89,11 @@ export const AwaitedEditionType = builder
           )
         },
       }),
+      awaitedAt: t.field({
+        type: 'DateTime',
+        description: 'When the reader started awaiting it.',
+        resolve: (view) => view.awaitedAt,
+      }),
       bookId: t.field({
         type: 'BookId',
         description: 'The book it was awaited from, on its owner’s shelf.',
