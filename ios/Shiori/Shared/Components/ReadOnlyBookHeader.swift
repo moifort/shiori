@@ -7,10 +7,12 @@ import SwiftUI
 /// arrow, as the book page draws Audible's — the way to its saga where the
 /// book page has it, and rows of its own under the facts.
 struct ReadOnlyBookHeader<Extra: View>: View {
-    /// A store the book can be opened in: its name on the tag, and where.
+    /// A store the book can be opened in: its name on the tag, and where. A
+    /// store with a colour of its own — Audible — draws its tag in it.
     struct StoreLink {
         let name: String
         let url: URL
+        var tint: Color? = nil
     }
 
     let book: Book
@@ -56,7 +58,7 @@ struct ReadOnlyBookHeader<Extra: View>: View {
             .overlay(alignment: .bottomTrailing) {
                 if let storeLink {
                     Link(destination: storeLink.url) {
-                        Pill(text: storeLink.name, trailingSystemImage: "arrow.up.right")
+                        Pill(text: storeLink.name, tint: storeLink.tint, trailingSystemImage: "arrow.up.right")
                     }
                     .buttonStyle(.borderless)
                     .accessibilityLabel(Text("Ouvrir dans \(storeLink.name)"))

@@ -30,7 +30,7 @@ struct AnnouncedVolumeView: View {
 
             ReadOnlyBookHeader(
                 book: book,
-                storeLink: volume.audibleURL.map { .init(name: "Audible", url: $0) },
+                storeLink: volume.audibleURL.map { .init(name: "Audible", url: $0, tint: .audible) },
                 onOpenSeries: linksToSaga ? { showsSaga = true } : nil
             )
 

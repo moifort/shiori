@@ -156,6 +156,15 @@ extension ReleaseFormat {
         }
     }
 
+    /// The colour of that store's tag: Audible's orange, the neutral grey for
+    /// Amazon.
+    var storeTint: Color? {
+        switch self {
+        case .book: nil
+        case .audiobook: .audible
+        }
+    }
+
     /// The action that opens where an edition out in this format is sold.
     var storeLabel: String {
         switch self {

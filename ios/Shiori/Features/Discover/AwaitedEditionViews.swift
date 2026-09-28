@@ -170,7 +170,7 @@ struct AwaitedEditionView: View {
 
             ReadOnlyBookHeader(
                 book: edition.cover,
-                storeLink: edition.storeURL.map { .init(name: edition.format.storeName, url: $0) }
+                storeLink: edition.storeURL.map { .init(name: edition.format.storeName, url: $0, tint: edition.format.storeTint) }
             ) {
                 if edition.title != edition.originalTitle {
                     LabeledInfoRow(title: "Titre original", value: edition.originalTitle, icon: "character.book.closed")
