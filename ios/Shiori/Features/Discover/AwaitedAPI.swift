@@ -108,6 +108,29 @@ struct EditionOffer: Sendable, Equatable {
     }
 }
 
+extension AwaitedEdition {
+    /// What a page shows the moment the reader asks to await an edition, while
+    /// the server looks it up on the web behind their back: nothing announced
+    /// yet. The server's answer replaces it.
+    static func pending(format: ReleaseFormat, of book: Book) -> AwaitedEdition {
+        AwaitedEdition(
+            id: "pending-\(book.id)-\(format.rawValue)",
+            format: format,
+            state: .unannounced,
+            title: book.title,
+            originalTitle: book.title,
+            originalLanguage: nil,
+            authors: book.authors,
+            date: nil,
+            coverURL: nil,
+            storeURL: nil,
+            awaitedAt: .now,
+            bookId: book.id,
+            ownerId: ""
+        )
+    }
+}
+
 extension ReleaseFormat {
     /// The action that awaits a book's edition in this format.
     var awaitLabel: String {

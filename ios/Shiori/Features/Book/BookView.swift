@@ -23,7 +23,9 @@ struct BookView: View {
     @State private var openSeries: SeriesDestination?
     /// What the page offers to await in the app's language, and what it awaits.
     @State private var offer = EditionOffer()
-    @State private var isAwaiting = false
+    /// The awaits sent and not answered yet, by format: the page already shows
+    /// them, so giving one up waits for the server's id.
+    @State private var awaiting: [ReleaseFormat: Task<AwaitedEdition?, Never>] = [:]
     @State private var awaitFailed: String?
     @Environment(\.dismiss) private var dismiss
 
@@ -71,7 +73,7 @@ struct BookView: View {
             // Toolbar actions close their menu before the mutation leaves, so the
             // call is made visible by a scrim rather than by the control itself.
             .overlay {
-                if viewModel.isSaving || isAwaiting {
+                if viewModel.isSaving {
                     ZStack {
                         Color.black.opacity(0.1).ignoresSafeArea()
                         ProgressView()
@@ -181,21 +183,37 @@ struct BookView: View {
         }
     }
 
-    /// Awaits the book's edition in the app's language: the server looks it up
-    /// on the web at once, so the page says straight away where it stands.
-    private func awaitEdition(_ format: ReleaseFormat) async {
-        isAwaiting = true
-        defer { isAwaiting = false }
-        do {
-            let edition = try await AwaitedAPI.awaitEdition(bookId: bookId, format: format)
-            offer.awaited.removeAll { $0.format == format }
-            offer.awaited.append(edition)
-        } catch {
-            awaitFailed = reportError(error)
+    /// Awaits the book's edition in the app's language. The page shows it
+    /// awaited at once, with no loader: the server looks it up on the web
+    /// behind, and its answer replaces the line when it comes.
+    private func awaitEdition(_ format: ReleaseFormat, of book: Book) {
+        let pending = AwaitedEdition.pending(format: format, of: book)
+        offer.awaited.append(pending)
+        awaiting[format] = Task {
+            defer { awaiting[format] = nil }
+            do {
+                let edition = try await AwaitedAPI.awaitEdition(bookId: bookId, format: format)
+                // Unless the reader gave it up meanwhile.
+                if let index = offer.awaited.firstIndex(where: { $0.id == pending.id }) {
+                    offer.awaited[index] = edition
+                }
+                return edition
+            } catch {
+                offer.awaited.removeAll { $0.id == pending.id }
+                awaitFailed = reportError(error)
+                return nil
+            }
         }
     }
 
     private func stopAwaiting(_ edition: AwaitedEdition) async {
+        var edition = edition
+        // Given up before the server answered: stopped once it has.
+        if let pending = awaiting[edition.format] {
+            offer.awaited.removeAll { $0.id == edition.id }
+            guard let answered = await pending.value else { return }
+            edition = answered
+        }
         do {
             try await AwaitedAPI.stop(id: edition.id)
             offer.awaited.removeAll { $0.id == edition.id }
@@ -263,7 +281,7 @@ struct BookView: View {
             // recording only for a reader who listens to any.
             ForEach(offer.awaitable) { format in
                 Button(format.awaitLabel, systemImage: format == .audiobook ? "headphones" : "character.book.closed") {
-                    Task { await awaitEdition(format) }
+                    awaitEdition(format, of: book)
                 }
                 .accessibilityIdentifier("book-await-\(format.rawValue)")
             }
