@@ -157,7 +157,7 @@ const recentWorksDescription =
 export const AuthorReleasesType = builder.objectRef<AuthorReleases>('AuthorReleases').implement({
   description:
     'What one author has for the reader in one format, outside the sagas they hold: the ' +
-    'author page’s "Prochaines sorties" and "Nouveautés".',
+    'author page’s "Annoncés" and "Nouveautés".',
   fields: (t) => ({
     next: t.field({
       type: DiscoveredWorkType,
@@ -173,7 +173,7 @@ export const AuthorReleasesType = builder.objectRef<AuthorReleases>('AuthorRelea
   }),
 })
 
-const AuthorDiscoveryType = builder.objectRef<AuthorDiscovery>('AuthorDiscovery').implement({
+export const AuthorDiscoveryType = builder.objectRef<AuthorDiscovery>('AuthorDiscovery').implement({
   description:
     'One row of the Découvrir tab’s Authors shelf: an author the reader holds, and what they ' +
     'brought out lately or announced outside the sagas the reader holds.',

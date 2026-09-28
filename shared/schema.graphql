@@ -305,6 +305,11 @@ type AuthorDiscovery {
   """The author as the Library’s Authors shelf draws their row."""
   author: FollowedAuthor!
 
+  """
+  The editions of theirs the reader awaits in that format that are announced or out, the ones out first — a work the web found under the same title is left to them.
+  """
+  awaited: [AwaitedEdition!]!
+
   """The soonest work announced, to the day, the month or the year."""
   next: DiscoveredWork
 
@@ -371,9 +376,14 @@ type AuthorPage {
 }
 
 """
-What one author has for the reader in one format, outside the sagas they hold: the author page’s "Prochaines sorties" and "Nouveautés".
+What one author has for the reader in one format, outside the sagas they hold: the author page’s "Annoncés" and "Nouveautés".
 """
 type AuthorReleases {
+  """
+  The editions of theirs the reader awaits in that format that are announced or out, the ones out first — a work the web found under the same title is left to them.
+  """
+  awaited: [AwaitedEdition!]!
+
   """The soonest work announced, to the day, the month or the year."""
   next: DiscoveredWork
 

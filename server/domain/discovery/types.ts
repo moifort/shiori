@@ -1,6 +1,7 @@
 import type { AudibleAsin } from '~/domain/audible/types'
 import type { AuthorKey } from '~/domain/author/types'
 import type { FollowedAuthor } from '~/domain/author/use-case'
+import type { AwaitedEditionView } from '~/domain/awaited-edition/types'
 import type {
   BookLanguage,
   CoverUrl,
@@ -158,6 +159,9 @@ export type AuthorReleases = {
   next?: FoundWork
   /** The works out in the last three months, the newest first. */
   recent: FoundWork[]
+  /** The reader's own editions of them awaited in that format that are
+   *  announced or out, in the shelf's order. */
+  awaited: AwaitedEditionView[]
 }
 
 export type AuthorDiscovery = AuthorReleases & {

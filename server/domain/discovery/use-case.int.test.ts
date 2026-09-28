@@ -112,6 +112,7 @@ const { SeriesQuery } = await import('~/domain/series/query')
 const { SeriesOpinionCommand } = await import('~/domain/series-opinion/command')
 const { SeriesName, VolumeNumber, seriesKeyOf } = await import('~/domain/series/primitives')
 const { AuthorName, BookTitle, Year } = await import('~/domain/shared/primitives')
+const { authorKeyOf } = await import('~/domain/author/primitives')
 
 const reader = 'reader' as UserId
 const other = 'other' as UserId
@@ -140,6 +141,42 @@ const stock = async (
       kind: 'main',
     },
   })
+}
+
+/** The reader awaits a book of Matt Dinniman's in French, in one format: found
+ *  as `found` says, or not found yet. */
+const awaits = (
+  format: 'book' | 'audiobook',
+  original: string,
+  found?: { title: string; date?: string; asin?: string },
+) => {
+  const watchKey = `${original}--${format}--fr`
+  fake.seed('awaited-editions', `${reader}--${watchKey}`, {
+    id: `${reader}--${watchKey}`,
+    userId: reader,
+    format,
+    language: 'fr',
+    source: {
+      bookId: `book-${original}`,
+      ownerId: reader,
+      title: original,
+      authors: ['Matt Dinniman'],
+      language: 'en',
+    },
+    watchKey,
+    awaitedAt: new Date('2026-09-01T08:00:00Z'),
+  })
+  if (found)
+    fake.seed('edition-watches', watchKey, {
+      key: watchKey,
+      title: original,
+      author: 'Matt Dinniman',
+      originalLanguage: 'en',
+      format,
+      language: 'fr',
+      checkedAt: now,
+      found,
+    })
 }
 
 beforeEach(() => {
@@ -381,10 +418,10 @@ describe('the Découvrir tab', () => {
 
     await DiscoveryUseCase.discover(reader, 'fr', 'book', now)
 
-    // The library and the saga opinions; the reader's record, the saga's
-    // catalogue, its watch, the author's watch and their catalogue for the
-    // portrait.
-    expect(fake.queryReads - before.queries).toBe(2)
+    // The library, the saga opinions and the editions awaited; the reader's
+    // record, the saga's catalogue, its watch, the author's watch and their
+    // catalogue for the portrait.
+    expect(fake.queryReads - before.queries).toBe(3)
     expect(fake.docReads - before.docs).toBe(5)
   })
 })
@@ -402,6 +439,67 @@ describe('the Authors shelf', () => {
     expect(row.author.books.map((book) => book.title)).toEqual([BookTitle('Carl 1')])
     expect(row.next?.title).toBe(BookTitle('Kaiju Battlefield Surgeon'))
     expect(row.recent.map((work) => work.title)).toEqual([BookTitle('La Tour 1')])
+  })
+
+  test('adds the editions awaited announced or out to the author’s row and page, not the ones not found', async () => {
+    await stock(reader)
+    await DiscoveryUseCase.watchDueSagas(now)
+    awaits('book', 'The Butcher’s Masquerade', {
+      title: 'La Mascarade du boucher',
+      date: '2026-11-20',
+    })
+    awaits('book', 'The Gate of the Feral Gods', {
+      title: 'La Porte des dieux',
+      date: '2026-09-02',
+    })
+    awaits('book', 'The Eye of the Bedlam Bride')
+
+    const [row] = (await DiscoveryUseCase.discover(reader, 'fr', 'book', now)).authors
+    const page = await DiscoveryUseCase.authorReleases(
+      reader,
+      authorKeyOf('Matt Dinniman'),
+      'book',
+      now,
+    )
+
+    const shown = [BookTitle('La Porte des dieux'), BookTitle('La Mascarade du boucher')]
+    expect(row.awaited.map((view) => view.found?.title)).toEqual(shown)
+    expect(row.awaited.map((view) => view.state)).toEqual(['available', 'announced'])
+    expect(row.next?.title).toBe(BookTitle('Kaiju Battlefield Surgeon'))
+    expect(page.awaited.map((view) => view.found?.title)).toEqual(shown)
+  })
+
+  test('draws a work the web found once when the reader awaits it', async () => {
+    await stock(reader)
+    await DiscoveryUseCase.watchDueSagas(now)
+    awaits('book', 'Kaiju: Battlefield Surgeon', {
+      title: 'Kaiju Battlefield Surgeon',
+      date: '2026-11-03',
+    })
+
+    const [row] = (await DiscoveryUseCase.discover(reader, 'fr', 'book', now)).authors
+
+    expect(row.next).toBeUndefined()
+    expect(row.awaited.map((view) => view.found?.title)).toEqual([
+      BookTitle('Kaiju Battlefield Surgeon'),
+    ])
+  })
+
+  test('shelves an author among the recordings for a recording awaited, though only read', async () => {
+    await stock(reader)
+    await DiscoveryUseCase.watchDueSagas(now)
+    awaits('audiobook', 'The Butcher’s Masquerade', {
+      title: 'La Mascarade du boucher',
+      date: '2026-09-02',
+      asin: 'B0MASQUE01',
+    })
+
+    const [row, ...rest] = (await DiscoveryUseCase.discover(reader, 'fr', 'audiobook', now)).authors
+
+    expect(rest).toEqual([])
+    expect(row.author.name).toBe(AuthorName('Matt Dinniman'))
+    expect(row.recent).toEqual([])
+    expect(row.awaited.map((view) => view.state)).toEqual(['available'])
   })
 
   test('watches an author only in the formats the reader holds them in', async () => {

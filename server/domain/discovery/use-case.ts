@@ -1,6 +1,9 @@
 import { AdminCommand } from '~/domain/admin/command'
 import type { AuthorKey, ShelvedAuthor } from '~/domain/author/types'
 import { AuthorUseCase } from '~/domain/author/use-case'
+import { awaitedByAuthorOf, viewOf } from '~/domain/awaited-edition/business-rules'
+import { AwaitedEditionQuery } from '~/domain/awaited-edition/query'
+import type { AwaitedEditionView } from '~/domain/awaited-edition/types'
 import { BookQuery } from '~/domain/book/query'
 import type { Book, BookLanguage } from '~/domain/book/types'
 import {
@@ -134,18 +137,21 @@ export namespace DiscoveryUseCase {
    *  with a volume announced they do not hold or one just out, and every
    *  author they hold in that format with a work announced or just out outside
    *  those sagas, as the shared watches know them, and how many were never
-   *  looked up. Opening it tells the hourly pass at once which sagas and
-   *  authors the reader follows now, and in which language to write to them. */
+   *  looked up. An author the reader awaits an edition of in that format,
+   *  announced or out, is on the Authors shelf with it, even one they hold
+   *  only in the other. Opening it tells the hourly pass at once which sagas
+   *  and authors the reader follows now, and in which language to write to
+   *  them. */
   export const discover = async (
     userId: UserId,
     language: Language,
     format: ReleaseFormat,
     now = new Date(),
   ): Promise<Discovery> => {
-    const library = await libraryOf(userId)
+    const [library, awaited] = await Promise.all([libraryOf(userId), awaitedOf(userId, now)])
     await rememberReader(userId, library, language, now)
     const { watches, authorWatches } = await watchesOf(library, format)
-    return discoveryOf(library, watches, authorWatches, format, now)
+    return discoveryOf(library, watches, authorWatches, awaited, format, now)
   }
 
   /** The first look at the tab: every saga, then every author, the reader
@@ -161,7 +167,7 @@ export namespace DiscoveryUseCase {
     budgetMs = ON_DEMAND_BUDGET_MS,
     startedAt = Date.now(),
   ): Promise<Discovery> => {
-    const library = await libraryOf(userId)
+    const [library, awaited] = await Promise.all([libraryOf(userId), awaitedOf(userId, now)])
     await rememberReader(userId, library, language, now)
     const { watches, authorWatches } = await watchesOf(library, format)
     const overBudget = () => Date.now() - startedAt > budgetMs
@@ -173,7 +179,7 @@ export namespace DiscoveryUseCase {
       (author) => author.format === format && !authorWatches.has(authorWatchKeyOf(author)),
     )
     await lookUpAllAuthors(unwatchedAuthors, authorWatches, now, overBudget)
-    return discoveryOf(library, watches, authorWatches, format, now)
+    return discoveryOf(library, watches, authorWatches, awaited, format, now)
   }
 
   /** What the saga screen shows under its introduction: the next volume
@@ -235,22 +241,25 @@ export namespace DiscoveryUseCase {
 
   /** What the author's page shows under its heading: the soonest work
    *  announced and the ones out in the last three months, in that format,
-   *  outside the sagas the reader holds — as the Authors shelf of the tab
-   *  shows them. Nothing for an author the reader holds nothing of in that
-   *  format, nor one never looked up: the hourly pass will. */
+   *  outside the sagas the reader holds, and the editions of theirs the
+   *  reader awaits in it that are announced or out — as the Authors shelf of
+   *  the tab shows them. No work found for an author the reader holds nothing
+   *  of in that format, nor one never looked up: the hourly pass will. */
   export const authorReleases = async (
     userId: UserId,
     authorKey: AuthorKey,
     format: ReleaseFormat,
     now = new Date(),
   ): Promise<AuthorReleases> => {
-    const shelved = (await AuthorUseCase.shelvedAuthors(userId)).find(
-      (author) => author.key === authorKey,
-    )
-    const watched = shelved
-      ? watchedAuthorsOf([shelved]).find((author) => author.format === format)
-      : undefined
-    if (!shelved || !watched) return { recent: [] }
+    const [authors, awaitedViews] = await Promise.all([
+      AuthorUseCase.shelvedAuthors(userId),
+      awaitedOf(userId, now),
+    ])
+    const shelved = authors.find((author) => author.key === authorKey)
+    if (!shelved) return { recent: [], awaited: [] }
+    const awaited = awaitedByAuthorOf(awaitedViews, format, shelved.books).get(authorKey) ?? []
+    const watched = watchedAuthorsOf([shelved]).find((author) => author.format === format)
+    if (!watched) return { recent: [], awaited }
     const key = authorWatchKeyOf(watched)
     const [watches, sagas] = await Promise.all([
       DiscoveryQuery.authorWatches([key]),
@@ -260,7 +269,14 @@ export namespace DiscoveryUseCase {
       ...sagas.map((series) => slugify(series.name)),
       ...shelved.books.flatMap((book) => (book.series ? [slugify(book.series.name)] : [])),
     ])
-    return authorReleasesOf(shelved.books, sagaNames, watches.get(key), todayOf(now))
+    const releases = authorReleasesOf(
+      shelved.books,
+      sagaNames,
+      watches.get(key),
+      todayOf(now),
+      titlesOf(awaited),
+    )
+    return { ...releases, awaited }
   }
 
   /** A volume announced, described for its page before the reader adds it.
@@ -454,11 +470,27 @@ const watchesOf = async (library: Library, format: ReleaseFormat) => {
   return { watches, authorWatches }
 }
 
+/** The editions the reader awaits, as the app draws them: the Authors shelf
+ *  and an author's page add the ones announced or out to the works the web
+ *  found. */
+const awaitedOf = async (userId: UserId, now: Date): Promise<AwaitedEditionView[]> => {
+  const awaited = await AwaitedEditionQuery.byUser(userId)
+  const watches = await AwaitedEditionQuery.watches(awaited.map((edition) => edition.watchKey))
+  const today = todayOf(now)
+  return awaited.map((edition) => viewOf(edition, watches.get(edition.watchKey), today))
+}
+
+/** The folded titles of editions awaited: a work the author's watch found
+ *  under the same title is the same book, drawn once. */
+const titlesOf = (awaited: readonly AwaitedEditionView[]): Set<string> =>
+  new Set(awaited.map((view) => slugify(view.found?.title ?? view.source.title)))
+
 /** The tab in one format out of the reader's library and the watches. */
 const discoveryOf = async (
   library: Library,
   watches: ReadonlyMap<string, SagaWatch>,
   authorWatches: ReadonlyMap<string, AuthorWatch>,
+  awaited: readonly AwaitedEditionView[],
   format: ReleaseFormat,
   now: Date,
 ): Promise<Discovery> => {
@@ -477,7 +509,7 @@ const discoveryOf = async (
     const missing = missingVolumesOf(series.books, watch, series.catalogue, today)
     return [{ ...releases, series, missing, recent }]
   })
-  const authors = await authorRowsOf(library, authorWatches, format, today)
+  const authors = await authorRowsOf(library, authorWatches, awaited, format, today)
   return {
     sagas: inDiscoveryOrder(rows),
     authors: authors.rows,
@@ -488,10 +520,12 @@ const discoveryOf = async (
 
 /** The Authors shelf in one format: every author the reader holds in it with
  *  a work announced or just out, outside any saga they hold — read or heard,
- *  followed or set aside — in the tab's order, with their portraits. */
+ *  followed or set aside — and every author they hold with an edition awaited
+ *  in it announced or out, in the tab's order, with their portraits. */
 const authorRowsOf = async (
   library: Library,
   watches: ReadonlyMap<string, AuthorWatch>,
+  awaitedViews: readonly AwaitedEditionView[],
   format: ReleaseFormat,
   today: string,
 ): Promise<{ rows: AuthorDiscovery[]; unwatched: number; followed: number }> => {
@@ -502,18 +536,33 @@ const authorRowsOf = async (
       author.books.flatMap((book) => (book.series ? [slugify(book.series.name)] : [])),
     ),
   ])
+  const awaitedBy = awaitedByAuthorOf(
+    awaitedViews,
+    format,
+    library.shelved.flatMap((author) => author.books),
+  )
   const watched = library.authors.filter((author) => author.format === format)
   let unwatched = 0
-  const rows = watched.flatMap((watchedAuthor) => {
+  const rows = watched.flatMap((watchedAuthor): AuthorDiscovery[] => {
     const watch = watches.get(authorWatchKeyOf(watchedAuthor))
     const author = shelved.get(watchedAuthor.authorKey)
+    const awaited = awaitedBy.get(watchedAuthor.authorKey) ?? []
     if (!watch) unwatched += 1
-    if (!watch || !author) return []
-    const releases = authorReleasesOf(author.books, sagaNames, watch, today)
-    if (!releases.next && releases.recent.length === 0) return []
-    return [{ ...releases, author }]
+    if (!author) return []
+    const releases = authorReleasesOf(author.books, sagaNames, watch, today, titlesOf(awaited))
+    if (!releases.next && releases.recent.length === 0 && awaited.length === 0) return []
+    return [{ ...releases, awaited, author }]
   })
-  const ordered = inDiscoveryOrder(rows)
+  // An author held only in the other format is on the shelf for what the
+  // reader awaits of them in this one.
+  const watchedKeys = new Set(watched.map((author) => author.authorKey))
+  for (const [key, awaited] of awaitedBy) {
+    const author = shelved.get(key)
+    if (author && !watchedKeys.has(key)) rows.push({ recent: [], awaited, author })
+  }
+  // An author with nothing dated but an edition awaited closes the shelf.
+  const dated = inDiscoveryOrder(rows)
+  const ordered = [...dated, ...rows.filter((row) => !dated.includes(row))]
   const portrayed = await AuthorUseCase.withPortraits(ordered.map((row) => row.author))
   return {
     rows: ordered.map((row, index) => ({ ...row, author: portrayed[index] ?? row.author })),

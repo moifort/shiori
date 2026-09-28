@@ -377,7 +377,7 @@ export const AUTHOR_RECENT_DAYS = 90
  *  announced, to the day, the month or the year, and the works out in the
  *  last three months, the newest first — dated to the day or to a month over,
  *  and a recording Audible never confirmed too, offered without its link. Left
- *  out, a work the reader holds in that format — matched
+ *  out, a work the reader holds in that format or awaits in it — matched
  *  on the folded title — and a volume of a saga they hold anything of, which
  *  the Séries shelf already watches or which they set aside. A new saga's
  *  first volume is the author's news. */
@@ -386,13 +386,15 @@ export const authorReleasesOf = (
   sagaNames: ReadonlySet<string>,
   watch: AuthorWatch | undefined,
   today: string,
+  awaitedTitles: ReadonlySet<string> = new Set(),
 ): { next?: FoundWork; recent: FoundWork[] } => {
   if (!watch) return { recent: [] }
-  const titles = new Set(
-    held
+  const titles = new Set([
+    ...held
       .filter((book) => releaseFormatOf(book.format) === watch.format)
       .map((book) => slugify(book.title)),
-  )
+    ...awaitedTitles,
+  ])
   const since = dayMinus(today, AUTHOR_RECENT_DAYS)
   const news = watch.works.filter(
     (work) =>

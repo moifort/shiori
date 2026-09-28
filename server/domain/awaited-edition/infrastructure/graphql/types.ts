@@ -2,7 +2,11 @@ import { AudibleQuery } from '~/domain/audible/query'
 import { storeUrlOf } from '~/domain/awaited-edition/business-rules'
 import type { AwaitedEditionView, EditionOffer } from '~/domain/awaited-edition/types'
 import { BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
-import { ReleaseFormatEnum } from '~/domain/discovery/infrastructure/graphql/types'
+import {
+  AuthorDiscoveryType,
+  AuthorReleasesType,
+  ReleaseFormatEnum,
+} from '~/domain/discovery/infrastructure/graphql/types'
 import { builder } from '~/domain/shared/graphql/builder'
 import { objectStore } from '~/system/object-store'
 
@@ -127,3 +131,25 @@ export const EditionOfferType = builder.objectRef<EditionOffer>('EditionOffer').
     }),
   }),
 })
+
+// An author's news carries the editions of theirs the reader awaits. Declared
+// here rather than on the Découvrir types, which the awaited types build on.
+const authorAwaitedDescription =
+  'The editions of theirs the reader awaits in that format that are announced or out, ' +
+  'the ones out first — a work the web found under the same title is left to them.'
+
+builder.objectFields(AuthorReleasesType, (t) => ({
+  awaited: t.field({
+    type: [AwaitedEditionType],
+    description: authorAwaitedDescription,
+    resolve: (releases) => releases.awaited,
+  }),
+}))
+
+builder.objectFields(AuthorDiscoveryType, (t) => ({
+  awaited: t.field({
+    type: [AwaitedEditionType],
+    description: authorAwaitedDescription,
+    resolve: (row) => row.awaited,
+  }),
+}))

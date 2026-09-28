@@ -1,3 +1,5 @@
+import { authorKeyOf } from '~/domain/author/primitives'
+import type { AuthorKey } from '~/domain/author/types'
 import { shelfKeyOf } from '~/domain/book/business-rules'
 import type { Book, BookFormat, BookLanguage } from '~/domain/book/types'
 import { lastDayOf, releaseFormatOf, WATCH_EVERY_MS } from '~/domain/discovery/business-rules'
@@ -164,6 +166,29 @@ export const inShelfOrder = (views: readonly AwaitedEditionView[]): AwaitedEditi
     }
     return right.awaitedAt.getTime() - left.awaitedAt.getTime()
   })
+}
+
+/** The editions awaited in one format that are announced or out, under the
+ *  key of each of their authors, in the shelf's order — what an author's page
+ *  and their row on Découvrir's Authors shelf add to the works the web found.
+ *  One the reader holds now is left out: the next read of the list ends it. */
+export const awaitedByAuthorOf = (
+  views: readonly AwaitedEditionView[],
+  format: ReleaseFormat,
+  books: readonly Pick<
+    Book,
+    'format' | 'language' | 'title' | 'authors' | 'audibleAsin' | 'isbn13'
+  >[],
+): Map<AuthorKey, AwaitedEditionView[]> => {
+  const byAuthor = new Map<AuthorKey, AwaitedEditionView[]>()
+  const shown = views.filter(
+    (view) =>
+      view.format === format && view.state !== 'unannounced' && !isHeld(view, view.found, books),
+  )
+  for (const view of inShelfOrder(shown))
+    for (const key of new Set(view.source.authors.map(authorKeyOf)))
+      byAuthor.set(key, [...(byAuthor.get(key) ?? []), view])
+  return byAuthor
 }
 
 /** The Audible store that sells the recordings of each language, for a reader
