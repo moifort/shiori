@@ -4,8 +4,8 @@ import SwiftUI
 /// drawn the way the book page draws the reader's own, with nothing to tap:
 /// the cover, the title, the author and the saga, then the genre and its tags.
 /// A page may add a way out to the store — a quiet tag in the corner with its
-/// arrow, as the book page draws Audible's — and rows of its own under the
-/// facts.
+/// arrow, as the book page draws Audible's — the way to its saga where the
+/// book page has it, and rows of its own under the facts.
 struct ReadOnlyBookHeader<Extra: View>: View {
     /// A store the book can be opened in: its name on the tag, and where.
     struct StoreLink {
@@ -15,6 +15,9 @@ struct ReadOnlyBookHeader<Extra: View>: View {
 
     let book: Book
     var storeLink: StoreLink?
+    /// Opens the book's saga, from the row the book page draws under the
+    /// cover. Nil draws no row: the saga is still named beside the cover.
+    var onOpenSeries: (() -> Void)?
     @ViewBuilder var extra: Extra
 
     var body: some View {
@@ -66,6 +69,11 @@ struct ReadOnlyBookHeader<Extra: View>: View {
                 CopyableValue(title: "Copier l'auteur", value: book.authors.joined(separator: ", ")),
             ])
 
+            if let series = book.series, let onOpenSeries {
+                SeriesLinkRow(name: series.name, action: onOpenSeries)
+                    .accessibilityIdentifier("book-series")
+            }
+
             if let genre = book.genre {
                 Label {
                     VStack(alignment: .leading, spacing: 8) {
@@ -98,8 +106,8 @@ struct ReadOnlyBookHeader<Extra: View>: View {
 }
 
 extension ReadOnlyBookHeader where Extra == EmptyView {
-    init(book: Book, storeLink: StoreLink? = nil) {
-        self.init(book: book, storeLink: storeLink) { EmptyView() }
+    init(book: Book, storeLink: StoreLink? = nil, onOpenSeries: (() -> Void)? = nil) {
+        self.init(book: book, storeLink: storeLink, onOpenSeries: onOpenSeries) { EmptyView() }
     }
 }
 

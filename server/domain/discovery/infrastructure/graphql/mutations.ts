@@ -46,6 +46,8 @@ builder.mutationFields((t) => ({
       'Spends one scan of the allowance, as a typed title does. Fails with `NOT_FOUND` for ' +
       'a volume no watch announced in that edition, `QUOTA_EXHAUSTED` once nothing is left, ' +
       'or `SCAN_FAILED` when the model call errors.',
+    deprecationReason:
+      'The volume page draws what `discovery` already carries, with no model call.',
     args: {
       seriesId: t.arg({ type: 'SeriesId', required: true }),
       language: t.arg({ type: BookLanguageEnum, required: true }),

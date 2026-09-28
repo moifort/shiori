@@ -1874,7 +1874,7 @@ type Mutation {
   
   Spends one scan of the allowance, as a typed title does. Fails with `NOT_FOUND` for a volume no watch announced in that edition, `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` when the model call errors.
   """
-  previewAnnouncedVolume(language: BookLanguage!, number: VolumeNumber!, seriesId: SeriesId!): AnnouncedVolumePreview!
+  previewAnnouncedVolume(language: BookLanguage!, number: VolumeNumber!, seriesId: SeriesId!): AnnouncedVolumePreview! @deprecated(reason: "The volume page draws what `discovery` already carries, with no model call.")
 
   """
   Give a book one to five stars. Rating marks it as read: the reader is saying they finished it, and leaving it on the pile would make every filter lie.

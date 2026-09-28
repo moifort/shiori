@@ -75,25 +75,6 @@ fragment SagaReleasesFields on SagaReleases {
   }
 }
 
-# A volume announced, described for its page before the reader adds it: by the
-# model for a printed one, off Audible's catalogue then by the model for a
-# recording. Spends one scan; a few seconds.
-mutation PreviewAnnouncedVolume(
-  $seriesId: SeriesId!
-  $language: BookLanguage!
-  $number: VolumeNumber!
-) {
-  previewAnnouncedVolume(seriesId: $seriesId, language: $language, number: $number) {
-    book {
-      ...ScannedRecord
-    }
-    narrators
-    durationMinutes
-    releaseDate
-    audibleUrl
-  }
-}
-
 fragment DiscoveredVolumeFields on DiscoveredVolume {
   number
   title
