@@ -333,11 +333,11 @@ export namespace FriendshipUseCase {
     }
   }
 
-  /** What every friend hearted in the last thirty days, sagas and books
-   *  mixed, the newest heart first: the news from the people the reader
-   *  shares with. One scan of each friend's shelf and hearts; only the covers
-   *  drawn are signed, a saga's first volume standing for it. A book marked
-   *  "do not share" is never among them. */
+  /** Each friend's last heart of the last thirty days, a saga or a book,
+   *  the newest first: the news from the people the reader shares with. One
+   *  scan of each friend's shelf and hearts; only the covers drawn are signed,
+   *  a saga's first volume standing for it. A book marked "do not share" is
+   *  never among them. */
   export const recentFavorites = async (
     userId: UserId,
     now = new Date(),

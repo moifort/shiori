@@ -168,7 +168,7 @@ describe('recentHeartsOf', () => {
       : undefined,
   })
 
-  test("mixes every friend's sagas and books, the newest heart first, up to the limit", () => {
+  test("keeps each friend's last heart, saga or book, the newest first, up to the limit", () => {
     const hearts = recentHeartsOf(
       [
         {
@@ -190,6 +190,24 @@ describe('recentHeartsOf', () => {
 
     expect(hearts.map((heart) => heart.book?.title ?? heart.saga?.id)).toEqual(['Vagabond', 'dune'])
     expect(hearts[1]?.friendId).toBe(bob)
+  })
+
+  // A friend who hearted a whole series in one evening is one tile, not ten.
+  test('shows one heart per friend, the last one they gave', () => {
+    const hearts = recentHeartsOf(
+      [
+        {
+          friendId: alice,
+          books: [book('Hypérion', day(10)), book('Vagabond', day(20))],
+          sagas: [saga(dune)],
+          favoriteSagas: new Map([[dune, day(15)]]),
+        },
+      ],
+      day(1),
+      10,
+    )
+
+    expect(hearts.map((heart) => heart.book?.title ?? heart.saga?.id)).toEqual(['Vagabond'])
   })
 
   // A heart given before the window, or before its date was kept, is not news.

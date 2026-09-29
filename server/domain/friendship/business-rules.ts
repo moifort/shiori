@@ -105,10 +105,14 @@ export type RecentHeart<Favorite, Saga> = { friendId: UserId; favoritedAt: Date 
   | { saga: Saga; book?: never }
 )
 
-/** The hearts every friend gave since `since`, the newest first, `limit` at
- *  most: what the dashboard shows as news from the people the reader shares
- *  with. Only a dated heart counts — one given before the date was kept says
- *  nothing about being new. A saga held in two languages is hearted once. */
+const newestHeartFirst = (left: { favoritedAt: Date }, right: { favoritedAt: Date }) =>
+  right.favoritedAt.getTime() - left.favoritedAt.getTime()
+
+/** The last heart each friend gave since `since`, the newest first, `limit`
+ *  at most: what the dashboard shows as news from the people the reader shares
+ *  with, one tile per friend so a busy shelf does not crowd out the others.
+ *  Only a dated heart counts — one given before the date was kept says nothing
+ *  about being new. A saga held in two languages is hearted once. */
 export const recentHeartsOf = <
   Favorite extends Pick<Book, 'favorite' | 'favoritedAt' | 'series'>,
   Saga extends { id: SeriesId },
@@ -138,11 +142,9 @@ export const recentHeartsOf = <
     ).flatMap((book): RecentHeart<Favorite, Saga>[] =>
       isRecent(book.favoritedAt) ? [{ friendId, favoritedAt: book.favoritedAt, book }] : [],
     )
-    return [...sagaHearts, ...bookHearts]
+    return [...sagaHearts, ...bookHearts].sort(newestHeartFirst).slice(0, 1)
   })
-  return hearts
-    .sort((left, right) => right.favoritedAt.getTime() - left.favoritedAt.getTime())
-    .slice(0, limit)
+  return hearts.sort(newestHeartFirst).slice(0, limit)
 }
 
 // MARK: - What the friends love that the reader does not hold

@@ -29,9 +29,9 @@ builder.queryFields((t) => ({
   friendFavorites: t.field({
     type: [FriendFavoriteType],
     description:
-      'What every friend hearted in the last thirty days, sagas and books mixed, the ' +
-      'newest heart first, twelve at most: the news the dashboard shows from the people ' +
-      'the reader shares with.\n\n' +
+      "Each friend's last heart of the last thirty days, a saga or a book, the newest " +
+      'first, twelve at most: the news the dashboard shows from the people the reader ' +
+      'shares with.\n\n' +
       'Only a dated heart counts. A book marked "do not share" is never among them.',
     resolve: (_root, _args, context) => FriendshipUseCase.recentFavorites(context.userId),
   }),

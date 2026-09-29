@@ -789,7 +789,7 @@ describe("the friends' new favourites, for the dashboard", () => {
   const query =
     '{ friendFavorites { friendId favoritedAt book { title } saga { name volumes { title } } } }'
 
-  test('mixes the sagas and books every friend hearted lately, the newest first', async () => {
+  test("shows each friend's last heart only, a saga as well as a book", async () => {
     const piranesi = await addBook(alice, 'title: "Piranesi", status: READ')
     await addBook(
       alice,
@@ -812,12 +812,6 @@ describe("the friends' new favourites, for the dashboard", () => {
         favoritedAt: '2026-09-12T10:00:00.000Z',
         book: null,
         saga: { name: 'Dune', volumes: [{ title: 'Dune 1' }] },
-      },
-      {
-        friendId: 'alice',
-        favoritedAt: '2026-09-10T10:00:00.000Z',
-        book: { title: 'Piranesi' },
-        saga: null,
       },
     ])
   })
