@@ -45,15 +45,13 @@ struct SagaReleasesSection: View {
                 Text(volume.title)
                     .font(.body.weight(.medium))
                     .lineLimit(2)
-                Group {
-                    if let date = volume.date {
-                        Text(ReleaseDateText.coming(date))
-                    } else {
-                        Text("Annoncé")
-                    }
+                // The day is the calendar leaf's to say: the line only says
+                // what the leaf cannot, a volume announced with no date.
+                if volume.date == nil {
+                    Text("Annoncé")
+                        .foregroundStyle(.orange)
+                        .font(.subheadline.weight(.medium))
                 }
-                .foregroundStyle(.orange)
-                .font(.subheadline.weight(.medium))
             }
             .accessibilityElement(children: .combine)
             Spacer(minLength: 8)

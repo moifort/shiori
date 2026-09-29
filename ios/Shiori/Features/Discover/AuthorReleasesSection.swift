@@ -132,15 +132,19 @@ struct WorkReleaseRow: View {
                 Text(work.title)
                     .font(.body.weight(.medium))
                     .lineLimit(2)
-                Group {
-                    if let date = work.date {
-                        Text(isOut ? ReleaseDateText.out(date) : ReleaseDateText.coming(date))
-                    } else {
-                        Text(isOut ? "Disponible" : "Annoncé")
+                // The day still to come is the calendar leaf's to say: the
+                // line says only that a work is out, or announced with no date.
+                if isOut || work.date == nil {
+                    Group {
+                        if let date = work.date {
+                            Text(ReleaseDateText.out(date))
+                        } else {
+                            Text(isOut ? "Disponible" : "Annoncé")
+                        }
                     }
+                    .foregroundStyle(isOut ? Color.accentColor : .orange)
+                    .font(.subheadline.weight(.medium))
                 }
-                .foregroundStyle(isOut ? Color.accentColor : .orange)
-                .font(.subheadline.weight(.medium))
             }
             .accessibilityElement(children: .combine)
             Spacer(minLength: 8)

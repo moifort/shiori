@@ -49,6 +49,10 @@ struct BookHeaderSection<Extra: View>: View {
     var footer: LocalizedStringKey?
     @ViewBuilder var extra: Extra
 
+    private static var coverWidth: CGFloat { 64 }
+    /// The cover at its standard proportions, as `BookCover` draws it.
+    private static var coverHeight: CGFloat { coverWidth * 1.5 }
+
     @State private var contentEdge: CGFloat = 0
     @State private var cardEdge: CGFloat = 0
 
@@ -101,62 +105,32 @@ struct BookHeaderSection<Extra: View>: View {
 
     private var identityRow: some View {
         HStack(alignment: .top, spacing: 12) {
-            BookCover(book: book, width: 64)
-            VStack(alignment: .leading, spacing: 2) {
-                // The pills share the first line only: beside a whole column
-                // they squeezed the title, the author and the reader into half
-                // the width the row has. On the title's baseline, so the taller
-                // pills do not push the author down.
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(book.title).font(.headline)
-                    Spacer(minLength: 0)
-                    pills
-                }
-                // The volume after the author, on the same line: a fact about
-                // the book rather than a heading over its title.
-                HStack(spacing: 4) {
-                    Text(book.authorLine)
-                    if let series = book.series {
-                        Text(verbatim: "· \(series.label)").fixedSize()
+            BookCover(book: book, width: Self.coverWidth)
+            // Everything beside the cover: the text with, while the book is
+            // still to come, its day in the corner.
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top, spacing: 12) {
+                    textColumn
+                    if let releaseDate, ReleaseDateText.isUpcoming(releaseDate) {
+                        ReleaseDateBadge(date: releaseDate)
+                            .accessibilityIdentifier("book-release-date")
                     }
-                }
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                // Who reads a recording is as much a reason to pick it as who
-                // wrote it, so it sits with the author. Only a recording has one.
-                if let narratorLine = book.narratorLine {
-                    Text("Lu par \(narratorLine)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 1)
-                }
-                if let state {
-                    Text(state.text)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(state.tint)
-                        .padding(.top, 2)
-                        .accessibilityIdentifier("book-state")
-                }
-                // A quiet tag in the corner rather than a row: a way out of
-                // Shiori, not a fact about the book. Pushed down to the foot of
-                // the cover: the row is as tall as the cover or the text,
-                // whichever is taller.
-                if let link = shownStoreLink {
-                    Spacer(minLength: 0)
-                    Link(destination: link.url) {
-                        Pill(text: link.name, tint: link.tint, trailingSystemImage: "arrow.up.right")
-                    }
-                    .buttonStyle(.borderless)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                    .padding(.top, 4)
-                    .accessibilityLabel(Text("Ouvrir dans \(link.name)"))
-                    .accessibilityIdentifier("book-store-link")
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            if let releaseDate, ReleaseDateText.isUpcoming(releaseDate) {
-                ReleaseDateBadge(date: releaseDate)
-                    .accessibilityIdentifier("book-release-date")
+        }
+        // A quiet tag in the corner rather than a row: a way out of Shiori,
+        // not a fact about the book. On the card's trailing edge, its foot
+        // level with the cover's however long the title runs.
+        .overlay(alignment: .topTrailing) {
+            if let link = shownStoreLink {
+                Link(destination: link.url) {
+                    Pill(text: link.name, tint: link.tint, trailingSystemImage: "arrow.up.right")
+                }
+                .buttonStyle(.borderless)
+                .frame(height: Self.coverHeight, alignment: .bottom)
+                .accessibilityLabel(Text("Ouvrir dans \(link.name)"))
+                .accessibilityIdentifier("book-store-link")
             }
         }
         .fixedSize(horizontal: false, vertical: true)
@@ -178,6 +152,46 @@ struct BookHeaderSection<Extra: View>: View {
             CopyableValue(title: "Copier l'auteur", value: book.authors.joined(separator: ", ")),
             CopyableValue(title: "Copier le lecteur", value: book.narratorLine ?? ""),
         ])
+    }
+
+    private var textColumn: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            // The pills share the first line only: beside a whole column they
+            // squeezed the title, the author and the reader into half the
+            // width the row has. On the title's baseline, so the taller pills
+            // do not push the author down.
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(book.title).font(.headline)
+                Spacer(minLength: 0)
+                pills
+            }
+            // The volume after the author, on the same line: a fact about the
+            // book rather than a heading over its title.
+            HStack(spacing: 4) {
+                Text(book.authorLine)
+                if let series = book.series {
+                    Text(verbatim: "· \(series.label)").fixedSize()
+                }
+            }
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            // Who reads a recording is as much a reason to pick it as who wrote
+            // it, so it sits with the author. Only a recording has one.
+            if let narratorLine = book.narratorLine {
+                Text("Lu par \(narratorLine)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 1)
+            }
+            if let state {
+                Text(state.text)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(state.tint)
+                    .padding(.top, 2)
+                    .accessibilityIdentifier("book-state")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// The facts a listener or a reader weighs at a glance, in the corner: how

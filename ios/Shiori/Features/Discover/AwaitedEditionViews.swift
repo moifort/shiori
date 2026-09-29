@@ -91,14 +91,17 @@ struct AwaitedEditionReleaseRow: View {
                 Text(edition.title)
                     .font(.body.weight(.medium))
                     .lineLimit(2)
-                Text(edition.stateLine)
-                    .foregroundStyle(edition.stateTint.map(AnyShapeStyle.init) ?? AnyShapeStyle(.secondary))
-                    .font(.subheadline.weight(.medium))
+                // The day still to come is the calendar leaf's to say.
+                if edition.announcedDate == nil {
+                    Text(edition.stateLine)
+                        .foregroundStyle(edition.stateTint.map(AnyShapeStyle.init) ?? AnyShapeStyle(.secondary))
+                        .font(.subheadline.weight(.medium))
+                }
             }
             .accessibilityElement(children: .combine)
             Spacer(minLength: 8)
             // Only what is still to come: once out, the green line says it.
-            if edition.state == .announced, let date = edition.date {
+            if let date = edition.announcedDate {
                 ReleaseDateBadge(date: date)
             }
         }
