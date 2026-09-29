@@ -101,38 +101,20 @@ struct FriendProfileView: View {
                 .listRowBackground(Color.clear)
             }
             // What moved lately, under the figures, so a friend coming back
-            // finds what changed rather than the same lists. A book read or
-            // finished brings its saga along, covers and all. A saga is not
-            // opened: the catalogue is not something a friendship opens.
+            // finds what changed rather than the same lists: the last book in
+            // progress, finished and hearted, as covers side by side. A tap
+            // opens the book.
             let recent = profile.recentActivity()
             if !recent.isEmpty {
                 Section("Activités récentes") {
-                    ForEach(recent) { activity in
-                        if let entry = activity.book {
-                            VStack(alignment: .leading, spacing: 12) {
-                                HStack(alignment: .top, spacing: 8) {
-                                    RecentActivityRow(activity: activity)
-                                        .contentShape(.rect)
-                                        .onTapGesture { openBook = entry }
-                                    takeButton(entry)
-                                }
-                                if let saga = profile.saga(of: entry.book) {
-                                    SagaRow(saga: saga, showsCovers: true)
-                                }
-                            }
-                            .edgeToEdgeSeparator()
-                        } else {
-                            RecentActivityRow(activity: activity)
-                                .edgeToEdgeSeparator()
-                        }
-                    }
+                    RecentActivityStrip(activities: recent) { openBook = $0 }
                 }
             }
             // The book the recent activity already leads with is not listed
             // again: the rest, the one touched last first — all of them up to
             // four, else three and "Voir plus" for the next three. A last
             // step that would hide a single book shows it instead.
-            let leading = recent.first { if case .reading = $0 { true } else { false } }?.book?.id
+            let leading = recent.first { if case .reading = $0 { true } else { false } }?.book.id
             let reading = profile.reading.filter { $0.id != leading }
             let shown = reading.count - readingShown <= 1 ? reading.count : readingShown
             // A section with nothing in it is not drawn at all.
@@ -401,5 +383,48 @@ struct FriendProfileView: View {
             profile.lastFinished?.inLibrary = true
         }
         self.profile = profile
+    }
+}
+
+extension FriendProfile {
+    static let preview: FriendProfile = {
+        let hunter = FriendBook(
+            book: Book(
+                id: "hunter", title: "Primal Hunter", authors: ["Zogarth"], format: .audiobook,
+                series: SeriesMembership(id: "ph", name: "Primal Hunter", volume: 6, kind: .main),
+                status: .reading
+            ),
+            inLibrary: true,
+            lastActivityAt: .now.addingTimeInterval(-3600)
+        )
+        let wind = FriendBook(
+            book: Book(
+                id: "wind", title: "Le Nom du vent", authors: ["Patrick Rothfuss"], status: .read,
+                finishedAt: .now.addingTimeInterval(-86400 * 4)
+            ),
+            inLibrary: false
+        )
+        let dune = FriendBook(
+            book: Book(id: "dune", title: "Dune", authors: ["Frank Herbert"], status: .read, favorite: true),
+            inLibrary: false,
+            favoritedAt: .now.addingTimeInterval(-86400 * 9)
+        )
+        return FriendProfile(
+            userId: "camille",
+            firstName: "Camille",
+            reading: [hunter],
+            pile: [],
+            favorites: [dune],
+            sagas: [],
+            lastFinished: wind,
+            bookCount: 3,
+            readThisYear: 2
+        )
+    }()
+}
+
+#Preview("Recent activity") {
+    NavigationStack {
+        FriendProfileView(preview: .preview)
     }
 }

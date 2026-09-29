@@ -164,11 +164,10 @@ struct FriendProfile: Codable, Sendable {
         }
     }
 
-    /// What moved on the shelf, one line of each kind at most: the book in
+    /// What moved on the shelf, one book of each kind at most: the book in
     /// progress touched last and the last book finished, each only within
-    /// thirty days, then the last heart given — a saga's or a book's — however
-    /// long ago. What a friend coming back looks for, rather than the same
-    /// lists as last time.
+    /// thirty days, then the last book hearted, however long ago. What a
+    /// friend coming back looks for, rather than the same lists as last time.
     func recentActivity(now: Date = .now) -> [RecentActivity] {
         let since = now.addingTimeInterval(-RecentActivity.window)
         let reading = self.reading.first.flatMap { entry in
@@ -177,26 +176,13 @@ struct FriendProfile: Codable, Sendable {
         let finished = lastFinished.flatMap { entry in
             entry.book.finishedAt.map { RecentActivity.finished(entry, at: $0) }
         }
-        // The last heart, a saga's or a book's, however long ago: what they
-        // last chose to keep close is news whenever it was.
-        let sagaHearts = favoriteSagas.compactMap { saga in
-            saga.favoritedAt.map { RecentActivity.heartedSaga(saga, at: $0) }
+        // What they last chose to keep close is news whenever it was.
+        let heart = favorites.compactMap { entry in
+            entry.favoritedAt.map { RecentActivity.hearted(entry, at: $0) }
         }
-        let bookHearts = favorites.compactMap { entry in
-            entry.favoritedAt.map { RecentActivity.heartedBook(entry, at: $0) }
-        }
-        let heart = (sagaHearts + bookHearts).max { $0.date < $1.date }
+        .max { $0.date < $1.date }
         return [reading, finished].compactMap(\.self).filter { $0.date >= since }
             + [heart].compactMap(\.self)
-    }
-
-    /// The saga a book belongs to, when it carries its covers: the recent
-    /// activity draws it under the book. The edition in the book's language
-    /// first, a saga being filed per language.
-    func saga(of book: Book) -> FriendSaga? {
-        guard let seriesId = book.series?.id else { return nil }
-        let candidates = sagas.filter { $0.seriesId == seriesId && !$0.volumes.isEmpty }
-        return candidates.first { $0.language == book.language } ?? candidates.first
     }
 
     var displayName: String {
@@ -208,47 +194,33 @@ struct FriendProfile: Codable, Sendable {
     }
 }
 
-/// One thing that moved on a shelf lately, with its day: a book picked up or
-/// read on, the last book finished, the last saga or book hearted.
+/// One book that moved on a shelf lately, with its day: picked up or read
+/// on, finished, or hearted.
 enum RecentActivity: Identifiable, Sendable {
     case reading(FriendBook, at: Date)
     case finished(FriendBook, at: Date)
-    case heartedSaga(FriendSaga, at: Date)
-    case heartedBook(FriendBook, at: Date)
+    case hearted(FriendBook, at: Date)
 
     /// How far back "lately" goes.
     static let window: TimeInterval = 30 * 24 * 3600
 
     var id: String {
         switch self {
-        case .reading: "reading-\(subjectId)"
-        case .finished: "finished-\(subjectId)"
-        case .heartedSaga: "saga-\(subjectId)"
-        case .heartedBook: "hearted-\(subjectId)"
+        case .reading: "reading-\(book.id)"
+        case .finished: "finished-\(book.id)"
+        case .hearted: "hearted-\(book.id)"
         }
     }
 
-    /// The book or saga it is about.
-    var subjectId: String {
+    var book: FriendBook {
         switch self {
-        case let .reading(entry, _), let .finished(entry, _), let .heartedBook(entry, _): entry.id
-        case let .heartedSaga(saga, _): saga.id
+        case let .reading(entry, _), let .finished(entry, _), let .hearted(entry, _): entry
         }
     }
 
     var date: Date {
         switch self {
-        case let .reading(_, date), let .finished(_, date), let .heartedSaga(_, date),
-             let .heartedBook(_, date):
-            date
-        }
-    }
-
-    /// The book it opens on, a saga opening nothing.
-    var book: FriendBook? {
-        switch self {
-        case let .reading(entry, _), let .finished(entry, _), let .heartedBook(entry, _): entry
-        case .heartedSaga: nil
+        case let .reading(_, date), let .finished(_, date), let .hearted(_, date): date
         }
     }
 }
