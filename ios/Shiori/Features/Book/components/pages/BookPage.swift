@@ -27,277 +27,43 @@ struct BookPage: View {
     var awaited: [AwaitedEdition] = []
     var onStopAwaiting: (AwaitedEdition) -> Void = { _ in }
 
-    /// Past this many words the summary folds, and a button unfolds it: an
-    /// Audible blurb can run to a screenful, and the facts below it were
-    /// scrolling out of reach.
-    static let summaryWordLimit = 500
-
-    @State private var summaryExpanded = false
-
     var body: some View {
         List {
-            statusSection
-            header
+            BookStatusSection(status: book.status, onSetStatus: onSetStatus)
+            BookHeaderSection(
+                book: book,
+                isAwaited: !awaited.isEmpty,
+                actions: .init(
+                    openSeries: onOpenSeries,
+                    editGenre: onEditGenre,
+                    editField: onEditField
+                )
+            )
             AwaitedEditionsSection(awaited: awaited, onStop: onStopAwaiting)
-            readingSection
-            if let synopsis = book.synopsis { synopsisSection(synopsis) }
+            BookReadingSection(
+                title: "Ma lecture",
+                book: book,
+                onRate: onRate,
+                onEditField: onEditField,
+                footer: "Un livre non partagé n'apparaîtra jamais dans une bibliothèque partagée."
+            ) {
+                if let recommendation = book.recommendation {
+                    recommendationRows(recommendation)
+                }
+                Toggle(isOn: Binding(get: { book.hidden }, set: { _ in onToggleHidden() })) {
+                    Label {
+                        Text("Ne pas partager")
+                    } icon: {
+                        Image(systemName: "eye.slash").foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityIdentifier("book-hidden")
+            }
+            if let synopsis = book.synopsis { BookSynopsisSection(synopsis: synopsis) }
         }
         .listStyle(.insetGrouped)
         .labelStyle(.row)
         .disabled(isSaving)
-    }
-
-    /// Sits straight on the sheet rather than in a card: it is the control the
-    /// reader comes back for, not one row among the book's facts.
-    private var statusSection: some View {
-        Section {
-            ReadingStatusPicker(status: Binding(get: { book.status }, set: onSetStatus))
-                .accessibilityIdentifier("book-status")
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets())
-        }
-    }
-
-    /// What the book is: the cover and the title, its place in a saga, and the
-    /// facts of its publication, in one section rather than two — a reader
-    /// looking for the publisher was scrolling past a heading to find it.
-    private var header: some View {
-        Section {
-            HStack(alignment: .top, spacing: 12) {
-                BookCover(book: book, width: 64)
-                VStack(alignment: .leading, spacing: 2) {
-                    // The pills share the first line only: beside a whole
-                    // column they squeezed the title, the author and the
-                    // reader into half the width the row has. On the title's
-                    // baseline, so the taller pills do not push the author down.
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text(book.title).font(.headline)
-                        Spacer(minLength: 0)
-                        badges
-                    }
-                    // The volume after the author, on the same line: a fact
-                    // about the book rather than a heading over its title.
-                    HStack(spacing: 4) {
-                        Text(book.authorLine)
-                        if let series = book.series {
-                            Text(verbatim: "· \(series.label)").fixedSize()
-                        }
-                    }
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    // Who reads a recording is as much a reason to pick it as
-                    // who wrote it, so it sits with the author rather than down
-                    // among the details. Only a recording has a reader.
-                    if let narratorLine = book.narratorLine {
-                        Text("Lu par \(narratorLine)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .padding(.top, 1)
-                    }
-                    // A universal link: iOS hands it to the Audible app when
-                    // it is installed, on the title, and to the website
-                    // otherwise. A quiet tag in the corner rather than a row:
-                    // a way out of Shiori, not a fact about the book.
-                    // Pushed down to the foot of the cover: the row is as tall
-                    // as the cover or the text, whichever is taller.
-                    if let audibleURL = book.audibleURL {
-                        Spacer(minLength: 0)
-                        Link(destination: audibleURL) {
-                            Pill(text: "Audible", tint: .audible, trailingSystemImage: "arrow.up.right")
-                        }
-                        .buttonStyle(.borderless)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                        .padding(.top, 4)
-                        .accessibilityLabel(Text("Ouvrir dans Audible"))
-                        .accessibilityIdentifier("book-audible")
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            }
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.vertical, 2)
-            // The rule under the cover runs the whole width: the list would
-            // start it under the title, leaving the cover hanging over nothing.
-            .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
-            .copyable([
-                CopyableValue(title: "Copier le titre", value: book.title),
-                CopyableValue(title: "Copier l'auteur", value: book.authors.joined(separator: ", ")),
-                CopyableValue(title: "Copier le lecteur", value: book.narratorLine ?? ""),
-            ])
-
-            if let series = book.series {
-                SeriesLinkRow(name: series.name, action: onOpenSeries)
-                    .accessibilityIdentifier("book-series")
-            }
-
-            genreRow
-
-            if let publisher = book.publisher {
-                LabeledInfoRow(title: "Éditeur", value: publisher, icon: "building.2")
-            }
-            if let year = book.firstPublishedIn {
-                editableRow(.firstPublishedIn, value: String(year), icon: "calendar")
-            }
-            if let pages = book.pageCount {
-                editableRow(.pageCount, value: String(pages), icon: "doc.plaintext")
-            }
-            if let isbn = book.isbn13 {
-                editableRow(.isbn13, value: isbn, icon: "barcode", font: .callout.monospaced())
-            }
-        }
-    }
-
-    /// How long a recording runs, as a pill in the corner: the one number a
-    /// listener weighs before starting. That it is a recording is said by the
-    /// pill on the cover; a drawn story keeps its format glyph here, a prose
-    /// book needs none. A dropped book says so here too: the picker above has
-    /// no segment for it.
-    private var badges: some View {
-        HStack(spacing: 6) {
-            if !awaited.isEmpty {
-                AwaitedMark()
-                    .accessibilityIdentifier("book-awaited-mark")
-            }
-            if book.status == .dropped {
-                ReadingStatusBadge(status: .dropped)
-                    .scaleEffect(1.2)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(Text(book.status.label))
-                    .accessibilityIdentifier("book-dropped")
-            }
-            // How far the Audible player got, while the recording is
-            // under way only: before, there is nothing to tell, and
-            // once it is over the status says it.
-            if book.status == .reading, let progress = book.listeningProgressLabel {
-                // In the colour of "En cours", which it measures.
-                Pill(text: progress, tint: ReadingStatus.reading.tint)
-                    .accessibilityLabel(Text("Écouté à \(progress)"))
-                    .accessibilityIdentifier("book-listening-progress")
-            }
-            if let durationLabel = book.durationLabel {
-                Pill(text: durationLabel, systemImage: "clock")
-                    .accessibilityIdentifier("book-duration")
-            }
-            if book.format != .book && book.format != .audiobook {
-                Image(systemName: book.format.symbol)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel(Text(book.format.label))
-                    .accessibilityIdentifier("book-format")
-            }
-        }
-    }
-
-    /// The genre and its subgenres on one tappable row. A book with neither
-    /// still gets the row, saying so: it is the way to give it one.
-    private var genreRow: some View {
-        Button(action: onEditGenre) {
-            Label {
-                VStack(alignment: .leading, spacing: 8) {
-                    LabeledContent("Genre") {
-                        HStack(spacing: 4) {
-                            if let genre = book.genre {
-                                genre.image.imageScale(.small)
-                            }
-                            Text(book.genre?.label ?? String(localized: "Non renseigné"))
-                                .multilineTextAlignment(.trailing)
-                            Image(systemName: "chevron.right").font(.caption.weight(.semibold))
-                        }
-                        .foregroundStyle(.tint)
-                    }
-                    if !book.subgenres.isEmpty {
-                        TagList(tags: book.subgenres, systemImage: "tag")
-                    }
-                }
-            } icon: {
-                // Neutral here: the genre's own glyph sits beside its name.
-                Image(systemName: "books.vertical").foregroundStyle(.secondary)
-            }
-        }
-        .tint(.primary)
-        .accessibilityIdentifier("book-genre")
-    }
-
-    private var readingSection: some View {
-        Section {
-            if let rating = book.rating {
-                Button(action: onRate) {
-                    Label {
-                        LabeledContent("Note") { StarRatingView(rating: rating) }
-                    } icon: {
-                        Image(systemName: "star").foregroundStyle(.secondary)
-                    }
-                }
-                .tint(.primary)
-                .accessibilityIdentifier("book-rating")
-            } else if let seriesRating = book.seriesRating {
-                // The saga's stars, lent to this volume: grey, named as such,
-                // and a tap gives the book a rating of its own.
-                Button(action: onRate) {
-                    Label {
-                        LabeledContent {
-                            OpinionMark(rating: seriesRating, isFavorite: false, font: .caption2, ratingIsInherited: true)
-                        } label: {
-                            Text("Note")
-                            Text("Héritée de la série")
-                        }
-                    } icon: {
-                        Image(systemName: "star").foregroundStyle(.secondary)
-                    }
-                }
-                .tint(.primary)
-                .accessibilityIdentifier("book-rating-inherited")
-            } else {
-                Button(action: onRate) {
-                    Label("Noter ce livre", systemImage: "star")
-                }
-                .accessibilityIdentifier("book-rate")
-            }
-
-            if let added = book.addedAt {
-                editableRow(.addedAt, value: added.formatted(date: .abbreviated, time: .omitted), icon: "tray.and.arrow.down")
-            }
-            if let started = book.startedAt {
-                editableRow(.startedAt, value: started.formatted(date: .abbreviated, time: .omitted), icon: "calendar.badge.plus")
-            }
-            if let finished = book.finishedAt {
-                editableRow(.finishedAt, value: finished.formatted(date: .abbreviated, time: .omitted), icon: "calendar.badge.checkmark")
-            }
-
-            if let recommendation = book.recommendation {
-                recommendationRows(recommendation)
-            }
-
-            Toggle(isOn: Binding(get: { book.hidden }, set: { _ in onToggleHidden() })) {
-                Label {
-                    Text("Ne pas partager")
-                } icon: {
-                    Image(systemName: "eye.slash").foregroundStyle(.secondary)
-                }
-            }
-            .accessibilityIdentifier("book-hidden")
-        } header: {
-            Text("Ma lecture")
-        } footer: {
-            Text("Un livre non partagé n'apparaîtra jamais dans une bibliothèque partagée.")
-        }
-    }
-
-    /// A fact drawn as the other rows draw theirs, that a tap opens for
-    /// correction and a long press still copies.
-    private func editableRow(_ field: BookField, value: String, icon: String, font: Font? = nil) -> some View {
-        Button { onEditField(field) } label: {
-            Label {
-                LabeledContent(field.title) {
-                    Text(value).font(font)
-                }
-            } icon: {
-                Image(systemName: icon).foregroundStyle(.secondary)
-            }
-        }
-        .tint(.primary)
-        .copyable(value)
-        .accessibilityIdentifier("book-\(field.rawValue)")
     }
 
     /// Who pressed the book on the reader, as in Vinarium's wine sheet. Only
@@ -329,24 +95,6 @@ struct BookPage: View {
                 Image(systemName: "text.quote").foregroundStyle(.secondary)
             }
             .copyable(comment)
-        }
-    }
-
-    private func synopsisSection(_ synopsis: String) -> some View {
-        let words = synopsis.split(whereSeparator: \.isWhitespace)
-        let folded = words.count > Self.summaryWordLimit && !summaryExpanded
-        let shown = folded ? words.prefix(Self.summaryWordLimit).joined(separator: " ") + "…" : synopsis
-        return Section("Résumé") {
-            // The whole summary, folded or not: what is copied is the text,
-            // not the part of it on screen.
-            Text(shown).font(.callout).copyable(synopsis)
-            if words.count > Self.summaryWordLimit {
-                Button(folded ? "Lire la suite" : "Réduire") {
-                    withAnimation(.snappy) { summaryExpanded.toggle() }
-                }
-                .font(.callout)
-                .accessibilityIdentifier("book-summary-toggle")
-            }
         }
     }
 }

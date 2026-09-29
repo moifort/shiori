@@ -214,9 +214,10 @@ struct FriendBookView: View {
     }
 }
 
-/// What a friend's book page draws once the book is known: the warning of a
-/// book the reader holds already, the book, what the friend made of it, its
-/// saga, the editions awaited, and where it stands on the reader's own shelf.
+/// What a friend's book page draws once the book is known: the reader's own
+/// book page, read-only — the friend's status, the book with where it stands
+/// for the reader pinned on its cover, the editions awaited, the friend's
+/// reading, and the summary.
 struct FriendBookPage: View {
     let entry: FriendBook
     let friendName: String
@@ -225,94 +226,57 @@ struct FriendBookPage: View {
     let awaited: [AwaitedEdition]
     let onStopAwaiting: (AwaitedEdition) -> Void
 
+    @State private var showsSaga = false
+
+    /// Where the book stands for the reader, pinned on its cover: just added
+    /// from the "+" in the corner, or held already, which is why the "+" is
+    /// greyed out.
+    private var state: BookState? {
+        switch added {
+        case .toRead: .addedToPile
+        case .read: .addedAsRead
+        case nil: entry.inLibrary ? .owned : nil
+        }
+    }
+
     var body: some View {
         List {
-            // A warning before anything else: the page is about a book the
-            // reader already holds, and its "+" is greyed out for that.
-            if entry.inLibrary && added == nil {
-                Section {} header: {
-                    ReleaseRibbon(
-                        text: String(localized: "Déjà dans votre bibliothèque"),
-                        systemImage: "exclamationmark.triangle.fill",
-                        tint: .orange
-                    )
-                    .ribbonRow()
-                    .accessibilityIdentifier("friend-book-owned")
-                }
-            }
-
-            ReadOnlyBookHeader(book: entry.book)
-
-            Section {
+            // Laid out as the reader's own page, row for row, so a book reads
+            // the same on either shelf: where it stands, what it is, how it
+            // was read, what it is about. Only what cannot be done here goes.
+            BookStatusSection(status: entry.book.status)
+            BookHeaderSection(
+                book: entry.book,
+                state: state,
+                actions: .init(openSeries: { showsSaga = true })
+            )
+            AwaitedEditionsSection(awaited: awaited, onStop: onStopAwaiting)
+            BookReadingSection(
+                title: "Lecture de \(friendName)",
+                book: entry.book,
+                footer: state == nil
+                    ? "Le livre sera noté « Conseillé par \(friendName) ». Sa note de lecture reste privée."
+                    : nil
+            ) {
                 if entry.book.favorite {
                     Label {
-                        Text("Coup de cœur de \(friendName)")
+                        Text("Coup de cœur")
                     } icon: {
                         Image(systemName: "heart.fill").foregroundStyle(.red)
                     }
-                } else if let rating = entry.book.rating {
-                    Label {
-                        LabeledContent("Note de \(friendName)") { StarRatingView(rating: rating) }
-                    } icon: {
-                        Image(systemName: "star").foregroundStyle(.secondary)
-                    }
-                }
-                Label {
-                    LabeledContent("Chez \(friendName)") { Text(entry.book.status.label) }
-                } icon: {
-                    Image(systemName: entry.book.status.symbol).foregroundStyle(entry.book.status.tint)
+                    .accessibilityIdentifier("friend-book-favorite")
                 }
             }
-
-            if let series = entry.book.series {
-                Section {
-                    NavigationLink {
-                        SeriesView(seriesId: series.id, language: entry.book.language)
-                    } label: {
-                        Label {
-                            LabeledContent(series.name) { Text(series.label) }
-                        } icon: {
-                            Image(systemName: "books.vertical").foregroundStyle(.secondary)
-                        }
-                    }
-                    .accessibilityIdentifier("friend-book-series")
-                }
-            }
-
-            AwaitedEditionsSection(awaited: awaited, onStop: onStopAwaiting)
-
             if let synopsis = entry.book.synopsis, !synopsis.isEmpty {
-                ReadOnlySynopsisSection(synopsis: synopsis)
-            }
-
-            if !entry.inLibrary || added != nil {
-                Section {
-                    status
-                } footer: {
-                    if added == nil {
-                        Text("Le livre sera noté « Conseillé par \(friendName) ». Sa note de lecture reste privée.")
-                    }
-                }
+                BookSynopsisSection(synopsis: synopsis)
             }
         }
         .listStyle(.insetGrouped)
         .labelStyle(.row)
-    }
-
-    /// Where the book stands on the reader's own shelf: just added, or what
-    /// the "+" in the corner will do. A book already there says so at the top.
-    @ViewBuilder
-    private var status: some View {
-        if let added {
-            Label(
-                added == .toRead ? "Ajouté à votre pile à lire" : "Ajouté à vos livres lus",
-                systemImage: "checkmark.circle.fill"
-            )
-            .foregroundStyle(.green)
-            .accessibilityIdentifier("friend-book-added")
-        } else {
-            Label("Pas encore dans votre bibliothèque", systemImage: "plus.circle")
-                .foregroundStyle(.secondary)
+        .navigationDestination(isPresented: $showsSaga) {
+            if let series = entry.book.series {
+                SeriesView(seriesId: series.id, language: entry.book.language)
+            }
         }
     }
 }
@@ -323,12 +287,20 @@ extension FriendBook {
             id: "preview",
             title: "Le Nom du vent",
             authors: ["Patrick Rothfuss"],
+            publisher: "Bragelonne",
+            firstPublishedIn: 2007,
             synopsis: "Kvothe raconte sa vie, de la troupe de comédiens où il a grandi à l'Université.",
             genre: .fantasy,
+            subgenres: ["Roman initiatique"],
+            pageCount: 662,
+            isbn13: "9782352943556",
             series: SeriesMembership(id: "kkc", name: "Chronique du tueur de roi", volume: 1, kind: .main),
             status: .read,
             rating: 5,
-            favorite: true
+            favorite: true,
+            addedAt: .now.addingTimeInterval(-86400 * 60),
+            startedAt: .now.addingTimeInterval(-86400 * 40),
+            finishedAt: .now.addingTimeInterval(-86400 * 10)
         ),
         inLibrary: true
     )

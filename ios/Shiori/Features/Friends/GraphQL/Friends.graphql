@@ -171,6 +171,11 @@ query FriendBook($userId: UserId!, $bookId: BookId!) {
     pageCount
     durationMinutes
     narrators
+    isbn13
+    audibleUrl
+    listeningProgress
+    addedAt
+    startedAt
   }
 }
 

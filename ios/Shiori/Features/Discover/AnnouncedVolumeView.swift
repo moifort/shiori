@@ -1,10 +1,10 @@
 import SwiftUI
 
 /// A volume announced, opened as a book opens — from the Books shelf of
-/// Découvrir, or from its row on the saga screen — drawn as an awaited edition
-/// is: when it comes on top — orange while announced, green once out — then the
-/// book's own section, with Audible's tag in its corner for a recording, and
-/// the way to its saga where the book page has it. Only what the weekly look
+/// Découvrir, or from its row on the saga screen — drawn as every book page
+/// is, when it comes pinned on its cover — orange while announced, green once
+/// out — with Audible's tag in its corner for a recording, and the way to its
+/// saga where the book page has it. Only what the weekly look
 /// found is drawn: the page asks nothing of the model and opens at once.
 ///
 /// "+" puts it on the pile, filed in its saga at its number; a recording goes
@@ -26,21 +26,12 @@ struct AnnouncedVolumeView: View {
 
     var body: some View {
         List {
-            Section {} header: { stateLine }
-
-            ReadOnlyBookHeader(
+            BookHeaderSection(
                 book: book,
+                state: added ? .addedToPile : .release(volume.date),
                 storeLink: volume.audibleURL.map { .init(name: "Audible", url: $0, tint: .audible) },
-                onOpenSeries: linksToSaga ? { showsSaga = true } : nil
+                actions: .init(openSeries: linksToSaga ? { showsSaga = true } : nil)
             )
-
-            if added {
-                Section {
-                    Label("Ajouté à votre pile à lire", systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                        .accessibilityIdentifier("announced-volume-added")
-                }
-            }
         }
         .listStyle(.insetGrouped)
         .labelStyle(.row)
@@ -73,22 +64,6 @@ struct AnnouncedVolumeView: View {
         } message: {
             Text(addFailed ?? "")
         }
-    }
-
-    /// When it comes out, or that it is out, on a bookmark ribbon: a volume
-    /// just out is opened from "Nouvelles parutions".
-    private var stateLine: some View {
-        Group {
-            if let date = volume.date, ReleaseDateText.isUpcoming(date) {
-                ReleaseRibbon(text: ReleaseDateText.coming(date), systemImage: "clock", tint: .orange)
-            } else if let date = volume.date {
-                ReleaseRibbon(text: ReleaseDateText.out(date), systemImage: "checkmark.circle", tint: .green)
-            } else {
-                ReleaseRibbon(text: String(localized: "Annoncé"), systemImage: "clock", tint: .gray)
-            }
-        }
-        .ribbonRow()
-        .accessibilityIdentifier("announced-volume-release")
     }
 
     /// What the weekly look knows: its title, author, cover and place in the

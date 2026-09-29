@@ -25,10 +25,6 @@ final class ScanViewModel {
     /// the scan rather than a generic loader.
     private(set) var capturedCover: Data?
     private(set) var draft: BookDraft?
-    /// The saga the scan resolved, shown on the review screen but not editable:
-    /// membership is the server's answer, and letting the reader retype it here
-    /// would create a saga that no catalogue knows.
-    private(set) var seriesLabel: String?
     /// Why the step is `.failed`, in the reader's words.
     private(set) var failure: String?
     /// The title being looked up, kept so a failed lookup can be run again.
@@ -52,9 +48,6 @@ final class ScanViewModel {
             }
             track(.scanSucceeded)
             draft = scanned.asDraft
-            seriesLabel = scanned.series.map { series in
-                series.volume.map { "\(series.name) · Tome \($0)" } ?? series.name
-            }
             step = .review
         } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {
             track(.scanBlockedByQuota)
@@ -83,9 +76,6 @@ final class ScanViewModel {
             }
             track(.scanSucceeded)
             draft = scanned.asDraft
-            seriesLabel = scanned.series.map { series in
-                series.volume.map { "\(series.name) · Tome \($0)" } ?? series.name
-            }
             step = .review
         } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {
             track(.scanBlockedByQuota)
@@ -114,9 +104,6 @@ final class ScanViewModel {
             }
             track(.scanSucceeded)
             draft = scanned.asDraft
-            seriesLabel = scanned.series.map { series in
-                series.volume.map { "\(series.name) · Tome \($0)" } ?? series.name
-            }
             step = .review
         } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {
             track(.scanBlockedByQuota)
@@ -166,7 +153,6 @@ final class ScanViewModel {
         sharedLink = nil
         failure = nil
         draft = nil
-        seriesLabel = nil
         step = .camera
     }
 }

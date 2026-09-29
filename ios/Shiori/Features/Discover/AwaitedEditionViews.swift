@@ -107,9 +107,8 @@ struct AwaitedEditionReleaseRow: View {
 }
 
 /// One awaited edition, opened from Découvrir, drawn as a volume announced
-/// is: where it stands on top, on a bookmark ribbon — orange while announced,
-/// green once out — then the book's own section, with the store's tag in its
-/// corner once it sells it, what it is a translation or a recording of, and
+/// is: where it stands pinned on its cover — orange while announced, green
+/// once out — with the store's tag in its corner once it sells it, what it is a translation or a recording of, and
 /// since when it is watched for. Only what is known is drawn. "Ne plus suivre"
 /// sits in the corner, asked for twice as a saga's deletion is. The Audible
 /// sync brings a recording bought into the library by itself, which ends the
@@ -123,18 +122,9 @@ struct AwaitedEditionView: View {
 
     var body: some View {
         List {
-            Section {} header: {
-                ReleaseRibbon(
-                    text: edition.stateLine,
-                    systemImage: edition.state == .available ? "checkmark.circle" : "clock",
-                    tint: edition.stateTint ?? .gray
-                )
-                .ribbonRow()
-                .accessibilityIdentifier("awaited-state")
-            }
-
-            ReadOnlyBookHeader(
+            BookHeaderSection(
                 book: edition.cover,
+                state: edition.pageState,
                 storeLink: edition.storeURL.map { .init(name: edition.format.storeName, url: $0, tint: edition.format.storeTint) }
             ) {
                 if edition.title != edition.originalTitle {
@@ -185,6 +175,15 @@ struct AwaitedEditionView: View {
 }
 
 extension AwaitedEdition {
+    /// Where it stands, pinned on its cover on its page.
+    var pageState: BookState {
+        BookState(
+            text: stateLine,
+            systemImage: state == .available ? "checkmark" : "clock",
+            tint: stateTint ?? .gray
+        )
+    }
+
     static let preview = AwaitedEdition(
         id: "preview",
         format: .audiobook,

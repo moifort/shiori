@@ -77,7 +77,6 @@ struct ScanView: View {
             if let draft = viewModel.draft {
                 ScanReviewPage(
                     draft: draft,
-                    seriesLabel: viewModel.seriesLabel,
                     isSaving: viewModel.isSaving,
                     onSave: { approved in
                         Task {
