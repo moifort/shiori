@@ -28,7 +28,7 @@ struct AnnouncedVolumeView: View {
         List {
             BookHeaderSection(
                 book: book,
-                state: added ? .addedToPile : .release(volume.date),
+                state: state,
                 releaseDate: volume.date,
                 storeLink: volume.audibleURL.map { .init(name: "Audible", url: $0, tint: .audible) },
                 actions: .init(openSeries: linksToSaga ? { showsSaga = true } : nil)
@@ -65,6 +65,14 @@ struct AnnouncedVolumeView: View {
         } message: {
             Text(addFailed ?? "")
         }
+    }
+
+    /// Said under the author only when the calendar leaf in the corner does
+    /// not say it already: once added, once out, or with no date yet.
+    private var state: BookState? {
+        if added { return .addedToPile }
+        if let date = volume.date, ReleaseDateText.isUpcoming(date) { return nil }
+        return .release(volume.date)
     }
 
     /// What the weekly look knows: its title, author, cover and place in the

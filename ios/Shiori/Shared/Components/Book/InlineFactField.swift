@@ -95,7 +95,7 @@ struct InlineFactField: View {
     var body: some View {
         Label {
             LabeledContent(fact.title) {
-                TextField("Non renseigné", text: $text)
+                TextField(fact.title, text: $text, prompt: Text(verbatim: ""))
                     .font(fact.font)
                     .multilineTextAlignment(.trailing)
                     .keyboardType(fact.keyboard)

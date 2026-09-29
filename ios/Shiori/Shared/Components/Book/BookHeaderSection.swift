@@ -49,6 +49,15 @@ struct BookHeaderSection<Extra: View>: View {
     var footer: LocalizedStringKey?
     @ViewBuilder var extra: Extra
 
+    @State private var contentEdge: CGFloat = 0
+    @State private var cardEdge: CGFloat = 0
+
+    /// How far the row's content sits inside its card.
+    private var rowMargin: CGFloat {
+        let measured = contentEdge - cardEdge
+        return measured > 0 ? measured : 16
+    }
+
     private var shownStoreLink: StoreLink? {
         storeLink ?? book.audibleURL.map { StoreLink(name: "Audible", url: $0, tint: .audible) }
     }
@@ -152,9 +161,18 @@ struct BookHeaderSection<Extra: View>: View {
         }
         .fixedSize(horizontal: false, vertical: true)
         .padding(.vertical, 2)
-        // The rule under the cover runs the whole width: the list would start
-        // it under the title, leaving the cover hanging over nothing.
-        .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
+        // The rule under the cover runs from one edge of the card to the
+        // other: the list would start it under the title and stop it at the
+        // margin. The guides are the row's own, so the rule is pushed out by
+        // the margin measured between the row and its card — 16 or 20 points
+        // with the width of the phone.
+        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minX } action: { contentEdge = $0 }
+        .listRowBackground(
+            Color(.secondarySystemGroupedBackground)
+                .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minX } action: { cardEdge = $0 }
+        )
+        .alignmentGuide(.listRowSeparatorLeading) { _ in -rowMargin }
+        .alignmentGuide(.listRowSeparatorTrailing) { dimensions in dimensions.width + rowMargin }
         .copyable([
             CopyableValue(title: "Copier le titre", value: book.title),
             CopyableValue(title: "Copier l'auteur", value: book.authors.joined(separator: ", ")),
