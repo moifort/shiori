@@ -633,6 +633,29 @@ describe("taking a book off a friend's shelf", () => {
     })
   })
 
+  // The friend's page draws the same rows as the owner's own book page.
+  test("carries the facts and the reading dates the owner's own page shows", async () => {
+    const dune = idOf(
+      await addBook(
+        alice,
+        'title: "Dune", authors: ["Frank Herbert"], isbn13: "9782266320481", status: READING',
+      ),
+    )
+    await befriend()
+
+    const result = await as(bob)(
+      `{ friendBook(userId: "alice", bookId: "${dune}") { isbn13 audibleUrl listeningProgress addedAt startedAt } }`,
+    )
+
+    expect(result.errors).toBeUndefined()
+    const book = result.data?.friendBook as Record<string, unknown>
+    expect(book.isbn13).toBe('9782266320481')
+    expect(book.audibleUrl).toBeNull()
+    expect(book.listeningProgress).toBeNull()
+    expect(typeof book.addedAt).toBe('string')
+    expect(typeof book.startedAt).toBe('string')
+  })
+
   // The preview of the reader's own page opens their books on the same page.
   test("opens the reader's own shared book as a friend would, never a hidden one", async () => {
     const dune = idOf(await addBook(alice, 'title: "Dune", authors: ["Frank Herbert"]'))

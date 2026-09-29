@@ -1172,6 +1172,12 @@ type Friend {
 A book as a friend sees it: what is on the shelf and what its owner makes of it, never their reading note.
 """
 type FriendBook {
+  addedAt: DateTime!
+
+  """
+  The recording's page on its owner's Audible store, as on the owner's own book page. Null on anything but an audiobook imported from Audible.
+  """
+  audibleUrl: String
   authors: [AuthorName!]!
   coverUrl: String
   durationMinutes: Int
@@ -1195,12 +1201,18 @@ type FriendBook {
   The reader already owns this story — same title and first author, whatever the edition — so there is nothing to add.
   """
   inLibrary: Boolean!
+  isbn13: Isbn13
   language: BookLanguage
 
   """
   When its owner last did anything with it — picked it up, moved its status, or had a listening sync move its position: what is recent on the shelf.
   """
   lastActivityAt: DateTime!
+
+  """
+  How far into the recording its owner got, as on their own book page: where the book stands on the shelf, not what they thought of it.
+  """
+  listeningProgress: Percentage
   narrators: [NarratorName!]!
   pageCount: PageCount
   publisher: Publisher
@@ -1211,6 +1223,9 @@ type FriendBook {
   The day it is shelved on: finished, else started, else added. Their library is ordered and cut into months by it, as the reader's own.
   """
   shelvedAt: DateTime!
+
+  """When its owner started it. Null on a book never opened."""
+  startedAt: DateTime
   status: ReadingStatus!
   subgenres: [Subgenre!]!
   synopsis: Synopsis

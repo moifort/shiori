@@ -1,4 +1,5 @@
-import { shelfDateOf } from '~/domain/book/business-rules'
+import { AudibleQuery } from '~/domain/audible/query'
+import { listeningProgressOf, shelfDateOf } from '~/domain/book/business-rules'
 import {
   BookFormatEnum,
   BookLanguageEnum,
@@ -23,7 +24,7 @@ import type {
 import { SeriesStateEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { isAudioSeries } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
-import { Count } from '~/domain/shared/primitives'
+import { Count, Percentage } from '~/domain/shared/primitives'
 
 /** A book on somebody else's shelf.
  *
@@ -119,6 +120,35 @@ export const FriendBookType = builder.objectRef<FriendBook>('FriendBook').implem
     }),
     durationMinutes: t.int({ nullable: true, resolve: (book) => book.durationMinutes ?? null }),
     narrators: t.field({ type: ['NarratorName'], resolve: (book) => book.narrators ?? [] }),
+    isbn13: t.field({ type: 'Isbn13', nullable: true, resolve: (book) => book.isbn13 ?? null }),
+    audibleUrl: t.string({
+      nullable: true,
+      description:
+        "The recording's page on its owner's Audible store, as on the owner's own " +
+        'book page. Null on anything but an audiobook imported from Audible.',
+      resolve: async (book) =>
+        book.audibleAsin
+          ? ((await AudibleQuery.recordingUrlOf(book.userId, book.audibleAsin)) ?? null)
+          : null,
+    }),
+    listeningProgress: t.field({
+      type: 'Percentage',
+      nullable: true,
+      description:
+        'How far into the recording its owner got, as on their own book page: ' +
+        'where the book stands on the shelf, not what they thought of it.',
+      resolve: (book) => {
+        const progress = listeningProgressOf(book)
+        return progress === undefined ? null : Percentage(progress)
+      },
+    }),
+    addedAt: t.field({ type: 'DateTime', resolve: (book) => book.addedAt }),
+    startedAt: t.field({
+      type: 'DateTime',
+      nullable: true,
+      description: 'When its owner started it. Null on a book never opened.',
+      resolve: (book) => book.startedAt ?? null,
+    }),
   }),
 })
 
