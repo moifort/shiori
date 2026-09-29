@@ -5,7 +5,8 @@ import SwiftUI
 /// title and the facts. Every fact is a guess — the safety net against a
 /// misread cover — so every one can be corrected: the publisher, the year, the
 /// pages and the ISBN typed in their row, every row shown even when the cover
-/// said nothing; the head, the saga and the genre from a prompt. Moving the
+/// said nothing; the head, the saga and the genre from a prompt; the edition's
+/// language from a menu, presumed the app's own. Moving the
 /// book to "En cours" or "Lu" asks for the day. Nothing leaves the phone until
 /// "Ajouter".
 ///
@@ -50,6 +51,14 @@ struct ScanReviewPage: View {
         return book
     }
 
+    /// The app's language, French and English, and the cover's own language
+    /// when it plainly said another.
+    private var languageChoices: [BookLanguage] {
+        let choices = BookLanguage.reviewChoices
+        guard let language = draft.language, !choices.contains(language) else { return choices }
+        return choices + [language]
+    }
+
     /// The finish that bounds the start: the one set on a read book, else today.
     private var latestStart: Date {
         draft.status == .read ? min(draft.finishedAt ?? .now, .now) : .now
@@ -85,7 +94,24 @@ struct ScanReviewPage: View {
                 ),
                 showsEmptyFacts: true,
                 footer: "Lu automatiquement sur la couverture : touchez une ligne pour la corriger avant d'ajouter le livre."
-            )
+            ) {
+                // The edition decides which volumes of its saga are out: a
+                // French copy taken for the English one drew volumes not
+                // translated yet. Presumed in the app's language, switched here.
+                MenuPicker(
+                    selection: $draft.language,
+                    options: languageChoices.map(Optional.some),
+                    label: { $0?.label ?? String(localized: "Non renseignée") }
+                ) {
+                    // Neutral, as the icons of the facts above it.
+                    Label {
+                        Text("Langue")
+                    } icon: {
+                        Image(systemName: "globe").foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityIdentifier("review-language")
+            }
 
             // Where the book page keeps the reader's dates, and as it would
             // stamp them: only the ones the status carries.

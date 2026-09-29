@@ -41,6 +41,38 @@ enum BookLanguage: String, Codable, CaseIterable, Identifiable, Sendable {
         Locale.current.language.languageCode.flatMap { BookLanguage(rawValue: $0.identifier) }
     }
 
+    /// The language the app speaks, when it is one this list draws: the one it
+    /// resolved from the phone among those it is translated into.
+    static var app: BookLanguage? {
+        Bundle.main.preferredLocalizations.first
+            .map { Locale.Language(identifier: $0) }
+            .flatMap(\.languageCode)
+            .flatMap { BookLanguage(rawValue: $0.identifier) }
+    }
+
+    /// The editions a scan is checked against: the app's language, French and
+    /// English. A reader's shelf holds the first, and the confusion a cover
+    /// makes is with English, whose titles a translation often keeps —
+    /// « Powerful » is printed on the French edition too.
+    static var reviewChoices: [BookLanguage] {
+        var choices = app.map { [$0] } ?? []
+        for language in [BookLanguage.fr, .en] where !choices.contains(language) {
+            choices.append(language)
+        }
+        return choices
+    }
+
+    /// The edition a scanned book is presumed in: the app's language, unless the
+    /// cover plainly said another that the review does not offer — a Japanese
+    /// manga reads as Japanese. A cover read as English is not trusted over the
+    /// app, since a French edition keeping its English title reads the same,
+    /// and an edition taken for the wrong language drew the other one's
+    /// volumes on the saga screen. The review lets the reader switch.
+    static func presumed(scanned: BookLanguage?) -> BookLanguage? {
+        guard let scanned, !reviewChoices.contains(scanned) else { return app ?? scanned }
+        return scanned
+    }
+
     /// Whether a language tag is worth drawing. A reader whose phone is in French
     /// owns a French library by default, and an "FR" on every row says nothing;
     /// the tag marks the exception, the edition in another language. Which is why this

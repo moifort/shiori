@@ -28,6 +28,9 @@ struct ScannedBook {
     /// the shared catalogue, so handing it straight back is what makes a scanned
     /// book join the very catalogue the scan built — and the review screen shows
     /// it read-only for the same reason.
+    ///
+    /// The edition is presumed in the app's language rather than taken from
+    /// the cover, which the review then lets the reader switch.
     var asDraft: BookDraft {
         BookDraft(
             title: title ?? "",
@@ -40,7 +43,7 @@ struct ScannedBook {
             subgenres: subgenres,
             pageCount: pageCount,
             isbn13: isbn13,
-            language: language,
+            language: BookLanguage.presumed(scanned: language),
             coverURL: coverURL,
             series: series
         )
