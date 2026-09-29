@@ -4,9 +4,10 @@ import SwiftUI
 /// what the book is, then the reader's own reading, then the summary. Pure and
 /// previewable.
 ///
-/// The status and sharing are switched in place; a tap on a fact — the
-/// rating, the year, a date — opens a small prompt to correct that one
-/// value, as the genre and the recommendation open theirs. The title, the
+/// The status and sharing are switched in place, and the publisher, the
+/// year, the pages and the ISBN are typed straight into their row; a tap on
+/// the rating or a date opens a small prompt to correct that one value, as
+/// the genre and the recommendation open theirs. The title, the
 /// authors and the saga go through "Modifier" in the sheet's menu, which is
 /// also where removing the book lives, one deliberate step away.
 ///
@@ -23,6 +24,9 @@ struct BookPage: View {
     let onEditGenre: () -> Void
     let onEditRecommendation: () -> Void
     let onEditField: (BookField) -> Void
+    /// A fact typed in place on its row: the publisher, the year, the pages,
+    /// the ISBN.
+    let onCorrect: (BookCorrection) -> Void
     /// The editions of this book the reader awaits in the app's language.
     var awaited: [AwaitedEdition] = []
     var onStopAwaiting: (AwaitedEdition) -> Void = { _ in }
@@ -36,7 +40,7 @@ struct BookPage: View {
                 actions: .init(
                     openSeries: onOpenSeries,
                     editGenre: onEditGenre,
-                    editField: onEditField
+                    correct: onCorrect
                 )
             )
             AwaitedEditionsSection(awaited: awaited, onStop: onStopAwaiting)
@@ -128,7 +132,8 @@ struct BookPage: View {
             onOpenSeries: {},
             onEditGenre: {},
             onEditRecommendation: {},
-            onEditField: { _ in }
+            onEditField: { _ in },
+            onCorrect: { _ in }
         )
     }
 }

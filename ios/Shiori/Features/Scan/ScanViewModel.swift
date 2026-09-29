@@ -134,12 +134,29 @@ final class ScanViewModel {
 
     /// Saves what the reader approved. The review screen is the safety net
     /// against a misread cover, so nothing reaches the library before this.
-    func save(_ draft: BookDraft) async -> Book? {
+    /// Adds the book. A saga the reader renamed on the review is not the one
+    /// the scan keyed, so the book is added without it and then filed by name,
+    /// as the edit form files one: the server joins the saga the reader holds
+    /// by that name, or keys a new one.
+    func save(_ draft: BookDraft, series placement: SeriesPlacement? = nil) async -> Book? {
         isSaving = true
         defer { isSaving = false }
         do {
-            let book = try await BookAPI.add(draft)
+            var added = draft
+            if placement != nil { added.series = nil }
+            var book = try await BookAPI.add(added)
             track(.bookAdded(source: .scan))
+            if let placement {
+                var correction = BookCorrection()
+                correction.series = .set(placement)
+                do {
+                    book = try await BookAPI.update(id: book.id, correction: correction)
+                } catch {
+                    // The book is in: only its saga is missing, which its
+                    // sheet can file afterwards.
+                    _ = reportError(error)
+                }
+            }
             return book
         } catch {
             self.error = reportError(error)

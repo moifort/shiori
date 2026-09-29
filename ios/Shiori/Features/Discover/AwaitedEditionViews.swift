@@ -125,6 +125,7 @@ struct AwaitedEditionView: View {
             BookHeaderSection(
                 book: edition.cover,
                 state: edition.pageState,
+                releaseDate: edition.state == .announced ? edition.date : nil,
                 storeLink: edition.storeURL.map { .init(name: edition.format.storeName, url: $0, tint: edition.format.storeTint) }
             ) {
                 if edition.title != edition.originalTitle {
@@ -177,11 +178,7 @@ struct AwaitedEditionView: View {
 extension AwaitedEdition {
     /// Where it stands, pinned on its cover on its page.
     var pageState: BookState {
-        BookState(
-            text: stateLine,
-            systemImage: state == .available ? "checkmark" : "clock",
-            tint: stateTint ?? .gray
-        )
+        BookState(text: stateLine, tint: stateTint ?? .gray)
     }
 
     static let preview = AwaitedEdition(

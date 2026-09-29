@@ -29,6 +29,7 @@ struct AnnouncedVolumeView: View {
             BookHeaderSection(
                 book: book,
                 state: added ? .addedToPile : .release(volume.date),
+                releaseDate: volume.date,
                 storeLink: volume.audibleURL.map { .init(name: "Audible", url: $0, tint: .audible) },
                 actions: .init(openSeries: linksToSaga ? { showsSaga = true } : nil)
             )

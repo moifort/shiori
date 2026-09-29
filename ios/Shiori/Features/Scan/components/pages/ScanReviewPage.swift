@@ -3,26 +3,32 @@ import SwiftUI
 /// What the model proposed, before anything is saved, drawn as the book's page
 /// will draw it once saved: the status on top, the cover the scan found, the
 /// title and the facts. Every fact is a guess — the safety net against a
-/// misread cover — so a tap on a row corrects it, with the prompt the book's
-/// page opens for it, and nothing leaves the phone until "Ajouter".
+/// misread cover — so every one can be corrected: the publisher, the year, the
+/// pages and the ISBN typed in their row, every row shown even when the cover
+/// said nothing; the head, the saga and the genre from a prompt. Moving the
+/// book to "En cours" or "Lu" asks for the day. Nothing leaves the phone until
+/// "Ajouter".
 ///
-/// The series is shown but not editable. Membership is resolved server-side and
-/// keyed to a shared catalogue; letting the reader retype it here would create a
-/// saga no catalogue knows, which would then never gather its other volumes.
+/// A saga renamed here is not the one the scan keyed: it is handed over by
+/// name, and the server files the book as the edit form files one — into the
+/// saga the reader holds by that name, or a new one keyed on its author.
 struct ScanReviewPage: View {
     @State private var draft: BookDraft
     let isSaving: Bool
-    let onSave: (BookDraft) -> Void
+    /// The draft, and the saga as the reader renamed it, if they did.
+    let onSave: (BookDraft, SeriesPlacement?) -> Void
     let onRetake: () -> Void
 
     @State private var editsIdentity = false
+    @State private var editsSeries = false
     @State private var editsGenre = false
-    @State private var editedField: BookField?
+    @State private var renamedSeries: SeriesPlacement?
+    @State private var askedDate: ReadingStatus?
 
     init(
         draft: BookDraft,
         isSaving: Bool,
-        onSave: @escaping (BookDraft) -> Void,
+        onSave: @escaping (BookDraft, SeriesPlacement?) -> Void,
         onRetake: @escaping () -> Void
     ) {
         _draft = State(initialValue: draft)
@@ -31,7 +37,18 @@ struct ScanReviewPage: View {
         self.onRetake = onRetake
     }
 
-    private var book: Book { draft.asReviewedBook }
+    private var book: Book {
+        var book = draft.asReviewedBook
+        if let renamedSeries {
+            book.series = SeriesMembership(
+                id: "",
+                name: renamedSeries.name,
+                volume: renamedSeries.volume,
+                kind: .main
+            )
+        }
+        return book
+    }
 
     /// The finish that bounds the start: the one set on a read book, else today.
     private var latestStart: Date {
@@ -53,15 +70,20 @@ struct ScanReviewPage: View {
 
     var body: some View {
         List {
-            BookStatusSection(status: draft.status) { draft.status = $0 }
+            BookStatusSection(status: draft.status) { status in
+                draft.status = status
+                if status != .toRead { askedDate = status }
+            }
 
             BookHeaderSection(
                 book: book,
                 actions: .init(
+                    editSeries: { editsSeries = true },
                     editIdentity: { editsIdentity = true },
                     editGenre: { editsGenre = true },
-                    editField: { editedField = $0 }
+                    correct: { draft.apply($0) }
                 ),
+                showsEmptyFacts: true,
                 footer: "Lu automatiquement sur la couverture : touchez une ligne pour la corriger avant d'ajouter le livre."
             )
 
@@ -107,10 +129,21 @@ struct ScanReviewPage: View {
                 return nil
             }
         }
-        .sheet(item: $editedField) { field in
-            FieldEditSheet(book: book, field: field) { correction in
-                draft.apply(correction)
+        .sheet(isPresented: $editsSeries) {
+            SeriesJoinSheet(book: book) { correction in
+                if case let .set(placement) = correction.series { renamedSeries = placement }
                 return nil
+            }
+        }
+        .sheet(item: $askedDate) { status in
+            if status == .read {
+                ReadingDateSheet(title: "Terminé le", date: finishedAt.wrappedValue, range: .distantPast...Date.now) {
+                    draft.finishedAt = $0
+                }
+            } else {
+                ReadingDateSheet(title: "Commencé le", date: startedAt.wrappedValue, range: .distantPast...latestStart) {
+                    draft.startedAt = $0
+                }
             }
         }
         .toolbar {
@@ -126,7 +159,7 @@ struct ScanReviewPage: View {
                 ToolbarIconButton(title: "Ajouter", systemImage: "checkmark") {
                     var approved = draft
                     approved.startedAt = draft.startedAt.map { min($0, latestStart) }
-                    onSave(approved)
+                    onSave(approved, renamedSeries)
                 }
                 .disabled(draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSaving)
                 .accessibilityIdentifier("review-save")
@@ -144,13 +177,13 @@ extension ScanReviewPage {
         date: Binding<Date>,
         range: ClosedRange<Date>
     ) -> some View {
-        Label {
-            LabeledContent(title) {
-                DatePicker("", selection: date, in: range, displayedComponents: .date)
-                    .labelsHidden()
+        // One line: the title and the day, the calendar popping over it.
+        DatePicker(selection: date, in: range, displayedComponents: .date) {
+            Label {
+                Text(title)
+            } icon: {
+                Image(systemName: icon).foregroundStyle(.secondary)
             }
-        } icon: {
-            Image(systemName: icon).foregroundStyle(.secondary)
         }
     }
 }
@@ -219,7 +252,7 @@ private extension BookCorrection.Change {
                 series: SeriesMembership(id: "kkc", name: "Chronique du tueur de roi", volume: 1, kind: .main)
             ),
             isSaving: false,
-            onSave: { _ in },
+            onSave: { _, _ in },
             onRetake: {}
         )
     }

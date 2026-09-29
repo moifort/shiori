@@ -14,11 +14,20 @@ struct SeriesJoinSheet: View {
     let onSave: (BookCorrection) async -> String?
     @Environment(\.dismiss) private var dismiss
 
-    @State private var name = ""
-    @State private var volume = ""
+    @State private var name: String
+    @State private var volume: String
     @State private var suggestions: [String] = []
     @State private var isSaving = false
     @State private var errorMessage: String?
+
+    /// Opens on the saga the book is filed in, if any: a scan being checked
+    /// may have read it wrong.
+    init(book: Book, onSave: @escaping (BookCorrection) async -> String?) {
+        self.book = book
+        self.onSave = onSave
+        _name = State(initialValue: book.series?.name ?? "")
+        _volume = State(initialValue: book.series?.volume.map(String.init) ?? "")
+    }
 
     var body: some View {
         NavigationStack {

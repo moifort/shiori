@@ -78,9 +78,9 @@ struct ScanView: View {
                 ScanReviewPage(
                     draft: draft,
                     isSaving: viewModel.isSaving,
-                    onSave: { approved in
+                    onSave: { approved, series in
                         Task {
-                            if await viewModel.save(approved) != nil { onDismiss() }
+                            if await viewModel.save(approved, series: series) != nil { onDismiss() }
                         }
                     },
                     onRetake: viewModel.retake

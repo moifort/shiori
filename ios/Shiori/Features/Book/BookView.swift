@@ -54,6 +54,9 @@ struct BookView: View {
                         onEditGenre: { showGenreEditor = true },
                         onEditRecommendation: { showRecommendation = true },
                         onEditField: { editedField = $0 },
+                        onCorrect: { correction in
+                            run { _ = await viewModel.save(correction, rating: book.rating) }
+                        },
                         awaited: offer.awaited,
                         onStopAwaiting: { edition in Task { await stopAwaiting(edition) } }
                     )
