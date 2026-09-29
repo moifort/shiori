@@ -66,6 +66,8 @@ struct ReadOnlyBookHeader<Extra: View>: View {
                 }
             }
             .padding(.vertical, 2)
+            // The rule under the cover runs the whole width, as on the book page.
+            .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
             .copyable([
                 CopyableValue(title: "Copier le titre", value: book.title),
                 CopyableValue(title: "Copier l'auteur", value: book.authors.joined(separator: ", ")),

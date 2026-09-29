@@ -98,7 +98,10 @@ struct BookPage: View {
                     // it is installed, on the title, and to the website
                     // otherwise. A quiet tag in the corner rather than a row:
                     // a way out of Shiori, not a fact about the book.
+                    // Pushed down to the foot of the cover: the row is as tall
+                    // as the cover or the text, whichever is taller.
                     if let audibleURL = book.audibleURL {
+                        Spacer(minLength: 0)
                         Link(destination: audibleURL) {
                             Pill(text: "Audible", tint: .audible, trailingSystemImage: "arrow.up.right")
                         }
@@ -109,9 +112,13 @@ struct BookPage: View {
                         .accessibilityIdentifier("book-audible")
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.vertical, 2)
+            // The rule under the cover runs the whole width: the list would
+            // start it under the title, leaving the cover hanging over nothing.
+            .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
             .copyable([
                 CopyableValue(title: "Copier le titre", value: book.title),
                 CopyableValue(title: "Copier l'auteur", value: book.authors.joined(separator: ", ")),
