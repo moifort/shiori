@@ -14,7 +14,7 @@ struct SeriesTile: View {
         BookCover(book: cover, width: width, showsFormatBadge: false, cornerRadius: 0)
             .overlay {
                 if let state = entry.state {
-                    MosaicStatusPill(symbol: state.symbol, label: state.label, tint: state.tint)
+                    MosaicStatusBadge(symbol: state.symbol, label: state.label)
                 }
             }
             .overlay(alignment: .bottom) {

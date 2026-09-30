@@ -114,27 +114,22 @@ extension ShelfMosaic {
 }
 
 /// Where the reader stands on a book or a saga, in the middle of its cover in
-/// the mosaic: the status's own symbol and word, white on its own colour, the
-/// one thing a cover cannot say for itself.
-struct MosaicStatusPill: View {
+/// the mosaic: the status's own symbol alone, white in a disc of frosted
+/// glass with no colour of its own, the cover showing through it — it says
+/// the state without shouting over the cover.
+struct MosaicStatusBadge: View {
     let symbol: String
     let label: String
-    let tint: Color
 
     var body: some View {
-        HStack(spacing: 3) {
-            Image(systemName: symbol).imageScale(.small)
-            Text(label)
-        }
-        .font(.caption2.weight(.bold))
-        .foregroundStyle(.white)
-        .lineLimit(1)
-        .padding(.horizontal, 7)
-        .padding(.vertical, 3)
-        .background(tint, in: Capsule())
-        .overlay(Capsule().strokeBorder(.white.opacity(0.8), lineWidth: 1))
-        .shadow(color: .black.opacity(0.3), radius: 3)
-        .fixedSize()
+        Image(systemName: symbol)
+            .font(.system(size: 17, weight: .bold))
+            .foregroundStyle(.white)
+            .frame(width: 40, height: 40)
+            .background(.ultraThinMaterial, in: Circle())
+            .environment(\.colorScheme, .dark)
+            .overlay(Circle().strokeBorder(.white.opacity(0.5), lineWidth: 1))
+            .accessibilityLabel(Text(label))
     }
 }
 

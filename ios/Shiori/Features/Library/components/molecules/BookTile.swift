@@ -12,7 +12,7 @@ struct BookTile: View {
     var body: some View {
         BookCover(book: book, width: width, showsFormatBadge: false, cornerRadius: 0)
             .overlay {
-                MosaicStatusPill(symbol: book.status.symbol, label: book.status.shelfTitle, tint: book.status.tint)
+                MosaicStatusBadge(symbol: book.status.symbol, label: book.status.shelfTitle)
             }
             .overlay(alignment: .bottom) {
                 if book.favorite || book.format == .audiobook {
