@@ -25,7 +25,7 @@ struct CameraView: UIViewControllerRepresentable {
     /// The camera must not outlive the view: releasing the controller is not
     /// enough to guarantee the hardware is freed, so the session is closed here.
     static func dismantleUIViewController(_ uiViewController: CameraViewController, coordinator: ()) {
-        uiViewController.closeSession()
+        uiViewController.releaseCamera()
     }
 }
 
@@ -108,6 +108,23 @@ final class CameraViewController: UIViewController {
         sessionQueue.async {
             guard session.isRunning else { return }
             session.stopRunning()
+        }
+    }
+
+    /// Closes the session and lets the preview go on the session queue, not the
+    /// main one. A preview layer's dealloc reconfigures its session and waits
+    /// for it: freed on the main thread while the session was still starting or
+    /// stopping, it froze the app for ten seconds when the scanner was dismissed.
+    /// Queued after the stop, the last reference dies once the session is idle.
+    func releaseCamera() {
+        guard let preview = previewLayer else { return closeSession() }
+        preview.removeFromSuperlayer()
+        previewLayer = nil
+        nonisolated(unsafe) let released = preview
+        let session = captureSession
+        sessionQueue.async {
+            if session.isRunning { session.stopRunning() }
+            withExtendedLifetime(released) {}
         }
     }
 }
