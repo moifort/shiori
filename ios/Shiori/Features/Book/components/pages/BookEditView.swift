@@ -263,7 +263,7 @@ struct BookEditView: View {
             HStack(alignment: .top, spacing: 12) {
                 BookCover(book: coverPreview, width: 56, showsFormatBadge: false)
                 VStack(alignment: .leading, spacing: 8) {
-                    Label("Adresse de l'image", systemImage: "photo")
+                    Label("Url de l'image", systemImage: "photo")
                         .foregroundStyle(.secondary)
                     TextField("https://…", text: $coverURL, axis: .vertical)
                         .keyboardType(.URL)
@@ -280,7 +280,7 @@ struct BookEditView: View {
             if let problem = coverProblem {
                 Text(problem).foregroundStyle(.red)
             } else {
-                Text("Collez l'adresse d'une image pour remplacer la couverture. Videz le champ pour l'effacer.")
+                Text("Collez l'URL d'une image pour remplacer la couverture. Videz le champ pour l'effacer.")
             }
         }
     }
@@ -391,7 +391,7 @@ struct BookEditView: View {
     private var coverProblem: String? {
         guard let typed = optional(coverURL) else { return nil }
         guard let url = URL(string: typed), typed.hasPrefix("https://"), url.host() != nil else {
-            return String(localized: "L'adresse doit commencer par https://.")
+            return String(localized: "L'URL doit commencer par https://.")
         }
         return nil
     }
