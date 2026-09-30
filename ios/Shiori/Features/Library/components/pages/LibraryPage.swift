@@ -117,7 +117,7 @@ struct LibraryPage: View {
                             .imageScale(.small)
                         Text(statusFilter?.shelfTitle ?? String(localized: "Tous"))
                     }
-                    .font(.subheadline.weight(.medium))
+                    .font(.footnote.weight(.medium))
                     .padding(.horizontal, 4)
                 }
                 .accessibilityIdentifier("library-filter-menu")
