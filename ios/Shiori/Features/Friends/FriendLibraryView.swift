@@ -54,8 +54,10 @@ struct FriendLibraryView: View {
                         }
                     }
                 } label: {
-                    Image(systemName: "line.3.horizontal.decrease")
-                        .symbolVariant(status != nil ? .fill : .none)
+                    ShelfFilterLabel(
+                        symbol: status?.symbol ?? "tray.full",
+                        title: status?.shelfTitle ?? String(localized: "Tous")
+                    )
                 }
                 .accessibilityIdentifier("friend-library-filter")
             }

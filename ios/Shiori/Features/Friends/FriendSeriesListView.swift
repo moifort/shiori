@@ -134,8 +134,10 @@ struct FriendSeriesListView: View {
                     }
                 }
             } label: {
-                Image(systemName: "line.3.horizontal.decrease")
-                    .symbolVariant(state != nil ? .fill : .none)
+                ShelfFilterLabel(
+                    symbol: state?.symbol ?? "tray.full",
+                    title: state?.shelfTitle ?? String(localized: "Toutes")
+                )
             }
             .accessibilityIdentifier("friend-series-filter")
         }

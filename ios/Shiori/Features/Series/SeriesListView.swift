@@ -261,8 +261,10 @@ struct SeriesListView: View {
                     }
                 }
             } label: {
-                Image(systemName: "line.3.horizontal.decrease")
-                    .symbolVariant(viewModel.stateFilter != nil ? .fill : .none)
+                ShelfFilterLabel(
+                    symbol: viewModel.stateFilter?.symbol ?? "tray.full",
+                    title: viewModel.stateFilter?.shelfTitle ?? String(localized: "Toutes")
+                )
             }
             .accessibilityIdentifier("series-filter-menu")
         }
