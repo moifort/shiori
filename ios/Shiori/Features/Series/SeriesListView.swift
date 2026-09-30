@@ -34,7 +34,8 @@ struct SeriesListView: View {
     @State private var openSeriesChanged = false
     @State private var changedVolumes: Set<String> = []
     @State private var changedElsewhere = false
-    @AppStorage("shelfLayout.series") private var layout: ShelfLayout = .list
+    /// A shelf opens on its mosaic, every time its pill is tapped.
+    @State private var layout: ShelfLayout = .mosaic
 
     var body: some View {
         NavigationStack {
@@ -75,8 +76,11 @@ struct SeriesListView: View {
                     list
                 }
             }
-            .navigationTitle("Séries")
-            .navigationSubtitle(layout == .mosaic ? String(localized: "Mosaïque") : viewModel.mode.subtitle)
+            // The mosaic goes without the title, as the Photos app does: the
+            // covers run up under the toolbar.
+            .navigationTitle(layout == .mosaic ? Text(verbatim: "") : Text("Séries"))
+            .navigationSubtitle(layout == .mosaic ? "" : viewModel.mode.subtitle)
+            .navigationBarTitleDisplayMode(layout == .mosaic ? .inline : .automatic)
             .toolbar { toolbar }
             .libraryShelfPicker(shelf)
             // A sheet, as a book opens from the library: its own stack, so a
@@ -189,7 +193,7 @@ struct SeriesListView: View {
 
     /// Every saga of the view as a cover, in the list's order.
     private var mosaic: some View {
-        ShelfMosaic(rows: viewModel.followed) { entry, width in
+        ShelfMosaic(rows: viewModel.followed, date: { $0.shelvedAt }) { entry, width in
             Button {
                 openSeries = destination(of: entry)
             } label: {
@@ -280,14 +284,7 @@ struct SeriesListView: View {
 struct SeriesStateLabel: View {
     let state: SeriesState
 
-    private var tint: Color {
-        switch state {
-        case .notStarted: ReadingStatus.toRead.tint
-        case .inProgress: ReadingStatus.reading.tint
-        case .complete: ReadingStatus.read.tint
-        case .unfollowed: .secondary
-        }
-    }
+    private var tint: Color { state.tint }
 
     var body: some View {
         // A saga set aside says so by the crossed-out bell alone: the word
@@ -316,6 +313,19 @@ struct SeriesStateLabel: View {
         .padding(.vertical, 2)
         .background(tint.opacity(0.15), in: Capsule())
         .fixedSize()
+    }
+}
+
+extension SeriesState {
+    /// The colour of the reading status the state matches, grey for a saga
+    /// set aside.
+    var tint: Color {
+        switch self {
+        case .notStarted: ReadingStatus.toRead.tint
+        case .inProgress: ReadingStatus.reading.tint
+        case .complete: ReadingStatus.read.tint
+        case .unfollowed: .gray
+        }
     }
 }
 

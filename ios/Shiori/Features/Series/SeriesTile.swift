@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// One saga in the Series shelf's mosaic, drawn as the library's mosaic draws
-/// a book: its opening volume's cover alone, edge to edge with its neighbours.
+/// a book: its opening volume's cover alone, edge to edge with its neighbours,
+/// with where the reader stands on the saga in its middle.
 /// Over its foot, the heart of a loved saga on the left and, on the right, how
 /// many volumes the reader holds — of how many, once the catalogue says —
 /// where the Photos app counts an album.
@@ -11,6 +12,11 @@ struct SeriesTile: View {
 
     var body: some View {
         BookCover(book: cover, width: width, showsFormatBadge: false, cornerRadius: 0)
+            .overlay {
+                if let state = entry.state {
+                    MosaicStatusPill(symbol: state.symbol, label: state.label, tint: state.tint)
+                }
+            }
             .overlay(alignment: .bottom) {
                 MosaicGlyphs {
                     if entry.opinion?.favorite == true { Image(systemName: "heart.fill") }

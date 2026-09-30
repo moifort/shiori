@@ -25,7 +25,8 @@ struct AuthorListView: View {
     /// navigation link, as on the Series tab: a link would claim the drag that
     /// scrolls the covers, and draw a chevron on every row.
     @State private var openAuthor: AuthorDestination?
-    @AppStorage("shelfLayout.authors") private var layout: ShelfLayout = .list
+    /// A shelf opens on its mosaic, every time its pill is tapped.
+    @State private var layout: ShelfLayout = .mosaic
 
     var body: some View {
         NavigationStack {

@@ -16,7 +16,8 @@ struct LibraryView: View {
 
     @State private var viewModel = LibraryViewModel()
     @State private var selectedBook: Book?
-    @AppStorage("shelfLayout.books") private var layout: ShelfLayout = .list
+    /// A shelf opens on its mosaic, every time its pill is tapped.
+    @State private var layout: ShelfLayout = .mosaic
 
     var body: some View {
         NavigationStack {

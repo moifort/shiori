@@ -71,8 +71,11 @@ struct LibraryPage: View {
                 list
             }
         }
-        .navigationTitle("Bibliothèque")
-        .navigationSubtitle(layout == .mosaic ? String(localized: "Mosaïque") : mode.subtitle)
+        // The mosaic goes without the title, as the Photos app does: the
+        // covers run up under the toolbar.
+        .navigationTitle(layout == .mosaic ? Text(verbatim: "") : Text("Bibliothèque"))
+        .navigationSubtitle(layout == .mosaic ? "" : mode.subtitle)
+        .navigationBarTitleDisplayMode(layout == .mosaic ? .inline : .automatic)
         .toolbar {
             ToolbarItemGroup {
                 // Every book, newest first: the mosaic is drawn from the view
@@ -120,7 +123,7 @@ struct LibraryPage: View {
 
     /// Every book of the view as a cover, in the list's order.
     private var mosaic: some View {
-        ShelfMosaic(rows: sections.flatMap(\.rows)) { book, width in
+        ShelfMosaic(rows: sections.flatMap(\.rows), date: { $0.shelvedAt }) { book, width in
             Button {
                 onBookTapped(book)
             } label: {
