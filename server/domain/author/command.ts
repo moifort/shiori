@@ -57,10 +57,11 @@ export namespace AuthorCommand {
       }
 
       const signedName = optionally(value.name, AuthorName) ?? name
+      const openLibrary: CoverLookup = { author: signedName, unreachable: false }
       const [portraitUrl, coveredSeries, coveredBooks] = await Promise.all([
         value.wikipediaTitle ? portraitOf(value.wikipediaTitle) : undefined,
-        withCovers(series, signedName),
-        withCovers(books, signedName),
+        withCovers(series, openLibrary),
+        withCovers(books, openLibrary),
       ])
       const author = await catalogue({
         key,
@@ -111,23 +112,43 @@ export namespace AuthorCommand {
    *  for a few at a time rather than all at once. */
   const COVER_LOOKUPS_AT_ONCE = 5
 
+  /** One catalogue's cover lookups, shared by its sagas and its books. */
+  type CoverLookup = { author: AuthorNameValue; unreachable: boolean }
+
   /** Each entry with its cover, looked up by the original title — once, when
    *  the catalogue is built, so no opening waits on Open Library. An entry
-   *  Open Library has no cover for keeps the placeholder. */
+   *  Open Library has no cover for keeps the placeholder.
+   *
+   *  The first failed search ends them all. Open Library fails in bursts — ten
+   *  searches timing out in the same second on September 30th 2026 — and the
+   *  scan waits on this: every further slice would cost the reader three more
+   *  seconds for covers that will not come. The entries left keep the
+   *  placeholder, and the burst is one warning rather than one per book. */
   const withCovers = async <T extends { coverUrl?: CoverUrl }>(
     listed: readonly Listed<T>[],
-    author: AuthorNameValue,
+    lookup: CoverLookup,
   ): Promise<T[]> => {
     const covered: T[] = []
     for (const slice of chunk(listed, COVER_LOOKUPS_AT_ONCE)) {
-      const found = await Promise.all(
-        slice.map(({ originalTitle }) =>
-          originalTitle ? openLibraryCoverByTitle(originalTitle, author) : undefined,
-        ),
-      )
+      const found = lookup.unreachable
+        ? []
+        : await Promise.allSettled(
+            slice.map(({ originalTitle }) =>
+              originalTitle ? openLibraryCoverByTitle(originalTitle, lookup.author) : undefined,
+            ),
+          )
+      const failure = found.find((result) => result.status === 'rejected')
+      if (failure && !lookup.unreachable) {
+        lookup.unreachable = true
+        logger.warn('Open Library title search failed', {
+          error: failure.reason,
+          author: lookup.author,
+        })
+      }
       covered.push(
         ...slice.map(({ entry }, index) => {
-          const coverUrl = found[index]
+          const result = found[index]
+          const coverUrl = result?.status === 'fulfilled' ? result.value : undefined
           return coverUrl ? { ...entry, coverUrl } : entry
         }),
       )

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
 import { Isbn13 } from '~/domain/book/primitives'
-import { openLibraryCoverOf } from '~/domain/scan/open-library'
+import { openLibraryCoverByTitle, openLibraryCoverOf } from '~/domain/scan/open-library'
 
 const isbn = Isbn13('9780756404741')
 
@@ -52,5 +52,18 @@ describe('openLibraryCoverOf', () => {
 
     openLibraryAnswers(new Error('The operation timed out.'))
     expect(await openLibraryCoverOf(isbn)).toBeUndefined()
+  })
+})
+
+describe('openLibraryCoverByTitle', () => {
+  // A bibliography's forty searches stop at the first failure: the caller has
+  // to be told, rather than handed the same answer as a work without a cover.
+  test('throws when Open Library errors or is unreachable', async () => {
+    openLibraryAnswers(503)
+    await expect(openLibraryCoverByTitle('Dune', 'Frank Herbert')).rejects.toThrow('503')
+    ;(globalThis.fetch as unknown as { mockRestore: () => void }).mockRestore()
+
+    openLibraryAnswers(new Error('The operation was aborted due to timeout'))
+    await expect(openLibraryCoverByTitle('Dune', 'Frank Herbert')).rejects.toThrow('timeout')
   })
 })

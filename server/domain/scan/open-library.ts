@@ -56,28 +56,22 @@ type SearchAnswer = { docs?: { cover_i?: number }[] }
  *  is therefore the edition Open Library shows for the work, often the original
  *  one rather than the reader's translation.
  *
- *  Never throws: a failed lookup is a book drawn with the placeholder. */
+ *  Throws when Open Library cannot be reached or answers an error: a whole
+ *  bibliography is looked up at once, and the caller stops asking at the first
+ *  failure rather than logging and waiting on each of forty. */
 export const openLibraryCoverByTitle = async (
   title: string,
   author: string,
 ): Promise<CoverUrlType | undefined> => {
   const query = new URLSearchParams({ title, author, fields: 'cover_i', limit: '1' })
-  try {
-    const response = await fetch(`https://openlibrary.org/search.json?${query}`, {
-      // Open Library asks every client to say who it is, and throttles those that don't.
-      headers: { 'user-agent': 'Shiori/1.0 (https://github.com/moifort/shiori)' },
-      signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
-    })
-    if (!response.ok) {
-      logger.warn('Open Library title search failed', { title, author, status: response.status })
-      return undefined
-    }
-    const coverId = ((await response.json()) as SearchAnswer).docs?.[0]?.cover_i
-    return coverId
-      ? CoverUrl(`https://covers.openlibrary.org/b/id/${coverId}-M.jpg?default=false`)
-      : undefined
-  } catch (error) {
-    logger.warn('Open Library title search failed', { error, title, author })
-    return undefined
-  }
+  const response = await fetch(`https://openlibrary.org/search.json?${query}`, {
+    // Open Library asks every client to say who it is, and throttles those that don't.
+    headers: { 'user-agent': 'Shiori/1.0 (https://github.com/moifort/shiori)' },
+    signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
+  })
+  if (!response.ok) throw new Error(`Open Library title search answered ${response.status}`)
+  const coverId = ((await response.json()) as SearchAnswer).docs?.[0]?.cover_i
+  return coverId
+    ? CoverUrl(`https://covers.openlibrary.org/b/id/${coverId}-M.jpg?default=false`)
+    : undefined
 }
