@@ -109,12 +109,16 @@ struct LibraryPage: View {
                     // The shelf shown, named with its symbol: a bare funnel
                     // did not say which one the list was narrowed to.
                     // Spelled out rather than a Label, which the toolbar
-                    // strips down to its icon.
-                    HStack(spacing: 6) {
+                    // strips down to its icon. A size under the toolbar's
+                    // own, so the pill sits level with the views beside it
+                    // rather than outweighing them.
+                    HStack(spacing: 4) {
                         Image(systemName: statusFilter?.symbol ?? "tray.full")
+                            .imageScale(.small)
                         Text(statusFilter?.shelfTitle ?? String(localized: "Tous"))
                     }
-                    .padding(.horizontal, 6)
+                    .font(.subheadline.weight(.medium))
+                    .padding(.horizontal, 4)
                 }
                 .accessibilityIdentifier("library-filter-menu")
             }
