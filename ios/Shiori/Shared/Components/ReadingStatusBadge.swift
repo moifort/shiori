@@ -45,13 +45,14 @@ extension ReadingStatus {
         }
     }
 
-    /// The status as a shelf of the library names it: a heading over the books
-    /// finished reads "Terminé", where the picker's "Lu" answers a question.
+    /// The status as a shelf of the library names it — the filter, a row's
+    /// tag — in the picker's own words, so a book said "Lu" on its page is
+    /// found under "Lu".
     var shelfTitle: String {
         switch self {
         case .toRead: String(localized: "À lire")
         case .reading: String(localized: "En cours")
-        case .read: String(localized: "Terminé")
+        case .read: String(localized: "Lu")
         case .dropped: String(localized: "Abandonné")
         }
     }

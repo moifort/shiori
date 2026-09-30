@@ -130,8 +130,12 @@ describe('cataloguing a book', () => {
     expect(edited.finishedAt).toEqual(MARCH)
     expect(edited.statusChangedAt).toEqual(MARCH)
 
-    const refused = await BookCommand.edit(reader, book.id, { finishedAt: new Date('2026-01-01') })
-    expect(refused).toBe('bad-dates')
+    // A finish before the start is kept, and the start follows it back.
+    const JANUARY = new Date('2026-01-01T00:00:00.000Z')
+    const moved = await BookCommand.edit(reader, book.id, { finishedAt: JANUARY })
+    if (typeof moved === 'string') throw new Error('unreachable')
+    expect(moved.finishedAt).toEqual(JANUARY)
+    expect(moved.startedAt).toEqual(JANUARY)
   })
 
   // The library is ordered on the last status change, so cataloguing counts as
@@ -375,10 +379,10 @@ describe('rating a book', () => {
   })
 })
 
-describe('a heart is five stars', () => {
-  // The heart is the top of the scale, not a second judgement beside it: giving
-  // it rates the book five, and a rating marks the book read as ever.
-  test('giving the heart rates the book five and marks it read', async () => {
+describe('a heart sits on three stars or more', () => {
+  // A book not rated yet gets the top of the scale with its heart, and a
+  // rating marks the book read as ever.
+  test('giving the heart rates an unrated book five and marks it read', async () => {
     const book = await add('Le Nom du vent')
 
     const loved = await BookCommand.setFavorite(reader, book.id, true, NOW)
@@ -414,8 +418,32 @@ describe('a heart is five stars', () => {
     expect(loved.status).toBe('dropped')
   })
 
-  test('taking the heart back takes the stars with it, and leaves the book read', async () => {
+  // A reader may love a book they would not call flawless.
+  test('giving the heart keeps three or four stars', async () => {
     const book = await add('Le Nom du vent')
+    await BookCommand.rate(reader, book.id, StarRating(3), NOW)
+
+    const loved = await BookCommand.setFavorite(reader, book.id, true, NOW)
+
+    if (loved === 'not-found') throw new Error('unreachable')
+    expect(loved.favorite).toBe(true)
+    expect(Number(loved.rating)).toBe(3)
+  })
+
+  // Two stars cannot hold a heart: giving one lifts them to five.
+  test('giving the heart over two stars rates the book five', async () => {
+    const book = await add('Le Nom du vent')
+    await BookCommand.rate(reader, book.id, StarRating(2), NOW)
+
+    const loved = await BookCommand.setFavorite(reader, book.id, true, NOW)
+
+    if (loved === 'not-found') throw new Error('unreachable')
+    expect(Number(loved.rating)).toBe(5)
+  })
+
+  test('taking the heart back leaves the stars and the book read', async () => {
+    const book = await add('Le Nom du vent')
+    await BookCommand.rate(reader, book.id, StarRating(4), NOW)
     await BookCommand.setFavorite(reader, book.id, true, NOW)
 
     const unloved = await BookCommand.setFavorite(reader, book.id, false, NOW)
@@ -423,12 +451,11 @@ describe('a heart is five stars', () => {
     if (unloved === 'not-found') throw new Error('unreachable')
     expect(unloved.favorite).toBeUndefined()
     expect(unloved.favoritedAt).toBeUndefined()
-    expect(unloved.rating).toBeUndefined()
+    expect(Number(unloved.rating)).toBe(4)
     expect(unloved.status).toBe('read')
   })
 
-  // Otherwise a heart would sit on three stars, which it can no longer mean.
-  test('rating below five takes the heart back', async () => {
+  test('rating three or four keeps the heart', async () => {
     const book = await add('Le Nom du vent')
     await BookCommand.setFavorite(reader, book.id, true, NOW)
 
@@ -436,6 +463,19 @@ describe('a heart is five stars', () => {
 
     if (rated === 'not-found') throw new Error('unreachable')
     expect(Number(rated.rating)).toBe(3)
+    expect(rated.favorite).toBe(true)
+    expect(rated.favoritedAt).toEqual(NOW)
+  })
+
+  // Otherwise a heart would sit on two stars, which it cannot mean.
+  test('rating below three takes the heart back', async () => {
+    const book = await add('Le Nom du vent')
+    await BookCommand.setFavorite(reader, book.id, true, NOW)
+
+    const rated = await BookCommand.rate(reader, book.id, StarRating(2), NOW)
+
+    if (rated === 'not-found') throw new Error('unreachable')
+    expect(Number(rated.rating)).toBe(2)
     expect(rated.favorite).toBeUndefined()
     expect(rated.favoritedAt).toBeUndefined()
   })

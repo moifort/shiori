@@ -1,18 +1,33 @@
 import { describe, expect, test } from 'bun:test'
 import { StarRating } from '~/domain/shared/primitives'
-import { favoriteAfterRating, HEART_RATING, lovedFirst, lovedRankOf } from '~/domain/shared/rating'
+import {
+  favoriteAfterRating,
+  HEART_RATING,
+  lovedFirst,
+  lovedRankOf,
+  ratingUnderHeart,
+} from '~/domain/shared/rating'
 
-describe('a heart is five stars', () => {
-  test('stands for the top of the scale', () => {
+describe('a heart sits on three stars or more', () => {
+  test('gives the top of the scale to what holds too few stars', () => {
     expect(HEART_RATING).toBe(StarRating(5))
+    expect(ratingUnderHeart(undefined)).toBe(StarRating(5))
+    expect(ratingUnderHeart(StarRating(2))).toBe(StarRating(5))
   })
 
-  test('survives five stars', () => {
+  test("keeps the reader's own stars when they can hold it", () => {
+    expect(ratingUnderHeart(StarRating(3))).toBe(StarRating(3))
+    expect(ratingUnderHeart(StarRating(4))).toBe(StarRating(4))
+  })
+
+  test('survives three, four and five stars', () => {
+    expect(favoriteAfterRating(true, StarRating(3))).toBe(true)
+    expect(favoriteAfterRating(true, StarRating(4))).toBe(true)
     expect(favoriteAfterRating(true, StarRating(5))).toBe(true)
   })
 
-  test('goes with anything less', () => {
-    expect(favoriteAfterRating(true, StarRating(4))).toBeUndefined()
+  test('goes with fewer, or with no rating', () => {
+    expect(favoriteAfterRating(true, StarRating(2))).toBeUndefined()
     expect(favoriteAfterRating(true, undefined)).toBeUndefined()
   })
 

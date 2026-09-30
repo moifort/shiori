@@ -120,7 +120,7 @@ describe('what a reader makes of a saga, through the API', () => {
     const result = await execute('{ library { series opinion { rating favorite } } }')
     expect(result.errors).toBeUndefined()
     expect(result.data?.library).toEqual([
-      { series: 'Dune', opinion: { rating: 5, favorite: true } },
+      { series: 'Dune', opinion: { rating: 4, favorite: true } },
     ])
   })
 

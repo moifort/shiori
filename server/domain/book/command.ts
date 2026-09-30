@@ -35,7 +35,7 @@ import type {
   TaggedSubgenre,
 } from '~/domain/book/types'
 import type { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
-import { favoriteAfterRating, HEART_RATING } from '~/domain/shared/rating'
+import { favoriteAfterRating, ratingUnderHeart } from '~/domain/shared/rating'
 import type { AuthorName, BookTitle, UserId, Year } from '~/domain/shared/types'
 import type { ObjectPath } from '~/system/object-store/types'
 
@@ -408,8 +408,10 @@ export namespace BookCommand {
     )
   }
 
-  /** A heart is five stars: giving it rates the book five — which marks it read,
-   *  as any rating does — and taking it back takes the stars with it. Stored
+  /** A heart sits on three stars or more: giving it keeps the reader's rating
+   *  when it can hold one, else rates the book five — which marks it read, as
+   *  any rating does. Taking it back leaves the stars: they were the reader's
+   *  judgement before the heart and stay it after. Stored
    *  only when true: a `false` on every record would be a field that means "the
    *  reader once looked at this and moved on". */
   export const setFavorite = async (
@@ -427,7 +429,6 @@ export namespace BookCommand {
           ...book,
           favorite: undefined,
           favoritedAt: undefined,
-          rating: undefined,
           updatedAt: now,
         },
         batch,
@@ -439,7 +440,7 @@ export namespace BookCommand {
         favorite: true,
         // Hearting it again is not news: the date stays that of the first heart.
         favoritedAt: book.favorite === true ? book.favoritedAt : now,
-        rating: HEART_RATING,
+        rating: ratingUnderHeart(book.rating),
         status,
         ...datesAfterStatusChange(book, status, now),
         ...statusStampAfterChange(book, status, now),

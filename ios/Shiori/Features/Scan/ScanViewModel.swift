@@ -157,6 +157,21 @@ final class ScanViewModel {
                     _ = reportError(error)
                 }
             }
+            if draft.rating > 0 || draft.favorite {
+                do {
+                    // The stars first: the heart then keeps them.
+                    if draft.rating > 0 {
+                        book = try await BookAPI.rate(id: book.id, stars: draft.rating)
+                    }
+                    if draft.favorite {
+                        book = try await BookAPI.setFavorite(id: book.id, favorite: true)
+                    }
+                } catch {
+                    // The book is in: only its stars or its heart are missing,
+                    // which its page gives in one tap.
+                    _ = reportError(error)
+                }
+            }
             return book
         } catch {
             self.error = reportError(error)

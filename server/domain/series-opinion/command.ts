@@ -4,7 +4,7 @@ import type { SeriesId, VolumeNumber } from '~/domain/series/types'
 import { followingAfter } from '~/domain/series-opinion/business-rules'
 import * as repository from '~/domain/series-opinion/infrastructure/repository'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
-import { favoriteAfterRating, HEART_RATING } from '~/domain/shared/rating'
+import { favoriteAfterRating, ratingUnderHeart } from '~/domain/shared/rating'
 import type { StarRating, UserId } from '~/domain/shared/types'
 
 export namespace SeriesOpinionCommand {
@@ -33,7 +33,8 @@ export namespace SeriesOpinionCommand {
       batch,
     )
 
-  /** A heart is five stars, as on a book: given with them, taken back with them. */
+  /** A heart sits on three stars or more, as on a book: given on the reader's
+   *  own stars when they can hold it, else on five; taken back, it leaves them. */
   export const setFavorite = (
     userId: UserId,
     seriesId: SeriesId,
@@ -51,9 +52,9 @@ export namespace SeriesOpinionCommand {
               favorite: true,
               // Hearting it again is not news: the date stays that of the first heart.
               favoritedAt: opinion.favorite === true ? opinion.favoritedAt : now,
-              rating: HEART_RATING,
+              rating: ratingUnderHeart(opinion.rating),
             }
-          : { ...opinion, favorite: undefined, favoritedAt: undefined, rating: undefined },
+          : { ...opinion, favorite: undefined, favoritedAt: undefined },
       batch,
     )
 

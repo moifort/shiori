@@ -25,6 +25,7 @@ struct ScanReviewPage: View {
     @State private var editsGenre = false
     @State private var renamedSeries: SeriesPlacement?
     @State private var askedDate: ReadingStatus?
+    @State private var rates = false
 
     init(
         draft: BookDraft,
@@ -40,6 +41,7 @@ struct ScanReviewPage: View {
 
     private var book: Book {
         var book = draft.asReviewedBook
+        book.rating = draft.rating > 0 ? draft.rating : nil
         if let renamedSeries {
             book.series = SeriesMembership(
                 id: "",
@@ -69,8 +71,50 @@ struct ScanReviewPage: View {
     private var startedAt: Binding<Date> {
         Binding(
             get: { draft.startedAt.map { min($0, latestStart) } ?? latestStart },
-            set: { draft.startedAt = $0 }
+            set: { setStart($0) }
         )
+    }
+
+    /// A start picked after the finish carries the finish along: the date just
+    /// picked is the reader's latest word. A finish picked before the start
+    /// brings the start back, through `latestStart`.
+    private func setStart(_ date: Date) {
+        draft.startedAt = date
+        if draft.status == .read, let finished = draft.finishedAt, finished < date {
+            draft.finishedAt = date
+        }
+    }
+
+    /// The stars as the server will keep them: fewer than three cannot hold a
+    /// heart, so they take it back.
+    private var rating: Binding<Int> {
+        Binding(
+            get: { draft.rating },
+            set: { stars in
+                draft.rating = stars
+                if stars < 3 { draft.favorite = false }
+                if stars > 0 { markRead() }
+            }
+        )
+    }
+
+    /// The heart as the server will give it: on the reader's stars when three
+    /// or more, else on five.
+    private var favorite: Binding<Bool> {
+        Binding(
+            get: { draft.favorite },
+            set: { loved in
+                draft.favorite = loved
+                if loved, draft.rating < 3 { draft.rating = 5 }
+                if loved { markRead() }
+            }
+        )
+    }
+
+    /// Stars or a heart say the book was read: it moves to "Lu", unless the
+    /// reader dropped it, which a rating does not undo — as on the server.
+    private func markRead() {
+        if draft.status == .toRead || draft.status == .reading { draft.status = .read }
     }
 
     private var finishedAt: Binding<Date> {
@@ -81,6 +125,12 @@ struct ScanReviewPage: View {
         List {
             BookStatusSection(status: draft.status) { status in
                 draft.status = status
+                // Back on the pile or in progress, the book was not read:
+                // stars or a heart kept would move it to "Lu" on saving.
+                if status == .toRead || status == .reading {
+                    draft.rating = 0
+                    draft.favorite = false
+                }
                 if status != .toRead { askedDate = status }
             }
 
@@ -113,15 +163,28 @@ struct ScanReviewPage: View {
                 .accessibilityIdentifier("review-language")
             }
 
-            // Where the book page keeps the reader's dates, and as it would
-            // stamp them: only the ones the status carries.
-            if draft.status != .toRead {
-                BookReadingSection(title: "Ma lecture", book: book) {
+            // Where the book page keeps the reader's stars and dates, and as it
+            // would stamp them: only the dates the status carries. The stars
+            // are drawn and asked as the book page does, whatever the status:
+            // stars or a heart mean the book was read, so giving them switches
+            // it to "Lu" and brings its finish date in, as the server would.
+            BookReadingSection(title: "Ma lecture", book: book, onRate: { rates = true }) {
+                Toggle(isOn: favorite) {
+                    Label {
+                        Text("Favori")
+                    } icon: {
+                        Image(systemName: draft.favorite ? "heart.fill" : "heart")
+                            .foregroundStyle(draft.favorite ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+                    }
+                }
+                .tint(.red)
+                .accessibilityIdentifier("review-favorite")
+                if draft.status != .toRead {
                     readingDate(
                         "Commencé le",
                         icon: "calendar.badge.plus",
                         date: startedAt,
-                        range: .distantPast...latestStart
+                        range: .distantPast...Date.now
                     )
                     .accessibilityIdentifier("review-started-at")
                     if draft.status == .read {
@@ -129,7 +192,7 @@ struct ScanReviewPage: View {
                             "Terminé le",
                             icon: "calendar.badge.checkmark",
                             date: finishedAt,
-                            range: startedAt.wrappedValue...max(startedAt.wrappedValue, .now)
+                            range: .distantPast...Date.now
                         )
                         .accessibilityIdentifier("review-finished-at")
                     }
@@ -161,14 +224,27 @@ struct ScanReviewPage: View {
                 return nil
             }
         }
+        .sheet(isPresented: $rates) {
+            RatingPromptView(
+                current: draft.rating > 0 ? draft.rating : nil,
+                onRemove: {
+                    rates = false
+                    rating.wrappedValue = 0
+                },
+                onRate: { stars in
+                    rates = false
+                    rating.wrappedValue = stars
+                }
+            )
+        }
         .sheet(item: $askedDate) { status in
             if status == .read {
                 ReadingDateSheet(title: "Terminé le", date: finishedAt.wrappedValue, range: .distantPast...Date.now) {
                     draft.finishedAt = $0
                 }
             } else {
-                ReadingDateSheet(title: "Commencé le", date: startedAt.wrappedValue, range: .distantPast...latestStart) {
-                    draft.startedAt = $0
+                ReadingDateSheet(title: "Commencé le", date: startedAt.wrappedValue, range: .distantPast...Date.now) {
+                    setStart($0)
                 }
             }
         }

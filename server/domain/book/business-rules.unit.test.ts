@@ -378,11 +378,51 @@ describe('datesAfterCorrection', () => {
     ).toEqual({ startedAt: march })
   })
 
-  test('refuses a finish before the start', () => {
-    expect(datesAfterCorrection(read, { finishedAt: new Date('2025-12-01') }, NOW)).toBe(
+  // The typed date is the reader's latest word: the stored ones follow it
+  // rather than refuse it.
+  test('brings the start and the arrival back to a finish set before them', () => {
+    const december = new Date('2025-12-01T12:00:00.000Z')
+    expect(datesAfterCorrection(read, { finishedAt: december }, NOW)).toEqual({
+      addedAt: december,
+      startedAt: december,
+      finishedAt: december,
+      statusChangedAt: december,
+    })
+  })
+
+  test('brings the arrival back to a start set before it', () => {
+    const reading = { status: 'reading' as const, addedAt: NOW, startedAt: NOW }
+    expect(datesAfterCorrection(reading, { startedAt: EARLIER }, NOW)).toEqual({
+      addedAt: EARLIER,
+      startedAt: EARLIER,
+      statusChangedAt: EARLIER,
+    })
+  })
+
+  test('carries the finish along with a start set after it', () => {
+    expect(datesAfterCorrection(read, { startedAt: LATER }, LATER)).toEqual({
+      startedAt: LATER,
+      finishedAt: LATER,
+      statusChangedAt: LATER,
+    })
+  })
+
+  test('carries the start and the finish along with an arrival set after them', () => {
+    const late = { ...read, finishedAt: EARLIER }
+    expect(datesAfterCorrection(late, { addedAt: NOW }, NOW)).toEqual({
+      addedAt: NOW,
+      startedAt: NOW,
+      finishedAt: NOW,
+      statusChangedAt: NOW,
+    })
+  })
+
+  // Two dates typed together are both the reader's word: out of order, they
+  // cannot both be kept.
+  test('refuses two typed dates out of order', () => {
+    expect(datesAfterCorrection(read, { startedAt: NOW, finishedAt: EARLIER }, NOW)).toBe(
       'bad-dates',
     )
-    expect(datesAfterCorrection(read, { startedAt: LATER }, LATER)).toBe('bad-dates')
   })
 
   // A day of slack for a phone whose clock runs ahead of the server's.

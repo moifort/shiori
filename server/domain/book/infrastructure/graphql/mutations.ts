@@ -94,8 +94,9 @@ builder.mutationFields((t) => ({
       'Correct a record the scan got wrong. Omitted fields are left alone; an ' +
       'optional field passed as null is cleared. BAD_USER_INPUT when `series` names ' +
       'a saga the reader does not hold and the book has no author to key it with, or ' +
-      'when a reading date is in the future, precedes the start, or is one the status ' +
-      'does not carry.',
+      'when a reading date is in the future, is one the status does not carry, or two ' +
+      'typed together are out of order. A typed date that contradicts a stored one ' +
+      'is kept, and the stored ones follow it: added, started, finished stay in order.',
     args: {
       id: t.arg({ type: 'BookId', required: true }),
       input: t.arg({ type: BookEditInput, required: true }),

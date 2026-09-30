@@ -660,7 +660,7 @@ describe('reading the library through the API', () => {
     expect(second.data?.libraryPage).toEqual({ hasMore: false, books: [{ title: 'Trois' }] })
   })
 
-  // A heart is five stars, and a rating marks the book read: both hearts land
+  // A heart on an unrated book is five stars, and a rating marks the book read: both hearts land
   // on the read shelf, and the page keeps them apart from the rest of the pile.
   test('narrows a library page to the favourites', async () => {
     await addBook('Pile ordinaire')

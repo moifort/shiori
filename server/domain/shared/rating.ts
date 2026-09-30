@@ -4,18 +4,29 @@ import type { StarRating } from '~/domain/shared/types'
  *  owned by either: both domains apply it, and neither may import the other's
  *  rules for it. */
 
-/** The rating a heart stands for: the top of the scale. A heart is five
- *  stars, not a second judgement beside them. */
+/** The rating a heart gives something not rated yet, or rated too low to
+ *  hold one: the top of the scale. */
 export const HEART_RATING = 5 as StarRating
 
-/** Whether a heart survives a new rating. Only five stars can hold one: a heart
- *  over three stars would say two things the reader cannot both mean. Five
- *  stars given by hand keep a heart but never grant one — the heart stays the
+/** The fewest stars a heart can sit on. A reader may love a book they would
+ *  not call flawless, so three and four stars hold a heart as five do; below
+ *  three, a heart and the stars would say two things the reader cannot both
+ *  mean. */
+export const HEART_FLOOR = 3
+
+/** Whether a heart survives a new rating: only on three stars or more. Stars
+ *  given by hand keep a heart but never grant one — the heart stays the
  *  reader's own gesture. */
 export const favoriteAfterRating = (
   favorite: boolean | undefined,
   rating: StarRating | undefined,
-): true | undefined => (favorite === true && rating === HEART_RATING ? true : undefined)
+): true | undefined =>
+  favorite === true && rating !== undefined && rating >= HEART_FLOOR ? true : undefined
+
+/** The stars under a heart just given: the reader's own when they can hold
+ *  it, else the top of the scale. */
+export const ratingUnderHeart = (rating: StarRating | undefined): StarRating =>
+  rating !== undefined && rating >= HEART_FLOOR ? rating : HEART_RATING
 
 /** Where a judgement sits among the favourites, best first: the reader's own
  *  heart; then a saga's full marks lent to a volume left unrated, which a row

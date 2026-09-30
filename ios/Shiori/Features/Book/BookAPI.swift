@@ -178,6 +178,11 @@ struct BookDraft {
     var startedAt: Date?
     var finishedAt: Date?
     var hidden = false
+    /// The stars and the heart given on the scan review, to a book read, 0
+    /// for no rating. Not part of the new book's input: they are given once
+    /// the book exists, as the book page gives them.
+    var rating = 0
+    var favorite = false
 
     var asInput: ShioriGraphQL.NewBookInput {
         ShioriGraphQL.NewBookInput(

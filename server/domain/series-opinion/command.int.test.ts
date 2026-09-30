@@ -25,8 +25,8 @@ describe('what a reader makes of a saga', () => {
     expect(await SeriesOpinionQuery.of(reader, dune)).toMatchObject({ rating: StarRating(4) })
   })
 
-  // The heart is the top of the scale, as on a book.
-  test('giving the heart rates the saga five', async () => {
+  // Two stars cannot hold a heart, as on a book: giving one lifts them to five.
+  test('giving the heart over two stars rates the saga five', async () => {
     await SeriesOpinionCommand.rate(reader, dune, StarRating(2))
     const now = new Date(Date.UTC(2026, 8, 20))
     await SeriesOpinionCommand.setFavorite(reader, dune, true, undefined, now)
@@ -47,20 +47,32 @@ describe('what a reader makes of a saga', () => {
     expect((await SeriesOpinionQuery.of(reader, dune))?.favoritedAt).toEqual(first)
   })
 
-  // Heart and stars gone together leave nothing: the opinion is erased.
-  test('taking the heart back takes the stars with it', async () => {
+  test('giving the heart keeps three or four stars', async () => {
+    await SeriesOpinionCommand.rate(reader, dune, StarRating(4))
+    await SeriesOpinionCommand.setFavorite(reader, dune, true)
+
+    expect(await SeriesOpinionQuery.of(reader, dune)).toMatchObject({
+      rating: StarRating(4),
+      favorite: true,
+    })
+  })
+
+  test('taking the heart back leaves the stars', async () => {
+    await SeriesOpinionCommand.rate(reader, dune, StarRating(3))
     await SeriesOpinionCommand.setFavorite(reader, dune, true)
     await SeriesOpinionCommand.setFavorite(reader, dune, false)
 
-    expect(await SeriesOpinionQuery.of(reader, dune)).toBeNull()
+    const opinion = await SeriesOpinionQuery.of(reader, dune)
+    expect(opinion?.rating).toBe(StarRating(3))
+    expect(opinion?.favorite).toBeUndefined()
   })
 
-  test('rating below five takes the heart back', async () => {
+  test('rating below three takes the heart back', async () => {
     await SeriesOpinionCommand.setFavorite(reader, dune, true)
-    await SeriesOpinionCommand.rate(reader, dune, StarRating(4))
+    await SeriesOpinionCommand.rate(reader, dune, StarRating(2))
 
     const opinion = await SeriesOpinionQuery.of(reader, dune)
-    expect(opinion?.rating).toBe(StarRating(4))
+    expect(opinion?.rating).toBe(StarRating(2))
     expect(opinion?.favorite).toBeUndefined()
     expect(opinion?.favoritedAt).toBeUndefined()
   })
@@ -111,6 +123,7 @@ describe('what a reader makes of a saga', () => {
   test('erases an opinion once nothing is left in it', async () => {
     await SeriesOpinionCommand.setFavorite(reader, dune, true)
     await SeriesOpinionCommand.setFavorite(reader, dune, false)
+    await SeriesOpinionCommand.rate(reader, dune, undefined)
 
     expect(await SeriesOpinionQuery.of(reader, dune)).toBeNull()
   })

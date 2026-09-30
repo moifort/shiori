@@ -129,16 +129,13 @@ struct FieldEditSheet: View {
         .presentationDetents([.height(field.isDate ? 480 : 200)])
     }
 
-    /// Bounded as the edit form bounds it: never finished before begun, nor on
-    /// a day still to come — nor before a date already stored, so a server
-    /// clock a little ahead of the phone's leaves the picker a range.
+    /// Bounded only by today, as the edit form is — never before a date
+    /// already stored, so a server clock a little ahead of the phone's leaves
+    /// the picker a range. A date out of order with the others is taken: the
+    /// server brings them in line with it.
     private var dateRange: ClosedRange<Date> {
         let latest = [Date.now, book.addedAt, book.startedAt, book.finishedAt].compactMap(\.self).max() ?? .now
-        return switch field {
-        case .startedAt: .distantPast...(book.finishedAt ?? latest)
-        case .finishedAt: (book.startedAt ?? .distantPast)...latest
-        default: .distantPast...latest
-        }
+        return .distantPast...latest
     }
 
     private var trimmed: String {

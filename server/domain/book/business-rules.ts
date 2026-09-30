@@ -239,16 +239,25 @@ export const datesAfterStatusChange = (
  *  "today" on its own clock, which can run ahead. */
 const CLOCK_DRIFT_MS = 86_400_000
 
-/** The reading dates a reader corrected by hand, checked against what the
- *  status says of the book, or `bad-dates` when they cannot be true: a date that
- *  does not parse, one in the future, a finish before the start, or a date the status does not carry
- *  — a book on the pile was never opened, and only a read one was finished.
+/** The reading dates in the order a book lives through them. */
+const READING_DATES = ['addedAt', 'startedAt', 'finishedAt'] as const
+
+/** The reading dates a reader corrected by hand, or `bad-dates` when they cannot
+ *  be true: a date that does not parse, one in the future, two typed together
+ *  out of order, or a date the status does not carry — a book on the pile was
+ *  never opened, and only a read one was finished.
+ *
+ *  A typed date is never refused for contradicting one already stored: it is
+ *  the reader's latest word, and the stored dates follow it. A start set before
+ *  the arrival brings the arrival back to it; a start set after the finish
+ *  carries the finish along; and so on down the line, added, started, finished.
  *
  *  Correcting the date that marks the current status — the finish of a read
  *  book, the start of one in progress, the arrival of one on the pile — also
  *  moves the status stamp the library is ordered on: the reader is saying when
- *  that move happened. A dropped book keeps its stamp, since no typed date says
- *  when it was dropped. */
+ *  that move happened. A date carried along by another moves it the same way.
+ *  A dropped book keeps its stamp, since no typed date says when it was
+ *  dropped. */
 export const datesAfterCorrection = (
   book: Pick<Book, 'status' | 'addedAt' | 'startedAt' | 'finishedAt'>,
   typed: Partial<Pick<Book, 'addedAt' | 'startedAt' | 'finishedAt'>>,
@@ -262,12 +271,33 @@ export const datesAfterCorrection = (
   if (Object.values(typed).some(unbelievable)) return 'bad-dates'
   if (typed.startedAt && book.status === 'to-read') return 'bad-dates'
   if (typed.finishedAt && book.status !== 'read') return 'bad-dates'
-  const startedAt = typed.startedAt ?? book.startedAt
-  const finishedAt = typed.finishedAt ?? book.finishedAt
-  if (startedAt && finishedAt && finishedAt < startedAt) return 'bad-dates'
-  const marking = { read: typed.finishedAt, reading: typed.startedAt, 'to-read': typed.addedAt }
+  const typedInOrder = READING_DATES.flatMap((field) => typed[field] ?? [])
+  if (typedInOrder.some((date, index) => index > 0 && date < typedInOrder[index - 1]))
+    return 'bad-dates'
+
+  const dates: Partial<Pick<Book, 'addedAt' | 'startedAt' | 'finishedAt'>> = {
+    addedAt: book.addedAt,
+    startedAt: book.startedAt,
+    finishedAt: book.finishedAt,
+    ...typed,
+  }
+  const moved: Partial<Pick<Book, 'addedAt' | 'startedAt' | 'finishedAt'>> = { ...typed }
+  READING_DATES.forEach((field, index) => {
+    const anchor = typed[field]
+    if (!anchor) return
+    READING_DATES.forEach((other, otherIndex) => {
+      const date = dates[other]
+      if (!date || typed[other]) return
+      const outOfOrder = otherIndex < index ? date > anchor : otherIndex > index && date < anchor
+      if (!outOfOrder) return
+      dates[other] = anchor
+      moved[other] = anchor
+    })
+  })
+
+  const marking = { read: moved.finishedAt, reading: moved.startedAt, 'to-read': moved.addedAt }
   const stamp = book.status === 'dropped' ? undefined : marking[book.status]
-  return { ...typed, ...(stamp ? { statusChangedAt: stamp } : {}) }
+  return { ...moved, ...(stamp ? { statusChangedAt: stamp } : {}) }
 }
 
 /** The reading dates a reader set on a book before saving it — on the scan

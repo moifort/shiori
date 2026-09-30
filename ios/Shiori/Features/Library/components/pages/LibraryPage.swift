@@ -93,8 +93,15 @@ struct LibraryPage: View {
                         }
                     }
                 } label: {
-                    Image(systemName: "line.3.horizontal.decrease")
-                        .symbolVariant(statusFilter != nil ? .fill : .none)
+                    // The shelf shown, named with its symbol: a bare funnel
+                    // did not say which one the list was narrowed to.
+                    // Spelled out rather than a Label, which the toolbar
+                    // strips down to its icon.
+                    HStack(spacing: 6) {
+                        Image(systemName: statusFilter?.symbol ?? "tray.full")
+                        Text(statusFilter?.shelfTitle ?? String(localized: "Tous"))
+                    }
+                    .padding(.horizontal, 6)
                 }
                 .accessibilityIdentifier("library-filter-menu")
             }

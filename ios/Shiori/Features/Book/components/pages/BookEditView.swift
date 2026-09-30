@@ -248,8 +248,10 @@ struct BookEditView: View {
         .interactiveDismissDisabled(correction != BookCorrection() || (rating == 0 ? nil : rating) != book.rating)
     }
 
-    /// Each picker is bounded by its neighbours, so the form cannot say a book
-    /// was finished before it was begun, nor on a day still to come.
+    /// No picker is bounded by its neighbours, only by today: the date just
+    /// picked is the reader's latest word, and the others follow it so that
+    /// added, started and finished stay in that order — as the server keeps
+    /// them. What the form shows is what it saves.
     @ViewBuilder
     private var dateFields: some View {
         // Never before a date already stored: a server clock a little ahead of
@@ -257,6 +259,7 @@ struct BookEditView: View {
         let latest = [Date.now, book.addedAt, book.startedAt, book.finishedAt].compactMap(\.self).max() ?? .now
         if book.addedAt != nil {
             DateField(title: "Ajouté le", icon: "tray.and.arrow.down", date: $addedAt, range: .distantPast...latest)
+                .onChange(of: addedAt) { align(after: .addedAt) }
                 .accessibilityIdentifier("edit-added-at")
         }
         if book.startedAt != nil {
@@ -264,8 +267,9 @@ struct BookEditView: View {
                 title: "Commencé le",
                 icon: "calendar.badge.plus",
                 date: $startedAt,
-                range: .distantPast...(book.finishedAt != nil ? finishedAt : latest)
+                range: .distantPast...latest
             )
+            .onChange(of: startedAt) { align(after: .startedAt) }
             .accessibilityIdentifier("edit-started-at")
         }
         if book.finishedAt != nil {
@@ -273,9 +277,29 @@ struct BookEditView: View {
                 title: "Terminé le",
                 icon: "calendar.badge.checkmark",
                 date: $finishedAt,
-                range: (book.startedAt != nil ? startedAt : .distantPast)...latest
+                range: .distantPast...latest
             )
+            .onChange(of: finishedAt) { align(after: .finishedAt) }
             .accessibilityIdentifier("edit-finished-at")
+        }
+    }
+
+    /// Brings the other dates in line with the one just picked: those before
+    /// it no later than it, those after it no earlier. Only the dates the book
+    /// carries move, since only they are saved.
+    private func align(after picked: BookField) {
+        switch picked {
+        case .addedAt:
+            if book.startedAt != nil, startedAt < addedAt { startedAt = addedAt }
+            if book.finishedAt != nil, finishedAt < addedAt { finishedAt = addedAt }
+        case .startedAt:
+            if book.addedAt != nil, addedAt > startedAt { addedAt = startedAt }
+            if book.finishedAt != nil, finishedAt < startedAt { finishedAt = startedAt }
+        case .finishedAt:
+            if book.startedAt != nil, startedAt > finishedAt { startedAt = finishedAt }
+            if book.addedAt != nil, addedAt > finishedAt { addedAt = finishedAt }
+        default:
+            break
         }
     }
 
