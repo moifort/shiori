@@ -10,6 +10,9 @@ import SwiftUI
 /// most recently first — and the phone only cuts where the month changes. The
 /// list is paginated, and ordered on the phone it would reshuffle every time a
 /// page landed.
+///
+/// A toolbar button trades the rows for a mosaic of piled covers, under the
+/// same sections.
 struct SeriesListView: View {
     /// Opens the add sheet, from the one button every empty state offers.
     var onScan: () -> Void = {}
@@ -31,6 +34,7 @@ struct SeriesListView: View {
     @State private var openSeriesChanged = false
     @State private var changedVolumes: Set<String> = []
     @State private var changedElsewhere = false
+    @AppStorage("shelfLayout.series") private var layout: ShelfLayout = .list
 
     var body: some View {
         NavigationStack {
@@ -65,6 +69,8 @@ struct SeriesListView: View {
                             primary: .init("Scanner un livre", systemImage: "camera") { onScan() }
                         )
                     }
+                } else if layout == .mosaic {
+                    mosaic
                 } else {
                     list
                 }
@@ -73,6 +79,13 @@ struct SeriesListView: View {
             .navigationSubtitle(viewModel.mode.subtitle)
             .toolbar { toolbar }
             .libraryShelfPicker(shelf)
+            // A sheet, as a book opens from the library: its own stack, so a
+            // volume or an author pushes inside it.
+            .sheet(item: $openSeries) { opened in
+                NavigationStack {
+                    SeriesView(seriesId: opened.seriesId, language: opened.language, isSheet: true)
+                }
+            }
             // Once, when the list first shows: a saga opens as a sheet over
             // it, and the rows it changed are asked again when the sheet
             // closes — a saga's first opening is where the server builds its
@@ -172,13 +185,39 @@ struct SeriesListView: View {
         }
         .listStyle(.insetGrouped)
         .refreshable { await viewModel.load() }
-        // A sheet, as a book opens from the library: its own stack, so a
-        // volume or an author pushes inside it.
-        .sheet(item: $openSeries) { opened in
-            NavigationStack {
-                SeriesView(seriesId: opened.seriesId, language: opened.language, isSheet: true)
+    }
+
+    /// The same sections as the list, as a grid of piled covers.
+    private var mosaic: some View {
+        ShelfMosaic(sections: sections) { entry, width in
+            Button {
+                openSeries = destination(of: entry)
+            } label: {
+                SeriesTile(entry: entry, width: width)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("series-tile")
+            .onAppear { viewModel.prefetchIfNeeded(for: entry.id) }
+        } top: {
+            if viewModel.refreshFailed {
+                RefreshRow(
+                    failed: viewModel.refreshFailed,
+                    loadingLabel: "Mise à jour des séries",
+                    onRetry: { await viewModel.refresh() }
+                )
+                .padding(.horizontal)
+            }
+        } bottom: {
+            if viewModel.hasMore {
+                LoadMoreRow(
+                    failed: viewModel.loadMoreFailed,
+                    loadingLabel: "Chargement de la suite",
+                    onLoadMore: { await viewModel.loadMore() }
+                )
+                .padding(.bottom)
             }
         }
+        .refreshable { await viewModel.load() }
     }
 
     /// The saga in the edition of this row: a saga held in two languages makes
@@ -219,6 +258,11 @@ struct SeriesListView: View {
                     .symbolVariant(viewModel.stateFilter != nil ? .fill : .none)
             }
             .accessibilityIdentifier("series-filter-menu")
+        }
+        ToolbarSpacer(.fixed)
+        ToolbarItem {
+            ShelfLayoutButton(layout: $layout)
+                .accessibilityIdentifier("series-layout-toggle")
         }
     }
 

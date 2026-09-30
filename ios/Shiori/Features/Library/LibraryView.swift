@@ -16,12 +16,14 @@ struct LibraryView: View {
 
     @State private var viewModel = LibraryViewModel()
     @State private var selectedBook: Book?
+    @AppStorage("shelfLayout.books") private var layout: ShelfLayout = .list
 
     var body: some View {
         NavigationStack {
             LibraryPage(
                 mode: $viewModel.mode,
                 statusFilter: $viewModel.statusFilter,
+                layout: $layout,
                 sections: viewModel.sections,
                 awaitedBookIds: viewModel.awaitedBookIds,
                 showsStatus: viewModel.statusFilter == nil,

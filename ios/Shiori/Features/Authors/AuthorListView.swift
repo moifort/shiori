@@ -11,7 +11,8 @@ import SwiftUI
 /// Every order comes from the server, which files an author under their
 /// surname the way a bookshop does; the phone only cuts the sections.
 ///
-/// A row opens the author's page, as a sheet.
+/// A row opens the author's page, as a sheet. A toolbar button trades the rows
+/// for a mosaic of portraits, under the same sections.
 struct AuthorListView: View {
     /// Opens the add sheet, from the one button every empty state offers.
     var onScan: () -> Void = {}
@@ -23,6 +24,7 @@ struct AuthorListView: View {
     /// navigation link, as on the Series tab: a link would claim the drag that
     /// scrolls the covers, and draw a chevron on every row.
     @State private var openAuthor: AuthorDestination?
+    @AppStorage("shelfLayout.authors") private var layout: ShelfLayout = .list
 
     var body: some View {
         NavigationStack {
@@ -41,6 +43,8 @@ struct AuthorListView: View {
                         message: "Scannez un livre et son auteur apparaîtra ici, avec tous ses livres.",
                         primary: .init("Scanner un livre", systemImage: "camera") { onScan() }
                     )
+                } else if layout == .mosaic {
+                    mosaic
                 } else {
                     list
                 }
@@ -49,6 +53,13 @@ struct AuthorListView: View {
             .navigationSubtitle(viewModel.order.subtitle)
             .toolbar { toolbar }
             .libraryShelfPicker(shelf)
+            // A sheet, as a book opens from the library and a saga from Découvrir:
+            // the same corners on an author. Its own stack, so a saga pushes inside it.
+            .sheet(item: $openAuthor) { opened in
+                NavigationStack {
+                    AuthorView(key: opened.key, name: opened.name, isSheet: true)
+                }
+            }
             // Over last session's snapshot when the disk had one: the rows show
             // at once and are brought up to date underneath.
             .task { await viewModel.loadOnAppear() }
@@ -109,12 +120,50 @@ struct AuthorListView: View {
         .listStyle(.insetGrouped)
         .listSectionIndexVisibility(viewModel.order == .name ? .visible : .hidden)
         .refreshable { await viewModel.load() }
-        // A sheet, as a book opens from the library and a saga from Découvrir:
-        // the same corners on an author. Its own stack, so a saga pushes inside it.
-        .sheet(item: $openAuthor) { opened in
-            NavigationStack {
-                AuthorView(key: opened.key, name: opened.name, isSheet: true)
+    }
+
+    /// The same order as the list, as a grid of portraits.
+    private var mosaic: some View {
+        ShelfMosaic(sections: mosaicSections) { author, width in
+            Button {
+                openAuthor = AuthorDestination(author)
+            } label: {
+                AuthorTile(author: author, width: width)
             }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("author-tile")
+            .onAppear { viewModel.prefetchIfNeeded(for: author.id) }
+        } top: {
+            if viewModel.refreshFailed {
+                RefreshRow(
+                    failed: viewModel.refreshFailed,
+                    loadingLabel: "Mise à jour des auteurs",
+                    onRetry: { await viewModel.refresh() }
+                )
+                .padding(.horizontal)
+            }
+        } bottom: {
+            if viewModel.hasMore {
+                LoadMoreRow(
+                    failed: viewModel.loadMoreFailed,
+                    loadingLabel: "Chargement de la suite",
+                    onLoadMore: { await viewModel.loadMore() }
+                )
+                .padding(.bottom)
+            }
+        }
+        .refreshable { await viewModel.load() }
+    }
+
+    /// The months of the list by activity. By name, the authors run on
+    /// without a heading per letter: most letters hold one or two, and a
+    /// row of three columns under each was mostly empty.
+    private var mosaicSections: [ListSection<FollowedAuthor>] {
+        switch viewModel.order {
+        case .recent:
+            ListSection.byMonth(viewModel.authors, on: \.shelvedAt)
+        case .name, .loved:
+            [ListSection(id: "all", title: "", rows: viewModel.authors)]
         }
     }
 
@@ -158,6 +207,11 @@ struct AuthorListView: View {
                 .tint(viewModel.order == item ? .accentColor : .primary)
                 .accessibilityIdentifier("authors-order-\(item.rawValue)")
             }
+        }
+        ToolbarSpacer(.fixed)
+        ToolbarItem {
+            ShelfLayoutButton(layout: $layout)
+                .accessibilityIdentifier("authors-layout-toggle")
         }
     }
 }

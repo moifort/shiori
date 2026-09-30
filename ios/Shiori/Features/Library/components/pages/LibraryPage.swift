@@ -7,11 +7,14 @@ import SwiftUI
 /// favourites, both sectioned by month as Vinarium's wine list is — newest
 /// first, on the day each book was finished, else started, else added; each
 /// row carries its status as a tag. A filter narrows any of them to one status.
+/// A toolbar button trades the rows for a mosaic of covers, under the same
+/// sections.
 /// Sagas are not gathered here: the Series tab reads a saga whole, and a row
 /// names its saga in a tag.
 struct LibraryPage: View {
     @Binding var mode: LibraryMode
     @Binding var statusFilter: ReadingStatus?
+    @Binding var layout: ShelfLayout
     let sections: [ListSection<Book>]
     /// The books whose edition in the app's language the reader awaits.
     var awaitedBookIds: Set<String> = []
@@ -62,6 +65,8 @@ struct LibraryPage: View {
                 } else {
                     emptyState
                 }
+            } else if layout == .mosaic {
+                mosaic
             } else {
                 list
             }
@@ -105,7 +110,50 @@ struct LibraryPage: View {
                 }
                 .accessibilityIdentifier("library-filter-menu")
             }
+            ToolbarSpacer(.fixed)
+            ToolbarItem {
+                ShelfLayoutButton(layout: $layout)
+                    .accessibilityIdentifier("library-layout-toggle")
+            }
         }
+    }
+
+    /// The same sections as the list, as a grid of covers.
+    private var mosaic: some View {
+        ShelfMosaic(sections: sections) { book, width in
+            Button {
+                onBookTapped(book)
+            } label: {
+                BookTile(
+                    book: book,
+                    width: width,
+                    showsStatus: showsStatus,
+                    isAwaited: awaitedBookIds.contains(book.id)
+                )
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("book-tile")
+            .onAppear { onPrefetch(book.id) }
+        } top: {
+            if refreshFailed {
+                RefreshRow(
+                    failed: refreshFailed,
+                    loadingLabel: "Mise à jour de la bibliothèque",
+                    onRetry: onRetryRefresh
+                )
+                .padding(.horizontal)
+            }
+        } bottom: {
+            if hasMore {
+                LoadMoreRow(
+                    failed: loadMoreFailed,
+                    loadingLabel: "Chargement de la suite",
+                    onLoadMore: onLoadMore
+                )
+                .padding(.bottom)
+            }
+        }
+        .refreshable { await onRetry() }
     }
 
     private var list: some View {
@@ -181,6 +229,7 @@ struct LibraryPage: View {
 #Preview("Par date") {
     @Previewable @State var mode: LibraryMode = .all
     @Previewable @State var statusFilter: ReadingStatus?
+    @Previewable @State var layout: ShelfLayout = .list
     let saga = SeriesMembership(id: "s1", name: "Chronique du tueur de roi", volume: 1, kind: .main)
     let saga2 = SeriesMembership(id: "s1", name: "Chronique du tueur de roi", volume: 2, kind: .main)
     let books = [
@@ -193,6 +242,7 @@ struct LibraryPage: View {
         LibraryPage(
             mode: $mode,
             statusFilter: $statusFilter,
+            layout: $layout,
             sections: ListSection.byMonth(books, on: \.shelvedAt),
             showsStatus: true,
             isLoading: false,
@@ -212,6 +262,7 @@ struct LibraryPage: View {
         LibraryPage(
             mode: $mode,
             statusFilter: $statusFilter,
+            layout: .constant(.list),
             sections: [],
             isLoading: false,
             errorMessage: nil,
