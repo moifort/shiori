@@ -180,12 +180,14 @@ const carouselValue = (html: string, icon: string): string | undefined =>
 
 /** What an Amazon book page says of the edition: its release day, or `unknown`
  *  when the page is of a book in another language — the ISBN was not that
- *  edition's — or `unreadable` when the page holds no book details at all,
- *  which is what a captcha looks like. */
+ *  edition's — or `captcha` when Amazon answered its robot check instead, or
+ *  `unreadable` when a page holds no book details and is no captcha either,
+ *  which means the page changed under the parser. */
 export const amazonEditionFrom = (
   html: string,
   language: BookLanguage,
-): { releaseDate?: ReleaseDateType } | 'unknown' | 'unreadable' => {
+): { releaseDate?: ReleaseDateType } | 'unknown' | 'captcha' | 'unreadable' => {
+  if (/validateCaptcha|opfcaptcha/.test(html)) return 'captcha'
   const date = carouselValue(html, 'book_details-publication_date')
   const shown = carouselValue(html, 'language')?.trim().toLowerCase()
   if (!date && !shown) return 'unreadable'

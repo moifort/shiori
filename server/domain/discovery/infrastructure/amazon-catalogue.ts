@@ -39,9 +39,17 @@ export const amazonEditionOf = async (
       logger.warn('Amazon edition lookup failed', { isbn13, status: response.status })
       return 'unreachable'
     }
-    const edition = amazonEditionFrom(await response.text(), language)
+    const html = await response.text()
+    const edition = amazonEditionFrom(html, language)
+    // Amazon's robot check comes and goes, and the page is read again next week.
+    if (edition === 'captcha') {
+      logger.info('Amazon answered a captcha', { isbn13, store })
+      return 'unreachable'
+    }
+    // The page's title and size say what came back, since the page itself is not kept.
     if (edition === 'unreadable') {
-      logger.warn('Amazon edition page unreadable', { isbn13, store })
+      const title = html.match(/<title>([^<]*)<\/title>/)?.[1]?.trim()
+      logger.warn('Amazon edition page unreadable', { isbn13, store, title, length: html.length })
       return 'unreachable'
     }
     return edition

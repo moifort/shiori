@@ -32,8 +32,12 @@ describe('an Amazon book page', () => {
     expect(amazonEditionFrom(page('3 mars 2024', 'Anglais'), 'fr')).toBe('unknown')
   })
 
-  test('with no book details, a captcha, is unreadable', () => {
-    expect(amazonEditionFrom('<form action="/errors/validateCaptcha">', 'fr')).toBe('unreadable')
+  test('a robot check is a captcha, not a page the parser failed on', () => {
+    expect(amazonEditionFrom('<form action="/errors/validateCaptcha">', 'fr')).toBe('captcha')
+  })
+
+  test('a page with no book details that is no captcha is unreadable', () => {
+    expect(amazonEditionFrom('<html><title>Amazon.fr</title></html>', 'fr')).toBe('unreadable')
   })
 })
 
