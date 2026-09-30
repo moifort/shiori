@@ -112,6 +112,7 @@ export type BookEdit = Partial<
     | 'narrators'
     | 'isbn13'
     | 'language'
+    | 'publishedCoverUrl'
     | 'addedAt'
     | 'startedAt'
     | 'finishedAt'

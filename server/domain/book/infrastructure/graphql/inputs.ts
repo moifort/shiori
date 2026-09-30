@@ -151,6 +151,13 @@ export const BookEditInput = builder.inputType('BookEditInput', {
     narrators: t.field({ type: ['NarratorName'], required: false, description: 'At most five.' }),
     language: t.field({ type: BookLanguageEnum, required: false }),
     isbn13: t.field({ type: 'Isbn13', required: false }),
+    coverUrl: t.field({
+      type: 'CoverUrl',
+      required: false,
+      description:
+        'Where to draw the cover from, typed by the reader when the scan found none or ' +
+        'found the wrong one. Null clears it, and the app draws its placeholder.',
+    }),
     addedAt: t.field({
       type: 'DateTime',
       required: false,

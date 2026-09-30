@@ -97,6 +97,33 @@ describe('cataloguing through the API', () => {
     expect(cleared.data?.updateBook).toEqual({ durationMinutes: null })
   })
 
+  test('sets the cover of a book the scan found none for, and clears it again', async () => {
+    const book = await addBook('Gataca')
+    const url = 'https://covers.openlibrary.org/b/isbn/9782265094116-L.jpg'
+
+    const set = await execute(
+      `mutation { updateBook(id: "${book.id}", input: { coverUrl: "${url}" }) { coverUrl } }`,
+    )
+
+    expect(set.errors).toBeUndefined()
+    expect(set.data?.updateBook).toEqual({ coverUrl: url })
+
+    const cleared = await execute(
+      `mutation { updateBook(id: "${book.id}", input: { coverUrl: null }) { coverUrl } }`,
+    )
+    expect(cleared.data?.updateBook).toEqual({ coverUrl: null })
+  })
+
+  test('refuses a cover the app could never draw', async () => {
+    const book = await addBook('Gataca')
+
+    const refused = await execute(
+      `mutation { updateBook(id: "${book.id}", input: { coverUrl: "http://example.com/a.jpg" }) { id } }`,
+    )
+
+    expect(refused.errors?.[0]).toBeDefined()
+  })
+
   test('puts a book in a saga by hand, groups it there, and takes it out again', async () => {
     const created = await execute(
       'mutation { addBook(input: { title: "Gataca", authors: ["Franck Thilliez"] }) { id } }',

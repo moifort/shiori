@@ -248,6 +248,8 @@ struct BookCorrection: Equatable, Sendable {
     var narrators: [String]?
     var isbn13: Change<String>?
     var language: Change<BookLanguage>?
+    /// Where the cover is drawn from, as an HTTPS address.
+    var coverURL: Change<String>?
     /// The saga as the reader names it. The server works out which saga that
     /// is, so the book joins the one its siblings already sit in.
     var series: Change<SeriesPlacement>?
@@ -263,6 +265,7 @@ struct BookCorrection: Equatable, Sendable {
         ShioriGraphQL.BookEditInput(
             addedAt: Self.nullable(addedAt.map(GraphQLHelpers.iso8601)),
             authors: Self.nullable(authors),
+            coverUrl: Self.nullable(coverURL),
             durationMinutes: Self.nullable(durationMinutes),
             finishedAt: Self.nullable(finishedAt.map(GraphQLHelpers.iso8601)),
             firstPublishedIn: Self.nullable(firstPublishedIn),

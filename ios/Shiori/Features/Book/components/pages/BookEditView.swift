@@ -36,6 +36,10 @@ struct BookEditView: View {
     @State private var isbn: String
     @State private var seriesName: String
     @State private var seriesVolume: String
+    /// The cover's address as typed. Shown even when it draws nothing — no
+    /// cover found, or one that has since vanished — since that is exactly
+    /// when the reader comes to fix it.
+    @State private var coverURL: String
     @State private var addedAt: Date
     @State private var startedAt: Date
     @State private var finishedAt: Date
@@ -67,6 +71,7 @@ struct BookEditView: View {
         _isbn = State(initialValue: book.isbn13 ?? "")
         _seriesName = State(initialValue: book.series?.name ?? "")
         _seriesVolume = State(initialValue: book.series?.volume.map(String.init) ?? "")
+        _coverURL = State(initialValue: book.coverURL?.absoluteString ?? "")
         _addedAt = State(initialValue: book.addedAt ?? .now)
         _startedAt = State(initialValue: book.startedAt ?? .now)
         _finishedAt = State(initialValue: book.finishedAt ?? .now)
@@ -75,6 +80,8 @@ struct BookEditView: View {
     var body: some View {
         NavigationStack {
             Form {
+                coverSection
+
                 Section {
                     LabeledField(title: "Titre", icon: "textformat") {
                         TextField("Titre", text: $title, axis: .vertical)
@@ -248,6 +255,43 @@ struct BookEditView: View {
         .interactiveDismissDisabled(correction != BookCorrection() || (rating == 0 ? nil : rating) != book.rating)
     }
 
+    /// The address beside the cover it draws, so the reader sees at once
+    /// whether it loads: one that does not falls back to the placeholder, as
+    /// on the shelf.
+    private var coverSection: some View {
+        Section {
+            HStack(alignment: .top, spacing: 12) {
+                BookCover(book: coverPreview, width: 56, showsFormatBadge: false)
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Adresse de l'image", systemImage: "photo")
+                        .foregroundStyle(.secondary)
+                    TextField("https://…", text: $coverURL, axis: .vertical)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .font(.callout)
+                        .accessibilityIdentifier("edit-cover-url")
+                }
+            }
+            .padding(.vertical, 4)
+        } header: {
+            Text("Couverture")
+        } footer: {
+            if let problem = coverProblem {
+                Text(problem).foregroundStyle(.red)
+            } else {
+                Text("Collez l'adresse d'une image pour remplacer la couverture. Videz le champ pour l'effacer.")
+            }
+        }
+    }
+
+    /// The book as the shelf would draw it with the address typed so far.
+    private var coverPreview: Book {
+        var preview = book
+        preview.coverURL = coverProblem == nil ? optional(coverURL).flatMap(URL.init(string:)) : nil
+        return preview
+    }
+
     /// No picker is bounded by its neighbours, only by today: the date just
     /// picked is the reader's latest word, and the others follow it so that
     /// added, started and finished stay in that order — as the server keeps
@@ -306,7 +350,7 @@ struct BookEditView: View {
     // MARK: - Validation
 
     private var isValid: Bool {
-        !trimmed(title).isEmpty && publicationProblem == nil && seriesProblem == nil
+        !trimmed(title).isEmpty && publicationProblem == nil && seriesProblem == nil && coverProblem == nil
     }
 
     /// A volume number the server would refuse, or a new saga it could not key:
@@ -338,6 +382,16 @@ struct BookEditView: View {
         }
         if !isbnDigits.isEmpty, !Self.isValidIsbn13(isbnDigits) {
             return String(localized: "L'ISBN doit compter 13 chiffres valides.")
+        }
+        return nil
+    }
+
+    /// The server takes HTTPS only: a plain HTTP image is blocked by App
+    /// Transport Security, and would be stored only never to be drawn.
+    private var coverProblem: String? {
+        guard let typed = optional(coverURL) else { return nil }
+        guard let url = URL(string: typed), typed.hasPrefix("https://"), url.host() != nil else {
+            return String(localized: "L'adresse doit commencer par https://.")
         }
         return nil
     }
@@ -378,6 +432,7 @@ struct BookEditView: View {
         }
         correction.isbn13 = change(from: book.isbn13, to: isbnDigits.isEmpty ? nil : isbnDigits)
         correction.language = change(from: book.language, to: language)
+        correction.coverURL = change(from: book.coverURL?.absoluteString, to: optional(coverURL))
         correction.series = change(
             from: book.series.map { SeriesPlacement(name: $0.name, volume: $0.volume) },
             to: optional(seriesName).map { SeriesPlacement(name: $0, volume: Int(trimmed(seriesVolume))) }

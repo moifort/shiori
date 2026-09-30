@@ -612,6 +612,11 @@ input BookEditInput {
   addedAt: DateTime
   authors: [AuthorName!]
 
+  """
+  Where to draw the cover from, typed by the reader when the scan found none or found the wrong one. Null clears it, and the app draws its placeholder.
+  """
+  coverUrl: CoverUrl
+
   """The running time of an audiobook, in minutes."""
   durationMinutes: ListeningMinutes
 

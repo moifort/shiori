@@ -135,6 +135,7 @@ builder.mutationFields((t) => ({
         ...clearable('durationMinutes', input.durationMinutes),
         ...clearable('isbn13', input.isbn13),
         ...clearable('language', input.language),
+        ...clearable('publishedCoverUrl', input.coverUrl),
         ...(input.series !== undefined
           ? {
               series: input.series
