@@ -197,7 +197,7 @@ struct SeriesListView: View {
             Button {
                 openSeries = destination(of: entry)
             } label: {
-                SeriesTile(entry: entry, width: width)
+                SeriesTile(entry: entry, width: width, showsState: viewModel.stateFilter == nil)
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("series-tile")

@@ -9,12 +9,14 @@ import SwiftUI
 struct SeriesTile: View {
     let entry: FollowedSeries
     let width: CGFloat
+    /// Off where a filter already says which state every saga is in.
+    var showsState = true
 
     var body: some View {
         BookCover(book: cover, width: width, showsFormatBadge: false, cornerRadius: 0)
             .overlay {
-                if let state = entry.state {
-                    MosaicStatusBadge(symbol: state.symbol, label: state.label)
+                if showsState, let state = entry.state {
+                    MosaicStatusBadge(symbol: state.symbol, label: state.label, coverWidth: width)
                 }
             }
             .overlay(alignment: .bottom) {

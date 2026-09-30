@@ -128,7 +128,9 @@ struct AuthorListView: View {
     /// would not say who is who — in rows with air between them, as Photos
     /// shows the people it knows.
     private var mosaic: some View {
-        ShelfMosaic(rows: viewModel.authors, idealTileWidth: 105, spacing: 12, margin: 16) { author, width in
+        ShelfMosaic(
+            rows: viewModel.authors, idealTileWidth: 105, spacing: 12, margin: 16, zoomRange: 2...5
+        ) { author, width in
             Button {
                 openAuthor = AuthorDestination(author)
             } label: {

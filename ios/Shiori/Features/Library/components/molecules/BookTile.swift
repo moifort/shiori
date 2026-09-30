@@ -8,11 +8,15 @@ import SwiftUI
 struct BookTile: View {
     let book: Book
     let width: CGFloat
+    /// Off where a filter already says which status every book has.
+    var showsStatus = true
 
     var body: some View {
         BookCover(book: book, width: width, showsFormatBadge: false, cornerRadius: 0)
             .overlay {
-                MosaicStatusBadge(symbol: book.status.symbol, label: book.status.shelfTitle)
+                if showsStatus {
+                    MosaicStatusBadge(symbol: book.status.symbol, label: book.status.shelfTitle, coverWidth: width)
+                }
             }
             .overlay(alignment: .bottom) {
                 if book.favorite || book.format == .audiobook {

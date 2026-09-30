@@ -127,7 +127,7 @@ struct LibraryPage: View {
             Button {
                 onBookTapped(book)
             } label: {
-                BookTile(book: book, width: width)
+                BookTile(book: book, width: width, showsStatus: showsStatus)
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("book-tile")
