@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  copyOf,
   datesAfterCorrection,
   datesAfterStatusChange,
   datesOnArrival,
@@ -899,5 +900,46 @@ describe('a saga in the order it runs', () => {
     expect(inSagaOrder([book({ title: 'Seul' })]).map(({ title }) => String(title))).toEqual([
       'Seul',
     ])
+  })
+})
+
+describe('the copy the reader already keeps', () => {
+  const held = (title: string, author: string, extra: Partial<BookView> = {}): BookView => ({
+    ...book({ title }),
+    authors: [AuthorName(author)],
+    ...extra,
+  })
+
+  test('is found by title and author, whatever the case and accents', () => {
+    const owned = held('Le Nom du vent', 'Patrick Rothfuss')
+
+    expect(copyOf([owned], { title: 'LE NOM DU VENT', authors: ['Patrick Rothfuss'] })).toBe(owned)
+  })
+
+  test('is found by ISBN when the title was read differently', () => {
+    const owned = held('Le Nom du vent', 'Patrick Rothfuss', {
+      isbn13: '9782352943556' as BookView['isbn13'],
+    })
+
+    expect(
+      copyOf([owned], {
+        title: 'Chronique du tueur de roi',
+        authors: ['Patrick Rothfuss'],
+        isbn13: '9782352943556',
+      }),
+    ).toBe(owned)
+  })
+
+  test('is the earliest on the shelf when there are several', () => {
+    const first = held('Dune', 'Frank Herbert', { id: BookId('first'), addedAt: EARLIER })
+    const second = held('Dune', 'Frank Herbert', { id: BookId('second'), addedAt: NOW })
+
+    expect(copyOf([second, first], { title: 'Dune', authors: ['Frank Herbert'] })).toBe(first)
+  })
+
+  test('is none for the same title by another author', () => {
+    expect(
+      copyOf([held('Dune', 'Frank Herbert')], { title: 'Dune', authors: ['Brian Herbert'] }),
+    ).toBeUndefined()
   })
 })

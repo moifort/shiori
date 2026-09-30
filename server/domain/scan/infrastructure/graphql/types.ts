@@ -3,6 +3,8 @@ import {
   BookLanguageEnum,
   GenreEnum,
 } from '~/domain/book/infrastructure/graphql/enums'
+import { BookType } from '~/domain/book/infrastructure/graphql/types'
+import { BookQuery } from '~/domain/book/query'
 import type {
   DetectedBook,
   DetectedBox,
@@ -112,6 +114,18 @@ export const ScanResultType = builder.objectRef<ScanResult>('ScanResult').implem
       type: ScannedSeriesType,
       nullable: true,
       resolve: (result) => result.series ?? null,
+    }),
+    ownedCopy: t.field({
+      type: BookType,
+      nullable: true,
+      description:
+        'The record the reader already keeps of this book — the same title and first ' +
+        'author, or the same ISBN — for the review to warn before a second copy is ' +
+        'added. The earliest on the shelf when there are several. Null when the book ' +
+        'is new to them, and when nothing was recognized.\n\n' +
+        'A warning, not a refusal: `addBook` still adds a second edition on purpose.',
+      resolve: (result, _args, { userId }) =>
+        result.title === '' ? null : BookQuery.copyOf(userId, result),
     }),
   }),
 })

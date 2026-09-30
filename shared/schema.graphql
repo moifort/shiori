@@ -2813,6 +2813,13 @@ type ScanResult {
   The language of the photographed edition, read off the cover — the object on the shelf, not the language the work was written in. Null when the cover does not settle it. Hand it back to `addBook` unchanged.
   """
   language: BookLanguage
+
+  """
+  The record the reader already keeps of this book — the same title and first author, or the same ISBN — for the review to warn before a second copy is added. The earliest on the shelf when there are several. Null when the book is new to them, and when nothing was recognized.
+  
+  A warning, not a refusal: `addBook` still adds a second edition on purpose.
+  """
+  ownedCopy: Book
   pageCount: PageCount
   publisher: Publisher
   recognized: Boolean!

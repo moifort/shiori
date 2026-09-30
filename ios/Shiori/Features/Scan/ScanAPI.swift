@@ -21,6 +21,10 @@ struct ScannedBook {
     /// The publisher's cover, found by ISBN server-side and already checked to exist.
     var coverURL: URL?
     var series: SeriesMembership?
+    /// The record the reader already keeps of this book — same title and
+    /// author, or same ISBN. A warning on the review, never a refusal: a
+    /// second edition is a choice some readers make.
+    var ownedCopy: Book?
 
     /// The draft the review screen edits and `addBook` persists.
     ///
@@ -160,7 +164,8 @@ extension ScannedBook {
                     volume: series.volume,
                     kind: series.kind.asDomain
                 )
-            }
+            },
+            ownedCopy: result.ownedCopy?.fragments.bookSummary.asBook
         )
     }
 }

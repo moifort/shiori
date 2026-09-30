@@ -523,3 +523,24 @@ export const shelfKeyOf = (title: string, author: string | undefined): string =>
 
 export const shelfKeysOf = (books: readonly Book[]): Set<string> =>
   new Set(books.map((book) => shelfKeyOf(book.title, book.authors[0])))
+
+/** The record the reader already keeps of a book about to be added: the same
+ *  story by its shelf key, or the same edition by its ISBN, which still matches
+ *  when the title was read differently off the cover. The earliest on the shelf
+ *  wins — the copy the reader thinks of as theirs.
+ *
+ *  A warning, never a refusal: two editions of one story — the paperback and
+ *  the recording — are a library some readers keep on purpose. */
+export const copyOf = <T extends Book>(
+  books: readonly T[],
+  candidate: { title: string; authors: readonly string[]; isbn13?: string },
+): T | undefined => {
+  const key = shelfKeyOf(candidate.title, candidate.authors[0])
+  return books
+    .filter(
+      (book) =>
+        shelfKeyOf(book.title, book.authors[0]) === key ||
+        (candidate.isbn13 !== undefined && book.isbn13 === candidate.isbn13),
+    )
+    .toSorted((a, b) => a.addedAt.getTime() - b.addedAt.getTime())[0]
+}

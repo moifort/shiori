@@ -1,4 +1,5 @@
 import {
+  copyOf as copyOfBook,
   groupedBySeries,
   inSagaOrder,
   lovedRankOfBook,
@@ -157,6 +158,16 @@ export namespace BookQuery {
    *  elsewhere — a friend's copy, a suggestion — is one they have. */
   export const shelfKeys = async (userId: UserId): Promise<Set<string>> =>
     shelfKeysOf(await repository.findAllByUser(userId))
+
+  /** The record the reader already keeps of a book they are about to add, for
+   *  the scan to warn before a second copy lands on the shelf. */
+  export const copyOf = async (
+    userId: UserId,
+    candidate: { title: string; authors: readonly string[]; isbn13?: string },
+  ): Promise<BookView | null> => {
+    const copy = copyOfBook(await repository.findAllByUser(userId), candidate)
+    return copy ? await withCover(copy) : null
+  }
 
   /** Sign the covers of the books that are about to be drawn. */
   export const withSignedCovers = (books: readonly Book[]): Promise<BookView[]> => withCovers(books)

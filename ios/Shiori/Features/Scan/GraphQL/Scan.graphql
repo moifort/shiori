@@ -54,4 +54,9 @@ fragment ScannedRecord on ScanResult {
     volume
     kind
   }
+  # The copy the reader already keeps, for the review to warn before a second
+  # one lands on the shelf.
+  ownedCopy {
+    ...BookSummary
+  }
 }

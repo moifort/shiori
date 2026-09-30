@@ -25,6 +25,8 @@ final class ScanViewModel {
     /// the scan rather than a generic loader.
     private(set) var capturedCover: Data?
     private(set) var draft: BookDraft?
+    /// The record the reader already keeps of the book under review, if any.
+    private(set) var ownedCopy: Book?
     /// Why the step is `.failed`, in the reader's words.
     private(set) var failure: String?
     /// The title being looked up, kept so a failed lookup can be run again.
@@ -48,6 +50,7 @@ final class ScanViewModel {
             }
             track(.scanSucceeded)
             draft = scanned.asDraft
+            ownedCopy = scanned.ownedCopy
             step = .review
         } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {
             track(.scanBlockedByQuota)
@@ -76,6 +79,7 @@ final class ScanViewModel {
             }
             track(.scanSucceeded)
             draft = scanned.asDraft
+            ownedCopy = scanned.ownedCopy
             step = .review
         } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {
             track(.scanBlockedByQuota)
@@ -104,6 +108,7 @@ final class ScanViewModel {
             }
             track(.scanSucceeded)
             draft = scanned.asDraft
+            ownedCopy = scanned.ownedCopy
             step = .review
         } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {
             track(.scanBlockedByQuota)
@@ -185,6 +190,7 @@ final class ScanViewModel {
         sharedLink = nil
         failure = nil
         draft = nil
+        ownedCopy = nil
         step = .camera
     }
 }

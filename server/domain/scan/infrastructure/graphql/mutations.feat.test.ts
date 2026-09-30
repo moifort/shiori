@@ -179,3 +179,50 @@ describe('describeDetectedBook', () => {
     expect(month.scans).toBe(1)
   })
 })
+
+describe('a scanned book the reader already keeps', () => {
+  const scanTitle = () =>
+    graphql({
+      schema,
+      source: `mutation($title: BookTitle!) {
+        scanTitle(title: $title) { title ownedCopy { id title } }
+      }`,
+      variableValues: { title: 'dune' },
+      contextValue: { event: undefined, userId },
+    })
+
+  const owned = {
+    userId,
+    title: 'Dune',
+    authors: ['Frank Herbert'],
+    format: 'book',
+    subgenres: [],
+    narrators: [],
+    status: 'read',
+    hidden: false,
+    addedAt: new Date('2026-01-02T08:00:00.000Z'),
+    updatedAt: new Date('2026-01-02T08:00:00.000Z'),
+  }
+
+  test('points at the copy on the shelf', async () => {
+    fake.seed('books', 'dune-1', { ...owned, id: 'dune-1' })
+    answers = [{ title: 'Dune', authors: ['Frank Herbert'], subgenres: [] }]
+
+    const result = await scanTitle()
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data).toEqual({
+      scanTitle: { title: 'Dune', ownedCopy: { id: 'dune-1', title: 'Dune' } },
+    })
+  })
+
+  test('points at nothing when only another reader keeps it', async () => {
+    fake.seed('books', 'dune-2', { ...owned, id: 'dune-2', userId: 'reader-2' })
+    answers = [{ title: 'Dune', authors: ['Frank Herbert'], subgenres: [] }]
+
+    const result = await scanTitle()
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data).toEqual({ scanTitle: { title: 'Dune', ownedCopy: null } })
+  })
+})

@@ -13,8 +13,12 @@ import SwiftUI
 /// A saga renamed here is not the one the scan keyed: it is handed over by
 /// name, and the server files the book as the edit form files one — into the
 /// saga the reader holds by that name, or a new one keyed on its author.
+///
+/// A book the reader already keeps is flagged on top, with the way to their
+/// copy: a second edition stays theirs to add, so nothing is refused.
 struct ScanReviewPage: View {
     @State private var draft: BookDraft
+    let ownedCopy: Book?
     let isSaving: Bool
     /// The draft, and the saga as the reader renamed it, if they did.
     let onSave: (BookDraft, SeriesPlacement?) -> Void
@@ -29,11 +33,13 @@ struct ScanReviewPage: View {
 
     init(
         draft: BookDraft,
+        ownedCopy: Book? = nil,
         isSaving: Bool,
         onSave: @escaping (BookDraft, SeriesPlacement?) -> Void,
         onRetake: @escaping () -> Void
     ) {
         _draft = State(initialValue: draft)
+        self.ownedCopy = ownedCopy
         self.isSaving = isSaving
         self.onSave = onSave
         self.onRetake = onRetake
@@ -123,6 +129,10 @@ struct ScanReviewPage: View {
 
     var body: some View {
         List {
+            if let ownedCopy {
+                OwnedCopySection(copy: ownedCopy)
+            }
+
             BookStatusSection(status: draft.status) { status in
                 draft.status = status
                 // Back on the pile or in progress, the book was not read:
@@ -290,6 +300,35 @@ extension ScanReviewPage {
     }
 }
 
+/// The warning that the reader already keeps this book, opening their copy.
+private struct OwnedCopySection: View {
+    let copy: Book
+
+    var body: some View {
+        Section {
+            NavigationLink {
+                BookView(bookId: copy.id)
+            } label: {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Déjà dans votre bibliothèque")
+                            .font(.headline)
+                        Text("\(copy.title) · \(copy.status.label)")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                }
+            }
+            .accessibilityIdentifier("review-owned-copy")
+        } footer: {
+            Text("Vous pouvez l'ajouter une seconde fois, pour une autre édition par exemple.")
+        }
+    }
+}
+
 private extension BookDraft {
     /// The draft as the book's page would draw it once saved.
     var asReviewedBook: Book {
@@ -335,6 +374,18 @@ private extension BookCorrection.Change {
         case let .set(value): value
         case .clear: nil
         }
+    }
+}
+
+#Preview("Déjà possédé") {
+    NavigationStack {
+        ScanReviewPage(
+            draft: BookDraft(title: "Dune", authors: ["Frank Herbert"], genre: .scienceFiction),
+            ownedCopy: Book(id: "dune", title: "Dune", authors: ["Frank Herbert"], status: .read),
+            isSaving: false,
+            onSave: { _, _ in },
+            onRetake: {}
+        )
     }
 }
 
