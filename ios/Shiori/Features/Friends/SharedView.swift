@@ -135,8 +135,6 @@ struct SharedView: View {
                         }
                     } header: {
                         Text("Vous")
-                    } footer: {
-                        Text("Vos amis vous voient ainsi dans leur liste. Touchez votre nom pour voir votre page telle qu'ils la voient.")
                     }
                 }
                 // Only a race once there is somebody to race against.
@@ -150,8 +148,6 @@ struct SharedView: View {
                         )
                     } header: {
                         Text("Défi lecture \(String(Calendar.current.component(.year, from: .now)))")
-                    } footer: {
-                        Text("Les livres terminés depuis le 1er janvier, par vous et vos amis.")
                     }
                 }
                 if viewModel.friends.isEmpty {
@@ -171,8 +167,6 @@ struct SharedView: View {
                         }
                     } header: {
                         Text("Mes amis")
-                    } footer: {
-                        Text("Un ami voit vos lectures en cours, votre pile, vos favoris et vos séries. Jamais vos notes de lecture, ni les livres que vous avez marqués « ne pas partager ».")
                     }
                 }
             }
