@@ -11,8 +11,9 @@ import SwiftUI
 /// Every order comes from the server, which files an author under their
 /// surname the way a bookshop does; the phone only cuts the sections.
 ///
-/// A row opens the author's page, as a sheet. A toolbar button trades the rows
-/// for a mosaic of portraits, under the same sections.
+/// A row opens the author's page, as a sheet. A fourth view, first in the
+/// toolbar, lays every author out as a mosaic of portraits, by name, as the
+/// Photos app lays out the people it knows.
 struct AuthorListView: View {
     /// Opens the add sheet, from the one button every empty state offers.
     var onScan: () -> Void = {}
@@ -50,7 +51,7 @@ struct AuthorListView: View {
                 }
             }
             .navigationTitle("Auteurs")
-            .navigationSubtitle(viewModel.order.subtitle)
+            .navigationSubtitle(layout == .mosaic ? String(localized: "Mosaïque") : viewModel.order.subtitle)
             .toolbar { toolbar }
             .libraryShelfPicker(shelf)
             // A sheet, as a book opens from the library and a saga from Découvrir:
@@ -122,9 +123,11 @@ struct AuthorListView: View {
         .refreshable { await viewModel.load() }
     }
 
-    /// The same order as the list, as a grid of portraits.
+    /// Every author as a portrait with their name under it — initials alone
+    /// would not say who is who — in rows with air between them, as Photos
+    /// shows the people it knows.
     private var mosaic: some View {
-        ShelfMosaic(sections: mosaicSections) { author, width in
+        ShelfMosaic(rows: viewModel.authors, idealTileWidth: 105, spacing: 12, margin: 16) { author, width in
             Button {
                 openAuthor = AuthorDestination(author)
             } label: {
@@ -153,18 +156,6 @@ struct AuthorListView: View {
             }
         }
         .refreshable { await viewModel.load() }
-    }
-
-    /// The months of the list by activity. By name, the authors run on
-    /// without a heading per letter: most letters hold one or two, and a
-    /// row of three columns under each was mostly empty.
-    private var mosaicSections: [ListSection<FollowedAuthor>] {
-        switch viewModel.order {
-        case .recent:
-            ListSection.byMonth(viewModel.authors, on: \.shelvedAt)
-        case .name, .loved:
-            [ListSection(id: "all", title: "", rows: viewModel.authors)]
-        }
     }
 
     private func row(_ author: FollowedAuthor) -> some View {
@@ -197,21 +188,19 @@ struct AuthorListView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItemGroup {
+            MosaicModeButton(layout: $layout) { Task { await viewModel.show(.name) } }
+                .accessibilityIdentifier("authors-mode-mosaic")
             ForEach(AuthorListOrder.allCases) { item in
                 Button {
+                    layout = .list
                     Task { await viewModel.show(item) }
                 } label: {
                     Label(item.label, systemImage: item.icon)
                 }
                 .labelStyle(.iconOnly)
-                .tint(viewModel.order == item ? .accentColor : .primary)
+                .tint(layout == .list && viewModel.order == item ? .accentColor : .primary)
                 .accessibilityIdentifier("authors-order-\(item.rawValue)")
             }
-        }
-        ToolbarSpacer(.fixed)
-        ToolbarItem {
-            ShelfLayoutButton(layout: $layout)
-                .accessibilityIdentifier("authors-layout-toggle")
         }
     }
 }

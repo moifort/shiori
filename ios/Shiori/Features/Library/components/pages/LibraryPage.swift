@@ -7,8 +7,8 @@ import SwiftUI
 /// favourites, both sectioned by month as Vinarium's wine list is — newest
 /// first, on the day each book was finished, else started, else added; each
 /// row carries its status as a tag. A filter narrows any of them to one status.
-/// A toolbar button trades the rows for a mosaic of covers, under the same
-/// sections.
+/// A third view, first in the toolbar, lays every book out as a mosaic of
+/// covers, as the Photos app lays out a library.
 /// Sagas are not gathered here: the Series tab reads a saga whole, and a row
 /// names its saga in a tag.
 struct LibraryPage: View {
@@ -72,17 +72,22 @@ struct LibraryPage: View {
             }
         }
         .navigationTitle("Bibliothèque")
-        .navigationSubtitle(mode.subtitle)
+        .navigationSubtitle(layout == .mosaic ? String(localized: "Mosaïque") : mode.subtitle)
         .toolbar {
             ToolbarItemGroup {
+                // Every book, newest first: the mosaic is drawn from the view
+                // by date.
+                MosaicModeButton(layout: $layout) { mode = .all }
+                    .accessibilityIdentifier("library-mode-mosaic")
                 ForEach(LibraryMode.allCases) { item in
                     Button {
+                        layout = .list
                         mode = item
                     } label: {
                         Label(item.label, systemImage: item.icon)
                     }
                     .labelStyle(.iconOnly)
-                    .tint(mode == item ? .accentColor : .primary)
+                    .tint(layout == .list && mode == item ? .accentColor : .primary)
                     .accessibilityIdentifier("library-mode-\(item.rawValue)")
                 }
             }
@@ -110,26 +115,16 @@ struct LibraryPage: View {
                 }
                 .accessibilityIdentifier("library-filter-menu")
             }
-            ToolbarSpacer(.fixed)
-            ToolbarItem {
-                ShelfLayoutButton(layout: $layout)
-                    .accessibilityIdentifier("library-layout-toggle")
-            }
         }
     }
 
-    /// The same sections as the list, as a grid of covers.
+    /// Every book of the view as a cover, in the list's order.
     private var mosaic: some View {
-        ShelfMosaic(sections: sections) { book, width in
+        ShelfMosaic(rows: sections.flatMap(\.rows)) { book, width in
             Button {
                 onBookTapped(book)
             } label: {
-                BookTile(
-                    book: book,
-                    width: width,
-                    showsStatus: showsStatus,
-                    isAwaited: awaitedBookIds.contains(book.id)
-                )
+                BookTile(book: book, width: width)
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("book-tile")

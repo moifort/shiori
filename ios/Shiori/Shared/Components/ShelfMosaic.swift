@@ -1,62 +1,48 @@
 import SwiftUI
 
 /// How a shelf of the Library tab is drawn: one row per book, saga or author,
-/// with everything the reader said about it, or a mosaic of covers that shows
-/// three times as many at once. Remembered per shelf, across launches.
+/// with everything the reader said about it, or a mosaic that shows them all
+/// at once, as the Photos app shows a library. Remembered per shelf, across
+/// launches.
 enum ShelfLayout: String {
     case list, mosaic
-
-    var toggled: ShelfLayout { self == .list ? .mosaic : .list }
-
-    /// The layout the button switches to, named by its own symbol.
-    var switchSymbol: String { self == .list ? "square.grid.3x3" : "list.bullet" }
-
-    var switchLabel: String {
-        self == .list ? String(localized: "Mosaïque") : String(localized: "Liste")
-    }
 }
 
-/// The toolbar button that switches a shelf between its list and its mosaic.
-struct ShelfLayoutButton: View {
+/// The toolbar button that opens a shelf's mosaic, drawn first in the group of
+/// its views: the mosaic is one more way of looking at the shelf, lit as they
+/// are when it is the one shown.
+struct MosaicModeButton: View {
     @Binding var layout: ShelfLayout
+    /// What else to set when the mosaic opens — the view it is drawn from.
+    var onOpen: () -> Void = {}
 
     var body: some View {
         Button {
-            withAnimation(.snappy) { layout = layout.toggled }
+            layout = .mosaic
+            onOpen()
         } label: {
-            Label(layout.switchLabel, systemImage: layout.switchSymbol)
+            Label("Mosaïque", systemImage: "square.grid.3x3")
         }
         .labelStyle(.iconOnly)
-        .tint(.primary)
+        .tint(layout == .mosaic ? .accentColor : .primary)
     }
 }
 
-/// The mosaic a shelf switches to: its sections, headed as the list heads
-/// them, each a grid of tiles at least three across. The tile is told its
-/// width, so a cover fills its column whatever the screen.
+/// A shelf's mosaic, as the Photos app lays out a library: the tiles edge to
+/// edge with a hairline between them, no heading and no caption — the covers
+/// say what they are, and a tap says the rest. As many columns as fit at the
+/// width a tile aims for, never fewer than three. The tile is told its width.
 ///
 /// `top` and `bottom` take what the list draws around its rows — the failed
 /// refresh, the sentinel that asks for the next page.
 struct ShelfMosaic<Row: Identifiable, Tile: View, Top: View, Bottom: View>: View {
-    let sections: [ListSection<Row>]
-    /// The width a tile aims for: the columns are as many as fit, never fewer
-    /// than three.
-    var idealTileWidth: CGFloat = 105
+    let rows: [Row]
+    var idealTileWidth: CGFloat = 95
+    var spacing: CGFloat = 2
+    var margin: CGFloat = 0
     @ViewBuilder let tile: (Row, CGFloat) -> Tile
     @ViewBuilder var top: () -> Top
     @ViewBuilder var bottom: () -> Bottom
-
-    private let margin: CGFloat = 16
-    private let spacing: CGFloat = 12
-
-    private func columnCount(in width: CGFloat) -> Int {
-        max(3, Int((width - 2 * margin + spacing) / (idealTileWidth + spacing)))
-    }
-
-    private func tileWidth(in width: CGFloat) -> CGFloat {
-        let count = CGFloat(columnCount(in: width))
-        return max(0, (width - 2 * margin - (count - 1) * spacing) / count)
-    }
 
     var body: some View {
         GeometryReader { proxy in
@@ -65,8 +51,8 @@ struct ShelfMosaic<Row: Identifiable, Tile: View, Top: View, Bottom: View>: View
     }
 
     private func grid(width: CGFloat) -> some View {
-        let columnCount = columnCount(in: width)
-        let tileWidth = tileWidth(in: width)
+        let count = max(3, Int((width - 2 * margin + spacing) / (idealTileWidth + spacing)))
+        let tileWidth = max(0, (width - 2 * margin - CGFloat(count - 1) * spacing) / CGFloat(count))
         return ScrollView {
             VStack(spacing: 0) {
                 top()
@@ -74,27 +60,13 @@ struct ShelfMosaic<Row: Identifiable, Tile: View, Top: View, Bottom: View>: View
                     LazyVGrid(
                         columns: Array(
                             repeating: GridItem(.fixed(tileWidth), spacing: spacing, alignment: .top),
-                            count: columnCount
+                            count: count
                         ),
-                        alignment: .leading,
-                        spacing: 20
+                        spacing: spacing
                     ) {
-                        ForEach(sections) { section in
-                            Section {
-                                ForEach(section.rows) { row in tile(row, tileWidth) }
-                            } header: {
-                                if !section.title.isEmpty {
-                                    Text(section.title)
-                                        .font(.headline)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .padding(.top, 8)
-                                }
-                            }
-                        }
+                        ForEach(rows) { row in tile(row, tileWidth) }
                     }
                     .padding(.horizontal, margin)
-                    .padding(.top, 8)
-                    .padding(.bottom, 20)
                 }
                 bottom()
             }
@@ -102,34 +74,27 @@ struct ShelfMosaic<Row: Identifiable, Tile: View, Top: View, Bottom: View>: View
     }
 }
 
-extension ShelfMosaic where Top == EmptyView {
-    init(
-        sections: [ListSection<Row>],
-        idealTileWidth: CGFloat = 105,
-        @ViewBuilder tile: @escaping (Row, CGFloat) -> Tile,
-        @ViewBuilder bottom: @escaping () -> Bottom
-    ) {
-        self.init(sections: sections, idealTileWidth: idealTileWidth, tile: tile, top: { EmptyView() }, bottom: bottom)
-    }
-}
-
-/// The caption under a tile: its name on two lines at most, and a line of
-/// detail under it. Left-aligned, as the Books app captions its covers.
-struct MosaicCaption<Detail: View>: View {
-    let title: String
-    @ViewBuilder var detail: () -> Detail
+/// The glyphs the Photos app lays over a thumbnail's foot — the heart of a
+/// favourite on the left, what kind of item it is on the right — in white on
+/// a shade that keeps them legible over any cover.
+struct MosaicGlyphs<Leading: View, Trailing: View>: View {
+    @ViewBuilder var leading: () -> Leading
+    @ViewBuilder var trailing: () -> Trailing
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(title)
-                .font(.caption.weight(.medium))
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-            detail()
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
+        HStack(spacing: 4) {
+            leading()
+            Spacer(minLength: 0)
+            trailing()
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .font(.caption2.weight(.semibold))
+        .foregroundStyle(.white)
+        .shadow(color: .black.opacity(0.5), radius: 2)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 4)
+        .background(alignment: .bottom) {
+            LinearGradient(colors: [.clear, .black.opacity(0.35)], startPoint: .top, endPoint: .bottom)
+                .frame(height: 28)
+        }
     }
 }

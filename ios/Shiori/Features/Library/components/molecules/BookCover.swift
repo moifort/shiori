@@ -23,11 +23,14 @@ struct BookCover: View {
     /// a list row can bring its bottom level with the text beside it. Never
     /// shorter than the standard height.
     var minHeight: CGFloat?
+    /// Square corners where covers sit edge to edge, as in a mosaic. Nil
+    /// rounds them in proportion to the width.
+    var cornerRadius: CGFloat?
 
     /// Standard trade paperback proportions, so photographed covers are cropped
     /// consistently and placeholders sit at the same size as real ones.
     private var height: CGFloat { max(width * 1.5, minHeight ?? 0) }
-    private var cornerRadius: CGFloat { width * 0.07 }
+    private var radius: CGFloat { cornerRadius ?? width * 0.07 }
 
     var body: some View {
         Group {
@@ -47,9 +50,9 @@ struct BookCover: View {
             }
         }
         .frame(width: width, height: height)
-        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
                 .strokeBorder(.separator, lineWidth: 0.5)
         )
         .opacity(coverOpacity)

@@ -11,8 +11,8 @@ import SwiftUI
 /// list is paginated, and ordered on the phone it would reshuffle every time a
 /// page landed.
 ///
-/// A toolbar button trades the rows for a mosaic of piled covers, under the
-/// same sections.
+/// A third view, first in the toolbar, lays every saga out as a mosaic of
+/// covers, as the Photos app lays out a library.
 struct SeriesListView: View {
     /// Opens the add sheet, from the one button every empty state offers.
     var onScan: () -> Void = {}
@@ -76,7 +76,7 @@ struct SeriesListView: View {
                 }
             }
             .navigationTitle("Séries")
-            .navigationSubtitle(viewModel.mode.subtitle)
+            .navigationSubtitle(layout == .mosaic ? String(localized: "Mosaïque") : viewModel.mode.subtitle)
             .toolbar { toolbar }
             .libraryShelfPicker(shelf)
             // A sheet, as a book opens from the library: its own stack, so a
@@ -187,9 +187,9 @@ struct SeriesListView: View {
         .refreshable { await viewModel.load() }
     }
 
-    /// The same sections as the list, as a grid of piled covers.
+    /// Every saga of the view as a cover, in the list's order.
     private var mosaic: some View {
-        ShelfMosaic(sections: sections) { entry, width in
+        ShelfMosaic(rows: viewModel.followed) { entry, width in
             Button {
                 openSeries = destination(of: entry)
             } label: {
@@ -231,14 +231,17 @@ struct SeriesListView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItemGroup {
+            MosaicModeButton(layout: $layout) { viewModel.mode = .all }
+                .accessibilityIdentifier("series-mode-mosaic")
             ForEach(LibraryMode.seriesViews) { item in
                 Button {
+                    layout = .list
                     viewModel.mode = item
                 } label: {
                     Label(item.label, systemImage: item.icon)
                 }
                 .labelStyle(.iconOnly)
-                .tint(viewModel.mode == item ? .accentColor : .primary)
+                .tint(layout == .list && viewModel.mode == item ? .accentColor : .primary)
                 .accessibilityIdentifier("series-mode-\(item.rawValue)")
             }
         }
@@ -258,11 +261,6 @@ struct SeriesListView: View {
                     .symbolVariant(viewModel.stateFilter != nil ? .fill : .none)
             }
             .accessibilityIdentifier("series-filter-menu")
-        }
-        ToolbarSpacer(.fixed)
-        ToolbarItem {
-            ShelfLayoutButton(layout: $layout)
-                .accessibilityIdentifier("series-layout-toggle")
         }
     }
 
