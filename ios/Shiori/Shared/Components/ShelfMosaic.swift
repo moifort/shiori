@@ -34,9 +34,11 @@ struct MosaicModeButton: View {
 /// width a tile aims for, never fewer than three. The tile is told its width.
 ///
 /// Given the date each row is shelved on, the month is pinned on a cover's
-/// corner in place of the list's headings: on the first cover of every month,
-/// and again at the head of a line whenever four have gone by without one, so
-/// a long month never scrolls past unnamed.
+/// corner in place of the list's headings, one line at most carrying one: on
+/// the first cover of a month, or at the head of the next line when the line
+/// it starts on already names the month before; and again at the head of a
+/// line whenever four have gone by without one, so a long month never scrolls
+/// past unnamed.
 ///
 /// `top` and `bottom` take what the list draws around its rows — the failed
 /// refresh, the sentinel that asks for the next page.
@@ -96,17 +98,16 @@ extension ShelfMosaic {
         guard let date else { return [:] }
         let calendar = Calendar.current
         var tags: [Int: String] = [:]
-        var lastMonth: DateComponents??
+        var taggedMonth: DateComponents?
         var lastTaggedLine = Int.min / 2
         for (index, row) in rows.enumerated() {
-            let day = date(row)
-            let month = day.map { calendar.dateComponents([.year, .month], from: $0) }
             let line = index / columns
-            let monthChanged = lastMonth.map { $0 != month } ?? true
+            guard line != lastTaggedLine, let day = date(row) else { continue }
+            let month = calendar.dateComponents([.year, .month], from: day)
             let lineUnnamedTooLong = index % columns == 0 && line - lastTaggedLine >= Self.linesPerTag
-            lastMonth = .some(month)
-            guard let day, monthChanged || lineUnnamedTooLong else { continue }
+            guard month != taggedMonth || lineUnnamedTooLong else { continue }
             tags[index] = day.formatted(.dateTime.month(.abbreviated).year())
+            taggedMonth = month
             lastTaggedLine = line
         }
         return tags
@@ -114,9 +115,9 @@ extension ShelfMosaic {
 }
 
 /// Where the reader stands on a book or a saga, in the middle of its cover in
-/// the mosaic: the status's own symbol alone, white in a disc of frosted
-/// glass with no colour of its own, the cover showing through it — it says
-/// the state without shouting over the cover.
+/// the mosaic: the status's own symbol alone, in a softened white, in a disc
+/// of frosted glass with no colour of its own, the cover showing through it —
+/// it says the state without shouting over the cover.
 struct MosaicStatusBadge: View {
     let symbol: String
     let label: String
@@ -124,7 +125,7 @@ struct MosaicStatusBadge: View {
     var body: some View {
         Image(systemName: symbol)
             .font(.system(size: 17, weight: .bold))
-            .foregroundStyle(.white)
+            .foregroundStyle(.white.opacity(0.8))
             .frame(width: 40, height: 40)
             .background(.ultraThinMaterial, in: Circle())
             .environment(\.colorScheme, .dark)
@@ -133,8 +134,9 @@ struct MosaicStatusBadge: View {
     }
 }
 
-/// The month pinned on a mosaic tile's top corner: small, in white on a dark
-/// capsule that reads over any cover.
+/// The month pinned on a mosaic tile's top corner, as the Photos app labels
+/// its grid: small, in white on a tag of frosted glass with softly rounded
+/// corners, which reads over any cover.
 struct MosaicDateTag: View {
     let text: String
 
@@ -143,8 +145,9 @@ struct MosaicDateTag: View {
             .font(.caption2.weight(.semibold))
             .foregroundStyle(.white)
             .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(.black.opacity(0.6), in: Capsule())
+            .padding(.vertical, 3)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+            .environment(\.colorScheme, .dark)
             .padding(4)
             .accessibilityHidden(true)
     }
