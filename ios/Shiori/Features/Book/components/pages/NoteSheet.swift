@@ -5,7 +5,8 @@ import SwiftUI
 /// stars. Opened from its row under "Ma lecture", filled with what is there so
 /// the reader corrects rather than retypes.
 ///
-/// The server's rules hold before the round trip: a comment emptied is
+/// Deleting is the red bin beside the check, there only once a comment
+/// exists. The server's rules hold before the round trip: a comment emptied is
 /// deleted, and one past its length is said rather than sent.
 struct NoteSheet: View {
     let current: String?
@@ -40,20 +41,6 @@ struct NoteSheet: View {
                     if isTooLong {
                         Text("\(edited?.count ?? 0) caractères sur \(Self.maxLength) au plus.")
                             .foregroundStyle(.red)
-                    } else {
-                        Text("Privé : un ami qui parcourt votre bibliothèque ne le voit jamais.")
-                    }
-                }
-
-                if current != nil {
-                    Section {
-                        Button(role: .destructive) {
-                            Task { await save(nil) }
-                        } label: {
-                            Label("Supprimer le commentaire", systemImage: "trash")
-                                .foregroundStyle(.red)
-                        }
-                        .accessibilityIdentifier("note-remove")
                     }
                 }
             }
@@ -62,6 +49,16 @@ struct NoteSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     ToolbarIconButton(title: "Annuler", systemImage: "xmark", role: .cancel) { dismiss() }
+                }
+                if current != nil {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        AsyncToolbarButton(title: "Supprimer le commentaire", systemImage: "trash", role: .destructive) {
+                            await save(nil)
+                        }
+                        .tint(.red)
+                        .disabled(isSaving)
+                        .accessibilityIdentifier("note-remove")
+                    }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     AsyncToolbarButton(title: "Enregistrer", systemImage: "checkmark") {
