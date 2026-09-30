@@ -193,7 +193,8 @@ struct SeriesListView: View {
 
     /// Every saga of the view as a cover, in the list's order.
     private var mosaic: some View {
-        ShelfMosaic(rows: viewModel.followed, date: { $0.shelvedAt }) { entry, width in
+        // One step short of the tightest grid: most of the sagas at a glance.
+        ShelfMosaic(rows: viewModel.followed, initialColumns: 6, date: { $0.shelvedAt }) { entry, width in
             Button {
                 openSeries = destination(of: entry)
             } label: {

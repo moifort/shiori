@@ -129,7 +129,7 @@ struct AuthorListView: View {
     /// shows the people it knows.
     private var mosaic: some View {
         ShelfMosaic(
-            rows: viewModel.authors, idealTileWidth: 105, spacing: 12, margin: 16, zoomRange: 2...5
+            rows: viewModel.authors, idealTileWidth: 105, spacing: 12, margin: 16, zoomRange: 3...5
         ) { author, width in
             Button {
                 openAuthor = AuthorDestination(author)
