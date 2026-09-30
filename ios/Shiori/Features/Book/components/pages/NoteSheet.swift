@@ -31,19 +31,38 @@ struct NoteSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    TextField("Ce que vous en pensez, un passage à retenir…", text: $text, axis: .vertical)
-                        .lineLimit(6...)
-                        .focused($isFocused)
-                        .accessibilityIdentifier("note-text")
-                } footer: {
-                    if isTooLong {
-                        Text("\(edited?.count ?? 0) caractères sur \(Self.maxLength) au plus.")
-                            .foregroundStyle(.red)
+            VStack(alignment: .leading, spacing: 8) {
+                // The editor fills what the keyboard leaves: its foot rests on
+                // the keys, however tall the phone.
+                TextEditor(text: $text)
+                    .focused($isFocused)
+                    .scrollContentBackground(.hidden)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .frame(maxHeight: .infinity)
+                    .overlay(alignment: .topLeading) {
+                        if text.isEmpty {
+                            Text("Ce que vous en pensez, un passage à retenir…")
+                                .foregroundStyle(.tertiary)
+                                .padding(.horizontal, 17)
+                                .padding(.vertical, 16)
+                                .allowsHitTesting(false)
+                        }
                     }
+                    .background(
+                        Color(.secondarySystemGroupedBackground),
+                        in: .rect(cornerRadius: 26)
+                    )
+                    .accessibilityIdentifier("note-text")
+                if isTooLong {
+                    Text("\(edited?.count ?? 0) caractères sur \(Self.maxLength) au plus.")
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                        .padding(.horizontal, 20)
                 }
             }
+            .padding([.horizontal, .bottom])
+            .background(Color(.systemGroupedBackground))
             .navigationTitle("Commentaire")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -79,7 +98,10 @@ struct NoteSheet: View {
             }
             .onAppear { isFocused = true }
         }
-        .presentationDetents([.medium, .large])
+        // A detent is measured above the keyboard: the sheet opens just tall
+        // enough to write in, not over the whole book, and a drag gives the
+        // full height to a long comment.
+        .presentationDetents([.height(300), .large])
     }
 
     /// What the form says now. Nil when only blanks are left: an empty
