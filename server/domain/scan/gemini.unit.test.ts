@@ -141,6 +141,16 @@ describe('reading the answer', () => {
     expect(answerOf('{"title":"L\\"} fin","n":1} merci')).toEqual({ title: 'L"} fin', n: 1 })
   })
 
+  test('a comment the model left inside the object is dropped', () => {
+    expect(
+      answerOf('{"works":[{"title":"Fearful","volume":3}]/* L\'unique titre paru {ici}. */}'),
+    ).toEqual({ works: [{ title: 'Fearful', volume: 3 }] })
+  })
+
+  test('a comment-like run inside a string is kept', () => {
+    expect(answerOf('{"title":"A /* B */ C"}')).toEqual({ title: 'A /* B */ C' })
+  })
+
   test('an object left open is still an error', () => {
     expect(() => answerOf('{"works":[')).toThrow()
   })
@@ -211,9 +221,63 @@ describe('an answer that cannot be read', () => {
     })
   })
 
+  test('the key travels in a header, never in the URL an error would name', async () => {
+    const calls = saying('{"works":[]}')
+    await generate(asked)
+    const [url, init] = calls.mock.calls[0] as unknown as [
+      string,
+      { headers: Record<string, string> },
+    ]
+    // Not the key's value: another test file mocks the config module for the whole run.
+    expect(url).not.toContain('?')
+    expect(Object.keys(init.headers)).toContain('x-goog-api-key')
+  })
+
   test('a readable answer is never asked twice', async () => {
     const calls = saying('{"works":[]}')
     await generate(asked)
+    expect(calls).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('a call Google could not serve', () => {
+  const globals = globalThis as unknown as Record<string, unknown>
+  const failing = (...statuses: (number | undefined)[]) => {
+    const calls = mock(async () => {
+      const status = statuses[calls.mock.calls.length - 1]
+      if (status !== undefined) throw Object.assign(new Error(`${status}`), { statusCode: status })
+      return { candidates: [{ content: { parts: [{ text: '{"works":[]}' }] } }] }
+    })
+    globals.useRuntimeConfig = () => ({
+      googleApiKey: 'key',
+      premiumUserIds: '',
+      publicBaseUrl: 'https://shiori.test',
+    })
+    globals.$fetch = calls
+    return calls
+  }
+  const asked = { step: 'enrich', parts: [{ text: 'Cherche.' }], responseSchema: {} }
+
+  afterEach(() => {
+    delete globals.useRuntimeConfig
+    delete globals.$fetch
+  })
+
+  test('an overloaded model is asked once more, and its second answer kept', async () => {
+    const calls = failing(503)
+    expect((await generate(asked)).value).toEqual({ works: [] })
+    expect(calls).toHaveBeenCalledTimes(2)
+  })
+
+  test('is asked only once more, and then fails', async () => {
+    const calls = failing(503, 503)
+    await expect(generate(asked)).rejects.toThrow('503')
+    expect(calls).toHaveBeenCalledTimes(2)
+  })
+
+  test('a request Google refused is never asked again', async () => {
+    const calls = failing(400)
+    await expect(generate(asked)).rejects.toThrow('400')
     expect(calls).toHaveBeenCalledTimes(1)
   })
 })

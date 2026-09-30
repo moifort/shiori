@@ -1,3 +1,4 @@
+import { setTimeout } from 'node:timers/promises'
 import type { AiStepUsage } from '~/domain/scan/types'
 import { config } from '~/system/config'
 import { createLogger } from '~/system/logger'
@@ -101,13 +102,7 @@ class UnreadableAnswer extends Error {
 const answeredOnce = async <T>(
   options: GenerateOptions,
 ): Promise<{ value: T; usage?: AiStepUsage }> => {
-  const { googleApiKey } = config()
-
-  const response = await $fetch<GeminiResponse>(`${GEMINI_API_URL}?key=${googleApiKey}`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: requestBodyOf(options),
-  })
+  const response = await requested(options)
   const usage = capturedUsage(options.step, response, options.grounded === true)
 
   const text = response.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('')
@@ -117,6 +112,36 @@ const answeredOnce = async <T>(
     return { value: answerOf(text) as T, usage }
   } catch (error) {
     throw new UnreadableAnswer(options.step, (error as Error).message, text, usage)
+  }
+}
+
+/** What Google answers when the model is overloaded or a call died on its
+ *  side: 503 "Service Unavailable" above all, seen twice on September 28th
+ *  2026, once failing a reader's lookup outright. It passes within a second or
+ *  two, so the call is made once more after a pause; a second failure is
+ *  Google's to fix, and the caller's error. A 4xx is ours and is never retried. */
+const TRANSIENT_STATUSES = new Set([500, 503, 504])
+const RETRY_PAUSE_MS = 1000
+
+/** The key travels in a header, never in the URL: the URL is what a failed
+ *  `$fetch` names in its error message, and that message is what Sentry shows
+ *  as the issue's title — which is where a query-string key was leaked. */
+const requested = async (options: GenerateOptions): Promise<GeminiResponse> => {
+  const { googleApiKey } = config()
+  const call = () =>
+    $fetch<GeminiResponse>(GEMINI_API_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-goog-api-key': googleApiKey },
+      body: requestBodyOf(options),
+    })
+  try {
+    return await call()
+  } catch (error) {
+    const status = (error as { statusCode?: number }).statusCode
+    if (status === undefined || !TRANSIENT_STATUSES.has(status)) throw error
+    logger.warn('Gemini unavailable, asked again', { error, status, step: options.step })
+    await setTimeout(RETRY_PAUSE_MS)
+    return await call()
   }
 }
 
@@ -164,11 +189,37 @@ ${JSON.stringify(schema)}`
 /** The JSON object in an answer. JSON mode returns it bare; free text may fence
  *  it, say a word around it, repeat it, or close it with one brace too many —
  *  seen on September 27th 2026 — so the object read is the one that opens at
- *  the first brace and closes where its own braces balance, whatever follows. */
+ *  the first brace and closes where its own braces balance, whatever follows.
+ *  It may also explain itself in a block comment inside the object, as it did
+ *  on September 28th 2026; the comment is dropped rather than paid for
+ *  twice. */
 export const answerOf = (text: string): unknown => {
   const start = text.indexOf('{')
   if (start === -1) throw new Error('Gemini answered without a JSON object')
-  return JSON.parse(text.slice(start, closingBraceOf(text, start) + 1))
+  const json = withoutComments(text.slice(start))
+  return JSON.parse(json.slice(0, closingBraceOf(json, 0) + 1))
+}
+
+/** The text with its block comments removed, those inside strings aside. */
+const withoutComments = (json: string): string => {
+  let kept = ''
+  let inString = false
+  for (let index = 0; index < json.length; index += 1) {
+    const char = json[index]
+    if (inString) {
+      kept += char
+      if (char === '\\') kept += json[++index] ?? ''
+      else if (char === '"') inString = false
+    } else if (char === '/' && json[index + 1] === '*') {
+      const end = json.indexOf('*/', index + 2)
+      if (end === -1) return kept
+      index = end + 1
+    } else {
+      if (char === '"') inString = true
+      kept += char
+    }
+  }
+  return kept
 }
 
 /** Where the object opening at `start` closes, braces inside strings aside;
