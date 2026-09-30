@@ -71,6 +71,12 @@ mutation SetBookRecommendation($id: BookId!, $recommendation: RecommendationInpu
   }
 }
 
+mutation SetBookNote($id: BookId!, $note: ReadingNote) {
+  setBookNote(id: $id, note: $note) {
+    ...BookDetail
+  }
+}
+
 mutation DeleteBook($id: BookId!) {
   deleteBook(id: $id)
 }

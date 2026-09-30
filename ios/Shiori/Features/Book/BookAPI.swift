@@ -119,6 +119,17 @@ enum BookAPI {
         return data.setBookRecommendation.fragments.bookDetail.asBook
     }
 
+    /// Writes the reader's own comment on the book, replacing what was there.
+    /// Nil deletes it: the server never stores an empty one.
+    static func setNote(id: String, note: String?) async throws -> Book {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            concerning: .book(id: id),
+            mutation: ShioriGraphQL.SetBookNoteMutation(id: id, note: note.map { .some($0) } ?? .null)
+        )
+        return data.setBookNote.fragments.bookDetail.asBook
+    }
+
     /// Every subgenre the reader has used, most used first. What the subgenre
     /// field proposes: a vocabulary drawn from their own shelf.
     /// The edit form's proposals, both lists in one request: the subgenres the

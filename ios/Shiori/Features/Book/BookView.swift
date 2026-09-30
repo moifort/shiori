@@ -17,6 +17,7 @@ struct BookView: View {
     @State private var showGenreEditor = false
     @State private var showSeriesJoin = false
     @State private var showRecommendation = false
+    @State private var showNote = false
     @State private var showRatingPrompt = false
     @State private var editedField: BookField?
     @State private var confirmDelete = false
@@ -53,6 +54,7 @@ struct BookView: View {
                         },
                         onEditGenre: { showGenreEditor = true },
                         onEditRecommendation: { showRecommendation = true },
+                        onEditNote: { showNote = true },
                         onEditField: { editedField = $0 },
                         onCorrect: { correction in
                             run { _ = await viewModel.save(correction, rating: book.rating) }
@@ -122,6 +124,17 @@ struct BookView: View {
                 if let book = viewModel.book {
                     RecommendationSheet(current: book.recommendation) { recommendation in
                         let saved = await viewModel.setRecommendation(recommendation)
+                        if let book = viewModel.book { onChanged(book) }
+                        guard !saved else { return nil }
+                        defer { viewModel.dismissError() }
+                        return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
+                    }
+                }
+            }
+            .sheet(isPresented: $showNote) {
+                if let book = viewModel.book {
+                    NoteSheet(current: book.note) { note in
+                        let saved = await viewModel.setNote(note)
                         if let book = viewModel.book { onChanged(book) }
                         guard !saved else { return nil }
                         defer { viewModel.dismissError() }

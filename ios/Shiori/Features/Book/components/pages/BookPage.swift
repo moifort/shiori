@@ -23,6 +23,7 @@ struct BookPage: View {
     let onOpenSeries: () -> Void
     let onEditGenre: () -> Void
     let onEditRecommendation: () -> Void
+    let onEditNote: () -> Void
     let onEditField: (BookField) -> Void
     /// A fact typed in place on its row: the publisher, the year, the pages,
     /// the ISBN.
@@ -54,6 +55,7 @@ struct BookPage: View {
                 if let recommendation = book.recommendation {
                     recommendationRows(recommendation)
                 }
+                noteRow
                 Toggle(isOn: Binding(get: { book.hidden }, set: { _ in onToggleHidden() })) {
                     Label {
                         Text("Ne pas partager")
@@ -68,6 +70,25 @@ struct BookPage: View {
         .listStyle(.insetGrouped)
         .labelStyle(.row)
         .disabled(isSaving)
+    }
+
+    /// The reader's own comment, whole, under the reading it is about. A tap
+    /// corrects it; without one, the row offers to write it.
+    private var noteRow: some View {
+        Button(action: onEditNote) {
+            if let note = book.note {
+                Label {
+                    Text(note).font(.callout)
+                } icon: {
+                    Image(systemName: "text.bubble").foregroundStyle(.secondary)
+                }
+            } else {
+                Label("Ajouter un commentaire", systemImage: "text.bubble")
+            }
+        }
+        .tint(book.note == nil ? nil : .primary)
+        .copyable(book.note ?? "")
+        .accessibilityIdentifier("book-note")
     }
 
     /// Who pressed the book on the reader, as in Vinarium's wine sheet. Only
@@ -121,6 +142,7 @@ struct BookPage: View {
                 isbn13: "9782352943556",
                 series: SeriesMembership(id: "s1", name: "Chronique du tueur de roi", volume: 1, kind: .main),
                 status: .reading,
+                note: "La scène de l'auberge, au début, vaut le livre entier.",
                 recommendation: BookRecommendation(recommenderName: "Marie Curie", comment: "Lis-le cet été."),
                 hidden: true,
                 startedAt: .now.addingTimeInterval(-86400 * 20)
@@ -132,6 +154,7 @@ struct BookPage: View {
             onOpenSeries: {},
             onEditGenre: {},
             onEditRecommendation: {},
+            onEditNote: {},
             onEditField: { _ in },
             onCorrect: { _ in }
         )
