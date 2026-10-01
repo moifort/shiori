@@ -116,6 +116,9 @@ struct FriendProfileView: View {
             if !recent.isEmpty {
                 Section("Activités récentes") {
                     RecentActivityStrip(activities: recent) { openBook = $0 }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .listRowInsets(EdgeInsets())
                 }
             }
             // Every book in progress, the one touched last first, as bare

@@ -243,20 +243,20 @@ struct SharedView: View {
 }
 
 /// A friend as the Partagé list draws them: the name, their shelf in figures
-/// in the top corner as a book row carries its marks, and the book they are
-/// reading. The invitation sheets draw the same row, so what is being shared
+/// in the top corner as a book row carries its marks, and under the name what
+/// moved lately on their shelf, as their page draws it. The invitation sheets draw the same row, so what is being shared
 /// reads the way it will be seen.
 struct FriendRow: View {
     let friend: Friend
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Text(friend.initials)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.tint)
-                .frame(width: 40, height: 40)
-                .background(.tint.opacity(0.15), in: .circle)
-            VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center, spacing: 12) {
+                Text(friend.initials)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.tint)
+                    .frame(width: 40, height: 40)
+                    .background(.tint.opacity(0.15), in: .circle)
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(friend.displayName)
                         .font(.body.weight(.medium))
@@ -275,12 +275,12 @@ struct FriendRow: View {
                     .foregroundStyle(.secondary)
                     .fixedSize()
                 }
-                if let title = friend.readingTitle {
-                    Text("Lit : \(title)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
+            }
+            // The whole width of the row, under the avatar too: a fifth of
+            // the column beside it leaves "Abandonné" no room.
+            let recent = friend.recentActivity.filter { $0.isRecent() }
+            if !recent.isEmpty {
+                RecentActivityStrip(activities: recent)
             }
         }
         .padding(.vertical, 2)
@@ -373,6 +373,33 @@ private struct InvitationSheet: View {
     }
 }
 
+extension Friend {
+    /// Two friends as the list draws them: one whose whole shelf moved lately,
+    /// one who only picked a book up.
+    static let previews: [Friend] = [
+        Friend(seenByFriends: .preview),
+        Friend(
+            userId: "leo",
+            firstName: "Léo",
+            since: .now,
+            bookCount: 12,
+            favoriteCount: 2,
+            readingCount: 1,
+            toReadCount: 4,
+            readThisYear: 3,
+            recentActivity: FriendProfile.preview.reading.dropFirst().prefix(1).map {
+                .reading($0, at: .now.addingTimeInterval(-7200))
+            }
+        ),
+    ]
+}
+
 #Preview {
     SharedView()
+}
+
+#Preview("Friend rows") {
+    List(Friend.previews) { friend in
+        FriendRow(friend: friend)
+    }
 }

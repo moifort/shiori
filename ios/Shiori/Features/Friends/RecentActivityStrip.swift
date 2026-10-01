@@ -3,10 +3,12 @@ import SwiftUI
 /// A friend's recent activity as five covers across the card: the book in
 /// progress, the last one read, the last one hearted, the last one added and
 /// the last one dropped. No title — the cover already shows the book — but
-/// under each, what happened, its symbol first, in its colour. A tap opens the book.
+/// under each, what happened, its symbol first, in its colour. A tap opens the
+/// book where there is a book page to open; on the friends list the whole row
+/// opens the friend's page instead.
 struct RecentActivityStrip: View {
     let activities: [RecentActivity]
-    let onOpen: (FriendBook) -> Void
+    var onOpen: ((FriendBook) -> Void)?
 
     /// One slot per kind of activity, so a cover keeps its size whether one
     /// or five moved lately.
@@ -15,20 +17,27 @@ struct RecentActivityStrip: View {
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             ForEach(activities.prefix(Self.slots)) { activity in
-                Button { onOpen(activity.book) } label: {
+                if let onOpen {
+                    Button { onOpen(activity.book) } label: {
+                        tile(activity)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(accessibilityLabel(activity))
+                    .accessibilityIdentifier("recent-activity-cover")
+                } else {
                     tile(activity)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(accessibilityLabel(activity))
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("\(activity.book.book.title), \(caption(activity))")
-                .accessibilityIdentifier("recent-activity-cover")
             }
             ForEach(activities.count..<max(activities.count, Self.slots), id: \.self) { _ in
                 Color.clear.frame(maxWidth: .infinity)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .listRowInsets(EdgeInsets())
+    }
+
+    private func accessibilityLabel(_ activity: RecentActivity) -> String {
+        "\(activity.book.book.title), \(caption(activity))"
     }
 
     private func tile(_ activity: RecentActivity) -> some View {
@@ -46,7 +55,7 @@ struct RecentActivityStrip: View {
                 Image(systemName: symbol(activity)).imageScale(.small)
                 Text(caption(activity))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                    .minimumScaleFactor(0.6)
             }
             .font(.caption2.weight(.medium))
             .foregroundStyle(tint(activity))

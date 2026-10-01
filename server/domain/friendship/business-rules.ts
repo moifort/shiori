@@ -56,6 +56,55 @@ export const lastDroppedOf = <
       undefined,
     )
 
+/** What moved last on a shelf, one book per kind, always in this order: the
+ *  book in progress touched last, the last one finished, the last one hearted,
+ *  the last one shelved and the last one dropped — each with its day. A kind
+ *  with no book, or a finish or a heart with no date, is left out. */
+export const recentActivityOf = <
+  Moved extends Pick<
+    Book,
+    | 'status'
+    | 'addedAt'
+    | 'updatedAt'
+    | 'statusChangedAt'
+    | 'startedAt'
+    | 'finishedAt'
+    | 'favorite'
+    | 'favoritedAt'
+  >,
+>(
+  books: readonly Moved[],
+): { kind: 'reading' | 'read' | 'hearted' | 'added' | 'dropped'; at: Date; book: Moved }[] => {
+  const latest = (candidates: readonly Moved[], dateOf: (book: Moved) => Date | undefined) =>
+    candidates.reduce<{ book: Moved; at: Date } | undefined>((found, book) => {
+      const at = dateOf(book)
+      return at && (!found || at > found.at) ? { book, at } : found
+    }, undefined)
+  const finished = lastFinishedOf(books)
+  const dropped = lastDroppedOf(books)
+  const added = lastAddedOf(books)
+  const moves = [
+    {
+      kind: 'reading' as const,
+      ...latest(
+        books.filter((book) => book.status === 'reading'),
+        lastActivityOf,
+      ),
+    },
+    { kind: 'read' as const, book: finished, at: finished?.finishedAt },
+    {
+      kind: 'hearted' as const,
+      ...latest(
+        books.filter((book) => book.favorite === true),
+        (book) => book.favoritedAt,
+      ),
+    },
+    { kind: 'added' as const, book: added, at: added?.addedAt },
+    { kind: 'dropped' as const, book: dropped, at: dropped && lastActivityOf(dropped) },
+  ]
+  return moves.flatMap(({ kind, book, at }) => (book && at ? [{ kind, at, book }] : []))
+}
+
 /** The book shelved most recently, whatever it became since. */
 export const lastAddedOf = <Added extends Pick<Book, 'addedAt'>>(
   books: readonly Added[],

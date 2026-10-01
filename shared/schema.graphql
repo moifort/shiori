@@ -1165,12 +1165,50 @@ type Friend {
   """
   The book they started most recently, null when they are reading nothing.
   """
-  readingTitle: BookTitle
+  readingTitle: BookTitle @deprecated(reason: "Use `recentActivity`, which draws the book in progress as a cover.")
+
+  """
+  What moved last on their shelf, one book per kind, always in the same order: in progress, read, hearted, added, dropped. The books they keep to themselves are left out.
+  """
+  recentActivity: [FriendActivity!]!
   since: DateTime!
 
   """How many books wait on their pile."""
   toReadCount: Count!
   userId: UserId!
+}
+
+"""
+A book that moved lately on a friend's shelf, as the friends list draws it: a cover and what happened to it.
+"""
+type FriendActivity {
+  """When it happened: the screen decides how far back is still recent."""
+  at: DateTime!
+  bookId: BookId!
+
+  """Its owner's photo of the cover, else the publisher's."""
+  coverUrl: String
+  format: BookFormat!
+  kind: FriendActivityKind!
+  title: BookTitle!
+}
+
+"""What happened lately to a book on a friend's shelf."""
+enum FriendActivityKind {
+  """Shelved: the book added last, whatever its status since."""
+  ADDED
+
+  """Dropped: the book given up last."""
+  DROPPED
+
+  """Hearted: the favourite given last."""
+  HEARTED
+
+  """Finished: the book read last."""
+  READ
+
+  """Picked up or read on: the book in progress touched last."""
+  READING
 }
 
 """

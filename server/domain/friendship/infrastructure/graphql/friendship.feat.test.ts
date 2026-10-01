@@ -585,6 +585,38 @@ describe('the friends list in figures', () => {
     ])
   })
 
+  // What moved last, one book per kind, read off the same view as the figures:
+  // the hidden book in progress, shelved last, shows nowhere.
+  test('names what moved last on their shelf, hidden books left out', async () => {
+    setSystemTime(new Date('2026-09-01T00:00:00Z'))
+    await addBook(alice, 'title: "Dune", status: READING')
+    setSystemTime(new Date('2026-09-02T00:00:00Z'))
+    const loved = idOf(await addBook(alice, 'title: "Le Nom du vent", status: READ'))
+    await as(alice)(`mutation { setBookFavorite(id: "${loved}", favorite: true) { id } }`)
+    setSystemTime(new Date('2026-09-03T00:00:00Z'))
+    await addBook(alice, 'title: "Ulysse", status: DROPPED')
+    setSystemTime(new Date('2026-09-04T00:00:00Z'))
+    const secret = idOf(await addBook(alice, 'title: "Un secret", status: READING'))
+    await as(alice)(`mutation { setBookHidden(id: "${secret}", hidden: true) { id } }`)
+    setSystemTime()
+    await befriend()
+
+    const result = await as(bob)('{ friends { recentActivity { kind title at } } }')
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.friends).toEqual([
+      {
+        recentActivity: [
+          { kind: 'READING', title: 'Dune', at: '2026-09-01T00:00:00.000Z' },
+          { kind: 'READ', title: 'Le Nom du vent', at: '2026-09-02T00:00:00.000Z' },
+          { kind: 'HEARTED', title: 'Le Nom du vent', at: '2026-09-02T00:00:00.000Z' },
+          { kind: 'ADDED', title: 'Ulysse', at: '2026-09-03T00:00:00.000Z' },
+          { kind: 'DROPPED', title: 'Ulysse', at: '2026-09-03T00:00:00.000Z' },
+        ],
+      },
+    ])
+  })
+
   // One friendships query, then one document per friend for the names and one
   // for the figures — never their library.
   test('reads one view per friend, not their books', async () => {

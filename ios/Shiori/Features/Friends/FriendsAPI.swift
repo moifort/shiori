@@ -13,11 +13,12 @@ struct Friend: Identifiable, Codable, Sendable {
     var favoriteCount = 0
     var readingCount = 0
     var toReadCount = 0
-    /// The book they started most recently.
-    var readingTitle: String?
     /// Books they finished since January 1st: what the reading challenge
     /// ranks them by.
     var readThisYear = 0
+    /// What moved last on their shelf, one book per kind, undated by any
+    /// window: the list keeps what is still recent when it draws them.
+    var recentActivity: [RecentActivity] = []
 
     var displayName: String {
         firstName ?? String(localized: "Un lecteur")
@@ -43,9 +44,8 @@ extension Friend {
             favoriteCount: shelf.favorites.count + shelf.favoriteSagas.count,
             readingCount: shelf.reading.count,
             toReadCount: shelf.pile.count,
-            // Most recently active first, as the friends list picks it.
-            readingTitle: shelf.reading.first?.book.title,
-            readThisYear: shelf.readThisYear
+            readThisYear: shelf.readThisYear,
+            recentActivity: shelf.recentActivity()
         )
     }
 }
@@ -175,7 +175,6 @@ struct FriendProfile: Codable, Sendable {
     /// thirty days. What a
     /// friend coming back looks for, rather than the same lists as last time.
     func recentActivity(now: Date = .now) -> [RecentActivity] {
-        let since = now.addingTimeInterval(-RecentActivity.window)
         let reading = self.reading.first.flatMap { entry in
             entry.lastActivityAt.map { RecentActivity.reading(entry, at: $0) }
         }
@@ -193,9 +192,9 @@ struct FriendProfile: Codable, Sendable {
             entry.favoritedAt.map { RecentActivity.hearted(entry, at: $0) }
         }
         .max { $0.date < $1.date }
-        let recent = { (activity: RecentActivity?) in activity.flatMap { $0.date >= since ? $0 : nil } }
-        return [recent(reading), recent(finished), heart, recent(added), recent(dropped)]
+        return [reading, finished, heart, added, dropped]
             .compactMap(\.self)
+            .filter { $0.isRecent(now: now) }
     }
 
     var displayName: String {
@@ -209,7 +208,7 @@ struct FriendProfile: Codable, Sendable {
 
 /// One book that moved on a shelf lately, with its day: picked up or read
 /// on, finished, hearted, added, or dropped.
-enum RecentActivity: Identifiable, Sendable {
+enum RecentActivity: Identifiable, Codable, Sendable {
     case reading(FriendBook, at: Date)
     case finished(FriendBook, at: Date)
     case dropped(FriendBook, at: Date)
@@ -218,6 +217,13 @@ enum RecentActivity: Identifiable, Sendable {
 
     /// How far back "lately" goes.
     static let window: TimeInterval = 30 * 24 * 3600
+
+    /// Still news: within the window, or a heart, which is news whenever it
+    /// was given.
+    func isRecent(now: Date = .now) -> Bool {
+        if case .hearted = self { return true }
+        return date >= now.addingTimeInterval(-Self.window)
+    }
 
     var id: String {
         switch self {
@@ -529,9 +535,40 @@ private extension Friend {
             favoriteCount: row.favoriteCount,
             readingCount: row.readingCount,
             toReadCount: row.toReadCount,
-            readingTitle: row.readingTitle,
-            readThisYear: row.readThisYear
+            readThisYear: row.readThisYear,
+            recentActivity: row.recentActivity.compactMap(RecentActivity.init(row:))
         )
+    }
+}
+
+private extension RecentActivity {
+    /// A book of the friends list: a cover and its title, all a tile draws.
+    init?(row: ShioriGraphQL.FriendRow.RecentActivity) {
+        guard let at = GraphQLHelpers.parseISO8601(row.at), let kind = row.kind.value else { return nil }
+        let status: ReadingStatus = switch kind {
+        case .reading: .reading
+        case .read: .read
+        case .dropped: .dropped
+        case .hearted, .added: .toRead
+        }
+        let entry = FriendBook(
+            book: Book(
+                id: row.bookId,
+                title: row.title,
+                authors: [],
+                format: row.format.asDomain,
+                coverURL: row.coverUrl.flatMap(URL.init(string:)),
+                status: status
+            ),
+            inLibrary: false
+        )
+        self = switch kind {
+        case .reading: .reading(entry, at: at)
+        case .read: .finished(entry, at: at)
+        case .hearted: .hearted(entry, at: at)
+        case .added: .added(entry, at: at)
+        case .dropped: .dropped(entry, at: at)
+        }
     }
 }
 

@@ -132,6 +132,22 @@ export type SharedShelf = {
    *  none left out: what the friends' reading challenge ranks them by. Absent
    *  on a view stored before the challenge existed. */
   readPerYear?: YearCount[]
+  /** What moved last on the shelf, one book per kind, in the order the friends
+   *  list draws them. Undated by any window: how recent is recent is the
+   *  screen's call, so the view does not go stale with the calendar. Absent on
+   *  a view stored before the friends list showed it. */
+  recentActivity?: SharedActivity[]
+}
+
+/** What happened to a book lately: picked up or read on, finished, hearted,
+ *  shelved, or dropped. */
+export type SharedActivityKind = 'reading' | 'read' | 'hearted' | 'added' | 'dropped'
+
+/** One book that moved, with the day it did. */
+export type SharedActivity = {
+  kind: SharedActivityKind
+  at: Date
+  book: SharedFavorite
 }
 
 /** The shared shelf read against today: the challenge's figure is derived at
@@ -141,7 +157,8 @@ export type SharedShelfToday = SharedShelf & {
   readThisYear: number
 }
 
-/** A hearted book as a friend's Découvrir tab draws it. */
+/** A book as a friend's screen draws it from the stored view: a hearted one on
+ *  the Découvrir tab, one that moved lately on the friends list. */
 export type SharedFavorite = {
   id: BookId
   title: BookTitle

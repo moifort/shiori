@@ -34,7 +34,7 @@ final class SharedViewModel {
 
     /// The last rows on disk. Bump the version whenever `Friend` or
     /// `FriendProfile` changes shape.
-    private let cache = SnapshotCache<Snapshot>("shared", version: 4)
+    private let cache = SnapshotCache<Snapshot>("shared", version: 5)
 
     var isEmpty: Bool { friends.isEmpty && myShelf == nil }
 

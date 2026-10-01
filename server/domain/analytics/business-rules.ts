@@ -8,6 +8,7 @@ import type {
   MonthHours,
   MonthPages,
   SeriesProgress,
+  SharedFavorite,
   SharedShelf,
   SharedShelfToday,
   TimeZone,
@@ -23,6 +24,7 @@ import {
   shownRatingOf,
 } from '~/domain/book/business-rules'
 import type { Book, Genre, StarRating } from '~/domain/book/types'
+import { recentActivityOf } from '~/domain/friendship/business-rules'
 import {
   followedSagasOf,
   followedStateOf,
@@ -47,7 +49,7 @@ const TOP_GENRES = 4
 /** Bumped whenever the view gains a figure or a rule changes, so a view stored
  *  by an older bundle is rebuilt on its next read instead of answering with a
  *  field it never computed. */
-export const VIEW_VERSION = 13
+export const VIEW_VERSION = 14
 
 // MARK: - Calendar
 
@@ -178,6 +180,17 @@ export const analyticsViewOf = (input: {
 /** How many hearted books a friend's Découvrir tab can draw from one shelf. */
 const SHARED_FAVORITES_KEPT = 30
 
+const sharedBookOf = (book: Book): SharedFavorite => ({
+  id: book.id,
+  title: book.title,
+  authors: book.authors,
+  format: book.format,
+  language: book.language,
+  series: book.series,
+  coverPath: book.coverPath,
+  publishedCoverUrl: book.publishedCoverUrl,
+})
+
 /** The shelf as a friend sees it: the books marked "do not share" are dropped
  *  first, so no count and no title here can betray them. */
 export const sharedShelfOf = (books: readonly Book[], timeZone: TimeZone): SharedShelf => {
@@ -195,17 +208,13 @@ export const sharedShelfOf = (books: readonly Book[], timeZone: TimeZone): Share
     readingCount: reading.length,
     toReadCount: shown.filter((book) => book.status === 'to-read').length,
     readingTitle: reading[0]?.title,
-    favorites: favorites.slice(0, SHARED_FAVORITES_KEPT).map((book) => ({
-      id: book.id,
-      title: book.title,
-      authors: book.authors,
-      format: book.format,
-      language: book.language,
-      series: book.series,
-      coverPath: book.coverPath,
-      publishedCoverUrl: book.publishedCoverUrl,
-    })),
+    favorites: favorites.slice(0, SHARED_FAVORITES_KEPT).map(sharedBookOf),
     readPerYear: readPerYearOf(shown, timeZone),
+    recentActivity: recentActivityOf(shown).map(({ kind, at, book }) => ({
+      kind,
+      at,
+      book: sharedBookOf(book),
+    })),
   }
 }
 

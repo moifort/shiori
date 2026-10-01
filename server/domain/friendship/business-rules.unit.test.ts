@@ -12,6 +12,7 @@ import {
   lastFinishedOf,
   newestFavoritesFirst,
   picksPerFriend,
+  recentActivityOf,
   recentHeartsOf,
   subgenreOf,
 } from '~/domain/friendship/business-rules'
@@ -64,6 +65,37 @@ describe('lastFinishedOf', () => {
     expect(lastFinishedOf([{ status: 'read' as const }, { status: 'to-read' as const }])).toBe(
       undefined,
     )
+  })
+})
+
+describe('recentActivityOf', () => {
+  test('names one book per kind, in the order the friends list draws them', () => {
+    const books = [
+      { title: 'dropped', status: 'dropped' as const, addedAt: day(1), statusChangedAt: day(6) },
+      {
+        title: 'hearted',
+        status: 'read' as const,
+        addedAt: day(2),
+        favorite: true,
+        favoritedAt: day(7),
+      },
+      { title: 'finished', status: 'read' as const, addedAt: day(3), finishedAt: day(8) },
+      { title: 'reading', status: 'reading' as const, addedAt: day(4), startedAt: day(9) },
+      { title: 'added', status: 'to-read' as const, addedAt: day(10) },
+    ]
+    expect(recentActivityOf(books).map(({ kind, at, book }) => [kind, at, book.title])).toEqual([
+      ['reading', day(9), 'reading'],
+      ['read', day(8), 'finished'],
+      ['hearted', day(7), 'hearted'],
+      ['added', day(10), 'added'],
+      ['dropped', day(6), 'dropped'],
+    ])
+  })
+
+  // A heart given before the date was kept says nothing about when.
+  test('leaves out a kind with no book, and a heart with no date', () => {
+    const books = [{ status: 'read' as const, addedAt: day(2), favorite: true }]
+    expect(recentActivityOf(books).map(({ kind }) => kind)).toEqual(['added'])
   })
 })
 

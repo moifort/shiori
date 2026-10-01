@@ -18,8 +18,15 @@ fragment FriendRow on Friend {
   favoriteCount
   readingCount
   toReadCount
-  readingTitle
   readThisYear
+  recentActivity {
+    kind
+    at
+    bookId
+    title
+    format
+    coverUrl
+  }
 }
 
 # What every friend hearted in the last thirty days, sagas and books mixed,

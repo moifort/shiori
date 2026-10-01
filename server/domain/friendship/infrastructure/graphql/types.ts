@@ -1,3 +1,4 @@
+import type { SharedActivity } from '~/domain/analytics/types'
 import { AudibleQuery } from '~/domain/audible/query'
 import { listeningProgressOf, shelfDateOf } from '~/domain/book/business-rules'
 import {
@@ -8,6 +9,7 @@ import {
 } from '~/domain/book/infrastructure/graphql/enums'
 import { SeriesMembershipType } from '~/domain/book/infrastructure/graphql/types'
 import { lastActivityOf } from '~/domain/friendship/business-rules'
+import { FriendActivityKindEnum } from '~/domain/friendship/infrastructure/graphql/enums'
 import type { Friend } from '~/domain/friendship/types'
 import type {
   FriendBook,
@@ -25,6 +27,7 @@ import { SeriesStateEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { isAudioSeries } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
 import { Count, Percentage } from '~/domain/shared/primitives'
+import { objectStore } from '~/system/object-store'
 
 /** A book on somebody else's shelf.
  *
@@ -249,6 +252,31 @@ export const FriendSagaType = builder.objectRef<FriendSaga>('FriendSaga').implem
   }),
 })
 
+export const FriendActivityType = builder.objectRef<SharedActivity>('FriendActivity').implement({
+  description:
+    "A book that moved lately on a friend's shelf, as the friends list draws it: a " +
+    'cover and what happened to it.',
+  fields: (t) => ({
+    kind: t.field({ type: FriendActivityKindEnum, resolve: (activity) => activity.kind }),
+    at: t.field({
+      type: 'DateTime',
+      description: 'When it happened: the screen decides how far back is still recent.',
+      resolve: (activity) => activity.at,
+    }),
+    bookId: t.field({ type: 'BookId', resolve: (activity) => activity.book.id }),
+    title: t.field({ type: 'BookTitle', resolve: (activity) => activity.book.title }),
+    format: t.field({ type: BookFormatEnum, resolve: (activity) => activity.book.format }),
+    coverUrl: t.string({
+      nullable: true,
+      description: "Its owner's photo of the cover, else the publisher's.",
+      resolve: async ({ book }) =>
+        book.coverPath
+          ? await objectStore().downloadUrl(book.coverPath)
+          : (book.publishedCoverUrl ?? null),
+    }),
+  }),
+})
+
 export const FriendType = builder.objectRef<Friend>('Friend').implement({
   description: 'Somebody whose library the reader can see, and who can see theirs.',
   fields: (t) => ({
@@ -285,7 +313,16 @@ export const FriendType = builder.objectRef<Friend>('Friend').implement({
       type: 'BookTitle',
       nullable: true,
       description: 'The book they started most recently, null when they are reading nothing.',
+      deprecationReason: 'Use `recentActivity`, which draws the book in progress as a cover.',
       resolve: (friend) => friend.shelf?.readingTitle ?? null,
+    }),
+    recentActivity: t.field({
+      type: [FriendActivityType],
+      description:
+        'What moved last on their shelf, one book per kind, always in the same order: ' +
+        'in progress, read, hearted, added, dropped. The books they keep to themselves ' +
+        'are left out.',
+      resolve: (friend) => friend.shelf?.recentActivity ?? [],
     }),
     readThisYear: t.field({
       type: 'Count',

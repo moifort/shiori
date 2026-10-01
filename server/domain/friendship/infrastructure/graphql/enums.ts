@@ -8,6 +8,23 @@ export const CopiedStatusEnum = builder.enumType('CopiedStatus', {
   } as const,
 })
 
+export const FriendActivityKindEnum = builder.enumType('FriendActivityKind', {
+  description: "What happened lately to a book on a friend's shelf.",
+  values: {
+    READING: {
+      value: 'reading',
+      description: 'Picked up or read on: the book in progress touched last.',
+    },
+    READ: { value: 'read', description: 'Finished: the book read last.' },
+    HEARTED: { value: 'hearted', description: 'Hearted: the favourite given last.' },
+    ADDED: {
+      value: 'added',
+      description: 'Shelved: the book added last, whatever its status since.',
+    },
+    DROPPED: { value: 'dropped', description: 'Dropped: the book given up last.' },
+  } as const,
+})
+
 export const AudioAvailabilityEnum = builder.enumType('AudioAvailability', {
   description: "Whether a friend's book can be taken as an audiobook.",
   values: {
