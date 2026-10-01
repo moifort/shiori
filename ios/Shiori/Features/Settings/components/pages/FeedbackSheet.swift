@@ -68,8 +68,6 @@ struct FeedbackSheet: View {
                 TextField(kindHint, text: $message, axis: .vertical)
                     .lineLimit(5...)
                     .accessibilityIdentifier("feedback-message")
-            } footer: {
-                Text("La version de l'application et le modèle d'appareil accompagnent le message. Ni votre nom ni votre adresse e-mail ne sont transmis.")
             }
         }
     }
