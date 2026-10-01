@@ -62,8 +62,8 @@ way (publishing is confirmed with the maintainer first):
 - `login(locale)` — the PKCE sign-in URL for a Kindle-for-iPhone device, and the cookies to plant
   in the web view before loading it.
 - `register(authorizationCode, session)` — registers the device; returns the refresh token, the
-  device key, the serial and the locale.
-- `refresh(credentials)` — a new access token.
+  device key, the serial and the locale. No access token is kept: nothing reads with one, so
+  nothing rotates and nothing has to be written back after a pass.
 - `websiteCookies(credentials)` — exchanges the refresh token for `amazon.<domain>` cookies.
 - `library(credentials)` — reads `mycd`: fetches the `csrfToken`, pages `GetContentOwnershipData`
   by 50, and returns typed titles: ASIN, title, authors, cover URL, `readStatus`, `originType`,
@@ -89,9 +89,9 @@ run against recorded, anonymised `mycd` answers.
   reader.
 - `command.ts` — `startLogin`, `completeLogin`, `recordImport`, `setAutoSync`, `disconnect`,
   `deleteForUser` (wired into account deletion).
-- `business-rules.ts` — title to book, status mapping, which titles are offered, name reversal
-  ("Surname, First" turned around, kept from today's rules with their tests). The CSV parsing
-  and column sniffing are deleted.
+- `business-rules.ts` — title to book, saga read off the title, status moves, links, which
+  titles are offered. The CSV rules move to `export-rules.ts` and stay until the deprecated
+  mutations are removed.
 - `use-case.ts` — `importableBooks`, `importBooks`, `syncLibrary`, `syncEveryReader`.
 
 The book gains an optional `kindleAsin`, beside `audibleAsin`. A new optional field: no migration.
@@ -107,11 +107,20 @@ those already on the shelf ticked off and untappable. `importKindleLibrary(asins
 rather than trusting the client: the app sends identifiers, every stored field comes from the
 source.
 
-- **Offered:** `EBOOK` titles bought, borrowed through Prime Reading or Kindle Unlimited. Free
-  samples (`EBOOK_SAMPLE`) never.
-- **A book carries:** ebook format, title, authors, `kindleAsin`, the cover at full size
-  (`productImage` stripped of its size suffix), status `read` when `readStatus` is `READ` and
-  `to-read` otherwise, and its saga named by `SeriesUseCase.namedAfterCatalogues`.
+- **Offered:** titles bought, borrowed through Prime Reading or Kindle Unlimited. Never the free
+  samples (`originType: Sample`, `udlCategory: KindleEBookSample`) nor the **dictionaries**
+  Amazon files under every Kindle account (`originType: KindleDictionary` — 88 of the 165 titles
+  of the account probed).
+- **A book carries:** ebook format, title, authors (from `bookProducerDetails`, role `author`,
+  already in reading order; the `authors` string split on commas otherwise), `kindleAsin`, the
+  cover (`productImage`, served at full size), the acquisition date as its `addedAt`, and status
+  `read` when `readStatus` is `READ`, `to-read` otherwise. A book imported as read is dated
+  finished on its acquisition day: Amazon never says when, and import night would rewrite the
+  reading statistics.
+- **Sagas are read off the title**, which is where Amazon puts them: "Powerless (Tome 3) -
+  Fearless" is volume 3 of Powerless, titled Fearless; "Boys of Tommen #5 : Taming 7" volume 5 of
+  Boys of Tommen. A title no pattern recognizes keeps no saga rather than a guessed one. The saga
+  is then named after its catalogue by `SeriesUseCase.namedAfterCatalogues`.
 - **No model is called**: an import costs no scan.
 - **Duplicates** are caught on the text — title plus first author, the existing shelf key — so a
   book already catalogued from Audible or a scan is not created twice.
@@ -122,31 +131,39 @@ For every reader connected with `autoSync` (absent reads as enabled):
 
 1. **New titles** — those acquired since `lastImportedAt` are catalogued. A title the reader left
    unticked at import time predates that cutoff and is never forced on them.
-2. **Status, one way only** — `READ` on Amazon moves a book carrying that `kindleAsin` to read.
-   Nothing ever moves it back: `UNKNOWN` does not mean unread, and a reader who marked a book read
-   in Shiori must not see it undone. This is a deliberate difference with the Audible sync, which
-   moves both ways.
-3. Ratings, notes, hidden books and every other field are never touched.
-4. A Kindle Unlimited loan returned disappears from Amazon; the book stays in Shiori.
+2. **Status, one way only, on news only** — a title Amazon newly reports `READ` moves the book
+   carrying that `kindleAsin` to read, dated tonight. Nothing ever moves it back: `UNKNOWN` does
+   not mean unread, and a reader who marked a book read in Shiori must not see it undone. This is
+   a deliberate difference with the Audible sync, which moves both ways.
+   `READ` never goes away on Amazon, so the connection keeps the ASINs it last saw read
+   (`readAsins`) and only a title absent from that set is news. Without it, a reader re-reading a
+   book would see it put back on read every night. The first pass, which has no previous set,
+   moves only books still on the pile or being read — never one the reader dropped.
+3. **Books catalogued before the link** — ebooks without a `kindleAsin`, the CSV import's above
+   all, are matched by shelf key and linked once, so they take part in the pass that links them.
+4. Ratings, notes, hidden books and every other field are never touched.
+5. A Kindle Unlimited loan returned disappears from Amazon; the book stays in Shiori.
 
 One reader's failure is counted and logged, never costs the others their night.
 
 ## Errors
 
-- A revoked device or a failed cookie exchange marks the connection as needing a reconnection,
-  shown as a banner on the Kindle row in Settings, and is logged with `warn` (reported to
-  Sentry).
+- A nightly pass that fails stamps `lastSyncFailedAt` on the account (cleared by the next pass that
+  works), which the Kindle screen shows with an offer to connect again, and is logged with `warn`
+  (reported to Sentry). A call the reader makes answers `KINDLE_UNAVAILABLE`.
 - A `mycd` shape change is logged with `error`.
 - Messages stay constant and the context is passed apart —
   `logger.warn('kindle cookie exchange failed', { error, userId })`.
 
 ## iOS
 
-**Onboarding.** `AudibleOfferPage` becomes "Tes bibliothèques": two switches, Audible and Kindle,
-both off, and one Amazon marketplace picker for both. "Continuer" chains the sign-in of each
-source switched on — Audible, then Kindle — each ending on its own picker, with the nightly sync
-on. "Passer" connects nothing. A sign-in that fails or is cancelled moves on to the next one; it
-can be redone from Settings.
+**Onboarding.** `AudibleOfferPage` becomes "Vos bibliothèques": two switches, Audible and Kindle,
+both off, and one Amazon store picker for both. "Continuer" chains the sign-in of each source
+switched on — Audible, then Kindle. As Audible already does at onboarding, each connection starts a
+first pass in the background that catalogues the whole library, and the preparation screen waits
+on both; there is no picker in the way of a reader who has not seen the app yet. "Plus tard"
+connects nothing. A sign-in that fails or is cancelled moves on to the next one; it can be redone
+from Settings.
 
 **Settings.** Audible and Kindle stay two separate rows, each with its connection, its sync switch
 and its disconnection. The Kindle row replaces `KindleImportView`.
@@ -160,7 +177,8 @@ Screens are verified through `#Preview` fixtures and a screenshot sent for appro
 
 `readKindleExport` and the CSV-taking `importKindleBooks` are **deprecated in the same commit**
 that stops the app using them, never removed there (see [api-evolution](../../api-evolution.md)).
-They go at the next release's `bun run deprecations` pass. The new mutation therefore takes a
+Their resolvers and the CSV reading rules keep working until the next release's
+`bun run deprecations` pass removes them together. The new mutation therefore takes a
 new name, `importKindleLibrary`. Batch 6 of [the roadmap](../../roadmap.md) is rewritten: it
 currently says the opposite of this design.
 
