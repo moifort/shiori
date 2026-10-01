@@ -40,10 +40,11 @@ struct ContentView: View {
     @State private var libraryMode: LibraryRequest?
     /// The same for the Library tab's series shelf.
     @State private var seriesMode: SeriesRequest?
-    /// The shelf each of Bibliothèque and Découvrir shows, held here because a
-    /// tab's own state does not survive a trip to another tab.
+    /// The shelf each of Bibliothèque and Découvrir shows. Held here so that
+    /// arriving on either tab brings it back to the books, whatever the
+    /// reader left it on.
     @State private var libraryShelf: LibraryShelf = .books
-    @State private var discoverShelf: LibraryShelf = .series
+    @State private var discoverShelf: LibraryShelf = .books
     /// The add sheet, behind the tab bar's scan button: the camera, the last
     /// photos, a title and a record typed by hand, from every tab.
     @State private var showAddSheet = false
@@ -160,6 +161,10 @@ struct ContentView: View {
                 } else {
                     lastContentTab = tab
                 }
+                // Each visit opens on the books, unless the dashboard asked
+                // for the series shelf on its way here.
+                if tab == .library { libraryShelf = seriesMode == nil ? .books : .series }
+                if tab == .discover { discoverShelf = .books }
             }
     }
 

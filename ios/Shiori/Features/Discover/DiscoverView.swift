@@ -47,7 +47,7 @@ struct DiscoverView: View {
     @State private var openAwaited: AwaitedEdition?
     @Environment(\.openURL) private var openURL
     @State private var format: ReleaseFormat
-    /// Held by `ContentView`, so the shelf survives a trip to another tab.
+    /// Held by `ContentView`, which brings it back to the books on each visit.
     @Binding var shelf: LibraryShelf
     /// The format was picked this session — by a tap, or once for the reader —
     /// and is kept even when it holds no saga.
@@ -554,5 +554,5 @@ extension AuthorDiscovery {
 }
 
 #Preview {
-    DiscoverView(shelf: .constant(.series))
+    DiscoverView(shelf: .constant(.books))
 }

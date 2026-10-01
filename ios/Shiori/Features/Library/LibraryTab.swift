@@ -23,9 +23,8 @@ enum LibraryShelf: String, CaseIterable, Identifiable {
 /// conditionally under a selectable `TabView`. Each shelf keeps its own stack,
 /// toolbar and cache; a launch always opens on the books.
 ///
-/// The shelf on screen is held by `ContentView`, not here: the tab's content
-/// does not outlive a trip to another tab, and the reader comes back to the
-/// shelf they left.
+/// The shelf on screen is held by `ContentView`, which brings it back to the
+/// books each time the reader arrives on the tab.
 struct LibraryTab: View {
     let onAdd: () -> Void
     @Binding var libraryRequest: LibraryRequest?
