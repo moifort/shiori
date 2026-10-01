@@ -2680,13 +2680,6 @@ type Query {
   friendRecommendations: FriendRecommendations!
 
   """
-  One page of a friend's sagas — or of the reader's own, previewed — drawn as the Series tab draws the reader's: the saga shelved last first, every volume on the shelf as a cover. Null for a stranger.
-  """
-  friendSagaPage(
-    """Cursor: the id of the last saga of the previous page"""
-    after: String
-
-  """
   One saga of a friend's shelf — or of the reader's own, previewed — with every volume of it they share, in reading order: what the saga screen draws against its catalogue when opened from their shelf, so where it stands is theirs, not the reader's.
   
   Null for a stranger and for a saga they share no volume of alike. A book marked "do not share" is never among the volumes.
@@ -2701,6 +2694,13 @@ type Query {
     """The friend"""
     userId: UserId!
   ): FriendSaga
+
+  """
+  One page of a friend's sagas — or of the reader's own, previewed — drawn as the Series tab draws the reader's: the saga shelved last first, every volume on the shelf as a cover. Null for a stranger.
+  """
+  friendSagaPage(
+    """Cursor: the id of the last saga of the previous page"""
+    after: String
 
     """Keep only the sagas they hearted."""
     favorite: Boolean @deprecated(reason: "Use `loved`, which follows the hearts with the stars.")
