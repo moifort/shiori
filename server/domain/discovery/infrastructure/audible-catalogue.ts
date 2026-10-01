@@ -150,25 +150,37 @@ const recordingOf = (product: Product, language: BookLanguage): AudibleRecording
  *  could not be asked. The product pages themselves answer robots with a 503,
  *  which is why the API is asked instead.
  *
- *  A model searching the web often names the audible.com ASIN of a French or
- *  German recording, which the store of that language sells under another one
- *  (Neuromancien: B09VY3W1FF on audible.com, B09VY5GXM7 on audible.fr). So an
- *  ASIN the reader's store does not know is looked up on audible.com, and the
- *  same recording — same title, language and release day — sought in the
- *  reader's store. */
+ *  A model searching the web often names an ASIN from another store: the
+ *  audible.com one of a French or German recording (Neuromancien: B09VY3W1FF on
+ *  audible.com, B09VY5GXM7 on audible.fr), or the audible.co.uk one of an
+ *  English recording (We Are Legion: B01L0831K6 there, B01L082HJ2 on
+ *  audible.com). So an ASIN the reader's store does not know is looked up on
+ *  audible.com and audible.co.uk, and the same recording — same title, language
+ *  and release day — sought in the reader's store.
+ *
+ *  It names a Kindle ASIN just as often, which no store knows. The recording is
+ *  then sought by its title, and kept only when exactly one in that language
+ *  carries it. */
 export const audibleProductOf = async (
   asin: AudibleAsinType,
   language: BookLanguage,
+  title?: string,
 ): Promise<AudibleProduct | 'unknown' | 'unreachable'> => {
   const domain = API_DOMAINS[language] ?? US_API_DOMAIN
   const product = await productOf(domain, asin, language)
-  if (product !== 'unknown' || domain === US_API_DOMAIN) return product
-  const elsewhere = await productOf(US_API_DOMAIN, asin, language)
-  if (elsewhere === 'unknown' || elsewhere === 'unreachable') return elsewhere
-  return sameRecordingIn(domain, elsewhere, language)
+  if (product !== 'unknown') return product
+  for (const other of ENGLISH_API_DOMAINS.filter((store) => store !== domain)) {
+    const elsewhere = await productOf(other, asin, language)
+    if (elsewhere === 'unreachable') return elsewhere
+    if (elsewhere !== 'unknown') return sameRecordingIn(domain, elsewhere, language)
+  }
+  return title ? onlyRecordingTitled(domain, title, language) : 'unknown'
 }
 
 const US_API_DOMAIN = 'api.audible.com'
+
+/** The stores a model most often takes an ASIN from. */
+const ENGLISH_API_DOMAINS = [US_API_DOMAIN, 'api.audible.co.uk']
 
 const PRODUCT_GROUPS =
   'response_groups=product_desc,product_attrs,contributors,media&image_sizes=500'
@@ -207,7 +219,37 @@ const sameRecordingIn = async (
   language: BookLanguage,
 ): Promise<AudibleProduct | 'unknown' | 'unreachable'> => {
   if (!recording.releaseDate) return 'unknown'
-  const keywords = encodeURIComponent([recording.title, recording.author].filter(Boolean).join(' '))
+  const found = await searchedIn(domain, [recording.title, recording.author], language)
+  if (found === 'unreachable') return found
+  const same = found.find(
+    (candidate) =>
+      candidate.releaseDate === recording.releaseDate &&
+      comparable(candidate.title) === comparable(recording.title),
+  )
+  return same ? productFrom(same) : 'unknown'
+}
+
+/** The one recording a store sells under exactly that title, `unknown` when
+ *  none or several do — two readings of one book are never told apart by a
+ *  guess. */
+const onlyRecordingTitled = async (
+  domain: string,
+  title: string,
+  language: BookLanguage,
+): Promise<AudibleProduct | 'unknown' | 'unreachable'> => {
+  const found = await searchedIn(domain, [title], language)
+  if (found === 'unreachable') return found
+  const titled = found.filter((candidate) => comparable(candidate.title) === comparable(title))
+  return titled.length === 1 && titled[0] ? productFrom(titled[0]) : 'unknown'
+}
+
+/** What a store's search answers for those words, in that language. */
+const searchedIn = async (
+  domain: string,
+  words: (string | undefined)[],
+  language: BookLanguage,
+): Promise<Described[] | 'unreachable'> => {
+  const keywords = encodeURIComponent(words.filter(Boolean).join(' '))
   const url = `https://${domain}/1.0/catalog/products?keywords=${keywords}&num_results=20&${PRODUCT_GROUPS}`
   try {
     const response = await fetch(url, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) })
@@ -216,22 +258,15 @@ const sameRecordingIn = async (
       return 'unreachable'
     }
     const { products } = (await response.json()) as { products?: Product[] }
-    const same = (products ?? [])
-      .map((product) => describedOf(product, language))
-      .find(
-        (found) =>
-          found &&
-          found.releaseDate === recording.releaseDate &&
-          comparable(found.title) === comparable(recording.title),
-      )
-    if (!same) return 'unknown'
-    const { title: _title, author: _author, ...product } = same
-    return product
+    return (products ?? []).map((product) => describedOf(product, language)).filter(isPresent)
   } catch (error) {
     logger.warn('Audible product search failed', { error, domain })
     return 'unreachable'
   }
 }
+
+const productFrom = ({ title: _title, author: _author, ...product }: Described): AudibleProduct =>
+  product
 
 /** A product in that language, with the ASIN, title and first author it
  *  carries; nothing when it has no title or is recorded in another language. */

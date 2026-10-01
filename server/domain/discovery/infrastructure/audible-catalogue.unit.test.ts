@@ -19,14 +19,17 @@ const neuromancien = (asin: string, extra: Record<string, unknown> = {}) => ({
 
 /** Answers each Audible store from its own table: a product lookup by the ASIN
  *  after `products/`, a search from `products?`. Records every URL asked. */
-const storesAnswer = (stores: {
-  fr: { products?: Record<string, unknown>; search?: unknown[] }
-  us?: { products?: Record<string, unknown> }
-}) => {
+type Store = { products?: Record<string, unknown>; search?: unknown[] }
+
+const storesAnswer = (stores: { fr: Store; us?: Store; uk?: Store }) => {
   const asked: string[] = []
   spyOn(globalThis, 'fetch').mockImplementation((async (url: string) => {
     asked.push(url)
-    const store = url.includes('api.audible.fr') ? stores.fr : (stores.us ?? {})
+    const store = url.includes('api.audible.fr')
+      ? stores.fr
+      : url.includes('api.audible.co.uk')
+        ? (stores.uk ?? {})
+        : (stores.us ?? {})
     if (url.includes('/catalog/products?')) {
       return Response.json({ products: 'search' in store ? (store.search ?? []) : [] })
     }
@@ -78,11 +81,62 @@ describe('audibleProductOf', () => {
     expect(asked.some((url) => url.includes('/catalog/products?'))).toBe(false)
   })
 
-  test('asks no other store for a language sold on audible.com', async () => {
-    const asked = storesAnswer({ fr: {} })
+  // We Are Legion is B01L0831K6 on audible.co.uk and B01L082HJ2 on audible.com.
+  test('swaps a British ASIN for the same recording on audible.com', async () => {
+    const bob = (asin: string) => ({
+      asin,
+      title: 'We Are Legion (We Are Bob)',
+      language: 'english',
+      release_date: '2016-09-20',
+      authors: [{ name: 'Dennis E. Taylor' }],
+    })
+    storesAnswer({
+      fr: {},
+      uk: { products: { B01L0831K6: bob('B01L0831K6') } },
+      us: { search: [bob('B01L082HJ2')] },
+    })
 
-    expect(await audibleProductOf(US_ASIN, 'en')).toBe('unknown')
-    expect(asked).toHaveLength(1)
+    const product = await audibleProductOf(AudibleAsin('B01L0831K6'), 'en')
+
+    expect(product).toMatchObject({ asin: 'B01L082HJ2', releaseDate: '2016-09-20' })
+  })
+
+  // A model often names the Kindle ASIN of a recording: Heretical Fishing 3 is
+  // B0D7X6LPGP on Kindle and B0D7XD7PTN on Audible.
+  test('finds the recording by its exact title when no store knows the ASIN', async () => {
+    const title = 'Heretical Fishing 3: A Cozy Guide to Annoying the Cults'
+    storesAnswer({
+      fr: {},
+      us: {
+        search: [
+          {
+            asin: 'B0CZPKBY63',
+            title: 'Heretical Fishing 2: A Cozy Guide to Annoying the Cults',
+            language: 'english',
+          },
+          { asin: 'B0D7XD7PTN', title, language: 'english', release_date: '2024-11-12' },
+        ],
+      },
+    })
+
+    const product = await audibleProductOf(AudibleAsin('B0D7X6LPGP'), 'en', title)
+
+    expect(product).toMatchObject({ asin: 'B0D7XD7PTN', releaseDate: '2024-11-12' })
+  })
+
+  test('stays unknown when several recordings carry that exact title', async () => {
+    const title = 'Dune'
+    storesAnswer({
+      fr: {},
+      us: {
+        search: [
+          { asin: 'B002V1OF70', title, language: 'english' },
+          { asin: 'B0CQ8DMJ9P', title, language: 'english' },
+        ],
+      },
+    })
+
+    expect(await audibleProductOf(AudibleAsin('B0KINDLE01'), 'en', title)).toBe('unknown')
   })
 })
 
