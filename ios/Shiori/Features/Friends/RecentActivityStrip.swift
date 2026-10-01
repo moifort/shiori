@@ -41,7 +41,7 @@ struct RecentActivityStrip: View {
     }
 
     private func tile(_ activity: RecentActivity) -> some View {
-        VStack(spacing: 4) {
+        VStack(alignment: .leading, spacing: 4) {
             Color.clear
                 .aspectRatio(2 / 3, contentMode: .fit)
                 .overlay {
@@ -51,8 +51,8 @@ struct RecentActivityStrip: View {
                 }
             // Not a caption label: its fixed icon column would leave
             // "Abandonné" too little of a fifth of the card.
-            HStack(spacing: 2) {
-                Image(systemName: symbol(activity)).imageScale(.small)
+            HStack(spacing: 3) {
+                icon(activity)
                 Text(caption(activity))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
@@ -61,6 +61,22 @@ struct RecentActivityStrip: View {
             .foregroundStyle(tint(activity))
         }
         .frame(maxWidth: .infinity)
+    }
+
+    /// A check or a plus is a bare stroke beside the filled book, heart and
+    /// thumb, so those two sit in a disc of their colour to weigh the same.
+    @ViewBuilder
+    private func icon(_ activity: RecentActivity) -> some View {
+        switch activity {
+        case .finished, .added:
+            Image(systemName: symbol(activity))
+                .font(.system(size: 7, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 13, height: 13)
+                .background(tint(activity), in: Circle())
+        case .reading, .hearted, .dropped:
+            Image(systemName: symbol(activity)).imageScale(.small)
+        }
     }
 
     private func caption(_ activity: RecentActivity) -> String {
