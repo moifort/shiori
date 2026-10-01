@@ -3,7 +3,7 @@ import SwiftUI
 /// A friend's recent activity as five covers across the card: the book in
 /// progress, the last one read, the last one hearted, the last one added and
 /// the last one dropped. No title — the cover already shows the book — but
-/// under each, what happened, in its colour. A tap opens the book.
+/// under each, what happened, its symbol first, in its colour. A tap opens the book.
 struct RecentActivityStrip: View {
     let activities: [RecentActivity]
     let onOpen: (FriendBook) -> Void
@@ -40,11 +40,16 @@ struct RecentActivityStrip: View {
                         BookCover(book: activity.book.book, width: proxy.size.width, showsFormatBadge: false)
                     }
                 }
-            Text(caption(activity))
-                .font(.caption2.weight(.medium))
-                .foregroundStyle(tint(activity))
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+            // Not a caption label: its fixed icon column would leave
+            // "Abandonné" too little of a fifth of the card.
+            HStack(spacing: 2) {
+                Image(systemName: symbol(activity)).imageScale(.small)
+                Text(caption(activity))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            .font(.caption2.weight(.medium))
+            .foregroundStyle(tint(activity))
         }
         .frame(maxWidth: .infinity)
     }
@@ -56,6 +61,18 @@ struct RecentActivityStrip: View {
         case .hearted: String(localized: "Favori")
         case .added: String(localized: "Ajouté")
         case .dropped: String(localized: "Abandonné")
+        }
+    }
+
+    /// The status symbols the rest of the app draws, and a plus for a book
+    /// just shelved, whatever its status.
+    private func symbol(_ activity: RecentActivity) -> String {
+        switch activity {
+        case .reading: ReadingStatus.reading.symbol
+        case .finished: ReadingStatus.read.symbol
+        case .hearted: "heart.fill"
+        case .added: "plus"
+        case .dropped: ReadingStatus.dropped.symbol
         }
     }
 
