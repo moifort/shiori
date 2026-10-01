@@ -79,16 +79,17 @@ struct BookCover: View {
             VStack(spacing: width * 0.06) {
                 Text(book.title)
                     .font(.system(size: titleSize, weight: .semibold, design: .serif))
-                    .lineLimit(6)
+                    .lineLimit(8)
+                    .layoutPriority(1)
                 Spacer(minLength: 0)
                 if !authorLine.isEmpty {
                     Text(authorLine)
-                        .font(.system(size: authorSize, weight: .medium, design: .serif))
-                        .lineLimit(3)
+                        .font(.system(size: authorSize, weight: .bold, design: .serif))
+                        .lineLimit(2)
+                        .shadow(color: .black.opacity(0.3), radius: 1, y: 0.5)
                 }
             }
             .multilineTextAlignment(.center)
-            .minimumScaleFactor(0.7)
             .foregroundStyle(.white)
             .padding(.horizontal, width * 0.08)
             .padding(.vertical, width * 0.12)
@@ -97,25 +98,36 @@ struct BookCover: View {
 
     private var authorLine: String { book.authors.joined(separator: ", ") }
 
-    /// "Dune" is set large, a fifty-letter title small: the size shrinks with
-    /// the length of the text, and again if its longest word would not fit on
-    /// one line — a word split across two lines reads worse than small print.
+    /// "Dune" is set large, a longer title smaller: the size shrinks with the
+    /// length of the text, and again if its longest word would not fit on one
+    /// line. Length alone never takes it below the size "Le Nom du vent" gets,
+    /// the smallest still easy to read on a list row: a longer title is cut
+    /// short instead. Only a word too long for the line goes a little under, as
+    /// a word split in two reads worse than slightly smaller print.
     private var titleSize: CGFloat {
-        fittedSize(for: book.title, largest: 0.18, smallest: 0.1, shrinkPerLetter: 0.0018)
+        fittedSize(
+            for: book.title, largest: 0.22, smallest: 0.155, longWordFloor: 0.12, shrinkPerLetter: 0.0046
+        )
     }
 
     private var authorSize: CGFloat {
-        fittedSize(for: authorLine, largest: 0.12, smallest: 0.085, shrinkPerLetter: 0.0012)
+        fittedSize(
+            for: authorLine, largest: 0.13, smallest: 0.105, longWordFloor: 0.09, shrinkPerLetter: 0.001
+        )
     }
 
     private func fittedSize(
-        for text: String, largest: CGFloat, smallest: CGFloat, shrinkPerLetter: CGFloat
+        for text: String,
+        largest: CGFloat,
+        smallest: CGFloat,
+        longWordFloor: CGFloat,
+        shrinkPerLetter: CGFloat
     ) -> CGFloat {
         let byLength = min(largest, max(smallest, largest - shrinkPerLetter * CGFloat(text.count)))
         let longestWord = text.split(separator: " ").map(\.count).max() ?? 1
-        // A serif letter averages a little over half its point size in width.
-        let byWord = width * 0.84 / (CGFloat(longestWord) * 0.58)
-        return width * byLength > byWord ? max(byWord, width * smallest) : width * byLength
+        // A bold serif letter averages about 0.62 of its point size in width.
+        let byWord = width * 0.84 / (CGFloat(longestWord) * 0.62)
+        return min(width * byLength, max(byWord, width * longWordFloor))
     }
 
     /// A hue derived from the title, so the same book always draws the same
