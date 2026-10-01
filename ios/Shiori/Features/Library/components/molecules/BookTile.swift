@@ -12,8 +12,18 @@ struct BookTile: View {
     /// Off where a filter already says which status every book has.
     var showsStatus = true
 
+    @Environment(\.displayScale) private var displayScale
+
+    /// The cover's height in pixels, rounded up to a step so that tiles a
+    /// point apart share one decoded image.
+    private var maxPixelSize: Int {
+        let pixels = Int((width * 1.5 * displayScale).rounded(.up))
+        return (pixels + 63) / 64 * 64
+    }
+
     var body: some View {
         BookCover(book: book, width: width, showsFormatBadge: false, cornerRadius: 0)
+            .environment(\.coverMaxPixelSize, maxPixelSize)
             .overlay(alignment: .bottom) {
                 if book.favorite || showsStatus {
                     MosaicGlyphs {

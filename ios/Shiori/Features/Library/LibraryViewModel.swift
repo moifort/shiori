@@ -100,14 +100,21 @@ final class LibraryViewModel {
     /// a spinner that would keep turning forever without a new attempt.
     private(set) var loadMoreFailed = false
 
-    /// Sixty rows fill several screens on the smallest phone: enough that the
-    /// next page is fetched while the reader is still scrolling the first.
-    private let pageSize = 60
+    /// How the shelf is drawn, which sets how much a page brings.
+    var layout: ShelfLayout = .mosaic
+
+    /// Sixty rows fill several screens of the list on the smallest phone:
+    /// enough that the next page is fetched while the reader is still
+    /// scrolling the first. The mosaic shows some seventy covers a screen, so
+    /// its page is twenty lines of seven, two screens and more.
+    private var pageSize: Int { layout == .mosaic ? Self.mosaicPageSize : 60 }
+    private static let mosaicPageSize = 140
     /// The most rows the server hands back in one page.
     private let maxPageSize = 200
     /// Well below the page size, otherwise the next page would load as soon as
-    /// the first one is displayed.
-    private let prefetchThreshold = 8
+    /// the first one is displayed. In the mosaic, six lines: the next page is
+    /// asked for most of a screen before the last cover comes up.
+    private var prefetchThreshold: Int { layout == .mosaic ? 42 : 8 }
     /// Stale-result token: a page asked for before a reload must not be
     /// appended to the list that replaced it.
     private var generation = 0
@@ -182,8 +189,10 @@ final class LibraryViewModel {
                 hasMore = more
             }
             loaded = true
+            CoverImages.prefetch(fetched.compactMap(\.coverURL))
             let cache = cache(for: mode, statusFilter)
-            let firstPage = Array(fetched.prefix(pageSize))
+            // Enough for a first screen of either layout.
+            let firstPage = Array(fetched.prefix(max(pageSize, Self.mosaicPageSize)))
             Task.detached { cache.write(firstPage) }
         } catch {
             guard requested == generation else { return }
@@ -221,6 +230,7 @@ final class LibraryViewModel {
             guard requested == generation else { return }
             books += page.books
             hasMore = page.hasMore
+            CoverImages.prefetch(page.books.compactMap(\.coverURL))
         } catch is CancellationError {
             return
         } catch {

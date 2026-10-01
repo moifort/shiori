@@ -16,15 +16,14 @@ struct LibraryView: View {
 
     @State private var viewModel = LibraryViewModel()
     @State private var selectedBook: Book?
-    /// A shelf opens on its mosaic, every time its pill is tapped.
-    @State private var layout: ShelfLayout = .mosaic
 
     var body: some View {
         NavigationStack {
             LibraryPage(
                 mode: $viewModel.mode,
                 statusFilter: $viewModel.statusFilter,
-                layout: $layout,
+                // A shelf opens on its mosaic, every time its pill is tapped.
+                layout: $viewModel.layout,
                 sections: viewModel.sections,
                 awaitedBookIds: viewModel.awaitedBookIds,
                 showsStatus: viewModel.statusFilter == nil,
