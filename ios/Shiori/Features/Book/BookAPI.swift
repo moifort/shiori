@@ -251,6 +251,7 @@ struct BookCorrection: Equatable, Sendable {
     var format: BookFormat?
     var publisher: Change<String>?
     var firstPublishedIn: Change<Int>?
+    var editionYear: Change<Int>?
     var synopsis: Change<String>?
     var genre: Change<BookGenre>?
     var subgenres: [String]?
@@ -278,6 +279,7 @@ struct BookCorrection: Equatable, Sendable {
             authors: Self.nullable(authors),
             coverUrl: Self.nullable(coverURL),
             durationMinutes: Self.nullable(durationMinutes),
+            editionYear: Self.nullable(editionYear),
             finishedAt: Self.nullable(finishedAt.map(GraphQLHelpers.iso8601)),
             firstPublishedIn: Self.nullable(firstPublishedIn),
             format: format.map { .some(LibraryAPI.graphQLFormat($0)) } ?? .none,

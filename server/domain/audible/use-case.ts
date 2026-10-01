@@ -4,6 +4,7 @@ import {
   audibleLinksFor,
   bookFrom,
   boughtSince,
+  editionYearsFor,
   heardByAsin,
   importableFrom,
   listenedMinutesFor,
@@ -144,6 +145,7 @@ export namespace AudibleUseCase {
     const listened = listenedMinutesFor(linked, positions)
     const redates = purchaseDatesFor(linked, items)
     const renumbers = seriesVolumesFor(linked, items)
+    const editionYears = editionYearsFor(linked, items)
     const bought = toImportable(
       { items: boughtSince(items, account.lastImportedAt), positions },
       linked,
@@ -155,6 +157,7 @@ export namespace AudibleUseCase {
       listened.length +
       redates.length +
       renumbers.length +
+      editionYears.length +
       bought.length
     const write = async () => {
       await bulkSave(links, async (link) =>
@@ -181,6 +184,11 @@ export namespace AudibleUseCase {
       await bulkSave(renumbers, async ({ bookId, volume }) =>
         BookCommand.numberInSeries(userId, bookId, volume, now),
       )
+      // Audiobooks imported before the edition year was kept show none; this is
+      // what gives them the year their recording came out.
+      await bulkSave(editionYears, async ({ bookId, editionYear }) =>
+        BookCommand.edit(userId, bookId, { editionYear }, now),
+      )
       await bulkSave(await SeriesUseCase.namedAfterCatalogues(bought.map(bookFrom)), async (book) =>
         BookCommand.add(userId, book, now),
       )
@@ -195,6 +203,7 @@ export namespace AudibleUseCase {
       imported: bought.length,
       redated: redates.length,
       renumbered: renumbers.length,
+      editionDated: editionYears.length,
     }
   }
 

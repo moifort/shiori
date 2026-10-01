@@ -237,6 +237,9 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
     var format: BookFormat = .book
     var publisher: String?
     var firstPublishedIn: Int?
+    /// The year this edition came out, where `firstPublishedIn` dates the work:
+    /// an audiobook's recording, which Audible states.
+    var editionYear: Int?
     var synopsis: String?
     var genre: BookGenre?
     var subgenres: [String] = []

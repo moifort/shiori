@@ -86,6 +86,14 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
       description: 'Year the work first appeared, not the year of this edition.',
       resolve: (book) => book.firstPublishedIn ?? null,
     }),
+    editionYear: t.field({
+      type: 'Year',
+      nullable: true,
+      description:
+        "Year this edition came out — an audiobook's recording, where firstPublishedIn " +
+        'dates the work. Filled from Audible for an imported audiobook.',
+      resolve: (book) => book.editionYear ?? null,
+    }),
     synopsis: t.field({
       type: 'Synopsis',
       nullable: true,

@@ -8,6 +8,7 @@ import SwiftUI
 enum BookFact: String, CaseIterable {
     case publisher
     case firstPublishedIn
+    case editionYear
     case pageCount
     case isbn13
 
@@ -15,6 +16,7 @@ enum BookFact: String, CaseIterable {
         switch self {
         case .publisher: "Éditeur"
         case .firstPublishedIn: "Première parution"
+        case .editionYear: "Année d'édition"
         case .pageCount: "Pages"
         case .isbn13: "ISBN"
         }
@@ -24,6 +26,7 @@ enum BookFact: String, CaseIterable {
         switch self {
         case .publisher: "building.2"
         case .firstPublishedIn: "calendar"
+        case .editionYear: "calendar.badge.clock"
         case .pageCount: "doc.plaintext"
         case .isbn13: "barcode"
         }
@@ -31,6 +34,12 @@ enum BookFact: String, CaseIterable {
 
     var keyboard: UIKeyboardType {
         self == .publisher ? .default : .numberPad
+    }
+
+    /// Whether the row belongs on `book` at all. The edition year is what
+    /// Audible states of a recording; a printed book shows it only once typed.
+    func applies(to book: Book) -> Bool {
+        self != .editionYear || book.format == .audiobook || book.editionYear != nil
     }
 
     var font: Font? {
@@ -41,6 +50,7 @@ enum BookFact: String, CaseIterable {
         switch self {
         case .publisher: book.publisher
         case .firstPublishedIn: book.firstPublishedIn.map(String.init)
+        case .editionYear: book.editionYear.map(String.init)
         case .pageCount: book.pageCount.map(String.init)
         case .isbn13: book.isbn13
         }
@@ -57,6 +67,9 @@ enum BookFact: String, CaseIterable {
         case .firstPublishedIn:
             guard trimmed.isEmpty || Int(trimmed) != nil else { return nil }
             correction.firstPublishedIn = change(from: book.firstPublishedIn, to: Int(trimmed))
+        case .editionYear:
+            guard trimmed.isEmpty || Int(trimmed) != nil else { return nil }
+            correction.editionYear = change(from: book.editionYear, to: Int(trimmed))
         case .pageCount:
             guard trimmed.isEmpty || (Int(trimmed) ?? 0) >= 1 else { return nil }
             correction.pageCount = change(from: book.pageCount, to: Int(trimmed))

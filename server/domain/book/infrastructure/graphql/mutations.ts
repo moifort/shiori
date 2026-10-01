@@ -130,6 +130,7 @@ builder.mutationFields((t) => ({
         ...clearable('genre', input.genre),
         ...clearable('publisher', input.publisher),
         ...clearable('firstPublishedIn', input.firstPublishedIn),
+        ...clearable('editionYear', input.editionYear),
         ...clearable('synopsis', input.synopsis),
         ...clearable('pageCount', input.pageCount),
         ...clearable('durationMinutes', input.durationMinutes),

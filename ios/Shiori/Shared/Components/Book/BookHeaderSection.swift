@@ -236,7 +236,7 @@ struct BookHeaderSection<Extra: View>: View {
         genreRow
         LabeledInfoRow(title: "Type", value: book.format.label, icon: book.format.symbol)
             .accessibilityIdentifier("book-format")
-        ForEach(BookFact.allCases, id: \.self) { fact in
+        ForEach(BookFact.allCases.filter { $0.applies(to: book) }, id: \.self) { fact in
             factRow(fact)
         }
     }

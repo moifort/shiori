@@ -189,6 +189,7 @@ extension ShioriGraphQL.BookDetail {
             format: format.asDomain,
             publisher: publisher,
             firstPublishedIn: firstPublishedIn,
+            editionYear: editionYear,
             synopsis: synopsis,
             genre: genre?.asDomain,
             subgenres: subgenres,

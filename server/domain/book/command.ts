@@ -49,6 +49,8 @@ export type NewBook = {
   format?: BookFormat
   publisher?: Publisher
   firstPublishedIn?: Year
+  /** The year of this edition, which only an Audible import knows. */
+  editionYear?: Year
   synopsis?: Synopsis
   genre?: Genre
   subgenres?: TaggedSubgenre[]
@@ -108,6 +110,7 @@ export type BookEdit = Partial<
     | 'format'
     | 'publisher'
     | 'firstPublishedIn'
+    | 'editionYear'
     | 'synopsis'
     | 'genre'
     | 'subgenres'
@@ -152,6 +155,7 @@ export namespace BookCommand {
       format: input.format ?? 'book',
       publisher: input.publisher,
       firstPublishedIn: input.firstPublishedIn,
+      editionYear: input.editionYear,
       synopsis: input.synopsis,
       genre: input.genre,
       subgenres: input.subgenres ?? [],

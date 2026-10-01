@@ -135,6 +135,7 @@ export const BookEditInput = builder.inputType('BookEditInput', {
     format: t.field({ type: BookFormatEnum, required: false }),
     publisher: t.field({ type: 'Publisher', required: false }),
     firstPublishedIn: t.field({ type: 'Year', required: false }),
+    editionYear: t.field({ type: 'Year', required: false }),
     synopsis: t.field({ type: 'Synopsis', required: false }),
     genre: t.field({ type: GenreEnum, required: false }),
     subgenres: t.field({

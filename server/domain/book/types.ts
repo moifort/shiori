@@ -162,6 +162,11 @@ export type Book = {
   format: BookFormat
   publisher?: Publisher
   firstPublishedIn?: Year
+  /** The year this edition came out, where `firstPublishedIn` dates the work: an
+   *  Audible recording of "Dune" is from 2018, the novel from 1965. Only Audible
+   *  states it — the import and the nightly sync fill it in — and the reader may
+   *  type it; a scan reads a cover, which does not print it. */
+  editionYear?: Year
   synopsis?: Synopsis
   /** Absent for a book added by hand, which had no model to classify it. */
   genre?: Genre

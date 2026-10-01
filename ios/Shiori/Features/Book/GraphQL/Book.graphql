@@ -88,6 +88,7 @@ fragment BookDetail on Book {
   format
   publisher
   firstPublishedIn
+  editionYear
   synopsis
   genre
   subgenres

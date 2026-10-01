@@ -528,6 +528,11 @@ type Book {
   durationMinutes: Int
 
   """
+  Year this edition came out — an audiobook's recording, where firstPublishedIn dates the work. Filled from Audible for an imported audiobook.
+  """
+  editionYear: Year
+
+  """
   A book the reader keeps close. Decoupled from the rating: a five-star novel one never wants to open again and a three-star one kept for what it meant are both real, and one field cannot say both.
   """
   favorite: Boolean!
@@ -619,6 +624,7 @@ input BookEditInput {
 
   """The running time of an audiobook, in minutes."""
   durationMinutes: ListeningMinutes
+  editionYear: Year
 
   """When the reading ended. Only for a read book; null is ignored."""
   finishedAt: DateTime

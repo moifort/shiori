@@ -29,8 +29,12 @@ import type {
 } from '~/domain/book/types'
 import { SeriesName, seriesKeyOf, VolumeNumber } from '~/domain/series/primitives'
 import type { SeriesId, VolumeNumber as VolumeNumberValue } from '~/domain/series/types'
-import { AuthorName, BookTitle } from '~/domain/shared/primitives'
-import type { AuthorName as AuthorNameValue, UserId } from '~/domain/shared/types'
+import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
+import type {
+  AuthorName as AuthorNameValue,
+  UserId,
+  Year as YearValue,
+} from '~/domain/shared/types'
 import { isPresent, optionally } from '~/utils/input'
 
 /** What one Audible title becomes in a Shiori library.
@@ -67,6 +71,7 @@ export const importableFrom = (
       .slice(0, MAX_NARRATORS),
     durationMinutes: optionally(item.durationMinutes, ListeningMinutes),
     publisher: optionally(item.publisher, Publisher),
+    editionYear: editionYearOf(item),
     synopsis: optionally(plainTextOf(item.summary ?? item.merchandisingSummary), Synopsis),
     // Audible carries the ISBN of the printed edition when it has one at all, so
     // this is the one field that can reach Open Library later.
@@ -94,7 +99,8 @@ export const importableFrom = (
  *
  *  No `firstPublishedIn`. Audible's release date is the date the recording came
  *  out, and the field means the year the work first appeared — filling one with
- *  the other would date "Dune" to 2018 and say so on the book screen.
+ *  the other would date "Dune" to 2018 and say so on the book screen. That date
+ *  goes where it belongs instead: `editionYear`, the year of this recording.
  *
  *  The genre is Audible's own shelf, read off the category ladder by id rather
  *  than by name — see `genre-mapping.ts` for why that distinction is the whole
@@ -113,6 +119,7 @@ export const bookFrom = (importable: ImportableBook): NewBook => ({
   authors: importable.authors,
   format: 'audiobook',
   publisher: importable.publisher,
+  editionYear: importable.editionYear,
   synopsis: importable.synopsis,
   isbn13: importable.isbn13,
   publishedCoverUrl: importable.coverUrl,
@@ -428,6 +435,28 @@ export const listenedMinutesFor = (
 /** When a title entered the reader's Audible library: the day Amazon added it,
  *  else the day it was bought. Undefined for a title it dates neither way. */
 const purchaseDateOf = (item: AudibleItem): Date | undefined => item.dateAdded ?? item.purchaseDate
+
+/** The year a recording came out, read off Audible's release date. Undefined
+ *  when Audible gives none, or one the year's brand refuses. */
+const editionYearOf = (item: AudibleItem) => optionally(item.releaseDate?.getUTCFullYear(), Year)
+
+/** The edition years to fill on books imported before the year was kept.
+ *
+ *  Only a book without one is touched: a year the reader typed is theirs, and
+ *  one already filled from Audible is the same year again. */
+export const editionYearsFor = (
+  books: readonly Book[],
+  items: readonly AudibleItem[],
+): { bookId: BookId; editionYear: YearValue }[] => {
+  const byAsin = new Map(items.map((item) => [item.asin, item]))
+
+  return books.flatMap((book) => {
+    if (!book.audibleAsin || book.editionYear !== undefined) return []
+    const item = byAsin.get(book.audibleAsin)
+    const editionYear = item && editionYearOf(item)
+    return editionYear ? [{ bookId: book.id, editionYear }] : []
+  })
+}
 
 /** The dates to move on books imported before the purchase date was kept.
  *

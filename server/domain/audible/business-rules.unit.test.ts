@@ -7,6 +7,7 @@ import {
   audibleSearchUrlOf,
   bookFrom,
   boughtSince,
+  editionYearsFor,
   importableFrom,
   listenedMinutesFor,
   listeningChangesFor,
@@ -27,6 +28,7 @@ import type {
 import { ListeningMinutes } from '~/domain/book/primitives'
 import type { Book, BookId } from '~/domain/book/types'
 import type { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
+import { Year } from '~/domain/shared/primitives'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 
 const anItem = (overrides: Partial<AudibleItem> = {}): AudibleItem =>
@@ -103,6 +105,20 @@ describe('reading one Audible title', () => {
 
     if (!importable) throw new Error('unreachable')
     expect(bookFrom(importable).firstPublishedIn).toBeUndefined()
+  })
+
+  test('dates the edition by the year the recording came out', () => {
+    const importable = importableFrom(anItem({ releaseDate: new Date('2018-03-01') }), noneOwned)
+
+    if (!importable) throw new Error('unreachable')
+    expect(bookFrom(importable).editionYear).toBe(Year(2018))
+  })
+
+  test('leaves the edition year empty when Audible gives no release date', () => {
+    const importable = importableFrom(anItem(), noneOwned)
+
+    if (!importable) throw new Error('unreachable')
+    expect(bookFrom(importable).editionYear).toBeUndefined()
   })
 
   // A single bad field must not sink an otherwise good record, exactly as with a
@@ -706,6 +722,30 @@ describe('dating an import back to the day the title was bought', () => {
       purchaseDatesFor([aBook({ addedAt: imported })], [anItem({ dateAdded: bought })]),
     ).toEqual([])
     expect(purchaseDatesFor([linked()], [anItem()])).toEqual([])
+  })
+})
+
+describe('dating the edition of an import made before the year was kept', () => {
+  const released = new Date('2018-03-01T00:00:00.000Z')
+  const linked = (overrides: Partial<Book> = {}) =>
+    aBook({ audibleAsin: asin('B002V1OF70'), ...overrides })
+
+  test('gives a linked audiobook the year its recording came out', () => {
+    expect(editionYearsFor([linked()], [anItem({ releaseDate: released })])).toEqual([
+      { bookId: bookId('book-1'), editionYear: Year(2018) },
+    ])
+  })
+
+  // A year the reader typed is theirs, and one already filled is the same again.
+  test('leaves a book that already has an edition year alone', () => {
+    expect(
+      editionYearsFor([linked({ editionYear: Year(2020) })], [anItem({ releaseDate: released })]),
+    ).toEqual([])
+  })
+
+  test('leaves an unlinked book, and one Audible cannot date, alone', () => {
+    expect(editionYearsFor([aBook()], [anItem({ releaseDate: released })])).toEqual([])
+    expect(editionYearsFor([linked()], [anItem()])).toEqual([])
   })
 })
 

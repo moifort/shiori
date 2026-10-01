@@ -134,6 +134,7 @@ struct BookPage: View {
                 format: .audiobook,
                 publisher: "Bragelonne",
                 firstPublishedIn: 2007,
+                editionYear: 2015,
                 synopsis: "Kvothe raconte sa propre légende : l'enfance sur les routes, la misère à Tarbean, l'Université et la magie qu'on y apprend.",
                 genre: .fantasy,
                 subgenres: ["Roman initiatique", "Aventure"],

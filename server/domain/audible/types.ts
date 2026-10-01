@@ -12,7 +12,7 @@ import type {
   Synopsis,
   TaggedSubgenre,
 } from '~/domain/book/types'
-import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
+import type { AuthorName, BookTitle, UserId, Year } from '~/domain/shared/types'
 
 /** Amazon's product identifier, the stable handle on an audiobook. Ten
  *  alphanumeric characters, `B002V1OF70`. */
@@ -87,6 +87,9 @@ export type LibrarySync = {
   /** Parts of split novels imported without a rank, numbered after the volume
    *  they were cut from. Only ever non-zero on the first pass after that change. */
   renumbered: number
+  /** Audiobooks imported before the edition year was kept, given Audible's.
+   *  Only ever non-zero on the first pass after that change. */
+  editionDated: number
 }
 
 /** What one run of the nightly job did, across every reader it reached. */
@@ -139,6 +142,8 @@ export type ImportableBook = {
    *  never opened, or opened for less than a minute. */
   listenedMinutes?: ListeningMinutes
   publisher?: Publisher
+  /** The year the recording came out — this edition's, not the work's. */
+  editionYear?: Year
   synopsis?: Synopsis
   isbn13?: Isbn13
   /** The language of the recording, as Audible files it. Dropped when it names

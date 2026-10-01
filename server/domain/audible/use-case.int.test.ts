@@ -109,7 +109,7 @@ const { AudibleUseCase } = await import('~/domain/audible/use-case')
 const { AudibleQuery } = await import('~/domain/audible/query')
 const { BookQuery } = await import('~/domain/book/query')
 const { BookCommand } = await import('~/domain/book/command')
-const { BookTitle, AuthorName } = await import('~/domain/shared/primitives')
+const { BookTitle, AuthorName, Year } = await import('~/domain/shared/primitives')
 const { ListeningMinutes } = await import('~/domain/book/primitives')
 const { SeriesId, SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
 
@@ -439,6 +439,7 @@ describe('the nightly sync', () => {
       imported: 1,
       redated: 0,
       renumbered: 0,
+      editionDated: 0,
     })
     expect((await BookQuery.all(reader)).map((book) => String(book.title))).toEqual([
       'Le Nom du vent',
@@ -470,6 +471,7 @@ describe('the nightly sync', () => {
       imported: 0,
       redated: 0,
       renumbered: 0,
+      editionDated: 0,
     })
     const [book] = await BookQuery.all(reader)
     expect(book?.audibleAsin).toBe(asin('B002V1OF70'))
@@ -494,6 +496,7 @@ describe('the nightly sync', () => {
       imported: 0,
       redated: 0,
       renumbered: 0,
+      editionDated: 0,
     })
     const [book] = await BookQuery.all(reader)
     expect(book?.status).toBe('to-read')
@@ -524,6 +527,7 @@ describe('the nightly sync', () => {
       imported: 0,
       redated: 1,
       renumbered: 0,
+      editionDated: 0,
     })
     const [book] = await BookQuery.all(reader)
     expect(book?.addedAt).toEqual(dateAdded)
@@ -562,6 +566,31 @@ describe('the nightly sync', () => {
     expect(book?.updatedAt).toEqual(LATER)
 
     expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ renumbered: 0 })
+  })
+
+  // Audiobooks were imported before the edition year was kept, and showed none.
+  // The pass gives them the year their recording came out, once.
+  test('dates the edition of an audiobook imported without its year', async () => {
+    await connect()
+    await AudibleCommand.recordImport(reader, NOW)
+    await BookCommand.add(
+      reader,
+      {
+        title: BookTitle('Le Nom du vent'),
+        authors: [AuthorName('Patrick Rothfuss')],
+        format: 'audiobook',
+        audibleAsin: asin('B002V1OF70'),
+      },
+      NOW,
+    )
+    items = [anItem({ releaseDate: new Date('2018-03-01T00:00:00.000Z') })]
+
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ editionDated: 1 })
+    const [book] = await BookQuery.all(reader)
+    expect(book?.editionYear).toBe(Year(2018))
+    expect(book?.firstPublishedIn).toBeUndefined()
+
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ editionDated: 0 })
   })
 
   // A book the old rule left on the pile, and one the reader started since:
@@ -667,6 +696,7 @@ describe('the nightly sync', () => {
       imported: 0,
       redated: 0,
       renumbered: 0,
+      editionDated: 0,
     })
     expect(await BookQuery.all(reader)).toHaveLength(1)
   })
