@@ -13,6 +13,9 @@ final class BookViewModel {
     /// Set while a mutation is in flight, so the screen can disable its controls
     /// without blanking the content underneath.
     private(set) var isSaving = false
+    /// Set while the record is looked up again: a web search that takes
+    /// seconds, so the screen says what it is waiting for.
+    private(set) var isRefreshing = false
 
     private let bookId: String
 
@@ -62,6 +65,22 @@ final class BookViewModel {
         } catch {
             errorMessage = reportError(error)
             return false
+        }
+    }
+
+    /// Brings the record up to date from the web. A refusal the reader can act
+    /// on is told in their words rather than the server's.
+    func refresh() async {
+        isRefreshing = true
+        defer { isRefreshing = false }
+        do {
+            book = try await BookAPI.refresh(id: bookId)
+        } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {
+            errorMessage = String(localized: "Vous avez utilisé tous vos scans. La mise à jour d'une fiche en consomme un.")
+        } catch let APIError.domain(code, _) where code == "SCAN_FAILED" {
+            errorMessage = String(localized: "Shiori n'a pas pu retrouver ce livre. La fiche est conservée ; réessayez plus tard.")
+        } catch {
+            errorMessage = reportError(error)
         }
     }
 

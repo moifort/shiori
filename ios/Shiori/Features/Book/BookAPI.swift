@@ -40,6 +40,20 @@ enum BookAPI {
         return data.updateBook.fragments.bookDetail.asBook
     }
 
+    /// Looks the book up again on the web and rewrites what describes it —
+    /// summary, genre, pages, cover — leaving what names it and what the reader
+    /// recorded alone. Spends one scan; throws
+    /// `APIError.domain(code: "QUOTA_EXHAUSTED")` once nothing is left, and
+    /// `"SCAN_FAILED"` when the lookup failed and the record is untouched.
+    static func refresh(id: String) async throws -> Book {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            concerning: .book(id: id),
+            mutation: ShioriGraphQL.RefreshBookMutation(id: id)
+        )
+        return data.refreshBook.fragments.bookDetail.asBook
+    }
+
     /// Saves the edit sheet in one request: the correction when there is one,
     /// then the stars when they changed — `rating` nil takes them back. Answers
     /// with the book as the last write left it, or nil when there was nothing

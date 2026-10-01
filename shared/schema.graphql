@@ -2170,6 +2170,13 @@ type Mutation {
   refreshAuthor(key: AuthorKey!): Author
 
   """
+  Bring a record up to date: the book is looked up again on the web from its title, authors, format, publisher and language, and what describes the work is rewritten from what was found — summary, genre, subgenres, page count, year of first publication, published cover, and the ISBN when the record has none. What names the book, the saga, and everything the reader recorded stay as they were; a field the lookup did not find keeps its value.
+  
+  Spends one scan of the allowance, only once the model answered. Fails with `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` when the model call errors — the record is then untouched.
+  """
+  refreshBook(id: BookId!): Book!
+
+  """
   Ask the world about a saga again: one fresh web-grounded model call, whose catalogue replaces the stored one of that edition for every reader of it. For a volume out since the catalogue was built.
   
   Built as `series` builds a first catalogue: from a volume the reader holds, listing the volumes out in its language, `language` naming that edition when the saga is held in more than one. Takes a few seconds. Null when the reader holds no volume of the saga, and when the model failed or found no volumes — the previous catalogue is then kept as it was.

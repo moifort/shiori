@@ -544,3 +544,49 @@ export const copyOf = <T extends Book>(
     )
     .toSorted((a, b) => a.addedAt.getTime() - b.addedAt.getTime())[0]
 }
+
+/** What a fresh lookup of the book found, as the scan answers it. */
+export type LookedUp = Partial<
+  Pick<Book, 'firstPublishedIn' | 'synopsis' | 'genre' | 'pageCount' | 'isbn13'>
+> & { subgenres?: readonly Subgenre[]; coverUrl?: Book['publishedCoverUrl'] }
+
+/** The facts a book takes from a fresh lookup when the reader asks for its
+ *  record to be brought up to date.
+ *
+ *  Only what describes the work is rewritten: summary, genre, subgenres, page
+ *  count, year, published cover. What names the book — title, authors, format,
+ *  language, publisher, saga — is what the lookup was made from, so it stays
+ *  the reader's. So does an ISBN already on the record: it names the edition on
+ *  the shelf, where the lookup only guesses one, and is filled in only when
+ *  missing. A field the lookup did not find keeps what the book had: a refresh
+ *  fills and corrects, it never empties. A recording has no page count,
+ *  whatever the lookup says of the printed book. */
+export const refreshedFacts = (
+  book: Pick<Book, 'format' | 'language' | 'isbn13'>,
+  found: LookedUp,
+  language: BookLanguage,
+): Partial<
+  Pick<
+    Book,
+    | 'firstPublishedIn'
+    | 'synopsis'
+    | 'genre'
+    | 'pageCount'
+    | 'isbn13'
+    | 'publishedCoverUrl'
+    | 'subgenres'
+  >
+> => {
+  const subgenres = found.subgenres ?? []
+  return Object.fromEntries(
+    Object.entries({
+      firstPublishedIn: found.firstPublishedIn,
+      synopsis: found.synopsis,
+      genre: found.genre,
+      pageCount: book.format === 'audiobook' ? undefined : found.pageCount,
+      isbn13: book.isbn13 ? undefined : found.isbn13,
+      publishedCoverUrl: found.coverUrl,
+      subgenres: subgenres.length > 0 ? taggedIn(subgenres, book.language ?? language) : undefined,
+    }).filter(([, value]) => value !== undefined),
+  )
+}

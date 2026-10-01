@@ -1,4 +1,4 @@
-import { match } from 'ts-pattern'
+import { match, P } from 'ts-pattern'
 import { datesOnArrival, taggedIn } from '~/domain/book/business-rules'
 import type { BookEdit } from '~/domain/book/command'
 import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
@@ -13,7 +13,7 @@ import { BookQuery } from '~/domain/book/query'
 import type { BookId } from '~/domain/book/types'
 import { BookUseCase } from '~/domain/book/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
-import { badUserInput, notFound } from '~/domain/shared/graphql/errors'
+import { badUserInput, domainError, notFound } from '~/domain/shared/graphql/errors'
 import { languageOf } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 
@@ -154,6 +154,30 @@ builder.mutationFields((t) => ({
         .with('bad-dates', () => badUserInput('These reading dates cannot be true'))
         .otherwise((book) => readBack(context.userId, book.id))
     },
+  }),
+
+  refreshBook: t.field({
+    type: BookType,
+    description:
+      'Bring a record up to date: the book is looked up again on the web from its ' +
+      'title, authors, format, publisher and language, and what describes the work ' +
+      'is rewritten from what was found — summary, genre, subgenres, page count, ' +
+      'year of first publication, published cover, and the ISBN when the record ' +
+      'has none. What names the book, the saga, and everything the reader recorded ' +
+      'stay as they were; a field the lookup did not find keeps its value.\n\n' +
+      'Spends one scan of the allowance, only once the model answered. Fails with ' +
+      '`QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` when the model call ' +
+      'errors — the record is then untouched.',
+    args: { id: t.arg({ type: 'BookId', required: true }) },
+    resolve: async (_root, args, context) =>
+      match(await BookUseCase.refresh(context.userId, args.id, languageOf(context.event)))
+        .with('not-found', () => notFound('Book not found'))
+        .with('quota-exhausted', () => domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up'))
+        .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
+        .with('no-author', 'bad-dates', () => {
+          throw new Error('a refresh touches neither the saga nor the dates')
+        })
+        .otherwise((book) => readBack(context.userId, book.id)),
   }),
 
   setReadingStatus: t.field({

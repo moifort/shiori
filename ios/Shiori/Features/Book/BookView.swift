@@ -78,13 +78,21 @@ struct BookView: View {
             // Toolbar actions close their menu before the mutation leaves, so the
             // call is made visible by a scrim rather than by the control itself.
             .overlay {
-                if viewModel.isSaving {
+                if viewModel.isRefreshing {
+                    ZStack {
+                        Color.black.opacity(0.1).ignoresSafeArea()
+                        ProgressView("Mise à jour de la fiche…")
+                            .padding()
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    }
+                } else if viewModel.isSaving {
                     ZStack {
                         Color.black.opacity(0.1).ignoresSafeArea()
                         ProgressView()
                     }
                 }
             }
+            .disabled(viewModel.isRefreshing)
             .sheet(isPresented: $showEditor) {
                 if let book = viewModel.book {
                     BookEditView(book: book) { correction, rating in
@@ -273,6 +281,14 @@ struct BookView: View {
                 showEditor = true
             }
             .accessibilityIdentifier("book-edit")
+
+            // As on an author's page: the book looked up again, for a record
+            // scanned thin or before the scan knew better. Typed corrections
+            // stay with "Modifier"; this one rewrites only what the web says.
+            Button("Mettre à jour la fiche", systemImage: "arrow.clockwise") {
+                run { await viewModel.refresh() }
+            }
+            .accessibilityIdentifier("book-refresh")
 
             // A volume the scan did not recognise as one is filed from here,
             // without going through the whole edit form. Only for a book in no

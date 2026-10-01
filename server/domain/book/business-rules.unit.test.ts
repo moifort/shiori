@@ -9,6 +9,7 @@ import {
   listeningProgressOf,
   membershipFor,
   readVolumeNumbersOf,
+  refreshedFacts,
   retaggedAfterEdit,
   sagaNamesOf,
   seriesInFormat,
@@ -24,10 +25,13 @@ import {
 } from '~/domain/book/business-rules'
 import {
   BookId,
+  Isbn13,
   ListeningMinutes,
+  PageCount,
   RecommendationComment,
   StarRating,
   Subgenre,
+  Synopsis,
 } from '~/domain/book/primitives'
 import type { Book, BookLanguage, BookView, Genre } from '~/domain/book/types'
 import { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
@@ -941,5 +945,52 @@ describe('the copy the reader already keeps', () => {
     expect(
       copyOf([held('Dune', 'Frank Herbert')], { title: 'Dune', authors: ['Brian Herbert'] }),
     ).toBeUndefined()
+  })
+})
+
+describe('a record brought up to date', () => {
+  const printed = { format: 'book' as const, language: 'en' as const }
+
+  test('takes the facts that describe the work from the lookup', () => {
+    expect(
+      refreshedFacts(
+        printed,
+        {
+          synopsis: Synopsis('A new summary'),
+          genre: 'fantasy',
+          pageCount: PageCount(662),
+          subgenres: [Subgenre('Epic fantasy')],
+        },
+        'fr',
+      ),
+    ).toEqual({
+      synopsis: Synopsis('A new summary'),
+      genre: 'fantasy',
+      pageCount: PageCount(662),
+      // Tagged in the edition's language, not the app's.
+      subgenres: [{ label: Subgenre('Epic fantasy'), language: 'en' }],
+    })
+  })
+
+  test('leaves alone what the lookup did not find', () => {
+    expect(refreshedFacts(printed, { subgenres: [] }, 'fr')).toEqual({})
+  })
+
+  test('tags the subgenres in the app language for an edition of no known language', () => {
+    expect(
+      refreshedFacts({ format: 'book' }, { subgenres: [Subgenre('Fantasy épique')] }, 'fr'),
+    ).toEqual({ subgenres: [{ label: Subgenre('Fantasy épique'), language: 'fr' }] })
+  })
+
+  test('keeps the ISBN of the edition on the shelf, and fills in a missing one', () => {
+    const found = { isbn13: Isbn13('9782352949329') }
+    expect(refreshedFacts({ ...printed, isbn13: Isbn13('9780756404741') }, found, 'fr')).toEqual({})
+    expect(refreshedFacts(printed, found, 'fr')).toEqual({ isbn13: Isbn13('9782352949329') })
+  })
+
+  test('gives a recording no page count', () => {
+    expect(
+      refreshedFacts({ format: 'audiobook', language: 'fr' }, { pageCount: PageCount(662) }, 'fr'),
+    ).toEqual({})
   })
 })

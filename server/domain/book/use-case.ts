@@ -1,6 +1,8 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
+import { refreshedFacts } from '~/domain/book/business-rules'
 import { BookCommand, type BookEdit, type NewBook } from '~/domain/book/command'
+import { BookQuery } from '~/domain/book/query'
 import type {
   BookId,
   ReadingNote,
@@ -8,7 +10,9 @@ import type {
   Recommendation,
   StarRating,
 } from '~/domain/book/types'
+import { ScanUseCase } from '~/domain/scan/use-case'
 import { SeriesUseCase } from '~/domain/series/use-case'
+import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 
 /** Every change a reader makes to their library, kept in step with the analytics
@@ -26,6 +30,31 @@ export namespace BookUseCase {
 
   export const edit = (userId: UserId, bookId: BookId, edit: BookEdit) =>
     withAnalytics(userId, (batch) => BookCommand.edit(userId, bookId, edit, undefined, batch))
+
+  /** Bring a record up to date: the book is looked up again, from what names
+   *  it, as a volume the release watch announced is, and the facts that
+   *  describe the work are rewritten from what was found — see
+   *  `refreshedFacts`. Metered like any lookup: one scan, spent only once the
+   *  model answered, and nothing written when it did not. */
+  export const refresh = async (userId: UserId, bookId: BookId, language: Language) => {
+    const book = await BookQuery.byId(userId, bookId)
+    if (!book) return 'not-found' as const
+    const found = await ScanUseCase.lookUpEdition(
+      userId,
+      {
+        recognized: true,
+        title: book.title,
+        authors: book.authors,
+        format: book.format,
+        publisher: book.publisher,
+        language: book.language,
+        subgenres: [],
+      },
+      language,
+    )
+    if (typeof found === 'string' || 'failed' in found) return found
+    return edit(userId, bookId, refreshedFacts(book, found, language))
+  }
 
   export const setStatus = (userId: UserId, bookId: BookId, status: ReadingStatus) =>
     withAnalytics(userId, (batch) =>

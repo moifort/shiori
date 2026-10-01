@@ -124,30 +124,35 @@ struct BookPage: View {
     }
 }
 
+extension Book {
+    /// A book read halfway, with every section of its page filled in.
+    static let preview = Book(
+        id: "1",
+        title: "Le Nom du vent",
+        authors: ["Patrick Rothfuss"],
+        format: .audiobook,
+        publisher: "Bragelonne",
+        firstPublishedIn: 2007,
+        editionYear: 2015,
+        synopsis: "Kvothe raconte sa propre légende : l'enfance sur les routes, la misère à Tarbean, l'Université et la magie qu'on y apprend.",
+        genre: .fantasy,
+        subgenres: ["Roman initiatique", "Aventure"],
+        pageCount: 662,
+        audibleURL: URL(string: "https://www.audible.fr/pd/B00X57B4KE"),
+        isbn13: "9782352943556",
+        series: SeriesMembership(id: "s1", name: "Chronique du tueur de roi", volume: 1, kind: .main),
+        status: .reading,
+        note: "La scène de l'auberge, au début, vaut le livre entier.",
+        recommendation: BookRecommendation(recommenderName: "Marie Curie", comment: "Lis-le cet été."),
+        hidden: true,
+        startedAt: .now.addingTimeInterval(-86400 * 20)
+    )
+}
+
 #Preview {
     NavigationStack {
         BookPage(
-            book: Book(
-                id: "1",
-                title: "Le Nom du vent",
-                authors: ["Patrick Rothfuss"],
-                format: .audiobook,
-                publisher: "Bragelonne",
-                firstPublishedIn: 2007,
-                editionYear: 2015,
-                synopsis: "Kvothe raconte sa propre légende : l'enfance sur les routes, la misère à Tarbean, l'Université et la magie qu'on y apprend.",
-                genre: .fantasy,
-                subgenres: ["Roman initiatique", "Aventure"],
-                pageCount: 662,
-                audibleURL: URL(string: "https://www.audible.fr/pd/B00X57B4KE"),
-                isbn13: "9782352943556",
-                series: SeriesMembership(id: "s1", name: "Chronique du tueur de roi", volume: 1, kind: .main),
-                status: .reading,
-                note: "La scène de l'auberge, au début, vaut le livre entier.",
-                recommendation: BookRecommendation(recommenderName: "Marie Curie", comment: "Lis-le cet été."),
-                hidden: true,
-                startedAt: .now.addingTimeInterval(-86400 * 20)
-            ),
+            book: .preview,
             isSaving: false,
             onSetStatus: { _ in },
             onRate: {},

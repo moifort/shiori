@@ -16,6 +16,12 @@ mutation UpdateBook($id: BookId!, $input: BookEditInput!) {
   }
 }
 
+mutation RefreshBook($id: BookId!) {
+  refreshBook(id: $id) {
+    ...BookDetail
+  }
+}
+
 # The edit sheet, saved in one request: the correction and the stars ride one
 # document, which the server runs field by field in order, and only what the
 # reader changed is sent. `rating` defaults so a sheet that clears or keeps the
