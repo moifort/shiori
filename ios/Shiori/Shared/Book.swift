@@ -330,14 +330,6 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
     var authorLine: String {
         authors.isEmpty ? String(localized: "Auteur inconnu") : authors.joined(separator: ", ")
     }
-
-    /// The two letters drawn on the placeholder cover: the title's initial and
-    /// the author's, which together make most shelves scannable at a glance.
-    var initials: String {
-        let titleInitial = title.first.map(String.init) ?? ""
-        let authorInitial = authors.first?.first.map(String.init) ?? ""
-        return (titleInitial + authorInitial).uppercased()
-    }
 }
 
 /// One place in a saga's cover strip: a volume the reader owns, or one of the

@@ -4,8 +4,9 @@ import SwiftUI
 /// no photo — a book added by hand or taken from a series catalogue never has one.
 ///
 /// The placeholder is deliberately not a grey rectangle with an icon: a shelf of
-/// those is unreadable. Initials plus a hue derived from the title give each book
-/// a stable, distinguishable identity at a glance.
+/// those is unreadable. It is typeset like a plain cover — the title at the top,
+/// the author at the foot, in small print — on a hue derived from the title, so
+/// each book can be read and told apart at a glance.
 struct BookCover: View {
     let book: Book
     var width: CGFloat = 56
@@ -75,9 +76,23 @@ struct BookCover: View {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            Text(book.initials)
-                .font(.system(size: width * 0.32, weight: .semibold, design: .serif))
-                .foregroundStyle(.white)
+            VStack(spacing: width * 0.06) {
+                Text(book.title)
+                    .font(.system(size: width * 0.13, weight: .semibold, design: .serif))
+                    .lineLimit(6)
+                Spacer(minLength: 0)
+                if !book.authors.isEmpty {
+                    Text(book.authors.joined(separator: ", "))
+                        .font(.system(size: width * 0.1, design: .serif))
+                        .lineLimit(3)
+                        .opacity(0.85)
+                }
+            }
+            .multilineTextAlignment(.center)
+            .minimumScaleFactor(0.7)
+            .foregroundStyle(.white)
+            .padding(.horizontal, width * 0.08)
+            .padding(.vertical, width * 0.12)
         }
     }
 
