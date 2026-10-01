@@ -64,12 +64,7 @@ struct LibrariesOfferPage: View {
                     options: AmazonMarketplace.allCases,
                     label: { $0.amazonLabel }
                 ) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Boutique")
-                        Text("Celle sur laquelle vous achetez.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                    Text("Boutique")
                 }
                 .padding(.vertical, 10)
                 .accessibilityIdentifier("onboarding-marketplace")
@@ -120,7 +115,7 @@ struct LibrariesOfferPage: View {
         identifier: String
     ) -> some View {
         Toggle(isOn: isOn) {
-            HStack(spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
                 Image(systemName: symbol)
                     .font(.title3)
                     .foregroundStyle(.tint)

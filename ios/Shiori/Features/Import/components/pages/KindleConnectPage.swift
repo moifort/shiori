@@ -41,8 +41,6 @@ struct KindleConnectPage: View {
                 .accessibilityIdentifier("kindle-marketplace")
             } header: {
                 Text("Boutique")
-            } footer: {
-                Text("Celle sur laquelle vous achetez vos livres Kindle.")
             }
 
             Section {
@@ -55,12 +53,6 @@ struct KindleConnectPage: View {
                 }
                 .disabled(isWorking)
                 .accessibilityIdentifier("kindle-connect")
-            } footer: {
-                Text(
-                    "La page de connexion est celle d'Amazon : votre mot de passe ne passe "
-                        + "jamais par Shiori. Cette connexion est indépendante de celle "
-                        + "d'Audible. L'import ne consomme aucun scan."
-                )
             }
         }
         .navigationTitle("Kindle")

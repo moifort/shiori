@@ -37,7 +37,9 @@ struct KindleSourcePage: View {
     /// read as nothing new to report.
     private var reconnectSection: some View {
         Section {
-            Label {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Amazon a refusé la dernière synchronisation")
                         .font(.subheadline.weight(.semibold))
@@ -45,9 +47,6 @@ struct KindleSourcePage: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-            } icon: {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange)
             }
             Button("Reconnecter mon compte Amazon", action: onReconnect)
                 .accessibilityIdentifier("kindle-reconnect")
@@ -62,11 +61,6 @@ struct KindleSourcePage: View {
             }
         } header: {
             Text("Compte")
-        } footer: {
-            Text(
-                "Votre mot de passe n'est jamais passé par Shiori, et vos identifiants "
-                    + "Amazon ne quittent pas le serveur."
-            )
         }
     }
 
@@ -97,14 +91,6 @@ struct KindleSourcePage: View {
             }
         } header: {
             Text("Synchronisation")
-        } footer: {
-            // It writes into the library without asking again, so it says what
-            // it does — and what it never does — where the reader can read it.
-            Text(
-                "Les livres Kindle achetés ou empruntés depuis la dernière fois rejoignent "
-                    + "votre bibliothèque, et ceux que Kindle marque comme lus le deviennent "
-                    + "ici. Rien n'est jamais remis à lire, et vos notes ne sont jamais modifiées."
-            )
         }
     }
 
@@ -127,10 +113,16 @@ struct KindleSourcePage: View {
             }
             .disabled((totalCount ?? 0) == 0)
             .accessibilityIdentifier("kindle-pick-books")
+
+            // The one mistake that fails silently: a library opened on the wrong
+            // store reads as empty. Said only then.
+            if totalCount == 0 {
+                Text("Aucun livre Kindle sur ce compte. Vérifiez la boutique : une bibliothèque française ne s'ouvre pas depuis amazon.com.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         } header: {
             Text("Bibliothèque")
-        } footer: {
-            Text(remainingLabel)
         }
     }
 
@@ -138,12 +130,6 @@ struct KindleSourcePage: View {
         Section {
             AsyncButton("Déconnecter Kindle", role: .destructive) { await onDisconnect() }
                 .accessibilityIdentifier("kindle-disconnect")
-        } footer: {
-            Text(
-                "Shiori oublie ses identifiants ; les livres déjà importés restent dans "
-                    + "votre bibliothèque. L'appareil « Kindle for iPhone » reste enregistré "
-                    + "chez Amazon jusqu'à ce que vous l'y retiriez."
-            )
         }
     }
 
@@ -157,18 +143,6 @@ struct KindleSourcePage: View {
         return String(localized: "il y a \(days) j")
     }
 
-    private var remainingLabel: String {
-        guard let totalCount, let catalogedCount else {
-            return String(localized: "L'import ne consomme aucun scan.")
-        }
-        if totalCount == 0 {
-            return String(localized: "Aucun livre Kindle sur ce compte. Vérifiez la boutique : une bibliothèque française ne s'ouvre pas depuis amazon.com.")
-        }
-        let remaining = max(0, totalCount - catalogedCount)
-        return remaining == 0
-            ? String(localized: "Toute votre bibliothèque Kindle est cataloguée.")
-            : String(localized: "\(remaining) titre(s) pas encore catalogué(s). L'import ne consomme aucun scan.")
-    }
 }
 
 #Preview("Connecté") {
