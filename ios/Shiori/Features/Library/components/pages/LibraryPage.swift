@@ -114,8 +114,8 @@ struct LibraryPage: View {
 
     /// Every book of the view as a cover, in the list's order.
     private var mosaic: some View {
-        // One step short of the tightest grid: most of the shelf at a glance.
-        ShelfMosaic(rows: sections.flatMap(\.rows), initialColumns: 6, date: { $0.shelvedAt }) { book, width in
+        // The tightest grid: most of the shelf at a glance.
+        ShelfMosaic(rows: sections.flatMap(\.rows), columns: 7, date: { $0.shelvedAt }) { book, width in
             Button {
                 onBookTapped(book)
             } label: {

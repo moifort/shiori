@@ -31,11 +31,8 @@ struct MosaicModeButton: View {
 /// A shelf's mosaic, as the Photos app lays out a library: the tiles edge to
 /// edge with a hairline between them, no heading and no caption — the covers
 /// say what they are, and a tap says the rest. As many columns as fit at the
-/// width a tile aims for, never fewer than three — or the columns asked for —
-/// until the reader pinches: spreading two fingers draws fewer, larger
-/// covers, closing them more and smaller ones, a column at a time, the one
-/// grid fading into the other as Photos zooms its grid. The tile is told its
-/// width.
+/// width a tile aims for, never fewer than three — or the columns asked for.
+/// The tile is told its width.
 ///
 /// Given the date each row is shelved on, the month is pinned on a cover's
 /// corner in place of the list's headings, one line at most carrying one: on
@@ -53,10 +50,8 @@ struct ShelfMosaic<Row: Identifiable, Tile: View, Bottom: View>: View {
     var idealTileWidth: CGFloat = 95
     var spacing: CGFloat = 2
     var margin: CGFloat = 0
-    /// How few and how many columns a pinch can reach.
-    var zoomRange: ClosedRange<Int> = 3...7
-    /// The columns the grid opens on. Nil fits as many as the width allows.
-    var initialColumns: Int?
+    /// The columns the grid is drawn in. Nil fits as many as the width allows.
+    var columns: Int?
     /// A tile's height over its width, which places each line without
     /// measuring it: a cover's 1.5.
     var tileAspect: CGFloat = 1.5
@@ -65,11 +60,6 @@ struct ShelfMosaic<Row: Identifiable, Tile: View, Bottom: View>: View {
     @ViewBuilder let tile: (Row, CGFloat) -> Tile
     @ViewBuilder var bottom: () -> Bottom
 
-    /// The columns the reader pinched to. Nil until they do.
-    @State private var zoomedColumns: Int?
-    /// The magnification at which the last column was added or taken away:
-    /// a pinch keeps stepping as long as the fingers keep moving.
-    @State private var pinchBase: CGFloat = 1
     /// The month tag held at the foot of the toolbar, and how far the next
     /// one has pushed it up.
     @State private var pinned = PinnedMonth()
@@ -85,7 +75,7 @@ struct ShelfMosaic<Row: Identifiable, Tile: View, Bottom: View>: View {
 
     private func grid(width: CGFloat) -> some View {
         let fitting = max(3, Int((width - 2 * margin + spacing) / (idealTileWidth + spacing)))
-        let count = zoomedColumns ?? initialColumns ?? fitting
+        let count = columns ?? fitting
         let tileWidth = max(0, (width - 2 * margin - CGFloat(count - 1) * spacing) / CGFloat(count))
         let tags = monthTags(columns: count)
         let isCompact = tileWidth < 80
@@ -111,13 +101,12 @@ struct ShelfMosaic<Row: Identifiable, Tile: View, Bottom: View>: View {
                                         MosaicDateTag(month: month, isCompact: isCompact)
                                     }
                                 }
+                                // Drawn over the next cover, which the tag
+                                // runs onto when it is wider than its own.
+                                .zIndex(tags[index] == nil ? 0 : 1)
                         }
                     }
                     .padding(.horizontal, margin)
-                    // A grid per zoom: the tiles do not slide to their new
-                    // places, the new grid fades in over the old one.
-                    .id(count)
-                    .transition(.opacity)
                 }
                 bottom()
             }
@@ -149,18 +138,6 @@ struct ShelfMosaic<Row: Identifiable, Tile: View, Bottom: View>: View {
                     .allowsHitTesting(false)
             }
         }
-        .simultaneousGesture(
-            MagnifyGesture()
-                .onChanged { value in
-                    let step = value.magnification / pinchBase
-                    guard step > 1.25 || step < 0.8 else { return }
-                    let columns = min(max(count + (step > 1 ? -1 : 1), zoomRange.lowerBound), zoomRange.upperBound)
-                    pinchBase = value.magnification
-                    guard columns != count else { return }
-                    withAnimation(.easeInOut(duration: 0.25)) { zoomedColumns = columns }
-                }
-                .onEnded { _ in pinchBase = 1 }
-        )
     }
 }
 
@@ -215,28 +192,27 @@ extension ShelfMosaic {
 /// corners, which reads over any cover.
 struct MosaicDateTag: View {
     let month: Date
-    /// Over the narrow covers of a grid pinched tight: the year in two
-    /// figures and smaller type, so the tag stays inside its cover — the next
-    /// one would cut it.
+    /// Over the narrow covers of a tight grid: the year in two figures, in
+    /// type still large enough to read at a glance.
     var isCompact = false
 
     /// Its height, padding included: how close the next tag comes before it
     /// pushes this one up.
-    static func height(isCompact: Bool) -> CGFloat { isCompact ? 21 : 30 }
+    static func height(isCompact: Bool) -> CGFloat { isCompact ? 26 : 30 }
 
     var body: some View {
         Text(isCompact
             ? month.formatted(.dateTime.month(.abbreviated).year(.twoDigits))
             : month.formatted(.dateTime.month(.abbreviated).year()))
-            .font(isCompact ? .system(size: 11, weight: .semibold) : .footnote.weight(.semibold))
+            .font(isCompact ? .system(size: 13, weight: .bold) : .footnote.weight(.semibold))
             .foregroundStyle(.white)
             .lineLimit(1)
             .fixedSize()
-            .padding(.horizontal, isCompact ? 4 : 7)
-            .padding(.vertical, isCompact ? 2 : 4)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: isCompact ? 4 : 6, style: .continuous))
+            .padding(.horizontal, isCompact ? 6 : 7)
+            .padding(.vertical, isCompact ? 3 : 4)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: isCompact ? 5 : 6, style: .continuous))
             .environment(\.colorScheme, .dark)
-            .padding(isCompact ? 2 : 4)
+            .padding(isCompact ? 3 : 4)
             .accessibilityHidden(true)
     }
 }
