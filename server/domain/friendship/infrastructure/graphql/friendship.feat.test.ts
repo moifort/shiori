@@ -336,6 +336,22 @@ describe("the reader's own shelf, as friends see it", () => {
     })
   })
 
+  // The recent activity names the book shelved last too.
+  test('names the book added last', async () => {
+    setSystemTime(new Date('2026-09-01T00:00:00Z'))
+    await addBook(alice, 'title: "Ulysse", status: READING')
+    setSystemTime(new Date('2026-09-10T00:00:00Z'))
+    await addBook(alice, 'title: "Les Bienveillantes", status: TO_READ')
+    setSystemTime()
+
+    const result = await as(alice)('{ myShelf { lastAdded { title addedAt } } }')
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.myShelf).toEqual({
+      lastAdded: { title: 'Les Bienveillantes', addedAt: '2026-09-10T00:00:00.000Z' },
+    })
+  })
+
   // The recent activity names the book dropped last too.
   test('names the book dropped last', async () => {
     setSystemTime(new Date('2026-09-01T00:00:00Z'))

@@ -33,6 +33,7 @@ import {
   friendSagaStateOf,
   inReadingOrder,
   lastActivityOf,
+  lastAddedOf,
   lastDroppedOf,
   lastFinishedOf,
   newestFavoritesFirst,
@@ -112,6 +113,8 @@ export type FriendProfile = {
   lastFinished?: FriendBook
   /** The book they dropped most recently. */
   lastDropped?: FriendBook
+  /** The book they shelved most recently. */
+  lastAdded?: FriendBook
   /** How many books their library shows — every one they share, the
    *  dropped ones aside, as the reader's own Library tab. */
   bookCount: CountValue
@@ -665,6 +668,7 @@ const sharedShelfOf = async (
 
   const finished = lastFinishedOf(books)
   const dropped = lastDroppedOf(books)
+  const added = lastAddedOf(books)
   // The sagas drawn with their covers: the favourites, and those of the
   // books the recent activity leads with — the one in progress, the last
   // finished, the last hearted.
@@ -678,21 +682,29 @@ const sharedShelfOf = async (
   )
 
   const sagas = followedSagasOf(books)
-  const [signedReading, signedPile, signedFavorites, signedVolumes, signedFinished, signedDropped] =
-    await Promise.all([
-      BookQuery.withSignedCovers(reading),
-      BookQuery.withSignedCovers(pile),
-      BookQuery.withSignedCovers(favorites),
-      Promise.all(
-        sagas.map((saga) =>
-          drawnSagaIds.has(saga.id)
-            ? BookQuery.withSignedCovers(inReadingOrder(saga.books))
-            : Promise.resolve([]),
-        ),
+  const [
+    signedReading,
+    signedPile,
+    signedFavorites,
+    signedVolumes,
+    signedFinished,
+    signedDropped,
+    signedAdded,
+  ] = await Promise.all([
+    BookQuery.withSignedCovers(reading),
+    BookQuery.withSignedCovers(pile),
+    BookQuery.withSignedCovers(favorites),
+    Promise.all(
+      sagas.map((saga) =>
+        drawnSagaIds.has(saga.id)
+          ? BookQuery.withSignedCovers(inReadingOrder(saga.books))
+          : Promise.resolve([]),
       ),
-      BookQuery.withSignedCovers(finished ? [finished] : []),
-      BookQuery.withSignedCovers(dropped ? [dropped] : []),
-    ])
+    ),
+    BookQuery.withSignedCovers(finished ? [finished] : []),
+    BookQuery.withSignedCovers(dropped ? [dropped] : []),
+    BookQuery.withSignedCovers(added ? [added] : []),
+  ])
   const unmarked = (books: BookView[]): FriendBook[] =>
     books.map((book) => ({ ...book, inLibrary: false }))
 
@@ -704,6 +716,7 @@ const sharedShelfOf = async (
     favorites: unmarked(signedFavorites),
     lastFinished: unmarked(signedFinished)[0],
     lastDropped: unmarked(signedDropped)[0],
+    lastAdded: unmarked(signedAdded)[0],
     sagas: sagas.map((saga, index) =>
       friendSagaOf(saga, favoriteSagas, ratings, unmarked(signedVolumes[index] ?? [])),
     ),
@@ -723,6 +736,7 @@ const marked = (shelf: FriendProfile, inLibrary: (book: FriendBook) => boolean):
     favorites: mark(shelf.favorites),
     lastFinished: shelf.lastFinished && mark([shelf.lastFinished])[0],
     lastDropped: shelf.lastDropped && mark([shelf.lastDropped])[0],
+    lastAdded: shelf.lastAdded && mark([shelf.lastAdded])[0],
     sagas: shelf.sagas.map((saga) => ({ ...saga, volumes: mark(saga.volumes) })),
   }
 }

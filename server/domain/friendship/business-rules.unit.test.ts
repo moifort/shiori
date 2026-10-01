@@ -7,6 +7,7 @@ import {
   inReadingOrder,
   isLovedByMany,
   lastActivityOf,
+  lastAddedOf,
   lastDroppedOf,
   lastFinishedOf,
   newestFavoritesFirst,
@@ -63,6 +64,20 @@ describe('lastFinishedOf', () => {
     expect(lastFinishedOf([{ status: 'read' as const }, { status: 'to-read' as const }])).toBe(
       undefined,
     )
+  })
+})
+
+describe('lastAddedOf', () => {
+  test('picks the book shelved last, whatever its status', () => {
+    const books = [
+      { title: 'earlier', status: 'to-read' as const, addedAt: day(3) },
+      { title: 'latest', status: 'read' as const, addedAt: day(9) },
+    ]
+    expect(lastAddedOf(books)?.title).toBe('latest')
+  })
+
+  test('answers nothing on an empty shelf', () => {
+    expect(lastAddedOf([])).toBe(undefined)
   })
 })
 

@@ -1,30 +1,29 @@
 import SwiftUI
 
-/// A friend's recent activity as four covers across the card: the book in
-/// progress, the last one finished, the last one dropped, the last one
-/// hearted. No title and no caption — the cover already shows the book — but
-/// in its corner, where it stands: its status, and a heart on a favourite.
-/// A tap opens the book.
+/// A friend's recent activity as five covers across the card: the book in
+/// progress, the last one read, the last one hearted, the last one added and
+/// the last one dropped. No title — the cover already shows the book — but
+/// under each, what happened, in its colour. A tap opens the book.
 struct RecentActivityStrip: View {
     let activities: [RecentActivity]
     let onOpen: (FriendBook) -> Void
 
     /// One slot per kind of activity, so a cover keeps its size whether one
-    /// or four moved lately.
-    private static let slots = 4
+    /// or five moved lately.
+    private static let slots = 5
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
+        HStack(alignment: .top, spacing: 8) {
             ForEach(activities.prefix(Self.slots)) { activity in
                 Button { onOpen(activity.book) } label: {
-                    cover(activity)
+                    tile(activity)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(accessibilityLabel(activity))
+                .accessibilityLabel("\(activity.book.book.title), \(caption(activity))")
                 .accessibilityIdentifier("recent-activity-cover")
             }
             ForEach(activities.count..<max(activities.count, Self.slots), id: \.self) { _ in
-                Color.clear.aspectRatio(2 / 3, contentMode: .fit)
+                Color.clear.frame(maxWidth: .infinity)
             }
         }
         .padding(.horizontal, 16)
@@ -32,38 +31,41 @@ struct RecentActivityStrip: View {
         .listRowInsets(EdgeInsets())
     }
 
-    private func cover(_ activity: RecentActivity) -> some View {
-        let book = activity.book.book
-        return Color.clear
-            .aspectRatio(2 / 3, contentMode: .fit)
-            .overlay {
-                GeometryReader { proxy in
-                    BookCover(book: book, width: proxy.size.width, showsFormatBadge: false)
-                }
-            }
-            .overlay(alignment: .bottomLeading) {
-                HStack(spacing: 3) {
-                    ReadingStatusBadge(status: book.status)
-                    if book.favorite {
-                        CoverBadge(systemImage: "heart.fill", tint: .red)
+    private func tile(_ activity: RecentActivity) -> some View {
+        VStack(spacing: 4) {
+            Color.clear
+                .aspectRatio(2 / 3, contentMode: .fit)
+                .overlay {
+                    GeometryReader { proxy in
+                        BookCover(book: activity.book.book, width: proxy.size.width, showsFormatBadge: false)
                     }
                 }
-                .padding(5)
-            }
-    }
-
-    private func accessibilityLabel(_ activity: RecentActivity) -> String {
-        let book = activity.book.book
-        let favorite = book.favorite ? [String(localized: "Favori")] : []
-        return ([book.title, caption(activity), book.status.label] + favorite).joined(separator: ", ")
+            Text(caption(activity))
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(tint(activity))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private func caption(_ activity: RecentActivity) -> String {
         switch activity {
         case .reading: String(localized: "En cours")
-        case .finished: String(localized: "Terminé")
+        case .finished: String(localized: "Lu")
+        case .hearted: String(localized: "Favori")
+        case .added: String(localized: "Ajouté")
         case .dropped: String(localized: "Abandonné")
-        case .hearted: String(localized: "Coup de cœur")
+        }
+    }
+
+    private func tint(_ activity: RecentActivity) -> Color {
+        switch activity {
+        case .reading: ReadingStatus.reading.tint
+        case .finished: ReadingStatus.read.tint
+        case .hearted: .red
+        case .added: ReadingStatus.toRead.tint
+        case .dropped: .secondary
         }
     }
 }

@@ -56,6 +56,15 @@ export const lastDroppedOf = <
       undefined,
     )
 
+/** The book shelved most recently, whatever it became since. */
+export const lastAddedOf = <Added extends Pick<Book, 'addedAt'>>(
+  books: readonly Added[],
+): Added | undefined =>
+  books.reduce<Added | undefined>(
+    (latest, book) => (!latest || book.addedAt > latest.addedAt ? book : latest),
+    undefined,
+  )
+
 /** The favourites newest first: the most recently hearted leads, so a friend
  *  who comes back finds what is new at the top rather than the same list. A
  *  heart given before its date was kept ranks on the book's last activity,

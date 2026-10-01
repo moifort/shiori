@@ -110,7 +110,7 @@ struct FriendProfileView: View {
             }
             // What moved lately, under the figures, so a friend coming back
             // finds what changed rather than the same lists: the last book in
-            // progress, finished, dropped and hearted, as covers side by side.
+            // progress, read, hearted, added and dropped, as covers side by side.
             // A tap opens the book.
             let recent = profile.recentActivity()
             if !recent.isEmpty {
@@ -302,6 +302,9 @@ struct FriendProfileView: View {
         if profile.lastDropped?.id == bookId {
             profile.lastDropped?.inLibrary = true
         }
+        if profile.lastAdded?.id == bookId {
+            profile.lastAdded?.inLibrary = true
+        }
         self.profile = profile
         write()
     }
@@ -336,6 +339,11 @@ extension FriendProfile {
             inLibrary: false,
             lastActivityAt: .now.addingTimeInterval(-86400 * 2)
         )
+        var silo = FriendBook(
+            book: Book(id: "silo", title: "Silo", authors: ["Hugh Howey"], status: .toRead),
+            inLibrary: false
+        )
+        silo.book.addedAt = .now.addingTimeInterval(-86400)
         let reading = [
             ("piranesi", "Piranesi", "Susanna Clarke"),
             ("lune", "La Lune est une maîtresse cruelle", "Robert A. Heinlein"),
@@ -361,6 +369,7 @@ extension FriendProfile {
             sagas: [],
             lastFinished: wind,
             lastDropped: ulysse,
+            lastAdded: silo,
             bookCount: 9,
             readThisYear: 2
         )
