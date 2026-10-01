@@ -3,7 +3,7 @@ import SwiftUI
 /// Découvrir's strip of the editions awaited in one format, drawn as the
 /// friends' favourites are: covers that scroll sideways, the ones out first
 /// with "Disponible" in green under them, the date of the ones announced in
-/// orange.
+/// orange. No title: the cover says it.
 struct AwaitedEditionsStrip: View {
     let editions: [AwaitedEdition]
     let onTapped: (AwaitedEdition) -> Void
@@ -16,6 +16,7 @@ struct AwaitedEditionsStrip: View {
                         CoverTile(
                             book: edition.cover,
                             caption: edition.caption,
+                            showsTitle: false,
                             captionTint: edition.stateTint
                         )
                     }

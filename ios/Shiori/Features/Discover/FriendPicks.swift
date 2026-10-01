@@ -105,7 +105,8 @@ private struct PicksStrip<Content: View>: View {
     }
 }
 
-/// The Books shelf's strip: the covers, the friend under each.
+/// The Books shelf's strip: the covers, the friend under each — no title, the
+/// cover says it.
 struct LovedBooksStrip: View {
     let books: [LovedBook]
     let onTapped: (LovedBook) -> Void
@@ -114,7 +115,7 @@ struct LovedBooksStrip: View {
         PicksStrip {
             ForEach(books) { loved in
                 Button { onTapped(loved) } label: {
-                    CoverTile(book: loved.book.book, caption: loved.lovers.caption)
+                    CoverTile(book: loved.book.book, caption: loved.lovers.caption, showsTitle: false)
                         .overlay(alignment: .topLeading) {
                             if loved.lovers.lovedByMany {
                                 LovedByManyBadge().offset(x: -6, y: -6)
