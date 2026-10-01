@@ -28,7 +28,6 @@ struct SharedView: View {
         NavigationStack(path: $path) {
             content
                 .navigationTitle("Partagé")
-                .toolbar { toolbar }
                 .navigationDestination(for: Friend.ID.self) { userId in
                     if let friend = viewModel.friends.first(where: { $0.userId == userId }) {
                         FriendProfileView(friend: friend)
@@ -154,6 +153,19 @@ struct SharedView: View {
                     invitePrompt
                 } else {
                     Section {
+                        Button {
+                            Task { await invite() }
+                        } label: {
+                            HStack {
+                                Label("Envoyer une invitation", systemImage: "person.badge.plus")
+                                if isInviting {
+                                    Spacer()
+                                    ProgressView()
+                                }
+                            }
+                        }
+                        .disabled(isInviting)
+                        .accessibilityIdentifier("friends-invite")
                         ForEach(viewModel.friends) { friend in
                             NavigationLink(value: friend.userId) {
                                 FriendRow(friend: friend)
@@ -195,34 +207,6 @@ struct SharedView: View {
             } label: {
                 Label("J'ai reçu une invitation", systemImage: "arrow.down.circle")
             }
-        }
-    }
-
-    @ToolbarContentBuilder
-    private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
-            Menu {
-                Button {
-                    Task { await invite() }
-                } label: {
-                    Label("Inviter un ami", systemImage: "person.badge.plus")
-                }
-                .accessibilityIdentifier("friends-invite")
-                Button {
-                    pastedCode = ""
-                    showAccept = true
-                } label: {
-                    Label("J'ai reçu une invitation", systemImage: "arrow.down.circle")
-                }
-                .accessibilityIdentifier("friends-accept")
-            } label: {
-                if isInviting {
-                    ProgressView()
-                } else {
-                    Label("Ajouter un ami", systemImage: "person.badge.plus")
-                }
-            }
-            .accessibilityIdentifier("shared-add-friend")
         }
     }
 
