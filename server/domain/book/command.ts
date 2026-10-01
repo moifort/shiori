@@ -34,6 +34,7 @@ import type {
   Synopsis,
   TaggedSubgenre,
 } from '~/domain/book/types'
+import type { KindleAsin } from '~/domain/kindle/types'
 import type { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
 import { favoriteAfterRating, ratingUnderHeart } from '~/domain/shared/rating'
 import type { AuthorName, BookTitle, UserId, Year } from '~/domain/shared/types'
@@ -65,6 +66,9 @@ export type NewBook = {
   /** The Audible title the record stands for. Only an import supplies it, and it
    *  is what lets the nightly sync find this very book again. */
   audibleAsin?: AudibleAsin
+  /** The Kindle title the record stands for. Only a Kindle import supplies it,
+   *  and it is what lets the nightly Kindle sync find this very book again. */
+  kindleAsin?: KindleAsin
   series?: SeriesMembership
   coverPath?: ObjectPath
   publishedCoverUrl?: CoverUrl
@@ -158,6 +162,7 @@ export namespace BookCommand {
       isbn13: input.isbn13,
       language: input.language,
       audibleAsin: input.audibleAsin,
+      kindleAsin: input.kindleAsin,
       // The scan keyed the saga from the format it read off the cover; the
       // reader may have saved another.
       series: seriesInFormat(input.series, input.format ?? 'book'),
@@ -276,6 +281,23 @@ export namespace BookCommand {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
     return repository.save({ ...book, audibleAsin, updatedAt: now }, batch)
+  }
+
+  /** Record which Kindle title a book stands for.
+   *
+   *  Its own command, as `linkToAudible` is: the reader never types an ASIN, and
+   *  the only thing that fills it is the sync recognizing an ebook catalogued
+   *  before the link existed — from the data export, or by hand. */
+  export const linkToKindle = async (
+    userId: UserId,
+    bookId: BookId,
+    kindleAsin: KindleAsin,
+    now = new Date(),
+    batch?: WriteBatch,
+  ): Promise<Book | 'not-found'> => {
+    const book = await repository.findById(userId, bookId)
+    if (!book) return 'not-found'
+    return repository.save({ ...book, kindleAsin, updatedAt: now }, batch)
   }
 
   /** Give a book its rank in the saga it is already filed under.

@@ -17,6 +17,7 @@ import type {
   AudibleKey as AudibleKeyType,
   GcpBillingTable as GcpBillingTableType,
   GoogleApiKey as GoogleApiKeyType,
+  KindleKey as KindleKeyType,
   PublicBaseUrl as PublicBaseUrlType,
   SentryDsn as SentryDsnType,
   SentryRelease as SentryReleaseType,
@@ -121,6 +122,20 @@ export const AudibleKey = (value: unknown) => {
     )
     .parse(value)
   return make<AudibleKeyType>()(v)
+}
+
+// The Kindle connections' own key, checked the same way. Its own rather than
+// Audible's: either integration can be cut, or its key rotated, without the
+// other's readers having to connect again.
+export const KindleKey = (value: unknown) => {
+  const v = z
+    .string()
+    .refine(
+      (key) => Buffer.from(key, 'base64').length === 32,
+      'kindle key must be 32 bytes, base64-encoded',
+    )
+    .parse(value)
+  return make<KindleKeyType>()(v)
 }
 
 export const PublicBaseUrl = (value: unknown) => {

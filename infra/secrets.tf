@@ -17,6 +17,13 @@ resource "random_bytes" "audible_key" {
   length = 32
 }
 
+# The same for the Kindle device credentials, under a key of its own: either
+# integration can be cut, or its key rotated, without the other's readers having
+# to connect again. `random_bytes` for the reason given above.
+resource "random_bytes" "kindle_key" {
+  length = 32
+}
+
 locals {
   admin_token_value = var.admin_token != null ? var.admin_token : random_password.admin_token[0].result
 
@@ -32,6 +39,7 @@ locals {
     sentry-dsn       = var.sentry_dsn
     asc-private-key  = local.asc_private_key_value
     audible-key      = random_bytes.audible_key.base64
+    kindle-key       = random_bytes.kindle_key.base64
     apns-private-key = local.apns_private_key_value
   }
 
@@ -44,6 +52,7 @@ locals {
     "google-api-key",
     "admin-token",
     "audible-key",
+    "kindle-key",
     nonsensitive(var.sentry_dsn) != "" ? "sentry-dsn" : "",
     local.asc_private_key_value != "" ? "asc-private-key" : "",
     local.apns_private_key_value != "" ? "apns-private-key" : "",

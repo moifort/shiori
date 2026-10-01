@@ -21,6 +21,7 @@ export type AttachmentsBucket = Brand<string, 'AttachmentsBucket'>
 /** The 256-bit key, base64-encoded, the Audible device credentials are sealed
  *  with before they reach Firestore. */
 export type AudibleKey = Brand<string, 'AudibleKey'>
+export type KindleKey = Brand<string, 'KindleKey'>
 /** The id of the Apple key with the APNs service enabled (10 characters). */
 export type ApnsKeyId = Brand<string, 'ApnsKeyId'>
 /** That key's .p8 PEM content, which signs the provider tokens. */

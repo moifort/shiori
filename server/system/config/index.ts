@@ -13,6 +13,7 @@ import {
   AudibleKey,
   GcpBillingTable,
   GoogleApiKey,
+  KindleKey,
   PremiumUserIds,
   PublicBaseUrl,
   SentryDsn,
@@ -50,6 +51,7 @@ export const config = () => {
       ? AttachmentsBucket(runtimeConfig.attachmentsBucket)
       : undefined,
     audibleKey: runtimeConfig.audibleKey ? AudibleKey(runtimeConfig.audibleKey) : undefined,
+    kindleKey: runtimeConfig.kindleKey ? KindleKey(runtimeConfig.kindleKey) : undefined,
     apnsKeyId: runtimeConfig.apnsKeyId ? ApnsKeyId(runtimeConfig.apnsKeyId) : undefined,
     apnsPrivateKey: runtimeConfig.apnsPrivateKey
       ? ApnsPrivateKey(runtimeConfig.apnsPrivateKey)

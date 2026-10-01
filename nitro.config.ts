@@ -57,6 +57,8 @@ export default defineNitroConfig({
     // Seals the Amazon device credentials an Audible connection is made of, so a
     // Firestore export does not hand out standing access to readers' accounts.
     audibleKey: '',
+    // The same, for the Kindle device credentials, under a key of its own.
+    kindleKey: '',
     // Push notifications through APNs: a key with the APNs service enabled, its
     // id, and the team that owns it. Any of them blank and the alerts are only
     // logged, never sent.

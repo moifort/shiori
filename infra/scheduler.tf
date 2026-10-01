@@ -64,6 +64,39 @@ resource "google_cloud_scheduler_job" "sync_audible_libraries" {
   depends_on = [google_project_service.apis]
 }
 
+# Passes over every reader who left the Kindle sync on, once a night: titles
+# acquired since the last pass are catalogued, and books Kindle newly marks read
+# move to read. Its own job rather than a step of the Audible one: the two
+# connections are independent, and a reader without a Kindle is never visited.
+# Half an hour after the Audible pass, so the two never race on one library.
+#
+# Answers 200 with the counts even when a reader's pass failed, and is
+# idempotent, so a retry re-reads Amazon and finds nothing new to do.
+resource "google_cloud_scheduler_job" "sync_kindle_libraries" {
+  project   = google_project.this.project_id
+  region    = var.region
+  name      = "sync-kindle-libraries"
+  schedule  = "30 4 * * *"
+  time_zone = "Europe/Paris"
+
+  # The job stops on its own after two minutes of the function's 180s ceiling.
+  attempt_deadline = "180s"
+
+  retry_config {
+    retry_count = 1
+  }
+
+  http_target {
+    http_method = "POST"
+    uri         = "${google_cloudfunctions2_function.server.service_config[0].uri}/admin/sync-kindle"
+    headers = {
+      Authorization = "Bearer ${local.admin_token_value}"
+    }
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
 # Keeps Découvrir and the sagas' release dates fresh: each hourly run reads again
 # the libraries last read a day ago, then looks up on the web the sagas anybody
 # follows whose watch is a week old, until two minutes are spent, so the work is

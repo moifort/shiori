@@ -71,7 +71,9 @@ import '~/domain/audible/infrastructure/graphql/mutations'
 
 // Kindle (cataloguing a library from the Amazon data export). After book: its
 // importable book borrows the book scalars.
+import '~/domain/kindle/infrastructure/graphql/enums'
 import '~/domain/kindle/infrastructure/graphql/types'
+import '~/domain/kindle/infrastructure/graphql/queries'
 import '~/domain/kindle/infrastructure/graphql/mutations'
 
 // Friendship (sharing a library with somebody). After book and series: a

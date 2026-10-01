@@ -1,5 +1,6 @@
 import type { Brand } from 'ts-brand'
 import type { AudibleAsin } from '~/domain/audible/types'
+import type { KindleAsin } from '~/domain/kindle/types'
 import type { SeriesId, SeriesName, VolumeKind, VolumeNumber } from '~/domain/series/types'
 import type {
   AuthorName,
@@ -196,6 +197,11 @@ export type Book = {
    *  Absent on everything but an imported audiobook, and on imports that predate
    *  the field — the first sync matches those by shelf key and fills it in once. */
   audibleAsin?: AudibleAsin
+  /** The Kindle title this record stands for, when it has one: what the nightly
+   *  Kindle sync moves a status on, for the same reason `audibleAsin` exists. Only
+   *  a book carrying it is ever touched by Kindle. Absent on everything but an
+   *  ebook imported from a connected Kindle library, or linked to one since. */
+  kindleAsin?: KindleAsin
   series?: SeriesMembership
   /** Absent for a book added by hand or from a series catalogue: those have no
    *  photo, and the app draws a typographic placeholder instead. */

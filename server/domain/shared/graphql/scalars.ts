@@ -18,6 +18,7 @@ import {
   Subgenre,
   Synopsis,
 } from '~/domain/book/primitives'
+import { KindleAsin } from '~/domain/kindle/primitives'
 import { DeviceToken } from '~/domain/notification/primitives'
 import { SeriesDescription, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import {
@@ -299,6 +300,16 @@ builder.scalarType('AudibleAsin', {
     '`importAudibleBooks` to say which titles to catalogue. Example: "B002V1OF70".',
   serialize: (value) => value as string,
   parseValue: validatedParse('AudibleAsin', AudibleAsin),
+})
+
+builder.scalarType('KindleAsin', {
+  description:
+    "Amazon's identifier for one Kindle book: ten upper-case alphanumeric " +
+    'characters.\n\n' +
+    'Handed out by `kindleLibrary` and passed straight back to ' +
+    '`importKindleLibrary` to say which titles to catalogue. Example: "B0G26NZ911".',
+  serialize: (value) => value as string,
+  parseValue: validatedParse('KindleAsin', KindleAsin),
 })
 
 builder.scalarType('DeviceToken', {

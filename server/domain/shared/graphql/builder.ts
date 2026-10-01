@@ -19,6 +19,7 @@ import type {
   Subgenre,
   Synopsis,
 } from '~/domain/book/types'
+import type { KindleAsin } from '~/domain/kindle/types'
 import type { DeviceToken } from '~/domain/notification/types'
 import type { SeriesDescription, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type {
@@ -88,6 +89,7 @@ export const builder = new SchemaBuilder<{
     CoverUrl: { Input: CoverUrl; Output: CoverUrl | SignedUrl }
     TimeZone: { Input: TimeZone; Output: TimeZone }
     AudibleAsin: { Input: AudibleAsin; Output: AudibleAsin }
+    KindleAsin: { Input: KindleAsin; Output: KindleAsin }
     DeviceToken: { Input: DeviceToken; Output: DeviceToken }
     AwaitedEditionId: { Input: AwaitedEditionId; Output: AwaitedEditionId }
   }
