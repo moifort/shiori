@@ -23,17 +23,10 @@ struct AuthorAvatar: View {
 
     private var monogram: some View {
         Text(initials)
-            .font(monogramFont)
+            .font(size > 50 ? .title2.weight(.semibold) : .subheadline.weight(.semibold))
             .foregroundStyle(.tint)
             .frame(width: size, height: size)
             .background(.tint.opacity(0.15), in: .circle)
-    }
-
-    /// Grown with the circle past the page header's size, so the initials of a
-    /// mosaic's column-wide portrait do not sit lost in the middle of it.
-    private var monogramFont: Font {
-        if size > 90 { return .system(size: size * 0.3, weight: .semibold) }
-        return size > 50 ? .title2.weight(.semibold) : .subheadline.weight(.semibold)
     }
 }
 

@@ -11,9 +11,7 @@ import SwiftUI
 /// Every order comes from the server, which files an author under their
 /// surname the way a bookshop does; the phone only cuts the sections.
 ///
-/// A row opens the author's page, as a sheet. A fourth view, first in the
-/// toolbar, lays every author out as a mosaic of portraits, by name, as the
-/// Photos app lays out the people it knows.
+/// A row opens the author's page, as a sheet.
 struct AuthorListView: View {
     /// Opens the add sheet, from the one button every empty state offers.
     var onScan: () -> Void = {}
@@ -25,8 +23,6 @@ struct AuthorListView: View {
     /// navigation link, as on the Series tab: a link would claim the drag that
     /// scrolls the covers, and draw a chevron on every row.
     @State private var openAuthor: AuthorDestination?
-    /// A shelf opens on its mosaic, every time its pill is tapped.
-    @State private var layout: ShelfLayout = .mosaic
 
     var body: some View {
         NavigationStack {
@@ -45,23 +41,14 @@ struct AuthorListView: View {
                         message: "Scannez un livre et son auteur apparaîtra ici, avec tous ses livres.",
                         primary: .init("Scanner un livre", systemImage: "camera") { onScan() }
                     )
-                } else if layout == .mosaic {
-                    mosaic
                 } else {
                     list
                 }
             }
             .navigationTitle("Auteurs")
-            .navigationSubtitle(layout == .mosaic ? String(localized: "Mosaïque") : viewModel.order.subtitle)
+            .navigationSubtitle(viewModel.order.subtitle)
             .toolbar { toolbar }
             .libraryShelfPicker(shelf)
-            // A sheet, as a book opens from the library and a saga from Découvrir:
-            // the same corners on an author. Its own stack, so a saga pushes inside it.
-            .sheet(item: $openAuthor) { opened in
-                NavigationStack {
-                    AuthorView(key: opened.key, name: opened.name, isSheet: true)
-                }
-            }
             // Over last session's snapshot when the disk had one: the rows show
             // at once and are brought up to date underneath.
             .task { await viewModel.loadOnAppear() }
@@ -122,43 +109,13 @@ struct AuthorListView: View {
         .listStyle(.insetGrouped)
         .listSectionIndexVisibility(viewModel.order == .name ? .visible : .hidden)
         .refreshable { await viewModel.load() }
-    }
-
-    /// Every author as a portrait with their name under it — initials alone
-    /// would not say who is who — in rows with air between them, as Photos
-    /// shows the people it knows.
-    private var mosaic: some View {
-        ShelfMosaic(
-            rows: viewModel.authors, idealTileWidth: 105, spacing: 12, margin: 16, zoomRange: 3...5
-        ) { author, width in
-            Button {
-                openAuthor = AuthorDestination(author)
-            } label: {
-                AuthorTile(author: author, width: width)
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("author-tile")
-            .onAppear { viewModel.prefetchIfNeeded(for: author.id) }
-        } top: {
-            if viewModel.refreshFailed {
-                RefreshRow(
-                    failed: viewModel.refreshFailed,
-                    loadingLabel: "Mise à jour des auteurs",
-                    onRetry: { await viewModel.refresh() }
-                )
-                .padding(.horizontal)
-            }
-        } bottom: {
-            if viewModel.hasMore {
-                LoadMoreRow(
-                    failed: viewModel.loadMoreFailed,
-                    loadingLabel: "Chargement de la suite",
-                    onLoadMore: { await viewModel.loadMore() }
-                )
-                .padding(.bottom)
+        // A sheet, as a book opens from the library and a saga from Découvrir:
+        // the same corners on an author. Its own stack, so a saga pushes inside it.
+        .sheet(item: $openAuthor) { opened in
+            NavigationStack {
+                AuthorView(key: opened.key, name: opened.name, isSheet: true)
             }
         }
-        .refreshable { await viewModel.load() }
     }
 
     private func row(_ author: FollowedAuthor) -> some View {
@@ -191,17 +148,14 @@ struct AuthorListView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItemGroup {
-            MosaicModeButton(layout: $layout) { Task { await viewModel.show(.name) } }
-                .accessibilityIdentifier("authors-mode-mosaic")
             ForEach(AuthorListOrder.allCases) { item in
                 Button {
-                    layout = .list
                     Task { await viewModel.show(item) }
                 } label: {
                     Label(item.label, systemImage: item.icon)
                 }
                 .labelStyle(.iconOnly)
-                .tint(layout == .list && viewModel.order == item ? .accentColor : .primary)
+                .tint(viewModel.order == item ? .accentColor : .primary)
                 .accessibilityIdentifier("authors-order-\(item.rawValue)")
             }
         }

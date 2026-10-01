@@ -10,9 +10,6 @@ import SwiftUI
 /// most recently first — and the phone only cuts where the month changes. The
 /// list is paginated, and ordered on the phone it would reshuffle every time a
 /// page landed.
-///
-/// A third view, first in the toolbar, lays every saga out as a mosaic of
-/// covers, as the Photos app lays out a library.
 struct SeriesListView: View {
     /// Opens the add sheet, from the one button every empty state offers.
     var onScan: () -> Void = {}
@@ -34,8 +31,6 @@ struct SeriesListView: View {
     @State private var openSeriesChanged = false
     @State private var changedVolumes: Set<String> = []
     @State private var changedElsewhere = false
-    /// A shelf opens on its mosaic, every time its pill is tapped.
-    @State private var layout: ShelfLayout = .mosaic
 
     var body: some View {
         NavigationStack {
@@ -70,26 +65,14 @@ struct SeriesListView: View {
                             primary: .init("Scanner un livre", systemImage: "camera") { onScan() }
                         )
                     }
-                } else if layout == .mosaic {
-                    mosaic
                 } else {
                     list
                 }
             }
-            // The mosaic goes without the title, as the Photos app does: the
-            // covers run up under the toolbar.
-            .navigationTitle(layout == .mosaic ? Text(verbatim: "") : Text("Séries"))
-            .navigationSubtitle(layout == .mosaic ? "" : viewModel.mode.subtitle)
-            .navigationBarTitleDisplayMode(layout == .mosaic ? .inline : .automatic)
+            .navigationTitle("Séries")
+            .navigationSubtitle(viewModel.mode.subtitle)
             .toolbar { toolbar }
             .libraryShelfPicker(shelf)
-            // A sheet, as a book opens from the library: its own stack, so a
-            // volume or an author pushes inside it.
-            .sheet(item: $openSeries) { opened in
-                NavigationStack {
-                    SeriesView(seriesId: opened.seriesId, language: opened.language, isSheet: true)
-                }
-            }
             // Once, when the list first shows: a saga opens as a sheet over
             // it, and the rows it changed are asked again when the sheet
             // closes — a saga's first opening is where the server builds its
@@ -189,40 +172,13 @@ struct SeriesListView: View {
         }
         .listStyle(.insetGrouped)
         .refreshable { await viewModel.load() }
-    }
-
-    /// Every saga of the view as a cover, in the list's order.
-    private var mosaic: some View {
-        // One step short of the tightest grid: most of the sagas at a glance.
-        ShelfMosaic(rows: viewModel.followed, initialColumns: 6, date: { $0.shelvedAt }) { entry, width in
-            Button {
-                openSeries = destination(of: entry)
-            } label: {
-                SeriesTile(entry: entry, width: width, showsState: viewModel.stateFilter == nil)
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("series-tile")
-            .onAppear { viewModel.prefetchIfNeeded(for: entry.id) }
-        } top: {
-            if viewModel.refreshFailed {
-                RefreshRow(
-                    failed: viewModel.refreshFailed,
-                    loadingLabel: "Mise à jour des séries",
-                    onRetry: { await viewModel.refresh() }
-                )
-                .padding(.horizontal)
-            }
-        } bottom: {
-            if viewModel.hasMore {
-                LoadMoreRow(
-                    failed: viewModel.loadMoreFailed,
-                    loadingLabel: "Chargement de la suite",
-                    onLoadMore: { await viewModel.loadMore() }
-                )
-                .padding(.bottom)
+        // A sheet, as a book opens from the library: its own stack, so a
+        // volume or an author pushes inside it.
+        .sheet(item: $openSeries) { opened in
+            NavigationStack {
+                SeriesView(seriesId: opened.seriesId, language: opened.language, isSheet: true)
             }
         }
-        .refreshable { await viewModel.load() }
     }
 
     /// The saga in the edition of this row: a saga held in two languages makes
@@ -236,17 +192,14 @@ struct SeriesListView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItemGroup {
-            MosaicModeButton(layout: $layout) { viewModel.mode = .all }
-                .accessibilityIdentifier("series-mode-mosaic")
             ForEach(LibraryMode.seriesViews) { item in
                 Button {
-                    layout = .list
                     viewModel.mode = item
                 } label: {
                     Label(item.label, systemImage: item.icon)
                 }
                 .labelStyle(.iconOnly)
-                .tint(layout == .list && viewModel.mode == item ? .accentColor : .primary)
+                .tint(viewModel.mode == item ? .accentColor : .primary)
                 .accessibilityIdentifier("series-mode-\(item.rawValue)")
             }
         }
@@ -287,7 +240,14 @@ struct SeriesListView: View {
 struct SeriesStateLabel: View {
     let state: SeriesState
 
-    private var tint: Color { state.tint }
+    private var tint: Color {
+        switch state {
+        case .notStarted: ReadingStatus.toRead.tint
+        case .inProgress: ReadingStatus.reading.tint
+        case .complete: ReadingStatus.read.tint
+        case .unfollowed: .secondary
+        }
+    }
 
     var body: some View {
         // A saga set aside says so by the crossed-out bell alone: the word
@@ -316,19 +276,6 @@ struct SeriesStateLabel: View {
         .padding(.vertical, 2)
         .background(tint.opacity(0.15), in: Capsule())
         .fixedSize()
-    }
-}
-
-extension SeriesState {
-    /// The colour of the reading status the state matches, grey for a saga
-    /// set aside.
-    var tint: Color {
-        switch self {
-        case .notStarted: ReadingStatus.toRead.tint
-        case .inProgress: ReadingStatus.reading.tint
-        case .complete: ReadingStatus.read.tint
-        case .unfollowed: .gray
-        }
     }
 }
 
