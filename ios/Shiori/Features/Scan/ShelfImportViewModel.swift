@@ -71,6 +71,7 @@ final class ShelfImportViewModel {
             remainingScans = await quota?.totalRemaining
             track(.shelfDetected(books: books.count))
             ticked = Set(books.filter { !$0.owned && $0.isNamed }.map(\.id))
+            crops = await Self.cut(books, from: photo)
             step = books.isEmpty ? .noResult : .checklist
         } catch let APIError.domain(code, _) where code == "PREMIUM_REQUIRED" || code == "QUOTA_EXHAUSTED" {
             step = .camera
@@ -121,6 +122,15 @@ final class ShelfImportViewModel {
         let cropped = photo?.crop(to: book.box)
         crops[book.id] = cropped
         return cropped
+    }
+
+    /// Every spine cut away from the main thread, before the checklist shows:
+    /// thirty cuts in a row's body froze the list for seconds.
+    private nonisolated static func cut(_ books: [DetectedBook], from photo: UIImage?) async -> [Int: UIImage] {
+        guard let photo else { return [:] }
+        return await Task.detached(priority: .userInitiated) {
+            books.reduce(into: [:]) { crops, book in crops[book.id] = photo.crop(to: book.box) }
+        }.value
     }
 
     func addTicked() {

@@ -96,7 +96,7 @@ extension UIImage {
             height: box.height * size.height
         ).integral
         guard rect.width > 0, rect.height > 0 else { return nil }
-        return UIGraphicsImageRenderer(size: rect.size).image { _ in
+        return UIGraphicsImageRenderer(size: rect.size, format: .pixelExact).image { _ in
             draw(at: CGPoint(x: -rect.minX, y: -rect.minY))
         }
     }
