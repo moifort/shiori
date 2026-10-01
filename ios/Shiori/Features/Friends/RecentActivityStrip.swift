@@ -1,40 +1,44 @@
 import SwiftUI
 
-/// A friend's recent activity as five covers across the card: the book in
-/// progress, the last one read, the last one hearted, the last one added and
-/// the last one dropped. No title — the cover already shows the book — but
+/// A friend's recent activity as up to five covers scrolled sideways: the
+/// book in progress, the last one read, the last one hearted, the last one
+/// added and the last one dropped. No title — the cover already shows the book — but
 /// under each, what happened, its symbol first, in its colour. A tap on a
 /// cover opens its book; on the friends list, the rest of the row opens the
 /// friend's page.
 struct RecentActivityStrip: View {
     let activities: [RecentActivity]
+    /// Where the first cover starts, inside the scroll, so the covers slide
+    /// out to the card's edge rather than vanish at its margin.
+    var inset: CGFloat = 0
     var onOpen: ((FriendBook) -> Void)?
 
-    /// One slot per kind of activity, so a cover keeps its size whether one
-    /// or five moved lately.
+    /// One kind of activity each, so never more than five.
     private static let slots = 5
 
+    /// Wider than five covers sharing the card would be: the last one peeks
+    /// out, and the strip scrolls to it.
+    private static let coverWidth: CGFloat = 72
+
     var body: some View {
-        // A narrow gap: what the five covers do not give up to it, they
-        // take in size.
-        HStack(alignment: .top, spacing: 4) {
-            ForEach(activities.prefix(Self.slots)) { activity in
-                if let onOpen {
-                    Button { onOpen(activity.book) } label: {
-                        tile(activity)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(accessibilityLabel(activity))
-                    .accessibilityIdentifier("recent-activity-cover")
-                } else {
-                    tile(activity)
-                        .accessibilityElement(children: .ignore)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(alignment: .top, spacing: 8) {
+                ForEach(activities.prefix(Self.slots)) { activity in
+                    if let onOpen {
+                        Button { onOpen(activity.book) } label: {
+                            tile(activity)
+                        }
+                        .buttonStyle(.plain)
                         .accessibilityLabel(accessibilityLabel(activity))
+                        .accessibilityIdentifier("recent-activity-cover")
+                    } else {
+                        tile(activity)
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel(accessibilityLabel(activity))
+                    }
                 }
             }
-            ForEach(activities.count..<max(activities.count, Self.slots), id: \.self) { _ in
-                Color.clear.frame(maxWidth: .infinity)
-            }
+            .padding(.horizontal, inset)
         }
     }
 
@@ -44,15 +48,9 @@ struct RecentActivityStrip: View {
 
     private func tile(_ activity: RecentActivity) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Color.clear
-                .aspectRatio(2 / 3, contentMode: .fit)
-                .overlay {
-                    GeometryReader { proxy in
-                        BookCover(book: activity.book.book, width: proxy.size.width, showsFormatBadge: false)
-                    }
-                }
+            BookCover(book: activity.book.book, width: Self.coverWidth, showsFormatBadge: false)
             // Not a caption label: its fixed icon column would leave
-            // "Abandonné" too little of a fifth of the card.
+            // "Abandonné" too little of a cover's width.
             HStack(spacing: 3) {
                 icon(activity)
                 Text(caption(activity))
@@ -63,7 +61,7 @@ struct RecentActivityStrip: View {
             .font(.caption2.weight(.medium))
             .foregroundStyle(tint(activity))
         }
-        .frame(maxWidth: .infinity)
+        .frame(width: Self.coverWidth, alignment: .leading)
     }
 
     /// A check or a plus is a bare stroke beside the filled book, heart and

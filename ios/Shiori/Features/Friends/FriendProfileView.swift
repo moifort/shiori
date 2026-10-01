@@ -115,8 +115,7 @@ struct FriendProfileView: View {
             let recent = profile.recentActivity()
             if !recent.isEmpty {
                 Section("Activités récentes") {
-                    RecentActivityStrip(activities: recent) { openBook = $0 }
-                        .padding(.horizontal, 16)
+                    RecentActivityStrip(activities: recent, inset: 16) { openBook = $0 }
                         .padding(.vertical, 12)
                         .listRowInsets(EdgeInsets())
                 }

@@ -306,7 +306,10 @@ struct FriendRow: View {
             // the column beside it leaves "Abandonné" no room.
             let recent = friend.recentActivity.filter { $0.isRecent() }
             if !recent.isEmpty {
-                RecentActivityStrip(activities: recent, onOpen: onOpen)
+                // Out to the card's edges, so a cover slides off it rather
+                // than vanish at the row's margin.
+                RecentActivityStrip(activities: recent, inset: 16, onOpen: onOpen)
+                    .padding(.horizontal, -16)
             }
         }
         .padding(.vertical, 2)
@@ -327,7 +330,9 @@ struct SharedSummary: View {
                     .foregroundStyle(.secondary)
             }
             FriendRow(friend: friend)
-                .padding(12)
+                .padding(.vertical, 12)
+                // The list's own margin: the covers run out to the card's edge.
+                .padding(.horizontal, 16)
                 .background(.quaternary, in: RoundedRectangle(cornerRadius: 14))
         }
     }
