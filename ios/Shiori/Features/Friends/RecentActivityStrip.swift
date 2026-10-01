@@ -55,7 +55,8 @@ struct RecentActivityStrip: View {
                 icon(activity)
                 Text(caption(activity))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.6)
+                    // Cut rather than shrunk: every caption keeps one size.
+                    .truncationMode(.tail)
             }
             .font(.caption2.weight(.medium))
             .foregroundStyle(tint(activity))
