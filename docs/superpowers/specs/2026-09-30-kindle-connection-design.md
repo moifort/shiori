@@ -54,6 +54,11 @@ It is the first task of the plan: the embryo of `kindle-api-ts` (`login`, `regis
 refuses those cookies, work stops and the design returns to a web-view session held server-side,
 with the periodic reconnection that implies.
 
+**Passed on 2026-10-01** against the amazon.fr account first probed: a Kindle-for-iPhone device
+(`A3NWHXTQ4EBCZS`) registered, and the cookies its refresh token minted read all 165 titles, 62
+of them read. The sign-in goes through the store's generic page (`frflex`): Amazon answers 404
+to `amzn_kindle_ios_fr`.
+
 ## `kindle-api-ts`
 
 A new library in `../kindle-api-ts`, shaped like `../audible-api-ts` and published to npm the same
