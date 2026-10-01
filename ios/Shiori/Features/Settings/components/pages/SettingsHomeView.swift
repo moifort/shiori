@@ -27,9 +27,7 @@ struct SettingsHomeView: View {
                         )
                     }
                     .accessibilityIdentifier("settings-profile")
-                }
 
-                Section {
                     Button {
                         premiumShown = true
                     } label: {
@@ -42,16 +40,14 @@ struct SettingsHomeView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("settings-premium")
-                }
 
-                Section {
                     NavigationLink {
                         NotificationSettingsView()
                     } label: {
                         SettingsRow(
                             icon: "bell.badge.fill",
                             title: "Notifications",
-                            subtitle: String(localized: "Les sorties de vos séries et de vos auteurs"),
+                            subtitle: String(localized: "Prochaine sortie et nouvelle disponibilité"),
                             tint: .red
                         )
                     }

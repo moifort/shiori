@@ -31,13 +31,6 @@ struct ProfileSettingsView: View {
 
             Section {
                 SignOutButton(action: signOut)
-            } footer: {
-                if let signOutError {
-                    Text(signOutError).foregroundStyle(.red)
-                }
-            }
-
-            Section {
                 // The dialog hangs off the button that opens it, so it pops out
                 // of the row instead of floating mid-screen.
                 DeleteAccountButton(isDeleting: isDeletingAccount) {
@@ -59,12 +52,8 @@ struct ProfileSettingsView: View {
                     )
                 }
             } footer: {
-                if let deleteError {
-                    Text(deleteError).foregroundStyle(.red)
-                } else {
-                    Text(
-                        "Supprime définitivement le compte et toutes ses données. Cette action est irréversible. Un abonnement Premium n'est pas résilié : il reste à annuler dans les réglages de l'App Store."
-                    )
+                if let error = signOutError ?? deleteError {
+                    Text(error).foregroundStyle(.red)
                 }
             }
         }

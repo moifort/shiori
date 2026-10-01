@@ -44,11 +44,6 @@ struct AudibleSourcePage: View {
             }
         } header: {
             Text("Compte")
-        } footer: {
-            Text(
-                "Votre mot de passe n'est jamais passé par Shiori, et vos identifiants "
-                    + "Amazon ne quittent pas le serveur."
-            )
         }
     }
 
@@ -79,15 +74,6 @@ struct AudibleSourcePage: View {
             }
         } header: {
             Text("Synchronisation")
-        } footer: {
-            // Stated here rather than buried in a menu: it writes books into the
-            // library without asking again, so it says what it does where the
-            // reader can read it.
-            Text(
-                "Les livres audio achetés depuis la dernière fois rejoignent votre "
-                    + "bibliothèque, et ceux que vous avez terminés sur Audible sont marqués "
-                    + "comme lus. Vos notes et vos commentaires ne sont jamais modifiés."
-            )
         }
     }
 
@@ -112,8 +98,6 @@ struct AudibleSourcePage: View {
             .accessibilityIdentifier("audible-pick-books")
         } header: {
             Text("Bibliothèque")
-        } footer: {
-            Text(remainingLabel)
         }
     }
 
@@ -121,12 +105,6 @@ struct AudibleSourcePage: View {
         Section {
             AsyncButton("Déconnecter Audible", role: .destructive) { await onDisconnect() }
                 .accessibilityIdentifier("audible-disconnect")
-        } footer: {
-            Text(
-                "Shiori oublie ses identifiants ; les livres déjà importés restent dans "
-                    + "votre bibliothèque. L'appareil reste enregistré chez Amazon jusqu'à ce "
-                    + "que vous l'y retiriez."
-            )
         }
     }
 
@@ -138,22 +116,6 @@ struct AudibleSourcePage: View {
         if days == 0 { return String(localized: "aujourd'hui") }
         if days == 1 { return String(localized: "hier") }
         return String(localized: "il y a \(days) j")
-    }
-
-    private var remainingLabel: String {
-        guard let totalCount, let catalogedCount else {
-            return String(localized: "L'import ne consomme aucun scan.")
-        }
-        // The one mistake that fails silently: a French account signed in on
-        // audible.com finds nothing and reads as "the import is broken". Said here
-        // because this is the screen that can change the store.
-        if totalCount == 0 {
-            return String(localized: "Aucun livre audio sur ce compte. Vérifiez la boutique : une bibliothèque française ne s'ouvre pas depuis audible.com.")
-        }
-        let remaining = max(0, totalCount - catalogedCount)
-        return remaining == 0
-            ? String(localized: "Toute votre bibliothèque Audible est cataloguée.")
-            : String(localized: "\(remaining) titre(s) pas encore catalogué(s). L'import ne consomme aucun scan.")
     }
 }
 

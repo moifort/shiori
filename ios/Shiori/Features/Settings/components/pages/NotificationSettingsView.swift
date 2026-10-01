@@ -29,31 +29,37 @@ struct NotificationSettingsView: View {
                 }
             }
 
-            Section {
-                if let settings {
+            if let settings {
+                Section("Me prévenir") {
                     ForEach([AlertKind.digest, .translation]) { kind in
                         Toggle(isOn: binding(kind, in: settings)) {
                             Label(kind.title, systemImage: kind.symbol)
                         }
                         .accessibilityIdentifier("notification-toggle-\(kind)")
                     }
-                } else if let errorMessage {
-                    Text(errorMessage).foregroundStyle(.secondary)
-                } else {
-                    HStack { Spacer(); ProgressView(); Spacer() }
                 }
-            } header: {
-                Text("Me prévenir")
-            } footer: {
-                Text("Le dimanche soir, les tomes nouvellement annoncés dans vos séries ; puis le jour de leur sortie. Jamais pour vous faire revenir.")
-            }
 
-            if let settings {
                 Section {
                     Toggle(isOn: allOff(in: settings)) {
                         Label("Tout désactiver", systemImage: "bell.slash")
                     }
                     .accessibilityIdentifier("notification-toggle-all-off")
+                }
+            }
+        }
+        // An empty list draws no grouped background: kept here so the page
+        // does not flash white while it loads.
+        .scrollContentBackground(.hidden)
+        .background(Color(.systemGroupedBackground))
+        .overlay {
+            if settings == nil {
+                if let errorMessage {
+                    Text(errorMessage)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                } else {
+                    ProgressView()
                 }
             }
         }

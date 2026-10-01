@@ -35,6 +35,13 @@ struct FeedbackSheet: View {
                         role: .cancel
                     ) { dismiss() }
                 }
+                if !sent {
+                    ToolbarItem(placement: .confirmationAction) {
+                        ToolbarIconButton(title: "Envoyer", systemImage: "paperplane.fill") { send() }
+                            .disabled(trimmedMessage.isEmpty)
+                            .accessibilityIdentifier("feedback-send")
+                    }
+                }
             }
             .task(id: sent) {
                 guard sent else { return }
@@ -47,26 +54,20 @@ struct FeedbackSheet: View {
 
     private var composer: some View {
         Form {
-            Section {
-                Picker("Sujet", selection: $kind) {
-                    Text("Problème").tag(FeedbackKind.bug)
-                    Text("Suggestion").tag(FeedbackKind.idea)
-                }
-                .pickerStyle(.segmented)
-            } footer: {
-                Text(kindHint)
+            // Bare on the page rather than in a card: it sets the subject, it is
+            // not a field of the message.
+            Picker("Sujet", selection: $kind) {
+                Text("Problème").tag(FeedbackKind.bug)
+                Text("Suggestion").tag(FeedbackKind.idea)
             }
+            .pickerStyle(.segmented)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets())
 
             Section {
-                TextField("Votre message", text: $message, axis: .vertical)
+                TextField(kindHint, text: $message, axis: .vertical)
                     .lineLimit(5...)
                     .accessibilityIdentifier("feedback-message")
-            }
-
-            Section {
-                Button("Envoyer") { send() }
-                    .disabled(trimmedMessage.isEmpty)
-                    .accessibilityIdentifier("feedback-send")
             } footer: {
                 Text("La version de l'application et le modèle d'appareil accompagnent le message. Ni votre nom ni votre adresse e-mail ne sont transmis.")
             }
