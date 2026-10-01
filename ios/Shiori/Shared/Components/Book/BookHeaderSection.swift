@@ -195,8 +195,8 @@ struct BookHeaderSection<Extra: View>: View {
     }
 
     /// The facts a listener or a reader weighs at a glance, in the corner: how
-    /// far the recording got, how long it runs, a foreign language, a drawn
-    /// story's format. That it is a recording is said by the pill on the cover.
+    /// far the recording got, how long it runs, a foreign language. What kind
+    /// of book it is has its own row under the genre.
     private var pills: some View {
         HStack(spacing: 6) {
             if isAwaited {
@@ -225,13 +225,6 @@ struct BookHeaderSection<Extra: View>: View {
                 Pill(text: durationLabel, systemImage: "clock")
                     .accessibilityIdentifier("book-duration")
             }
-            if book.format != .book && book.format != .audiobook {
-                Image(systemName: book.format.symbol)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel(Text(book.format.label))
-                    .accessibilityIdentifier("book-format")
-            }
         }
     }
 
@@ -241,6 +234,8 @@ struct BookHeaderSection<Extra: View>: View {
     private var facts: some View {
         seriesRow
         genreRow
+        LabeledInfoRow(title: "Type", value: book.format.label, icon: book.format.symbol)
+            .accessibilityIdentifier("book-format")
         ForEach(BookFact.allCases, id: \.self) { fact in
             factRow(fact)
         }
