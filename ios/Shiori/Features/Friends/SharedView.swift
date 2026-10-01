@@ -23,6 +23,7 @@ struct SharedView: View {
     @State private var removing: Friend?
     @State private var isInviting = false
     @State private var path = NavigationPath()
+    @State private var openedBook: OpenedBook?
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -52,6 +53,21 @@ struct SharedView: View {
         // they did not ask for.
         .sheet(item: $invitation) { invitation in
             InvitationSheet(invitation: invitation, myShelf: viewModel.myShelf)
+        }
+        // A cover opens its book as the friend's page opens it; the reader's
+        // own covers open their own record.
+        .sheet(item: $openedBook) { opened in
+            if let friend = opened.friend {
+                NavigationStack {
+                    FriendBookView(
+                        friendId: friend.userId,
+                        bookId: opened.book.id,
+                        friendName: friend.displayName
+                    )
+                }
+            } else {
+                BookView(bookId: opened.book.id)
+            }
         }
         .alert("J'ai reçu une invitation", isPresented: $showAccept) {
             TextField("Code ou lien", text: $pastedCode)
@@ -107,7 +123,9 @@ struct SharedView: View {
                 if let myShelf = viewModel.myShelf {
                     Section {
                         NavigationLink(value: MyPagePreview()) {
-                            FriendRow(friend: Friend(seenByFriends: myShelf))
+                            FriendRow(friend: Friend(seenByFriends: myShelf)) {
+                                openedBook = OpenedBook(book: $0, friend: nil)
+                            }
                         }
                         .navigationLinkIndicatorVisibility(.hidden)
                         .listRowInsets(.horizontal, 16)
@@ -159,9 +177,14 @@ struct SharedView: View {
                         .accessibilityIdentifier("friends-invite")
                         ForEach(viewModel.friends) { friend in
                             NavigationLink(value: friend.userId) {
-                                FriendRow(friend: friend)
+                                FriendRow(friend: friend) {
+                                    openedBook = OpenedBook(book: $0, friend: friend)
+                                }
                             }
                             .navigationLinkIndicatorVisibility(.hidden)
+                            // The reader's own row's margin, so the covers
+                            // keep the same size from one card to the next.
+                            .listRowInsets(.horizontal, 16)
                             .edgeToEdgeSeparator()
                             .swipeActions {
                                 Button("Retirer", role: .destructive) { removing = friend }
@@ -248,6 +271,9 @@ struct SharedView: View {
 /// reads the way it will be seen.
 struct FriendRow: View {
     let friend: Friend
+    /// Opens a recent cover's book; without it the covers are part of the
+    /// row, and a tap anywhere opens the friend's page.
+    var onOpen: ((FriendBook) -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -280,7 +306,7 @@ struct FriendRow: View {
             // the column beside it leaves "Abandonné" no room.
             let recent = friend.recentActivity.filter { $0.isRecent() }
             if !recent.isEmpty {
-                RecentActivityStrip(activities: recent)
+                RecentActivityStrip(activities: recent, onOpen: onOpen)
             }
         }
         .padding(.vertical, 2)
@@ -305,6 +331,15 @@ struct SharedSummary: View {
                 .background(.quaternary, in: RoundedRectangle(cornerRadius: 14))
         }
     }
+}
+
+/// A book opened from a cover of the list: a friend's, or the reader's own
+/// when the friend is nil.
+private struct OpenedBook: Identifiable {
+    let book: FriendBook
+    let friend: Friend?
+
+    var id: String { book.id }
 }
 
 /// The navigation value of the reader's own page, previewed.

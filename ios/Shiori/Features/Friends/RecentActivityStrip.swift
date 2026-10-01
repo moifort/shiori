@@ -3,9 +3,9 @@ import SwiftUI
 /// A friend's recent activity as five covers across the card: the book in
 /// progress, the last one read, the last one hearted, the last one added and
 /// the last one dropped. No title — the cover already shows the book — but
-/// under each, what happened, its symbol first, in its colour. A tap opens the
-/// book where there is a book page to open; on the friends list the whole row
-/// opens the friend's page instead.
+/// under each, what happened, its symbol first, in its colour. A tap on a
+/// cover opens its book; on the friends list, the rest of the row opens the
+/// friend's page.
 struct RecentActivityStrip: View {
     let activities: [RecentActivity]
     var onOpen: ((FriendBook) -> Void)?
@@ -15,7 +15,9 @@ struct RecentActivityStrip: View {
     private static let slots = 5
 
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
+        // A narrow gap: what the five covers do not give up to it, they
+        // take in size.
+        HStack(alignment: .top, spacing: 4) {
             ForEach(activities.prefix(Self.slots)) { activity in
                 if let onOpen {
                     Button { onOpen(activity.book) } label: {
