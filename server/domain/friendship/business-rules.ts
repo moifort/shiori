@@ -38,6 +38,24 @@ export const lastFinishedOf = <Finished extends Pick<Book, 'status' | 'finishedA
       undefined,
     )
 
+/** The book dropped most recently, on the day its status last moved — the
+ *  last time anything was done with it, for a record written before that
+ *  stamp existed. */
+export const lastDroppedOf = <
+  Dropped extends Pick<Book, 'status' | 'addedAt' | 'updatedAt' | 'statusChangedAt' | 'startedAt'>,
+>(
+  books: readonly Dropped[],
+): Dropped | undefined =>
+  books
+    .filter((book) => book.status === 'dropped')
+    .reduce<Dropped | undefined>(
+      (latest, book) =>
+        !latest || lastActivityOf(book).getTime() > lastActivityOf(latest).getTime()
+          ? book
+          : latest,
+      undefined,
+    )
+
 /** The favourites newest first: the most recently hearted leads, so a friend
  *  who comes back finds what is new at the top rather than the same list. A
  *  heart given before its date was kept ranks on the book's last activity,

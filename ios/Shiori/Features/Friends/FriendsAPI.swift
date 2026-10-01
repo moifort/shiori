@@ -132,6 +132,8 @@ struct FriendProfile: Codable, Sendable {
     var sagas: [FriendSaga]
     /// The book they finished most recently, when one carries its date.
     var lastFinished: FriendBook?
+    /// The book they dropped most recently.
+    var lastDropped: FriendBook?
     /// How many books their library shows, the dropped ones aside.
     var bookCount = 0
     /// Books they finished since January 1st, as the friends list counts them.
@@ -165,8 +167,9 @@ struct FriendProfile: Codable, Sendable {
     }
 
     /// What moved on the shelf, one book of each kind at most: the book in
-    /// progress touched last and the last book finished, each only within
-    /// thirty days, then the last book hearted, however long ago. What a
+    /// progress touched last, the last book finished and the last one
+    /// dropped, each only within thirty days, then the last book hearted,
+    /// however long ago. What a
     /// friend coming back looks for, rather than the same lists as last time.
     func recentActivity(now: Date = .now) -> [RecentActivity] {
         let since = now.addingTimeInterval(-RecentActivity.window)
@@ -176,12 +179,15 @@ struct FriendProfile: Codable, Sendable {
         let finished = lastFinished.flatMap { entry in
             entry.book.finishedAt.map { RecentActivity.finished(entry, at: $0) }
         }
+        let dropped = lastDropped.flatMap { entry in
+            entry.lastActivityAt.map { RecentActivity.dropped(entry, at: $0) }
+        }
         // What they last chose to keep close is news whenever it was.
         let heart = favorites.compactMap { entry in
             entry.favoritedAt.map { RecentActivity.hearted(entry, at: $0) }
         }
         .max { $0.date < $1.date }
-        return [reading, finished].compactMap(\.self).filter { $0.date >= since }
+        return [reading, finished, dropped].compactMap(\.self).filter { $0.date >= since }
             + [heart].compactMap(\.self)
     }
 
@@ -195,10 +201,11 @@ struct FriendProfile: Codable, Sendable {
 }
 
 /// One book that moved on a shelf lately, with its day: picked up or read
-/// on, finished, or hearted.
+/// on, finished, dropped, or hearted.
 enum RecentActivity: Identifiable, Sendable {
     case reading(FriendBook, at: Date)
     case finished(FriendBook, at: Date)
+    case dropped(FriendBook, at: Date)
     case hearted(FriendBook, at: Date)
 
     /// How far back "lately" goes.
@@ -208,19 +215,22 @@ enum RecentActivity: Identifiable, Sendable {
         switch self {
         case .reading: "reading-\(book.id)"
         case .finished: "finished-\(book.id)"
+        case .dropped: "dropped-\(book.id)"
         case .hearted: "hearted-\(book.id)"
         }
     }
 
     var book: FriendBook {
         switch self {
-        case let .reading(entry, _), let .finished(entry, _), let .hearted(entry, _): entry
+        case let .reading(entry, _), let .finished(entry, _), let .dropped(entry, _),
+             let .hearted(entry, _): entry
         }
     }
 
     var date: Date {
         switch self {
-        case let .reading(_, date), let .finished(_, date), let .hearted(_, date): date
+        case let .reading(_, date), let .finished(_, date), let .dropped(_, date),
+             let .hearted(_, date): date
         }
     }
 }
@@ -526,6 +536,7 @@ private extension FriendProfile {
             favorites: shelf.favorites.map { FriendBook(row: $0.fragments.friendBookRow) },
             sagas: shelf.sagas.map { FriendSaga(row: $0.fragments.friendSagaRow) },
             lastFinished: shelf.lastFinished.map { FriendBook(row: $0.fragments.friendBookRow) },
+            lastDropped: shelf.lastDropped.map { FriendBook(row: $0.fragments.friendBookRow) },
             bookCount: shelf.bookCount,
             readThisYear: shelf.readThisYear
         )

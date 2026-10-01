@@ -33,6 +33,7 @@ import {
   friendSagaStateOf,
   inReadingOrder,
   lastActivityOf,
+  lastDroppedOf,
   lastFinishedOf,
   newestFavoritesFirst,
   recentHeartsOf,
@@ -109,6 +110,8 @@ export type FriendProfile = {
   sagas: FriendSaga[]
   /** The book they finished most recently, when one carries its date. */
   lastFinished?: FriendBook
+  /** The book they dropped most recently. */
+  lastDropped?: FriendBook
   /** How many books their library shows — every one they share, the
    *  dropped ones aside, as the reader's own Library tab. */
   bookCount: CountValue
@@ -661,6 +664,7 @@ const sharedShelfOf = async (
   ).slice(0, shown)
 
   const finished = lastFinishedOf(books)
+  const dropped = lastDroppedOf(books)
   // The sagas drawn with their covers: the favourites, and those of the
   // books the recent activity leads with — the one in progress, the last
   // finished, the last hearted.
@@ -674,7 +678,7 @@ const sharedShelfOf = async (
   )
 
   const sagas = followedSagasOf(books)
-  const [signedReading, signedPile, signedFavorites, signedVolumes, signedFinished] =
+  const [signedReading, signedPile, signedFavorites, signedVolumes, signedFinished, signedDropped] =
     await Promise.all([
       BookQuery.withSignedCovers(reading),
       BookQuery.withSignedCovers(pile),
@@ -687,6 +691,7 @@ const sharedShelfOf = async (
         ),
       ),
       BookQuery.withSignedCovers(finished ? [finished] : []),
+      BookQuery.withSignedCovers(dropped ? [dropped] : []),
     ])
   const unmarked = (books: BookView[]): FriendBook[] =>
     books.map((book) => ({ ...book, inLibrary: false }))
@@ -698,6 +703,7 @@ const sharedShelfOf = async (
     pile: unmarked(signedPile),
     favorites: unmarked(signedFavorites),
     lastFinished: unmarked(signedFinished)[0],
+    lastDropped: unmarked(signedDropped)[0],
     sagas: sagas.map((saga, index) =>
       friendSagaOf(saga, favoriteSagas, ratings, unmarked(signedVolumes[index] ?? [])),
     ),
@@ -716,6 +722,7 @@ const marked = (shelf: FriendProfile, inLibrary: (book: FriendBook) => boolean):
     pile: mark(shelf.pile),
     favorites: mark(shelf.favorites),
     lastFinished: shelf.lastFinished && mark([shelf.lastFinished])[0],
+    lastDropped: shelf.lastDropped && mark([shelf.lastDropped])[0],
     sagas: shelf.sagas.map((saga) => ({ ...saga, volumes: mark(saga.volumes) })),
   }
 }

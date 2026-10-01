@@ -336,6 +336,22 @@ describe("the reader's own shelf, as friends see it", () => {
     })
   })
 
+  // The recent activity names the book dropped last too.
+  test('names the book dropped last', async () => {
+    setSystemTime(new Date('2026-09-01T00:00:00Z'))
+    await addBook(alice, 'title: "Ulysse", status: DROPPED')
+    setSystemTime(new Date('2026-09-10T00:00:00Z'))
+    await addBook(alice, 'title: "Les Bienveillantes", status: DROPPED')
+    setSystemTime()
+
+    const result = await as(alice)('{ myShelf { lastDropped { title lastActivityAt } } }')
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.myShelf).toEqual({
+      lastDropped: { title: 'Les Bienveillantes', lastActivityAt: '2026-09-10T00:00:00.000Z' },
+    })
+  })
+
   // The recent activity draws the saga of the book in progress with its
   // covers, hearted or not; any other saga still carries none.
   test('carries the volumes of the saga being read, and of no other unhearted saga', async () => {

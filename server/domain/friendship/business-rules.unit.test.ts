@@ -7,6 +7,7 @@ import {
   inReadingOrder,
   isLovedByMany,
   lastActivityOf,
+  lastDroppedOf,
   lastFinishedOf,
   newestFavoritesFirst,
   picksPerFriend,
@@ -62,6 +63,21 @@ describe('lastFinishedOf', () => {
     expect(lastFinishedOf([{ status: 'read' as const }, { status: 'to-read' as const }])).toBe(
       undefined,
     )
+  })
+})
+
+describe('lastDroppedOf', () => {
+  test('picks the book whose drop is the latest', () => {
+    const books = [
+      { title: 'earlier', status: 'dropped' as const, addedAt: day(1), statusChangedAt: day(4) },
+      { title: 'latest', status: 'dropped' as const, addedAt: day(2), statusChangedAt: day(8) },
+      { title: 'in progress', status: 'reading' as const, addedAt: day(9) },
+    ]
+    expect(lastDroppedOf(books)?.title).toBe('latest')
+  })
+
+  test('answers nothing when no book was dropped', () => {
+    expect(lastDroppedOf([{ status: 'read' as const, addedAt: day(1) }])).toBe(undefined)
   })
 })
 

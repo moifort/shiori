@@ -110,8 +110,8 @@ struct FriendProfileView: View {
             }
             // What moved lately, under the figures, so a friend coming back
             // finds what changed rather than the same lists: the last book in
-            // progress, finished and hearted, as covers side by side. A tap
-            // opens the book.
+            // progress, finished, dropped and hearted, as covers side by side.
+            // A tap opens the book.
             let recent = profile.recentActivity()
             if !recent.isEmpty {
                 Section("Activités récentes") {
@@ -149,10 +149,8 @@ struct FriendProfileView: View {
                 }
             }
             if !profile.favorites.isEmpty {
-                Section {
+                Section("Favoris") {
                     FriendCoverStrip(books: profile.favoritesByShelf) { openBook = $0 }
-                } header: {
-                    hearted("Livres")
                 }
             }
             // The rest of the shelf is a list of its own, drawn as the
@@ -301,6 +299,9 @@ struct FriendProfileView: View {
         if profile.lastFinished?.id == bookId {
             profile.lastFinished?.inLibrary = true
         }
+        if profile.lastDropped?.id == bookId {
+            profile.lastDropped?.inLibrary = true
+        }
         self.profile = profile
         write()
     }
@@ -330,6 +331,11 @@ extension FriendProfile {
             inLibrary: false,
             favoritedAt: .now.addingTimeInterval(-86400 * 9)
         )
+        let ulysse = FriendBook(
+            book: Book(id: "ulysse", title: "Ulysse", authors: ["James Joyce"], status: .dropped),
+            inLibrary: false,
+            lastActivityAt: .now.addingTimeInterval(-86400 * 2)
+        )
         let reading = [
             ("piranesi", "Piranesi", "Susanna Clarke"),
             ("lune", "La Lune est une maîtresse cruelle", "Robert A. Heinlein"),
@@ -354,6 +360,7 @@ extension FriendProfile {
             favorites: [dune, wind] + favorites,
             sagas: [],
             lastFinished: wind,
+            lastDropped: ulysse,
             bookCount: 9,
             readThisYear: 2
         )

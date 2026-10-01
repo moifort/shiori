@@ -66,6 +66,9 @@ fragment SharedShelf on FriendProfile {
   lastFinished {
     ...FriendBookRow
   }
+  lastDropped {
+    ...FriendBookRow
+  }
   bookCount
   readThisYear
   sagas {

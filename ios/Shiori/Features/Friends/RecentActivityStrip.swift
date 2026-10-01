@@ -1,55 +1,55 @@
 import SwiftUI
 
-/// A friend's recent activity as large covers side by side: the book in
-/// progress, the last one finished, the last one hearted. No title — the cover
-/// already shows it — but under each, where the book stands as icons (its
-/// status, and a heart when it is a favourite) and what happened, in its
-/// colour. A tap opens the book.
+/// A friend's recent activity as four covers across the card: the book in
+/// progress, the last one finished, the last one dropped, the last one
+/// hearted. No title and no caption — the cover already shows the book — but
+/// in its corner, where it stands: its status, and a heart on a favourite.
+/// A tap opens the book.
 struct RecentActivityStrip: View {
     let activities: [RecentActivity]
     let onOpen: (FriendBook) -> Void
 
-    /// Three covers across the card of the narrowest phone.
-    private static let coverWidth: CGFloat = 100
+    /// One slot per kind of activity, so a cover keeps its size whether one
+    /// or four moved lately.
+    private static let slots = 4
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(alignment: .top, spacing: 12) {
-                ForEach(activities) { activity in
-                    Button { onOpen(activity.book) } label: {
-                        tile(activity)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("recent-activity-cover")
+        HStack(alignment: .top, spacing: 10) {
+            ForEach(activities.prefix(Self.slots)) { activity in
+                Button { onOpen(activity.book) } label: {
+                    cover(activity)
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel(accessibilityLabel(activity))
+                .accessibilityIdentifier("recent-activity-cover")
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            ForEach(activities.count..<max(activities.count, Self.slots), id: \.self) { _ in
+                Color.clear.aspectRatio(2 / 3, contentMode: .fit)
+            }
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .listRowInsets(EdgeInsets())
     }
 
-    private func tile(_ activity: RecentActivity) -> some View {
+    private func cover(_ activity: RecentActivity) -> some View {
         let book = activity.book.book
-        return VStack(alignment: .leading, spacing: 5) {
-            BookCover(book: book, width: Self.coverWidth, formatBadgeSize: CoverTile.formatBadgeSize)
-            HStack(spacing: 4) {
-                Image(systemName: book.status.symbol)
-                    .foregroundStyle(book.status.tint)
-                // The caption already says a heart was given.
-                if book.favorite, !activity.isHeart {
-                    Image(systemName: "heart.fill")
-                        .foregroundStyle(.red)
+        return Color.clear
+            .aspectRatio(2 / 3, contentMode: .fit)
+            .overlay {
+                GeometryReader { proxy in
+                    BookCover(book: book, width: proxy.size.width, showsFormatBadge: false)
                 }
-                Text(caption(activity))
-                    .foregroundStyle(tint(activity))
-                    .lineLimit(1)
             }
-            .font(.caption2.weight(.medium))
-        }
-        .frame(width: Self.coverWidth, alignment: .leading)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityLabel(activity))
+            .overlay(alignment: .bottomLeading) {
+                HStack(spacing: 3) {
+                    ReadingStatusBadge(status: book.status)
+                    if book.favorite {
+                        CoverBadge(systemImage: "heart.fill", tint: .red)
+                    }
+                }
+                .padding(5)
+            }
     }
 
     private func accessibilityLabel(_ activity: RecentActivity) -> String {
@@ -62,15 +62,8 @@ struct RecentActivityStrip: View {
         switch activity {
         case .reading: String(localized: "En cours")
         case .finished: String(localized: "Terminé")
+        case .dropped: String(localized: "Abandonné")
         case .hearted: String(localized: "Coup de cœur")
-        }
-    }
-
-    private func tint(_ activity: RecentActivity) -> Color {
-        switch activity {
-        case .reading: ReadingStatus.reading.tint
-        case .finished: ReadingStatus.read.tint
-        case .hearted: .red
         }
     }
 }
@@ -99,11 +92,5 @@ struct FriendCoverStrip: View {
             .padding(.vertical, 12)
         }
         .listRowInsets(EdgeInsets())
-    }
-}
-
-private extension RecentActivity {
-    var isHeart: Bool {
-        if case .hearted = self { true } else { false }
     }
 }

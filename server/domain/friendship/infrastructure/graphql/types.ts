@@ -335,6 +335,14 @@ export const FriendProfileType = builder.objectRef<FriendProfile>('FriendProfile
         'its finishing date.',
       resolve: (profile) => profile.lastFinished ?? null,
     }),
+    lastDropped: t.field({
+      type: FriendBookType,
+      nullable: true,
+      description:
+        'The book they dropped most recently, by the day its status last moved; ' +
+        'its `lastActivityAt` says when. Null when they dropped none.',
+      resolve: (profile) => profile.lastDropped ?? null,
+    }),
     bookCount: t.field({
       type: 'Count',
       description:
