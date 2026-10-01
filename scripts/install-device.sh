@@ -8,7 +8,7 @@
 set -euo pipefail
 
 DEVICE_ID="8F972B31-AA93-5250-B1BA-21912EF9733E" # TiPhone junior (iPhone 15 Pro)
-export DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 
 echo "==> Building for device ${DEVICE_ID}"
 # -allowProvisioningUpdates lets automatic signing register the device and mint
