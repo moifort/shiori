@@ -40,7 +40,7 @@
     "@pothos/core": "4.13.1",
     "@sentry/node": "10.74.0",
     "audible-api-ts": "0.5.1",
-    "kindle-api-ts": "file:../kindle-api-ts",
+    "kindle-api-ts": "0.1.0",
     "consola": "3.4.2",
     "firebase-admin": "13.10.0",
     "graphql": "16.14.2",
