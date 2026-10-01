@@ -168,8 +168,14 @@ export type FriendPick<Item> = {
 
 type Heart<Item> = { friendId: UserId; key: string; item: Item; lovedAt: Date }
 
+/** How many picks one friend's copy may stand for on a shelf: two, and one
+ *  past five friends, so a reader who hearts a lot does not fill the strip
+ *  and every friend gets a say. */
+export const picksPerFriend = (friendCount: number): number => (friendCount > 5 ? 1 : 2)
+
 /** The hearts folded by what they are about, the newest heart first, leaving
- *  out what the reader holds already. */
+ *  out what the reader holds already and what a friend already stands for
+ *  `picksPerFriend` picks of. */
 const picksOf = <Item>(
   hearts: readonly Heart<Item>[],
   held: ReadonlySet<string>,
@@ -195,7 +201,14 @@ const picksOf = <Item>(
       known.friendIds.push(heart.friendId)
     }
   }
+  const perFriend = picksPerFriend(friendCount)
+  const shown = new Map<UserId, number>()
   return [...picks.values()]
+    .filter((pick) => {
+      const count = shown.get(pick.friendId) ?? 0
+      shown.set(pick.friendId, count + 1)
+      return count < perFriend
+    })
     .slice(0, limit)
     .map((pick) => ({ ...pick, lovedByMany: isLovedByMany(pick.friendIds.length, friendCount) }))
 }
@@ -218,7 +231,8 @@ type PickedBook = Pick<
 
 /** What the reader's friends love and the reader does not hold, for Découvrir:
  *  the books they hearted, the sagas they hearted and the authors of both, each
- *  the newest heart first, `limit` of each at most.
+ *  the newest heart first, `limit` of each at most and `picksPerFriend` per
+ *  friend.
  *
  *  Held is judged on the story, never on the format: a book the reader owns in
  *  any format, a saga they hold a volume of read or heard, an author they hold

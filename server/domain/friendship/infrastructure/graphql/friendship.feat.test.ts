@@ -925,7 +925,8 @@ describe('what the friends love, for Découvrir', () => {
 
   // One scan of the friendships, of the reader's library, and of each
   // friend's books and saga opinions; then the friend's name and, in one
-  // batch, the three authors' catalogue documents for their faces.
+  // batch, the catalogue documents of the two authors shown — one friend
+  // stands for two picks at most — for their faces.
   test('reads each shelf once, whatever it suggests', async () => {
     for (const title of ['Un', 'Deux', 'Trois']) {
       const id = await addBook(
@@ -942,7 +943,7 @@ describe('what the friends love, for Découvrir', () => {
     await as(bob)(query)
 
     expect(fake.queryReads - before.queries).toBe(4)
-    expect(fake.docReads - before.docs).toBe(4)
+    expect(fake.docReads - before.docs).toBe(3)
   })
 })
 

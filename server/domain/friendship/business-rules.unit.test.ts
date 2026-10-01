@@ -9,6 +9,7 @@ import {
   lastActivityOf,
   lastFinishedOf,
   newestFavoritesFirst,
+  picksPerFriend,
   recentHeartsOf,
   subgenreOf,
 } from '~/domain/friendship/business-rules'
@@ -405,6 +406,48 @@ describe('friendPicksOf', () => {
     expect(picks.sagas[0]?.lovedByMany).toBe(false)
     expect(picks.books).toEqual([])
     expect(picks.authors.map((pick) => String(pick.item.name))).toEqual(['Frank Herbert'])
+  })
+
+  test('shows two picks per friend at most, so one busy friend does not fill the shelf', () => {
+    const picks = friendPicksOf(
+      [
+        shelf(alice, [
+          book('One', 'A', { favoritedAt: day(30) }),
+          book('Two', 'B', { favoritedAt: day(29) }),
+          book('Three', 'C', { favoritedAt: day(28) }),
+        ]),
+        shelf(bob, [book('Four', 'D', { favoritedAt: day(10) })]),
+      ],
+      [],
+      10,
+    )
+
+    expect(picks.books.map((pick) => String(pick.item.title))).toEqual(['One', 'Two', 'Four'])
+    expect(picks.authors.map((pick) => String(pick.item.name))).toEqual(['A', 'B', 'D'])
+  })
+
+  test('shows one pick per friend past five friends', () => {
+    const friends = ['alice', 'bob', 'carol', 'dave', 'erin', 'fred'] as UserId[]
+    const picks = friendPicksOf(
+      friends.map((friendId, index) =>
+        shelf(friendId, [
+          book(`${friendId} new`, `${friendId} A`, { favoritedAt: day(40 - index) }),
+          book(`${friendId} old`, `${friendId} B`, { favoritedAt: day(20 - index) }),
+        ]),
+      ),
+      [],
+      20,
+    )
+
+    expect(picks.books.map((pick) => String(pick.item.title))).toEqual(
+      friends.map((friendId) => `${friendId} new`),
+    )
+  })
+
+  test('picksPerFriend', () => {
+    expect(picksPerFriend(1)).toBe(2)
+    expect(picksPerFriend(5)).toBe(2)
+    expect(picksPerFriend(6)).toBe(1)
   })
 
   test('ranks an undated heart on the last activity of what it is on', () => {
