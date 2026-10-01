@@ -136,8 +136,6 @@ struct HomeView: View {
                     dashboard: dashboard,
                     releases: viewModel.releases,
                     friendFavorites: viewModel.friendFavorites,
-                    refreshFailed: viewModel.refreshFailed,
-                    onRetryRefresh: { await viewModel.refresh() },
                     onReadingTapped: { onShowLibrary(LibraryRequest(status: .reading)) },
                     onSeriesTapped: { onShowSeries(SeriesRequest(state: .inProgress)) },
                     onPileTapped: { onShowLibrary(LibraryRequest(status: .toRead)) },

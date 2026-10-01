@@ -104,15 +104,6 @@ struct SharedView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             List {
-                // The snapshot on screen is brought up to date silently. Only a
-                // refresh that failed says so, since the rows are then last time's.
-                if viewModel.refreshFailed {
-                    RefreshRow(
-                        failed: viewModel.refreshFailed,
-                        loadingLabel: "Mise à jour de vos amis",
-                        onRetry: { await viewModel.refresh() }
-                    )
-                }
                 if let myShelf = viewModel.myShelf {
                     Section {
                         NavigationLink(value: MyPagePreview()) {

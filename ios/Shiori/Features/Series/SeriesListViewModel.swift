@@ -49,12 +49,6 @@ final class SeriesListViewModel {
     private(set) var isLoading = false
     private(set) var errorMessage: String?
 
-    /// The rows on screen are last session's and fresher ones are on their
-    /// way. Never set by a pull-to-refresh, whose own control spins.
-    private(set) var isRefreshing = false
-    /// That refresh failed: the rows are the ones from last time, and the
-    /// leading row offers to try again.
-    private(set) var refreshFailed = false
     /// The server has answered at least once, so the rows are no longer the
     /// snapshot.
     private var loaded = false
@@ -66,21 +60,14 @@ final class SeriesListViewModel {
     }
 
     /// Switching view: the new view's rows from its last visit at once, brought
-    /// up to date under the spinner.
+    /// up to date silently.
     private func scheduleReload() {
         reloadTask?.cancel()
         generation += 1
         followed = cache(for: mode, stateFilter).read() ?? []
         hasMore = false
         loaded = false
-        refreshFailed = false
-        isRefreshing = !followed.isEmpty
-        reloadTask = Task {
-            let failed = await load()
-            guard isRefreshing, !Task.isCancelled else { return }
-            isRefreshing = false
-            refreshFailed = failed
-        }
+        reloadTask = Task { await load() }
     }
 
     /// More rows follow the ones on screen.
@@ -98,10 +85,9 @@ final class SeriesListViewModel {
     /// `keepingDepth` is set: a reload after an edit far down the list must
     /// not cut it back to the first page and throw the reader to the top.
     ///
-    /// Says whether it failed. A load a newer one took over, or one called off,
-    /// did not: the rows are whatever the newer one brings.
-    @discardableResult
-    func load(keepingDepth: Bool = false) async -> Bool {
+    /// A failure over rows already on screen says nothing: they stay as they
+    /// were, and a pull tries again.
+    func load(keepingDepth: Bool = false) async {
         generation += 1
         let requested = generation
         let wanted = keepingDepth ? max(followed.count, pageSize) : pageSize
@@ -119,7 +105,7 @@ final class SeriesListViewModel {
                     limit: min(wanted - fetched.count, maxPageSize), offset: fetched.count,
                     mode: mode, state: stateFilter
                 )
-                guard requested == generation else { return false }
+                guard requested == generation else { return }
                 fetched += page.items
                 more = page.hasMore && !page.items.isEmpty
             }
@@ -130,20 +116,17 @@ final class SeriesListViewModel {
                 hasMore = more
             }
             loaded = true
-            // Fresh rows: whatever an earlier refresh said is no longer true.
-            refreshFailed = false
             let cache = cache(for: mode, stateFilter)
             let firstPage = Array(fetched.prefix(pageSize))
             Task.detached { cache.write(firstPage) }
         } catch {
-            guard requested == generation else { return false }
+            guard requested == generation else { return }
             isLoading = false
-            guard !isCancellation(error) else { return false }
+            guard !isCancellation(error) else { return }
             errorMessage = reportError(error)
-            return true
+            return
         }
         isLoading = false
-        return false
     }
 
     /// Loads the next page and appends it to the rows already loaded.
@@ -269,27 +252,13 @@ final class SeriesListViewModel {
         return left.name < right.name
     }
 
-    /// The tab appeared: a list still showing last session's snapshot refreshes
-    /// it under the leading spinner, one never loaded loads. A list the server
+    /// The tab appeared: a list still showing last session's snapshot is
+    /// brought up to date silently, one never loaded loads. A list the server
     /// already answered asks nothing: every write posts the change notice this
     /// tab listens to, so coming back to it only redrew the same rows at the
     /// cost of a request.
     func loadOnAppear() async {
         guard !loaded, !isLoading else { return }
-        if !followed.isEmpty {
-            await refresh()
-        } else {
-            await load()
-        }
-    }
-
-    /// Bring the rows on screen up to date without taking them away — and the
-    /// retry when that failed.
-    func refresh() async {
-        isRefreshing = true
-        refreshFailed = false
-        let failed = await load()
-        isRefreshing = false
-        refreshFailed = failed
+        await load()
     }
 }

@@ -46,9 +46,9 @@ struct MosaicModeButton: View {
 /// the covers scrolling under it, until the next one comes up and pushes it
 /// away, as a list pins its section headings.
 ///
-/// `top` and `bottom` take what the list draws around its rows — the failed
-/// refresh, the sentinel that asks for the next page.
-struct ShelfMosaic<Row: Identifiable, Tile: View, Top: View, Bottom: View>: View {
+/// `bottom` takes what the list draws under its rows: the sentinel that asks
+/// for the next page.
+struct ShelfMosaic<Row: Identifiable, Tile: View, Bottom: View>: View {
     let rows: [Row]
     var idealTileWidth: CGFloat = 95
     var spacing: CGFloat = 2
@@ -63,7 +63,6 @@ struct ShelfMosaic<Row: Identifiable, Tile: View, Top: View, Bottom: View>: View
     /// The date a row is shelved on. Nil draws no month tag at all.
     var date: ((Row) -> Date?)? = nil
     @ViewBuilder let tile: (Row, CGFloat) -> Tile
-    @ViewBuilder var top: () -> Top
     @ViewBuilder var bottom: () -> Bottom
 
     /// The columns the reader pinched to. Nil until they do.
@@ -94,7 +93,6 @@ struct ShelfMosaic<Row: Identifiable, Tile: View, Top: View, Bottom: View>: View
         let taggedIndices = tags.keys.sorted()
         return ScrollView {
             VStack(spacing: 0) {
-                top()
                 if width > 0 {
                     LazyVGrid(
                         columns: Array(

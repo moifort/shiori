@@ -21,9 +21,6 @@ final class HomeViewModel {
     private(set) var isLoading = false
     private(set) var errorMessage: String?
 
-    /// Bringing last session's figures up to date failed: the ones on screen
-    /// are from last time, and the leading row offers to try again.
-    private(set) var refreshFailed = false
     /// The server has answered at least once, so what is on screen is no
     /// longer the snapshot.
     private var loaded = false
@@ -37,12 +34,8 @@ final class HomeViewModel {
     /// How many releases the dashboard lines up; the rest are Découvrir's.
     private static let releasesShown = 10
 
-    /// Says whether it failed. One skipped because another was already on its
-    /// way, or one called off, did not: the figures are whatever that other
-    /// one brings.
-    @discardableResult
-    func load() async -> Bool {
-        guard !isLoading else { return false }
+    func load() async {
+        guard !isLoading else { return }
         isLoading = true
         errorMessage = nil
         // Side by side with the figures, and never in their way: a section
@@ -55,22 +48,20 @@ final class HomeViewModel {
             // than the whole page redrawing at once.
             withAnimation(dashboard == nil ? nil : .smooth) { dashboard = fetched }
             loaded = true
-            // Fresh figures: whatever an earlier refresh said is no longer true.
-            refreshFailed = false
             let cache = cache
             Task.detached { cache.write(fetched) }
         } catch {
             keep(releases: await releases, favorites: await favorites)
             isLoading = false
-            guard !isCancellation(error) else { return false }
-            // The last dashboard stays on screen: blanking good figures because a
-            // refresh failed reads as data loss.
+            guard !isCancellation(error) else { return }
+            // The last dashboard stays on screen and says nothing: blanking good
+            // figures because a refresh failed reads as data loss, and a pull
+            // tries again.
             errorMessage = reportError(error)
-            return true
+            return
         }
         keep(releases: await releases, favorites: await favorites)
         isLoading = false
-        return false
     }
 
     /// A section that came back replaces the one on screen, and is kept for
@@ -126,23 +117,12 @@ final class HomeViewModel {
     }
 
     /// The tab appeared: a dashboard still showing last session's snapshot
-    /// refreshes it under the leading spinner, one never loaded loads. A
-    /// dashboard the server already answered asks nothing: every write posts
-    /// the change notice this tab listens to.
+    /// is brought up to date silently, one never loaded loads. A dashboard the
+    /// server already answered asks nothing: every write posts the change
+    /// notice this tab listens to.
     func loadOnAppear() async {
         guard !loaded, !isLoading else { return }
-        if dashboard != nil {
-            await refresh()
-        } else {
-            await load()
-        }
-    }
-
-    /// Bring the snapshot on screen up to date without taking it away — and
-    /// the retry when that failed.
-    func refresh() async {
-        refreshFailed = false
-        refreshFailed = await load()
+        await load()
     }
 }
 

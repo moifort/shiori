@@ -70,15 +70,6 @@ struct AuthorListView: View {
 
     private var list: some View {
         List {
-            // The snapshot on screen is brought up to date silently. Only a
-            // refresh that failed says so, since the rows are then last time's.
-            if viewModel.refreshFailed {
-                RefreshRow(
-                    failed: viewModel.refreshFailed,
-                    loadingLabel: "Mise à jour des auteurs",
-                    onRetry: { await viewModel.refresh() }
-                )
-            }
             switch viewModel.order {
             case .name:
                 ForEach(letters, id: \.letter) { section in

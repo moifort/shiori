@@ -160,15 +160,6 @@ struct DiscoverView: View {
 
     private func list(_ rows: [SagaDiscovery]) -> some View {
         List {
-            // The snapshot on screen is brought up to date silently. Only a
-            // refresh that failed says so, since the rows are then last time's.
-            if viewModel.refreshFailed {
-                RefreshRow(
-                    failed: viewModel.refreshFailed,
-                    loadingLabel: "Mise à jour de Découvrir",
-                    onRetry: { await viewModel.refresh(format) }
-                )
-            }
             friendPicksSection
             if shelf == .books { awaitedSection }
             if shelf == .authors {

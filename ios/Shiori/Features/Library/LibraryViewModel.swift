@@ -81,12 +81,6 @@ final class LibraryViewModel {
         }
     }
 
-    /// The rows on screen are last session's and fresher ones are on their
-    /// way. Never set by a pull-to-refresh, whose own control spins.
-    private(set) var isRefreshing = false
-    /// That refresh failed: the rows are the ones from last time, and the
-    /// leading row offers to try again.
-    private(set) var refreshFailed = false
     /// The server has answered at least once, so the rows are no longer the
     /// snapshot.
     private var loaded = false
@@ -145,18 +139,11 @@ final class LibraryViewModel {
         reloadTask?.cancel()
         generation += 1
         // The new view's rows from its last visit, when there were any: shown at
-        // once and brought up to date under the spinner, as on launch.
+        // once and brought up to date silently, as on launch.
         books = cache(for: mode, statusFilter).read() ?? []
         hasMore = false
         loaded = false
-        refreshFailed = false
-        isRefreshing = !books.isEmpty
-        reloadTask = Task {
-            let failed = await load()
-            guard isRefreshing, !Task.isCancelled else { return }
-            isRefreshing = false
-            refreshFailed = failed
-        }
+        reloadTask = Task { await load() }
     }
 
     /// Loads the first page, or as many rows as the list already shows when
@@ -164,10 +151,9 @@ final class LibraryViewModel {
     /// not cut the list back to page one, or the reader lands far above the
     /// book they just saved and scrolls all the way down again.
     ///
-    /// Says whether it failed. A load a newer one took over, or one called off,
-    /// did not: the rows are whatever the newer one brings.
-    @discardableResult
-    func load(keepingDepth: Bool = false) async -> Bool {
+    /// A failure over rows already on screen says nothing: they stay as they
+    /// were, and a pull tries again.
+    func load(keepingDepth: Bool = false) async {
         generation += 1
         let requested = generation
         let wanted = keepingDepth ? max(books.count, pageSize) : pageSize
@@ -185,7 +171,7 @@ final class LibraryViewModel {
                     mode: mode, status: statusFilter,
                     limit: min(wanted - fetched.count, maxPageSize), after: fetched.last?.id
                 )
-                guard requested == generation else { return false }
+                guard requested == generation else { return }
                 fetched += page.books
                 more = page.hasMore && !page.books.isEmpty
             }
@@ -196,22 +182,19 @@ final class LibraryViewModel {
                 hasMore = more
             }
             loaded = true
-            // Fresh rows: whatever an earlier refresh said is no longer true.
-            refreshFailed = false
             let cache = cache(for: mode, statusFilter)
             let firstPage = Array(fetched.prefix(pageSize))
             Task.detached { cache.write(firstPage) }
         } catch {
-            guard requested == generation else { return false }
+            guard requested == generation else { return }
             isLoading = false
-            guard !isCancellation(error) else { return false }
+            guard !isCancellation(error) else { return }
             // The list keeps whatever it was showing: replacing a good library
             // with an empty one because a refresh failed reads as data loss.
             errorMessage = reportError(error)
-            return true
+            return
         }
         isLoading = false
-        return false
     }
 
     func loadAwaited() async {
@@ -257,31 +240,14 @@ final class LibraryViewModel {
         }
     }
 
-    /// The tab appeared: a list still showing last session's snapshot refreshes
-    /// it under the leading spinner, one never loaded loads. A list the server
+    /// The tab appeared: a list still showing last session's snapshot is
+    /// brought up to date silently, one never loaded loads. A list the server
     /// already answered asks nothing: every write posts the change notice this
     /// tab listens to, so coming back to it only redrew the same rows at the
     /// cost of a request.
     func loadOnAppear() async {
         guard !loaded, !isLoading else { return }
-        if !books.isEmpty {
-            await refresh()
-        } else {
-            await load()
-        }
-    }
-
-    /// Bring the rows on screen up to date without taking them away — and the
-    /// retry when that failed.
-    func refresh() async {
-        isRefreshing = true
-        refreshFailed = false
-        let failed = await load()
-        // A view or filter change took the list over meanwhile, and this
-        // refresh no longer has anything to say.
-        guard isRefreshing else { return }
-        isRefreshing = false
-        refreshFailed = failed
+        await load()
     }
 
     /// Puts back a book the detail screen just changed, without asking the

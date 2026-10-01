@@ -22,9 +22,6 @@ final class SharedViewModel {
     /// else on screen.
     private(set) var loadFailed: String?
 
-    /// Bringing last session's rows up to date failed: they are the ones from
-    /// last time, and the leading row offers to try again.
-    private(set) var refreshFailed = false
     /// The server has answered at least once, so the rows are no longer the
     /// snapshot.
     private(set) var loaded = false
@@ -41,12 +38,10 @@ final class SharedViewModel {
 
     var isEmpty: Bool { friends.isEmpty && myShelf == nil }
 
-    /// Says whether it failed. One skipped because another was already on its
-    /// way, or one called off, did not: the rows are whatever that other one
-    /// brings.
-    @discardableResult
-    func load() async -> Bool {
-        guard !isLoading else { return false }
+    /// A refresh that fails over rows already on screen says nothing: they
+    /// stay as they were, and a pull brings them up to date.
+    func load() async {
+        guard !isLoading else { return }
         isLoading = true
         defer { isLoading = false }
         // The two reads are independent: the preview still opens when the
@@ -80,12 +75,7 @@ final class SharedViewModel {
             if let fetchedShelf { myShelf = fetchedShelf }
         }
         if fetchedFriends != nil || fetchedShelf != nil { loaded = true }
-        if !failed {
-            // Fresh rows: whatever an earlier refresh said is no longer true.
-            refreshFailed = false
-            write()
-        }
-        return failed
+        if !failed { write() }
     }
 
     /// The tab appeared: rows still showing last session's snapshot refresh,
@@ -93,18 +83,7 @@ final class SharedViewModel {
     /// every write posts the change notice this tab listens to.
     func loadOnAppear() async {
         guard !loaded, !isLoading else { return }
-        if !isEmpty {
-            await refresh()
-        } else {
-            await load()
-        }
-    }
-
-    /// Bring the rows on screen up to date without taking them away — and the
-    /// retry when that failed.
-    func refresh() async {
-        refreshFailed = false
-        refreshFailed = await load()
+        await load()
     }
 
     /// A friend the reader just accepted: filed where the server files it, by

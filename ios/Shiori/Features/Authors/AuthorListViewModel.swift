@@ -62,12 +62,6 @@ final class AuthorListViewModel {
     private(set) var isLoading = false
     private(set) var errorMessage: String?
 
-    /// The rows on screen are last session's and fresher ones are on their
-    /// way. Never set by a pull-to-refresh, whose own control spins.
-    private(set) var isRefreshing = false
-    /// That refresh failed: the rows are the ones from last time, and the
-    /// leading row offers to try again.
-    private(set) var refreshFailed = false
     /// The server has answered at least once, so the rows are no longer the
     /// snapshot.
     private var loaded = false
@@ -113,10 +107,9 @@ final class AuthorListViewModel {
     /// `keepingDepth` is set: a reload after an edit far down the list must
     /// not cut it back to the first page and throw the reader to the top.
     ///
-    /// Says whether it failed. A load a newer one took over, or one called off,
-    /// did not: the rows are whatever the newer one brings.
-    @discardableResult
-    func load(keepingDepth: Bool = false) async -> Bool {
+    /// A failure over rows already on screen says nothing: they stay as they
+    /// were, and a pull tries again.
+    func load(keepingDepth: Bool = false) async {
         generation += 1
         let requested = generation
         let wanted = order == .name
@@ -136,7 +129,7 @@ final class AuthorListViewModel {
                     limit: min(wanted - fetched.count, maxPageSize), offset: fetched.count,
                     order: order
                 )
-                guard requested == generation else { return false }
+                guard requested == generation else { return }
                 fetched += page.items
                 more = page.hasMore && !page.items.isEmpty
             }
@@ -148,21 +141,18 @@ final class AuthorListViewModel {
                 hasMore = more
             }
             loaded = true
-            // Fresh rows: whatever an earlier refresh said is no longer true.
-            refreshFailed = false
             // By name the whole list is kept, as the whole list is drawn.
             let cache = cache
             let snapshot = order == .name ? fetched : Array(fetched.prefix(pageSize))
             Task.detached { cache.write(snapshot) }
         } catch {
-            guard requested == generation else { return false }
+            guard requested == generation else { return }
             isLoading = false
-            guard !isCancellation(error) else { return false }
+            guard !isCancellation(error) else { return }
             errorMessage = reportError(error)
-            return true
+            return
         }
         isLoading = false
-        return false
     }
 
     /// Loads the next page and appends it to the rows already loaded.
@@ -202,20 +192,6 @@ final class AuthorListViewModel {
     /// asks nothing: every write posts the change notice this shelf listens to.
     func loadOnAppear() async {
         guard !loaded, !isLoading else { return }
-        if !authors.isEmpty {
-            await refresh()
-        } else {
-            await load()
-        }
-    }
-
-    /// Bring the rows on screen up to date without taking them away — and the
-    /// retry when that failed.
-    func refresh() async {
-        isRefreshing = true
-        refreshFailed = false
-        let failed = await load()
-        isRefreshing = false
-        refreshFailed = failed
+        await load()
     }
 }

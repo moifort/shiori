@@ -21,16 +21,12 @@ struct LibraryPage: View {
     /// Rows say their own status, unless a filter already says which.
     var showsStatus: Bool = false
     let isLoading: Bool
-    /// Bringing last session's rows up to date failed: a retry row leads the
-    /// list.
-    var refreshFailed: Bool = false
     let errorMessage: String?
     /// More rows follow the ones on screen: a sentinel closes the list and
     /// asks for them as it appears.
     var hasMore: Bool = false
     var loadMoreFailed: Bool = false
     let onRetry: () async -> Void
-    var onRetryRefresh: () async -> Void = {}
     var onPrefetch: (String) -> Void = { _ in }
     var onLoadMore: () async -> Void = {}
     let onAdd: () -> Void
@@ -128,15 +124,6 @@ struct LibraryPage: View {
             .buttonStyle(.plain)
             .accessibilityIdentifier("book-tile")
             .onAppear { onPrefetch(book.id) }
-        } top: {
-            if refreshFailed {
-                RefreshRow(
-                    failed: refreshFailed,
-                    loadingLabel: "Mise à jour de la bibliothèque",
-                    onRetry: onRetryRefresh
-                )
-                .padding(.horizontal)
-            }
         } bottom: {
             if hasMore {
                 LoadMoreRow(
@@ -152,16 +139,6 @@ struct LibraryPage: View {
 
     private var list: some View {
         List {
-            // The snapshot on screen is brought up to date silently: a spinner
-            // at the top on every change of view was noise. Only a refresh that
-            // failed says so, since the rows are then last time's.
-            if refreshFailed {
-                RefreshRow(
-                    failed: refreshFailed,
-                    loadingLabel: "Mise à jour de la bibliothèque",
-                    onRetry: onRetryRefresh
-                )
-            }
             ForEach(sections) { section in
                 Section(section.title) {
                     rows(of: section)

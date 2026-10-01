@@ -20,9 +20,6 @@ final class DiscoverViewModel {
     /// being looked up on the web, and the tab has nothing to show until it is.
     private(set) var isLookingUp = false
 
-    /// Bringing last session's rows up to date failed: the rows are the ones
-    /// from last time, and the leading row offers to try again.
-    private(set) var refreshFailed = false
     /// The formats the server has answered for since launch, so their rows are
     /// no longer the snapshot.
     private var loaded: Set<ReleaseFormat> = []
@@ -171,11 +168,8 @@ final class DiscoverViewModel {
         followed(format) == 0 && awaited(format).isEmpty
     }
 
-    /// Says whether it failed. One skipped because another was already on its
-    /// way, or one called off, did not.
-    @discardableResult
-    func load(_ format: ReleaseFormat) async -> Bool {
-        guard !isLoading else { return false }
+    func load(_ format: ReleaseFormat) async {
+        guard !isLoading else { return }
         isLoading = true
         errorMessage = nil
         let page: DiscoveryPage
@@ -184,14 +178,13 @@ final class DiscoverViewModel {
             feed.followed[format] = page.followed
             show(page, in: format)
             loaded.insert(format)
-            refreshFailed = false
         } catch {
             isLoading = false
-            guard !isCancellation(error) else { return false }
-            // The last rows stay on screen: blanking good rows because a
-            // refresh failed reads as data loss.
+            guard !isCancellation(error) else { return }
+            // The last rows stay on screen and say nothing: blanking good rows
+            // because a refresh failed reads as data loss, and a pull tries again.
             errorMessage = reportError(error)
-            return true
+            return
         }
         isLoading = false
         // The very first look, when nothing the reader follows in this format
@@ -203,7 +196,6 @@ final class DiscoverViewModel {
             await Task { await lookUp(format) }.value
         }
         await askForAlertsIfWorthIt(format)
-        return false
     }
 
     /// Whether the reader follows something in this format and none of it was
@@ -231,14 +223,7 @@ final class DiscoverViewModel {
     /// change notice this tab listens to.
     func loadOnAppear(_ format: ReleaseFormat) async {
         guard !loaded.contains(format) else { return }
-        await refresh(format)
-    }
-
-    /// Bring the rows on screen up to date without taking them away — and the
-    /// retry when that failed.
-    func refresh(_ format: ReleaseFormat) async {
-        refreshFailed = false
-        refreshFailed = await load(format)
+        await load(format)
     }
 
     /// The library changed: the formats already loaded are asked again.

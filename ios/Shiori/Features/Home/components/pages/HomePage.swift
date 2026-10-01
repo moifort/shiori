@@ -10,10 +10,6 @@ struct HomePage: View {
     var releases: [HomeRelease] = []
     /// What the reader's friends hearted lately, the newest first.
     var friendFavorites: [FriendFavorite] = []
-    /// Bringing last session's figures up to date failed: a retry row leads
-    /// the page.
-    var refreshFailed: Bool = false
-    var onRetryRefresh: () async -> Void = {}
     /// The "reading" shelf: opens the library on the books being read.
     let onReadingTapped: () -> Void
     /// The progress card: opens the Series tab on the sagas in progress.
@@ -44,16 +40,6 @@ struct HomePage: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                // The snapshot on screen is brought up to date silently: a
-                // spinner at the top on every opening was noise. Only a refresh
-                // that failed says so, since the figures are then last time's.
-                if refreshFailed {
-                    RefreshRow(
-                        failed: refreshFailed,
-                        loadingLabel: "Mise à jour de l'accueil",
-                        onRetry: onRetryRefresh
-                    )
-                }
 
                 // The one thing a reader can do from an empty dashboard, above
                 // the cards it will fill.
