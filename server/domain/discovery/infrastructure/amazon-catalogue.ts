@@ -14,7 +14,7 @@ export type AmazonEdition = { releaseDate?: ReleaseDate }
 /** What Amazon's page for a printed edition says of it: the day it came out or
  *  comes out, or `unknown` when Amazon has no such book in that language, or
  *  `unreachable` when the page could not be read — Amazon answers a robot a
- *  captcha now and then, and that is not an answer. A 979 ISBN has no ASIN a
+ *  captcha or a 503 now and then, and that is not an answer. A 979 ISBN has no ASIN a
  *  page can be read at, and is `unreachable` too. */
 export const amazonEditionOf = async (
   isbn13: Isbn13,
@@ -35,6 +35,11 @@ export const amazonEditionOf = async (
       },
     })
     if (response.status === 404) return 'unknown'
+    // A 503 is Amazon turning a robot away, as its captcha does: read again next week.
+    if (response.status === 503) {
+      logger.info('Amazon turned the lookup away', { isbn13, store })
+      return 'unreachable'
+    }
     if (!response.ok) {
       logger.warn('Amazon edition lookup failed', { isbn13, status: response.status })
       return 'unreachable'
