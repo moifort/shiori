@@ -124,10 +124,12 @@ const rebuild = async (
     BookQuery.all(userId),
     SeriesOpinionQuery.all(userId),
   ])
-  const seriesIds = [...new Set(books.flatMap((book) => (book.series ? [book.series.id] : [])))]
+  const editions = books.flatMap((book) =>
+    book.series ? [{ id: book.series.id, language: book.language }] : [],
+  )
   // The world's catalogues, and the reader's own count where the world has
   // none: a saga they counted themselves has a bar on the dashboard too.
-  const catalogues = [...cataloguesOf(books, await SeriesQuery.byIds(seriesIds), opinions).values()]
+  const catalogues = [...cataloguesOf(books, await SeriesQuery.byIds(editions), opinions).values()]
   return AnalyticsCommand.rebuild({ userId, books, catalogues, opinions, timeZone, now })
 }
 

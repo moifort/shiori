@@ -218,7 +218,7 @@ export namespace AudibleUseCase {
     const connected = await connectedCredentials(userId)
     if (connected === 'not-connected') return connected
     const [catalogue, watches] = await Promise.all([
-      SeriesQuery.byId(seriesId),
+      SeriesQuery.byId({ id: seriesId, language }),
       DiscoveryQuery.watches([watchKeyOf({ seriesId, language })]),
     ])
     const entry = catalogue?.volumes.find(

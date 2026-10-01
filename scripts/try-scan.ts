@@ -43,6 +43,6 @@ process.stdout.write(`usage: ${JSON.stringify(usage)}\n`)
 process.stdout.write(`elapsed: ${((Date.now() - started) / 1000).toFixed(1)}s\n`)
 
 if (result.series) {
-  const series = await SeriesQuery.byId(result.series.id)
+  const series = await SeriesQuery.byId({ id: result.series.id, language: result.language })
   process.stdout.write(`\ncatalogue: ${JSON.stringify(series, null, 2)}\n`)
 }

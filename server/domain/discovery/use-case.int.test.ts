@@ -234,6 +234,7 @@ describe('the hourly pass', () => {
   test('writes the dates it found into the saga’s catalogue, Amazon’s over the web’s', async () => {
     await stock(reader)
     await SeriesCommand.catalogue({
+      language: 'fr',
       id: carl,
       name: SeriesName('Dungeon Crawler Carl'),
       author: AuthorName('Matt Dinniman'),
@@ -249,7 +250,7 @@ describe('the hourly pass', () => {
     await DiscoveryUseCase.watchDueSagas(now)
     startFakeRequest()
 
-    const catalogue = await SeriesQuery.byId(carl)
+    const catalogue = await SeriesQuery.byId({ id: carl, language: 'fr' })
     expect(catalogue?.volumes.map((volume): unknown[] => [volume.number, volume.releases])).toEqual(
       [
         [1, { fr: '2024-05-02' }],

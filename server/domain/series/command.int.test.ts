@@ -15,6 +15,7 @@ const id = SeriesId('system-universe--dakota-krout')
 
 const catalogue = () => ({
   id,
+  language: 'fr' as const,
   name: SeriesName('System Universe'),
   author: AuthorName('Dakota Krout'),
   catalogedAt: new Date('2026-01-01'),
@@ -40,7 +41,7 @@ describe('release dates written into the catalogue', () => {
         { volume: VolumeNumber(5), title: BookTitle('Cinq'), date: ReleaseDate('2026-10-08') },
       ]),
     )
-    const stored = await withRequestCacheScope(() => SeriesQuery.byId(id))
+    const stored = await withRequestCacheScope(() => SeriesQuery.byId({ id, language: 'fr' }))
     expect(stored?.volumes.map((volume) => volume.releases?.fr as string | undefined)).toEqual([
       undefined,
       '2026-10-08',
@@ -53,7 +54,7 @@ describe('release dates written into the catalogue', () => {
         { volume: VolumeNumber(1), title: BookTitle('Un') },
       ]),
     ).toBeNull()
-    expect(await SeriesQuery.byId(SeriesId('nobody--nobody'))).toBeNull()
+    expect(await SeriesQuery.byId({ id: SeriesId('nobody--nobody'), language: 'fr' })).toBeNull()
   })
 
   test('building the catalogue again keeps the dates', async () => {
@@ -64,10 +65,41 @@ describe('release dates written into the catalogue', () => {
       ]),
     )
     await withRequestCacheScope(() => SeriesCommand.catalogue(catalogue()))
-    const stored = await withRequestCacheScope(() => SeriesQuery.byId(id))
+    const stored = await withRequestCacheScope(() => SeriesQuery.byId({ id, language: 'fr' }))
     expect(stored?.volumes[0]).toMatchObject({
       releases: { fr: '2025-02-01' },
       titles: { fr: 'Quatre' },
     })
+  })
+
+  test("an edition's dates go into that edition's catalogue only", async () => {
+    await SeriesCommand.catalogue(catalogue())
+    await SeriesCommand.catalogue({ ...catalogue(), language: 'en' })
+    await withRequestCacheScope(() =>
+      SeriesCommand.recordReleases(id, 'en', [
+        { volume: VolumeNumber(4), title: BookTitle('Four'), date: ReleaseDate('2024-03-01') },
+      ]),
+    )
+    const [french, english] = await withRequestCacheScope(() =>
+      Promise.all([
+        SeriesQuery.byId({ id, language: 'fr' }),
+        SeriesQuery.byId({ id, language: 'en' }),
+      ]),
+    )
+    expect(french?.volumes[0]?.releases).toBeUndefined()
+    expect(english?.volumes[0]?.releases).toEqual({ en: ReleaseDate('2024-03-01') })
+  })
+
+  test('a watch on an edition nobody catalogued leaves the other editions alone', async () => {
+    await SeriesCommand.catalogue(catalogue())
+    expect(
+      await withRequestCacheScope(() =>
+        SeriesCommand.recordReleases(id, 'en', [
+          { volume: VolumeNumber(5), title: BookTitle('Five'), date: ReleaseDate('2026-10-08') },
+        ]),
+      ),
+    ).toBeNull()
+    const french = await withRequestCacheScope(() => SeriesQuery.byId({ id, language: 'fr' }))
+    expect(french?.volumes).toHaveLength(1)
   })
 })

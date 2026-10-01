@@ -721,8 +721,9 @@ describe('adding a volume of a saga heard from its screen', () => {
       ...overrides,
     })
   const catalogued = () =>
-    fake.seed('series', saga, {
+    fake.seed('series', `${saga}~fr`, {
       id: saga,
+      language: 'fr',
       name: 'Chronique du tueur de roi',
       author: 'Patrick Rothfuss',
       catalogedAt: NOW,

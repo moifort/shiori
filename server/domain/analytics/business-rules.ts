@@ -29,6 +29,7 @@ import {
   inTabOrder,
   progressOf,
 } from '~/domain/series/business-rules'
+import { catalogueKeyOf } from '~/domain/series/primitives'
 import type { Series, SeriesId } from '~/domain/series/types'
 import { editionUnfollowed } from '~/domain/series-opinion/business-rules'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
@@ -246,14 +247,16 @@ export const seriesProgressOf = (
   seriesRatings: ReadonlyMap<SeriesId, StarRating> = new Map(),
   hearted: ReadonlySet<SeriesId> = new Set(),
 ): SeriesProgress[] => {
-  const catalogueOf = new Map(catalogues.map((series) => [series.id, series]))
+  const catalogueOf = new Map(
+    catalogues.map((series) => [catalogueKeyOf(series.id, series.language), series]),
+  )
   const sagas = followedSagasOf(books).map((saga) => ({
     ...saga,
     shelvedAt: new Date(Math.max(...saga.books.map((book) => shelfDateOf(book).getTime()))),
   }))
   const progress: SeriesProgress[] = []
   for (const saga of inTabOrder(sagas)) {
-    const series = catalogueOf.get(saga.id)
+    const series = catalogueOf.get(catalogueKeyOf(saga.id, saga.language))
     if (!series || progress.some((shown) => shown.id === saga.id)) continue
     const read = readVolumeNumbersOf(saga.books)
     const edition = { language: saga.language }

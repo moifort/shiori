@@ -34,12 +34,21 @@ export type Volume = {
   covers?: Partial<Record<BookLanguage, CoverUrl>>
 }
 
-/** The public catalogue of a saga. It holds no reference to any user: it is a
- *  fact about the world, written once and read by everyone, which is what lets a
- *  single AI call serve every reader of the saga. It is never exposed through
- *  library sharing. */
+/** The public catalogue of a saga in one edition language. It holds no
+ *  reference to any user: it is a fact about the world, written once and read
+ *  by everyone, which is what lets a single AI call serve every reader of the
+ *  saga in that language. It is never exposed through library sharing.
+ *
+ *  One per language because an edition is its own list: a translation trails
+ *  its original, sometimes skips volumes, names the saga and its volumes
+ *  otherwise, and comes out on other days under other covers. A catalogue
+ *  shared by every language took all of that from whoever scanned first. */
 export type Series = {
+  /** The saga, whatever the language: what books, opinions and watches name. */
   id: SeriesId
+  /** The edition this catalogue lists. Absent for the volumes that record no
+   *  language, which have a catalogue of their own as they have a row. */
+  language?: BookLanguage
   name: SeriesName
   author: AuthorName
   description?: SeriesDescription
@@ -54,12 +63,17 @@ export type Series = {
   provisional?: true
 }
 
+/** A saga in one edition language: what a catalogue is looked up by. The
+ *  language is absent for the volumes that record none. */
+export type SeriesEdition = { id: SeriesId; language?: BookLanguage }
+
 /** A saga the catalogue call answered with no volume at all — a saga heard that
  *  Audible lists no recording of, most often. Remembered so that the next
  *  opening does not wait on the same grounded call, and forgotten after a while
  *  so that a recording published since is found. */
 export type SeriesMiss = {
   id: SeriesId
+  language?: BookLanguage
   missedAt: Date
 }
 

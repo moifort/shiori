@@ -459,20 +459,25 @@ export namespace ScanCommand {
   }
 
   /** Step 3, and only when it buys something: a standalone book or a saga
-   *  already in the catalogue skips it entirely. The catalogue is shared, so
-   *  this is paid once for every reader of that saga, ever. */
+   *  already catalogued in this edition skips it entirely. The catalogue is
+   *  shared, so this is paid once for every reader of that saga in that
+   *  language, ever. */
   const catalogueSeriesIfNeeded = async (result: ScanResult, language: ScanLanguage) => {
     const series = result.series
     if (!series || result.authors.length === 0) return undefined
 
-    if (await SeriesCommand.isCatalogued(series.id)) return undefined
+    // A cover that does not say its language is presumed in the reader's, as
+    // the app presumes it when the book is added: that is the edition whose
+    // catalogue the reader opens next.
+    const edition = result.language ?? language
+    if (await SeriesCommand.isCatalogued({ id: series.id, language: edition })) return undefined
 
     const { usage } = await catalogueSeries(
       series.id,
       series.name,
       result.authors[0],
       language,
-      result.language,
+      edition,
     )
     return usage
   }
@@ -482,8 +487,11 @@ export namespace ScanCommand {
    *  series screen runs it for a saga an Audible import named, since an import
    *  describes nothing, and again when the reader asks for a fresh catalogue.
    *
-   *  `editionLanguage` is the edition on the shelf, which titles the volumes;
-   *  absent, the reader's language stands in.
+   *  `editionLanguage` is the edition on the shelf, whose catalogue this is:
+   *  the volumes out in that language, under their titles there. Absent — a
+   *  volume that records no language — the reader's language stands in for
+   *  the model, and the catalogue is stored as that of no language, the one
+   *  such volumes read.
    *
    *  Never throws: a failed catalogue must not fail the scan that asked for it.
    *  The reader still gets their book, and the saga is catalogued by the next
@@ -515,12 +523,16 @@ export namespace ScanCommand {
 
       const volumes = withoutDuplicateVolumes(value.volumes.map(parsedVolume).filter(isPresent))
       if (volumes.length === 0) {
-        await SeriesCommand.recordNothingFound(seriesId, new Date())
+        await SeriesCommand.recordNothingFound(
+          { id: seriesId, language: editionLanguage },
+          new Date(),
+        )
         return { usage }
       }
 
       const series = await SeriesCommand.catalogue({
         id: seriesId,
+        ...(editionLanguage ? { language: editionLanguage } : {}),
         name: SeriesName(value.name),
         author: AuthorName(value.author),
         description: optional(value.description, SeriesDescription),
@@ -535,12 +547,13 @@ export namespace ScanCommand {
     }
   }
 
-  /** Every reader's volumes of a saga just catalogued take the name the
-   *  catalogue gives it, as the saga screen shows it. A failure leaves them
-   *  named as they were, and the catalogue stands. */
+  /** Every reader's volumes of a saga just catalogued in one edition take the
+   *  name that edition's catalogue gives it, as the saga screen shows it — and
+   *  only those: the same saga is called otherwise in another language. A
+   *  failure leaves them named as they were, and the catalogue stands. */
   const nameBooksAfter = async (series: Series) => {
     try {
-      await BookCommand.nameSeries(series.id, series.name)
+      await BookCommand.nameSeries(series, series.name)
     } catch (error) {
       logger.warn('saga name not written into its books', { error, series: series.id })
     }

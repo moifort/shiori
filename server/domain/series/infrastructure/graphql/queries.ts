@@ -142,7 +142,8 @@ builder.queryFields((t) => ({
     type: SeriesType,
     nullable: true,
     description:
-      'The full catalogue of one saga, owned volumes and unowned alike.\n\n' +
+      'The full catalogue of one saga in one edition language, owned volumes and ' +
+      'unowned alike.\n\n' +
       'Everything the reader does not own is a proposal: nothing enters a library ' +
       'until they add it.\n\n' +
       'Built on first sight when nobody has catalogued the saga yet — an Audible ' +
@@ -160,8 +161,9 @@ builder.queryFields((t) => ({
         required: false,
         description:
           'The edition the reader opened, for a saga held in more than one ' +
-          'language: a catalogue built on this opening titles its volumes as ' +
-          'that edition does. Absent, the edition of whichever volume they hold answers.',
+          'language: each edition has its own catalogue. Absent, the edition of ' +
+          'whichever volume they hold answers, and the reader’s own language for ' +
+          'a saga they hold nothing of.',
       }),
       proposed: t.arg({
         type: ProposedSagaInput,

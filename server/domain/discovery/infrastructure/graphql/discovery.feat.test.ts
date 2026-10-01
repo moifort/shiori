@@ -162,8 +162,9 @@ describe('the Découvrir tab', () => {
   // The row draws every cover the Series tab draws: the catalogue's spine
   // comes with it.
   test('carries the catalogue spine the Series tab draws its strip from', async () => {
-    fake.seed('series', carl, {
+    fake.seed('series', `${carl}~fr`, {
       id: carl,
+      language: 'fr',
       name: 'Dungeon Crawler Carl',
       author: 'Matt Dinniman',
       catalogedAt: new Date(),

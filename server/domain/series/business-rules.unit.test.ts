@@ -417,7 +417,7 @@ describe('cataloguesOf', () => {
     expect(catalogues.has(SeriesId('other'))).toBe(false)
   })
 
-  test('draws one provisional catalogue for a saga held in two languages', () => {
+  test('draws one provisional catalogue per edition of a saga held in two languages', () => {
     const catalogues = cataloguesOf(
       [
         { ...volume(kingkiller, 'Kingkiller', 'Le Nom du vent', 1), language: 'fr' as const },
@@ -427,13 +427,25 @@ describe('cataloguesOf', () => {
       [{ seriesId: kingkiller, volumeCount: VolumeNumber(2) }],
     )
 
-    expect([...catalogues.keys()]).toEqual([kingkiller])
-    // One spine over both editions, the first-shelved title standing for a
-    // number both hold.
-    expect(catalogues.get(kingkiller)?.volumes.map((volume) => String(volume.title))).toEqual([
-      'Le Nom du vent',
-      'Kingkiller',
-    ])
+    expect([...catalogues.keys()]).toEqual([`${kingkiller}~en`, `${kingkiller}~fr`])
+    // The count is the work's; each spine is titled from its own edition.
+    expect(
+      catalogues.get(`${kingkiller}~fr`)?.volumes.map((volume) => String(volume.title)),
+    ).toEqual(['Le Nom du vent', 'Kingkiller'])
+    expect(catalogues.get(`${kingkiller}~en`)).toMatchObject({ language: 'en' })
+  })
+
+  test('reads each edition from its own stored catalogue', () => {
+    const catalogues = cataloguesOf(
+      [
+        { ...volume(dune, 'Dune', 'Dune', 1), language: 'fr' as const },
+        { ...volume(dune, 'Dune', 'Dune', 1), language: 'en' as const },
+      ],
+      [{ ...known, language: 'en' }],
+      [],
+    )
+
+    expect([...catalogues.keys()]).toEqual([`${dune}~en`])
   })
 
   // A volume out after the saga was catalogued, filed by hand: the stored

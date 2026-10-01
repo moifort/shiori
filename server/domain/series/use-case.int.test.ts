@@ -194,10 +194,101 @@ describe('the name a saga goes by', () => {
     const first = await volumeOf('Red Rising[French Edition]', reader, 1)
     const other = await volumeOf('Red Rising [French Edition]', 'reader-2' as UserId, 2)
 
-    expect(await BookCommand.nameSeries(redRising, SeriesName('Red Rising'))).toBe(2)
+    expect(await BookCommand.nameSeries({ id: redRising }, SeriesName('Red Rising'))).toBe(2)
 
     for (const book of [first, other])
       expect(fake.data('books', book.id)?.series).toMatchObject({ name: 'Red Rising' })
     expect(fake.data('books', first.id)?.updatedAt).toEqual(first.updatedAt)
+  })
+})
+
+describe('a saga held in two languages', () => {
+  const dune = SeriesId('dune--frank-herbert')
+  const volumeIn = (language: 'fr' | 'en', name: string) =>
+    BookCommand.add(
+      reader,
+      {
+        title: BookTitle(`${name} 1`),
+        language,
+        series: { id: dune, name: SeriesName(name), volume: VolumeNumber(1), kind: 'main' },
+      },
+      NOW,
+    )
+
+  beforeEach(() => {
+    fake.seed('series', `${dune}~fr`, {
+      id: dune,
+      language: 'fr',
+      name: 'Le Cycle de Dune',
+      author: 'Frank Herbert',
+      volumes: [
+        { number: 1, title: 'Dune', kind: 'main' },
+        { number: 2, title: 'Le Messie de Dune', kind: 'main' },
+      ],
+    })
+    fake.seed('series', `${dune}~en`, {
+      id: dune,
+      language: 'en',
+      name: 'Dune Chronicles',
+      author: 'Frank Herbert',
+      volumes: [
+        { number: 1, title: 'Dune', kind: 'main' },
+        { number: 2, title: 'Dune Messiah', kind: 'main' },
+        { number: 3, title: 'Children of Dune', kind: 'main' },
+      ],
+    })
+  })
+
+  test('draws each row from its own edition’s catalogue', async () => {
+    await volumeIn('fr', 'Dune')
+    await volumeIn('en', 'Dune')
+
+    const rows = await SeriesUseCase.followed(reader)
+
+    expect(rows.map((row) => [row.language, String(row.name), row.progress?.totalCount])).toEqual([
+      ['en', 'Dune Chronicles', 3],
+      ['fr', 'Le Cycle de Dune', 2],
+    ])
+  })
+
+  test('names a book about to be added after its own edition', async () => {
+    const book = (language: 'fr' | 'en') => ({
+      title: BookTitle('Dune 2'),
+      language,
+      series: {
+        id: dune,
+        name: SeriesName('Dune'),
+        volume: VolumeNumber(2),
+        kind: 'main' as const,
+      },
+    })
+
+    const [french, english] = await SeriesUseCase.namedAfterCatalogues([book('fr'), book('en')])
+
+    expect(String(french?.series?.name)).toBe('Le Cycle de Dune')
+    expect(String(english?.series?.name)).toBe('Dune Chronicles')
+  })
+
+  test('renames only the volumes of the edition catalogued', async () => {
+    const french = await volumeIn('fr', 'Dune')
+    const english = await volumeIn('en', 'Dune')
+
+    expect(
+      await BookCommand.nameSeries({ id: dune, language: 'fr' }, SeriesName('Le Cycle de Dune')),
+    ).toBe(1)
+
+    expect(fake.data('books', french.id)?.series).toMatchObject({ name: 'Le Cycle de Dune' })
+    expect(fake.data('books', english.id)?.series).toMatchObject({ name: 'Dune' })
+  })
+
+  test('opens the saga screen on the edition asked for, else on a volume held', async () => {
+    await volumeIn('en', 'Dune')
+
+    expect(
+      (await SeriesUseCase.describe(reader, dune, 'fr', 'fr'))?.volumes.map((volume) =>
+        String(volume.title),
+      ),
+    ).toEqual(['Dune', 'Le Messie de Dune'])
+    expect((await SeriesUseCase.describe(reader, dune, 'fr'))?.language).toBe('en')
   })
 })

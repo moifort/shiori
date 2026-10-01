@@ -74,16 +74,30 @@ export const VolumeType = builder.objectRef<Volume>('Volume').implement({
 
 export const SeriesType = builder.objectRef<Series>('Series').implement({
   description:
-    'The shared catalogue of a saga.\n\n' +
-    'A public fact with no reference to any reader: one document serves everyone, ' +
-    'which is what lets a single AI call pay for the whole saga. It is never ' +
-    'exposed through library sharing, which shows books only.\n\n' +
+    'The shared catalogue of a saga in one edition language.\n\n' +
+    'A public fact with no reference to any reader: one document serves everyone ' +
+    'reading that edition, which is what lets a single AI call pay for the whole ' +
+    'saga. It is never exposed through library sharing, which shows books only.\n\n' +
+    'Each language has its own: a translation lists the volumes out in it, under ' +
+    'its own names, dates and covers.\n\n' +
     'Volumes are stored in publication order, which is verifiable. Reading order ' +
     'differs on many sagas and is an opinion.\n\n' +
     "A `provisional` catalogue is the exception: the reader's own count of the " +
     'volumes, drawn on the fly for a saga nobody has described, and never stored.',
   fields: (t) => ({
-    id: t.field({ type: 'SeriesId', resolve: (series) => series.id }),
+    id: t.field({
+      type: 'SeriesId',
+      description: 'The saga, the same in every language: what its books name.',
+      resolve: (series) => series.id,
+    }),
+    language: t.field({
+      type: BookLanguageEnum,
+      nullable: true,
+      description:
+        'The edition this catalogue lists. Null for the catalogue of the volumes ' +
+        'that record no language.',
+      resolve: (series) => series.language ?? null,
+    }),
     name: t.field({ type: 'SeriesName', resolve: (series) => series.name }),
     audio: t.boolean({
       description:

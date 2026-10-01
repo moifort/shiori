@@ -19,7 +19,7 @@ import {
   progressOf,
   withShelvedVolumes,
 } from '~/domain/series/business-rules'
-import { isAudioSeries, seriesIdFor, seriesKeyOf } from '~/domain/series/primitives'
+import { catalogueKeyOf, isAudioSeries, seriesIdFor, seriesKeyOf } from '~/domain/series/primitives'
 import { SeriesQuery } from '~/domain/series/query'
 import type { Series, SeriesId, SeriesName, SeriesState } from '~/domain/series/types'
 import { editionUnfollowed } from '~/domain/series-opinion/business-rules'
@@ -61,23 +61,31 @@ export type FollowedSeries = {
 export type SagaProgress = { readCount: number; totalCount: number }
 
 export namespace SeriesUseCase {
-  /** Books about to be added, each saga named as its catalogue names it — the
-   *  name the saga screen and the Series tab show — rather than as the scan or
-   *  the import wrote it. The catalogues in one getAll; a saga with none keeps
-   *  the name it came with. */
-  export const namedAfterCatalogues = async <Input extends Pick<NewBook, 'series' | 'format'>>(
+  /** Books about to be added, each saga named as its catalogue in that
+   *  book's language names it — the name the saga screen and the Series tab
+   *  show — rather than as the scan or the import wrote it. The catalogues in
+   *  one getAll; a saga with none in that edition keeps the name it came with. */
+  export const namedAfterCatalogues = async <
+    Input extends Pick<NewBook, 'series' | 'format' | 'language'>,
+  >(
     inputs: readonly Input[],
   ): Promise<Input[]> => {
-    const idOf = (input: Input) =>
-      input.series && seriesIdFor(input.series.id, input.format ?? 'book')
-    const ids = [...new Set(inputs.flatMap((input) => idOf(input) ?? []))]
-    if (ids.length === 0) return [...inputs]
+    const editionOf = (input: Input) =>
+      input.series && {
+        id: seriesIdFor(input.series.id, input.format ?? 'book'),
+        language: input.language,
+      }
+    const editions = inputs.flatMap((input) => editionOf(input) ?? [])
+    if (editions.length === 0) return [...inputs]
     const names = new Map(
-      (await SeriesQuery.byIds(ids)).map((catalogue) => [catalogue.id, catalogue.name]),
+      (await SeriesQuery.byIds(editions)).map((catalogue) => [
+        catalogueKeyOf(catalogue.id, catalogue.language),
+        catalogue.name,
+      ]),
     )
     return inputs.map((input) => {
-      const id = idOf(input)
-      const name = id && names.get(id)
+      const edition = editionOf(input)
+      const name = edition && names.get(catalogueKeyOf(edition.id, edition.language))
       return input.series && name ? { ...input, series: { ...input.series, name } } : input
     })
   }
@@ -185,7 +193,8 @@ export namespace SeriesUseCase {
       (removed) => removed > 0,
     )
 
-  /** One saga's catalogue, built the first time somebody asks for it.
+  /** One saga's catalogue in one edition, built the first time somebody asks
+   *  for it.
    *
    *  A scan catalogues the saga of every volume it reads, but an Audible import
    *  names sagas without describing them, and a scan's catalogue call can fail.
@@ -196,17 +205,18 @@ export namespace SeriesUseCase {
    *  library must not pay one call per saga inside a single request.
    *
    *  `edition` is the language of the row the reader opened, for a saga they
-   *  hold in more than one: the catalogue titles its volumes as that edition
-   *  does. Absent, the edition of whichever volume they hold answers.
+   *  hold in more than one: each edition has its own catalogue, listing the
+   *  volumes out in that language under their titles there. Absent, the
+   *  edition of whichever volume they hold answers — see `editionOpened`.
    *
    *  A saga the reader counted themselves answers with a provisional catalogue
    *  drawn from that count, and the model is not asked: `recatalogue` is how
    *  they ask for the world's.
    *
    *  A saga the reader holds nothing of — offered on an author's page — is
-   *  catalogued from the `proposed` name and author instead, provided they fold
-   *  into this very id: the catalogue is shared, and a pair naming another saga
-   *  must not write over it.
+   *  catalogued from the `proposed` name and author instead, in the reader's
+   *  language, provided they fold into this very id: the catalogue is shared,
+   *  and a pair naming another saga must not write over it.
    *
    *  Null when the reader holds no volume of the saga and no proposal names it,
    *  since there is then nothing to ask about, and when the model fails or
@@ -220,33 +230,35 @@ export namespace SeriesUseCase {
     edition?: BookLanguage,
     proposed?: ProposedSaga,
   ): Promise<Series | null> => {
-    const known = await SeriesQuery.byId(seriesId)
-    if (known) return withShelvedVolumes(known, await BookQuery.bySeries(userId, seriesId))
+    const shelf = await BookQuery.bySeries(userId, seriesId)
+    const opened = { id: seriesId, language: editionOpened(shelf, language, edition) }
+    const held = shelf.filter((book) => book.language === opened.language)
+    const known = await SeriesQuery.byId(opened)
+    if (known) return withShelvedVolumes(known, held)
     // The reader counted the volumes themselves: their spine is drawn from
     // that, and the world is only asked again when they ask for it — every
     // opening would otherwise wait on a model call that already failed once.
     const opinion = await SeriesOpinionQuery.of(userId, seriesId)
     if (opinion?.volumeCount !== undefined) {
-      const provisional = cataloguesOf(
-        await BookQuery.bySeries(userId, seriesId),
-        [],
-        [opinion],
-      ).get(seriesId)
+      const provisional = cataloguesOf(held, [], [opinion]).get(
+        catalogueKeyOf(seriesId, opened.language),
+      )
       if (provisional) return provisional
     }
     // The model found nothing on this saga lately — a saga heard that Audible
     // lists no recording of: asking again would make every opening wait on the
     // same empty answer. `recatalogue` asks regardless.
-    if (isRecentMiss(await SeriesQuery.lastMiss(seriesId), new Date())) return null
-    return catalogueFromLibrary(userId, seriesId, language, edition, proposed)
+    if (isRecentMiss(await SeriesQuery.lastMiss(opened), new Date())) return null
+    return catalogueFromLibrary(userId, seriesId, held, language, opened.language, proposed)
   }
 
-  /** The catalogue asked of the world again, replacing the stored one.
+  /** The catalogue of one edition asked of the world again, replacing the
+   *  stored one.
    *
-   *  A catalogue is written once and read by everyone, so a volume announced
-   *  after that call never showed, and a catalogue built in the wrong language
-   *  never got another chance. The reader asks for a fresh one; the write
-   *  replaces the stale list for everyone, as the command allows.
+   *  A catalogue is written once and read by everyone, so a volume out since
+   *  that call never showed. The reader asks for a fresh one; the write
+   *  replaces the stale list for everyone reading that edition, as the command
+   *  allows.
    *
    *  Null when the reader holds no volume of the saga, and when the model fails
    *  or finds no volumes — the previous catalogue is then left untouched, so a
@@ -256,27 +268,34 @@ export namespace SeriesUseCase {
     seriesId: SeriesId,
     language: ScanLanguage,
     edition?: BookLanguage,
-  ): Promise<Series | null> => catalogueFromLibrary(userId, seriesId, language, edition)
+  ): Promise<Series | null> => {
+    const shelf = await BookQuery.bySeries(userId, seriesId)
+    const opened = editionOpened(shelf, language, edition)
+    return catalogueFromLibrary(
+      userId,
+      seriesId,
+      shelf.filter((book) => book.language === opened),
+      language,
+      opened,
+    )
+  }
 
+  /** Ask the model for one edition's catalogue, named after a volume of that
+   *  edition the reader holds, or after the saga proposed when they hold none.
+   *  `held` is the reader's volumes of that edition. */
   const catalogueFromLibrary = async (
     userId: UserId,
     seriesId: SeriesId,
+    held: readonly Book[],
     language: ScanLanguage,
     edition: BookLanguage | undefined,
     proposed?: ProposedSaga,
   ): Promise<Series | null> => {
-    const shelf = await BookQuery.bySeries(userId, seriesId)
-    const held = shelf.filter((book) => book.series && book.authors.length > 0)
-    // The edition the reader opened first, then any volume that says its
-    // language, then whatever they hold.
-    const volume =
-      held.find((book) => edition !== undefined && book.language === edition) ??
-      held.find((book) => book.language !== undefined) ??
-      held[0]
+    const volume = held.find((book) => book.series && book.authors.length > 0)
     const source = volume?.series
-      ? { name: volume.series.name, author: volume.authors[0], edition: volume.language }
+      ? { name: volume.series.name, author: volume.authors[0] }
       : proposed && namesSaga(proposed, seriesId)
-        ? { ...proposed, edition }
+        ? proposed
         : undefined
     if (!source) return null
 
@@ -285,7 +304,7 @@ export namespace SeriesUseCase {
       source.name,
       source.author,
       language,
-      source.edition,
+      edition,
     )
     // Telemetry: the catalogue is already built, so a failed counter write is
     // logged rather than turned into an error the reader has to read.
@@ -297,8 +316,22 @@ export namespace SeriesUseCase {
     // none until now: flagged here, or the progress bar would wait for the next
     // unrelated book write to appear.
     if (series) await AnalyticsUseCase.markStale(userId)
-    return series ? withShelvedVolumes(series, shelf) : null
+    return series ? withShelvedVolumes(series, held) : null
   }
+}
+
+/** The edition a saga screen was opened on: the one the row names, else the
+ *  language of a volume the reader holds, else — they hold only volumes that
+ *  record none — none. A saga the reader holds nothing of, offered on an
+ *  author's page, is opened in the reader's own language. */
+const editionOpened = (
+  shelf: readonly Book[],
+  language: ScanLanguage,
+  edition: BookLanguage | undefined,
+): BookLanguage | undefined => {
+  if (edition) return edition
+  if (shelf.length === 0) return language
+  return shelf.find((book) => book.language !== undefined)?.language
 }
 
 /** A saga the reader holds nothing of, as whoever offered it names it: what
@@ -351,12 +384,12 @@ const described = async (
   const ids = new Set(sagas.map((saga) => saga.id))
   const catalogued = cataloguesOf(
     shelf.books.filter((book) => book.series && ids.has(book.series.id)),
-    await SeriesQuery.byIds([...ids]),
+    await SeriesQuery.byIds(sagas.map(({ id, language }) => ({ id, language }))),
     shelf.opinions,
   )
   const currentYear = Year(new Date().getUTCFullYear())
   return sagas.map((saga) => {
-    const catalogue = catalogued.get(saga.id) ?? null
+    const catalogue = catalogued.get(catalogueKeyOf(saga.id, saga.language)) ?? null
     const read = readVolumeNumbersOf(saga.books)
     return {
       id: saga.id,

@@ -1,6 +1,6 @@
 import { make } from 'ts-brand'
 import { z } from 'zod'
-import type { BookFormat } from '~/domain/book/types'
+import type { BookFormat, BookLanguage } from '~/domain/book/types'
 import type {
   ReleaseDate as ReleaseDateType,
   SeriesDescription as SeriesDescriptionType,
@@ -72,6 +72,12 @@ export const VolumeKindValue = (value: unknown): VolumeKind => z.enum(VOLUME_KIN
 // a key ending in `--audio`. Every other format reads the printed saga.
 export const seriesKeyOf = (name: string, author: string, format: BookFormat): SeriesIdType =>
   seriesIdFor(SeriesId(`${slugify(name)}--${slugify(author)}`), format)
+
+/** Where a saga's catalogue in one edition is stored: the saga's key, then the
+ *  language after a `~` no slug can produce. The volumes that record no
+ *  language keep the bare key. */
+export const catalogueKeyOf = (id: SeriesIdType, language?: BookLanguage): string =>
+  language ? `${id}~${language}` : id
 
 const AUDIO_SUFFIX = '--audio'
 

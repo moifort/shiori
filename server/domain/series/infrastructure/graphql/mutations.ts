@@ -10,11 +10,10 @@ builder.mutationFields((t) => ({
     nullable: true,
     description:
       'Ask the world about a saga again: one fresh web-grounded model call, whose ' +
-      'catalogue replaces the stored one for every reader of the saga. For a volume ' +
-      'announced since the catalogue was built, or a catalogue built in the wrong ' +
-      'language.\n\n' +
+      'catalogue replaces the stored one of that edition for every reader of it. ' +
+      'For a volume out since the catalogue was built.\n\n' +
       'Built as `series` builds a first catalogue: from a volume the reader holds, ' +
-      'titled as the edition on the shelf titles it, `language` naming that edition ' +
+      'listing the volumes out in its language, `language` naming that edition ' +
       'when the saga is held in more than one. Takes a few seconds. Null when the ' +
       'reader holds no volume of the saga, and when the model failed or found no ' +
       'volumes — the previous catalogue is then kept as it was.',

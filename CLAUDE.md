@@ -91,9 +91,12 @@ This is the rule the data model turns on, and getting it backwards is expensive:
   exactly one reader, never merged with anyone else's. Two readers who scan the same novel keep two
   independent records. Status, rating and note sit on the record itself — there is no separate
   "library entry" entity.
-- **A series catalogue is shared.** It lives at `series/{seriesKey}`, holds no reference to any
-  user, and is keyed by name and author rather than randomly, so two readers converge on one
-  document and the AI call that produced it is paid once. **It is never exposed through library
+- **A series catalogue is shared, one per edition language.** It lives at
+  `series/{seriesKey}~{language}` (bare `series/{seriesKey}` for volumes that record no
+  language), holds no reference to any user, and is keyed by name and author rather than
+  randomly, so two readers of the same edition converge on one document and the AI call that
+  produced it is paid once. A translation lists its own volumes, names, dates and covers; what
+  is announced is written in by Découvrir's release watch, never by the scan. **It is never exposed through library
   sharing**, which shows books only.
 - **Every book carries `hidden`.** Sharing is not built yet; the flag exists now because adding
   a boolean to production records costs a migration.

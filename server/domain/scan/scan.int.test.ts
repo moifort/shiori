@@ -165,7 +165,10 @@ describe('looking a title up', () => {
     expect(String(result.series?.name)).toBe('Chronique du tueur de roi')
     expect(calls).toEqual(['enrichment', 'catalogue'])
     expect(
-      await SeriesQuery.byId(seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book')),
+      await SeriesQuery.byId({
+        id: seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book'),
+        language: 'fr',
+      }),
     ).not.toBeNull()
   })
 })
@@ -502,9 +505,10 @@ describe('surviving what the model invents', () => {
 
     await ScanCommand.scanWithCache(image, 'fr')
 
-    const series = await SeriesQuery.byId(
-      seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book'),
-    )
+    const series = await SeriesQuery.byId({
+      id: seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book'),
+      language: 'fr',
+    })
     expect(series?.volumes).toHaveLength(3)
   })
 })
@@ -541,9 +545,10 @@ describe('cataloguing a saga', () => {
     expect(prompts.catalogue).toContain('ENREGISTRÉS EN LIVRE AUDIO en français')
     expect(prompts.catalogue).toContain('audible.fr')
     expect(
-      await SeriesQuery.byId(
-        seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'audiobook'),
-      ),
+      await SeriesQuery.byId({
+        id: seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'audiobook'),
+        language: 'fr',
+      }),
     ).not.toBeNull()
   })
 
@@ -557,6 +562,29 @@ describe('cataloguing a saga', () => {
     await ScanCommand.scanWithCache(other, 'fr')
 
     expect(calls).toEqual(['vision', 'enrichment'])
+  })
+
+  // Each edition lists its own volumes: a saga catalogued in French says
+  // nothing of what is out in English.
+  test('catalogues the saga again for a cover in another language', async () => {
+    answers = [{ ...aCover, language: 'fr' }, anEnrichment, aCatalogue]
+    await ScanCommand.scanWithCache(image, 'fr')
+
+    answers = [
+      { ...aCover, title: 'The Name of the Wind', language: 'en' },
+      anEnrichment,
+      { ...aCatalogue, name: 'The Kingkiller Chronicle' },
+    ]
+    calls.length = 0
+    await ScanCommand.scanWithCache(Buffer.from('the english cover'), 'fr')
+
+    expect(calls).toEqual(['vision', 'enrichment', 'catalogue'])
+    const id = seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book')
+    expect(await SeriesQuery.byId({ id, language: 'en' })).toMatchObject({
+      name: 'The Kingkiller Chronicle',
+      language: 'en',
+    })
+    expect(await SeriesQuery.byId({ id, language: 'fr' })).toMatchObject({ language: 'fr' })
   })
 
   test('skips it entirely for a standalone book', async () => {
@@ -586,9 +614,10 @@ describe('cataloguing a saga', () => {
 
     await ScanCommand.scanWithCache(image, 'fr')
 
-    const series = await SeriesQuery.byId(
-      seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book'),
-    )
+    const series = await SeriesQuery.byId({
+      id: seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book'),
+      language: 'fr',
+    })
     expect(series).toBeNull()
   })
 })
@@ -648,7 +677,10 @@ describe("cataloguing the author's page", () => {
     expect(String(result.title)).toBe('Le Nom du vent')
     expect(await AuthorQuery.byKey(rothfuss)).toBeNull()
     expect(
-      await SeriesQuery.byId(seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book')),
+      await SeriesQuery.byId({
+        id: seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book'),
+        language: 'fr',
+      }),
     ).not.toBeNull()
   })
 })

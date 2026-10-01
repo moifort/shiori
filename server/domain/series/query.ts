@@ -1,14 +1,15 @@
 import * as repository from '~/domain/series/infrastructure/repository'
-import type { Series, SeriesId, SeriesMiss } from '~/domain/series/types'
+import type { Series, SeriesEdition, SeriesMiss } from '~/domain/series/types'
 
 export namespace SeriesQuery {
-  export const byId = async (seriesId: SeriesId): Promise<Series | null> =>
-    repository.findById(seriesId)
+  /** The catalogue of a saga in one edition language. */
+  export const byId = async (edition: SeriesEdition): Promise<Series | null> =>
+    repository.findById(edition)
 
-  export const byIds = async (seriesIds: readonly SeriesId[]): Promise<Series[]> =>
-    repository.findManyByIds(seriesIds)
+  export const byIds = async (editions: readonly SeriesEdition[]): Promise<Series[]> =>
+    repository.findManyByIds(editions)
 
-  /** When the catalogue call last found nothing on this saga, if it did. */
-  export const lastMiss = async (seriesId: SeriesId): Promise<SeriesMiss | null> =>
-    repository.findMiss(seriesId)
+  /** When the catalogue call last found nothing on this saga in that edition. */
+  export const lastMiss = async (edition: SeriesEdition): Promise<SeriesMiss | null> =>
+    repository.findMiss(edition)
 }

@@ -195,7 +195,7 @@ export namespace DiscoveryUseCase {
     const [books, watches, catalogue] = await Promise.all([
       BookQuery.bySeries(userId, seriesId),
       DiscoveryQuery.watches([watchKeyOf({ seriesId, language })]),
-      SeriesQuery.byId(seriesId),
+      SeriesQuery.byId({ id: seriesId, language }),
     ])
     return releasesOf(
       books.filter((book) => book.language === language),
@@ -219,7 +219,7 @@ export namespace DiscoveryUseCase {
     const [books, watches, catalogue] = await Promise.all([
       BookQuery.bySeries(userId, seriesId),
       DiscoveryQuery.watches([key]),
-      SeriesQuery.byId(seriesId),
+      SeriesQuery.byId({ id: seriesId, language }),
     ])
     const held = books.filter((book) => book.language === language)
     const lookingUp = !watches.has(key)
@@ -236,7 +236,8 @@ export namespace DiscoveryUseCase {
         )
     }
     // The catalogue as the lookup left it, the dates it found written in.
-    const written = lookingUp && watches.has(key) ? await SeriesQuery.byId(seriesId) : catalogue
+    const written =
+      lookingUp && watches.has(key) ? await SeriesQuery.byId({ id: seriesId, language }) : catalogue
     return releasesOf(held, watches.get(key), written, todayOf(now))
   }
 

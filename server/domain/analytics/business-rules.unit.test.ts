@@ -369,13 +369,20 @@ describe('building the view', () => {
       }),
       volume('fr', 'read', '2026-03-01'),
     ]
+    // Each edition is measured on its own catalogue.
+    const editions = [
+      { ...catalogue, language: 'fr' as const },
+      { ...catalogue, language: 'en' as const },
+    ]
 
-    expect(seriesProgressOf(books, [catalogue], 2026)).toEqual([
+    expect(seriesProgressOf(books, editions, 2026)).toEqual([
       expect.objectContaining({ id: kingkiller, readCount: 1, totalCount: 2 }),
     ])
-    expect(seriesProgressOf(books, [catalogue], 2026)[0]?.lastActivityAt).toEqual(
+    expect(seriesProgressOf(books, editions, 2026)[0]?.lastActivityAt).toEqual(
       new Date('2026-03-01'),
     )
+    // Without the French catalogue, the French row has nothing to measure.
+    expect(seriesProgressOf(books, [{ ...catalogue, language: 'en' as const }], 2026)).toEqual([])
   })
 
   // The card reads as the top of the Series tab: the saga whose latest volume

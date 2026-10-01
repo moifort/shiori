@@ -1,4 +1,5 @@
 import type { BookLanguage, CoverUrl, Genre, ReadingStatus } from '~/domain/book/types'
+import { catalogueKeyOf } from '~/domain/series/primitives'
 import type {
   ReleaseDate,
   Series,
@@ -245,11 +246,12 @@ export const withShelvedVolumes = (
   return shelved.length === 0 ? series : { ...series, volumes: [...series.volumes, ...shelved] }
 }
 
-/** The catalogue each of the reader's sagas is drawn from, keyed by saga: the
- *  world's when somebody has described it, else the one the reader's own count
- *  makes, else none. One entry per saga whatever the number of languages it is
- *  held in — a count is about the work, not an edition, and the provisional
- *  spine takes its titles from whichever volumes the reader holds.
+/** The catalogue each of the reader's sagas is drawn from, keyed by saga and
+ *  edition language as `catalogueKeyOf` writes it: the world's when somebody
+ *  has described that edition, else the one the reader's own count makes, else
+ *  none. A saga held in two languages is two catalogues, since each edition
+ *  lists its own volumes; a count is about the work, and lays out a spine for
+ *  every edition that has no catalogue, titled from that edition's volumes.
  *
  *  What every surface that measures a saga — the saga screen, the Series tab,
  *  the dashboard — reads its catalogue through, so a declared count reaches all
@@ -264,41 +266,35 @@ export const cataloguesOf = (
   }[],
   known: readonly Series[],
   opinions: readonly { seriesId: SeriesId; volumeCount?: VolumeNumber }[],
-): Map<SeriesId, Series> => {
-  const stored = new Map(known.map((series) => [series.id, series]))
+): Map<string, Series> => {
+  const stored = new Map(
+    known.map((series) => [catalogueKeyOf(series.id, series.language), series]),
+  )
   const counts = new Map(
     opinions.flatMap((opinion) =>
       opinion.volumeCount === undefined ? [] : [[opinion.seriesId, opinion.volumeCount] as const],
     ),
   )
-  const catalogues = new Map<SeriesId, Series>()
-  // One row per saga and language: the second edition of a saga is skipped,
-  // since its spine was drawn from every edition's volumes on the first.
+  const catalogues = new Map<string, Series>()
   for (const saga of followedSagasOf(books)) {
-    if (catalogues.has(saga.id)) continue
-    const series = stored.get(saga.id)
+    const key = catalogueKeyOf(saga.id, saga.language)
+    const series = stored.get(key)
     if (series) {
-      catalogues.set(
-        saga.id,
-        withShelvedVolumes(
-          series,
-          books.filter((book) => book.series?.id === saga.id),
-        ),
-      )
+      catalogues.set(key, withShelvedVolumes(series, saga.books))
       continue
     }
     const count = counts.get(saga.id)
     if (count === undefined) continue
-    catalogues.set(
-      saga.id,
-      provisionalCatalogueOf(
+    catalogues.set(key, {
+      ...provisionalCatalogueOf(
         // A saga no owned volume names an author for is catalogued under none:
         // the count still deserves its spine.
         { id: saga.id, name: saga.name, author: saga.author ?? ('' as AuthorName) },
-        books.filter((book) => book.series?.id === saga.id),
+        saga.books,
         count,
       ),
-    )
+      ...(saga.language ? { language: saga.language } : {}),
+    })
   }
   return catalogues
 }
@@ -574,10 +570,9 @@ export const withReleases = (
 }
 
 /** A catalogue built again keeps what the release watch wrote on it: the
- *  model's fresh list knows nothing of dates per language. It lists only the
- *  volumes out in the edition it was asked in, so a volume the watch found —
- *  announced, or out in another language — is kept too, or a refresh would
- *  undo the watch until its next pass. A volume the watch never dated is the
+ *  model's fresh list knows nothing of release dates. It lists only the
+ *  volumes already out in its edition, so a volume the watch found announced
+ *  is kept too, or a refresh would undo the watch until its next pass. A volume the watch never dated is the
  *  old catalogue's alone, and goes with it. */
 export const keepingReleases = (fresh: Series, previous: Series | null): Series => {
   if (!previous) return fresh

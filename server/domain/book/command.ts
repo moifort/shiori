@@ -35,7 +35,7 @@ import type {
   TaggedSubgenre,
 } from '~/domain/book/types'
 import type { KindleAsin } from '~/domain/kindle/types'
-import type { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
+import type { SeriesEdition, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
 import { favoriteAfterRating, ratingUnderHeart } from '~/domain/shared/rating'
 import type { AuthorName, BookTitle, UserId, Year } from '~/domain/shared/types'
 import type { ObjectPath } from '~/system/object-store/types'
@@ -512,14 +512,18 @@ export namespace BookCommand {
     return { removed: going.length, remaining: volumes.length - going.length }
   }
 
-  /** Give every reader's volumes of a saga the name its catalogue gives it: a
-   *  book carries whatever a scan or an import wrote — "Red Rising [French
-   *  Edition]" — where the saga screen shows the catalogue's "Red Rising".
-   *  Only the name moves; the book is otherwise untouched, `updatedAt` too.
-   *  Answers how many books were renamed. */
-  export const nameSeries = async (seriesId: SeriesId, name: SeriesName): Promise<number> => {
-    const renamed = (await repository.findInSeries(seriesId)).filter(
-      (book) => book.series && book.series.name !== name,
+  /** Give every reader's volumes of a saga in one edition the name that
+   *  edition's catalogue gives it: a book carries whatever a scan or an import
+   *  wrote — "Red Rising [French Edition]" — where the saga screen shows the
+   *  catalogue's "Red Rising". Volumes in another language keep theirs, as
+   *  their own catalogue names the saga. Only the name moves; the book is
+   *  otherwise untouched, `updatedAt` too. Answers how many books were renamed. */
+  export const nameSeries = async (
+    { id, language }: SeriesEdition,
+    name: SeriesName,
+  ): Promise<number> => {
+    const renamed = (await repository.findInSeries(id)).filter(
+      (book) => book.language === language && book.series && book.series.name !== name,
     )
     for (const book of renamed)
       if (book.series) await repository.save({ ...book, series: { ...book.series, name } })
