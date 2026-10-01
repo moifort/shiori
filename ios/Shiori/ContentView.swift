@@ -40,6 +40,10 @@ struct ContentView: View {
     @State private var libraryMode: LibraryRequest?
     /// The same for the Library tab's series shelf.
     @State private var seriesMode: SeriesRequest?
+    /// The shelf each of Bibliothèque and Découvrir shows, held here because a
+    /// tab's own state does not survive a trip to another tab.
+    @State private var libraryShelf: LibraryShelf = .books
+    @State private var discoverShelf: LibraryShelf = .series
     /// The add sheet, behind the tab bar's scan button: the camera, the last
     /// photos, a title and a record typed by hand, from every tab.
     @State private var showAddSheet = false
@@ -200,7 +204,8 @@ struct ContentView: View {
                 LibraryTab(
                     onAdd: { showAddSheet = true },
                     libraryRequest: $libraryMode,
-                    seriesRequest: $seriesMode
+                    seriesRequest: $seriesMode,
+                    shelf: $libraryShelf
                 )
             }
             Tab(
@@ -208,7 +213,7 @@ struct ContentView: View {
                 systemImage: TabSelection.discover.symbol,
                 value: .discover
             ) {
-                DiscoverView()
+                DiscoverView(shelf: $discoverShelf)
             }
             Tab(TabSelection.shared.label, systemImage: TabSelection.shared.symbol, value: .shared) {
                 SharedView()

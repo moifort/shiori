@@ -47,7 +47,8 @@ struct DiscoverView: View {
     @State private var openAwaited: AwaitedEdition?
     @Environment(\.openURL) private var openURL
     @State private var format: ReleaseFormat
-    @State private var shelf: LibraryShelf = .series
+    /// Held by `ContentView`, so the shelf survives a trip to another tab.
+    @Binding var shelf: LibraryShelf
     /// The format was picked this session — by a tap, or once for the reader —
     /// and is kept even when it holds no saga.
     @State private var formatSettled: Bool
@@ -55,7 +56,8 @@ struct DiscoverView: View {
     /// The tab opens on the format last session's snapshot says the reader
     /// follows something in, so a reader of audio sagas alone never sees the
     /// empty book format first, then the switch once the server has answered.
-    init() {
+    init(shelf: Binding<LibraryShelf>) {
+        _shelf = shelf
         let viewModel = DiscoverViewModel()
         let opensOnOther = viewModel.holdsNothing(in: .book)
         _viewModel = State(initialValue: viewModel)
@@ -561,5 +563,5 @@ extension AuthorDiscovery {
 }
 
 #Preview {
-    DiscoverView()
+    DiscoverView(shelf: .constant(.series))
 }
