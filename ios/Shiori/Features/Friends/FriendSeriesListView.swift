@@ -55,7 +55,14 @@ struct FriendSeriesListView: View {
         // A sheet, as a saga opens from the reader's own Series tab.
         .sheet(item: $openSaga) { saga in
             NavigationStack {
-                SeriesView(seriesId: saga.seriesId, language: saga.language, isSheet: true)
+                // Where the saga stands is the friend's; previewed, the
+                // reader's own saga opens as it does from their Series tab.
+                SeriesView(
+                    seriesId: saga.seriesId,
+                    language: saga.language,
+                    isSheet: true,
+                    friend: isPreview ? nil : SeriesFriend(id: friendId, name: friendName)
+                )
             }
         }
         .alert(

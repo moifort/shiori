@@ -7,6 +7,7 @@ import {
   seriesRatingsOf,
   shelfDateOf,
   shelfKeyOf,
+  shelfKeysOf,
   shelfPageOf,
   shelvedOf,
 } from '~/domain/book/business-rules'
@@ -337,6 +338,43 @@ export namespace FriendshipUseCase {
       ),
       hasMore: start + page.limit < sagas.length,
     }
+  }
+
+  /** One saga of a friend's shelf — or of the reader's own, previewed — with
+   *  every volume of it they share, in reading order: what the saga screen
+   *  draws against its catalogue when opened from their shelf, so the ring
+   *  and the volumes read as theirs. Only the edition named, when one is.
+   *  Null for a stranger, and for a saga they share no volume of. Whether the
+   *  viewer owns each story is judged on their own volumes of the saga, not
+   *  their whole library: the screen does not draw it. */
+  export const saga = async (
+    viewerId: UserId,
+    ownerId: UserId,
+    seriesId: SeriesId,
+    edition?: BookLanguage,
+  ): Promise<FriendSaga | null> => {
+    if (!(await canRead(viewerId, ownerId))) return null
+    const [held, opinion, viewerVolumes] = await Promise.all([
+      BookQuery.sharedInSaga(ownerId, seriesId),
+      SeriesOpinionQuery.of(ownerId, seriesId),
+      BookQuery.bySeries(viewerId, seriesId),
+    ])
+    const [saga] = followedSagasOf(
+      edition ? held.filter((book) => book.language === edition) : held,
+    )
+    if (!saga) return null
+    const owned = shelfKeysOf(viewerVolumes)
+    const favorites = new Map<SeriesId, Date | undefined>(
+      opinion?.favorite ? [[seriesId, opinion.favoritedAt]] : [],
+    )
+    const ratings = seriesRatingsOf(opinion ? [opinion] : [])
+    const volumes = await BookQuery.withSignedCovers(inReadingOrder(saga.books))
+    return friendSagaOf(
+      saga,
+      favorites,
+      ratings,
+      volumes.map((book) => ({ ...book, inLibrary: ownsStory(owned, book) })),
+    )
   }
 
   /** Each friend's last heart of the last thirty days, a saga or a book,

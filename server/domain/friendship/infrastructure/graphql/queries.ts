@@ -1,5 +1,5 @@
 import { EditionOfferType } from '~/domain/awaited-edition/infrastructure/graphql/types'
-import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
+import { BookLanguageEnum, ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { AudioAvailabilityEnum } from '~/domain/friendship/infrastructure/graphql/enums'
 import {
   FriendBookType,
@@ -8,6 +8,7 @@ import {
   FriendProfileType,
   FriendRecommendationsType,
   FriendSagaPageType,
+  FriendSagaType,
   FriendType,
 } from '~/domain/friendship/infrastructure/graphql/types'
 import { FriendshipUseCase } from '~/domain/friendship/use-case'
@@ -206,6 +207,36 @@ builder.queryFields((t) => ({
           favorite: args.favorite ?? undefined,
           loved: args.loved ?? undefined,
         },
+      ),
+  }),
+
+  friendSaga: t.field({
+    type: FriendSagaType,
+    nullable: true,
+    description:
+      "One saga of a friend's shelf — or of the reader's own, previewed — with every " +
+      'volume of it they share, in reading order: what the saga screen draws against ' +
+      'its catalogue when opened from their shelf, so where it stands is theirs, not ' +
+      "the reader's.\n\n" +
+      'Null for a stranger and for a saga they share no volume of alike. A book marked ' +
+      '"do not share" is never among the volumes.',
+    args: {
+      userId: t.arg({ type: 'UserId', required: true, description: 'The friend' }),
+      seriesId: t.arg({ type: 'SeriesId', required: true }),
+      language: t.arg({
+        type: BookLanguageEnum,
+        required: false,
+        description:
+          'The edition opened, for a saga they hold in more than one language. Absent, ' +
+          'the first edition by name answers.',
+      }),
+    },
+    resolve: (_root, args, context) =>
+      FriendshipUseCase.saga(
+        context.userId,
+        args.userId,
+        args.seriesId,
+        args.language ?? undefined,
       ),
   }),
 }))

@@ -525,6 +525,39 @@ describe("the reader's own shelf, as friends see it", () => {
     })
   })
 
+  // A saga opened from a friend's book reads where they stand, not the reader.
+  test('opens one saga as the friend holds it, their hidden volumes aside', async () => {
+    await addBook(alice, dune(1))
+    await addBook(alice, dune(2).replace('status: READ', 'status: TO_READ'))
+    const secret = await addBook(alice, dune(3))
+    await as(alice)(`mutation { setBookHidden(id: "${secret}", hidden: true) { id } }`)
+    await as(alice)(
+      'mutation { rateSeries(seriesId: "dune--frank-herbert", rating: 4) { rating } }',
+    )
+    await addBook(bob, dune(2))
+    await befriend()
+
+    const query = (seriesId: string) =>
+      `{ friendSaga(userId: "alice", seriesId: "${seriesId}") { name rating favorite state volumes { title status inLibrary } } }`
+    const saga = await as(bob)(query('dune--frank-herbert'))
+    const unheld = await as(bob)(query('hyperion--dan-simmons'))
+    const stranger = await as(carol)(query('dune--frank-herbert'))
+
+    expect(saga.errors).toBeUndefined()
+    expect(saga.data?.friendSaga).toEqual({
+      name: 'Dune',
+      rating: 4,
+      favorite: false,
+      state: 'IN_PROGRESS',
+      volumes: [
+        { title: 'Dune 1', status: 'READ', inLibrary: false },
+        { title: 'Dune 2', status: 'TO_READ', inLibrary: true },
+      ],
+    })
+    expect(unheld.data?.friendSaga).toBeNull()
+    expect(stranger.data?.friendSaga).toBeNull()
+  })
+
   test('puts the book in progress touched most recently first', async () => {
     setSystemTime(new Date('2026-09-01T00:00:00Z'))
     await addBook(alice, 'title: "Ancien", status: READING')

@@ -146,6 +146,11 @@ export namespace BookQuery {
   export const shared = async (userId: UserId): Promise<Book[]> =>
     (await repository.findAllByUser(userId)).filter((book) => !book.hidden)
 
+  /** The volumes of one saga a reader holds, as somebody else may see them:
+   *  the ones marked "do not share" left out. Covers unsigned. */
+  export const sharedInSaga = async (userId: UserId, seriesId: SeriesId): Promise<Book[]> =>
+    (await repository.findBySeries(userId, seriesId)).filter((book) => !book.hidden)
+
   /** One of a reader's books as somebody else may see it: null when it is not
    *  theirs, does not exist, or is marked "do not share" — three answers a
    *  friend must not be able to tell apart. */

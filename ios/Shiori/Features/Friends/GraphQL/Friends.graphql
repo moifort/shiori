@@ -126,6 +126,18 @@ query FriendSagaPage($userId: UserId!, $state: SeriesState, $loved: Boolean, $af
   }
 }
 
+# A saga opened from a friend's shelf: the shared catalogue, with where the
+# friend stands on it — their volumes, their stars and their heart — in place of
+# the reader's own.
+query FriendSeriesScreen($userId: UserId!, $id: SeriesId!, $language: BookLanguage) {
+  series(id: $id, language: $language) {
+    ...SeriesCatalogue
+  }
+  friendSaga(userId: $userId, seriesId: $id, language: $language) {
+    ...FriendSagaRow
+  }
+}
+
 fragment FriendBookRow on FriendBook {
   id
   title
@@ -141,6 +153,7 @@ fragment FriendBookRow on FriendBook {
   shelvedAt
   finishedAt
   addedAt
+  startedAt
   inLibrary
   genre
   subgenres

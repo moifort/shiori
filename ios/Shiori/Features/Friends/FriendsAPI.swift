@@ -386,6 +386,28 @@ enum FriendsAPI {
         return (page.sagas.map { FriendSaga(row: $0.fragments.friendSagaRow) }, page.hasMore)
     }
 
+    /// A saga opened from a friend's shelf: the catalogue, and where the
+    /// friend stands on it. The saga is nil when they share no volume of it.
+    static func sagaScreen(
+        friendId: String,
+        seriesId: String,
+        language: BookLanguage?
+    ) async throws -> (series: BookSeries?, saga: FriendSaga?) {
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.FriendSeriesScreenQuery(
+                userId: friendId,
+                id: seriesId,
+                language: SeriesAPI.graphQLLanguage(language)
+            ),
+            requestTimeout: SeriesAPI.firstOpeningTimeout
+        )
+        return (
+            series: data.series.map { BookSeries(catalogue: $0.fragments.seriesCatalogue) },
+            saga: data.friendSaga.map { FriendSaga(row: $0.fragments.friendSagaRow) }
+        )
+    }
+
     /// One book of a friend's shelf, with everything the read-only page shows.
     /// Nil for a book they keep to themselves, and for anybody who is not a
     /// friend.
@@ -652,6 +674,7 @@ private extension Book {
             rating: row.rating,
             favorite: row.favorite,
             addedAt: GraphQLHelpers.parseISO8601(row.addedAt),
+            startedAt: row.startedAt.flatMap(GraphQLHelpers.parseISO8601),
             finishedAt: row.finishedAt.flatMap(GraphQLHelpers.parseISO8601),
             shelvedAt: GraphQLHelpers.parseISO8601(row.shelvedAt)
         )

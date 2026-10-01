@@ -2686,6 +2686,22 @@ type Query {
     """Cursor: the id of the last saga of the previous page"""
     after: String
 
+  """
+  One saga of a friend's shelf — or of the reader's own, previewed — with every volume of it they share, in reading order: what the saga screen draws against its catalogue when opened from their shelf, so where it stands is theirs, not the reader's.
+  
+  Null for a stranger and for a saga they share no volume of alike. A book marked "do not share" is never among the volumes.
+  """
+  friendSaga(
+    """
+    The edition opened, for a saga they hold in more than one language. Absent, the first edition by name answers.
+    """
+    language: BookLanguage
+    seriesId: SeriesId!
+
+    """The friend"""
+    userId: UserId!
+  ): FriendSaga
+
     """Keep only the sagas they hearted."""
     favorite: Boolean @deprecated(reason: "Use `loved`, which follows the hearts with the stars.")
 

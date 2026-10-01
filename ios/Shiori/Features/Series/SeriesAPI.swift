@@ -6,7 +6,7 @@ enum SeriesAPI {
     /// on this first opening, with one web-grounded model call that a cold
     /// function can stretch well past the session's 60 s; every later opening
     /// reads the stored catalogue and answers at once.
-    private static let firstOpeningTimeout: TimeInterval = 120
+    static let firstOpeningTimeout: TimeInterval = 120
 
     /// Everything the saga screen draws, in one request: the catalogue, the
     /// reader's opinion, and the volumes they hold.
@@ -78,7 +78,7 @@ enum SeriesAPI {
         return data.addAudibleSeriesVolume.fragments.bookDetail.asBook
     }
 
-    private static func graphQLLanguage(
+    static func graphQLLanguage(
         _ language: BookLanguage?
     ) -> GraphQLNullable<GraphQLEnum<ShioriGraphQL.BookLanguage>> {
         language.map { .some(LibraryAPI.graphQLLanguage($0)) } ?? .none
@@ -241,7 +241,7 @@ enum SeriesAPI {
     }
 }
 
-private extension BookSeries {
+extension BookSeries {
     init(catalogue: ShioriGraphQL.SeriesCatalogue) {
         self.init(
             id: catalogue.id,

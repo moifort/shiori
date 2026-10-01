@@ -42,6 +42,7 @@ struct FriendBookView: View {
             } else if let entry {
                 FriendBookPage(
                     entry: entry,
+                    friendId: friendId,
                     friendName: friendName,
                     added: added,
                     awaited: offer.awaited
@@ -220,6 +221,8 @@ struct FriendBookView: View {
 /// reading, and the summary.
 struct FriendBookPage: View {
     let entry: FriendBook
+    /// The friend whose shelf it is: their saga opens as they hold it.
+    let friendId: String
     let friendName: String
     /// What the reader just did with it from the "+" in the corner.
     let added: CopiedStatus?
@@ -275,7 +278,11 @@ struct FriendBookPage: View {
         .labelStyle(.row)
         .navigationDestination(isPresented: $showsSaga) {
             if let series = entry.book.series {
-                SeriesView(seriesId: series.id, language: entry.book.language)
+                SeriesView(
+                    seriesId: series.id,
+                    language: entry.book.language,
+                    friend: SeriesFriend(id: friendId, name: friendName)
+                )
             }
         }
     }
@@ -308,7 +315,7 @@ extension FriendBook {
 
 #Preview("Friend's book held already") {
     NavigationStack {
-        FriendBookPage(entry: .preview, friendName: "Camille", added: nil, awaited: []) { _ in }
+        FriendBookPage(entry: .preview, friendId: "preview", friendName: "Camille", added: nil, awaited: []) { _ in }
             .navigationTitle("Chez Camille")
             .navigationBarTitleDisplayMode(.inline)
     }

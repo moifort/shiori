@@ -11,6 +11,10 @@ import SwiftUI
 ///
 /// Removing the saga removes every volume of it the reader holds, which the
 /// confirmation says in so many words.
+///
+/// Opened from a friend's shelf, the same catalogue reads as theirs: the ring,
+/// the dates, the stars and the volumes held are the friend's, read-only, and
+/// a volume of theirs opens as their book does.
 struct SeriesView: View {
     let seriesId: String
     /// The edition the reader came from. The catalogue is keyed by name and
@@ -25,11 +29,15 @@ struct SeriesView: View {
     /// The saga as an author's page names it, for a saga the reader holds
     /// nothing of: the server catalogues it from this on the first opening.
     var proposal: SeriesProposal? = nil
+    /// The friend whose shelf the saga was opened from: where it stands is
+    /// theirs, and nothing on the screen changes the reader's library.
+    var friend: SeriesFriend? = nil
 
     @Environment(\.dismiss) private var dismiss
 
     @State private var series: BookSeries?
-    /// Every volume of the saga the reader holds, numbered or not: what the
+    /// Every volume of the saga the reader holds — the friend, on their
+    /// shelf — numbered or not: what the
     /// genre and the dates are read off, and what the genre is corrected on.
     @State private var owned: [Book] = []
     @State private var isEditingGenre = false
@@ -75,7 +83,7 @@ struct SeriesView: View {
                     title: "Série non cataloguée",
                     verbatim: errorMessage ?? String(localized: "Shiori n'a pas réussi à constituer le catalogue de cette série. Réessayez plus tard, ou scannez la couverture d'un de ses tomes."),
                     primary: .init("Réessayer", systemImage: "arrow.clockwise") { await load() },
-                    secondary: owned.isEmpty
+                    secondary: owned.isEmpty || friend != nil
                         ? nil
                         : .init("Indiquer le nombre de tomes", systemImage: "number") {
                             isDeclaringVolumeCount = true
@@ -85,6 +93,7 @@ struct SeriesView: View {
         }
         .navigationTitle(series?.name ?? "Série")
         .navigationBarTitleDisplayMode(.inline)
+        .modifier(FriendSubtitle(name: friend?.name))
         // In the corner even when the catalogue is missing: what a reader thinks
         // of a saga does not wait on the world having described it.
         .toolbar {
@@ -93,83 +102,7 @@ struct SeriesView: View {
                     ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
                 }
             }
-            ToolbarItem(placement: .primaryAction) {
-                AsyncToolbarButton(
-                    title: isFavorite ? "Retirer des favoris" : "Ajouter aux favoris",
-                    systemImage: isFavorite ? "heart.fill" : "heart"
-                ) {
-                    await setFavorite(!isFavorite)
-                }
-                .tint(isFavorite ? .red : nil)
-                .accessibilityIdentifier("series-favorite")
-            }
-            // A saga the reader holds nothing of — opened from a friend's
-            // book — joins their sagas with its first volume, on the pile.
-            if owned.isEmpty, let series, let first = firstVolume(of: series) {
-                ToolbarItem(placement: .primaryAction) {
-                    AsyncToolbarButton(title: "Ajouter à mes séries", systemImage: "plus") {
-                        await add(first, author: series.author)
-                    }
-                    .disabled(addingTitle != nil)
-                    .accessibilityIdentifier("series-add")
-                }
-            }
-            if !owned.isEmpty {
-                ToolbarItem(placement: .primaryAction) {
-                    Menu {
-                        // Only over a catalogue: with none, the screen's own
-                        // retry button already asks the world about the saga.
-                        if series != nil {
-                            Button("Mettre à jour", systemImage: "arrow.clockwise") {
-                                Task { await refreshCatalogue() }
-                            }
-                            .accessibilityIdentifier("series-refresh")
-                        }
-                        // The count is the reader's own: they can correct it
-                        // for as long as it is what the screen is drawn from.
-                        if series?.isProvisional == true {
-                            Button("Nombre de tomes", systemImage: "number") {
-                                isDeclaringVolumeCount = true
-                            }
-                            .accessibilityIdentifier("series-volume-count")
-                        }
-                        // Only the saga is set aside: its volumes keep their
-                        // own statuses in the library.
-                        if isFollowed {
-                            Button("Ne plus suivre", systemImage: "bell.slash") {
-                                Task { await setFollowed(false) }
-                            }
-                            .accessibilityIdentifier("series-unfollow")
-                        } else {
-                            Button("Suivre", systemImage: "bell") {
-                                Task { await setFollowed(true) }
-                            }
-                            .accessibilityIdentifier("series-follow")
-                        }
-                        Button("Supprimer", systemImage: "trash", role: .destructive) {
-                            confirmDelete = true
-                        }
-                        .accessibilityIdentifier("series-delete")
-                    } label: {
-                        Image(systemName: "ellipsis")
-                    }
-                    .accessibilityLabel(Text("Plus d'actions"))
-                    .accessibilityIdentifier("series-menu")
-                    // Attached to the menu, as on the book sheet: the dialog
-                    // rises from the button that asked rather than the screen.
-                    .confirmationDialog(
-                        "Supprimer la série ?",
-                        isPresented: $confirmDelete,
-                        titleVisibility: .visible
-                    ) {
-                        Button("Supprimer", role: .destructive) { Task { await deleteSeries() } }
-                            .accessibilityIdentifier("choice-delete-series")
-                        Button("Annuler", role: .cancel) {}
-                    } message: {
-                        Text("Les \(owned.count) livres de cette série dans votre bibliothèque seront supprimés avec elle, ainsi que votre note. Cette action est définitive.")
-                    }
-                }
-            }
+            if friend == nil { ownerToolbar }
         }
         .alert("Catalogue non mis à jour", isPresented: $refreshFailed) {
             Button("OK", role: .cancel) {}
@@ -196,11 +129,18 @@ struct SeriesView: View {
         }
         .disabled(isSaving)
         .sheet(item: $selectedBook) { book in
-            BookView(
-                bookId: book.id,
-                onChanged: { _ in Task { await load() } },
-                onDeleted: { _ in Task { await load() } }
-            )
+            if let friend {
+                // The friend's volume, as their shelf opens it.
+                NavigationStack {
+                    FriendBookView(friendId: friend.id, bookId: book.id, friendName: friend.name)
+                }
+            } else {
+                BookView(
+                    bookId: book.id,
+                    onChanged: { _ in Task { await load() } },
+                    onDeleted: { _ in Task { await load() } }
+                )
+            }
         }
         .sheet(isPresented: $isRating) {
             RatingPromptView(
@@ -268,10 +208,95 @@ struct SeriesView: View {
         .task { await loadReleases() }
     }
 
+    /// What the reader can do with a saga of their own: the heart, the
+    /// saga taken up from its first volume, and the menu. None of it on a
+    /// friend's shelf.
+    @ToolbarContentBuilder
+    private var ownerToolbar: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            AsyncToolbarButton(
+                title: isFavorite ? "Retirer des favoris" : "Ajouter aux favoris",
+                systemImage: isFavorite ? "heart.fill" : "heart"
+            ) {
+                await setFavorite(!isFavorite)
+            }
+            .tint(isFavorite ? .red : nil)
+            .accessibilityIdentifier("series-favorite")
+        }
+        // A saga the reader holds nothing of — offered on an author's page
+        // or by Découvrir — joins their sagas with its first volume, on the
+        // pile.
+        if owned.isEmpty, let series, let first = firstVolume(of: series) {
+            ToolbarItem(placement: .primaryAction) {
+                AsyncToolbarButton(title: "Ajouter à mes séries", systemImage: "plus") {
+                    await add(first, author: series.author)
+                }
+                .disabled(addingTitle != nil)
+                .accessibilityIdentifier("series-add")
+            }
+        }
+        if !owned.isEmpty {
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    // Only over a catalogue: with none, the screen's own
+                    // retry button already asks the world about the saga.
+                    if series != nil {
+                        Button("Mettre à jour", systemImage: "arrow.clockwise") {
+                            Task { await refreshCatalogue() }
+                        }
+                        .accessibilityIdentifier("series-refresh")
+                    }
+                    // The count is the reader's own: they can correct it
+                    // for as long as it is what the screen is drawn from.
+                    if series?.isProvisional == true {
+                        Button("Nombre de tomes", systemImage: "number") {
+                            isDeclaringVolumeCount = true
+                        }
+                        .accessibilityIdentifier("series-volume-count")
+                    }
+                    // Only the saga is set aside: its volumes keep their
+                    // own statuses in the library.
+                    if isFollowed {
+                        Button("Ne plus suivre", systemImage: "bell.slash") {
+                            Task { await setFollowed(false) }
+                        }
+                        .accessibilityIdentifier("series-unfollow")
+                    } else {
+                        Button("Suivre", systemImage: "bell") {
+                            Task { await setFollowed(true) }
+                        }
+                        .accessibilityIdentifier("series-follow")
+                    }
+                    Button("Supprimer", systemImage: "trash", role: .destructive) {
+                        confirmDelete = true
+                    }
+                    .accessibilityIdentifier("series-delete")
+                } label: {
+                    Image(systemName: "ellipsis")
+                }
+                .accessibilityLabel(Text("Plus d'actions"))
+                .accessibilityIdentifier("series-menu")
+                // Attached to the menu, as on the book sheet: the dialog
+                // rises from the button that asked rather than the screen.
+                .confirmationDialog(
+                    "Supprimer la série ?",
+                    isPresented: $confirmDelete,
+                    titleVisibility: .visible
+                ) {
+                    Button("Supprimer", role: .destructive) { Task { await deleteSeries() } }
+                        .accessibilityIdentifier("choice-delete-series")
+                    Button("Annuler", role: .cancel) {}
+                } message: {
+                    Text("Les \(owned.count) livres de cette série dans votre bibliothèque seront supprimés avec elle, ainsi que votre note. Cette action est définitive.")
+                }
+            }
+        }
+    }
+
     private func catalogue(_ series: BookSeries) -> some View {
         List {
             mainSection(series)
-            if let releases {
+            if friend == nil, let releases {
                 SagaReleasesSection(
                     releases: releases,
                     author: series.author,
@@ -328,7 +353,7 @@ struct SeriesView: View {
                 // In the corner, as on the Series tab row: the crossed-out
                 // bell says the saga is set aside.
                 .overlay(alignment: .topTrailing) {
-                    if !isFollowed {
+                    if friend == nil, !isFollowed {
                         SeriesStateLabel(state: .unfollowed)
                             .accessibilityIdentifier("series-unfollowed")
                     }
@@ -344,26 +369,10 @@ struct SeriesView: View {
 
             if !owned.isEmpty { genreRow }
 
-            // The saga's own rating, not the average of its volumes: a cycle
-            // can be worth more than its books — the shape only shows at the
-            // end — or rather less, when three good ones are followed by four
-            // that should not exist.
-            // Read-only stars and a prompt behind them, as on the book screen.
-            if let rating = opinion?.rating {
-                Button { isRating = true } label: {
-                    Label {
-                        LabeledContent("Note") { StarRatingView(rating: rating) }
-                    } icon: {
-                        Image(systemName: "star").foregroundStyle(.secondary)
-                    }
-                }
-                .tint(.primary)
-                .accessibilityIdentifier("series-rating")
+            if let friend {
+                friendOpinion(friend)
             } else {
-                Button { isRating = true } label: {
-                    Label("Noter cette série", systemImage: "star")
-                }
-                .accessibilityIdentifier("series-rate")
+                ownRating
             }
 
             if let started = startedAt {
@@ -392,10 +401,57 @@ struct SeriesView: View {
                 if series.isProvisional {
                     Text("Catalogue provisoire, dessiné d'après le nombre de tomes que vous avez indiqué. « Mettre à jour » demande le vrai.")
                 }
-                if !owned.isEmpty {
+                if !owned.isEmpty, friend == nil {
                     Text("Le genre et les sous-genres s'appliquent à tous les tomes de la série dans votre bibliothèque.")
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private var ownRating: some View {
+        // The saga's own rating, not the average of its volumes: a cycle
+        // can be worth more than its books — the shape only shows at the
+        // end — or rather less, when three good ones are followed by four
+        // that should not exist.
+        // Read-only stars and a prompt behind them, as on the book screen.
+        if let rating = opinion?.rating {
+            Button { isRating = true } label: {
+                Label {
+                    LabeledContent("Note") { StarRatingView(rating: rating) }
+                } icon: {
+                    Image(systemName: "star").foregroundStyle(.secondary)
+                }
+            }
+            .tint(.primary)
+            .accessibilityIdentifier("series-rating")
+        } else {
+            Button { isRating = true } label: {
+                Label("Noter cette série", systemImage: "star")
+            }
+            .accessibilityIdentifier("series-rate")
+        }
+    }
+
+    /// The friend's stars and heart for the saga, read-only, under their name:
+    /// nothing to prompt when they gave neither.
+    @ViewBuilder
+    private func friendOpinion(_ friend: SeriesFriend) -> some View {
+        if let rating = opinion?.rating {
+            Label {
+                LabeledContent("Note de \(friend.name)") { StarRatingView(rating: rating) }
+            } icon: {
+                Image(systemName: "star").foregroundStyle(.secondary)
+            }
+            .accessibilityIdentifier("series-friend-rating")
+        }
+        if isFavorite {
+            Label {
+                Text("Coup de cœur")
+            } icon: {
+                Image(systemName: "heart.fill").foregroundStyle(.red)
+            }
+            .accessibilityIdentifier("series-friend-favorite")
         }
     }
 
@@ -403,33 +459,44 @@ struct SeriesView: View {
     /// sheet starts, since the saga has at least that many.
     private var highestOwnedVolume: Int { owned.compactMap(\.series?.volume).max() ?? 0 }
 
-    /// The genre and its subgenres on one tappable row, as on the book screen.
+    /// The genre and its subgenres on one tappable row, as on the book screen
+    /// — read-only on a friend's shelf, where it is theirs to correct.
+    @ViewBuilder
     private var genreRow: some View {
+        if friend == nil {
+            Button { isEditingGenre = true } label: { genreLabel(editable: true) }
+                .tint(.primary)
+                .accessibilityIdentifier("series-genre")
+        } else {
+            genreLabel(editable: false)
+                .accessibilityIdentifier("series-genre")
+        }
+    }
+
+    private func genreLabel(editable: Bool) -> some View {
         let volume = owned.first
-        return Button { isEditingGenre = true } label: {
-            Label {
-                VStack(alignment: .leading, spacing: 8) {
-                    LabeledContent("Genre") {
-                        HStack(spacing: 4) {
-                            if let genre = volume?.genre {
-                                genre.image.imageScale(.small)
-                            }
-                            Text(volume?.genre?.label ?? String(localized: "Non renseigné"))
-                                .multilineTextAlignment(.trailing)
+        return Label {
+            VStack(alignment: .leading, spacing: 8) {
+                LabeledContent("Genre") {
+                    HStack(spacing: 4) {
+                        if let genre = volume?.genre {
+                            genre.image.imageScale(.small)
+                        }
+                        Text(volume?.genre?.label ?? String(localized: "Non renseigné"))
+                            .multilineTextAlignment(.trailing)
+                        if editable {
                             Image(systemName: "chevron.right").font(.caption.weight(.semibold))
                         }
-                        .foregroundStyle(.tint)
                     }
-                    if let subgenres = volume?.subgenres, !subgenres.isEmpty {
-                        TagList(tags: subgenres, systemImage: "tag")
-                    }
+                    .foregroundStyle(editable ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
                 }
-            } icon: {
-                Image(systemName: "books.vertical").foregroundStyle(.secondary)
+                if let subgenres = volume?.subgenres, !subgenres.isEmpty {
+                    TagList(tags: subgenres, systemImage: "tag")
+                }
             }
+        } icon: {
+            Image(systemName: "books.vertical").foregroundStyle(.secondary)
         }
-        .tint(.primary)
-        .accessibilityIdentifier("series-genre")
     }
 
     /// One block of volumes, a row each, in catalogue order.
@@ -579,7 +646,8 @@ struct SeriesView: View {
     }
 
     /// What can be done with a volume the reader does not hold: add it, or
-    /// nothing yet when it is not out.
+    /// nothing yet when it is not out. On a friend's shelf the volume is one
+    /// they lack, and nothing is offered.
     @ViewBuilder
     private func action(_ volume: Volume, author: String) -> some View {
         if volume.isForthcoming(asOf: currentYear, in: language, datedUpTo: datedUpTo) {
@@ -588,6 +656,8 @@ struct SeriesView: View {
             Image(systemName: "clock")
                 .foregroundStyle(dated ? AnyShapeStyle(.orange) : AnyShapeStyle(.tertiary))
                 .accessibilityLabel(Text("Pas encore paru"))
+        } else if friend != nil {
+            EmptyView()
         } else if addingTitle == volume.title {
             ProgressView().controlSize(.small)
         } else {
@@ -647,6 +717,11 @@ struct SeriesView: View {
     /// cover in it, and the screen slowed down as the library grew.
     private func load() async {
         isLoading = true
+        if let friend {
+            await loadFriendShelf(friend)
+            isLoading = false
+            return
+        }
         do {
             let screen = try await SeriesAPI.screen(id: seriesId, language: language, proposal: proposal)
             series = screen.series
@@ -658,11 +733,32 @@ struct SeriesView: View {
         isLoading = false
     }
 
+    /// The catalogue, with the friend's volumes, stars and heart in place of
+    /// the reader's own.
+    private func loadFriendShelf(_ friend: SeriesFriend) async {
+        do {
+            let screen = try await FriendsAPI.sagaScreen(
+                friendId: friend.id,
+                seriesId: seriesId,
+                language: language
+            )
+            series = screen.series
+            owned = screen.saga?.volumes ?? []
+            opinion = screen.saga.map {
+                SeriesOpinion(seriesId: seriesId, rating: $0.rating, favorite: $0.favorite)
+            }
+        } catch {
+            errorMessage = reportError(error)
+        }
+    }
+
     /// What Découvrir found of the saga, for an edition the reader opened —
     /// looked up on the spot when nobody ever did. The dashboard's card names
     /// no edition, and has nothing to show here.
     private func loadReleases() async {
-        guard let language else { return }
+        // The section speaks of the volumes the reader lacks: not drawn on a
+        // friend's shelf.
+        guard friend == nil, let language else { return }
         let key = "\(seriesId)|\(language.rawValue)"
         if releases == nil { releases = SagaReleasesCache.entries[key] }
         do {
@@ -885,6 +981,25 @@ struct SeriesRing: View {
         SeriesRing(read: 7, total: 7).frame(width: 84, height: 84)
     }
     .padding()
+}
+
+/// The friend whose shelf a saga screen was opened from.
+struct SeriesFriend: Hashable, Sendable {
+    let id: String
+    let name: String
+}
+
+/// The friend's name under the title, as their other screens carry it.
+private struct FriendSubtitle: ViewModifier {
+    let name: String?
+
+    func body(content: Content) -> some View {
+        if let name {
+            content.navigationSubtitle(name)
+        } else {
+            content
+        }
+    }
 }
 
 /// What opens a saga screen: the saga and, when the caller stands in one, the
