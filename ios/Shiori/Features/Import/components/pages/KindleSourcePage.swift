@@ -1,44 +1,62 @@
 import SwiftUI
 
-/// What a reader sees of their Audible connection: where it points, whether it
-/// follows them, what the last pass brought back, and how much of the library is
-/// already on the shelf.
-///
-/// The screen the import now opens on. Picking titles is one tap further in,
-/// because it is the rare act: a connected library keeps itself up to date, and
-/// what a reader comes here to do is check on it.
+/// What a reader sees of their Kindle connection: where it points, whether it
+/// follows them, what the last pass brought back, and how much of the library
+/// is already on the shelf.
 ///
 /// Pure and previewable: it takes what to draw and what to call, and knows
 /// nothing about the network.
-struct AudibleSourcePage: View {
-    let account: AudibleAccount
-    /// How many titles the Audible library holds, and how many are catalogued.
+struct KindleSourcePage: View {
+    let account: KindleAccount
+    /// How many books the Kindle library holds, and how many are catalogued.
     /// Both nil until the library has been read.
     let totalCount: Int?
     let catalogedCount: Int?
     let isLoading: Bool
     let isSyncing: Bool
-    /// What the pass the reader just asked for changed. Nil until they ask.
     let lastSyncOutcome: SyncOutcome?
     let onAutoSyncChange: (Bool) -> Void
     let onSyncNow: () -> Void
     let onPickBooks: () -> Void
+    let onReconnect: () -> Void
     let onDisconnect: () async -> Void
 
     var body: some View {
         List {
+            if account.lastSyncFailedAt != nil { reconnectSection }
             connectionSection
             syncSection
             librarySection
             disconnectSection
         }
-        .navigationTitle("Audible")
+        .navigationTitle("Kindle")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    /// Said first, and in so many words: a library gone quiet would otherwise
+    /// read as nothing new to report.
+    private var reconnectSection: some View {
+        Section {
+            Label {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Amazon a refusé la dernière synchronisation")
+                        .font(.subheadline.weight(.semibold))
+                    Text("Reconnectez votre compte pour que votre bibliothèque Kindle continue de vous suivre.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } icon: {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+            }
+            Button("Reconnecter mon compte Amazon", action: onReconnect)
+                .accessibilityIdentifier("kindle-reconnect")
+        }
     }
 
     private var connectionSection: some View {
         Section {
-            LabeledContent("Boutique", value: account.marketplace.audibleLabel)
+            LabeledContent("Boutique", value: account.marketplace.amazonLabel)
             if let connectedAt = account.connectedAt {
                 LabeledContent("Connecté le", value: connectedAt.formatted(date: .abbreviated, time: .omitted))
             }
@@ -58,7 +76,7 @@ struct AudibleSourcePage: View {
                 "Synchroniser chaque nuit",
                 isOn: Binding(get: { account.autoSync }, set: onAutoSyncChange)
             )
-            .accessibilityIdentifier("audible-auto-sync")
+            .accessibilityIdentifier("kindle-auto-sync")
 
             LabeledContent("Dernière synchronisation", value: lastSyncLabel)
 
@@ -70,7 +88,7 @@ struct AudibleSourcePage: View {
                 }
             }
             .disabled(isSyncing)
-            .accessibilityIdentifier("audible-sync-now")
+            .accessibilityIdentifier("kindle-sync-now")
 
             if let lastSyncOutcome {
                 Text(lastSyncOutcome.summary)
@@ -80,13 +98,12 @@ struct AudibleSourcePage: View {
         } header: {
             Text("Synchronisation")
         } footer: {
-            // Stated here rather than buried in a menu: it writes books into the
-            // library without asking again, so it says what it does where the
-            // reader can read it.
+            // It writes into the library without asking again, so it says what
+            // it does — and what it never does — where the reader can read it.
             Text(
-                "Les livres audio achetés depuis la dernière fois rejoignent votre "
-                    + "bibliothèque, et ceux que vous avez terminés sur Audible sont marqués "
-                    + "comme lus. Vos notes et vos commentaires ne sont jamais modifiés."
+                "Les livres Kindle achetés ou empruntés depuis la dernière fois rejoignent "
+                    + "votre bibliothèque, et ceux que Kindle marque comme lus le deviennent "
+                    + "ici. Rien n'est jamais remis à lire, et vos notes ne sont jamais modifiées."
             )
         }
     }
@@ -94,11 +111,11 @@ struct AudibleSourcePage: View {
     private var librarySection: some View {
         Section {
             if let totalCount, let catalogedCount {
-                LabeledContent("Livres audio sur Audible", value: "\(totalCount)")
+                LabeledContent("Livres sur Kindle", value: "\(totalCount)")
                 LabeledContent("Déjà dans votre bibliothèque", value: "\(catalogedCount)")
             } else {
                 HStack {
-                    Text("Lecture de votre bibliothèque Audible...")
+                    Text("Lecture de votre bibliothèque Kindle...")
                         .foregroundStyle(.secondary)
                     Spacer()
                     if isLoading { ProgressView() }
@@ -109,7 +126,7 @@ struct AudibleSourcePage: View {
                 Label("Choisir des livres à importer", systemImage: "checklist")
             }
             .disabled((totalCount ?? 0) == 0)
-            .accessibilityIdentifier("audible-pick-books")
+            .accessibilityIdentifier("kindle-pick-books")
         } header: {
             Text("Bibliothèque")
         } footer: {
@@ -119,13 +136,13 @@ struct AudibleSourcePage: View {
 
     private var disconnectSection: some View {
         Section {
-            AsyncButton("Déconnecter Audible", role: .destructive) { await onDisconnect() }
-                .accessibilityIdentifier("audible-disconnect")
+            AsyncButton("Déconnecter Kindle", role: .destructive) { await onDisconnect() }
+                .accessibilityIdentifier("kindle-disconnect")
         } footer: {
             Text(
                 "Shiori oublie ses identifiants ; les livres déjà importés restent dans "
-                    + "votre bibliothèque. L'appareil reste enregistré chez Amazon jusqu'à ce "
-                    + "que vous l'y retiriez."
+                    + "votre bibliothèque. L'appareil « Kindle for iPhone » reste enregistré "
+                    + "chez Amazon jusqu'à ce que vous l'y retiriez."
             )
         }
     }
@@ -144,58 +161,47 @@ struct AudibleSourcePage: View {
         guard let totalCount, let catalogedCount else {
             return String(localized: "L'import ne consomme aucun scan.")
         }
-        // The one mistake that fails silently: a French account signed in on
-        // audible.com finds nothing and reads as "the import is broken". Said here
-        // because this is the screen that can change the store.
         if totalCount == 0 {
-            return String(localized: "Aucun livre audio sur ce compte. Vérifiez la boutique : une bibliothèque française ne s'ouvre pas depuis audible.com.")
+            return String(localized: "Aucun livre Kindle sur ce compte. Vérifiez la boutique : une bibliothèque française ne s'ouvre pas depuis amazon.com.")
         }
         let remaining = max(0, totalCount - catalogedCount)
         return remaining == 0
-            ? String(localized: "Toute votre bibliothèque Audible est cataloguée.")
+            ? String(localized: "Toute votre bibliothèque Kindle est cataloguée.")
             : String(localized: "\(remaining) titre(s) pas encore catalogué(s). L'import ne consomme aucun scan.")
     }
 }
 
 #Preview("Connecté") {
     NavigationStack {
-        AudibleSourcePage(
-            account: AudibleAccount(
-                marketplace: .fr,
-                connectedAt: Date().addingTimeInterval(-86400 * 40),
-                lastImportedAt: Date().addingTimeInterval(-86400 * 2),
-                autoSync: true
-            ),
-            totalCount: 128,
-            catalogedCount: 124,
+        KindleSourcePage(
+            account: .preview,
+            totalCount: 76,
+            catalogedCount: 71,
             isLoading: false,
             isSyncing: false,
-            lastSyncOutcome: SyncOutcome(imported: 2, updated: 1),
+            lastSyncOutcome: SyncOutcome(imported: 1, updated: 2),
             onAutoSyncChange: { _ in },
             onSyncNow: {},
             onPickBooks: {},
+            onReconnect: {},
             onDisconnect: {}
         )
     }
 }
 
-#Preview("Jamais synchronisé") {
+#Preview("Synchronisation refusée") {
     NavigationStack {
-        AudibleSourcePage(
-            account: AudibleAccount(
-                marketplace: .com,
-                connectedAt: Date(),
-                lastImportedAt: nil,
-                autoSync: false
-            ),
+        KindleSourcePage(
+            account: .refusedPreview,
             totalCount: nil,
             catalogedCount: nil,
-            isLoading: true,
+            isLoading: false,
             isSyncing: false,
             lastSyncOutcome: nil,
             onAutoSyncChange: { _ in },
             onSyncNow: {},
             onPickBooks: {},
+            onReconnect: {},
             onDisconnect: {}
         )
     }

@@ -28,7 +28,7 @@ enum ImportAPI {
         }
     }
 
-    static func startSignIn(on marketplace: AudibleMarketplace) async throws -> AudibleLogin {
+    static func startSignIn(on marketplace: AmazonMarketplace) async throws -> AmazonLogin {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
             mutation: ShioriGraphQL.StartAudibleLoginMutation(
@@ -37,11 +37,11 @@ enum ImportAPI {
             changesLibrary: false
         )
         let login = data.startAudibleLogin
-        return AudibleLogin(
+        return AmazonLogin(
             url: login.url,
             redirectURL: login.redirectUrl,
             cookies: login.cookies.map {
-                AudibleLogin.Cookie(name: $0.name, value: $0.value, domain: $0.domain)
+                AmazonLogin.Cookie(name: $0.name, value: $0.value, domain: $0.domain)
             }
         )
     }
@@ -101,7 +101,7 @@ enum ImportAPI {
     /// nothing and leaves it out: it would cost Amazon a second call.
     static func syncNow(
         withLibrary: Bool = false
-    ) async throws -> (outcome: AudibleSyncOutcome, account: AudibleAccount, library: [ImportableBook]?) {
+    ) async throws -> (outcome: SyncOutcome, account: AudibleAccount, library: [ImportableBook]?) {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
             mutation: ShioriGraphQL.SyncAudibleNowMutation(withLibrary: withLibrary),
@@ -109,7 +109,7 @@ enum ImportAPI {
         )
         let sync = data.syncAudibleNow
         return (
-            AudibleSyncOutcome(imported: sync.imported, updated: sync.updated),
+            SyncOutcome(imported: sync.imported, updated: sync.updated),
             sync.account.fragments.audibleAccountSummary.asDomain,
             sync.account.library?.map { $0.fragments.importableAudibleBook.asDomain }
         )
@@ -125,39 +125,6 @@ enum ImportAPI {
             changesLibrary: false
         )
     }
-
-    // MARK: - Kindle
-
-    /// Reads an Amazon data export into books to tick. Saves nothing, calls no
-    /// model, and spends no scan: this reads a file.
-    static func readKindleExport(csv: String) async throws -> [KindleBook] {
-        let data = try await GraphQLHelpers.perform(
-            GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.ReadKindleExportMutation(csv: csv),
-            // Reads a file: nothing is saved before `importKindleBooks`.
-            changesLibrary: false
-        )
-        return data.readKindleExport.map {
-            KindleBook(
-                key: $0.key,
-                title: $0.title,
-                authors: $0.authors,
-                alreadyInLibrary: $0.alreadyInLibrary
-            )
-        }
-    }
-
-    /// Catalogues the ticked titles. The file goes back with the keys: the
-    /// server reads it again rather than trusting records the app composed, so
-    /// every stored field comes from the export.
-    static func importKindleBooks(csv: String, keys: [String]) async throws -> [Book] {
-        let data = try await GraphQLHelpers.perform(
-            GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.ImportKindleBooksMutation(csv: csv, keys: keys),
-            requestTimeout: importTimeout
-        )
-        return data.importKindleBooks.map { $0.fragments.bookDetail.asBook }
-    }
 }
 
 extension ShioriGraphQL.AudibleAccountSummary {
@@ -165,7 +132,7 @@ extension ShioriGraphQL.AudibleAccountSummary {
     /// connected either way, and the label is the only thing that suffers.
     var asDomain: AudibleAccount {
         AudibleAccount(
-            marketplace: AudibleMarketplace(rawValue: marketplace.rawValue) ?? .com,
+            marketplace: AmazonMarketplace(rawValue: marketplace.rawValue) ?? .com,
             connectedAt: GraphQLHelpers.parseISO8601(connectedAt),
             lastImportedAt: lastImportedAt.flatMap(GraphQLHelpers.parseISO8601),
             autoSync: autoSync

@@ -1,0 +1,84 @@
+# Connecting a Kindle library — the same three-step sign-in as Audible, on a
+# device of its own: the server opens it, the app drives Amazon's page in a web
+# view, and the server trades the code it catches for credentials it keeps.
+
+# The connection and the library behind it, in one request: a reader who never
+# connected comes back with no account, hence no library and no error.
+query KindleImport {
+  kindleAccount {
+    ...KindleAccountSummary
+    library {
+      ...ImportableKindleBookFields
+    }
+  }
+}
+
+fragment KindleAccountSummary on KindleAccount {
+  marketplace
+  connectedAt
+  lastImportedAt
+  autoSync
+  lastSyncFailedAt
+}
+
+mutation StartKindleLogin($marketplace: KindleMarketplace!) {
+  startKindleLogin(marketplace: $marketplace) {
+    url
+    redirectUrl
+    cookies {
+      name
+      value
+      domain
+    }
+  }
+}
+
+mutation CompleteKindleLogin($authorizationCode: String!) {
+  completeKindleLogin(authorizationCode: $authorizationCode) {
+    ...KindleAccountSummary
+  }
+}
+
+# A proposal, not a record: nothing is catalogued until `ImportKindleLibrary`
+# is called with the ASINs the reader ticked.
+fragment ImportableKindleBookFields on ImportableKindleBook {
+  asin
+  title
+  authors
+  coverUrl
+  seriesName
+  volume
+  status
+  alreadyInLibrary
+}
+
+mutation ImportKindleLibrary($asins: [KindleAsin!]!) {
+  importKindleLibrary(asins: $asins) {
+    ...BookSummary
+  }
+}
+
+mutation SetKindleAutoSync($enabled: Boolean!) {
+  setKindleAutoSync(enabled: $enabled) {
+    ...KindleAccountSummary
+  }
+}
+
+# The nightly pass, asked for now. The background pass onboarding starts leaves
+# the library out: it draws nothing, and it would cost Amazon a second read.
+mutation SyncKindleNow($withLibrary: Boolean!) {
+  syncKindleNow {
+    imported
+    updated
+    account {
+      ...KindleAccountSummary
+      library @include(if: $withLibrary) {
+        ...ImportableKindleBookFields
+      }
+    }
+  }
+}
+
+mutation DisconnectKindle {
+  disconnectKindle
+}

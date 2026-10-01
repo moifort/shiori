@@ -22,8 +22,10 @@ struct HomeView: View {
     @State private var viewModel = HomeViewModel()
     @State private var selectedBook: Book?
     @State private var showSettings = false
-    /// An Audible pass started at onboarding, still bringing the library in.
+    /// The Audible and Kindle passes started at onboarding, still bringing the
+    /// library in.
     @State private var audibleSync = AudibleBackgroundSync.shared
+    @State private var kindleSync = KindleBackgroundSync.shared
     /// The wait onboarding hands over to, drawn in place of the dashboard.
     @State private var preparation = LibraryPreparation.shared
     /// The saga opened from its progress row, as a sheet like a book.
@@ -60,16 +62,18 @@ struct HomeView: View {
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
             Task { await viewModel.load() }
         }
+        // One alert for both passes: two on one view would shadow each other.
+        // Audible's is said first, Kindle's on the next appearance.
         .alert(
-            "Import Audible interrompu",
+            audibleSync.errorMessage != nil ? "Import Audible interrompu" : "Import Kindle interrompu",
             isPresented: Binding(
-                get: { audibleSync.errorMessage != nil },
-                set: { if !$0 { audibleSync.errorMessage = nil } }
+                get: { audibleSync.errorMessage != nil || kindleSync.errorMessage != nil },
+                set: { if !$0 { dismissSyncError() } }
             )
         ) {
-            Button("OK", role: .cancel) { audibleSync.errorMessage = nil }
+            Button("OK", role: .cancel) { dismissSyncError() }
         } message: {
-            Text("\(audibleSync.errorMessage ?? "") Vous pouvez relancer la synchronisation depuis les réglages.")
+            Text("\(audibleSync.errorMessage ?? kindleSync.errorMessage ?? "") Vous pouvez relancer la synchronisation depuis les réglages.")
         }
         .sheet(item: $selectedBook) { book in
             // The book's own writes post the change notice this screen
@@ -163,6 +167,16 @@ struct HomeView: View {
         } else {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    /// Clears the pass whose failure was just said: Audible's first, as the
+    /// alert shows it first.
+    private func dismissSyncError() {
+        if audibleSync.errorMessage != nil {
+            audibleSync.errorMessage = nil
+        } else {
+            kindleSync.errorMessage = nil
         }
     }
 }

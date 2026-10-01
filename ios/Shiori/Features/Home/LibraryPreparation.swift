@@ -23,7 +23,7 @@ final class LibraryPreparation {
 }
 
 /// The ribbon over a caption that says what is being done: the library being
-/// prepared, and Audible being read while its pass runs.
+/// prepared, and Audible or Kindle being read while their passes run.
 ///
 /// Held long enough to read even with nothing to wait for, and never longer
 /// than `longestWait`: a library of several hundred titles can keep the pass
@@ -34,6 +34,7 @@ struct LibraryPreparationView: View {
     let onReady: () async -> Void
 
     @State private var audibleSync = AudibleBackgroundSync.shared
+    @State private var kindleSync = KindleBackgroundSync.shared
 
     private static let shortestWait: Duration = .seconds(2)
     private static let longestWait: Duration = .seconds(25)
@@ -47,6 +48,8 @@ struct LibraryPreparationView: View {
                 Group {
                     if audibleSync.isSyncing {
                         Text("Synchronisation avec Audible…")
+                    } else if kindleSync.isSyncing {
+                        Text("Synchronisation avec Kindle…")
                     } else {
                         Text("Presque prêt…")
                     }
@@ -54,7 +57,7 @@ struct LibraryPreparationView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .contentTransition(.opacity)
-                .animation(.easeInOut, value: audibleSync.isSyncing)
+                .animation(.easeInOut, value: audibleSync.isSyncing || kindleSync.isSyncing)
             }
             .multilineTextAlignment(.center)
         }
@@ -69,7 +72,7 @@ struct LibraryPreparationView: View {
         let clock = ContinuousClock()
         let deadline = clock.now + Self.longestWait
         try? await Task.sleep(for: Self.shortestWait)
-        while audibleSync.isSyncing, clock.now < deadline {
+        while audibleSync.isSyncing || kindleSync.isSyncing, clock.now < deadline {
             try? await Task.sleep(for: .milliseconds(300))
         }
         guard !Task.isCancelled else { return }

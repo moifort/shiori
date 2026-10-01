@@ -1,12 +1,11 @@
 import SwiftUI
 
-/// What a reader sees before their Amazon account is linked: what the import
-/// does, which store to sign in on, and one button.
+/// What a reader sees before their Kindle library is linked: what the
+/// connection does, which store to sign in on, and one button.
 ///
-/// The store comes first because getting it wrong is the one mistake that fails
-/// silently — a French account signed in on audible.com finds an empty library
-/// and reads as "the import is broken".
-struct AudibleConnectPage: View {
+/// The store comes first because getting it wrong fails silently — a French
+/// library signed in on amazon.com reads as empty.
+struct KindleConnectPage: View {
     @Binding var marketplace: AmazonMarketplace
     let isWorking: Bool
     let onConnect: () -> Void
@@ -15,15 +14,16 @@ struct AudibleConnectPage: View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 12) {
-                    Image(systemName: "headphones")
+                    Image(systemName: "book.closed")
                         .font(.largeTitle)
                         .foregroundStyle(.tint)
-                    Text("Importez votre bibliothèque Audible")
+                    Text("Importez votre bibliothèque Kindle")
                         .font(.title3.bold())
                     Text(
                         "Connectez votre compte Amazon une fois, puis choisissez les livres "
-                            + "audio à ajouter. Ils rejoignent votre bibliothèque avec leur "
-                            + "couverture, leur série et votre avancement d'écoute."
+                            + "à ajouter. Ils rejoignent votre bibliothèque avec leur couverture "
+                            + "et leur série, et ceux que vous avez finis sur Kindle sont marqués "
+                            + "comme lus."
                     )
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -33,16 +33,16 @@ struct AudibleConnectPage: View {
 
             Section {
                 MenuPicker(
-                    "Boutique Audible",
+                    "Boutique Amazon",
                     selection: $marketplace,
                     options: AmazonMarketplace.allCases,
-                    label: { $0.audibleLabel }
+                    label: { $0.amazonLabel }
                 )
-                .accessibilityIdentifier("audible-marketplace")
+                .accessibilityIdentifier("kindle-marketplace")
             } header: {
                 Text("Boutique")
             } footer: {
-                Text("Celle sur laquelle vous achetez vos livres audio.")
+                Text("Celle sur laquelle vous achetez vos livres Kindle.")
             }
 
             Section {
@@ -54,15 +54,16 @@ struct AudibleConnectPage: View {
                     }
                 }
                 .disabled(isWorking)
-                .accessibilityIdentifier("audible-connect")
+                .accessibilityIdentifier("kindle-connect")
             } footer: {
                 Text(
                     "La page de connexion est celle d'Amazon : votre mot de passe ne passe "
-                        + "jamais par Shiori. L'import ne consomme aucun scan."
+                        + "jamais par Shiori. Cette connexion est indépendante de celle "
+                        + "d'Audible. L'import ne consomme aucun scan."
                 )
             }
         }
-        .navigationTitle("Audible")
+        .navigationTitle("Kindle")
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -70,6 +71,6 @@ struct AudibleConnectPage: View {
 #Preview {
     @Previewable @State var marketplace: AmazonMarketplace = .fr
     NavigationStack {
-        AudibleConnectPage(marketplace: $marketplace, isWorking: false, onConnect: {})
+        KindleConnectPage(marketplace: $marketplace, isWorking: false, onConnect: {})
     }
 }

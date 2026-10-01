@@ -1,14 +1,16 @@
 import Foundation
 
-/// The Amazon store an Audible account was opened on. It decides which domain
-/// the sign-in page and the API live on, so a connection made on the wrong one
-/// finds an empty library — which is why the reader picks it before signing in
-/// rather than after being told there is nothing to import.
+/// The Amazon store an account was opened on, for Audible and Kindle alike. It
+/// decides which domain the sign-in page and the library live on, so a
+/// connection made on the wrong one finds an empty library — which is why the
+/// reader picks it before signing in rather than after being told there is
+/// nothing to import.
 ///
 /// The raw value is the schema's own enum name rather than a lowercase slug:
-/// the mapping to the generated type goes through it, which keeps `IN` — a Swift
-/// keyword Apollo has to escape — out of every switch in the app.
-enum AudibleMarketplace: String, CaseIterable, Identifiable, Sendable {
+/// `AudibleMarketplace` and `KindleMarketplace` share it, the mapping to either
+/// generated type goes through it, and it keeps `IN` — a Swift keyword Apollo
+/// has to escape — out of every switch in the app.
+enum AmazonMarketplace: String, CaseIterable, Identifiable, Sendable {
     case fr = "FR"
     case com = "COM"
     case coUk = "CO_UK"
@@ -22,7 +24,8 @@ enum AudibleMarketplace: String, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
-    var label: String {
+    /// The store as Audible names it, for the Audible screens.
+    var audibleLabel: String {
         switch self {
         case .fr: "audible.fr"
         case .com: "audible.com"
@@ -37,10 +40,27 @@ enum AudibleMarketplace: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// The store as Amazon names it, for the Kindle screens and for a picker
+    /// that serves both connections.
+    var amazonLabel: String {
+        switch self {
+        case .fr: "amazon.fr"
+        case .com: "amazon.com"
+        case .coUk: "amazon.co.uk"
+        case .de: "amazon.de"
+        case .it: "amazon.it"
+        case .es: "amazon.es"
+        case .ca: "amazon.ca"
+        case .comAu: "amazon.com.au"
+        case .india: "amazon.in"
+        case .coJp: "amazon.co.jp"
+        }
+    }
+
     /// The store the reader most likely buys from, guessed from the language
     /// the phone is set to. Only a default: the picker is right there, and a
     /// reader who bought abroad changes it in one tap.
-    static var suggested: AudibleMarketplace {
+    static var suggested: AmazonMarketplace {
         suggested(
             // The device's own first language, not the app's: the app speaks
             // French only, so its language would say French for everyone.
@@ -52,7 +72,7 @@ enum AudibleMarketplace: String, CaseIterable, Identifiable, Sendable {
     /// The language decides, and the region only settles a language several
     /// stores sell in: English, and French in Canada. A language no store
     /// sells in falls back on the region, then on audible.com.
-    static func suggested(language: Locale.Language?, region: String?) -> AudibleMarketplace {
+    static func suggested(language: Locale.Language?, region: String?) -> AmazonMarketplace {
         let region = language?.region?.identifier ?? region
         switch language?.languageCode?.identifier {
         case "fr": return region == "CA" ? .ca : .fr
@@ -88,7 +108,7 @@ enum AudibleMarketplace: String, CaseIterable, Identifiable, Sendable {
 /// The reader's live link to Audible. Holds no credential: those never leave the
 /// server.
 struct AudibleAccount: Sendable {
-    let marketplace: AudibleMarketplace
+    let marketplace: AmazonMarketplace
     let connectedAt: Date?
     let lastImportedAt: Date?
     /// Whether the nightly pass runs for this reader: it catalogues what was
@@ -97,8 +117,10 @@ struct AudibleAccount: Sendable {
     let autoSync: Bool
 }
 
-/// Everything the web view needs to run Amazon's sign-in.
-struct AudibleLogin: Identifiable, Sendable {
+/// Everything the web view needs to run Amazon's sign-in, for an Audible or a
+/// Kindle connection: the page, the cookies to plant first, the redirect that
+/// carries the code back.
+struct AmazonLogin: Identifiable, Sendable {
     /// The sign-in URL doubles as the identity of this attempt: a new sign-in
     /// carries a new PKCE challenge, which is what has to re-present the sheet.
     var id: String { url }
@@ -163,12 +185,9 @@ struct ImportableBook: Identifiable, Sendable {
     }
 }
 
-/// Where a library can be imported from.
-///
-/// The two are not the same kind of thing and the screens say so: Audible is an
-/// account Shiori stays connected to and syncs each night, Kindle is a file
-/// Amazon hands the reader once. There is no Kindle library API to connect to,
-/// and the Audible credentials reach nothing on that side.
+/// Where a library can be imported from. Each is a connection of its own —
+/// its own Amazon sign-in, its own device, its own nightly pass — so a reader
+/// links only what they use.
 enum ImportSource: String, CaseIterable, Identifiable, Sendable {
     case audible
     case kindle
@@ -194,41 +213,15 @@ enum ImportSource: String, CaseIterable, Identifiable, Sendable {
     var subtitle: String {
         switch self {
         case .audible: String(localized: "Connexion, import et synchronisation")
-        case .kindle: String(localized: "Import depuis l'export de données Amazon")
+        case .kindle: String(localized: "Connexion, import et synchronisation")
         }
     }
 }
 
-/// One title read off an Amazon data export, before anything is saved.
-///
-/// Thin on purpose: the export is a purchase history. It names the book and who
-/// wrote it and carries nothing else, so a book catalogued from it is a stub the
-/// reader can scan or correct afterwards.
-struct KindleBook: Identifiable, Sendable {
-    /// The title and first author folded together, as the duplicate check folds
-    /// them. The identity, rather than the title: two different books that
-    /// happen to share one are still two rows.
-    var id: String { key }
-    let key: String
-    let title: String
-    let authors: [String]
-    let alreadyInLibrary: Bool
-
-    var authorLine: String {
-        authors.isEmpty ? String(localized: "Auteur inconnu") : authors.joined(separator: ", ")
-    }
-
-    /// A stand-in book, only so the row can draw the shared cover component and
-    /// its typographic placeholder. An export carries no image.
-    var asCoverSubject: Book {
-        Book(id: key, title: title, authors: authors, status: .toRead)
-    }
-}
-
-/// What one pass over the Audible library changed. Shown on the source card
+/// What one pass over a connected library changed. Shown on the source card
 /// right after the reader asks for it, so the button reports rather than just
 /// stopping its spinner.
-struct AudibleSyncOutcome: Sendable {
+struct SyncOutcome: Sendable {
     let imported: Int
     let updated: Int
 

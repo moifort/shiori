@@ -15,7 +15,7 @@ import WebKit
 /// data store is non-persistent so nothing of that session is left behind, and a
 /// second attempt starts from a clean slate rather than from a half-signed-in one.
 struct AmazonSignInWebView: UIViewRepresentable {
-    let login: AudibleLogin
+    let login: AmazonLogin
     let onCode: (String) -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -53,7 +53,7 @@ struct AmazonSignInWebView: UIViewRepresentable {
         }
 
         @MainActor
-        func start(_ webView: WKWebView, in dataStore: WKWebsiteDataStore, with login: AudibleLogin) {
+        func start(_ webView: WKWebView, in dataStore: WKWebsiteDataStore, with login: AmazonLogin) {
             guard let url = URL(string: login.url) else { return }
             Task {
                 for cookie in login.cookies {

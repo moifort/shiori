@@ -15,7 +15,7 @@ final class AudibleImportViewModel {
     /// What the pass the reader asked for changed. Nil until they ask, and reset
     /// the next time the library is read so the card never reports an old figure
     /// under a fresh date.
-    private(set) var lastSyncOutcome: AudibleSyncOutcome?
+    private(set) var lastSyncOutcome: SyncOutcome?
     /// Whether Amazon has actually answered with a library. Distinct from an
     /// empty `books`, which is also what a failed read and a first paint look
     /// like.
@@ -24,11 +24,11 @@ final class AudibleImportViewModel {
 
     /// The store to sign in on. Only read before the first connection: afterwards
     /// the account carries its own.
-    var marketplace: AudibleMarketplace = .suggested
+    var marketplace: AmazonMarketplace = .suggested
 
     /// Non-nil while Amazon's page is on screen. Setting it to nil abandons the
     /// attempt; the server's half expires on its own half an hour later.
-    var signIn: AudibleLogin?
+    var signIn: AmazonLogin?
 
     /// The ASINs the reader ticked.
     private(set) var selected: Set<String> = []

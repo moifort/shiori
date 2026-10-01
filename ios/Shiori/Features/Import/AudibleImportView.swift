@@ -39,7 +39,9 @@ struct AudibleImportView: View {
         // Keyed on the login itself: a second attempt carries a new PKCE
         // challenge, and re-presenting the sheet is what loads the new page.
         .sheet(item: $viewModel.signIn) { login in
-            signInSheet(login)
+            AmazonSignInSheet(login: login, onCode: { code in
+                Task { await viewModel.finishSignIn(code: code) }
+            }, onCancel: { viewModel.cancelSignIn() })
         }
         .alert(
             "Une erreur est survenue",
@@ -107,21 +109,5 @@ struct AudibleImportView: View {
                 }
             }
         )
-    }
-
-    private func signInSheet(_ login: AudibleLogin) -> some View {
-        NavigationStack {
-            AmazonSignInWebView(login: login) { code in
-                Task { await viewModel.finishSignIn(code: code) }
-            }
-            .ignoresSafeArea(edges: .bottom)
-            .navigationTitle("Connexion Amazon")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    ToolbarIconButton(title: "Annuler", systemImage: "xmark", role: .cancel) { viewModel.cancelSignIn() }
-                }
-            }
-        }
     }
 }

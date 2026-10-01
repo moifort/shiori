@@ -12,7 +12,7 @@ are recorded here so their constraints are not forgotten while the foundation is
 | 3 | Sharing a library with other people, `hidden` books excluded | **built** |
 | 4 | Release alerts: the next volume of a followed saga, and translations | **built** |
 | 5 | Audible import | **built** |
-| 6 | Kindle import | planned |
+| 6 | Kindle connection ([spec](superpowers/specs/2026-09-30-kindle-connection-design.md)) | **built** |
 | 7 | The Découvrir tab: what is coming next in the sagas the reader follows | **rebuilt, sagas only** |
 | 8 | Authors: a Library shelf, the author page, then an author release watch in Découvrir ([spec](superpowers/specs/2026-09-25-authors-design.md)) | **building** |
 
@@ -78,14 +78,25 @@ A fourth, added when the library learned to keep itself up to date:
   catalogued from the printed edition is never moved. `autoSync` on the connection is how a
   reader takes the whole thing back.
 
-## Batch 6 — Kindle import
+## Batch 6 — Kindle connection
 
-**This is an import, not a live sync.** Amazon publishes no Kindle library API, and the
-Goodreads API has been closed since 2020. The realistic paths are the Amazon GDPR data export
-("Request my data", a CSV) or manual entry. Scraping `read.amazon.com` would require the
-user's Amazon credentials and is not an option. Note that the Audible connection of batch 5
-does NOT help here: it authenticates against Audible's own API, which knows nothing about
-Kindle.
+Built, as a connection of its own beside Audible's rather than the data-export import first
+shipped. Amazon publishes no Kindle library API, but a Kindle device registered over PKCE — the
+same sign-in the Audible connection runs, in Amazon's own page, the password never reaching
+Shiori — mints website cookies from its refresh token, and those read "Manage your content and
+devices": every title with its read status and acquisition date.
+[kindle-api-ts](https://github.com/moifort/kindle-api-ts) speaks it. No model is called, so an
+import costs no scan.
+
+- **Independent of Audible.** Its own device, its own sealed credentials (`NITRO_KINDLE_KEY`),
+  its own nightly job. A reader connects only what they use; onboarding offers either or both.
+- **Read, never unread.** Amazon says a book was read, never that it is being read, and `READ`
+  never goes away on its side. The nightly pass moves a book to read only when Amazon newly
+  says so — the connection keeps the ASINs it last saw read — and never moves one back.
+- **Sagas live in the title.** "Powerless (Tome 3) - Fearless" is volume 3 of Powerless; a title
+  no pattern recognizes keeps no saga rather than a guessed one.
+- **The data export is deprecated**, its mutations kept working until the next release's
+  deprecation pass.
 
 ## Batch 7 — Découvrir
 
