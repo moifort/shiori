@@ -11,6 +11,7 @@ mock.module('~/system/config', () => ({ config: () => ({ kindleKey }) }))
 /** Stands in for Amazon: nobody registers a device in a test. What is asserted
  *  is what the domain writes down. */
 let registrations: string[] = []
+let deviceNames: (string | undefined)[] = []
 let registerFails: Error | undefined
 
 mock.module('~/domain/kindle/infrastructure/kindle-api', () => ({
@@ -19,8 +20,13 @@ mock.module('~/domain/kindle/infrastructure/kindle-api', () => ({
     session: { codeVerifier: 'verifier-1', serial: 'SERIAL1', locale: marketplace, createdAt: NOW },
     cookies: [{ name: 'frc', value: 'planted', domain: `.amazon.${marketplace}` }],
   }),
-  register: async (authorizationCode: string) => {
+  register: async (
+    authorizationCode: string,
+    _session: unknown,
+    options?: { deviceName?: string },
+  ) => {
     registrations.push(authorizationCode)
+    deviceNames.push(options?.deviceName)
     if (registerFails) throw registerFails
     return {
       refreshToken: 'Atnr|the-refresh-token',
@@ -48,6 +54,7 @@ beforeEach(() => {
   fake = resetFakeFirestore()
   registrations = []
   registerFails = undefined
+  deviceNames = []
 })
 
 const connect = async () => {
@@ -96,6 +103,12 @@ describe('completing a Kindle sign-in', () => {
     expect(openCredentials(stored.account.credentials as never).refreshToken).toBe(
       'Atnr|the-refresh-token',
     )
+  })
+
+  test('registers the device under the app’s name', async () => {
+    await connect()
+
+    expect(deviceNames).toEqual(['Shiori'])
   })
 
   test('refuses a code when no sign-in is in progress', async () => {

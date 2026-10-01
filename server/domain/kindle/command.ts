@@ -57,12 +57,18 @@ export namespace KindleCommand {
       return 'login-expired'
     }
 
-    const credentials = await api.register(authorizationCode, {
-      codeVerifier: pending.codeVerifier,
-      serial: pending.serial,
-      locale: pending.marketplace,
-      createdAt: pending.startedAt,
-    })
+    // Named after the app, so the reader can tell it apart in Amazon's device
+    // list and remove it there.
+    const credentials = await api.register(
+      authorizationCode,
+      {
+        codeVerifier: pending.codeVerifier,
+        serial: pending.serial,
+        locale: pending.marketplace,
+        createdAt: pending.startedAt,
+      },
+      { deviceName: 'Shiori' },
+    )
 
     const account: ConnectedKindleAccount = {
       marketplace: pending.marketplace,
