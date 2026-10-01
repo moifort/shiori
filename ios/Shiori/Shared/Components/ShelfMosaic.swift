@@ -35,11 +35,11 @@ struct MosaicModeButton: View {
 /// The tile is told its width.
 ///
 /// Given the date each row is shelved on, the month is pinned on a cover's
-/// corner in place of the list's headings, one line at most carrying one: on
-/// the first cover of a month, or at the head of the next line when the line
-/// it starts on already names the month before; and again at the head of a
-/// line whenever four have gone by without one, so a long month never scrolls
-/// past unnamed. A tag that reaches the foot of the toolbar stays there, over
+/// corner in place of the list's headings, only ever on the first cover of a
+/// line and never on two lines closer than three apart: at the head of the
+/// first line that opens on a new month, once the last tag is far enough
+/// back; and again at the head of a line whenever four have gone by without
+/// one, so a long month never scrolls past unnamed. A tag that reaches the foot of the toolbar stays there, over
 /// the covers scrolling under it, until the next one comes up and pushes it
 /// away, as a list pins its section headings.
 ///
@@ -166,18 +166,23 @@ extension ShelfMosaic {
     /// The most lines that go by without a month tag.
     static var linesPerTag: Int { 4 }
 
-    /// The month each tile that carries a tag names, by its place in the grid.
+    /// The fewest lines from one month tag to the next: two tagged lines
+    /// always have two bare ones between them.
+    static var linesBetweenTags: Int { 3 }
+
+    /// The month each tile that carries a tag names, by its place in the
+    /// grid: always the first tile of a line.
     func monthTags(columns: Int) -> [Int: Date] {
         guard let date else { return [:] }
         let calendar = Calendar.current
         var tags: [Int: Date] = [:]
         var taggedMonth: DateComponents?
         var lastTaggedLine = Int.min / 2
-        for (index, row) in rows.enumerated() {
+        for index in stride(from: 0, to: rows.count, by: columns) {
             let line = index / columns
-            guard line != lastTaggedLine, let day = date(row) else { continue }
+            guard line - lastTaggedLine >= Self.linesBetweenTags, let day = date(rows[index]) else { continue }
             let month = calendar.dateComponents([.year, .month], from: day)
-            let lineUnnamedTooLong = index % columns == 0 && line - lastTaggedLine >= Self.linesPerTag
+            let lineUnnamedTooLong = line - lastTaggedLine >= Self.linesPerTag
             guard month != taggedMonth || lineUnnamedTooLong else { continue }
             tags[index] = day
             taggedMonth = month
