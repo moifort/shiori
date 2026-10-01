@@ -9,6 +9,7 @@ import {
   inTabOrder,
   isForthcoming,
   isRecentMiss,
+  keepingReleases,
   matchingFilter,
   progressOf,
   provisionalCatalogueOf,
@@ -697,6 +698,39 @@ describe('withReleases', () => {
         { volume: VolumeNumber(1), title: BookTitle('One'), date: ReleaseDate('2021') },
       ]),
     ).toBe(once)
+  })
+})
+
+describe('keepingReleases', () => {
+  test('a catalogue built again keeps the dates the release watch wrote on a volume', () => {
+    const previous = saga([
+      volume({
+        title: 'One',
+        number: VolumeNumber(1),
+        releases: { fr: ReleaseDate('2021-05-02') },
+      }),
+    ])
+    const fresh = saga([volume({ title: 'One', number: VolumeNumber(1), publishedIn: Year(2021) })])
+    expect(keepingReleases(fresh, previous).volumes[0]?.releases).toEqual({
+      fr: ReleaseDate('2021-05-02'),
+    })
+  })
+
+  test('a volume only the release watch found survives a catalogue that lists what is out', () => {
+    const previous = saga([
+      volume({ title: 'One', number: VolumeNumber(1) }),
+      volume({ title: 'Two', number: VolumeNumber(2), releases: { fr: ReleaseDate('2027-03') } }),
+      volume({ title: 'Dropped', number: VolumeNumber(3) }),
+    ])
+    const fresh = saga([
+      volume({ title: 'One', number: VolumeNumber(1) }),
+      volume({ title: 'Side', kind: 'novella' }),
+    ])
+    expect(keepingReleases(fresh, previous).volumes.map((entry) => entry.title as string)).toEqual([
+      'One',
+      'Two',
+      'Side',
+    ])
   })
 })
 

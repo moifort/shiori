@@ -574,23 +574,31 @@ export const withReleases = (
 }
 
 /** A catalogue built again keeps what the release watch wrote on it: the
- *  model's fresh list knows nothing of dates per language. */
+ *  model's fresh list knows nothing of dates per language. It lists only the
+ *  volumes out in the edition it was asked in, so a volume the watch found —
+ *  announced, or out in another language — is kept too, or a refresh would
+ *  undo the watch until its next pass. A volume the watch never dated is the
+ *  old catalogue's alone, and goes with it. */
 export const keepingReleases = (fresh: Series, previous: Series | null): Series => {
   if (!previous) return fresh
   const sameVolume = (left: Volume, right: Volume) =>
     left.kind === right.kind &&
     (left.number !== undefined ? left.number === right.number : left.title === right.title)
-  return {
-    ...fresh,
-    volumes: fresh.volumes.map((volume) => {
-      const before = previous.volumes.find((entry) => sameVolume(entry, volume))
-      if (!before) return volume
-      return {
-        ...volume,
-        releases: before.releases ?? volume.releases,
-        titles: before.titles ?? volume.titles,
-        covers: before.covers ?? volume.covers,
-      }
-    }),
-  }
+  const volumes = fresh.volumes.map((volume) => {
+    const before = previous.volumes.find((entry) => sameVolume(entry, volume))
+    if (!before) return volume
+    return {
+      ...volume,
+      releases: before.releases ?? volume.releases,
+      titles: before.titles ?? volume.titles,
+      covers: before.covers ?? volume.covers,
+    }
+  })
+  const watched = previous.volumes.filter(
+    (volume) =>
+      volume.releases !== undefined && !fresh.volumes.some((entry) => sameVolume(entry, volume)),
+  )
+  return watched.length === 0
+    ? { ...fresh, volumes }
+    : { ...fresh, volumes: inCatalogueOrder([...volumes, ...watched]) }
 }

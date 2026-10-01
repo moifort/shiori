@@ -104,6 +104,12 @@ Le texte peut être approximatif, partiel ou mal orthographié, et peut contenir
  *  once per reader, which is what makes it affordable to ask for the complete
  *  list rather than just the next volume.
  *
+ *  Only the volumes already out in the edition's language: what is announced,
+ *  or out in another language only, is the release watch's to find, per
+ *  language and with a date, in Découvrir's hourly pass. A scan that listed
+ *  them made an untranslated volume count as out until that pass came by, on
+ *  nothing more than the year it came out elsewhere.
+ *
  *  The volumes are titled as the edition on the shelf titles them: a reader
  *  holding a saga in French looks for the French titles of its sequels, and
  *  asked for "French text" alone the model kept the original English ones as
@@ -119,18 +125,18 @@ export const cataloguePrompt = (
   return `Recherche sur le web la liste COMPLÈTE des volumes de cette série et renseigne son catalogue.
 
 Série : « ${seriesName} » de ${author}
-Édition : en ${edition}. C'est de CETTE édition que parle le catalogue : le nom de la série et les titres des volumes sont ceux sous lesquels ils sont publiés en ${edition} — les titres traduits, jamais les titres originaux d'une autre langue. Un volume pas encore traduit garde son titre original.
+Édition : en ${edition}. C'est de CETTE édition que parle le catalogue : le nom de la série et les titres des volumes sont ceux sous lesquels ils sont publiés en ${edition} — les titres traduits, jamais les titres originaux d'une autre langue.
 
 Renseigne :
 - name et author : le nom de la série et son auteur principal.
 - description : 2 à 3 phrases présentant la série, SANS révéler le dénouement.
-- volumes : TOUS les volumes publiés ou annoncés, dans l'ordre de PUBLICATION. Pour chacun :
+- volumes : TOUS les volumes DÉJÀ PARUS en ${edition}, dans l'ordre de PUBLICATION. Un volume annoncé mais pas encore paru n'en fait PAS partie, ni un volume paru dans une autre langue mais pas encore traduit en ${edition} : ne les liste pas. Pour chacun :
   - number : le numéro du tome dans l'histoire principale, ou null pour tout ce qui est hors numérotation.
   - title : le titre du volume dans l'édition en ${edition}.
-  - publishedIn : l'année de parution. Pour un volume annoncé mais pas encore paru, indique l'année annoncée — c'est une information utile, ne l'omets pas.
+  - publishedIn : l'année de parution en ${edition}, pas celle de l'édition originale.
   - kind : ${VOLUME_KINDS.map((kind) => `'${kind}'`).join(', ')}. 'main' pour un tome numéroté de l'histoire principale, 'prequel' pour une préquelle, 'spin-off' pour un récit dérivé, 'novella' pour un texte court, 'companion' pour un guide, un atlas ou un artbook.
 
-N'invente pas de volumes pour compléter une série : si tu n'en connais que quatre, n'en liste que quatre. Une série inexistante ou introuvable doit revenir avec un tableau volumes vide.
+N'invente pas de volumes pour compléter une série : si tu n'en connais que quatre, n'en liste que quatre. Une série inexistante, introuvable ou sans aucun volume paru en ${edition} doit revenir avec un tableau volumes vide.
 
 En dehors des titres, toutes les valeurs textuelles doivent être en ${LANGUAGE_NAMES[language]}.`
 }
@@ -138,7 +144,8 @@ En dehors des titres, toutes les valeurs textuelles doivent être en ${LANGUAGE_
 /** Step 3 for a saga heard rather than read: the volumes recorded, not the
  *  volumes printed. A recording trails its book, sometimes by years, and some
  *  are never made — so a volume out in print only is left out, and the saga's
- *  spine is the one its listener can actually follow. The recordings are looked
+ *  spine is the one its listener can actually follow. A recording announced
+ *  but not out is left to the release watch, as for a saga read. The recordings are looked
  *  up on the Audible store of the edition's language, where they are listed. */
 export const audioCataloguePrompt = (
   seriesName: string,
@@ -156,10 +163,10 @@ Série : « ${seriesName} » de ${author}
 Renseigne :
 - name et author : le nom de la série et son auteur principal.
 - description : 2 à 3 phrases présentant la série, SANS révéler le dénouement.
-- volumes : les volumes enregistrés en livre audio en ${edition}, parus ou annoncés, dans l'ordre de PUBLICATION. Un tome paru en livre imprimé mais pas encore enregistré en ${edition} n'en fait PAS partie : ne le liste pas. Pour chacun :
+- volumes : les volumes enregistrés en livre audio en ${edition} DÉJÀ SORTIS, dans l'ordre de PUBLICATION. Un tome paru en livre imprimé mais pas encore enregistré en ${edition} n'en fait PAS partie, ni un enregistrement annoncé mais pas encore sorti : ne les liste pas. Pour chacun :
   - number : le numéro du tome dans l'histoire principale, ou null pour tout ce qui est hors numérotation.
   - title : le titre de l'enregistrement en ${edition}.
-  - publishedIn : l'année de sortie du livre audio, pas celle du livre imprimé. Pour un enregistrement annoncé mais pas encore sorti, indique l'année annoncée.
+  - publishedIn : l'année de sortie du livre audio, pas celle du livre imprimé.
   - kind : ${VOLUME_KINDS.map((kind) => `'${kind}'`).join(', ')}. 'main' pour un tome numéroté de l'histoire principale, 'prequel' pour une préquelle, 'spin-off' pour un récit dérivé, 'novella' pour un texte court, 'companion' pour un guide, un atlas ou un artbook.
 
 Le nom de la série et les titres des volumes sont des titres d'œuvre, pas des intitulés de fiche Audible : retire-leur toute mention d'édition ou de format, comme « (French edition) », « (Édition française) », « (Unabridged) », « Version intégrale », « Livre audio », « Audiobook », ou le numéro de tome placé entre parenthèses à la suite du titre.

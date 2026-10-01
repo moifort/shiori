@@ -134,7 +134,7 @@ export const CATALOGUE_SCHEMA = {
           publishedIn: {
             type: 'integer',
             nullable: true,
-            description: 'Année de parution, y compris future pour un volume annoncé',
+            description: "Année de parution dans la langue de l'édition",
           },
         },
         required: ['kind', 'title'],
