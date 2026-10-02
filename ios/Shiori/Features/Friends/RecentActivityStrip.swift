@@ -3,7 +3,7 @@ import SwiftUI
 /// A friend's recent activity as up to five covers scrolled sideways: the
 /// book in progress, the last one read, the last one hearted, the last one
 /// added and the last one dropped. No title — the cover already shows the book — and
-/// no caption: what happened is its symbol, centred on the cover, in its colour. A tap on a
+/// no caption: what happened is its symbol, centred on the cover. A tap on a
 /// cover opens its book; on the friends list, the rest of the row opens the
 /// friend's page.
 struct RecentActivityStrip: View {
@@ -59,15 +59,14 @@ struct RecentActivityStrip: View {
         .overlay { icon(activity) }
     }
 
-    /// What happened, as a solid disc of its colour in the middle of the
-    /// cover: opaque, so the symbol reads whatever the photo under it.
+    /// What happened, as a bare symbol in the middle of the cover, lightly
+    /// see-through as a play button on a video: white, and a soft shadow,
+    /// so it reads whatever the photo under it.
     private func icon(_ activity: RecentActivity) -> some View {
         Image(systemName: symbol(activity))
-            .font(.system(size: 14, weight: .bold))
-            .foregroundStyle(.white)
-            .frame(width: 32, height: 32)
-            .background(tint(activity), in: Circle())
-            .shadow(color: .black.opacity(0.35), radius: 4, y: 1)
+            .font(.system(size: 30, weight: .bold))
+            .foregroundStyle(.white.opacity(0.8))
+            .shadow(color: .black.opacity(0.4), radius: 3, y: 1)
     }
 
     private func caption(_ activity: RecentActivity) -> String {
@@ -89,17 +88,6 @@ struct RecentActivityStrip: View {
         case .hearted: "heart.fill"
         case .added: "plus"
         case .dropped: ReadingStatus.dropped.symbol
-        }
-    }
-
-    private func tint(_ activity: RecentActivity) -> Color {
-        switch activity {
-        case .reading: ReadingStatus.reading.tint
-        case .finished: ReadingStatus.read.tint
-        case .hearted: .red
-        case .added: ReadingStatus.toRead.tint
-        // Not .secondary: translucent, the disc would let the cover through.
-        case .dropped: Color(.systemGray)
         }
     }
 }
