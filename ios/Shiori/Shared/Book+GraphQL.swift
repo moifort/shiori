@@ -20,12 +20,31 @@ extension ShioriGraphQL.ReadingStatus {
 extension ShioriGraphQL.BookFormat {
     var asDomain: BookFormat {
         switch self {
-        case .book: .book
-        case .ebook: .ebook
+        // Deprecated and never returned: a book on a screen is a book.
+        case .book, .ebook: .book
         case .audiobook: .audiobook
         case .bandeDessinee: .bandeDessinee
         case .comic: .comic
         case .manga: .manga
+        }
+    }
+}
+
+extension ShioriGraphQL.BookMedium {
+    var asDomain: BookMedium {
+        switch self {
+        case .print: .print
+        case .digital: .digital
+        }
+    }
+}
+
+extension Array where Element == GraphQLEnum<ShioriGraphQL.BookMedium> {
+    /// A medium added after this build shipped is left out rather than guessed.
+    var asDomain: [BookMedium] {
+        compactMap { medium in
+            if case let .case(value) = medium { return value.asDomain }
+            return nil
         }
     }
 }
@@ -165,6 +184,7 @@ extension ShioriGraphQL.BookSummary {
             title: title,
             authors: authors,
             format: format.asDomain,
+            media: media.asDomain,
             genre: genre?.asDomain,
             subgenres: subgenres,
             listeningProgress: listeningProgress.map { Int($0) },
@@ -187,6 +207,7 @@ extension ShioriGraphQL.BookDetail {
             title: title,
             authors: authors,
             format: format.asDomain,
+            media: media.asDomain,
             publisher: publisher,
             firstPublishedIn: firstPublishedIn,
             editionYear: editionYear,

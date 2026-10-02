@@ -83,11 +83,19 @@ enum LibraryAPI {
     static func graphQLFormat(_ format: BookFormat) -> GraphQLEnum<ShioriGraphQL.BookFormat> {
         switch format {
         case .book: .case(.book)
-        case .ebook: .case(.ebook)
         case .audiobook: .case(.audiobook)
         case .bandeDessinee: .case(.bandeDessinee)
         case .comic: .case(.comic)
         case .manga: .case(.manga)
+        }
+    }
+
+    static func graphQLMedia(_ media: [BookMedium]) -> [GraphQLEnum<ShioriGraphQL.BookMedium>] {
+        media.map { medium in
+            switch medium {
+            case .print: .case(.print)
+            case .digital: .case(.digital)
+            }
         }
     }
 

@@ -13,6 +13,7 @@ struct ManualAddView: View {
     @State private var title = ""
     @State private var author = ""
     @State private var format: BookFormat = .book
+    @State private var media: [BookMedium] = [.print]
     @State private var status: ReadingStatus = .toRead
     @State private var isSaving = false
     @State private var errorMessage: String?
@@ -40,6 +41,9 @@ struct ManualAddView: View {
                         image: { Image(systemName: $0.symbol) }
                     )
                     .accessibilityIdentifier("manual-format")
+                    if format != .audiobook {
+                        MediaToggles(media: $media)
+                    }
                 }
                 Section("Lecture") {
                     ReadingStatusPicker(status: $status)
@@ -85,6 +89,7 @@ struct ManualAddView: View {
                     title: trimmedTitle,
                     authors: trimmedAuthor.isEmpty ? [] : [trimmedAuthor],
                     format: format,
+                    media: media,
                     status: status
                 )
             )

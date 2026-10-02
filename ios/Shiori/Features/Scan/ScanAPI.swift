@@ -7,6 +7,9 @@ struct ScannedBook {
     var authors: [String] = []
     /// Absent when the cover did not say; the draft then proposes a plain book.
     var format: BookFormat?
+    /// Digital for a cover shown on an e-reader; empty when the photo did not
+    /// say, and the draft then proposes paper.
+    var media: [BookMedium] = []
     var publisher: String?
     var firstPublishedIn: Int?
     var synopsis: String?
@@ -40,6 +43,7 @@ struct ScannedBook {
             title: title ?? "",
             authors: authors,
             format: format ?? .book,
+            media: media.isEmpty ? [.print] : media,
             publisher: publisher,
             firstPublishedIn: firstPublishedIn,
             synopsis: synopsis,
@@ -148,6 +152,7 @@ extension ScannedBook {
             title: result.title,
             authors: result.authors,
             format: result.format?.asDomain,
+            media: result.media.asDomain,
             publisher: result.publisher,
             firstPublishedIn: result.firstPublishedIn,
             synopsis: result.synopsis,

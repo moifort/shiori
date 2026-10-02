@@ -22,6 +22,7 @@ struct BookEditView: View {
     @State private var title: String
     @State private var authors: String
     @State private var format: BookFormat
+    @State private var media: [BookMedium]
     @State private var rating: Int
     @State private var synopsis: String
     @State private var publisher: String
@@ -58,6 +59,7 @@ struct BookEditView: View {
         _title = State(initialValue: book.title)
         _authors = State(initialValue: book.authors.joined(separator: ", "))
         _format = State(initialValue: book.format)
+        _media = State(initialValue: book.media.isEmpty ? [.print] : book.media)
         _rating = State(initialValue: book.rating ?? 0)
         _synopsis = State(initialValue: book.synopsis ?? "")
         _publisher = State(initialValue: book.publisher ?? "")
@@ -109,6 +111,9 @@ struct BookEditView: View {
                         image: { Image(systemName: $0.symbol) }
                     )
                     .accessibilityIdentifier("edit-format")
+                    if format != .audiobook {
+                        MediaToggles(media: $media)
+                    }
                 } footer: {
                     if trimmed(title).isEmpty {
                         Text("Un livre a besoin d'un titre.").foregroundStyle(.red)
@@ -417,6 +422,7 @@ struct BookEditView: View {
         let authorList = list(authors)
         if authorList != book.authors { correction.authors = authorList }
         if format != book.format { correction.format = format }
+        if format != .audiobook, media != book.media { correction.media = media }
         correction.publisher = change(from: book.publisher, to: optional(publisher))
         correction.firstPublishedIn = change(from: book.firstPublishedIn, to: Int(trimmed(year)))
         correction.synopsis = change(from: book.synopsis, to: optional(synopsis))

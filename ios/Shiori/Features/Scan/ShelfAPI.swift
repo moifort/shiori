@@ -11,6 +11,8 @@ struct DetectedBook: Identifiable, Hashable {
     let publisher: String?
     let language: BookLanguage?
     let format: BookFormat?
+    /// Digital for a cover shown on a screen; empty when the photo did not say.
+    var media: [BookMedium] = []
     let seriesName: String?
     let volume: Int?
     /// Where it sits, as fractions of the photo that was sent.
@@ -55,6 +57,7 @@ enum ShelfAPI {
                 publisher: book.publisher,
                 language: book.language?.asDomain,
                 format: book.format?.asDomain,
+                media: book.media.asDomain,
                 seriesName: book.seriesName,
                 volume: book.volume,
                 box: CGRect(x: book.box.x, y: book.box.y, width: book.box.width, height: book.box.height),
@@ -72,6 +75,7 @@ enum ShelfAPI {
                     authors: book.authors,
                     format: GraphQLHelpers.graphQLNullable(book.format.map(LibraryAPI.graphQLFormat)),
                     language: GraphQLHelpers.graphQLNullable(book.language.map(LibraryAPI.graphQLLanguage)),
+                    media: book.media.isEmpty ? .none : .some(LibraryAPI.graphQLMedia(book.media)),
                     publisher: GraphQLHelpers.graphQLNullable(book.publisher),
                     title: book.title ?? ""
                 )

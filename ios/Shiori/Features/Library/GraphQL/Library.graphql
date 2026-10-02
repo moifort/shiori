@@ -20,6 +20,7 @@ fragment BookSummary on Book {
   title
   authors
   format
+  media
   genre
   subgenres
   language

@@ -39,6 +39,7 @@ fragment ScannedRecord on ScanResult {
   title
   authors
   format
+  media
   publisher
   firstPublishedIn
   synopsis

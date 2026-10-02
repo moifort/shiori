@@ -39,10 +39,10 @@ enum ReadingStatus: String, Codable, CaseIterable, Identifiable, Sendable {
 }
 
 /// What kind of object the reader holds. Drawn stories are split into the three
-/// traditions readers shelve apart; `book` covers everything in prose.
+/// traditions readers shelve apart; `book` covers everything in prose. Paper or
+/// screen is not a format: it is `BookMedium`.
 enum BookFormat: String, Codable, CaseIterable, Identifiable, Sendable {
     case book
-    case ebook
     case audiobook
     case bandeDessinee
     case comic
@@ -53,7 +53,6 @@ enum BookFormat: String, Codable, CaseIterable, Identifiable, Sendable {
     var label: String {
         switch self {
         case .book: String(localized: "Livre")
-        case .ebook: String(localized: "Livre numérique")
         case .audiobook: String(localized: "Livre audio")
         case .bandeDessinee: String(localized: "BD")
         case .comic: String(localized: "Comics")
@@ -64,12 +63,40 @@ enum BookFormat: String, Codable, CaseIterable, Identifiable, Sendable {
     var symbol: String {
         switch self {
         case .book: "book.closed"
-        case .ebook: "ipad"
         case .audiobook: "headphones"
         case .bandeDessinee: "text.bubble"
         case .comic: "bolt"
         case .manga: "character.book.closed.ja"
         }
+    }
+}
+
+/// Where a read book is held: on paper, on a screen, or both — one record either
+/// way, since the reader keeps one book, not a paperback and an ebook. A
+/// recording is held on neither.
+enum BookMedium: String, Codable, CaseIterable, Identifiable, Sendable {
+    case print
+    case digital
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .print: String(localized: "Papier")
+        case .digital: String(localized: "Numérique")
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .print: "book.closed"
+        case .digital: "ipad"
+        }
+    }
+
+    /// The media as the book sheet names them: "Papier · Numérique".
+    static func label(of media: [BookMedium]) -> String {
+        allCases.filter(media.contains).map(\.label).joined(separator: " · ")
     }
 }
 
@@ -235,6 +262,8 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
     let title: String
     let authors: [String]
     var format: BookFormat = .book
+    /// Where the reader holds it, paper first. Empty on an audiobook.
+    var media: [BookMedium] = [.print]
     var publisher: String?
     var firstPublishedIn: Int?
     /// The year this edition came out, where `firstPublishedIn` dates the work:

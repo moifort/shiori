@@ -123,6 +123,16 @@ struct ScanReviewPage: View {
         if draft.status == .toRead || draft.status == .reading { draft.status = .read }
     }
 
+    /// The media this book brings to the copy the reader already keeps, which
+    /// it then joins rather than doubles — as the server decides: read rather
+    /// than heard, in the same language wherever both say. Empty when it
+    /// brings none, and saving shelves a second copy.
+    private func mediaJoining(_ copy: Book) -> [BookMedium] {
+        guard draft.format != .audiobook, copy.format != .audiobook else { return [] }
+        if let language = draft.language, let held = copy.language, language != held { return [] }
+        return draft.media.filter { !copy.media.contains($0) }
+    }
+
     private var finishedAt: Binding<Date> {
         Binding(get: { draft.finishedAt ?? .now }, set: { draft.finishedAt = $0 })
     }
@@ -130,7 +140,7 @@ struct ScanReviewPage: View {
     var body: some View {
         List {
             if let ownedCopy {
-                OwnedCopySection(copy: ownedCopy)
+                OwnedCopySection(copy: ownedCopy, joining: mediaJoining(ownedCopy))
             }
 
             BookStatusSection(status: draft.status) { status in
@@ -300,9 +310,13 @@ extension ScanReviewPage {
     }
 }
 
-/// The warning that the reader already keeps this book, opening their copy.
+/// The reader already keeps this book, opening their copy: a warning when
+/// saving would shelve a second one, a note when it joins the copy on another
+/// medium — paper or screen, it is one book.
 private struct OwnedCopySection: View {
     let copy: Book
+    /// The media saving adds to the copy. Empty when it adds none.
+    let joining: [BookMedium]
 
     var body: some View {
         Section {
@@ -319,12 +333,20 @@ private struct OwnedCopySection: View {
                             .lineLimit(1)
                     }
                 } icon: {
-                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    if joining.isEmpty {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    } else {
+                        Image(systemName: "link").foregroundStyle(.tint)
+                    }
                 }
             }
             .accessibilityIdentifier("review-owned-copy")
         } footer: {
-            Text("Vous pouvez l'ajouter une seconde fois, pour une autre édition par exemple.")
+            if joining.isEmpty {
+                Text("Vous pouvez l'ajouter une seconde fois, pour une autre édition par exemple.")
+            } else {
+                Text("Il rejoindra votre fiche, désormais en \(BookMedium.label(of: copy.media + joining)). Un seul livre, quel que soit le support.")
+            }
         }
     }
 }
@@ -337,6 +359,7 @@ private extension BookDraft {
             title: title,
             authors: authors,
             format: format,
+            media: format == .audiobook ? [] : media,
             publisher: publisher,
             firstPublishedIn: firstPublishedIn,
             synopsis: synopsis,
@@ -357,6 +380,7 @@ private extension BookDraft {
         if let title = correction.title { self.title = title }
         if let authors = correction.authors { self.authors = authors }
         if let format = correction.format { self.format = format }
+        if let media = correction.media { self.media = media }
         if let change = correction.publisher { publisher = change.value }
         if let change = correction.firstPublishedIn { firstPublishedIn = change.value }
         if let change = correction.synopsis { synopsis = change.value }

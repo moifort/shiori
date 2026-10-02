@@ -11,6 +11,7 @@ struct ScanIdentitySheet: View {
     @State private var title: String
     @State private var authors: String
     @State private var format: BookFormat
+    @State private var media: [BookMedium]
 
     init(book: Book, onSave: @escaping (BookCorrection) -> Void) {
         self.book = book
@@ -18,6 +19,7 @@ struct ScanIdentitySheet: View {
         _title = State(initialValue: book.title)
         _authors = State(initialValue: book.authors.joined(separator: ", "))
         _format = State(initialValue: book.format)
+        _media = State(initialValue: book.media.isEmpty ? [.print] : book.media)
     }
 
     var body: some View {
@@ -38,6 +40,9 @@ struct ScanIdentitySheet: View {
                         image: { Image(systemName: $0.symbol) }
                     )
                     .accessibilityIdentifier("review-format")
+                    if format != .audiobook {
+                        MediaToggles(media: $media)
+                    }
                 } footer: {
                     Text("Séparez les auteurs par des virgules.")
                 }
@@ -73,6 +78,7 @@ struct ScanIdentitySheet: View {
             .filter { !$0.isEmpty }
         if list != book.authors { correction.authors = list }
         if format != book.format { correction.format = format }
+        if format != .audiobook, media != book.media { correction.media = media }
         return correction
     }
 }

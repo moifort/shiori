@@ -179,6 +179,9 @@ struct BookDraft {
     var title: String
     var authors: [String] = []
     var format: BookFormat = .book
+    /// Where the reader holds it. A book they already keep on the other medium
+    /// joins that record rather than doubling it.
+    var media: [BookMedium] = [.print]
     var publisher: String?
     var firstPublishedIn: Int?
     var synopsis: String?
@@ -222,6 +225,7 @@ struct BookDraft {
             hidden: .some(hidden),
             isbn13: GraphQLHelpers.graphQLNullable(isbn13),
             language: GraphQLHelpers.graphQLNullable(language.map(LibraryAPI.graphQLLanguage)),
+            media: format == .audiobook ? .none : .some(LibraryAPI.graphQLMedia(media)),
             pageCount: GraphQLHelpers.graphQLNullable(pageCount),
             publisher: GraphQLHelpers.graphQLNullable(publisher),
             series: GraphQLHelpers.graphQLNullable(
@@ -263,6 +267,7 @@ struct BookCorrection: Equatable, Sendable {
     var title: String?
     var authors: [String]?
     var format: BookFormat?
+    var media: [BookMedium]?
     var publisher: Change<String>?
     var firstPublishedIn: Change<Int>?
     var editionYear: Change<Int>?
@@ -300,6 +305,7 @@ struct BookCorrection: Equatable, Sendable {
             genre: Self.nullableGenre(genre),
             isbn13: Self.nullable(isbn13),
             language: Self.nullableLanguage(language),
+            media: media.map { .some(LibraryAPI.graphQLMedia($0)) } ?? .none,
             narrators: Self.nullable(narrators),
             pageCount: Self.nullable(pageCount),
             publisher: Self.nullable(publisher),

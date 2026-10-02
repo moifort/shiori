@@ -96,9 +96,8 @@ extension GenreInsights {
             .init(genre: .literaryFiction, count: 1),
         ],
         formats: [
-            .init(format: .book, count: 22, topGenre: .crime),
+            .init(format: .book, count: 27, topGenre: .crime),
             .init(format: .audiobook, count: 9, topGenre: .fantasy),
-            .init(format: .ebook, count: 5, topGenre: .scienceFiction),
             .init(format: .manga, count: 4, topGenre: .adventure),
             .init(format: .bandeDessinee, count: 2, topGenre: .historicalFiction),
         ],

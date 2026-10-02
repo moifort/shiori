@@ -72,7 +72,6 @@ extension BookFormat {
     var chartColor: Color {
         switch self {
         case .book: .blue
-        case .ebook: .teal
         case .audiobook: .audible
         case .bandeDessinee: .purple
         case .comic: .red

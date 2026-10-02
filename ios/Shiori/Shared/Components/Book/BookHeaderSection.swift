@@ -236,6 +236,15 @@ struct BookHeaderSection<Extra: View>: View {
         genreRow
         LabeledInfoRow(title: "Type", value: book.format.label, icon: book.format.symbol)
             .accessibilityIdentifier("book-format")
+        // Paper, screen or both: one book either way. A recording is heard.
+        if !book.media.isEmpty {
+            LabeledInfoRow(
+                title: "Support",
+                value: BookMedium.label(of: book.media),
+                icon: book.media.count > 1 ? "books.vertical" : book.media[0].symbol
+            )
+            .accessibilityIdentifier("book-media")
+        }
         ForEach(BookFact.allCases.filter { $0.applies(to: book) }, id: \.self) { fact in
             factRow(fact)
         }

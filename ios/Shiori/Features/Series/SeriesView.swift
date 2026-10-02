@@ -926,15 +926,17 @@ struct SeriesView: View {
                 if code != "NOT_FOUND" && code != "AUDIBLE_NOT_CONNECTED" { _ = reportError(error) }
             }
         }
-        // Another volume of a manga is a manga: the saga shares its format.
+        // Another volume of a manga is a manga: the saga shares its format, and
+        // a saga read on the Kindle goes on being read there.
         let format = owned.first?.format ?? .book
+        let media = owned.first.map(\.media).flatMap { $0.isEmpty ? nil : $0 } ?? [.print]
         let membership = SeriesMembership(
             id: seriesId,
             name: series?.name ?? owned.first?.series?.name ?? volume.title,
             volume: volume.number,
             kind: volume.kind
         )
-        var draft = BookDraft(title: volume.title, authors: [author], format: format)
+        var draft = BookDraft(title: volume.title, authors: [author], format: format, media: media)
         // A provisional volume is titled after its saga and has no title to
         // look up: it is added bare, at its number, and described later.
         let canLookUp = series?.isProvisional != true
@@ -943,6 +945,7 @@ struct SeriesView: View {
             if draft.title.isEmpty { draft.title = volume.title }
             if draft.authors.isEmpty { draft.authors = [author] }
             draft.format = format
+            draft.media = media
         }
         // Filed here whatever the lookup answered: the catalogue is what says
         // which volume this is, and the row it fills. In the edition of this
