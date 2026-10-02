@@ -4,7 +4,7 @@ import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import { mediaFor, shelfOf } from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
-import type { Book } from '~/domain/book/types'
+import type { Book, BookLanguage } from '~/domain/book/types'
 import {
   acquiredSince,
   bookFrom,
@@ -15,6 +15,7 @@ import {
   readAsinsOf,
   readingChangesFor,
   readTitleFrom,
+  storeLanguageOf,
   titlesWorthMatching,
 } from '~/domain/kindle/business-rules'
 import { KindleCommand } from '~/domain/kindle/command'
@@ -53,9 +54,10 @@ export namespace KindleUseCase {
   export const importableBooks = async (
     userId: UserId,
   ): Promise<ImportableKindleBook[] | 'not-connected'> => {
-    const titles = await fetchLibrary(userId)
-    if (titles === 'not-connected') return titles
-    return toImportable(titles, await BookQuery.all(userId), await readingsOf(titles))
+    const library = await fetchLibrary(userId)
+    if (library === 'not-connected') return library
+    const { titles, store } = library
+    return toImportable(titles, await BookQuery.all(userId), await readingsOf(titles), store)
   }
 
   /** Catalogue the titles the reader ticked.
@@ -70,20 +72,21 @@ export namespace KindleUseCase {
     asins: readonly KindleAsin[],
     now = new Date(),
   ): Promise<Book[] | 'not-connected'> => {
-    const titles = await fetchLibrary(userId)
-    if (titles === 'not-connected') return titles
+    const library = await fetchLibrary(userId)
+    if (library === 'not-connected') return library
+    const { titles, store } = library
 
     const wanted = new Set<string>(asins)
     // The preview's readings, from the shared store: the book written is the
     // one the reader ticked, not a second answer of the model.
     const owned = await BookQuery.all(userId)
     const reads = await readingsOf(titles, now)
-    const chosen = toImportable(titles, owned, reads).filter(
+    const chosen = toImportable(titles, owned, reads, store).filter(
       (importable) => wanted.has(importable.asin) && !importable.alreadyInLibrary,
     )
     // A title the reader already holds on paper was shown "already there": it
     // joins that record here, as the nightly pass would join it.
-    const links = kindleLinksFor(owned, titles, reads)
+    const links = kindleLinksFor(owned, titles, reads, store)
     if (links.length > 0)
       await AnalyticsUseCase.whileStale(userId, () => linkAll(userId, links, now))
     const imported = await catalogue(userId, chosen, now)
@@ -117,8 +120,9 @@ export namespace KindleUseCase {
     // should not cost a cookie exchange.
     if (!onDemand && account.autoSync === false) return 'sync-disabled'
 
-    const titles = await fetchLibrary(userId)
-    if (titles === 'not-connected') return titles
+    const library = await fetchLibrary(userId)
+    if (library === 'not-connected') return library
+    const { titles, store } = library
 
     const owned = await BookQuery.all(userId)
     const fresh = acquiredSince(titles, account.lastImportedAt)
@@ -128,9 +132,10 @@ export namespace KindleUseCase {
       fresh,
       account.lastImportedAt,
       now,
+      store,
     )
     const moves = readingChangesFor(linked, titles, account.readAsins)
-    const acquired = toImportable(fresh, linked, reads).filter(
+    const acquired = toImportable(fresh, linked, reads, store).filter(
       (importable) => !importable.alreadyInLibrary,
     )
 
@@ -236,10 +241,11 @@ const linksOf = async (
   fresh: readonly KindleTitle[],
   lastPass: Date | undefined,
   now: Date,
+  store: BookLanguage,
 ) => {
   const worth = titlesWorthMatching(owned, titles, fresh, lastPass)
   const reads = await readingsOf([...new Set([...fresh, ...worth])], now)
-  const links = kindleLinksFor(owned, worth, reads)
+  const links = kindleLinksFor(owned, worth, reads, store)
   const linked = owned.map((book) => {
     const link = links.find((candidate) => candidate.bookId === book.id)
     return link
@@ -280,11 +286,18 @@ const catalogue = async (
   return imported
 }
 
-/** One trip to Amazon: fresh cookies minted from the device, then the list. */
-const fetchLibrary = async (userId: UserId): Promise<KindleTitle[] | 'not-connected'> => {
+/** One trip to Amazon: fresh cookies minted from the device, then the list —
+ *  and the language of the store it lives on, which every edition Amazon names
+ *  no language of is in. */
+const fetchLibrary = async (
+  userId: UserId,
+): Promise<{ titles: KindleTitle[]; store: BookLanguage } | 'not-connected'> => {
   const connected = await connectedCredentials(userId)
   if (connected === 'not-connected') return connected
-  return api.library(connected.credentials)
+  return {
+    titles: await api.library(connected.credentials),
+    store: storeLanguageOf(connected.account.marketplace),
+  }
 }
 
 /** The reader's account and its credentials, opened.
@@ -317,9 +330,10 @@ const toImportable = (
   titles: readonly KindleTitle[],
   owned: readonly Book[],
   reads: ReadonlyMap<string, ReadKindleTitle>,
+  store: BookLanguage,
 ): ImportableKindleBook[] => {
   const shelf = shelfOf(owned)
-  return titles.map((title) => importableFrom(title, shelf, reads)).filter(isPresent)
+  return titles.map((title) => importableFrom(title, shelf, reads, store)).filter(isPresent)
 }
 
 /** The model's reading of each title, by ASIN: from the shared store when a

@@ -100,8 +100,8 @@ beforeEach(() => {
   titleFailures.length = 0
 })
 
-const connect = async (who: UserId = reader) => {
-  await KindleCommand.startLogin(who, 'fr', NOW)
+const connect = async (who: UserId = reader, marketplace: 'fr' | 'com' = 'fr') => {
+  await KindleCommand.startLogin(who, marketplace, NOW)
   await KindleCommand.completeLogin(who, 'the-code', NOW)
 }
 
@@ -178,6 +178,26 @@ describe('importing the ticked titles', () => {
     expect(book.addedAt).toEqual(new Date('2026-09-14T10:00:00.000Z'))
     expect(book.finishedAt).toEqual(new Date('2026-09-14T10:00:00.000Z'))
     expect(libraryCalls).toHaveLength(1)
+  })
+
+  // A store names the language of an edition foreign to it only.
+  test('files an edition that names no language in the language of its store', async () => {
+    await connect(reader, 'com')
+    titles = [
+      aTitle(),
+      aTitle({ asin: 'B0TESTBBB2', title: 'Phantasma', sortableTitle: 'phantasma french edition' }),
+    ]
+
+    await KindleUseCase.importBooks(
+      reader,
+      [KindleAsin('B0TESTAAA1'), KindleAsin('B0TESTBBB2')],
+      NOW,
+    )
+
+    const languages = Object.fromEntries(
+      (await BookQuery.all(reader)).map((book) => [book.title, book.language]),
+    )
+    expect(languages).toEqual({ Fearless: 'en', Phantasma: 'fr' })
   })
 
   test('creates no duplicate when the same list is imported twice', async () => {

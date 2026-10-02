@@ -17,6 +17,7 @@ import {
   readTitleFrom,
   sagaOf,
   splitOf,
+  storeLanguageOf,
   titlesWorthMatching,
 } from '~/domain/kindle/business-rules'
 import { KindleAsin } from '~/domain/kindle/primitives'
@@ -134,6 +135,23 @@ describe('editionLanguageOf', () => {
     expect(editionLanguageOf('Captive - Tome 1 (édition reliée)', undefined)).toBeUndefined()
     expect(editionLanguageOf('1984', '1984')).toBeUndefined()
     expect(editionLanguageOf('Le Nom du vent', 'nom du vent klingon edition, le')).toBeUndefined()
+  })
+
+  // A store names the language of an edition foreign to it only: one it does
+  // not name is in its own.
+  test('takes the language of the store for an edition that names none', () => {
+    expect(editionLanguageOf('1984', '1984', 'en')).toBe('en')
+    expect(editionLanguageOf('Phantasma', 'phantasma french edition', 'en')).toBe('fr')
+  })
+})
+
+describe('storeLanguageOf', () => {
+  test('is the language each store sells in', () => {
+    expect(storeLanguageOf('fr')).toBe('fr')
+    expect(storeLanguageOf('de')).toBe('de')
+    expect(storeLanguageOf('co.jp')).toBe('ja')
+    expect(storeLanguageOf('com')).toBe('en')
+    expect(storeLanguageOf('co.uk')).toBe('en')
   })
 })
 

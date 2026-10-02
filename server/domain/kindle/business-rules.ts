@@ -16,6 +16,7 @@ import type {
   ImportableKindleBook,
   KindleAsin as KindleAsinValue,
   KindleConnection,
+  KindleMarketplace,
   ReadKindleTitle,
 } from '~/domain/kindle/types'
 import { SeriesName, seriesKeyOf, VolumeNumber } from '~/domain/series/primitives'
@@ -127,24 +128,46 @@ const TITLE_LANGUAGE_MENTIONS = [
 ]
 const SORT_KEY_LANGUAGE = /\b(\p{L}+) edition(?:, \p{L}+)?$/u
 
+/** The language each store sells its own editions in. */
+const STORE_LANGUAGES: Record<KindleMarketplace, BookLanguage> = {
+  fr: 'fr',
+  com: 'en',
+  'co.uk': 'en',
+  de: 'de',
+  it: 'it',
+  es: 'es',
+  ca: 'en',
+  'com.au': 'en',
+  in: 'en',
+  'co.jp': 'ja',
+}
+
+/** The language a store sells in: that of every edition it names no language
+ *  of. */
+export const storeLanguageOf = (marketplace: KindleMarketplace): BookLanguage =>
+  STORE_LANGUAGES[marketplace]
+
 /** The language of the edition, as Amazon names it.
  *
  *  The list carries no language field, but a store names the language of an
  *  edition foreign to it: in the title for some ("(English Edition)" on
  *  amazon.fr), in the sort key for every one ("… french edition"). The title is
- *  read first, the sort key after. An edition in the store's own language may
- *  be named nowhere, and then keeps none rather than a guess. */
+ *  read first, the sort key after. An edition named nowhere is in the store's
+ *  own language, when the store is known. */
 export const editionLanguageOf = (
   title: string,
   sortableTitle: string | undefined,
+  store?: BookLanguage,
 ): BookLanguage | undefined => {
   const named = [
     ...TITLE_LANGUAGE_MENTIONS.map((pattern) => title.match(pattern)?.[1]),
     sortableTitle?.match(SORT_KEY_LANGUAGE)?.[1],
   ]
-  return named
-    .map((word) => (word ? EDITION_LANGUAGES[word.toLowerCase()] : undefined))
-    .find(isPresent)
+  return (
+    named
+      .map((word) => (word ? EDITION_LANGUAGES[word.toLowerCase()] : undefined))
+      .find(isPresent) ?? store
+  )
 }
 
 /** Whether the Amazon title carries this volume number: "T06", "Tome 02",
@@ -205,6 +228,7 @@ export const importableFrom = (
   item: KindleTitle,
   owned: Shelf,
   reads: ReadonlyMap<string, ReadKindleTitle> = new Map(),
+  store?: BookLanguage,
 ): ImportableKindleBook | undefined => {
   if (!isCataloguable(item)) return undefined
   const asin = optionally(item.asin, KindleAsin)
@@ -215,7 +239,7 @@ export const importableFrom = (
   const authors = item.authors.map((name) => optionally(name, AuthorName)).filter(isPresent)
   const status: ReadingStatus = item.readStatus === 'READ' ? 'read' : 'to-read'
   const series = membershipOf(saga.series, authors[0])
-  const language = editionLanguageOf(item.title, item.sortableTitle)
+  const language = editionLanguageOf(item.title, item.sortableTitle, store)
   return {
     asin,
     title,
@@ -269,6 +293,7 @@ export const kindleLinksFor = (
   books: readonly Book[],
   titles: readonly KindleTitle[],
   reads: ReadonlyMap<string, ReadKindleTitle> = new Map(),
+  store?: BookLanguage,
 ): KindleLink[] => {
   const taken = new Set<string>(books.flatMap((book) => (book.kindleAsin ? [book.kindleAsin] : [])))
   const byShelfKey = new Map<string, LinkableTitle[]>()
@@ -283,7 +308,7 @@ export const kindleLinksFor = (
         asin,
         coverUrl: optionally(item.coverUrl, CoverUrl),
         volume: split.series?.volume,
-        language: editionLanguageOf(item.title, item.sortableTitle),
+        language: editionLanguageOf(item.title, item.sortableTitle, store),
       },
     ])
   }
