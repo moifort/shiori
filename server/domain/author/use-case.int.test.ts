@@ -405,4 +405,46 @@ describe('an author’s page', () => {
     expect(await AuthorUseCase.page(reader, authorKeyOf('Nobody'), 'fr')).toBeNull()
     expect(calls).toEqual([])
   })
+
+  // The defect: an author a friend loves, opened from Découvrir, is by
+  // definition one the reader holds nothing of, and the page came back empty.
+  test('is built from the name Découvrir offers for an author the reader holds nothing of', async () => {
+    answers = [sanderson]
+
+    const page = await AuthorUseCase.page(
+      reader,
+      authorKeyOf('Brandon Sanderson'),
+      'fr',
+      AuthorName('Brandon Sanderson'),
+    )
+
+    expect(calls).toEqual(['author'])
+    expect(String(page?.author.name)).toBe('Brandon Sanderson')
+    expect(page?.author.books).toEqual([])
+    expect(page?.sagas).toEqual([])
+    expect(page?.books).toEqual([])
+    expect(page?.booksNotHeld.map((work) => String(work.title))).toEqual(['Elantris', 'Warbreaker'])
+  })
+
+  test('answers nothing when the name offered is another author’s', async () => {
+    expect(
+      await AuthorUseCase.page(reader, authorKeyOf('Nobody'), 'fr', AuthorName('Somebody')),
+    ).toBeNull()
+    expect(calls).toEqual([])
+  })
+
+  test('reads the reader’s own books whatever name is offered', async () => {
+    await holdSanderson()
+    answers = [sanderson]
+
+    const page = await AuthorUseCase.page(
+      reader,
+      authorKeyOf('Brandon Sanderson'),
+      'fr',
+      AuthorName('brandon sanderson'),
+    )
+
+    expect(String(page?.author.name)).toBe('Brandon Sanderson')
+    expect(page?.books.map((book) => String(book.title))).toEqual(['Elantris'])
+  })
 })

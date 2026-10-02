@@ -79,6 +79,19 @@ export const shelvedAuthorsOf = <Book extends AuthoredBook>(
   })
 }
 
+/** An author the reader holds nothing of, as Découvrir offers one a friend
+ *  loves: the name it gives, and nothing of the reader's. Null unless the name
+ *  folds into the key, so a page is never built for somebody else. Never on the
+ *  Authors tab, so the date it is "shelved" on, `now`, orders nothing. */
+export const unshelvedAuthorOf = <Book>(
+  key: AuthorKey,
+  name: AuthorName,
+  now: Date,
+): ShelvedAuthor<Book> | null =>
+  authorKeyOf(name) === key
+    ? { key, name, books: [], seriesIds: [], shelvedAt: now, favoriteCount: Count(0) }
+    : null
+
 /** The Authors tab's order: the authors the reader loves first. Hearts first,
  *  since a heart is the one mark given on purpose; then the stars' mean; then
  *  how much of theirs the reader holds; then the name, so two authors who tie

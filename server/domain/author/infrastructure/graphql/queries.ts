@@ -289,9 +289,20 @@ builder.queryFields((t) => ({
       'edition the reader holds titles them, the rest in the language of ' +
       '`Accept-Language` — and Wikipedia for the portrait. That first opening takes ' +
       'a few seconds; every later one, by anyone, reads the stored catalogue. Null ' +
-      'when the reader holds no book of the author.',
-    args: { key: t.arg({ type: 'AuthorKey', required: true }) },
+      'when the reader holds no book of the author and no `offered` names them.',
+    args: {
+      key: t.arg({ type: 'AuthorKey', required: true }),
+      offered: t.arg({
+        type: 'AuthorName',
+        required: false,
+        description:
+          'The author as Découvrir offers one a friend loves, for an author the reader ' +
+          'holds nothing of: their catalogue is asked for with this name, and all of it ' +
+          'is something to add. Ignored unless it folds into `key`, and whenever the ' +
+          'reader holds a book of theirs.',
+      }),
+    },
     resolve: (_root, args, { userId, event }) =>
-      AuthorUseCase.page(userId, args.key, languageOf(event)),
+      AuthorUseCase.page(userId, args.key, languageOf(event), args.offered ?? undefined),
   }),
 }))

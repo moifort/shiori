@@ -2643,9 +2643,16 @@ type Query {
   audibleLibrary: [ImportableBook!]!
 
   """
-  One author’s page. Built on first sight when nobody has opened it yet: one web-grounded model call for the facts and the bibliography — titles as the edition the reader holds titles them, the rest in the language of `Accept-Language` — and Wikipedia for the portrait. That first opening takes a few seconds; every later one, by anyone, reads the stored catalogue. Null when the reader holds no book of the author.
+  One author’s page. Built on first sight when nobody has opened it yet: one web-grounded model call for the facts and the bibliography — titles as the edition the reader holds titles them, the rest in the language of `Accept-Language` — and Wikipedia for the portrait. That first opening takes a few seconds; every later one, by anyone, reads the stored catalogue. Null when the reader holds no book of the author and no `offered` names them.
   """
-  authorPage(key: AuthorKey!): AuthorPage
+  authorPage(
+    key: AuthorKey!
+
+    """
+    The author as Découvrir offers one a friend loves, for an author the reader holds nothing of: their catalogue is asked for with this name, and all of it is something to add. Ignored unless it folds into `key`, and whenever the reader holds a book of theirs.
+    """
+    offered: AuthorName
+  ): AuthorPage
 
   """
   What the author page shows under its heading, in one format: the soonest work announced and the ones out in the last three months, outside the sagas the reader holds — the Découvrir Authors shelf’s row for that author. Empty for an author the reader holds nothing of in that format, or never looked up yet.

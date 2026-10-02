@@ -275,4 +275,39 @@ describe('an author’s page', () => {
       myAuthorsPage: { items: [{ portraitUrl: 'https://upload.wikimedia.org/portrait.jpg' }] },
     })
   })
+
+  test('offers everything of an author a friend loves whom the reader holds nothing of', async () => {
+    answers = [
+      {
+        name: 'Frank Herbert',
+        biography: 'Auteur.',
+        wikipediaTitle: 'Frank Herbert',
+        series: [{ name: 'Dune', volumeCount: 6, firstVolumeTitle: 'Dune' }],
+        books: [{ title: 'Destination vide', publishedIn: 1966 }],
+      },
+    ]
+
+    const unnamed = await execute('{ authorPage(key: "frank-herbert") { author { name } } }')
+    const offered = await execute(
+      `{ authorPage(key: "frank-herbert", offered: "Frank Herbert") {
+        author { name bookCount readCount }
+        sagas { name }
+        sagasNotHeld(audio: false) { name }
+        books { title }
+        booksNotHeld { title }
+      } }`,
+    )
+
+    expect(unnamed.data).toEqual({ authorPage: null })
+    expect(offered.errors).toBeUndefined()
+    expect(offered.data).toEqual({
+      authorPage: {
+        author: { name: 'Frank Herbert', bookCount: 0, readCount: 0 },
+        sagas: [],
+        sagasNotHeld: [{ name: 'Dune' }],
+        books: [],
+        booksNotHeld: [{ title: 'Destination vide' }],
+      },
+    })
+  })
 })

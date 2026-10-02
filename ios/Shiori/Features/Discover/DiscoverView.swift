@@ -115,7 +115,7 @@ struct DiscoverView: View {
                 // pushes inside it.
                 .sheet(item: $openAuthor) { opened in
                     NavigationStack {
-                        AuthorView(key: opened.key, name: opened.name, isSheet: true)
+                        AuthorView(key: opened.key, name: opened.name, isSheet: true, isOffered: opened.isOffered)
                     }
                 }
         }
@@ -195,7 +195,7 @@ struct DiscoverView: View {
                     LovedSagasStrip(sagas: picks.sagas) { openFriendSaga = $0 }
                 case .authors:
                     LovedAuthorsStrip(authors: picks.authors) {
-                        openAuthor = AuthorDestination(key: $0.key, name: $0.name)
+                        openAuthor = AuthorDestination(key: $0.key, name: $0.name, isOffered: true)
                     }
                 }
             } header: {

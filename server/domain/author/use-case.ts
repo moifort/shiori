@@ -10,6 +10,7 @@ import {
   matchingAuthorFilter,
   shelvedAuthorsOf,
   standaloneBooksOf,
+  unshelvedAuthorOf,
   worksNotHeldOf,
 } from '~/domain/author/business-rules'
 import { AuthorCommand } from '~/domain/author/command'
@@ -26,7 +27,7 @@ import type { Book } from '~/domain/book/types'
 import { type FollowedSeries, SeriesUseCase } from '~/domain/series/use-case'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { Language } from '~/domain/shared/language'
-import type { UserId } from '~/domain/shared/types'
+import type { AuthorName, UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
 
 const logger = createLogger('author')
@@ -86,14 +87,18 @@ export namespace AuthorUseCase {
    *  name the reader's books give — and titled in the language most of those
    *  books are in, as a saga's catalogue is titled for the edition held.
    *
-   *  Null when the reader holds no book of the author: there is nothing to
-   *  show then, and nothing to ask about. */
+   *  An author the reader holds no book of is built from the name `offered`,
+   *  as Découvrir offers one a friend loves: everything of theirs is then
+   *  something to add. Null without it, or when it names somebody else. */
   export const page = async (
     userId: UserId,
     key: AuthorKey,
     language: Language,
+    offered?: AuthorName,
   ): Promise<AuthorPage | null> => {
-    const shelved = (await shelvedAuthors(userId)).find((author) => author.key === key)
+    const shelved =
+      (await shelvedAuthors(userId)).find((author) => author.key === key) ??
+      (offered ? unshelvedAuthorOf<Book>(key, offered, new Date()) : null)
     if (!shelved) return null
     const [catalogue, sagas] = await Promise.all([
       catalogueOf(shelved, language),

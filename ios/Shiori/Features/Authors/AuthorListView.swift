@@ -158,6 +158,9 @@ struct AuthorListView: View {
 struct AuthorDestination: Hashable, Identifiable {
     let key: String
     let name: String
+    /// An author a friend loves, offered by Découvrir: the reader may hold
+    /// nothing of theirs.
+    var isOffered = false
     var id: String { key }
 
     init(_ author: FollowedAuthor) {
@@ -165,8 +168,9 @@ struct AuthorDestination: Hashable, Identifiable {
         name = author.name
     }
 
-    init(key: String, name: String) {
+    init(key: String, name: String, isOffered: Bool = false) {
         self.key = key
         self.name = name
+        self.isOffered = isOffered
     }
 }

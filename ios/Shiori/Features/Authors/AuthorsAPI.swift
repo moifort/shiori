@@ -7,11 +7,13 @@ enum AuthorsAPI {
     /// 60 s; every later one reads it at once.
     private static let firstOpeningTimeout: TimeInterval = 120
 
-    /// An author's page. Nil when the reader no longer holds a book of theirs.
-    static func page(key: String) async throws -> AuthorPage? {
+    /// An author's page. Nil when the reader no longer holds a book of theirs,
+    /// unless `offered` names them: an author a friend loves, opened from
+    /// Découvrir, whose page is then built for a reader who holds nothing.
+    static func page(key: String, offered: String? = nil) async throws -> AuthorPage? {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.AuthorPageQuery(key: key),
+            query: ShioriGraphQL.AuthorPageQuery(key: key, offered: offered.map { .some($0) } ?? .none),
             requestTimeout: firstOpeningTimeout
         )
         guard let page = data.authorPage else { return nil }

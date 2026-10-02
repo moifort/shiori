@@ -46,6 +46,10 @@ struct AuthorView: View {
     /// Opened as a sheet — from the Authors shelf, as a book opens from the
     /// library — rather than pushed: a close button in the corner.
     var isSheet = false
+    /// Offered by Découvrir as an author a friend loves, whom the reader may
+    /// hold nothing of: the page is then built from `name`, everything on it
+    /// something to add.
+    var isOffered = false
 
     @Environment(\.dismiss) private var dismiss
     @State private var page: AuthorPage?
@@ -510,7 +514,7 @@ struct AuthorView: View {
         defer { isLoading = false }
         async let found = try? DiscoverAPI.authorReleases(key: key)
         do {
-            let fresh = try await AuthorsAPI.page(key: key)
+            let fresh = try await AuthorsAPI.page(key: key, offered: isOffered ? name : nil)
             let foundReleases = await found
             withAnimation(page == nil ? nil : .smooth) {
                 page = fresh
