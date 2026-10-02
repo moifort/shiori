@@ -87,8 +87,8 @@ export type ImportableKindleBook = {
   title: BookTitle
   authors: AuthorName[]
   coverUrl?: CoverUrl
-  /** Read off the title, which is where Amazon puts the saga. Absent when no
-   *  pattern recognizes one, rather than guessed. */
+  /** Read off the title, which is where Amazon puts the saga, by the model or,
+   *  failing it, by pattern. Absent when neither finds one. */
   series?: SeriesMembership
   /** The language of the edition, which Amazon names in the title or its sort
    *  key. Absent when neither does. */
@@ -101,6 +101,26 @@ export type ImportableKindleBook = {
   /** When the title entered the account, kept as the book's own addition date. */
   addedAt?: Date
   alreadyInLibrary: boolean
+}
+
+/** A Kindle title split by the model into the volume's own title, its saga and
+ *  its number.
+ *
+ *  Shared, one per ASIN and holding no reference to any reader: the title is
+ *  the product's, the same on every account, so two readers of one ebook pay
+ *  for one reading — and the preview and the import that follows it read the
+ *  same answer rather than two answers of a model that never says the same
+ *  thing twice. Kept with the title it was read from: a publisher renaming the
+ *  product makes the reading stale. */
+export type ReadKindleTitle = {
+  asin: KindleAsin
+  amazonTitle: string
+  title: BookTitle
+  seriesName?: string
+  /** Only a number the Amazon title itself carries: the model's own knowledge
+   *  of a saga's order was wrong on the first library tried. */
+  volume?: number
+  readAt: Date
 }
 
 /** What one pass over a reader's library changed. Counts rather than records:

@@ -9,11 +9,13 @@ import type {
   ReadingStatus,
   SeriesMembership,
 } from '~/domain/book/types'
+import type { TitleRead } from '~/domain/kindle/infrastructure/title-reader'
 import { KindleAsin } from '~/domain/kindle/primitives'
 import type {
   ImportableKindleBook,
   KindleAsin as KindleAsinValue,
   KindleConnection,
+  ReadKindleTitle,
 } from '~/domain/kindle/types'
 import { SeriesName, seriesKeyOf, VolumeNumber } from '~/domain/series/primitives'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
@@ -73,9 +75,9 @@ const SAGA_PATTERNS: RegExp[] = [
  *  volume, becomes the book's — what a scan of its cover would call it. A title
  *  no pattern recognizes keeps no saga: a guessed saga would file a book on a
  *  shelf nothing else shares. */
-export const sagaOf = (
-  rawTitle: string,
-): { title: string; series?: { name: string; volume: number } } => {
+type Split = { title: string; series?: { name: string; volume?: number } }
+
+export const sagaOf = (rawTitle: string): Split => {
   const title = rawTitle.replace(EDITION_SUFFIX, '').trim()
   for (const pattern of SAGA_PATTERNS) {
     const groups = title.match(pattern)?.groups
@@ -143,8 +145,48 @@ export const editionLanguageOf = (
     .find(isPresent)
 }
 
+/** Whether the Amazon title carries this volume number: "T06", "Tome 02",
+ *  "#5", "T3.5". Not a digit of another number — 3 is not in "T3.5" nor in
+ *  "1984". */
+export const carriesVolume = (amazonTitle: string, volume: number): boolean =>
+  new RegExp(
+    String.raw`(?<![\d.])0*${String(volume).replace('.', String.raw`\.`)}(?![.,]?\d)`,
+  ).test(amazonTitle)
+
+/** The model's answer for one title, checked. A volume number is kept only
+ *  when the Amazon title carries it: the saga a famous title belongs to is
+ *  well known, the order of its volumes far less — on the first library tried,
+ *  three volumes of one saga came back numbered wrong. The saga is kept
+ *  without its number then. */
+export const readTitleFrom = (
+  item: KindleTitle,
+  answer: TitleRead,
+  readAt: Date,
+): ReadKindleTitle | undefined => {
+  const asin = optionally(item.asin, KindleAsin)
+  const title = optionally(answer.title?.trim(), BookTitle)
+  if (!asin || !title) return undefined
+  const seriesName = answer.seriesName?.trim() || undefined
+  const volume =
+    seriesName && answer.volumeNumber && carriesVolume(item.title, answer.volumeNumber)
+      ? answer.volumeNumber
+      : undefined
+  return { asin, amazonTitle: item.title, title, seriesName, volume, readAt }
+}
+
+/** A title split into the volume's own title and its saga: the model's reading
+ *  when there is one for this very title, the patterns otherwise. */
+export const splitOf = (item: KindleTitle, reads: ReadonlyMap<string, ReadKindleTitle>): Split => {
+  const read = reads.get(item.asin)
+  if (!read || read.amazonTitle !== item.title) return sagaOf(item.title)
+  return {
+    title: read.title,
+    series: read.seriesName ? { name: read.seriesName, volume: read.volume } : undefined,
+  }
+}
+
 const membershipOf = (
-  saga: ReturnType<typeof sagaOf>['series'],
+  saga: Split['series'],
   author: string | undefined,
 ): SeriesMembership | undefined => {
   const name = optionally(saga?.name, SeriesName)
@@ -160,10 +202,11 @@ const membershipOf = (
 export const importableFrom = (
   item: KindleTitle,
   ownedKeys: ReadonlySet<string>,
+  reads: ReadonlyMap<string, ReadKindleTitle> = new Map(),
 ): ImportableKindleBook | undefined => {
   if (!isCataloguable(item)) return undefined
   const asin = optionally(item.asin, KindleAsin)
-  const saga = sagaOf(item.title)
+  const saga = splitOf(item, reads)
   const title = optionally(saga.title, BookTitle)
   if (!asin || !title) return undefined
 
@@ -209,11 +252,12 @@ export const bookFrom = (importable: ImportableKindleBook): NewBook => ({
 export const kindleLinksFor = (
   books: readonly Book[],
   titles: readonly KindleTitle[],
+  reads: ReadonlyMap<string, ReadKindleTitle> = new Map(),
 ): { bookId: BookId; kindleAsin: KindleAsinValue }[] => {
   const byShelfKey = new Map<string, KindleAsinValue>()
   for (const item of titles.filter(isCataloguable)) {
     const asin = optionally(item.asin, KindleAsin)
-    if (asin) byShelfKey.set(shelfKeyOf(sagaOf(item.title).title, item.authors[0]), asin)
+    if (asin) byShelfKey.set(shelfKeyOf(splitOf(item, reads).title, item.authors[0]), asin)
   }
   const taken = new Set<string>(books.flatMap((book) => (book.kindleAsin ? [book.kindleAsin] : [])))
 

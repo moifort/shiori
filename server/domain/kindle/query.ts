@@ -1,6 +1,6 @@
 import { readersDueForSync } from '~/domain/kindle/business-rules'
 import * as repository from '~/domain/kindle/infrastructure/repository'
-import type { ConnectedKindleAccount } from '~/domain/kindle/types'
+import type { ConnectedKindleAccount, ReadKindleTitle } from '~/domain/kindle/types'
 import type { UserId } from '~/domain/shared/types'
 
 export namespace KindleQuery {
@@ -14,4 +14,9 @@ export namespace KindleQuery {
    *  first. Readers who turned the sync off are not in it. */
   export const readersToSync = async (): Promise<UserId[]> =>
     readersDueForSync(await repository.findAll())
+
+  /** The readings already made of these titles, by ASIN. One document read
+   *  each. */
+  export const readTitles = async (asins: readonly string[]): Promise<ReadKindleTitle[]> =>
+    repository.findReadTitles(asins)
 }

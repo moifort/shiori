@@ -1,4 +1,4 @@
-import type { KindleConnection } from '~/domain/kindle/types'
+import type { KindleConnection, ReadKindleTitle } from '~/domain/kindle/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import {
@@ -40,4 +40,23 @@ export const save = async (connection: KindleConnection): Promise<KindleConnecti
 export const remove = async (userId: UserId): Promise<void> => {
   await connections().doc(userId).delete()
   evictFromRequestCache(cacheKey(userId))
+}
+
+// Shared, keyed by the ASIN, holding no reference to any reader.
+const readTitles = () =>
+  db().collection('kindle-titles').withConverter(genericDataConverter<ReadKindleTitle>())
+
+export const findReadTitles = async (asins: readonly string[]): Promise<ReadKindleTitle[]> => {
+  const unique = [...new Set(asins)]
+  if (unique.length === 0) return []
+  const snapshots = await db().getAll(...unique.map((asin) => readTitles().doc(asin)))
+  // Typed loosely by getAll, though each ref carries the converter.
+  return snapshots.flatMap((snapshot) => {
+    const read = snapshot.data() as ReadKindleTitle | undefined
+    return read ? [read] : []
+  })
+}
+
+export const saveReadTitle = async (read: ReadKindleTitle): Promise<void> => {
+  await readTitles().doc(read.asin).set(withoutAbsentFields(read))
 }

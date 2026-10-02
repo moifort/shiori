@@ -6,8 +6,10 @@ import type {
   KindleAsin,
   KindleLogin,
   KindleMarketplace,
+  ReadKindleTitle,
 } from '~/domain/kindle/types'
 import type { UserId } from '~/domain/shared/types'
+import { bulkSave } from '~/utils/firestore'
 
 /** A sign-in the reader walked away from stops being usable after this. The
  *  authorization code Amazon hands back expires within minutes anyway; the
@@ -125,6 +127,10 @@ export namespace KindleCommand {
 
   /** Erase the reader's connection outright — an account deletion takes it. */
   export const deleteForUser = async (userId: UserId): Promise<void> => repository.remove(userId)
+
+  /** Keep the model's readings of Kindle titles for every reader after. */
+  export const keepReadTitles = async (reads: readonly ReadKindleTitle[]): Promise<void> =>
+    bulkSave([...reads], repository.saveReadTitle)
 }
 
 /** Change fields of the stored account, on whatever is stored right now.

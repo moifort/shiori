@@ -1,4 +1,5 @@
 import type { KindleTitle } from 'kindle-api-ts'
+import { AdminCommand } from '~/domain/admin/command'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import { shelfKeysOf } from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
@@ -8,14 +9,17 @@ import {
   acquiredSince,
   bookFrom,
   importableFrom,
+  isCataloguable,
   kindleLinksFor,
   readAsinsOf,
   readingChangesFor,
+  readTitleFrom,
 } from '~/domain/kindle/business-rules'
 import { KindleCommand } from '~/domain/kindle/command'
 import { bookFrom as exportedBookFrom, importablesFrom } from '~/domain/kindle/export-rules'
 import { openCredentials } from '~/domain/kindle/infrastructure/credentials-vault'
 import * as api from '~/domain/kindle/infrastructure/kindle-api'
+import { readTitles, TITLES_PER_CALL } from '~/domain/kindle/infrastructure/title-reader'
 import { KindleQuery } from '~/domain/kindle/query'
 import type {
   ConnectedKindleAccount,
@@ -24,10 +28,12 @@ import type {
   KindleAsin,
   KindleLibrarySync,
   KindleSyncRun,
+  ReadKindleTitle,
   UnreadableExport,
 } from '~/domain/kindle/types'
 import { SeriesUseCase } from '~/domain/series/use-case'
 import type { UserId } from '~/domain/shared/types'
+import { config } from '~/system/config'
 import { createLogger } from '~/system/logger'
 import { withRequestCacheScope } from '~/system/request-cache'
 import { bulkSave } from '~/utils/firestore'
@@ -47,7 +53,7 @@ export namespace KindleUseCase {
   ): Promise<ImportableKindleBook[] | 'not-connected'> => {
     const titles = await fetchLibrary(userId)
     if (titles === 'not-connected') return titles
-    return toImportable(titles, await BookQuery.all(userId))
+    return toImportable(titles, await BookQuery.all(userId), await readingsOf(titles))
   }
 
   /** Catalogue the titles the reader ticked.
@@ -66,9 +72,13 @@ export namespace KindleUseCase {
     if (titles === 'not-connected') return titles
 
     const wanted = new Set<string>(asins)
-    const chosen = toImportable(titles, await BookQuery.all(userId)).filter(
-      (importable) => wanted.has(importable.asin) && !importable.alreadyInLibrary,
-    )
+    // The preview's readings, from the shared store: the book written is the
+    // one the reader ticked, not a second answer of the model.
+    const chosen = toImportable(
+      titles,
+      await BookQuery.all(userId),
+      await readingsOf(titles, now),
+    ).filter((importable) => wanted.has(importable.asin) && !importable.alreadyInLibrary)
     const imported = await catalogue(userId, chosen, now)
     // The read set is the nightly pass's to keep. An import before any pass
     // leaves it absent, so the first pass still reads every title Amazon reports
@@ -104,13 +114,18 @@ export namespace KindleUseCase {
     if (titles === 'not-connected') return titles
 
     const owned = await BookQuery.all(userId)
-    const links = kindleLinksFor(owned, titles)
+    const fresh = acquiredSince(titles, account.lastImportedAt)
+    // Linking matches every title against the ebooks still unlinked; with none
+    // left, only the new titles need reading.
+    const unlinked = owned.some((book) => book.format === 'ebook' && !book.kindleAsin)
+    const reads = await readingsOf(unlinked ? titles : fresh, now)
+    const links = kindleLinksFor(owned, titles, reads)
     const linked = owned.map((book) => {
       const link = links.find((candidate) => candidate.bookId === book.id)
       return link ? { ...book, kindleAsin: link.kindleAsin } : book
     })
     const moves = readingChangesFor(linked, titles, account.readAsins)
-    const acquired = toImportable(acquiredSince(titles, account.lastImportedAt), linked).filter(
+    const acquired = toImportable(fresh, linked, reads).filter(
       (importable) => !importable.alreadyInLibrary,
     )
 
@@ -260,7 +275,65 @@ const opened = (sealed: ConnectedKindleAccount['credentials']) => {
 const toImportable = (
   titles: readonly KindleTitle[],
   owned: readonly Book[],
+  reads: ReadonlyMap<string, ReadKindleTitle>,
 ): ImportableKindleBook[] => {
   const ownedKeys = shelfKeysOf(owned)
-  return titles.map((title) => importableFrom(title, ownedKeys)).filter(isPresent)
+  return titles.map((title) => importableFrom(title, ownedKeys, reads)).filter(isPresent)
+}
+
+/** The model's reading of each title, by ASIN: from the shared store when a
+ *  reader already paid for it, from the model otherwise, a batch of titles per
+ *  call and the calls side by side.
+ *
+ *  A call that fails costs its titles their reading, not the import: they fall
+ *  back on the patterns, and are read again next time since nothing was kept.
+ *  The stubbed dev server never calls the model. */
+const readingsOf = async (
+  titles: readonly KindleTitle[],
+  now = new Date(),
+): Promise<Map<string, ReadKindleTitle>> => {
+  const wanted = titles.filter(isCataloguable)
+  const known = new Map(
+    (await KindleQuery.readTitles(wanted.map((title) => title.asin))).map((read) => [
+      read.asin as string,
+      read,
+    ]),
+  )
+  const unread = wanted.filter((title) => known.get(title.asin)?.amazonTitle !== title.title)
+  if (unread.length === 0 || (import.meta.dev && config().scanStub)) return known
+
+  const batches = Array.from({ length: Math.ceil(unread.length / TITLES_PER_CALL) }, (_, index) =>
+    unread.slice(index * TITLES_PER_CALL, (index + 1) * TITLES_PER_CALL),
+  )
+  const answers = await Promise.all(
+    batches.map(async (batch) => {
+      try {
+        const { value, usage } = await readTitles(
+          batch.map((title) => ({
+            asin: title.asin,
+            title: title.title,
+            author: title.authors[0],
+          })),
+        )
+        if (usage)
+          await AdminCommand.recordKindleTitlesUsage(usage).catch((error) =>
+            logger.warn('Kindle title reading usage could not be recorded', { error }),
+          )
+        return value.books ?? []
+      } catch (error) {
+        logger.warn('Kindle titles could not be read', { error, titles: batch.length })
+        return []
+      }
+    }),
+  )
+
+  const byAsin = new Map(unread.map((title) => [title.asin, title]))
+  const fresh = answers.flat().flatMap((answer) => {
+    const item = answer.asin ? byAsin.get(answer.asin) : undefined
+    const read = item && readTitleFrom(item, answer, now)
+    return read ? [read] : []
+  })
+  await KindleCommand.keepReadTitles(fresh)
+  for (const read of fresh) known.set(read.asin, read)
+  return known
 }

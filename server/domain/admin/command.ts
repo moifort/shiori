@@ -39,6 +39,17 @@ export namespace AdminCommand {
     })
   }
 
+  // Kindle titles split into title, saga and volume, read once per ASIN for
+  // every reader. Text only, like a typed title's search: the enrichment line.
+  // Telemetry like the above.
+  export const recordKindleTitlesUsage = async (reading: AiStepUsage) => {
+    await repository.recordUsage(monthOf(new Date()), {
+      scans: 0,
+      cacheHits: 0,
+      enrichment: reading,
+    })
+  }
+
   // A shelf photo read for its books. No scan is spent on it — each book the
   // reader keeps is its own scan — so only the tokens move, on the vision line,
   // since it is the same kind of call. Telemetry like the above.

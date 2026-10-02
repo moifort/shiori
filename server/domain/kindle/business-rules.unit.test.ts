@@ -6,6 +6,7 @@ import type { Book, ReadingStatus } from '~/domain/book/types'
 import {
   acquiredSince,
   bookFrom,
+  carriesVolume,
   editionLanguageOf,
   importableFrom,
   isCataloguable,
@@ -13,7 +14,9 @@ import {
   readAsinsOf,
   readersDueForSync,
   readingChangesFor,
+  readTitleFrom,
   sagaOf,
+  splitOf,
 } from '~/domain/kindle/business-rules'
 import { KindleAsin } from '~/domain/kindle/primitives'
 import type { KindleConnection } from '~/domain/kindle/types'
@@ -128,6 +131,87 @@ describe('editionLanguageOf', () => {
     expect(editionLanguageOf('Captive - Tome 1 (édition reliée)', undefined)).toBeUndefined()
     expect(editionLanguageOf('1984', '1984')).toBeUndefined()
     expect(editionLanguageOf('Le Nom du vent', 'nom du vent klingon edition, le')).toBeUndefined()
+  })
+})
+
+describe('carriesVolume', () => {
+  test('finds the number however the publisher wrote it', () => {
+    expect(carriesVolume("Goldfinch: La saga d'Auren - T06", 6)).toBe(true)
+    expect(carriesVolume('King of Scars, Tome 02: Le règne des loups', 2)).toBe(true)
+    expect(carriesVolume('Boys of Tommen #5 : Taming 7', 5)).toBe(true)
+    expect(carriesVolume("Un Palais d'épines et de roses T3.5: Un Palais de glace", 3.5)).toBe(true)
+  })
+
+  test('finds no number inside another', () => {
+    expect(carriesVolume("Un Palais d'épines et de roses T3.5: Un Palais de glace", 3)).toBe(false)
+    expect(carriesVolume('1984', 1)).toBe(false)
+    expect(carriesVolume('La femme de ménage voit tout', 2)).toBe(false)
+  })
+})
+
+describe('readTitleFrom', () => {
+  const READ_AT = new Date('2026-10-02T09:00:00.000Z')
+
+  test('keeps the title, the saga and a number the Amazon title carries', () => {
+    const item = aTitle({ title: 'Iron Flame - Version française: The Empyrean Tome 2' })
+
+    expect(
+      readTitleFrom(
+        item,
+        { title: ' Iron Flame ', seriesName: 'The Empyrean', volumeNumber: 2 },
+        READ_AT,
+      ),
+    ).toEqual({
+      asin: KindleAsin('B0TESTAAA1'),
+      amazonTitle: 'Iron Flame - Version française: The Empyrean Tome 2',
+      title: BookTitle('Iron Flame'),
+      seriesName: 'The Empyrean',
+      volume: 2,
+      readAt: READ_AT,
+    })
+  })
+
+  // Three volumes of one saga came back numbered wrong on the first library.
+  test('drops a number the model worked out on its own', () => {
+    const item = aTitle({ title: 'La femme de ménage voit tout' })
+    const read = readTitleFrom(
+      item,
+      { title: 'La femme de ménage voit tout', seriesName: 'La femme de ménage', volumeNumber: 2 },
+      READ_AT,
+    )
+
+    expect(read?.seriesName).toBe('La femme de ménage')
+    expect(read?.volume).toBeUndefined()
+  })
+
+  test('reads nothing from an answer with no title', () => {
+    expect(readTitleFrom(aTitle(), { title: '  ', seriesName: null }, READ_AT)).toBeUndefined()
+  })
+})
+
+describe('splitOf', () => {
+  const read = {
+    asin: KindleAsin('B0TESTAAA1'),
+    amazonTitle: 'Phantasma: Wicked Games Tome 1',
+    title: BookTitle('Phantasma'),
+    seriesName: 'Wicked Games',
+    volume: 1,
+    readAt: new Date(),
+  }
+
+  test("takes the model's reading of this very title", () => {
+    expect(
+      splitOf(aTitle({ title: 'Phantasma: Wicked Games Tome 1' }), new Map([[read.asin, read]])),
+    ).toEqual({ title: 'Phantasma', series: { name: 'Wicked Games', volume: 1 } })
+  })
+
+  test('reads a renamed title by its patterns again', () => {
+    expect(
+      splitOf(aTitle({ title: 'Wicked Games (Tome 1) - Phantasma' }), new Map([[read.asin, read]])),
+    ).toEqual({ title: 'Phantasma', series: { name: 'Wicked Games', volume: 1 } })
+    expect(splitOf(aTitle({ title: 'Phantasma' }), new Map([[read.asin, read]]))).toEqual({
+      title: 'Phantasma',
+    })
   })
 })
 

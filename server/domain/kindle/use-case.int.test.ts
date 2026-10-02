@@ -38,6 +38,31 @@ mock.module('~/domain/kindle/infrastructure/kindle-api', () => ({
   landingUrlFor: (marketplace: string) => `https://www.amazon.${marketplace}/ap/maplanding`,
 }))
 
+/** Stands in for the model that splits Kindle titles: what it was asked, and
+ *  what it answers — nothing by default, so the patterns read the titles. A
+ *  queued failure is thrown by the next call. */
+const titleCalls: { asin: string; title: string }[][] = []
+let titleAnswers: Record<string, { title: string; seriesName?: string; volumeNumber?: number }> = {}
+const titleFailures: Error[] = []
+mock.module('~/domain/kindle/infrastructure/title-reader', () => ({
+  TITLES_PER_CALL: 40,
+  readTitles: async (batch: { asin: string; title: string }[]) => {
+    titleCalls.push(batch)
+    const failure = titleFailures.shift()
+    if (failure) throw failure
+    return {
+      usage: { promptTokens: 10, outputTokens: 5, thinkingTokens: 0, searches: 0 },
+      value: {
+        books: batch.flatMap(({ asin }) =>
+          titleAnswers[asin]
+            ? [{ asin, seriesName: null, volumeNumber: null, ...titleAnswers[asin] }]
+            : [],
+        ),
+      },
+    }
+  },
+}))
+
 const { KindleCommand } = await import('~/domain/kindle/command')
 const { KindleUseCase } = await import('~/domain/kindle/use-case')
 const { KindleQuery } = await import('~/domain/kindle/query')
@@ -70,6 +95,9 @@ beforeEach(() => {
   titles = []
   libraryCalls.length = 0
   libraryRefusals.length = 0
+  titleCalls.length = 0
+  titleAnswers = {}
+  titleFailures.length = 0
 })
 
 const connect = async (who: UserId = reader) => {
@@ -173,6 +201,86 @@ describe('importing the ticked titles', () => {
     const account = await KindleQuery.accountOf(reader)
     expect(account?.lastImportedAt).toEqual(NOW)
     expect(account?.readAsins).toBeUndefined()
+  })
+})
+
+describe('reading the titles with the model', () => {
+  const ironFlame = aTitle({
+    asin: 'B0IRONFLAM',
+    title: 'Iron Flame - Version française: The Empyrean Tome 2',
+    authors: ['Rebecca Yarros'],
+  })
+
+  test('catalogues the title alone, in the saga the model names', async () => {
+    await connect()
+    titles = [ironFlame]
+    titleAnswers = {
+      B0IRONFLAM: { title: 'Iron Flame', seriesName: 'The Empyrean', volumeNumber: 2 },
+    }
+
+    await KindleUseCase.importBooks(reader, [KindleAsin('B0IRONFLAM')], NOW)
+
+    const [book] = await BookQuery.all(reader)
+    expect(book).toMatchObject({
+      title: 'Iron Flame',
+      series: { name: 'The Empyrean', volume: 2 },
+    })
+  })
+
+  // The order of a saga's volumes is where the model was wrong.
+  test('keeps the saga but not a number the Amazon title does not carry', async () => {
+    await connect()
+    titles = [aTitle({ asin: 'B0MENAGE02', title: 'La femme de ménage voit tout' })]
+    titleAnswers = {
+      B0MENAGE02: {
+        title: 'La femme de ménage voit tout',
+        seriesName: 'La femme de ménage',
+        volumeNumber: 2,
+      },
+    }
+
+    const [importable] = (await KindleUseCase.importableBooks(reader)) as { series?: unknown }[]
+
+    expect(importable?.series).toMatchObject({ name: 'La femme de ménage', volume: undefined })
+  })
+
+  test('reads a title once for every reader, and again only once Amazon renames it', async () => {
+    await connect()
+    titles = [ironFlame]
+    titleAnswers = { B0IRONFLAM: { title: 'Iron Flame', seriesName: 'The Empyrean' } }
+
+    await KindleUseCase.importableBooks(reader)
+    await KindleUseCase.importBooks(reader, [KindleAsin('B0IRONFLAM')], NOW)
+    expect(titleCalls).toHaveLength(1)
+    expect(fake.data('kindle-titles', 'B0IRONFLAM')).toMatchObject({ title: 'Iron Flame' })
+
+    titles = [{ ...ironFlame, title: 'Iron Flame: The Empyrean, T2' }]
+    await KindleUseCase.importableBooks(reader)
+    expect(titleCalls).toHaveLength(2)
+  })
+
+  test('falls back on the patterns when the model fails, and keeps nothing', async () => {
+    await connect()
+    titles = [aTitle()]
+    titleFailures.push(new Error('Gemini unavailable'))
+
+    const importable = await KindleUseCase.importableBooks(reader)
+
+    expect(Array.isArray(importable) && importable.map((book) => String(book.title))).toEqual([
+      'Fearless',
+    ])
+    expect(fake.data('kindle-titles', 'B0TESTAAA1')).toBeNull()
+  })
+
+  test('asks forty titles a call', async () => {
+    await connect()
+    titles = Array.from({ length: 41 }, (_, index) =>
+      aTitle({ asin: `B0TEST${String(index).padStart(4, '0')}`, title: `Livre ${index}` }),
+    )
+
+    await KindleUseCase.importableBooks(reader)
+
+    expect(titleCalls.map((batch) => batch.length)).toEqual([40, 1])
   })
 })
 
