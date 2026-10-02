@@ -132,35 +132,41 @@ struct PremiumSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    /// The plans in the order they are declared in, not whatever the App Store
+    /// returns: yearly first, the offer put forward.
+    private var plans: [PremiumOffer] {
+        #if DEBUG
+        if Showcase.isOn { return Showcase.offers }
+        #endif
+        return SubscriptionProducts.all.compactMap { id in
+            store.products.first { $0.id == id }.map(PremiumOffer.init)
+        }
+    }
+
     @ViewBuilder
     private var offers: some View {
-        if store.isLoading && store.products.isEmpty {
+        if store.isLoading && plans.isEmpty {
             ProgressView()
                 .frame(maxWidth: .infinity, minHeight: 120)
-        } else if store.products.isEmpty {
+        } else if plans.isEmpty {
             Text("Les offres ne sont pas disponibles pour le moment.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         } else {
             VStack(spacing: 12) {
-                // Yearly first: it is the offer put forward.
-                ForEach(sortedProducts, id: \.id) { product in
+                ForEach(plans) { plan in
                     OfferButton(
-                        product: product,
-                        savings: product.id == SubscriptionProducts.yearly ? yearlySavings : nil,
+                        offer: plan,
+                        savings: plan.id == SubscriptionProducts.yearly ? yearlySavings : nil,
                         isPurchasing: store.isPurchasing
                     ) {
+                        guard let product = plan.product else { return }
                         if await store.purchase(product) { dismiss() }
                     }
                 }
             }
         }
-    }
-
-    /// The order the products are declared in, not whatever the App Store returns.
-    private var sortedProducts: [Product] {
-        SubscriptionProducts.all.compactMap { id in store.products.first { $0.id == id } }
     }
 
     /// What the yearly plan saves against twelve months of the monthly plan,
@@ -169,8 +175,8 @@ struct PremiumSheet: View {
     /// not actually save anything.
     private var yearlySavings: Decimal? {
         guard
-            let yearly = store.products.first(where: { $0.id == SubscriptionProducts.yearly }),
-            let monthly = store.products.first(where: { $0.id == SubscriptionProducts.monthly }),
+            let yearly = plans.first(where: { $0.id == SubscriptionProducts.yearly }),
+            let monthly = plans.first(where: { $0.id == SubscriptionProducts.monthly }),
             monthly.price > 0
         else { return nil }
         let twelveMonths = monthly.price * 12
@@ -224,14 +230,60 @@ private struct BenefitRow: View {
     }
 }
 
-/// One offer. The price and the period come from the `Product`, never from a
-/// string in the app: Apple shows the storefront's own currency and amount.
-/// The optional savings ratio is computed by the sheet from the loaded prices.
-///
-/// It has no preview of its own: StoreKit's `Product` cannot be built by hand, so
-/// the button only renders through `PremiumSheet` once the store answered.
+/// One plan as the sheet draws it. The price and the period come from the
+/// `Product`, never from a string in the app: Apple shows the storefront's own
+/// currency and amount. Held apart from the `Product` because StoreKit's cannot
+/// be built by hand, and the App Store captures draw the sheet without a store.
+struct PremiumOffer: Identifiable {
+    let id: String
+    let name: String
+    let displayPrice: String
+    let price: Decimal
+    /// "1 semaine offerte", for a plan that opens on a free trial.
+    var trial: String?
+    /// What a tap buys. Nil on a plan drawn for a capture.
+    var product: Product?
+
+    init(id: String, name: String, displayPrice: String, price: Decimal, trial: String? = nil) {
+        self.id = id
+        self.name = name
+        self.displayPrice = displayPrice
+        self.price = price
+        self.trial = trial
+    }
+
+    init(product: Product) {
+        self.init(
+            id: product.id,
+            name: product.displayName,
+            displayPrice: product.displayPrice,
+            price: product.price,
+            trial: product.subscription?.introductoryOffer
+                .flatMap { $0.paymentMode == .freeTrial ? Self.trialLabel($0.period) : nil }
+        )
+        self.product = product
+    }
+
+    /// The free period, in the unit the App Store declares it in: reading every
+    /// period as days or months called a week a month.
+    static func trialLabel(_ period: Product.SubscriptionPeriod) -> String {
+        let count = period.value
+        return switch period.unit {
+        case .day: count == 1 ? String(localized: "1 jour offert") : String(localized: "\(count) jours offerts")
+        case .week: count == 1
+            ? String(localized: "1 semaine offerte")
+            : String(localized: "\(count) semaines offertes")
+        case .month: count == 1 ? String(localized: "1 mois offert") : String(localized: "\(count) mois offerts")
+        case .year: count == 1 ? String(localized: "1 an offert") : String(localized: "\(count) ans offerts")
+        @unknown default: String(localized: "Essai gratuit")
+        }
+    }
+}
+
+/// One offer. The optional savings ratio is computed by the sheet from the
+/// loaded prices.
 private struct OfferButton: View {
-    let product: Product
+    let offer: PremiumOffer
     var savings: Decimal?
     let isPurchasing: Bool
     let buy: () async -> Void
@@ -249,7 +301,7 @@ private struct OfferButton: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 8) {
-                        Text(product.displayName)
+                        Text(offer.name)
                             .font(.headline)
                         if let savingsBadge {
                             Text(savingsBadge)
@@ -260,8 +312,8 @@ private struct OfferButton: View {
                                 .background(.tint, in: Capsule())
                         }
                     }
-                    if let introductoryOffer {
-                        Text(introductoryOffer)
+                    if let trial = offer.trial {
+                        Text(trial)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -270,7 +322,7 @@ private struct OfferButton: View {
                 if isBuying {
                     ProgressView()
                 } else {
-                    Text(product.displayPrice)
+                    Text(offer.displayPrice)
                         .font(.headline)
                 }
             }
@@ -281,14 +333,6 @@ private struct OfferButton: View {
         }
         .buttonStyle(.plain)
         .disabled(isPurchasing)
-    }
-
-    private var introductoryOffer: String? {
-        guard let offer = product.subscription?.introductoryOffer, offer.paymentMode == .freeTrial
-        else { return nil }
-        return offer.period.unit == .day
-            ? String(localized: "\(offer.period.value) jours offerts")
-            : String(localized: "\(offer.period.value) mois offerts")
     }
 
     /// The saving as a tinted capsule next to the plan's name, `-30 %`.
