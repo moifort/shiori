@@ -46,6 +46,9 @@ mock.module('~/domain/scan/open-library', () => ({
 mock.module('~/domain/author/infrastructure/wikipedia', () => ({
   portraitOf: async () => undefined,
 }))
+mock.module('~/domain/author/infrastructure/open-library', () => ({
+  openLibraryPortraitOf: async () => undefined,
+}))
 
 mock.module('~/domain/scan/published-cover', () => ({
   publishedCoverOf: async (isbn13: string) => {

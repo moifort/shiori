@@ -24,6 +24,9 @@ mock.module('~/domain/scan/open-library', () => ({
 mock.module('~/domain/author/infrastructure/wikipedia', () => ({
   portraitOf: async () => 'https://upload.wikimedia.org/portrait.jpg',
 }))
+mock.module('~/domain/author/infrastructure/open-library', () => ({
+  openLibraryPortraitOf: async () => undefined,
+}))
 
 const { schema } = await import('~/domain/shared/graphql/schema')
 

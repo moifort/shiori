@@ -38,6 +38,12 @@ mock.module('~/domain/author/infrastructure/wikipedia', () => ({
   },
 }))
 
+/** The authors Open Library has a photograph of, by name. */
+const openLibraryFaces: Record<string, string> = {}
+mock.module('~/domain/author/infrastructure/open-library', () => ({
+  openLibraryPortraitOf: async (name: string) => openLibraryFaces[name],
+}))
+
 const { AuthorUseCase } = await import('~/domain/author/use-case')
 const { authorKeyOf } = await import('~/domain/author/primitives')
 const { BookCommand } = await import('~/domain/book/command')
@@ -58,6 +64,7 @@ beforeEach(() => {
   faceless.clear()
   portraitSearches.length = 0
   for (const title of Object.keys(covers)) delete covers[title]
+  for (const name of Object.keys(openLibraryFaces)) delete openLibraryFaces[name]
 })
 
 /** One author per saga, each saga catalogued with three volumes. */
@@ -372,6 +379,21 @@ describe('an author’s page', () => {
     expect(String((await AuthorUseCase.page(reader, key, 'fr'))?.author.portraitUrl)).toBe(
       String(built?.catalogue?.portraitUrl),
     )
+  })
+
+  test('takes the photograph from Open Library when Wikipedia has none', async () => {
+    await holdSanderson()
+    faceless.add('Brandon Sanderson')
+    openLibraryFaces['Brandon Sanderson'] =
+      'https://covers.openlibrary.org/a/olid/OL1394865A-M.jpg?default=false'
+    answers = [sanderson]
+
+    const page = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
+
+    expect(String(page?.catalogue?.portraitUrl)).toBe(
+      'https://covers.openlibrary.org/a/olid/OL1394865A-M.jpg?default=false',
+    )
+    expect(page?.catalogue?.portraitSoughtAt).toBeUndefined()
   })
 
   test('refreshes nothing for an author the reader holds no book of', async () => {

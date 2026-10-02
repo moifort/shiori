@@ -1,4 +1,5 @@
 import { chunk } from 'lodash-es'
+import { openLibraryPortraitOf } from '~/domain/author/infrastructure/open-library'
 import * as repository from '~/domain/author/infrastructure/repository'
 import { portraitOf } from '~/domain/author/infrastructure/wikipedia'
 import { AuthorBiography, Nationality } from '~/domain/author/primitives'
@@ -18,16 +19,21 @@ import { isPresent, optionally } from '~/utils/input'
 
 const logger = createLogger('author')
 
+/** An author's photograph: Wikipedia's, whose page is the one the model
+ *  named, else Open Library's, which keeps writers no Wikipedia page shows. */
+const faceOf = async (name: AuthorNameValue, pageTitle?: string) =>
+  (await portraitOf(name, pageTitle)) ?? (await openLibraryPortraitOf(name))
+
 export namespace AuthorCommand {
   /** Record an author's catalogue. Nothing in it is per reader, so the write
    *  simply replaces whatever was there. */
   export const catalogue = (entry: Author): Promise<Author> => repository.save(entry)
 
-  /** Ask Wikipedia again for the face of an author catalogued without one,
-   *  by their name, and store what it says — the portrait, or when it was
-   *  sought. Never throws: the page keeps the catalogue it had. */
+  /** Ask again for the face of an author catalogued without one, by their
+   *  name, and store what it says — the portrait, or when it was sought.
+   *  Never throws: the page keeps the catalogue it had. */
   export const seekPortrait = async (author: Author): Promise<Author> => {
-    const portraitUrl = await portraitOf(author.name)
+    const portraitUrl = await faceOf(author.name)
     try {
       return await catalogue(
         portraitUrl
@@ -42,7 +48,7 @@ export namespace AuthorCommand {
 
   /** Ask the web about an author and store what it says: one grounded call for
    *  the facts and the bibliography, then Wikipedia for the portrait, on the page
-   *  the model named.
+   *  the model named, and Open Library when Wikipedia has none.
    *
    *  Never throws: a page that could not be built shows the reader's own books.
    *  A failure or an answer with no bibliography is remembered as a miss rather
@@ -80,7 +86,7 @@ export namespace AuthorCommand {
       const signedName = optionally(value.name, AuthorName) ?? name
       const openLibrary: CoverLookup = { author: signedName, unreachable: false }
       const [foundPortrait, coveredSeries, coveredBooks] = await Promise.all([
-        portraitOf(signedName, value.wikipediaTitle ?? undefined),
+        faceOf(signedName, value.wikipediaTitle ?? undefined),
         withCovers(series, openLibrary),
         withCovers(books, openLibrary),
       ])
