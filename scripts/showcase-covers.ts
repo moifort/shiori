@@ -36,9 +36,12 @@ const volumes = (slug: string, term: string, match: (n: number) => string, numbe
 
 const COVERS: Cover[] = [
   // The first volumes are sold under another listing than the recent ones.
-  ...volumes('one-piece', 'one piece tome', (n) => `one piece tome ${n}`, [1, 2, 3, 4, 5, 6]).map(
-    (cover) => ({ ...cover, term: `${cover.term} oda` }),
-  ),
+  ...volumes(
+    'one-piece',
+    'one piece tome',
+    (n) => `one piece tome ${n}`,
+    [1, 2, 3, 4, 5, 6, 7, 8],
+  ).map((cover) => ({ ...cover, term: `${cover.term} oda` })),
   ...volumes(
     'one-piece',
     'one piece édition originale tome',
@@ -49,13 +52,13 @@ const COVERS: Cover[] = [
     'frieren',
     'frieren t',
     (n) => `frieren t${String(n).padStart(2, '0')}`,
-    [1, 2, 3, 4, 5, 6, 12, 13, 14, 15],
+    [1, 2, 3, 4, 5, 6, 7, 8, 12, 13, 14, 15],
   ).map((cover) => ({ ...cover, term: `frieren ${cover.match.split(' ')[1]}` })),
   ...volumes(
     'blue-lock',
     'blue lock',
     (n) => `blue lock t${String(n).padStart(2, '0')}`,
-    [1, 2, 3, 4, 5, 6, 32, 33, 34, 35],
+    [1, 2, 3, 4, 5, 6, 7, 8, 32, 33, 34, 35],
   ).map((cover) => ({ ...cover, term: cover.match, avoid: 'nagi anniversaire' })),
   ...volumes('blacksad', 'blacksad tome', (n) => `blacksad tome ${n}`, [1, 2, 3, 4, 5, 6, 7]).map(
     (cover) =>
