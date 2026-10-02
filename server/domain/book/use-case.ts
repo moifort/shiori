@@ -10,6 +10,7 @@ import type {
   Recommendation,
   StarRating,
 } from '~/domain/book/types'
+import { isCoverGone, publishedCoverOf } from '~/domain/scan/published-cover'
 import { ScanUseCase } from '~/domain/scan/use-case'
 import { SeriesUseCase } from '~/domain/series/use-case'
 import type { Language } from '~/domain/shared/language'
@@ -35,7 +36,12 @@ export namespace BookUseCase {
    *  it, as a volume the release watch announced is, and the facts that
    *  describe the work are rewritten from what was found — see
    *  `refreshedFacts`. Metered like any lookup: one scan, spent only once the
-   *  model answered, and nothing written when it did not. */
+   *  model answered, and nothing written when it did not.
+   *
+   *  The published cover is sought by the ISBN the lookup found, then by the
+   *  one already on the record, which the lookup may not have named. When
+   *  neither has one, a stored cover that no longer loads is dropped, so the
+   *  app draws its placeholder at once rather than failing on a dead link. */
   export const refresh = async (userId: UserId, bookId: BookId, language: Language) => {
     const book = await BookQuery.byId(userId, bookId)
     if (!book) return 'not-found' as const
@@ -53,7 +59,17 @@ export namespace BookUseCase {
       language,
     )
     if (typeof found === 'string' || 'failed' in found) return found
-    return edit(userId, bookId, refreshedFacts(book, found, language))
+    const coverUrl =
+      found.coverUrl ??
+      (book.isbn13 && book.isbn13 !== found.isbn13
+        ? await publishedCoverOf(book.isbn13)
+        : undefined)
+    const facts = refreshedFacts(book, { ...found, coverUrl }, language)
+    const coverGone =
+      !coverUrl &&
+      book.publishedCoverUrl !== undefined &&
+      (await isCoverGone(book.publishedCoverUrl))
+    return edit(userId, bookId, coverGone ? { ...facts, publishedCoverUrl: undefined } : facts)
   }
 
   export const setStatus = (userId: UserId, bookId: BookId, status: ReadingStatus) =>

@@ -358,6 +358,22 @@ describe('an author’s page', () => {
     expect(page?.catalogue?.biography).toBe(built?.catalogue?.biography)
   })
 
+  test('keeps the portrait when a refresh finds no photograph', async () => {
+    await holdSanderson()
+    answers = [sanderson, sanderson]
+    const key = authorKeyOf('Brandon Sanderson')
+    const built = await AuthorUseCase.page(reader, key, 'fr')
+
+    faceless.add('Brandon Sanderson')
+    const refreshed = await AuthorUseCase.recatalogue(reader, key, 'fr')
+
+    expect(String(refreshed?.portraitUrl)).toBe(String(built?.catalogue?.portraitUrl))
+    expect(refreshed?.portraitSoughtAt).toBeUndefined()
+    expect(String((await AuthorUseCase.page(reader, key, 'fr'))?.author.portraitUrl)).toBe(
+      String(built?.catalogue?.portraitUrl),
+    )
+  })
+
   test('refreshes nothing for an author the reader holds no book of', async () => {
     expect(await AuthorUseCase.recatalogue(reader, authorKeyOf('Nobody'), 'fr')).toBeNull()
     expect(calls).toEqual([])

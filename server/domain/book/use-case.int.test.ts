@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import type { CoverUrl as CoverUrlType, Isbn13 as Isbn13Type } from '~/domain/book/types'
 import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
 
@@ -17,11 +18,21 @@ mock.module('~/domain/scan/gemini', () => ({
     return { value, usage: { promptTokens: 10, outputTokens: 5, thinkingTokens: 0, searches: 1 } }
   },
 }))
-mock.module('~/domain/scan/published-cover', () => ({ publishedCoverOf: async () => undefined }))
+/** The published covers by ISBN, and the stored covers that no longer load. */
+const publishedCovers: Record<string, string> = {}
+const goneCovers = new Set<string>()
+const probed: string[] = []
+mock.module('~/domain/scan/published-cover', () => ({
+  publishedCoverOf: async (isbn13: string) => publishedCovers[isbn13],
+  isCoverGone: async (url: string) => {
+    probed.push(url)
+    return goneCovers.has(url)
+  },
+}))
 
 const { BookUseCase } = await import('~/domain/book/use-case')
 const { BookCommand } = await import('~/domain/book/command')
-const { BookId, Synopsis } = await import('~/domain/book/primitives')
+const { BookId, CoverUrl, Isbn13, Synopsis } = await import('~/domain/book/primitives')
 const { monthOf } = await import('~/domain/quota/business-rules')
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
 
@@ -31,18 +42,22 @@ let fake = resetFakeFirestore()
 beforeEach(() => {
   fake = resetFakeFirestore()
   answers = []
+  for (const isbn of Object.keys(publishedCovers)) delete publishedCovers[isbn]
+  goneCovers.clear()
+  probed.length = 0
 })
 
 const spent = () =>
   (fake.data('ai-quotas', `${reader}_${monthOf(new Date())}`) as { scans: number } | null)?.scans ??
   0
 
-const aBook = () =>
+const aBook = (facts: { isbn13?: Isbn13Type; publishedCoverUrl?: CoverUrlType } = {}) =>
   BookCommand.add(reader, {
     title: BookTitle('Le Nom du vent'),
     authors: [AuthorName('Patrick Rothfuss')],
     synopsis: Synopsis('An old summary.'),
     status: 'reading',
+    ...facts,
   })
 
 describe('bringing a record up to date', () => {
@@ -90,6 +105,42 @@ describe('bringing a record up to date', () => {
     expect(refreshed).toEqual({ failed: 'model down' })
     expect(fake.data('books', book.id)).toMatchObject({ synopsis: 'An old summary.' })
     expect(spent()).toBe(0)
+  })
+
+  test('finds the cover by the ISBN on the record when the lookup names none', async () => {
+    const book = await aBook({ isbn13: Isbn13('9782352943556') })
+    publishedCovers['9782352943556'] = 'https://m.media-amazon.com/images/P/2352943558.01.jpg'
+    answers = [{ title: 'Le Nom du vent', authors: [], subgenres: [] }]
+
+    const refreshed = await BookUseCase.refresh(reader, book.id, 'fr')
+
+    expect(refreshed).toMatchObject({
+      publishedCoverUrl: 'https://m.media-amazon.com/images/P/2352943558.01.jpg',
+    })
+  })
+
+  test('drops a stored cover that no longer loads when no other is found', async () => {
+    const dead = CoverUrl('https://covers.openlibrary.org/b/isbn/9782352943556-M.jpg?default=false')
+    const book = await aBook({ publishedCoverUrl: dead })
+    goneCovers.add(String(dead))
+    answers = [{ title: 'Le Nom du vent', authors: [], subgenres: [] }]
+
+    await BookUseCase.refresh(reader, book.id, 'fr')
+
+    expect(fake.data('books', book.id)).not.toHaveProperty('publishedCoverUrl')
+  })
+
+  test('keeps a stored cover that still loads, or that could not be checked', async () => {
+    const stored = CoverUrl(
+      'https://covers.openlibrary.org/b/isbn/9782352943556-M.jpg?default=false',
+    )
+    const book = await aBook({ publishedCoverUrl: stored })
+    answers = [{ title: 'Le Nom du vent', authors: [], subgenres: [] }]
+
+    await BookUseCase.refresh(reader, book.id, 'fr')
+
+    expect(probed).toEqual([String(stored)])
+    expect(fake.data('books', book.id)).toMatchObject({ publishedCoverUrl: String(stored) })
   })
 
   test('answers not-found for a book the reader does not own, without calling the model', async () => {

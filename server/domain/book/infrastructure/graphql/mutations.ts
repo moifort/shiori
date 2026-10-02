@@ -164,7 +164,9 @@ builder.mutationFields((t) => ({
       'is rewritten from what was found — summary, genre, subgenres, page count, ' +
       'year of first publication, published cover, and the ISBN when the record ' +
       'has none. What names the book, the saga, and everything the reader recorded ' +
-      'stay as they were; a field the lookup did not find keeps its value.\n\n' +
+      'stay as they were; a field the lookup did not find keeps its value. The ' +
+      'published cover is also sought by the ISBN already on the record, and one ' +
+      'that no longer loads is dropped when no other is found.\n\n' +
       'Spends one scan of the allowance, only once the model answered. Fails with ' +
       '`QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` when the model call ' +
       'errors — the record is then untouched.',

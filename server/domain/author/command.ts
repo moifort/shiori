@@ -49,7 +49,11 @@ export namespace AuthorCommand {
    *  than stored as a catalogue — one would mask the author as known — and no later
    *  opening asks again; the reader's refresh does. A catalogue already stored
    *  is left as it was. `usage` says what the call cost whenever it answered,
-   *  stored or not. */
+   *  stored or not.
+   *
+   *  A refresh whose portrait lookup comes back empty keeps the portrait the
+   *  stored catalogue had: Wikipedia missing a page today must not take the
+   *  author's face off a page that showed it. */
   export const catalogueFromWeb = async (
     key: AuthorKey,
     name: AuthorNameValue,
@@ -75,11 +79,12 @@ export namespace AuthorCommand {
 
       const signedName = optionally(value.name, AuthorName) ?? name
       const openLibrary: CoverLookup = { author: signedName, unreachable: false }
-      const [portraitUrl, coveredSeries, coveredBooks] = await Promise.all([
+      const [foundPortrait, coveredSeries, coveredBooks] = await Promise.all([
         portraitOf(signedName, value.wikipediaTitle ?? undefined),
         withCovers(series, openLibrary),
         withCovers(books, openLibrary),
       ])
+      const portraitUrl = foundPortrait ?? (await repository.findByKey(key))?.portraitUrl
       const author = await catalogue({
         key,
         name: signedName,
