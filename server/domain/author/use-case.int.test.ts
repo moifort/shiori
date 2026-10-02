@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { UserId } from '~/domain/shared/types'
-import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
+import { fakeDb, resetFakeFirestore, startFakeRequest } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
 
@@ -28,8 +28,14 @@ mock.module('~/domain/scan/open-library', () => ({
     return covers[title]
   },
 }))
+/** The authors Wikipedia has no photograph of; the names it was asked about, in order. */
+const faceless = new Set<string>()
+const portraitSearches: string[] = []
 mock.module('~/domain/author/infrastructure/wikipedia', () => ({
-  portraitOf: async (title: string) => `https://upload.wikimedia.org/${title}.jpg`,
+  portraitOf: async (name: string, title?: string) => {
+    portraitSearches.push(name)
+    return faceless.has(name) ? undefined : `https://upload.wikimedia.org/${title ?? name}.jpg`
+  },
 }))
 
 const { AuthorUseCase } = await import('~/domain/author/use-case')
@@ -49,6 +55,8 @@ beforeEach(() => {
   calls.length = 0
   coverSearches.length = 0
   openLibraryDown = false
+  faceless.clear()
+  portraitSearches.length = 0
   for (const title of Object.keys(covers)) delete covers[title]
 })
 
@@ -169,6 +177,52 @@ describe('an author’s page', () => {
     )
     expect(second?.catalogue?.biography).toBe(first?.catalogue?.biography)
     expect(String(second?.author.portraitUrl)).toBe(String(first?.catalogue?.portraitUrl))
+  })
+
+  // A catalogue built without a face asks Wikipedia again when the page is
+  // opened, by the author's name, but not at every opening.
+  test('asks again for a portrait missing from the catalogue, once in a while', async () => {
+    await holdSanderson()
+    faceless.add('Brandon Sanderson')
+    answers = [sanderson]
+    const key = authorKeyOf('Brandon Sanderson')
+
+    const built = await AuthorUseCase.page(reader, key, 'fr')
+    await AuthorUseCase.page(reader, key, 'fr')
+    expect(built?.author.portraitUrl).toBeUndefined()
+    expect(portraitSearches).toEqual(['Brandon Sanderson'])
+
+    // A month on, Wikipedia has a photograph.
+    const stored = fake.data('authors', key) as Record<string, unknown>
+    fake.seed('authors', key, { ...stored, portraitSoughtAt: new Date('2026-01-01') })
+    startFakeRequest()
+    faceless.clear()
+    const found = await AuthorUseCase.page(reader, key, 'fr')
+    const after = await AuthorUseCase.page(reader, key, 'fr')
+
+    expect(calls).toEqual(['author'])
+    expect(portraitSearches).toEqual(['Brandon Sanderson', 'Brandon Sanderson'])
+    expect(String(found?.author.portraitUrl)).toBe(
+      'https://upload.wikimedia.org/Brandon Sanderson.jpg',
+    )
+    expect(String(after?.author.portraitUrl)).toBe(String(found?.author.portraitUrl))
+  })
+
+  // A catalogue stored before the lookup was retried has no `portraitSoughtAt`.
+  test('asks for the portrait of a catalogue stored without one before', async () => {
+    await holdSanderson()
+    answers = [sanderson]
+    const key = authorKeyOf('Brandon Sanderson')
+    await AuthorUseCase.page(reader, key, 'fr')
+    const { portraitUrl: _, ...stored } = fake.data('authors', key) as Record<string, unknown>
+    fake.seed('authors', key, stored)
+    startFakeRequest()
+    portraitSearches.length = 0
+
+    const page = await AuthorUseCase.page(reader, key, 'fr')
+
+    expect(portraitSearches).toEqual(['Brandon Sanderson'])
+    expect(page?.author.portraitUrl).toBeDefined()
   })
 
   // French titles find nothing on Open Library; the original ones find the work.

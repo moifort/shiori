@@ -5,6 +5,7 @@ import {
   inAuthorOrder,
   inNameOrder,
   inPageOrder,
+  isPortraitWorthSeeking,
   mainLanguageOf,
   matchingAuthorFilter,
   shelvedAuthorsOf,
@@ -148,13 +149,15 @@ export namespace AuthorUseCase {
 
   /** The stored catalogue, else one built now — unless the model already
    *  failed on this author: every opening would otherwise wait on the same
-   *  grounded call. `recatalogue` asks regardless. */
+   *  grounded call. `recatalogue` asks regardless. A stored catalogue with no
+   *  portrait asks Wikipedia again, now and then, by the author's name. */
   const catalogueOf = async (
     shelved: ShelvedAuthor<Book>,
     language: Language,
   ): Promise<Author | null> => {
     const known = await AuthorQuery.byKey(shelved.key)
-    if (known) return known
+    if (known)
+      return isPortraitWorthSeeking(known, new Date()) ? AuthorCommand.seekPortrait(known) : known
     if (await AuthorQuery.lastMiss(shelved.key)) return null
     return askTheWeb(shelved, language)
   }

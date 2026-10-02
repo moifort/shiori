@@ -6,6 +6,7 @@ import {
   indexLetterOf,
   inNameOrder,
   inPageOrder,
+  isPortraitWorthSeeking,
   mainLanguageOf,
   matchingAuthorFilter,
   sagaCountOf,
@@ -14,7 +15,7 @@ import {
   standaloneBooksOf,
   worksNotHeldOf,
 } from '~/domain/author/business-rules'
-import { authorKeyOf } from '~/domain/author/primitives'
+import { authorKeyOf, PortraitUrl } from '~/domain/author/primitives'
 import { SeriesId, SeriesName, seriesKeyOf } from '~/domain/series/primitives'
 import { AuthorName, BookTitle, Count } from '~/domain/shared/primitives'
 
@@ -316,5 +317,24 @@ describe('the author page', () => {
       'fr',
     )
     expect(mainLanguageOf([{}])).toBeUndefined()
+  })
+})
+
+describe('isPortraitWorthSeeking', () => {
+  const now = new Date('2026-10-02T12:00:00Z')
+
+  test('never for an author who has a face', () => {
+    const portraitUrl = PortraitUrl('https://upload.wikimedia.org/a.jpg')
+    expect(isPortraitWorthSeeking({ portraitUrl }, now)).toBe(false)
+  })
+
+  test('for a catalogue never sought, as those stored before the retry were', () => {
+    expect(isPortraitWorthSeeking({}, now)).toBe(true)
+  })
+
+  test('not within a month of the last search, then again', () => {
+    const days = (count: number) => new Date(now.getTime() - count * 86_400_000)
+    expect(isPortraitWorthSeeking({ portraitSoughtAt: days(29) }, now)).toBe(false)
+    expect(isPortraitWorthSeeking({ portraitSoughtAt: days(30) }, now)).toBe(true)
   })
 })

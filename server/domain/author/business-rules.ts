@@ -298,3 +298,20 @@ export const mainLanguageOf = (
     if (leading === undefined || count > (counts.get(leading) ?? 0)) leading = language
   return leading
 }
+
+/** How long an author without a face waits before Wikipedia is asked again:
+ *  a page gains a photograph rarely, and each opening must not pay a lookup. */
+export const PORTRAIT_RETRY_DAYS = 30
+
+/** Whether opening the page should ask Wikipedia for the author's portrait:
+ *  the catalogue has none, and it was not sought lately. A catalogue built
+ *  before the lookup fell back on the author's name was never sought that
+ *  way, so it is asked at its next opening. */
+export const isPortraitWorthSeeking = (
+  author: Pick<Author, 'portraitUrl' | 'portraitSoughtAt'>,
+  now: Date,
+): boolean => {
+  if (author.portraitUrl) return false
+  if (!author.portraitSoughtAt) return true
+  return now.getTime() - author.portraitSoughtAt.getTime() >= PORTRAIT_RETRY_DAYS * 86_400_000
+}

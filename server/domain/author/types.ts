@@ -75,6 +75,9 @@ export type Author = {
   deathYear?: Year
   biography?: AuthorBiography
   portraitUrl?: PortraitUrl
+  /** When Wikipedia was last asked for a portrait it did not have. Absent once
+   *  one is found, and on catalogues built before the lookup was retried. */
+  portraitSoughtAt?: Date
   series: AuthorSeries[]
   books: AuthorWork[]
   cataloguedAt: Date

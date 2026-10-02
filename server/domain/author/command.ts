@@ -23,6 +23,23 @@ export namespace AuthorCommand {
    *  simply replaces whatever was there. */
   export const catalogue = (entry: Author): Promise<Author> => repository.save(entry)
 
+  /** Ask Wikipedia again for the face of an author catalogued without one,
+   *  by their name, and store what it says — the portrait, or when it was
+   *  sought. Never throws: the page keeps the catalogue it had. */
+  export const seekPortrait = async (author: Author): Promise<Author> => {
+    const portraitUrl = await portraitOf(author.name)
+    try {
+      return await catalogue(
+        portraitUrl
+          ? { ...author, portraitUrl, portraitSoughtAt: undefined }
+          : { ...author, portraitSoughtAt: new Date() },
+      )
+    } catch (error) {
+      logger.warn('author portrait not recorded', { error, key: author.key })
+      return portraitUrl ? { ...author, portraitUrl } : author
+    }
+  }
+
   /** Ask the web about an author and store what it says: one grounded call for
    *  the facts and the bibliography, then Wikipedia for the portrait, on the page
    *  the model named.
@@ -59,7 +76,7 @@ export namespace AuthorCommand {
       const signedName = optionally(value.name, AuthorName) ?? name
       const openLibrary: CoverLookup = { author: signedName, unreachable: false }
       const [portraitUrl, coveredSeries, coveredBooks] = await Promise.all([
-        value.wikipediaTitle ? portraitOf(value.wikipediaTitle) : undefined,
+        portraitOf(signedName, value.wikipediaTitle ?? undefined),
         withCovers(series, openLibrary),
         withCovers(books, openLibrary),
       ])
@@ -71,6 +88,7 @@ export namespace AuthorCommand {
         deathYear: optionally(value.deathYear, Year),
         biography,
         portraitUrl,
+        portraitSoughtAt: portraitUrl ? undefined : new Date(),
         series: coveredSeries,
         books: coveredBooks,
         cataloguedAt: new Date(),
