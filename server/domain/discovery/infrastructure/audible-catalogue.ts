@@ -47,6 +47,7 @@ type Relationship = {
   relationship_to_product?: string
   asin?: string
   sequence?: string
+  sku?: string
 }
 
 type Contributor = { name?: string }
@@ -309,12 +310,20 @@ const askAudible = async <Answer>(
   }
 }
 
+/** A product Audible lists in a series before any recording of that volume
+ *  exists: dated 2200-01-01, without a cover, and listed beside the real
+ *  recording once there is one — sometimes ahead of it, under the same number.
+ *  Its SKU says so. */
+const isPlaceholder = (entry: Relationship) => entry.sku?.startsWith('PL_HLDR_') ?? false
+
 /** Every numbered recording of the series one recording belongs to, as
  *  Audible's own catalogue in that language lists it: its number in the series,
  *  title, release day and cover — out or on preorder. What a saga heard is
  *  judged by, since a recording is out when Audible sells it, whatever the web
- *  says of the printed book or of another language. `unknown` when the
- *  recording belongs to no series Audible knows in that language. */
+ *  says of the printed book or of another language. A placeholder is not a
+ *  recording, so a volume Audible holds nothing but a placeholder for is left
+ *  out. `unknown` when the recording belongs to no series Audible knows in
+ *  that language. */
 export const audibleSeriesOf = async (
   asin: AudibleAsinType,
   language: BookLanguage,
@@ -341,6 +350,7 @@ export const audibleSeriesOf = async (
       entry.relationship_type === 'series' &&
       entry.relationship_to_product === 'child' &&
       entry.asin &&
+      !isPlaceholder(entry) &&
       Number.isInteger(number) &&
       number > 0
     if (numbered && entry.asin && ![...numbers.values()].includes(number))

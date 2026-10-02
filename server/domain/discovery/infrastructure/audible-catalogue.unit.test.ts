@@ -3,6 +3,7 @@ import { AudibleAsin } from '~/domain/audible/primitives'
 import {
   audibleEditionOf,
   audibleProductOf,
+  audibleSeriesOf,
 } from '~/domain/discovery/infrastructure/audible-catalogue'
 
 const US_ASIN = AudibleAsin('B09VY3W1FF')
@@ -137,6 +138,66 @@ describe('audibleProductOf', () => {
     })
 
     expect(await audibleProductOf(AudibleAsin('B0KINDLE01'), 'en', title)).toBe('unknown')
+  })
+})
+
+describe('audibleSeriesOf', () => {
+  // L'Ange de la Nuit on audible.fr lists a placeholder beside volumes 1 and 3,
+  // dated 2200-01-01 — the third one ahead of the real recording.
+  test('takes each volume’s recording over the placeholder Audible lists beside it', async () => {
+    const child = (asin: string, sequence: string, sku: string) => ({
+      asin,
+      sequence,
+      sku,
+      relationship_type: 'series',
+      relationship_to_product: 'child',
+    })
+    const recording = (asin: string, title: string, release_date: string) => ({
+      asin,
+      title,
+      release_date,
+      language: 'french',
+    })
+    const asked = storesAnswer({
+      fr: {
+        products: {
+          B0CNHJ5HBV: {
+            asin: 'B0CNHJ5HBV',
+            relationships: [
+              {
+                asin: 'B0CN2N7Y3X',
+                relationship_type: 'series',
+                relationship_to_product: 'parent',
+              },
+            ],
+          },
+          B0CN2N7Y3X: {
+            asin: 'B0CN2N7Y3X',
+            relationships: [
+              child('B0CN2B1S84', '2', 'BK_EDTH_001205FR'),
+              child('B0CNHJ5HBV', '1', 'BK_EDTH_001218FR'),
+              child('B0CN2RL6N5', '1', 'PL_HLDR_137311FR'),
+              child('B0CN2PZH51', '3', 'PL_HLDR_137312FR'),
+              child('B0CP6T4WXH', '3', 'BK_EDTH_001237FR'),
+            ],
+          },
+        },
+        search: [
+          recording('B0CN2B1S84', 'Le Choix des ombres', '2023-11-23'),
+          recording('B0CNHJ5HBV', 'La Voie des ombres', '2024-01-26'),
+          recording('B0CP6T4WXH', 'Au-delà des ombres', '2023-12-21'),
+        ],
+      },
+    })
+
+    const volumes = await audibleSeriesOf(AudibleAsin('B0CNHJ5HBV'), 'fr')
+
+    expect(volumes).toMatchObject([
+      { number: 1, asin: 'B0CNHJ5HBV' },
+      { number: 2, asin: 'B0CN2B1S84' },
+      { number: 3, asin: 'B0CP6T4WXH', date: '2023-12-21' },
+    ])
+    expect(asked.some((url) => url.includes('PL_HLDR') || url.includes('B0CN2PZH51'))).toBe(false)
   })
 })
 
