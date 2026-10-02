@@ -173,10 +173,10 @@ describe('the genre insights through the API', () => {
     }`)
 
     expect(result.errors).toBeUndefined()
-    const insights = result.data?.genreInsights as Record<string, unknown> & {
+    const { unexplored, ...insights } = result.data?.genreInsights as {
       unexplored: { genre: string; pileCount: number }[]
     }
-    expect({ ...insights, unexplored: insights.unexplored[0] }).toEqual({
+    expect({ ...insights, unexplored: unexplored[0] } as Record<string, unknown>).toEqual({
       readCount: 4,
       shares: [{ genre: 'SCIENCE_FICTION', count: 4 }],
       formats: [
