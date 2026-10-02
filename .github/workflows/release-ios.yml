@@ -61,9 +61,10 @@ jobs:
   # review (auto-release on approval). No Xcode needed — runs on Linux. Tag pushes only;
   # a manual workflow_dispatch stops after upload so it can be submitted by hand.
   #
-  # Vinarium pushes its App Store screenshots between the upload and this job. Shiori
-  # has no screenshots workflow yet, so a version's screenshots are set by hand in App
-  # Store Connect before the tag is pushed — a submission without them is refused.
+  # The App Store panels are uploaded from the Mac before the tag
+  # (bun scripts/upload-appstore-panels.ts, see docs/superpowers/specs/
+  # 2026-10-02-app-store-listing-design.md): a version without them is refused, so this
+  # job checks they are there before submitting rather than learn it from App Review.
   submit:
     name: 🍎 iOS submit
     needs: release
@@ -118,14 +119,15 @@ jobs:
           set -euo pipefail
           # One release_notes.txt per declared App Store locale. App Store Connect asks for
           # "What's New" in each of them, and a locale deliver does not write keeps whatever
-          # it had — which on a new version is nothing. Shiori ships in French and English,
-          # so the two changelogs map onto the two store locales.
+          # it had — which on a new version is nothing. The listing is French alone
+          # (infra/fastlane/metadata/fr-FR): notes for another locale would make deliver
+          # create it with no description and no screenshots, and the submission would be
+          # refused. Add a locale here when its listing exists.
           #
           # Bullets under the first "## " section become the notes. App Store caps them at
           # 4000 chars, so keep whole bullets until ~3900 and drop the rest.
           for pair in \
-            "fr-FR:CHANGELOG.fr.md" \
-            "en-US:CHANGELOG.md"
+            "fr-FR:CHANGELOG.fr.md"
           do
             locale="${pair%%:*}"
             source="${pair#*:}"
@@ -140,6 +142,11 @@ jobs:
             echo "---- What's New ($locale from $source), $(wc -c < "infra/fastlane/metadata/$locale/release_notes.txt") chars ----"
             cat "infra/fastlane/metadata/$locale/release_notes.txt"
           done
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Refuse a version without its App Store panels
+        run: bun scripts/upload-appstore-panels.ts --check
 
       - name: Attach build and submit for review
         working-directory: infra
