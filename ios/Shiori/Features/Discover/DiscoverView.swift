@@ -95,12 +95,15 @@ struct DiscoverView: View {
                         )
                     }
                 }
+                // The reader holds no volume of it: the saga is named to the
+                // server, which catalogues it if nobody has yet.
                 .sheet(item: $openFriendSaga) { loved in
                     NavigationStack {
                         SeriesView(
                             seriesId: loved.saga.seriesId,
                             language: loved.saga.language,
-                            isSheet: true
+                            isSheet: true,
+                            proposal: loved.saga.author.map { SeriesProposal(name: loved.saga.name, author: $0) }
                         )
                     }
                 }
