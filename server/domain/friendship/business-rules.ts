@@ -59,7 +59,9 @@ export const lastDroppedOf = <
 /** What moved last on a shelf, one book per kind, always in this order: the
  *  book in progress touched last, the last one finished, the last one hearted,
  *  the last one shelved and the last one dropped — each with its day. A kind
- *  with no book, or a finish or a heart with no date, is left out. */
+ *  with no book, or a finish with no date, is left out. A heart given before
+ *  its date was kept still shows, on the book's last activity, but only when
+ *  no heart carries a date. */
 export const recentActivityOf = <
   Moved extends Pick<
     Book,
@@ -80,6 +82,8 @@ export const recentActivityOf = <
       const at = dateOf(book)
       return at && (!found || at > found.at) ? { book, at } : found
     }, undefined)
+  const hearted = books.filter((book) => book.favorite === true)
+  const lastHeart = latest(hearted, (book) => book.favoritedAt) ?? latest(hearted, lastActivityOf)
   const finished = lastFinishedOf(books)
   const dropped = lastDroppedOf(books)
   const added = lastAddedOf(books)
@@ -92,13 +96,7 @@ export const recentActivityOf = <
       ),
     },
     { kind: 'read' as const, book: finished, at: finished?.finishedAt },
-    {
-      kind: 'hearted' as const,
-      ...latest(
-        books.filter((book) => book.favorite === true),
-        (book) => book.favoritedAt,
-      ),
-    },
+    { kind: 'hearted' as const, ...lastHeart },
     { kind: 'added' as const, book: added, at: added?.addedAt },
     { kind: 'dropped' as const, book: dropped, at: dropped && lastActivityOf(dropped) },
   ]

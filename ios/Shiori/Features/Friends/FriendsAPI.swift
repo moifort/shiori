@@ -187,9 +187,15 @@ struct FriendProfile: Codable, Sendable {
         let added = lastAdded.flatMap { entry in
             entry.book.addedAt.map { RecentActivity.added(entry, at: $0) }
         }
-        // What they last chose to keep close is news whenever it was.
-        let heart = favorites.compactMap { entry in
+        // What they last chose to keep close is news whenever it was. A heart
+        // given before its date was kept stands on the book's last activity,
+        // and only while no heart carries a date.
+        let datedHeart = favorites.compactMap { entry in
             entry.favoritedAt.map { RecentActivity.hearted(entry, at: $0) }
+        }
+        .max { $0.date < $1.date }
+        let heart = datedHeart ?? favorites.compactMap { entry in
+            entry.lastActivityAt.map { RecentActivity.hearted(entry, at: $0) }
         }
         .max { $0.date < $1.date }
         return [reading, finished, heart, added, dropped]
