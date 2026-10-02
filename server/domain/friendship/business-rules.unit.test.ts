@@ -92,42 +92,10 @@ describe('recentActivityOf', () => {
     ])
   })
 
-  test('leaves out a kind with no book', () => {
-    const books = [{ status: 'to-read' as const, addedAt: day(2) }]
+  // A heart given before the date was kept says nothing about when.
+  test('leaves out a kind with no book, and a heart with no date', () => {
+    const books = [{ status: 'read' as const, addedAt: day(2), favorite: true }]
     expect(recentActivityOf(books).map(({ kind }) => kind)).toEqual(['added'])
-  })
-
-  // A heart given before the date was kept still shows, on the book's last
-  // activity, until a heart with its date comes.
-  test('stands an undated heart on the book last activity, behind any dated one', () => {
-    const undated = [
-      { title: 'old', status: 'read' as const, addedAt: day(2), favorite: true },
-      {
-        title: 'older',
-        status: 'read' as const,
-        addedAt: day(1),
-        statusChangedAt: day(5),
-        favorite: true,
-      },
-    ]
-    expect(
-      recentActivityOf(undated)
-        .filter(({ kind }) => kind === 'hearted')
-        .map(({ at, book }) => [at, book.title]),
-    ).toEqual([[day(5), 'older']])
-
-    const dated = {
-      title: 'dated',
-      status: 'read' as const,
-      addedAt: day(1),
-      favorite: true,
-      favoritedAt: day(3),
-    }
-    expect(
-      recentActivityOf([...undated, dated])
-        .filter(({ kind }) => kind === 'hearted')
-        .map(({ book }) => book.title),
-    ).toEqual(['dated'])
   })
 })
 
