@@ -49,14 +49,14 @@ enum AuthorListOrder: String, CaseIterable, Identifiable {
 @MainActor
 @Observable
 final class AuthorListViewModel {
-    /// Opens by name, as the Books shelf opens unfiltered.
+    /// Opens by date, as the Books and Series shelves do.
     init() {
         authors = Self.cache(for: order).read() ?? []
     }
 
     /// How the rows are listed. By name, every author is loaded at once: the
     /// alphabet down the side must reach Z without waiting for a page.
-    private(set) var order: AuthorListOrder = .name
+    private(set) var order: AuthorListOrder = .recent
 
     private(set) var authors: [FollowedAuthor] = []
     private(set) var isLoading = false
