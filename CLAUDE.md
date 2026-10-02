@@ -98,6 +98,11 @@ This is the rule the data model turns on, and getting it backwards is expensive:
   produced it is paid once. A translation lists its own volumes, names, dates and covers; what
   is announced is written in by Découvrir's release watch, never by the scan. **It is never exposed through library
   sharing**, which shows books only.
+- **Paper or screen is one book.** `format` says what the object is (book, manga, audiobook…),
+  `media` where a read book is held (`print`, `digital`, or both). A paperback and its Kindle
+  copy are one record: whatever arrives on a medium the reader lacks — a scan, a Kindle import
+  or sync, `addBook` — joins the record they keep, in the same language. A recording stays its
+  own record. The Kindle cover is drawn before any other (`coverSourcesOf`).
 - **Every book carries `hidden`.** Sharing is not built yet; the flag exists now because adding
   a boolean to production records costs a migration.
 
