@@ -153,8 +153,12 @@ would be the fallback for exactly those books, and the edition actually on the
 shelf. Everything underneath exists — the object store, the private bucket, the
 signed download URLs, and `coverPathOf` keyed by owner so an account deletion
 sweeps them in one prefix delete — and `coverUrl` already prefers a stored photo
-over the published cover. What is missing is the wiring: the scan must persist
+over the published cover, after the Kindle cover. What is missing is the wiring: the scan must persist
 the bytes it already holds and return a handle, and `addBook` must accept it.
+
+Whoever wires it must also delete the photo of a record that goes away: neither
+`BookCommand.remove` nor the paper-and-screen merge (`mergedCopies`, migration 014)
+touches the bucket today, since no record has ever held a photo.
 
 Deferred by decision, not by oversight.
 
