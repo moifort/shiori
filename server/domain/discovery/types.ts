@@ -35,6 +35,10 @@ export type WatchedSaga = {
   /** A recording of the saga heard the reader holds in that language: the way
    *  into Audible's own listing of the series. */
   asin?: AudibleAsin
+  /** The furthest numbered volume the reader holds in that language, and when
+   *  they added it: a watch looked up before it was added and that does not
+   *  list it is behind the reader's own shelf. */
+  furthest?: { number: VolumeNumber; addedAt: Date }
 }
 
 /** One volume of a saga as the web found it in one language, out or announced. */

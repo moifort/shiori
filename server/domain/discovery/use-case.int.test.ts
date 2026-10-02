@@ -100,6 +100,7 @@ mock.module('~/domain/discovery/infrastructure/amazon-catalogue', () => ({
 }))
 mock.module('~/domain/scan/published-cover', () => ({
   publishedCoverOf: async () => 'https://covers.example/carl1.jpg',
+  isCoverGone: async () => false,
 }))
 
 const { BookUseCase } = await import('~/domain/book/use-case')
@@ -210,6 +211,52 @@ describe('the hourly pass', () => {
     expect(calls).toEqual([])
     await DiscoveryUseCase.watchDueSagas(new Date('2026-10-04T08:00:00Z'))
     expect(calls).toEqual(['Dungeon Crawler Carl'])
+  })
+
+  // The web stops at volume 4: a fifth the reader adds is worth one look the
+  // next day, not a week later — and no more than one while the web still
+  // does not know it.
+  test('looks a saga up again once a reader holds a volume its last look did not find', async () => {
+    await stock(reader)
+    await DiscoveryUseCase.watchDueSagas(now)
+    await BookUseCase.add(reader, {
+      title: BookTitle('Carl 5'),
+      authors: [AuthorName('Matt Dinniman')],
+      status: 'read',
+      language: 'fr',
+      format: 'book',
+      addedAt: new Date('2026-09-26T12:00:00Z'),
+      series: {
+        id: carl,
+        name: SeriesName('Dungeon Crawler Carl'),
+        volume: VolumeNumber(5),
+        kind: 'main',
+      },
+    })
+    calls.length = 0
+
+    await DiscoveryUseCase.watchDueSagas(new Date('2026-09-27T09:00:00Z'))
+    expect(calls).toEqual(['Dungeon Crawler Carl'])
+    await DiscoveryUseCase.watchDueSagas(new Date('2026-09-28T10:00:00Z'))
+    expect(calls).toEqual(['Dungeon Crawler Carl'])
+  })
+
+  // An account deleted while a pass was reading it leaves its reader behind:
+  // its sagas would be looked up every week for nobody.
+  test('forgets a reader whose account is gone, and their sagas with them', async () => {
+    fake.seed('discovery-readers', 'gone', {
+      userId: 'gone',
+      language: 'fr',
+      sagas: [{ seriesId: carl, language: 'fr', name: 'Dungeon Crawler Carl' }],
+      syncedAt: now,
+      notified: [],
+    })
+
+    const result = await DiscoveryUseCase.watchDueSagas(now)
+
+    expect(result.watched).toBe(0)
+    expect(calls).toEqual([])
+    expect(fake.data('discovery-readers', 'gone')).toBeNull()
   })
 
   test('never looks up a saga the reader set aside', async () => {

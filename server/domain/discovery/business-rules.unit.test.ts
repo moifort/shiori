@@ -139,6 +139,68 @@ describe('the sagas watched for a reader', () => {
     ).toEqual(['never' as SeriesId, 'old' as SeriesId])
   })
 
+  test('carry the furthest volume the reader holds in that language, and when it was added', () => {
+    const book = (volume: number, language: BookLanguage, addedAt: string, kind = 'main') =>
+      ({
+        series: { id: carl, volume, kind },
+        language,
+        addedAt: new Date(addedAt),
+        status: 'read',
+      }) as unknown as Book
+    const [watched] = watchedSagasOf([
+      saga({
+        books: [
+          book(1, 'fr', '2026-01-01'),
+          book(4, 'fr', '2026-09-27'),
+          book(7, 'en', '2026-09-28'),
+          book(5, 'fr', '2026-09-29', 'novella'),
+        ],
+      }),
+    ])
+    expect(watched?.furthest).toEqual({
+      number: 4 as VolumeNumber,
+      addedAt: new Date('2026-09-27'),
+    })
+  })
+
+  test('are looked up again when a reader added a volume the watch missed since its last look', () => {
+    const reader = (sagas: DiscoveryReader['sagas']): DiscoveryReader => ({
+      userId: 'bob' as UserId,
+      language: 'fr',
+      sagas,
+      syncedAt: new Date(),
+      notified: [],
+    })
+    const holding = (seriesId: string, number: number, addedAt: string) => ({
+      seriesId: seriesId as SeriesId,
+      language: 'fr' as const,
+      name: 'S' as SeriesName,
+      furthest: { number: number as VolumeNumber, addedAt: new Date(addedAt) },
+    })
+    const checked = (seriesId: string, numbers: number[]) => ({
+      ...watchOf(
+        seriesId as SeriesId,
+        numbers.map((number) => volume(number)),
+      ),
+      checkedAt: new Date('2026-09-28'),
+    })
+    const now = new Date('2026-09-30')
+    const watches = new Map([
+      ['behind--fr', checked('behind', [1, 2, 3])],
+      ['added-before--fr', checked('added-before', [1, 2, 3])],
+      ['listed--fr', checked('listed', [1, 2, 3, 4])],
+    ])
+    const due = dueWatches(
+      [
+        reader([holding('behind', 2, '2026-01-01'), holding('listed', 4, '2026-09-29')]),
+        reader([holding('behind', 4, '2026-09-29'), holding('added-before', 4, '2026-09-27')]),
+      ],
+      watches,
+      now,
+    )
+    expect(due.map((entry) => entry.seriesId)).toEqual(['behind' as SeriesId])
+  })
+
   test('write to the reader in the app language they read most sagas in', () => {
     const in_ = (language: 'fr' | 'en' | 'de') => ({
       seriesId: 'x' as SeriesId,

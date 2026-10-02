@@ -315,11 +315,13 @@ export namespace DiscoveryUseCase {
   }
 
   /** The hourly pass. First every reader whose sagas and authors were last
-   *  worked out a day ago has their library read again; then every saga
-   *  anybody follows whose watch is a week old is looked up on the web — the
-   *  ones never looked up first — and what was found written into its
-   *  catalogue; then every author, the same way. All stop when the budget is
-   *  spent; whatever is not reached goes first next hour. */
+   *  worked out a day ago has their library read again, and every reader whose
+   *  account is gone forgotten; then every saga anybody follows whose watch is
+   *  a week old, or that a reader holds a volume of its last look missed, is
+   *  looked up on the web — the ones never looked up first — and what was
+   *  found written into its catalogue; then every author, the same way. All
+   *  stop when the budget is spent; whatever is not reached goes first next
+   *  hour. */
   export const watchDueSagas = async (
     now = new Date(),
     budgetMs = SCHEDULED_BUDGET_MS,
@@ -327,7 +329,7 @@ export namespace DiscoveryUseCase {
   ): Promise<{ synced: number; watched: number; failed: number; deferred: number }> => {
     const overBudget = () => Date.now() - startedAt > budgetMs
     const [userIds, stored] = await Promise.all([UserQuery.allIds(), DiscoveryQuery.allReaders()])
-    const readers = new Map(stored.map((reader) => [reader.userId, reader]))
+    const readers = new Map(await withoutAccountsGone(stored, userIds))
     let synced = 0
     let failed = 0
     for (const userId of userIds) {
@@ -623,6 +625,30 @@ const lookUpAll = async (
     }
   }
   return { watched, failed, deferred: 0 }
+}
+
+/** The readers whose account still exists, by id; the others are forgotten. A
+ *  pass that read an account just before it was deleted writes its reader back
+ *  after the deletion erased it, and the reader's sagas would then be looked
+ *  up every week for nobody. One that cannot be forgotten now is next hour. */
+const withoutAccountsGone = async (
+  stored: readonly DiscoveryReader[],
+  userIds: readonly UserId[],
+): Promise<[UserId, DiscoveryReader][]> => {
+  const accounts = new Set(userIds)
+  const gone = stored.filter((reader) => !accounts.has(reader.userId))
+  await Promise.all(
+    gone.map(async ({ userId }) => {
+      try {
+        await DiscoveryCommand.deleteForUser(userId)
+      } catch (error) {
+        logger.warn('reader of a deleted account not forgotten', { error, userId })
+      }
+    }),
+  )
+  return stored
+    .filter((reader) => accounts.has(reader.userId))
+    .map((reader) => [reader.userId, reader])
 }
 
 /** Keep what the passes need to know of a reader, writing only when it moved:

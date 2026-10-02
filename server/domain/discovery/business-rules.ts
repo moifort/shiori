@@ -80,16 +80,34 @@ export const watchedSagasOf = (followed: readonly FollowedSeries[]): WatchedSaga
     const asin = isAudioSeries(saga.id)
       ? saga.books.find((book) => book.audibleAsin && book.language === language)?.audibleAsin
       : undefined
+    const furthest = furthestHeldOf(saga.books, language)
     const watched: WatchedSaga = {
       seriesId: saga.id,
       language,
       name: saga.name,
       ...(saga.author ? { author: saga.author } : {}),
       ...(asin ? { asin } : {}),
+      ...(furthest ? { furthest } : {}),
     }
     sagas.set(watchKeyOf(watched), watched)
   }
   return [...sagas.values()]
+}
+
+/** The furthest numbered volume of a saga the reader holds in that language,
+ *  and when they added it — a novella or a companion is numbered apart from
+ *  the volumes a watch lists. */
+const furthestHeldOf = (
+  books: readonly Pick<Book, 'series' | 'language' | 'addedAt'>[],
+  language: BookLanguage,
+): WatchedSaga['furthest'] => {
+  let furthest: WatchedSaga['furthest']
+  for (const book of books) {
+    const number = book.series?.kind === 'main' ? book.series.volume : undefined
+    if (number === undefined || book.language !== language) continue
+    if (!furthest || number > furthest.number) furthest = { number, addedAt: book.addedAt }
+  }
+  return furthest
 }
 
 /** Whether a saga is due for another look on the web. */
@@ -100,18 +118,38 @@ export const watchIsStale = (watch: SagaWatch | undefined, now: Date): boolean =
 export const readerIsStale = (reader: DiscoveryReader | undefined, now: Date): boolean =>
   !reader || now.getTime() - reader.syncedAt.getTime() > SYNC_EVERY_MS
 
+/** Whether a reader added a volume of the saga since its last look that the
+ *  look did not find: the web is searched again rather than in a week. Once
+ *  looked up again, the watch is newer than the volume, so a volume the web
+ *  still does not know costs one look, not one an hour. */
+export const watchIsBehind = (watch: SagaWatch | undefined, saga: WatchedSaga): boolean => {
+  const { furthest } = saga
+  if (!watch || !furthest || furthest.addedAt <= watch.checkedAt) return false
+  return !watch.volumes.some((volume) => volume.number === furthest.number)
+}
+
 /** The sagas every reader follows, each once, the ones never looked up first,
- *  then the longest unchecked. */
+ *  then the longest unchecked: every one a week old, and every one a reader
+ *  holds further than it found. */
 export const dueWatches = (
   readers: readonly DiscoveryReader[],
   watches: ReadonlyMap<string, SagaWatch>,
   now: Date,
 ): WatchedSaga[] => {
   const sagas = new Map<string, WatchedSaga>()
-  for (const reader of readers) for (const saga of reader.sagas) sagas.set(watchKeyOf(saga), saga)
+  const behind = new Set<string>()
+  for (const reader of readers)
+    for (const saga of reader.sagas) {
+      const key = watchKeyOf(saga)
+      sagas.set(key, saga)
+      if (watchIsBehind(watches.get(key), saga)) behind.add(key)
+    }
   const checkedAt = (saga: WatchedSaga) => watches.get(watchKeyOf(saga))?.checkedAt.getTime() ?? 0
   return [...sagas.values()]
-    .filter((saga) => watchIsStale(watches.get(watchKeyOf(saga)), now))
+    .filter((saga) => {
+      const key = watchKeyOf(saga)
+      return behind.has(key) || watchIsStale(watches.get(key), now)
+    })
     .sort((left, right) => checkedAt(left) - checkedAt(right))
 }
 
