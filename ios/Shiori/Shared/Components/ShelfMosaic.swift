@@ -236,6 +236,9 @@ struct MosaicGlyphs<Leading: View, Trailing: View>: View {
             trailing()
         }
         .font(.caption2.weight(.semibold))
+        // A notch below the text size: at full scale the glyphs covered too
+        // much of a cover a third of the screen wide.
+        .imageScale(.small)
         .foregroundStyle(.white)
         .shadow(color: .black.opacity(0.5), radius: 2)
         .padding(.horizontal, 5)

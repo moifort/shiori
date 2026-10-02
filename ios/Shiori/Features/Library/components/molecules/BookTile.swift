@@ -3,9 +3,10 @@ import SwiftUI
 /// One book in the library's mosaic, as the Photos app draws a photo: the
 /// cover alone, square-cornered, edge to edge with its neighbours. Over its
 /// foot, the heart of a favourite on the left and the reading status on the
-/// right, where Photos puts a favourite's heart and a video's length. Whether
-/// it is a recording goes unsaid: one more glyph was noise. The rest is a tap
-/// away.
+/// right, where Photos puts a favourite's heart and a video's length. A read
+/// book shows no status — most of a library is read, and a glyph on every
+/// tile said nothing — so its heart moves into the right corner. Whether it is
+/// a recording goes unsaid: one more glyph was noise. The rest is a tap away.
 struct BookTile: View {
     let book: Book
     let width: CGFloat
@@ -21,17 +22,21 @@ struct BookTile: View {
         return (pixels + 63) / 64 * 64
     }
 
+    private var showsStatusGlyph: Bool { showsStatus && book.status != .read }
+
     var body: some View {
         BookCover(book: book, width: width, showsFormatBadge: false, cornerRadius: 0)
             .environment(\.coverMaxPixelSize, maxPixelSize)
             .overlay(alignment: .bottom) {
-                if book.favorite || showsStatus {
+                if book.favorite || showsStatusGlyph {
                     MosaicGlyphs {
-                        if book.favorite { Image(systemName: "heart.fill") }
+                        if book.favorite && showsStatusGlyph { Image(systemName: "heart.fill") }
                     } trailing: {
-                        if showsStatus {
+                        if showsStatusGlyph {
                             Image(systemName: book.status.symbol)
                                 .accessibilityLabel(Text(book.status.shelfTitle))
+                        } else if book.favorite {
+                            Image(systemName: "heart.fill")
                         }
                     }
                 }
