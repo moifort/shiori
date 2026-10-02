@@ -200,7 +200,7 @@ struct LovedAuthorsStrip: View {
                 }
             Text(loved.name)
                 .font(.caption.weight(.medium))
-                .lineLimit(2, reservesSpace: true)
+                .lineLimit(2)
                 .multilineTextAlignment(.center)
             Text(loved.lovers.caption)
                 .font(.caption2)
