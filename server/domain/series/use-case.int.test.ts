@@ -8,6 +8,9 @@ const { SeriesUseCase } = await import('~/domain/series/use-case')
 const { BookCommand } = await import('~/domain/book/command')
 const { SeriesId, SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
 const { BookTitle } = await import('~/domain/shared/primitives')
+const { BookQuery } = await import('~/domain/book/query')
+const { SeriesOpinionCommand } = await import('~/domain/series-opinion/command')
+const { SeriesOpinionQuery } = await import('~/domain/series-opinion/query')
 
 const reader = 'reader-1' as UserId
 const NOW = new Date('2026-09-22T10:00:00.000Z')
@@ -290,5 +293,75 @@ describe('a saga held in two languages', () => {
       ),
     ).toEqual(['Dune', 'Le Messie de Dune'])
     expect((await SeriesUseCase.describe(reader, dune, 'fr'))?.language).toBe('en')
+  })
+})
+
+describe('merging a duplicate saga', () => {
+  const kept = SeriesId('assassin-royal--robin-hobb')
+  const duplicate = SeriesId('l-assassin-royal-french-edition--robin-hobb')
+
+  const shelve = (id: typeof kept, name: string, volume: number, language: 'fr' | 'en' = 'fr') =>
+    BookCommand.add(
+      reader,
+      {
+        title: BookTitle(`${name}, tome ${volume}`),
+        language,
+        series: { id, name: SeriesName(name), volume: VolumeNumber(volume), kind: 'main' },
+      },
+      NOW,
+    )
+
+  test('files every volume under the kept saga, at its number and under its name', async () => {
+    await shelve(kept, "L'Assassin royal", 1)
+    await shelve(duplicate, "L'Assassin royal (French Edition)", 2)
+    await shelve(duplicate, "L'Assassin royal (French Edition)", 3)
+
+    expect(await SeriesUseCase.mergeInto(reader, duplicate, undefined, kept)).toBe(2)
+
+    expect(await BookQuery.bySeries(reader, duplicate)).toEqual([])
+    const volumes = await BookQuery.bySeries(reader, kept)
+    expect(volumes.map((book) => `${book.series?.name} ${book.series?.volume}`).sort()).toEqual([
+      "L'Assassin royal 1",
+      "L'Assassin royal 2",
+      "L'Assassin royal 3",
+    ])
+  })
+
+  test("forgets the duplicate's opinion and keeps the kept saga's", async () => {
+    await shelve(kept, "L'Assassin royal", 1)
+    await shelve(duplicate, 'Assassin', 2)
+    await SeriesOpinionCommand.setFavorite(reader, kept, true)
+    await SeriesOpinionCommand.setFavorite(reader, duplicate, true)
+
+    await SeriesUseCase.mergeInto(reader, duplicate, undefined, kept)
+
+    expect(await SeriesOpinionQuery.of(reader, duplicate)).toBeNull()
+    expect((await SeriesOpinionQuery.of(reader, kept))?.favorite).toBe(true)
+  })
+
+  test('moves only the edition named, and the duplicate keeps its opinion while it remains', async () => {
+    await shelve(kept, "L'Assassin royal", 1)
+    await shelve(duplicate, 'Assassin', 2, 'fr')
+    await shelve(duplicate, "Assassin's Apprentice", 1, 'en')
+    await SeriesOpinionCommand.setFavorite(reader, duplicate, true)
+
+    expect(await SeriesUseCase.mergeInto(reader, duplicate, 'fr', kept)).toBe(1)
+
+    const left = await BookQuery.bySeries(reader, duplicate)
+    expect(left.map((book) => book.language)).toEqual(['en'])
+    expect((await SeriesOpinionQuery.of(reader, duplicate))?.favorite).toBe(true)
+  })
+
+  test('refuses a saga the reader does not hold, itself, and another format', async () => {
+    await shelve(duplicate, 'Assassin', 2)
+
+    expect(await SeriesUseCase.mergeInto(reader, duplicate, undefined, kept)).toBe('not-found')
+    expect(await SeriesUseCase.mergeInto(reader, duplicate, undefined, duplicate)).toBe(
+      'same-series',
+    )
+    expect(
+      await SeriesUseCase.mergeInto(reader, duplicate, undefined, SeriesId(`${kept}--audio`)),
+    ).toBe('other-format')
+    expect(await BookQuery.bySeries(reader, duplicate)).toHaveLength(1)
   })
 })

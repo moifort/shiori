@@ -178,6 +178,37 @@ enum SeriesAPI {
         return data.deleteSeries
     }
 
+    /// Every saga the reader holds, one row per edition, alphabetically: what
+    /// a duplicate can be folded into.
+    static func mergeCandidates() async throws -> [FollowedSeries] {
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.MergeCandidatesQuery()
+        )
+        return data.mySeries.map { FollowedSeries(row: $0.fragments.followedSeriesRow) }
+    }
+
+    /// Folds a duplicate saga into the one the reader keeps: its volumes —
+    /// only those of `language` when they stand in one edition — move there at
+    /// their numbers, and the duplicate leaves the library with its rating.
+    /// Two sagas change, so every list reloads. Answers how many books moved.
+    @discardableResult
+    static func merge(
+        seriesId: String,
+        language: BookLanguage? = nil,
+        into targetId: String
+    ) async throws -> Int {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.MergeSeriesMutation(
+                seriesId: seriesId,
+                language: graphQLLanguage(language),
+                intoSeriesId: targetId
+            )
+        )
+        return data.mergeSeries
+    }
+
     /// Rate the saga itself. Leaves every volume rating alone — the two say
     /// different things about different objects.
     static func rate(seriesId: String, stars: Int) async throws -> SeriesOpinion {

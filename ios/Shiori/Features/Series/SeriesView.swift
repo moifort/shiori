@@ -48,6 +48,10 @@ struct SeriesView: View {
     /// A rating, a heart or the removal is on its way to the server.
     @State private var isSaving = false
     @State private var confirmDelete = false
+    /// The sheet picking the saga this one, a duplicate, is folded into.
+    @State private var isMerging = false
+    /// The saga was folded into another: its screen closes with the sheet.
+    @State private var merged = false
     @State private var isRating = false
     /// The refresh came back with nothing: the catalogue on screen is the old one.
     @State private var refreshFailed = false
@@ -155,6 +159,17 @@ struct SeriesView: View {
                     Task { await rate(stars) }
                 }
             )
+        }
+        .sheet(isPresented: $isMerging, onDismiss: { if merged { dismiss() } }) {
+            MergeSeriesSheet(
+                seriesId: seriesId,
+                seriesName: series?.name ?? owned.first?.series?.name ?? "",
+                isAudio: seriesId.hasSuffix("--audio"),
+                author: series?.author ?? owned.first?.authors.first,
+                ownedCount: owned.count
+            ) { target in
+                await merge(into: target)
+            }
         }
         .sheet(isPresented: $isDeclaringVolumeCount) {
             VolumeCountSheet(
@@ -267,6 +282,12 @@ struct SeriesView: View {
                         }
                         .accessibilityIdentifier("series-follow")
                     }
+                    // A scan and an import often name one saga twice: the
+                    // reader keeps one, and this one's volumes move there.
+                    Button("Fusionner avec…", systemImage: "arrow.triangle.merge") {
+                        isMerging = true
+                    }
+                    .accessibilityIdentifier("series-merge")
                     Button("Supprimer", systemImage: "trash", role: .destructive) {
                         confirmDelete = true
                     }
@@ -860,6 +881,19 @@ struct SeriesView: View {
             dismiss()
         } catch {
             errorMessage = reportError(error)
+        }
+    }
+
+    /// Folds this saga into the one the reader picked. The screen leaves once
+    /// the sheet has closed: the saga is gone from the library.
+    private func merge(into target: FollowedSeries) async -> String? {
+        do {
+            // The edition this screen shows, and no other, as on a removal.
+            try await SeriesAPI.merge(seriesId: seriesId, language: language, into: target.seriesId)
+            merged = true
+            return nil
+        } catch {
+            return reportError(error)
         }
     }
 

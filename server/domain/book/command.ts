@@ -516,6 +516,25 @@ export namespace BookCommand {
     return { removed: going.length, remaining: volumes.length - going.length }
   }
 
+  /** File the reader's volumes of one saga under another — only those of one
+   *  edition when `edition` names a language. Each keeps its number, its kind
+   *  and everything else; only the saga it names changes. Returns how many
+   *  books moved, and how many volumes of the first saga remain. */
+  export const moveSeries = async (
+    userId: UserId,
+    from: SeriesId,
+    edition: BookLanguage | undefined,
+    to: Pick<SeriesMembership, 'id' | 'name'>,
+    batch?: WriteBatch,
+  ): Promise<{ moved: number; remaining: number }> => {
+    const volumes = await repository.findBySeries(userId, from)
+    const going = edition ? volumes.filter((volume) => volume.language === edition) : volumes
+    for (const volume of going)
+      if (volume.series)
+        await repository.save({ ...volume, series: { ...volume.series, ...to } }, batch)
+    return { moved: going.length, remaining: volumes.length - going.length }
+  }
+
   /** Give every reader's volumes of a saga in one edition the name that
    *  edition's catalogue gives it: a book carries whatever a scan or an import
    *  wrote — "Red Rising [French Edition]" — where the saga screen shows the

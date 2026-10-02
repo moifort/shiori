@@ -738,6 +738,48 @@ describe('removing a saga from the library', () => {
   })
 })
 
+describe('merging a duplicate saga', () => {
+  const addDuplicate = (title: string, volume: number) =>
+    execute(
+      `mutation { addBook(input: {
+        title: "${title}"
+        authors: ["Frank Herbert"]
+        series: { id: "dune-fr--frank-herbert", name: "Dune (French Edition)", volume: ${volume}, kind: MAIN }
+      }) { id } }`,
+    )
+
+  test('files the duplicate under the kept saga and takes it off the tab', async () => {
+    await addVolume('Dune', 1)
+    await addDuplicate('Le Messie de Dune', 2)
+    await execute(
+      'mutation { rateSeries(seriesId: "dune-fr--frank-herbert", rating: 2) { rating } }',
+    )
+
+    const merged = await execute(
+      'mutation { mergeSeries(seriesId: "dune-fr--frank-herbert", intoSeriesId: "dune--frank-herbert") }',
+    )
+    expect(merged.errors).toBeUndefined()
+    expect(merged.data?.mergeSeries).toBe(1)
+
+    const left = await execute(
+      '{ mySeries { id name ownedCount } seriesOpinion(seriesId: "dune-fr--frank-herbert") { rating } }',
+    )
+    expect(left.data).toEqual({
+      mySeries: [{ id: 'dune--frank-herbert', name: 'Dune', ownedCount: 2 }],
+      seriesOpinion: null,
+    })
+  })
+
+  test('refuses a kept saga the reader holds nothing of', async () => {
+    await addDuplicate('Le Messie de Dune', 2)
+
+    const merged = await execute(
+      'mutation { mergeSeries(seriesId: "dune-fr--frank-herbert", intoSeriesId: "dune--frank-herbert") }',
+    )
+    expect(merged.errors?.[0]?.extensions?.code).toBe('NOT_FOUND')
+  })
+})
+
 describe('a saga the reader counted themselves', () => {
   const DUNE = 'dune--frank-herbert'
   const aCatalogue = {

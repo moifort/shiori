@@ -116,6 +116,21 @@ mutation DeleteSeries($seriesId: SeriesId!, $language: BookLanguage) {
   deleteSeries(seriesId: $seriesId, language: $language)
 }
 
+# The sagas a duplicate can be folded into: every saga the reader holds, one
+# row per edition, without the covers the tab signs.
+query MergeCandidates {
+  mySeries {
+    ...FollowedSeriesRow
+  }
+}
+
+# Folds a duplicate saga into the one the reader keeps: its volumes — one
+# edition's, when the reader stands in one — move there at their numbers, and
+# the duplicate leaves the library. Answers how many books moved.
+mutation MergeSeries($seriesId: SeriesId!, $language: BookLanguage, $intoSeriesId: SeriesId!) {
+  mergeSeries(seriesId: $seriesId, language: $language, intoSeriesId: $intoSeriesId)
+}
+
 fragment FollowedSeriesRow on FollowedSeries {
   id
   name

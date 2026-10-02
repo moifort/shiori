@@ -193,6 +193,52 @@ export namespace SeriesUseCase {
       (removed) => removed > 0,
     )
 
+  /** Fold a duplicate saga into the one the reader keeps: every volume they
+   *  hold of it — only those of one edition when `edition` names a language —
+   *  is filed under `targetId`, at its own number, and the duplicate leaves the
+   *  Series tab with its last volume. Two sagas a scan and an import named
+   *  apart, "Assassin Royal" and "L'Assassin royal (French Edition)", become one.
+   *
+   *  The volumes take the name the kept saga's own volumes carry, in their
+   *  language when it holds that edition. Its opinion stands; the duplicate's
+   *  goes once no volume of it remains, as on a removal. The shared catalogues
+   *  stay, as they belong to nobody.
+   *
+   *  One batch, so the library never shows a saga half moved. `not-found` when
+   *  the reader holds nothing of the kept saga, `same-series` when it is the
+   *  duplicate itself, `other-format` when one saga is heard and the other read:
+   *  a recording has a spine of its own. Returns how many books moved. */
+  export const mergeInto = async (
+    userId: UserId,
+    seriesId: SeriesId,
+    edition: BookLanguage | undefined,
+    targetId: SeriesId,
+  ): Promise<number | 'not-found' | 'same-series' | 'other-format'> => {
+    if (seriesId === targetId) return 'same-series'
+    if (isAudioSeries(seriesId) !== isAudioSeries(targetId)) return 'other-format'
+    const kept = await BookQuery.bySeries(userId, targetId)
+    const named = (
+      kept.find((book) => book.language === edition && book.series) ??
+      kept.find((book) => book.series)
+    )?.series
+    if (!named) return 'not-found'
+    return AnalyticsUseCase.afterWrite(
+      userId,
+      async (batch) => {
+        const { moved, remaining } = await BookCommand.moveSeries(
+          userId,
+          seriesId,
+          edition,
+          { id: targetId, name: named.name },
+          batch,
+        )
+        if (moved > 0 && remaining === 0) await SeriesOpinionCommand.forget(userId, seriesId, batch)
+        return moved
+      },
+      (moved) => moved > 0,
+    )
+  }
+
   /** One saga's catalogue in one edition, built the first time somebody asks
    *  for it.
    *

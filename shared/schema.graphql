@@ -2132,6 +2132,24 @@ type Mutation {
   lookUpSagaReleases(language: BookLanguage!, seriesId: SeriesId!): SagaReleases!
 
   """
+  Fold a duplicate saga into the one the reader keeps: every volume they hold of `seriesId` — only those of one edition when `language` names it — is filed under `intoSeriesId` at its own number, under the name its volumes carry, and the duplicate leaves the library with its last volume, its rating and heart with it. The kept saga's opinion stands; the shared catalogues are left alone. Returns how many books moved, zero when the reader held none of the duplicate.
+  
+  `NOT_FOUND` when the reader holds no volume of the kept saga; `BAD_USER_INPUT` when both name the same saga, or when one is heard and the other read.
+  """
+  mergeSeries(
+    """The saga the reader keeps."""
+    intoSeriesId: SeriesId!
+
+    """
+    The edition to move, for a duplicate held in more than one language. Absent, every edition moves.
+    """
+    language: BookLanguage
+
+    """The duplicate."""
+    seriesId: SeriesId!
+  ): Int!
+
+  """
   Describe a volume the release watch announced, for its page before the reader adds it. A printed volume is described by the web-grounded model; a recording Audible confirmed is read off Audible’s catalogue first, and the model adds its summary, genre and first publication. A few seconds. Nothing is saved.
   
   Spends one scan of the allowance, as a typed title does. Fails with `NOT_FOUND` for a volume no watch announced in that edition, `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` when the model call errors.
