@@ -14,6 +14,7 @@ import type {
 import { Year } from '~/domain/shared/primitives'
 import { lovedFirst, lovedRankOf } from '~/domain/shared/rating'
 import type { AuthorName, BookTitle, StarRating, Year as YearValue } from '~/domain/shared/types'
+import { optionally } from '~/utils/input'
 import { slugify } from '~/utils/slug'
 
 /** Which edition of a saga a rule is judged for, and on which day. Without a
@@ -560,7 +561,9 @@ export const withReleases = (
       number: entry.volume,
       title: entry.title,
       kind: 'main',
-      publishedIn: entry.date ? Year(Number(entry.date.slice(0, 4))) : undefined,
+      // A store's placeholder date (2099-12-31) is past any publication year:
+      // the volume still joins, with its date, but without a year.
+      publishedIn: entry.date ? optionally(Number(entry.date.slice(0, 4)), Year) : undefined,
       releases: entry.date ? { [language]: entry.date } : undefined,
       covers: entry.coverUrl ? { [language]: entry.coverUrl } : undefined,
     })

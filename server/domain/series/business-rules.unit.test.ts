@@ -699,6 +699,14 @@ describe('withReleases', () => {
     })
   })
 
+  test('a volume dated past any publication year joins without one, and does not throw', () => {
+    const merged = withReleases(series, 'fr', [
+      { volume: VolumeNumber(2), title: BookTitle('Deux'), date: ReleaseDate('2099-12-31') },
+    ])
+    expect(merged.volumes[1]).toMatchObject({ title: 'Deux', releases: { fr: '2099-12-31' } })
+    expect(merged.volumes[1].publishedIn).toBeUndefined()
+  })
+
   test('nothing the catalogue holds is removed, and the same answer changes nothing', () => {
     const once = withReleases(series, 'fr', [
       { volume: VolumeNumber(1), title: BookTitle('One'), date: ReleaseDate('2021') },
