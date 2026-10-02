@@ -24,8 +24,13 @@ type Cover = {
   match: string
   /** Words that rule a title out: a spin-off shares its series' name. */
   avoid?: string
+  /** A second search, for a volume the first one does not reach. */
+  alternative?: string
   media?: 'ebook' | 'audiobook'
 }
+
+const range = (first: number, last: number) =>
+  Array.from({ length: last - first + 1 }, (_, index) => first + index)
 
 const volumes = (slug: string, term: string, match: (n: number) => string, numbers: number[]) =>
   numbers.map((n) => ({
@@ -35,30 +40,26 @@ const volumes = (slug: string, term: string, match: (n: number) => string, numbe
   }))
 
 const COVERS: Cover[] = [
-  // The first volumes are sold under another listing than the recent ones.
-  ...volumes(
-    'one-piece',
-    'one piece tome',
-    (n) => `one piece tome ${n}`,
-    [1, 2, 3, 4, 5, 6, 7, 8],
-  ).map((cover) => ({ ...cover, term: `${cover.term} oda` })),
-  ...volumes(
-    'one-piece',
-    'one piece édition originale tome',
-    (n) => `one piece originale tome ${n}`,
-    [109, 110, 111, 112, 113, 114],
+  // Every volume of the long sagas: the library's mosaic draws dozens at once.
+  // One Piece's first volumes and its recent ones are sold under two listings.
+  ...volumes('one-piece', 'one piece tome', (n) => `one piece tome ${n}`, range(1, 114)).map(
+    (cover) => ({
+      ...cover,
+      term: `${cover.term} oda`,
+      alternative: cover.term.replace('one piece tome', 'one piece édition originale tome'),
+    }),
   ),
   ...volumes(
     'frieren',
     'frieren t',
     (n) => `frieren t${String(n).padStart(2, '0')}`,
-    [1, 2, 3, 4, 5, 6, 7, 8, 12, 13, 14, 15],
-  ).map((cover) => ({ ...cover, term: `frieren ${cover.match.split(' ')[1]}` })),
+    range(1, 15),
+  ).map((cover) => ({ ...cover, term: cover.match })),
   ...volumes(
     'blue-lock',
     'blue lock',
     (n) => `blue lock t${String(n).padStart(2, '0')}`,
-    [1, 2, 3, 4, 5, 6, 7, 8, 32, 33, 34, 35],
+    range(1, 35),
   ).map((cover) => ({ ...cover, term: cover.match, avoid: 'nagi anniversaire' })),
   ...volumes('blacksad', 'blacksad tome', (n) => `blacksad tome ${n}`, [1, 2, 3, 4, 5, 6, 7]).map(
     (cover) =>
@@ -163,26 +164,30 @@ for (const cover of COVERS) {
   if (!force && (await Bun.file(file).exists())) continue
 
   const media = cover.media ?? 'ebook'
-  const url = `https://itunes.apple.com/search?${new URLSearchParams({
-    term: cover.term,
-    country: 'fr',
-    media,
-    limit: '25',
-  })}`
-  const { results } = await search(url)
   const words = plain(cover.match).split(' ')
-  const found = results.find((result) => {
-    const title = plain(`${result.trackName ?? ''} ${result.collectionName ?? ''}`)
-    const tokens = title.split(' ')
-    const avoided = plain(cover.avoid ?? '')
-      .split(' ')
-      .filter(Boolean)
-    return (
-      words.every((word) => tokens.includes(word)) &&
-      !avoided.some((word) => tokens.includes(word)) &&
-      result.artworkUrl100
-    )
-  })
+  const avoided = plain(cover.avoid ?? '')
+    .split(' ')
+    .filter(Boolean)
+  const lookFor = async (term: string) => {
+    const url = `https://itunes.apple.com/search?${new URLSearchParams({
+      term,
+      country: 'fr',
+      media,
+      limit: '25',
+    })}`
+    const { results } = await search(url)
+    return results.find((result) => {
+      const tokens = plain(`${result.trackName ?? ''} ${result.collectionName ?? ''}`).split(' ')
+      return (
+        words.every((word) => tokens.includes(word)) &&
+        !avoided.some((word) => tokens.includes(word)) &&
+        result.artworkUrl100
+      )
+    })
+  }
+  const found =
+    (await lookFor(cover.term)) ??
+    (cover.alternative ? await lookFor(cover.alternative) : undefined)
   if (!found?.artworkUrl100) {
     missing += 1
     process.stdout.write(`not found    ${cover.slug}\n`)

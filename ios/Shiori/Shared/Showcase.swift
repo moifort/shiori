@@ -90,6 +90,7 @@ enum Showcase {
         /// The cover slug of a volume, by number.
         let slug: String
         var firstPublishedIn: Int?
+        var description: String?
 
         var isAudio: Bool { format == .audiobook }
 
@@ -108,7 +109,11 @@ enum Showcase {
             publisher: "Glénat", genre: .adventure, subgenres: ["Shōnen", "Pirates"], pages: 208,
             published: 113, owned: 113, read: 112, readBetween: (900, 20), readingSince: 3,
             announced: (114, nil, 68), rating: 5, favorite: true, slug: "one-piece",
-            firstPublishedIn: 1997
+            firstPublishedIn: 1997,
+            description: """
+            Monkey D. Luffy, un garçon au corps élastique, prend la mer pour trouver le One \
+            Piece, le trésor légendaire de Gol D. Roger, et devenir le roi des pirates.
+            """
         ),
         Saga(
             id: "frieren", name: "Frieren", authors: ["Kanehito Yamada", "Tsukasa Abe"],
@@ -132,7 +137,12 @@ enum Showcase {
                 5: "La Mascarade du boucher", 6: "L'Œil de la Veuve du Chaos",
             ],
             published: 5, owned: 5, read: 5, readBetween: (300, 38),
-            announced: (6, nil, 47), rating: 5, favorite: true, slug: "dcc", firstPublishedIn: 2020
+            announced: (6, nil, 47), rating: 5, favorite: true, slug: "dcc", firstPublishedIn: 2020,
+            description: """
+            Quand la Terre est rasée pour devenir le décor d'un jeu télévisé intergalactique, \
+            Carl et la chatte de son ex, Princesse Beignet, n'ont qu'une issue : descendre les \
+            dix-huit étages du donjon, sous l'œil de milliards de spectateurs.
+            """
         ),
         Saga(
             id: "blacksad", name: "Blacksad", authors: ["Juan Díaz Canales", "Juanjo Guarnido"],
@@ -400,10 +410,8 @@ enum Showcase {
 
     // MARK: - Series
 
-    /// A saga as the Series tab draws it: its volumes on the shelf, and the
-    /// catalogue's strip with the volume out the reader lacks and the one to come.
-    static func followed(_ saga: Saga) -> FollowedSeries {
-        let volumes = books.filter { $0.series?.id == saga.id }
+    /// The saga's catalogue: every volume out, then the one announced.
+    static func spine(of saga: Saga) -> [Volume] {
         var spine = (1...saga.published).map { number in
             Volume(
                 number: number,
@@ -434,6 +442,14 @@ enum Showcase {
                 )]
             ))
         }
+        return spine
+    }
+
+    /// A saga as the Series tab draws it: its volumes on the shelf, and the
+    /// catalogue's strip with the volume out the reader lacks and the one to come.
+    static func followed(_ saga: Saga) -> FollowedSeries {
+        let volumes = books.filter { $0.series?.id == saga.id }
+        let spine = spine(of: saga)
         let readCount = volumes.filter { $0.status == .read }.count
         let state: SeriesState = readCount == saga.published && saga.announced == nil
             ? .complete
@@ -468,6 +484,40 @@ enum Showcase {
             .sorted { ($0.shelvedAt ?? .distantPast) > ($1.shelvedAt ?? .distantPast) }
         let page = Array(all.dropFirst(offset).prefix(limit))
         return (page, offset + page.count < all.count)
+    }
+
+    /// The saga page: its catalogue, what the reader thinks of it, their volumes.
+    static func seriesScreen(id: String) -> (series: BookSeries?, opinion: SeriesOpinion?, owned: [Book]) {
+        guard let saga = sagas.first(where: { $0.id == id }) else { return (nil, nil, []) }
+        return (
+            series: BookSeries(
+                id: saga.id,
+                name: saga.name,
+                author: saga.authors.joined(separator: ", "),
+                description: saga.description,
+                spine: spine(of: saga),
+                isAudio: saga.isAudio
+            ),
+            opinion: SeriesOpinion(seriesId: saga.id, rating: saga.rating, favorite: saga.favorite),
+            owned: books.filter { $0.series?.id == saga.id }
+        )
+    }
+
+    /// The next volume the release watch found, under the saga's introduction.
+    static func sagaReleases(seriesId: String) -> SagaReleases {
+        let saga = sagas.first { $0.id == seriesId }
+        return SagaReleases(
+            watched: true,
+            next: saga?.announced.map { announced in
+                DiscoveredVolume(
+                    number: announced.number,
+                    title: announced.title ?? saga!.title(announced.number),
+                    date: day(announced.inDays),
+                    isbn13: nil,
+                    coverURL: cover(saga!.coverSlug(announced.number))
+                )
+            }
+        )
     }
 
     static func followedSeries(seriesId: String) -> FollowedSeries? {

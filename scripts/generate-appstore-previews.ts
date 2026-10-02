@@ -71,21 +71,19 @@ const PANORAMAS: Panorama[] = [
     subtitles: WHAT_THE_APP_DOES,
     panels: [
       {
-        // The review the scan fills, not the viewfinder: the simulator has no
-        // camera, and the answer sells the feature better than the tool.
-        source: '01-scan.png',
-        output: '01-scan.png',
-        captions: { fr: 'Une photo, un livre catalogué' },
+        source: '01-library.png',
+        output: '01-bibliotheque.png',
+        captions: { fr: 'Une photo, votre bibliothèque' },
       },
       {
         source: '02-home.png',
         output: '02-accueil.png',
-        captions: { fr: "Vos lectures en un coup d'œil" },
+        captions: { fr: 'Des analytics détaillés' },
       },
       {
-        source: '03-library.png',
+        source: '03-series.png',
         output: '03-series.png',
-        captions: { fr: 'Vos séries, tome par tome' },
+        captions: { fr: "Détection des séries et de votre état d'avancement" },
       },
     ],
   },
@@ -98,19 +96,21 @@ const PANORAMAS: Panorama[] = [
     subtitles: WHAT_THE_APP_DOES,
     panels: [
       {
-        source: '04-book.png',
-        output: '04-fiche.png',
-        captions: { fr: 'Notez, annotez, souvenez-vous' },
+        source: '04-saga.png',
+        output: '04-serie.png',
+        captions: { fr: "Être averti de l'arrivée d'un tome de votre série préférée" },
       },
       {
         source: '05-discover.png',
         output: '05-decouvrir.png',
-        captions: { fr: 'Ne ratez plus aucune sortie' },
+        captions: {
+          fr: 'Découvrez les sorties, les disponibilités et les coups de cœur de vos amis',
+        },
       },
       {
         source: '06-shared.png',
         output: '06-partage.png',
-        captions: { fr: 'Vos lectures, entre amis' },
+        captions: { fr: 'Partagez votre bibliothèque avec vos proches' },
       },
     ],
   },

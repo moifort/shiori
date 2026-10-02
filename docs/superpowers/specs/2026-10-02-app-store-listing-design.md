@@ -97,12 +97,12 @@ the device and pastes the real captures.
 
 | Panorama | Scene | Panel | Caption |
 |---|---|---|---|
-| 1 | Wooden bookshelves, warm lamp light | 01 Scan | Une photo, un livre catalogué |
-| | | 02 Accueil | Vos lectures en un coup d'œil |
-| | | 03 Bibliothèque | Vos séries, tome par tome |
-| 2 | Reading corner: armchair, stacked books, window | 04 Fiche | Notez, annotez, souvenez-vous |
-| | | 05 Découvrir | Ne ratez plus aucune sortie |
-| | | 06 Partagé | Vos lectures, entre amis |
+| 1 | Home library at dusk, bookshelves, lamp light | 01 Bibliothèque (mosaic) | Une photo, votre bibliothèque |
+| | | 02 Accueil | Des analytics détaillés |
+| | | 03 Séries | Détection des séries et de votre état d'avancement |
+| 2 | Reading corner: armchair, stacked books, window | 04 Série (One Piece, next volume) | Être averti de l'arrivée d'un tome de votre série préférée |
+| | | 05 Découvrir | Découvrez les sorties, les disponibilités et les coups de cœur de vos amis |
+| | | 06 Partagé | Partagez votre bibliothèque avec vos proches |
 
 Line under every caption: « Ce que vous lisez, ce que vous avez lu, ce qui arrive. »
 

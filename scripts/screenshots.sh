@@ -40,22 +40,6 @@ xcrun simctl bootstatus "$udid" -b >/dev/null
 # Apple's own marketing status bar: 9:41, full signal, full battery.
 xcrun simctl status_bar "$udid" override --time "9:41" --batteryState charged \
   --batteryLevel 100 --cellularBars 4 --wifiBars 3 --dataNetwork wifi
-# The scan starts from the add sheet's last photo: the cover, and the right to read it.
-xcrun simctl privacy "$udid" grant photos "$BUNDLE_ID" 2>/dev/null || true
-# On a simulator whose Photos never opened, addmedia waits forever for a library
-# that does not exist yet: opening Photos once creates it.
-xcrun simctl launch "$udid" com.apple.mobileslideshow >/dev/null
-sleep 3
-xcrun simctl addmedia "$udid" screenshots/covers/jacaranda.jpg &
-addmedia=$!
-for _ in $(seq 1 30); do kill -0 "$addmedia" 2>/dev/null || break; sleep 2; done
-if kill -0 "$addmedia" 2>/dev/null; then
-  kill "$addmedia"
-  echo "error: simctl addmedia did not return within a minute." >&2
-  exit 1
-fi
-wait "$addmedia"
-xcrun simctl terminate "$udid" com.apple.mobileslideshow 2>/dev/null || true
 
 rm -rf "$DESTINATION_DIR"
 mkdir -p "$DESTINATION_DIR"

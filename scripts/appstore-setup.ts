@@ -159,21 +159,40 @@ log('description, keywords, promotional text, support URL and copyright set')
 const rating = await api<Single<Record<string, unknown>>>(
   `/v1/appInfos/${info.id}/ageRatingDeclaration`,
 )
-// Nothing to declare: every descriptor at its "none", every yes/no at no. The
-// overrides and the regional fields keep what they hold.
-const untouched = new Set([
-  'ageRatingOverride',
-  'ageRatingOverrideV2',
-  'koreaAgeRatingOverride',
-  'kidsAgeBand',
-  'gracRatingClassificationNumber',
-  'developerAgeRatingInfoUrl',
+// Nothing to declare: every descriptor at its "none", every yes/no at no. A
+// fresh declaration holds nulls, so the fields are named rather than read back.
+const NO = [
+  'advertising',
+  'ageAssurance',
+  'gambling',
+  'healthOrWellnessTopics',
+  'lootBox',
+  'messagingAndChat',
+  'parentalControls',
+  'socialMedia',
+  'socialMediaAgeRestricted',
+  'unrestrictedWebAccess',
+  'userGeneratedContent',
+]
+const NONE = [
+  'alcoholTobaccoOrDrugUseOrReferences',
+  'contests',
+  'gamblingSimulated',
+  'gunsOrOtherWeapons',
+  'horrorOrFearThemes',
+  'matureOrSuggestiveThemes',
+  'medicalOrTreatmentInformation',
+  'profanityOrCrudeHumor',
+  'sexualContentGraphicAndNudity',
+  'sexualContentOrNudity',
+  'violenceCartoonOrFantasy',
+  'violenceRealistic',
+  'violenceRealisticProlongedGraphicOrSadistic',
+]
+const declaration = Object.fromEntries([
+  ...NO.map((key) => [key, false]),
+  ...NONE.map((key) => [key, 'NONE']),
 ])
-const declaration = Object.fromEntries(
-  Object.entries(rating.data.attributes)
-    .filter(([key, value]) => !untouched.has(key) && value !== null)
-    .map(([key, value]) => [key, typeof value === 'boolean' ? false : 'NONE']),
-)
 await patch(`/v1/ageRatingDeclarations/${rating.data.id}`, {
   type: 'ageRatingDeclarations',
   id: rating.data.id,

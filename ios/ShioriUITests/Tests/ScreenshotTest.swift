@@ -47,25 +47,25 @@ final class ScreenshotTest: XCTestCase {
         settle()
         save("02-home")
 
-        // Bibliothèque, on its sagas: the strips of covers, a volume to come.
+        // Bibliothèque, its books as a mosaic of covers.
         try open("Bibliothèque")
         let shelves = app.segmentedControls["library-shelf-picker"]
+        try tap(shelves.buttons.element(boundBy: 0), until: app.buttons["library-mode-mosaic"])
+        try tap(app.buttons["library-mode-mosaic"], until: app.buttons["book-tile"].firstMatch)
+        settle()
+        save("01-library")
+
+        // The sagas: their strips of covers, the volumes to come.
         try tap(shelves.buttons.element(boundBy: 1), until: app.descendants(matching: .any)["series-row"].firstMatch)
         settle()
-        save("03-library")
+        save("03-series")
 
-        // The book page, opened from the books shelf as a reader would.
-        // From the list rather than the mosaic, whose first row sits under the
-        // navigation bar and takes a tap meant for it.
-        try tap(shelves.buttons.element(boundBy: 0), until: app.buttons["library-mode-all"])
-        try tap(app.buttons["library-mode-all"])
-        try tap(element(labelled: "Projet Dernière Chance"))
-        try wait(app.buttons["book-detail-menu"])
+        // One saga, its next volume announced under its introduction.
+        try tap(app.descendants(matching: .any)["series-row"].firstMatch, until: app.descendants(matching: .any)["series-releases"])
         settle()
-        save("04-book")
-        // The page is a sheet over the tab bar: closed by its own button.
-        try tap(app.navigationBars.buttons["xmark"].firstMatch)
-        _ = app.buttons["book-detail-menu"].waitForNonExistence(timeout: 5)
+        save("04-saga")
+        // A sheet when it is one, closed by its own button; pushed, the tab bar stays.
+        try tap(app.navigationBars.buttons["xmark"].firstMatch, ifPresent: true)
 
         try open("Découvrir")
         try wait(app.descendants(matching: .any)["discover-volume-row"].firstMatch)
@@ -76,15 +76,6 @@ final class ScreenshotTest: XCTestCase {
         try wait(app.descendants(matching: .any)["shared-my-page"])
         settle()
         save("06-shared")
-
-        // The scan: the last photo of the add sheet, read as a cover.
-        try open("Scanner")
-        try tap(app.descendants(matching: .any)["add-book-recent-photo-0"])
-        try wait(app.descendants(matching: .any)["review-save"], timeout: 30)
-        settle()
-        save("01-scan")
-        try tap(app.navigationBars["Vérifier"].buttons["xmark"])
-        _ = app.buttons["review-save"].waitForNonExistence(timeout: 5)
 
         // The paywall, for App Review: behind the settings, as the review notes say.
         try open("Accueil")

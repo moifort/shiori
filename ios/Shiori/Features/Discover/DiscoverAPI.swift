@@ -214,6 +214,11 @@ enum DiscoverAPI {
     /// What the saga screen shows under its introduction, in the edition
     /// opened.
     static func sagaReleases(seriesId: String, language: BookLanguage) async throws -> SagaReleases {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.sagaReleases(seriesId: seriesId)
+        }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.SagaReleasesQuery(

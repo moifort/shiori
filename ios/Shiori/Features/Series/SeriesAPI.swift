@@ -22,6 +22,11 @@ enum SeriesAPI {
         language: BookLanguage? = nil,
         proposal: SeriesProposal? = nil
     ) async throws -> (series: BookSeries?, opinion: SeriesOpinion?, owned: [Book]) {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.seriesScreen(id: id)
+        }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.SeriesScreenQuery(
