@@ -2,7 +2,13 @@ import type { KindleTitle } from 'kindle-api-ts'
 import { shelfKeyOf } from '~/domain/book/business-rules'
 import type { NewBook } from '~/domain/book/command'
 import { CoverUrl } from '~/domain/book/primitives'
-import type { Book, BookId, ReadingStatus, SeriesMembership } from '~/domain/book/types'
+import type {
+  Book,
+  BookId,
+  BookLanguage,
+  ReadingStatus,
+  SeriesMembership,
+} from '~/domain/book/types'
 import { KindleAsin } from '~/domain/kindle/primitives'
 import type {
   ImportableKindleBook,
@@ -82,6 +88,61 @@ export const sagaOf = (
   return { title }
 }
 
+/** The words Amazon names an edition's language with, in the stores' languages:
+ *  "(English Edition)", "(Édition Française)", "Version française", and the
+ *  "french edition" its sort key ends on. */
+const EDITION_LANGUAGES: Record<string, BookLanguage> = {
+  french: 'fr',
+  française: 'fr',
+  francaise: 'fr',
+  english: 'en',
+  anglaise: 'en',
+  spanish: 'es',
+  española: 'es',
+  german: 'de',
+  deutsche: 'de',
+  italian: 'it',
+  italiana: 'it',
+  portuguese: 'pt',
+  dutch: 'nl',
+  swedish: 'sv',
+  polish: 'pl',
+  russian: 'ru',
+  ukrainian: 'uk',
+  turkish: 'tr',
+  arabic: 'ar',
+  japanese: 'ja',
+  chinese: 'zh',
+  korean: 'ko',
+}
+
+const TITLE_LANGUAGE_MENTIONS = [
+  /\((\p{L}+) Edition\)/iu,
+  /[EÉ]dition (\p{L}+)/iu,
+  /Version (\p{L}+)/iu,
+]
+const SORT_KEY_LANGUAGE = /\b(\p{L}+) edition(?:, \p{L}+)?$/u
+
+/** The language of the edition, as Amazon names it.
+ *
+ *  The list carries no language field, but a store names the language of an
+ *  edition foreign to it: in the title for some ("(English Edition)" on
+ *  amazon.fr), in the sort key for every one ("… french edition"). The title is
+ *  read first, the sort key after. An edition in the store's own language may
+ *  be named nowhere, and then keeps none rather than a guess. */
+export const editionLanguageOf = (
+  title: string,
+  sortableTitle: string | undefined,
+): BookLanguage | undefined => {
+  const named = [
+    ...TITLE_LANGUAGE_MENTIONS.map((pattern) => title.match(pattern)?.[1]),
+    sortableTitle?.match(SORT_KEY_LANGUAGE)?.[1],
+  ]
+  return named
+    .map((word) => (word ? EDITION_LANGUAGES[word.toLowerCase()] : undefined))
+    .find(isPresent)
+}
+
 const membershipOf = (
   saga: ReturnType<typeof sagaOf>['series'],
   author: string | undefined,
@@ -114,6 +175,7 @@ export const importableFrom = (
     authors,
     coverUrl: optionally(item.coverUrl, CoverUrl),
     series: membershipOf(saga.series, authors[0]),
+    language: editionLanguageOf(item.title, item.sortableTitle),
     status,
     // Amazon says a book was read, never when: the day it was acquired is the
     // honest lower bound, and import night would rewrite the reading statistics.
@@ -132,6 +194,7 @@ export const bookFrom = (importable: ImportableKindleBook): NewBook => ({
   format: 'ebook',
   publishedCoverUrl: importable.coverUrl,
   series: importable.series,
+  language: importable.language,
   status: importable.status,
   finishedAt: importable.finishedAt,
   addedAt: importable.addedAt,

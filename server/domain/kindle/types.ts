@@ -1,5 +1,5 @@
 import type { Brand } from 'ts-brand'
-import type { CoverUrl, ReadingStatus, SeriesMembership } from '~/domain/book/types'
+import type { BookLanguage, CoverUrl, ReadingStatus, SeriesMembership } from '~/domain/book/types'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 
 /** Amazon's product identifier for a Kindle edition. Ten alphanumeric
@@ -90,6 +90,9 @@ export type ImportableKindleBook = {
   /** Read off the title, which is where Amazon puts the saga. Absent when no
    *  pattern recognizes one, rather than guessed. */
   series?: SeriesMembership
+  /** The language of the edition, which Amazon names in the title or its sort
+   *  key. Absent when neither does. */
+  language?: BookLanguage
   status: ReadingStatus
   /** Amazon says a book was read, never when. A book imported as read is dated
    *  finished on the day it was acquired — the honest lower bound — so a decade

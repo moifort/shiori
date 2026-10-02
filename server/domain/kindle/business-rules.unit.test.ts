@@ -6,6 +6,7 @@ import type { Book, ReadingStatus } from '~/domain/book/types'
 import {
   acquiredSince,
   bookFrom,
+  editionLanguageOf,
   importableFrom,
   isCataloguable,
   kindleLinksFor,
@@ -95,6 +96,41 @@ describe('sagaOf', () => {
   })
 })
 
+// Every title below is one of the first library synced, on amazon.fr.
+describe('editionLanguageOf', () => {
+  test('reads the language a title names', () => {
+    expect(editionLanguageOf('Zodiac Academy 9: Restless Stars (English Edition)', undefined)).toBe(
+      'en',
+    )
+    expect(editionLanguageOf('Enchantra (Édition Française): Wicked Games Tome 2', undefined)).toBe(
+      'fr',
+    )
+    expect(
+      editionLanguageOf(
+        'Zodiac Academy 3: Le Jugement (Zodiac Academy (Édition Française))',
+        undefined,
+      ),
+    ).toBe('fr')
+    expect(
+      editionLanguageOf('Iron Flame - Version française: The Empyrean Tome 2', undefined),
+    ).toBe('fr')
+  })
+
+  // The title of 44 of the 50 titles probed said nothing; their sort key did.
+  test('falls back on the language the sort key ends on', () => {
+    expect(editionLanguageOf('Phantasma: Wicked Games Tome 1', 'phantasma french edition')).toBe(
+      'fr',
+    )
+    expect(editionLanguageOf('La femme de ménage', 'femme de ménage french edition, la')).toBe('fr')
+  })
+
+  test('takes no language from an edition that names none', () => {
+    expect(editionLanguageOf('Captive - Tome 1 (édition reliée)', undefined)).toBeUndefined()
+    expect(editionLanguageOf('1984', '1984')).toBeUndefined()
+    expect(editionLanguageOf('Le Nom du vent', 'nom du vent klingon edition, le')).toBeUndefined()
+  })
+})
+
 describe('importableFrom', () => {
   test('maps a bought title onto the book it would be', () => {
     const importable = importableFrom(aTitle({ title: 'Powerless (Tome 3) - Fearless' }), new Set())
@@ -132,6 +168,15 @@ describe('importableFrom', () => {
     expect(importable?.series).toBeUndefined()
   })
 
+  test('carries the language of the edition', () => {
+    const importable = importableFrom(
+      aTitle({ title: 'Fearless', sortableTitle: 'fearless french edition' }),
+      new Set(),
+    )
+
+    expect(importable?.language).toBe('fr')
+  })
+
   test('offers nothing for a dictionary, a sample, or a bad identifier', () => {
     expect(importableFrom(aTitle({ originType: 'KindleDictionary' }), new Set())).toBeUndefined()
     expect(importableFrom(aTitle({ category: 'KindleEBookSample' }), new Set())).toBeUndefined()
@@ -141,7 +186,10 @@ describe('importableFrom', () => {
 
 describe('bookFrom', () => {
   test('catalogues an ebook carrying its Kindle title', () => {
-    const importable = importableFrom(aTitle({ readStatus: 'READ' }), new Set())
+    const importable = importableFrom(
+      aTitle({ readStatus: 'READ', sortableTitle: 'nom du vent french edition, le' }),
+      new Set(),
+    )
     if (!importable) throw new Error('expected an importable book')
 
     expect(bookFrom(importable)).toMatchObject({
@@ -149,6 +197,7 @@ describe('bookFrom', () => {
       format: 'ebook',
       status: 'read',
       kindleAsin: 'B0TESTAAA1',
+      language: 'fr',
       publishedCoverUrl: 'https://m.media-amazon.com/images/I/91cover.jpg',
     })
   })
