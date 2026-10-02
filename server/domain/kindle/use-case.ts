@@ -15,6 +15,7 @@ import {
   readAsinsOf,
   readingChangesFor,
   readTitleFrom,
+  titlesWorthMatching,
 } from '~/domain/kindle/business-rules'
 import { KindleCommand } from '~/domain/kindle/command'
 import { bookFrom as exportedBookFrom, importablesFrom } from '~/domain/kindle/export-rules'
@@ -121,7 +122,13 @@ export namespace KindleUseCase {
 
     const owned = await BookQuery.all(userId)
     const fresh = acquiredSince(titles, account.lastImportedAt)
-    const { links, linked, reads } = await linksOf(owned, titles, fresh, now)
+    const { links, linked, reads } = await linksOf(
+      owned,
+      titles,
+      fresh,
+      account.lastImportedAt,
+      now,
+    )
     const moves = readingChangesFor(linked, titles, account.readAsins)
     const acquired = toImportable(fresh, linked, reads).filter(
       (importable) => !importable.alreadyInLibrary,
@@ -227,13 +234,12 @@ const linksOf = async (
   owned: readonly Book[],
   titles: readonly KindleTitle[],
   fresh: readonly KindleTitle[],
+  lastPass: Date | undefined,
   now: Date,
 ) => {
-  const taken = new Set<string>(owned.flatMap((book) => (book.kindleAsin ? [book.kindleAsin] : [])))
-  const unlinked = owned.some((book) => book.format !== 'audiobook' && !book.kindleAsin)
-  const untaken = titles.filter((title) => !taken.has(title.asin))
-  const reads = await readingsOf(unlinked ? untaken : fresh, now)
-  const links = kindleLinksFor(owned, titles, reads)
+  const worth = titlesWorthMatching(owned, titles, fresh, lastPass)
+  const reads = await readingsOf([...new Set([...fresh, ...worth])], now)
+  const links = kindleLinksFor(owned, worth, reads)
   const linked = owned.map((book) => {
     const link = links.find((candidate) => candidate.bookId === book.id)
     return link

@@ -22,6 +22,7 @@ import { SeriesName, seriesKeyOf, VolumeNumber } from '~/domain/series/primitive
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import type { UserId } from '~/domain/shared/types'
 import { isPresent, optionally } from '~/utils/input'
+import { slugify } from '~/utils/slug'
 
 /** How a title came to the account that makes it no book of the reader's: the
  *  free extract of a book, and the dictionaries Amazon files under every Kindle
@@ -299,6 +300,37 @@ export const kindleLinksFor = (
     taken.add(match.asin)
     return [{ bookId: book.id, kindleAsin: match.asin, coverUrl: match.coverUrl }]
   })
+}
+
+/** The titles a pass matches books against, so that a pair compared on an
+ *  earlier night is not compared again: it did not match then, and neither
+ *  side has changed since. A title acquired since the last pass meets every
+ *  book; a read book written since — scanned, typed, corrected — meets every
+ *  title of its author not yet linked. Everything else was settled before.
+ *  With no previous pass, every title not yet linked is worth a look. */
+export const titlesWorthMatching = (
+  books: readonly Book[],
+  titles: readonly KindleTitle[],
+  fresh: readonly KindleTitle[],
+  lastPass: Date | undefined,
+): KindleTitle[] => {
+  const taken = new Set<string>(books.flatMap((book) => (book.kindleAsin ? [book.kindleAsin] : [])))
+  const acquired = new Set(fresh.map((title) => title.asin))
+  const authors = new Set(
+    books
+      .filter(
+        (book) =>
+          book.format !== 'audiobook' &&
+          !book.kindleAsin &&
+          (!lastPass || (book.updatedAt ?? book.addedAt).getTime() > lastPass.getTime()),
+      )
+      .map((book) => slugify(book.authors[0] ?? '')),
+  )
+  return titles.filter(
+    (title) =>
+      !taken.has(title.asin) &&
+      (acquired.has(title.asin) || authors.has(slugify(title.authors[0] ?? ''))),
+  )
 }
 
 type LinkableTitle = {

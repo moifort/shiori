@@ -17,6 +17,7 @@ import {
   readTitleFrom,
   sagaOf,
   splitOf,
+  titlesWorthMatching,
 } from '~/domain/kindle/business-rules'
 import { KindleAsin } from '~/domain/kindle/primitives'
 import type { KindleConnection } from '~/domain/kindle/types'
@@ -363,6 +364,39 @@ describe('kindleLinksFor', () => {
 
   test('ignores titles that are no book', () => {
     expect(kindleLinksFor([aBook()], [aTitle({ originType: 'KindleDictionary' })])).toEqual([])
+  })
+})
+
+describe('titlesWorthMatching', () => {
+  const LAST_PASS = new Date('2026-09-30T04:00:00.000Z')
+  const before = new Date('2026-09-01T10:00:00.000Z')
+  const after = new Date('2026-10-01T10:00:00.000Z')
+  const old = aTitle({ asin: 'B0OLDAAAA1' })
+  const bought = aTitle({ asin: 'B0NEWAAAA1', title: 'La Peur du sage' })
+  const asins = (titles: KindleTitle[]) => titles.map((title) => title.asin)
+
+  // Compared on an earlier night, unmatched then, unchanged since.
+  test('leaves out the old titles when no book was written since the last pass', () => {
+    const unchanged = aBook({ media: ['print'], addedAt: before, updatedAt: before })
+    expect(asins(titlesWorthMatching([unchanged], [old, bought], [bought], LAST_PASS))).toEqual([
+      'B0NEWAAAA1',
+    ])
+  })
+
+  test('matches a book written since against every title of its author', () => {
+    const scanned = aBook({ media: ['print'], addedAt: after, updatedAt: after })
+    const other = aTitle({ asin: 'B0OTHERAA1', authors: ['Frank Herbert'] })
+    expect(asins(titlesWorthMatching([scanned], [old, other], [], LAST_PASS))).toEqual([
+      'B0OLDAAAA1',
+    ])
+  })
+
+  test('looks at every title not yet linked on a first pass', () => {
+    const linked = aBook({ id: BookId('linked'), kindleAsin: KindleAsin('B0OLDAAAA1') })
+    const unlinked = aBook({ media: ['print'], addedAt: before })
+    expect(
+      asins(titlesWorthMatching([linked, unlinked], [old, bought], [bought], undefined)),
+    ).toEqual(['B0NEWAAAA1'])
   })
 })
 

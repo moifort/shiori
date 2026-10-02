@@ -404,6 +404,28 @@ describe('a nightly pass', () => {
     )
   })
 
+  // A pair compared on an earlier night is not compared again: the old titles
+  // are read only once a book of their author has been written since.
+  test('reads the old titles again only for a book written since the last pass', async () => {
+    await connect()
+    const paperback = await BookCommand.add(
+      reader,
+      { title: BookTitle('Fearless'), authors: [AuthorName('Lauren Roberts')] },
+      new Date('2026-09-01T10:00:00.000Z'),
+    )
+    await KindleCommand.recordPass(reader, [], NOW)
+    titles = [aTitle({ acquiredAt: new Date('2026-08-01T10:00:00.000Z') })]
+
+    expect(await KindleUseCase.syncLibrary(reader, NIGHT)).toMatchObject({ linked: 0 })
+    expect(titleCalls).toHaveLength(0)
+
+    await BookCommand.setStatus(reader, paperback.id, 'reading', new Date(NIGHT.getTime() + 60_000))
+    startFakeRequest()
+    const later = new Date(NIGHT.getTime() + 3_600_000)
+    expect(await KindleUseCase.syncLibrary(reader, later)).toMatchObject({ linked: 1 })
+    expect(titleCalls.flat().map(({ asin }) => asin)).toEqual(['B0TESTAAA1'])
+  })
+
   test('never touches the note of a book it moves', async () => {
     await connect()
     const book = await anEbook('Fearless')
