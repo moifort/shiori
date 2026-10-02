@@ -107,11 +107,14 @@ export const BOOK_LANGUAGES = [
 ] as const
 export type BookLanguage = (typeof BOOK_LANGUAGES)[number]
 
-/** The edition a book is taken to be in when nothing says otherwise: a cover
- *  that names no language, a title typed by hand, a store selling in its own
- *  language. A volume without one was an edition of its own on the Series tab,
- *  so a French paperback and its French sequel on a Kindle showed as two
- *  sagas; the readers are French, and a wrong guess is one correction away. */
+/** The edition a book is taken to be in when nothing else can say.
+ *
+ *  A book always has a language: a volume without one was an edition of its
+ *  own on the Series tab, so a French paperback and its French sequel on a
+ *  Kindle showed as two sagas. What names it, first to last: the edition
+ *  itself (the cover, Amazon's "(English Edition)"), the store an import
+ *  comes from, which sells its own language unnamed, the language the
+ *  reader's app speaks — and, where no request carries one, this. */
 export const DEFAULT_BOOK_LANGUAGE: BookLanguage = 'fr'
 
 /** What kind of object the reader holds. Prose, sound, or a drawn story — and

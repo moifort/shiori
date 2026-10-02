@@ -3,7 +3,12 @@ import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import { inSagaOrder, readVolumeNumbersOf, shelfDateOf } from '~/domain/book/business-rules'
 import { BookCommand, type NewBook } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
-import type { Book, BookLanguage, Genre } from '~/domain/book/types'
+import {
+  type Book,
+  type BookLanguage,
+  DEFAULT_BOOK_LANGUAGE,
+  type Genre,
+} from '~/domain/book/types'
 import { ScanCommand } from '~/domain/scan/command'
 import type { ScanLanguage } from '~/domain/scan/types'
 import {
@@ -73,7 +78,8 @@ export namespace SeriesUseCase {
     const editionOf = (input: Input) =>
       input.series && {
         id: seriesIdFor(input.series.id, input.format ?? 'book'),
-        language: input.language,
+        // The edition the book is written in, as `BookCommand.add` writes it.
+        language: input.language ?? DEFAULT_BOOK_LANGUAGE,
       }
     const editions = inputs.flatMap((input) => editionOf(input) ?? [])
     if (editions.length === 0) return [...inputs]

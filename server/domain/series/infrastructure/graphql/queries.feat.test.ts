@@ -228,13 +228,14 @@ describe('a saga held in more than one language', () => {
     ])
   })
 
-  // A volume whose edition names no language is French: on a row of its own
-  // it showed the saga twice, under one name.
-  test('files a volume that names no language on the French row', async () => {
-    await addVolume('Dune', 1, { language: 'FR' })
-    await addVolume('Le Messie de Dune', 2)
+  // A volume whose edition names no language is in the language of the app
+  // that added it — English here: on a row of its own it showed the saga
+  // twice, under one name.
+  test('files a volume that names no language on the row of the app’s language', async () => {
+    await addVolume('Dune', 1, { language: 'EN' })
+    await addVolume('Dune Messiah', 2)
 
-    expect((await followedLanguages()).map((row) => row.language)).toEqual(['FR'])
+    expect((await followedLanguages()).map((row) => row.language)).toEqual(['EN'])
   })
 
   test('shows one section per language in the library', async () => {

@@ -185,7 +185,13 @@ describe('the name a saga goes by', () => {
     )
 
   test('is the catalogue’s on a book about to be added', async () => {
-    fake.seed('series', redRising, { id: redRising, name: 'Red Rising', author: 'A', volumes: [] })
+    fake.seed('series', `${redRising}~fr`, {
+      id: redRising,
+      language: 'fr',
+      name: 'Red Rising',
+      author: 'A',
+      volumes: [],
+    })
     const book = {
       title: BookTitle('Red Rising 2'),
       format: 'audiobook' as const,

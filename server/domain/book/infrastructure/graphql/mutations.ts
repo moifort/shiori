@@ -76,7 +76,8 @@ builder.mutationFields((t) => ({
           : undefined,
         pageCount: args.input.pageCount ?? undefined,
         narrators: args.input.narrators?.slice(0, MAX_NARRATORS) ?? undefined,
-        language: args.input.language ?? undefined,
+        // An edition nothing names is in the language the reader's app speaks.
+        language: args.input.language ?? languageOf(context.event),
         isbn13: args.input.isbn13 ?? undefined,
         series: args.input.series
           ? {
@@ -141,7 +142,10 @@ builder.mutationFields((t) => ({
         ...clearable('pageCount', input.pageCount),
         ...clearable('durationMinutes', input.durationMinutes),
         ...clearable('isbn13', input.isbn13),
-        ...clearable('language', input.language),
+        // Cleared, the language goes back to the app's, never to none.
+        ...(input.language !== undefined
+          ? { language: input.language ?? languageOf(context.event) }
+          : {}),
         ...clearable('publishedCoverUrl', input.coverUrl),
         ...(input.series !== undefined
           ? {

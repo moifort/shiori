@@ -61,6 +61,36 @@ describe('cataloguing through the API', () => {
     })
   })
 
+  // A book whose edition nothing names is in the language the reader's app
+  // speaks: on a row of no language it showed its saga twice.
+  test('takes a book that names no language to be in the language of the app', async () => {
+    const french = await executeInFrench(
+      'mutation { addBook(input: { title: "Le Crime de l’Orient-Express" }) { language } }',
+    )
+    const english = await execute('mutation { addBook(input: { title: "Dune" }) { language } }')
+    const named = await executeInFrench(
+      'mutation { addBook(input: { title: "Fourth Wing", language: EN }) { language } }',
+    )
+
+    expect(french.data?.addBook).toEqual({ language: 'FR' })
+    expect(english.data?.addBook).toEqual({ language: 'EN' })
+    expect(named.data?.addBook).toEqual({ language: 'EN' })
+  })
+
+  test('takes a book whose language the reader clears back to the language of the app', async () => {
+    const created = await execute(
+      'mutation { addBook(input: { title: "Dune", language: EN }) { id } }',
+    )
+    const { id } = (created.data as { addBook: { id: string } }).addBook
+
+    const cleared = await executeInFrench(
+      `mutation { updateBook(id: "${id}", input: { language: null }) { language } }`,
+    )
+
+    expect(cleared.errors).toBeUndefined()
+    expect(cleared.data?.updateBook).toEqual({ language: 'FR' })
+  })
+
   test('catalogues a manga as a manga, and a correction changes only the format', async () => {
     const created = await execute(
       'mutation { addBook(input: { title: "One Piece", format: MANGA }) { id format } }',
