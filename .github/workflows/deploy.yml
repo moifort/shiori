@@ -62,7 +62,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - uses: hashicorp/setup-terraform@v4
         with:
-          terraform_version: 1.10.0
+          terraform_version: v1.16.4
 
       - name: Authenticate to Google Cloud (workload identity)
         uses: google-github-actions/auth@v3
