@@ -1,8 +1,10 @@
+import { MAX_NOTE_LENGTH, ReadingNote } from '~/domain/book/primitives'
 import type {
   Book,
   BookFormat,
   BookId,
   BookLanguage,
+  BookMedium,
   BookView,
   LibrarySection,
   ReadingStatus,
@@ -14,6 +16,7 @@ import type {
   Subgenre,
   TaggedSubgenre,
 } from '~/domain/book/types'
+import { BOOK_MEDIA } from '~/domain/book/types'
 import { compareWithinSeries } from '~/domain/series/business-rules'
 import { isAudioSeries, seriesIdFor, seriesKeyOf } from '~/domain/series/primitives'
 import type { SeriesId, SeriesName } from '~/domain/series/types'
@@ -579,6 +582,119 @@ export const copyOf = <T extends Book>(
     )
     .toSorted((a, b) => a.addedAt.getTime() - b.addedAt.getTime())[0]
 }
+
+/** Where a book of this format is held, from what a source said of it: a
+ *  recording is heard, so it is held on neither; a read book is on paper unless
+ *  something said otherwise. Always in the order paper, screen, so two records
+ *  held the same way compare equal. */
+export const mediaFor = (format: BookFormat, media: readonly BookMedium[] = []): BookMedium[] => {
+  if (format === 'audiobook') return []
+  const held = BOOK_MEDIA.filter((medium) => media.includes(medium))
+  return held.length > 0 ? held : ['print']
+}
+
+/** The record a book arriving on another medium joins, rather than doubling:
+ *  the same story by its shelf key or the same edition by its ISBN, read
+ *  rather than heard, in the same volume and language wherever both say, and
+ *  not yet held on every medium the arrival brings. The paperback scanned after
+ *  the Kindle copy is one book, not two; a French paperback and an English
+ *  Kindle copy are two editions, as their sagas are. The earliest on the shelf
+ *  wins, as for `copyOf`. */
+export const recordJoinedBy = <T extends Book>(
+  books: readonly T[],
+  arriving: Pick<Book, 'title' | 'authors' | 'isbn13' | 'format' | 'media' | 'language' | 'series'>,
+): T | undefined => {
+  if (arriving.format === 'audiobook') return undefined
+  const key = shelfKeyOf(arriving.title, arriving.authors[0])
+  return books
+    .filter(
+      (book) =>
+        book.format !== 'audiobook' &&
+        (shelfKeyOf(book.title, book.authors[0]) === key ||
+          (arriving.isbn13 !== undefined && book.isbn13 === arriving.isbn13)) &&
+        agrees(book.series?.volume, arriving.series?.volume) &&
+        agrees(book.language, arriving.language) &&
+        arriving.media.some((medium) => !book.media.includes(medium)),
+    )
+    .toSorted((a, b) => a.addedAt.getTime() - b.addedAt.getTime())[0]
+}
+
+/** How far along a reading each status is, for two copies of one book to keep
+ *  the furthest: finished beats dropped, which beats begun, which beats the
+ *  pile. */
+const PROGRESS: Record<ReadingStatus, number> = { 'to-read': 0, reading: 1, dropped: 2, read: 3 }
+
+const earliest = (...dates: (Date | undefined)[]): Date | undefined =>
+  dates.filter(isDefined).toSorted((a, b) => a.getTime() - b.getTime())[0]
+
+const latest = (...dates: (Date | undefined)[]): Date | undefined =>
+  dates.filter(isDefined).toSorted((a, b) => b.getTime() - a.getTime())[0]
+
+const isDefined = <T>(value: T | undefined): value is T => value !== undefined
+
+/** Two copies of one book — on paper and on a screen — as the one record the
+ *  reader keeps of it.
+ *
+ *  `kept` names the record: its id, and every fact it already states. `other`
+ *  fills what `kept` leaves blank, and lends a drawn format (manga, comic) over
+ *  the plain `book` a Kindle title is always filed as. Where both said
+ *  something about the reading, the furthest along wins: the furthest status,
+ *  the earliest start and the latest finish, the higher rating, either heart,
+ *  both notes one after the other. A book either copy hid stays hidden. */
+export const mergedCopies = (kept: Book, other: Book, now: Date): Book => {
+  const format = kept.format === 'book' ? other.format : kept.format
+  const status = PROGRESS[other.status] > PROGRESS[kept.status] ? other.status : kept.status
+  const finishing = [kept, other].filter((copy) => copy.status === 'read')
+  const hearted = [kept, other].filter((copy) => copy.favorite)
+  const notes = [kept.note, other.note].filter(isDefined)
+  const ratings = [kept.rating, other.rating].filter(isDefined)
+  return {
+    ...other,
+    ...withoutAbsent(kept),
+    format,
+    media: mediaFor(format, [...kept.media, ...other.media]),
+    authors: kept.authors.length > 0 ? kept.authors : other.authors,
+    subgenres: kept.subgenres.length > 0 ? kept.subgenres : other.subgenres,
+    narrators: kept.narrators.length > 0 ? kept.narrators : other.narrators,
+    status,
+    rating: ratings.toSorted((a, b) => b - a)[0],
+    favorite: hearted.length > 0 ? true : undefined,
+    favoritedAt: earliest(...hearted.map((copy) => copy.favoritedAt)),
+    note: notes.length > 0 ? ReadingNote(notes.join('\n\n').slice(0, MAX_NOTE_LENGTH)) : undefined,
+    hidden: kept.hidden || other.hidden,
+    addedAt: earliest(kept.addedAt, other.addedAt) ?? kept.addedAt,
+    startedAt: status === 'to-read' ? undefined : earliest(kept.startedAt, other.startedAt),
+    finishedAt: latest(...finishing.map((copy) => copy.finishedAt)),
+    statusChangedAt: latest(kept.statusChangedAt, other.statusChangedAt),
+    updatedAt: now,
+  }
+}
+
+const withoutAbsent = <T extends object>(record: T): Partial<T> =>
+  Object.fromEntries(
+    Object.entries(record).filter(([, value]) => value !== undefined),
+  ) as Partial<T>
+
+/** The sources a book's cover is drawn from, folded into the two every drawing
+ *  site reads: the Kindle cover first — it is the one the reader sees on their
+ *  Kindle — then the reader's own photo, then the publisher's. */
+export const coverSourcesOf = (
+  book: Pick<Book, 'kindleCoverUrl' | 'coverPath' | 'publishedCoverUrl'>,
+): Pick<Book, 'coverPath' | 'publishedCoverUrl'> => {
+  if (book.kindleCoverUrl) return { publishedCoverUrl: book.kindleCoverUrl }
+  return withoutAbsent({ coverPath: book.coverPath, publishedCoverUrl: book.publishedCoverUrl })
+}
+
+/** What a record keeps of its Kindle title once its media are settled: a book
+ *  no longer held on a screen is no Kindle title's, so the nightly sync can
+ *  never move its status again, and its Kindle cover goes with it. */
+export const kindleLinkUnder = (
+  book: Pick<Book, 'kindleAsin' | 'kindleCoverUrl'>,
+  media: readonly BookMedium[],
+): Pick<Book, 'kindleAsin' | 'kindleCoverUrl'> =>
+  media.includes('digital')
+    ? { kindleAsin: book.kindleAsin, kindleCoverUrl: book.kindleCoverUrl }
+    : { kindleAsin: undefined, kindleCoverUrl: undefined }
 
 /** What a fresh lookup of the book found, as the scan answers it. */
 export type LookedUp = Partial<

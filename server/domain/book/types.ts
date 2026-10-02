@@ -107,19 +107,21 @@ export const BOOK_LANGUAGES = [
 ] as const
 export type BookLanguage = (typeof BOOK_LANGUAGES)[number]
 
-/** What kind of object the reader holds. Prose in print or on a screen, sound, or
- *  a drawn story — and among drawn stories, the three traditions a reader shelves
- *  apart: the Franco-Belgian album, the American comic, the manga. `book` is the
- *  default because it is what nearly every catalogued title is. */
-export const BOOK_FORMATS = [
-  'book',
-  'ebook',
-  'audiobook',
-  'bande-dessinee',
-  'comic',
-  'manga',
-] as const
+/** What kind of object the reader holds. Prose, sound, or a drawn story — and
+ *  among drawn stories, the three traditions a reader shelves apart: the
+ *  Franco-Belgian album, the American comic, the manga. `book` is the default
+ *  because it is what nearly every catalogued title is.
+ *
+ *  Paper or screen is not a format: a novel is the same novel on the shelf and
+ *  on the Kindle, and the reader keeps one record of it. Where it is held is
+ *  `media`. */
+export const BOOK_FORMATS = ['book', 'audiobook', 'bande-dessinee', 'comic', 'manga'] as const
 export type BookFormat = (typeof BOOK_FORMATS)[number]
+
+/** Where a read book is held: on paper, on a screen. A record held both ways is
+ *  one record carrying both. A recording has neither — it is heard. */
+export const BOOK_MEDIA = ['print', 'digital'] as const
+export type BookMedium = (typeof BOOK_MEDIA)[number]
 
 /** The book's place in a saga, denormalized onto the record. The name is copied
  *  here on purpose: grouping a 300-book library into sections must not read one
@@ -160,6 +162,9 @@ export type Book = {
   title: BookTitle
   authors: AuthorName[]
   format: BookFormat
+  /** Where the reader holds it: paper, screen, or both, in that order. Never
+   *  empty on a read book, always empty on an audiobook. */
+  media: BookMedium[]
   publisher?: Publisher
   firstPublishedIn?: Year
   /** The year this edition came out, where `firstPublishedIn` dates the work: an
@@ -204,9 +209,14 @@ export type Book = {
   audibleAsin?: AudibleAsin
   /** The Kindle title this record stands for, when it has one: what the nightly
    *  Kindle sync moves a status on, for the same reason `audibleAsin` exists. Only
-   *  a book carrying it is ever touched by Kindle. Absent on everything but an
-   *  ebook imported from a connected Kindle library, or linked to one since. */
+   *  a book carrying it is ever touched by Kindle. Absent on everything not held
+   *  digitally, and on a digital copy no connected Kindle library has named. */
   kindleAsin?: KindleAsin
+  /** The cover Amazon shows for that Kindle title. Drawn before any other —
+   *  the reader's photo and the publisher's cover included — because it is the
+   *  one the reader sees on their Kindle. Kept apart from `publishedCoverUrl`
+   *  so a refresh, which rewrites the publisher's, never loses it. */
+  kindleCoverUrl?: CoverUrl
   series?: SeriesMembership
   /** Absent for a book added by hand or from a series catalogue: those have no
    *  photo, and the app draws a typographic placeholder instead. */

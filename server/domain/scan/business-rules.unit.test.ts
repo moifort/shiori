@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { boxOf, inReadingOrder } from '~/domain/scan/business-rules'
+import { boxOf, heldFormatOf, inReadingOrder } from '~/domain/scan/business-rules'
 
 describe('boxOf', () => {
   test('turns Gemini’s [ymin, xmin, ymax, xmax] on 0–1000 into fractions of the photo', () => {
@@ -36,5 +36,17 @@ describe('inReadingOrder', () => {
   test('reads two shelves top to bottom, each left to right', () => {
     const books = [at('d', 0.6, 0.55), at('b', 0.6, 0.05), at('c', 0.1, 0.6), at('a', 0.1, 0.1)]
     expect(inReadingOrder(books).map(({ id }) => id)).toEqual(['a', 'b', 'c', 'd'])
+  })
+})
+
+describe('heldFormatOf', () => {
+  test('reads a cover shown on an e-reader as a book held on a screen', () => {
+    expect(heldFormatOf('ebook')).toEqual({ format: 'book', media: ['digital'] })
+  })
+
+  test('says nothing of the medium for anything else', () => {
+    expect(heldFormatOf('manga')).toEqual({ format: 'manga' })
+    expect(heldFormatOf(null)).toEqual({})
+    expect(heldFormatOf('scroll')).toEqual({})
   })
 })

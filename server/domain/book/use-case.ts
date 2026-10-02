@@ -1,6 +1,6 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
-import { refreshedFacts } from '~/domain/book/business-rules'
+import { mediaFor, recordJoinedBy, refreshedFacts } from '~/domain/book/business-rules'
 import { BookCommand, type BookEdit, type NewBook } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
 import type {
@@ -23,10 +23,32 @@ import type { UserId } from '~/domain/shared/types'
  *  The book and the view's stale flag land in one batch: the view can never look
  *  fresh while a book it does not reflect is already stored. */
 export namespace BookUseCase {
-  /** The saga is named as its catalogue names it, when it has one. */
+  /** The saga is named as its catalogue names it, when it has one.
+   *
+   *  A book the reader already keeps on another medium — the paperback of a
+   *  Kindle title, the Kindle copy of a paperback — joins that record rather
+   *  than landing beside it: paper or screen, it is one book. */
   export const add = async (userId: UserId, input: NewBook) => {
     const [named] = await SeriesUseCase.namedAfterCatalogues([input])
-    return withAnalytics(userId, (batch) => BookCommand.add(userId, named, undefined, batch))
+    const format = named.format ?? 'book'
+    // A recording joins nothing, so the library is not read for it.
+    const joined =
+      format !== 'audiobook' &&
+      recordJoinedBy(await BookQuery.all(userId), {
+        title: named.title,
+        authors: named.authors ?? [],
+        isbn13: named.isbn13,
+        format,
+        media: mediaFor(format, named.media),
+        language: named.language,
+        series: named.series,
+      })
+    return withAnalytics(userId, async (batch) => {
+      if (!joined) return BookCommand.add(userId, named, undefined, batch)
+      const book = await BookCommand.join(userId, joined.id, named, undefined, batch)
+      if (book === 'not-found') throw new Error('a book just read from the library is gone')
+      return book
+    })
   }
 
   export const edit = (userId: UserId, bookId: BookId, edit: BookEdit) =>

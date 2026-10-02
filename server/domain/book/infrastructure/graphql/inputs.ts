@@ -1,6 +1,7 @@
 import {
   BookFormatEnum,
   BookLanguageEnum,
+  BookMediumEnum,
   GenreEnum,
   ReadingStatusEnum,
 } from '~/domain/book/infrastructure/graphql/enums'
@@ -65,6 +66,14 @@ export const NewBookInput = builder.inputType('NewBookInput', {
     title: t.field({ type: 'BookTitle', required: true }),
     authors: t.field({ type: ['AuthorName'], required: false }),
     format: t.field({ type: BookFormatEnum, required: false, description: 'Defaults to BOOK.' }),
+    media: t.field({
+      type: [BookMediumEnum],
+      required: false,
+      description:
+        'Where the reader holds it. Defaults to PRINT; ignored on an AUDIOBOOK. A book ' +
+        'the reader already keeps on another medium — same title and first author, or ' +
+        'same ISBN, same volume and language — joins that record instead of doubling it.',
+    }),
     publisher: t.field({ type: 'Publisher', required: false }),
     firstPublishedIn: t.field({ type: 'Year', required: false }),
     synopsis: t.field({ type: 'Synopsis', required: false }),
@@ -133,6 +142,13 @@ export const BookEditInput = builder.inputType('BookEditInput', {
     title: t.field({ type: 'BookTitle', required: false }),
     authors: t.field({ type: ['AuthorName'], required: false }),
     format: t.field({ type: BookFormatEnum, required: false }),
+    media: t.field({
+      type: [BookMediumEnum],
+      required: false,
+      description:
+        'Where the reader holds it. Null or empty is ignored: a read book is held ' +
+        'somewhere. Taking DIGITAL away lets go of its Kindle title and cover.',
+    }),
     publisher: t.field({ type: 'Publisher', required: false }),
     firstPublishedIn: t.field({ type: 'Year', required: false }),
     editionYear: t.field({ type: 'Year', required: false }),

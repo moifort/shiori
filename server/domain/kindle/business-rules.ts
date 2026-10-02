@@ -6,6 +6,7 @@ import type {
   Book,
   BookId,
   BookLanguage,
+  CoverUrl as CoverUrlValue,
   ReadingStatus,
   SeriesMembership,
 } from '~/domain/book/types'
@@ -194,7 +195,7 @@ const membershipOf = (
   // Without an author there is no stable key, so the membership is dropped
   // rather than given an id nothing else shares — the rule the scan applies.
   if (!name || !author) return undefined
-  return { id: seriesKeyOf(name, author, 'ebook'), name, volume, kind: 'main' }
+  return { id: seriesKeyOf(name, author, 'book'), name, volume, kind: 'main' }
 }
 
 /** One title of the account as the book it would be catalogued as, or nothing
@@ -235,14 +236,16 @@ export const importableFrom = (
   }
 }
 
-/** The record an import writes. `format` is `ebook`: that is what the reader
- *  owns, whatever edition the work also exists in. Nothing is guessed beyond
- *  what the list carries — no summary, no page count, no genre. */
+/** The record an import writes: a book held on a screen, under the cover Amazon
+ *  shows for it. Nothing is guessed beyond what the list carries — no summary,
+ *  no page count, no genre, and no drawn format: a manga on a Kindle is filed a
+ *  book until the reader says otherwise, or scans its paper copy. */
 export const bookFrom = (importable: ImportableKindleBook): NewBook => ({
   title: importable.title,
   authors: importable.authors,
-  format: 'ebook',
-  publishedCoverUrl: importable.coverUrl,
+  format: 'book',
+  media: ['digital'],
+  kindleCoverUrl: importable.coverUrl,
   series: importable.series,
   language: importable.language,
   status: importable.status,
@@ -251,31 +254,62 @@ export const bookFrom = (importable: ImportableKindleBook): NewBook => ({
   kindleAsin: importable.asin,
 })
 
-/** Ebooks catalogued before they were linked — from the data export, by hand,
- *  by a scan — matched to their Kindle title by shelf key, once. Only an ebook:
- *  a printed copy or a recording of the same story is another object, and the
- *  Kindle sync must never write into it. An ASIN already taken is not given
- *  twice. */
+/** A book the sync found on the reader's Kindle, and the Kindle title it is. */
+export type KindleLink = { bookId: BookId; kindleAsin: KindleAsinValue; coverUrl?: CoverUrlValue }
+
+/** Books catalogued before they were linked — a paperback scanned, an ebook
+ *  from the data export or typed by hand — matched to their Kindle title by
+ *  shelf key, once, in the same volume and language wherever both say. A
+ *  paperback found on the Kindle is then held both ways: one book, whichever
+ *  the reader picks up, and the sync moves its status like any Kindle title's.
+ *  Never a recording: Audible's, and another object. An ASIN already taken is
+ *  not given twice. */
 export const kindleLinksFor = (
   books: readonly Book[],
   titles: readonly KindleTitle[],
   reads: ReadonlyMap<string, ReadKindleTitle> = new Map(),
-): { bookId: BookId; kindleAsin: KindleAsinValue }[] => {
-  const byShelfKey = new Map<string, KindleAsinValue>()
+): KindleLink[] => {
+  const taken = new Set<string>(books.flatMap((book) => (book.kindleAsin ? [book.kindleAsin] : [])))
+  const byShelfKey = new Map<string, LinkableTitle[]>()
   for (const item of titles.filter(isCataloguable)) {
     const asin = optionally(item.asin, KindleAsin)
-    if (asin) byShelfKey.set(shelfKeyOf(splitOf(item, reads).title, item.authors[0]), asin)
+    if (!asin || taken.has(asin)) continue
+    const split = splitOf(item, reads)
+    const key = shelfKeyOf(split.title, item.authors[0])
+    byShelfKey.set(key, [
+      ...(byShelfKey.get(key) ?? []),
+      {
+        asin,
+        coverUrl: optionally(item.coverUrl, CoverUrl),
+        volume: split.series?.volume,
+        language: editionLanguageOf(item.title, item.sortableTitle),
+      },
+    ])
   }
-  const taken = new Set<string>(books.flatMap((book) => (book.kindleAsin ? [book.kindleAsin] : [])))
 
   return books.flatMap((book) => {
-    if (book.kindleAsin || book.format !== 'ebook') return []
-    const kindleAsin = byShelfKey.get(shelfKeyOf(book.title, book.authors[0]))
-    if (!kindleAsin || taken.has(kindleAsin)) return []
-    taken.add(kindleAsin)
-    return [{ bookId: book.id, kindleAsin }]
+    if (book.kindleAsin || book.format === 'audiobook') return []
+    const match = (byShelfKey.get(shelfKeyOf(book.title, book.authors[0])) ?? []).find(
+      (title) =>
+        !taken.has(title.asin) &&
+        agrees(book.series?.volume, title.volume) &&
+        agrees(book.language, title.language),
+    )
+    if (!match) return []
+    taken.add(match.asin)
+    return [{ bookId: book.id, kindleAsin: match.asin, coverUrl: match.coverUrl }]
   })
 }
+
+type LinkableTitle = {
+  asin: KindleAsinValue
+  coverUrl?: CoverUrlValue
+  volume?: number
+  language?: BookLanguage
+}
+
+const agrees = <T>(kept: T | undefined, candidate: T | undefined) =>
+  kept === undefined || candidate === undefined || kept === candidate
 
 /** The titles Amazon reports read, as the set the next pass reads news against. */
 export const readAsinsOf = (titles: readonly KindleTitle[]): KindleAsinValue[] =>

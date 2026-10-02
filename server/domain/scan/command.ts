@@ -3,7 +3,6 @@ import { authorKeyOf } from '~/domain/author/primitives'
 import { AuthorQuery } from '~/domain/author/query'
 import { BookCommand } from '~/domain/book/command'
 import {
-  BookFormatValue,
   BookLanguageValue,
   GenreValue,
   Isbn13,
@@ -14,7 +13,12 @@ import {
   Synopsis,
 } from '~/domain/book/primitives'
 import type { BookLanguage, Isbn13 as Isbn13Type } from '~/domain/book/types'
-import { boxOf, inReadingOrder, MAX_DETECTED_BOOKS } from '~/domain/scan/business-rules'
+import {
+  boxOf,
+  heldFormatOf,
+  inReadingOrder,
+  MAX_DETECTED_BOOKS,
+} from '~/domain/scan/business-rules'
 import { generate } from '~/domain/scan/gemini'
 import * as repository from '~/domain/scan/infrastructure/repository'
 import { hashImage } from '~/domain/scan/primitives'
@@ -256,7 +260,7 @@ export namespace ScanCommand {
     const book: SeenOnShelf = {
       title: optional(raw.title, BookTitle),
       authors: parsedAuthors(raw.authors ?? []),
-      format: optional(raw.format, BookFormatValue),
+      ...heldFormatOf(raw.format),
       publisher: optional(raw.publisher, Publisher),
       language: optional(raw.language, BookLanguageValue),
       seriesName: optional(raw.seriesName, SeriesName),
@@ -356,7 +360,7 @@ export namespace ScanCommand {
         recognized: true,
         title: BookTitle(value.title),
         authors: parsedAuthors(value.authors),
-        format: optional(value.format, BookFormatValue),
+        ...heldFormatOf(value.format),
         publisher: optional(value.publisher, Publisher),
         language: optional(value.language, BookLanguageValue),
         subgenres: [],
@@ -386,6 +390,7 @@ export namespace ScanCommand {
         title: optional(value.title, BookTitle) ?? seen.title,
         authors: authors.length > 0 ? authors : seen.authors,
         format: seen.format,
+        media: seen.media,
         publisher: seen.publisher,
         // Kept from step 1 rather than asked again: the language of the edition
         // is a fact about the object photographed, and the grounded step answers

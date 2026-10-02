@@ -3,6 +3,7 @@ import { listeningProgressOf, shelfDateOf, statusChangedAtOf } from '~/domain/bo
 import {
   BookFormatEnum,
   BookLanguageEnum,
+  BookMediumEnum,
   GenreEnum,
   ReadingStatusEnum,
 } from '~/domain/book/infrastructure/graphql/enums'
@@ -75,6 +76,13 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
       resolve: (book) => book.authors,
     }),
     format: t.field({ type: BookFormatEnum, resolve: (book) => book.format }),
+    media: t.field({
+      type: [BookMediumEnum],
+      description:
+        'Where the reader holds it: PRINT, DIGITAL, or both, in that order. Empty on ' +
+        'an AUDIOBOOK, never empty otherwise.',
+      resolve: (book) => book.media,
+    }),
     publisher: t.field({
       type: 'Publisher',
       nullable: true,

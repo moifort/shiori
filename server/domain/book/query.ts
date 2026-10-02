@@ -1,5 +1,6 @@
 import {
   copyOf as copyOfBook,
+  coverSourcesOf,
   groupedBySeries,
   inSagaOrder,
   lovedRankOfBook,
@@ -200,10 +201,11 @@ const missingIndex = (error: unknown): boolean =>
 const withCovers = (books: readonly Book[]): Promise<BookView[]> =>
   Promise.all(books.map(withCover))
 
-// The reader's own photo wins over the publisher's cover: it is the edition on
-// their shelf. Neither is a guarantee the image loads, so the app keeps its
-// placeholder for a URL that fails.
+// The Kindle cover first, then the reader's own photo, then the publisher's —
+// see `coverSourcesOf`. None is a guarantee the image loads, so the app keeps
+// its placeholder for a URL that fails.
 const withCover = async (book: Book): Promise<BookView> => {
-  if (book.coverPath) return { ...book, coverUrl: await objectStore().downloadUrl(book.coverPath) }
-  return book.publishedCoverUrl ? { ...book, coverUrl: book.publishedCoverUrl } : book
+  const { coverPath, publishedCoverUrl } = coverSourcesOf(book)
+  if (coverPath) return { ...book, coverUrl: await objectStore().downloadUrl(coverPath) }
+  return publishedCoverUrl ? { ...book, coverUrl: publishedCoverUrl } : book
 }

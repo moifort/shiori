@@ -1,6 +1,6 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
-import { shelfDateOf } from '~/domain/book/business-rules'
-import type { Book, BookId, ReadingStatus } from '~/domain/book/types'
+import { mediaFor, shelfDateOf } from '~/domain/book/business-rules'
+import type { Book, BookFormat, BookId, BookMedium, ReadingStatus } from '~/domain/book/types'
 import type { SeriesId } from '~/domain/series/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
@@ -19,14 +19,25 @@ import { deleteInBatches, genericDataConverter, withoutAbsentFields } from '~/ut
 // Stored with the date the Library tab shelves it on, derived on every write: the
 // tab pages on it with a Firestore cursor rather than scanning the library for
 // each page. A storage field only — it is stripped on the way back to a `Book`.
-type StoredBook = Book & { shelvedAt: Date }
+//
+// A record written before paper and screen were told apart from the format —
+// `ebook`, and no `media` — reads as one written now: migration 014 rewrites
+// them, and this covers the minutes between a deploy and its migration.
+type StoredBook = Omit<Book, 'format' | 'media'> & {
+  format: BookFormat | 'ebook'
+  media?: BookMedium[]
+  shelvedAt: Date
+}
 
 const books = () => db().collection('books').withConverter(genericDataConverter<StoredBook>())
 
 const stored = (book: Book): StoredBook =>
   withoutAbsentFields({ ...book, shelvedAt: shelfDateOf(book) })
 
-const asBook = ({ shelvedAt: _, ...book }: StoredBook): Book => book
+const asBook = ({ shelvedAt: _, format, media, ...book }: StoredBook): Book =>
+  format === 'ebook'
+    ? { ...book, format: 'book', media: mediaFor('book', [...(media ?? []), 'digital']) }
+    : { ...book, format, media: mediaFor(format, media) }
 
 const ownedBy = (userId: UserId) => books().where('userId', '==', userId)
 

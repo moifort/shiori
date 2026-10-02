@@ -1,4 +1,5 @@
-import { BOOK_FORMATS, BOOK_LANGUAGES, GENRES } from '~/domain/book/types'
+import { BOOK_LANGUAGES, GENRES } from '~/domain/book/types'
+import { SEEN_FORMATS } from '~/domain/scan/business-rules'
 import { VOLUME_KINDS } from '~/domain/series/types'
 
 /** The response schemas handed to Gemini's `responseSchema`, which constrains
@@ -20,7 +21,7 @@ export const VISION_SCHEMA = {
     },
     format: {
       type: 'string',
-      enum: [...BOOK_FORMATS],
+      enum: [...SEEN_FORMATS],
       nullable: true,
       description: 'Nature de l’objet photographié, déduite de la couverture',
     },

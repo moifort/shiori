@@ -148,3 +148,68 @@ describe('bringing a record up to date', () => {
     expect(spent()).toBe(0)
   })
 })
+
+describe('adding a book the reader holds on another medium', () => {
+  test('joins the Kindle copy to its paperback rather than shelving it twice', async () => {
+    const paperback = await aBook()
+
+    const added = await BookUseCase.add(reader, {
+      title: BookTitle('Le Nom du vent'),
+      authors: [AuthorName('Patrick Rothfuss')],
+      media: ['digital'],
+      isbn13: Isbn13('9782352943556'),
+    })
+
+    expect(added.id).toBe(paperback.id)
+    expect(fake.snapshot('books').size).toBe(1)
+    expect(fake.data('books', paperback.id)).toMatchObject({
+      media: ['print', 'digital'],
+      isbn13: '9782352943556',
+      // The reading the reader was already in stays: the furthest along.
+      status: 'reading',
+      synopsis: 'An old summary.',
+    })
+  })
+
+  test('shelves a second paperback, or a recording, beside the first', async () => {
+    await aBook()
+
+    await BookUseCase.add(reader, {
+      title: BookTitle('Le Nom du vent'),
+      authors: [AuthorName('Patrick Rothfuss')],
+    })
+    await BookUseCase.add(reader, {
+      title: BookTitle('Le Nom du vent'),
+      authors: [AuthorName('Patrick Rothfuss')],
+      format: 'audiobook',
+    })
+
+    expect(fake.snapshot('books').size).toBe(3)
+  })
+})
+
+describe('changing where a book is held', () => {
+  test('lets go of its Kindle title once it is no longer held on a screen', async () => {
+    const book = await BookCommand.add(reader, {
+      title: BookTitle('Le Nom du vent'),
+      authors: [AuthorName('Patrick Rothfuss')],
+      media: ['print', 'digital'],
+      kindleAsin: 'B0G26NZ911' as never,
+      kindleCoverUrl: CoverUrl('https://m.media-amazon.com/nom-du-vent.jpg'),
+    })
+
+    const edited = await BookUseCase.edit(reader, book.id, { media: ['print'] })
+
+    expect(edited).toMatchObject({ media: ['print'] })
+    expect(fake.data('books', book.id)?.kindleAsin).toBeUndefined()
+    expect(fake.data('books', book.id)?.kindleCoverUrl).toBeUndefined()
+  })
+
+  test('holds a book turned recording on no medium', async () => {
+    const book = await aBook()
+
+    expect(await BookUseCase.edit(reader, book.id, { format: 'audiobook' })).toMatchObject({
+      media: [],
+    })
+  })
+})

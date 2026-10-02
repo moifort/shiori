@@ -1,6 +1,7 @@
 import {
   BookFormatEnum,
   BookLanguageEnum,
+  BookMediumEnum,
   GenreEnum,
 } from '~/domain/book/infrastructure/graphql/enums'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
@@ -63,6 +64,13 @@ export const ScanResultType = builder.objectRef<ScanResult>('ScanResult').implem
       nullable: true,
       description: 'Null when the cover did not say. The app then proposes BOOK.',
       resolve: (result) => result.format ?? null,
+    }),
+    media: t.field({
+      type: [BookMediumEnum],
+      description:
+        'Where the photographed copy is held, when the cover said: DIGITAL for a ' +
+        'cover shown on an e-reader. Empty when it did not; the app then proposes PRINT.',
+      resolve: (result) => result.media ?? [],
     }),
     publisher: t.field({
       type: 'Publisher',
@@ -198,6 +206,11 @@ export const DetectedBookType = builder.objectRef<DetectedBook>('DetectedBook').
       type: BookFormatEnum,
       nullable: true,
       resolve: (book) => book.format ?? null,
+    }),
+    media: t.field({
+      type: [BookMediumEnum],
+      description: 'DIGITAL for a cover shown on a screen; empty when the photo did not say.',
+      resolve: (book) => book.media ?? [],
     }),
     seriesName: t.field({
       type: 'SeriesName',

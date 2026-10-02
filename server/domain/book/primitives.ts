@@ -4,6 +4,7 @@ import type {
   BookFormat,
   BookId as BookIdType,
   BookLanguage,
+  BookMedium,
   CoverUrl as CoverUrlType,
   Genre,
   Isbn13 as Isbn13Type,
@@ -17,7 +18,13 @@ import type {
   Subgenre as SubgenreType,
   Synopsis as SynopsisType,
 } from '~/domain/book/types'
-import { BOOK_FORMATS, BOOK_LANGUAGES, GENRES, READING_STATUSES } from '~/domain/book/types'
+import {
+  BOOK_FORMATS,
+  BOOK_LANGUAGES,
+  BOOK_MEDIA,
+  GENRES,
+  READING_STATUSES,
+} from '~/domain/book/types'
 
 export { AuthorName, BookTitle, StarRating, Year } from '~/domain/shared/primitives'
 
@@ -168,8 +175,11 @@ export const CoverUrl = (value: unknown) => {
   return make<CoverUrlType>()(v)
 }
 
+/** The longest note a reader may keep on one book. */
+export const MAX_NOTE_LENGTH = 10000
+
 export const ReadingNote = (value: unknown) => {
-  const v = z.string().trim().min(1).max(10000).parse(value)
+  const v = z.string().trim().min(1).max(MAX_NOTE_LENGTH).parse(value)
   return make<ReadingNoteType>()(v)
 }
 
@@ -184,6 +194,8 @@ export const ReadingStatusValue = (value: unknown): ReadingStatus =>
 export const GenreValue = (value: unknown): Genre => z.enum(GENRES).parse(value)
 
 export const BookFormatValue = (value: unknown): BookFormat => z.enum(BOOK_FORMATS).parse(value)
+
+export const BookMediumValue = (value: unknown): BookMedium => z.enum(BOOK_MEDIA).parse(value)
 
 export const BookLanguageValue = (value: unknown): BookLanguage =>
   z.enum(BOOK_LANGUAGES).parse(value)

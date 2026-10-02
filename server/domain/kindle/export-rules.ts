@@ -178,8 +178,8 @@ export const importablesFrom = (
   return importables
 }
 
-/** The record an import writes. `format` is `ebook`: that is what the reader
- *  owns, whatever edition the work also exists in.
+/** The record an import writes: a book held on a screen, which is what the
+ *  reader owns, whatever edition the work also exists in.
  *
  *  Everything else is left absent rather than guessed. The export carries a
  *  purchase date, which is not when the work was published and not when the
@@ -189,6 +189,7 @@ export const importablesFrom = (
 export const bookFrom = (importable: ExportedKindleBook): NewBook => ({
   title: importable.title,
   authors: importable.authors,
-  format: 'ebook',
+  format: 'book',
+  media: ['digital'],
   status: 'to-read',
 })

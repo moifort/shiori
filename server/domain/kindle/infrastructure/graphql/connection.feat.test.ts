@@ -164,12 +164,12 @@ describe('listing and importing through the API', () => {
     })
   })
 
-  test('catalogues the ticked titles as ebooks, and creates no duplicate', async () => {
+  test('catalogues the ticked titles held on a screen, and creates no duplicate', async () => {
     await connect()
     titles = [aTitle()]
 
     const first = await execute(
-      'mutation { importKindleLibrary(asins: ["B0TESTAAA1"]) { title format status coverUrl } }',
+      'mutation { importKindleLibrary(asins: ["B0TESTAAA1"]) { title format media status coverUrl } }',
     )
     const second = await execute('mutation { importKindleLibrary(asins: ["B0TESTAAA1"]) { id } }')
 
@@ -177,7 +177,8 @@ describe('listing and importing through the API', () => {
     expect(first.data?.importKindleLibrary).toEqual([
       {
         title: 'Fearless',
-        format: 'EBOOK',
+        format: 'BOOK',
+        media: ['DIGITAL'],
         status: 'READ',
         coverUrl: 'https://m.media-amazon.com/images/I/91cover.jpg',
       },

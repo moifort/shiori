@@ -4,7 +4,10 @@ import type { AudibleAsin } from '~/domain/audible/types'
 import {
   datesAfterCorrection,
   datesAfterStatusChange,
+  kindleLinkUnder,
+  mediaFor,
   membershipFor,
+  mergedCopies,
   retaggedAfterEdit,
   seriesInFormat,
   statusAfterRating,
@@ -18,6 +21,7 @@ import type {
   BookFormat,
   BookId,
   BookLanguage,
+  BookMedium,
   CoverUrl,
   Genre,
   Isbn13,
@@ -47,6 +51,9 @@ export type NewBook = {
   title: BookTitle
   authors?: AuthorName[]
   format?: BookFormat
+  /** Where the reader holds it. Defaults to paper for a read book; ignored on
+   *  an audiobook, which is heard. */
+  media?: BookMedium[]
   publisher?: Publisher
   firstPublishedIn?: Year
   /** The year of this edition, which only an Audible import knows. */
@@ -71,6 +78,8 @@ export type NewBook = {
   /** The Kindle title the record stands for. Only a Kindle import supplies it,
    *  and it is what lets the nightly Kindle sync find this very book again. */
   kindleAsin?: KindleAsin
+  /** The cover Amazon shows for that Kindle title, drawn before any other. */
+  kindleCoverUrl?: CoverUrl
   series?: SeriesMembership
   coverPath?: ObjectPath
   publishedCoverUrl?: CoverUrl
@@ -108,6 +117,7 @@ export type BookEdit = Partial<
     | 'title'
     | 'authors'
     | 'format'
+    | 'media'
     | 'publisher'
     | 'firstPublishedIn'
     | 'editionYear'
@@ -126,65 +136,86 @@ export type BookEdit = Partial<
   > & { series: SeriesPlacement }
 >
 
+/** The record a new book makes, before it is stored — or folded into the copy
+ *  the reader already keeps on another medium. */
+const recordOf = (userId: UserId, input: NewBook, now: Date): Book => {
+  const addedAt = input.addedAt ?? now
+  // A known finishing date stands in for the start as well. The reader never
+  // told us when they began, and stamping today would put the start after the
+  // end — which every statistic reads as a book finished before it was opened.
+  // Failing that, the day the book arrived is the honest lower bound.
+  const dates = datesAfterStatusChange(
+    {
+      status: 'to-read',
+      startedAt: input.startedAt ?? input.finishedAt ?? addedAt,
+      finishedAt: input.finishedAt,
+    },
+    input.status ?? 'to-read',
+    now,
+  )
+  const book: Book = {
+    id: BookIdOf(randomUUID()),
+    userId,
+    title: input.title,
+    authors: input.authors ?? [],
+    format: input.format ?? 'book',
+    media: mediaFor(input.format ?? 'book', input.media),
+    publisher: input.publisher,
+    firstPublishedIn: input.firstPublishedIn,
+    editionYear: input.editionYear,
+    synopsis: input.synopsis,
+    genre: input.genre,
+    subgenres: input.subgenres ?? [],
+    pageCount: input.pageCount,
+    durationMinutes: input.durationMinutes,
+    listenedMinutes: input.listenedMinutes,
+    narrators: input.narrators ?? [],
+    isbn13: input.isbn13,
+    language: input.language,
+    audibleAsin: input.audibleAsin,
+    kindleAsin: input.kindleAsin,
+    kindleCoverUrl: input.kindleCoverUrl,
+    // The scan keyed the saga from the format it read off the cover; the
+    // reader may have saved another.
+    series: seriesInFormat(input.series, input.format ?? 'book'),
+    coverPath: input.coverPath,
+    publishedCoverUrl: input.publishedCoverUrl,
+    // A book lands on the "to read" pile unless the reader says otherwise. It is
+    // the only status that is true of every book the moment it is catalogued.
+    status: input.status ?? 'to-read',
+    hidden: input.hidden ?? false,
+    recommendation: storedRecommendation(input.recommendation),
+    addedAt,
+    updatedAt: now,
+    // The status was set when the date it implies says so — finished, else
+    // started, else added — not on the night a record was written about it.
+    statusChangedAt: dates.finishedAt ?? dates.startedAt ?? addedAt,
+    ...dates,
+  }
+  return book
+}
+
 export namespace BookCommand {
   export const add = async (
     userId: UserId,
     input: NewBook,
     now = new Date(),
     batch?: WriteBatch,
-  ): Promise<Book> => {
-    const addedAt = input.addedAt ?? now
-    // A known finishing date stands in for the start as well. The reader never
-    // told us when they began, and stamping today would put the start after the
-    // end — which every statistic reads as a book finished before it was opened.
-    // Failing that, the day the book arrived is the honest lower bound.
-    const dates = datesAfterStatusChange(
-      {
-        status: 'to-read',
-        startedAt: input.startedAt ?? input.finishedAt ?? addedAt,
-        finishedAt: input.finishedAt,
-      },
-      input.status ?? 'to-read',
-      now,
-    )
-    const book: Book = {
-      id: BookIdOf(randomUUID()),
-      userId,
-      title: input.title,
-      authors: input.authors ?? [],
-      format: input.format ?? 'book',
-      publisher: input.publisher,
-      firstPublishedIn: input.firstPublishedIn,
-      editionYear: input.editionYear,
-      synopsis: input.synopsis,
-      genre: input.genre,
-      subgenres: input.subgenres ?? [],
-      pageCount: input.pageCount,
-      durationMinutes: input.durationMinutes,
-      listenedMinutes: input.listenedMinutes,
-      narrators: input.narrators ?? [],
-      isbn13: input.isbn13,
-      language: input.language,
-      audibleAsin: input.audibleAsin,
-      kindleAsin: input.kindleAsin,
-      // The scan keyed the saga from the format it read off the cover; the
-      // reader may have saved another.
-      series: seriesInFormat(input.series, input.format ?? 'book'),
-      coverPath: input.coverPath,
-      publishedCoverUrl: input.publishedCoverUrl,
-      // A book lands on the "to read" pile unless the reader says otherwise. It is
-      // the only status that is true of every book the moment it is catalogued.
-      status: input.status ?? 'to-read',
-      hidden: input.hidden ?? false,
-      recommendation: storedRecommendation(input.recommendation),
-      addedAt,
-      updatedAt: now,
-      // The status was set when the date it implies says so — finished, else
-      // started, else added — not on the night a record was written about it.
-      statusChangedAt: dates.finishedAt ?? dates.startedAt ?? addedAt,
-      ...dates,
-    }
-    return repository.save(book, batch)
+  ): Promise<Book> => repository.save(recordOf(userId, input, now), batch)
+
+  /** Fold a book arriving on another medium into the record the reader already
+   *  keeps of it — the paperback scanned after the Kindle copy — rather than
+   *  shelving it twice. See `mergedCopies` for what each side keeps. */
+  export const join = async (
+    userId: UserId,
+    bookId: BookId,
+    input: NewBook,
+    now = new Date(),
+    batch?: WriteBatch,
+  ): Promise<Book | 'not-found'> => {
+    const book = await repository.findById(userId, bookId)
+    if (!book) return 'not-found'
+    return repository.save(mergedCopies(book, recordOf(userId, input, now), now), batch)
   }
 
   /** Move the dates a record was stamped with on arrival back to the day the
@@ -257,8 +288,21 @@ export namespace BookCommand {
       series && ('genre' in edit || 'subgenres' in edit)
         ? (await repository.findBySeries(userId, series.id)).filter((other) => other.id !== book.id)
         : []
+    // A recording is heard, so it is held on no medium; a book taken off the
+    // screen is no Kindle title's any more, and the sync lets go of it.
+    const format = facts.format ?? book.format
+    const media = mediaFor(format, facts.media ?? book.media)
     const edited = await repository.save(
-      { ...book, ...facts, ...retagged, ...membership, ...dates, updatedAt: now },
+      {
+        ...book,
+        ...facts,
+        media,
+        ...kindleLinkUnder(book, media),
+        ...retagged,
+        ...membership,
+        ...dates,
+        updatedAt: now,
+      },
       batch,
     )
     const classification = {
@@ -287,21 +331,32 @@ export namespace BookCommand {
     return repository.save({ ...book, audibleAsin, updatedAt: now }, batch)
   }
 
-  /** Record which Kindle title a book stands for.
+  /** Record which Kindle title a book stands for, and so that the reader holds
+   *  it on a screen — a paperback whose Kindle copy the sync just found is now
+   *  held both ways — with the cover Amazon shows for it.
    *
    *  Its own command, as `linkToAudible` is: the reader never types an ASIN, and
-   *  the only thing that fills it is the sync recognizing an ebook catalogued
-   *  before the link existed — from the data export, or by hand. */
+   *  the only thing that fills it is the sync recognizing a book catalogued
+   *  before the link existed — from a scan, the data export, or by hand. */
   export const linkToKindle = async (
     userId: UserId,
     bookId: BookId,
-    kindleAsin: KindleAsin,
+    kindle: { asin: KindleAsin; coverUrl?: CoverUrl },
     now = new Date(),
     batch?: WriteBatch,
   ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
-    return repository.save({ ...book, kindleAsin, updatedAt: now }, batch)
+    return repository.save(
+      {
+        ...book,
+        media: mediaFor(book.format, [...book.media, 'digital']),
+        kindleAsin: kindle.asin,
+        kindleCoverUrl: kindle.coverUrl ?? book.kindleCoverUrl,
+        updatedAt: now,
+      },
+      batch,
+    )
   }
 
   /** Give a book its rank in the saga it is already filed under.

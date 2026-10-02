@@ -1,7 +1,7 @@
 import type { KindleTitle } from 'kindle-api-ts'
 import { AdminCommand } from '~/domain/admin/command'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
-import { shelfOf } from '~/domain/book/business-rules'
+import { mediaFor, shelfOf } from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
 import type { Book } from '~/domain/book/types'
@@ -10,6 +10,7 @@ import {
   bookFrom,
   importableFrom,
   isCataloguable,
+  type KindleLink,
   kindleLinksFor,
   readAsinsOf,
   readingChangesFor,
@@ -74,11 +75,16 @@ export namespace KindleUseCase {
     const wanted = new Set<string>(asins)
     // The preview's readings, from the shared store: the book written is the
     // one the reader ticked, not a second answer of the model.
-    const chosen = toImportable(
-      titles,
-      await BookQuery.all(userId),
-      await readingsOf(titles, now),
-    ).filter((importable) => wanted.has(importable.asin) && !importable.alreadyInLibrary)
+    const owned = await BookQuery.all(userId)
+    const reads = await readingsOf(titles, now)
+    const chosen = toImportable(titles, owned, reads).filter(
+      (importable) => wanted.has(importable.asin) && !importable.alreadyInLibrary,
+    )
+    // A title the reader already holds on paper was shown "already there": it
+    // joins that record here, as the nightly pass would join it.
+    const links = kindleLinksFor(owned, titles, reads)
+    if (links.length > 0)
+      await AnalyticsUseCase.whileStale(userId, () => linkAll(userId, links, now))
     const imported = await catalogue(userId, chosen, now)
     // The read set is the nightly pass's to keep. An import before any pass
     // leaves it absent, so the first pass still reads every title Amazon reports
@@ -115,24 +121,14 @@ export namespace KindleUseCase {
 
     const owned = await BookQuery.all(userId)
     const fresh = acquiredSince(titles, account.lastImportedAt)
-    // Linking matches every title against the ebooks still unlinked; with none
-    // left, only the new titles need reading.
-    const unlinked = owned.some((book) => book.format === 'ebook' && !book.kindleAsin)
-    const reads = await readingsOf(unlinked ? titles : fresh, now)
-    const links = kindleLinksFor(owned, titles, reads)
-    const linked = owned.map((book) => {
-      const link = links.find((candidate) => candidate.bookId === book.id)
-      return link ? { ...book, kindleAsin: link.kindleAsin } : book
-    })
+    const { links, linked, reads } = await linksOf(owned, titles, fresh, now)
     const moves = readingChangesFor(linked, titles, account.readAsins)
     const acquired = toImportable(fresh, linked, reads).filter(
       (importable) => !importable.alreadyInLibrary,
     )
 
     const write = async () => {
-      await bulkSave(links, async (link) =>
-        BookCommand.linkToKindle(userId, link.bookId, link.kindleAsin, now),
-      )
+      await linkAll(userId, links, now)
       await bulkSave(moves, async (bookId) => BookCommand.setStatus(userId, bookId, 'read', now))
       await bulkSave(
         await SeriesUseCase.namedAfterCatalogues(acquired.map(bookFrom)),
@@ -221,6 +217,45 @@ export namespace KindleUseCase {
     return imported
   }
 }
+
+/** The books the pass links to their Kindle title, the library as it reads once
+ *  they are linked, and the readings the pass works from.
+ *
+ *  Linking matches the titles no book holds yet against the read books still
+ *  unlinked; with none of either, only the new titles need reading. */
+const linksOf = async (
+  owned: readonly Book[],
+  titles: readonly KindleTitle[],
+  fresh: readonly KindleTitle[],
+  now: Date,
+) => {
+  const taken = new Set<string>(owned.flatMap((book) => (book.kindleAsin ? [book.kindleAsin] : [])))
+  const unlinked = owned.some((book) => book.format !== 'audiobook' && !book.kindleAsin)
+  const untaken = titles.filter((title) => !taken.has(title.asin))
+  const reads = await readingsOf(unlinked ? untaken : fresh, now)
+  const links = kindleLinksFor(owned, titles, reads)
+  const linked = owned.map((book) => {
+    const link = links.find((candidate) => candidate.bookId === book.id)
+    return link
+      ? {
+          ...book,
+          kindleAsin: link.kindleAsin,
+          media: mediaFor(book.format, [...book.media, 'digital']),
+        }
+      : book
+  })
+  return { links, linked, reads }
+}
+
+const linkAll = (userId: UserId, links: KindleLink[], now: Date) =>
+  bulkSave(links, async (link) =>
+    BookCommand.linkToKindle(
+      userId,
+      link.bookId,
+      { asin: link.kindleAsin, coverUrl: link.coverUrl },
+      now,
+    ),
+  )
 
 /** Write the chosen books, each saga named as its catalogue names it. */
 const catalogue = async (

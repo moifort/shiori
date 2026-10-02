@@ -1,4 +1,26 @@
+import { BookFormatValue } from '~/domain/book/primitives'
+import type { BookFormat, BookMedium } from '~/domain/book/types'
+import { BOOK_FORMATS } from '~/domain/book/types'
 import type { DetectedBox } from '~/domain/scan/types'
+import { optionally } from '~/utils/input'
+
+/** What the model may say an object is. `ebook` is not a format of the
+ *  library — paper or screen is where a book is held, not what it is — but it
+ *  is what a cover shown on a reader looks like, so the model keeps the word
+ *  and `heldFormatOf` reads it. */
+export const SEEN_FORMATS = [...BOOK_FORMATS, 'ebook'] as const
+
+/** The format and media of what was seen: a cover on an e-reader is a book held
+ *  on a screen; anything else says nothing of the medium, and the reader's
+ *  save files it on paper. Also reads the scans cached when `ebook` was still a
+ *  format. */
+export const heldFormatOf = (
+  seen: string | null | undefined,
+): { format?: BookFormat; media?: BookMedium[] } => {
+  if (seen === 'ebook') return { format: 'book', media: ['digital'] }
+  const format = optionally(seen, BookFormatValue)
+  return format ? { format } : {}
+}
 
 /** How many books one photo answers at most. Past thirty the spines are too
  *  thin to read anyway, and the checklist is longer than anyone ticks through. */

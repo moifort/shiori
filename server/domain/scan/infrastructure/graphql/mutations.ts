@@ -1,5 +1,10 @@
 import { match, P } from 'ts-pattern'
-import { BookFormatEnum, BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
+import {
+  BookFormatEnum,
+  BookLanguageEnum,
+  BookMediumEnum,
+  heldAs,
+} from '~/domain/book/infrastructure/graphql/enums'
 import { imageWithinSizeLimit } from '~/domain/scan/limits'
 import type { ScanOutcome, ShelfOutcome } from '~/domain/scan/use-case'
 import { ScanUseCase } from '~/domain/scan/use-case'
@@ -147,6 +152,7 @@ const DetectedBookInput = builder.inputType('DetectedBookInput', {
     publisher: t.field({ type: 'Publisher' }),
     language: t.field({ type: BookLanguageEnum }),
     format: t.field({ type: BookFormatEnum }),
+    media: t.field({ type: [BookMediumEnum] }),
   }),
 })
 
@@ -216,7 +222,7 @@ builder.mutationField('describeDetectedBook', (t) =>
             authors: book.authors,
             publisher: book.publisher ?? undefined,
             language: book.language ?? undefined,
-            format: book.format ?? undefined,
+            ...heldAs(book.format, book.media),
             subgenres: [],
           },
           languageFrom(event && getHeader(event, 'accept-language')),

@@ -70,7 +70,7 @@ const { KindleAsin } = await import('~/domain/kindle/primitives')
 const { BookQuery } = await import('~/domain/book/query')
 const { BookCommand } = await import('~/domain/book/command')
 const { BookTitle, AuthorName } = await import('~/domain/shared/primitives')
-const { ReadingNote } = await import('~/domain/book/primitives')
+const { CoverUrl, ReadingNote } = await import('~/domain/book/primitives')
 
 const reader = 'reader-1' as UserId
 const NOW = new Date('2026-10-01T10:00:00.000Z')
@@ -109,7 +109,14 @@ const anEbook = (title: string, author = 'Lauren Roberts') =>
   BookCommand.add(reader, {
     title: BookTitle(title),
     authors: [AuthorName(author)],
-    format: 'ebook',
+    media: ['digital'],
+  })
+
+const aPaperback = (title: string, author = 'Lauren Roberts') =>
+  BookCommand.add(reader, {
+    title: BookTitle(title),
+    authors: [AuthorName(author)],
+    publishedCoverUrl: CoverUrl('https://covers.openlibrary.org/b/isbn/fearless.jpg'),
   })
 
 describe('listing what could be imported', () => {
@@ -150,7 +157,7 @@ describe('listing what could be imported', () => {
 })
 
 describe('importing the ticked titles', () => {
-  test('catalogues them as ebooks in their saga, with their cover and their status', async () => {
+  test('catalogues them held on a screen, in their saga, with their cover and status', async () => {
     await connect()
     titles = [aTitle({ readStatus: 'READ' }), aTitle({ asin: 'B0TESTBBB2', title: 'Autre' })]
 
@@ -160,10 +167,11 @@ describe('importing the ticked titles', () => {
     const [book] = await BookQuery.all(reader)
     expect(book).toMatchObject({
       title: 'Fearless',
-      format: 'ebook',
+      format: 'book',
+      media: ['digital'],
       status: 'read',
       kindleAsin: 'B0TESTAAA1',
-      publishedCoverUrl: 'https://m.media-amazon.com/images/I/91cover.jpg',
+      kindleCoverUrl: 'https://m.media-amazon.com/images/I/91cover.jpg',
       series: { name: 'Powerless', volume: 3 },
     })
     // Dated on the acquisition, never on import night.
@@ -182,6 +190,21 @@ describe('importing the ticked titles', () => {
 
     expect(second).toEqual([])
     expect(await BookQuery.all(reader)).toHaveLength(1)
+  })
+
+  test('joins a title held on paper to its record rather than doubling it', async () => {
+    await connect()
+    const paperback = await aPaperback('Fearless')
+    titles = [aTitle()]
+
+    expect(await KindleUseCase.importBooks(reader, [KindleAsin('B0TESTAAA1')], NOW)).toEqual([])
+    expect(await BookQuery.all(reader)).toEqual([
+      expect.objectContaining({
+        id: paperback.id,
+        media: ['print', 'digital'],
+        kindleAsin: 'B0TESTAAA1',
+      }),
+    ])
   })
 
   test('matches an ASIN the library does not hold to nothing', async () => {
@@ -355,6 +378,30 @@ describe('a nightly pass', () => {
     })
     const [book] = await BookQuery.all(reader)
     expect(book).toMatchObject({ kindleAsin: 'B0TESTAAA1', status: 'read' })
+  })
+
+  // Paper or screen, one book: the paperback found on the Kindle is held both
+  // ways, drawn under the Kindle cover, and followed like any Kindle title.
+  test('links a paperback the reader also holds on the Kindle, and moves it', async () => {
+    await connect()
+    await aPaperback('Fearless')
+    titles = [aTitle({ readStatus: 'READ' })]
+
+    expect(await KindleUseCase.syncLibrary(reader, NIGHT)).toEqual({
+      linked: 1,
+      moved: 1,
+      imported: 0,
+    })
+    const [book] = await BookQuery.all(reader)
+    expect(book).toMatchObject({
+      media: ['print', 'digital'],
+      kindleAsin: 'B0TESTAAA1',
+      kindleCoverUrl: 'https://m.media-amazon.com/images/I/91cover.jpg',
+      status: 'read',
+    })
+    expect((await BookQuery.byId(reader, book.id))?.coverUrl).toBe(
+      CoverUrl('https://m.media-amazon.com/images/I/91cover.jpg'),
+    )
   })
 
   test('never touches the note of a book it moves', async () => {

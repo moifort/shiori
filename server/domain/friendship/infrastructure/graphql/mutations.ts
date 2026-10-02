@@ -4,7 +4,7 @@ import {
   awaitedOrError,
 } from '~/domain/awaited-edition/infrastructure/graphql/mutations'
 import { AwaitedEditionType } from '~/domain/awaited-edition/infrastructure/graphql/types'
-import { BookFormatEnum } from '~/domain/book/infrastructure/graphql/enums'
+import { BookFormatEnum, heldAs } from '~/domain/book/infrastructure/graphql/enums'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
 import { ReleaseFormatEnum } from '~/domain/discovery/infrastructure/graphql/types'
@@ -119,12 +119,14 @@ builder.mutationFields((t) => ({
       }),
     },
     resolve: async (_root, args, context) => {
+      const held = heldAs(args.format)
       const outcome = await FriendshipUseCase.copyBook(
         context.userId,
         args.userId,
         args.bookId,
         args.status,
-        args.format ?? undefined,
+        held.format,
+        held.media,
       )
       return match(outcome)
         .with('not-found', () => notFound('Book not found'))

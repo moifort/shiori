@@ -1,14 +1,19 @@
 import { describe, expect, test } from 'bun:test'
 import {
   copyOf,
+  coverSourcesOf,
   datesAfterCorrection,
   datesAfterStatusChange,
   datesOnArrival,
   groupedBySeries,
   inSagaOrder,
+  kindleLinkUnder,
   listeningProgressOf,
+  mediaFor,
   membershipFor,
+  mergedCopies,
   readVolumeNumbersOf,
+  recordJoinedBy,
   refreshedFacts,
   retaggedAfterEdit,
   sagaNamesOf,
@@ -61,6 +66,7 @@ const book = (spec: BookSpec): BookView => ({
   title: BookTitle(spec.title),
   authors: [],
   format: 'book',
+  media: ['print'],
   subgenres: [],
   narrators: [],
   status: spec.status ?? 'to-read',
@@ -855,7 +861,7 @@ describe('a saga in the format of its book', () => {
   test('moves a book turned audiobook to the saga heard, and back', () => {
     const heard = seriesInFormat(series, 'audiobook')
     expect(heard).toEqual({ ...series, id: SeriesId('bobiverse--dennis-e-taylor--audio') })
-    expect(seriesInFormat(heard, 'ebook')).toEqual(series)
+    expect(seriesInFormat(heard, 'book')).toEqual(series)
   })
 
   test('leaves a standalone book standalone', () => {
@@ -992,5 +998,161 @@ describe('a record brought up to date', () => {
     expect(
       refreshedFacts({ format: 'audiobook', language: 'fr' }, { pageCount: PageCount(662) }, 'fr'),
     ).toEqual({})
+  })
+})
+
+describe('where a book is held', () => {
+  test('is on paper unless something said otherwise, in the order paper, screen', () => {
+    expect(mediaFor('book')).toEqual(['print'])
+    expect(mediaFor('manga', ['digital'])).toEqual(['digital'])
+    expect(mediaFor('book', ['digital', 'print', 'digital'])).toEqual(['print', 'digital'])
+  })
+
+  test('is nowhere for a recording, which is heard', () => {
+    expect(mediaFor('audiobook', ['print'])).toEqual([])
+  })
+})
+
+describe('the record a book arriving on another medium joins', () => {
+  const held = (extra: Partial<BookView> = {}): BookView => ({
+    ...book({ title: 'Dune' }),
+    authors: [AuthorName('Frank Herbert')],
+    ...extra,
+  })
+  const arriving = {
+    title: BookTitle('DUNE'),
+    authors: [AuthorName('Frank Herbert')],
+    format: 'book' as const,
+    media: ['digital' as const],
+  }
+
+  test('is the paperback the Kindle copy of which arrives', () => {
+    const paperback = held()
+    expect(recordJoinedBy([paperback], arriving)).toBe(paperback)
+  })
+
+  test('is found by ISBN when the title was read differently', () => {
+    const paperback = held({ title: BookTitle('Dune, tome 1'), isbn13: Isbn13('9782266320481') })
+    expect(recordJoinedBy([paperback], { ...arriving, isbn13: Isbn13('9782266320481') })).toBe(
+      paperback,
+    )
+  })
+
+  test('is none when the arrival brings no medium the record lacks', () => {
+    expect(recordJoinedBy([held({ media: ['print', 'digital'] })], arriving)).toBeUndefined()
+    expect(recordJoinedBy([held()], { ...arriving, media: ['print'] })).toBeUndefined()
+  })
+
+  test('is none across a recording, another language or another volume', () => {
+    expect(recordJoinedBy([held({ format: 'audiobook', media: [] })], arriving)).toBeUndefined()
+    expect(recordJoinedBy([held()], { ...arriving, format: 'audiobook' })).toBeUndefined()
+    expect(
+      recordJoinedBy([held({ language: 'en' })], { ...arriving, language: 'fr' }),
+    ).toBeUndefined()
+    const volume = (number: number) => ({
+      id: SeriesId('dune--frank-herbert'),
+      name: SeriesName('Dune'),
+      volume: VolumeNumber(number),
+      kind: 'main' as const,
+    })
+    expect(
+      recordJoinedBy([held({ series: volume(1) })], { ...arriving, series: volume(2) }),
+    ).toBeUndefined()
+  })
+})
+
+describe('two copies of one book as one record', () => {
+  const paperback: Book = {
+    ...book({ title: 'Dune', addedAt: EARLIER }),
+    id: BookId('paperback'),
+    authors: [AuthorName('Frank Herbert')],
+    format: 'manga',
+    pageCount: PageCount(900),
+    rating: StarRating(3),
+    note: 'Offert par Léa.' as Book['note'],
+  }
+  const kindle: Book = {
+    ...book({
+      title: 'Dune',
+      status: 'read',
+      addedAt: NOW,
+      startedAt: NOW,
+      finishedAt: LATER,
+      statusChangedAt: LATER,
+    }),
+    id: BookId('kindle'),
+    format: 'book',
+    media: ['digital'],
+    kindleAsin: 'B0G26NZ911' as Book['kindleAsin'],
+    rating: StarRating(5),
+    favorite: true,
+    favoritedAt: LATER,
+    note: 'Relu sur la liseuse.' as Book['note'],
+    hidden: true,
+  }
+
+  test('keeps the record, its facts and its drawn format, filled from the other copy', () => {
+    expect(mergedCopies(paperback, kindle, LATER)).toMatchObject({
+      id: BookId('paperback'),
+      format: 'manga',
+      media: ['print', 'digital'],
+      pageCount: PageCount(900),
+      kindleAsin: 'B0G26NZ911',
+      addedAt: EARLIER,
+      updatedAt: LATER,
+    })
+  })
+
+  test('keeps the furthest reading: status, dates, rating, heart, both notes', () => {
+    expect(mergedCopies(paperback, kindle, LATER)).toMatchObject({
+      status: 'read',
+      startedAt: NOW,
+      finishedAt: LATER,
+      statusChangedAt: LATER,
+      rating: StarRating(5),
+      favorite: true,
+      favoritedAt: LATER,
+      note: 'Offert par Léa.\n\nRelu sur la liseuse.',
+    })
+  })
+
+  test('stays hidden when either copy was', () => {
+    expect(mergedCopies(paperback, kindle, LATER).hidden).toBe(true)
+  })
+
+  test('takes a drawn format over the plain book a Kindle title is filed as', () => {
+    expect(mergedCopies(kindle, paperback, LATER).format).toBe('manga')
+  })
+})
+
+describe('the cover a book is drawn under', () => {
+  const photo = 'covers/r/dune.jpg' as Book['coverPath']
+  const publisher = 'https://covers.openlibrary.org/dune.jpg' as Book['publishedCoverUrl']
+  const kindle = 'https://m.media-amazon.com/dune.jpg' as Book['kindleCoverUrl']
+
+  test('is the Kindle cover first, then the photo, then the publisher’s', () => {
+    expect(
+      coverSourcesOf({ kindleCoverUrl: kindle, coverPath: photo, publishedCoverUrl: publisher }),
+    ).toEqual({ publishedCoverUrl: kindle })
+    expect(coverSourcesOf({ coverPath: photo, publishedCoverUrl: publisher })).toEqual({
+      coverPath: photo,
+      publishedCoverUrl: publisher,
+    })
+    expect(coverSourcesOf({})).toEqual({})
+  })
+})
+
+describe('what a record keeps of its Kindle title', () => {
+  const linked = {
+    kindleAsin: 'B0G26NZ911' as Book['kindleAsin'],
+    kindleCoverUrl: 'https://m.media-amazon.com/dune.jpg' as Book['kindleCoverUrl'],
+  }
+
+  test('is all of it while the book is held on a screen, none of it once not', () => {
+    expect(kindleLinkUnder(linked, ['print', 'digital'])).toEqual(linked)
+    expect(kindleLinkUnder(linked, ['print'])).toEqual({
+      kindleAsin: undefined,
+      kindleCoverUrl: undefined,
+    })
   })
 })

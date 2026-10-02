@@ -1,7 +1,7 @@
 import { match, P } from 'ts-pattern'
 import { datesOnArrival, taggedIn } from '~/domain/book/business-rules'
 import type { BookEdit } from '~/domain/book/command'
-import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
+import { heldAs, ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
 import {
   BookEditInput,
   NewBookInput,
@@ -24,6 +24,12 @@ const readBack = async (userId: UserId, bookId: BookId) => {
   const view = await BookQuery.byId(userId, bookId)
   return view ?? notFound('Book not found')
 }
+
+// What the wire left out stays out of the edit, which leaves it untouched.
+const withoutAbsent = <T extends object>(record: T): Partial<T> =>
+  Object.fromEntries(
+    Object.entries(record).filter(([, value]) => value !== undefined),
+  ) as Partial<T>
 
 // GraphQL tells an omitted field (undefined) from an explicit null. Omitted is
 // left alone; null clears, which the command expresses as an undefined value
@@ -55,7 +61,7 @@ builder.mutationFields((t) => ({
         ...dates,
         title: args.input.title,
         authors: args.input.authors ?? undefined,
-        format: args.input.format ?? undefined,
+        ...heldAs(args.input.format, args.input.media),
         publisher: args.input.publisher ?? undefined,
         firstPublishedIn: args.input.firstPublishedIn ?? undefined,
         synopsis: args.input.synopsis ?? undefined,
@@ -111,7 +117,7 @@ builder.mutationFields((t) => ({
         ...(input.addedAt != null ? { addedAt: input.addedAt } : {}),
         ...(input.startedAt != null ? { startedAt: input.startedAt } : {}),
         ...(input.finishedAt != null ? { finishedAt: input.finishedAt } : {}),
-        ...(input.format != null ? { format: input.format } : {}),
+        ...withoutAbsent(heldAs(input.format, input.media?.length ? input.media : undefined)),
         // Lists clear to empty rather than to absent: the record always has them.
         ...(input.authors !== undefined ? { authors: input.authors ?? [] } : {}),
         // Typed by the reader, so in the language of their app — except the labels

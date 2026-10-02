@@ -679,7 +679,7 @@ describe('the authors watched for a reader', () => {
     const printed = author({ format: 'book', language: 'fr', status: 'read' })
     const heard = author({ format: 'audiobook', language: 'en', status: 'reading' })
     const both = author(
-      { format: 'ebook', language: 'fr', status: 'read' },
+      { format: 'book', language: 'fr', status: 'read' },
       { format: 'audiobook', language: 'en', status: 'read' },
     )
 

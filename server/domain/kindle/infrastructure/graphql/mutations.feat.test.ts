@@ -80,14 +80,20 @@ describe('reading an Amazon data export', () => {
 })
 
 describe('importing from an Amazon data export', () => {
-  test('catalogues the ticked titles as ebooks on the pile', async () => {
+  test('catalogues the ticked titles held on a screen, on the pile', async () => {
     const found = await read()
 
-    const result = await importBooks([found[0].key], 'title format status authors')
+    const result = await importBooks([found[0].key], 'title format media status authors')
 
     expect(result.errors).toBeUndefined()
     expect(result.data?.importKindleBooks).toEqual([
-      { title: 'Dune', format: 'EBOOK', status: 'TO_READ', authors: ['Frank Herbert'] },
+      {
+        title: 'Dune',
+        format: 'BOOK',
+        media: ['DIGITAL'],
+        status: 'TO_READ',
+        authors: ['Frank Herbert'],
+      },
     ])
   })
 

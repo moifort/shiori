@@ -2,6 +2,7 @@ import type { Brand } from 'ts-brand'
 import type {
   BookFormat,
   BookLanguage,
+  BookMedium,
   CoverUrl,
   Genre,
   Isbn13,
@@ -34,6 +35,10 @@ export type ScanResult = {
   /** Absent when the model could not tell, and on scans cached before the format
    *  was read — the reader picks it on the review screen either way. */
   format?: BookFormat
+  /** Where the photographed copy is held, when the cover said: a cover shown on
+   *  an e-reader is held on a screen. Absent otherwise — the save files it on
+   *  paper. */
+  media?: BookMedium[]
   publisher?: Publisher
   firstPublishedIn?: Year
   synopsis?: Synopsis
@@ -125,6 +130,7 @@ export type SeenOnShelf = {
   publisher?: Publisher
   language?: BookLanguage
   format?: BookFormat
+  media?: BookMedium[]
   seriesName?: SeriesName
   volume?: VolumeNumber
   box: DetectedBox

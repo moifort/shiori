@@ -105,7 +105,7 @@ builder.mutationFields((t) => ({
         .otherwise((imported) => imported)
       // An imported book has no photo of its own: the only cover it can draw is
       // the one Amazon supplied, so it is not read back to learn that.
-      return books.map((book) => ({ ...book, coverUrl: book.publishedCoverUrl }))
+      return books.map((book) => ({ ...book, coverUrl: book.kindleCoverUrl }))
     },
   }),
 

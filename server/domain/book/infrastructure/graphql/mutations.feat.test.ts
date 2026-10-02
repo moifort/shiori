@@ -811,3 +811,51 @@ describe('an audiobook imported from Audible', () => {
     expect(read.data?.book).toEqual({ audibleUrl: null })
   })
 })
+
+describe('paper and screen through the API', () => {
+  test('a book is held on paper unless the app says otherwise', async () => {
+    const result = await execute(
+      'mutation { addBook(input: { title: "Dune", authors: ["Frank Herbert"] }) { format media } }',
+    )
+
+    expect(result.data?.addBook).toEqual({ format: 'BOOK', media: ['PRINT'] })
+  })
+
+  // An installed build still sends EBOOK.
+  test('an EBOOK sent by an older build is a book held on a screen', async () => {
+    const result = await execute(
+      'mutation { addBook(input: { title: "Dune", authors: ["Frank Herbert"], format: EBOOK }) { format media } }',
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.addBook).toEqual({ format: 'BOOK', media: ['DIGITAL'] })
+  })
+
+  test('the Kindle copy of a paperback joins its record', async () => {
+    const paperback = await execute(
+      'mutation { addBook(input: { title: "Dune", authors: ["Frank Herbert"] }) { id } }',
+    )
+    const kindle = await execute(
+      'mutation { addBook(input: { title: "Dune", authors: ["Frank Herbert"], media: [DIGITAL] }) { id media } }',
+    )
+
+    expect(kindle.data?.addBook).toEqual({
+      id: (paperback.data as { addBook: { id: string } }).addBook.id,
+      media: ['PRINT', 'DIGITAL'],
+    })
+  })
+
+  test('the media are corrected, and an empty list is ignored', async () => {
+    const { id } = await addBook('Dune')
+
+    const both = await execute(
+      `mutation { updateBook(id: "${id}", input: { media: [DIGITAL, PRINT] }) { media } }`,
+    )
+    const ignored = await execute(
+      `mutation { updateBook(id: "${id}", input: { media: [] }) { media } }`,
+    )
+
+    expect(both.data?.updateBook).toEqual({ media: ['PRINT', 'DIGITAL'] })
+    expect(ignored.data?.updateBook).toEqual({ media: ['PRINT', 'DIGITAL'] })
+  })
+})

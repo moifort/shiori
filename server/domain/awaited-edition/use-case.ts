@@ -25,6 +25,7 @@ import type {
   EditionOffer,
   EditionWatch,
 } from '~/domain/awaited-edition/types'
+import { coverSourcesOf } from '~/domain/book/business-rules'
 import { BookQuery } from '~/domain/book/query'
 import type { BookId, BookView } from '~/domain/book/types'
 import { todayOf } from '~/domain/discovery/business-rules'
@@ -254,6 +255,7 @@ const formatsFor = async (
  *  kept by its path, to be signed when drawn; a friend's never is. */
 const sourceOf = (book: BookView, ownerId: UserId, userId: UserId): AwaitedSource => {
   if (!book.language) throw new Error('A book awaited in another edition has a language')
+  const covers = coverSourcesOf(book)
   return {
     bookId: book.id,
     ownerId,
@@ -268,8 +270,8 @@ const sourceOf = (book: BookView, ownerId: UserId, userId: UserId): AwaitedSourc
           },
         }
       : {}),
-    ...(book.publishedCoverUrl ? { coverUrl: book.publishedCoverUrl } : {}),
-    ...(book.coverPath && ownerId === userId ? { coverPath: book.coverPath } : {}),
+    ...(covers.publishedCoverUrl ? { coverUrl: covers.publishedCoverUrl } : {}),
+    ...(covers.coverPath && ownerId === userId ? { coverPath: covers.coverPath } : {}),
   }
 }
 

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { KindleTitle } from 'kindle-api-ts'
 import { type Shelf, shelfKeyOf } from '~/domain/book/business-rules'
-import { BookId } from '~/domain/book/primitives'
+import { BookId, CoverUrl } from '~/domain/book/primitives'
 import type { Book, ReadingStatus } from '~/domain/book/types'
 import {
   acquiredSince,
@@ -20,6 +20,7 @@ import {
 } from '~/domain/kindle/business-rules'
 import { KindleAsin } from '~/domain/kindle/primitives'
 import type { KindleConnection } from '~/domain/kindle/types'
+import { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import { AuthorName, BookTitle, UserId } from '~/domain/shared/primitives'
 
 const aTitle = (overrides: Partial<KindleTitle> = {}): KindleTitle => ({
@@ -39,7 +40,8 @@ const aBook = (overrides: Partial<Book> = {}): Book => ({
   userId: UserId('reader'),
   title: BookTitle('Le Nom du vent'),
   authors: [AuthorName('Patrick Rothfuss')],
-  format: 'ebook',
+  format: 'book',
+  media: ['digital'],
   subgenres: [],
   narrators: [],
   status: 'to-read',
@@ -269,7 +271,7 @@ describe('importableFrom', () => {
 })
 
 describe('bookFrom', () => {
-  test('catalogues an ebook carrying its Kindle title', () => {
+  test('catalogues a book held on a screen, carrying its Kindle title and cover', () => {
     const importable = importableFrom(
       aTitle({ readStatus: 'READ', sortableTitle: 'nom du vent french edition, le' }),
       new Map(),
@@ -278,20 +280,59 @@ describe('bookFrom', () => {
 
     expect(bookFrom(importable)).toMatchObject({
       title: 'Le Nom du vent',
-      format: 'ebook',
+      format: 'book',
+      media: ['digital'],
       status: 'read',
       kindleAsin: 'B0TESTAAA1',
       language: 'fr',
-      publishedCoverUrl: 'https://m.media-amazon.com/images/I/91cover.jpg',
+      kindleCoverUrl: 'https://m.media-amazon.com/images/I/91cover.jpg',
     })
+    expect(bookFrom(importable).publishedCoverUrl).toBeUndefined()
   })
 })
 
 describe('kindleLinksFor', () => {
-  test('links an ebook catalogued before the link, by shelf key', () => {
+  test('links an ebook catalogued before the link, by shelf key, with its cover', () => {
     const links = kindleLinksFor([aBook()], [aTitle()])
 
-    expect(links).toEqual([{ bookId: BookId('book-1'), kindleAsin: KindleAsin('B0TESTAAA1') }])
+    expect(links).toEqual([
+      {
+        bookId: BookId('book-1'),
+        kindleAsin: KindleAsin('B0TESTAAA1'),
+        coverUrl: CoverUrl('https://m.media-amazon.com/images/I/91cover.jpg'),
+      },
+    ])
+  })
+
+  // Paper or screen, it is one book: the paperback found on the Kindle is
+  // held both ways from then on.
+  test('links a paperback, and any drawn format, the reader also holds on the Kindle', () => {
+    expect(kindleLinksFor([aBook({ media: ['print'] })], [aTitle()])).toHaveLength(1)
+    expect(kindleLinksFor([aBook({ format: 'manga', media: ['print'] })], [aTitle()])).toHaveLength(
+      1,
+    )
+  })
+
+  test('never links another edition: another volume, another language', () => {
+    const tome = (volume: number) =>
+      aBook({
+        title: BookTitle('Fearless'),
+        series: {
+          id: SeriesId('powerless--lauren-roberts'),
+          name: SeriesName('Powerless'),
+          volume: VolumeNumber(volume),
+          kind: 'main',
+        },
+      })
+    const fearless = aTitle({ title: 'Powerless (Tome 3) - Fearless' })
+    expect(kindleLinksFor([tome(2)], [fearless])).toEqual([])
+    expect(kindleLinksFor([tome(3)], [fearless])).toHaveLength(1)
+    expect(
+      kindleLinksFor(
+        [aBook({ language: 'en' })],
+        [aTitle({ sortableTitle: 'nom du vent french edition, le' })],
+      ),
+    ).toEqual([])
   })
 
   test('matches on the title the saga was read out of', () => {
@@ -303,9 +344,9 @@ describe('kindleLinksFor', () => {
     expect(links).toHaveLength(1)
   })
 
-  // A printed copy or a recording of the same story is another object.
-  test('never links a book in another format, or one already linked', () => {
-    expect(kindleLinksFor([aBook({ format: 'book' })], [aTitle()])).toEqual([])
+  // A recording of the same story is another object, and Audible's.
+  test('never links a recording, or a book already linked', () => {
+    expect(kindleLinksFor([aBook({ format: 'audiobook', media: [] })], [aTitle()])).toEqual([])
     expect(kindleLinksFor([aBook({ kindleAsin: KindleAsin('B0OTHERAAA') })], [aTitle()])).toEqual(
       [],
     )

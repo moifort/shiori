@@ -1,3 +1,4 @@
+import { heldFormatOf } from '~/domain/scan/business-rules'
 import type { CachedScan, ImageHash, ScanLanguage } from '~/domain/scan/types'
 import { db } from '~/system/firebase'
 import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
@@ -16,7 +17,11 @@ export const findBy = async (
   language: ScanLanguage,
 ): Promise<CachedScan | null> => {
   const doc = await cache().doc(docId(imageHash, language)).get()
-  return doc.data() ?? null
+  const entry = doc.data()
+  if (!entry) return null
+  // A scan cached when `ebook` was still a format reads as a book on a screen.
+  const { format, ...result } = entry.result
+  return { ...entry, result: { ...result, ...heldFormatOf(format) } }
 }
 
 export const save = async (entry: CachedScan): Promise<void> => {

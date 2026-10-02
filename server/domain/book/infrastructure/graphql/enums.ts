@@ -1,3 +1,4 @@
+import type { BookFormat, BookMedium } from '~/domain/book/types'
 import { builder } from '~/domain/shared/graphql/builder'
 
 export const ReadingStatusEnum = builder.enumType('ReadingStatus', {
@@ -61,10 +62,15 @@ export const BookFormatEnum = builder.enumType('BookFormat', {
   description:
     'What kind of object the reader holds.\n\n' +
     'Prose, sound, or a drawn story. Drawn stories are split into the three ' +
-    'traditions readers shelve apart. Defaults to `BOOK` when nothing says otherwise.',
+    'traditions readers shelve apart. Defaults to `BOOK` when nothing says otherwise. ' +
+    'Paper or screen is not a format: see `BookMedium`.',
   values: {
-    BOOK: { value: 'book', description: 'A printed book: novel, essay, anything in prose.' },
-    EBOOK: { value: 'ebook', description: 'A book read on a screen.' },
+    BOOK: { value: 'book', description: 'A book in prose: novel, essay, on paper or on a screen.' },
+    EBOOK: {
+      value: 'ebook',
+      description: 'A book read on a screen. Sent, it is read as `BOOK` held `DIGITAL`.',
+      deprecationReason: 'Use `BOOK` with `media: [DIGITAL]`. Never returned.',
+    },
     AUDIOBOOK: { value: 'audiobook', description: 'A book listened to.' },
     BANDE_DESSINEE: {
       value: 'bande-dessinee',
@@ -74,6 +80,27 @@ export const BookFormatEnum = builder.enumType('BookFormat', {
     MANGA: { value: 'manga', description: 'A Japanese comic, or one drawn in that tradition.' },
   } as const,
 })
+
+export const BookMediumEnum = builder.enumType('BookMedium', {
+  description:
+    'Where a read book is held. A book held both ways is one record carrying both: ' +
+    'the reader keeps one book, not a paperback and an ebook. An audiobook has none.',
+  values: {
+    PRINT: { value: 'print', description: 'On paper.' },
+    DIGITAL: { value: 'digital', description: 'On a screen: a Kindle, a tablet.' },
+  } as const,
+})
+
+/** A format and media off the wire, as the domain holds them: the `EBOOK` an
+ *  older build still sends is a book held on a screen. Absent stays absent, for
+ *  the command to default. */
+export const heldAs = (
+  format: BookFormat | 'ebook' | null | undefined,
+  media?: readonly BookMedium[] | null,
+): { format?: BookFormat; media?: BookMedium[] } =>
+  format === 'ebook'
+    ? { format: 'book', media: [...(media ?? []), 'digital'] }
+    : { format: format ?? undefined, media: media ? [...media] : undefined }
 
 export const BookLanguageEnum = builder.enumType('BookLanguage', {
   description:

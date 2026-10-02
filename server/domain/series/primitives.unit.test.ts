@@ -44,7 +44,7 @@ describe('the format in the key', () => {
   test('keeps every other format on the printed saga', () => {
     const read = String(seriesKeyOf('Bobiverse', 'Dennis E. Taylor', 'book'))
     expect(read).toBe('bobiverse--dennis-e-taylor')
-    for (const format of ['ebook', 'bande-dessinee', 'comic', 'manga'] as const)
+    for (const format of ['bande-dessinee', 'comic', 'manga'] as const)
       expect(String(seriesKeyOf('Bobiverse', 'Dennis E. Taylor', format))).toBe(read)
     expect(isAudioSeries(SeriesId(read))).toBe(false)
   })

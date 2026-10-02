@@ -561,6 +561,11 @@ type Book {
   listeningProgress: Percentage
 
   """
+  Where the reader holds it: PRINT, DIGITAL, or both, in that order. Empty on an AUDIOBOOK, never empty otherwise.
+  """
+  media: [BookMedium!]!
+
+  """
   Who reads the recording, at most five. Empty on anything but an audiobook, and empty on an audiobook no import ever named.
   """
   narrators: [NarratorName!]!
@@ -634,6 +639,11 @@ input BookEditInput {
   isbn13: Isbn13
   language: BookLanguage
 
+  """
+  Where the reader holds it. Null or empty is ignored: a read book is held somewhere. Taking DIGITAL away lets go of its Kindle title and cover.
+  """
+  media: [BookMedium!]
+
   """At most five."""
   narrators: [NarratorName!]
   pageCount: PageCount
@@ -658,7 +668,7 @@ input BookEditInput {
 """
 What kind of object the reader holds.
 
-Prose, sound, or a drawn story. Drawn stories are split into the three traditions readers shelve apart. Defaults to `BOOK` when nothing says otherwise.
+Prose, sound, or a drawn story. Drawn stories are split into the three traditions readers shelve apart. Defaults to `BOOK` when nothing says otherwise. Paper or screen is not a format: see `BookMedium`.
 """
 enum BookFormat {
   """A book listened to."""
@@ -667,14 +677,14 @@ enum BookFormat {
   """A Franco-Belgian comic album, such as Astérix or Blacksad."""
   BANDE_DESSINEE
 
-  """A printed book: novel, essay, anything in prose."""
+  """A book in prose: novel, essay, on paper or on a screen."""
   BOOK
 
   """An American comic book or graphic novel."""
   COMIC
 
-  """A book read on a screen."""
-  EBOOK
+  """A book read on a screen. Sent, it is read as `BOOK` held `DIGITAL`."""
+  EBOOK @deprecated(reason: "Use `BOOK` with `media: [DIGITAL]`. Never returned.")
 
   """A Japanese comic, or one drawn in that tradition."""
   MANGA
@@ -711,6 +721,17 @@ enum BookLanguage {
   """Ukrainian."""
   UK
   ZH
+}
+
+"""
+Where a read book is held. A book held both ways is one record carrying both: the reader keeps one book, not a paperback and an ebook. An audiobook has none.
+"""
+enum BookMedium {
+  """On a screen: a Kindle, a tablet."""
+  DIGITAL
+
+  """On paper."""
+  PRINT
 }
 
 """
@@ -867,6 +888,11 @@ type DetectedBook {
   language: BookLanguage
 
   """
+  DIGITAL for a cover shown on a screen; empty when the photo did not say.
+  """
+  media: [BookMedium!]!
+
+  """
   The reader already has this story, in any edition — the same title by the same first author. Such a book comes unticked. Always false without a title.
   """
   owned: Boolean!
@@ -887,6 +913,7 @@ input DetectedBookInput {
   authors: [AuthorName!]!
   format: BookFormat
   language: BookLanguage
+  media: [BookMedium!]
   publisher: Publisher
   title: BookTitle!
 }
@@ -2539,6 +2566,11 @@ input NewBookInput {
   language: BookLanguage
 
   """
+  Where the reader holds it. Defaults to PRINT; ignored on an AUDIOBOOK. A book the reader already keeps on another medium — same title and first author, or same ISBN, same volume and language — joins that record instead of doubling it.
+  """
+  media: [BookMedium!]
+
+  """
   Who reads the recording, at most five. Only meaningful on an AUDIOBOOK.
   """
   narrators: [NarratorName!]
@@ -3247,6 +3279,11 @@ type ScanResult {
   The language of the photographed edition, read off the cover — the object on the shelf, not the language the work was written in. Null when the cover does not settle it. Hand it back to `addBook` unchanged.
   """
   language: BookLanguage
+
+  """
+  Where the photographed copy is held, when the cover said: DIGITAL for a cover shown on an e-reader. Empty when it did not; the app then proposes PRINT.
+  """
+  media: [BookMedium!]!
 
   """
   The record the reader already keeps of this book — the same title and first author, or the same ISBN — for the review to warn before a second copy is added. The earliest on the shelf when there are several. Null when the book is new to them, and when nothing was recognized.

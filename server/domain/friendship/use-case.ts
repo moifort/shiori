@@ -17,6 +17,7 @@ import type {
   BookFormat,
   BookId,
   BookLanguage,
+  BookMedium,
   BookView,
   Genre,
   ReadingStatus,
@@ -586,6 +587,7 @@ export namespace FriendshipUseCase {
     bookId: BookId,
     status: CopiedStatus,
     format?: BookFormat,
+    media?: BookMedium[],
   ): Promise<Book | 'not-found' | 'already-owned'> => {
     const source = await book(userId, friendId, bookId)
     if (!source) return 'not-found'
@@ -607,6 +609,8 @@ export namespace FriendshipUseCase {
       title: source.title,
       authors: source.authors,
       format: taken,
+      // Held the way the friend holds it, unless the reader said otherwise.
+      media: media ?? (taken === source.format ? source.media : undefined),
       publisher: source.publisher,
       firstPublishedIn: source.firstPublishedIn,
       synopsis: source.synopsis,
@@ -618,7 +622,7 @@ export namespace FriendshipUseCase {
       isbn13: source.isbn13,
       language: source.language,
       series: source.series,
-      publishedCoverUrl: recording?.coverUrl ?? source.publishedCoverUrl,
+      publishedCoverUrl: recording?.coverUrl ?? source.kindleCoverUrl ?? source.publishedCoverUrl,
       status,
       recommendation: firstName ? { recommenderName: PersonName(firstName) } : undefined,
     })
