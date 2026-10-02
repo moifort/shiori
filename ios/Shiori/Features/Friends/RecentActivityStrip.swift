@@ -2,8 +2,8 @@ import SwiftUI
 
 /// A friend's recent activity as up to five covers scrolled sideways: the
 /// book in progress, the last one read, the last one hearted, the last one
-/// added and the last one dropped. No title — the cover already shows the book — but
-/// under each, what happened, its symbol first, in its colour. A tap on a
+/// added and the last one dropped. No title — the cover already shows the book — and
+/// no caption: what happened is its symbol, centred on the cover, in its colour. A tap on a
 /// cover opens its book; on the friends list, the rest of the row opens the
 /// friend's page.
 struct RecentActivityStrip: View {
@@ -19,6 +19,9 @@ struct RecentActivityStrip: View {
     /// Wider than five covers sharing the card would be: the last one peeks
     /// out, and the strip scrolls to it.
     private static let coverWidth: CGFloat = 72
+    /// Taller than a cover's own proportions: with no caption under it, the
+    /// cover takes the room the caption had, and some.
+    private static let coverHeight: CGFloat = 130
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -47,37 +50,24 @@ struct RecentActivityStrip: View {
     }
 
     private func tile(_ activity: RecentActivity) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            BookCover(book: activity.book.book, width: Self.coverWidth, showsFormatBadge: false)
-            // Not a caption label: its fixed icon column would leave
-            // "Abandonné" too little of a cover's width.
-            HStack(spacing: 3) {
-                icon(activity)
-                Text(caption(activity))
-                    .lineLimit(1)
-                    // Cut rather than shrunk: every caption keeps one size.
-                    .truncationMode(.tail)
-            }
-            .font(.caption2.weight(.medium))
-            .foregroundStyle(tint(activity))
-        }
-        .frame(width: Self.coverWidth, alignment: .leading)
+        BookCover(
+            book: activity.book.book,
+            width: Self.coverWidth,
+            showsFormatBadge: false,
+            minHeight: Self.coverHeight
+        )
+        .overlay { icon(activity) }
     }
 
-    /// A check or a plus is a bare stroke beside the filled book, heart and
-    /// thumb, so those two sit in a disc of their colour to weigh the same.
-    @ViewBuilder
+    /// What happened, as a solid disc of its colour in the middle of the
+    /// cover: opaque, so the symbol reads whatever the photo under it.
     private func icon(_ activity: RecentActivity) -> some View {
-        switch activity {
-        case .finished, .added:
-            Image(systemName: symbol(activity))
-                .font(.system(size: 7, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 13, height: 13)
-                .background(tint(activity), in: Circle())
-        case .reading, .hearted, .dropped:
-            Image(systemName: symbol(activity)).imageScale(.small)
-        }
+        Image(systemName: symbol(activity))
+            .font(.system(size: 14, weight: .bold))
+            .foregroundStyle(.white)
+            .frame(width: 32, height: 32)
+            .background(tint(activity), in: Circle())
+            .shadow(color: .black.opacity(0.35), radius: 4, y: 1)
     }
 
     private func caption(_ activity: RecentActivity) -> String {
@@ -108,7 +98,8 @@ struct RecentActivityStrip: View {
         case .finished: ReadingStatus.read.tint
         case .hearted: .red
         case .added: ReadingStatus.toRead.tint
-        case .dropped: .secondary
+        // Not .secondary: translucent, the disc would let the cover through.
+        case .dropped: Color(.systemGray)
         }
     }
 }

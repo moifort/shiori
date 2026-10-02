@@ -302,8 +302,8 @@ struct FriendRow: View {
                     .fixedSize()
                 }
             }
-            // The whole width of the row, under the avatar too: a fifth of
-            // the column beside it leaves "Abandonné" no room.
+            // The whole width of the row, under the avatar too: the column
+            // beside it leaves room for two covers at most.
             let recent = friend.recentActivity.filter { $0.isRecent() }
             if !recent.isEmpty {
                 // Out to the card's edges, so a cover slides off it rather
