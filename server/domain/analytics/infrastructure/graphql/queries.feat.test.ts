@@ -204,3 +204,36 @@ describe('the genre insights through the API', () => {
     expect(fake.batches.length).toBe(writes)
   })
 })
+
+describe('the taste map through the API', () => {
+  test('places a subgenre with three rated books apart, and may name it the gem', async () => {
+    const rated = async (fields: string, rating: number) => {
+      const id = await addBook(`title: "Livre", status: READ, ${fields}`)
+      await execute(`mutation { rateBook(id: "${id}", rating: ${rating}) { id } }`)
+    }
+    for (const rating of [4, 4, 4, 4, 4, 4]) await rated('genre: FANTASY', rating)
+    for (const rating of [3, 4, 3, 4, 3]) await rated('genre: CRIME', rating)
+    for (const rating of [5, 5, 5]) {
+      await rated('genre: HISTORICAL_FICTION, subgenres: ["Uchronie"]', rating)
+    }
+
+    const result = await execute(`{
+      genreInsights {
+        tasteMap { genre subgenre readCount }
+        gem { genre subgenre averageRating }
+        hiddenGem
+      }
+    }`)
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.genreInsights).toEqual({
+      tasteMap: [
+        { genre: 'FANTASY', subgenre: null, readCount: 6 },
+        { genre: 'CRIME', subgenre: null, readCount: 5 },
+        { genre: 'HISTORICAL_FICTION', subgenre: 'Uchronie', readCount: 3 },
+      ],
+      gem: { genre: 'HISTORICAL_FICTION', subgenre: 'Uchronie', averageRating: 5 },
+      hiddenGem: 'HISTORICAL_FICTION',
+    })
+  })
+})

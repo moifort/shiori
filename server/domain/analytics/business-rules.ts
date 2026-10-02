@@ -27,7 +27,7 @@ import {
   shelvedOf,
   shownRatingOf,
 } from '~/domain/book/business-rules'
-import type { Book, BookFormat, Genre, StarRating } from '~/domain/book/types'
+import type { Book, BookFormat, Genre, StarRating, Subgenre } from '~/domain/book/types'
 import { GENRES } from '~/domain/book/types'
 import { recentActivityOf } from '~/domain/friendship/business-rules'
 import {
@@ -526,20 +526,18 @@ export const genreInsightsOf = (books: readonly Book[]): GenreInsights => {
     .sort(mostFirst)
   const averageRating = meanOf(read.flatMap(ratingOf))
   const tastes = [...readByGenre]
-    .flatMap(([genre, shelf]) => {
-      const ratings = shelf.flatMap(ratingOf)
-      return ratings.length < ENOUGH_BOOKS
-        ? []
-        : [{ genre, readCount: shelf.length, averageRating: meanOf(ratings) ?? 0 }]
-    })
-    .sort((left, right) => right.readCount - left.readCount || genreOrder(left, right))
+    .flatMap(([genre, shelf]) => tasteOf(genre, shelf))
+    .sort(mostReadFirst)
+  const tasteMap = tasteMapOf(read)
   return {
     readCount: read.length,
     shares,
     formats: formatSharesOf(read),
     tastes,
+    tasteMap,
     averageRating,
-    hiddenGem: hiddenGemOf(tastes, averageRating),
+    hiddenGem: hiddenGemOf(tastes, averageRating)?.genre,
+    gem: hiddenGemOf(tasteMap, averageRating),
     longest: longestOf(readByGenre),
     fastest: fastestOf(readByGenre),
     mostDropped: mostDroppedOf(books),
@@ -566,12 +564,62 @@ const formatSharesOf = (read: readonly Book[]): FormatShare[] => {
     .sort((left, right) => right.count - left.count || left.format.localeCompare(right.format))
 }
 
-/** The genre left of the median that the reader rates well above their own
+/** The taste map: a book goes to its head subgenre — the most representative
+ *  — when that subgenre gathers enough rated books of the genre on its own,
+ *  and to its genre otherwise. A small library reads as genres only; a large
+ *  one brings out the subgenres that weigh. Labels meet whatever their case
+ *  or hyphens ("Space-opera", "space opera"); across languages they do not. */
+const tasteMapOf = (read: readonly Book[]): GenreTaste[] => {
+  const bySubgenre = new Map<string, { genre: Genre; subgenre: Subgenre; books: Book[] }>()
+  for (const book of read) {
+    const [head] = book.subgenres
+    if (!head || book.genre === undefined || book.genre === 'other') continue
+    const key = `${book.genre}~${subgenreKeyOf(head.label)}`
+    const entry = bySubgenre.get(key) ?? { genre: book.genre, subgenre: head.label, books: [] }
+    bySubgenre.set(key, { ...entry, books: [...entry.books, book] })
+  }
+  const subgenreTastes = [...bySubgenre.values()].flatMap(({ genre, subgenre, books }) =>
+    tasteOf(genre, books, subgenre),
+  )
+  const claimed = new Set(
+    [...bySubgenre.values()]
+      .filter(({ genre, subgenre }) =>
+        subgenreTastes.some((taste) => taste.genre === genre && taste.subgenre === subgenre),
+      )
+      .flatMap(({ books }) => books.map(({ id }) => id)),
+  )
+  const genreTastes = [...byGenre(read.filter(({ id }) => !claimed.has(id)))].flatMap(
+    ([genre, shelf]) => tasteOf(genre, shelf),
+  )
+  return [...subgenreTastes, ...genreTastes].sort(mostReadFirst)
+}
+
+/** The key two spellings of one subgenre share: case and hyphens aside. */
+export const subgenreKeyOf = (label: string): string =>
+  label
+    .toLocaleLowerCase('fr')
+    .replace(/[\s\-‐‑–]+/gu, ' ')
+    .trim()
+
+/** A place on the map for these books, when enough of them are rated. */
+const tasteOf = (genre: Genre, books: readonly Book[], subgenre?: Subgenre): GenreTaste[] => {
+  const ratings = books.flatMap(ratingOf)
+  return ratings.length < ENOUGH_BOOKS
+    ? []
+    : [{ genre, subgenre, readCount: books.length, averageRating: meanOf(ratings) ?? 0 }]
+}
+
+const mostReadFirst = (left: GenreTaste, right: GenreTaste) =>
+  right.readCount - left.readCount ||
+  genreOrder(left, right) ||
+  (left.subgenre ?? '').localeCompare(right.subgenre ?? '')
+
+/** The place left of the median that the reader rates well above their own
  *  average: few books, much liked. The best rated wins, then the least read. */
 export const hiddenGemOf = (
   tastes: readonly GenreTaste[],
   averageRating: number | undefined,
-): Genre | undefined => {
+): GenreTaste | undefined => {
   if (averageRating === undefined || tastes.length < 3) return undefined
   const median = medianOf(tastes.map(({ readCount }) => readCount))
   const [gem] = tastes
@@ -582,7 +630,7 @@ export const hiddenGemOf = (
     .sort(
       (left, right) => right.averageRating - left.averageRating || left.readCount - right.readCount,
     )
-  return gem?.genre
+  return gem
 }
 
 const longestOf = (readByGenre: Map<Genre, Book[]>) => {

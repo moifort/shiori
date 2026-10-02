@@ -54,11 +54,9 @@ enum HomeAPI {
             formats: insights.formats.map {
                 .init(format: $0.format.asDomain, count: $0.count, topGenre: $0.topGenre?.asDomain)
             },
-            tastes: insights.tastes.map {
-                .init(genre: $0.genre.asDomain, readCount: $0.readCount, averageRating: $0.averageRating)
-            },
+            tastes: insights.tasteMap.map { $0.fragments.tastePlace.asTaste },
             averageRating: insights.averageRating,
-            hiddenGem: insights.hiddenGem?.asDomain,
+            gem: insights.gem?.fragments.tastePlace.asTaste,
             longest: insights.longest.map { .init(genre: $0.genre.asDomain, averagePages: $0.averagePages) },
             fastest: insights.fastest.map { .init(genre: $0.genre.asDomain, averageDays: $0.averageDays) },
             mostDropped: insights.mostDropped.map {
@@ -66,6 +64,12 @@ enum HomeAPI {
             },
             unexplored: insights.unexplored.map { .init(genre: $0.genre.asDomain, pileCount: $0.pileCount) }
         )
+    }
+}
+
+private extension ShioriGraphQL.TastePlace {
+    var asTaste: GenreInsights.Taste {
+        .init(genre: genre.asDomain, subgenre: subgenre, readCount: readCount, averageRating: averageRating)
     }
 }
 

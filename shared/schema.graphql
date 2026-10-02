@@ -1606,9 +1606,14 @@ type GenreInsights {
   formats: [FormatShare!]!
 
   """
+  The place of tasteMap read less than the median and rated half a star above the reader's average, the best rated if several: a genre or a subgenre.
+  """
+  gem: GenreTaste
+
+  """
   A genre read less than the median and rated half a star above the reader's average, the best rated if several.
   """
-  hiddenGem: Genre
+  hiddenGem: Genre @deprecated(reason: "Use gem, which may name a subgenre.")
   longest: LongestGenre
   mostDropped: MostDroppedGenre
 
@@ -1620,8 +1625,13 @@ type GenreInsights {
   """
   shares: [GenreShare!]!
 
+  """
+  The taste map, the most read first: a head subgenre with three rated books of its own placed apart, every other book in its genre.
+  """
+  tasteMap: [GenreTaste!]!
+
   """The genres with three rated books, the most read first."""
-  tastes: [GenreTaste!]!
+  tastes: [GenreTaste!]! @deprecated(reason: "Use tasteMap, which places the subgenres that weigh apart.")
 
   """
   The genres never finished, OTHER aside, those waiting on the pile first.
@@ -1636,7 +1646,7 @@ type GenreShare {
 }
 
 """
-One genre placed on the taste map: how many of its books the reader finished against how they rated them. Only genres with three rated books are placed.
+One place on the taste map: how many of its books the reader finished against how they rated them. Only places with three rated books are drawn.
 """
 type GenreTaste {
   """The average of the rated ones, to one decimal."""
@@ -1645,6 +1655,11 @@ type GenreTaste {
 
   """Finished books, rated or not."""
   readCount: Int!
+
+  """
+  The head subgenre of the books placed here, as the reader first wrote it. Null for the books of the genre that no subgenre took.
+  """
+  subgenre: Subgenre
 }
 
 """

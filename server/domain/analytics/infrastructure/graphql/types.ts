@@ -256,10 +256,18 @@ const FormatShareType = builder.objectRef<FormatShare>('FormatShare').implement(
 
 const GenreTasteType = builder.objectRef<GenreTaste>('GenreTaste').implement({
   description:
-    'One genre placed on the taste map: how many of its books the reader finished ' +
-    'against how they rated them. Only genres with three rated books are placed.',
+    'One place on the taste map: how many of its books the reader finished against ' +
+    'how they rated them. Only places with three rated books are drawn.',
   fields: (t) => ({
     genre: t.field({ type: GenreEnum, resolve: (taste) => taste.genre }),
+    subgenre: t.field({
+      type: 'Subgenre',
+      nullable: true,
+      description:
+        'The head subgenre of the books placed here, as the reader first wrote it. ' +
+        'Null for the books of the genre that no subgenre took.',
+      resolve: (taste) => taste.subgenre ?? null,
+    }),
     readCount: t.exposeInt('readCount', { description: 'Finished books, rated or not.' }),
     averageRating: t.exposeFloat('averageRating', {
       description: 'The average of the rated ones, to one decimal.',
@@ -333,7 +341,15 @@ export const GenreInsightsType = builder.objectRef<GenreInsights>('GenreInsights
     tastes: t.field({
       type: [GenreTasteType],
       description: 'The genres with three rated books, the most read first.',
+      deprecationReason: 'Use tasteMap, which places the subgenres that weigh apart.',
       resolve: (insights) => insights.tastes,
+    }),
+    tasteMap: t.field({
+      type: [GenreTasteType],
+      description:
+        'The taste map, the most read first: a head subgenre with three rated books ' +
+        'of its own placed apart, every other book in its genre.',
+      resolve: (insights) => insights.tasteMap,
     }),
     averageRating: t.float({
       nullable: true,
@@ -343,10 +359,19 @@ export const GenreInsightsType = builder.objectRef<GenreInsights>('GenreInsights
     hiddenGem: t.field({
       type: GenreEnum,
       nullable: true,
+      deprecationReason: 'Use gem, which may name a subgenre.',
       description:
         "A genre read less than the median and rated half a star above the reader's " +
         'average, the best rated if several.',
       resolve: (insights) => insights.hiddenGem ?? null,
+    }),
+    gem: t.field({
+      type: GenreTasteType,
+      nullable: true,
+      description:
+        'The place of tasteMap read less than the median and rated half a star above ' +
+        "the reader's average, the best rated if several: a genre or a subgenre.",
+      resolve: (insights) => insights.gem ?? null,
     }),
     longest: t.field({
       type: LongestGenreType,

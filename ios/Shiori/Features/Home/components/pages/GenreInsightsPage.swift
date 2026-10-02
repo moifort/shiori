@@ -21,7 +21,7 @@ struct GenreInsightsPage: View {
                     TasteMap(
                         tastes: insights.tastes,
                         averageRating: averageRating,
-                        hiddenGem: insights.hiddenGem
+                        gem: insights.gem
                     )
                 }
 

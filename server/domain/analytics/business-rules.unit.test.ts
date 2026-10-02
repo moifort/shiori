@@ -17,11 +17,12 @@ import {
   seriesProgressOf,
   sharedShelfOf,
   sharedShelfTodayOf,
+  subgenreKeyOf,
   VIEW_VERSION,
 } from '~/domain/analytics/business-rules'
 import { LocalDate, TimeZone } from '~/domain/analytics/primitives'
 import type { Finish } from '~/domain/analytics/types'
-import { BookId, ListeningMinutes, PageCount, StarRating } from '~/domain/book/primitives'
+import { BookId, ListeningMinutes, PageCount, StarRating, Subgenre } from '~/domain/book/primitives'
 import type { Book, Genre } from '~/domain/book/types'
 import { SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import type { Series, SeriesId } from '~/domain/series/types'
@@ -826,7 +827,7 @@ describe('the genre insights', () => {
           taste('poetry', 3, 5),
         ],
         4,
-      ),
+      )?.genre,
     ).toBe('poetry')
   })
 
@@ -911,6 +912,69 @@ describe('the genre insights', () => {
     expect(genres).not.toContain('fantasy')
     expect(genres).not.toContain('other')
     expect(genres).toHaveLength(20)
+  })
+
+  const tagged = (label: string) => ({ label: Subgenre(label), language: 'fr' as const })
+  const ratedIn = (genre: Genre, subgenre: string | undefined, ratings: number[]) =>
+    ratings.map((rating) =>
+      book({
+        genre,
+        rating: StarRating(rating),
+        subgenres: subgenre === undefined ? [] : [tagged(subgenre), tagged('Autre chose')],
+      }),
+    )
+
+  test('places a subgenre apart once it gathers three rated books, the rest in their genre', () => {
+    const insights = genreInsightsOf([
+      ...ratedIn('fantasy', 'Dark fantasy', [5, 5, 4]),
+      ...ratedIn('fantasy', 'Fantasy urbaine', [3, 3]),
+      ...ratedIn('fantasy', undefined, [4]),
+    ])
+
+    expect(insights.tasteMap).toEqual([
+      { genre: 'fantasy', subgenre: undefined, readCount: 3, averageRating: 3.3 },
+      { genre: 'fantasy', subgenre: Subgenre('Dark fantasy'), readCount: 3, averageRating: 4.7 },
+    ])
+    expect(insights.tastes).toEqual([
+      { genre: 'fantasy', subgenre: undefined, readCount: 6, averageRating: 4 },
+    ])
+  })
+
+  test('meets two spellings of one subgenre, case and hyphens aside', () => {
+    const insights = genreInsightsOf([
+      ...ratedIn('science-fiction', 'Space opera', [4, 4]),
+      ...ratedIn('science-fiction', 'Space-Opera', [5]),
+    ])
+
+    expect(insights.tasteMap.map(({ subgenre, readCount }) => ({ subgenre, readCount }))).toEqual([
+      { subgenre: Subgenre('Space opera'), readCount: 3 },
+    ])
+    expect(subgenreKeyOf('Space‑Opera ')).toBe('space opera')
+  })
+
+  test('keeps one subgenre of two genres apart', () => {
+    const insights = genreInsightsOf([
+      ...ratedIn('science-fiction', 'Uchronie', [4, 4]),
+      ...ratedIn('historical-fiction', 'Uchronie', [4]),
+    ])
+
+    expect(insights.tasteMap.map(({ genre, subgenre }) => ({ genre, subgenre }))).toEqual([])
+  })
+
+  test('points out a subgenre as the gem, while the old field names its genre', () => {
+    const insights = genreInsightsOf([
+      ...ratedIn('fantasy', undefined, [4, 4, 4, 4, 4, 4, 4, 4]),
+      ...ratedIn('crime', undefined, [3, 4, 3, 4, 3, 4]),
+      ...ratedIn('historical-fiction', 'Uchronie', [5, 5, 5]),
+    ])
+
+    expect(insights.gem).toEqual({
+      genre: 'historical-fiction',
+      subgenre: Subgenre('Uchronie'),
+      readCount: 3,
+      averageRating: 5,
+    })
+    expect(insights.hiddenGem).toBe('historical-fiction')
   })
 
   test('takes the median of an odd and of an even count of values', () => {

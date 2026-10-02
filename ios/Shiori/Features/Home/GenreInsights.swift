@@ -20,13 +20,20 @@ struct GenreInsights: Codable, Sendable {
         let topGenre: BookGenre?
     }
 
-    /// One genre placed by how much it is read against how much it is liked.
-    /// Only genres with enough rated books to mean something are placed.
+    /// One place on the taste map: a genre, or a subgenre that gathers enough
+    /// rated books of its own, by how much it is read against how much it is
+    /// liked. Only places with enough rated books to mean something are drawn.
     struct Taste: Identifiable, Hashable, Codable, Sendable {
-        var id: BookGenre { genre }
+        var id: String { "\(genre.rawValue)~\(subgenre ?? "")" }
         let genre: BookGenre
+        /// Nil for the books of the genre that no subgenre took.
+        var subgenre: String?
         let readCount: Int
         let averageRating: Double
+
+        /// What the bubble is named: the subgenre as the reader wrote it, else
+        /// the genre.
+        var label: String { subgenre ?? genre.label }
     }
 
     /// The genre whose books run longest, in pages on average.
@@ -65,8 +72,8 @@ struct GenreInsights: Codable, Sendable {
     /// The reader's average across every rated book: what splits the taste map
     /// between the genres liked more and the genres liked less.
     let averageRating: Double?
-    /// The genre read little and liked most, when one stands out.
-    let hiddenGem: BookGenre?
+    /// The place read little and liked most, when one stands out.
+    let gem: Taste?
     let longest: LongestRecord?
     let fastest: FastestRecord?
     let mostDropped: DroppedRecord?
@@ -96,15 +103,16 @@ extension GenreInsights {
             .init(format: .bandeDessinee, count: 2, topGenre: .historicalFiction),
         ],
         tastes: [
-            .init(genre: .fantasy, readCount: 14, averageRating: 4.1),
-            .init(genre: .scienceFiction, readCount: 8, averageRating: 4.4),
+            .init(genre: .fantasy, readCount: 8, averageRating: 3.9),
+            .init(genre: .fantasy, subgenre: "Dark fantasy", readCount: 6, averageRating: 4.5),
+            .init(genre: .scienceFiction, subgenre: "Space opera", readCount: 5, averageRating: 4.4),
             .init(genre: .crime, readCount: 6, averageRating: 3.6),
             .init(genre: .thriller, readCount: 4, averageRating: 3.2),
-            .init(genre: .historicalFiction, readCount: 3, averageRating: 4.8),
+            .init(genre: .historicalFiction, subgenre: "Uchronie", readCount: 3, averageRating: 4.8),
             .init(genre: .essay, readCount: 3, averageRating: 3.4),
         ],
         averageRating: 4.0,
-        hiddenGem: .historicalFiction,
+        gem: .init(genre: .historicalFiction, subgenre: "Uchronie", readCount: 3, averageRating: 4.8),
         longest: .init(genre: .fantasy, averagePages: 612),
         fastest: .init(genre: .thriller, averageDays: 4),
         mostDropped: .init(genre: .essay, droppedCount: 3, startedCount: 7),
@@ -132,7 +140,7 @@ extension GenreInsights {
         formats: [.init(format: .book, count: 1, topGenre: .fantasy)],
         tastes: [],
         averageRating: 4,
-        hiddenGem: nil,
+        gem: nil,
         longest: nil,
         fastest: nil,
         mostDropped: nil,

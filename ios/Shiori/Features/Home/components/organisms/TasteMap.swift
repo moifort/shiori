@@ -10,7 +10,7 @@ import SwiftUI
 struct TasteMap: View {
     let tastes: [GenreInsights.Taste]
     let averageRating: Double
-    let hiddenGem: BookGenre?
+    let gem: GenreInsights.Taste?
 
     /// The middle of the genres' counts: left of it, a genre is read little.
     private var medianCount: Double {
@@ -45,7 +45,7 @@ struct TasteMap: View {
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 12)
-            if let gem = tastes.first(where: { $0.genre == hiddenGem }) {
+            if let gem {
                 gemCallout(gem)
             }
         }
@@ -62,7 +62,7 @@ struct TasteMap: View {
         .chartXScale(domain: 0...countCeiling)
         .chartYScale(domain: ratingFloor...ratingCeiling)
         .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+            AxisMarks(values: Array(stride(from: 0, through: countCeiling, by: countCeiling > 12 ? 5 : 2))) { _ in
                 AxisValueLabel()
             }
         }
@@ -135,8 +135,8 @@ struct TasteMap: View {
     /// annotation, which loses its anchor on a symbol drawn as a view.
     private func bubble(_ taste: GenreInsights.Taste) -> some View {
         let size = 12 + 14 * CGFloat(taste.readCount) / CGFloat(countCeiling)
-        let onLeft = Double(taste.readCount) > countCeiling * 0.7
-        let isGem = taste.genre == hiddenGem
+        let onLeft = labelOnLeft(taste)
+        let isGem = taste == gem
         return Circle()
             .fill(taste.genre.tint.gradient)
             .overlay(Circle().stroke(.white, lineWidth: 2))
@@ -150,12 +150,26 @@ struct TasteMap: View {
                 }
             }
             .overlay(alignment: onLeft ? .trailing : .leading) {
-                Text(taste.genre.label)
+                Text(taste.label)
                     .font(.caption2.weight(.medium))
                     .foregroundStyle(isGem ? taste.genre.tint : Color(.secondaryLabel))
                     .fixedSize()
                     .padding(onLeft ? .trailing : .leading, size + (isGem ? 10 : 6))
             }
+    }
+
+    /// A name reads on the bubble's right, unless the right edge is too near,
+    /// or a neighbour sits just to the right at about the same rating, where
+    /// the two names would run into each other.
+    private func labelOnLeft(_ taste: GenreInsights.Taste) -> Bool {
+        if Double(taste.readCount) > countCeiling * 0.7 { return true }
+        let reach = max(2, countCeiling / 5)
+        return tastes.contains { other in
+            other != taste
+                && other.readCount > taste.readCount
+                && Double(other.readCount - taste.readCount) <= reach
+                && abs(other.averageRating - taste.averageRating) < 0.25
+        }
     }
 
     private func quadrant(_ text: LocalizedStringKey, color: Color) -> some View {
@@ -175,7 +189,7 @@ struct TasteMap: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Pépite sous-explorée")
                     .font(.subheadline.weight(.semibold))
-                Text("\(gem.genre.label) : \(gem.averageRating.formatted(.number.precision(.fractionLength(1)))) ★ en moyenne, sur \(gem.readCount) livres seulement.")
+                Text("\(gem.label) : \(gem.averageRating.formatted(.number.precision(.fractionLength(1)))) ★ en moyenne, sur \(gem.readCount) livres seulement.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -190,7 +204,7 @@ struct TasteMap: View {
     TasteMap(
         tastes: GenreInsights.preview.tastes,
         averageRating: GenreInsights.preview.averageRating ?? 4,
-        hiddenGem: GenreInsights.preview.hiddenGem
+        gem: GenreInsights.preview.gem
     )
     .padding()
     .background(Color(.systemGroupedBackground))

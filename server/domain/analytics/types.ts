@@ -9,6 +9,7 @@ import type {
   PageCount,
   SeriesMembership,
   StarRating,
+  Subgenre,
 } from '~/domain/book/types'
 import type { SeriesId, SeriesName } from '~/domain/series/types'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
@@ -226,12 +227,20 @@ export type GenreInsights = {
   shares: GenreShare[]
   /** The formats of the finished books, the most read first. */
   formats: FormatShare[]
-  /** The genres with enough rated books to be placed on the taste map. */
+  /** The genres with enough rated books to be placed on the taste map.
+   *  Superseded by `tasteMap`; kept for the builds that still ask for it. */
   tastes: GenreTaste[]
+  /** The taste map: a subgenre with enough rated books of its own placed
+   *  apart, every other book in its genre. */
+  tasteMap: GenreTaste[]
   /** The average of every rated finished book: what splits the taste map. */
   averageRating?: number
-  /** The genre read little and liked well above the reader's average. */
+  /** The genre read little and liked well above the reader's average, among
+   *  `tastes`. Superseded by `gem`. */
   hiddenGem?: Genre
+  /** The entry of `tasteMap` read little and liked well above the reader's
+   *  average: a genre or a subgenre. */
+  gem?: GenreTaste
   longest?: { genre: Genre; averagePages: number }
   fastest?: { genre: Genre; averageDays: number }
   mostDropped?: { genre: Genre; droppedCount: number; startedCount: number }
@@ -242,5 +251,12 @@ export type GenreInsights = {
 
 export type GenreShare = { genre: Genre; count: number }
 export type FormatShare = { format: BookFormat; count: number; topGenre?: Genre }
-export type GenreTaste = { genre: Genre; readCount: number; averageRating: number }
+/** A place on the taste map. With a subgenre, the books whose head subgenre
+ *  it is; without, the books of the genre that no subgenre took. */
+export type GenreTaste = {
+  genre: Genre
+  subgenre?: Subgenre
+  readCount: number
+  averageRating: number
+}
 export type UnexploredGenre = { genre: Genre; pileCount: number }

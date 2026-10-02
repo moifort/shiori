@@ -76,13 +76,13 @@ query GenreInsights {
       count
       topGenre
     }
-    tastes {
-      genre
-      readCount
-      averageRating
+    tasteMap {
+      ...TastePlace
     }
     averageRating
-    hiddenGem
+    gem {
+      ...TastePlace
+    }
     longest {
       genre
       averagePages
@@ -101,4 +101,11 @@ query GenreInsights {
       pileCount
     }
   }
+}
+
+fragment TastePlace on GenreTaste {
+  genre
+  subgenre
+  readCount
+  averageRating
 }
