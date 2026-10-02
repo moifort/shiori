@@ -7,7 +7,13 @@ import type {
   AudibleMarketplace,
   ImportableBook,
 } from '~/domain/audible/types'
-import { shelfKeyOf, shelfKeysOf } from '~/domain/book/business-rules'
+import {
+  keepsCopyOf,
+  type Shelf,
+  shelfKeyOf,
+  shelfKeysOf,
+  shelfOf,
+} from '~/domain/book/business-rules'
 import type { NewBook } from '~/domain/book/command'
 import {
   BookLanguageValue,
@@ -47,11 +53,11 @@ import { isPresent, optionally } from '~/utils/input'
  *  to catalogue and nothing to tick in the picker. */
 export const importableFrom = (
   item: AudibleItem,
-  ownedKeys: ReadonlySet<string>,
+  owned: Shelf,
   heard?: LastPosition,
 ): ImportableBook | undefined => {
   const asin = optionally(item.asin, AudibleAsin)
-  const title = optionally(item.title, BookTitle)
+  const title = optionally(titleOf(item), BookTitle)
   if (!asin || !title) return undefined
 
   const authors = authorsOf(item)
@@ -60,6 +66,7 @@ export const importableFrom = (
   // of titles under a language nobody expected. Unknown ones are dropped: a
   // guess here would split a saga's shelves on a value nothing established.
   const language = optionally(languageCodeOf(item.language), BookLanguageValue)
+  const series = seriesMembershipOf(item, authors)
 
   return {
     asin,
@@ -80,7 +87,7 @@ export const importableFrom = (
     coverUrl: optionally(largestCoverOf(item), CoverUrl),
     genre: genreFrom(item),
     subgenres: subgenresFrom(item, language),
-    series: seriesMembershipOf(item, authors),
+    series,
     status,
     // Only a finished book has a finishing date to keep. A part-listened title
     // gets today's start stamp like any book the reader moves to "reading".
@@ -90,7 +97,12 @@ export const importableFrom = (
       status === 'read' ? (item.listeningStatus?.finishedAt ?? heard?.lastUpdatedAt) : undefined,
     listenedMinutes: listenedMinutesOf(heard),
     addedAt: purchaseDateOf(item),
-    alreadyInLibrary: ownedKeys.has(shelfKeyOf(title, authors[0])),
+    alreadyInLibrary: keepsCopyOf(owned, {
+      title,
+      author: authors[0],
+      volume: series?.volume,
+      language,
+    }),
   }
 }
 
@@ -217,11 +229,37 @@ export const heardByAsin = (
  *
  *  Without an author there is no stable key, so the membership is dropped rather
  *  than given an id nothing else shares — the same rule the scan applies. */
+/** What a few publishers append to a title or a saga's name on Audible,
+ *  "(French Edition)", when the language is a field of its own. */
+const EDITION_MENTION = /\s*\((?:\p{L}+ Edition|[EÉ]dition \p{L}+)\)\s*$/iu
+
+const VOLUME_MENTION = String.raw`\b(?:tome|livre|book|volume|vol\.|t\.?)\s*\d+`
+const LEADING_VOLUME = new RegExp(String.raw`^${VOLUME_MENTION}\s*[-–—:.,]?\s*`, 'iu')
+const TRAILING_VOLUME = new RegExp(String.raw`\s*[-–—:,]?\s*${VOLUME_MENTION}$`, 'iu')
+
+/** The title alone. Audible keeps the saga in a field of its own, but some
+ *  publishers repeat it in the title — "System Universe - Torith - Tome 2",
+ *  "La Trilogie Baryonique - Tome 1 : La Tragédie de l'Orque". The saga's name
+ *  is dropped from the front only when a volume is named with it: "La Légende
+ *  des Firemane - L'intégrale" is the title of that recording. */
+export const titleOf = (item: AudibleItem): string => {
+  const title = item.title.replace(EDITION_MENTION, '').trim()
+  const saga = item.series?.name?.replace(EDITION_MENTION, '').trim()
+  if (!saga || !title.toLowerCase().startsWith(saga.toLowerCase())) return title
+  const rest = title
+    .slice(saga.length)
+    .replace(/^\s*[-–—:,]\s*/, '')
+    .trim()
+  const named = LEADING_VOLUME.test(rest) || TRAILING_VOLUME.test(rest)
+  const alone = rest.replace(LEADING_VOLUME, '').replace(TRAILING_VOLUME, '').trim()
+  return named && alone ? alone : title
+}
+
 const seriesMembershipOf = (
   item: AudibleItem,
   authors: readonly AuthorNameValue[],
 ): ImportableBook['series'] => {
-  const name = optionally(item.series?.name, SeriesName)
+  const name = optionally(item.series?.name?.replace(EDITION_MENTION, '').trim(), SeriesName)
   if (!name || authors.length === 0) return undefined
   return {
     id: seriesKeyOf(name, authors[0], 'audiobook'),
@@ -326,7 +364,7 @@ export const plainTextOf = (html: string | undefined): string | undefined => {
 
 // What counts as "the reader already has this one" is the book domain's shelf
 // key, shared with the Kindle import and the friends' shelves.
-export { shelfKeyOf, shelfKeysOf }
+export { shelfKeyOf, shelfKeysOf, shelfOf }
 
 /** The Audible title each catalogued book stands for, for the books that have no
  *  ASIN on them yet.

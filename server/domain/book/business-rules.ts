@@ -524,6 +524,41 @@ export const shelfKeyOf = (title: string, author: string | undefined): string =>
 export const shelfKeysOf = (books: readonly Book[]): Set<string> =>
   new Set(books.map((book) => shelfKeyOf(book.title, book.authors[0])))
 
+/** One copy the reader keeps of a story: what tells it from another volume or
+ *  another language under the same title. */
+export type ShelfCopy = { volume?: number; language?: BookLanguage }
+
+/** The reader's books by shelf key, as an import checks a title against them. */
+export type Shelf = ReadonlyMap<string, readonly ShelfCopy[]>
+
+export const shelfOf = (books: readonly Book[]): Shelf => {
+  const shelf = new Map<string, ShelfCopy[]>()
+  for (const book of books) {
+    const key = shelfKeyOf(book.title, book.authors[0])
+    shelf.set(key, [
+      ...(shelf.get(key) ?? []),
+      { volume: book.series?.volume, language: book.language },
+    ])
+  }
+  return shelf
+}
+
+/** Whether the reader already keeps this title, by its shelf key — except that
+ *  a saga whose volumes share one title ("Primal Hunter" 4, 5 and 6 on Audible)
+ *  is told apart by volume, and a recording in English from the French one by
+ *  language. A side that does not say matches: the check stays as loose as the
+ *  key wherever nothing tells two copies apart. */
+export const keepsCopyOf = (
+  shelf: Shelf,
+  candidate: { title: string; author?: string; volume?: number; language?: BookLanguage },
+): boolean =>
+  (shelf.get(shelfKeyOf(candidate.title, candidate.author)) ?? []).some(
+    (copy) => agrees(copy.volume, candidate.volume) && agrees(copy.language, candidate.language),
+  )
+
+const agrees = <T>(kept: T | undefined, candidate: T | undefined) =>
+  kept === undefined || candidate === undefined || kept === candidate
+
 /** The record the reader already keeps of a book about to be added: the same
  *  story by its shelf key, or the same edition by its ISBN, which still matches
  *  when the title was read differently off the cover. The earliest on the shelf

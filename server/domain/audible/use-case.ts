@@ -12,7 +12,7 @@ import {
   purchaseDatesFor,
   recordingOfVolume,
   seriesVolumesFor,
-  shelfKeysOf,
+  shelfOf,
   volumeBookFrom,
 } from '~/domain/audible/business-rules'
 import { AudibleCommand } from '~/domain/audible/command'
@@ -358,10 +358,10 @@ const toImportable = (
   },
   owned: readonly Book[],
 ): ImportableBook[] => {
-  const ownedKeys = shelfKeysOf(owned)
+  const shelf = shelfOf(owned)
   const heard = heardByAsin(fetched.positions)
   return fetched.items
-    .map((item) => importableFrom(item, ownedKeys, heard.get(item.asin)))
+    .map((item) => importableFrom(item, shelf, heard.get(item.asin)))
     .filter(isPresent)
 }
 
@@ -370,7 +370,7 @@ type Credentials = Parameters<typeof api.search>[0]
 /** Every candidate turned into what it would be catalogued as, to be matched
  *  on its language and its place in the saga. Nothing is owned here. */
 const importablesOf = (items: readonly AudibleItem[]) =>
-  items.map((item) => importableFrom(item, new Set())).filter(isPresent)
+  items.map((item) => importableFrom(item, new Map())).filter(isPresent)
 
 /** The recording of one volume on the reader's store: by the ASIN the release
  *  watch confirmed, then among the saga's recordings, then among a search for

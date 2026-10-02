@@ -1,7 +1,7 @@
 import type { KindleTitle } from 'kindle-api-ts'
 import { AdminCommand } from '~/domain/admin/command'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
-import { shelfKeysOf } from '~/domain/book/business-rules'
+import { shelfOf } from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
 import type { Book } from '~/domain/book/types'
@@ -277,8 +277,8 @@ const toImportable = (
   owned: readonly Book[],
   reads: ReadonlyMap<string, ReadKindleTitle>,
 ): ImportableKindleBook[] => {
-  const ownedKeys = shelfKeysOf(owned)
-  return titles.map((title) => importableFrom(title, ownedKeys, reads)).filter(isPresent)
+  const shelf = shelfOf(owned)
+  return titles.map((title) => importableFrom(title, shelf, reads)).filter(isPresent)
 }
 
 /** The model's reading of each title, by ASIN: from the shared store when a

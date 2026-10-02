@@ -1,5 +1,5 @@
 import type { KindleTitle } from 'kindle-api-ts'
-import { shelfKeyOf } from '~/domain/book/business-rules'
+import { keepsCopyOf, type Shelf, shelfKeyOf } from '~/domain/book/business-rules'
 import type { NewBook } from '~/domain/book/command'
 import { CoverUrl } from '~/domain/book/primitives'
 import type {
@@ -201,7 +201,7 @@ const membershipOf = (
  *  for a title that is no book or carries no usable title. */
 export const importableFrom = (
   item: KindleTitle,
-  ownedKeys: ReadonlySet<string>,
+  owned: Shelf,
   reads: ReadonlyMap<string, ReadKindleTitle> = new Map(),
 ): ImportableKindleBook | undefined => {
   if (!isCataloguable(item)) return undefined
@@ -212,19 +212,26 @@ export const importableFrom = (
 
   const authors = item.authors.map((name) => optionally(name, AuthorName)).filter(isPresent)
   const status: ReadingStatus = item.readStatus === 'READ' ? 'read' : 'to-read'
+  const series = membershipOf(saga.series, authors[0])
+  const language = editionLanguageOf(item.title, item.sortableTitle)
   return {
     asin,
     title,
     authors,
     coverUrl: optionally(item.coverUrl, CoverUrl),
-    series: membershipOf(saga.series, authors[0]),
-    language: editionLanguageOf(item.title, item.sortableTitle),
+    series,
+    language,
     status,
     // Amazon says a book was read, never when: the day it was acquired is the
     // honest lower bound, and import night would rewrite the reading statistics.
     finishedAt: status === 'read' ? item.acquiredAt : undefined,
     addedAt: item.acquiredAt,
-    alreadyInLibrary: ownedKeys.has(shelfKeyOf(title, authors[0])),
+    alreadyInLibrary: keepsCopyOf(owned, {
+      title,
+      author: authors[0],
+      volume: series?.volume,
+      language,
+    }),
   }
 }
 

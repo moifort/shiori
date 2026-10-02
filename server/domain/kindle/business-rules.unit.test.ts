@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { KindleTitle } from 'kindle-api-ts'
-import { shelfKeyOf } from '~/domain/book/business-rules'
+import { type Shelf, shelfKeyOf } from '~/domain/book/business-rules'
 import { BookId } from '~/domain/book/primitives'
 import type { Book, ReadingStatus } from '~/domain/book/types'
 import {
@@ -217,7 +217,7 @@ describe('splitOf', () => {
 
 describe('importableFrom', () => {
   test('maps a bought title onto the book it would be', () => {
-    const importable = importableFrom(aTitle({ title: 'Powerless (Tome 3) - Fearless' }), new Set())
+    const importable = importableFrom(aTitle({ title: 'Powerless (Tome 3) - Fearless' }), new Map())
 
     expect(importable).toMatchObject({
       asin: 'B0TESTAAA1',
@@ -234,20 +234,20 @@ describe('importableFrom', () => {
 
   // Amazon says a book was read, never when.
   test('dates a read title finished on the day it was acquired', () => {
-    const importable = importableFrom(aTitle({ readStatus: 'READ' }), new Set())
+    const importable = importableFrom(aTitle({ readStatus: 'READ' }), new Map())
 
     expect(importable?.status).toBe('read')
     expect(importable?.finishedAt).toEqual(new Date('2026-03-01T10:00:00.000Z'))
   })
 
   test('marks a title already on the shelf, whatever the edition', () => {
-    const owned = new Set([shelfKeyOf('Le Nom du vent', 'Patrick Rothfuss')])
+    const owned: Shelf = new Map([[shelfKeyOf('Le Nom du vent', 'Patrick Rothfuss'), [{}]]])
 
     expect(importableFrom(aTitle(), owned)?.alreadyInLibrary).toBe(true)
   })
 
   test('keeps no saga without an author to key it on', () => {
-    const importable = importableFrom(aTitle({ title: 'Dune - Livre 2', authors: [] }), new Set())
+    const importable = importableFrom(aTitle({ title: 'Dune - Livre 2', authors: [] }), new Map())
 
     expect(importable?.series).toBeUndefined()
   })
@@ -255,16 +255,16 @@ describe('importableFrom', () => {
   test('carries the language of the edition', () => {
     const importable = importableFrom(
       aTitle({ title: 'Fearless', sortableTitle: 'fearless french edition' }),
-      new Set(),
+      new Map(),
     )
 
     expect(importable?.language).toBe('fr')
   })
 
   test('offers nothing for a dictionary, a sample, or a bad identifier', () => {
-    expect(importableFrom(aTitle({ originType: 'KindleDictionary' }), new Set())).toBeUndefined()
-    expect(importableFrom(aTitle({ category: 'KindleEBookSample' }), new Set())).toBeUndefined()
-    expect(importableFrom(aTitle({ asin: 'nope' }), new Set())).toBeUndefined()
+    expect(importableFrom(aTitle({ originType: 'KindleDictionary' }), new Map())).toBeUndefined()
+    expect(importableFrom(aTitle({ category: 'KindleEBookSample' }), new Map())).toBeUndefined()
+    expect(importableFrom(aTitle({ asin: 'nope' }), new Map())).toBeUndefined()
   })
 })
 
@@ -272,7 +272,7 @@ describe('bookFrom', () => {
   test('catalogues an ebook carrying its Kindle title', () => {
     const importable = importableFrom(
       aTitle({ readStatus: 'READ', sortableTitle: 'nom du vent french edition, le' }),
-      new Set(),
+      new Map(),
     )
     if (!importable) throw new Error('expected an importable book')
 

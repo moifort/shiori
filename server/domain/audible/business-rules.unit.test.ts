@@ -17,14 +17,16 @@ import {
   recordingOfVolume,
   seriesVolumesFor,
   shelfKeyOf,
-  shelfKeysOf,
+  shelfOf,
   statusOf,
+  titleOf,
 } from '~/domain/audible/business-rules'
 import type {
   AudibleAsin as AudibleAsinValue,
   AudibleConnection,
   ImportableBook,
 } from '~/domain/audible/types'
+import type { Shelf } from '~/domain/book/business-rules'
 import { ListeningMinutes } from '~/domain/book/primitives'
 import type { Book, BookId } from '~/domain/book/types'
 import type { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
@@ -47,7 +49,7 @@ const anItem = (overrides: Partial<AudibleItem> = {}): AudibleItem =>
     ...overrides,
   }) as AudibleItem
 
-const noneOwned = new Set<string>()
+const noneOwned: Shelf = new Map()
 
 const aPosition = (overrides: Partial<LastPosition> = {}): LastPosition => ({
   asin: 'B002V1OF70',
@@ -201,7 +203,7 @@ describe('who a title is credited to', () => {
   })
 
   test('keys the shelf on the author, never on the translator', () => {
-    const owned = new Set([shelfKeyOf('Le Dernier Vœu', 'Andrzej Sapkowski')])
+    const owned: Shelf = new Map([[shelfKeyOf('Le Dernier Vœu', 'Andrzej Sapkowski'), [{}]]])
     const importable = importableFrom(
       anItem({
         title: 'Le Dernier Vœu',
@@ -458,6 +460,34 @@ describe('an Audible summary', () => {
   })
 })
 
+// Every title below is one of the first library imported.
+describe('titleOf', () => {
+  const titled = (title: string, saga?: string) =>
+    titleOf(anItem({ title, series: saga ? { name: saga, position: 1 } : undefined }))
+
+  test('drops the edition a publisher appends', () => {
+    expect(titled('Fourth Wing (French Edition)', 'The Empyrean')).toBe('Fourth Wing')
+    expect(titled('Outsphere (French Edition)')).toBe('Outsphere')
+  })
+
+  test('drops the saga and the volume a publisher repeats in front', () => {
+    expect(titled('System Universe - Torith - Tome 2', 'System Universe')).toBe('Torith')
+    expect(
+      titled("La Trilogie Baryonique - Tome 1 : La Tragédie de l'Orque", 'La Trilogie Baryonique'),
+    ).toBe("La Tragédie de l'Orque")
+  })
+
+  test('keeps a title that only starts like its saga', () => {
+    expect(titled("La Légende des Firemane - L'intégrale", 'La Légende des Firemane')).toBe(
+      "La Légende des Firemane - L'intégrale",
+    )
+    expect(titled('Primal Hunter', 'Primal Hunter')).toBe('Primal Hunter')
+    expect(titled('Le Nom du Vent - Seconde partie', 'Chronique du Tueur de Roi')).toBe(
+      'Le Nom du Vent - Seconde partie',
+    )
+  })
+})
+
 describe('telling what the reader already has', () => {
   const owned = [
     { title: 'Le Nom du vent', authors: ['Patrick Rothfuss'] },
@@ -465,7 +495,7 @@ describe('telling what the reader already has', () => {
   ] as unknown as Book[]
 
   test('recognizes a title already on the shelves', () => {
-    expect(importableFrom(anItem(), shelfKeysOf(owned))?.alreadyInLibrary).toBe(true)
+    expect(importableFrom(anItem(), shelfOf(owned))?.alreadyInLibrary).toBe(true)
   })
 
   // The match is on the text, not on an identifier kept on the book: a title
@@ -477,15 +507,55 @@ describe('telling what the reader already has', () => {
   })
 
   test('leaves a title the reader does not have unmatched', () => {
-    const importable = importableFrom(anItem({ title: 'La Peur du sage' }), shelfKeysOf(owned))
+    const importable = importableFrom(anItem({ title: 'La Peur du sage' }), shelfOf(owned))
 
     expect(importable?.alreadyInLibrary).toBe(false)
+  })
+
+  // Audible titles the fourth, fifth and sixth volumes of Primal Hunter
+  // "Primal Hunter" alike: the seventh must still be offered.
+  test('tells apart the volumes of a saga that share one title', () => {
+    const saga = [
+      {
+        title: 'Primal Hunter',
+        authors: ['Zogarth'],
+        series: { name: 'Primal Hunter', volume: 6 },
+        language: 'fr',
+      },
+    ] as unknown as Book[]
+    const volume = (position: number) =>
+      importableFrom(
+        anItem({
+          title: 'Primal Hunter',
+          authors: ['Zogarth'],
+          language: 'french',
+          series: { name: 'Primal Hunter', position },
+        }),
+        shelfOf(saga),
+      )?.alreadyInLibrary
+
+    expect(volume(6)).toBe(true)
+    expect(volume(7)).toBe(false)
+  })
+
+  test('tells the recording in one language from the one in another', () => {
+    const english = [
+      { title: 'Dungeon Crawler Carl', authors: ['Matt Dinniman'], language: 'en' },
+    ] as unknown as Book[]
+    const french = (language: string) =>
+      importableFrom(
+        anItem({ title: 'Dungeon Crawler Carl', authors: ['Matt Dinniman'], language }),
+        shelfOf(english),
+      )?.alreadyInLibrary
+
+    expect(french('french')).toBe(false)
+    expect(french('english')).toBe(true)
   })
 
   test('does not confuse two books that only share a title', () => {
     const importable = importableFrom(
       anItem({ title: 'Dune', authors: ['Frank Herbert'] }),
-      shelfKeysOf(owned),
+      shelfOf(owned),
     )
 
     expect(importable?.alreadyInLibrary).toBe(false)
@@ -878,7 +948,7 @@ describe('the recording of one volume of a saga', () => {
         series: { name: 'Chronique du tueur de roi', position: 2 },
         ...overrides,
       }),
-      new Set(),
+      new Map(),
     ) as ImportableBook
   const wanted = {
     seriesId: saga,
