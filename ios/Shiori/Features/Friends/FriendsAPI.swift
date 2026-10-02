@@ -302,6 +302,11 @@ struct FriendInvitation: Sendable {
 
 enum FriendsAPI {
     static func friends() async throws -> [Friend] {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.friends
+        }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.FriendsQuery()
@@ -311,6 +316,11 @@ enum FriendsAPI {
 
     /// What every friend hearted in the last thirty days, the newest first.
     static func recentFavorites() async throws -> [FriendFavorite] {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.recentFavorites
+        }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.FriendFavoritesQuery()
@@ -340,6 +350,11 @@ enum FriendsAPI {
     /// keep to themselves left out, in full rather than the thirty a friend is
     /// shown of each list.
     static func myShelf() async throws -> FriendProfile {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.myShelf
+        }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.MyShelfQuery()
@@ -414,6 +429,11 @@ enum FriendsAPI {
     /// "Coups de cœur de vos amis", for Découvrir: what the friends hearted
     /// and the reader holds in no format.
     static func picks() async throws -> FriendPicks {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.picks
+        }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.FriendRecommendationsQuery()

@@ -4,6 +4,11 @@ enum HomeAPI {
     /// Counted in the device time zone, so a book finished on New Year's Eve lands
     /// on the year the reader lived it in.
     static func dashboard() async throws -> Dashboard {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.dashboard
+        }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.DashboardQuery(timeZone: TimeZone.current.identifier)

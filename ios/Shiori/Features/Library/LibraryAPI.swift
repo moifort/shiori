@@ -10,6 +10,11 @@ enum LibraryAPI {
         limit: Int,
         after: String?
     ) async throws -> LibraryPageResult {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.libraryPage(mode: mode, status: status, limit: limit, after: after)
+        }
+        #endif
         let query = ShioriGraphQL.LibraryPageQuery(
             loved: mode == .favorites ? .some(true) : .none,
             status: GraphQLHelpers.graphQLNullable(status.map(Self.graphQLStatus)),

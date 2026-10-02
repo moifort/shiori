@@ -29,6 +29,11 @@ enum SubscriptionAPI {
     /// The plan and the allowance, in one request: what the subscription sheet
     /// draws.
     static func state() async throws -> (entitlement: EntitlementState, quota: QuotaState) {
+        #if DEBUG
+        if Showcase.isOn {
+            return (Showcase.entitlement, Showcase.quota)
+        }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.SubscriptionStateQuery()
@@ -40,6 +45,11 @@ enum SubscriptionAPI {
     }
 
     static func quota() async throws -> QuotaState {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.quota
+        }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.QuotaQuery()

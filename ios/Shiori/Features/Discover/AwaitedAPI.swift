@@ -180,6 +180,11 @@ enum AwaitedAPI {
     private static let awaitTimeout: TimeInterval = 60
 
     static func awaited(format: ReleaseFormat) async throws -> [AwaitedEdition] {
+        #if DEBUG
+        if Showcase.isOn {
+            return []
+        }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.AwaitedEditionsQuery(format: .case(format.graphQL))
@@ -190,6 +195,11 @@ enum AwaitedAPI {
     /// What the page of one of the reader's own books offers. Nil for a book
     /// that is no longer theirs.
     static func offer(bookId: String) async throws -> EditionOffer? {
+        #if DEBUG
+        if Showcase.isOn {
+            return nil
+        }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.BookEditionOfferQuery(bookId: bookId)

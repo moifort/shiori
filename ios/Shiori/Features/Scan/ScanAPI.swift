@@ -87,6 +87,13 @@ enum ScanAPI {
     /// Throws `APIError.domain(code: "QUOTA_EXHAUSTED")` once nothing is left,
     /// which the view model turns into the paywall rather than an error alert.
     static func scan(jpeg: Data) async throws -> ScannedBook {
+        #if DEBUG
+        if Showcase.isOn {
+            // Long enough for the analysing screen to show, as a real scan does.
+            try await Task.sleep(for: .seconds(1))
+            return Showcase.scanned
+        }
+        #endif
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
             mutation: ShioriGraphQL.ScanBookMutation(imageBase64: jpeg.base64EncodedString()),

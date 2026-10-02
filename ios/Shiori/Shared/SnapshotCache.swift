@@ -30,6 +30,11 @@ struct SnapshotCache<Value: Codable & Sendable>: Sendable {
     /// The last snapshot, or `nil` when there is no usable file: a first
     /// launch, a cache the system reclaimed, or a file written by an older shape.
     func read() -> Value? {
+        #if DEBUG
+        // The captures draw the showcase alone, never a session left on the
+        // simulator.
+        if Showcase.isOn { return nil }
+        #endif
         guard let data = try? Data(contentsOf: file),
               let stored = try? JSONDecoder().decode(Stored.self, from: data),
               stored.version == version
@@ -41,6 +46,9 @@ struct SnapshotCache<Value: Codable & Sendable>: Sendable {
     /// on purpose: a snapshot that cannot be written costs a loader on the
     /// next launch, nothing more.
     func write(_ value: Value) {
+        #if DEBUG
+        if Showcase.isOn { return }
+        #endif
         guard let data = try? JSONEncoder().encode(Stored(version: version, value: value))
         else { return }
         try? FileManager.default.createDirectory(

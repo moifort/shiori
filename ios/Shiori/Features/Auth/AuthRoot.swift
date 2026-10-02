@@ -25,6 +25,8 @@ struct AuthRoot: View {
         Group {
             if case .updateRequired(let appStoreURL) = supportGate.state {
                 UpdateRequiredView(appStoreURL: appStoreURL)
+            } else if isShowcase {
+                signedIn
             } else if session.user == nil {
                 LoginView()
             } else {
@@ -38,14 +40,17 @@ struct AuthRoot: View {
         .environment(subscriptions)
         .environment(\.isAdmin, gate.isAdmin)
         .environment(\.accountFirstName, gate.firstName)
-        .task { await supportGate.check() }
+        .task {
+            guard !isShowcase else { return }
+            await supportGate.check()
+        }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { Task { await supportGate.check() } }
+            if phase == .active, !isShowcase { Task { await supportGate.check() } }
         }
         // One request routes the launch and carries the plan along: it needs a
         // signed-in caller, and the plan is the server's answer.
         .task(id: session.user?.uid) {
-            if session.user != nil {
+            if session.user != nil || isShowcase {
                 await gate.refresh(subscriptions: subscriptions)
             } else {
                 gate.reset()
@@ -58,6 +63,15 @@ struct AuthRoot: View {
                 invitationRequest = InvitationRequest(code: code)
             }
         }
+    }
+
+    /// The App Store captures: signed in as the showcase reader, without Apple.
+    private var isShowcase: Bool {
+        #if DEBUG
+        Showcase.isOn
+        #else
+        false
+        #endif
     }
 
     @ViewBuilder

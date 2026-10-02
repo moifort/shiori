@@ -13,6 +13,14 @@ struct LaunchState {
 
 enum OnboardingAPI {
     static func launch() async throws -> LaunchState {
+        #if DEBUG
+        if Showcase.isOn {
+            return LaunchState(
+                firstName: Showcase.firstName, onboardingCompleted: true, isAdmin: false,
+                entitlement: Showcase.entitlement, quota: Showcase.quota
+            )
+        }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.LaunchQuery()

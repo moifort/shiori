@@ -187,6 +187,11 @@ enum DiscoverAPI {
     private static let lookUpTimeout: TimeInterval = 150
 
     static func discovery(format: ReleaseFormat) async throws -> DiscoveryPage {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.discovery(format: format)
+        }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.DiscoveryQuery(format: .case(format.graphQL))

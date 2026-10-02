@@ -93,6 +93,11 @@ enum SeriesAPI {
         mode: LibraryMode = .all,
         state: SeriesState? = nil
     ) async throws -> (items: [FollowedSeries], hasMore: Bool) {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.seriesPage(limit: limit, offset: offset, mode: mode, state: state)
+        }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.MySeriesPageQuery(
@@ -118,6 +123,11 @@ enum SeriesAPI {
     /// for the saga the reader just changed. Nil when they no longer hold a
     /// volume of that edition.
     static func followedSeries(seriesId: String, language: BookLanguage?) async throws -> FollowedSeries? {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.followedSeries(seriesId: seriesId)
+        }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.MyFollowedSeriesQuery(

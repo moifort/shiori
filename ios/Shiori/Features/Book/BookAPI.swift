@@ -5,6 +5,11 @@ import Foundation
 /// for — rating a book also marks it read, and the answer says so.
 enum BookAPI {
     static func book(id: String) async throws -> Book? {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.book(id: id)
+        }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.BookQuery(id: id)
