@@ -413,15 +413,22 @@ describe('a nightly pass', () => {
       { title: BookTitle('Fearless'), authors: [AuthorName('Lauren Roberts')] },
       new Date('2026-09-01T10:00:00.000Z'),
     )
-    await KindleCommand.recordPass(reader, [], NOW)
+    const lastPass = new Date('2026-10-03T02:30:00.000Z')
+    const tonight = new Date('2026-10-04T02:30:00.000Z')
+    await KindleCommand.recordPass(reader, [], lastPass)
     titles = [aTitle({ acquiredAt: new Date('2026-08-01T10:00:00.000Z') })]
 
-    expect(await KindleUseCase.syncLibrary(reader, NIGHT)).toMatchObject({ linked: 0 })
+    expect(await KindleUseCase.syncLibrary(reader, tonight)).toMatchObject({ linked: 0 })
     expect(titleCalls).toHaveLength(0)
 
-    await BookCommand.setStatus(reader, paperback.id, 'reading', new Date(NIGHT.getTime() + 60_000))
+    await BookCommand.setStatus(
+      reader,
+      paperback.id,
+      'reading',
+      new Date(tonight.getTime() + 60_000),
+    )
     startFakeRequest()
-    const later = new Date(NIGHT.getTime() + 3_600_000)
+    const later = new Date(tonight.getTime() + 3_600_000)
     expect(await KindleUseCase.syncLibrary(reader, later)).toMatchObject({ linked: 1 })
     expect(titleCalls.flat().map(({ asin }) => asin)).toEqual(['B0TESTAAA1'])
   })

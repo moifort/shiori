@@ -302,18 +302,28 @@ export const kindleLinksFor = (
   })
 }
 
+/** When paperbacks began to be linked to their Kindle title: the deploy of
+ *  that change. A pass before it matched ebooks only, so it settled nothing
+ *  about a paperback. */
+export const PAPERBACKS_LINKED_SINCE = new Date('2026-10-02T12:42:00.000Z')
+
 /** The titles a pass matches books against, so that a pair compared on an
  *  earlier night is not compared again: it did not match then, and neither
  *  side has changed since. A title acquired since the last pass meets every
  *  book; a read book written since — scanned, typed, corrected — meets every
  *  title of its author not yet linked. Everything else was settled before.
- *  With no previous pass, every title not yet linked is worth a look. */
+ *  With no previous pass, or none since paperbacks are linked, every title not
+ *  yet linked is worth a look. */
 export const titlesWorthMatching = (
   books: readonly Book[],
   titles: readonly KindleTitle[],
   fresh: readonly KindleTitle[],
-  lastPass: Date | undefined,
+  previousPass: Date | undefined,
 ): KindleTitle[] => {
+  const lastPass =
+    previousPass && previousPass.getTime() > PAPERBACKS_LINKED_SINCE.getTime()
+      ? previousPass
+      : undefined
   const taken = new Set<string>(books.flatMap((book) => (book.kindleAsin ? [book.kindleAsin] : [])))
   const acquired = new Set(fresh.map((title) => title.asin))
   const authors = new Set(

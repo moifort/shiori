@@ -368,9 +368,9 @@ describe('kindleLinksFor', () => {
 })
 
 describe('titlesWorthMatching', () => {
-  const LAST_PASS = new Date('2026-09-30T04:00:00.000Z')
+  const LAST_PASS = new Date('2026-10-03T02:30:00.000Z')
   const before = new Date('2026-09-01T10:00:00.000Z')
-  const after = new Date('2026-10-01T10:00:00.000Z')
+  const after = new Date('2026-10-03T10:00:00.000Z')
   const old = aTitle({ asin: 'B0OLDAAAA1' })
   const bought = aTitle({ asin: 'B0NEWAAAA1', title: 'La Peur du sage' })
   const asins = (titles: KindleTitle[]) => titles.map((title) => title.asin)
@@ -388,6 +388,16 @@ describe('titlesWorthMatching', () => {
     const other = aTitle({ asin: 'B0OTHERAA1', authors: ['Frank Herbert'] })
     expect(asins(titlesWorthMatching([scanned], [old, other], [], LAST_PASS))).toEqual([
       'B0OLDAAAA1',
+    ])
+  })
+
+  // A pass before paperbacks were linked compared ebooks only.
+  test('looks at every title on the first pass since paperbacks are linked', () => {
+    const paperback = aBook({ media: ['print'], addedAt: before, updatedAt: before })
+    const earlier = new Date('2026-10-02T02:30:00.000Z')
+    expect(asins(titlesWorthMatching([paperback], [old, bought], [bought], earlier))).toEqual([
+      'B0OLDAAAA1',
+      'B0NEWAAAA1',
     ])
   })
 
