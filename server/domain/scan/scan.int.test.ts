@@ -55,6 +55,7 @@ mock.module('~/domain/scan/published-cover', () => ({
     coverLookups.push(isbn13)
     return covers[isbn13]
   },
+  isCoverGone: async () => false,
 }))
 
 const { ScanCommand } = await import('~/domain/scan/command')

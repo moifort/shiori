@@ -53,6 +53,7 @@ mock.module('~/domain/discovery/infrastructure/amazon-catalogue', () => ({
 }))
 mock.module('~/domain/scan/published-cover', () => ({
   publishedCoverOf: async () => 'https://covers.example/vent.jpg',
+  isCoverGone: async () => false,
 }))
 
 const { BookUseCase } = await import('~/domain/book/use-case')

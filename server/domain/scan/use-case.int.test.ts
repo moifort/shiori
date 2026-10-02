@@ -28,7 +28,10 @@ mock.module('~/domain/scan/gemini', () => ({
     return { value, usage: { promptTokens: 10, outputTokens: 5, thinkingTokens: 0, searches: 0 } }
   },
 }))
-mock.module('~/domain/scan/published-cover', () => ({ publishedCoverOf: async () => undefined }))
+mock.module('~/domain/scan/published-cover', () => ({
+  publishedCoverOf: async () => undefined,
+  isCoverGone: async () => false,
+}))
 
 /** What a shared page answers for its title. Undefined is a page with none. */
 let pageTitle: string | undefined

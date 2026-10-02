@@ -30,7 +30,10 @@ mock.module('~/domain/scan/gemini', () => ({
     }
   },
 }))
-mock.module('~/domain/scan/published-cover', () => ({ publishedCoverOf: async () => undefined }))
+mock.module('~/domain/scan/published-cover', () => ({
+  publishedCoverOf: async () => undefined,
+  isCoverGone: async () => false,
+}))
 
 /** Audible sells the fourth recording, read by Jeff Hays. */
 mock.module('~/domain/discovery/infrastructure/audible-catalogue', () => ({
