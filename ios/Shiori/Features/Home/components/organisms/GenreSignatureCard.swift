@@ -176,13 +176,6 @@ struct GenreRadar: View {
                     .shadow(color: tint.opacity(0.35), radius: 14)
                 RadarPolygon(values: values, radius: radius)
                     .stroke(tint, style: StrokeStyle(lineWidth: 2.5, lineJoin: .round))
-                ForEach(Array(values.enumerated()), id: \.offset) { index, value in
-                    Circle()
-                        .fill(.white)
-                        .overlay(Circle().stroke(tint, lineWidth: 2))
-                        .frame(width: 9, height: 9)
-                        .position(RadarPolygon.point(index, of: values.count, at: radius * value, around: center))
-                }
                 ForEach(Array(axes.enumerated()), id: \.element.id) { index, share in
                     Label {
                         Text(share.genre.label)
@@ -217,17 +210,38 @@ private struct RadarSpokes: Shape {
     }
 }
 
-/// A closed polygon through one point per axis, the first axis pointing up.
+/// A closed curve through one point per axis, the first axis pointing up:
+/// a Catmull-Rom spline, so the shape reads as one soft outline rather than
+/// a polygon of corners.
 private struct RadarPolygon: Shape {
     let values: [Double]
     let radius: CGFloat
 
     func path(in rect: CGRect) -> Path {
         let center = CGPoint(x: rect.midX, y: rect.midY)
+        let points = values.enumerated().map { index, value in
+            Self.point(index, of: values.count, at: radius * value, around: center)
+        }
+        guard let first = points.first else { return Path() }
+        let count = points.count
         var path = Path()
-        for (index, value) in values.enumerated() {
-            let point = Self.point(index, of: values.count, at: radius * value, around: center)
-            index == 0 ? path.move(to: point) : path.addLine(to: point)
+        path.move(to: first)
+        for index in 0..<count {
+            let previous = points[(index - 1 + count) % count]
+            let current = points[index]
+            let next = points[(index + 1) % count]
+            let afterNext = points[(index + 2) % count]
+            path.addCurve(
+                to: next,
+                control1: CGPoint(
+                    x: current.x + (next.x - previous.x) / 6,
+                    y: current.y + (next.y - previous.y) / 6
+                ),
+                control2: CGPoint(
+                    x: next.x - (afterNext.x - current.x) / 6,
+                    y: next.y - (afterNext.y - current.y) / 6
+                )
+            )
         }
         path.closeSubpath()
         return path

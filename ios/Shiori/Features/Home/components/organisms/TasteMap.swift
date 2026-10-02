@@ -44,6 +44,7 @@ struct TasteMap: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            .padding(.horizontal, 12)
             if let gem = tastes.first(where: { $0.genre == hiddenGem }) {
                 gemCallout(gem)
             }
