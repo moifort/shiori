@@ -9,6 +9,7 @@ import { watchesOlderThanTheirCatalogue } from '~/system/migration/migrations/01
 import { digestAlertStartsOn } from '~/system/migration/migrations/012-digest-alert-starts-on'
 import { cataloguesPerEdition } from '~/system/migration/migrations/013-catalogues-per-edition'
 import { paperAndScreenAreOneBook } from '~/system/migration/migrations/014-paper-and-screen-are-one-book'
+import { booksWithoutALanguageAreFrench } from '~/system/migration/migrations/015-books-without-a-language-are-french'
 import type { Migration } from '~/system/migration/types'
 
 // Forward-only, sequential, no rollback. Adding a new optional field or a new
@@ -30,4 +31,5 @@ export const migrations: Migration[] = [
   digestAlertStartsOn,
   cataloguesPerEdition,
   paperAndScreenAreOneBook,
+  booksWithoutALanguageAreFrench,
 ]

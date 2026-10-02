@@ -228,13 +228,13 @@ describe('a saga held in more than one language', () => {
     ])
   })
 
-  // Unknown is not French: a book catalogued before the scan read languages
-  // carries none, and folding it into a language would state what nobody knows.
-  test('keeps volumes of unrecorded language in a row of their own, last', async () => {
+  // A volume whose edition names no language is French: on a row of its own
+  // it showed the saga twice, under one name.
+  test('files a volume that names no language on the French row', async () => {
     await addVolume('Dune', 1, { language: 'FR' })
     await addVolume('Le Messie de Dune', 2)
 
-    expect((await followedLanguages()).map((row) => row.language)).toEqual(['FR', null])
+    expect((await followedLanguages()).map((row) => row.language)).toEqual(['FR'])
   })
 
   test('shows one section per language in the library', async () => {

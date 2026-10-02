@@ -170,6 +170,37 @@ describe('cataloguing a book', () => {
     expect(Object.hasOwn(stored as object, 'synopsis')).toBe(false)
   })
 
+  // A volume with no language was an edition of its own on the Series tab, so
+  // a French paperback and its French sequel on a Kindle showed as two sagas.
+  test('takes a book whose edition says no language as French', async () => {
+    const book = await add('Le Crime de l’Orient-Express')
+
+    expect(book.language).toBe('fr')
+    expect(fake.data('books', book.id)?.language).toBe('fr')
+  })
+
+  test('keeps the language the scan read off the cover', async () => {
+    const book = await BookCommand.add(
+      reader,
+      { title: BookTitle('Fourth Wing'), language: 'en' },
+      NOW,
+    )
+
+    expect(book.language).toBe('en')
+  })
+
+  test('takes a book back to French when the reader clears its language', async () => {
+    const book = await BookCommand.add(
+      reader,
+      { title: BookTitle('Fourth Wing'), language: 'en' },
+      NOW,
+    )
+
+    const edited = await BookCommand.edit(reader, book.id, { language: undefined })
+
+    expect(edited).toMatchObject({ language: 'fr' })
+  })
+
   test('keeps two readers libraries apart', async () => {
     await add('Le Nom du vent')
     await BookCommand.add('reader-2' as UserId, { title: BookTitle('Autre') }, NOW)

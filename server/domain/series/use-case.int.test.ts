@@ -21,11 +21,18 @@ beforeEach(() => {
   fake = resetFakeFirestore()
 })
 
-/** Sagas shelved newest first: saga-0 is the most recent. Each is catalogued. */
+/** Sagas shelved newest first: saga-0 is the most recent. Each is catalogued
+ *  in French, the edition a book that names no language is taken to be in. */
 const followSagas = async (count: number) => {
   for (let index = 0; index < count; index++) {
     const id = SeriesId(`saga-${index}`)
-    fake.seed('series', id, { id, name: `Saga ${index}`, author: 'A', volumes: [] })
+    fake.seed('series', `${id}~fr`, {
+      id,
+      language: 'fr',
+      name: `Saga ${index}`,
+      author: 'A',
+      volumes: [],
+    })
     await BookCommand.add(
       reader,
       {
@@ -87,7 +94,13 @@ describe('the name of a row', () => {
   // that name: the row must not keep the one a scan or an import wrote.
   test("is the catalogue's once there is one", async () => {
     const id = SeriesId('saga-0')
-    fake.seed('series', id, { id, name: 'The Saga', author: 'A', volumes: [] })
+    fake.seed('series', `${id}~fr`, {
+      id,
+      language: 'fr',
+      name: 'The Saga',
+      author: 'A',
+      volumes: [],
+    })
     await BookCommand.add(
       reader,
       {
@@ -130,7 +143,7 @@ describe('one row of the Series tab', () => {
     await followSagas(6)
     const before = fake.docReads
 
-    const row = await SeriesUseCase.followedOne(reader, SeriesId('saga-3'))
+    const row = await SeriesUseCase.followedOne(reader, SeriesId('saga-3'), 'fr')
     expect(fake.docReads - before).toBe(1)
 
     const all = await SeriesUseCase.followed(reader)
@@ -148,8 +161,8 @@ describe('one row of the Series tab', () => {
     await followSagas(1)
     const id = SeriesId('saga-0')
 
-    expect(await SeriesUseCase.followedOne(reader, id, 'fr')).toBeNull()
-    expect((await SeriesUseCase.followedOne(reader, id))?.language).toBeUndefined()
+    expect(await SeriesUseCase.followedOne(reader, id, 'en')).toBeNull()
+    expect((await SeriesUseCase.followedOne(reader, id, 'fr'))?.language).toBe('fr')
   })
 })
 
@@ -197,7 +210,9 @@ describe('the name a saga goes by', () => {
     const first = await volumeOf('Red Rising[French Edition]', reader, 1)
     const other = await volumeOf('Red Rising [French Edition]', 'reader-2' as UserId, 2)
 
-    expect(await BookCommand.nameSeries({ id: redRising }, SeriesName('Red Rising'))).toBe(2)
+    expect(
+      await BookCommand.nameSeries({ id: redRising, language: 'fr' }, SeriesName('Red Rising')),
+    ).toBe(2)
 
     for (const book of [first, other])
       expect(fake.data('books', book.id)?.series).toMatchObject({ name: 'Red Rising' })

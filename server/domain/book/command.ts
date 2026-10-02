@@ -38,6 +38,7 @@ import type {
   Synopsis,
   TaggedSubgenre,
 } from '~/domain/book/types'
+import { DEFAULT_BOOK_LANGUAGE } from '~/domain/book/types'
 import type { KindleAsin } from '~/domain/kindle/types'
 import type { SeriesEdition, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
 import { favoriteAfterRating, ratingUnderHeart } from '~/domain/shared/rating'
@@ -171,7 +172,7 @@ const recordOf = (userId: UserId, input: NewBook, now: Date): Book => {
     listenedMinutes: input.listenedMinutes,
     narrators: input.narrators ?? [],
     isbn13: input.isbn13,
-    language: input.language,
+    language: input.language ?? DEFAULT_BOOK_LANGUAGE,
     audibleAsin: input.audibleAsin,
     kindleAsin: input.kindleAsin,
     kindleCoverUrl: input.kindleCoverUrl,
@@ -296,6 +297,9 @@ export namespace BookCommand {
       {
         ...book,
         ...facts,
+        // Clearing the language says nothing of the edition: it reads as the
+        // default again, never as an edition of its own.
+        language: ('language' in facts ? facts.language : book.language) ?? DEFAULT_BOOK_LANGUAGE,
         media,
         ...kindleLinkUnder(book, media),
         ...retagged,

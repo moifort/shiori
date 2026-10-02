@@ -472,8 +472,9 @@ export type FollowedSaga<Book> = {
  *
  *  Keyed by language as well as by saga, the same way the library shelves are:
  *  a reader who holds Dune in French and in English follows two rows, because
- *  those are two sets of books. An unrecorded language is its own group and
- *  sorts last — unknown is not French. */
+ *  those are two sets of books. A book is written French when nothing names
+ *  its edition; a record that still carries no language is its own group and
+ *  sorts last. */
 export const followedSagasOf = <
   Book extends {
     series?: { id: SeriesId; name: SeriesName }

@@ -107,6 +107,13 @@ export const BOOK_LANGUAGES = [
 ] as const
 export type BookLanguage = (typeof BOOK_LANGUAGES)[number]
 
+/** The edition a book is taken to be in when nothing says otherwise: a cover
+ *  that names no language, a title typed by hand, a store selling in its own
+ *  language. A volume without one was an edition of its own on the Series tab,
+ *  so a French paperback and its French sequel on a Kindle showed as two
+ *  sagas; the readers are French, and a wrong guess is one correction away. */
+export const DEFAULT_BOOK_LANGUAGE: BookLanguage = 'fr'
+
 /** What kind of object the reader holds. Prose, sound, or a drawn story — and
  *  among drawn stories, the three traditions a reader shelves apart: the
  *  Franco-Belgian album, the American comic, the manga. `book` is the default
@@ -192,9 +199,9 @@ export type Book = {
    *  player never opened. */
   listenedMinutes?: ListeningMinutes
   isbn13?: Isbn13
-  /** The language of the edition on the shelf, not the app's language. Absent on
-   *  every book catalogued before the scan started reading it, and on any edition
-   *  in a language the closed list does not carry. */
+  /** The language of the edition on the shelf, not the app's language. Written
+   *  on every book, `DEFAULT_BOOK_LANGUAGE` when nothing named it; still optional
+   *  because a record is read as it was stored. */
   language?: BookLanguage
   /** The Audible title this record stands for, when it has one.
    *
