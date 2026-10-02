@@ -64,7 +64,7 @@ struct RecentActivityStrip: View {
     /// so it reads whatever the photo under it.
     private func icon(_ activity: RecentActivity) -> some View {
         Image(systemName: symbol(activity))
-            .font(.system(size: 30, weight: .bold))
+            .font(.system(size: 20, weight: .bold))
             .foregroundStyle(.white.opacity(0.8))
             .shadow(color: .black.opacity(0.4), radius: 3, y: 1)
     }
