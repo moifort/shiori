@@ -1,52 +1,127 @@
 import SwiftUI
 
-/// The genre the reader reads most, spelled out with its share, and the two
-/// that follow.
+/// The genre the reader reads most, as a gauge of its share, the two that
+/// follow as bars against the same scale, and the two counts that frame them.
+/// The card takes the first genre's colour, washed over its corner.
 struct GenreSignatureCard: View {
     let readCount: Int
     let shares: [GenreInsights.Share]
 
+    /// "Other" is not a genre one can explore.
+    private var genreCount: Int { BookGenre.allCases.count - 1 }
+
     var body: some View {
-        WidgetCard(title: "Votre signature") {
-            if let first = shares.first {
-                headline(first)
-                HStack(spacing: 6) {
-                    Pill(text: String(localized: "\(readCount) lus"))
-                    Pill(text: String(localized: "\(shares.count) genres sur \(BookGenre.allCases.count - 1)"))
+        if let first = shares.first {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Votre signature").font(.headline)
+                hero(first)
+                if shares.count > 1 {
+                    VStack(spacing: 10) {
+                        ForEach(shares.dropFirst().prefix(2)) { share in
+                            runnerUp(share)
+                        }
+                    }
                 }
+                Divider()
+                HStack(spacing: 0) {
+                    figure("\(readCount)", caption: "livres lus")
+                    Divider().frame(height: 32)
+                    figure("\(shares.count) sur \(genreCount)", caption: "genres explorés")
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+                ZStack {
+                    Color(.secondarySystemGroupedBackground)
+                    LinearGradient(
+                        colors: [first.genre.tint.opacity(0.22), .clear],
+                        startPoint: .topLeading,
+                        endPoint: .center
+                    )
+                }
+                .clipShape(.rect(cornerRadius: 20))
             }
         }
     }
 
-    private func headline(_ first: GenreInsights.Share) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            first.genre.image
-                .font(.title2)
-                .foregroundStyle(first.genre.tint)
-                .frame(width: 32)
+    private func hero(_ first: GenreInsights.Share) -> some View {
+        HStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .stroke(first.genre.tint.opacity(0.15), lineWidth: 9)
+                Circle()
+                    .trim(from: 0, to: share(first))
+                    .stroke(
+                        first.genre.tint.gradient,
+                        style: StrokeStyle(lineWidth: 9, lineCap: .round)
+                    )
+                    .rotationEffect(.degrees(-90))
+                first.genre.image
+                    .font(.title2)
+                    .foregroundStyle(first.genre.tint)
+            }
+            .frame(width: 76, height: 76)
             VStack(alignment: .leading, spacing: 2) {
                 Text(first.genre.label)
-                    .font(.title2.weight(.bold))
+                    .font(.title.weight(.bold))
+                    .fontDesign(.rounded)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                 Text("\(percent(first))% de vos lectures")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                if shares.count > 1 {
-                    Text(runnersUp)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
             }
         }
     }
 
-    private var runnersUp: String {
-        let names = shares.dropFirst().prefix(2).map(\.genre.label)
-        return String(localized: "Devant \(names.formatted(.list(type: .and)))")
+    private func runnerUp(_ entry: GenreInsights.Share) -> some View {
+        HStack(spacing: 8) {
+            entry.genre.image
+                .font(.subheadline)
+                .foregroundStyle(entry.genre.tint)
+                .frame(width: 22)
+            Text(entry.genre.label)
+                .font(.subheadline)
+                .frame(width: 120, alignment: .leading)
+                .lineLimit(1)
+            GeometryReader { proxy in
+                Capsule()
+                    .fill(entry.genre.tint.opacity(0.15))
+                    .overlay(alignment: .leading) {
+                        Capsule()
+                            .fill(entry.genre.tint.gradient)
+                            .frame(width: proxy.size.width * share(entry))
+                    }
+            }
+            .frame(height: 8)
+            Text("\(percent(entry))%")
+                .font(.caption.weight(.medium))
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+                .frame(width: 34, alignment: .trailing)
+        }
     }
 
-    private func percent(_ share: GenreInsights.Share) -> Int {
+    private func figure(_ value: String, caption: LocalizedStringKey) -> some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(.title3.weight(.semibold))
+                .fontDesign(.rounded)
+            Text(caption)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func share(_ entry: GenreInsights.Share) -> CGFloat {
         guard readCount > 0 else { return 0 }
-        return Int((Double(share.count) / Double(readCount) * 100).rounded())
+        return CGFloat(entry.count) / CGFloat(readCount)
+    }
+
+    private func percent(_ entry: GenreInsights.Share) -> Int {
+        Int((share(entry) * 100).rounded())
     }
 }
 
