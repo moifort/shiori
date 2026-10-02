@@ -2,11 +2,12 @@ import Charts
 import SwiftUI
 
 /// Each genre placed by how many of its books the reader finished against how
-/// they rated them. The median count and the reader's average rating cut the
-/// map in four, each quarter washed in its own colour: what the reader reads a
-/// lot and likes, reads a lot out of habit, should read more of, and keeps
+/// they rated them, drawn straight on the page. The median count and the
+/// reader's average rating cut the map in four, each quarter washed in its own
+/// colour and fading out towards the edges into the page: what the reader reads
+/// a lot and likes, reads a lot out of habit, should read more of, and keeps
 /// being let down by. A genre is a bubble as large as its shelf.
-struct TasteMapCard: View {
+struct TasteMap: View {
     let tastes: [GenreInsights.Taste]
     let averageRating: Double
     let hiddenGem: BookGenre?
@@ -33,10 +34,10 @@ struct TasteMapCard: View {
     }
 
     var body: some View {
-        WidgetCard(title: "Ce que vous lisez, ce que vous aimez") {
+        VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .trailing, spacing: 2) {
                 chart
-                    .frame(height: 260)
+                    .frame(height: 280)
                 // Below the chart rather than as its axis label, which the
                 // quarter washes leave undrawn.
                 Text("Livres lus")
@@ -50,39 +51,41 @@ struct TasteMapCard: View {
     }
 
     private var chart: some View {
-        Chart {
-            quarter(x: 0...medianCount, y: averageRating...ratingCeiling, color: .orange)
-            quarter(x: medianCount...countCeiling, y: averageRating...ratingCeiling, color: .green)
-            quarter(x: 0...medianCount, y: ratingFloor...averageRating, color: .red)
-            quarter(x: medianCount...countCeiling, y: ratingFloor...averageRating, color: .gray)
-            ForEach(tastes) { taste in
-                PointMark(
-                    x: .value("Livres lus", taste.readCount),
-                    y: .value("Note moyenne", taste.averageRating)
-                )
-                .symbol { bubble(taste) }
-            }
+        Chart(tastes) { taste in
+            PointMark(
+                x: .value("Livres lus", taste.readCount),
+                y: .value("Note moyenne", taste.averageRating)
+            )
+            .symbol { bubble(taste) }
         }
         .chartXScale(domain: 0...countCeiling)
         .chartYScale(domain: ratingFloor...ratingCeiling)
-        .chartYAxis {
-            AxisMarks(position: .leading, values: Array(stride(from: ratingFloor.rounded(.up), through: 5, by: 1))) { value in
-                AxisValueLabel {
-                    if let rating = value.as(Double.self) {
-                        Label("\(Int(rating))", systemImage: "star.fill")
-                            .labelStyle(.titleAndIcon)
-                    }
-                }
-            }
-        }
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: 4)) { _ in
                 AxisValueLabel()
             }
         }
+        .chartYAxis {
+            AxisMarks(position: .leading, values: Array(stride(from: ratingFloor.rounded(.up), through: 5, by: 1))) { value in
+                AxisValueLabel {
+                    if let rating = value.as(Double.self) {
+                        HStack(spacing: 1) {
+                            Image(systemName: "star.fill").imageScale(.small)
+                            Text("\(Int(rating))")
+                        }
+                    }
+                }
+            }
+        }
+        .chartBackground { proxy in
+            GeometryReader { geometry in
+                if let plotFrame = proxy.plotFrame {
+                    quarters(in: geometry[plotFrame], proxy: proxy)
+                }
+            }
+        }
         .chartPlotStyle { plot in
             plot
-                .clipShape(.rect(cornerRadius: 14))
                 .overlay(alignment: .topLeading) { quadrant("À creuser", color: .orange) }
                 .overlay(alignment: .topTrailing) { quadrant("Valeurs sûres", color: .green) }
                 .overlay(alignment: .bottomLeading) { quadrant("Déceptions", color: .red) }
@@ -90,14 +93,40 @@ struct TasteMapCard: View {
         }
     }
 
-    private func quarter(x: ClosedRange<Double>, y: ClosedRange<Double>, color: Color) -> some ChartContent {
-        RectangleMark(
-            xStart: .value("Livres lus", x.lowerBound),
-            xEnd: .value("Livres lus", x.upperBound),
-            yStart: .value("Note moyenne", y.lowerBound),
-            yEnd: .value("Note moyenne", y.upperBound)
+    /// The four washes, behind the bubbles, split where the median and the
+    /// average fall and faded out on every side so the map has no edge.
+    private func quarters(in frame: CGRect, proxy: ChartProxy) -> some View {
+        let splitX = (proxy.position(forX: medianCount) ?? frame.width / 2)
+        let splitY = (proxy.position(forY: averageRating) ?? frame.height / 2)
+        return ZStack(alignment: .topLeading) {
+            wash(.orange, x: 0, y: 0, width: splitX, height: splitY)
+            wash(.green, x: splitX, y: 0, width: frame.width - splitX, height: splitY)
+            wash(.red, x: 0, y: splitY, width: splitX, height: frame.height - splitY)
+            wash(.gray, x: splitX, y: splitY, width: frame.width - splitX, height: frame.height - splitY)
+        }
+        .frame(width: frame.width, height: frame.height, alignment: .topLeading)
+        .mask(fade(.horizontal))
+        .mask(fade(.vertical))
+        .offset(x: frame.minX, y: frame.minY)
+    }
+
+    private func wash(_ color: Color, x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat) -> some View {
+        color.opacity(0.16)
+            .frame(width: max(0, width), height: max(0, height))
+            .offset(x: x, y: y)
+    }
+
+    private func fade(_ axis: Axis) -> LinearGradient {
+        LinearGradient(
+            stops: [
+                .init(color: .clear, location: 0),
+                .init(color: .black, location: 0.22),
+                .init(color: .black, location: 0.78),
+                .init(color: .clear, location: 1),
+            ],
+            startPoint: axis == .horizontal ? .leading : .top,
+            endPoint: axis == .horizontal ? .trailing : .bottom
         )
-        .foregroundStyle(color.opacity(0.09))
     }
 
     /// A glossy bubble, as large as the genre's shelf, named beside it; the gem
@@ -106,13 +135,14 @@ struct TasteMapCard: View {
     private func bubble(_ taste: GenreInsights.Taste) -> some View {
         let size = 12 + 14 * CGFloat(taste.readCount) / CGFloat(countCeiling)
         let onLeft = Double(taste.readCount) > countCeiling * 0.7
+        let isGem = taste.genre == hiddenGem
         return Circle()
             .fill(taste.genre.tint.gradient)
             .overlay(Circle().stroke(.white, lineWidth: 2))
             .frame(width: size, height: size)
             .shadow(color: taste.genre.tint.opacity(0.45), radius: 4, y: 1)
             .background {
-                if taste.genre == hiddenGem {
+                if isGem {
                     Circle()
                         .stroke(taste.genre.tint.opacity(0.5), lineWidth: 1.5)
                         .frame(width: size + 10, height: size + 10)
@@ -121,16 +151,16 @@ struct TasteMapCard: View {
             .overlay(alignment: onLeft ? .trailing : .leading) {
                 Text(taste.genre.label)
                     .font(.caption2.weight(.medium))
-                    .foregroundStyle(taste.genre == hiddenGem ? taste.genre.tint : Color(.secondaryLabel))
+                    .foregroundStyle(isGem ? taste.genre.tint : Color(.secondaryLabel))
                     .fixedSize()
-                    .padding(onLeft ? .trailing : .leading, size + (taste.genre == hiddenGem ? 10 : 6))
+                    .padding(onLeft ? .trailing : .leading, size + (isGem ? 10 : 6))
             }
     }
 
     private func quadrant(_ text: LocalizedStringKey, color: Color) -> some View {
         Text(text)
             .font(.caption2.weight(.semibold))
-            .foregroundStyle(color.opacity(0.8))
+            .foregroundStyle(color.opacity(0.85))
             .padding(6)
             .allowsHitTesting(false)
     }
@@ -156,7 +186,7 @@ struct TasteMapCard: View {
 }
 
 #Preview {
-    TasteMapCard(
+    TasteMap(
         tastes: GenreInsights.preview.tastes,
         averageRating: GenreInsights.preview.averageRating ?? 4,
         hiddenGem: GenreInsights.preview.hiddenGem

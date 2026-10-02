@@ -18,7 +18,7 @@ struct GenreInsightsPage: View {
                 }
 
                 if insights.tastes.count >= 3, let averageRating = insights.averageRating {
-                    TasteMapCard(
+                    TasteMap(
                         tastes: insights.tastes,
                         averageRating: averageRating,
                         hiddenGem: insights.hiddenGem
