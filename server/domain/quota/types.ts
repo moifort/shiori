@@ -20,10 +20,14 @@ export type Quota = {
  *  onboarding: stocking a cellar is the moment the app is judged, and metering
  *  it at five would have made that judgement about the meter.
  *
- *  Absent storage means nothing left, the same way an absent quota reads zero. */
+ *  Absent storage means nothing left, the same way an absent quota reads zero.
+ *
+ *  A second grant lands on the same balance the first time the account turns
+ *  Premium; `premiumWelcomedAt` is when, and what keeps it from landing twice. */
 export type ScanCredit = {
   userId: UserId
   scans: Count
+  premiumWelcomedAt?: Date
 }
 
 /** Which counter the next scan comes out of. The month goes first because it

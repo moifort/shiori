@@ -6,6 +6,7 @@ import {
   debitFor,
   monthOf,
   welcomeCredit,
+  withPremiumWelcome,
 } from '~/domain/quota/business-rules'
 import * as repository from '~/domain/quota/infrastructure/repository'
 import type { ScanCredit, ScanDebit } from '~/domain/quota/types'
@@ -48,6 +49,11 @@ export namespace QuotaCommand {
   // from the onboarding that creates the profile, in that same batch.
   export const grantWelcomeCredit = (userId: UserId, batch?: WriteBatch): Promise<ScanCredit> =>
     repository.saveCredit(welcomeCredit(userId), batch)
+
+  // Hand an account turning Premium the scans to bring its whole library in, on
+  // top of what it holds. Safe to call on every sync: only the first lands.
+  export const grantPremiumWelcome = (userId: UserId): Promise<ScanCredit> =>
+    repository.topUpCredit(userId, (credit) => withPremiumWelcome(credit, new Date()))
 
   // Erase the account's monthly scan counters and its granted balance (account
   // deletion).

@@ -81,6 +81,27 @@ export const consumeCredit = async (
   return spent
 }
 
+// Add to the balance, atomically and at most once: `topUp` answers nothing when
+// the grant was handed already, and nothing is written then. The read is inside
+// the transaction because the app syncs its subscription on every launch, and
+// two launches racing must not both see the grant missing.
+export const topUpCredit = async (
+  userId: UserId,
+  topUp: (credit: ScanCredit) => ScanCredit | undefined,
+): Promise<ScanCredit> => {
+  const ref = credits().doc(userId)
+  const credit = await transactionally(async (tx) => {
+    const doc = await tx.get(ref)
+    const held = doc.data() ?? noCredit(userId)
+    const toppedUp = topUp(held)
+    if (!toppedUp) return held
+    tx.set(ref, toppedUp)
+    return toppedUp
+  })
+  evictFromRequestCache(creditCacheKey(userId))
+  return credit
+}
+
 // Hand an account its granted scans. Takes the caller's batch so the grant lands
 // with the profile that earns it, or neither does.
 export const saveCredit = async (credit: ScanCredit, batch?: WriteBatch): Promise<ScanCredit> => {

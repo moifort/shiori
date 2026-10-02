@@ -1,7 +1,9 @@
+import { isActive } from '~/domain/entitlement/business-rules'
 import { EntitlementCommand } from '~/domain/entitlement/command'
 import { AppAccountToken } from '~/domain/entitlement/primitives'
 import { EntitlementQuery } from '~/domain/entitlement/query'
 import type { Entitlement } from '~/domain/entitlement/types'
+import { QuotaCommand } from '~/domain/quota/command'
 import type { UserId } from '~/domain/shared/types'
 import { Apple } from '~/system/apple'
 import type { AppleTransaction } from '~/system/apple/types'
@@ -13,6 +15,17 @@ type SubscriptionTransaction = AppleTransaction & { expiresAt: Date; appAccountT
 
 const grantsTime = (transaction: AppleTransaction): transaction is SubscriptionTransaction =>
   transaction.expiresAt !== undefined && transaction.appAccountToken !== undefined
+
+// Record what the App Store sold and, when it makes the account Premium, hand it
+// the Premium welcome. Every sync and every renewal passes here, so the grant
+// keeps its own once-only guard rather than guessing a first purchase from the
+// event: an account subscribed before the grant existed gets it on its next
+// launch.
+const recordAndWelcome = async (userId: UserId, transaction: SubscriptionTransaction) => {
+  const entitlement = await EntitlementCommand.record(userId, transaction)
+  if (isActive(entitlement, new Date())) await QuotaCommand.grantPremiumWelcome(userId)
+  return entitlement
+}
 
 export namespace EntitlementUseCase {
   // Take the app's word for nothing. The client hands over the transaction the
@@ -32,7 +45,7 @@ export namespace EntitlementUseCase {
     if (transaction.appAccountToken !== (EntitlementQuery.tokenFor(userId) as string))
       return 'transaction-not-yours'
 
-    return EntitlementCommand.record(userId, transaction)
+    return recordAndWelcome(userId, transaction)
   }
 
   // Apply what Apple pushed to the webhook: a renewal, an expiry, a refund. The
@@ -55,7 +68,7 @@ export namespace EntitlementUseCase {
     const known = await EntitlementQuery.byToken(AppAccountToken(transaction.appAccountToken))
     if (!known) return 'ignored'
 
-    await EntitlementCommand.record(known.userId, transaction)
+    await recordAndWelcome(known.userId, transaction)
     return 'applied'
   }
 }

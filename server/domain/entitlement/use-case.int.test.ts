@@ -25,6 +25,9 @@ mock.module('~/system/config/index', () => ({
 
 const { EntitlementUseCase } = await import('~/domain/entitlement/use-case')
 const { EntitlementQuery } = await import('~/domain/entitlement/query')
+const { QuotaCommand } = await import('~/domain/quota/command')
+const { QuotaQuery } = await import('~/domain/quota/query')
+const { PREMIUM_WELCOME_SCANS, WELCOME_SCANS } = await import('~/domain/quota/business-rules')
 
 const user = (id: string) => id as UserId
 
@@ -94,6 +97,72 @@ describe('syncing a purchase the app hands over', () => {
     expect((await EntitlementQuery.of(user('u1')))?.expiresAt).toEqual(
       new Date('2028-01-01T00:00:00.000Z'),
     )
+  })
+})
+
+describe('the scans handed to an account turning Premium', () => {
+  const creditOf = async (id: string) => (await QuotaQuery.creditOf(user(id))).scans as number
+
+  test('lands on top of what the account still held from its welcome', async () => {
+    await QuotaCommand.grantWelcomeCredit(user('u1'))
+    verifiedTransaction = aTransaction()
+
+    await EntitlementUseCase.sync(user('u1'), 'signed-jws')
+
+    expect(await creditOf('u1')).toBe(WELCOME_SCANS + PREMIUM_WELCOME_SCANS)
+  })
+
+  test('is handed once, however many launches sync the subscription again', async () => {
+    verifiedTransaction = aTransaction()
+
+    await Promise.all([
+      EntitlementUseCase.sync(user('u1'), 'signed-jws'),
+      EntitlementUseCase.sync(user('u1'), 'signed-jws'),
+    ])
+    await EntitlementUseCase.sync(user('u1'), 'signed-jws')
+
+    expect(await creditOf('u1')).toBe(PREMIUM_WELCOME_SCANS)
+  })
+
+  test('is not handed again on a renewal, nor on subscribing again after a lapse', async () => {
+    verifiedTransaction = aTransaction()
+    await EntitlementUseCase.sync(user('u1'), 'signed-jws')
+    verifiedNotification = {
+      type: 'EXPIRED',
+      transaction: aTransaction({ expiresAt: new Date('2026-01-01T00:00:00.000Z') }),
+    }
+    await EntitlementUseCase.applyNotification('signed-payload')
+
+    verifiedTransaction = aTransaction({ expiresAt: new Date('2100-01-01T00:00:00.000Z') })
+    await EntitlementUseCase.sync(user('u1'), 'signed-jws')
+
+    expect(await creditOf('u1')).toBe(PREMIUM_WELCOME_SCANS)
+  })
+
+  test('is not handed for a subscription that has already run out', async () => {
+    verifiedTransaction = aTransaction({ expiresAt: new Date('2026-01-01T00:00:00.000Z') })
+
+    await EntitlementUseCase.sync(user('u1'), 'signed-jws')
+
+    expect(await creditOf('u1')).toBe(0)
+  })
+
+  test('is handed to a subscriber recorded before it existed, on their next sync', async () => {
+    verifiedTransaction = aTransaction()
+    await EntitlementUseCase.sync(user('u1'), 'signed-jws')
+    await fakeDb().collection('ai-credits').doc('u1').delete()
+
+    await EntitlementUseCase.sync(user('u1'), 'signed-jws')
+
+    expect(await creditOf('u1')).toBe(PREMIUM_WELCOME_SCANS)
+  })
+
+  test('is not handed for a purchase refused as another account s', async () => {
+    verifiedTransaction = aTransaction({ appAccountToken: tokenOf('someone-else') })
+
+    await EntitlementUseCase.sync(user('u1'), 'signed-jws')
+
+    expect(await creditOf('u1')).toBe(0)
   })
 })
 

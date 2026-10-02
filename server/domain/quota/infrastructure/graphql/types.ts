@@ -37,8 +37,9 @@ export const QuotaType = builder.objectRef<QuotaState>('Quota').implement({
     }),
     welcomeRemaining: t.int({
       description:
-        'How many granted scans are left, e.g. `14`. Handed once when onboarding completes, drawn ' +
-        'down only after the month is spent, and never refilled by the calendar.',
+        'How many granted scans are left, e.g. `14`. Handed once when onboarding completes, topped ' +
+        'up once the first time the account turns Premium, drawn down only after the month is ' +
+        'spent, and never refilled by the calendar.',
       resolve: (state) => state.credit.scans,
     }),
     totalRemaining: t.int({

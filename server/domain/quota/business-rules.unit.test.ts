@@ -11,10 +11,12 @@ import {
   monthOf,
   noCredit,
   PREMIUM_MONTHLY_SCANS,
+  PREMIUM_WELCOME_SCANS,
   renewsOn,
   totalRemaining,
   WELCOME_SCANS,
   welcomeCredit,
+  withPremiumWelcome,
 } from '~/domain/quota/business-rules'
 import { QuotaMonth } from '~/domain/quota/primitives'
 import { Count, UserId } from '~/domain/shared/primitives'
@@ -84,6 +86,27 @@ describe('what a new account is granted', () => {
 
   it('reads as nothing left when the account was never granted any', () => {
     expect(empty.scans).toBe(Count(0))
+  })
+})
+
+describe('what an account turning Premium is granted', () => {
+  const now = new Date('2026-10-02T08:00:00.000Z')
+
+  it('adds the Premium welcome to what the account still holds', () => {
+    expect(withPremiumWelcome(creditOf(12), now)).toEqual({
+      userId: UserId('u1'),
+      scans: Count(12 + PREMIUM_WELCOME_SCANS),
+      premiumWelcomedAt: now,
+    })
+  })
+
+  it('is enough to bring a whole library in, which the monthly ceiling alone is not', () => {
+    expect(PREMIUM_WELCOME_SCANS).toBeGreaterThan(PREMIUM_MONTHLY_SCANS)
+  })
+
+  it('is nothing for an account that was already welcomed', () => {
+    const welcomed = { ...creditOf(3), premiumWelcomedAt: new Date('2026-09-01T00:00:00.000Z') }
+    expect(withPremiumWelcome(welcomed, now)).toBeUndefined()
   })
 })
 

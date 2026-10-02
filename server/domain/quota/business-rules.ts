@@ -30,6 +30,13 @@ export const PREMIUM_MONTHLY_SCANS: CountType = Count(100)
 // pipeline captures on every call.
 export const WELCOME_SCANS: CountType = Count(50)
 
+// What an account is handed the first time it turns Premium, once and for good,
+// on top of whatever it still holds. Subscribing is when a reader brings in the
+// whole library rather than a shelf, and the monthly ceiling alone would refuse
+// that evening as abuse: a reader cataloguing 130 books in two days is exactly
+// the use Premium is sold for.
+export const PREMIUM_WELCOME_SCANS: CountType = Count(500)
+
 // The month a moment belongs to, `"2026-07"`. UTC on purpose: the window must not
 // move with the caller's timezone, and someone scanning near midnight on the 1st
 // is a rounding question nobody will ever ask.
@@ -55,6 +62,13 @@ export const noCredit = (userId: UserId): ScanCredit => ({ userId, scans: Count(
 
 // The grant itself, handed once at the end of onboarding.
 export const welcomeCredit = (userId: UserId): ScanCredit => ({ userId, scans: WELCOME_SCANS })
+
+// The balance once the Premium welcome is handed, or nothing when the account
+// already had it: renewing, cancelling and subscribing again never hand it twice.
+export const withPremiumWelcome = (credit: ScanCredit, now: Date): ScanCredit | undefined =>
+  credit.premiumWelcomedAt
+    ? undefined
+    : { ...credit, scans: Count(credit.scans + PREMIUM_WELCOME_SCANS), premiumWelcomedAt: now }
 
 // How many scans the plan allows per month.
 export const limitOf = (plan: Plan): CountType =>
