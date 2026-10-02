@@ -4,7 +4,11 @@ import type {
   BookCard,
   Dashboard,
   Finish,
+  FormatShare,
   GenreCount,
+  GenreInsights,
+  GenreShare,
+  GenreTaste,
   MonthHours,
   MonthPages,
   SeriesProgress,
@@ -23,7 +27,8 @@ import {
   shelvedOf,
   shownRatingOf,
 } from '~/domain/book/business-rules'
-import type { Book, Genre, StarRating } from '~/domain/book/types'
+import type { Book, BookFormat, Genre, StarRating } from '~/domain/book/types'
+import { GENRES } from '~/domain/book/types'
 import { recentActivityOf } from '~/domain/friendship/business-rules'
 import {
   followedSagasOf,
@@ -499,3 +504,162 @@ export const genresOf = (finishes: readonly Finish[]): GenreCount[] => {
     ranked.slice(TOP_GENRES).reduce((sum, [, count]) => sum + count, 0) + (counts.get('other') ?? 0)
   return others > 0 ? [...top, { count: others }] : top
 }
+
+/** Below this many books a genre's figure is luck rather than taste: it is
+ *  placed on no map and holds no record. */
+export const ENOUGH_BOOKS = 3
+
+/** How far above the reader's own average a genre read little must be rated to
+ *  be worth pointing out. */
+export const GEM_MARGIN = 0.5
+
+const DAY = 86_400_000
+
+/** What the reader's books say about their tastes, genre by genre. Read books
+ *  for every figure but two: the dropped record counts every book started, and
+ *  the unexplored genres count the pile. */
+export const genreInsightsOf = (books: readonly Book[]): GenreInsights => {
+  const read = books.filter(({ status }) => status === 'read')
+  const readByGenre = byGenre(read)
+  const shares = [...readByGenre]
+    .map(([genre, shelf]) => ({ genre, count: shelf.length }))
+    .sort(mostFirst)
+  const averageRating = meanOf(read.flatMap(ratingOf))
+  const tastes = [...readByGenre]
+    .flatMap(([genre, shelf]) => {
+      const ratings = shelf.flatMap(ratingOf)
+      return ratings.length < ENOUGH_BOOKS
+        ? []
+        : [{ genre, readCount: shelf.length, averageRating: meanOf(ratings) ?? 0 }]
+    })
+    .sort((left, right) => right.readCount - left.readCount || genreOrder(left, right))
+  return {
+    readCount: read.length,
+    shares,
+    formats: formatSharesOf(read),
+    tastes,
+    averageRating,
+    hiddenGem: hiddenGemOf(tastes, averageRating),
+    longest: longestOf(readByGenre),
+    fastest: fastestOf(readByGenre),
+    mostDropped: mostDroppedOf(books),
+    unexplored: GENRES.filter((genre) => genre !== 'other' && !readByGenre.has(genre))
+      .map((genre) => ({
+        genre,
+        pileCount: books.filter((book) => book.status === 'to-read' && book.genre === genre).length,
+      }))
+      .sort((left, right) => right.pileCount - left.pileCount),
+  }
+}
+
+/** The formats read, each with the genre it carries most. */
+const formatSharesOf = (read: readonly Book[]): FormatShare[] => {
+  const byFormat = new Map<BookFormat, Book[]>()
+  for (const book of read) byFormat.set(book.format, [...(byFormat.get(book.format) ?? []), book])
+  return [...byFormat]
+    .map(([format, shelf]) => {
+      const [top] = [...byGenre(shelf)]
+        .map(([genre, books]) => ({ genre, count: books.length }))
+        .sort(mostFirst)
+      return { format, count: shelf.length, topGenre: top?.genre }
+    })
+    .sort((left, right) => right.count - left.count || left.format.localeCompare(right.format))
+}
+
+/** The genre left of the median that the reader rates well above their own
+ *  average: few books, much liked. The best rated wins, then the least read. */
+export const hiddenGemOf = (
+  tastes: readonly GenreTaste[],
+  averageRating: number | undefined,
+): Genre | undefined => {
+  if (averageRating === undefined || tastes.length < 3) return undefined
+  const median = medianOf(tastes.map(({ readCount }) => readCount))
+  const [gem] = tastes
+    .filter(
+      ({ readCount, averageRating: rating }) =>
+        readCount < median && rating >= averageRating + GEM_MARGIN,
+    )
+    .sort(
+      (left, right) => right.averageRating - left.averageRating || left.readCount - right.readCount,
+    )
+  return gem?.genre
+}
+
+const longestOf = (readByGenre: Map<Genre, Book[]>) => {
+  const [longest] = [...readByGenre]
+    .flatMap(([genre, shelf]) => {
+      const pages = shelf.flatMap(({ pageCount }) => (pageCount === undefined ? [] : [pageCount]))
+      return pages.length < ENOUGH_BOOKS
+        ? []
+        : [{ genre, averagePages: Math.round(pages.reduce((sum, p) => sum + p, 0) / pages.length) }]
+    })
+    .sort((left, right) => right.averagePages - left.averagePages || genreOrder(left, right))
+  return longest
+}
+
+/** Days from the first page to the last, a book read within the day counting
+ *  one. */
+const fastestOf = (readByGenre: Map<Genre, Book[]>) => {
+  const [fastest] = [...readByGenre]
+    .flatMap(([genre, shelf]) => {
+      const days = shelf.flatMap(({ startedAt, finishedAt }) =>
+        startedAt && finishedAt
+          ? [Math.max(1, Math.round((finishedAt.getTime() - startedAt.getTime()) / DAY))]
+          : [],
+      )
+      return days.length < ENOUGH_BOOKS
+        ? []
+        : [{ genre, averageDays: Math.round(days.reduce((sum, d) => sum + d, 0) / days.length) }]
+    })
+    .sort((left, right) => left.averageDays - right.averageDays || genreOrder(left, right))
+  return fastest
+}
+
+/** The genre given up most often, out of the books of it ever opened: read,
+ *  being read or dropped. */
+const mostDroppedOf = (books: readonly Book[]) => {
+  const opened = books.filter(({ status }) => status !== 'to-read')
+  const [dropped] = [...byGenre(opened)]
+    .flatMap(([genre, shelf]) => {
+      const droppedCount = shelf.filter(({ status }) => status === 'dropped').length
+      return droppedCount === 0 || shelf.length < ENOUGH_BOOKS
+        ? []
+        : [{ genre, droppedCount, startedCount: shelf.length }]
+    })
+    .sort(
+      (left, right) =>
+        right.droppedCount / right.startedCount - left.droppedCount / left.startedCount ||
+        right.droppedCount - left.droppedCount ||
+        genreOrder(left, right),
+    )
+  return dropped
+}
+
+/** The books of each genre, `other` and books without one left out. */
+const byGenre = (books: readonly Book[]): Map<Genre, Book[]> => {
+  const shelves = new Map<Genre, Book[]>()
+  for (const book of books) {
+    if (book.genre === undefined || book.genre === 'other') continue
+    shelves.set(book.genre, [...(shelves.get(book.genre) ?? []), book])
+  }
+  return shelves
+}
+
+const ratingOf = ({ rating }: Book): number[] => (rating === undefined ? [] : [Number(rating)])
+
+const meanOf = (values: readonly number[]): number | undefined =>
+  values.length === 0
+    ? undefined
+    : Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10
+
+export const medianOf = (values: readonly number[]): number => {
+  const sorted = [...values].sort((left, right) => left - right)
+  const middle = Math.floor(sorted.length / 2)
+  return sorted.length % 2 === 0 ? (sorted[middle - 1] + sorted[middle]) / 2 : sorted[middle]
+}
+
+const genreOrder = (left: { genre: Genre }, right: { genre: Genre }) =>
+  GENRES.indexOf(left.genre) - GENRES.indexOf(right.genre)
+
+const mostFirst = (left: GenreShare, right: GenreShare) =>
+  right.count - left.count || genreOrder(left, right)

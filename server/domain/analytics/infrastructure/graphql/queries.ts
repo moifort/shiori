@@ -1,4 +1,4 @@
-import { DashboardType } from '~/domain/analytics/infrastructure/graphql/types'
+import { DashboardType, GenreInsightsType } from '~/domain/analytics/infrastructure/graphql/types'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
 
@@ -19,5 +19,25 @@ builder.queryField('dashboard', (t) =>
       '```',
     args: { timeZone: t.arg({ type: 'TimeZone', required: true }) },
     resolve: (_root, args, { userId }) => AnalyticsUseCase.dashboard(userId, args.timeZone),
+  }),
+)
+
+builder.queryField('genreInsights', (t) =>
+  t.field({
+    type: GenreInsightsType,
+    description:
+      "What the signed-in reader's books say about their tastes, genre by genre: the " +
+      "page the dashboard's genre card opens. Worked out from the library on each " +
+      'read; a figure with fewer than three books behind it is left out.\n\n' +
+      '```graphql\n' +
+      'query {\n' +
+      '  genreInsights {\n' +
+      '    shares { genre count }\n' +
+      '    tastes { genre readCount averageRating }\n' +
+      '    hiddenGem\n' +
+      '  }\n' +
+      '}\n' +
+      '```',
+    resolve: (_root, _args, { userId }) => AnalyticsUseCase.genreInsights(userId),
   }),
 )

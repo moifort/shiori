@@ -62,3 +62,43 @@ fragment DashboardBookCard on DashboardBook {
   startedAt
   finishedAt
 }
+
+# What the reader's genres say about their tastes: the page the genre card opens.
+query GenreInsights {
+  genreInsights {
+    readCount
+    shares {
+      genre
+      count
+    }
+    formats {
+      format
+      count
+      topGenre
+    }
+    tastes {
+      genre
+      readCount
+      averageRating
+    }
+    averageRating
+    hiddenGem
+    longest {
+      genre
+      averagePages
+    }
+    fastest {
+      genre
+      averageDays
+    }
+    mostDropped {
+      genre
+      droppedCount
+      startedCount
+    }
+    unexplored {
+      genre
+      pileCount
+    }
+  }
+}

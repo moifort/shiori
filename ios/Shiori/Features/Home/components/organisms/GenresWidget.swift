@@ -3,8 +3,7 @@ import SwiftUI
 /// The genres of every book the reader has finished, whatever the year.
 struct GenresWidget: View {
     let genres: [Dashboard.GenreSlice]
-    /// Opens the library on its default view: the genres are no longer a
-    /// view of their own.
+    /// Opens the genre page.
     var onTapped: (() -> Void)?
 
     var body: some View {

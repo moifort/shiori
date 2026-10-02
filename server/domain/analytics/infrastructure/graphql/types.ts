@@ -1,11 +1,16 @@
 import type {
   Dashboard,
   DashboardBook,
+  FormatShare,
   GenreCount,
+  GenreInsights,
+  GenreShare,
+  GenreTaste,
   MonthHours,
   MonthPages,
   SeriesProgress,
   Trend,
+  UnexploredGenre,
   YearCount,
 } from '~/domain/analytics/types'
 import { BookFormatEnum, GenreEnum } from '~/domain/book/infrastructure/graphql/enums'
@@ -223,6 +228,145 @@ export const DashboardType = builder.objectRef<Dashboard>('Dashboard').implement
     }),
     libraryIsEmpty: t.exposeBoolean('libraryIsEmpty', {
       description: 'True when the reader has not catalogued a single book yet.',
+    }),
+  }),
+})
+
+const GenreShareType = builder.objectRef<GenreShare>('GenreShare').implement({
+  description: 'How many finished books carry one genre.',
+  fields: (t) => ({
+    genre: t.field({ type: GenreEnum, resolve: (share) => share.genre }),
+    count: t.exposeInt('count'),
+  }),
+})
+
+const FormatShareType = builder.objectRef<FormatShare>('FormatShare').implement({
+  description: 'How many finished books came in one format, and the genre it carries most.',
+  fields: (t) => ({
+    format: t.field({ type: BookFormatEnum, resolve: (share) => share.format }),
+    count: t.exposeInt('count'),
+    topGenre: t.field({
+      type: GenreEnum,
+      nullable: true,
+      description: 'Null when no book of the format has a genre other than OTHER.',
+      resolve: (share) => share.topGenre ?? null,
+    }),
+  }),
+})
+
+const GenreTasteType = builder.objectRef<GenreTaste>('GenreTaste').implement({
+  description:
+    'One genre placed on the taste map: how many of its books the reader finished ' +
+    'against how they rated them. Only genres with three rated books are placed.',
+  fields: (t) => ({
+    genre: t.field({ type: GenreEnum, resolve: (taste) => taste.genre }),
+    readCount: t.exposeInt('readCount', { description: 'Finished books, rated or not.' }),
+    averageRating: t.exposeFloat('averageRating', {
+      description: 'The average of the rated ones, to one decimal.',
+    }),
+  }),
+})
+
+const LongestGenreType = builder
+  .objectRef<NonNullable<GenreInsights['longest']>>('LongestGenre')
+  .implement({
+    description: 'The genre whose finished books run longest.',
+    fields: (t) => ({
+      genre: t.field({ type: GenreEnum, resolve: (record) => record.genre }),
+      averagePages: t.exposeInt('averagePages'),
+    }),
+  })
+
+const FastestGenreType = builder
+  .objectRef<NonNullable<GenreInsights['fastest']>>('FastestGenre')
+  .implement({
+    description:
+      'The genre read fastest, in days from the first page to the last, a book read ' +
+      'within the day counting one.',
+    fields: (t) => ({
+      genre: t.field({ type: GenreEnum, resolve: (record) => record.genre }),
+      averageDays: t.exposeInt('averageDays'),
+    }),
+  })
+
+const MostDroppedGenreType = builder
+  .objectRef<NonNullable<GenreInsights['mostDropped']>>('MostDroppedGenre')
+  .implement({
+    description: 'The genre given up most often, out of the books of it ever opened.',
+    fields: (t) => ({
+      genre: t.field({ type: GenreEnum, resolve: (record) => record.genre }),
+      droppedCount: t.exposeInt('droppedCount'),
+      startedCount: t.exposeInt('startedCount', {
+        description: 'Books of the genre read, being read or dropped.',
+      }),
+    }),
+  })
+
+const UnexploredGenreType = builder.objectRef<UnexploredGenre>('UnexploredGenre').implement({
+  description: 'A genre the reader never finished a book of.',
+  fields: (t) => ({
+    genre: t.field({ type: GenreEnum, resolve: (entry) => entry.genre }),
+    pileCount: t.exposeInt('pileCount', {
+      description: 'Books of the genre waiting on the pile.',
+    }),
+  }),
+})
+
+export const GenreInsightsType = builder.objectRef<GenreInsights>('GenreInsights').implement({
+  description:
+    "What the reader's books say about their tastes, genre by genre. A record or a " +
+    'gem with too few books behind it is null rather than drawn from luck.',
+  fields: (t) => ({
+    readCount: t.exposeInt('readCount', {
+      description: 'Every book finished, with or without a genre.',
+    }),
+    shares: t.field({
+      type: [GenreShareType],
+      description: 'The genres read, the most read first, OTHER and books without one aside.',
+      resolve: (insights) => insights.shares,
+    }),
+    formats: t.field({
+      type: [FormatShareType],
+      description: 'The formats read, the most read first.',
+      resolve: (insights) => insights.formats,
+    }),
+    tastes: t.field({
+      type: [GenreTasteType],
+      description: 'The genres with three rated books, the most read first.',
+      resolve: (insights) => insights.tastes,
+    }),
+    averageRating: t.float({
+      nullable: true,
+      description: 'The average of every rated finished book: what splits the taste map.',
+      resolve: (insights) => insights.averageRating ?? null,
+    }),
+    hiddenGem: t.field({
+      type: GenreEnum,
+      nullable: true,
+      description:
+        "A genre read less than the median and rated half a star above the reader's " +
+        'average, the best rated if several.',
+      resolve: (insights) => insights.hiddenGem ?? null,
+    }),
+    longest: t.field({
+      type: LongestGenreType,
+      nullable: true,
+      resolve: (insights) => insights.longest ?? null,
+    }),
+    fastest: t.field({
+      type: FastestGenreType,
+      nullable: true,
+      resolve: (insights) => insights.fastest ?? null,
+    }),
+    mostDropped: t.field({
+      type: MostDroppedGenreType,
+      nullable: true,
+      resolve: (insights) => insights.mostDropped ?? null,
+    }),
+    unexplored: t.field({
+      type: [UnexploredGenreType],
+      description: 'The genres never finished, OTHER aside, those waiting on the pile first.',
+      resolve: (insights) => insights.unexplored,
     }),
   }),
 })

@@ -105,3 +105,14 @@ private struct FlowLayout: Layout {
         TagList(tags: ["Fantasy", "Roman initiatique", "Aventure", "Magie", "Musique"])
     }
 }
+
+/// Any views laid out as pills are, wrapping onto as many lines as they need,
+/// for a list whose pills do not all look alike.
+struct PillFlow<Content: View>: View {
+    var spacing: CGFloat = 6
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        FlowLayout(spacing: spacing) { content }
+    }
+}

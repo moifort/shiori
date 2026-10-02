@@ -1018,6 +1018,14 @@ type Entitlement {
 scalar Eur
 
 """
+The genre read fastest, in days from the first page to the last, a book read within the day counting one.
+"""
+type FastestGenre {
+  averageDays: Int!
+  genre: Genre!
+}
+
+"""
 An author the reader holds at least one book of. Derived from the books on every request, never stored.
 """
 type FollowedAuthor {
@@ -1143,6 +1151,17 @@ type FollowedSeriesPage {
   """Whether more sagas follow this page"""
   hasMore: Boolean!
   items: [FollowedSeries!]!
+}
+
+"""
+How many finished books came in one format, and the genre it carries most.
+"""
+type FormatShare {
+  count: Int!
+  format: BookFormat!
+
+  """Null when no book of the format has a genre other than OTHER."""
+  topGenre: Genre
 }
 
 """Somebody whose library the reader can see, and who can see theirs."""
@@ -1576,6 +1595,59 @@ type GenreCount {
 }
 
 """
+What the reader's books say about their tastes, genre by genre. A record or a gem with too few books behind it is null rather than drawn from luck.
+"""
+type GenreInsights {
+  """The average of every rated finished book: what splits the taste map."""
+  averageRating: Float
+  fastest: FastestGenre
+
+  """The formats read, the most read first."""
+  formats: [FormatShare!]!
+
+  """
+  A genre read less than the median and rated half a star above the reader's average, the best rated if several.
+  """
+  hiddenGem: Genre
+  longest: LongestGenre
+  mostDropped: MostDroppedGenre
+
+  """Every book finished, with or without a genre."""
+  readCount: Int!
+
+  """
+  The genres read, the most read first, OTHER and books without one aside.
+  """
+  shares: [GenreShare!]!
+
+  """The genres with three rated books, the most read first."""
+  tastes: [GenreTaste!]!
+
+  """
+  The genres never finished, OTHER aside, those waiting on the pile first.
+  """
+  unexplored: [UnexploredGenre!]!
+}
+
+"""How many finished books carry one genre."""
+type GenreShare {
+  count: Int!
+  genre: Genre!
+}
+
+"""
+One genre placed on the taste map: how many of its books the reader finished against how they rated them. Only genres with three rated books are placed.
+"""
+type GenreTaste {
+  """The average of the rated ones, to one decimal."""
+  averageRating: Float!
+  genre: Genre!
+
+  """Finished books, rated or not."""
+  readCount: Int!
+}
+
+"""
 One audiobook of the Audible library, as it would be catalogued.
 
 A proposal, not a record — the same contract `scanBook` has. Nothing is saved until `importAudibleBooks` is called with the ASINs the reader ticked. Every imported book is catalogued as an `AUDIOBOOK`.
@@ -1843,6 +1915,12 @@ An audiobook running time in whole minutes, 1 to 60000. Absent when unknown. Exa
 """
 scalar ListeningMinutes
 
+"""The genre whose finished books run longest."""
+type LongestGenre {
+  averagePages: Int!
+  genre: Genre!
+}
+
 """An author as the friends’ hearts name them."""
 type LovedAuthor {
   """What their page is opened on."""
@@ -1908,6 +1986,15 @@ type MonthPages {
   """1 for January, 12 for December."""
   month: Int!
   pages: Int!
+}
+
+"""The genre given up most often, out of the books of it ever opened."""
+type MostDroppedGenre {
+  droppedCount: Int!
+  genre: Genre!
+
+  """Books of the genre read, being read or dropped."""
+  startedCount: Int!
 }
 
 type Mutation {
@@ -2753,6 +2840,21 @@ type Query {
   friends: [Friend!]!
 
   """
+  What the signed-in reader's books say about their tastes, genre by genre: the page the dashboard's genre card opens. Worked out from the library on each read; a figure with fewer than three books behind it is left out.
+  
+  ```graphql
+  query {
+    genreInsights {
+      shares { genre count }
+      tastes { genre readCount averageRating }
+      hiddenGem
+    }
+  }
+  ```
+  """
+  genreInsights: GenreInsights!
+
+  """
   The reader's Kindle connection, or null when there is none.
   
   A sign-in left half-finished reads as null: the screen must offer to connect, not claim a library no credentials back.
@@ -3384,6 +3486,14 @@ type Trend {
 
   """Null when last year has nothing to compare against: draw no arrow."""
   previous: Int
+}
+
+"""A genre the reader never finished a book of."""
+type UnexploredGenre {
+  genre: Genre!
+
+  """Books of the genre waiting on the pile."""
+  pileCount: Int!
 }
 
 """

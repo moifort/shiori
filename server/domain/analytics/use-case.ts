@@ -1,6 +1,7 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
 import {
   dashboardOf,
+  genreInsightsOf,
   localDateOf,
   sharedShelfTodayOf,
   VIEW_VERSION,
@@ -13,6 +14,7 @@ import type {
   BookCard,
   Dashboard,
   DashboardBook,
+  GenreInsights,
   SharedShelfToday,
   TimeZone as TimeZoneValue,
 } from '~/domain/analytics/types'
@@ -47,6 +49,12 @@ export namespace AnalyticsUseCase {
         : await rebuild(userId, timeZone, now)
     return withCovers(dashboardOf(view, localDateOf(now, timeZone)))
   }
+
+  /** What the reader's genres say about their tastes. One read of the library,
+   *  nothing stored: the page is opened rarely, and a stored copy would be
+   *  marked stale by every write for nobody to read. */
+  export const genreInsights = async (userId: UserId): Promise<GenreInsights> =>
+    genreInsightsOf(await BookQuery.all(userId))
 
   /** Run a write the dashboard reflects, with the view's stale flag in the same
    *  batch. `wrote` tells an outcome that changed nothing (a book not found, an

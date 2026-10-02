@@ -36,6 +36,8 @@ struct HomeView: View {
     @State private var openAwaited: AwaitedEdition?
     /// The friend's favourite opened, on its read-only page.
     @State private var openFavorite: FriendFavorite?
+    /// The genre page, pushed from the genre card.
+    @State private var showGenres = false
 
     var body: some View {
         NavigationStack {
@@ -56,6 +58,7 @@ struct HomeView: View {
                 // The first time only: after that, writes made anywhere
                 // arrive through the change notice below.
                 .task { await viewModel.loadOnAppear() }
+                .navigationDestination(isPresented: $showGenres) { GenreInsightsView() }
         }
         // And every time a write lands anywhere: the figures behind this screen
         // are rebuilt by the server on each one, and the tab may be showing.
@@ -143,7 +146,7 @@ struct HomeView: View {
                     onReadTapped: { onShowLibrary(LibraryRequest(status: .read)) },
                     onFavoritesTapped: { onShowLibrary(LibraryRequest(mode: .favorites)) },
                     onDroppedTapped: { onShowLibrary(LibraryRequest(status: .dropped)) },
-                    onGenresTapped: { onShowLibrary(LibraryRequest()) },
+                    onGenresTapped: { showGenres = true },
                     onScan: onScan,
                     onBookTapped: { selectedBook = $0 },
                     onSeriesOpened: { openSeries = OpenedSeries(id: $0) },

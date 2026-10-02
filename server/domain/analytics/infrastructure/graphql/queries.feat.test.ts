@@ -149,3 +149,58 @@ describe('the dashboard through the API', () => {
     }
   })
 })
+
+describe('the genre insights through the API', () => {
+  test('serves the genres, formats and taste map of the books read', async () => {
+    for (const rating of [4, 5, 5]) {
+      const id = await addBook('title: "Fondation", status: READ, genre: SCIENCE_FICTION')
+      await execute(`mutation { rateBook(id: "${id}", rating: ${rating}) { id } }`)
+    }
+    await addBook('title: "Dune", status: READ, genre: SCIENCE_FICTION, format: AUDIOBOOK')
+    await addBook('title: "Les Misérables", status: TO_READ, genre: HISTORICAL_FICTION')
+
+    const result = await execute(`{
+      genreInsights {
+        readCount
+        shares { genre count }
+        formats { format count topGenre }
+        tastes { genre readCount averageRating }
+        averageRating
+        hiddenGem
+        longest { genre averagePages }
+        unexplored { genre pileCount }
+      }
+    }`)
+
+    expect(result.errors).toBeUndefined()
+    const insights = result.data?.genreInsights as Record<string, unknown> & {
+      unexplored: { genre: string; pileCount: number }[]
+    }
+    expect({ ...insights, unexplored: insights.unexplored[0] }).toEqual({
+      readCount: 4,
+      shares: [{ genre: 'SCIENCE_FICTION', count: 4 }],
+      formats: [
+        { format: 'BOOK', count: 3, topGenre: 'SCIENCE_FICTION' },
+        { format: 'AUDIOBOOK', count: 1, topGenre: 'SCIENCE_FICTION' },
+      ],
+      tastes: [{ genre: 'SCIENCE_FICTION', readCount: 4, averageRating: 4.7 }],
+      averageRating: 4.7,
+      hiddenGem: null,
+      longest: null,
+      unexplored: { genre: 'HISTORICAL_FICTION', pileCount: 1 },
+    })
+  })
+
+  // Nothing stored: the page reads the library once, whatever its size.
+  test('reads the library in one query and writes nothing', async () => {
+    await addBook('title: "Fondation", status: READ, genre: SCIENCE_FICTION')
+    const writes = fake.batches.length
+    const queries = fake.queryReads
+
+    const result = await execute('{ genreInsights { readCount } }')
+
+    expect(result.errors).toBeUndefined()
+    expect(fake.queryReads - queries).toBe(1)
+    expect(fake.batches.length).toBe(writes)
+  })
+})

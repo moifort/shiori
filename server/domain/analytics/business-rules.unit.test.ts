@@ -5,9 +5,12 @@ import {
   booksPerYearOf,
   booksReadTrendOf,
   dashboardOf,
+  genreInsightsOf,
   genresOf,
+  hiddenGemOf,
   hoursPerMonthOf,
   localDateOf,
+  medianOf,
   monthsToClearPileOf,
   pagesPerMonthOf,
   readPerYearOf,
@@ -719,5 +722,199 @@ describe('the reading challenge', () => {
 
     expect(sharedShelfTodayOf(shelf, day('2025-09-27')).readThisYear).toBe(1)
     expect(sharedShelfTodayOf(shelf, day('2026-01-01')).readThisYear).toBe(0)
+  })
+})
+
+describe('the genre insights', () => {
+  let counter = 0
+  const book = (overrides: Partial<Book>): Book => ({
+    id: BookId(`book-${++counter}`),
+    userId: 'reader-1' as UserId,
+    title: BookTitle(`Book ${counter}`),
+    authors: [],
+    format: 'book',
+    subgenres: [],
+    narrators: [],
+    status: 'read',
+    hidden: false,
+    addedAt: new Date('2025-01-01T10:00:00.000Z'),
+    ...overrides,
+  })
+  const many = (count: number, overrides: Partial<Book>) =>
+    Array.from({ length: count }, () => book(overrides))
+  const rated = (genre: Genre, ratings: number[]) =>
+    ratings.map((rating) => book({ genre, rating: StarRating(rating) }))
+
+  test('ranks the genres read, leaving out "other" and books without a genre', () => {
+    const insights = genreInsightsOf([
+      ...many(3, { genre: 'fantasy' }),
+      ...many(2, { genre: 'crime' }),
+      ...many(2, { genre: 'other' }),
+      book({}),
+      book({ genre: 'horror', status: 'to-read' }),
+    ])
+
+    expect(insights.readCount).toBe(8)
+    expect(insights.shares).toEqual([
+      { genre: 'fantasy', count: 3 },
+      { genre: 'crime', count: 2 },
+    ])
+  })
+
+  test('gives each format the genre it carries most', () => {
+    const insights = genreInsightsOf([
+      ...many(2, { format: 'audiobook', genre: 'fantasy' }),
+      book({ format: 'audiobook', genre: 'crime' }),
+      book({ format: 'manga' }),
+      ...many(4, { format: 'book', genre: 'crime' }),
+    ])
+
+    expect(insights.formats).toEqual([
+      { format: 'book', count: 4, topGenre: 'crime' },
+      { format: 'audiobook', count: 3, topGenre: 'fantasy' },
+      { format: 'manga', count: 1, topGenre: undefined },
+    ])
+  })
+
+  test('places on the taste map only the genres with three rated books', () => {
+    const insights = genreInsightsOf([
+      ...rated('fantasy', [4, 4, 5]),
+      book({ genre: 'fantasy' }),
+      ...rated('crime', [5, 5]),
+    ])
+
+    expect(insights.tastes).toEqual([{ genre: 'fantasy', readCount: 4, averageRating: 4.3 }])
+    expect(insights.averageRating).toBe(4.6)
+  })
+
+  test('points out a genre read little and liked well above the average', () => {
+    const insights = genreInsightsOf([
+      ...rated('fantasy', [4, 4, 4, 4, 4, 4, 4, 4]),
+      ...rated('crime', [3, 4, 3, 4, 3, 4]),
+      ...rated('historical-fiction', [5, 5, 5]),
+    ])
+
+    expect(insights.hiddenGem).toBe('historical-fiction')
+  })
+
+  test('points out no gem rated too close to the average, or among too few genres', () => {
+    const taste = (genre: Genre, readCount: number, averageRating: number) => ({
+      genre,
+      readCount,
+      averageRating,
+    })
+    const tastes = [taste('fantasy', 8, 4), taste('crime', 6, 3.5), taste('romance', 3, 4.3)]
+
+    expect(hiddenGemOf(tastes, 4)).toBeUndefined()
+    expect(hiddenGemOf(tastes.slice(1), 3)).toBeUndefined()
+    expect(hiddenGemOf(tastes, undefined)).toBeUndefined()
+  })
+
+  test('breaks a tie between gems on the fewer books read', () => {
+    const taste = (genre: Genre, readCount: number, averageRating: number) => ({
+      genre,
+      readCount,
+      averageRating,
+    })
+
+    expect(
+      hiddenGemOf(
+        [
+          taste('fantasy', 9, 3.5),
+          taste('crime', 8, 3.5),
+          taste('romance', 4, 5),
+          taste('poetry', 3, 5),
+        ],
+        4,
+      ),
+    ).toBe('poetry')
+  })
+
+  test('crowns the longest genre on its average pages, from three books on', () => {
+    const insights = genreInsightsOf([
+      ...[600, 700, 650].map((pages) => book({ genre: 'fantasy', pageCount: PageCount(pages) })),
+      ...[900, 900].map((pages) => book({ genre: 'history', pageCount: PageCount(pages) })),
+      ...[300, 320, 280].map((pages) => book({ genre: 'crime', pageCount: PageCount(pages) })),
+    ])
+
+    expect(insights.longest).toEqual({ genre: 'fantasy', averagePages: 650 })
+  })
+
+  test('crowns the fastest genre, a book read within the day counting one day', () => {
+    const read = (genre: Genre, days: number) =>
+      book({
+        genre,
+        startedAt: new Date('2026-03-01T08:00:00.000Z'),
+        finishedAt: new Date(Date.parse('2026-03-01T08:00:00.000Z') + days * 86_400_000),
+      })
+    const insights = genreInsightsOf([
+      read('thriller', 0),
+      read('thriller', 2),
+      read('thriller', 3),
+      read('fantasy', 20),
+      read('fantasy', 30),
+      read('fantasy', 25),
+      book({ genre: 'crime', startedAt: new Date('2026-03-01') }),
+    ])
+
+    expect(insights.fastest).toEqual({ genre: 'thriller', averageDays: 2 })
+  })
+
+  test('holds no record without three books behind it', () => {
+    const insights = genreInsightsOf([
+      book({ genre: 'fantasy', pageCount: PageCount(800) }),
+      book({ genre: 'essay', status: 'dropped' }),
+    ])
+
+    expect(insights.longest).toBeUndefined()
+    expect(insights.fastest).toBeUndefined()
+    expect(insights.mostDropped).toBeUndefined()
+    expect(insights.tastes).toEqual([])
+    expect(insights.hiddenGem).toBeUndefined()
+  })
+
+  test('finds the genre given up most often, out of the books of it opened', () => {
+    const insights = genreInsightsOf([
+      ...many(3, { genre: 'essay', status: 'dropped' }),
+      ...many(3, { genre: 'essay' }),
+      book({ genre: 'essay', status: 'reading' }),
+      ...many(5, { genre: 'essay', status: 'to-read' }),
+      ...many(2, { genre: 'crime', status: 'dropped' }),
+      ...many(2, { genre: 'crime' }),
+      ...many(4, { genre: 'fantasy' }),
+    ])
+
+    expect(insights.mostDropped).toEqual({ genre: 'crime', droppedCount: 2, startedCount: 4 })
+  })
+
+  test('breaks an equal drop rate on the more books dropped', () => {
+    const insights = genreInsightsOf([
+      ...many(2, { genre: 'crime', status: 'dropped' }),
+      ...many(2, { genre: 'crime' }),
+      ...many(3, { genre: 'essay', status: 'dropped' }),
+      ...many(3, { genre: 'essay' }),
+    ])
+
+    expect(insights.mostDropped).toEqual({ genre: 'essay', droppedCount: 3, startedCount: 6 })
+  })
+
+  test('lists the genres never finished, those waiting on the pile first', () => {
+    const insights = genreInsightsOf([
+      book({ genre: 'fantasy' }),
+      book({ genre: 'travel', status: 'to-read' }),
+      book({ genre: 'poetry', status: 'dropped' }),
+    ])
+    const genres = insights.unexplored.map(({ genre }) => genre)
+
+    expect(insights.unexplored[0]).toEqual({ genre: 'travel', pileCount: 1 })
+    expect(genres).toContain('poetry')
+    expect(genres).not.toContain('fantasy')
+    expect(genres).not.toContain('other')
+    expect(genres).toHaveLength(20)
+  })
+
+  test('takes the median of an odd and of an even count of values', () => {
+    expect(medianOf([5, 1, 3])).toBe(3)
+    expect(medianOf([8, 2, 4, 6])).toBe(5)
   })
 })

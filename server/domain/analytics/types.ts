@@ -213,3 +213,34 @@ export type Dashboard<Card = DashboardBook> = {
   droppedCount: number
   libraryIsEmpty: boolean
 }
+
+/** What the reader's books say about their tastes, genre by genre: the page the
+ *  dashboard's genre card opens. Worked out from the library on each read rather
+ *  than stored — the page is opened far less often than the dashboard, and a
+ *  materialized copy would go stale with every write for nobody. */
+export type GenreInsights = {
+  /** Every book finished, with or without a genre. */
+  readCount: number
+  /** The genres of the finished books, the most read first. `other` and books
+   *  without a genre are left out: they say nothing of a taste. */
+  shares: GenreShare[]
+  /** The formats of the finished books, the most read first. */
+  formats: FormatShare[]
+  /** The genres with enough rated books to be placed on the taste map. */
+  tastes: GenreTaste[]
+  /** The average of every rated finished book: what splits the taste map. */
+  averageRating?: number
+  /** The genre read little and liked well above the reader's average. */
+  hiddenGem?: Genre
+  longest?: { genre: Genre; averagePages: number }
+  fastest?: { genre: Genre; averageDays: number }
+  mostDropped?: { genre: Genre; droppedCount: number; startedCount: number }
+  /** The genres of the closed list never finished, `other` aside, those with
+   *  books waiting on the pile first. */
+  unexplored: UnexploredGenre[]
+}
+
+export type GenreShare = { genre: Genre; count: number }
+export type FormatShare = { format: BookFormat; count: number; topGenre?: Genre }
+export type GenreTaste = { genre: Genre; readCount: number; averageRating: number }
+export type UnexploredGenre = { genre: Genre; pileCount: number }

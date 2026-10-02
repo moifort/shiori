@@ -41,6 +41,32 @@ enum HomeAPI {
             libraryIsEmpty: dashboard.libraryIsEmpty
         )
     }
+
+    static func genreInsights() async throws -> GenreInsights {
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.GenreInsightsQuery()
+        )
+        let insights = data.genreInsights
+        return GenreInsights(
+            readCount: insights.readCount,
+            shares: insights.shares.map { .init(genre: $0.genre.asDomain, count: $0.count) },
+            formats: insights.formats.map {
+                .init(format: $0.format.asDomain, count: $0.count, topGenre: $0.topGenre?.asDomain)
+            },
+            tastes: insights.tastes.map {
+                .init(genre: $0.genre.asDomain, readCount: $0.readCount, averageRating: $0.averageRating)
+            },
+            averageRating: insights.averageRating,
+            hiddenGem: insights.hiddenGem?.asDomain,
+            longest: insights.longest.map { .init(genre: $0.genre.asDomain, averagePages: $0.averagePages) },
+            fastest: insights.fastest.map { .init(genre: $0.genre.asDomain, averageDays: $0.averageDays) },
+            mostDropped: insights.mostDropped.map {
+                .init(genre: $0.genre.asDomain, droppedCount: $0.droppedCount, startedCount: $0.startedCount)
+            },
+            unexplored: insights.unexplored.map { .init(genre: $0.genre.asDomain, pileCount: $0.pileCount) }
+        )
+    }
 }
 
 private extension ShioriGraphQL.DashboardBookCard {
