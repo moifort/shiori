@@ -36,7 +36,7 @@ struct HomeView: View {
     @State private var openAwaited: AwaitedEdition?
     /// The friend's favourite opened, on its read-only page.
     @State private var openFavorite: FriendFavorite?
-    /// The genre page, pushed from the genre card.
+    /// The genre page, opened from the genre card as a sheet.
     @State private var showGenres = false
 
     var body: some View {
@@ -58,7 +58,6 @@ struct HomeView: View {
                 // The first time only: after that, writes made anywhere
                 // arrive through the change notice below.
                 .task { await viewModel.loadOnAppear() }
-                .navigationDestination(isPresented: $showGenres) { GenreInsightsView() }
         }
         // And every time a write lands anywhere: the figures behind this screen
         // are rebuilt by the server on each one, and the tab may be showing.
@@ -77,6 +76,9 @@ struct HomeView: View {
             Button("OK", role: .cancel) { dismissSyncError() }
         } message: {
             Text("\(audibleSync.errorMessage ?? kindleSync.errorMessage ?? "") Vous pouvez relancer la synchronisation depuis les réglages.")
+        }
+        .sheet(isPresented: $showGenres) {
+            NavigationStack { GenreInsightsView() }
         }
         .sheet(item: $selectedBook) { book in
             // The book's own writes post the change notice this screen

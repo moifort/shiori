@@ -9,6 +9,8 @@ struct GenreInsightsPage: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
+                GenreRadar(shares: insights.shares)
+
                 GenreSignatureCard(readCount: insights.readCount, shares: insights.shares)
 
                 if !insights.formats.isEmpty {
@@ -40,7 +42,7 @@ struct GenreInsightsPage: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Genres lus")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

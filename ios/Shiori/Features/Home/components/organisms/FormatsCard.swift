@@ -33,11 +33,11 @@ struct FormatsCard: View {
     }
 
     private func row(_ share: GenreInsights.FormatShare) -> some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 8) {
             Image(systemName: share.format.symbol)
                 .font(.body)
                 .foregroundStyle(share.format.chartColor)
-                .frame(width: 28)
+                .frame(width: 22)
             VStack(alignment: .leading, spacing: 2) {
                 Text(share.format.label)
                     .font(.subheadline.weight(.semibold))
@@ -52,7 +52,7 @@ struct FormatsCard: View {
                 Text("\(share.count)")
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
-                Text("\(percent(share)) %")
+                Text("\(percent(share))%")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()

@@ -61,9 +61,6 @@ struct GenreRecordsCard: View {
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
-            genre.image
-                .font(.subheadline)
-                .foregroundStyle(genre.tint)
         }
     }
 }

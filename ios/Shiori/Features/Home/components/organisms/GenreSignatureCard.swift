@@ -1,22 +1,15 @@
 import SwiftUI
 
-/// The shape of a reader's tastes: the genre they read most, spelled out, and a
-/// radar of the few that follow, drawn against the first.
+/// The genre the reader reads most, spelled out with its share, and the two
+/// that follow.
 struct GenreSignatureCard: View {
     let readCount: Int
     let shares: [GenreInsights.Share]
-
-    /// A radar needs three axes to enclose anything.
-    private var axes: [GenreInsights.Share] { Array(shares.prefix(6)) }
 
     var body: some View {
         WidgetCard(title: "Votre signature") {
             if let first = shares.first {
                 headline(first)
-                if axes.count >= 3 {
-                    GenreRadar(shares: axes, tint: first.genre.tint)
-                        .frame(height: 250)
-                }
                 HStack(spacing: 6) {
                     Pill(text: String(localized: "\(readCount) lus"))
                     Pill(text: String(localized: "\(shares.count) genres sur \(BookGenre.allCases.count - 1)"))
@@ -34,7 +27,7 @@ struct GenreSignatureCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(first.genre.label)
                     .font(.title2.weight(.bold))
-                Text("\(percent(first)) % de vos lectures")
+                Text("\(percent(first))% de vos lectures")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 if shares.count > 1 {
@@ -57,41 +50,95 @@ struct GenreSignatureCard: View {
     }
 }
 
-/// One axis per genre, its length the genre's count against the most read.
-private struct GenreRadar: View {
+/// The shape of a reader's tastes, drawn straight on the page: one axis per
+/// genre among the six most read, its length the genre's count against the
+/// first. Glassy rather than plotted — a tinted pane over faint rings, the
+/// genres named in glass capsules — because it is read as a shape, not
+/// measured. A radar needs three axes to enclose anything; fewer draw nothing.
+struct GenreRadar: View {
     let shares: [GenreInsights.Share]
-    let tint: Color
+
+    private var axes: [GenreInsights.Share] { Array(shares.prefix(6)) }
 
     var body: some View {
-        let top = Double(shares.map(\.count).max() ?? 1)
-        let values = shares.map { Double($0.count) / top }
-        GeometryReader { proxy in
+        if axes.count >= 3, let first = axes.first {
+            chart(tint: first.genre.tint)
+                .frame(height: 320)
+                .accessibilityElement(children: .combine)
+        }
+    }
+
+    private func chart(tint: Color) -> some View {
+        let top = Double(axes.map(\.count).max() ?? 1)
+        let values = axes.map { Double($0.count) / top }
+        return GeometryReader { proxy in
             let center = CGPoint(x: proxy.size.width / 2, y: proxy.size.height / 2)
-            let radius = min(proxy.size.width, proxy.size.height) / 2 - 40
+            let radius = min(proxy.size.width, proxy.size.height) / 2 - 48
             ZStack {
-                RadarPolygon(values: Array(repeating: 1, count: shares.count), radius: radius)
-                    .stroke(.quaternary, lineWidth: 1)
-                RadarPolygon(values: Array(repeating: 0.5, count: shares.count), radius: radius)
-                    .stroke(.quaternary, lineWidth: 1)
+                Circle()
+                    .fill(RadialGradient(
+                        colors: [tint.opacity(0.14), tint.opacity(0.02)],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: radius
+                    ))
+                    .frame(width: radius * 2, height: radius * 2)
+                    .position(center)
+                ForEach([1.0, 2.0 / 3, 1.0 / 3], id: \.self) { ring in
+                    Circle()
+                        .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+                        .frame(width: radius * 2 * ring, height: radius * 2 * ring)
+                        .position(center)
+                }
+                RadarSpokes(count: axes.count, radius: radius)
+                    .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
                 RadarPolygon(values: values, radius: radius)
-                    .fill(tint.opacity(0.22))
+                    .fill(LinearGradient(
+                        colors: [tint.opacity(0.55), tint.opacity(0.18)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ))
+                    .shadow(color: tint.opacity(0.35), radius: 14)
                 RadarPolygon(values: values, radius: radius)
-                    .stroke(tint, style: StrokeStyle(lineWidth: 2, lineJoin: .round))
-                ForEach(Array(shares.enumerated()), id: \.element.id) { index, share in
-                    VStack(spacing: 1) {
-                        share.genre.image
-                            .font(.footnote)
-                            .foregroundStyle(share.genre.tint)
+                    .stroke(tint, style: StrokeStyle(lineWidth: 2.5, lineJoin: .round))
+                ForEach(Array(values.enumerated()), id: \.offset) { index, value in
+                    Circle()
+                        .fill(.white)
+                        .overlay(Circle().stroke(tint, lineWidth: 2))
+                        .frame(width: 9, height: 9)
+                        .position(RadarPolygon.point(index, of: values.count, at: radius * value, around: center))
+                }
+                ForEach(Array(axes.enumerated()), id: \.element.id) { index, share in
+                    Label {
                         Text(share.genre.label)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                    } icon: {
+                        share.genre.image.foregroundStyle(share.genre.tint)
                     }
+                    .font(.caption.weight(.medium))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .glassEffect(.regular, in: .capsule)
                     .fixedSize()
-                    .position(RadarPolygon.point(index, of: shares.count, at: radius + 30, around: center))
+                    .position(RadarPolygon.point(index, of: axes.count, at: radius + 26, around: center))
                 }
             }
         }
-        .accessibilityElement(children: .combine)
+    }
+}
+
+/// One line from the centre out to each axis.
+private struct RadarSpokes: Shape {
+    let count: Int
+    let radius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        var path = Path()
+        for index in 0..<count {
+            path.move(to: center)
+            path.addLine(to: RadarPolygon.point(index, of: count, at: radius, around: center))
+        }
+        return path
     }
 }
 
@@ -118,7 +165,10 @@ private struct RadarPolygon: Shape {
 }
 
 #Preview {
-    GenreSignatureCard(readCount: GenreInsights.preview.readCount, shares: GenreInsights.preview.shares)
-        .padding()
-        .background(Color(.systemGroupedBackground))
+    VStack(spacing: 16) {
+        GenreRadar(shares: GenreInsights.preview.shares)
+        GenreSignatureCard(readCount: GenreInsights.preview.readCount, shares: GenreInsights.preview.shares)
+    }
+    .padding()
+    .background(Color(.systemGroupedBackground))
 }
