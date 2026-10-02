@@ -1,0 +1,25 @@
+Shiori, c'est votre bibliothèque dans votre poche.
+
+Photographiez la couverture d'un livre : Shiori le reconnaît et remplit sa fiche tout seul — titre, auteur, éditeur, résumé, genre et série. Romans, BD, mangas, comics ou livres audio : tout trouve sa place.
+
+FONCTIONNALITÉS
+• Scan de couverture : une photo suffit pour cataloguer un livre
+• Séries tome par tome : vos sagas regroupées, les tomes qui vous manquent et ceux à paraître
+• Nouveautés : Shiori surveille vos séries et vous prévient à la sortie du prochain tome
+• À lire, en cours, lu ou abandonné, avec vos étoiles, vos favoris et vos notes
+• Tableau de bord : livres lus par an, pages lues et heures d'écoute, genres préférés, pile à lire
+• Kindle et Audible : importez votre bibliothèque existante et gardez-la synchronisée
+• Papier et numérique réunis : un livre que vous avez en poche et sur liseuse reste une seule fiche
+
+ENTRE AMIS
+Invitez vos amis : chacun voit la bibliothèque de l'autre, ses coups de cœur et ses lectures du moment. Piochez une idée chez eux en un geste, et lancez-vous un défi lecture pour l'année. Vos notes restent privées, et un livre masqué n'est jamais partagé.
+
+SHIORI PREMIUM
+Shiori est gratuit, avec des scans offerts chaque mois. Premium débloque les scans illimités, le scan d'une étagère entière en une photo et le catalogue complet de vos séries, tomes à paraître compris.
+• Premium mensuel : 1,99 € par mois
+• Premium annuel : 17,99 € par an, premier mois offert
+
+L'abonnement se renouvelle automatiquement sauf résiliation au moins 24 heures avant la fin de la période en cours, depuis les réglages de votre compte App Store.
+
+Conditions d'utilisation : https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Confidentialité : https://moifort.github.io/shiori/

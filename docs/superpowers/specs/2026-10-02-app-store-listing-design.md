@@ -53,13 +53,15 @@ progress — with statuses, ratings, notes and reading dates spread over two yea
 with an announced volume, and two friends with their recent hearts.
 
 The dashboard is **computed from that list** (books per year, pages per month, genres, series
-progress, averages), never typed by hand, so the home screen cannot contradict the library. A
-unit test pins the derived figures.
+progress, averages), never typed by hand, so the home screen cannot contradict the library by
+construction. The app has no unit-test target, and one is not added for this.
 
 ### Covers
 
 `scripts/showcase-covers.ts`, modelled on `launch-covers.ts`, downloads each fixture's cover
-once from Open Library into `screenshots/covers/`, committed. The fixtures name them by `file://`
+once into `screenshots/covers/`, committed. The source is the iTunes Search API, which serves
+the French editions' artwork without a key or a quota: Open Library knows few recent French
+editions, and Google Books refuses anonymous callers once its daily quota is spent. The fixtures name them by `file://`
 URL built from `#filePath`: the simulator reads the Mac's disk, and the app bundle gains nothing.
 
 ### The paywall
@@ -67,12 +69,15 @@ URL built from `#filePath`: the simulator reads the Mac's disk, and the app bund
 StoreKit does not reliably hand products to an app launched by a UI test, so `PremiumSheet` is
 split atomic-design style: `PremiumPage` takes plain offers (name, price, period, trial) and the
 sheet maps StoreKit's `Product` onto them. The showcase hands the page 1,99 € a month and
-17,99 € a year with a one-week trial. This capture is for App Review only.
+17,99 € a year with a one-month trial. This capture is for App Review only.
 
 ### The scan
 
 The capture is the review of a scanned cover (`ScanReviewPage`) fed a showcase result: the
-simulator has no camera, and an empty viewfinder sells nothing.
+simulator has no camera, and an empty viewfinder sells nothing. The test reaches it the way a
+reader does, through the add sheet's last photo, which the script puts in the simulator's
+library (`simctl addmedia`, after opening Photos once: on a fresh simulator it otherwise waits
+forever).
 
 ### Running it
 
@@ -80,9 +85,9 @@ simulator has no camera, and an empty viewfinder sells nothing.
 (`SWIFT_ENABLE_EXPLICIT_MODULES=NO`, `DEVELOPER_DIR` set) and runs `ShioriUITests/ScreenshotTest`
 on an iPhone 17 Pro Max (1320×2868, the 6.9" size). The test navigates by accessibility
 identifier, waits for an identifier that only exists once a screen has its data, and writes
-seven PNGs: `scan`, `home`, `library`, `book`, `discover`, `shared`, `paywall`. The language
-travels through `build/screenshot-language`, as in Vinarium. The script fails when fewer than
-seven files come out.
+seven PNGs into `screenshots/captures/fr/`: `01-scan` to `06-shared`, and `paywall`. The script
+fails when fewer than seven files come out. French is hard-wired until the app has a string
+catalogue.
 
 ## 2. Panels
 
@@ -140,7 +145,7 @@ counts what the store holds and fails on a mismatch.
 | Product | Price (France, equalized elsewhere) | Offer | Localized name / description |
 |---|---|---|---|
 | `…premium.monthly` (created) | 1,99 € | — | Premium mensuel · Scans illimités et séries complètes, pour un mois |
-| `…premium.yearly` (completed) | 17,99 € | one free week | Premium annuel · Scans illimités et séries complètes, pour un an |
+| `…premium.yearly` (completed) | 17,99 € | one free month | Premium annuel · Scans illimités et séries complètes, pour un an |
 
 Each gets the paywall capture as review screenshot and a review note. They go to review with
 version 1.0.
@@ -158,7 +163,6 @@ the user's go-ahead at that moment.
 
 ## Testing
 
-- Swift unit test: the showcase dashboard matches the showcase library.
 - A Release build contains no `Showcase` symbol.
 - The seven captures and six panels are sent to the user for approval before any upload.
 - The upload and subscription scripts end by reading back what the store holds.
