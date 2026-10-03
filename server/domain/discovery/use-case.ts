@@ -317,7 +317,7 @@ export namespace DiscoveryUseCase {
   /** The hourly pass. First every reader whose sagas and authors were last
    *  worked out a day ago has their library read again, and every reader whose
    *  account is gone forgotten; then every saga anybody follows whose watch is
-   *  a week old, or that a reader holds a volume of its last look missed, is
+   *  two weeks old, or that a reader holds a volume of its last look missed, is
    *  looked up on the web — the ones never looked up first — and what was
    *  found written into its catalogue; then every author, the same way. All
    *  stop when the budget is spent; whatever is not reached goes first next
@@ -630,7 +630,7 @@ const lookUpAll = async (
 /** The readers whose account still exists, by id; the others are forgotten. A
  *  pass that read an account just before it was deleted writes its reader back
  *  after the deletion erased it, and the reader's sagas would then be looked
- *  up every week for nobody. One that cannot be forgotten now is next hour. */
+ *  up every two weeks for nobody. One that cannot be forgotten now is next hour. */
 const withoutAccountsGone = async (
   stored: readonly DiscoveryReader[],
   userIds: readonly UserId[],

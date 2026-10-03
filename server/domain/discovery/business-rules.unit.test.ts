@@ -348,7 +348,7 @@ describe('the volumes a saga has just brought out', () => {
   const isbn13 = '9782253000000' as never
   const asin = 'B0TESTASIN' as AudibleAsin
 
-  test('are the volumes out on a day of the last week, the newest first', () => {
+  test('are the volumes out on a day of the last two weeks, the newest first', () => {
     const watch = watchOf(carl, [
       volume(3, '2026-09-19', { isbn13 }),
       volume(4, '2026-09-20', { isbn13 }),
@@ -357,7 +357,7 @@ describe('the volumes a saga has just brought out', () => {
       volume(7, '2026-09-27', { isbn13 }),
     ])
     expect(recentReleasesOf(held(), watch, undefined, today).map(({ number }) => number)).toEqual([
-      6, 5, 4,
+      6, 5, 4, 3,
     ] as VolumeNumber[])
   })
 

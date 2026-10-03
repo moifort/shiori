@@ -18,11 +18,13 @@ import type {
   FoundEdition,
 } from './types'
 
-/** How many editions one reader may await: each one is a grounded call a week. */
+/** How many editions one reader may await: each one is a grounded call every
+ *  two weeks. */
 export const MAX_AWAITED = 100
 
-/** How late an alert may still go out for an edition the morning pass missed. */
-const ALERT_GRACE_DAYS = 14
+/** How late an alert may still go out for an edition the morning pass missed:
+ *  one already out when its two-weekly look finds it, a week of margin on top. */
+const ALERT_GRACE_DAYS = 21
 
 export const editionWatchKeyOf = (
   source: Pick<AwaitedSource, 'title' | 'authors'>,

@@ -28,7 +28,7 @@ enum ReleaseFormat: String, Codable, Sendable, Hashable, CaseIterable, Identifia
     }
 }
 
-/// A volume of a saga the reader does not hold, announced, as the weekly web
+/// A volume of a saga the reader does not hold, announced, as the web
 /// search found it.
 struct DiscoveredVolume: Identifiable, Hashable, Codable, Sendable {
     let number: Int
@@ -70,7 +70,7 @@ struct SagaDiscovery: Identifiable, Codable, Sendable {
 }
 
 /// A work of an author the reader does not hold, announced or just out,
-/// outside the sagas they hold, as the weekly web search found it.
+/// outside the sagas they hold, as the web search found it.
 struct DiscoveredWork: Identifiable, Hashable, Codable, Sendable {
     let title: String
     /// `YYYY`, `YYYY-MM` or `YYYY-MM-DD`.
@@ -230,7 +230,7 @@ enum DiscoverAPI {
     }
 
     /// What the author page shows under its heading, in each format: read off
-    /// the weekly watches, so it answers at once.
+    /// the shared watches, so it answers at once.
     static func authorReleases(key: String) async throws -> [ReleaseFormat: AuthorReleases] {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,

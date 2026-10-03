@@ -153,7 +153,7 @@ describe('dueWatchesOf', () => {
     ).toEqual(['other', awaited().watchKey])
   })
 
-  test('leaves a watch less than a week old, and one found out', () => {
+  test('leaves a watch less than two weeks old, and one found out', () => {
     const fresh = new Map([[awaited().watchKey, watch({})]])
     expect(dueWatchesOf([awaited()], fresh, now, today)).toEqual([])
     const out = new Map([
@@ -173,7 +173,7 @@ describe('alerts', () => {
   const out = (date: string) =>
     view({ state: 'available', found: found({ date: date as ReleaseDate }) })
 
-  test('are due for an edition out in the last two weeks, never sent', () => {
+  test('are due for an edition out in the last three weeks, never sent', () => {
     expect(alertIsDue(out('2026-09-28'), today)).toBe(true)
     expect(alertIsDue(out('2026-09-01'), today)).toBe(false)
     expect(alertIsDue({ ...out('2026-09-28'), notifiedAt: new Date() }, today)).toBe(false)

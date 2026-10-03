@@ -19,7 +19,7 @@ import SwiftUI
 /// visits: an author is watched only in the formats the reader holds them in.
 ///
 /// Above what is announced, "Nouvelles parutions": the volumes out in the last
-/// week the reader can have now, read off the same weekly look.
+/// two weeks the reader can have now, read off the same look on the web.
 ///
 /// Above everything, "Coups de cœur de vos amis": what the friends hearted and
 /// the reader holds in no format, as a strip that scrolls sideways so it takes

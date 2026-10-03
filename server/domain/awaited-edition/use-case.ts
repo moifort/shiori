@@ -160,7 +160,7 @@ export namespace AwaitedEditionUseCase {
     inShelfOrder((await awaitedOf(userId, now)).filter((view) => view.format === format))
 
   /** The hourly pass's share: every edition anybody awaits whose watch was
-   *  never looked up, then every one a week old, until the budget is spent;
+   *  never looked up, then every one two weeks old, until the budget is spent;
    *  whatever is not reached goes first next hour. */
   export const watchDue = async (
     now = new Date(),

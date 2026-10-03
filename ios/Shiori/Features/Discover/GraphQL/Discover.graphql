@@ -95,7 +95,7 @@ fragment DiscoveredVolumeFields on DiscoveredVolume {
 
 # What the author page shows under its heading, in both formats: the soonest
 # work announced and the ones out in the last three months, outside the sagas
-# the reader holds. Read off the weekly watches: answers at once.
+# the reader holds. Read off the shared watches: answers at once.
 query AuthorReleases($key: AuthorKey!) {
   book: authorReleases(key: $key, format: BOOK) {
     ...AuthorReleasesFields

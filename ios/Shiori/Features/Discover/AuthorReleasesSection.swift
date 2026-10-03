@@ -6,7 +6,7 @@ import SwiftUI
 /// reader awaits that are announced, the soonest first — then "Nouveautés" —
 /// the works out in the last three months and the editions awaited now out,
 /// the newest first. Drawn by the Découvrir domain, which looks the author up
-/// on the web every week. A recording Audible confirmed opens on Audible; an
+/// on the web every month. A recording Audible confirmed opens on Audible; an
 /// edition awaited opens its own page, as Découvrir opens it.
 struct AuthorReleasesSection: View {
     let releases: AuthorReleases

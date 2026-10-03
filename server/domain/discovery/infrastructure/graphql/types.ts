@@ -24,7 +24,7 @@ export const ReleaseFormatEnum = builder.enumType('ReleaseFormat', {
 
 const DiscoveredVolumeType = builder.objectRef<FoundVolume>('DiscoveredVolume').implement({
   description:
-    'One volume of a saga the reader does not hold, announced or just out, as the weekly web search ' +
+    'One volume of a saga the reader does not hold, announced or just out, as the web search ' +
     'found it in the language they follow the saga in.',
   fields: (t) => ({
     number: t.field({ type: 'VolumeNumber', resolve: (volume) => volume.number }),
@@ -97,9 +97,9 @@ export const SagaDiscoveryType = builder.objectRef<SagaDiscovery>('SagaDiscovery
     recent: t.field({
       type: [DiscoveredVolumeType],
       description:
-        'The volumes out in the last week, on a known day, that the reader does not hold and ' +
+        'The volumes out in the last two weeks, on a known day, that the reader does not hold and ' +
         'can have now — a recording Audible confirmed, a printed book with an ISBN Amazon ' +
-        'did not turn down — the newest first. Read off the same weekly watch as `next`: a ' +
+        'did not turn down — the newest first. Read off the same watch as `next`: a ' +
         'volume announced moves here on its day.',
       resolve: (row) => row.recent,
     }),
@@ -109,7 +109,7 @@ export const SagaDiscoveryType = builder.objectRef<SagaDiscovery>('SagaDiscovery
 const DiscoveredWorkType = builder.objectRef<FoundWork>('DiscoveredWork').implement({
   description:
     'One work of an author the reader does not hold, announced or just out, outside any saga ' +
-    'they hold, as the weekly web search found it in the language and format they hold the ' +
+    'they hold, as the web search found it in the language and format they hold the ' +
     'author in.',
   fields: (t) => ({
     title: t.field({ type: 'BookTitle', resolve: (work) => work.title }),

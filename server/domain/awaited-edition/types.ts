@@ -58,7 +58,7 @@ export type FoundEdition = {
 
 /** What the web says of one book in one language and format — shared by every
  *  reader who awaits it, keyed on the book rather than on anybody, so the
- *  grounded call behind it is paid once a week. */
+ *  grounded call behind it is paid once every two weeks. */
 export type EditionWatch = {
   /** `{shelfKey}--{format}--{language}`. */
   key: string

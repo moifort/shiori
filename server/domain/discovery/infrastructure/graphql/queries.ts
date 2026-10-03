@@ -18,7 +18,7 @@ builder.queryFields((t) => ({
       'first, or a volume out in the last week they can have now; a saga with neither is ' +
       'left out. And every author they hold in that format with a work announced or just ' +
       'out outside those sagas.\n\n' +
-      'Read off shared watches a scheduled pass keeps a week fresh, so it answers at once. ' +
+      'Read off shared watches a scheduled pass keeps fresh, so it answers at once. ' +
       'A saga or an author never looked up is counted in `unwatched`, for `lookUpDiscovery`.',
     args: { format: t.arg({ type: ReleaseFormatEnum, required: true }) },
     resolve: (_root, { format }, context) =>

@@ -58,7 +58,7 @@ export type FoundVolume = {
 
 /** What exists or is announced of one saga in one language, as the web says —
  *  shared by every reader who follows it, keyed on the saga rather than on
- *  anybody, so the grounded call behind it is paid once a week. */
+ *  anybody, so the grounded call behind it is paid once every two weeks. */
 export type SagaWatch = {
   /** `{seriesId}--{language}`. */
   key: string
@@ -141,7 +141,7 @@ export type FoundWork = {
 /** What an author brought out lately or has announced in one language and
  *  format, as the web says — shared by every reader who holds them, keyed on
  *  the author rather than on anybody, so the grounded call behind it is paid
- *  once a week. */
+ *  once a month. */
 export type AuthorWatch = {
   /** `{authorKey}--{format}--{language}`. */
   key: string

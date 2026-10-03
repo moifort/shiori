@@ -31,14 +31,21 @@ import type {
 } from './types'
 
 /** How often the web is searched again for one saga: a publisher announces a
- *  volume months ahead, and the grounded call is the expensive part. */
-export const WATCH_EVERY_MS = 7 * 86_400_000
+ *  volume months ahead, and the grounded call is the expensive part — every
+ *  search it runs is billed, about a cent each. Weekly, these looks were the
+ *  one Gemini cost that came back every month without anybody scanning; two
+ *  weeks halves it and still catches an announcement long before the day. */
+export const WATCH_EVERY_MS = 14 * 86_400_000
+/** How often the web is searched again for one author. An author publishes a
+ *  few times a year and their shelf keeps three months of works out, so a
+ *  month apart misses nothing a reader would see. */
+export const AUTHOR_WATCH_EVERY_MS = 30 * 86_400_000
 /** How often the hourly pass reads a reader's library again to learn which
  *  sagas they follow. Opening the tab does it at once. */
 export const SYNC_EVERY_MS = 86_400_000
-/** How long a volume out stays among the new releases: a week, as often as
- *  a saga is looked up again. */
-const RECENT_DAYS = 7
+/** How long a volume out stays among the new releases: two weeks, as often
+ *  as a saga is looked up again, so one only learned of once out still shows. */
+const RECENT_DAYS = 14
 /** How late an alert may still go out for a volume the morning pass missed. */
 const ALERT_GRACE_DAYS = 14
 
@@ -119,7 +126,7 @@ export const readerIsStale = (reader: DiscoveryReader | undefined, now: Date): b
   !reader || now.getTime() - reader.syncedAt.getTime() > SYNC_EVERY_MS
 
 /** Whether a reader added a volume of the saga since its last look that the
- *  look did not find: the web is searched again rather than in a week. Once
+ *  look did not find: the web is searched again rather than in two weeks. Once
  *  looked up again, the watch is newer than the volume, so a volume the web
  *  still does not know costs one look, not one an hour. */
 export const watchIsBehind = (watch: SagaWatch | undefined, saga: WatchedSaga): boolean => {
@@ -129,7 +136,7 @@ export const watchIsBehind = (watch: SagaWatch | undefined, saga: WatchedSaga): 
 }
 
 /** The sagas every reader follows, each once, the ones never looked up first,
- *  then the longest unchecked: every one a week old, and every one a reader
+ *  then the longest unchecked: every one two weeks old, and every one a reader
  *  holds further than it found. */
 export const dueWatches = (
   readers: readonly DiscoveryReader[],
@@ -189,7 +196,7 @@ export const watchedAuthorsOf = (
 
 /** Whether an author is due for another look on the web. */
 export const authorWatchIsStale = (watch: AuthorWatch | undefined, now: Date): boolean =>
-  !watch || now.getTime() - watch.checkedAt.getTime() > WATCH_EVERY_MS
+  !watch || now.getTime() - watch.checkedAt.getTime() > AUTHOR_WATCH_EVERY_MS
 
 /** The authors every reader holds, each once, the ones never looked up first,
  *  then the longest unchecked. */
@@ -353,9 +360,9 @@ const isAvailable = (
   format: ReleaseFormat,
 ): boolean => (format === 'audiobook' ? volume.asin !== undefined : volume.isbn13 !== undefined)
 
-/** The volumes the saga brought out in the last week that the reader does not
+/** The volumes the saga brought out in the last two weeks that the reader does not
  *  hold and can have now, the newest first: out on a known day — a month
- *  alone does not say it was this week — as the same shared watch the next
+ *  alone does not say it was this fortnight — as the same shared watch the next
  *  volume is read off dates it. A volume announced moves here on its day,
  *  with no new look on the web. */
 export const recentReleasesOf = (

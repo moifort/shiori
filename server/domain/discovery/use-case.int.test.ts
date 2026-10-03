@@ -202,19 +202,19 @@ describe('the hourly pass', () => {
     expect(authorCalls).toEqual(['Matt Dinniman (livre)'])
   })
 
-  test('looks a saga up again only once its watch is a week old', async () => {
+  test('looks a saga up again only once its watch is two weeks old', async () => {
     await stock(reader)
     await DiscoveryUseCase.watchDueSagas(now)
     calls.length = 0
 
-    await DiscoveryUseCase.watchDueSagas(new Date('2026-09-30T08:00:00Z'))
-    expect(calls).toEqual([])
     await DiscoveryUseCase.watchDueSagas(new Date('2026-10-04T08:00:00Z'))
+    expect(calls).toEqual([])
+    await DiscoveryUseCase.watchDueSagas(new Date('2026-10-11T08:00:00Z'))
     expect(calls).toEqual(['Dungeon Crawler Carl'])
   })
 
   // The web stops at volume 4: a fifth the reader adds is worth one look the
-  // next day, not a week later — and no more than one while the web still
+  // next day, not two weeks later — and no more than one while the web still
   // does not know it.
   test('looks a saga up again once a reader holds a volume its last look did not find', async () => {
     await stock(reader)
@@ -362,7 +362,7 @@ describe('a saga heard', () => {
     await DiscoveryUseCase.watchDueSagas(now)
     calls.length = 0
 
-    await DiscoveryUseCase.watchDueSagas(new Date('2026-10-04T08:00:00Z'))
+    await DiscoveryUseCase.watchDueSagas(new Date('2026-10-11T08:00:00Z'))
 
     expect(calls).toEqual([])
     expect(seriesAsked).toEqual(['B0DM67WR2V', 'B0DM67WR2V'])
@@ -387,7 +387,7 @@ describe('the Découvrir tab', () => {
     expect(row.recent.map((volume) => volume.number)).toEqual([VolumeNumber(3)])
   })
 
-  test('moves a volume announced among the new releases on its day, for a week', async () => {
+  test('moves a volume announced among the new releases on its day, for two weeks', async () => {
     await stock(reader)
     await DiscoveryUseCase.watchDueSagas(now)
     const tabOn = async (day: string) =>
@@ -399,7 +399,11 @@ describe('the Découvrir tab', () => {
     expect((await tabOn('2026-10-01T08:00:00Z')).recent.map(({ number }) => number)).toEqual([
       VolumeNumber(3),
     ])
-    expect((await tabOn('2026-10-02T08:00:00Z')).recent).toEqual([])
+    // Out on September 25th as Amazon dates it: shown through October 8th.
+    expect((await tabOn('2026-10-08T08:00:00Z')).recent.map(({ number }) => number)).toEqual([
+      VolumeNumber(3),
+    ])
+    expect((await tabOn('2026-10-09T08:00:00Z')).recent).toEqual([])
     expect(calls).toEqual(['Dungeon Crawler Carl'])
   })
 
@@ -569,14 +573,14 @@ describe('the Authors shelf', () => {
     expect(authorCalls).toEqual([])
   })
 
-  test('looks an author up once a week for every reader who holds them', async () => {
+  test('looks an author up once a month for every reader who holds them', async () => {
     await stock(reader)
     await stock(other)
     await DiscoveryUseCase.watchDueSagas(now)
-    await DiscoveryUseCase.watchDueSagas(new Date('2026-09-30T08:00:00Z'))
+    await DiscoveryUseCase.watchDueSagas(new Date('2026-10-20T08:00:00Z'))
 
     expect(authorCalls).toEqual(['Matt Dinniman (livre)'])
-    await DiscoveryUseCase.watchDueSagas(new Date('2026-10-04T08:00:00Z'))
+    await DiscoveryUseCase.watchDueSagas(new Date('2026-10-27T08:00:00Z'))
     expect(authorCalls).toEqual(['Matt Dinniman (livre)', 'Matt Dinniman (livre)'])
   })
 })

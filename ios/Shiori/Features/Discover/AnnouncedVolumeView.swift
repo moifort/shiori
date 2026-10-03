@@ -4,7 +4,7 @@ import SwiftUI
 /// Découvrir, or from its row on the saga screen — drawn as every book page
 /// is, when it comes pinned on its cover — orange while announced, green once
 /// out — with Audible's tag in its corner for a recording, and the way to its
-/// saga where the book page has it. Only what the weekly look
+/// saga where the book page has it. Only what the look on the web
 /// found is drawn: the page asks nothing of the model and opens at once.
 ///
 /// "+" puts it on the pile, filed in its saga at its number; a recording goes
@@ -75,7 +75,7 @@ struct AnnouncedVolumeView: View {
         return .release(volume.date)
     }
 
-    /// What the weekly look knows: its title, author, cover and place in the
+    /// What the look on the web knows: its title, author, cover and place in the
     /// saga.
     private var book: Book {
         let series = saga.series
