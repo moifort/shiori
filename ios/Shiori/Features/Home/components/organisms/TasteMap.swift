@@ -12,6 +12,9 @@ struct TasteMap: View {
     let averageRating: Double
     let gem: GenreInsights.Taste?
 
+    /// The plot's size, once drawn: what the labels are laid out against.
+    @State private var plotSize: CGSize = .zero
+
     /// The middle of the genres' counts: left of it, a genre is read little.
     private var medianCount: Double {
         let counts = tastes.map(\.readCount).sorted()
@@ -52,12 +55,13 @@ struct TasteMap: View {
     }
 
     private var chart: some View {
-        Chart(tastes) { taste in
+        let sides = labelSides
+        return Chart(tastes) { taste in
             PointMark(
                 x: .value("Livres lus", taste.readCount),
                 y: .value("Note moyenne", taste.averageRating)
             )
-            .symbol { bubble(taste) }
+            .symbol { bubble(taste, side: sides[taste.id] ?? .trailing) }
         }
         .chartXScale(domain: 0...countCeiling)
         .chartYScale(domain: ratingFloor...ratingCeiling)
@@ -82,6 +86,7 @@ struct TasteMap: View {
             GeometryReader { geometry in
                 if let plotFrame = proxy.plotFrame {
                     quarters(in: geometry[plotFrame], proxy: proxy)
+                        .onGeometryChange(for: CGSize.self) { $0.size } action: { plotSize = $0 }
                 }
             }
         }
@@ -130,12 +135,12 @@ struct TasteMap: View {
         )
     }
 
-    /// A glossy bubble, as large as the genre's shelf, named beside it; the gem
-    /// rings itself. The name hangs off the bubble rather than being a chart
-    /// annotation, which loses its anchor on a symbol drawn as a view.
-    private func bubble(_ taste: GenreInsights.Taste) -> some View {
-        let size = 12 + 14 * CGFloat(taste.readCount) / CGFloat(countCeiling)
-        let onLeft = labelOnLeft(taste)
+    /// A glossy bubble, as large as the genre's shelf, named on the side
+    /// `labelSides` gave it; the gem rings itself. The name hangs off the bubble
+    /// rather than being a chart annotation, which loses its anchor on a symbol
+    /// drawn as a view.
+    private func bubble(_ taste: GenreInsights.Taste, side: LabelSide) -> some View {
+        let size = bubbleSize(taste)
         let isGem = taste == gem
         return Circle()
             .fill(taste.genre.tint.gradient)
@@ -149,27 +154,99 @@ struct TasteMap: View {
                         .frame(width: size + 10, height: size + 10)
                 }
             }
-            .overlay(alignment: onLeft ? .trailing : .leading) {
+            .overlay {
                 Text(taste.label)
                     .font(.caption2.weight(.medium))
                     .foregroundStyle(isGem ? taste.genre.tint : Color(.secondaryLabel))
                     .fixedSize()
-                    .padding(onLeft ? .trailing : .leading, size + (isGem ? 10 : 6))
+                    .offset(labelOffset(taste, side: side))
             }
     }
 
-    /// A name reads on the bubble's right, unless the right edge is too near,
-    /// or a neighbour sits just to the right at about the same rating, where
-    /// the two names would run into each other.
-    private func labelOnLeft(_ taste: GenreInsights.Taste) -> Bool {
-        if Double(taste.readCount) > countCeiling * 0.7 { return true }
-        let reach = max(2, countCeiling / 5)
-        return tastes.contains { other in
-            other != taste
-                && other.readCount > taste.readCount
-                && Double(other.readCount - taste.readCount) <= reach
-                && abs(other.averageRating - taste.averageRating) < 0.25
+    private func bubbleSize(_ taste: GenreInsights.Taste) -> CGFloat {
+        12 + 14 * CGFloat(taste.readCount) / CGFloat(countCeiling)
+    }
+
+    // MARK: - Label layout
+
+    /// Where a bubble's name reads: beside it on either hand, or under it when
+    /// both hands are taken.
+    private enum LabelSide: CaseIterable {
+        case trailing, leading, below
+    }
+
+    private static let labelFont = UIFont.systemFont(
+        ofSize: UIFont.preferredFont(forTextStyle: .caption2).pointSize,
+        weight: .medium
+    )
+
+    private func labelGap(_ taste: GenreInsights.Taste) -> CGFloat {
+        taste == gem ? 7 : 4
+    }
+
+    private func labelSize(_ taste: GenreInsights.Taste) -> CGSize {
+        (taste.label as NSString).size(withAttributes: [.font: Self.labelFont])
+    }
+
+    /// How far the name's centre sits from the bubble's.
+    private func labelOffset(_ taste: GenreInsights.Taste, side: LabelSide) -> CGSize {
+        let label = labelSize(taste)
+        let reach = bubbleSize(taste) / 2 + labelGap(taste)
+        return switch side {
+        case .trailing: CGSize(width: reach + label.width / 2, height: 0)
+        case .leading: CGSize(width: -(reach + label.width / 2), height: 0)
+        case .below: CGSize(width: 0, height: reach + label.height / 2 - 2)
         }
+    }
+
+    /// The bubble's centre on the plot, in points.
+    private func centre(_ taste: GenreInsights.Taste) -> CGPoint {
+        CGPoint(
+            x: plotSize.width * CGFloat(Double(taste.readCount) / countCeiling),
+            y: plotSize.height
+                * CGFloat((ratingCeiling - taste.averageRating) / (ratingCeiling - ratingFloor))
+        )
+    }
+
+    /// Every name's side, laid out once for the whole map: the most read first,
+    /// each taking the first side that runs into no bubble and no name already
+    /// placed, nor off the plot; when none is free, the side that overlaps
+    /// least. Nothing is measured before the plot is drawn, when every name
+    /// reads on the right.
+    private var labelSides: [GenreInsights.Taste.ID: LabelSide] {
+        guard plotSize != .zero else { return [:] }
+        // The axis labels leave a little room past either edge of the plot.
+        let bounds = CGRect(origin: .zero, size: plotSize).insetBy(dx: -24, dy: -8)
+        var taken = tastes.map { taste in
+            let size = bubbleSize(taste)
+            let centre = centre(taste)
+            return CGRect(x: centre.x - size / 2, y: centre.y - size / 2, width: size, height: size)
+        }
+        var sides: [GenreInsights.Taste.ID: LabelSide] = [:]
+        for taste in tastes.sorted(by: { $0.readCount > $1.readCount }) {
+            let candidates = LabelSide.allCases.map { side in
+                let label = labelSize(taste)
+                let offset = labelOffset(taste, side: side)
+                let centre = centre(taste)
+                let rect = CGRect(
+                    x: centre.x + offset.width - label.width / 2,
+                    y: centre.y + offset.height - label.height / 2,
+                    width: label.width,
+                    height: label.height
+                )
+                let overlap = taken.reduce(0) { $0 + area($1.intersection(rect)) }
+                let outside = area(rect) - area(bounds.intersection(rect))
+                return (side: side, rect: rect, cost: overlap + outside)
+            }
+            let best = candidates.first { $0.cost == 0 } ?? candidates.min { $0.cost < $1.cost }!
+            sides[taste.id] = best.side
+            taken.append(best.rect)
+        }
+        return sides
+    }
+
+    private func area(_ rect: CGRect) -> CGFloat {
+        rect.isNull ? 0 : rect.width * rect.height
     }
 
     private func quadrant(_ text: LocalizedStringKey, color: Color) -> some View {
