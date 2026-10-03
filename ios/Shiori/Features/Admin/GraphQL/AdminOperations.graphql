@@ -1,0 +1,38 @@
+query AdminMetrics {
+  adminMetrics {
+    aiCostEur
+    tokenCostEur
+    searchCostEur
+    infraEur
+    totalCostEur
+    totalUsers
+    premiumTotal
+    premiumMonthly
+    premiumYearly
+    revenueProceedsEur
+    revenueGrossEur
+    scans
+    cacheHits
+    searches
+    vision {
+      ...AiStepUsageFields
+    }
+    enrichment {
+      ...AiStepUsageFields
+    }
+    catalogue {
+      ...AiStepUsageFields
+    }
+    discovery {
+      ...AiStepUsageFields
+    }
+    refreshedAt
+  }
+}
+
+fragment AiStepUsageFields on AiTokenUsage {
+  promptTokens
+  outputTokens
+  thinkingTokens
+  searches
+}

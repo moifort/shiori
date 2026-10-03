@@ -22,6 +22,10 @@ struct HomeView: View {
     @State private var viewModel = HomeViewModel()
     @State private var selectedBook: Book?
     @State private var showSettings = false
+    /// The month's costs and readers, behind a toolbar button only an admin
+    /// account sees.
+    @State private var showAdmin = false
+    @Environment(\.isAdmin) private var isAdmin
     /// The Audible and Kindle passes started at onboarding, still bringing the
     /// library in.
     @State private var audibleSync = AudibleBackgroundSync.shared
@@ -44,6 +48,14 @@ struct HomeView: View {
             content
                 .navigationTitle("Accueil")
                 .toolbar {
+                    if isAdmin {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            ToolbarIconButton(title: "Admin", systemImage: "shield") {
+                                showAdmin = true
+                            }
+                            .accessibilityIdentifier("home-admin")
+                        }
+                    }
                     ToolbarItem(placement: .topBarTrailing) {
                         // The settings hold the account, the subscription and the
                         // connected sources: managing a linked Audible account is
@@ -126,6 +138,18 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showSettings) {
             SettingsHomeView()
+        }
+        .sheet(isPresented: $showAdmin) {
+            NavigationStack {
+                AdminView()
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) {
+                                showAdmin = false
+                            }
+                        }
+                    }
+            }
         }
     }
 
