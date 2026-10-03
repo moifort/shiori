@@ -1008,6 +1008,23 @@ describe('the genre insights', () => {
     ])
   })
 
+  test('counts a subgenre named as its genre in the genre, in French or in English', () => {
+    const insights = genreInsightsOf([
+      ...ratedIn('essay', 'Essai', [4, 4, 4]),
+      ...ratedIn('essay', 'essay', [5]),
+      ...ratedIn('essay', 'Sociologie', [5, 5, 5]),
+      ...ratedIn('science-fiction', 'Science-Fiction', [3, 3, 3]),
+    ])
+
+    expect(
+      insights.tasteMap.map(({ genre, subgenre, readCount }) => ({ genre, subgenre, readCount })),
+    ).toEqual([
+      { genre: 'essay', subgenre: undefined, readCount: 4 },
+      { genre: 'science-fiction', subgenre: undefined, readCount: 3 },
+      { genre: 'essay', subgenre: Subgenre('Sociologie'), readCount: 3 },
+    ])
+  })
+
   test('draws at most ten places, the most read, and always the gem', () => {
     const genres: Genre[] = [
       'fantasy',

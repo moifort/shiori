@@ -583,6 +583,7 @@ const tasteMapOf = (read: readonly Book[]): GenreTaste[] => {
   for (const book of read) {
     const [head] = book.subgenres
     if (!head || book.genre === undefined || book.genre === 'other') continue
+    if (namesItsGenre(book.genre, head.label)) continue
     const key = `${book.genre}~${subgenreKeyOf(head.label)}`
     const entry = bySubgenre.get(key) ?? { genre: book.genre, subgenre: head.label, books: [] }
     bySubgenre.set(key, { ...entry, books: [...entry.books, book] })
@@ -610,6 +611,39 @@ const drawnOf = (tasteMap: readonly GenreTaste[], gem: GenreTaste | undefined): 
   const drawn = tasteMap.slice(0, MAP_PLACES)
   return gem === undefined || drawn.includes(gem) ? drawn : [...drawn.slice(0, -1), gem]
 }
+
+/** What a genre is called on the reader's side, in the app's French and in
+ *  English, the two languages subgenres are tagged in. A head subgenre that
+ *  only repeats its genre's name is no subgenre at all: its books count in the
+ *  genre, rather than standing beside it under the same name. The French names
+ *  follow `BookGenre.label` in the app. */
+const GENRE_NAMES: Record<Exclude<Genre, 'other'>, readonly string[]> = {
+  fantasy: ['Fantastique', 'Fantasy'],
+  'science-fiction': ['Science-fiction', 'SF'],
+  horror: ['Horreur', 'Horror'],
+  crime: ['Polar', 'Crime', 'Roman policier'],
+  thriller: ['Thriller'],
+  romance: ['Romance'],
+  'historical-fiction': ['Roman historique', 'Historical fiction'],
+  adventure: ['Aventure', 'Adventure'],
+  'literary-fiction': ['Littérature', 'Literary fiction', 'Literature'],
+  humor: ['Humour', 'Humor'],
+  poetry: ['Poésie', 'Poetry'],
+  drama: ['Théâtre', 'Drama'],
+  biography: ['Biographie', 'Biography'],
+  history: ['Histoire', 'History'],
+  essay: ['Essai', 'Essay'],
+  science: ['Sciences', 'Science'],
+  'self-help': ['Développement personnel', 'Self-help'],
+  business: ['Économie', 'Business'],
+  art: ['Art'],
+  cooking: ['Cuisine', 'Cooking'],
+  travel: ['Voyage', 'Travel'],
+}
+
+/** Whether a subgenre label only names its own genre again. */
+const namesItsGenre = (genre: Exclude<Genre, 'other'>, label: string): boolean =>
+  GENRE_NAMES[genre].some((name) => subgenreKeyOf(name) === subgenreKeyOf(label))
 
 /** The key two spellings of one subgenre share: case and hyphens aside. */
 export const subgenreKeyOf = (label: string): string =>
