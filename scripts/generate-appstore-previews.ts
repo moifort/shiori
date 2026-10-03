@@ -14,8 +14,8 @@
  * Three kinds of panel. The first two are one photograph cut in two: a reader
  * photographing a book, the phone showing its record filled in. The last is two
  * friends' hands, each phone showing the Partagé page. In between, the app alone:
- * an iPhone drawn to its exact proportions (device-panel.swift), on the grey or
- * before a dark bookshelf — hands added nothing there.
+ * an iPhone drawn to its exact proportions (device-panel.swift), on the grey —
+ * hands added nothing there.
  *
  * Scenes are cached in screenshots/appstore/scenes/ and committed: changing a
  * caption or a capture asks nothing of the model. Look at a new scene before
@@ -56,14 +56,13 @@ type Scene = { name: string; aspect: string; prompt: string }
 const SCAN: Scene = {
   name: 'scan',
   aspect: '1:1',
-  prompt: `ONE single continuous photorealistic studio photograph, square, one shot from one camera. It is NOT a diptych: no dividing line, no border, no seam; every object appears exactly once.
+  prompt: `ONE single continuous photorealistic studio photograph, square, one shot from one camera, seen from slightly above. It is NOT a diptych: no dividing line, no border, no seam; every object appears exactly once.
 ${BACKDROP}
-A reader photographs a book with their phone. The frame will be cut down its vertical middle into two side-by-side panels:
-- LEFT HALF: a single closed paperback book lies on the light grey surface, seen from slightly above, large — about 75% of the left half's width — its front cover facing up toward the camera. The cover is ONE uniform, flat, pure magenta (#FF00FF) rectangle from edge to edge, no print, no texture (a placeholder to be replaced).
-- RIGHT HALF: a single hand (hand and wrist only, light-medium skin) holds one modern iPhone upright and VERY LARGE, its top edge 18% below the top of the frame and its bottom edge at 92% of the frame's height, its screen facing the viewer, turned very slightly toward the book as if it has just photographed it.
-- Nothing on the vertical centre line: the phone stays entirely in the right half.
+A reader photographs a book with their phone. The frame will be cut down its vertical middle into two side-by-side panels, and the scene must visibly run across that cut:
+- A single large closed paperback book lies flat on the light grey surface, ACROSS the vertical centre line: about 60% of it in the left half and 40% in the right half, its front cover facing up. The cover is ONE uniform, flat, pure magenta (#FF00FF) rectangle from edge to edge, no print, no texture (a placeholder to be replaced). The book is large: about 55% of the frame's width.
+- In the right half, beside the right end of the book and NOT overlapping it, a single hand (hand and wrist only, light-medium skin) enters from the right edge and holds one modern iPhone almost upright, its screen facing the viewer straight on (turned at most 10° toward the book, as if it has just photographed it). The phone is LARGE — about 62% of the frame's height — and stays entirely in the right half; nothing covers any part of the book's cover.
 ${GREEN_SCREEN}
-The top 16% of the frame is empty background, for captions.
+The top 18% of the frame is empty background, for captions.
 ${NO_TEXT}`,
 }
 
@@ -78,20 +77,12 @@ Each display has the slim proportions of an iPhone 17 Pro Max, its height 2.17 t
 ${NO_TEXT}`,
 }
 
-const SHELVES: Scene = {
-  name: 'shelves',
-  aspect: '9:16',
-  prompt: `A photorealistic photograph, vertical 9:16: a wall of dark walnut bookshelves packed with old and colourful books, filling the whole frame from edge to edge, softly out of focus, deep shadows between the books, dim warm lamplight. No person, no hand, no phone, no object in front of the shelves.
-ABSOLUTELY NO TEXT, letters or logos anywhere, not on the book spines either.`,
-}
-
-/** The app alone, in a drawn iPhone: on the grey, or before a scene. */
+/** The app alone, in a drawn iPhone on the grey. */
 type DevicePanel = {
   kind: 'device'
   output: string
   capture: string
   caption: string
-  scene?: Scene
 }
 
 const LIGHT_GREY = '#F2F2F4'
@@ -101,8 +92,7 @@ const DEVICES: DevicePanel[] = [
     kind: 'device',
     output: '03-bibliotheque.png',
     capture: '01-library.png',
-    caption: 'Une photo, votre bibliothèque',
-    scene: SHELVES,
+    caption: 'Livres et audio !',
   },
   {
     kind: 'device',
@@ -114,19 +104,19 @@ const DEVICES: DevicePanel[] = [
     kind: 'device',
     output: '05-series.png',
     capture: '03-series.png',
-    caption: "Détection des séries et de votre état d'avancement",
+    caption: 'Suivi de vos séries préférées',
   },
   {
     kind: 'device',
     output: '06-serie.png',
     capture: '04-saga.png',
-    caption: "Être averti de l'arrivée d'un tome de votre série préférée",
+    caption: 'Être averti des sorties et disponibilités',
   },
   {
     kind: 'device',
     output: '07-decouvrir.png',
     capture: '05-discover.png',
-    caption: 'Découvrez les sorties, les disponibilités et les coups de cœur de vos amis',
+    caption: 'Découvrez vos nouveaux coups de cœur',
   },
 ]
 
@@ -204,15 +194,14 @@ const caption = async (input: string, output: string, text: string) => {
   const fitted = join(work, 'scan-fit.png')
   const covered = join(work, 'scan-cover.png')
   const screened = join(work, 'scan-screen.png')
-  // The model draws the phone at half the height asked: the window closes in on it.
-  await $`swift ${finishPanel} fit ${await sceneImage(SCAN)} ${fitted} --backdrop --width 2640 --zoom 1.17 --top 0.05 --center 0.455`.quiet()
+  await $`swift ${finishPanel} fit ${await sceneImage(SCAN)} ${fitted} --backdrop --width 2640`.quiet()
   await $`swift ${compositeMockup} ${fitted} ${covered} ${hyperionCover}`
     .env({ ...process.env, KEY: 'magenta' })
     .quiet()
   await $`swift ${compositeMockup} ${covered} ${screened} ${await capture('00-scan.png')}`.quiet()
   const halves = [
-    { output: '01-scan-livre.png', text: 'Photographiez la couverture', offset: 0 },
-    { output: '02-scan-fiche.png', text: 'Shiori remplit la fiche', offset: 1320 },
+    { output: '01-scan-livre.png', text: 'Scannez…', offset: 0 },
+    { output: '02-scan-fiche.png', text: '…Shiori fait le reste', offset: 1320 },
   ]
   for (const half of halves) {
     const cut = join(work, `scan-${half.offset}.png`)
@@ -226,8 +215,7 @@ const caption = async (input: string, output: string, text: string) => {
 // 03 to 07: the app alone.
 for (const panel of DEVICES) {
   const drawn = join(work, panel.output)
-  const backdrop = panel.scene ? await sceneImage(panel.scene) : LIGHT_GREY
-  await $`swift ${devicePanel} ${backdrop} ${await capture(panel.capture)} ${drawn}`.quiet()
+  await $`swift ${devicePanel} ${LIGHT_GREY} ${await capture(panel.capture)} ${drawn}`.quiet()
   await caption(drawn, panel.output, panel.caption)
 }
 

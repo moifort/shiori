@@ -113,6 +113,7 @@ func analyse(_ photo: CIImage) -> Analysis {
 /// keyed region's outermost cells along the middle of that side, where the
 /// rounding does not reach; the corners are where the lines meet.
 func corners(of cells: [Int]) -> [CGPoint] {
+  if magenta { return cover(of: cells) }
   var left: [Int: Int] = [:], right: [Int: Int] = [:], top: [Int: Int] = [:], bottom: [Int: Int] = [:]
   for cell in cells {
     let (x, y) = (cell % gridWidth, cell / gridWidth)
@@ -149,6 +150,32 @@ func corners(of cells: [Int]) -> [CGPoint] {
     meet(vertical: r, offsetX: 1.5, horizontal: t, offsetY: -0.5),
     meet(vertical: r, offsetX: 1.5, horizontal: b, offsetY: 1.5),
     meet(vertical: l, offsetX: -0.5, horizontal: b, offsetY: 1.5),
+  ]
+}
+
+/// A book's cover, lying square to the camera, which a hand or a phone may cover
+/// in part: each side is where most of the cover reaches, so a side hidden in
+/// the middle by a phone is still found where it shows above and below it.
+func cover(of cells: [Int]) -> [CGPoint] {
+  var lefts: [Int: Int] = [:], rights: [Int: Int] = [:], tops: [Int: Int] = [:], bottoms: [Int: Int] = [:]
+  for cell in cells {
+    let (x, y) = (cell % gridWidth, cell / gridWidth)
+    lefts[y] = min(lefts[y] ?? .max, x)
+    rights[y] = max(rights[y] ?? .min, x)
+    tops[x] = min(tops[x] ?? .max, y)
+    bottoms[x] = max(bottoms[x] ?? .min, y)
+  }
+  func percentile(_ values: [Int], _ share: Double) -> Double {
+    let sorted = values.sorted()
+    return Double(sorted[min(sorted.count - 1, Int(Double(sorted.count) * share))])
+  }
+  let left = (percentile(Array(lefts.values), 0.1) - 0.5) * Double(step)
+  let right = (percentile(Array(rights.values), 0.9) + 1.5) * Double(step)
+  let top = (percentile(Array(tops.values), 0.1) - 0.5) * Double(step)
+  let bottom = (percentile(Array(bottoms.values), 0.9) + 1.5) * Double(step)
+  return [
+    CGPoint(x: left, y: top), CGPoint(x: right, y: top),
+    CGPoint(x: right, y: bottom), CGPoint(x: left, y: bottom),
   ]
 }
 

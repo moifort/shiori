@@ -95,23 +95,23 @@ Eight panels on a very light grey (#F2F2F4):
 
 | Panel | What it shows | Caption |
 |---|---|---|
-| 01 · 02 | One photograph cut in two: the Hypérion paperback with its real cover, a hand holding the phone that just photographed it, showing its record | Photographiez la couverture · Shiori remplit la fiche |
-| 03 | A drawn iPhone before dark bookshelves: the mosaic | Une photo, votre bibliothèque |
+| 01 · 02 | One photograph cut in two: the Hypérion paperback lying across the cut, a hand scanning it, the phone showing its record | Scannez… · …Shiori fait le reste |
+| 03 | A drawn iPhone: the mosaic | Livres et audio ! |
 | 04 | A drawn iPhone: the dashboard | Des analytics détaillés |
-| 05 | A drawn iPhone: the sagas | Détection des séries et de votre état d'avancement |
-| 06 | A drawn iPhone: One Piece's page and its next volume | Être averti de l'arrivée d'un tome de votre série préférée |
-| 07 | A drawn iPhone: Découvrir | Découvrez les sorties, les disponibilités et les coups de cœur de vos amis |
+| 05 | A drawn iPhone: the sagas | Suivi de vos séries préférées |
+| 06 | A drawn iPhone: One Piece's page and its next volume | Être averti des sorties et disponibilités |
+| 07 | A drawn iPhone: Découvrir | Découvrez vos nouveaux coups de cœur |
 | 08 | Two friends' hands, each phone on the Partagé page, one held upside down | Partagez votre bibliothèque avec vos proches |
 
 **The app alone** (03–07) is an iPhone 17 Pro Max drawn by `device-panel.swift` to the
 device's own geometry — titanium band, black border, Dynamic Island, side buttons — so the
-capture fills the screen to the pixel. Hands added nothing there.
+capture fills the screen to the pixel, on the grey. Hands added nothing there.
 
 **The photographs** (01–02, 08) are drawn by the image model with each phone's display in
 flat chroma-key green and the book's cover in magenta; it is never asked for the app or the
 cover, whose text it garbles. `composite-mockup.swift` finds each keyed region, takes its
 corners from straight lines fitted along its four edges (its extreme points sit inside the
-rounded corners and left a strip of screen uncovered), widens the photograph around the
+rounded corners and left a strip of screen uncovered; a book's cover, which the phone may hide in part, is taken square from where most of each side shows), widens the photograph around the
 phones until their screens have the capture's proportions (the model draws phones narrower
 than an iPhone whatever it is told), and fits the capture in perspective, never stretched,
 keeping the photograph wherever a finger or the bezel crosses it.
