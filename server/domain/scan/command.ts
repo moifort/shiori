@@ -60,6 +60,7 @@ import {
 } from '~/domain/series/primitives'
 import type { Series, SeriesId, SeriesName as SeriesNameValue, Volume } from '~/domain/series/types'
 import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
+import { bareTitleOf } from '~/domain/shared/saga-title'
 import type {
   AuthorName as AuthorNameValue,
   BookTitle as BookTitleValue,
@@ -384,10 +385,13 @@ export namespace ScanCommand {
     })
 
     const authors = parsedAuthors(value.authors)
+    const series = parsedSeries(value, authors.length > 0 ? authors : seen.authors, seen.format)
     return {
       result: {
         recognized: true,
-        title: optional(value.title, BookTitle) ?? seen.title,
+        // The review shows the saga and the volume beside the title, as the
+        // book will.
+        title: bareTitleOf(optional(value.title, BookTitle) ?? seen.title, series?.name),
         authors: authors.length > 0 ? authors : seen.authors,
         format: seen.format,
         media: seen.media,
@@ -405,7 +409,7 @@ export namespace ScanCommand {
           .slice(0, MAX_SUBGENRES),
         pageCount: optional(value.pageCount, PageCount),
         isbn13: optional(value.isbn13, Isbn13),
-        series: parsedSeries(value, authors.length > 0 ? authors : seen.authors, seen.format),
+        series,
       } satisfies ScanResult,
       // Not part of the result: the book is the edition the reader holds, and
       // this one only lends it a cover.

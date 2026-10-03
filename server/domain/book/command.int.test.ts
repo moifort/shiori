@@ -35,6 +35,25 @@ describe('cataloguing a book', () => {
     expect(book.startedAt).toBeUndefined()
   })
 
+  test('titles a volume without its saga, which sits beside it', async () => {
+    const book = await BookCommand.add(
+      reader,
+      {
+        title: BookTitle('Crescent City, Tome 1 : Maison de la Terre et du Sang'),
+        series: {
+          id: SeriesId('crescent-city--sarah-j-maas'),
+          name: SeriesName('Crescent City'),
+          volume: VolumeNumber(1),
+          kind: 'main',
+        },
+      },
+      NOW,
+    )
+
+    expect(book.title as string).toBe('Maison de la Terre et du Sang')
+    expect(fake.data('books', book.id)?.title).toBe('Maison de la Terre et du Sang')
+  })
+
   test('catalogues it as a book when no format is given', async () => {
     const book = await add('Le Nom du vent')
 

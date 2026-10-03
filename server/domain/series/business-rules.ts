@@ -13,6 +13,7 @@ import type {
 } from '~/domain/series/types'
 import { Year } from '~/domain/shared/primitives'
 import { lovedFirst, lovedRankOf } from '~/domain/shared/rating'
+import { bareTitleOf } from '~/domain/shared/saga-title'
 import type { AuthorName, BookTitle, StarRating, Year as YearValue } from '~/domain/shared/types'
 import { optionally } from '~/utils/input'
 import { slugify } from '~/utils/slug'
@@ -567,8 +568,9 @@ const placeOf = (
 export const withReleases = (
   series: Series,
   language: BookLanguage,
-  found: readonly FoundVolume[],
+  listed: readonly FoundVolume[],
 ): Series => {
+  const found = listed.map((entry) => ({ ...entry, title: bareTitleOf(entry.title, series.name) }))
   let changed = false
   const matches = new Map<number, FoundVolume>()
   const unlisted: FoundVolume[] = []
@@ -619,6 +621,26 @@ export const withReleases = (
   if (!changed) return series
   return { ...series, volumes: inCatalogueOrder(volumes) }
 }
+
+/** The catalogue with every volume titled without its saga (`titleWithoutSaga`):
+ *  the screens show the saga and the number beside the title. */
+export const withBareTitles = (series: Series): Series => ({
+  ...series,
+  volumes: series.volumes.map((volume) => ({
+    ...volume,
+    title: bareTitleOf(volume.title, series.name),
+    ...(volume.titles
+      ? {
+          titles: Object.fromEntries(
+            Object.entries(volume.titles).map(([language, title]) => [
+              language,
+              bareTitleOf(title, series.name),
+            ]),
+          ),
+        }
+      : {}),
+  })),
+})
 
 /** A catalogue built again keeps what the release watch wrote on it: the
  *  model's fresh list knows nothing of release dates. It lists only the

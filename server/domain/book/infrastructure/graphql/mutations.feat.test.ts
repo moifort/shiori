@@ -490,7 +490,7 @@ describe('correcting a book through the API', () => {
   test('applies a genre corrected on one volume to every volume of its saga', async () => {
     const volume = async (number: number) => {
       const result = await execute(
-        `mutation { addBook(input: { title: "Dune ${number}", genre: FANTASY, ` +
+        `mutation { addBook(input: { title: "Dune, part ${number}", genre: FANTASY, ` +
           `series: { id: "dune--frank-herbert", name: "Dune", volume: ${number}, kind: MAIN } }) { id } }`,
       )
       expect(result.errors).toBeUndefined()
@@ -509,8 +509,8 @@ describe('correcting a book through the API', () => {
     expect(library.data?.library).toEqual([
       {
         books: [
-          { title: 'Dune 1', genre: 'SCIENCE_FICTION', subgenres: ['Space Opera'] },
-          { title: 'Dune 2', genre: 'SCIENCE_FICTION', subgenres: ['Space Opera'] },
+          { title: 'Dune, part 1', genre: 'SCIENCE_FICTION', subgenres: ['Space Opera'] },
+          { title: 'Dune, part 2', genre: 'SCIENCE_FICTION', subgenres: ['Space Opera'] },
         ],
       },
       { books: [{ title: 'Alone', genre: null, subgenres: [] }] },
@@ -520,7 +520,7 @@ describe('correcting a book through the API', () => {
   test('leaves the other volumes alone when the correction is not about the genre', async () => {
     const volume = async (number: number) => {
       const result = await execute(
-        `mutation { addBook(input: { title: "Dune ${number}", genre: FANTASY, ` +
+        `mutation { addBook(input: { title: "Dune, part ${number}", genre: FANTASY, ` +
           `series: { id: "dune--frank-herbert", name: "Dune", volume: ${number}, kind: MAIN } }) { id } }`,
       )
       return (result.data as { addBook: { id: string } }).addBook.id
@@ -534,8 +534,8 @@ describe('correcting a book through the API', () => {
     expect(library.data?.library).toEqual([
       {
         books: [
-          { title: 'Dune 1', pageCount: 600 },
-          { title: 'Dune 2', pageCount: null },
+          { title: 'Dune, part 1', pageCount: 600 },
+          { title: 'Dune, part 2', pageCount: null },
         ],
       },
     ])

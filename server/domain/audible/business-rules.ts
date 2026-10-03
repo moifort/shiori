@@ -36,6 +36,7 @@ import type {
 import { SeriesName, seriesKeyOf, VolumeNumber } from '~/domain/series/primitives'
 import type { SeriesId, VolumeNumber as VolumeNumberValue } from '~/domain/series/types'
 import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
+import { titleWithoutSaga } from '~/domain/shared/saga-title'
 import type {
   AuthorName as AuthorNameValue,
   UserId,
@@ -233,27 +234,14 @@ export const heardByAsin = (
  *  "(French Edition)", when the language is a field of its own. */
 const EDITION_MENTION = /\s*\((?:\p{L}+ Edition|[EÉ]dition \p{L}+)\)\s*$/iu
 
-const VOLUME_MENTION = String.raw`\b(?:tome|livre|book|volume|vol\.|t\.?)\s*\d+`
-const LEADING_VOLUME = new RegExp(String.raw`^${VOLUME_MENTION}\s*[-–—:.,]?\s*`, 'iu')
-const TRAILING_VOLUME = new RegExp(String.raw`\s*[-–—:,]?\s*${VOLUME_MENTION}$`, 'iu')
-
 /** The title alone. Audible keeps the saga in a field of its own, but some
  *  publishers repeat it in the title — "System Universe - Torith - Tome 2",
- *  "La Trilogie Baryonique - Tome 1 : La Tragédie de l'Orque". The saga's name
- *  is dropped from the front only when a volume is named with it: "La Légende
- *  des Firemane - L'intégrale" is the title of that recording. */
-export const titleOf = (item: AudibleItem): string => {
-  const title = item.title.replace(EDITION_MENTION, '').trim()
-  const saga = item.series?.name?.replace(EDITION_MENTION, '').trim()
-  if (!saga || !title.toLowerCase().startsWith(saga.toLowerCase())) return title
-  const rest = title
-    .slice(saga.length)
-    .replace(/^\s*[-–—:,]\s*/, '')
-    .trim()
-  const named = LEADING_VOLUME.test(rest) || TRAILING_VOLUME.test(rest)
-  const alone = rest.replace(LEADING_VOLUME, '').replace(TRAILING_VOLUME, '').trim()
-  return named && alone ? alone : title
-}
+ *  "La Trilogie Baryonique - Tome 1 : La Tragédie de l'Orque". */
+export const titleOf = (item: AudibleItem): string =>
+  titleWithoutSaga(
+    item.title.replace(EDITION_MENTION, ''),
+    item.series?.name?.replace(EDITION_MENTION, ''),
+  )
 
 const seriesMembershipOf = (
   item: AudibleItem,

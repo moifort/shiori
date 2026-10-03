@@ -42,6 +42,7 @@ import { DEFAULT_BOOK_LANGUAGE } from '~/domain/book/types'
 import type { KindleAsin } from '~/domain/kindle/types'
 import type { SeriesEdition, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
 import { favoriteAfterRating, ratingUnderHeart } from '~/domain/shared/rating'
+import { bareTitleOf } from '~/domain/shared/saga-title'
 import type { AuthorName, BookTitle, UserId, Year } from '~/domain/shared/types'
 import type { ObjectPath } from '~/system/object-store/types'
 
@@ -157,7 +158,8 @@ const recordOf = (userId: UserId, input: NewBook, now: Date): Book => {
   const book: Book = {
     id: BookIdOf(randomUUID()),
     userId,
-    title: input.title,
+    // The saga and the volume number are fields of their own, shown beside it.
+    title: bareTitleOf(input.title, input.series?.name),
     authors: input.authors ?? [],
     format: input.format ?? 'book',
     media: mediaFor(input.format ?? 'book', input.media),

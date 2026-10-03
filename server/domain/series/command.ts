@@ -1,5 +1,10 @@
 import type { BookLanguage } from '~/domain/book/types'
-import { type FoundVolume, keepingReleases, withReleases } from '~/domain/series/business-rules'
+import {
+  type FoundVolume,
+  keepingReleases,
+  withBareTitles,
+  withReleases,
+} from '~/domain/series/business-rules'
 import * as repository from '~/domain/series/infrastructure/repository'
 import type { Series, SeriesEdition, SeriesId } from '~/domain/series/types'
 
@@ -11,9 +16,10 @@ export namespace SeriesCommand {
    *  fact with no reader state to preserve. What the release watch wrote on the
    *  volumes — dates, titles and covers — is carried over, since the model's
    *  fresh list knows nothing of it. Nothing here is per user, so one reader
-   *  refreshing the catalogue improves it for everyone reading that edition. */
+   *  refreshing the catalogue improves it for everyone reading that edition.
+   *  Its volumes are titled without the saga's name and number. */
   export const catalogue = async (entry: Series): Promise<Series> =>
-    repository.save(keepingReleases(entry, await repository.findById(entry)))
+    repository.save(keepingReleases(withBareTitles(entry), await repository.findById(entry)))
 
   /** Write what the release watch found of one edition into that edition's
    *  catalogue. An edition nobody catalogued is left alone: the watch is no

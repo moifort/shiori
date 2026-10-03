@@ -219,7 +219,7 @@ describe("the reader's own shelf, as friends see it", () => {
     return (result.data as { addBook: { id: string } }).addBook.id
   }
   const dune = (volume: number) =>
-    `title: "Dune ${volume}", authors: ["Frank Herbert"], genre: SCIENCE_FICTION, status: READ, series: { id: "dune--frank-herbert", name: "Dune", volume: ${volume}, kind: MAIN }, coverUrl: "https://covers.example/dune-${volume}.jpg"`
+    `title: "Dune, part ${volume}", authors: ["Frank Herbert"], genre: SCIENCE_FICTION, status: READ, series: { id: "dune--frank-herbert", name: "Dune", volume: ${volume}, kind: MAIN }, coverUrl: "https://covers.example/dune-${volume}.jpg"`
 
   // A hearted saga stands for its volumes: listing one again among the
   // favourite books would carry it twice into a list shared with somebody.
@@ -247,8 +247,8 @@ describe("the reader's own shelf, as friends see it", () => {
           ownedCount: 2,
           genre: 'SCIENCE_FICTION',
           volumes: [
-            { title: 'Dune 1', coverUrl: 'https://covers.example/dune-1.jpg' },
-            { title: 'Dune 2', coverUrl: 'https://covers.example/dune-2.jpg' },
+            { title: 'Dune, part 1', coverUrl: 'https://covers.example/dune-1.jpg' },
+            { title: 'Dune, part 2', coverUrl: 'https://covers.example/dune-2.jpg' },
           ],
         },
       ],
@@ -383,7 +383,11 @@ describe("the reader's own shelf, as friends see it", () => {
     expect(result.errors).toBeUndefined()
     expect(result.data?.myShelf).toEqual({
       sagas: expect.arrayContaining([
-        { name: 'Dune', favorite: false, volumes: [{ title: 'Dune 1' }, { title: 'Dune 2' }] },
+        {
+          name: 'Dune',
+          favorite: false,
+          volumes: [{ title: 'Dune, part 1' }, { title: 'Dune, part 2' }],
+        },
         { name: 'Hypérion', favorite: false, volumes: [] },
       ]),
     })
@@ -398,7 +402,7 @@ describe("the reader's own shelf, as friends see it", () => {
     const result = await as(alice)('{ myShelf { sagas { name volumes { title } } } }')
 
     expect(result.data?.myShelf).toEqual({
-      sagas: [{ name: 'Dune', volumes: [{ title: 'Dune 1' }, { title: 'Dune 2' }] }],
+      sagas: [{ name: 'Dune', volumes: [{ title: 'Dune, part 1' }, { title: 'Dune, part 2' }] }],
     })
   })
 
@@ -475,7 +479,7 @@ describe("the reader's own shelf, as friends see it", () => {
           id: expect.any(String),
           name: 'Dune',
           shelvedAt: '2026-09-05T00:00:00.000Z',
-          volumes: [{ title: 'Dune 1' }, { title: 'Dune 2' }],
+          volumes: [{ title: 'Dune, part 1' }, { title: 'Dune, part 2' }],
         },
       ],
       hasMore: true,
@@ -550,8 +554,8 @@ describe("the reader's own shelf, as friends see it", () => {
       favorite: false,
       state: 'IN_PROGRESS',
       volumes: [
-        { title: 'Dune 1', status: 'READ', inLibrary: false },
-        { title: 'Dune 2', status: 'TO_READ', inLibrary: true },
+        { title: 'Dune, part 1', status: 'READ', inLibrary: false },
+        { title: 'Dune, part 2', status: 'TO_READ', inLibrary: true },
       ],
     })
     expect(unheld.data?.friendSaga).toBeNull()
@@ -890,7 +894,7 @@ describe("the friends' new favourites, for the dashboard", () => {
     const piranesi = await addBook(alice, 'title: "Piranesi", status: READ')
     await addBook(
       alice,
-      'title: "Dune 1", authors: ["Frank Herbert"], status: READ, series: { id: "dune--frank-herbert", name: "Dune", volume: 1, kind: MAIN }',
+      'title: "Dune, part 1", authors: ["Frank Herbert"], status: READ, series: { id: "dune--frank-herbert", name: "Dune", volume: 1, kind: MAIN }',
     )
     await heartAt(alice, piranesi, '2026-09-10T10:00:00Z')
     setSystemTime(new Date('2026-09-12T10:00:00Z'))
@@ -908,7 +912,7 @@ describe("the friends' new favourites, for the dashboard", () => {
         friendId: 'alice',
         favoritedAt: '2026-09-12T10:00:00.000Z',
         book: null,
-        saga: { name: 'Dune', volumes: [{ title: 'Dune 1' }] },
+        saga: { name: 'Dune', volumes: [{ title: 'Dune, part 1' }] },
       },
     ])
   })
@@ -961,11 +965,11 @@ describe('what the friends love, for Découvrir', () => {
     )
     await addBook(
       alice,
-      'title: "Dune 1", authors: ["Frank Herbert"], format: AUDIOBOOK, status: READ, series: { id: "dune--frank-herbert--audio", name: "Dune", volume: 1, kind: MAIN }',
+      'title: "Dune, part 1", authors: ["Frank Herbert"], format: AUDIOBOOK, status: READ, series: { id: "dune--frank-herbert--audio", name: "Dune", volume: 1, kind: MAIN }',
     )
     await addBook(
       alice,
-      'title: "Dune 2", authors: ["Frank Herbert"], format: AUDIOBOOK, status: READ, series: { id: "dune--frank-herbert--audio", name: "Dune", volume: 2, kind: MAIN }',
+      'title: "Dune, part 2", authors: ["Frank Herbert"], format: AUDIOBOOK, status: READ, series: { id: "dune--frank-herbert--audio", name: "Dune", volume: 2, kind: MAIN }',
     )
     const held = await addBook(alice, 'title: "Hypérion", authors: ["Dan Simmons"], status: READ')
     await heartAt(alice, piranesi, '2026-09-10T10:00:00Z')
@@ -985,7 +989,7 @@ describe('what the friends love, for Découvrir', () => {
       books: [{ book: { title: 'Piranesi' }, friends: [{ userId: 'alice' }], lovedByMany: false }],
       sagas: [
         {
-          saga: { name: 'Dune', ownedCount: 2, volumes: [{ title: 'Dune 1' }] },
+          saga: { name: 'Dune', ownedCount: 2, volumes: [{ title: 'Dune, part 1' }] },
           friends: [{ userId: 'alice' }],
           lovedByMany: false,
         },

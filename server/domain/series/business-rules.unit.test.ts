@@ -16,6 +16,7 @@ import {
   publishedVolumes,
   splitBySpine,
   stateOf,
+  withBareTitles,
   withoutDuplicateVolumes,
   withReleases,
   withShelvedVolumes,
@@ -682,6 +683,15 @@ describe('withReleases', () => {
     })
   })
 
+  test('a title found with the saga in it is written without it', () => {
+    const merged = withReleases(series, 'fr', [
+      { volume: VolumeNumber(1), title: BookTitle('Saga, tome 1 : Un') },
+      { volume: VolumeNumber(2), title: BookTitle('Saga, tome 2') },
+    ])
+    expect(merged.volumes[0]?.titles).toMatchObject({ fr: 'Un' })
+    expect(merged.volumes[1]).toMatchObject({ number: 2, title: 'Saga' })
+  })
+
   test('a volume the catalogue lacks joins the spine at its number', () => {
     const merged = withReleases(series, 'fr', [
       { volume: VolumeNumber(2), title: BookTitle('Deux'), date: ReleaseDate('2026-10-08') },
@@ -842,5 +852,21 @@ describe('an empty catalogue answer', () => {
   test('lets the model be asked again after a month, or when there is none', () => {
     expect(isRecentMiss(missed(30), now)).toBe(false)
     expect(isRecentMiss(null, now)).toBe(false)
+  })
+})
+
+describe('withBareTitles', () => {
+  test('titles every volume, in every language, without the saga', () => {
+    const series = saga([
+      {
+        ...volume({ title: 'Saga, Tome 1 : One', number: VolumeNumber(1) }),
+        titles: { fr: BookTitle('Saga T1 - Un') },
+      },
+      volume({ title: 'Side', kind: 'novella' }),
+    ])
+    expect(withBareTitles(series).volumes).toMatchObject([
+      { title: 'One', titles: { fr: 'Un' } },
+      { title: 'Side' },
+    ])
   })
 })

@@ -59,7 +59,7 @@ Livre : « ${title} »${authors.length > 0 ? ` de ${authors.join(', ')}` : ''}
 ${editionOf(publisher, editionLanguage ?? language)}
 
 Renseigne :
-- title et authors : corrige-les si la recherche montre que la lecture de la couverture était fautive, sinon reprends-les tels quels.
+- title et authors : corrige-les si la recherche montre que la lecture de la couverture était fautive, sinon reprends-les tels quels. Le titre est celui du livre SEUL, sans le nom de la série ni le numéro du tome, qui ont leurs propres champs ; un tome sans titre propre porte le nom de la série.
 - synopsis : un résumé de 3 à 5 phrases, SANS révéler le dénouement.
 - firstPublishedIn : l'année de première publication de l'ŒUVRE, pas de cette édition.
 - genre : UN SEUL genre, choisi dans la liste imposée par le schéma : le plus précis qui convienne au contenu. Le format de l'objet (manga, BD) et le public visé (jeunesse, young adult) ne sont pas des genres. Mets other si aucun ne convient.
@@ -96,7 +96,7 @@ Le texte peut être approximatif, partiel ou mal orthographié, et peut contenir
 - Si le texte désigne sans ambiguïté un seul livre, ne renvoie que celui-là.
 - Deux éditions ou traductions d'une même œuvre sont UN SEUL livre : ne les liste pas séparément.
 - Des tomes différents d'une même série sont des livres distincts.
-- title : le titre exact, dans l'édition en ${LANGUAGE_NAMES[language]} si elle existe.
+- title : le titre exact, dans l'édition en ${LANGUAGE_NAMES[language]} si elle existe, sans le nom de la série ni le numéro du tome.
 - seriesName et volumeNumber : la série et le numéro de tome, sinon null.
 - Si aucun livre ne correspond, renvoie une liste vide.`
 
@@ -132,7 +132,7 @@ Renseigne :
 - description : 2 à 3 phrases présentant la série, SANS révéler le dénouement.
 - volumes : TOUS les volumes DÉJÀ PARUS en ${edition}, dans l'ordre de PUBLICATION. Un volume annoncé mais pas encore paru n'en fait PAS partie, ni un volume paru dans une autre langue mais pas encore traduit en ${edition} : ne les liste pas. Pour chacun :
   - number : le numéro du tome dans l'histoire principale, ou null pour tout ce qui est hors numérotation.
-  - title : le titre du volume dans l'édition en ${edition}.
+  - title : le titre du volume dans l'édition en ${edition}, sans le nom de la série ni le numéro du tome ; un tome sans titre propre porte le nom de la série.
   - publishedIn : l'année de parution en ${edition}, pas celle de l'édition originale.
   - kind : ${VOLUME_KINDS.map((kind) => `'${kind}'`).join(', ')}. 'main' pour un tome numéroté de l'histoire principale, 'prequel' pour une préquelle, 'spin-off' pour un récit dérivé, 'novella' pour un texte court, 'companion' pour un guide, un atlas ou un artbook.
 
@@ -165,7 +165,7 @@ Renseigne :
 - description : 2 à 3 phrases présentant la série, SANS révéler le dénouement.
 - volumes : les volumes enregistrés en livre audio en ${edition} DÉJÀ SORTIS, dans l'ordre de PUBLICATION. Un tome paru en livre imprimé mais pas encore enregistré en ${edition} n'en fait PAS partie, ni un enregistrement annoncé mais pas encore sorti : ne les liste pas. Pour chacun :
   - number : le numéro du tome dans l'histoire principale, ou null pour tout ce qui est hors numérotation.
-  - title : le titre de l'enregistrement en ${edition}.
+  - title : le titre de l'enregistrement en ${edition}, sans le nom de la série ni le numéro du tome ; un tome sans titre propre porte le nom de la série.
   - publishedIn : l'année de sortie du livre audio, pas celle du livre imprimé.
   - kind : ${VOLUME_KINDS.map((kind) => `'${kind}'`).join(', ')}. 'main' pour un tome numéroté de l'histoire principale, 'prequel' pour une préquelle, 'spin-off' pour un récit dérivé, 'novella' pour un texte court, 'companion' pour un guide, un atlas ou un artbook.
 
