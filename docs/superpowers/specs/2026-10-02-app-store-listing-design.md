@@ -97,7 +97,7 @@ Eight panels on a very light grey (#F2F2F4):
 |---|---|---|
 | 01 · 02 | One photograph cut in two: the Hypérion paperback lying across the cut, a hand scanning it, the phone showing its record | Scannez… · …Shiori fait le reste |
 | 03 | A drawn iPhone: the mosaic | Livres et audio ! |
-| 04 | A drawn iPhone: the dashboard | Des analytics détaillés |
+| 04 | A drawn iPhone: the detailed statistics | Des analytics détaillés |
 | 05 | A drawn iPhone: the sagas | Suivi de vos séries préférées |
 | 06 | A drawn iPhone: One Piece's page and its next volume | Être averti des sorties et disponibilités |
 | 07 | A drawn iPhone: Découvrir | Découvrez vos nouveaux coups de cœur |

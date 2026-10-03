@@ -47,6 +47,13 @@ final class ScreenshotTest: XCTestCase {
         settle()
         save("02-home")
 
+        // The detailed statistics, behind the genres card.
+        try tap(app.descendants(matching: .any)["home-genres"].firstMatch, until: app.descendants(matching: .any)["genre-insights"])
+        settle()
+        save("02-stats")
+        try tap(app.navigationBars.buttons["xmark"].firstMatch, ifPresent: true)
+        _ = app.descendants(matching: .any)["genre-insights"].waitForNonExistence(timeout: 5)
+
         // Bibliothèque, its books as a mosaic of covers.
         try open("Bibliothèque")
         let shelves = app.segmentedControls["library-shelf-picker"]
@@ -79,6 +86,17 @@ final class ScreenshotTest: XCTestCase {
 
         // The scan: the last photo of the add sheet, a cover, read and filled in.
         try open("Scanner")
+        // A fresh install has not been allowed the photos yet: the sheet asks, and
+        // the system's alert is answered with full access.
+        let permission = app.descendants(matching: .any)["add-book-photos-permission"]
+        if permission.waitForExistence(timeout: 3) {
+            permission.tap()
+            let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+            let allow = springboard.buttons
+                .matching(NSPredicate(format: "label CONTAINS[c] 'complet' OR label CONTAINS[c] 'Full Access'"))
+                .firstMatch
+            try tap(allow)
+        }
         try tap(app.descendants(matching: .any)["add-book-recent-photo-0"])
         try wait(app.buttons["review-save"], timeout: 30)
         settle()

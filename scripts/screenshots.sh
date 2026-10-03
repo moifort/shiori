@@ -20,7 +20,7 @@ DEVICE_NAME="Shiori Captures"
 DEVICE_TYPE="com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max"
 BUNDLE_ID="com.polyforms.shiori.app"
 DESTINATION_DIR="screenshots/captures/fr"
-EXPECTED=8
+EXPECTED=9
 
 udid=$(xcrun simctl list devices available -j | bun -e '
   const { devices } = JSON.parse(await Bun.stdin.text())
@@ -40,6 +40,10 @@ xcrun simctl bootstatus "$udid" -b >/dev/null
 # Apple's own marketing status bar: 9:41, full signal, full battery.
 xcrun simctl status_bar "$udid" override --time "9:41" --batteryState charged \
   --batteryLevel 100 --cellularBars 4 --wifiBars 3 --dataNetwork wifi
+
+# A fresh install every run, before the photos permission is granted to it: the app keeps the covers it fetched on disk, keyed by
+# address, and a cover replaced under the same file name would otherwise show stale.
+xcrun simctl uninstall "$udid" "$BUNDLE_ID" 2>/dev/null || true
 
 # The scan starts from the add sheet's last photo: the cover, and the right to read it.
 # On a simulator whose Photos never opened, addmedia waits forever for a library

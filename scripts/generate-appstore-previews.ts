@@ -96,8 +96,8 @@ const DEVICES: DevicePanel[] = [
   },
   {
     kind: 'device',
-    output: '04-accueil.png',
-    capture: '02-home.png',
+    output: '04-statistiques.png',
+    capture: '02-stats.png',
     caption: 'Des analytics détaillés',
   },
   {

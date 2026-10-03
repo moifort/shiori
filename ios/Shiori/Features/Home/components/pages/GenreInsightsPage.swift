@@ -42,6 +42,7 @@ struct GenreInsightsPage: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Genres lus")
+        .accessibilityIdentifier("genre-insights")
         .navigationBarTitleDisplayMode(.inline)
     }
 }

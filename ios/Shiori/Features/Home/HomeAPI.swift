@@ -48,6 +48,11 @@ enum HomeAPI {
     }
 
     static func genreInsights() async throws -> GenreInsights {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.genreInsights
+        }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.GenreInsightsQuery()

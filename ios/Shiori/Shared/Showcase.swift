@@ -107,7 +107,7 @@ enum Showcase {
         Saga(
             id: "one-piece", name: "One Piece", authors: ["Eiichirō Oda"], format: .manga,
             publisher: "Glénat", genre: .adventure, subgenres: ["Shōnen", "Pirates"], pages: 208,
-            published: 113, owned: 113, read: 112, readBetween: (900, 20), readingSince: 3,
+            published: 113, owned: 113, read: 22, readBetween: (900, 20), readingSince: 3,
             announced: (114, nil, 68), rating: 5, favorite: true, slug: "one-piece",
             firstPublishedIn: 1997,
             description: """
@@ -125,7 +125,7 @@ enum Showcase {
         Saga(
             id: "blue-lock", name: "Blue Lock", authors: ["Muneyuki Kaneshiro", "Yusuke Nomura"],
             format: .manga, publisher: "Pika", genre: .adventure, subgenres: ["Sport", "Shōnen"],
-            pages: 192, published: 34, owned: 34, read: 34, readBetween: (610, 5),
+            pages: 192, published: 34, owned: 34, read: 10, readBetween: (610, 5),
             announced: (35, nil, 12), rating: 4, slug: "blue-lock", firstPublishedIn: 2018
         ),
         Saga(
@@ -208,7 +208,11 @@ enum Showcase {
         } else {
             status = .toRead
         }
-        let addedAt = startedAt.map { $0.addingTimeInterval(-3 * 86400) } ?? daysAgo(45)
+        // A volume still on the pile was bought along the way, as the others were
+        // read: spread over the same months rather than piled on one day.
+        let span = saga.readBetween.from - saga.readBetween.to
+        let bought = saga.readBetween.from - span * Double(number - 1) / Double(max(1, saga.owned - 1))
+        let addedAt = startedAt.map { $0.addingTimeInterval(-3 * 86400) } ?? daysAgo(bought + 1)
         return Book(
             id: "\(saga.id)-\(number)",
             title: saga.title(number),
@@ -625,6 +629,66 @@ enum Showcase {
             hasAudiobooks: books.contains { $0.format == .audiobook },
             hasPrintedBooks: true,
             libraryIsEmpty: false
+        )
+    }
+
+    /// The detailed statistics, counted off the same shelf.
+    static var genreInsights: GenreInsights {
+        let read = books.filter { $0.status == .read }
+        let byGenre = Dictionary(grouping: read.filter { $0.genre != nil }) { $0.genre! }
+        let shares = byGenre.map { GenreInsights.Share(genre: $0.key, count: $0.value.count) }
+            .sorted { $0.count > $1.count }
+        let formats = Dictionary(grouping: read, by: \.format).map { format, books in
+            let top = Dictionary(grouping: books.compactMap(\.genre), by: { $0 })
+                .max { $0.value.count < $1.value.count }?.key
+            return GenreInsights.FormatShare(format: format, count: books.count, topGenre: top)
+        }.sorted { $0.count > $1.count }
+        // A taste: a genre, or one of its subgenres, and the stars its books got.
+        var groups: [String: (genre: BookGenre, subgenre: String?, ratings: [Int], count: Int)] = [:]
+        for book in read {
+            guard let genre = book.genre else { continue }
+            for subgenre in [nil] + book.subgenres.prefix(1).map(Optional.some) {
+                let key = "\(genre.rawValue)~\(subgenre ?? "")"
+                var group = groups[key] ?? (genre, subgenre, [], 0)
+                group.count += 1
+                if let stars = book.shownRating { group.ratings.append(stars) }
+                groups[key] = group
+            }
+        }
+        let tastes = groups.values
+            .filter { !$0.ratings.isEmpty && $0.count >= 2 }
+            .map {
+                GenreInsights.Taste(
+                    genre: $0.genre, subgenre: $0.subgenre, readCount: $0.count,
+                    averageRating: Double($0.ratings.reduce(0, +)) / Double($0.ratings.count)
+                )
+            }
+            .sorted { $0.readCount > $1.readCount }
+        let rated = read.compactMap(\.shownRating)
+        let paged = Dictionary(grouping: read.filter { $0.pageCount != nil && $0.genre != nil }) { $0.genre! }
+            .filter { $0.value.count >= 2 }
+            .mapValues { $0.compactMap(\.pageCount).reduce(0, +) / $0.count }
+        let days = Dictionary(grouping: read.filter { $0.genre != nil && $0.startedAt != nil }) { $0.genre! }
+            .filter { $0.value.count >= 2 }
+            .mapValues { books in
+                books.map { ($0.finishedAt!.timeIntervalSince($0.startedAt!) / 86400).rounded(.up) }
+                    .reduce(0, +) / Double(books.count)
+            }
+        let pile = books.filter { $0.status == .toRead }
+        return GenreInsights(
+            readCount: read.count,
+            shares: shares,
+            formats: formats,
+            tastes: Array(tastes.prefix(7)),
+            averageRating: rated.isEmpty ? nil : Double(rated.reduce(0, +)) / Double(rated.count),
+            gem: tastes.filter { $0.readCount >= 3 }.max { $0.averageRating < $1.averageRating },
+            longest: paged.max { $0.value < $1.value }.map { .init(genre: $0.key, averagePages: $0.value) },
+            fastest: days.min { $0.value < $1.value }.map { .init(genre: $0.key, averageDays: max(1, Int($0.value))) },
+            mostDropped: nil,
+            unexplored: BookGenre.allCases
+                .filter { $0 != .other && byGenre[$0] == nil }
+                .map { genre in .init(genre: genre, pileCount: pile.filter { $0.genre == genre }.count) }
+                .sorted { $0.pileCount > $1.pileCount }
         )
     }
 

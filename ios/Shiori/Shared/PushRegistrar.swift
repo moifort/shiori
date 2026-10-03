@@ -29,6 +29,10 @@ final class PushRegistrar: NSObject, UNUserNotificationCenterDelegate {
     /// Ask for permission if it was never asked, and register this device when
     /// it is granted. Answers whether notifications are allowed.
     func requestPermission() async -> Bool {
+        #if DEBUG
+        // The App Store captures: no system alert over the screen being taken.
+        if Showcase.isOn { return true }
+        #endif
         let center = UNUserNotificationCenter.current()
         let status = await authorizationStatus()
         let granted: Bool
