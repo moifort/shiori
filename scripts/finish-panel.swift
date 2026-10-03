@@ -10,7 +10,7 @@
 // The captions are set here rather than asked of the image model, which garbles
 // text: Core Text, the system font, shrunk and wrapped until it fits the band.
 //
-// Usage: swift finish-panel.swift fit <in.png> <out.png> [--backdrop] [--anchor left|center|right] [--center <0-1>]
+// Usage: swift finish-panel.swift fit <in.png> <out.png> [--backdrop] [--width <px>] [--zoom <n>] [--top <0-1>] [--anchor left|center|right] [--center <0-1>]
 //        swift finish-panel.swift caption <in.png> <out.png> <caption>
 
 import CoreGraphics
@@ -36,10 +36,13 @@ func load(_ path: String) -> CGImage {
   return image
 }
 
+/// The canvas's width: one panel, or with --width a panorama of several.
+var canvasWidth = panelWidth
+
 func canvas() -> CGContext {
   guard
     let context = CGContext(
-      data: nil, width: panelWidth, height: panelHeight, bitsPerComponent: 8, bytesPerRow: 0,
+      data: nil, width: canvasWidth, height: panelHeight, bitsPerComponent: 8, bytesPerRow: 0,
       space: CGColorSpace(name: CGColorSpace.sRGB)!,
       bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)
   else { fail("cannot allocate the panel") }
@@ -80,11 +83,24 @@ let options = Array(arguments.dropFirst(4))
 
 switch mode {
 case "fit":
+  if let index = options.firstIndex(of: "--width"), let value = Int(options[index + 1]) {
+    canvasWidth = value
+  }
+  let panelWidth = canvasWidth
   let image = load(input)
   // Scaled to the panel's height, then cut to its width where the anchor says:
   // the left half of a pair keeps its right edge, which meets the other half.
-  let scale = Double(panelHeight) / Double(image.height)
+  // --zoom crops in closer than the panel's height, for a subject the model drew
+  // smaller than asked; --top then says where the window starts, as a share of
+  // the zoomed height.
+  let zoom = options.firstIndex(of: "--zoom").flatMap { Double(options[$0 + 1]) } ?? 1
+  let top = options.firstIndex(of: "--top").flatMap { Double(options[$0 + 1]) } ?? 0
+  let scale = Double(panelHeight) / Double(image.height) * zoom
   let scaledWidth = Double(image.width) * scale
+  let scaledHeight = Double(image.height) * scale
+  // Core Graphics counts from the bottom: the window's top at `top` of the
+  // zoomed height leaves this much of the image below the panel.
+  let y = Double(panelHeight) - scaledHeight * (1 - top)
   let anchor = options.firstIndex(of: "--anchor").map { options[$0 + 1] } ?? "center"
   // --center places the panel's middle at that share of the scene's width, for a
   // subject that is not quite centred.
@@ -99,7 +115,7 @@ case "fit":
     }
   let context = canvas()
   context.interpolationQuality = .high
-  context.draw(image, in: CGRect(x: x, y: 0, width: scaledWidth, height: Double(panelHeight)))
+  context.draw(image, in: CGRect(x: x, y: y, width: scaledWidth, height: scaledHeight))
 
   if options.contains("--backdrop"), let data = context.data {
     // The backdrop is never quite flat: the sweep darkens toward one side, and

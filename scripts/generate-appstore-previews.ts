@@ -11,8 +11,11 @@
  * 6.9" panel, brings its backdrop to the exact grey so panels drawn apart meet
  * without a seam, and sets the caption.
  *
- * The first two panels are one moment told in two: the book, then the phone that
- * photographed it, its record filled in.
+ * Three kinds of panel. The first two are one photograph cut in two: a reader
+ * photographing a book, the phone showing its record filled in. The last is two
+ * friends' hands, each phone showing the Partagé page. In between, the app alone:
+ * an iPhone drawn to its exact proportions (device-panel.swift), on the grey or
+ * before a dark bookshelf — hands added nothing there.
  *
  * Scenes are cached in screenshots/appstore/scenes/ and committed: changing a
  * caption or a capture asks nothing of the model. Look at a new scene before
@@ -41,122 +44,96 @@ const outputDir = join(appstoreDir, LANGUAGE)
 const hyperionCover = join(appstoreDir, 'assets/hyperion-cover.jpg')
 const compositeMockup = join(import.meta.dir, 'composite-mockup.swift')
 const finishPanel = join(import.meta.dir, 'finish-panel.swift')
+const devicePanel = join(import.meta.dir, 'device-panel.swift')
 
 const BACKDROP = `Background: one seamless, perfectly plain, flat, very light neutral grey (#F2F2F4) — no texture, no gradient, no vignette, no horizon line. Soft, even daylight from the upper left.`
 const GREEN_SCREEN = `The display has the slim proportions of an iPhone 17 Pro Max: its height is 2.17 times its width. The phone's display is ONE uniform, flat, pure chroma-key green (#00FF00) from edge to edge of the glass, with the black pill-shaped Dynamic Island at the top: no icons, no reflections, no gradient. Fingers must not cover the display.`
 const NO_TEXT = `ABSOLUTELY NO TEXT, letters, logos or watermarks anywhere. Natural skin, five fingers, sharp focus.`
 
-/** A phone held up close on the grey, by a hand described in a few words. */
-const handHeld = (
-  hand: string,
-) => `A photorealistic studio EXTREME CLOSE-UP photograph, vertical 9:16.
-${BACKDROP}
-Subject: one modern iPhone with thin titanium edges, upright, screen facing the viewer, held by ${hand} whose fingers wrap its lower left and right edges. The phone is HUGE in the frame: its top edge sits at 17% of the image height and its bottom edge at 96% of the image height; it spans 86% of the image width. Only a little of the hand shows, around the lower part of the phone and below it. Nothing else in the frame.
-${GREEN_SCREEN}
-The top 15% of the frame is empty background.
-${NO_TEXT}`
+/** A scene the model draws, cached under its name. */
+type Scene = { name: string; aspect: string; prompt: string }
 
-type Panel = {
-  output: string
-  scene: string
-  prompt: string
-  /** The backdrop is the listing's grey, to be evened out to it. */
-  backdrop: boolean
-  /** Where the panel's middle falls across the scene, when its subject is off centre. */
-  center?: number
-  /** The book's magenta cover, replaced by the real one. */
-  cover?: string
-  /** The captures for the green screens, top to bottom; `@180` on a phone held upside down. */
-  screens: string[]
-  caption: string
+const SCAN: Scene = {
+  name: 'scan',
+  aspect: '1:1',
+  prompt: `ONE single continuous photorealistic studio photograph, square, one shot from one camera. It is NOT a diptych: no dividing line, no border, no seam; every object appears exactly once.
+${BACKDROP}
+A reader photographs a book with their phone. The frame will be cut down its vertical middle into two side-by-side panels:
+- LEFT HALF: a single closed paperback book lies on the light grey surface, seen from slightly above, large — about 75% of the left half's width — its front cover facing up toward the camera. The cover is ONE uniform, flat, pure magenta (#FF00FF) rectangle from edge to edge, no print, no texture (a placeholder to be replaced).
+- RIGHT HALF: a single hand (hand and wrist only, light-medium skin) holds one modern iPhone upright and VERY LARGE, its top edge 18% below the top of the frame and its bottom edge at 92% of the frame's height, its screen facing the viewer, turned very slightly toward the book as if it has just photographed it.
+- Nothing on the vertical centre line: the phone stays entirely in the right half.
+${GREEN_SCREEN}
+The top 16% of the frame is empty background, for captions.
+${NO_TEXT}`,
 }
 
-const PANELS: Panel[] = [
-  {
-    output: '01-scan-livre.png',
-    scene: 'scan-book',
-    backdrop: true,
-    cover: hyperionCover,
-    screens: [],
-    caption: 'Photographiez la couverture',
-    prompt: `A photorealistic studio photograph, vertical 9:16.
+const SHARE: Scene = {
+  name: 'share',
+  aspect: '9:16',
+  prompt: `A photorealistic studio photograph for an App Store marketing image, vertical 9:16.
 ${BACKDROP}
-Subject: a single closed paperback book standing almost upright, leaning slightly back, its front cover facing the viewer, seen straight on, LARGE: it fills about 80% of the frame's width and about 55% of its height, centred horizontally, in the lower 70% of the frame. Its front cover is ONE uniform, flat, pure magenta (#FF00FF) rectangle from edge to edge, no print, no texture, no reflection (a placeholder that will be replaced).
-The top 25% of the frame is empty background.
-ABSOLUTELY NO TEXT, letters, logos or watermarks anywhere.`,
-  },
-  {
-    output: '02-scan-fiche.png',
-    scene: 'scan-phone',
-    backdrop: true,
-    screens: ['00-scan.png'],
-    caption: 'Shiori remplit la fiche',
-    prompt: handHeld('a single hand (light-medium skin)'),
-  },
-  {
-    output: '03-bibliotheque.png',
-    scene: 'library',
-    backdrop: false,
-    screens: ['01-library.png'],
-    caption: 'Une photo, votre bibliothèque',
-    prompt: `A photorealistic photograph for an App Store marketing image, vertical 9:16.
-The WHOLE background, from the top edge to the bottom edge and from side to side, is a wall of wooden bookshelves packed with colourful books, softly out of focus — no bare wall, no ceiling, no floor, no window: books everywhere behind the phone. The library is darker and moodier: dark walnut shelves, deep shadows between the books, dim warm lamplight, so the bright phone stands out.
-A person's hand (only the hand and wrist, medium-dark skin) holds a modern iPhone upright, facing the camera straight on, IN A CLOSE-UP, very large and close to the camera: the phone fills 78% of the image height and 70% of its width, centred horizontally, its top edge 17% below the top of the image, its bottom edge at 95% of the image height. The phone is the dominant subject, far larger than in an ordinary photograph.
-${GREEN_SCREEN}
-${NO_TEXT}`,
-  },
-  {
-    output: '04-accueil.png',
-    scene: 'home',
-    backdrop: true,
-    screens: ['02-home.png'],
-    caption: 'Des analytics détaillés',
-    prompt: handHeld('a left hand with deep brown skin'),
-  },
-  {
-    output: '05-series.png',
-    scene: 'series',
-    backdrop: true,
-    screens: ['03-series.png'],
-    caption: "Détection des séries et de votre état d'avancement",
-    prompt: handHeld('a right hand with light, freckled skin'),
-  },
-  {
-    output: '06-serie.png',
-    scene: 'saga',
-    backdrop: true,
-    screens: ['04-saga.png'],
-    caption: "Être averti de l'arrivée d'un tome de votre série préférée",
-    prompt: handHeld('a left hand with olive, medium skin and a thin silver ring'),
-  },
-  {
-    output: '07-decouvrir.png',
-    scene: 'discover',
-    backdrop: true,
-    screens: ['05-discover.png'],
-    caption: 'Découvrez les sorties, les disponibilités et les coups de cœur de vos amis',
-    prompt: handHeld('a right hand with light-medium East Asian skin'),
-  },
-  {
-    output: '08-partage.png',
-    scene: 'share',
-    backdrop: true,
-    // The friend across the table holds their phone upside down: their library.
-    screens: ['01-library.png@180', '06-shared.png'],
-    caption: 'Partagez votre bibliothèque avec vos proches',
-    prompt: `A photorealistic studio photograph for an App Store marketing image, vertical 9:16.
-${BACKDROP}
-Two friends sitting face to face show each other their phones, seen from above: one hand with dark brown skin enters from the LEFT edge and holds a modern iPhone upside down (rotated 180°, its Dynamic Island toward the bottom), in the upper-left part of the frame; another hand with light skin enters from the RIGHT edge and holds a modern iPhone upright (Dynamic Island at the top), in the lower-right part. Both phones are LARGE — each about 40% of the frame's height — both displays face the viewer, and they do not overlap. Both phones stay within the central 80% of the frame's width. Only hands and wrists, no faces; no arm reaches the top of the frame.
-The topmost 18% of the frame is empty background for a caption: nothing — no hand, no arm, no phone — enters it.
+Two friends show each other their phones, seen from above: one hand with dark brown skin enters from the LEFT edge and holds a modern iPhone upside down (rotated 180°, its Dynamic Island toward the bottom) in the upper-left; another hand with light skin enters from the RIGHT edge and holds a modern iPhone upright (Dynamic Island at the top) in the lower-right. Both phones are VERY LARGE — each about 52% of the frame's height and 58% of its width — overlapping diagonally a little at their inner corners is fine, but their displays never touch. Both displays face the viewer. Only hands and wrists, no faces; no arm reaches the top of the frame.
+The topmost 15% of the frame is empty background for a caption: nothing enters it.
 Each display has the slim proportions of an iPhone 17 Pro Max, its height 2.17 times its width. Each phone's display is ONE uniform, flat, pure chroma-key green (#00FF00) from edge to edge of the glass, with the black pill-shaped Dynamic Island: no icons, no reflections, no gradient. Fingers must not cover the displays.
 ${NO_TEXT}`,
+}
+
+const SHELVES: Scene = {
+  name: 'shelves',
+  aspect: '9:16',
+  prompt: `A photorealistic photograph, vertical 9:16: a wall of dark walnut bookshelves packed with old and colourful books, filling the whole frame from edge to edge, softly out of focus, deep shadows between the books, dim warm lamplight. No person, no hand, no phone, no object in front of the shelves.
+ABSOLUTELY NO TEXT, letters or logos anywhere, not on the book spines either.`,
+}
+
+/** The app alone, in a drawn iPhone: on the grey, or before a scene. */
+type DevicePanel = {
+  kind: 'device'
+  output: string
+  capture: string
+  caption: string
+  scene?: Scene
+}
+
+const LIGHT_GREY = '#F2F2F4'
+
+const DEVICES: DevicePanel[] = [
+  {
+    kind: 'device',
+    output: '03-bibliotheque.png',
+    capture: '01-library.png',
+    caption: 'Une photo, votre bibliothèque',
+    scene: SHELVES,
+  },
+  {
+    kind: 'device',
+    output: '04-accueil.png',
+    capture: '02-home.png',
+    caption: 'Des analytics détaillés',
+  },
+  {
+    kind: 'device',
+    output: '05-series.png',
+    capture: '03-series.png',
+    caption: "Détection des séries et de votre état d'avancement",
+  },
+  {
+    kind: 'device',
+    output: '06-serie.png',
+    capture: '04-saga.png',
+    caption: "Être averti de l'arrivée d'un tome de votre série préférée",
+  },
+  {
+    kind: 'device',
+    output: '07-decouvrir.png',
+    capture: '05-discover.png',
+    caption: 'Découvrez les sorties, les disponibilités et les coups de cœur de vos amis',
   },
 ]
 
-const generateScene = async (panel: Panel, target: string) => {
+const generateScene = async (scene: Scene, target: string) => {
   const apiKey = process.env.NITRO_GOOGLE_API_KEY
   if (!apiKey) throw new Error('NITRO_GOOGLE_API_KEY is not set (expected in .env)')
-  console.log(`${panel.scene}: drawing a new scene with ${MODEL}...`)
+  console.log(`${scene.name}: drawing a new scene with ${MODEL}...`)
   // A 2K image takes a minute to come back, and the connection is sometimes
   // reset under it: tried three times before giving up.
   const request = () =>
@@ -164,10 +141,10 @@ const generateScene = async (panel: Panel, target: string) => {
       method: 'POST',
       headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: panel.prompt }] }],
+        contents: [{ parts: [{ text: scene.prompt }] }],
         generationConfig: {
           responseModalities: ['TEXT', 'IMAGE'],
-          imageConfig: { aspectRatio: '9:16', imageSize: '2K' },
+          imageConfig: { aspectRatio: scene.aspect, imageSize: '2K' },
         },
       }),
     })
@@ -177,7 +154,7 @@ const generateScene = async (panel: Panel, target: string) => {
       response = await request()
     } catch (error) {
       if (attempt >= 3) throw error
-      console.log(`${panel.scene}: ${String(error)}, trying again`)
+      console.log(`${scene.name}: ${String(error)}, trying again`)
     }
   }
   if (!response.ok) throw new Error(`Gemini API error ${response.status}: ${await response.text()}`)
@@ -202,37 +179,65 @@ await mkdir(sceneDir, { recursive: true })
 await mkdir(outputDir, { recursive: true })
 const work = await mkdtemp(join(tmpdir(), 'shiori-panels-'))
 
-for (const panel of PANELS) {
-  const scene = join(sceneDir, `${panel.scene}.jpg`)
-  if (regenerate === panel.scene || !(await Bun.file(scene).exists()))
-    await generateScene(panel, scene)
-  for (const screen of panel.screens) {
-    const capture = join(captures, screen.replace('@180', ''))
-    if (!(await Bun.file(capture).exists()))
-      throw new Error(`Missing capture: ${capture} — run scripts/screenshots.sh`)
-  }
+/** The scene's cached image, drawn first when it is missing or asked for again. */
+const sceneImage = async (scene: Scene) => {
+  const path = join(sceneDir, `${scene.name}.jpg`)
+  if (regenerate === scene.name || !(await Bun.file(path).exists()))
+    await generateScene(scene, path)
+  return path
+}
 
-  let current = join(work, `${panel.scene}-fit.png`)
-  const fit = [
-    ...(panel.backdrop ? ['--backdrop'] : []),
-    ...(panel.center ? ['--center', String(panel.center)] : []),
+const capture = async (name: string) => {
+  const path = join(captures, name.replace('@180', ''))
+  if (!(await Bun.file(path).exists()))
+    throw new Error(`Missing capture: ${path} — run scripts/screenshots.sh`)
+  return join(captures, name)
+}
+
+const caption = async (input: string, output: string, text: string) => {
+  await $`swift ${finishPanel} caption ${input} ${join(outputDir, output)} ${text}`.quiet()
+  console.log(`  ${join(outputDir, output)}`)
+}
+
+// 01 and 02: one photograph, cut in two.
+{
+  const fitted = join(work, 'scan-fit.png')
+  const covered = join(work, 'scan-cover.png')
+  const screened = join(work, 'scan-screen.png')
+  // The model draws the phone at half the height asked: the window closes in on it.
+  await $`swift ${finishPanel} fit ${await sceneImage(SCAN)} ${fitted} --backdrop --width 2640 --zoom 1.17 --top 0.05 --center 0.455`.quiet()
+  await $`swift ${compositeMockup} ${fitted} ${covered} ${hyperionCover}`
+    .env({ ...process.env, KEY: 'magenta' })
+    .quiet()
+  await $`swift ${compositeMockup} ${covered} ${screened} ${await capture('00-scan.png')}`.quiet()
+  const halves = [
+    { output: '01-scan-livre.png', text: 'Photographiez la couverture', offset: 0 },
+    { output: '02-scan-fiche.png', text: 'Shiori remplit la fiche', offset: 1320 },
   ]
-  await $`swift ${finishPanel} fit ${scene} ${current} ${fit}`.quiet()
-  if (panel.cover) {
-    const next = join(work, `${panel.scene}-cover.png`)
-    await $`swift ${compositeMockup} ${current} ${next} ${panel.cover}`
-      .env({ ...process.env, KEY: 'magenta' })
-      .quiet()
-    current = next
+  for (const half of halves) {
+    const cut = join(work, `scan-${half.offset}.png`)
+    await $`cp ${screened} ${cut}`.quiet()
+    // offsetY is 1, not 0: sips ignores an all-zero --cropOffset and centres the crop.
+    await $`sips -c 2868 1320 --cropOffset 1 ${half.offset} ${cut}`.quiet()
+    await caption(cut, half.output, half.text)
   }
-  if (panel.screens.length > 0) {
-    const next = join(work, `${panel.scene}-screens.png`)
-    const screens = panel.screens.map((screen) => join(captures, screen))
-    await $`swift ${compositeMockup} ${current} ${next} ${screens}`.quiet()
-    current = next
-  }
-  const output = join(outputDir, panel.output)
-  await $`swift ${finishPanel} caption ${current} ${output} ${panel.caption}`.quiet()
-  console.log(`  ${output}`)
+}
+
+// 03 to 07: the app alone.
+for (const panel of DEVICES) {
+  const drawn = join(work, panel.output)
+  const backdrop = panel.scene ? await sceneImage(panel.scene) : LIGHT_GREY
+  await $`swift ${devicePanel} ${backdrop} ${await capture(panel.capture)} ${drawn}`.quiet()
+  await caption(drawn, panel.output, panel.caption)
+}
+
+// 08: two friends, the same page on both phones.
+{
+  const fitted = join(work, 'share-fit.png')
+  const screened = join(work, 'share-screens.png')
+  await $`swift ${finishPanel} fit ${await sceneImage(SHARE)} ${fitted} --backdrop --zoom 1.0 --center 0.49`.quiet()
+  const shared = await capture('06-shared.png')
+  await $`swift ${compositeMockup} ${fitted} ${screened} ${`${shared}@180`} ${shared}`.quiet()
+  await caption(screened, '08-partage.png', 'Partagez votre bibliothèque avec vos proches')
 }
 console.log('Done.')

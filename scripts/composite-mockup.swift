@@ -105,25 +105,51 @@ func analyse(_ photo: CIImage) -> Analysis {
   return analysis
 }
 
-/// The four corners of one screen, in image coordinates (origin top left): the
-/// keyed cells furthest along each diagonal, pushed out by the rounding of the
-/// glass, which the extreme points sit inside of.
+/// The four corners of one screen, in image coordinates (origin top left).
+///
+/// Taken from its four edges rather than its extreme points: those sit inside the
+/// glass's rounded corners, and a capture fitted to them left a strip of screen
+/// uncovered along every side. Each edge is a straight line fitted through the
+/// keyed region's outermost cells along the middle of that side, where the
+/// rounding does not reach; the corners are where the lines meet.
 func corners(of cells: [Int]) -> [CGPoint] {
-  var topLeft = CGPoint.zero, topRight = topLeft, bottomLeft = topLeft, bottomRight = topLeft
-  var best = (tl: Int.max, tr: Int.min, bl: Int.min, br: Int.min)
+  var left: [Int: Int] = [:], right: [Int: Int] = [:], top: [Int: Int] = [:], bottom: [Int: Int] = [:]
   for cell in cells {
-    let (x, y) = (cell % gridWidth * step, cell / gridWidth * step)
-    if x + y < best.tl { best.tl = x + y; topLeft = CGPoint(x: x, y: y) }
-    if x - y > best.tr { best.tr = x - y; topRight = CGPoint(x: x, y: y) }
-    if y - x > best.bl { best.bl = y - x; bottomLeft = CGPoint(x: x, y: y) }
-    if x + y > best.br { best.br = x + y; bottomRight = CGPoint(x: x, y: y) }
+    let (x, y) = (cell % gridWidth, cell / gridWidth)
+    left[y] = min(left[y] ?? .max, x)
+    right[y] = max(right[y] ?? .min, x)
+    top[x] = min(top[x] ?? .max, y)
+    bottom[x] = max(bottom[x] ?? .min, y)
   }
-  let quad = [topLeft, topRight, bottomRight, bottomLeft]
-  let center = CGPoint(x: quad.map(\.x).reduce(0, +) / 4, y: quad.map(\.y).reduce(0, +) / 4)
-  let grow = 1.04
-  return quad.map {
-    CGPoint(x: center.x + ($0.x - center.x) * grow, y: center.y + ($0.y - center.y) * grow)
+  /// A line `a + b·t` through (t, value) pairs, by least squares, over the
+  /// middle 60% of the side.
+  func line(_ samples: [Int: Int]) -> (a: Double, b: Double) {
+    let keys = samples.keys.sorted()
+    let span = keys.count
+    let middle = keys[(span / 5)..<(span - span / 5)]
+    let points = middle.map { (t: Double($0), v: Double(samples[$0]!)) }
+    let n = Double(points.count)
+    let meanT = points.map(\.t).reduce(0, +) / n, meanV = points.map(\.v).reduce(0, +) / n
+    let covariance = points.map { ($0.t - meanT) * ($0.v - meanV) }.reduce(0, +)
+    let variance = points.map { ($0.t - meanT) * ($0.t - meanT) }.reduce(0, +)
+    let b = variance == 0 ? 0 : covariance / variance
+    return (meanV - b * meanT, b)
   }
+  // Left and right give x as a function of y; top and bottom give y of x. The
+  // outer edge of the outermost cell is half a cell further out.
+  let l = line(left), r = line(right), t = line(top), b = line(bottom)
+  func meet(vertical v: (a: Double, b: Double), offsetX: Double, horizontal h: (a: Double, b: Double), offsetY: Double) -> CGPoint {
+    // x = v.a + v.b·y, y = h.a + h.b·x, in cells.
+    let y = (h.a + h.b * (v.a + offsetX) + offsetY) / (1 - h.b * v.b)
+    let x = v.a + offsetX + v.b * y
+    return CGPoint(x: x * Double(step), y: y * Double(step))
+  }
+  return [
+    meet(vertical: l, offsetX: -0.5, horizontal: t, offsetY: -0.5),
+    meet(vertical: r, offsetX: 1.5, horizontal: t, offsetY: -0.5),
+    meet(vertical: r, offsetX: 1.5, horizontal: b, offsetY: 1.5),
+    meet(vertical: l, offsetX: -0.5, horizontal: b, offsetY: 1.5),
+  ]
 }
 
 /// Width over height of a screen, along its edges.

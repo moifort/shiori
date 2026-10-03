@@ -91,39 +91,37 @@ catalogue.
 
 ## 2. Panels
 
-Eight panels on a very light grey (#F2F2F4), each a photograph of hands and phones
-drawn by the image model, with the app's real captures in the phones:
+Eight panels on a very light grey (#F2F2F4):
 
-| Panel | Scene | Caption |
+| Panel | What it shows | Caption |
 |---|---|---|
-| 01 | The Hypérion paperback, its real cover | Photographiez la couverture |
-| 02 | A hand, a very large phone: the scan's review of Hypérion | Shiori remplit la fiche |
-| 03 | A phone held up before a dark library: the mosaic | Une photo, votre bibliothèque |
-| 04 | A hand, the dashboard | Des analytics détaillés |
-| 05 | A hand, the sagas | Détection des séries et de votre état d'avancement |
-| 06 | A hand, One Piece's page and its next volume | Être averti de l'arrivée d'un tome de votre série préférée |
-| 07 | A hand, Découvrir | Découvrez les sorties, les disponibilités et les coups de cœur de vos amis |
-| 08 | Two friends' hands, one phone upside down across the table | Partagez votre bibliothèque avec vos proches |
+| 01 · 02 | One photograph cut in two: the Hypérion paperback with its real cover, a hand holding the phone that just photographed it, showing its record | Photographiez la couverture · Shiori remplit la fiche |
+| 03 | A drawn iPhone before dark bookshelves: the mosaic | Une photo, votre bibliothèque |
+| 04 | A drawn iPhone: the dashboard | Des analytics détaillés |
+| 05 | A drawn iPhone: the sagas | Détection des séries et de votre état d'avancement |
+| 06 | A drawn iPhone: One Piece's page and its next volume | Être averti de l'arrivée d'un tome de votre série préférée |
+| 07 | A drawn iPhone: Découvrir | Découvrez les sorties, les disponibilités et les coups de cœur de vos amis |
+| 08 | Two friends' hands, each phone on the Partagé page, one held upside down | Partagez votre bibliothèque avec vos proches |
 
-The first two are one moment in two panels. The hands differ in skin and side from panel
-to panel.
+**The app alone** (03–07) is an iPhone 17 Pro Max drawn by `device-panel.swift` to the
+device's own geometry — titanium band, black border, Dynamic Island, side buttons — so the
+capture fills the screen to the pixel. Hands added nothing there.
 
-The model draws each phone's display in flat chroma-key green and the book's cover in
-magenta, and is never asked for the app or the cover, whose text it garbles.
-`composite-mockup.swift` finds each keyed region, fits the capture or the cover onto it in
-perspective, keeps the photograph wherever a finger or the bezel crosses it, and takes the
-key's spill off the edges. The model draws phones narrower than an iPhone 17 Pro Max
-whatever it is told, so the photograph is first widened around them until their screens
-have the capture's proportions (no further than keeps every phone in frame); the capture
-itself is never stretched, only trimmed of what remains. `finish-panel.swift` fits each scene to 1320x2868, evens its
-backdrop out to the exact grey with a correction read all around the border (a model's
-backdrop drifts by a dozen levels across one image, and two panels drawn apart must meet
-without a step), and sets the caption in the system font, dark on the grey and light on the dark library.
+**The photographs** (01–02, 08) are drawn by the image model with each phone's display in
+flat chroma-key green and the book's cover in magenta; it is never asked for the app or the
+cover, whose text it garbles. `composite-mockup.swift` finds each keyed region, takes its
+corners from straight lines fitted along its four edges (its extreme points sit inside the
+rounded corners and left a strip of screen uncovered), widens the photograph around the
+phones until their screens have the capture's proportions (the model draws phones narrower
+than an iPhone whatever it is told), and fits the capture in perspective, never stretched,
+keeping the photograph wherever a finger or the bezel crosses it.
 
-Scenes are drawn at 2K and cached as JPEG in `screenshots/appstore/scenes/` and committed; only
-`--regenerate <scene>` calls the model (`NITRO_GOOGLE_API_KEY`). Look at a new scene: the
-model sometimes draws the phone smaller than asked, or lays a grey patch on the green
-(the key still takes it as screen).
+`finish-panel.swift` fits each photograph to the panel — or to two, for the scan — evens its
+backdrop out to the exact grey, zooms in where the model drew the phones smaller than asked,
+and sets the captions in the system font.
+
+Scenes are drawn at 2K and cached as JPEG in `screenshots/appstore/scenes/`, committed; only
+`--regenerate <scene>` calls the model (`NITRO_GOOGLE_API_KEY`, a local-only key).
 
 ### Upload
 
