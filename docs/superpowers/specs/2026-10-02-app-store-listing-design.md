@@ -91,7 +91,7 @@ catalogue.
 
 ## 2. Panels
 
-Eight panels on the listing's cream (#F3ECDC), each a photograph of hands and phones
+Eight panels on a very light grey (#F2F2F4), each a photograph of hands and phones
 drawn by the image model, with the app's real captures in the phones:
 
 | Panel | Scene | Caption |
@@ -112,12 +112,15 @@ The model draws each phone's display in flat chroma-key green and the book's cov
 magenta, and is never asked for the app or the cover, whose text it garbles.
 `composite-mockup.swift` finds each keyed region, fits the capture or the cover onto it in
 perspective, keeps the photograph wherever a finger or the bezel crosses it, and takes the
-key's spill off the edges. `finish-panel.swift` fits each scene to 1320x2868, evens its
-backdrop out to the exact cream with a correction read all around the border (a model's
+key's spill off the edges. The model draws phones narrower than an iPhone 17 Pro Max
+whatever it is told, so the photograph is first widened around them until their screens
+have the capture's proportions (no further than keeps every phone in frame); the capture
+itself is never stretched, only trimmed of what remains. `finish-panel.swift` fits each scene to 1320x2868, evens its
+backdrop out to the exact grey with a correction read all around the border (a model's
 backdrop drifts by a dozen levels across one image, and two panels drawn apart must meet
-without a step), and sets the caption in the system font, dark on cream.
+without a step), and sets the caption in the system font, dark on the grey and light on the dark library.
 
-Scenes are cached as JPEG in `screenshots/appstore/scenes/` and committed; only
+Scenes are drawn at 2K and cached as JPEG in `screenshots/appstore/scenes/` and committed; only
 `--regenerate <scene>` calls the model (`NITRO_GOOGLE_API_KEY`). Look at a new scene: the
 model sometimes draws the phone smaller than asked, or lays a grey patch on the green
 (the key still takes it as screen).

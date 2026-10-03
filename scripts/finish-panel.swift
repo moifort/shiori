@@ -1,16 +1,16 @@
 // Turns a generated photograph into an App Store panel, in two steps around the
 // screen compositing (composite-mockup.swift):
 //
-//   fit      scales and crops it to the 6.9" panel, 1320x2868, and with --cream
-//            brings its background to the listing's exact cream, so panels drawn
+//   fit      scales and crops it to the 6.9" panel, 1320x2868, and with --backdrop
+//            brings its background to the listing's exact grey, so panels drawn
 //            one at a time meet without a visible change of colour;
 //   caption  sets the caption in the band at the top, dark on a light background
-//            and cream on a dark one.
+//            and light on a dark one.
 //
 // The captions are set here rather than asked of the image model, which garbles
 // text: Core Text, the system font, shrunk and wrapped until it fits the band.
 //
-// Usage: swift finish-panel.swift fit <in.png> <out.png> [--cream] [--anchor left|center|right] [--center <0-1>]
+// Usage: swift finish-panel.swift fit <in.png> <out.png> [--backdrop] [--anchor left|center|right] [--center <0-1>]
 //        swift finish-panel.swift caption <in.png> <out.png> <caption>
 
 import CoreGraphics
@@ -21,8 +21,8 @@ import UniformTypeIdentifiers
 
 let panelWidth = 1320
 let panelHeight = 2868
-/// #F3ECDC, the cream of the app's icon.
-let cream = (r: 243.0 / 255, g: 236.0 / 255, b: 220.0 / 255)
+/// #F2F2F4, the listing's very light grey.
+let backdropColor = (r: 242.0 / 255, g: 242.0 / 255, b: 244.0 / 255)
 
 func fail(_ message: String) -> Never {
   FileHandle.standardError.write(Data("\(message)\n".utf8))
@@ -101,12 +101,12 @@ case "fit":
   context.interpolationQuality = .high
   context.draw(image, in: CGRect(x: x, y: 0, width: scaledWidth, height: Double(panelHeight)))
 
-  if options.contains("--cream"), let data = context.data {
+  if options.contains("--backdrop"), let data = context.data {
     // The backdrop is never quite flat: the sweep darkens toward one side, and
     // two panels drawn apart would meet on a step of colour. So it is read all
     // around the border, the points that fall on the subject (a hand, a book)
     // set aside, and every pixel is corrected by what brings the backdrop near
-    // it to cream — a correction that varies across the panel as the light does.
+    // it to the listing's grey — a correction that varies across the panel as the light does.
     let bytes = data.bindMemory(to: UInt8.self, capacity: context.bytesPerRow * panelHeight)
     let row = context.bytesPerRow
     func sample(_ x: Int, _ y: Int) -> (x: Double, y: Double, r: Double, g: Double, b: Double) {
@@ -135,7 +135,7 @@ case "fit":
     let median = brightness[brightness.count / 2]
     let backdrop = points.filter { abs($0.r + $0.g + $0.b - median) < 45 }
     guard backdrop.count >= 6 else { fail("no backdrop to read in \(input)") }
-    let targets = (r: cream.r * 255, g: cream.g * 255, b: cream.b * 255)
+    let targets = (r: backdropColor.r * 255, g: backdropColor.g * 255, b: backdropColor.b * 255)
     // Gains on a coarse grid, by inverse-distance weighting of the backdrop
     // points, then applied per pixel from the nearest grid cell.
     let cell = 12
@@ -181,7 +181,7 @@ case "caption":
   let light = 0.299 * background.r + 0.587 * background.g + 0.114 * background.b > 0.55
   let ink = light
     ? CGColor(red: 0.16, green: 0.12, blue: 0.10, alpha: 1)
-    : CGColor(red: cream.r, green: cream.g, blue: cream.b, alpha: 1)
+    : CGColor(red: backdropColor.r, green: backdropColor.g, blue: backdropColor.b, alpha: 1)
 
   var alignment = CTTextAlignment.center
   let paragraph = withUnsafeBytes(of: &alignment) { buffer -> CTParagraphStyle in
