@@ -980,6 +980,64 @@ describe('the genre insights', () => {
     expect(insights.hiddenGem).toBe('historical-fiction')
   })
 
+  test('places apart only the most read subgenres, folding the others into their genre', () => {
+    const insights = genreInsightsOf([
+      ...ratedIn('science-fiction', 'Space opera', [4, 4, 4, 4, 4, 4, 4, 4, 4]),
+      ...ratedIn('science-fiction', 'Hard SF', [4, 4, 4, 4, 4, 4, 4, 4]),
+      ...ratedIn('science-fiction', 'Cyberpunk', [4, 4, 4, 4, 4, 4, 4]),
+      ...ratedIn('fantasy', 'Dark fantasy', [4, 4, 4, 4, 4, 4]),
+      ...ratedIn('fantasy', 'Fantasy urbaine', [4, 4, 4, 4, 4]),
+      ...ratedIn('crime', 'Polar nordique', [4, 4, 4, 4]),
+      ...ratedIn('science-fiction', 'Uchronie', [4, 4, 4]),
+      ...ratedIn('fantasy', 'Low fantasy', [3, 3, 3]),
+    ])
+
+    expect(insights.tasteMap.map(({ subgenre, readCount }) => ({ subgenre, readCount }))).toEqual([
+      { subgenre: Subgenre('Space opera'), readCount: 9 },
+      { subgenre: Subgenre('Hard SF'), readCount: 8 },
+      { subgenre: Subgenre('Cyberpunk'), readCount: 7 },
+      { subgenre: Subgenre('Dark fantasy'), readCount: 6 },
+      { subgenre: Subgenre('Fantasy urbaine'), readCount: 5 },
+      { subgenre: Subgenre('Polar nordique'), readCount: 4 },
+      { subgenre: undefined, readCount: 3 },
+      { subgenre: undefined, readCount: 3 },
+    ])
+    expect(insights.tasteMap.slice(6).map(({ genre }) => genre)).toEqual([
+      'fantasy',
+      'science-fiction',
+    ])
+  })
+
+  test('draws at most ten places, the most read, and always the gem', () => {
+    const genres: Genre[] = [
+      'fantasy',
+      'science-fiction',
+      'horror',
+      'crime',
+      'thriller',
+      'romance',
+      'historical-fiction',
+      'adventure',
+      'literary-fiction',
+      'humor',
+      'biography',
+    ]
+    const insights = genreInsightsOf([
+      ...genres.flatMap((genre, index) =>
+        ratedIn(
+          genre,
+          undefined,
+          Array.from({ length: 14 - index }, () => 3),
+        ),
+      ),
+      ...ratedIn('essay', undefined, [5, 5, 5]),
+    ])
+
+    expect(insights.tasteMap).toHaveLength(10)
+    expect(insights.tasteMap.map(({ genre }) => genre)).toEqual([...genres.slice(0, 9), 'essay'])
+    expect(insights.gem?.genre).toBe('essay')
+  })
+
   test('takes the median of an odd and of an even count of values', () => {
     expect(medianOf([5, 1, 3])).toBe(3)
     expect(medianOf([8, 2, 4, 6])).toBe(5)

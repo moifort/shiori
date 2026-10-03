@@ -230,8 +230,9 @@ export type GenreInsights = {
   /** The genres with enough rated books to be placed on the taste map.
    *  Superseded by `tasteMap`; kept for the builds that still ask for it. */
   tastes: GenreTaste[]
-  /** The taste map: a subgenre with enough rated books of its own placed
-   *  apart, every other book in its genre. */
+  /** The taste map, ten places at most: the six most read subgenres with
+   *  enough rated books of their own placed apart, every other book in its
+   *  genre. */
   tasteMap: GenreTaste[]
   /** The average of every rated finished book: what splits the taste map. */
   averageRating?: number

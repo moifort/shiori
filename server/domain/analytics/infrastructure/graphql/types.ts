@@ -347,8 +347,9 @@ export const GenreInsightsType = builder.objectRef<GenreInsights>('GenreInsights
     tasteMap: t.field({
       type: [GenreTasteType],
       description:
-        'The taste map, the most read first: a head subgenre with three rated books ' +
-        'of its own placed apart, every other book in its genre.',
+        'The taste map, the most read first and ten places at most, the gem always ' +
+        'among them: the six most read head subgenres with three rated books of their ' +
+        'own placed apart, every other book in its genre.',
       resolve: (insights) => insights.tasteMap,
     }),
     averageRating: t.float({

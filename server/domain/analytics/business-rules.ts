@@ -512,6 +512,14 @@ export const ENOUGH_BOOKS = 3
  *  be worth pointing out. */
 export const GEM_MARGIN = 0.5
 
+/** How many subgenres the taste map places apart, the most read: past it, a
+ *  large library's subgenres crowd the map into unreadable names. */
+export const MAP_SUBGENRES = 6
+
+/** How many places the taste map draws, the most read, the gem always among
+ *  them. */
+export const MAP_PLACES = 10
+
 const DAY = 86_400_000
 
 /** What the reader's books say about their tastes, genre by genre. Read books
@@ -528,15 +536,16 @@ export const genreInsightsOf = (books: readonly Book[]): GenreInsights => {
     .flatMap(([genre, shelf]) => tasteOf(genre, shelf))
     .sort(mostReadFirst)
   const tasteMap = tasteMapOf(read)
+  const gem = hiddenGemOf(tasteMap, averageRating)
   return {
     readCount: read.length,
     shares,
     formats: formatSharesOf(read),
     tastes,
-    tasteMap,
+    tasteMap: drawnOf(tasteMap, gem),
     averageRating,
     hiddenGem: hiddenGemOf(tastes, averageRating)?.genre,
-    gem: hiddenGemOf(tasteMap, averageRating),
+    gem,
     longest: longestOf(readByGenre),
     fastest: fastestOf(readByGenre),
     mostDropped: mostDroppedOf(books),
@@ -564,10 +573,11 @@ const formatSharesOf = (read: readonly Book[]): FormatShare[] => {
 }
 
 /** The taste map: a book goes to its head subgenre — the most representative
- *  — when that subgenre gathers enough rated books of the genre on its own,
- *  and to its genre otherwise. A small library reads as genres only; a large
- *  one brings out the subgenres that weigh. Labels meet whatever their case
- *  or hyphens ("Space-opera", "space opera"); across languages they do not. */
+ *  — when that subgenre gathers enough rated books of the genre on its own and
+ *  is among the most read of them, and to its genre otherwise. A small library
+ *  reads as genres only; a large one brings out the subgenres that weigh.
+ *  Labels meet whatever their case or hyphens ("Space-opera", "space opera");
+ *  across languages they do not. */
 const tasteMapOf = (read: readonly Book[]): GenreTaste[] => {
   const bySubgenre = new Map<string, { genre: Genre; subgenre: Subgenre; books: Book[] }>()
   for (const book of read) {
@@ -577,9 +587,10 @@ const tasteMapOf = (read: readonly Book[]): GenreTaste[] => {
     const entry = bySubgenre.get(key) ?? { genre: book.genre, subgenre: head.label, books: [] }
     bySubgenre.set(key, { ...entry, books: [...entry.books, book] })
   }
-  const subgenreTastes = [...bySubgenre.values()].flatMap(({ genre, subgenre, books }) =>
-    tasteOf(genre, books, subgenre),
-  )
+  const subgenreTastes = [...bySubgenre.values()]
+    .flatMap(({ genre, subgenre, books }) => tasteOf(genre, books, subgenre))
+    .sort(mostReadFirst)
+    .slice(0, MAP_SUBGENRES)
   const claimed = new Set(
     [...bySubgenre.values()]
       .filter(({ genre, subgenre }) =>
@@ -591,6 +602,13 @@ const tasteMapOf = (read: readonly Book[]): GenreTaste[] => {
     ([genre, shelf]) => tasteOf(genre, shelf),
   )
   return [...subgenreTastes, ...genreTastes].sort(mostReadFirst)
+}
+
+/** The places the map draws: the most read, the gem taking the last seat when
+ *  it would miss out, so the callout never names a bubble that is not there. */
+const drawnOf = (tasteMap: readonly GenreTaste[], gem: GenreTaste | undefined): GenreTaste[] => {
+  const drawn = tasteMap.slice(0, MAP_PLACES)
+  return gem === undefined || drawn.includes(gem) ? drawn : [...drawn.slice(0, -1), gem]
 }
 
 /** The key two spellings of one subgenre share: case and hyphens aside. */
