@@ -3,7 +3,8 @@ import SwiftUI
 /// A friend's recent activity as up to five covers scrolled sideways: the
 /// book in progress, the last one read, the last one hearted, the last one
 /// added and the last one dropped. No title — the cover already shows the book — and
-/// no caption: what happened is its symbol, centred on the cover, in its colour. A tap on a
+/// no caption: what happened is its symbol, pinned on the cover's corner where a recording's
+/// headphones sit, in its colour. A tap on a
 /// cover opens its book; on the friends list, the rest of the row opens the
 /// friend's page.
 struct RecentActivityStrip: View {
@@ -22,6 +23,10 @@ struct RecentActivityStrip: View {
     /// Taller than a cover's own proportions: with no caption under it, the
     /// cover takes the room the caption had, and some.
     private static let coverHeight: CGFloat = 130
+    /// The headphones pill's size on the shelves, so both pastilles read as one family.
+    private static let iconSize = CoverTile.formatBadgeSize
+    /// What the pastille overhangs the cover by, as on the shelves.
+    private static let iconRoom = (iconSize / 3).rounded(.up)
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -42,7 +47,12 @@ struct RecentActivityStrip: View {
                 }
             }
             .padding(.horizontal, inset)
+            // Room for the pastille, which overhangs the cover's corner and the
+            // scroll view would otherwise clip; taken back outside so the covers
+            // stay where they were.
+            .padding(.top, Self.iconRoom)
         }
+        .padding(.top, -Self.iconRoom)
     }
 
     private func accessibilityLabel(_ activity: RecentActivity) -> String {
@@ -56,18 +66,21 @@ struct RecentActivityStrip: View {
             showsFormatBadge: false,
             minHeight: Self.coverHeight
         )
-        .overlay { icon(activity) }
+        .overlay(alignment: .topTrailing) {
+            icon(activity)
+                .offset(x: Self.iconSize * 0.3, y: -Self.iconSize * 0.3)
+        }
     }
 
-    /// What happened, as a solid disc of its colour in the middle of the
-    /// cover: opaque, so the symbol reads whatever the photo under it.
+    /// What happened, as a solid disc of its colour overhanging the cover's
+    /// corner, drawn like the headphones pill: opaque, so the symbol reads
+    /// whatever the photo under it.
     private func icon(_ activity: RecentActivity) -> some View {
         Image(systemName: symbol(activity))
-            .font(.system(size: 14, weight: .bold))
+            .font(.system(size: Self.iconSize * 0.52, weight: .bold))
             .foregroundStyle(.white)
-            .frame(width: 32, height: 32)
+            .frame(width: Self.iconSize, height: Self.iconSize)
             .background(tint(activity), in: Circle())
-            .shadow(color: .black.opacity(0.35), radius: 4, y: 1)
     }
 
     private func caption(_ activity: RecentActivity) -> String {
