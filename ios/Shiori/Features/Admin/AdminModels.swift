@@ -3,12 +3,9 @@ import Foundation
 /// The month's figures the admin screen shows: what Gemini and GCP cost, what
 /// the App Store paid, and how many readers there are.
 struct AdminMetrics {
-    /// What one Gemini step consumed this month. Searches are billed one by one,
-    /// and cost more than the tokens of the call that ran them.
+    /// The Google searches one Gemini step ran this month. Billed one by one,
+    /// they are most of the Gemini bill. Reading the cover never searches.
     struct StepUsage {
-        let promptTokens: Int
-        let outputTokens: Int
-        let thinkingTokens: Int
         let searches: Int
     }
 
@@ -29,7 +26,6 @@ struct AdminMetrics {
     let scans: Int
     let cacheHits: Int
     let searches: Int
-    let vision: StepUsage
     let enrichment: StepUsage
     let catalogue: StepUsage
     let discovery: StepUsage
@@ -53,10 +49,9 @@ extension AdminMetrics {
         scans: 304,
         cacheHits: 5,
         searches: 910,
-        vision: .init(promptTokens: 81_765, outputTokens: 42_814, thinkingTokens: 0, searches: 0),
-        enrichment: .init(promptTokens: 352_764, outputTokens: 76_275, thinkingTokens: 0, searches: 348),
-        catalogue: .init(promptTokens: 209_173, outputTokens: 99_949, thinkingTokens: 0, searches: 329),
-        discovery: .init(promptTokens: 99_625, outputTokens: 25_389, thinkingTokens: 0, searches: 233),
+        enrichment: .init(searches: 348),
+        catalogue: .init(searches: 329),
+        discovery: .init(searches: 233),
         refreshedAt: Date(timeIntervalSince1970: 1_791_014_400)
     )
 
@@ -75,10 +70,9 @@ extension AdminMetrics {
         scans: 0,
         cacheHits: 0,
         searches: 0,
-        vision: .init(promptTokens: 0, outputTokens: 0, thinkingTokens: 0, searches: 0),
-        enrichment: .init(promptTokens: 0, outputTokens: 0, thinkingTokens: 0, searches: 0),
-        catalogue: .init(promptTokens: 0, outputTokens: 0, thinkingTokens: 0, searches: 0),
-        discovery: .init(promptTokens: 0, outputTokens: 0, thinkingTokens: 0, searches: 0),
+        enrichment: .init(searches: 0),
+        catalogue: .init(searches: 0),
+        discovery: .init(searches: 0),
         refreshedAt: nil
     )
 }

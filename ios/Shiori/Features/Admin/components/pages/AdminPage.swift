@@ -1,9 +1,8 @@
 import SwiftUI
 
 /// The admin screen, pure and previewable: the four key figures as tiles, then
-/// the month's revenue, costs, readers and what each Gemini step consumed.
-/// Grounded searches get their own lines: billed one by one, they are most of
-/// the Gemini bill.
+/// the month's revenue, costs, readers and Gemini calls. Grounded searches get
+/// their own lines: billed one by one, they are most of the Gemini bill.
 struct AdminPage: View {
     let metrics: AdminMetrics?
     var isLoading = false
@@ -41,7 +40,7 @@ struct AdminPage: View {
             Section("Coûts du mois") {
                 LabeledContent("Total", value: euro(metrics.totalCostEur))
                 LabeledContent("Recherches Google", value: euro(metrics.searchCostEur))
-                LabeledContent("Tokens Gemini", value: euro(metrics.tokenCostEur))
+                LabeledContent("Génération Gemini", value: euro(metrics.tokenCostEur))
                 LabeledContent("Infra (GCP)", value: euroOrUnavailable(metrics.infraEur))
             }
 
@@ -57,10 +56,11 @@ struct AdminPage: View {
                 LabeledContent("Recherches Google", value: count(metrics.searches))
             }
 
-            stepSection("Vision", usage: metrics.vision)
-            stepSection("Enrichissement", usage: metrics.enrichment)
-            stepSection("Catalogue", usage: metrics.catalogue)
-            stepSection("Découvrir", usage: metrics.discovery)
+            Section("Recherches Google par étape") {
+                LabeledContent("Enrichissement des scans", value: count(metrics.enrichment.searches))
+                LabeledContent("Catalogue des sagas", value: count(metrics.catalogue.searches))
+                LabeledContent("Découvrir", value: count(metrics.discovery.searches))
+            }
 
             Section {
                 LabeledContent("Comptes, abonnés et CA", value: refreshed(metrics.refreshedAt))
@@ -91,15 +91,6 @@ struct AdminPage: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 12))
-    }
-
-    private func stepSection(_ title: LocalizedStringKey, usage: AdminMetrics.StepUsage) -> some View {
-        Section(title) {
-            LabeledContent("Tokens en entrée", value: count(usage.promptTokens))
-            LabeledContent("Tokens en sortie", value: count(usage.outputTokens))
-            LabeledContent("Tokens de réflexion", value: count(usage.thinkingTokens))
-            LabeledContent("Recherches Google", value: count(usage.searches))
-        }
     }
 
     private func euro(_ value: Double) -> String {

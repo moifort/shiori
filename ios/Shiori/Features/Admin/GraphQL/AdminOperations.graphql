@@ -14,9 +14,6 @@ query AdminMetrics {
     scans
     cacheHits
     searches
-    vision {
-      ...AiStepUsageFields
-    }
     enrichment {
       ...AiStepUsageFields
     }
@@ -31,8 +28,5 @@ query AdminMetrics {
 }
 
 fragment AiStepUsageFields on AiTokenUsage {
-  promptTokens
-  outputTokens
-  thinkingTokens
   searches
 }

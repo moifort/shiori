@@ -23,7 +23,6 @@ enum AdminAPI {
             scans: m.scans,
             cacheHits: m.cacheHits,
             searches: m.searches,
-            vision: step(m.vision.fragments.aiStepUsageFields),
             enrichment: step(m.enrichment.fragments.aiStepUsageFields),
             catalogue: step(m.catalogue.fragments.aiStepUsageFields),
             discovery: step(m.discovery.fragments.aiStepUsageFields),
@@ -32,11 +31,6 @@ enum AdminAPI {
     }
 
     private static func step(_ usage: ShioriGraphQL.AiStepUsageFields) -> AdminMetrics.StepUsage {
-        AdminMetrics.StepUsage(
-            promptTokens: usage.promptTokens,
-            outputTokens: usage.outputTokens,
-            thinkingTokens: usage.thinkingTokens,
-            searches: usage.searches
-        )
+        AdminMetrics.StepUsage(searches: usage.searches)
     }
 }
