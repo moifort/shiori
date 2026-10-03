@@ -327,6 +327,15 @@ describe('a call Google could not serve', () => {
       expect(calls).toHaveBeenCalledTimes(2)
     })
 
+    test('prepaid credits run out are the cap by another name', async () => {
+      setSystemTime(new Date('2026-01-02T12:00:00Z'))
+      const calls = failing(402, undefined)
+
+      await expect(generate(asked)).rejects.toBeInstanceOf(SpendCapReached)
+      await expect(generate(asked)).rejects.toBeInstanceOf(SpendCapReached)
+      expect(calls).toHaveBeenCalledTimes(1)
+    })
+
     test('a 429 that is not the cap is not mistaken for it', async () => {
       setSystemTime(new Date('2026-01-03T09:00:00Z'))
       const calls = failing(429)

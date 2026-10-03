@@ -46,9 +46,8 @@ export const AdminMetricsType = builder.objectRef<AdminMetricsView>('AdminMetric
     searchCostEur: t.expose('searchCostEur', {
       type: 'Eur',
       description:
-        "This month's grounded searches, e.g. `0.12`. Reads `0` until the 5,000 free searches " +
-        'of the month are spent, which is a real zero and not a missing figure — past that, ' +
-        'one search costs more than all the tokens of the scan that ran it.',
+        "This month's grounded searches, e.g. `0.12`, every one of them billed: one search " +
+        'costs more than all the tokens of the scan that ran it.',
     }),
     aiCostEur: t.expose('aiCostEur', {
       type: 'Eur',
@@ -106,8 +105,7 @@ export const AdminMetricsType = builder.objectRef<AdminMetricsView>('AdminMetric
     }),
     searches: t.int({
       description:
-        'Google searches run this month, free allowance included, e.g. `812`. Watch it against ' +
-        'the 5,000 free ones: the cost stays at zero right up to the last of them.\n\n' +
+        'Google searches run this month, e.g. `812`: what `searchCostEur` is made of.\n\n' +
         'An estimate rather than the invoice — Gemini does not always report the searches it ' +
         'ran while thinking, and a grounded call that reports none is counted as one.',
       resolve: (metrics) => metrics.searches,

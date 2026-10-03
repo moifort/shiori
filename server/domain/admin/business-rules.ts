@@ -16,13 +16,14 @@ const INPUT_USD_PER_MILLION = 0.3
 const OUTPUT_USD_PER_MILLION = 2.5
 
 // Grounding is billed per search the model chose to run, not per call and not
-// per token: $14 per thousand past the first 5,000 of the month. That allowance
-// is shared across every Gemini 3.x model of the project, so anything else
-// calling Gemini here eats into it and this figure reads low.
+// per token: $14 per thousand. The price list speaks of 5,000 free searches a
+// month, but the invoice does not: the bill from September 1st to October
+// 3rd 2026 charged every one of 1,796 Gemini 3 searches, €22.10 of €28, while
+// this figure, still counting an allowance, read under one euro. So none is
+// assumed.
 //
-// Worth its own line because it is a different lever: past the allowance one
-// grounded search costs more than all the tokens of the scan that ran it.
-const FREE_SEARCHES_PER_MONTH = 5000
+// Worth its own line because it is a different lever: one grounded search costs
+// more than all the tokens of the scan that ran it.
 const USD_PER_THOUSAND_SEARCHES = 14
 
 // A fixed conversion, not a live rate: the cost figure steers decisions, it does
@@ -73,17 +74,13 @@ export const tokenCostEur = (usage: AiUsage): EurType => {
   return Eur(usd * USD_TO_EUR)
 }
 
-// What the month's grounded searches cost in euros. Nothing until the monthly
-// allowance is spent, then every further search is billed — so this reads zero
-// for a long time and is not broken when it does.
+// What the month's grounded searches cost in euros, every one of them billed.
 export const searchCostEur = (usage: AiUsage): EurType => {
   const searches = stepsOf(usage).reduce((sum, step) => sum + step.searches, 0)
-  const billable = Math.max(0, searches - FREE_SEARCHES_PER_MONTH)
-  return Eur(((billable * USD_PER_THOUSAND_SEARCHES) / 1000) * USD_TO_EUR)
+  return Eur(((searches * USD_PER_THOUSAND_SEARCHES) / 1000) * USD_TO_EUR)
 }
 
-// How many searches the month ran, allowance included — what says how close the
-// free 5,000 are to running out, which the cost alone cannot while it reads zero.
+// How many searches the month ran: what the search cost is made of.
 export const searchesOf = (usage: AiUsage): CountType =>
   Count(stepsOf(usage).reduce((sum, step) => sum + step.searches, 0))
 

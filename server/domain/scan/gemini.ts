@@ -139,16 +139,19 @@ export class SpendCapReached extends Error {
   /** Read by the logger: one issue for the cap, whichever caller hit it. */
   readonly fingerprint = ['gemini-spend-cap']
   constructor(options?: ErrorOptions) {
-    super('Gemini monthly spending cap reached', options)
+    super('Gemini spending cap reached or prepaid credits spent', options)
     this.name = 'SpendCapReached'
   }
 }
 
+/** The cap, or its prepaid twin: a project billed in advance answers 402 once
+ *  its credits are spent, and is as stuck until someone tops them up. */
 const isSpendCap = (error: unknown): boolean => {
   const { statusCode, data } = error as {
     statusCode?: number
     data?: { error?: { message?: string } }
   }
+  if (statusCode === 402) return true
   return statusCode === 429 && /spend(ing)? cap/i.test(data?.error?.message ?? '')
 }
 

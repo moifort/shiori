@@ -89,31 +89,24 @@ describe('pricing the month s grounded searches', () => {
     ...usage(none, step(0, 0, 0, count)),
   })
 
-  test('the free allowance of the month costs nothing, right up to the last one', () => {
-    expect(searchCostEur(withSearches(1)) as number).toBe(0)
-    expect(searchCostEur(withSearches(4999)) as number).toBe(0)
-    expect(searchCostEur(withSearches(5000)) as number).toBe(0)
+  test('every search is billed, from the first: the invoice shows no free allowance', () => {
+    // At $14 per thousand, converted at 0.91.
+    expect(searchCostEur(withSearches(0)) as number).toBe(0)
+    expect(searchCostEur(withSearches(1)) as number).toBeCloseTo(0.014 * 0.91, 10)
+    expect(searchCostEur(withSearches(1000)) as number).toBeCloseTo(14 * 0.91, 10)
   })
 
-  test('past the allowance only the searches beyond it are billed', () => {
-    // 1000 billable searches at $14 per thousand, converted at 0.91.
-    expect(searchCostEur(withSearches(6000)) as number).toBeCloseTo(14 * 0.91, 10)
-  })
-
-  test('one billed search costs more than the tokens of the scan that ran it', () => {
+  test('one search costs more than the tokens of the scan that ran it', () => {
     const scan = tokenCostEur(usage(step(2600, 250, 1500), step(5000, 200, 1500)))
-    const oneSearch = (searchCostEur(withSearches(5001)) as number) - 0
 
-    expect(oneSearch).toBeGreaterThan(scan as number)
+    expect(searchCostEur(withSearches(1)) as number).toBeGreaterThan(scan as number)
   })
 
   test('the searches of every step add up, wherever they were run', () => {
     const spread = {
       ...usage(step(0, 0, 0, 1), step(0, 0, 0, 2), step(0, 0, 0, 3)),
     }
-    // Six searches, all inside the allowance, so what is asserted is the sum
-    // reaching the pricing at all rather than a figure.
-    expect(searchCostEur(spread) as number).toBe(0)
+    expect(searchCostEur(spread) as number).toBeCloseTo(6 * 0.014 * 0.91, 10)
     expect(searchesOf(spread) as number).toBe(6)
   })
 })
