@@ -91,23 +91,36 @@ catalogue.
 
 ## 2. Panels
 
-`scripts/generate-appstore-previews.ts` and `scripts/composite-panorama.swift`, transposed from
-Vinarium. The model draws the room only; the compositor sets the captions in Core Text, draws
-the device and pastes the real captures.
+Eight panels on the listing's cream (#F3ECDC), each a photograph of hands and phones
+drawn by the image model, with the app's real captures in the phones:
 
-| Panorama | Scene | Panel | Caption |
-|---|---|---|---|
-| 1 | Home library at dusk, bookshelves, lamp light | 01 Bibliothèque (mosaic) | Une photo, votre bibliothèque |
-| | | 02 Accueil | Des analytics détaillés |
-| | | 03 Séries | Détection des séries et de votre état d'avancement |
-| 2 | Reading corner: armchair, stacked books, window | 04 Série (One Piece, next volume) | Être averti de l'arrivée d'un tome de votre série préférée |
-| | | 05 Découvrir | Découvrez les sorties, les disponibilités et les coups de cœur de vos amis |
-| | | 06 Partagé | Partagez votre bibliothèque avec vos proches |
+| Panel | Scene | Caption |
+|---|---|---|
+| 01 | The Hypérion paperback, its real cover | Photographiez la couverture |
+| 02 | A hand, a very large phone: the scan's review of Hypérion | Shiori remplit la fiche |
+| 03 | A phone held up before a dark library: the mosaic | Une photo, votre bibliothèque |
+| 04 | A hand, the dashboard | Des analytics détaillés |
+| 05 | A hand, the sagas | Détection des séries et de votre état d'avancement |
+| 06 | A hand, One Piece's page and its next volume | Être averti de l'arrivée d'un tome de votre série préférée |
+| 07 | A hand, Découvrir | Découvrez les sorties, les disponibilités et les coups de cœur de vos amis |
+| 08 | Two friends' hands, one phone upside down across the table | Partagez votre bibliothèque avec vos proches |
 
-Line under every caption: « Ce que vous lisez, ce que vous avez lu, ce qui arrive. »
+The first two are one moment in two panels. The hands differ in skin and side from panel
+to panel.
 
-Scenes are cached and committed in `screenshots/appstore/scenes/`; only `--regenerate` calls the
-model (`NITRO_GOOGLE_API_KEY`, already in `.env`). Panels land in `screenshots/appstore/fr/`.
+The model draws each phone's display in flat chroma-key green and the book's cover in
+magenta, and is never asked for the app or the cover, whose text it garbles.
+`composite-mockup.swift` finds each keyed region, fits the capture or the cover onto it in
+perspective, keeps the photograph wherever a finger or the bezel crosses it, and takes the
+key's spill off the edges. `finish-panel.swift` fits each scene to 1320x2868, evens its
+backdrop out to the exact cream with a correction read all around the border (a model's
+backdrop drifts by a dozen levels across one image, and two panels drawn apart must meet
+without a step), and sets the caption in the system font, dark on cream.
+
+Scenes are cached as JPEG in `screenshots/appstore/scenes/` and committed; only
+`--regenerate <scene>` calls the model (`NITRO_GOOGLE_API_KEY`). Look at a new scene: the
+model sometimes draws the phone smaller than asked, or lays a grey patch on the green
+(the key still takes it as screen).
 
 ### Upload
 

@@ -750,25 +750,30 @@ enum Showcase {
 
     // MARK: - Scan
 
-    /// What the scan of a cover answers: a book the reader does not hold yet.
+    /// What the scan of a cover answers: the paperback of a saga the reader
+    /// already hears, which joins it as its first volume.
     static let scanned = ScannedBook(
         recognized: true,
-        title: "Jacaranda",
-        authors: ["Gaël Faye"],
+        title: "Hypérion",
+        authors: ["Dan Simmons"],
         format: .book,
         media: [.print],
-        publisher: "Grasset",
-        firstPublishedIn: 2024,
+        publisher: "Robert Laffont",
+        firstPublishedIn: 1989,
         synopsis: """
-        Milan a grandi en France, loin du Rwanda de sa mère, qui se tait sur le génocide \
-        des Tutsi. Adolescent, il part à Kigali et découvre un pays qui se reconstruit, \
-        une famille, et le silence qu'il faudra traverser. Prix Renaudot 2024.
+        Sur la planète Hypérion, aux confins de l'Hégémonie, se dressent les Tombeaux du \
+        Temps, gardés par le Gritche, une créature de métal et de lames. À la veille d'une \
+        guerre, sept pèlerins partent à leur rencontre, et chacun raconte en chemin ce qui \
+        l'y mène.
         """,
-        genre: .literaryFiction,
-        subgenres: ["Roman familial"],
-        pageCount: 288,
+        genre: .scienceFiction,
+        subgenres: ["Space opera"],
+        pageCount: 576,
         language: .fr,
-        coverURL: cover("jacaranda")
+        coverURL: cover("hyperion"),
+        series: SeriesMembership(
+            id: "cantos-hyperion", name: "Les Cantos d'Hypérion", volume: 1, kind: .main
+        )
     )
 
     // MARK: - Subscription

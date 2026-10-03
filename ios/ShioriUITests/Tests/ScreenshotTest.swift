@@ -77,6 +77,15 @@ final class ScreenshotTest: XCTestCase {
         settle()
         save("06-shared")
 
+        // The scan: the last photo of the add sheet, a cover, read and filled in.
+        try open("Scanner")
+        try tap(app.descendants(matching: .any)["add-book-recent-photo-0"])
+        try wait(app.buttons["review-save"], timeout: 30)
+        settle()
+        save("00-scan")
+        try tap(app.navigationBars["Vérifier"].buttons["xmark"])
+        _ = app.buttons["review-save"].waitForNonExistence(timeout: 5)
+
         // The paywall, for App Review: behind the settings, as the review notes say.
         try open("Accueil")
         try tap(app.descendants(matching: .any)["home-settings"])

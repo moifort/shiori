@@ -94,6 +94,7 @@ const COVERS: Cover[] = [
   { slug: 'furtifs', term: 'les furtifs damasio', match: 'furtifs' },
   { slug: 'veiller-sur-elle', term: 'veiller sur elle andrea', match: 'veiller sur elle' },
   { slug: 'jacaranda', term: 'jacaranda gaël faye', match: 'jacaranda' },
+  { slug: 'hyperion', term: 'hypérion simmons', match: 'hyperion tome 1' },
   { slug: 'fondation', term: 'fondation asimov', match: 'fondation tome 1' },
   { slug: 'fourth-wing', term: 'fourth wing yarros', match: 'fourth wing francaise' },
   { slug: 'demain-et-demain', term: 'demain et demain et demain zevin', match: 'demain et demain' },
