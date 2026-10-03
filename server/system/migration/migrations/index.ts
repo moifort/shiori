@@ -11,6 +11,7 @@ import { cataloguesPerEdition } from '~/system/migration/migrations/013-catalogu
 import { paperAndScreenAreOneBook } from '~/system/migration/migrations/014-paper-and-screen-are-one-book'
 import { booksWithoutALanguageAreFrench } from '~/system/migration/migrations/015-books-without-a-language-are-french'
 import { cataloguesWithoutALanguageAreFrench } from '~/system/migration/migrations/016-catalogues-without-a-language-are-french'
+import { cataloguesRenumberedByTheWatch } from '~/system/migration/migrations/017-catalogues-renumbered-by-the-watch'
 import type { Migration } from '~/system/migration/types'
 
 // Forward-only, sequential, no rollback. Adding a new optional field or a new
@@ -34,4 +35,5 @@ export const migrations: Migration[] = [
   paperAndScreenAreOneBook,
   booksWithoutALanguageAreFrench,
   cataloguesWithoutALanguageAreFrench,
+  cataloguesRenumberedByTheWatch,
 ]

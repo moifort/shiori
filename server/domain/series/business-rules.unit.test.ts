@@ -707,6 +707,79 @@ describe('withReleases', () => {
     expect(merged.volumes[1].publishedIn).toBeUndefined()
   })
 
+  describe('a watch that numbers the saga another way', () => {
+    // Foundation in publication order, as the catalogue holds it; the watch
+    // numbers it in reading order, its two prequels first.
+    const foundation = saga([
+      volume({ title: 'Fondation', number: VolumeNumber(1) }),
+      volume({ title: 'Fondation et Empire', number: VolumeNumber(2) }),
+      volume({ title: 'Seconde Fondation', number: VolumeNumber(3) }),
+      volume({ title: 'Fondation foudroyée', number: VolumeNumber(4) }),
+      volume({ title: 'Terre et Fondation', number: VolumeNumber(5) }),
+      volume({ title: 'Prélude à Fondation', kind: 'prequel' }),
+      volume({ title: "L'Aube de Fondation", kind: 'prequel' }),
+    ])
+    const readingOrder = [
+      'Prélude à Fondation',
+      "L'Aube de Fondation",
+      'Fondation',
+      'Fondation et Empire',
+      'Seconde Fondation',
+      'Fondation Foudroyée',
+      'Terre et Fondation',
+    ].map((title, index) => ({
+      volume: VolumeNumber(index + 1),
+      title: BookTitle(title),
+      date: ReleaseDate(String(1951 + index)),
+    }))
+
+    test('adds no volume the catalogue already holds under another number', () => {
+      const merged = withReleases(foundation, 'fr', readingOrder)
+      expect(merged.volumes.map((entry) => entry.title as string).sort()).toEqual(
+        foundation.volumes.map((entry) => entry.title as string).sort(),
+      )
+    })
+
+    test('dates each volume by its title, and titles none after another', () => {
+      const merged = withReleases(foundation, 'fr', readingOrder)
+      expect(merged.volumes.map((entry) => entry.releases?.fr as string | undefined)).toEqual([
+        '1953',
+        '1954',
+        '1955',
+        '1956',
+        '1957',
+        undefined,
+        undefined,
+      ])
+      expect(merged.volumes.every((entry) => entry.titles === undefined)).toBe(true)
+    })
+
+    test('a volume titled like no other still joins at its number', () => {
+      const merged = withReleases(foundation, 'fr', [
+        ...readingOrder,
+        { volume: VolumeNumber(8), title: BookTitle('Fondation et Chaos') },
+      ])
+      expect(merged.volumes.at(5)).toMatchObject({ number: 8, title: 'Fondation et Chaos' })
+    })
+  })
+
+  test('volumes that all carry the saga’s name are still matched by number', () => {
+    const named = saga([
+      volume({ title: 'Saga', number: VolumeNumber(1) }),
+      volume({ title: 'Saga', number: VolumeNumber(2) }),
+    ])
+    const merged = withReleases(named, 'fr', [
+      { volume: VolumeNumber(1), title: BookTitle('Saga'), date: ReleaseDate('2020') },
+      { volume: VolumeNumber(2), title: BookTitle('Saga'), date: ReleaseDate('2021') },
+      { volume: VolumeNumber(3), title: BookTitle('Saga'), date: ReleaseDate('2027') },
+    ])
+    expect(merged.volumes.map((entry) => entry.releases?.fr as string | undefined)).toEqual([
+      '2020',
+      '2021',
+      '2027',
+    ])
+  })
+
   test('nothing the catalogue holds is removed, and the same answer changes nothing', () => {
     const once = withReleases(series, 'fr', [
       { volume: VolumeNumber(1), title: BookTitle('One'), date: ReleaseDate('2021') },

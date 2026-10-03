@@ -518,9 +518,49 @@ export type FoundVolume = {
   coverUrl?: CoverUrl
 }
 
+/** Where a volume the release watch found goes in the catalogue: the index of
+ *  the volume it is, `'new'` for one the spine lacks, or undefined for one that
+ *  has no place on it.
+ *
+ *  The watch numbers a saga as the web it searched does, and the web does not
+ *  always agree with the catalogue: Foundation in reading order puts its two
+ *  prequels first, so its "volume 6" is the catalogue's volume 4. Matched on
+ *  the number alone, every volume took its neighbour's title and date, and the
+ *  last two joined the spine a second time. A title is the better witness, so
+ *  it decides whenever it names one volume on both sides; the number decides
+ *  only otherwise — a translated title, or volumes that all carry the saga's
+ *  name — and never hands over a volume another entry found by its title. */
+const placeOf = (
+  volumes: readonly Volume[],
+  found: readonly FoundVolume[],
+  entry: FoundVolume,
+): number | 'new' | undefined => {
+  const counted = (titles: readonly string[]) => {
+    const counts = new Map<string, number>()
+    for (const title of titles) counts.set(slugify(title), (counts.get(slugify(title)) ?? 0) + 1)
+    return counts
+  }
+  const held = counted(volumes.map((volume) => volume.title))
+  const named = counted(found.map((other) => other.title))
+  const distinctive = (title: string) =>
+    held.get(slugify(title)) === 1 && named.get(slugify(title)) === 1
+  if (distinctive(entry.title)) {
+    const index = volumes.findIndex((volume) => slugify(volume.title) === slugify(entry.title))
+    const volume = volumes[index]
+    return volume?.kind === 'main' && volume.number !== undefined ? index : undefined
+  }
+  const index = volumes.findIndex(
+    (volume) => volume.kind === 'main' && volume.number === entry.volume,
+  )
+  if (index === -1) return 'new'
+  const volume = volumes[index]
+  return volume && distinctive(volume.title) ? undefined : index
+}
+
 /** The catalogue with what the release watch found of one edition written in:
  *  each volume's date, title and cover in that language, and any numbered
  *  volume the catalogue lacked — an announced volume 5 — appended to the spine.
+ *  A found volume is placed by its title before its number (`placeOf`).
  *  Nothing is ever removed: a search that misses a volume does not unmake it.
  *  The same catalogue, by reference, when nothing changed, so the caller can
  *  skip the write. */
@@ -530,18 +570,25 @@ export const withReleases = (
   found: readonly FoundVolume[],
 ): Series => {
   let changed = false
-  const volumes = series.volumes.map((volume) => {
-    const match = found.find(
-      (entry) =>
-        volume.kind === 'main' && volume.number !== undefined && entry.volume === volume.number,
-    )
+  const matches = new Map<number, FoundVolume>()
+  const unlisted: FoundVolume[] = []
+  for (const entry of found) {
+    const place = placeOf(series.volumes, found, entry)
+    if (place === 'new') unlisted.push(entry)
+    else if (place !== undefined && !matches.has(place)) matches.set(place, entry)
+  }
+  const volumes = series.volumes.map((volume, index) => {
+    const match = matches.get(index)
     if (!match) return volume
     const next = { ...volume }
     if (match.date && volume.releases?.[language] !== match.date) {
       next.releases = { ...volume.releases, [language]: match.date }
       changed = true
     }
-    if (match.title !== volume.title && volume.titles?.[language] !== match.title) {
+    if (
+      slugify(match.title) !== slugify(volume.title) &&
+      volume.titles?.[language] !== match.title
+    ) {
       next.titles = { ...volume.titles, [language]: match.title }
       changed = true
     }
@@ -554,7 +601,7 @@ export const withReleases = (
   const known = new Set(
     volumes.flatMap((volume) => (volume.kind === 'main' ? [volume.number] : [])),
   )
-  for (const entry of found) {
+  for (const entry of unlisted) {
     if (known.has(entry.volume)) continue
     known.add(entry.volume)
     changed = true
