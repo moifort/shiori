@@ -20,7 +20,8 @@ let reportedSinceFlush = false
  *  code catches and recovers from — a model call that failed, a cover lookup
  *  that answered 500, a dashboard left stale — is still a problem, and one
  *  nobody reads the logs for. An error the line carries is reported with its
- *  stack; a line with none is reported as a message. A no-op until the Sentry
+ *  stack; a line with none is reported as a message. An error naming its own
+ *  `fingerprint` is one problem wherever it is caught, and is grouped so. A no-op until the Sentry
  *  plugin initialized the SDK, so a local run reports nothing. */
 const sentryReport: Report = (level, tag, message, { error, ...extra }) => {
   reportedSinceFlush = true
@@ -28,6 +29,8 @@ const sentryReport: Report = (level, tag, message, { error, ...extra }) => {
     scope.setLevel(level)
     scope.setTag('logger', tag)
     scope.setExtras({ ...extra, message })
+    const fingerprint = (error as { fingerprint?: unknown } | undefined)?.fingerprint
+    if (Array.isArray(fingerprint)) scope.setFingerprint(fingerprint)
     if (error instanceof Error) Sentry.captureException(error)
     else {
       if (error !== undefined) scope.setExtra('error', String(error))

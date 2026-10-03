@@ -1,10 +1,11 @@
-import { afterEach, describe, expect, mock, test } from 'bun:test'
+import { afterEach, describe, expect, mock, setSystemTime, test } from 'bun:test'
 import {
   answerOf,
   billedSearches,
   type GeminiResponse,
   generate,
   requestBodyOf,
+  SpendCapReached,
 } from '~/domain/scan/gemini'
 
 const answered = (parts: Partial<GeminiResponse>): GeminiResponse => ({
@@ -279,5 +280,59 @@ describe('a call Google could not serve', () => {
     const calls = failing(400)
     await expect(generate(asked)).rejects.toThrow('400')
     expect(calls).toHaveBeenCalledTimes(1)
+  })
+  describe('once the monthly spending cap is spent', () => {
+    // Back in time, so that the pause each test starts is long over for the others.
+    afterEach(() => setSystemTime())
+    const capped = () =>
+      Object.assign(new Error('429 Too Many Requests'), {
+        statusCode: 429,
+        data: {
+          error: {
+            code: 429,
+            message: 'Your project has exceeded its monthly spending cap. Please go to AI Studio.',
+            status: 'RESOURCE_EXHAUSTED',
+          },
+        },
+      })
+
+    test('fails with the one error Sentry groups, and is not asked again', async () => {
+      setSystemTime(new Date('2026-01-01T09:00:00Z'))
+      const calls = failing()
+      calls.mockImplementation(async () => {
+        throw capped()
+      })
+
+      const failure = await generate(asked).catch((error) => error)
+
+      expect(failure).toBeInstanceOf(SpendCapReached)
+      expect(failure.fingerprint).toEqual(['gemini-spend-cap'])
+      expect(calls).toHaveBeenCalledTimes(1)
+    })
+
+    test('every call that follows fails at once, without asking Google, for a while', async () => {
+      setSystemTime(new Date('2026-01-02T09:00:00Z'))
+      const calls = failing()
+      calls.mockImplementationOnce(async () => {
+        throw capped()
+      })
+
+      await expect(generate(asked)).rejects.toBeInstanceOf(SpendCapReached)
+      setSystemTime(new Date('2026-01-02T09:14:00Z'))
+      await expect(generate(asked)).rejects.toBeInstanceOf(SpendCapReached)
+      expect(calls).toHaveBeenCalledTimes(1)
+
+      setSystemTime(new Date('2026-01-02T09:16:00Z'))
+      expect((await generate(asked)).value).toEqual({ works: [] })
+      expect(calls).toHaveBeenCalledTimes(2)
+    })
+
+    test('a 429 that is not the cap is not mistaken for it', async () => {
+      setSystemTime(new Date('2026-01-03T09:00:00Z'))
+      const calls = failing(429)
+      await expect(generate(asked)).rejects.toThrow('429')
+      expect(calls).toHaveBeenCalledTimes(1)
+      expect((await generate(asked)).value).toEqual({ works: [] })
+    })
   })
 })

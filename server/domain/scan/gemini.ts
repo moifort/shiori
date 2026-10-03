@@ -123,10 +123,40 @@ const answeredOnce = async <T>(
 const TRANSIENT_STATUSES = new Set([500, 503, 504])
 const RETRY_PAUSE_MS = 1000
 
+/** What Google answers once the project's monthly spending cap is spent: a 429
+ *  RESOURCE_EXHAUSTED naming the cap, to every call until someone raises it in
+ *  AI Studio. On October 3rd 2026 one reader's morning — a scan, a refresh, the
+ *  Découvrir tab — turned it into twenty events over five Sentry issues, each
+ *  caller reporting the same refusal from its own stack. So the first refusal
+ *  pauses every call this instance makes for a while, without asking Google,
+ *  and every caller fails with the one error below, which Sentry gathers into a
+ *  single issue. The pause is short because the cap lifts the moment it is
+ *  raised, and nothing else would tell an instance it was. */
+const SPEND_CAP_PAUSE_MS = 15 * 60 * 1000
+let pausedUntil = 0
+
+export class SpendCapReached extends Error {
+  /** Read by the logger: one issue for the cap, whichever caller hit it. */
+  readonly fingerprint = ['gemini-spend-cap']
+  constructor(options?: ErrorOptions) {
+    super('Gemini monthly spending cap reached', options)
+    this.name = 'SpendCapReached'
+  }
+}
+
+const isSpendCap = (error: unknown): boolean => {
+  const { statusCode, data } = error as {
+    statusCode?: number
+    data?: { error?: { message?: string } }
+  }
+  return statusCode === 429 && /spend(ing)? cap/i.test(data?.error?.message ?? '')
+}
+
 /** The key travels in a header, never in the URL: the URL is what a failed
  *  `$fetch` names in its error message, and that message is what Sentry shows
  *  as the issue's title — which is where a query-string key was leaked. */
 const requested = async (options: GenerateOptions): Promise<GeminiResponse> => {
+  if (Date.now() < pausedUntil) throw new SpendCapReached()
   const { googleApiKey } = config()
   const call = () =>
     $fetch<GeminiResponse>(GEMINI_API_URL, {
@@ -137,6 +167,10 @@ const requested = async (options: GenerateOptions): Promise<GeminiResponse> => {
   try {
     return await call()
   } catch (error) {
+    if (isSpendCap(error)) {
+      pausedUntil = Date.now() + SPEND_CAP_PAUSE_MS
+      throw new SpendCapReached({ cause: error })
+    }
     const status = (error as { statusCode?: number }).statusCode
     if (status === undefined || !TRANSIENT_STATUSES.has(status)) throw error
     logger.warn('Gemini unavailable, asked again', { error, status, step: options.step })
