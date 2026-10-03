@@ -682,14 +682,41 @@ struct SeriesView: View {
         } else if addingTitle == volume.title {
             ProgressView().controlSize(.small)
         } else {
-            Button { Task { await add(volume, author: author) } } label: {
+            Menu {
+                ForEach(takenFormat.takenAs, id: \.self) { format in
+                    Section(format.label) {
+                        Button("Ajouter à ma pile", systemImage: "bookmark.fill") {
+                            Task { await add(volume, author: author, as: format) }
+                        }
+                        .accessibilityIdentifier("series-volume-add-pile-\(format.rawValue)")
+                        Button(
+                            format == .audiobook ? "Je l'ai déjà écouté" : "Je l'ai déjà lu",
+                            systemImage: "checkmark"
+                        ) {
+                            Task { await add(volume, author: author, as: format, status: .read) }
+                        }
+                        .accessibilityIdentifier("series-volume-add-read-\(format.rawValue)")
+                    }
+                }
+            } label: {
                 Image(systemName: "plus.circle.fill")
-                    .font(.title3)
+                    .font(.title)
                     .symbolRenderingMode(.hierarchical)
+                    .frame(minWidth: 44, minHeight: 44)
             }
+            .menuStyle(.button)
             .buttonStyle(.borderless)
-            .accessibilityLabel(Text("Ajouter « \(volume.title) » à ma liste à lire"))
+            .accessibilityLabel(Text("Ajouter « \(volume.title) » à ma bibliothèque"))
+            .accessibilityIdentifier("series-volume-add")
         }
+    }
+
+    /// What the saga is read as: the format of the volumes held — a manga
+    /// stays a manga — else a recording for a saga heard, a book otherwise.
+    /// A volume is offered in that format's print form and as a recording,
+    /// as a friend's book is.
+    private var takenFormat: BookFormat {
+        owned.first?.format ?? (series?.isAudio == true ? .audiobook : .book)
     }
 
     /// How far the edition opened was dated: past it, a volume out elsewhere
@@ -904,32 +931,50 @@ struct SeriesView: View {
     ///
     /// The lookup spends a scan. When it cannot run — no scan left, the model
     /// down — the volume is still added, with what the catalogue knows.
-    private func add(_ volume: Volume, author: String) async {
+    private func add(
+        _ volume: Volume,
+        author: String,
+        as format: BookFormat? = nil,
+        status: ReadingStatus = .toRead
+    ) async {
         addingTitle = volume.title
         defer { addingTitle = nil }
-        // A saga heard takes Audible's own record of the recording — cover,
-        // narrators, running time — read through the reader's account. Without
-        // an account, or a recording Audible does not sell, the volume is added
+        let format = format ?? takenFormat
+        // A recording takes Audible's own record of it — cover, narrators,
+        // running time — read through the reader's account. Without an
+        // account, or a recording Audible does not sell, the volume is added
         // by its title below, as a book is.
-        if series?.isAudio == true, volume.kind == .main, let number = volume.number, let language {
+        if format == .audiobook, volume.kind == .main, let number = volume.number, let language {
+            var heard: Book?
             do {
-                let added = try await SeriesAPI.addAudibleVolume(
+                heard = try await SeriesAPI.addAudibleVolume(
                     seriesId: seriesId,
                     volume: number,
                     language: language
                 )
-                track(.bookAdded(source: .series))
-                owned.append(added)
-                return
             } catch {
                 let code = (error as? APIError)?.domainCode
                 if code != "NOT_FOUND" && code != "AUDIBLE_NOT_CONNECTED" { _ = reportError(error) }
             }
+            if var added = heard {
+                track(.bookAdded(source: .series))
+                // Audible's record lands on the pile: one already heard is
+                // moved to the books read, which stamps its finish. Failing
+                // that, it stays on the pile rather than being added twice.
+                if status != .toRead {
+                    do {
+                        added = try await BookAPI.setStatus(id: added.id, status: status)
+                    } catch {
+                        errorMessage = reportError(error)
+                    }
+                }
+                owned.append(added)
+                return
+            }
         }
-        // Another volume of a manga is a manga: the saga shares its format, and
-        // a saga read on the Kindle goes on being read there.
-        let format = owned.first?.format ?? .book
-        let media = owned.first.map(\.media).flatMap { $0.isEmpty ? nil : $0 } ?? [.print]
+        // A saga read on the Kindle goes on being read there.
+        let media = owned.first { $0.format != .audiobook }
+            .map(\.media).flatMap { $0.isEmpty ? nil : $0 } ?? [.print]
         let membership = SeriesMembership(
             id: seriesId,
             name: series?.name ?? owned.first?.series?.name ?? volume.title,
@@ -954,7 +999,7 @@ struct SeriesView: View {
         // it was meant to join.
         draft.series = membership
         draft.language = language ?? owned.first?.language
-        draft.status = .toRead
+        draft.status = status
         do {
             // The new volume is the answer: it joins the shelf on screen, and
             // the catalogue and the opinion it is drawn against are unchanged.
