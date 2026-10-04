@@ -169,6 +169,39 @@ export const listeningProgressOf = (
   return Math.min(100, Math.floor((book.listenedMinutes / book.durationMinutes) * 100))
 }
 
+/** The Amazon Associates tag every store link carries. It belongs to amazon.fr
+ *  alone — a tag is bound to one store and pays nothing on another — which is
+ *  why every link points there, whatever store the reader's Kindle lives on. */
+export const AMAZON_ASSOCIATE_TAG = 'polyforms-21'
+
+/** Where the book can be bought on amazon.fr, tagged. The exact product page
+ *  when the record names one — its Kindle title, else the printed edition its
+ *  ISBN stands for — and otherwise a search on its title and author, among
+ *  recordings for an audiobook and among books for anything else. A 979 ISBN
+ *  has no ISBN-10, the form Amazon's product pages answer to, so it is searched. */
+export const amazonUrlOf = (
+  book: Pick<Book, 'title' | 'authors' | 'format' | 'kindleAsin' | 'isbn13'>,
+): string => {
+  const page = (id: string) => `https://www.amazon.fr/dp/${id}?tag=${AMAZON_ASSOCIATE_TAG}`
+  if (book.kindleAsin) return page(book.kindleAsin)
+  const isbn10 = book.isbn13 ? isbn10Of(book.isbn13) : undefined
+  if (isbn10) return page(isbn10)
+  const search = new URLSearchParams({
+    k: [book.title, book.authors[0]].filter(Boolean).join(' '),
+    i: book.format === 'audiobook' ? 'audible' : 'stripbooks',
+    tag: AMAZON_ASSOCIATE_TAG,
+  })
+  return `https://www.amazon.fr/s?${search}`
+}
+
+const isbn10Of = (isbn13: string): string | undefined => {
+  if (!isbn13.startsWith('978')) return undefined
+  const body = isbn13.slice(3, 12)
+  const sum = [...body].reduce((total, digit, index) => total + Number(digit) * (10 - index), 0)
+  const check = (11 - (sum % 11)) % 11
+  return `${body}${check === 10 ? 'X' : check}`
+}
+
 /** The stars a book shows: its own, else the rating of its saga. A saga rated
  *  as a whole rates each volume the reader left unrated, and a rating given to
  *  the book itself always wins. `seriesRatings` is the reader's saga ratings,

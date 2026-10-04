@@ -510,6 +510,11 @@ type Book {
   addedAt: DateTime!
 
   """
+  Where the book can be bought on amazon.fr, carrying Shiori's Associates tag: the Kindle title when the record names one, else the edition its ISBN stands for, else a search on its title and author. Never null — every book has a title to search.
+  """
+  amazonUrl: String!
+
+  """
   The recording's page on the owner's Audible store, `https://www.audible.{marketplace}/pd/{asin}`. Audible claims that path as a universal link: opened on an iPhone with the Audible app, it lands in the app on the title rather than on the website. Null on anything but an audiobook imported from Audible, and once the account is unlinked — the ASIN belongs to a store no longer known.
   """
   audibleUrl: String
@@ -1268,6 +1273,11 @@ A book as a friend sees it: what is on the shelf and what its owner makes of it,
 """
 type FriendBook {
   addedAt: DateTime!
+
+  """
+  Where the book can be bought on amazon.fr, carrying Shiori's Associates tag, as on the owner's own book page.
+  """
+  amazonUrl: String!
 
   """
   The recording's page on its owner's Audible store, as on the owner's own book page. Null on anything but an audiobook imported from Audible.
@@ -2377,6 +2387,13 @@ type Mutation {
   ): ScanResult!
 
   """
+  Build the record of a volume the reader adds from its saga page, as `scanTitle` does from a typed title, but told which saga, which volume and which format it is: the volumes of a comic are often all titled after the saga, and the title alone found volume 1 for every one of them, with its ISBN and its cover. The answer stays filed at the volume asked for. Nothing is saved; `addBook` persists it.
+  
+  One web-grounded model call, never cached, spending one scan of the allowance once the model answered. Fails with `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` when the model call errors.
+  """
+  scanSeriesVolume(volume: SeriesVolumeInput!): ScanResult!
+
+  """
   Look a book up from a title the reader typed and return a record to review, as `scanBook` does from a cover.
   
   The title can be approximate: the model looks for the most likely book and answers with its exact title. Nothing is saved; the reader corrects the proposal and `addBook` persists it.
@@ -2386,13 +2403,6 @@ type Mutation {
   scanTitle(
     """The title as remembered"""
     title: BookTitle!
-  """
-  Build the record of a volume the reader adds from its saga page, as `scanTitle` does from a typed title, but told which saga, which volume and which format it is: the volumes of a comic are often all titled after the saga, and the title alone found volume 1 for every one of them, with its ISBN and its cover. The answer stays filed at the volume asked for. Nothing is saved; `addBook` persists it.
-  
-  One web-grounded model call, never cached, spending one scan of the allowance once the model answered. Fails with `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` when the model call errors.
-  """
-  scanSeriesVolume(volume: SeriesVolumeInput!): ScanResult!
-
   ): ScanResult!
 
   """
@@ -3496,16 +3506,6 @@ enum SeriesState {
 }
 
 """
-The words the reader has already used, for the edit form to propose as they type. Both lists come from one read of the library.
-"""
-type ShelfVocabulary {
-  """
-  Every saga the reader holds a volume of, alphabetically, each named once: a saga held in two languages is two rows of the Series tab but one name here.
-  """
-  sagas: [SeriesName!]!
-
-  """
-"""
 A volume of a saga the reader is adding from its page: the catalogue already names its saga, its place and its edition.
 """
 input SeriesVolumeInput {
@@ -3522,6 +3522,16 @@ input SeriesVolumeInput {
   volume: VolumeNumber
 }
 
+"""
+The words the reader has already used, for the edit form to propose as they type. Both lists come from one read of the library.
+"""
+type ShelfVocabulary {
+  """
+  Every saga the reader holds a volume of, alphabetically, each named once: a saga held in two languages is two rows of the Series tab but one name here.
+  """
+  sagas: [SeriesName!]!
+
+  """
   Every subgenre the reader has used in the language of `Accept-Language`, the most used first.
   """
   subgenres: [Subgenre!]!

@@ -1,6 +1,6 @@
 import type { SharedActivity } from '~/domain/analytics/types'
 import { AudibleQuery } from '~/domain/audible/query'
-import { listeningProgressOf, shelfDateOf } from '~/domain/book/business-rules'
+import { amazonUrlOf, listeningProgressOf, shelfDateOf } from '~/domain/book/business-rules'
 import {
   BookFormatEnum,
   BookLanguageEnum,
@@ -124,6 +124,12 @@ export const FriendBookType = builder.objectRef<FriendBook>('FriendBook').implem
     durationMinutes: t.int({ nullable: true, resolve: (book) => book.durationMinutes ?? null }),
     narrators: t.field({ type: ['NarratorName'], resolve: (book) => book.narrators ?? [] }),
     isbn13: t.field({ type: 'Isbn13', nullable: true, resolve: (book) => book.isbn13 ?? null }),
+    amazonUrl: t.string({
+      description:
+        "Where the book can be bought on amazon.fr, carrying Shiori's Associates tag, " +
+        "as on the owner's own book page.",
+      resolve: (book) => amazonUrlOf(book),
+    }),
     audibleUrl: t.string({
       nullable: true,
       description:

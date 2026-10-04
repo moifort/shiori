@@ -505,6 +505,7 @@ enum FriendsAPI {
         friendBook.book.narrators = row.narrators
         friendBook.book.isbn13 = row.isbn13
         friendBook.book.audibleURL = row.audibleUrl.flatMap(URL.init(string:))
+        friendBook.book.amazonURL = URL(string: row.amazonUrl)
         friendBook.book.listeningProgress = row.listeningProgress.map { Int($0) }
         friendBook.book.addedAt = GraphQLHelpers.parseISO8601(row.addedAt)
         friendBook.book.startedAt = row.startedAt.flatMap(GraphQLHelpers.parseISO8601)

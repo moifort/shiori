@@ -1,5 +1,10 @@
 import { AudibleQuery } from '~/domain/audible/query'
-import { listeningProgressOf, shelfDateOf, statusChangedAtOf } from '~/domain/book/business-rules'
+import {
+  amazonUrlOf,
+  listeningProgressOf,
+  shelfDateOf,
+  statusChangedAtOf,
+} from '~/domain/book/business-rules'
 import {
   BookFormatEnum,
   BookLanguageEnum,
@@ -151,6 +156,14 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
         const progress = listeningProgressOf(book)
         return progress === undefined ? null : Percentage(progress)
       },
+    }),
+    amazonUrl: t.string({
+      description:
+        "Where the book can be bought on amazon.fr, carrying Shiori's Associates tag: " +
+        'the Kindle title when the record names one, else the edition its ISBN stands ' +
+        'for, else a search on its title and author. Never null — every book has a ' +
+        'title to search.',
+      resolve: (book) => amazonUrlOf(book),
     }),
     audibleUrl: t.string({
       nullable: true,

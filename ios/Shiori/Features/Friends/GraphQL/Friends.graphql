@@ -200,6 +200,7 @@ query FriendBook($userId: UserId!, $bookId: BookId!) {
     narrators
     isbn13
     audibleUrl
+    amazonUrl
     listeningProgress
     addedAt
     startedAt

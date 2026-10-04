@@ -40,7 +40,8 @@ struct BookHeaderSection<Extra: View>: View {
     var releaseDate: String?
     /// The reader awaits an edition of it: binoculars beside the title.
     var isAwaited = false
-    /// Nil opens the book's own Audible page, when it has one.
+    /// Nil opens the book's own stores: Audible when it has a page there,
+    /// and Amazon.
     var storeLink: StoreLink?
     var actions = Actions()
     /// Draws a row for every fact, known or not, so a page checking a scan
@@ -62,8 +63,12 @@ struct BookHeaderSection<Extra: View>: View {
         return measured > 0 ? measured : 16
     }
 
-    private var shownStoreLink: StoreLink? {
-        storeLink ?? book.audibleURL.map { StoreLink(name: "Audible", url: $0, tint: .audible) }
+    private var shownStoreLinks: [StoreLink] {
+        if let storeLink { return [storeLink] }
+        return [
+            book.audibleURL.map { StoreLink(name: "Audible", url: $0, tint: .audible) },
+            book.amazonURL.map { StoreLink(name: "Amazon", url: $0) },
+        ].compactMap { $0 }
     }
 
     var body: some View {
@@ -119,19 +124,21 @@ struct BookHeaderSection<Extra: View>: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        // A quiet tag in the corner rather than a row: a way out of Shiori,
-        // not a fact about the book. On the card's trailing edge, its foot
-        // level with the cover's however long the title runs.
+        // Quiet tags in the corner rather than rows: ways out of Shiori, not
+        // facts about the book. On the card's trailing edge, the last one's
+        // foot level with the cover's however long the title runs.
         .overlay(alignment: .topTrailing) {
-            if let link = shownStoreLink {
-                Link(destination: link.url) {
-                    Pill(text: link.name, tint: link.tint, trailingSystemImage: "arrow.up.right")
+            VStack(alignment: .trailing, spacing: 6) {
+                ForEach(shownStoreLinks, id: \.name) { link in
+                    Link(destination: link.url) {
+                        Pill(text: link.name, tint: link.tint, trailingSystemImage: "arrow.up.right")
+                    }
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel(Text("Ouvrir dans \(link.name)"))
+                    .accessibilityIdentifier("book-store-link-\(link.name.lowercased())")
                 }
-                .buttonStyle(.borderless)
-                .frame(height: Self.coverHeight, alignment: .bottom)
-                .accessibilityLabel(Text("Ouvrir dans \(link.name)"))
-                .accessibilityIdentifier("book-store-link")
             }
+            .frame(height: Self.coverHeight, alignment: .bottom)
         }
         .fixedSize(horizontal: false, vertical: true)
         .padding(.vertical, 2)

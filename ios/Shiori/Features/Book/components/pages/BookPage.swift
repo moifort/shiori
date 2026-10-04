@@ -139,6 +139,7 @@ extension Book {
         subgenres: ["Roman initiatique", "Aventure"],
         pageCount: 662,
         audibleURL: URL(string: "https://www.audible.fr/pd/B00X57B4KE"),
+        amazonURL: URL(string: "https://www.amazon.fr/s?k=Le+Nom+du+vent+Patrick+Rothfuss&i=audible&tag=polyforms-21"),
         isbn13: "9782352943556",
         series: SeriesMembership(id: "s1", name: "Chronique du tueur de roi", volume: 1, kind: .main),
         status: .reading,

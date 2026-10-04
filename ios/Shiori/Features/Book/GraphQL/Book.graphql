@@ -104,6 +104,7 @@ fragment BookDetail on Book {
   listeningProgress
   narrators
   audibleUrl
+  amazonUrl
   language
   isbn13
   coverUrl

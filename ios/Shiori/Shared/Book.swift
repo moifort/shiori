@@ -287,6 +287,10 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
     /// imported from Audible, and once the account is unlinked. Only the
     /// book's own screen carries it.
     var audibleURL: URL?
+    /// Where the book is bought on amazon.fr, carrying Shiori's Associates
+    /// tag: the Kindle title, the edition its ISBN names, or a search. Only
+    /// the book's own screen and a friend's carry it.
+    var amazonURL: URL?
     var isbn13: String?
     /// The language of this edition. Nil on every book catalogued before the scan
     /// started reading it off the cover, and on any edition in a language the
