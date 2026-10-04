@@ -1,43 +1,40 @@
 import Charts
 import SwiftUI
 
-/// How many sessions GA4 counted each day of the month, over the same
-/// whole-month axis as the costs, so the two charts line up day for day.
+/// How many sessions GA4 counted each day, in the same columns as the costs:
+/// the count above, the date below, two weeks at a time, opening on the last
+/// counted day.
 struct AdminDailySessionsChart: View {
     let days: [AdminMetrics.DailySessions]
-    let monthStart: Date
-    let monthEnd: Date
+    let daysInMonth: Int
 
     var body: some View {
         Chart(days) { day in
             BarMark(
-                x: .value("Jour", day.day, unit: .day, calendar: AdminMetrics.utc),
-                y: .value("Sessions", day.sessions)
+                x: .value("Jour", AdminDailyChart.dayNumber(day.day)),
+                y: .value("Sessions", day.sessions),
+                width: .fixed(AdminDailyChart.barWidth)
             )
             .foregroundStyle(Color.blue)
-        }
-        .chartXScale(domain: monthStart...endOfLastDay)
-        .chartXAxis {
-            AxisMarks(values: .stride(by: .day, count: 7, calendar: AdminMetrics.utc)) { _ in
-                AxisGridLine()
-                AxisValueLabel(format: AdminFormat.dayMonth)
+            .cornerRadius(3)
+            .annotation(position: .top, spacing: 2) {
+                AdminDailyChart.valueLabel(day.sessions.formatted(.number))
+            }
+            .annotation(position: .bottom, spacing: 4) {
+                AdminDailyChart.dayLabel(day.day)
             }
         }
-        .chartYAxis {
-            AxisMarks(position: .leading)
-        }
-        .frame(height: 160)
-    }
-
-    private var endOfLastDay: Date {
-        AdminMetrics.utc.date(byAdding: .day, value: 1, to: monthEnd) ?? monthEnd
+        .modifier(
+            AdminDailyChart.Layout(
+                daysInMonth: daysInMonth,
+                lastDay: days.last.map { AdminDailyChart.dayNumber($0.day) } ?? 1,
+                peak: Double(days.map(\.sessions).max() ?? 0)
+            )
+        )
     }
 }
 
 #Preview {
-    let metrics = AdminMetrics.preview
-    AdminDailySessionsChart(
-        days: metrics.sessions ?? [], monthStart: metrics.month, monthEnd: metrics.monthEnd
-    )
-    .padding()
+    AdminDailySessionsChart(days: AdminMetrics.preview.sessions ?? [], daysInMonth: 31)
+        .padding()
 }

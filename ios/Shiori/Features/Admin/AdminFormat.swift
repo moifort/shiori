@@ -17,6 +17,11 @@ enum AdminFormat {
         return style
     }
 
+    /// The day's number alone, "17": the month is in the screen's title.
+    static var dayOfMonth: Date.FormatStyle {
+        Date.FormatStyle(timeZone: TimeZone(identifier: "UTC")!).day()
+    }
+
     static var shortMonth: Date.FormatStyle {
         Date.FormatStyle(timeZone: TimeZone(identifier: "UTC")!).month(.abbreviated)
     }

@@ -37,9 +37,7 @@ struct AdminPage: View {
 
             Section("Coûts par jour") {
                 if let costs = metrics.costs, !costs.days.isEmpty {
-                    AdminDailyCostChart(
-                        days: costs.days, monthStart: metrics.month, monthEnd: metrics.monthEnd
-                    )
+                    AdminDailyCostChart(days: costs.days, daysInMonth: metrics.daysInMonth)
                     .padding(.vertical, 8)
                 } else {
                     unavailable(metrics.costs == nil ? "Facturation indisponible" : "Aucun jour facturé")
@@ -48,9 +46,7 @@ struct AdminPage: View {
 
             Section("Sessions par jour") {
                 if let sessions = metrics.sessions, !sessions.isEmpty {
-                    AdminDailySessionsChart(
-                        days: sessions, monthStart: metrics.month, monthEnd: metrics.monthEnd
-                    )
+                    AdminDailySessionsChart(days: sessions, daysInMonth: metrics.daysInMonth)
                     .padding(.vertical, 8)
                 } else {
                     unavailable(metrics.sessions == nil ? "Sessions indisponibles" : "Aucune session")

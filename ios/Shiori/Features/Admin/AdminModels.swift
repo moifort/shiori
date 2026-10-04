@@ -42,7 +42,7 @@ struct AdminMetrics {
         let days: [DailyCost]
     }
 
-    /// Midnight UTC on the month's first day: where the charts' axis starts.
+    /// Midnight UTC on the month's first day: the month the screen shows.
     let month: Date
     /// Nil while the billing export has not answered this month.
     let costs: Costs?
@@ -86,10 +86,9 @@ extension AdminMetrics {
         utc.date(from: utc.dateComponents([.year, .month], from: moment)) ?? moment
     }
 
-    /// The last day of the month, at midnight UTC.
-    var monthEnd: Date {
-        let next = Self.utc.date(byAdding: .month, value: 1, to: month) ?? month
-        return Self.utc.date(byAdding: .day, value: -1, to: next) ?? month
+    /// How many days the month shown has: the length of the charts' axis.
+    var daysInMonth: Int {
+        Self.utc.range(of: .day, in: .month, for: month)?.count ?? 31
     }
 }
 
