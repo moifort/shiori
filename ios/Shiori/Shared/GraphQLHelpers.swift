@@ -15,11 +15,13 @@ enum GraphQLHelpers {
         requestTimeout: TimeInterval? = nil
     ) async throws -> Q.Data
     where Q.ResponseFormat == SingleResponseFormat {
-        let response = try await client.fetch(
-            query: query,
-            cachePolicy: .networkOnly,
-            requestConfiguration: requestTimeout.map { RequestConfiguration(requestTimeout: $0) }
-        )
+        let response = try await calledOffWhenCancelled {
+            try await client.fetch(
+                query: query,
+                cachePolicy: .networkOnly,
+                requestConfiguration: requestTimeout.map { RequestConfiguration(requestTimeout: $0) }
+            )
+        }
         return try unwrap(response)
     }
 
@@ -44,10 +46,12 @@ enum GraphQLHelpers {
         changesLibrary: Bool = true
     ) async throws -> M.Data
     where M.ResponseFormat == SingleResponseFormat {
-        let response = try await client.perform(
-            mutation: mutation,
-            requestConfiguration: requestTimeout.map { RequestConfiguration(requestTimeout: $0) }
-        )
+        let response = try await calledOffWhenCancelled {
+            try await client.perform(
+                mutation: mutation,
+                requestConfiguration: requestTimeout.map { RequestConfiguration(requestTimeout: $0) }
+            )
+        }
         let data = try unwrap(response)
         // The write landed: every list and the dashboard are told, once, here,
         // rather than by each screen remembering to say so.
@@ -56,6 +60,25 @@ enum GraphQLHelpers {
             NotificationCenter.default.post(name: .shioriDataDidChange, object: change)
         }
         return data
+    }
+
+    /// A request whose task was cancelled — the reader left the screen that
+    /// asked — fails as a cancellation, whatever Apollo made of it.
+    ///
+    /// Apollo 2.2 nests one stream per stage, each fed by its own task. Cancelling
+    /// the caller cancels them all at once, and now and then an inner stage, seeing
+    /// its source end empty, reports `noResults` before the outer stream has closed
+    /// on the cancellation: about one cancelled request in a thousand. Nothing
+    /// came back because nothing was waited for; in a task still running,
+    /// `noResults` stays the failure it is.
+    private static func calledOffWhenCancelled<Response>(
+        _ request: () async throws -> Response
+    ) async throws -> Response {
+        do {
+            return try await request()
+        } catch ApolloClient.Error.noResults where Task.isCancelled {
+            throw CancellationError()
+        }
     }
 
     /// Turn a `GraphQLResponse` into its `Data`, surfacing GraphQL errors and
