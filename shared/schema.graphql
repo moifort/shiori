@@ -2386,6 +2386,13 @@ type Mutation {
   scanTitle(
     """The title as remembered"""
     title: BookTitle!
+  """
+  Build the record of a volume the reader adds from its saga page, as `scanTitle` does from a typed title, but told which saga, which volume and which format it is: the volumes of a comic are often all titled after the saga, and the title alone found volume 1 for every one of them, with its ISBN and its cover. The answer stays filed at the volume asked for. Nothing is saved; `addBook` persists it.
+  
+  One web-grounded model call, never cached, spending one scan of the allowance once the model answered. Fails with `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` when the model call errors.
+  """
+  scanSeriesVolume(volume: SeriesVolumeInput!): ScanResult!
+
   ): ScanResult!
 
   """
@@ -3498,6 +3505,23 @@ type ShelfVocabulary {
   sagas: [SeriesName!]!
 
   """
+"""
+A volume of a saga the reader is adding from its page: the catalogue already names its saga, its place and its edition.
+"""
+input SeriesVolumeInput {
+  authors: [AuthorName!]!
+  format: BookFormat
+  kind: VolumeKind!
+  language: BookLanguage
+  media: [BookMedium!]
+  seriesId: SeriesId!
+  seriesName: SeriesName!
+  title: BookTitle!
+
+  """Null for an unnumbered work"""
+  volume: VolumeNumber
+}
+
   Every subgenre the reader has used in the language of `Accept-Language`, the most used first.
   """
   subgenres: [Subgenre!]!

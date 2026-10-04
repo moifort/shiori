@@ -924,9 +924,9 @@ struct SeriesView: View {
         }
     }
 
-    /// Adds a missing volume as a full record: the title lookup — the same AI
-    /// call as a title typed in the add sheet — writes its summary, genre, pages
-    /// and cover, and the volume is filed under this saga at its number, so its
+    /// Adds a missing volume as a full record: the volume lookup — told the
+    /// saga, the number and the format, since the volumes of a comic are often
+    /// all titled after it — writes its summary, genre, pages and cover, and the volume is filed under this saga at its number, so its
     /// row here turns into the reader's book as soon as the list reloads.
     ///
     /// The lookup spends a scan. When it cannot run — no scan left, the model
@@ -985,7 +985,14 @@ struct SeriesView: View {
         // A provisional volume is titled after its saga and has no title to
         // look up: it is added bare, at its number, and described later.
         let canLookUp = series?.isProvisional != true
-        if canLookUp, let found = try? await ScanAPI.lookUp(title: "\(volume.title) — \(author)"), found.recognized {
+        if canLookUp, let found = try? await ScanAPI.lookUp(
+            volume: volume.title,
+            author: author,
+            membership: membership,
+            format: format,
+            media: media,
+            language: language ?? owned.first?.language
+        ), found.recognized {
             draft = found.asDraft
             if draft.title.isEmpty { draft.title = volume.title }
             if draft.authors.isEmpty { draft.authors = [author] }

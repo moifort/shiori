@@ -1,6 +1,8 @@
 import { AdminCommand } from '~/domain/admin/command'
 import { shelfKeyOf } from '~/domain/book/business-rules'
 import { BookQuery } from '~/domain/book/query'
+import { watchKeyOf } from '~/domain/discovery/business-rules'
+import { DiscoveryQuery } from '~/domain/discovery/query'
 import { exhausted } from '~/domain/quota/business-rules'
 import { QuotaCommand } from '~/domain/quota/command'
 import { QuotaQuery } from '~/domain/quota/query'
@@ -8,14 +10,19 @@ import { ScanCommand } from '~/domain/scan/command'
 import { pageTitleOf } from '~/domain/scan/page-title'
 import type {
   DetectedBook,
+  EditionHints,
   ScanLanguage,
+  ScannedSeries,
   ScanResult,
   ScanUsage,
   TitleCandidate,
 } from '~/domain/scan/types'
+import { SeriesQuery } from '~/domain/series/query'
+import type { VolumeKind, VolumeNumber } from '~/domain/series/types'
 import { BookTitle } from '~/domain/shared/primitives'
 import type { BookTitle as BookTitleValue, Plan, UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
+import { slugify } from '~/utils/slug'
 
 const logger = createLogger('scan')
 
@@ -50,11 +57,70 @@ export namespace ScanUseCase {
   /** Describe a book already named — a volume the release watch announced —
    *  for the reader to look at before adding it. Never cached, so it always
    *  spends one scan. */
-  export const lookUpEdition = (userId: UserId, seen: ScanResult, language: ScanLanguage) =>
+  export const lookUpEdition = (
+    userId: UserId,
+    seen: ScanResult,
+    language: ScanLanguage,
+    hints?: EditionHints,
+  ) =>
     metered(userId, 'edition lookup failed', async () => ({
-      ...(await ScanCommand.lookUpEdition(seen, language)),
+      ...(await ScanCommand.lookUpEdition(seen, language, hints)),
       cacheHit: false,
     }))
+
+  /** Describe one volume of a saga — one added from its page, or refreshed —
+   *  with everything already known of it beside its name: the ISBN and date
+   *  the release watch found, and the reader's other volumes, whose ISBNs are
+   *  not this one's and whose publisher is most likely this one's too. The
+   *  volumes of a comic are often all titled after the saga, and the title
+   *  alone found volume 1 for each, with its ISBN and its cover. Spends one
+   *  scan, as `lookUpEdition` does. */
+  export const lookUpVolume = async (
+    userId: UserId,
+    seen: ScanResult & { series: ScannedSeries },
+    language: ScanLanguage,
+  ) => {
+    const { series } = seen
+    // Numbered, a volume is its number; unnumbered, its title.
+    const sameVolume = (other: { kind: VolumeKind; volume?: VolumeNumber; title: string }) =>
+      other.kind === series.kind &&
+      (series.volume !== undefined
+        ? other.volume === series.volume
+        : slugify(other.title) === slugify(seen.title))
+    const edition = seen.language
+    const key = edition ? watchKeyOf({ seriesId: series.id, language: edition }) : undefined
+    const [books, catalogue, watches] = await Promise.all([
+      BookQuery.all(userId),
+      SeriesQuery.byId({ id: series.id, language: edition }),
+      key ? DiscoveryQuery.watches([key]) : undefined,
+    ])
+    const others = books.filter(
+      (book) => book.series?.id === series.id && !sameVolume({ ...book.series, title: book.title }),
+    )
+    const volume = catalogue?.volumes.find((entry) =>
+      sameVolume({ kind: entry.kind, volume: entry.number, title: entry.title }),
+    )
+    const watched = key
+      ? watches
+          ?.get(key)
+          ?.volumes.find((entry) => series.kind === 'main' && entry.number === series.volume)
+      : undefined
+    const siblings = others.flatMap((book) =>
+      book.isbn13 && book.series
+        ? [{ volume: book.series.volume, kind: book.series.kind, isbn13: book.isbn13 }]
+        : [],
+    )
+    const hints: EditionHints = {
+      watchedIsbn13: watched?.isbn13,
+      releasedOn: (edition && volume?.releases?.[edition]) || watched?.date,
+      siblings,
+    }
+    // The reader's other volumes in this edition name its publisher.
+    const publisher =
+      seen.publisher ??
+      others.find((book) => book.publisher && book.language === edition)?.publisher
+    return lookUpEdition(userId, { ...seen, publisher }, language, hints)
+  }
 
   /** Describe a book the reader ticked on a shelf photo. Never cached, so it
    *  always spends one scan — and only once the model answered. */

@@ -10,8 +10,10 @@ mock.module('~/system/config', () => ({
 }))
 
 let answers: unknown[] = []
+let prompts: string[] = []
 mock.module('~/domain/scan/gemini', () => ({
-  generate: async ({ step }: { step: string }) => {
+  generate: async ({ step, parts }: { step: string; parts: { text?: string }[] }) => {
+    prompts.push(parts.map((part) => part.text ?? '').join(''))
     // The author's page a described book builds is covered by the scan's own
     // tests: here it finds nothing, and stays out of the queue.
     if (step === 'author')
@@ -35,6 +37,7 @@ let fake: ReturnType<typeof resetFakeFirestore>
 beforeEach(() => {
   fake = resetFakeFirestore()
   answers = []
+  prompts = []
   premiumUserIds = []
 })
 
@@ -177,6 +180,140 @@ describe('describeDetectedBook', () => {
     })
     const month = fake.data('ai-quotas', `${userId}_${monthOf(new Date())}`) as { scans: number }
     expect(month.scans).toBe(1)
+  })
+})
+
+describe('scanSeriesVolume', () => {
+  const scanSeriesVolume = () =>
+    graphql({
+      schema,
+      source: `mutation($volume: SeriesVolumeInput!) {
+        scanSeriesVolume(volume: $volume) { recognized title series { id name volume kind } }
+      }`,
+      variableValues: {
+        volume: {
+          title: 'Sweet Tooth',
+          authors: ['Jeff Lemire'],
+          seriesId: 'sweet-tooth--jeff-lemire',
+          seriesName: 'Sweet Tooth',
+          volume: 2,
+          kind: 'MAIN',
+          language: 'FR',
+          format: 'COMIC',
+        },
+      },
+      contextValue: { event: undefined, userId },
+    })
+
+  test('tells the model which volume and which format it is looking for', async () => {
+    answers = [{ title: 'Sweet Tooth', authors: ['Jeff Lemire'], subgenres: [] }]
+
+    const result = await scanSeriesVolume()
+
+    expect(result.errors).toBeUndefined()
+    expect(prompts[0]).toContain('Série : « Sweet Tooth », tome 2.')
+    expect(prompts[0]).toContain('Format : comic.')
+  })
+
+  test('keeps the answer filed at the volume asked for', async () => {
+    // The model named another volume of the saga: the catalogue decides.
+    answers = [
+      {
+        title: 'Sweet Tooth',
+        authors: ['Jeff Lemire'],
+        seriesName: 'Sweet Tooth',
+        volumeNumber: 1,
+        volumeKind: 'main',
+        subgenres: [],
+      },
+    ]
+
+    const result = await scanSeriesVolume()
+
+    expect(result.data).toEqual({
+      scanSeriesVolume: {
+        recognized: true,
+        title: 'Sweet Tooth',
+        series: { id: 'sweet-tooth--jeff-lemire', name: 'Sweet Tooth', volume: 2, kind: 'MAIN' },
+      },
+    })
+    const month = fake.data('ai-quotas', `${userId}_${monthOf(new Date())}`) as { scans: number }
+    expect(month.scans).toBe(1)
+  })
+})
+
+describe('scanSeriesVolume, with the volumes the reader holds', () => {
+  const volumeOne = {
+    id: 'sweet-tooth-1',
+    userId,
+    title: 'Sweet Tooth',
+    authors: ['Jeff Lemire'],
+    format: 'comic',
+    media: ['print'],
+    language: 'fr',
+    publisher: 'Urban Comics',
+    isbn13: '9782365777148',
+    series: { id: 'sweet-tooth--jeff-lemire', name: 'Sweet Tooth', volume: 1, kind: 'main' },
+    subgenres: [],
+    narrators: [],
+    status: 'read',
+    hidden: false,
+    addedAt: new Date('2026-01-02T08:00:00.000Z'),
+    updatedAt: new Date('2026-01-02T08:00:00.000Z'),
+  }
+
+  const scanVolumeTwo = () =>
+    graphql({
+      schema,
+      source: `mutation($volume: SeriesVolumeInput!) {
+        scanSeriesVolume(volume: $volume) { isbn13 }
+      }`,
+      variableValues: {
+        volume: {
+          title: 'Sweet Tooth',
+          authors: ['Jeff Lemire'],
+          seriesId: 'sweet-tooth--jeff-lemire',
+          seriesName: 'Sweet Tooth',
+          volume: 2,
+          kind: 'MAIN',
+          language: 'FR',
+          format: 'COMIC',
+        },
+      },
+      contextValue: { event: undefined, userId },
+    })
+
+  test('names the other volumes, their ISBNs and their publisher', async () => {
+    fake.seed('books', volumeOne.id, volumeOne)
+    fake.seed('series', 'sweet-tooth--jeff-lemire~fr', {
+      id: 'sweet-tooth--jeff-lemire',
+      name: 'Sweet Tooth',
+      author: 'Jeff Lemire',
+      language: 'fr',
+      volumes: [
+        { number: 1, title: 'Sweet Tooth', kind: 'main' },
+        { number: 2, title: 'Sweet Tooth', kind: 'main', releases: { fr: '2016-03-04' } },
+      ],
+    })
+    answers = [{ title: 'Sweet Tooth', authors: ['Jeff Lemire'], subgenres: [] }]
+
+    await scanVolumeTwo()
+
+    expect(prompts[0]).toContain('9782365777148 (tome 1)')
+    expect(prompts[0]).toContain('éditeur « Urban Comics »')
+    expect(prompts[0]).toContain('2016-03-04')
+  })
+
+  test("drops another volume's ISBN rather than draw its cover", async () => {
+    fake.seed('books', volumeOne.id, volumeOne)
+    answers = [
+      { title: 'Sweet Tooth', authors: ['Jeff Lemire'], isbn13: '9782365777148', subgenres: [] },
+    ]
+
+    const result = await scanVolumeTwo()
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data).toEqual({ scanSeriesVolume: { isbn13: null } })
   })
 })
 

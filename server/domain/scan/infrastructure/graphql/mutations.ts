@@ -8,6 +8,7 @@ import {
 import { imageWithinSizeLimit } from '~/domain/scan/limits'
 import type { ScanOutcome, ShelfOutcome } from '~/domain/scan/use-case'
 import { ScanUseCase } from '~/domain/scan/use-case'
+import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { builder } from '~/domain/shared/graphql/builder'
 import { domainError } from '~/domain/shared/graphql/errors'
 import { languageFrom } from '~/domain/shared/language'
@@ -228,5 +229,63 @@ builder.mutationField('describeDetectedBook', (t) =>
           languageFrom(event && getHeader(event, 'accept-language')),
         ),
       ),
+  }),
+)
+
+const SeriesVolumeInput = builder.inputType('SeriesVolumeInput', {
+  description:
+    'A volume of a saga the reader is adding from its page: the catalogue already ' +
+    'names its saga, its place and its edition.',
+  fields: (t) => ({
+    title: t.field({ type: 'BookTitle', required: true }),
+    authors: t.field({ type: ['AuthorName'], required: true }),
+    seriesId: t.field({ type: 'SeriesId', required: true }),
+    seriesName: t.field({ type: 'SeriesName', required: true }),
+    volume: t.field({ type: 'VolumeNumber', description: 'Null for an unnumbered work' }),
+    kind: t.field({ type: VolumeKindEnum, required: true }),
+    language: t.field({ type: BookLanguageEnum }),
+    format: t.field({ type: BookFormatEnum }),
+    media: t.field({ type: [BookMediumEnum] }),
+  }),
+})
+
+builder.mutationField('scanSeriesVolume', (t) =>
+  t.field({
+    type: ScanResultType,
+    description:
+      'Build the record of a volume the reader adds from its saga page, as ' +
+      '`scanTitle` does from a typed title, but told which saga, which volume and ' +
+      'which format it is: the volumes of a comic are often all titled after the ' +
+      'saga, and the title alone found volume 1 for every one of them, with its ' +
+      'ISBN and its cover. The answer stays filed at the volume asked for. Nothing ' +
+      'is saved; `addBook` persists it.\n\n' +
+      'One web-grounded model call, never cached, spending one scan of the ' +
+      'allowance once the model answered. Fails with `QUOTA_EXHAUSTED` once nothing ' +
+      'is left, or `SCAN_FAILED` when the model call errors.',
+    args: { volume: t.arg({ type: SeriesVolumeInput, required: true }) },
+    resolve: async (_root, { volume }, { userId, event }) => {
+      const series = {
+        id: volume.seriesId,
+        name: volume.seriesName,
+        volume: volume.volume ?? undefined,
+        kind: volume.kind,
+      }
+      const outcome = await ScanUseCase.lookUpVolume(
+        userId,
+        {
+          recognized: true,
+          title: volume.title,
+          authors: volume.authors,
+          language: volume.language ?? undefined,
+          ...heldAs(volume.format, volume.media),
+          series,
+          subgenres: [],
+        },
+        languageFrom(event && getHeader(event, 'accept-language')),
+      )
+      return answered(
+        typeof outcome === 'object' && 'recognized' in outcome ? { ...outcome, series } : outcome,
+      )
+    },
   }),
 )

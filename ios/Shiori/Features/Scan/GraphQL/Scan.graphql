@@ -22,6 +22,15 @@ mutation LookUpTitle($title: BookTitle!) {
   }
 }
 
+# A volume added from its saga page, looked up as the volume it is: the
+# saga, the number and the format go with the title, which alone named
+# volume 1 for every volume of a saga titled after itself.
+mutation ScanSeriesVolume($volume: SeriesVolumeInput!) {
+  scanSeriesVolume(volume: $volume) {
+    ...ScannedRecord
+  }
+}
+
 # The books a typed title may mean, for the reader to pick before
 # `LookUpTitle` builds the record. Quick, and spends nothing.
 mutation SearchTitle($title: BookTitle!) {

@@ -328,6 +328,30 @@ describe('naming the edition', () => {
     expect(prompts.enrichment).toContain('collector')
   })
 
+  // The volumes of a comic are often all titled after the saga: without its
+  // number, volume 2 was looked up as volume 1, ISBN and cover with it.
+  test('names the volume and the format the cover printed', async () => {
+    answers = [
+      { ...aCover, format: 'comic', seriesName: 'Sweet Tooth', volumeNumber: 2 },
+      anEnrichment,
+      aCatalogue,
+    ]
+
+    await ScanCommand.scanWithCache(image, 'fr')
+
+    expect(prompts.enrichment).toContain('Série : « Sweet Tooth », tome 2.')
+    expect(prompts.enrichment).toContain('Format : comic.')
+  })
+
+  test('names neither for a plain standalone book', async () => {
+    answers = [aCover, anEnrichment, aCatalogue]
+
+    await ScanCommand.scanWithCache(image, 'fr')
+
+    expect(prompts.enrichment).not.toContain('Série :')
+    expect(prompts.enrichment).not.toContain('Format :')
+  })
+
   test('falls back to an edition in the reader language for a typed title', async () => {
     answers = [anEnrichment, aCatalogue]
 

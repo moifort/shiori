@@ -42,6 +42,7 @@ import {
 import { STUBBED_SCAN, STUBBED_SHELF } from '~/domain/scan/stub'
 import type {
   AiStepUsage,
+  EditionHints,
   ScanLanguage,
   ScanResult,
   ScanUsage,
@@ -204,10 +205,15 @@ export namespace ScanCommand {
   export const lookUpEdition = async (
     seen: ScanResult,
     language: ScanLanguage,
+    hints?: EditionHints,
   ): Promise<{ result: ScanResult; usage: ScanUsage }> => {
     if (import.meta.dev && config().scanStub) return { result: STUBBED_SCAN, usage: {} }
 
-    const { result: enriched, regularEdition, usage: enrichment } = await enrich(seen, language)
+    const {
+      result: enriched,
+      regularEdition,
+      usage: enrichment,
+    } = await enrich(seen, language, 'cover', hints)
     const result = { ...enriched, coverUrl: await coverOf(enriched.isbn13, regularEdition) }
     return { result, usage: { enrichment } }
   }
@@ -356,15 +362,28 @@ export namespace ScanCommand {
       }
     }
 
+    const authors = parsedAuthors(value.authors)
+    const held = heldFormatOf(value.format)
     return {
       result: {
         recognized: true,
         title: BookTitle(value.title),
-        authors: parsedAuthors(value.authors),
-        ...heldFormatOf(value.format),
+        authors,
+        ...held,
         publisher: optional(value.publisher, Publisher),
         language: optional(value.language, BookLanguageValue),
         subgenres: [],
+        // What the cover printed of its saga — "Volume 2" — goes on to step 2,
+        // which needs it to tell this volume from the others titled the same.
+        series: parsedSeries(
+          {
+            seriesName: value.seriesName,
+            volumeNumber: value.volumeNumber,
+            volumeKind: value.volumeNumber != null ? 'main' : null,
+          },
+          authors,
+          held.format,
+        ),
       } satisfies ScanResult,
       usage,
     }
@@ -376,10 +395,11 @@ export namespace ScanCommand {
     seen: ScanResult,
     language: ScanLanguage,
     source: 'cover' | 'typed' = 'cover',
+    hints?: EditionHints,
   ) => {
     const { value, usage } = await generate<EnrichmentOutput>({
       step: 'enrichment',
-      parts: [{ text: enrichmentPrompt(seen, language, source) }],
+      parts: [{ text: enrichmentPrompt(seen, language, source, hints) }],
       responseSchema: ENRICHMENT_SCHEMA,
       grounded: true,
     })
@@ -408,15 +428,20 @@ export namespace ScanCommand {
           .filter(isPresent)
           .slice(0, MAX_SUBGENRES),
         pageCount: optional(value.pageCount, PageCount),
-        isbn13: optional(value.isbn13, Isbn13),
+        // Another volume's ISBN, though the model was told it is not this one,
+        // would draw that volume's cover: no cover beats a wrong one.
+        isbn13: notAnotherVolume(optional(value.isbn13, Isbn13), hints),
         series,
       } satisfies ScanResult,
       // Not part of the result: the book is the edition the reader holds, and
       // this one only lends it a cover.
-      regularEdition: optional(value.regularEditionIsbn13, Isbn13),
+      regularEdition: notAnotherVolume(optional(value.regularEditionIsbn13, Isbn13), hints),
       usage,
     }
   }
+
+  const notAnotherVolume = (isbn13: Isbn13Type | undefined, hints: EditionHints | undefined) =>
+    isbn13 && hints?.siblings.some((sibling) => sibling.isbn13 === isbn13) ? undefined : isbn13
 
   /** The published cover of the edition the reader holds, drawn with its regular
    *  edition's cover when it is a special one. A collector's own cover is often a
@@ -587,7 +612,7 @@ export namespace ScanCommand {
   }
 
   const parsedSeries = (
-    value: EnrichmentOutput,
+    value: Pick<EnrichmentOutput, 'seriesName' | 'volumeNumber' | 'volumeKind'>,
     authors: ScanResult['authors'],
     format: ScanResult['format'],
   ): ScanResult['series'] => {

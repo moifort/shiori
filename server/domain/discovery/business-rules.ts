@@ -724,6 +724,8 @@ export const announcedEditionOf = (
   format: formatOf(watch.seriesId),
   publisher: recording?.publisher,
   language: watch.language,
+  // Named, so the lookup describes this volume and not another titled the same.
+  series: { id: watch.seriesId, name: watch.name, volume: volume.number, kind: 'main' },
   subgenres: [],
 })
 

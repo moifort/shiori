@@ -67,19 +67,20 @@ export namespace BookUseCase {
   export const refresh = async (userId: UserId, bookId: BookId, language: Language) => {
     const book = await BookQuery.byId(userId, bookId)
     if (!book) return 'not-found' as const
-    const found = await ScanUseCase.lookUpEdition(
-      userId,
-      {
-        recognized: true,
-        title: book.title,
-        authors: book.authors,
-        format: book.format,
-        publisher: book.publisher,
-        language: book.language,
-        subgenres: [],
-      },
-      language,
-    )
+    const seen = {
+      recognized: true,
+      title: book.title,
+      authors: book.authors,
+      format: book.format,
+      publisher: book.publisher,
+      language: book.language,
+      subgenres: [],
+    }
+    // A volume is looked up as the volume it is, or a refresh of volume 2 of a
+    // saga whose volumes are all titled after it brings back volume 1's ISBN.
+    const found = book.series
+      ? await ScanUseCase.lookUpVolume(userId, { ...seen, series: book.series }, language)
+      : await ScanUseCase.lookUpEdition(userId, seen, language)
     if (typeof found === 'string' || 'failed' in found) return found
     const coverUrl =
       found.coverUrl ??

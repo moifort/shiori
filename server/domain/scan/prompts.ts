@@ -1,6 +1,6 @@
-import type { BookLanguage } from '~/domain/book/types'
-import type { ScanLanguage, ScanResult } from '~/domain/scan/types'
-import { VOLUME_KINDS } from '~/domain/series/types'
+import type { BookFormat, BookLanguage } from '~/domain/book/types'
+import type { EditionHints, ScanLanguage, ScanResult } from '~/domain/scan/types'
+import { VOLUME_KINDS, type VolumeKind } from '~/domain/series/types'
 import { AUDIBLE_STORES } from '~/domain/shared/audible-stores'
 
 /** The language name is written into the prompt so Gemini emits every free-text
@@ -35,8 +35,13 @@ export const visionPrompt = (language: ScanLanguage) =>
 N'INVENTE RIEN. Si une information n'est pas visible sur l'image, mets null. Toutes les valeurs textuelles doivent être en ${LANGUAGE_NAMES[language]}.`
 
 /** What step 1 read off the cover that step 2 needs to name the edition, not
- *  merely the work: the reader owns one object, and its ISBN is that object's. */
-type EditionSeen = Pick<ScanResult, 'title' | 'authors' | 'publisher' | 'language'>
+ *  merely the work: the reader owns one object, and its ISBN is that object's.
+ *  The saga and the format too, when known: the volumes of a comic are often
+ *  all titled after it, and the title alone named volume 1 for every one. */
+type EditionSeen = Pick<
+  ScanResult,
+  'title' | 'authors' | 'publisher' | 'language' | 'format' | 'series'
+>
 
 const languageNames = new Intl.DisplayNames(['fr'], { type: 'language' })
 
@@ -45,18 +50,73 @@ const languageNames = new Intl.DisplayNames(['fr'], { type: 'language' })
 const editionOf = (publisher: string | undefined, language: string) =>
   `Édition : ${publisher ? `éditeur « ${publisher} », ` : ''}en ${languageNames.of(language)}. C'est de CETTE édition que parlent pageCount et isbn13.`
 
+/** What the object is, said to the model when it is not a plain book: a comic
+ *  and the novel it was drawn from share a title, never an ISBN. */
+const FORMAT_NAMES: Record<Exclude<BookFormat, 'book'>, string> = {
+  audiobook: 'livre audio',
+  'bande-dessinee': 'bande dessinée',
+  comic: 'comic',
+  manga: 'manga',
+}
+
+const formatLineOf = (format: BookFormat | undefined) =>
+  format && format !== 'book' ? `Format : ${FORMAT_NAMES[format]}.\n` : ''
+
+const KIND_NAMES: Record<Exclude<VolumeKind, 'main'>, string> = {
+  prequel: 'préquelle',
+  'spin-off': 'récit dérivé',
+  novella: 'texte court',
+  companion: 'guide ou artbook',
+}
+
+/** The volume, when the cover printed it or the catalogue knows it. */
+const sagaLineOf = (series: ScanResult['series']) => {
+  if (!series) return ''
+  const volume = series.volume !== undefined ? `, tome ${series.volume}` : ''
+  const kind = series.kind !== 'main' ? ` (${KIND_NAMES[series.kind]})` : ''
+  return `Série : « ${series.name} »${volume}${kind}. C'est CE tome qu'il faut renseigner : les tomes d'une série portent souvent le même titre, mais ni le même ISBN, ni la même couverture, ni le même nombre de pages.\n`
+}
+
+/** What the catalogue and the reader's shelf already say of the volume. */
+const hintLinesOf = (hints: EditionHints | undefined) => {
+  if (!hints) return ''
+  const lines: string[] = []
+  if (hints.watchedIsbn13)
+    lines.push(
+      `ISBN relevé pour ce tome par notre veille des parutions : ${hints.watchedIsbn13}. Vérifie-le : reprends-le s'il désigne bien ce tome dans cette édition, sinon cherche le bon.`,
+    )
+  if (hints.releasedOn)
+    lines.push(
+      `Parution de ce tome dans cette édition, d'après notre veille : ${hints.releasedOn}.`,
+    )
+  if (hints.siblings.length > 0) {
+    const listed = hints.siblings
+      .map(({ volume, kind, isbn13 }) =>
+        volume !== undefined && kind === 'main'
+          ? `${isbn13} (tome ${volume})`
+          : `${isbn13} (${kind === 'main' ? 'autre tome' : KIND_NAMES[kind]})`,
+      )
+      .join(', ')
+    lines.push(
+      `ISBN d'autres tomes de la même série, qui ne sont donc PAS celui de ce tome : ${listed}. Ils indiquent aussi l'éditeur et la collection à chercher.`,
+    )
+  }
+  return lines.map((line) => `${line}\n`).join('')
+}
+
 /** Step 2 — what the web knows. This is where grounding earns its cost: series
  *  membership in particular is what the cover conveys badly or not at all, and
  *  it is what the whole series feature is built on. */
 export const enrichmentPrompt = (
-  { title, authors, publisher, language: editionLanguage }: EditionSeen,
+  { title, authors, publisher, language: editionLanguage, format, series }: EditionSeen,
   language: ScanLanguage,
   source: 'cover' | 'typed' = 'cover',
+  hints?: EditionHints,
 ) =>
   `${source === 'typed' ? TYPED_TITLE_PREFACE : ''}Recherche sur le web les informations de ce livre et renseigne la fiche.
 
 Livre : « ${title} »${authors.length > 0 ? ` de ${authors.join(', ')}` : ''}
-${editionOf(publisher, editionLanguage ?? language)}
+${sagaLineOf(series)}${formatLineOf(format)}${hintLinesOf(hints)}${editionOf(publisher, editionLanguage ?? language)}
 
 Renseigne :
 - title et authors : corrige-les si la recherche montre que la lecture de la couverture était fautive, sinon reprends-les tels quels. Le titre est celui du livre SEUL, sans le nom de la série ni le numéro du tome, qui ont leurs propres champs ; un tome sans titre propre porte le nom de la série.

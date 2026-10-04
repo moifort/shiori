@@ -150,6 +150,39 @@ enum ScanAPI {
         )
         return ScannedBook(fields: data.scanTitle.fragments.scannedRecord)
     }
+
+    /// A volume added from its saga page, looked up as the volume it is: its
+    /// saga, number and format go with the title, which alone named volume 1
+    /// for every volume of a saga titled after itself. Spends one scan.
+    static func lookUp(
+        volume title: String,
+        author: String,
+        membership: SeriesMembership,
+        format: BookFormat,
+        media: [BookMedium],
+        language: BookLanguage?
+    ) async throws -> ScannedBook {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.ScanSeriesVolumeMutation(
+                volume: ShioriGraphQL.SeriesVolumeInput(
+                    authors: [author],
+                    format: .some(LibraryAPI.graphQLFormat(format)),
+                    kind: .case(LibraryAPI.graphQLVolumeKind(membership.kind)),
+                    language: GraphQLHelpers.graphQLNullable(language.map(LibraryAPI.graphQLLanguage)),
+                    media: format == .audiobook ? .none : .some(LibraryAPI.graphQLMedia(media)),
+                    seriesId: membership.id,
+                    seriesName: membership.name,
+                    title: title,
+                    volume: GraphQLHelpers.graphQLNullable(membership.volume)
+                )
+            ),
+            requestTimeout: requestTimeout,
+            // A proposal: nothing reaches the library before `addBook`.
+            changesLibrary: false
+        )
+        return ScannedBook(fields: data.scanSeriesVolume.fragments.scannedRecord)
+    }
 }
 
 extension ScannedBook {

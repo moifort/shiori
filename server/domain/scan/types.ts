@@ -11,7 +11,13 @@ import type {
   Subgenre,
   Synopsis,
 } from '~/domain/book/types'
-import type { SeriesId, SeriesName, VolumeKind, VolumeNumber } from '~/domain/series/types'
+import type {
+  ReleaseDate,
+  SeriesId,
+  SeriesName,
+  VolumeKind,
+  VolumeNumber,
+} from '~/domain/series/types'
 import type { Language } from '~/domain/shared/language'
 import type { AuthorName, BookTitle, Year } from '~/domain/shared/types'
 
@@ -70,6 +76,18 @@ export type ScannedSeries = {
   name: SeriesName
   volume?: VolumeNumber
   kind: VolumeKind
+}
+
+/** What else is known of a volume looked up by name, said to the model so it
+ *  settles on this volume of this edition: the volumes of a comic are often
+ *  all titled after the saga, and the title alone named volume 1 for each. */
+export type EditionHints = {
+  /** The ISBN the release watch found for this volume, for the model to check. */
+  watchedIsbn13?: Isbn13
+  /** When this volume came out in this edition, as the release watch found it. */
+  releasedOn?: ReleaseDate
+  /** Other volumes of the saga the reader holds: their ISBNs are not this one's. */
+  siblings: { volume?: VolumeNumber; kind: VolumeKind; isbn13: Isbn13 }[]
 }
 
 /** One book a typed title may mean, offered for the reader to pick before the
