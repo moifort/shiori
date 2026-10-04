@@ -161,6 +161,7 @@ jobs:
           asc_private_key_path   = "./asc.p8"
           asc_vendor_number      = "${{ vars.ASC_VENDOR_NUMBER }}"
           gcp_billing_table      = "${{ vars.GCP_BILLING_TABLE }}"
+          ga4_property_id        = "${{ vars.GA4_PROPERTY_ID }}"
           apns_key_id            = "${{ secrets.APNS_KEY_ID }}"
           apns_private_key_path  = "./apns.p8"
           EOF

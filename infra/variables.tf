@@ -129,6 +129,12 @@ variable "gcp_billing_table" {
   default     = ""
 }
 
+variable "ga4_property_id" {
+  description = "Numeric id of the GA4 property the app reports to (GA4 Admin, Property details). Blank hides the sessions on the admin screen."
+  type        = string
+  default     = ""
+}
+
 variable "github_repo" {
   description = "GitHub repository (owner/name) allowed to deploy via Workload Identity Federation"
   type        = string

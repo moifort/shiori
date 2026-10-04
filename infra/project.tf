@@ -32,6 +32,8 @@ resource "google_project_service" "apis" {
     "orgpolicy.googleapis.com",
     "cloudscheduler.googleapis.com",
     "bigquery.googleapis.com",
+    # The admin screen reads the daily sessions GA4 counts for the app.
+    "analyticsdata.googleapis.com",
   ])
 
   project            = google_project.this.project_id

@@ -19,10 +19,11 @@ resource "google_project_iam_member" "function_firebase_auth" {
   member  = "serviceAccount:${google_service_account.function.email}"
 }
 
-# The admin metrics read actual GCP spend from the billing export dataset in
-# BigQuery: the function needs to run a query job and read that dataset. The
-# project holds no other BigQuery data, so project-scoped viewer is as narrow
-# as it is useful.
+# The admin metrics read actual GCP spend from the billing export in BigQuery:
+# the function runs the query job here. The export itself belongs to the billing
+# account and lives in vinarium-prod (dataset billing_export), where reading it
+# was granted by hand — this deploy account cannot grant on another project.
+# The project-scoped viewer below covers an export moved here later.
 resource "google_project_iam_member" "function_bigquery_job_user" {
   project = google_project.this.project_id
   role    = "roles/bigquery.jobUser"
@@ -122,6 +123,7 @@ resource "google_cloudfunctions2_function" "server" {
       NITRO_ASC_KEY_ID        = var.asc_key_id
       NITRO_ASC_VENDOR_NUMBER = var.asc_vendor_number
       NITRO_GCP_BILLING_TABLE = var.gcp_billing_table
+      NITRO_GA4_PROPERTY_ID   = var.ga4_property_id
       # Push notifications: the key id and its team are identifiers; the .p8
       # rides the secret_environment_variables block below.
       NITRO_APNS_KEY_ID  = var.apns_key_id
