@@ -22,7 +22,7 @@ import { api, type Collection, editableVersion, patch, post, type Single } from 
 const DISPLAY_TYPE = 'APP_IPHONE_67'
 
 /** The App Store locales the listing is written in, by capture language. */
-const LOCALES: Record<string, string> = { fr: 'fr-FR' }
+const LOCALES: Record<string, string> = { fr: 'fr-FR', en: 'en-US' }
 
 type Screenshot = { fileName: string }
 type UploadOperation = {

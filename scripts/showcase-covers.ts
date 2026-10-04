@@ -1,17 +1,19 @@
 /**
- * Downloads the covers the showcase library draws, into `screenshots/covers/`.
+ * Downloads the covers the showcase library draws, into `screenshots/covers/`, and
+ * those of its English editions into `screenshots/covers/en/`.
  *
  * The App Store captures show a reader's library (`ios/Shiori/Shared/Showcase.swift`),
  * and a library of grey initials sells nothing. Each cover is the French edition's,
  * found through the iTunes Search API, which answers without a key or a quota and
- * serves the artwork at any size. Open Library knows few recent French editions and
+ * serves the artwork at any size. The English captures show the American editions,
+ * from the American store; a slug missing there draws its French cover. Open Library knows few recent French editions and
  * Google Books refuses anonymous callers once its daily quota is spent.
  *
  * The files are committed: the captures must not depend on a store search answering
  * the same way twice. Run again only to add or replace a cover; a slug already on
  * disk is kept unless `--force` is given.
  *
- * Usage: bun scripts/showcase-covers.ts [--force]
+ * Usage: bun scripts/showcase-covers.ts [--language en] [--force]
  */
 import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -127,8 +129,87 @@ const COVERS: Cover[] = [
   ),
 ]
 
+/** The American editions, under the same slugs: `Showcase.swift` swaps the
+ *  French books it has no English edition of for others, kept on those slugs. */
+const ENGLISH_COVERS: Cover[] = [
+  // The last volumes are not out in English yet: their French covers stand in.
+  ...volumes('one-piece', 'one piece vol', (n) => `one piece vol ${n}`, range(1, 112)).map(
+    (cover) => ({ ...cover, term: `${cover.term} oda`, alternative: cover.term }),
+  ),
+  ...volumes(
+    'frieren',
+    'frieren beyond journey s end vol',
+    (n) => `frieren vol ${n}`,
+    range(1, 14),
+  ),
+  ...volumes('blue-lock', 'blue lock volume', (n) => `blue lock volume ${n}`, range(1, 35)),
+  ...volumes('blacksad', 'blacksad volume', (n) => `blacksad volume ${n}`, range(1, 7)),
+  // Le Château des Animaux has no American edition: Saga stands in for it.
+  ...volumes('chateau-animaux', 'saga vol', (n) => `saga vol ${n}`, range(1, 4)).map((cover) => ({
+    ...cover,
+    term: `${cover.term} vaughan`,
+    avoid: 'deluxe compendium',
+  })),
+  ...volumes('spy-family', 'spy x family vol', (n) => `spy family vol ${n}`, [1]),
+  { slug: 'nom-du-vent', term: 'the name of the wind rothfuss', match: 'name of the wind' },
+  { slug: 'peur-du-sage', term: 'the wise man s fear rothfuss', match: 'wise man s fear' },
+  {
+    slug: 'dune',
+    term: 'dune frank herbert',
+    match: 'dune',
+    avoid: 'messiah children god emperor',
+  },
+  { slug: 'messie-de-dune', term: 'dune messiah herbert', match: 'dune messiah' },
+  { slug: 'trois-corps', term: 'the three body problem liu', match: 'three body problem' },
+  { slug: 'foret-sombre', term: 'the dark forest cixin liu', match: 'dark forest' },
+  { slug: 'mort-immortelle', term: 'death s end cixin liu', match: 'death s end' },
+  { slug: 'projet-derniere-chance', term: 'project hail mary weir', match: 'project hail mary' },
+  { slug: 'horde-du-contrevent', term: 'the way of kings sanderson', match: 'way of kings' },
+  { slug: 'furtifs', term: 'the left hand of darkness le guin', match: 'left hand of darkness' },
+  { slug: 'veiller-sur-elle', term: 'lessons in chemistry garmus', match: 'lessons in chemistry' },
+  { slug: 'hyperion', term: 'hyperion dan simmons', match: 'hyperion', avoid: 'fall' },
+  { slug: 'fondation', term: 'foundation isaac asimov', match: 'foundation' },
+  { slug: 'fourth-wing', term: 'fourth wing yarros', match: 'fourth wing' },
+  {
+    slug: 'demain-et-demain',
+    term: 'tomorrow and tomorrow and tomorrow zevin',
+    match: 'tomorrow and tomorrow',
+  },
+  { slug: 'sapiens', term: 'sapiens harari', match: 'sapiens' },
+  { slug: 'shibumi', term: 'shibumi trevanian', match: 'shibumi' },
+  { slug: 'monte-cristo', term: 'the count of monte cristo dumas', match: 'count of monte cristo' },
+  { slug: 'sorceleur-01', term: 'the last wish sapkowski', match: 'last wish' },
+  ...[
+    'dungeon crawler carl',
+    'carl s doomsday scenario',
+    'dungeon anarchist s cookbook',
+    'gate of the feral gods',
+    'butcher s masquerade',
+    'eye of the bedlam bride',
+  ].map((match, index) => ({
+    slug: `dcc-${String(index + 1).padStart(2, '0')}`,
+    term: `${match} dinniman`,
+    match,
+    // A reading guide shares the sixth's title.
+    avoid: 'after reading summary guide',
+    // The store sells the sixth as a recording only.
+    ...(index === 5 ? { media: 'audiobook' as const } : {}),
+  })),
+  ...['hyperion', 'fall of hyperion', 'endymion', 'rise of endymion'].map((match, index) => ({
+    slug: `hyperion-audio-${String(index + 1).padStart(2, '0')}`,
+    term: `${match} simmons`,
+    match: `${match} unabridged`,
+    avoid: index === 0 ? 'fall' : index === 2 ? 'rise' : undefined,
+    media: 'audiobook' as const,
+  })),
+]
+
+const english =
+  process.argv.includes('--language') &&
+  process.argv[process.argv.indexOf('--language') + 1] === 'en'
+
 const force = process.argv.includes('--force')
-const target = join(import.meta.dir, '../screenshots/covers')
+const target = join(import.meta.dir, '../screenshots/covers', english ? 'en' : '')
 await mkdir(target, { recursive: true })
 
 /** Lower case, no accents, no punctuation: what a reader would call the same title. */
@@ -140,7 +221,12 @@ const plain = (text: string) =>
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
 
-type Result = { trackName?: string; collectionName?: string; artworkUrl100?: string }
+type Result = {
+  trackName?: string
+  collectionName?: string
+  artworkUrl100?: string
+  releaseDate?: string
+}
 
 /** The store answers some twenty searches a minute, then "Rate limit exceeded" in
  *  plain text: each search waits its turn, and one refused waits a minute more. */
@@ -149,6 +235,8 @@ async function search(url: string): Promise<{ results: Result[] }> {
     await Bun.sleep(3_500)
     const response = await fetch(url)
     const body = await response.text()
+    // Some searches break the store itself, every time: as good as no answer.
+    if (body.includes('newNullResponse')) return { results: [] }
     try {
       return JSON.parse(body) as { results: Result[] }
     } catch {
@@ -160,7 +248,7 @@ async function search(url: string): Promise<{ results: Result[] }> {
 }
 
 let missing = 0
-for (const cover of COVERS) {
+for (const cover of english ? ENGLISH_COVERS : COVERS) {
   const file = join(target, `${cover.slug}.jpg`)
   if (!force && (await Bun.file(file).exists())) continue
 
@@ -172,7 +260,7 @@ for (const cover of COVERS) {
   const lookFor = async (term: string) => {
     const url = `https://itunes.apple.com/search?${new URLSearchParams({
       term,
-      country: 'fr',
+      country: english ? 'us' : 'fr',
       media,
       limit: '25',
     })}`
@@ -182,6 +270,8 @@ for (const cover of COVERS) {
       return (
         words.every((word) => tokens.includes(word)) &&
         !avoided.some((word) => tokens.includes(word)) &&
+        // A pre-order shows a grey placeholder with its title, not its cover.
+        !(result.releaseDate && new Date(result.releaseDate) > new Date()) &&
         result.artworkUrl100
       )
     })

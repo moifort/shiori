@@ -119,15 +119,16 @@ jobs:
           set -euo pipefail
           # One release_notes.txt per declared App Store locale. App Store Connect asks for
           # "What's New" in each of them, and a locale deliver does not write keeps whatever
-          # it had — which on a new version is nothing. The listing is French alone
-          # (infra/fastlane/metadata/fr-FR): notes for another locale would make deliver
-          # create it with no description and no screenshots, and the submission would be
-          # refused. Add a locale here when its listing exists.
+          # it had — which on a new version is nothing. One pair per listing of
+          # infra/fastlane/metadata/: notes for a locale with no listing would make
+          # deliver create it with no description and no screenshots, and the
+          # submission would be refused. Add a locale here when its listing exists.
           #
           # Bullets under the first "## " section become the notes. App Store caps them at
           # 4000 chars, so keep whole bullets until ~3900 and drop the rest.
           for pair in \
-            "fr-FR:CHANGELOG.fr.md"
+            "fr-FR:CHANGELOG.fr.md" \
+            "en-US:CHANGELOG.md"
           do
             locale="${pair%%:*}"
             source="${pair#*:}"

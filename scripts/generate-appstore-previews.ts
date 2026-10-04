@@ -22,8 +22,12 @@
  * keeping it — the model sometimes lays a grey patch on the green, which the key
  * takes as screen, and sometimes draws the phone smaller than asked.
  *
+ * The scenes carry no text, so both languages share them: only the captures,
+ * the cover on the book and the captions change.
+ *
  * Usage:
- *   bun scripts/generate-appstore-previews.ts                     # every panel
+ *   bun scripts/generate-appstore-previews.ts                     # every French panel
+ *   bun scripts/generate-appstore-previews.ts --language en       # every English panel
  *   bun scripts/generate-appstore-previews.ts --regenerate home   # draw one scene again
  *
  * A new scene needs NITRO_GOOGLE_API_KEY in .env.
@@ -34,14 +38,23 @@ import { join } from 'node:path'
 import { $ } from 'bun'
 
 const MODEL = 'gemini-3-pro-image'
-const LANGUAGE = 'fr'
+
+const argv = process.argv.slice(2)
+const LANGUAGE = argv.includes('--language') ? argv[argv.indexOf('--language') + 1] : 'fr'
+if (LANGUAGE !== 'fr' && LANGUAGE !== 'en') throw new Error(`No panels in ${LANGUAGE}: fr or en`)
+
+/** Each caption, in the panel's language. */
+const say = (french: string, english: string) => (LANGUAGE === 'en' ? english : french)
 
 const repoRoot = join(import.meta.dir, '..')
 const captures = join(repoRoot, 'screenshots/captures', LANGUAGE)
 const appstoreDir = join(repoRoot, 'screenshots/appstore')
 const sceneDir = join(appstoreDir, 'scenes')
 const outputDir = join(appstoreDir, LANGUAGE)
-const hyperionCover = join(appstoreDir, 'assets/hyperion-cover.jpg')
+const hyperionCover = join(
+  appstoreDir,
+  say('assets/hyperion-cover.jpg', 'assets/hyperion-cover-en.jpg'),
+)
 const compositeMockup = join(import.meta.dir, 'composite-mockup.swift')
 const finishPanel = join(import.meta.dir, 'finish-panel.swift')
 const devicePanel = join(import.meta.dir, 'device-panel.swift')
@@ -92,31 +105,31 @@ const DEVICES: DevicePanel[] = [
     kind: 'device',
     output: '03-bibliotheque.png',
     capture: '01-library.png',
-    caption: 'Livres et audio !',
+    caption: say('Livres et audio !', 'Books and audio!'),
   },
   {
     kind: 'device',
     output: '04-statistiques.png',
     capture: '02-stats.png',
-    caption: 'Des analytics détaillés',
+    caption: say('Des statistiques détaillées', 'Detailed reading stats'),
   },
   {
     kind: 'device',
     output: '05-series.png',
     capture: '03-series.png',
-    caption: 'Suivi de vos séries préférées',
+    caption: say('Suivez vos séries préférées', 'Follow your favorite series'),
   },
   {
     kind: 'device',
     output: '06-serie.png',
     capture: '04-saga.png',
-    caption: 'Être averti des sorties et disponibilités',
+    caption: say('Soyez averti des sorties et des disponibilités', 'Never miss a new release'),
   },
   {
     kind: 'device',
     output: '07-decouvrir.png',
     capture: '05-discover.png',
-    caption: 'Découvrez vos nouveaux coups de cœur',
+    caption: say('Découvrez vos nouveaux coups de cœur', 'Discover your next favorites'),
   },
 ]
 
@@ -160,7 +173,6 @@ const generateScene = async (scene: Scene, target: string) => {
   await $`rm ${png}`.quiet()
 }
 
-const argv = process.argv.slice(2)
 const regenerate = argv.includes('--regenerate')
   ? argv[argv.indexOf('--regenerate') + 1]
   : undefined
@@ -200,8 +212,12 @@ const caption = async (input: string, output: string, text: string) => {
     .quiet()
   await $`swift ${compositeMockup} ${covered} ${screened} ${await capture('00-scan.png')}`.quiet()
   const halves = [
-    { output: '01-scan-livre.png', text: 'Scannez…', offset: 0 },
-    { output: '02-scan-fiche.png', text: '…Shiori fait le reste', offset: 1320 },
+    { output: '01-scan-livre.png', text: say('Scannez…', 'Scan…'), offset: 0 },
+    {
+      output: '02-scan-fiche.png',
+      text: say('…Shiori fait le reste', '…Shiori does the rest'),
+      offset: 1320,
+    },
   ]
   for (const half of halves) {
     const cut = join(work, `scan-${half.offset}.png`)
@@ -226,6 +242,10 @@ for (const panel of DEVICES) {
   await $`swift ${finishPanel} fit ${await sceneImage(SHARE)} ${fitted} --backdrop --zoom 1.0 --center 0.49`.quiet()
   const shared = await capture('06-shared.png')
   await $`swift ${compositeMockup} ${fitted} ${screened} ${`${shared}@180`} ${shared}`.quiet()
-  await caption(screened, '08-partage.png', 'Partagez votre bibliothèque avec vos proches')
+  await caption(
+    screened,
+    '08-partage.png',
+    say('Partagez votre bibliothèque avec vos proches', 'Share your library with friends'),
+  )
 }
 console.log('Done.')

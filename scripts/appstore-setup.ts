@@ -5,15 +5,17 @@
  * so a second run changes nothing and says so.
  *
  * What it sets, from the repository:
- * - the listing text of infra/fastlane/metadata/ (the same files `deliver` pushes
- *   with every release), the categories, the copyright;
+ * - the listing text of infra/fastlane/metadata/ in every language it holds (the
+ *   same files `deliver` pushes with every release, through appstore/listing.ts,
+ *   which `bun scripts/appstore-listing.ts` runs alone), the categories, the
+ *   copyright;
  * - the age rating (nothing to declare: 4+), the third-party content answer, the
  *   availability in every territory;
  * - the App Review contact, copied from Vinarium's so no phone number sits in this
  *   public repository, and the review notes below;
  * - the two subscriptions: the monthly one created, both priced in France and
- *   equalized everywhere else, the yearly one opening on a free month, their names,
- *   review notes and the paywall capture App Review asks for.
+ *   equalized everywhere else, the yearly one opening on a free month, their names
+ *   in every language, review notes and the paywall capture App Review asks for.
  *
  * App Privacy has no public API: it is answered in App Store Connect itself.
  *
@@ -31,8 +33,8 @@ import {
   post,
   type Single,
 } from './appstore/connect'
+import { nameSubscriptions, pushListing } from './appstore/listing'
 
-const LOCALE = 'fr-FR'
 const VINARIUM_APP_ID = '6789688303'
 const metadata = join(import.meta.dir, '../infra/fastlane/metadata')
 const paywall = join(import.meta.dir, '../screenshots/captures/fr/paywall.png')
@@ -51,8 +53,8 @@ const SUBSCRIPTION_REVIEW_NOTE =
 
 type Plan = {
   productId: string
+  /** The reference name App Store Connect lists it under; what readers see is in appstore/listing.ts. */
   name: string
-  description: string
   period: 'ONE_MONTH' | 'ONE_YEAR'
   level: number
   /** In euros, as France sells it; every other storefront gets Apple's equivalent. */
@@ -64,7 +66,6 @@ const PLANS: Plan[] = [
   {
     productId: 'com.polyforms.shiori.app.premium.yearly',
     name: 'Premium annuel',
-    description: 'Scans illimités et séries complètes, pour un an',
     period: 'ONE_YEAR',
     level: 1,
     price: '17.99',
@@ -73,7 +74,6 @@ const PLANS: Plan[] = [
   {
     productId: 'com.polyforms.shiori.app.premium.monthly',
     name: 'Premium mensuel',
-    description: 'Scans illimités et séries complètes, pour un mois',
     period: 'ONE_MONTH',
     level: 2,
     price: '1.99',
@@ -116,43 +116,13 @@ await patch(`/v1/appInfos/${info.id}`, {
 })
 log('categories set')
 
-const infoLocalization = (
-  await api<Collection<{ locale: string }>>(`/v1/appInfos/${info.id}/appInfoLocalizations`)
-).data.find((l) => l.attributes.locale === LOCALE)
-if (!infoLocalization) throw new Error(`No ${LOCALE} app info localization`)
-await patch(`/v1/appInfoLocalizations/${infoLocalization.id}`, {
-  type: 'appInfoLocalizations',
-  id: infoLocalization.id,
-  attributes: {
-    name: await text(`${LOCALE}/name.txt`),
-    subtitle: await text(`${LOCALE}/subtitle.txt`),
-    privacyPolicyUrl: await text(`${LOCALE}/privacy_url.txt`),
-  },
-})
-log('name, subtitle and privacy policy set')
-
-const versionLocalization = (
-  await api<Collection<{ locale: string }>>(
-    `/v1/appStoreVersions/${version.id}/appStoreVersionLocalizations`,
-  )
-).data.find((l) => l.attributes.locale === LOCALE)
-if (!versionLocalization) throw new Error(`No ${LOCALE} version localization`)
-await patch(`/v1/appStoreVersionLocalizations/${versionLocalization.id}`, {
-  type: 'appStoreVersionLocalizations',
-  id: versionLocalization.id,
-  attributes: {
-    description: await text(`${LOCALE}/description.txt`),
-    keywords: await text(`${LOCALE}/keywords.txt`),
-    promotionalText: await text(`${LOCALE}/promotional_text.txt`),
-    supportUrl: await text(`${LOCALE}/support_url.txt`),
-  },
-})
+await pushListing(app, version.id, log)
 await patch(`/v1/appStoreVersions/${version.id}`, {
   type: 'appStoreVersions',
   id: version.id,
   attributes: { copyright: await text('copyright.txt') },
 })
-log('description, keywords, promotional text, support URL and copyright set')
+log('copyright set')
 
 // MARK: - Age rating, rights, availability
 
@@ -281,18 +251,6 @@ const [group] = (
 ).data
 if (!group) throw new Error('No subscription group')
 
-const groupLocalizations = await api<Collection<{ locale: string }>>(
-  `/v1/subscriptionGroups/${group.id}/subscriptionGroupLocalizations`,
-)
-if (!groupLocalizations.data.some((l) => l.attributes.locale === LOCALE)) {
-  await post('/v1/subscriptionGroupLocalizations', {
-    type: 'subscriptionGroupLocalizations',
-    attributes: { locale: LOCALE, name: 'Shiori Premium' },
-    relationships: { subscriptionGroup: { data: { type: 'subscriptionGroups', id: group.id } } },
-  })
-  log('group named Shiori Premium')
-}
-
 const existing = await all<{ productId: string }>(
   `/v1/subscriptionGroups/${group.id}/subscriptions`,
 )
@@ -324,26 +282,6 @@ const subscriptionOf = async (plan: Plan) => {
   })
   log(`${plan.name}: created`)
   return created.data.id
-}
-
-const localize = async (subscriptionId: string, plan: Plan) => {
-  const localizations = await api<Collection<{ locale: string }>>(
-    `/v1/subscriptions/${subscriptionId}/subscriptionLocalizations`,
-  )
-  const current = localizations.data.find((l) => l.attributes.locale === LOCALE)
-  const attributes = { name: plan.name, description: plan.description }
-  if (current)
-    await patch(`/v1/subscriptionLocalizations/${current.id}`, {
-      type: 'subscriptionLocalizations',
-      id: current.id,
-      attributes,
-    })
-  else
-    await post('/v1/subscriptionLocalizations', {
-      type: 'subscriptionLocalizations',
-      attributes: { ...attributes, locale: LOCALE },
-      relationships: { subscription: { data: { type: 'subscriptions', id: subscriptionId } } },
-    })
 }
 
 const makeAvailable = async (subscriptionId: string) => {
@@ -459,7 +397,6 @@ const showPaywall = async (subscriptionId: string) => {
 
 for (const plan of PLANS) {
   const id = await subscriptionOf(plan)
-  await localize(id, plan)
   await makeAvailable(id)
   log(`${plan.name}: ${await price(id, plan)}`)
   await offerTrial(id, plan)
@@ -467,3 +404,5 @@ for (const plan of PLANS) {
   const state = await api<Single<{ state: string }>>(`/v1/subscriptions/${id}`)
   log(`${plan.name}: ${state.data.attributes.state}`)
 }
+
+await nameSubscriptions(app, log)

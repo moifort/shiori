@@ -12,9 +12,25 @@ import XCTest
 /// a capture never shows a spinner.
 @MainActor
 final class ScreenshotTest: XCTestCase {
-    /// The App Store language the run captures. French alone for now: the app
-    /// has no string catalogue yet.
-    private let language = "fr"
+    /// The App Store language the run captures: `fr` or `en`, which
+    /// `scripts/screenshots.sh` hands down as `SHIORI_CAPTURE_LANGUAGE`.
+    private let language = ProcessInfo.processInfo.environment["SHIORI_CAPTURE_LANGUAGE"] ?? "fr"
+
+    /// The labels the run finds its way by, in the language it captures.
+    private var labels: [String: String] {
+        language == "en"
+            ? [
+                "Bibliothèque": "Library", "Découvrir": "Discover", "Partagé": "Shared",
+                "Scanner": "Scan", "Accueil": "Home", "Vérifier": "Review",
+                "Premium annuel": "Premium Yearly",
+            ]
+            : [:]
+    }
+
+    /// A French label, as the run's language says it.
+    private func label(_ french: String) -> String {
+        labels[french] ?? french
+    }
 
     private var repositoryRoot: URL {
         URL(fileURLWithPath: #filePath)
@@ -32,7 +48,7 @@ final class ScreenshotTest: XCTestCase {
         app.launchArguments = [
             "-showcase",
             "-AppleLanguages", "(\(language))",
-            "-AppleLocale", "fr_FR",
+            "-AppleLocale", language == "en" ? "en_US" : "fr_FR",
         ]
         app.launch()
     }
@@ -101,14 +117,14 @@ final class ScreenshotTest: XCTestCase {
         try wait(app.buttons["review-save"], timeout: 30)
         settle()
         save("00-scan")
-        try tap(app.navigationBars["Vérifier"].buttons["xmark"])
+        try tap(app.navigationBars[label("Vérifier")].buttons["xmark"])
         _ = app.buttons["review-save"].waitForNonExistence(timeout: 5)
 
         // The paywall, for App Review: behind the settings, as the review notes say.
         try open("Accueil")
         try tap(app.descendants(matching: .any)["home-settings"])
         try tap(app.descendants(matching: .any)["settings-premium"])
-        try wait(app.staticTexts["Premium annuel"])
+        try wait(app.staticTexts[label("Premium annuel")])
         settle()
         save("paywall")
     }
@@ -118,9 +134,10 @@ final class ScreenshotTest: XCTestCase {
     /// A screen that never came: the run stops there rather than photograph it.
     private struct Missing: Error {}
 
-    /// A tab by its label: the run is French, and the tab bar has no
+    /// A tab by its French label, translated for the run: the tab bar has no
     /// identifiers a `Tab` reliably hands down to its button.
-    private func open(_ tab: String) throws {
+    private func open(_ french: String) throws {
+        let tab = label(french)
         let button = app.tabBars.buttons[tab].firstMatch
         if button.waitForExistence(timeout: 5) {
             button.tap()

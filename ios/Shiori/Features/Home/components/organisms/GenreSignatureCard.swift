@@ -26,7 +26,7 @@ struct GenreSignatureCard: View {
                 HStack(spacing: 0) {
                     figure("\(readCount)", caption: "livres lus")
                     Divider().frame(height: 32)
-                    figure("\(shares.count) sur \(genreCount)", caption: "genres explorés")
+                    figure(String(localized: "\(shares.count) sur \(genreCount)"), caption: "genres explorés")
                 }
             }
             .padding(16)

@@ -1,0 +1,23 @@
+Shiori is your library in your pocket.
+
+Take a photo of a book cover: Shiori recognizes it and fills in its record for you — title, author, publisher, summary, genre and series. Novels, graphic novels, manga, comics or audiobooks: everything has its place.
+
+FEATURES
+• Cover scan: one photo is all it takes to catalogue a book
+• Series, volume by volume: your series grouped together, with the volumes you’re missing and the ones still to come
+• New releases: Shiori watches your series and lets you know when the next volume comes out
+• Reading tracker: to read, reading, read or dropped, with your star ratings, favorites and notes
+• Dashboard: books read per year, pages read and hours listened, favorite genres, to-read pile
+• Kindle and Audible: import your existing library and keep it in sync
+• Print and digital together: a book you own on paper and on your e-reader stays a single record
+
+WITH FRIENDS
+Invite your friends: you each see the other’s library, favorites and current reads. Pick up an idea from their shelves in one tap, and set each other a reading challenge for the year. Your notes stay private, and a hidden book is never shared.
+
+SHIORI PREMIUM
+Shiori is free, with scans included every month. Premium unlocks unlimited scans, scanning a whole shelf in one photo, and the complete catalogue of your series, upcoming volumes included. Choose a monthly or a yearly plan; the yearly plan starts with a free month.
+
+Your subscription renews automatically unless cancelled at least 24 hours before the end of the current period, from your App Store account settings.
+
+Terms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Privacy Policy: https://moifort.github.io/shiori/

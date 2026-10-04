@@ -5,6 +5,7 @@
 # launched with -showcase and every read answers from that library.
 #
 #   scripts/screenshots.sh        # into screenshots/captures/fr/
+#   scripts/screenshots.sh en     # into screenshots/captures/en/, the American editions
 #
 # Runs on the Mac, never in CI: the captures change when a screen does, not on
 # every release. Then: bun scripts/generate-appstore-previews.ts.
@@ -19,7 +20,13 @@ export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Develope
 DEVICE_NAME="Shiori Captures"
 DEVICE_TYPE="com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max"
 BUNDLE_ID="com.polyforms.shiori.app"
-DESTINATION_DIR="screenshots/captures/fr"
+LANGUAGE="${1:-fr}"
+case "$LANGUAGE" in
+  fr) COVER="screenshots/covers/hyperion.jpg" ;;
+  en) COVER="screenshots/covers/en/hyperion.jpg" ;;
+  *) echo "error: no captures in '$LANGUAGE', only fr and en." >&2; exit 1 ;;
+esac
+DESTINATION_DIR="screenshots/captures/$LANGUAGE"
 EXPECTED=9
 
 udid=$(xcrun simctl list devices available -j | bun -e '
@@ -51,7 +58,7 @@ xcrun simctl uninstall "$udid" "$BUNDLE_ID" 2>/dev/null || true
 xcrun simctl privacy "$udid" grant photos "$BUNDLE_ID" 2>/dev/null || true
 xcrun simctl launch "$udid" com.apple.mobileslideshow >/dev/null
 sleep 3
-xcrun simctl addmedia "$udid" screenshots/covers/hyperion.jpg &
+xcrun simctl addmedia "$udid" "$COVER" &
 addmedia=$!
 for _ in $(seq 1 30); do kill -0 "$addmedia" 2>/dev/null || break; sleep 2; done
 if kill -0 "$addmedia" 2>/dev/null; then
@@ -65,8 +72,9 @@ xcrun simctl terminate "$udid" com.apple.mobileslideshow 2>/dev/null || true
 rm -rf "$DESTINATION_DIR"
 mkdir -p "$DESTINATION_DIR"
 
-echo "==> Capturing on $DEVICE_NAME ($udid)"
-xcodebuild test \
+echo "==> Capturing in $LANGUAGE on $DEVICE_NAME ($udid)"
+# The test runner reads its own environment with the prefix taken off.
+TEST_RUNNER_SHIORI_CAPTURE_LANGUAGE="$LANGUAGE" xcodebuild test \
   -project ios/Shiori.xcodeproj \
   -scheme Shiori \
   -configuration Debug \
