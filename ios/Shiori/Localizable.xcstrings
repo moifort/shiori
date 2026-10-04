@@ -81,6 +81,38 @@
         }
       }
     },
+    "%@ brut" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ gross"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ brut"
+          }
+        }
+      }
+    },
+    "%@ d'infra" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ of infra"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ d'infra"
+          }
+        }
+      }
+    },
     "%@ et %@" : {
       "localizations" : {
         "en" : {
@@ -109,6 +141,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ voit votre bibliothèque, et vous voyez la sienne."
+          }
+        }
+      }
+    },
+    "%@ vs %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ vs %2$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ vs %2$@"
           }
         }
       }
@@ -965,6 +1013,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%llde"
+          }
+        }
+      }
+    },
+    "+%lld ce mois" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%lld this month"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%lld ce mois"
           }
         }
       }
@@ -1957,6 +2021,22 @@
         }
       }
     },
+    "Aucun jour facturé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No billed day"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun jour facturé"
+          }
+        }
+      }
+    },
     "Aucun livre" : {
       "localizations" : {
         "en" : {
@@ -2209,6 +2289,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aucune de vos séries n'est dans cet état."
+          }
+        }
+      }
+    },
+    "Aucune session" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No sessions"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune session"
           }
         }
       }
@@ -2641,38 +2737,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Boutique Audible"
-          }
-        }
-      }
-    },
-    "Brut" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gross"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Brut"
-          }
-        }
-      }
-    },
-    "CA du mois" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Revenue this month"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CA du mois"
           }
         }
       }
@@ -3349,38 +3413,6 @@
         }
       }
     },
-    "Comptes" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Accounts"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Comptes"
-          }
-        }
-      }
-    },
-    "Comptes, abonnés et CA" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Accounts, subscribers and revenue"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Comptes, abonnés et CA"
-          }
-        }
-      }
-    },
     "Conditions d’utilisation" : {
       "localizations" : {
         "en" : {
@@ -3409,22 +3441,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Confidentialité"
-          }
-        }
-      }
-    },
-    "Connecte-toi pour retrouver ta bibliothèque." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sign in to get your library back."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connecte-toi pour retrouver ta bibliothèque."
           }
         }
       }
@@ -3505,6 +3521,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Connectez votre compte Amazon une fois, puis choisissez les livres à ajouter. Ils rejoignent votre bibliothèque avec leur couverture et leur série, et ceux que vous avez finis sur Kindle sont marqués comme lus."
+          }
+        }
+      }
+    },
+    "Connectez-vous pour retrouver votre bibliothèque." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in to get your library back."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connectez-vous pour retrouver votre bibliothèque."
           }
         }
       }
@@ -3845,18 +3877,50 @@
         }
       }
     },
-    "Coûts du mois" : {
+    "Coût" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Costs this month"
+            "value" : "Cost"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Coûts du mois"
+            "value" : "Coût"
+          }
+        }
+      }
+    },
+    "Coût du mois" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cost this month"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coût du mois"
+          }
+        }
+      }
+    },
+    "Coûts par jour" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Costs per day"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coûts par jour"
           }
         }
       }
@@ -4533,6 +4597,54 @@
         }
       }
     },
+    "Facturation indisponible" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Billing unavailable"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Facturation indisponible"
+          }
+        }
+      }
+    },
+    "Facture, comptes et sessions" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bill, accounts and sessions"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Facture, comptes et sessions"
+          }
+        }
+      }
+    },
+    "Facturé jusqu'au %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Billed until %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Facturé jusqu'au %@"
+          }
+        }
+      }
+    },
     "Fantastique" : {
       "localizations" : {
         "en" : {
@@ -4789,6 +4901,22 @@
         }
       }
     },
+    "Gemini / Infra" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gemini / Infra"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gemini / Infra"
+          }
+        }
+      }
+    },
     "Gemini du mois" : {
       "localizations" : {
         "en" : {
@@ -4865,22 +4993,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Genres lus"
-          }
-        }
-      }
-    },
-    "Génération Gemini" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gemini generation"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Génération Gemini"
           }
         }
       }
@@ -5341,22 +5453,6 @@
         }
       }
     },
-    "Infra (GCP)" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Infra (GCP)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Infra (GCP)"
-          }
-        }
-      }
-    },
     "Invitation" : {
       "localizations" : {
         "en" : {
@@ -5513,6 +5609,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Je t'ouvre ma bibliothèque sur Shiori. Code : %@"
+          }
+        }
+      }
+    },
+    "Jour" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Day"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jour"
           }
         }
       }
@@ -5849,22 +5961,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Le tome doit être un nombre entre 1 et 200."
-          }
-        }
-      }
-    },
-    "Lecteurs" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Readers"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lecteurs"
           }
         }
       }
@@ -6853,22 +6949,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ne plus suivre la version française"
-          }
-        }
-      }
-    },
-    "Net encaissé" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Net proceeds"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Net encaissé"
           }
         }
       }
@@ -8057,6 +8137,22 @@
         }
       }
     },
+    "Poste" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Item"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Poste"
+          }
+        }
+      }
+    },
     "Pourquoi ce conseil ?" : {
       "localizations" : {
         "en" : {
@@ -8117,38 +8213,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Premium"
-          }
-        }
-      }
-    },
-    "Premium annuel" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Premium yearly"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Premium annuel"
-          }
-        }
-      }
-    },
-    "Premium mensuel" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Premium monthly"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Premium mensuel"
           }
         }
       }
@@ -8697,6 +8761,22 @@
         }
       }
     },
+    "Revenus Premium" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premium revenue"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revenus Premium"
+          }
+        }
+      }
+    },
     "Rien de neuf pour l'instant" : {
       "localizations" : {
         "en" : {
@@ -9205,6 +9285,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Servis par le cache"
+          }
+        }
+      }
+    },
+    "Sessions" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sessions"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sessions"
+          }
+        }
+      }
+    },
+    "Sessions indisponibles" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sessions unavailable"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sessions indisponibles"
+          }
+        }
+      }
+    },
+    "Sessions par jour" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sessions per day"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sessions par jour"
           }
         }
       }
@@ -10377,22 +10505,6 @@
         }
       }
     },
-    "Total" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Total"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Total"
-          }
-        }
-      }
-    },
     "Touchez l'étoile sélectionnée pour retirer la note." : {
       "localizations" : {
         "en" : {
@@ -10773,6 +10885,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Url de l'image"
+          }
+        }
+      }
+    },
+    "Utilisateurs" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Users"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utilisateurs"
           }
         }
       }
@@ -11773,6 +11901,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "–"
+          }
+        }
+      }
+    },
+    "≈ %@ fin de mois" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "≈ %@ by month end"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "≈ %@ fin de mois"
           }
         }
       }
