@@ -95,7 +95,7 @@ struct SeriesView: View {
                 )
             }
         }
-        .navigationTitle(series?.name ?? "Série")
+        .navigationTitle(series?.name ?? String(localized: "Série"))
         .navigationBarTitleDisplayMode(.inline)
         .modifier(FriendSubtitle(name: friend?.name))
         // In the corner even when the catalogue is missing: what a reader thinks

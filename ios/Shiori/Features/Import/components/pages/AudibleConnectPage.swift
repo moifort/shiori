@@ -21,9 +21,7 @@ struct AudibleConnectPage: View {
                     Text("Importez votre bibliothèque Audible")
                         .font(.title3.bold())
                     Text(
-                        "Connectez votre compte Amazon une fois, puis choisissez les livres "
-                            + "audio à ajouter. Ils rejoignent votre bibliothèque avec leur "
-                            + "couverture, leur série et votre avancement d'écoute."
+                        "Connectez votre compte Amazon une fois, puis choisissez les livres audio à ajouter. Ils rejoignent votre bibliothèque avec leur couverture, leur série et votre avancement d'écoute."
                     )
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -57,8 +55,7 @@ struct AudibleConnectPage: View {
                 .accessibilityIdentifier("audible-connect")
             } footer: {
                 Text(
-                    "La page de connexion est celle d'Amazon : votre mot de passe ne passe "
-                        + "jamais par Shiori. L'import ne consomme aucun scan."
+                    "La page de connexion est celle d'Amazon : votre mot de passe ne passe jamais par Shiori. L'import ne consomme aucun scan."
                 )
             }
         }

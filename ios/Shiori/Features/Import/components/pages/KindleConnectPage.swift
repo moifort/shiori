@@ -20,10 +20,7 @@ struct KindleConnectPage: View {
                     Text("Importez votre bibliothèque Kindle")
                         .font(.title3.bold())
                     Text(
-                        "Connectez votre compte Amazon une fois, puis choisissez les livres "
-                            + "à ajouter. Ils rejoignent votre bibliothèque avec leur couverture "
-                            + "et leur série, et ceux que vous avez finis sur Kindle sont marqués "
-                            + "comme lus."
+                        "Connectez votre compte Amazon une fois, puis choisissez les livres à ajouter. Ils rejoignent votre bibliothèque avec leur couverture et leur série, et ceux que vous avez finis sur Kindle sont marqués comme lus."
                     )
                     .font(.subheadline)
                     .foregroundStyle(.secondary)

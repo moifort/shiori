@@ -13,6 +13,8 @@ What comes after it is in [docs/roadmap.md](docs/roadmap.md).
 Everything versioned and technical is written in **English**: commit messages, code, comments,
 documentation. The only non-English prose is user-facing copy: the served changelog
 translations (`CHANGELOG.fr.md`) and the iOS app's on-screen text (`Localizable.xcstrings`).
+The app's strings are written in French in the Swift code and translated into English in the
+catalogue; English is the development language, the fallback for every other iPhone language.
 Never mix languages in a commit message or a comment.
 
 `CHANGELOG.md` is the English source of truth, `CHANGELOG.fr.md` its translation, kept in
@@ -34,6 +36,7 @@ cut, from the commits since the previous one, under that release's version and d
 | GraphQL schema | `bun run generate:graphql` (then `cd ios && apollo-ios-cli generate`) |
 | Schema compatibility | `bun run schema:check` (breaking changes against `origin/main`) |
 | Deprecations | `bun run deprecations` (what can be removed, and the build floor) |
+| iOS strings | `bun scripts/check-strings.ts <derived-data> --write` after a build (French entry filled, English listed if missing) |
 | Dev server | `bun run dev` |
 | Build | `bun run build` |
 

@@ -1,0 +1,38 @@
+{
+  "sourceLanguage" : "fr",
+  "strings" : {
+    "NSCameraUsageDescription" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shiori needs your camera to scan the covers of your books."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shiori a besoin de votre appareil photo pour scanner la couverture de vos livres."
+          }
+        }
+      }
+    },
+    "NSPhotoLibraryUsageDescription" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shiori shows your latest photos so you can scan a cover you already took."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shiori montre vos dernières photos pour scanner une couverture déjà prise."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

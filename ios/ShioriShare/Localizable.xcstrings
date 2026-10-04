@@ -1,0 +1,54 @@
+{
+  "sourceLanguage" : "fr",
+  "strings" : {
+    "Gardé pour Shiori" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved for Shiori"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gardé pour Shiori"
+          }
+        }
+      }
+    },
+    "Ouvrez Shiori : le livre vous sera proposé, à vérifier avant d'être ajouté." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Shiori: the book will be suggested to you, to check before it’s added."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrez Shiori : le livre vous sera proposé, à vérifier avant d'être ajouté."
+          }
+        }
+      }
+    },
+    "Terminé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terminé"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

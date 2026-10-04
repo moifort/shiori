@@ -318,7 +318,12 @@ struct BookView: View {
                 .accessibilityIdentifier("book-await-\(format.rawValue)")
             }
             ForEach(offer.awaited) { edition in
-                Button("Ne plus suivre \(edition.format == .audiobook ? "l'audio" : "la version française")", systemImage: "bell.slash") {
+                Button(
+                    edition.format == .audiobook
+                        ? String(localized: "Ne plus suivre l'audio")
+                        : String(localized: "Ne plus suivre la version française"),
+                    systemImage: "bell.slash"
+                ) {
                     Task { await stopAwaiting(edition) }
                 }
             }

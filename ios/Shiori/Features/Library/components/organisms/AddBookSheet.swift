@@ -302,7 +302,7 @@ struct AddBookSheet: View {
         case let .candidates(candidates):
             candidateList(candidates)
         case .noMatch:
-            searchMessage("Aucun livre trouvé, essayez un autre titre", systemImage: "magnifyingglass")
+            searchMessage(String(localized: "Aucun livre trouvé, essayez un autre titre"), systemImage: "magnifyingglass")
         case let .failed(reason):
             searchMessage(reason, systemImage: "exclamationmark.triangle")
         }

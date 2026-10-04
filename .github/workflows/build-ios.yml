@@ -59,3 +59,10 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Every string has its French and its English
+        # Reads the strings the build just extracted: one added to the code and
+        # left out of the catalogue fails here, as does one with no English.
+        run: bun scripts/check-strings.ts "$HOME/Library/Developer/Xcode/DerivedData"
