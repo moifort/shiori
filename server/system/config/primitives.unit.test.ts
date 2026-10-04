@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { AscVendorNumber, GcpBillingTable } from '~/system/config/primitives'
+import { AscVendorNumber, Ga4PropertyId, GcpBillingTable } from '~/system/config/primitives'
 
 describe('the App Store vendor number config value', () => {
   // Nitro coerces an all-digit env var to a number before config() reads it.
@@ -25,5 +25,15 @@ describe('the GCP billing table config value', () => {
 
   test('rejects a value that is not three dot-separated parts', () => {
     expect(() => GcpBillingTable('billing_export')).toThrow()
+  })
+})
+
+describe('the GA4 property id config value', () => {
+  test('accepts the number Nitro coerces an all-digit env var to', () => {
+    expect(Ga4PropertyId(512345678) as string).toBe('512345678')
+  })
+
+  test('rejects a measurement id, which is not the property', () => {
+    expect(() => Ga4PropertyId('G-ABC123')).toThrow()
   })
 })

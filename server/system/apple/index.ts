@@ -89,6 +89,9 @@ const toTransaction = (payload: JWSTransactionDecodedPayload): AppleTransaction 
         ...(payload.appAccountToken ? { appAccountToken: payload.appAccountToken } : {}),
         ...(payload.expiresDate ? { expiresAt: new Date(payload.expiresDate) } : {}),
         ...(payload.revocationDate ? { revokedAt: new Date(payload.revocationDate) } : {}),
+        ...(payload.originalPurchaseDate
+          ? { startedAt: new Date(payload.originalPurchaseDate) }
+          : {}),
       }
     : undefined
 

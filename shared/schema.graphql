@@ -1,13 +1,34 @@
 """
-The app's monthly economics, for the admin screen: what the month costs (measured AI tokens, measured GCP billing) against what it brings in (App Store sales) and who is here (accounts, subscribers).
+What the bill says one day cost the project, credits (the free tier) included.
+"""
+type AdminDailyCost {
+  """The usage day, UTC, e.g. `"2026-10-03"`"""
+  day: Day!
 
-AI figures are live, incremented at each scan, and split into what the tokens cost and what the grounded searches cost — two different levers, and past a few thousand searches a month the second is the larger. Users, subscribers, revenue and the GCP bill come from a projection a scheduler refreshes daily — `refreshedAt` says when, and is null until it has run once.
+  """The Gemini API that day, tokens and grounded searches, e.g. `0.83`"""
+  geminiEur: Eur!
+
+  """Every other service of the project that day, e.g. `0.04`"""
+  infraEur: Eur!
+}
+
+"""How many sessions GA4 counted on one day."""
+type AdminDailySessions {
+  """The day, e.g. `"2026-10-03"`"""
+  day: Day!
+
+  """Sessions that day, e.g. `14`"""
+  sessions: Int!
+}
+
+"""
+The app's month, for the admin screen: what it costs (the bill, day by day), what it brings in (App Store sales), who is here and who came (accounts, subscribers), and how much the app is used (GA4 sessions).
+
+The bill, the sessions, the accounts, the subscribers and the revenue come from a projection a scheduler refreshes daily — `refreshedAt` says when, and is null until it has run once. The Gemini call counters (scans, cache hits, searches) are live.
 """
 type AdminMetrics {
-  """
-  This month's whole Gemini bill: tokens and searches together, e.g. `0.42`
-  """
-  aiCostEur: Eur!
+  """This month's Gemini bill so far, `0` while it is unknown."""
+  aiCostEur: Eur! @deprecated(reason: "Use `costs`, read from the bill rather than priced from the tokens.")
 
   """
   Scan requests served from the cover cache this month, at no cost, e.g. `4`
@@ -20,6 +41,11 @@ type AdminMetrics {
   catalogue: AiTokenUsage!
 
   """
+  This month's bill; null while the billing export is not configured or has not answered this month.
+  """
+  costs: AdminMonthCosts
+
+  """
   The Découvrir tab's token consumption this month: each reader's weekly suggestions, the award lists shared per genre, and the release dates of followed sagas and authors.
   """
   discovery: AiTokenUsage!
@@ -29,19 +55,25 @@ type AdminMetrics {
   """
   enrichment: AiTokenUsage!
 
-  """
-  This month's measured GCP bill for the project, from the billing export, e.g. `0.19`; null while the export is not configured or has never answered. Carries no fixed line: the Apple Developer fee is shared across projects and deliberately left out.
-  """
-  infraEur: Eur
+  """This month's infrastructure bill so far; null while it is unknown."""
+  infraEur: Eur @deprecated(reason: "Use `costs`, read from the bill rather than priced from the tokens.")
 
-  """Of them, on the monthly plan, e.g. `2`"""
-  premiumMonthly: Int!
+  """
+  Subscriptions that began this month, a free trial included, whether or not they are still active, e.g. `2`
+  """
+  newPremium: Int!
+
+  """Of them, how many completed it this month, e.g. `6`"""
+  newUsers: Int!
+
+  """Active subscribers on the monthly plan, e.g. `2`"""
+  premiumMonthly: Int! @deprecated(reason: "The admin screen no longer splits subscribers by plan.")
 
   """Active Premium subscribers right now, e.g. `5`"""
   premiumTotal: Int!
 
-  """Of them, on the yearly plan, e.g. `3`"""
-  premiumYearly: Int!
+  """Active subscribers on the yearly plan, e.g. `3`"""
+  premiumYearly: Int! @deprecated(reason: "The admin screen no longer splits subscribers by plan.")
 
   """
   When the daily projection last ran, e.g. `"2026-09-20T04:00:00.000Z"`; null before its first run.
@@ -59,25 +91,26 @@ type AdminMetrics {
   """Scans that really reached Gemini this month, e.g. `37`"""
   scans: Int!
 
-  """
-  This month's grounded searches, e.g. `0.12`, every one of them billed: one search costs more than all the tokens of the scan that ran it.
-  """
-  searchCostEur: Eur!
+  """No longer measured: always `0`."""
+  searchCostEur: Eur! @deprecated(reason: "Use `costs`, read from the bill rather than priced from the tokens.")
 
   """
-  Google searches run this month, e.g. `812`: what `searchCostEur` is made of.
+  Google searches run this month, e.g. `812` — the line the Gemini bill turns on once the free monthly allowance is spent.
   
-  An estimate rather than the invoice — Gemini does not always report the searches it ran while thinking, and a grounded call that reports none is counted as one.
+  Counted by the app, not billed: Gemini does not always report the searches it ran while thinking, and a grounded call that reports none is counted as one.
   """
   searches: Int!
 
   """
-  This month's Gemini tokens, priced from what the API reported, e.g. `0.30`
+  This month's sessions per day, in day order; null while GA4 is not configured or has not answered this month.
   """
-  tokenCostEur: Eur!
+  sessions: [AdminDailySessions!]
 
-  """AI plus the measured infrastructure bill, e.g. `0.61`"""
-  totalCostEur: Eur!
+  """No longer measured: always `0`."""
+  tokenCostEur: Eur! @deprecated(reason: "Use `costs`, read from the bill rather than priced from the tokens.")
+
+  """This month's whole bill so far, `0` while it is unknown."""
+  totalCostEur: Eur! @deprecated(reason: "Use `costs`, read from the bill rather than priced from the tokens.")
 
   """How many accounts completed onboarding, e.g. `42`"""
   totalUsers: Int!
@@ -86,6 +119,45 @@ type AdminMetrics {
   The cover-reading step's token consumption this month. Runs on every scan.
   """
   vision: AiTokenUsage!
+}
+
+"""
+The month's bill so far, read from the billing export: what AI Studio's Spend page shows for Gemini, and the rest of the project as infrastructure.
+
+The export runs about a day behind, so `billedThrough` is usually yesterday or the day before, and today is never in it.
+"""
+type AdminMonthCosts {
+  """
+  The last day the export has reached, e.g. `"2026-10-03"`; null before any.
+  """
+  billedThrough: Day
+
+  """
+  The projection against last month, as a ratio: `0.12` is 12 % more, `-0.3` 30 % less. Null without a projection or a previous month.
+  """
+  changeVsPreviousMonth: Float
+
+  """One entry per billed day, in day order. A day with no line is absent."""
+  days: [AdminDailyCost!]!
+
+  """The month's Gemini API bill so far, e.g. `4.12`"""
+  geminiEur: Eur!
+
+  """The month's infrastructure bill so far, e.g. `0.95`"""
+  infraEur: Eur!
+
+  """
+  Last month's whole bill, e.g. `46.8`; null when the export does not hold all of it.
+  """
+  previousMonthEur: Eur
+
+  """
+  The whole month at the daily average of the days billed so far, e.g. `52.4`; null until a first day is billed.
+  """
+  projectedEur: Eur
+
+  """Both together, e.g. `5.07`"""
+  totalEur: Eur!
 }
 
 """
@@ -882,6 +954,9 @@ A date and time serialized as an ISO 8601 string in UTC.
 On output a JavaScript `Date` is rendered as an ISO string; on input an ISO string is parsed back into a `Date`. Used for record timestamps (`addedAt`, `startedAt`, `finishedAt`). Example: "2026-09-14T09:30:00.000Z".
 """
 scalar DateTime
+
+"""A calendar day, UTC. Example: "2026-10-04"."""
+scalar Day
 
 """
 One book found in a shelf photo, as printed on its spine or cover — nothing is looked up yet. The reader ticks the ones to keep, and `describeDetectedBook` builds the record of each.

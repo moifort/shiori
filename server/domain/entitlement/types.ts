@@ -17,7 +17,9 @@ export type AppAccountToken = Brand<string, 'AppAccountToken'>
 /** What the App Store sold, as we recorded it. One document per account: an
  *  account has at most one entitlement, and a renewal overwrites it in place.
  *  `revokedAt` is set on a refund or a family-sharing removal — Premium ends then
- *  and there, whatever `expiresAt` still says. */
+ *  and there, whatever `expiresAt` still says. `startedAt` is when the chain
+ *  began (Apple's `originalPurchaseDate`, a free trial's start included), stable
+ *  across renewals; absent on an entitlement recorded before it was kept. */
 export type Entitlement = {
   userId: UserId
   productId: ProductId
@@ -25,5 +27,6 @@ export type Entitlement = {
   appAccountToken: AppAccountToken
   expiresAt: Date
   revokedAt?: Date
+  startedAt?: Date
   updatedAt: Date
 }

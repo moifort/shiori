@@ -19,6 +19,7 @@ export namespace EntitlementCommand {
       appAccountToken: AppAccountToken(transaction.appAccountToken),
       expiresAt: transaction.expiresAt,
       ...(transaction.revokedAt ? { revokedAt: transaction.revokedAt } : {}),
+      ...(transaction.startedAt ? { startedAt: transaction.startedAt } : {}),
       updatedAt: new Date(),
     })
 

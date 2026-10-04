@@ -4,6 +4,7 @@ import type {
   AuthorName as AuthorNameType,
   BookTitle as BookTitleType,
   Count as CountType,
+  Day as DayType,
   Eur as EurType,
   Month as MonthType,
   Percentage as PercentageType,
@@ -48,6 +49,14 @@ export const Month = (value: unknown) => {
     .regex(/^\d{4}-\d{2}$/)
     .parse(value)
   return make<MonthType>()(v)
+}
+
+export const Day = (value: unknown) => {
+  const v = z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .parse(value)
+  return make<DayType>()(v)
 }
 
 export const Count = (value: number) => make<CountType>()(value)

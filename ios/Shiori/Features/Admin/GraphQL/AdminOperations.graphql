@@ -1,14 +1,27 @@
 query AdminMetrics {
   adminMetrics {
-    aiCostEur
-    tokenCostEur
-    searchCostEur
-    infraEur
-    totalCostEur
+    costs {
+      geminiEur
+      infraEur
+      totalEur
+      projectedEur
+      previousMonthEur
+      changeVsPreviousMonth
+      billedThrough
+      days {
+        day
+        geminiEur
+        infraEur
+      }
+    }
+    sessions {
+      day
+      sessions
+    }
     totalUsers
+    newUsers
     premiumTotal
-    premiumMonthly
-    premiumYearly
+    newPremium
     revenueProceedsEur
     revenueGrossEur
     scans

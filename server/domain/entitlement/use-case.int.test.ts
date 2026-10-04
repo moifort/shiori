@@ -98,6 +98,14 @@ describe('syncing a purchase the app hands over', () => {
       new Date('2028-01-01T00:00:00.000Z'),
     )
   })
+
+  test('keeps when the chain began, the same on every renewal', async () => {
+    const startedAt = new Date('2026-10-02T09:00:00.000Z')
+    verifiedTransaction = aTransaction({ startedAt })
+    await EntitlementUseCase.sync(user('u1'), 'signed-jws')
+
+    expect((await EntitlementQuery.of(user('u1')))?.startedAt).toEqual(startedAt)
+  })
 })
 
 describe('the scans handed to an account turning Premium', () => {

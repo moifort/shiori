@@ -22,6 +22,9 @@ export type AppleTransaction = {
   appAccountToken?: string
   expiresAt?: Date
   revokedAt?: Date
+  /** When the chain began, a free trial included: Apple's `originalPurchaseDate`,
+   *  the same on every renewal. */
+  startedAt?: Date
 }
 
 /** What Apple tells us happened, from an App Store Server Notification. The

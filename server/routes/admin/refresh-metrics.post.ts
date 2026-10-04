@@ -1,7 +1,7 @@
 import { AdminUseCase } from '~/domain/admin/use-case'
 
 /** Refreshes the admin metrics projection (accounts, subscribers, App Store
- *  revenue, GCP bill), called daily by Cloud Scheduler.
+ *  revenue, the bill day by day, GA4 sessions), called daily by Cloud Scheduler.
  *
  *  Admin-token gated like every `/admin/` route, and idempotent: the refresh
  *  recomputes the whole projection from source, so a retried run overwrites it

@@ -18,13 +18,25 @@ mock.module('~/system/appstore-connect', () => ({
   },
 }))
 
-let gcpCost: number | undefined
+type BilledDay = { day: string; geminiEur: number; infraEur: number }
+let billedDays: Map<string, BilledDay[]> | undefined
 let gcpFails = false
 mock.module('~/system/gcp-billing', () => ({
   GcpBilling: {
-    monthCost: async () => {
+    dailyCosts: async (month: string) => {
       if (gcpFails) throw new Error('BigQuery is down')
-      return gcpCost
+      return billedDays ? (billedDays.get(month) ?? []) : undefined
+    },
+  },
+}))
+
+let sessionDays: { day: string; sessions: number }[] | undefined
+let gaFails = false
+mock.module('~/system/google-analytics', () => ({
+  GoogleAnalytics: {
+    dailySessions: async () => {
+      if (gaFails) throw new Error('GA4 is down')
+      return sessionDays
     },
   },
 }))
@@ -32,9 +44,11 @@ mock.module('~/system/gcp-billing', () => ({
 const { AdminCommand } = await import('~/domain/admin/command')
 const { AdminQuery } = await import('~/domain/admin/query')
 const { AdminUseCase } = await import('~/domain/admin/use-case')
-const { monthOf } = await import('~/domain/admin/business-rules')
+const { isBilledMonth, monthOf, previousMonthOf } = await import('~/domain/admin/business-rules')
 
 const month = monthOf(new Date()) as string
+const previousMonth = previousMonthOf(monthOf(new Date())) as string
+const lastYear = '2025-01'
 
 const step = (
   promptTokens: number,
@@ -50,24 +64,24 @@ const step = (
 
 const scanned = (usage: ScanUsage) => AdminCommand.recordAiUsage({ cacheHit: false, usage })
 
-const seedProfile = (id: string) => {
-  fake.seed('users', id, {
-    userId: id,
-    firstName: 'Someone',
-    onboardingCompletedAt: new Date('2026-09-01T00:00:00.000Z'),
-  })
+const seedProfile = (id: string, onboardingCompletedAt = new Date('2025-01-15T00:00:00.000Z')) => {
+  fake.seed('users', id, { userId: id, firstName: 'Someone', onboardingCompletedAt })
 }
 
-const seedEntitlement = (id: string, productId: string, expiresAt: Date) => {
+const seedEntitlement = (id: string, productId: string, expiresAt: Date, startedAt?: Date) => {
   fake.seed('entitlements', id, {
     userId: id as UserId,
     productId,
     originalTransactionId: '2000000900000001',
     appAccountToken: `token-${id}`,
     expiresAt,
+    ...(startedAt ? { startedAt } : {}),
     updatedAt: new Date('2026-09-01T00:00:00.000Z'),
   })
 }
+
+// A moment inside the current month, whatever day the suite runs on.
+const thisMonth = new Date(`${month}-01T12:00:00.000Z`)
 
 let fake = resetFakeFirestore()
 
@@ -75,8 +89,10 @@ beforeEach(() => {
   fake = resetFakeFirestore()
   ascSales = undefined
   ascFails = false
-  gcpCost = undefined
+  billedDays = undefined
   gcpFails = false
+  sessionDays = undefined
+  gaFails = false
 })
 
 describe('recording a scan s AI usage', () => {
@@ -156,86 +172,176 @@ describe('refreshing the metrics projection', () => {
     expect(fake.snapshot('admin-metrics').get('current')).toMatchObject({ totalUsers: 3 })
   })
 
-  test('stores the revenue and the GCP bill when their sources answer', async () => {
+  test('counts who joined and who subscribed this month, and no one before', async () => {
+    seedProfile('old')
+    seedProfile('new', thisMonth)
+    const future = new Date('2099-01-01T00:00:00.000Z')
+    seedEntitlement('old', 'com.polyforms.shiori.app.premium.yearly', future)
+    seedEntitlement('new', 'com.polyforms.shiori.app.premium.monthly', future, thisMonth)
+
+    const projection = await AdminUseCase.refreshMetrics()
+
+    expect(projection.newUsers as number).toBe(1)
+    expect(projection.newPremium as number).toBe(1)
+  })
+
+  test('stores the revenue, the bill day by day and the sessions when they answer', async () => {
     ascSales = { proceedsEur: 12.4, grossEur: 17.9 }
-    gcpCost = 0.42
+    billedDays = new Map([
+      [month, [{ day: `${month}-01`, geminiEur: 0.4, infraEur: 0.2 }]],
+      [previousMonth, [{ day: `${previousMonth}-12`, geminiEur: 5, infraEur: 1 }]],
+    ])
+    sessionDays = [{ day: `${month}-01`, sessions: 7 }]
 
     const projection = await AdminUseCase.refreshMetrics()
 
     expect(projection.revenue).toMatchObject({ month, proceedsEur: 12.4, grossEur: 17.9 })
-    expect(projection.infra).toMatchObject({ month, gcpCostEur: 0.42 })
+    expect(projection.costs).toMatchObject({
+      month,
+      days: [{ day: `${month}-01`, geminiEur: 0.4, infraEur: 0.2 }],
+    })
+    expect(projection.sessions).toEqual({
+      month,
+      days: [{ day: `${month}-01`, sessions: 7 }],
+    } as never)
   })
 
-  test('leaves revenue and infra absent while their sources are unconfigured', async () => {
+  test('compares with last month only when the export holds its whole bill', async () => {
+    billedDays = new Map([
+      [previousMonth, [{ day: `${previousMonth}-12`, geminiEur: 5, infraEur: 1 }]],
+    ])
+
+    const projection = await AdminUseCase.refreshMetrics()
+
+    if (isBilledMonth(previousMonthOf(monthOf(new Date())))) {
+      expect(projection.costs?.previousMonthEur as number).toBe(6)
+    } else {
+      expect(projection.costs?.previousMonthEur).toBeUndefined()
+    }
+  })
+
+  test('leaves revenue, costs and sessions absent while their sources are unconfigured', async () => {
     const projection = await AdminUseCase.refreshMetrics()
 
     expect(projection.revenue).toBeUndefined()
-    expect(projection.infra).toBeUndefined()
-    expect(fake.snapshot('admin-metrics').get('current')).not.toContainKeys(['revenue', 'infra'])
+    expect(projection.costs).toBeUndefined()
+    expect(projection.sessions).toBeUndefined()
+    expect(fake.snapshot('admin-metrics').get('current')).not.toContainKeys([
+      'revenue',
+      'costs',
+      'sessions',
+    ])
   })
 
-  test('a failing source keeps the last stored figure rather than erasing it', async () => {
+  test('a failing source keeps the last figure of the same month rather than erasing it', async () => {
     fake.seed('admin-metrics', 'current', {
       totalUsers: 1,
+      newUsers: 0,
       premium: { total: 0, monthly: 0, yearly: 0 },
+      newPremium: 0,
       revenue: { month: '2026-08', proceedsEur: 9.9, grossEur: 14 },
-      infra: { month: '2026-08', gcpCostEur: 0.3 },
-      refreshedAt: new Date('2026-08-31T04:00:00.000Z'),
+      costs: { month, days: [{ day: `${month}-01`, geminiEur: 0.3, infraEur: 0.1 }] },
+      sessions: { month, days: [{ day: `${month}-01`, sessions: 4 }] },
+      refreshedAt: new Date(`${month}-02T04:00:00.000Z`),
     })
     ascFails = true
     gcpFails = true
+    gaFails = true
 
     const projection = await AdminUseCase.refreshMetrics()
 
     expect(projection.revenue).toMatchObject({ proceedsEur: 9.9 })
-    expect(projection.infra).toMatchObject({ gcpCostEur: 0.3 })
+    expect(projection.costs?.days).toHaveLength(1)
+    expect(projection.sessions?.days).toHaveLength(1)
   })
 
-  test('reads one document and two collection-wide queries, however many readers exist', async () => {
+  test('a failing source drops a figure measured in another month', async () => {
+    fake.seed('admin-metrics', 'current', {
+      totalUsers: 1,
+      newUsers: 0,
+      premium: { total: 0, monthly: 0, yearly: 0 },
+      newPremium: 0,
+      costs: { month: lastYear, days: [{ day: `${lastYear}-01`, geminiEur: 0.3, infraEur: 0.1 }] },
+      sessions: { month: lastYear, days: [{ day: `${lastYear}-01`, sessions: 4 }] },
+      refreshedAt: new Date(`${lastYear}-31T04:00:00.000Z`),
+    })
+    gcpFails = true
+    gaFails = true
+
+    const projection = await AdminUseCase.refreshMetrics()
+
+    expect(projection.costs).toBeUndefined()
+    expect(projection.sessions).toBeUndefined()
+  })
+
+  test('reads one document and three collection-wide queries, however many readers exist', async () => {
     seedProfile('u1')
     seedProfile('u2')
 
     await AdminUseCase.refreshMetrics()
 
-    // The previous projection (keyed read), plus the profiles count() aggregate
-    // and the entitlements stream — never a per-reader read.
+    // The previous projection (keyed read), plus the two profile count()
+    // aggregates and the entitlements stream — never a per-reader read.
     expect(fake.docReads).toBe(1)
-    expect(fake.queryReads).toBe(2)
+    expect(fake.queryReads).toBe(3)
   })
 })
 
 describe('reading the metrics view', () => {
-  test('joins the live month usage with the projection and prices it', async () => {
-    await scanned({ vision: step(1_000_000, 0, 0) })
-    gcpCost = 0.5
+  test('joins the live month counters with the projection and reads the bill', async () => {
+    await scanned({ vision: step(1000, 0, 0), enrichment: step(0, 0, 0, 2) })
+    billedDays = new Map([[month, [{ day: `${month}-01`, geminiEur: 0.4, infraEur: 0.2 }]]])
+    sessionDays = [{ day: `${month}-01`, sessions: 7 }]
     await AdminUseCase.refreshMetrics()
 
     const view = await AdminQuery.metrics()
 
     expect(view.scans as number).toBe(1)
-    expect(view.searches as number).toBe(0)
-    // What a token costs is the unit test's business, and it changes with the
-    // calendar — asserting a figure here would turn this into a test that fails
-    // on a date. What matters is that the live month reached the view at all.
-    expect(view.aiCostEur as number).toBeGreaterThan(0)
-    // Infra is the measured GCP bill alone, no fixed Apple line added.
-    expect(view.infraEur as number).toBeCloseTo(0.5, 10)
-    expect(view.totalCostEur as number).toBeCloseTo((view.aiCostEur as number) + 0.5, 10)
+    expect(view.searches as number).toBe(2)
+    expect(view.costs?.geminiEur as number).toBeCloseTo(0.4, 10)
+    expect(view.costs?.infraEur as number).toBeCloseTo(0.2, 10)
+    expect(view.costs?.billedThrough as string).toBe(`${month}-01`)
+    expect(view.sessions).toEqual([{ day: `${month}-01`, sessions: 7 }] as never)
     expect(view.refreshedAt).toBeInstanceOf(Date)
+  })
+
+  test('costs two document reads: the month counters and the projection', async () => {
+    await AdminQuery.metrics()
+
+    expect(fake.docReads).toBe(2)
+    expect(fake.queryReads).toBe(0)
+  })
+
+  test('serves none of a projection s month figures once the month has turned', async () => {
+    fake.seed('admin-metrics', 'current', {
+      totalUsers: 3,
+      newUsers: 2,
+      premium: { total: 1, monthly: 0, yearly: 1 },
+      newPremium: 1,
+      costs: { month: lastYear, days: [{ day: `${lastYear}-01`, geminiEur: 0.3, infraEur: 0.1 }] },
+      sessions: { month: lastYear, days: [{ day: `${lastYear}-01`, sessions: 4 }] },
+      refreshedAt: new Date(`${lastYear}-31T04:00:00.000Z`),
+    })
+
+    const view = await AdminQuery.metrics()
+
+    expect(view.totalUsers as number).toBe(3)
+    expect(view.newUsers as number).toBe(0)
+    expect(view.newPremium as number).toBe(0)
+    expect(view.costs).toBeUndefined()
+    expect(view.sessions).toBeUndefined()
   })
 
   test('works before the first refresh: zeros and nulls, never a crash', async () => {
     const view = await AdminQuery.metrics()
 
     expect(view.totalUsers as number).toBe(0)
+    expect(view.newUsers as number).toBe(0)
     expect(view.premium).toMatchObject({ total: 0, monthly: 0, yearly: 0 })
     expect(view.revenue).toBeUndefined()
+    expect(view.costs).toBeUndefined()
+    expect(view.sessions).toBeUndefined()
     expect(view.refreshedAt).toBeUndefined()
     expect(view.searches as number).toBe(0)
-    expect(view.searchCostEur as number).toBe(0)
-    expect(view.tokenCostEur as number).toBe(0)
-    // No billing export yet: infra is unavailable and the total is AI only.
-    expect(view.infraEur).toBeUndefined()
-    expect(view.totalCostEur as number).toBe(0)
   })
 })

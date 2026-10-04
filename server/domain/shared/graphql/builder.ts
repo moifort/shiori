@@ -26,6 +26,7 @@ import type {
   AuthorName,
   BookTitle,
   Count,
+  Day,
   Eur,
   Percentage,
   PersonName,
@@ -84,6 +85,7 @@ export const builder = new SchemaBuilder<{
     VolumeNumber: { Input: VolumeNumber; Output: VolumeNumber }
     Year: { Input: Year; Output: Year }
     Count: { Input: Count; Output: Count }
+    Day: { Input: Day; Output: Day }
     Eur: { Input: Eur; Output: Eur }
     Percentage: { Input: Percentage; Output: Percentage }
     CoverUrl: { Input: CoverUrl; Output: CoverUrl | SignedUrl }

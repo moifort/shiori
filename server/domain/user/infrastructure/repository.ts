@@ -41,6 +41,13 @@ export const countProfiles = async (): Promise<number> => {
   return snap.data().count
 }
 
+// How many accounts completed onboarding on or after a moment — a count()
+// aggregate on a single-field range, which Firestore indexes on its own.
+export const countProfilesSince = async (since: Date): Promise<number> => {
+  const snap = await profiles().where('onboardingCompletedAt', '>=', since).count().get()
+  return snap.data().count
+}
+
 export const saveProfile = async (
   profile: UserProfile,
   batch?: WriteBatch,

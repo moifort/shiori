@@ -26,17 +26,27 @@ const seedProfile = (admin: boolean) => {
   })
 }
 
+const month = new Date().toISOString().slice(0, 7)
+const [year, monthIndex] = month.split('-').map(Number) as [number, number]
+const daysInMonth = new Date(Date.UTC(year, monthIndex, 0)).getUTCDate()
+
 const metricsQuery = `query {
   adminMetrics {
-    tokenCostEur
-    searchCostEur
-    aiCostEur
-    infraEur
-    totalCostEur
+    costs {
+      geminiEur
+      infraEur
+      totalEur
+      projectedEur
+      previousMonthEur
+      changeVsPreviousMonth
+      billedThrough
+      days { day geminiEur infraEur }
+    }
+    sessions { day sessions }
     totalUsers
+    newUsers
     premiumTotal
-    premiumMonthly
-    premiumYearly
+    newPremium
     revenueProceedsEur
     revenueGrossEur
     scans
@@ -72,13 +82,12 @@ describe('who may read the admin metrics', () => {
 
     expect(result.errors).toBeUndefined()
     expect(result.data?.adminMetrics).toMatchObject({
-      tokenCostEur: 0,
-      searchCostEur: 0,
-      aiCostEur: 0,
-      infraEur: null,
-      totalCostEur: 0,
+      costs: null,
+      sessions: null,
       totalUsers: 0,
+      newUsers: 0,
       premiumTotal: 0,
+      newPremium: 0,
       revenueProceedsEur: null,
       scans: 0,
       cacheHits: 0,
@@ -89,28 +98,80 @@ describe('who may read the admin metrics', () => {
     })
   })
 
-  test('serves what the projection and the month s counters hold', async () => {
+  test('serves the month s bill, its projection and the sessions the projection holds', async () => {
     seedProfile(true)
     fake.seed('admin-metrics', 'current', {
       totalUsers: 42,
+      newUsers: 6,
       premium: { total: 5, monthly: 2, yearly: 3 },
-      revenue: { month: '2026-09', proceedsEur: 12.4, grossEur: 17.9 },
-      infra: { month: '2026-09', gcpCostEur: 0.19 },
-      refreshedAt: new Date('2026-09-20T04:00:00.000Z'),
+      newPremium: 2,
+      revenue: { month, proceedsEur: 12.4, grossEur: 17.9 },
+      costs: {
+        month,
+        days: [
+          { day: `${month}-02`, geminiEur: 0.5, infraEur: 0.25 },
+          { day: `${month}-01`, geminiEur: 1, infraEur: 0.25 },
+        ],
+      },
+      sessions: { month, days: [{ day: `${month}-01`, sessions: 14 }] },
+      refreshedAt: new Date(`${month}-03T04:00:00.000Z`),
     })
 
     const result = await execute(metricsQuery)
 
     expect(result.errors).toBeUndefined()
     expect(result.data?.adminMetrics).toMatchObject({
+      costs: {
+        geminiEur: 1.5,
+        infraEur: 0.5,
+        totalEur: 2,
+        // 2 € over the first two days, extended to every day of the month.
+        projectedEur: daysInMonth,
+        previousMonthEur: null,
+        changeVsPreviousMonth: null,
+        billedThrough: `${month}-02`,
+        days: [
+          { day: `${month}-01`, geminiEur: 1, infraEur: 0.25 },
+          { day: `${month}-02`, geminiEur: 0.5, infraEur: 0.25 },
+        ],
+      },
+      sessions: [{ day: `${month}-01`, sessions: 14 }],
       totalUsers: 42,
+      newUsers: 6,
       premiumTotal: 5,
-      premiumMonthly: 2,
-      premiumYearly: 3,
+      newPremium: 2,
       revenueProceedsEur: 12.4,
       revenueGrossEur: 17.9,
-      infraEur: 0.19,
-      refreshedAt: '2026-09-20T04:00:00.000Z',
+      refreshedAt: `${month}-03T04:00:00.000Z`,
+    })
+  })
+
+  test('still answers the fields the earlier builds ask for, from the bill', async () => {
+    seedProfile(true)
+    fake.seed('admin-metrics', 'current', {
+      totalUsers: 1,
+      newUsers: 0,
+      premium: { total: 1, monthly: 0, yearly: 1 },
+      newPremium: 0,
+      costs: { month, days: [{ day: `${month}-01`, geminiEur: 1, infraEur: 0.5 }] },
+      refreshedAt: new Date(`${month}-02T04:00:00.000Z`),
+    })
+
+    const result = await execute(`query {
+      adminMetrics {
+        tokenCostEur searchCostEur aiCostEur infraEur totalCostEur premiumMonthly premiumYearly
+      }
+    }`)
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.adminMetrics).toEqual({
+      tokenCostEur: 0,
+      searchCostEur: 0,
+      aiCostEur: 1,
+      infraEur: 0.5,
+      totalCostEur: 1.5,
+      premiumMonthly: 0,
+      premiumYearly: 1,
     })
   })
 })

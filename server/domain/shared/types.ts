@@ -7,6 +7,9 @@ export type Plan = 'free' | 'premium'
 export type Eur = Brand<number, 'Eur'>
 export type Year = Brand<number, 'Year'>
 export type Month = Brand<string, 'Month'>
+/** A calendar day in UTC, `"2026-10-04"`: the unit the bill and the sessions are
+ *  reported in. */
+export type Day = Brand<string, 'Day'>
 export type Count = Brand<number, 'Count'>
 export type Percentage = Brand<number, 'Percentage'>
 /** A title and an author name are spoken by both `book` and `series`: a catalogue

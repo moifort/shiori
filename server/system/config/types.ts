@@ -16,6 +16,8 @@ export type AscPrivateKey = Brand<string, 'AscPrivateKey'>
 export type AscVendorNumber = Brand<string, 'AscVendorNumber'>
 /** Fully qualified BigQuery billing export table, `project.dataset.table`. */
 export type GcpBillingTable = Brand<string, 'GcpBillingTable'>
+/** The numeric id of the GA4 property the app reports to, e.g. `512345678`. */
+export type Ga4PropertyId = Brand<string, 'Ga4PropertyId'>
 /** The private bucket holding book cover attachments, e.g. `shiori-polyforms-attachments`. */
 export type AttachmentsBucket = Brand<string, 'AttachmentsBucket'>
 /** The 256-bit key, base64-encoded, the Audible device credentials are sealed

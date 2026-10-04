@@ -1,13 +1,12 @@
-import type { Count, Eur, Month } from '~/domain/shared/types'
+import type { Count, Day, Eur, Month } from '~/domain/shared/types'
 
-/** What one Gemini call consumed, as `usageMetadata` reported it. Thinking
- *  tokens are kept apart from plain output because they bill at the output rate
- *  and are the largest line on a scan.
+/** What one Gemini call consumed, as `usageMetadata` reported it. No longer
+ *  priced: the cost is read from the bill. The counters stay because they say
+ *  where the calls go, which the bill does not.
  *
- *  `searches` counts the Google searches a grounded step ran. They are billed
- *  per search rather than per token, which makes them a separate line with a
- *  separate lever — and the bigger one once the monthly free allowance runs
- *  out. Only enrichment and catalogue can have any. */
+ *  `searches` counts the Google searches a grounded step ran — the line the
+ *  bill turns on once the monthly free allowance runs out. Only enrichment,
+ *  catalogue and Découvrir can have any. */
 export type AiStepUsage = {
   promptTokens: Count
   outputTokens: Count
@@ -52,44 +51,80 @@ export type Revenue = {
   grossEur: Eur
 }
 
-/** What GCP billed for one month, measured from the billing export. */
-export type InfraUsage = {
+/** What the bill says one day cost, as the billing export reports it: the
+ *  Gemini API on its own, every other service of the project as
+ *  infrastructure. Credits (the free tier) are folded in. */
+export type DailyCost = {
+  day: Day
+  geminiEur: Eur
+  infraEur: Eur
+}
+
+/** How many sessions GA4 counted on one day. */
+export type DailySessions = {
+  day: Day
+  sessions: Count
+}
+
+/** The month's bill so far, one entry per billed day, and last month's total
+ *  when that month is one the export fully covers. */
+export type MonthCosts = {
   month: Month
-  gcpCostEur: Eur
+  days: DailyCost[]
+  previousMonthEur?: Eur
+}
+
+export type MonthSessions = {
+  month: Month
+  days: DailySessions[]
 }
 
 /** The read model the daily refresh writes — a single `current` document.
- *  `revenue` and `infra` are absent until their external source has answered
- *  once (missing config, API refusal), and a later failed fetch keeps the last
- *  stored value rather than erasing it. */
+ *  `revenue`, `costs` and `sessions` are absent until their external source has
+ *  answered once (missing config, API refusal), and a later failed fetch keeps
+ *  the last stored value of the same month rather than erasing it. `newUsers`
+ *  and `newPremium` count the month the refresh ran in. */
 export type AdminMetricsProjection = {
   totalUsers: Count
+  newUsers: Count
   premium: PremiumBreakdown
+  newPremium: Count
   revenue?: Revenue
-  infra?: InfraUsage
+  costs?: MonthCosts
+  sessions?: MonthSessions
   refreshedAt: Date
 }
 
-/** What the admin screen shows: the projection joined with the current month's
- *  live AI usage and priced in euros. `infraEur` is the measured GCP bill for
- *  this project, absent until the billing export is configured and has answered
- *  (the Apple Developer fee is deliberately excluded: it is shared across
- *  several projects, so imputing it here would overstate this app's cost).
- *  `refreshedAt` is absent until the daily refresh has run once. */
+/** The month's bill as the admin screen reads it. `billedThrough` is the last
+ *  day the export has reached, about a day behind; the projection extends the
+ *  daily average over those days to the whole month, and is absent while no day
+ *  is billed yet. `changeVsPreviousMonth` is a ratio (`0.12` is 12 % more). */
+export type MonthCostsView = {
+  geminiEur: Eur
+  infraEur: Eur
+  totalEur: Eur
+  projectedEur?: Eur
+  previousMonthEur?: Eur
+  changeVsPreviousMonth?: number
+  billedThrough?: Day
+  days: DailyCost[]
+}
+
+/** What the admin screen shows: the projection of the current month joined
+ *  with its live AI counters. `costs` and `sessions` are absent while their
+ *  source has not answered for this month; `refreshedAt` is absent until the
+ *  daily refresh has run once. */
 export type AdminMetricsView = {
-  tokenCostEur: Eur
-  searchCostEur: Eur
-  aiCostEur: Eur
-  infraEur?: Eur
-  totalCostEur: Eur
+  costs?: MonthCostsView
+  sessions?: DailySessions[]
   totalUsers: Count
+  newUsers: Count
   premium: PremiumBreakdown
+  newPremium: Count
   revenue?: Revenue
   scans: Count
   cacheHits: Count
-  /** Every grounded search of the month, allowance included — what says how
-   *  close the free 5,000 are to running out while `searchCostEur` still
-   *  reads zero. */
+  /** Every grounded search of the month, as the counters measured them. */
   searches: Count
   vision: AiStepUsage
   enrichment: AiStepUsage

@@ -25,6 +25,7 @@ import {
   AuthorName,
   BookTitle,
   Count,
+  Day,
   Eur,
   Percentage,
   PersonName,
@@ -259,6 +260,12 @@ builder.scalarType('Count', {
   description: 'A non-negative whole number of things. Example: 12.',
   serialize: (value) => value as number,
   parseValue: validatedParse('Count', (value) => Count(Number(value))),
+})
+
+builder.scalarType('Day', {
+  description: 'A calendar day, UTC. Example: "2026-10-04".',
+  serialize: (value) => value as string,
+  parseValue: validatedParse('Day', Day),
 })
 
 builder.scalarType('Eur', {

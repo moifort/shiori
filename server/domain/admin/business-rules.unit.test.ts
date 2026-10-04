@@ -1,127 +1,107 @@
 import { describe, expect, test } from 'bun:test'
 import {
-  aiCostEur,
-  freshUsage,
+  daysInMonth,
+  isBilledMonth,
+  monthCostsView,
   monthOf,
+  monthStart,
+  newPremiumIn,
   premiumBreakdown,
-  searchCostEur,
-  searchesOf,
-  tokenCostEur,
+  previousMonthOf,
 } from '~/domain/admin/business-rules'
-import type { AiStepUsage, AiUsage } from '~/domain/admin/types'
+import type { DailyCost, MonthCosts } from '~/domain/admin/types'
 import type { Entitlement, ProductId } from '~/domain/entitlement/types'
-import type { Count, Month, UserId } from '~/domain/shared/types'
+import type { Count, Day, Eur, Month, UserId } from '~/domain/shared/types'
 
-const month = '2026-09' as Month
+const october = '2026-10' as Month
 
-const step = (
-  promptTokens: number,
-  outputTokens: number,
-  thinkingTokens: number,
-  searches = 0,
-): AiStepUsage => ({
-  promptTokens: promptTokens as Count,
-  outputTokens: outputTokens as Count,
-  thinkingTokens: thinkingTokens as Count,
-  searches: searches as Count,
+const day = (date: string, geminiEur: number, infraEur: number): DailyCost => ({
+  day: date as Day,
+  geminiEur: geminiEur as Eur,
+  infraEur: infraEur as Eur,
 })
 
-const none = step(0, 0, 0)
-
-const usage = (
-  vision: AiStepUsage,
-  enrichment: AiStepUsage = none,
-  catalogue: AiStepUsage = none,
-): AiUsage => ({
-  month,
-  scans: 1 as Count,
-  cacheHits: 0 as Count,
-  vision,
-  enrichment,
-  catalogue,
+const costs = (days: DailyCost[], previousMonthEur?: number): MonthCosts => ({
+  month: october,
+  days,
+  ...(previousMonthEur !== undefined ? { previousMonthEur: previousMonthEur as Eur } : {}),
 })
 
-describe('pricing the month s AI consumption', () => {
-  test('a month without a single scan costs nothing', () => {
-    expect(aiCostEur(freshUsage(month)) as number).toBe(0)
-    expect(tokenCostEur(freshUsage(month)) as number).toBe(0)
-    expect(searchCostEur(freshUsage(month)) as number).toBe(0)
+describe('the month arithmetic', () => {
+  test('the month before January is December of the year before', () => {
+    expect(previousMonthOf('2026-01' as Month) as string).toBe('2025-12')
+    expect(previousMonthOf(october) as string).toBe('2026-09')
   })
 
-  test('input tokens bill at the input rate', () => {
-    // 1M input tokens at $0.30/M and a 0.91 USD→EUR conversion.
-    expect(tokenCostEur(usage(step(1_000_000, 0, 0))) as number).toBeCloseTo(0.3 * 0.91, 10)
+  test('a month knows how many days it has, February included', () => {
+    expect(daysInMonth('2026-02' as Month)).toBe(28)
+    expect(daysInMonth('2028-02' as Month)).toBe(29)
+    expect(daysInMonth(october)).toBe(31)
   })
 
-  test('thinking tokens bill at the output rate, the point of tracking them apart', () => {
-    const thinking = tokenCostEur(usage(step(0, 0, 1_000_000)))
-    const output = tokenCostEur(usage(step(0, 1_000_000, 0)))
-    expect(thinking as number).toBe(output as number)
-    expect(thinking as number).toBeCloseTo(2.5 * 0.91, 10)
+  test('a month starts at midnight UTC on its first day', () => {
+    expect(monthStart(october).toISOString()).toBe('2026-10-01T00:00:00.000Z')
   })
 
-  test('the three steps add up', () => {
-    const visionOnly = tokenCostEur(usage(step(2600, 250, 1500)))
-    const enrichmentOnly = tokenCostEur(usage(none, step(5000, 200, 1500)))
-    const catalogueOnly = tokenCostEur(usage(none, none, step(3000, 400, 2000)))
-    const all = tokenCostEur(
-      usage(step(2600, 250, 1500), step(5000, 200, 1500), step(3000, 400, 2000)),
+  test('September is not a billed month: its Gemini went to another project', () => {
+    expect(isBilledMonth('2026-09' as Month)).toBe(false)
+    expect(isBilledMonth(october)).toBe(true)
+    expect(isBilledMonth('2027-01' as Month)).toBe(true)
+  })
+})
+
+describe('reading the month s bill', () => {
+  test('sums each line and extends the daily average to the whole month', () => {
+    const view = monthCostsView(
+      costs([
+        day('2026-10-01', 0.5, 0.5),
+        day('2026-10-02', 0.25, 0.25),
+        day('2026-10-03', 1, 0.5),
+      ]),
     )
-    expect(all as number).toBeCloseTo(
-      (visionOnly as number) + (enrichmentOnly as number) + (catalogueOnly as number),
-      10,
-    )
+
+    expect(view.geminiEur as number).toBeCloseTo(1.75, 10)
+    expect(view.infraEur as number).toBeCloseTo(1.25, 10)
+    expect(view.totalEur as number).toBeCloseTo(3, 10)
+    expect(view.billedThrough as string).toBe('2026-10-03')
+    // 3 € over three days, 31 days in October.
+    expect(view.projectedEur as number).toBeCloseTo(31, 10)
   })
 
-  test('a scan of an already-catalogued saga costs about a cent in tokens', () => {
-    // The two steps a routine scan runs: ~2.6K in, ~250 out, ~1.5K thinking for
-    // the cover; ~5K in, ~200 out, ~1.5K thinking for the enrichment. The saga
-    // catalogue does not run, which is what makes the routine scan the cheap one.
-    // This is the number the scan allowances in the quota domain are sized on.
-    const cost = tokenCostEur(usage(step(2600, 250, 1500), step(5000, 200, 1500)))
-    expect(cost as number).toBeGreaterThan(0.005)
-    expect(cost as number).toBeLessThan(0.015)
-  })
-})
+  test('counts the days elapsed, not the rows: a day with nothing billed still passed', () => {
+    const view = monthCostsView(costs([day('2026-10-01', 1, 0), day('2026-10-04', 1, 0)]))
 
-describe('pricing the month s grounded searches', () => {
-  const withSearches = (count: number) => ({
-    ...usage(none, step(0, 0, 0, count)),
+    expect(view.projectedEur as number).toBeCloseTo((2 / 4) * 31, 10)
   })
 
-  test('every search is billed, from the first: the invoice shows no free allowance', () => {
-    // At $14 per thousand, converted at 0.91.
-    expect(searchCostEur(withSearches(0)) as number).toBe(0)
-    expect(searchCostEur(withSearches(1)) as number).toBeCloseTo(0.014 * 0.91, 10)
-    expect(searchCostEur(withSearches(1000)) as number).toBeCloseTo(14 * 0.91, 10)
+  test('sorts days the export returned out of order', () => {
+    const view = monthCostsView(costs([day('2026-10-02', 1, 0), day('2026-10-01', 2, 0)]))
+
+    expect(view.days.map((entry) => entry.day as string)).toEqual(['2026-10-01', '2026-10-02'])
+    expect(view.billedThrough as string).toBe('2026-10-02')
   })
 
-  test('one search costs more than the tokens of the scan that ran it', () => {
-    const scan = tokenCostEur(usage(step(2600, 250, 1500), step(5000, 200, 1500)))
+  test('compares the projection with last month s total', () => {
+    const view = monthCostsView(costs([day('2026-10-01', 1, 0)], 15.5))
 
-    expect(searchCostEur(withSearches(1)) as number).toBeGreaterThan(scan as number)
+    expect(view.previousMonthEur as number).toBe(15.5)
+    expect(view.changeVsPreviousMonth as number).toBeCloseTo(31 / 15.5 - 1, 10)
   })
 
-  test('the searches of every step add up, wherever they were run', () => {
-    const spread = {
-      ...usage(step(0, 0, 0, 1), step(0, 0, 0, 2), step(0, 0, 0, 3)),
-    }
-    expect(searchCostEur(spread) as number).toBeCloseTo(6 * 0.014 * 0.91, 10)
-    expect(searchesOf(spread) as number).toBe(6)
+  test('no comparison without a previous month, or against a month that cost nothing', () => {
+    expect(monthCostsView(costs([day('2026-10-01', 1, 0)])).changeVsPreviousMonth).toBeUndefined()
+    expect(
+      monthCostsView(costs([day('2026-10-01', 1, 0)], 0)).changeVsPreviousMonth,
+    ).toBeUndefined()
   })
-})
 
-describe('what the whole Gemini bill adds up to', () => {
-  test('is the tokens plus the searches', () => {
-    const month = {
-      ...usage(step(2600, 250, 1500), step(5000, 200, 1500, 6000)),
-    }
+  test('before the first billed day: zeros, and nothing to project', () => {
+    const view = monthCostsView(costs([], 12))
 
-    expect(aiCostEur(month) as number).toBeCloseTo(
-      (tokenCostEur(month) as number) + (searchCostEur(month) as number),
-      10,
-    )
-    expect(searchCostEur(month) as number).toBeGreaterThan(0)
+    expect(view.totalEur as number).toBe(0)
+    expect(view.projectedEur).toBeUndefined()
+    expect(view.billedThrough).toBeUndefined()
+    expect(view.changeVsPreviousMonth).toBeUndefined()
   })
 })
 
@@ -193,5 +173,30 @@ describe('counting who is Premium', () => {
       monthly: 0 as Count,
       yearly: 0 as Count,
     })
+  })
+})
+
+describe('counting who subscribed this month', () => {
+  const subscribed = (userId: string, startedAt?: Date): Entitlement => ({
+    userId: userId as UserId,
+    productId: 'com.polyforms.shiori.app.premium.yearly' as ProductId,
+    originalTransactionId: '2000000900000001' as Entitlement['originalTransactionId'],
+    appAccountToken: 'bc4a0626-772c-4b01-a0ec-4d018ee55375' as Entitlement['appAccountToken'],
+    expiresAt: new Date('2099-01-01T00:00:00.000Z'),
+    ...(startedAt ? { startedAt } : {}),
+    updatedAt: new Date('2026-10-04T00:00:00.000Z'),
+  })
+
+  test('counts a chain that began in the month, and only those', () => {
+    const count = newPremiumIn(
+      [
+        subscribed('u1', new Date('2026-10-02T09:00:00.000Z')),
+        subscribed('u2', new Date('2026-09-30T23:59:59.000Z')),
+        subscribed('u3'),
+      ],
+      october,
+    )
+
+    expect(count as number).toBe(1)
   })
 })

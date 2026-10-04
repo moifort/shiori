@@ -34,4 +34,9 @@ export namespace UserQuery {
 
   // How many accounts completed onboarding — the admin metrics' user count.
   export const total = async (): Promise<CountType> => Count(await repository.countProfiles())
+
+  // How many accounts completed onboarding since a moment — the admin metrics'
+  // newcomers of the month.
+  export const joinedSince = async (since: Date): Promise<CountType> =>
+    Count(await repository.countProfilesSince(since))
 }

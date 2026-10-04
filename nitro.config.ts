@@ -53,6 +53,11 @@ export default defineNitroConfig({
     ascPrivateKey: '',
     ascVendorNumber: '',
     gcpBillingTable: '',
+    // The project the function runs in, set by Terraform: what the billing
+    // export's rows are filtered on, and where the BigQuery job runs.
+    firebaseProjectId: '',
+    // The GA4 property the app reports to, for the admin screen's sessions.
+    ga4PropertyId: '',
     attachmentsBucket: '',
     // Seals the Amazon device credentials an Audible connection is made of, so a
     // Firestore export does not hand out standing access to readers' accounts.

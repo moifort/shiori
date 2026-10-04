@@ -2,27 +2,42 @@ import { applicationDefault, getApp } from 'firebase-admin/app'
 import type { Month } from '~/domain/shared/types'
 import { config } from '~/system/config/index'
 import { createLogger } from '~/system/logger'
+import { type BilledDay, parseDailyCosts } from './daily-costs'
 
 const logger = createLogger('gcp-billing')
 
+// How the export names the Gemini API. Every other service of the project is
+// infrastructure (functions, Firestore, storage, scheduler…).
+const GEMINI_SERVICE = 'Gemini API'
+
+// One day's net amount: its cost plus its credits (the free tier, negative).
+const NET = 'cost + IFNULL((SELECT SUM(c.amount) FROM UNNEST(credits) c), 0)'
+
 export namespace GcpBilling {
-  // What GCP billed this project for one month, read from the billing export
-  // table in BigQuery (the only place actual spend exists — no REST endpoint
-  // serves it). Returns undefined when the export table is not configured.
-  // Credits (free tier, promotions) are folded in, so this is what the invoice
-  // really says; a credit surplus clamps at zero rather than showing income.
-  export const monthCost = async (month: Month): Promise<number | undefined> => {
-    const { gcpBillingTable } = config()
-    if (!gcpBillingTable) return undefined
-    const [project] = (gcpBillingTable as string).split('.') as [string]
+  // What the bill says each day of the month cost this project, read from the
+  // billing export in BigQuery — the only place actual spend exists, and what
+  // AI Studio's Spend page shows. The export holds every project on the billing
+  // account and lives wherever it was set up (Vinarium's project, today), so the
+  // rows are filtered on this function's own project, and the job runs here.
+  //
+  // The export lags about a day: today, and often yesterday, have no rows yet.
+  // Returns undefined when the table or the project id is not configured.
+  export const dailyCosts = async (month: Month): Promise<BilledDay[] | undefined> => {
+    const { gcpBillingTable, gcpProjectId } = config()
+    if (!gcpBillingTable || !gcpProjectId) return undefined
 
     const query =
-      'SELECT SUM(cost) + SUM(IFNULL((SELECT SUM(c.amount) FROM UNNEST(credits) c), 0)) ' +
+      `SELECT CAST(DATE(usage_start_time) AS STRING) AS day, ` +
+      `SUM(IF(service.description = @gemini, ${NET}, 0)), ` +
+      `SUM(IF(service.description = @gemini, 0, ${NET})) ` +
       `FROM \`${gcpBillingTable}\` ` +
-      'WHERE invoice.month = @month AND project.id = @project'
+      'WHERE project.id = @project AND DATE(usage_start_time) BETWEEN @first AND @last ' +
+      'GROUP BY day ORDER BY day'
 
+    const [year, index] = (month as string).split('-').map(Number) as [number, number]
+    const lastDay = new Date(Date.UTC(year, index, 0)).getUTCDate()
     const response = await fetch(
-      `https://bigquery.googleapis.com/bigquery/v2/projects/${project}/queries`,
+      `https://bigquery.googleapis.com/bigquery/v2/projects/${gcpProjectId}/queries`,
       {
         method: 'POST',
         headers: {
@@ -34,9 +49,10 @@ export namespace GcpBilling {
           useLegacySql: false,
           parameterMode: 'NAMED',
           queryParameters: [
-            // The export keys its months "202607", without the dash.
-            parameter('month', (month as string).replace('-', '')),
-            parameter('project', project),
+            parameter('gemini', 'STRING', GEMINI_SERVICE),
+            parameter('project', 'STRING', gcpProjectId),
+            parameter('first', 'DATE', `${month}-01`),
+            parameter('last', 'DATE', `${month}-${String(lastDay).padStart(2, '0')}`),
           ],
           timeoutMs: 30_000,
         }),
@@ -46,19 +62,12 @@ export namespace GcpBilling {
       logger.error('BigQuery query failed', { status: response.status })
       throw new Error(`BigQuery billing query answered ${response.status}`)
     }
-    const result = (await response.json()) as {
-      jobComplete?: boolean
-      rows?: { f: { v: string | null }[] }[]
-    }
-    if (!result.jobComplete) throw new Error('BigQuery billing query did not complete in time')
-    // SUM over an empty month is NULL — a month with no line items costs nothing.
-    const value = Number(result.rows?.[0]?.f?.[0]?.v ?? 0)
-    return Math.max(0, value)
+    return parseDailyCosts(await response.json())
   }
 
-  const parameter = (name: string, value: string) => ({
+  const parameter = (name: string, type: 'STRING' | 'DATE', value: string) => ({
     name,
-    parameterType: { type: 'STRING' },
+    parameterType: { type },
     parameterValue: { value },
   })
 
