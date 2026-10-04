@@ -3877,22 +3877,6 @@
         }
       }
     },
-    "Coût" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cost"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Coût"
-          }
-        }
-      }
-    },
     "Coût du mois" : {
       "localizations" : {
         "en" : {
@@ -8133,22 +8117,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Portugais"
-          }
-        }
-      }
-    },
-    "Poste" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Item"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Poste"
           }
         }
       }
