@@ -726,8 +726,10 @@ const confirmedOnAudible = async <
   if (asin === known?.asin) return volume
   const product = await audibleProductOf(asin, language, volume.title)
   if (product === 'unreachable') return { ...volume, asin: known?.asin }
+  // The web search names a Kindle ASIN, or one no store sells, every run:
+  // dropping it is what this check is for, not a failure anyone has to fix.
   if (product === 'unknown') {
-    logger.warn('Audible ASIN not confirmed', { asin, title: volume.title })
+    logger.info('Audible ASIN not confirmed', { asin, title: volume.title })
     return { ...volume, asin: undefined }
   }
   return {
@@ -823,8 +825,10 @@ const confirmedOnAmazon = async <Found extends Pick<FoundVolume, 'isbn13' | 'tit
   if (!isbn13) return volume
   const edition = await amazonEditionOf(isbn13, language)
   if (edition === 'unreachable') return volume
+  // The web search names ISBNs that never existed every run: dropping them is
+  // what this check is for, not a failure anyone has to fix.
   if (edition === 'unknown') {
-    logger.warn('Amazon ISBN not confirmed', { isbn13, title: volume.title })
+    logger.info('Amazon ISBN not confirmed', { isbn13, title: volume.title })
     return { ...volume, isbn13: undefined }
   }
   return edition.releaseDate ? { ...volume, date: edition.releaseDate } : volume

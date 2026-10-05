@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
+import * as Sentry from '@sentry/node'
 import type { UserId } from '~/domain/shared/types'
 import {
   type FakeFirestore,
@@ -65,7 +66,7 @@ mock.module('~/domain/scan/gemini', () => ({
             ]
           : [
               { number: 1, title: 'Carl 1', date: '2024-05-02', isbn13: '9782226488176' },
-              { number: 2, title: 'Carl 2', date: '2025-01-15' },
+              { number: 2, title: 'Carl 2', date: '2025-01-15', isbn13: '9782226488206' },
               { number: 3, title: 'Carl 3', date: '2026-09-26', isbn13: '9782226488190' },
               { number: 4, title: 'Carl 4', date: '2027-02-12' },
             ],
@@ -93,10 +94,15 @@ mock.module('~/domain/discovery/infrastructure/audible-catalogue', () => ({
   },
   audibleRecordingOf: async () => 'unknown',
 }))
-/** Amazon dates the third French volume a day before the web did. */
+/** Amazon dates the third French volume a day before the web did, and sells no
+ *  book under the ISBN the web gave the second. */
 mock.module('~/domain/discovery/infrastructure/amazon-catalogue', () => ({
   amazonEditionOf: async (isbn13: string) =>
-    isbn13 === '9782226488190' ? { releaseDate: '2026-09-25' } : 'unreachable',
+    isbn13 === '9782226488190'
+      ? { releaseDate: '2026-09-25' }
+      : isbn13 === '9782226488206'
+        ? 'unknown'
+        : 'unreachable',
 }))
 mock.module('~/domain/scan/published-cover', () => ({
   publishedCoverOf: async () => 'https://covers.example/carl1.jpg',
@@ -330,6 +336,24 @@ describe('the hourly pass', () => {
         asin: 'B0FRSTORE3' as never,
       },
     ])
+  })
+
+  // The web search names identifiers no store sells — a Kindle ASIN, an ISBN
+  // that never existed — every run: checking them is the point, not a failure.
+  test('drops an ISBN or an ASIN no store knows without reporting it', async () => {
+    await stock(reader)
+    await stock(reader, 'audiobook')
+    const reports = spyOn(Sentry, 'captureMessage')
+
+    try {
+      await DiscoveryUseCase.watchDueSagas(now)
+
+      const printed = (await DiscoveryQuery.watches([`${carl}--fr`])).get(`${carl}--fr`)
+      expect(printed?.volumes.find((volume) => volume.number === 2)?.isbn13).toBeUndefined()
+      expect(reports).not.toHaveBeenCalled()
+    } finally {
+      reports.mockRestore()
+    }
   })
 })
 
