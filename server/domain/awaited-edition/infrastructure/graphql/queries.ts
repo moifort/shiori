@@ -3,6 +3,11 @@ import {
   EditionOfferType,
 } from '~/domain/awaited-edition/infrastructure/graphql/types'
 import { AwaitedEditionUseCase } from '~/domain/awaited-edition/use-case'
+import {
+  BookFormatEnum,
+  BookLanguageEnum,
+  heldAs,
+} from '~/domain/book/infrastructure/graphql/enums'
 import { ReleaseFormatEnum } from '~/domain/discovery/infrastructure/graphql/types'
 import { builder } from '~/domain/shared/graphql/builder'
 import { languageOf } from '~/domain/shared/language'
@@ -27,5 +32,22 @@ builder.queryFields((t) => ({
     args: { bookId: t.arg({ type: 'BookId', required: true }) },
     resolve: (_root, { bookId }, context) =>
       AwaitedEditionUseCase.offerForBook(context.userId, bookId, languageOf(context.event)),
+  }),
+  draftEditionFormats: t.field({
+    type: [ReleaseFormatEnum],
+    description:
+      'The formats a book not added yet — the one a scan proposes — may be awaited in, ' +
+      'in the app’s language, once added: what its page will offer, so the review ' +
+      'offers it before saving.',
+    args: {
+      language: t.arg({ type: BookLanguageEnum, required: true }),
+      format: t.arg({ type: BookFormatEnum, required: true }),
+    },
+    resolve: (_root, { language, format }, context) =>
+      AwaitedEditionUseCase.formatsForDraft(
+        context.userId,
+        { language, format: heldAs(format).format ?? 'book' },
+        languageOf(context.event),
+      ),
   }),
 }))

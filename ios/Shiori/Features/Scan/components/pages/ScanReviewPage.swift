@@ -16,6 +16,10 @@ import SwiftUI
 ///
 /// A book the reader already keeps is flagged on top, with the way to their
 /// copy: a second edition stays theirs to add, so nothing is refused.
+///
+/// A book in another language offers what its page will offer once added: its
+/// edition in the app's language, translated or recorded, awaited. Asked here,
+/// it is awaited the moment the book is in.
 struct ScanReviewPage: View {
     @State private var draft: BookDraft
     let ownedCopy: Book?
@@ -30,6 +34,9 @@ struct ScanReviewPage: View {
     @State private var renamedSeries: SeriesPlacement?
     @State private var askedDate: ReadingStatus?
     @State private var rates = false
+    /// The editions in the app's language this book may be awaited in, as the
+    /// server says for its language and format.
+    @State private var awaitable: [ReleaseFormat] = []
 
     init(
         draft: BookDraft,
@@ -133,6 +140,34 @@ struct ScanReviewPage: View {
         return draft.media.filter { !copy.media.contains($0) }
     }
 
+    private func awaits(_ format: ReleaseFormat) -> Binding<Bool> {
+        Binding(
+            get: { draft.awaitedFormats.contains(format) },
+            set: { awaited in
+                draft.awaitedFormats.removeAll { $0 == format }
+                if awaited { draft.awaitedFormats.append(format) }
+            }
+        )
+    }
+
+    /// Asked again whenever the language or the format is corrected: a book
+    /// switched to the app's language has nothing left to await. A failure
+    /// leaves the offer out — the book's page makes it once added.
+    private func loadAwaitable() async {
+        guard let language = draft.language else {
+            awaitable = []
+            draft.awaitedFormats = []
+            return
+        }
+        do {
+            let formats = try await AwaitedAPI.formats(language: language, format: draft.format)
+            awaitable = formats
+            draft.awaitedFormats.removeAll { !formats.contains($0) }
+        } catch {
+            _ = reportError(error)
+        }
+    }
+
     private var finishedAt: Binding<Date> {
         Binding(get: { draft.finishedAt ?? .now }, set: { draft.finishedAt = $0 })
     }
@@ -183,6 +218,26 @@ struct ScanReviewPage: View {
                 .accessibilityIdentifier("review-language")
             }
 
+            // The book page's "Suivre la version française", offered before
+            // the book is saved: under the language it depends on.
+            if !awaitable.isEmpty {
+                Section {
+                    ForEach(awaitable) { format in
+                        Toggle(isOn: awaits(format)) {
+                            Label {
+                                Text(format.awaitLabel)
+                            } icon: {
+                                Image(systemName: format == .audiobook ? "headphones" : "character.book.closed")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .accessibilityIdentifier("review-await-\(format.rawValue)")
+                    }
+                } footer: {
+                    Text("Vous serez prévenu de sa sortie.")
+                }
+            }
+
             // Where the book page keeps the reader's stars and dates, and as it
             // would stamp them: only the dates the status carries. The stars
             // are drawn and asked as the book page does, whatever the status:
@@ -229,6 +284,7 @@ struct ScanReviewPage: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
         .disabled(isSaving)
+        .task(id: [draft.language?.rawValue, draft.format.rawValue]) { await loadAwaitable() }
         .sheet(isPresented: $editsIdentity) {
             ScanIdentitySheet(book: book) { draft.apply($0) }
         }

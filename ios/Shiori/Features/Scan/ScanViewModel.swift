@@ -139,10 +139,11 @@ final class ScanViewModel {
 
     /// Saves what the reader approved. The review screen is the safety net
     /// against a misread cover, so nothing reaches the library before this.
-    /// Adds the book. A saga the reader renamed on the review is not the one
-    /// the scan keyed, so the book is added without it and then filed by name,
-    /// as the edit form files one: the server joins the saga the reader holds
-    /// by that name, or keys a new one.
+    /// Adds the book, then awaits the editions asked for. A saga the reader
+    /// renamed on the review is not the one the scan keyed, so the book is
+    /// added without it and then filed by name, as the edit form files one:
+    /// the server joins the saga the reader holds by that name, or keys a new
+    /// one.
     func save(_ draft: BookDraft, series placement: SeriesPlacement? = nil) async -> Book? {
         isSaving = true
         defer { isSaving = false }
@@ -177,10 +178,29 @@ final class ScanViewModel {
                     _ = reportError(error)
                 }
             }
+            awaitEditions(draft.awaitedFormats, of: book)
             return book
         } catch {
             self.error = reportError(error)
             return nil
+        }
+    }
+
+    /// Awaits the editions the reader asked for on the review, once the book
+    /// exists. Not waited for: each looks the edition up on the web, up to a
+    /// minute, and the book is in already — its page shows them awaited once
+    /// the server answers, and offers them again if it failed.
+    private func awaitEditions(_ formats: [ReleaseFormat], of book: Book) {
+        guard !formats.isEmpty else { return }
+        let bookId = book.id
+        Task {
+            for format in formats {
+                do {
+                    _ = try await AwaitedAPI.awaitEdition(bookId: bookId, format: format)
+                } catch {
+                    _ = reportError(error)
+                }
+            }
         }
     }
 

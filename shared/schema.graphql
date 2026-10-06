@@ -2843,6 +2843,11 @@ type Query {
   discovery(format: ReleaseFormat!): Discovery!
 
   """
+  The formats a book not added yet — the one a scan proposes — may be awaited in, in the app’s language, once added: what its page will offer, so the review offers it before saving.
+  """
+  draftEditionFormats(format: BookFormat!, language: BookLanguage!): [ReleaseFormat!]!
+
+  """
   What the account is entitled to today, and the account token to start a purchase with. The app reads this before showing the subscription sheet.
   
   ```graphql

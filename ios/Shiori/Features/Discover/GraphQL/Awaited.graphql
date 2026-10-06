@@ -13,6 +13,12 @@ query BookEditionOffer($bookId: BookId!) {
   }
 }
 
+# What a book a scan proposes will offer to await once added, so the review
+# offers it before saving.
+query DraftEditionFormats($language: BookLanguage!, $format: BookFormat!) {
+  draftEditionFormats(language: $language, format: $format)
+}
+
 # What the page of a friend's book offers to await. Asks Audible for a printed
 # book in the app's language, so the page asks only when it opens.
 query FriendBookEditionOffer($userId: UserId!, $bookId: BookId!) {

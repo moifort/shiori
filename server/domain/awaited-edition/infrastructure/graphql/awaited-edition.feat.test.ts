@@ -128,6 +128,26 @@ describe('awaiting a book of one’s own', () => {
   })
 })
 
+describe('a book a scan proposes, not added yet', () => {
+  const FORMATS =
+    'query ($language: BookLanguage!, $format: BookFormat!) { draftEditionFormats(language: $language, format: $format) }'
+
+  test('is offered translated and recorded to a reader who listens', async () => {
+    const result = await as(bob)(FORMATS, { language: 'EN', format: 'BOOK' })
+    expect(result.data?.draftEditionFormats).toEqual(['BOOK', 'AUDIOBOOK'])
+  })
+
+  test('is offered only translated to a reader who never listens', async () => {
+    const result = await as(alice)(FORMATS, { language: 'EN', format: 'BOOK' })
+    expect(result.data?.draftEditionFormats).toEqual(['BOOK'])
+  })
+
+  test('is offered nothing in the app’s language', async () => {
+    const result = await as(bob)(FORMATS, { language: 'FR', format: 'BOOK' })
+    expect(result.data?.draftEditionFormats).toEqual([])
+  })
+})
+
 describe('awaiting a friend’s book', () => {
   const befriend = async () => {
     const invitation = await as(alice)('mutation { inviteFriend { code } }')

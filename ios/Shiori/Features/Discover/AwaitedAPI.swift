@@ -207,6 +207,30 @@ enum AwaitedAPI {
         return data.bookEditionOffer.map { EditionOffer(fields: $0.fragments.editionOfferFields) }
     }
 
+    /// The formats a book not added yet — the one a scan proposes — may be
+    /// awaited in once added.
+    static func formats(language: BookLanguage, format: BookFormat) async throws -> [ReleaseFormat] {
+        #if DEBUG
+        if Showcase.isOn {
+            return []
+        }
+        #endif
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.DraftEditionFormatsQuery(
+                language: LibraryAPI.graphQLLanguage(language),
+                format: LibraryAPI.graphQLFormat(format)
+            )
+        )
+        return data.draftEditionFormats.compactMap { format -> ReleaseFormat? in
+            switch format.value {
+            case .book: return .book
+            case .audiobook: return .audiobook
+            case nil: return nil
+            }
+        }
+    }
+
     /// What the page of a friend's book offers. Nil for a book that is not
     /// shared with the reader.
     static func offer(friendId: String, bookId: String) async throws -> EditionOffer? {

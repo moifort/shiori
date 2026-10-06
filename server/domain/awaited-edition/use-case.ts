@@ -61,6 +61,15 @@ export namespace AwaitedEditionUseCase {
     return book ? offerFor(userId, book, book.userId, appLanguage, false, now) : null
   }
 
+  /** The formats a book not added yet — the one a scan proposes — may be
+   *  awaited in once added: what its page will offer, so the review can offer
+   *  it before the book is saved. */
+  export const formatsForDraft = (
+    userId: UserId,
+    draft: Pick<BookView, 'language' | 'format'>,
+    appLanguage: Language,
+  ): Promise<ReleaseFormat[]> => formatsFor(userId, draft, appLanguage, false)
+
   /** What a book's page offers: the formats its edition in the app's language
    *  may be awaited in, and the ones the reader awaits already. `unrecorded`
    *  says Audible is known not to sell a printed book in its own language. */
@@ -243,7 +252,7 @@ const awaitedOf = async (userId: UserId, now: Date): Promise<AwaitedEditionView[
  *  recording only when their library holds one. */
 const formatsFor = async (
   userId: UserId,
-  book: BookView,
+  book: Pick<BookView, 'language' | 'format'>,
   appLanguage: Language,
   unrecorded: boolean,
 ): Promise<ReleaseFormat[]> => {
