@@ -26,9 +26,11 @@ import SwiftUI
 /// one row — covers on the Books shelf, sagas on the Series shelf, faces on the
 /// Authors shelf, the newest heart first. A flame marks what many of them love.
 ///
-/// Under them, on the Books shelf, "Bientôt en audio" or "Bientôt en FR": the
-/// books the reader awaits in the app's language, in the format on screen, as
-/// a strip of covers, the ones out first.
+/// Under them, on the Books shelf, "Bientôt en FR" and "Bientôt en audio": the
+/// books the reader awaits in the app's language, as a strip of covers per
+/// format, the ones out first. The book format shows both — a book read on
+/// paper is as often awaited recorded as translated — the audio format only
+/// the recordings.
 ///
 /// The server looks the sagas up on the web once a week. The tab opens on
 /// everything it last showed — the rows, the friends' picks, the books awaited
@@ -127,7 +129,9 @@ struct DiscoverView: View {
             openOnAFollowedFormat()
         }
         .task { await viewModel.loadPicks() }
-        .task(id: format) { await viewModel.loadAwaited(format) }
+        .task(id: format) {
+            for awaited in format.awaitedShown { await viewModel.loadAwaited(awaited) }
+        }
         // The Authors shelf carries the editions awaited too.
         .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
             Task {
@@ -208,19 +212,21 @@ struct DiscoverView: View {
         }
     }
 
-    /// "Bientôt en audio" or "Bientôt en FR": the editions the reader awaits in
-    /// the format on screen, as a strip like the friends' favourites. Absent
-    /// when none is awaited.
+    /// "Bientôt en FR" and "Bientôt en audio": the editions the reader awaits
+    /// in the formats the one on screen shows, a strip each like the friends'
+    /// favourites. A strip is absent when nothing is awaited in its format.
     @ViewBuilder
     private var awaitedSection: some View {
-        let editions = viewModel.awaited(format)
-        if !editions.isEmpty {
-            Section {
-                AwaitedEditionsStrip(editions: editions) { openAwaited = $0 }
-            } header: {
-                Text(format.awaitedTitle)
+        ForEach(format.awaitedShown) { awaited in
+            let editions = viewModel.awaited(awaited)
+            if !editions.isEmpty {
+                Section {
+                    AwaitedEditionsStrip(editions: editions) { openAwaited = $0 }
+                } header: {
+                    Text(awaited.awaitedTitle)
+                }
+                .accessibilityIdentifier("discover-awaited-\(awaited.rawValue)")
             }
-            .accessibilityIdentifier("discover-awaited")
         }
     }
 

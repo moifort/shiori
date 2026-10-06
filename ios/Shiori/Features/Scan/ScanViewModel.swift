@@ -187,14 +187,15 @@ final class ScanViewModel {
     }
 
     /// Awaits the editions the reader asked for on the review, once the book
-    /// exists. Not waited for: each looks the edition up on the web, up to a
-    /// minute, and the book is in already — its page shows them awaited once
-    /// the server answers, and offers them again if it failed.
+    /// exists, side by side. Not waited for: each looks the edition up on the
+    /// web, up to a minute, and the book is in already — its page and
+    /// Découvrir show them awaited once the server answers, and the page
+    /// offers them again if it failed.
     private func awaitEditions(_ formats: [ReleaseFormat], of book: Book) {
         guard !formats.isEmpty else { return }
         let bookId = book.id
-        Task {
-            for format in formats {
+        for format in formats {
+            Task {
                 do {
                     _ = try await AwaitedAPI.awaitEdition(bookId: bookId, format: format)
                 } catch {
