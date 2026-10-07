@@ -13,6 +13,7 @@ import { booksWithoutALanguageAreFrench } from '~/system/migration/migrations/01
 import { cataloguesWithoutALanguageAreFrench } from '~/system/migration/migrations/016-catalogues-without-a-language-are-french'
 import { cataloguesRenumberedByTheWatch } from '~/system/migration/migrations/017-catalogues-renumbered-by-the-watch'
 import { titlesWithoutTheirSaga } from '~/system/migration/migrations/018-titles-without-their-saga'
+import { alertsNoDeviceHeard } from '~/system/migration/migrations/019-alerts-no-device-heard'
 import type { Migration } from '~/system/migration/types'
 
 // Forward-only, sequential, no rollback. Adding a new optional field or a new
@@ -38,4 +39,5 @@ export const migrations: Migration[] = [
   cataloguesWithoutALanguageAreFrench,
   cataloguesRenumberedByTheWatch,
   titlesWithoutTheirSaga,
+  alertsNoDeviceHeard,
 ]
