@@ -3,14 +3,10 @@ import SwiftUI
 /// Découvrir's strip of the editions awaited in one format, drawn as the
 /// friends' favourites are: covers that scroll sideways, the ones out first
 /// with "Disponible" in green under them, the date of the ones announced in
-/// orange. No title: the cover says it. A long press gives one up: it stays
-/// otherwise until the library holds it, out or not.
+/// orange. No title: the cover says it.
 struct AwaitedEditionsStrip: View {
     let editions: [AwaitedEdition]
     let onTapped: (AwaitedEdition) -> Void
-    let onStop: (AwaitedEdition) -> Void
-
-    @Environment(\.openURL) private var openURL
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -25,16 +21,6 @@ struct AwaitedEditionsStrip: View {
                         )
                     }
                     .buttonStyle(.plain)
-                    .contextMenu {
-                        if let url = edition.storeURL {
-                            Button(edition.format.storeLabel, systemImage: "arrow.up.right.square") {
-                                openURL(url)
-                            }
-                        }
-                        Button("Ne plus suivre", systemImage: "bell.slash", role: .destructive) {
-                            onStop(edition)
-                        }
-                    }
                     .accessibilityIdentifier("discover-awaited-tile")
                 }
             }
