@@ -44,8 +44,9 @@ struct AwaitedEdition: Identifiable, Hashable, Codable, Sendable {
     let storeURL: URL?
     /// When the reader started awaiting it.
     let awaitedAt: Date?
-    /// The book it was awaited from, on its owner's shelf.
-    let bookId: String
+    /// The book it was awaited from, on its owner's shelf. Nil for one awaited
+    /// from a scan's review without being added.
+    let bookId: String?
     /// The reader's own id for their copy, a friend's for theirs.
     let ownerId: String
 
@@ -284,6 +285,34 @@ enum AwaitedAPI {
         return AwaitedEdition(fields: data.awaitFriendBookEdition.fragments.awaitedEditionFields)
     }
 
+    /// Awaits a book a scan proposed, from its review, without adding it to
+    /// the library.
+    static func awaitScanned(_ draft: BookDraft, format: ReleaseFormat) async throws -> AwaitedEdition {
+        let book = ShioriGraphQL.ScannedBookInput(
+            authors: GraphQLHelpers.graphQLNullable(draft.authors.isEmpty ? nil : draft.authors),
+            coverUrl: GraphQLHelpers.graphQLNullable(draft.coverURL?.absoluteString),
+            format: LibraryAPI.graphQLFormat(draft.format),
+            language: GraphQLHelpers.graphQLNullable(draft.language.map(LibraryAPI.graphQLLanguage)),
+            series: GraphQLHelpers.graphQLNullable(
+                draft.series.map { membership in
+                    ShioriGraphQL.SeriesPlacementInput(
+                        name: membership.name,
+                        volume: GraphQLHelpers.graphQLNullable(membership.volume)
+                    )
+                }
+            ),
+            title: draft.title
+        )
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.AwaitScannedEditionMutation(book: book, format: .case(format.graphQL)),
+            requestTimeout: awaitTimeout,
+            changesLibrary: false
+        )
+        await announce()
+        return AwaitedEdition(fields: data.awaitScannedEdition.fragments.awaitedEditionFields)
+    }
+
     static func stop(id: String) async throws {
         _ = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
@@ -319,7 +348,7 @@ extension AwaitedEdition {
             coverURL: fields.coverUrl.flatMap(URL.init(string:)),
             storeURL: fields.storeUrl.flatMap(URL.init(string:)),
             awaitedAt: GraphQLHelpers.parseISO8601(fields.awaitedAt),
-            bookId: fields.bookId,
+            bookId: fields.sourceBookId,
             ownerId: fields.ownerId
         )
     }

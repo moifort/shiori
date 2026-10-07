@@ -11305,22 +11305,6 @@
         }
       }
     },
-    "Vous serez prévenu de sa sortie." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You’ll be notified when it comes out."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vous serez prévenu de sa sortie."
-          }
-        }
-      }
-    },
     "Voyage" : {
       "localizations" : {
         "en" : {

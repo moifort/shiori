@@ -210,7 +210,7 @@ final class LibraryViewModel {
         do {
             async let printed = AwaitedAPI.awaited(format: .book)
             async let recorded = AwaitedAPI.awaited(format: .audiobook)
-            awaitedBookIds = Set(try await (printed + recorded).map(\.bookId))
+            awaitedBookIds = Set(try await (printed + recorded).compactMap(\.bookId))
         } catch {
             guard !isCancellation(error) else { return }
             _ = reportError(error)

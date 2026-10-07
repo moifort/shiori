@@ -178,30 +178,10 @@ final class ScanViewModel {
                     _ = reportError(error)
                 }
             }
-            awaitEditions(draft.awaitedFormats, of: book)
             return book
         } catch {
             self.error = reportError(error)
             return nil
-        }
-    }
-
-    /// Awaits the editions the reader asked for on the review, once the book
-    /// exists, side by side. Not waited for: each looks the edition up on the
-    /// web, up to a minute, and the book is in already — its page and
-    /// Découvrir show them awaited once the server answers, and the page
-    /// offers them again if it failed.
-    private func awaitEditions(_ formats: [ReleaseFormat], of book: Book) {
-        guard !formats.isEmpty else { return }
-        let bookId = book.id
-        for format in formats {
-            Task {
-                do {
-                    _ = try await AwaitedAPI.awaitEdition(bookId: bookId, format: format)
-                } catch {
-                    _ = reportError(error)
-                }
-            }
         }
     }
 

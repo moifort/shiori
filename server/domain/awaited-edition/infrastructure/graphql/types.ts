@@ -2,6 +2,7 @@ import { AudibleQuery } from '~/domain/audible/query'
 import { storeUrlOf } from '~/domain/awaited-edition/business-rules'
 import type { AwaitedEditionView, EditionOffer } from '~/domain/awaited-edition/types'
 import { BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
+import { BookId } from '~/domain/book/primitives'
 import {
   AuthorDiscoveryType,
   AuthorReleasesType,
@@ -100,8 +101,20 @@ export const AwaitedEditionType = builder
       }),
       bookId: t.field({
         type: 'BookId',
-        description: 'The book it was awaited from, on its owner’s shelf.',
-        resolve: (view) => view.source.bookId,
+        description:
+          'The book it was awaited from, on its owner’s shelf. For one awaited from a ' +
+          'scan without being added, which is on no shelf, the edition’s own id.',
+        deprecationReason:
+          'Use `sourceBookId`, null for an edition awaited from a scan without being added.',
+        resolve: (view) => view.source.bookId ?? BookId(view.id),
+      }),
+      sourceBookId: t.field({
+        type: 'BookId',
+        nullable: true,
+        description:
+          'The book it was awaited from, on its owner’s shelf. Null for one awaited from ' +
+          'a scan’s review without being added to the library.',
+        resolve: (view) => view.source.bookId ?? null,
       }),
       ownerId: t.field({
         type: 'UserId',

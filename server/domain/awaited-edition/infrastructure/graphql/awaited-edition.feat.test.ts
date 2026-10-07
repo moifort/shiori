@@ -124,6 +124,56 @@ describe('awaiting a book of one’s own', () => {
   })
 })
 
+describe('awaiting a book from a scan, without adding it', () => {
+  const AWAIT_SCANNED = `mutation ($book: ScannedBookInput!) {
+    awaitScannedEdition(book: $book, format: AUDIOBOOK) { id state title bookId sourceBookId }
+  }`
+  const scanned = {
+    title: 'Wind and Truth',
+    authors: ['Brandon Sanderson'],
+    format: 'BOOK',
+    language: 'EN',
+  }
+
+  test('awaits it with no book on the shelf, and lists it', async () => {
+    const result = await as(bob)(AWAIT_SCANNED, { book: scanned })
+
+    expect(result.errors).toBeUndefined()
+    const awaited = (result.data as { awaitScannedEdition: Record<string, unknown> })
+      .awaitScannedEdition
+    expect(awaited).toMatchObject({
+      state: 'AVAILABLE',
+      title: 'Vent et vérité',
+      sourceBookId: null,
+    })
+    expect(awaited.bookId).toBe(awaited.id)
+    expect(fake.snapshot('books').size).toBe(0)
+    const listed = await as(bob)('{ awaitedEditions(format: AUDIOBOOK) { title sourceBookId } }')
+    expect(listed.data?.awaitedEditions).toEqual([{ title: 'Vent et vérité', sourceBookId: null }])
+  })
+
+  test('shows it awaited on the book’s page once the book is added after all', async () => {
+    await as(bob)(AWAIT_SCANNED, { book: scanned })
+    const bookId = await shelve(bob, 'Wind and Truth', 'en')
+
+    const offer = await as(bob)(
+      'query ($bookId: BookId!) { bookEditionOffer(bookId: $bookId) { awaited { format } } }',
+      { bookId },
+    )
+
+    expect(offer.data?.bookEditionOffer).toEqual({ awaited: [{ format: 'AUDIOBOOK' }] })
+  })
+
+  test('refuses a format the review does not offer', async () => {
+    const result = await as(bob)(
+      `mutation ($book: ScannedBookInput!) { awaitScannedEdition(book: $book, format: BOOK) { id } }`,
+      { book: { ...scanned, language: 'FR' } },
+    )
+
+    expect(result.errors?.[0]?.extensions?.code).toBe('BAD_USER_INPUT')
+  })
+})
+
 describe('a book a scan proposes, not added yet', () => {
   const FORMATS =
     'query ($language: BookLanguage!, $format: BookFormat!) { draftEditionFormats(language: $language, format: $format) }'

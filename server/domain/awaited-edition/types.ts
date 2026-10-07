@@ -1,6 +1,6 @@
 import type { Brand } from 'ts-brand'
 import type { AudibleAsin } from '~/domain/audible/types'
-import type { BookId, BookLanguage, CoverUrl, Isbn13 } from '~/domain/book/types'
+import type { BookFormat, BookId, BookLanguage, CoverUrl, Isbn13 } from '~/domain/book/types'
 import type { ReleaseFormat } from '~/domain/discovery/types'
 import type { ReleaseDate, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
@@ -10,9 +10,11 @@ import type { ObjectPath } from '~/system/object-store/types'
 export type AwaitedEditionId = Brand<string, 'AwaitedEditionId'>
 
 /** The book an edition is awaited of, as its page showed it: the reader's own
- *  copy or a friend's, in a language other than the app's. */
+ *  copy, a friend's, or one the reader scanned and never added. */
 export type AwaitedSource = {
-  bookId: BookId
+  /** The record it was awaited from. Absent for a book awaited from a scan's
+   *  review without being added: nothing of it is on any shelf. */
+  bookId?: BookId
   /** Whose book it is: the reader, or the friend it was seen at. */
   ownerId: UserId
   title: BookTitle
@@ -24,6 +26,17 @@ export type AwaitedSource = {
   /** The reader's own photo of their copy, signed when drawn. Never a friend's:
    *  it lives under their account. */
   coverPath?: ObjectPath
+}
+
+/** A book a scan proposed, awaited from its review without being added to the
+ *  library: what the review shows of it. */
+export type ScannedBook = {
+  title: BookTitle
+  authors: AuthorName[]
+  language?: BookLanguage
+  format: BookFormat
+  series?: { name: SeriesName; volume?: VolumeNumber }
+  coverUrl?: CoverUrl
 }
 
 /** A book a reader waits to see come out in the app's language, in one format:

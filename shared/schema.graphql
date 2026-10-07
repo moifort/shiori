@@ -516,8 +516,10 @@ type AwaitedEdition {
   """When the reader started awaiting it."""
   awaitedAt: DateTime!
 
-  """The book it was awaited from, on its owner’s shelf."""
-  bookId: BookId!
+  """
+  The book it was awaited from, on its owner’s shelf. For one awaited from a scan without being added, which is on no shelf, the edition’s own id.
+  """
+  bookId: BookId! @deprecated(reason: "Use `sourceBookId`, null for an edition awaited from a scan without being added.")
 
   """
   The edition’s own cover once found, else the cover of the book it was awaited from.
@@ -540,6 +542,11 @@ type AwaitedEdition {
 
   """Whose shelf that book is on: the reader’s, or a friend’s."""
   ownerId: UserId!
+
+  """
+  The book it was awaited from, on its owner’s shelf. Null for one awaited from a scan’s review without being added to the library.
+  """
+  sourceBookId: BookId
   state: AwaitedState!
 
   """
@@ -2189,6 +2196,11 @@ type Mutation {
   ): AwaitedEdition!
 
   """
+  Await a book a scan proposed, from its review, without adding it to the library: in the language of the app, translated into print or recorded. Look it up on the web at once when nobody did — one grounded call, about ten seconds — so the answer says whether it is announced or already out. Awaiting it twice answers the first. Fails with `BAD_USER_INPUT` for a format the book’s page does not offer, and `TOO_MANY_AWAITED` past a hundred editions.
+  """
+  awaitScannedEdition(book: ScannedBookInput!, format: ReleaseFormat!): AwaitedEdition!
+
+  """
   Register the device with the authorization code the web view caught, and link the account.
   
   The credentials are sealed before they reach storage and never leave the server. Fails with `AUDIBLE_NO_PENDING_LOGIN` when no sign-in was started, `AUDIBLE_LOGIN_EXPIRED` past the thirty-minute window — start over in both cases — and `AUDIBLE_UNAVAILABLE` when Amazon refuses the registration.
@@ -3397,6 +3409,20 @@ type ScanResult {
 
   """Null when nothing was recognized."""
   title: BookTitle
+}
+
+"""
+A book a scan proposed, as the reader reviewed it, awaited without being added.
+"""
+input ScannedBookInput {
+  authors: [AuthorName!]
+  coverUrl: CoverUrl
+  format: BookFormat!
+
+  """The language of this edition. Absent, it is taken to be the app’s."""
+  language: BookLanguage
+  series: SeriesPlacementInput
+  title: BookTitle!
 }
 
 """

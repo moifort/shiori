@@ -42,6 +42,14 @@ mutation AwaitFriendBookEdition($userId: UserId!, $bookId: BookId!, $format: Rel
   }
 }
 
+# Await a book a scan proposed, from its review, without adding it to the
+# library. Looks it up on the web at once too.
+mutation AwaitScannedEdition($book: ScannedBookInput!, $format: ReleaseFormat!) {
+  awaitScannedEdition(book: $book, format: $format) {
+    ...AwaitedEditionFields
+  }
+}
+
 mutation StopAwaitingEdition($id: AwaitedEditionId!) {
   stopAwaitingEdition(id: $id)
 }
@@ -65,6 +73,6 @@ fragment AwaitedEditionFields on AwaitedEdition {
   coverUrl
   storeUrl
   awaitedAt
-  bookId
+  sourceBookId
   ownerId
 }

@@ -23,6 +23,7 @@ import type {
   AwaitedSource,
   EditionOffer,
   EditionWatch,
+  ScannedBook,
 } from '~/domain/awaited-edition/types'
 import { coverSourcesOf } from '~/domain/book/business-rules'
 import { BookQuery } from '~/domain/book/query'
@@ -78,10 +79,20 @@ export namespace AwaitedEditionUseCase {
     now = new Date(),
   ): Promise<EditionOffer> => {
     const awaited = await awaitedOf(userId, now)
+    // One awaited from the book's scan, before it was added, is this book's
+    // too: it carries no record, so it is known by the edition it watches.
+    const source = sourceOf(book, ownerId, userId, appLanguage)
+    const unshelved = new Set(
+      (['book', 'audiobook'] as const).map((format) =>
+        editionWatchKeyOf(source, format, appLanguage),
+      ),
+    )
     return {
       formats: awaitableFormatsOf(book, appLanguage),
-      awaited: awaited.filter(
-        (view) => view.source.bookId === book.id && view.source.ownerId === ownerId,
+      awaited: awaited.filter((view) =>
+        view.source.bookId
+          ? view.source.bookId === book.id && view.source.ownerId === ownerId
+          : unshelved.has(view.watchKey),
       ),
     }
   }
@@ -113,7 +124,44 @@ export namespace AwaitedEditionUseCase {
     now = new Date(),
   ): Promise<AwaitOutcome> => {
     if (!awaitableFormatsOf(book, appLanguage).includes(format)) return 'not-awaitable'
-    const source = sourceOf(book, ownerId, userId)
+    return awaitSource(
+      userId,
+      sourceOf(book, ownerId, userId, appLanguage),
+      format,
+      appLanguage,
+      now,
+    )
+  }
+
+  /** Await a book a scan proposed, from its review, without adding it to the
+   *  library: the reader saw it in a shop and wants to know when it comes out
+   *  in their language. Answered as an edition awaited from a shelf is. */
+  export const awaitScannedBook = async (
+    userId: UserId,
+    scanned: ScannedBook,
+    format: ReleaseFormat,
+    appLanguage: Language,
+    now = new Date(),
+  ): Promise<AwaitOutcome> => {
+    if (!awaitableFormatsOf(scanned, appLanguage).includes(format)) return 'not-awaitable'
+    const source: AwaitedSource = {
+      ownerId: userId,
+      title: scanned.title,
+      authors: scanned.authors,
+      language: scanned.language ?? appLanguage,
+      ...(scanned.series ? { series: scanned.series } : {}),
+      ...(scanned.coverUrl ? { coverUrl: scanned.coverUrl } : {}),
+    }
+    return awaitSource(userId, source, format, appLanguage, now)
+  }
+
+  const awaitSource = async (
+    userId: UserId,
+    source: AwaitedSource,
+    format: ReleaseFormat,
+    appLanguage: Language,
+    now: Date,
+  ): Promise<AwaitOutcome> => {
     const watchKey = editionWatchKeyOf(source, format, appLanguage)
     const id = awaitedIdOf(userId, watchKey)
     const already = await AwaitedEditionQuery.byUser(userId)
@@ -241,15 +289,19 @@ const awaitedOf = async (userId: UserId, now: Date): Promise<AwaitedEditionView[
 
 /** The book as the awaited edition remembers it. The reader's own photo is
  *  kept by its path, to be signed when drawn; a friend's never is. */
-const sourceOf = (book: BookView, ownerId: UserId, userId: UserId): AwaitedSource => {
-  if (!book.language) throw new Error('A book awaited in another edition has a language')
+const sourceOf = (
+  book: BookView,
+  ownerId: UserId,
+  userId: UserId,
+  appLanguage: Language,
+): AwaitedSource => {
   const covers = coverSourcesOf(book)
   return {
     bookId: book.id,
     ownerId,
     title: book.title,
     authors: book.authors,
-    language: book.language,
+    language: book.language ?? appLanguage,
     ...(book.series
       ? {
           series: {

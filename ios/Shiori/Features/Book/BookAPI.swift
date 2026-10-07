@@ -216,10 +216,6 @@ struct BookDraft {
     /// the book exists, as the book page gives them.
     var rating = 0
     var favorite = false
-    /// The editions in the app's language the reader asked, on the scan
-    /// review, to await. Not part of the new book's input either: an edition
-    /// is awaited from a book that exists, as the book page awaits it.
-    var awaitedFormats: [ReleaseFormat] = []
 
     var asInput: ShioriGraphQL.NewBookInput {
         ShioriGraphQL.NewBookInput(
