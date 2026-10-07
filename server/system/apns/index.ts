@@ -61,8 +61,16 @@ export namespace Apns {
         authorization: `bearer ${providerToken(apnsTeamId, apnsKeyId, apnsPrivateKey)}`,
       })
       if (status === 200) return 'sent'
-      if (status === 410 || reason === 'BadDeviceToken' || reason === 'Unregistered')
+      // A token sent to the wrong gateway — a development build registered as
+      // production, or the reverse — is a bug, not a phone gone.
+      if (reason === 'BadDeviceToken') {
+        logger.warn('push token rejected', { reason, environment: device.environment })
         return 'unregistered'
+      }
+      if (status === 410 || reason === 'Unregistered') {
+        logger.info('push token gone', { status, reason, environment: device.environment })
+        return 'unregistered'
+      }
       logger.warn('push refused', { status, reason, environment: device.environment })
       return 'failed'
     } catch (error) {

@@ -39,7 +39,7 @@ describe('pushing an alert', () => {
   test('reaches every device of a reader, the alert being on by default', async () => {
     await NotificationCommand.registerDevice(reader, phone, 'production')
 
-    expect(await NotificationUseCase.notify(reader, alert)).toBe(true)
+    expect(await NotificationUseCase.notify(reader, alert)).toBe('delivered')
     expect(sent).toEqual([{ token: phone, title: 'Enfin traduit' }])
   })
 
@@ -47,8 +47,19 @@ describe('pushing an alert', () => {
     await NotificationCommand.registerDevice(reader, phone, 'production')
     await NotificationCommand.setAlert(reader, 'translation', false)
 
-    expect(await NotificationUseCase.notify(reader, alert)).toBe(false)
+    expect(await NotificationUseCase.notify(reader, alert)).toBe('switched-off')
     expect(sent).toEqual([])
+  })
+
+  test('says no device heard an alert when none is registered', async () => {
+    expect(await NotificationUseCase.notify(reader, alert)).toBe('undelivered')
+  })
+
+  test('says no device heard an alert when every one refused it', async () => {
+    await NotificationCommand.registerDevice(reader, phone, 'production')
+    answer = 'failed'
+
+    expect(await NotificationUseCase.notify(reader, alert)).toBe('undelivered')
   })
 
   test('forgets a device APNs says is gone', async () => {

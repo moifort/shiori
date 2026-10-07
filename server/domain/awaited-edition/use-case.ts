@@ -251,12 +251,14 @@ export namespace AwaitedEditionUseCase {
       if (view.notifiedAt || view.state !== 'available') continue
       try {
         if (alertIsDue(view, today)) {
-          await NotificationUseCase.notify(awaited.userId, {
+          const delivery = await NotificationUseCase.notify(awaited.userId, {
             kind: 'translation',
             ...alertOf(view, awaited.language === 'fr' ? 'fr' : 'en'),
             link: 'shiori://discover',
           })
-          reached.add(awaited.userId)
+          // No device heard it: it stays due while its grace lasts.
+          if (delivery === 'undelivered') continue
+          if (delivery === 'delivered') reached.add(awaited.userId)
         }
         await AwaitedEditionCommand.markNotified(awaited, now)
       } catch (error) {

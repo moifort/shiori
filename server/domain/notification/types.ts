@@ -14,6 +14,10 @@ export const ALERT_KINDS = [
 ] as const
 export type AlertKind = (typeof ALERT_KINDS)[number]
 
+/** What became of an alert: heard by a device, unwanted by the reader, or
+ *  heard by none — no device registered, or every one refused. */
+export type Delivery = 'delivered' | 'switched-off' | 'undelivered'
+
 /** The token APNs hands a device for this app, in hexadecimal. */
 export type DeviceToken = Brand<string, 'DeviceToken'>
 

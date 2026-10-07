@@ -1,18 +1,21 @@
 import { wantsAlert } from '~/domain/notification/business-rules'
 import { NotificationCommand } from '~/domain/notification/command'
 import * as repository from '~/domain/notification/infrastructure/repository'
-import type { Alert } from '~/domain/notification/types'
+import type { Alert, Delivery } from '~/domain/notification/types'
 import type { UserId } from '~/domain/shared/types'
 import { Apns } from '~/system/apns'
 
 export namespace NotificationUseCase {
   /** Push an alert to every device of the reader, if they switched its kind
-   *  on. Devices APNs reports gone are forgotten on the way. Answers whether
-   *  the alert reached at least one device — or would have, on a server with
-   *  no APNs key, where it is only logged. */
-  export const notify = async (userId: UserId, alert: Alert): Promise<boolean> => {
+   *  on. Devices APNs reports gone are forgotten on the way. Answers
+   *  `delivered` when the alert reached at least one device — or would have,
+   *  on a server with no APNs key, where it is only logged; `switched-off`
+   *  when the reader does not want it; `undelivered` when no device heard it,
+   *  which the caller keeps for a later try. */
+  export const notify = async (userId: UserId, alert: Alert): Promise<Delivery> => {
     const settings = await repository.findByUser(userId)
-    if (!settings || !wantsAlert(settings, alert.kind)) return false
+    if (settings && !settings.alerts.includes(alert.kind)) return 'switched-off'
+    if (!settings || !wantsAlert(settings, alert.kind)) return 'undelivered'
     const outcomes = await Promise.all(
       settings.devices.map(async (device) => ({
         device,
@@ -31,5 +34,7 @@ export namespace NotificationUseCase {
         gone.map(({ device }) => device.token),
       )
     return outcomes.some(({ outcome }) => outcome === 'sent' || outcome === 'unconfigured')
+      ? 'delivered'
+      : 'undelivered'
   }
 }

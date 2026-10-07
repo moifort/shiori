@@ -649,6 +649,30 @@ describe('the morning alerts', () => {
 
     expect(pushed).toEqual(['« Carl 3 », tome 3 de Dungeon Crawler Carl, est sorti.'])
   })
+
+  test('never push a volume due while the reader had the alert off', async () => {
+    await stock(reader)
+    await NotificationCommand.registerDevice(reader, DeviceToken('ab'.repeat(32)), 'production')
+    await NotificationCommand.setAlert(reader, 'translation', false)
+    await DiscoveryUseCase.watchDueSagas(now)
+
+    await DiscoveryUseCase.sendAlertsToEveryReader(now)
+    await NotificationCommand.setAlert(reader, 'translation', true)
+    await DiscoveryUseCase.sendAlertsToEveryReader(now)
+
+    expect(pushed).toEqual([])
+  })
+
+  test('keep a volume for the morning a device can hear it', async () => {
+    await stock(reader)
+    await DiscoveryUseCase.watchDueSagas(now)
+
+    await DiscoveryUseCase.sendAlertsToEveryReader(now)
+    await NotificationCommand.registerDevice(reader, DeviceToken('ab'.repeat(32)), 'production')
+    await DiscoveryUseCase.sendAlertsToEveryReader(now)
+
+    expect(pushed).toEqual(['« Carl 3 », tome 3 de Dungeon Crawler Carl, est sorti.'])
+  })
 })
 
 describe('the Sunday digest', () => {
@@ -658,6 +682,17 @@ describe('the Sunday digest', () => {
     await DiscoveryUseCase.watchDueSagas(now)
 
     await DiscoveryUseCase.sendDigestToEveryReader(now)
+    await DiscoveryUseCase.sendDigestToEveryReader(now)
+
+    expect(pushed).toEqual(['Dungeon Crawler Carl, tome 4, le 12 février 2027'])
+  })
+
+  test('keeps a volume for the Sunday a device can hear it', async () => {
+    await stock(reader)
+    await DiscoveryUseCase.watchDueSagas(now)
+
+    await DiscoveryUseCase.sendDigestToEveryReader(now)
+    await NotificationCommand.registerDevice(reader, DeviceToken('ab'.repeat(32)), 'production')
     await DiscoveryUseCase.sendDigestToEveryReader(now)
 
     expect(pushed).toEqual(['Dungeon Crawler Carl, tome 4, le 12 février 2027'])

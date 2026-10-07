@@ -381,16 +381,19 @@ export namespace DiscoveryUseCase {
       const due = dueAlertsOf(reader, watches, todayOf(now))
       if (due.length === 0) continue
       try {
-        for (const alert of due)
-          await NotificationUseCase.notify(reader.userId, {
+        // A volume no device heard stays due: the reader may register one
+        // before its two weeks are up.
+        const settled: string[] = []
+        for (const alert of due) {
+          const delivery = await NotificationUseCase.notify(reader.userId, {
             kind: 'translation',
             ...alertOf(alert, reader.language),
             link: 'shiori://discover',
           })
-        await DiscoveryCommand.markNotified(
-          reader,
-          due.map((alert) => alert.key),
-        )
+          if (delivery !== 'undelivered') settled.push(alert.key)
+        }
+        if (settled.length === 0) continue
+        await DiscoveryCommand.markNotified(reader, settled)
         reached += 1
       } catch (error) {
         logger.warn('release alerts failed', { error, userId: reader.userId })
@@ -415,11 +418,13 @@ export namespace DiscoveryUseCase {
         const followed = await withRequestCacheScope(() => SeriesUseCase.followed(reader.userId))
         const due = newAnnouncementsOf(followed, watches, new Set(reader.announced ?? []), today)
         if (due.length === 0) continue
-        await NotificationUseCase.notify(reader.userId, {
+        const delivery = await NotificationUseCase.notify(reader.userId, {
           kind: 'digest',
           ...digestOf(due, reader.language, today),
           link: 'shiori://discover',
         })
+        // Named to no device, the volumes wait for next Sunday's digest.
+        if (delivery === 'undelivered') continue
         await DiscoveryCommand.markAnnounced(
           reader,
           due.map((announcement) => announcement.key),

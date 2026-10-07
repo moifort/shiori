@@ -198,6 +198,19 @@ describe('awaiting a book of one’s own', () => {
 })
 
 describe('the scheduled passes', () => {
+  test('keep an edition out for the morning a device can hear it', async () => {
+    await AwaitedEditionUseCase.awaitOwnBook(reader, await stock(reader), 'audiobook', 'fr', now)
+    answers = { 'Wind and Truth': { ...recorded } }
+    const later = new Date('2026-10-11T08:00:00Z')
+    await AwaitedEditionUseCase.watchDue(later)
+
+    await AwaitedEditionUseCase.sendAlerts(later)
+    await NotificationCommand.registerDevice(reader, DeviceToken('ab'.repeat(32)), 'production')
+    await AwaitedEditionUseCase.sendAlerts(later)
+
+    expect(pushed).toEqual(['« Vent et vérité » de Brandon Sanderson est sorti en livre audio.'])
+  })
+
   test('look an edition up again every two weeks, and push it the morning it is out', async () => {
     await NotificationCommand.registerDevice(reader, DeviceToken('ab'.repeat(32)), 'production')
     await AwaitedEditionUseCase.awaitOwnBook(reader, await stock(reader), 'audiobook', 'fr', now)
