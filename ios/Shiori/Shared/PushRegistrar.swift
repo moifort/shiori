@@ -99,12 +99,18 @@ final class PushRegistrar: NSObject, UNUserNotificationCenterDelegate {
         [.banner, .sound, .list]
     }
 
+    /// The completion handler variant, not the async one: the async bridge calls
+    /// UIKit's handler from the concurrency pool, and UIKit then aborts with
+    /// "Call must be made on main thread" while saving its state restoration.
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse
-    ) async {
-        await MainActor.run {
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        nonisolated(unsafe) let completionHandler = completionHandler
+        DispatchQueue.main.async {
             NotificationCenter.default.post(name: .shioriOpenDiscover, object: nil)
+            completionHandler()
         }
     }
 }
