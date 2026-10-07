@@ -119,9 +119,10 @@ export const EditionOfferType = builder.objectRef<EditionOffer>('EditionOffer').
     formats: t.field({
       type: [ReleaseFormatEnum],
       description:
-        'The formats it may be awaited in. None for a book already in the app’s ' +
-        'language; a recording only for a reader whose library holds one — and, for a ' +
-        'printed book in the app’s language, only once Audible is known not to sell it.',
+        'The formats it may be awaited in: translated and recorded for a book in another ' +
+        'language, recorded only for a printed book in the app’s language, nothing for a ' +
+        'recording in it. A recording only for a reader whose library holds one. Whether ' +
+        'a store sells the edition already does not matter: it is then awaited out.',
       resolve: (offer) => offer.formats,
     }),
     awaited: t.field({

@@ -114,8 +114,7 @@ builder.queryFields((t) => ({
     description:
       "What the page of a friend's book offers to await in the app's language: its " +
       'translation or its recording — and, for a printed book already in that ' +
-      'language, its recording once Audible is known not to sell it. Asks Audible for ' +
-      'that last case, so a page asks it only when it opens.\n\n' +
+      'language, its recording.\n\n' +
       'Null for a stranger, a book that does not exist and a book marked "do not ' +
       'share" alike.',
     args: {

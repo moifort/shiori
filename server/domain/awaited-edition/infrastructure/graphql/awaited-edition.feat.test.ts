@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
+import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import { graphql } from 'graphql'
 import type { UserId } from '~/domain/shared/types'
 import { type FakeFirestore, fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
@@ -61,10 +61,6 @@ beforeEach(() => {
   fake.seed('analytics', bob, { userId: bob, audiobookCount: 2 })
   watched('book')
   watched('audiobook')
-})
-
-afterEach(() => {
-  ;(globalThis.fetch as unknown as { mockRestore?: () => void }).mockRestore?.()
 })
 
 const AWAITED = `id format state title originalTitle authors date storeUrl coverUrl`
@@ -142,8 +138,13 @@ describe('a book a scan proposes, not added yet', () => {
     expect(result.data?.draftEditionFormats).toEqual(['BOOK'])
   })
 
-  test('is offered nothing in the app’s language', async () => {
+  test('is offered only recorded in the app’s language', async () => {
     const result = await as(bob)(FORMATS, { language: 'FR', format: 'BOOK' })
+    expect(result.data?.draftEditionFormats).toEqual(['AUDIOBOOK'])
+  })
+
+  test('is offered nothing as a recording in the app’s language', async () => {
+    const result = await as(bob)(FORMATS, { language: 'FR', format: 'AUDIOBOOK' })
     expect(result.data?.draftEditionFormats).toEqual([])
   })
 })
@@ -157,11 +158,9 @@ describe('awaiting a friend’s book', () => {
     })
   }
 
-  test('offers a printed book in the app’s language recorded, once Audible lacks it', async () => {
+  test('offers a printed book in the app’s language recorded', async () => {
     await befriend()
     const bookId = await shelve(alice, 'La Voie des rois', 'fr')
-    spyOn(globalThis, 'fetch').mockImplementation((async () =>
-      Response.json({ products: [] })) as unknown as typeof fetch)
 
     const offer = await as(bob)(
       `query ($userId: UserId!, $bookId: BookId!) {

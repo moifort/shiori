@@ -529,7 +529,7 @@ export namespace FriendshipUseCase {
 
   /** What the page of a friend's book offers to await: its edition in the
    *  app's language, translated or recorded — and, for a printed book already
-   *  in that language, its recording once Audible is known not to sell it.
+   *  in that language, its recording.
    *  Null for a stranger's book, a book that does not exist and a book marked
    *  "do not share" alike. */
   export const editionOffer = async (
@@ -540,8 +540,7 @@ export namespace FriendshipUseCase {
   ): Promise<EditionOffer | null> => {
     const source = await book(userId, friendId, bookId)
     if (!source) return null
-    const unrecorded = await isUnrecorded(source, appLanguage)
-    return AwaitedEditionUseCase.offerFor(userId, source, friendId, appLanguage, unrecorded)
+    return AwaitedEditionUseCase.offerFor(userId, source, friendId, appLanguage)
   }
 
   /** Await a friend's book in the app's language, in one format. */
@@ -554,15 +553,7 @@ export namespace FriendshipUseCase {
   ): Promise<AwaitOutcome> => {
     const source = await book(userId, friendId, bookId)
     if (!source) return 'not-found'
-    const unrecorded = format === 'audiobook' && (await isUnrecorded(source, appLanguage))
-    return AwaitedEditionUseCase.awaitBook(
-      userId,
-      source,
-      friendId,
-      format,
-      appLanguage,
-      unrecorded,
-    )
+    return AwaitedEditionUseCase.awaitBook(userId, source, friendId, format, appLanguage)
   }
 
   /** Put a friend's book on the reader's own shelf.
@@ -785,19 +776,3 @@ const marked = (shelf: FriendProfile, inLibrary: (book: FriendBook) => boolean):
 
 const ownsStory = (owned: ReadonlySet<string>, book: Pick<Book, 'title' | 'authors'>): boolean =>
   owned.has(shelfKeyOf(book.title, book.authors[0]))
-
-/** Whether a printed book in the app's language is one Audible does not sell
- *  in that language: the one case a book in the reader's own language may be
- *  awaited, as a recording. */
-const isUnrecorded = async (
-  source: Pick<FriendBook, 'format' | 'language' | 'title' | 'authors'>,
-  appLanguage: Language,
-): Promise<boolean> => {
-  if (source.format === 'audiobook' || source.language !== appLanguage) return false
-  const recording = await DiscoveryUseCase.audioEditionOf(
-    source.title,
-    source.authors[0],
-    source.language,
-  )
-  return recording === 'unknown'
-}

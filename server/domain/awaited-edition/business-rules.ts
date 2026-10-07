@@ -37,17 +37,17 @@ export const awaitedIdOf = (userId: UserId, watchKey: string) =>
 
 /** The formats a book's edition in the app's language may be awaited in. A
  *  book in another language may be awaited translated, and recorded; a printed
- *  book in the app's language only recorded, once Audible is known not to sell
- *  it. A recording is offered only to a reader who listens to any. */
+ *  book in the app's language only recorded. Whether a store sells it already
+ *  does not matter: one out when it is awaited is shown out, with its link. A
+ *  recording is offered only to a reader who listens to any. */
 export const awaitableFormatsOf = (
   book: { language?: BookLanguage; format: BookFormat },
   appLanguage: Language,
   listens: boolean,
-  unrecorded = false,
 ): ReleaseFormat[] => {
   if (!book.language) return []
   if (book.language === appLanguage)
-    return unrecorded && listens && book.format !== 'audiobook' ? ['audiobook'] : []
+    return listens && book.format !== 'audiobook' ? ['audiobook'] : []
   return listens ? ['book', 'audiobook'] : ['book']
 }
 

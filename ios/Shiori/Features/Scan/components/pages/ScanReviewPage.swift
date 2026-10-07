@@ -17,8 +17,8 @@ import SwiftUI
 /// A book the reader already keeps is flagged on top, with the way to their
 /// copy: a second edition stays theirs to add, so nothing is refused.
 ///
-/// A book in another language offers what its page will offer once added: its
-/// edition in the app's language, translated or recorded, awaited. Asked here,
+/// The book offers what its page will offer once added: its edition in the
+/// app's language, translated or recorded, awaited. Asked here,
 /// it is awaited the moment the book is in.
 struct ScanReviewPage: View {
     @State private var draft: BookDraft
@@ -151,7 +151,7 @@ struct ScanReviewPage: View {
     }
 
     /// Asked again whenever the language or the format is corrected: a book
-    /// switched to the app's language has nothing left to await. A failure
+    /// switched to the app's language is left only its recording to await. A failure
     /// leaves the offer out — the book's page makes it once added.
     private func loadAwaitable() async {
         guard let language = draft.language else {
@@ -218,7 +218,7 @@ struct ScanReviewPage: View {
                 .accessibilityIdentifier("review-language")
             }
 
-            // The book page's "Suivre la version française", offered before
+            // The book page's "Guetter la sortie…" actions, offered before
             // the book is saved: under the language it depends on.
             if !awaitable.isEmpty {
                 Section {

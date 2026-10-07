@@ -59,16 +59,16 @@ describe('awaitableFormatsOf', () => {
     ])
   })
 
-  test('offers nothing for a book in the app’s language, nor one in no language known', () => {
-    expect(awaitableFormatsOf({ language: 'fr', format: 'book' }, 'fr', true)).toEqual([])
+  test('offers nothing for a recording in the app’s language, nor a book in no language known', () => {
+    expect(awaitableFormatsOf({ language: 'fr', format: 'audiobook' }, 'fr', true)).toEqual([])
     expect(awaitableFormatsOf({ format: 'book' }, 'fr', true)).toEqual([])
   })
 
-  test('offers a printed book in the app’s language recorded once Audible lacks it', () => {
-    expect(awaitableFormatsOf({ language: 'fr', format: 'book' }, 'fr', true, true)).toEqual([
+  test('offers a printed book in the app’s language recorded, to a reader who listens', () => {
+    expect(awaitableFormatsOf({ language: 'fr', format: 'book' }, 'fr', true)).toEqual([
       'audiobook',
     ])
-    expect(awaitableFormatsOf({ language: 'fr', format: 'book' }, 'fr', false, true)).toEqual([])
+    expect(awaitableFormatsOf({ language: 'fr', format: 'book' }, 'fr', false)).toEqual([])
   })
 })
 

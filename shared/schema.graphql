@@ -1091,7 +1091,7 @@ type EditionOffer {
   awaited: [AwaitedEdition!]!
 
   """
-  The formats it may be awaited in. None for a book already in the app’s language; a recording only for a reader whose library holds one — and, for a printed book in the app’s language, only once Audible is known not to sell it.
+  The formats it may be awaited in: translated and recorded for a book in another language, recorded only for a printed book in the app’s language, nothing for a recording in it. A recording only for a reader whose library holds one. Whether a store sells the edition already does not matter: it is then awaited out.
   """
   formats: [ReleaseFormat!]!
 }
@@ -2888,7 +2888,7 @@ type Query {
   ): AudioAvailability
 
   """
-  What the page of a friend's book offers to await in the app's language: its translation or its recording — and, for a printed book already in that language, its recording once Audible is known not to sell it. Asks Audible for that last case, so a page asks it only when it opens.
+  What the page of a friend's book offers to await in the app's language: its translation or its recording — and, for a printed book already in that language, its recording.
   
   Null for a stranger, a book that does not exist and a book marked "do not share" alike.
   """

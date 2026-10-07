@@ -4981,6 +4981,38 @@
         }
       }
     },
+    "Guetter la sortie de la version audio" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch for the English audiobook"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guetter la sortie de la version audio"
+          }
+        }
+      }
+    },
+    "Guetter la sortie de la version française" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch for the English edition"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guetter la sortie de la version française"
+          }
+        }
+      }
+    },
     "Habitudes" : {
       "localizations" : {
         "en" : {
@@ -9637,38 +9669,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Suivre"
-          }
-        }
-      }
-    },
-    "Suivre la version audio française" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Follow the English audiobook"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Suivre la version audio française"
-          }
-        }
-      }
-    },
-    "Suivre la version française" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Follow the English edition"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Suivre la version française"
           }
         }
       }

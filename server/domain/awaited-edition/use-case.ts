@@ -58,7 +58,7 @@ export namespace AwaitedEditionUseCase {
     now = new Date(),
   ): Promise<EditionOffer | null> => {
     const book = await BookQuery.byId(userId, bookId)
-    return book ? offerFor(userId, book, book.userId, appLanguage, false, now) : null
+    return book ? offerFor(userId, book, book.userId, appLanguage, now) : null
   }
 
   /** The formats a book not added yet — the one a scan proposes — may be
@@ -68,21 +68,19 @@ export namespace AwaitedEditionUseCase {
     userId: UserId,
     draft: Pick<BookView, 'language' | 'format'>,
     appLanguage: Language,
-  ): Promise<ReleaseFormat[]> => formatsFor(userId, draft, appLanguage, false)
+  ): Promise<ReleaseFormat[]> => formatsFor(userId, draft, appLanguage)
 
   /** What a book's page offers: the formats its edition in the app's language
-   *  may be awaited in, and the ones the reader awaits already. `unrecorded`
-   *  says Audible is known not to sell a printed book in its own language. */
+   *  may be awaited in, and the ones the reader awaits already. */
   export const offerFor = async (
     userId: UserId,
     book: BookView,
     ownerId: UserId,
     appLanguage: Language,
-    unrecorded: boolean,
     now = new Date(),
   ): Promise<EditionOffer> => {
     const [formats, awaited] = await Promise.all([
-      formatsFor(userId, book, appLanguage, unrecorded),
+      formatsFor(userId, book, appLanguage),
       awaitedOf(userId, now),
     ])
     return {
@@ -103,7 +101,7 @@ export namespace AwaitedEditionUseCase {
   ): Promise<AwaitOutcome> => {
     const book = await BookQuery.byId(userId, bookId)
     if (!book) return 'not-found'
-    return awaitBook(userId, book, book.userId, format, appLanguage, false, now)
+    return awaitBook(userId, book, book.userId, format, appLanguage, now)
   }
 
   /** Await a book's edition in the app's language, in one format, and look it
@@ -117,10 +115,9 @@ export namespace AwaitedEditionUseCase {
     ownerId: UserId,
     format: ReleaseFormat,
     appLanguage: Language,
-    unrecorded: boolean,
     now = new Date(),
   ): Promise<AwaitOutcome> => {
-    const formats = await formatsFor(userId, book, appLanguage, unrecorded)
+    const formats = await formatsFor(userId, book, appLanguage)
     if (!formats.includes(format)) return 'not-awaitable'
     const source = sourceOf(book, ownerId, userId)
     const watchKey = editionWatchKeyOf(source, format, appLanguage)
@@ -254,10 +251,9 @@ const formatsFor = async (
   userId: UserId,
   book: Pick<BookView, 'language' | 'format'>,
   appLanguage: Language,
-  unrecorded: boolean,
 ): Promise<ReleaseFormat[]> => {
   const view = await AnalyticsQuery.view(userId)
-  return awaitableFormatsOf(book, appLanguage, (view?.audiobookCount ?? 0) > 0, unrecorded)
+  return awaitableFormatsOf(book, appLanguage, (view?.audiobookCount ?? 0) > 0)
 }
 
 /** The book as the awaited edition remembers it. The reader's own photo is

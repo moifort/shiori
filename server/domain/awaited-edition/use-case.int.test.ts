@@ -186,6 +186,26 @@ describe('awaiting a book of one’s own', () => {
     expect(offer?.formats).toEqual(['book', 'audiobook'])
     expect(offer?.awaited.map((view) => view.format)).toEqual(['book'])
   })
+
+  test('offers a printed book in the app’s language recorded, whether a store sells it or not', async () => {
+    answers = {
+      'Les Profondeurs de la Terre': { ...recorded, title: 'Les Profondeurs de la Terre' },
+    }
+    fake.seed('analytics', reader, { userId: reader, audiobookCount: 3 })
+    const book = await BookUseCase.add(reader, {
+      title: BookTitle('Les Profondeurs de la Terre'),
+      authors: [AuthorName('Robert Silverberg')],
+      status: 'to-read',
+      language: 'fr',
+      format: 'book',
+    })
+
+    const offer = await AwaitedEditionUseCase.offerForBook(reader, book.id, 'fr', now)
+    const view = await AwaitedEditionUseCase.awaitOwnBook(reader, book.id, 'audiobook', 'fr', now)
+
+    expect(offer?.formats).toEqual(['audiobook'])
+    expect(view).toMatchObject({ format: 'audiobook', state: 'available' })
+  })
 })
 
 describe('the scheduled passes', () => {

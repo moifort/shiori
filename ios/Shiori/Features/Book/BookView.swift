@@ -308,9 +308,10 @@ struct BookView: View {
             }
             .accessibilityIdentifier("book-recommend")
 
-            // A book in another language: its French edition, translated or
-            // recorded, watched for and announced the day it is out. The
-            // recording only for a reader who listens to any.
+            // Its French edition watched for and announced the day it is out:
+            // translated or recorded for a book in another language, recorded
+            // for a printed one in French, shown out at once when a store
+            // sells it already. The recording only for a reader who listens.
             ForEach(offer.awaitable) { format in
                 Button(format.awaitLabel, systemImage: format == .audiobook ? "headphones" : "character.book.closed") {
                     awaitEdition(format, of: book)
