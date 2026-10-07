@@ -221,7 +221,9 @@ struct DiscoverView: View {
             let editions = viewModel.awaited(awaited)
             if !editions.isEmpty {
                 Section {
-                    AwaitedEditionsStrip(editions: editions) { openAwaited = $0 }
+                    AwaitedEditionsStrip(editions: editions) { openAwaited = $0 } onStop: { edition in
+                        Task { await viewModel.stopAwaiting(edition) }
+                    }
                 } header: {
                     Text(awaited.awaitedTitle)
                 }

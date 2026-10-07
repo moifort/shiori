@@ -238,6 +238,51 @@ describe('the editions awaited', () => {
     expect(fake.snapshot('awaited-editions').size).toBe(0)
   })
 
+  test('stay awaited once out, while the library holds only the printed copy', async () => {
+    answers = {
+      'Les Profondeurs de la Terre': { ...recorded, title: 'Les Profondeurs de la Terre' },
+    }
+    const book = await BookUseCase.add(reader, {
+      title: BookTitle('Les Profondeurs de la Terre'),
+      authors: [AuthorName('Robert Silverberg')],
+      status: 'to-read',
+      language: 'fr',
+      format: 'book',
+    })
+    await AwaitedEditionUseCase.awaitOwnBook(reader, book.id, 'audiobook', 'fr', now)
+    await AwaitedEditionUseCase.sendAlerts(new Date('2026-12-01T08:00:00Z'))
+    startFakeRequest()
+
+    const views = await AwaitedEditionUseCase.awaited(
+      reader,
+      'audiobook',
+      new Date('2026-12-01T08:00:00Z'),
+    )
+
+    expect(views.map((view) => view.state)).toEqual(['available'])
+    expect(fake.snapshot('awaited-editions').size).toBe(1)
+  })
+
+  test('awaited from a scan, stay awaited until the book is added', async () => {
+    answers = { 'Wind and Truth': recorded }
+    await AwaitedEditionUseCase.awaitScannedBook(
+      reader,
+      {
+        title: BookTitle('Wind and Truth'),
+        authors: [AuthorName('Brandon Sanderson')],
+        language: 'en',
+        format: 'book',
+      },
+      'audiobook',
+      'fr',
+      now,
+    )
+    startFakeRequest()
+
+    expect((await AwaitedEditionUseCase.awaited(reader, 'audiobook', now)).length).toBe(1)
+    expect(fake.snapshot('awaited-editions').size).toBe(1)
+  })
+
   test('are read in one query and one getAll of their watches', async () => {
     await AwaitedEditionUseCase.awaitOwnBook(reader, await stock(reader), 'book', 'fr', now)
     startFakeRequest()
