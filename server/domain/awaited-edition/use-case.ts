@@ -1,5 +1,4 @@
 import { AdminCommand } from '~/domain/admin/command'
-import { AnalyticsQuery } from '~/domain/analytics/query'
 import {
   alertIsDue,
   alertOf,
@@ -65,10 +64,9 @@ export namespace AwaitedEditionUseCase {
    *  awaited in once added: what its page will offer, so the review can offer
    *  it before the book is saved. */
   export const formatsForDraft = (
-    userId: UserId,
     draft: Pick<BookView, 'language' | 'format'>,
     appLanguage: Language,
-  ): Promise<ReleaseFormat[]> => formatsFor(userId, draft, appLanguage)
+  ): ReleaseFormat[] => awaitableFormatsOf(draft, appLanguage)
 
   /** What a book's page offers: the formats its edition in the app's language
    *  may be awaited in, and the ones the reader awaits already. */
@@ -79,12 +77,9 @@ export namespace AwaitedEditionUseCase {
     appLanguage: Language,
     now = new Date(),
   ): Promise<EditionOffer> => {
-    const [formats, awaited] = await Promise.all([
-      formatsFor(userId, book, appLanguage),
-      awaitedOf(userId, now),
-    ])
+    const awaited = await awaitedOf(userId, now)
     return {
-      formats,
+      formats: awaitableFormatsOf(book, appLanguage),
       awaited: awaited.filter(
         (view) => view.source.bookId === book.id && view.source.ownerId === ownerId,
       ),
@@ -117,8 +112,7 @@ export namespace AwaitedEditionUseCase {
     appLanguage: Language,
     now = new Date(),
   ): Promise<AwaitOutcome> => {
-    const formats = await formatsFor(userId, book, appLanguage)
-    if (!formats.includes(format)) return 'not-awaitable'
+    if (!awaitableFormatsOf(book, appLanguage).includes(format)) return 'not-awaitable'
     const source = sourceOf(book, ownerId, userId)
     const watchKey = editionWatchKeyOf(source, format, appLanguage)
     const id = awaitedIdOf(userId, watchKey)
@@ -243,17 +237,6 @@ const awaitedOf = async (userId: UserId, now: Date): Promise<AwaitedEditionView[
     held.map((view) => view.id),
   )
   return views.filter((view) => !held.includes(view))
-}
-
-/** The formats a book may be awaited in for this reader, who is offered a
- *  recording only when their library holds one. */
-const formatsFor = async (
-  userId: UserId,
-  book: Pick<BookView, 'language' | 'format'>,
-  appLanguage: Language,
-): Promise<ReleaseFormat[]> => {
-  const view = await AnalyticsQuery.view(userId)
-  return awaitableFormatsOf(book, appLanguage, (view?.audiobookCount ?? 0) > 0)
 }
 
 /** The book as the awaited edition remembers it. The reader's own photo is

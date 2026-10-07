@@ -46,29 +46,24 @@ const view = (fields: Partial<AwaitedEditionView> = {}): AwaitedEditionView => (
 })
 
 describe('awaitableFormatsOf', () => {
-  test('offers a book in another language translated, and recorded to a listener', () => {
-    expect(awaitableFormatsOf({ language: 'en', format: 'book' }, 'fr', true)).toEqual([
+  test('offers a book in another language translated and recorded', () => {
+    expect(awaitableFormatsOf({ language: 'en', format: 'book' }, 'fr')).toEqual([
+      'book',
+      'audiobook',
+    ])
+    expect(awaitableFormatsOf({ language: 'en', format: 'audiobook' }, 'fr')).toEqual([
       'book',
       'audiobook',
     ])
   })
 
-  test('offers no recording to a reader who never listens', () => {
-    expect(awaitableFormatsOf({ language: 'en', format: 'audiobook' }, 'fr', false)).toEqual([
-      'book',
-    ])
+  test('offers a printed book in the app’s language recorded, and a recording in it nothing', () => {
+    expect(awaitableFormatsOf({ language: 'fr', format: 'book' }, 'fr')).toEqual(['audiobook'])
+    expect(awaitableFormatsOf({ language: 'fr', format: 'audiobook' }, 'fr')).toEqual([])
   })
 
-  test('offers nothing for a recording in the app’s language, nor a book in no language known', () => {
-    expect(awaitableFormatsOf({ language: 'fr', format: 'audiobook' }, 'fr', true)).toEqual([])
-    expect(awaitableFormatsOf({ format: 'book' }, 'fr', true)).toEqual([])
-  })
-
-  test('offers a printed book in the app’s language recorded, to a reader who listens', () => {
-    expect(awaitableFormatsOf({ language: 'fr', format: 'book' }, 'fr', true)).toEqual([
-      'audiobook',
-    ])
-    expect(awaitableFormatsOf({ language: 'fr', format: 'book' }, 'fr', false)).toEqual([])
+  test('takes a book that names no language to be in the app’s', () => {
+    expect(awaitableFormatsOf({ format: 'book' }, 'fr')).toEqual(['audiobook'])
   })
 })
 

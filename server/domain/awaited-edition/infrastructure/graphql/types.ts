@@ -121,8 +121,8 @@ export const EditionOfferType = builder.objectRef<EditionOffer>('EditionOffer').
       description:
         'The formats it may be awaited in: translated and recorded for a book in another ' +
         'language, recorded only for a printed book in the app’s language, nothing for a ' +
-        'recording in it. A recording only for a reader whose library holds one. Whether ' +
-        'a store sells the edition already does not matter: it is then awaited out.',
+        'recording in it; a book that names no language is taken to be in the app’s. ' +
+        'Whether a store sells the edition already does not matter: it is then awaited out.',
       resolve: (offer) => offer.formats,
     }),
     awaited: t.field({

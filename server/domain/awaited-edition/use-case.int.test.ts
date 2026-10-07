@@ -67,9 +67,8 @@ const other = 'other' as UserId
 const now = new Date('2026-09-26T08:00:00Z')
 let fake: FakeFirestore
 
-/** Wind and Truth, read in English, by a reader who listens or not. */
-const stock = async (userId: UserId, listens = true): Promise<BookId> => {
-  fake.seed('analytics', userId, { userId, audiobookCount: listens ? 3 : 0 })
+/** Wind and Truth, read in English. */
+const stock = async (userId: UserId): Promise<BookId> => {
   const book = await BookUseCase.add(userId, {
     title: BookTitle('Wind and Truth'),
     authors: [AuthorName('Brandon Sanderson')],
@@ -134,16 +133,7 @@ describe('awaiting a book of one’s own', () => {
     expect(fake.snapshot('awaited-editions').size).toBe(1)
   })
 
-  test('refuses a recording to a reader who never listens, and a book in their language', async () => {
-    expect(
-      await AwaitedEditionUseCase.awaitOwnBook(
-        reader,
-        await stock(reader, false),
-        'audiobook',
-        'fr',
-        now,
-      ),
-    ).toBe('not-awaitable')
+  test('refuses a book in the reader’s own language translated', async () => {
     expect(
       await AwaitedEditionUseCase.awaitOwnBook(reader, await stock(reader), 'book', 'en', now),
     ).toBe('not-awaitable')
@@ -191,7 +181,6 @@ describe('awaiting a book of one’s own', () => {
     answers = {
       'Les Profondeurs de la Terre': { ...recorded, title: 'Les Profondeurs de la Terre' },
     }
-    fake.seed('analytics', reader, { userId: reader, audiobookCount: 3 })
     const book = await BookUseCase.add(reader, {
       title: BookTitle('Les Profondeurs de la Terre'),
       authors: [AuthorName('Robert Silverberg')],

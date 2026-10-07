@@ -45,7 +45,6 @@ builder.queryFields((t) => ({
     },
     resolve: (_root, { language, format }, context) =>
       AwaitedEditionUseCase.formatsForDraft(
-        context.userId,
         { language, format: heldAs(format).format ?? 'book' },
         languageOf(context.event),
       ),

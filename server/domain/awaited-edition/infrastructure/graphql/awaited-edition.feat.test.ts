@@ -128,14 +128,9 @@ describe('a book a scan proposes, not added yet', () => {
   const FORMATS =
     'query ($language: BookLanguage!, $format: BookFormat!) { draftEditionFormats(language: $language, format: $format) }'
 
-  test('is offered translated and recorded to a reader who listens', async () => {
-    const result = await as(bob)(FORMATS, { language: 'EN', format: 'BOOK' })
-    expect(result.data?.draftEditionFormats).toEqual(['BOOK', 'AUDIOBOOK'])
-  })
-
-  test('is offered only translated to a reader who never listens', async () => {
+  test('is offered translated and recorded, to a reader who never listened too', async () => {
     const result = await as(alice)(FORMATS, { language: 'EN', format: 'BOOK' })
-    expect(result.data?.draftEditionFormats).toEqual(['BOOK'])
+    expect(result.data?.draftEditionFormats).toEqual(['BOOK', 'AUDIOBOOK'])
   })
 
   test('is offered only recorded in the app’s language', async () => {
