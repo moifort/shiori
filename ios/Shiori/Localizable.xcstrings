@@ -1541,6 +1541,22 @@
         }
       }
     },
+    "Ajouter à la bibliothèque" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to library"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajouter à la bibliothèque"
+          }
+        }
+      }
+    },
     "Ajouter à la main" : {
       "localizations" : {
         "en" : {

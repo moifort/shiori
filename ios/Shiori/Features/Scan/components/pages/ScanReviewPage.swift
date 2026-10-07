@@ -17,10 +17,11 @@ import SwiftUI
 /// A book the reader already keeps is flagged on top, with the way to their
 /// copy: a second edition stays theirs to add, so nothing is refused.
 ///
-/// The "…" menu offers what the book's page offers once added: its edition in
-/// the app's language, translated or recorded, awaited. Asked here, it is
-/// awaited at once and the book is not added: a reader who scanned it in a
-/// shop only wants to know when it comes out.
+/// The "+" adds the book. When its edition in the app's language may be
+/// awaited, translated or recorded, it opens a menu that offers that too, as
+/// the book's page does once added: awaited from here at once, the book is not
+/// added — a reader who scanned it in a shop only wants to know when it comes
+/// out.
 struct ScanReviewPage: View {
     @State private var draft: BookDraft
     let ownedCopy: Book?
@@ -200,8 +201,32 @@ struct ScanReviewPage: View {
         }
     }
 
-    private var awaitMenu: some View {
+    private var canSave: Bool {
+        !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isSaving
+    }
+
+    private func save() {
+        var approved = draft
+        approved.startedAt = draft.startedAt.map { min($0, latestStart) }
+        onSave(approved, renamedSeries)
+    }
+
+    @ViewBuilder
+    private var addButton: some View {
+        if awaitable.isEmpty {
+            ToolbarIconButton(title: "Ajouter", systemImage: "plus", action: save)
+                .disabled(!canSave)
+                .accessibilityIdentifier("review-save")
+        } else {
+            addMenu
+        }
+    }
+
+    private var addMenu: some View {
         Menu {
+            Button("Ajouter à la bibliothèque", systemImage: "books.vertical", action: save)
+                .disabled(!canSave)
+                .accessibilityIdentifier("review-save")
             ForEach(awaitable) { format in
                 if let edition = awaited.first(where: { $0.format == format }) {
                     Button(
@@ -220,10 +245,10 @@ struct ScanReviewPage: View {
                 }
             }
         } label: {
-            Image(systemName: "ellipsis")
+            Label("Ajouter", systemImage: "plus")
+                .labelStyle(.iconOnly)
         }
-        .accessibilityLabel(Text("Plus d'actions"))
-        .accessibilityIdentifier("review-menu")
+        .accessibilityIdentifier("review-add")
     }
 
     private var finishedAt: Binding<Date> {
@@ -379,19 +404,8 @@ struct ScanReviewPage: View {
                     action: onRetake
                 )
             }
-            if !awaitable.isEmpty {
-                ToolbarItem(placement: .primaryAction) {
-                    awaitMenu
-                }
-            }
             ToolbarItem(placement: .confirmationAction) {
-                ToolbarIconButton(title: "Ajouter", systemImage: "checkmark") {
-                    var approved = draft
-                    approved.startedAt = draft.startedAt.map { min($0, latestStart) }
-                    onSave(approved, renamedSeries)
-                }
-                .disabled(draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSaving)
-                .accessibilityIdentifier("review-save")
+                addButton
             }
         }
     }
