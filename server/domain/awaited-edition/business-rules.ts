@@ -166,13 +166,27 @@ export const alertOf = (
   }
 }
 
-/** The order the shelf draws them in: the editions out first, the newest
- *  first; then the ones announced, the soonest first and the undated last;
- *  then the ones not announced, the latest awaited first. */
-export const inShelfOrder = (views: readonly AwaitedEditionView[]): AwaitedEditionView[] => {
+/** How long an edition just awaited leads the strip, whatever it stands at:
+ *  the reader who just asked sees it where they look first, rather than at
+ *  the far end behind every dated one. */
+export const JUST_AWAITED_MS = 48 * 3_600_000
+
+/** The order the shelf draws them in: with `now`, the editions awaited in the
+ *  last two days first, the latest awaited first; then the editions out, the
+ *  newest first; then the ones announced, the soonest first and the undated
+ *  last; then the ones not announced, the latest awaited first. */
+export const inShelfOrder = (
+  views: readonly AwaitedEditionView[],
+  now?: Date,
+): AwaitedEditionView[] => {
   const rank = { available: 0, announced: 1, unannounced: 2 } as const
   const dayOf = (view: AwaitedEditionView) => (view.found?.date ? lastDayOf(view.found.date) : '')
+  const isFresh = (view: AwaitedEditionView) =>
+    now !== undefined && now.getTime() - view.awaitedAt.getTime() < JUST_AWAITED_MS
   return [...views].sort((left, right) => {
+    const [freshLeft, freshRight] = [isFresh(left), isFresh(right)]
+    if (freshLeft !== freshRight) return freshLeft ? -1 : 1
+    if (freshLeft) return right.awaitedAt.getTime() - left.awaitedAt.getTime()
     if (left.state !== right.state) return rank[left.state] - rank[right.state]
     if (left.state === 'available') return dayOf(right).localeCompare(dayOf(left))
     if (left.state === 'announced') {

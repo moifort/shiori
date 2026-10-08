@@ -249,6 +249,29 @@ describe('inShelfOrder', () => {
   })
 })
 
+describe('inShelfOrder, for the strip', () => {
+  test('draws an edition awaited in the last two days first, whatever it stands at', () => {
+    const now = new Date('2026-10-08T20:00:00Z')
+    const views = [
+      view({ id: 'out' as never, state: 'available', awaitedAt: new Date('2026-09-01') }),
+      view({
+        id: 'just' as never,
+        state: 'unannounced',
+        awaitedAt: new Date('2026-10-08T19:00:00Z'),
+      }),
+      view({ id: 'yesterday' as never, awaitedAt: new Date('2026-10-07T21:00:00Z') }),
+      view({ id: 'old' as never, awaitedAt: new Date('2026-10-05') }),
+    ]
+    expect(inShelfOrder(views, now).map((edition) => edition.id)).toEqual([
+      'just',
+      'yesterday',
+      'out',
+      'old',
+    ] as never[])
+    expect(inShelfOrder(views).map((edition) => edition.id)[0]).toBe('out' as never)
+  })
+})
+
 describe('storeUrlOf', () => {
   test('points a recording to its page on the language’s Audible store', () => {
     expect(storeUrlOf('audiobook', 'fr', { asin: 'B0DM67WR2V' as never })).toBe(

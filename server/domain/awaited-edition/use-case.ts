@@ -208,13 +208,17 @@ export namespace AwaitedEditionUseCase {
     return true
   }
 
-  /** The editions the reader awaits in one format, in the shelf's order. */
+  /** The editions the reader awaits in one format, in the shelf's order, the
+   *  ones just awaited first. */
   export const awaited = async (
     userId: UserId,
     format: ReleaseFormat,
     now = new Date(),
   ): Promise<AwaitedEditionView[]> =>
-    inShelfOrder((await awaitedOf(userId, now)).filter((view) => view.format === format))
+    inShelfOrder(
+      (await awaitedOf(userId, now)).filter((view) => view.format === format),
+      now,
+    )
 
   /** The hourly pass's share: every edition anybody awaits whose watch was
    *  never looked up, then every one two weeks old, until the budget is spent;
