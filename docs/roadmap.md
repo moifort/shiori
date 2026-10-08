@@ -139,6 +139,16 @@ A saga nobody ever looked up is looked up at once rather than on the next hourly
 saga of the format on the first look at the tab, behind a loader, within ninety seconds — the
 hourly pass takes the rest — and a single saga when its screen is opened.
 
+The award winners came back on 2026-10-08, one genre at a time
+([spec](superpowers/specs/2026-10-08-award-winners-design.md)): on the Books shelf, "Prix
+littéraires" shows the latest winners of the awards of the genre the reader reads most — Hugo,
+Nebula, Locus, Clarke for science fiction; World Fantasy, Locus, Hugo, Nebula for fantasy — that
+they do not hold in the format on screen, with every award in full behind "Tout voir". The
+winners are versioned data, never asked of a model. Where each one's edition stands in the app's
+language is the shared edition watch an awaited book uses, looked up by the hourly pass for the
+genres somebody looked at, so "Guetter" on a winner costs no second call. The Grand Prix de
+l'Imaginaire waits for a checked list of its French winners.
+
 ## Deferred on purpose
 
 ### The reader's cover photo is not stored

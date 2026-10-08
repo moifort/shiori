@@ -1,0 +1,40 @@
+# The novels the awards of the reader's genre crowned, in one format, with
+# where their edition stands in the app's language. Null when the reader reads
+# no genre with awards enough.
+query AwardShelf($format: ReleaseFormat!, $genre: Genre) {
+  awardShelf(format: $format, genre: $genre) {
+    genre
+    genres
+    recent {
+      ...AwardWinnerFields
+    }
+    awards {
+      award
+      readCount
+      total
+      winners {
+        ...AwardWinnerFields
+      }
+    }
+  }
+}
+
+fragment AwardWinnerFields on AwardWinner {
+  id
+  format
+  title
+  originalTitle
+  originalLanguage
+  authors
+  awards {
+    award
+    year
+  }
+  state
+  watched
+  date
+  coverUrl
+  storeUrl
+  awaitable
+  awaitedEditionId
+}

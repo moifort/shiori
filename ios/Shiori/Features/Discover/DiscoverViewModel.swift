@@ -128,6 +128,21 @@ final class DiscoverViewModel {
         }
     }
 
+    /// The award winners of the reader's genre in each format: nil until
+    /// loaded, and when the reader reads no genre with awards enough. Not kept
+    /// in the snapshot: a suggestion, asked anew on each visit.
+    private(set) var awards: [ReleaseFormat: AwardShelf] = [:]
+
+    func loadAwards(_ format: ReleaseFormat) async {
+        do {
+            let found = try await AwardsAPI.shelf(format: format, genre: nil)
+            withAnimation(.smooth) { awards[format] = found }
+        } catch {
+            guard !isCancellation(error) else { return }
+            _ = reportError(error)
+        }
+    }
+
     /// Every format already shown is asked again.
     func reloadAwaited() async {
         for format in feed.awaited.keys { await loadAwaited(format) }

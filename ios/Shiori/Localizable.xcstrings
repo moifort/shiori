@@ -481,6 +481,22 @@
         }
       }
     },
+    "%lld lauréats lus sur %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld of %2$lld winners read"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld lauréats lus sur %2$lld"
+          }
+        }
+      }
+    },
     "%lld livre(s) ajouté(s), %lld mis à jour." : {
       "localizations" : {
         "en" : {
@@ -1301,6 +1317,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Achat impossible"
+          }
+        }
+      }
+    },
+    "Action impossible" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Action failed"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Action impossible"
           }
         }
       }
@@ -7097,6 +7129,22 @@
         }
       }
     },
+    "Non traduit" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not translated"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non traduit"
+          }
+        }
+      }
+    },
     "Note" : {
       "localizations" : {
         "en" : {
@@ -7897,6 +7945,22 @@
         }
       }
     },
+    "Pas encore en audio" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not yet in audio"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas encore en audio"
+          }
+        }
+      }
+    },
     "Pas encore paru" : {
       "localizations" : {
         "en" : {
@@ -8265,6 +8329,118 @@
         }
       }
     },
+    "Prix Arthur C. Clarke" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arthur C. Clarke Award"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prix Arthur C. Clarke"
+          }
+        }
+      }
+    },
+    "Prix Hugo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hugo Award"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prix Hugo"
+          }
+        }
+      }
+    },
+    "Prix Locus de la fantasy" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Locus Award for Fantasy"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prix Locus de la fantasy"
+          }
+        }
+      }
+    },
+    "Prix Locus de la science-fiction" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Locus Award for Science Fiction"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prix Locus de la science-fiction"
+          }
+        }
+      }
+    },
+    "Prix Nebula" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nebula Award"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prix Nebula"
+          }
+        }
+      }
+    },
+    "Prix littéraires" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Literary awards"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prix littéraires"
+          }
+        }
+      }
+    },
+    "Prix littéraires · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Literary awards · %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prix littéraires · %@"
+          }
+        }
+      }
+    },
     "Problème" : {
       "localizations" : {
         "en" : {
@@ -8437,6 +8613,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rayon"
+          }
+        }
+      }
+    },
+    "Recherche de l'édition en cours" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Looking for the edition"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recherche de l'édition en cours"
           }
         }
       }
@@ -8885,6 +9077,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Récits annexes"
+          }
+        }
+      }
+    },
+    "Récompenses" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Awards"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Récompenses"
           }
         }
       }
@@ -10649,6 +10857,22 @@
         }
       }
     },
+    "Tout voir" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See all"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tout voir"
+          }
+        }
+      }
+    },
     "Toutes" : {
       "localizations" : {
         "en" : {
@@ -11161,6 +11385,22 @@
         }
       }
     },
+    "Vous avez tous ses lauréats." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You hold all of its winners."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous avez tous ses lauréats."
+          }
+        }
+      }
+    },
     "Vous avez utilisé tous vos scans. La mise à jour d'une fiche en consomme un." : {
       "localizations" : {
         "en" : {
@@ -11349,6 +11589,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vérifier"
+          }
+        }
+      }
+    },
+    "World Fantasy Award" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "World Fantasy Award"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "World Fantasy Award"
           }
         }
       }

@@ -30,7 +30,9 @@ import SwiftUI
 /// books the reader awaits in the app's language, as a strip of covers per
 /// format, the ones out first. The book format shows both — a book read on
 /// paper is as often awaited recorded as translated — the audio format only
-/// the recordings.
+/// the recordings. Then "Prix littéraires": the latest winners of the awards
+/// of the genre the reader reads most that they do not hold, a strip of
+/// covers with every award in full behind "Tout voir".
 ///
 /// The server looks the sagas up on the web once a week. The tab opens on
 /// everything it last showed — the rows, the friends' picks, the books awaited
@@ -47,6 +49,8 @@ struct DiscoverView: View {
     @State private var openFriendBook: LovedBook?
     @State private var openFriendSaga: LovedSaga?
     @State private var openAwaited: AwaitedEdition?
+    @State private var openWinner: AwardWinner?
+    @State private var openAwards: AwardShelf?
     @Environment(\.openURL) private var openURL
     @State private var format: ReleaseFormat
     /// Held by `ContentView`, which brings it back to the books on each visit.
@@ -116,6 +120,12 @@ struct DiscoverView: View {
                         }
                     }
                 }
+                .sheet(item: $openWinner) { winner in
+                    NavigationStack { AwardWinnerView(winner: winner) }
+                }
+                .sheet(item: $openAwards) { awards in
+                    NavigationStack { AwardsListView(format: format, shelf: awards) }
+                }
                 // The Library's own author page, in its own stack so a saga
                 // pushes inside it.
                 .sheet(item: $openAuthor) { opened in
@@ -132,17 +142,20 @@ struct DiscoverView: View {
         .task(id: format) {
             for awaited in format.awaitedShown { await viewModel.loadAwaited(awaited) }
         }
+        .task(id: format) { await viewModel.loadAwards(format) }
         // The Authors shelf carries the editions awaited too.
         .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
             Task {
                 await viewModel.reloadAwaited()
                 await viewModel.reload()
+                await viewModel.loadAwards(format)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
             Task {
                 await viewModel.reload()
                 await viewModel.loadPicks()
+                await viewModel.loadAwards(format)
             }
         }
     }
@@ -168,7 +181,10 @@ struct DiscoverView: View {
     private func list(_ rows: [SagaDiscovery]) -> some View {
         List {
             friendPicksSection
-            if shelf == .books { awaitedSection }
+            if shelf == .books {
+                awaitedSection
+                awardsSection
+            }
             if shelf == .authors {
                 authorSections
             } else {
@@ -227,6 +243,29 @@ struct DiscoverView: View {
                 }
                 .accessibilityIdentifier("discover-awaited-\(awaited.rawValue)")
             }
+        }
+    }
+
+    /// "Prix littéraires": the latest winners of the awards of the genre the
+    /// reader reads most, the ones they do not hold in the format on screen,
+    /// as a strip like the editions awaited. "Tout voir" opens every award in
+    /// full. Absent when the reader reads no genre with awards enough.
+    @ViewBuilder
+    private var awardsSection: some View {
+        if let awards = viewModel.awards[format], !awards.recent.isEmpty {
+            Section {
+                AwardWinnersStrip(winners: awards.recent) { openWinner = $0 }
+            } header: {
+                HStack {
+                    Text("Prix littéraires · \(awards.genre.label)")
+                    Spacer()
+                    Button("Tout voir") { openAwards = awards }
+                        .font(.footnote.weight(.semibold))
+                        .textCase(nil)
+                        .accessibilityIdentifier("discover-awards-all")
+                }
+            }
+            .accessibilityIdentifier("discover-awards")
         }
     }
 
