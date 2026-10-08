@@ -28,23 +28,77 @@ private let appGroup = "group.com.polyforms.shiori.app"
 /// Where the handover lands. One folder, cleared by the app once it has read it.
 private let intakeFolder = "shared-intake"
 
+/// What the extension asks the system to open once the handover is written.
+/// The app does nothing with the address itself: coming to the front is what
+/// makes it read the shared folder.
+private let appURL = URL(string: "shiori://intake")!
+
 final class ShareViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
-        let host = UIHostingController(rootView: SharePrompt { [weak self] in self?.finish() })
+        let host = UIHostingController(rootView: SharePrompt(isOpening: true, onDone: {}))
         addChild(host)
         host.view.frame = view.bounds
         host.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.addSubview(host.view)
         host.didMove(toParent: self)
 
-        Task { await collect() }
+        Task {
+            let written = await collect()
+            if written, await openApp() {
+                finish()
+            } else {
+                host.rootView = SharePrompt(isOpening: false) { [weak self] in self?.finish() }
+            }
+        }
+    }
+
+    /// Brings Shiori to the front, so the reader lands on the book rather than
+    /// having to go and find the app.
+    ///
+    /// No public API lets a share extension open its app: `UIApplication` is
+    /// unavailable here, and `NSExtensionContext.open` only serves widgets. So
+    /// this walks the responder chain to whatever answers the system's
+    /// URL-opening message and sends it by hand. Apple does not support it and
+    /// iOS 18 already broke its older, shorter form, which is why anything other
+    /// than a confirmed opening — no responder, a refusal, no answer at all —
+    /// falls back to the sheet telling the reader to open Shiori themselves.
+    /// The handover is written before this runs, so a failure loses nothing.
+    private func openApp() async -> Bool {
+        typealias OpenURL = @convention(c) (
+            AnyObject, Selector, NSURL, NSDictionary, @convention(block) (Bool) -> Void
+        ) -> Void
+        let selector = NSSelectorFromString("openURL:options:completionHandler:")
+
+        var responder: UIResponder? = self
+        while let current = responder, !current.responds(to: selector) {
+            responder = current.next
+        }
+        guard let opener = responder else { return false }
+        let open = unsafeBitCast(opener.method(for: selector), to: OpenURL.self)
+
+        return await withCheckedContinuation { continuation in
+            let gate = ResumeGate()
+            // A system that never answers is a failure, not a sheet left spinning.
+            Task {
+                try? await Task.sleep(for: .seconds(3))
+                guard gate.claim() else { return }
+                continuation.resume(returning: false)
+            }
+            open(opener, selector, appURL as NSURL, NSDictionary()) { success in
+                guard gate.claim() else { return }
+                continuation.resume(returning: success)
+            }
+        }
     }
 
     /// Takes the first thing it recognizes out of what was shared. A page in
     /// Safari arrives as a URL and a title; a selection as text; a screenshot as
     /// an image. Any one of them is enough for the app to work from.
-    private func collect() async {
+    ///
+    /// Returns whether the handover was written, so there is something for the app to
+    /// open on.
+    private func collect() async -> Bool {
         let attachments = (extensionContext?.inputItems as? [NSExtensionItem] ?? [])
             .flatMap { $0.attachments ?? [] }
 
@@ -66,7 +120,7 @@ final class ShareViewController: UIViewController {
             }
         }
 
-        write(intake, image: imageData)
+        return write(intake, image: imageData)
     }
 
     /// The bytes behind an attachment. Asked for as data rather than as an
@@ -107,15 +161,16 @@ final class ShareViewController: UIViewController {
         }
     }
 
-    /// A failure here is swallowed: the sheet has already told the reader it
-    /// worked, and the worst case is that Shiori opens on nothing new. There is
-    /// nothing useful to say about a container that would not take a file.
-    private func write(_ intake: SharedIntake, image: Data?) {
+    /// A failure here is not shown: there is nothing useful to say about a
+    /// container that would not take a file. It only keeps the extension from
+    /// opening the app on nothing; the sheet asks the reader to open Shiori
+    /// instead, and the worst case is that it opens on nothing new.
+    private func write(_ intake: SharedIntake, image: Data?) -> Bool {
         guard
             let container = FileManager.default.containerURL(
                 forSecurityApplicationGroupIdentifier: appGroup
             )
-        else { return }
+        else { return false }
         let folder = container.appending(path: intakeFolder, directoryHint: .isDirectory)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
 
@@ -125,15 +180,20 @@ final class ShareViewController: UIViewController {
             try? image.write(to: folder.appending(path: name), options: .atomic)
             record.imageFile = name
         }
-        guard let data = try? JSONEncoder().encode(record) else { return }
+        guard let data = try? JSONEncoder().encode(record) else { return false }
         // The moment it was shared leads the name, so the app reads a pile of
         // them in the order they arrived rather than the order the file system
         // happens to list.
         let stamp = String(format: "%015.3f", record.receivedAt.timeIntervalSince1970)
-        try? data.write(
-            to: folder.appending(path: "\(stamp)-\(UUID().uuidString).json"),
-            options: .atomic
-        )
+        do {
+            try data.write(
+                to: folder.appending(path: "\(stamp)-\(UUID().uuidString).json"),
+                options: .atomic
+            )
+            return true
+        } catch {
+            return false
+        }
     }
 
     private func finish() {
@@ -141,13 +201,26 @@ final class ShareViewController: UIViewController {
     }
 }
 
-/// What the reader sees. It says where the book went and what to do next,
+/// What the reader sees. While Shiori is being opened, only a spinner: on
+/// success the sheet closes before there is anything to read. When the app
+/// could not be opened, it says where the book went and what to do next,
 /// because nothing else will: the extension cannot catalogue on its own, so a
 /// sheet that just closed would leave them wondering whether anything happened.
 private struct SharePrompt: View {
+    let isOpening: Bool
     let onDone: () -> Void
 
     var body: some View {
+        if isOpening {
+            ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.systemBackground))
+        } else {
+            prompt
+        }
+    }
+
+    private var prompt: some View {
         VStack(spacing: 18) {
             Image(systemName: "books.vertical.fill")
                 .font(.system(size: 44))
