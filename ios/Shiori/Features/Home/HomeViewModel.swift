@@ -85,28 +85,44 @@ final class HomeViewModel {
         keep(releases: await Self.fetchReleases(), favorites: nil)
     }
 
-    /// Découvrir's rows in both formats: the volumes just out, the newest
-    /// first, then the volumes still to come, the soonest first, among which
-    /// the recordings awaited that have a date. Nil when either format could
-    /// not be read; the awaited recordings are left out when they could not.
+    /// Découvrir's rows in both formats and the editions the reader awaits: the
+    /// volumes and the editions awaited out in the last two weeks, the newest
+    /// first, then the volumes and the editions awaited still to come, the
+    /// soonest first. An edition awaited moves from one to the other the day
+    /// it comes out, rather than leaving the card. Nil when either format of
+    /// the rows could not be read; the editions awaited are left out when they
+    /// could not.
     private static func fetchReleases() async -> [HomeRelease]? {
         async let books = try? DiscoverAPI.discovery(format: .book)
         async let audiobooks = try? DiscoverAPI.discovery(format: .audiobook)
-        async let awaited = try? AwaitedAPI.awaited(format: .audiobook)
+        async let awaitedRecordings = try? AwaitedAPI.awaited(format: .audiobook)
+        async let awaitedTranslations = try? AwaitedAPI.awaited(format: .book)
         guard let books = await books, let audiobooks = await audiobooks else { return nil }
         let rows = books.rows + audiobooks.rows
-        let recent = rows
+        let awaited = (await awaitedRecordings ?? []) + (await awaitedTranslations ?? [])
+        let recentVolumes = rows
             .flatMap { saga in saga.recent.map { DiscoveryVolume(saga: saga, volume: $0) } }
-            .sorted { ($0.volume.date ?? "", $0.volume.number) > ($1.volume.date ?? "", $1.volume.number) }
             .map(HomeRelease.volume)
+        // Découvrir's window for a volume just out, applied to the editions
+        // awaited: only a day known to the day says when it came out.
+        let since = Date.now.addingTimeInterval(-Double(recentDays) * 86_400)
+            .formatted(.iso8601.year().month().day())
+        let recentAwaited = awaited
+            .filter { edition in
+                guard edition.state == .available, let date = edition.date, date.count == 10 else { return false }
+                return date >= since
+            }
+            .map(HomeRelease.awaited)
+        let recent = (recentVolumes + recentAwaited)
+            .sorted { ($0.date ?? "", $1.name) > ($1.date ?? "", $0.name) }
         let nextVolumes = rows.compactMap { row -> HomeRelease? in
             guard let next = row.releases.next else { return nil }
             return .volume(DiscoveryVolume(saga: row, volume: next))
         }
-        let awaitedRecordings = (await awaited ?? [])
+        let awaitedComing = awaited
             .filter { $0.state == .announced }
             .map(HomeRelease.awaited)
-        let upcoming = (nextVolumes + awaitedRecordings)
+        let upcoming = (nextVolumes + awaitedComing)
             .compactMap { release -> (HomeRelease, String)? in
                 guard let date = release.date, ReleaseDateText.isUpcoming(date) else { return nil }
                 return (release, ReleaseDateText.lastDay(date))
@@ -115,6 +131,10 @@ final class HomeViewModel {
             .map(\.0)
         return Array((recent + upcoming).prefix(releasesShown))
     }
+
+    /// How long a volume or an edition awaited counts as just out, in days:
+    /// Découvrir's own window for its "Nouvelles parutions".
+    private static let recentDays = 14
 
     /// The tab appeared: a dashboard still showing last session's snapshot
     /// is brought up to date silently, one never loaded loads. A dashboard the
