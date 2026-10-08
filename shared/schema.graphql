@@ -580,6 +580,120 @@ enum AwaitedState {
   UNANNOUNCED
 }
 
+"""A literary award whose novel winners Découvrir lists."""
+enum Award {
+  """The Arthur C. Clarke Award."""
+  CLARKE
+
+  """The Hugo Award for Best Novel."""
+  HUGO
+
+  """The Locus Award for Best Fantasy Novel."""
+  LOCUS_FANTASY
+
+  """The Locus Award for Best Science Fiction Novel."""
+  LOCUS_SF
+
+  """The Nebula Award for Best Novel."""
+  NEBULA
+
+  """The World Fantasy Award for Best Novel."""
+  WORLD_FANTASY
+}
+
+"""One award’s winners, for the full list."""
+type AwardList {
+  award: Award!
+
+  """How many of all its winners the reader has read, in any format."""
+  readCount: Int!
+
+  """How many novels it crowned."""
+  total: Int!
+
+  """Its winners the reader does not hold in that format, the newest first."""
+  winners: [AwardWinner!]!
+}
+
+"""One prize a novel won."""
+type AwardMention {
+  award: Award!
+
+  """The year it was presented, not the year the novel came out."""
+  year: Int!
+}
+
+"""
+Découvrir’s award winners: the novels the awards of the reader’s genre crowned, with where their edition stands in the app’s language.
+"""
+type AwardShelf {
+  """Each of the genre’s awards in full, its own first."""
+  awards: [AwardList!]!
+
+  """
+  The genre shown: the one asked for, else the one the reader reads most.
+  """
+  genre: Genre!
+
+  """Every genre with awards the reader reads enough, the most read first."""
+  genres: [Genre!]!
+
+  """
+  The latest winners across the genre’s awards the reader does not hold in that format, twelve at most, the newest first.
+  """
+  recent: [AwardWinner!]!
+}
+
+"""
+A novel that won one of the awards, as its edition stands in one format and the app’s language. Looked up on the web by a scheduled pass, shared by every reader.
+"""
+type AwardWinner {
+  authors: [AuthorName!]!
+
+  """
+  Whether it may be awaited from its row, with `awaitScannedEdition`: not out, not awaited already, and in a format its edition can be awaited in.
+  """
+  awaitable: Boolean!
+
+  """The edition the reader awaits already, when they do."""
+  awaitedEditionId: AwaitedEditionId
+
+  """Every prize it won among the genre’s awards, the newest first."""
+  awards: [AwardMention!]!
+
+  """The edition’s cover once found."""
+  coverUrl: String
+
+  """
+  When the edition came out or comes out: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Null until found, and for an edition found with no date.
+  """
+  date: String
+  format: ReleaseFormat!
+
+  """The edition’s shared watch: stable for a novel, format and language."""
+  id: String!
+  originalLanguage: BookLanguage!
+
+  """The title it won under, in English."""
+  originalTitle: BookTitle!
+
+  """
+  Where its edition stands: out, announced, or not found. Not found also for a novel never looked up yet: `watched` tells them apart.
+  """
+  state: AwaitedState!
+
+  """
+  Where to get it: the recording’s page on the reader’s Audible store, or the printed edition’s on Amazon. Null until a store confirmed it.
+  """
+  storeUrl: String
+
+  """Its title in the app’s language once found, else the one it won under."""
+  title: BookTitle!
+
+  """Whether the web was ever searched for its edition."""
+  watched: Boolean!
+}
+
 """
 A book as one reader holds it.
 
@@ -2814,6 +2928,13 @@ type Query {
   The editions the reader awaits in one format: the ones out first, the newest first; then the ones announced, the soonest first; then the ones not announced, the latest awaited first. One the library now holds is no longer awaited and is left out.
   """
   awaitedEditions(format: ReleaseFormat!): [AwaitedEdition!]!
+
+  """
+  The novels the literary awards of the reader’s genre crowned — Hugo, Nebula, Locus, Clarke, World Fantasy — in one format, with where their edition stands in the app’s language. The genre is the one asked for when the reader reads it enough, else the one they read most. Null when they read no genre with awards enough.
+  
+  Read off shared watches a scheduled pass looks up, so it answers at once: a novel never looked up comes back not `watched`.
+  """
+  awardShelf(format: ReleaseFormat!, genre: Genre): AwardShelf
 
   """One book of the reader library. Null when they do not own it."""
   book(id: BookId!): Book

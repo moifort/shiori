@@ -32,30 +32,32 @@ hand from settings, friends' views.
 
 ## Rules
 
-1. **The reader's genre.** The genre with the most books in `read` or `reading`, a rating of four
-   or five stars counting double. `recommended` and `to-read` books do not count: they describe
-   intent, not taste. Ties go to the genre of the most recently read book. A reader with fewer
-   than five read books, or whose top genre has no award, sees no section. A capsule above the
-   strip lets them switch to another genre that has awards; the choice is not stored.
+1. **The reader's genre.** Among the genres that have awards, the one with the most books in
+   `read` or `reading`, a rating of four or five stars counting double. Books on the pile or
+   dropped do not count: they describe intent, not taste. Ties go to the genre read most
+   recently. A genre is offered only past a weight of three, so a single novel read by chance
+   is not a taste; a reader with no such genre sees no section. A capsule above the list lets
+   them switch to another genre past that weight; the choice is not stored.
 
 2. **Awards per genre.** A fixed table in the domain. An award may serve two genres.
 
    | Genre | Awards |
    |---|---|
-   | `science-fiction` | Hugo (novel), Nebula (novel), Locus SF, Arthur C. Clarke, Grand Prix de l'Imaginaire (roman francophone) |
-   | `fantasy` | Hugo (novel), World Fantasy (novel), Locus Fantasy, Grand Prix de l'Imaginaire (roman francophone) |
+   | `science-fiction` | Hugo (novel), Nebula (novel), Locus SF, Arthur C. Clarke |
+   | `fantasy` | World Fantasy (novel), Locus Fantasy, Hugo (novel), Nebula (novel) |
    | `horror` | Bram Stoker (novel) |
    | `crime`, `thriller` | Edgar (novel), CWA Gold Dagger, Grand Prix de Littérature Policière |
    | `literary-fiction` | Booker, Goncourt |
 
    The first version ships `science-fiction` and `fantasy` only. The other rows are added when
-   their data file is.
+   their data is. The Grand Prix de l'Imaginaire is left out until its full list of French
+   winners is checked: no source reachable when this was built gave every year.
 
-3. **The winners file.** `server/domain/award/winners/{award}.ts`, one entry per year:
-   original title, authors, original language, year, and the Hugo/Nebula category when the award
-   has several. Seeded once from Wikidata (award received, P166, with point in time, P585) by a
-   script kept in `scripts/`, then checked by hand against the award's own site. Updated by one
-   commit after each ceremony.
+3. **The winners file.** `server/domain/award/winners.ts`, one row per winner: the year of the
+   ceremony, the English title it won under, its authors. Nebula rows are shifted by one year,
+   since SFWA labels them by publication year. Checked against the Science Fiction Awards
+   Database and Wikipedia; `scripts/check-award-winners.ts` compares it to Wikidata (award
+   received, P166, with point in time, P585). Updated by one commit after each ceremony.
 
 4. **Availability.** For each winner, the section reads the `EditionWatch` keyed on the work,
    the tab's format and the app's language. A winner whose watch was never looked up is looked
@@ -68,15 +70,16 @@ hand from settings, friends' views.
    fantasy table holds roughly 300 winners, so about 600 calls the first time, then a few
    dozen a month.
 
-5. **Guetter.** A winner not out in the app's language shows "Guetter" on its row. It goes
-   through `awaitScannedBook` with the winner's title, authors and original language: nothing of
-   it is on any shelf, which is exactly that path's case. It counts against `MAX_AWAITED` (100)
+5. **Guetter.** A winner not out in the app's language shows "Guetter" on its row. The app
+   calls the existing `awaitScannedEdition` with the winner's title, authors and language:
+   nothing of it is on any shelf, which is exactly that path's case, and its watch key is the
+   very one the section reads, so no second lookup is paid. It counts against `MAX_AWAITED` (100)
    like any awaited edition. Nothing is awaited automatically: the two award lists alone hold
    more untranslated winners than a reader would want alerts for, and an automatic subscription
    would fill "À venir" with books the reader never chose.
 
-6. **Already held.** A winner the reader holds in the tab's format, in any status but
-   `recommended`, is not shown. Held means a book of theirs matches the watch's ISBN, or the
+6. **Already held.** A winner the reader holds in the tab's format, in any status, is not
+   shown. Held means a book of theirs matches the watch's ISBN, or the
    watch's found title and an author, normalized as `shelfKey` does. Matching on the original
    title alone would miss every French copy.
 
@@ -92,18 +95,20 @@ hand from settings, friends' views.
 
 ## Data
 
-- New domain `award`: `types.ts` (`AwardId`, `AwardWinner`), the winners files, the genre table,
-  `query.ts` (`AwardQuery.winnersFor(genre)`), `use-case.ts` for the section.
-- No new collection. Watches live where `EditionWatch` lives already.
-- No migration: a new section, a new optional cadence on the watch pass.
+- New domain `award`: `types.ts`, `winners.ts`, the genre table and the rules in
+  `business-rules.ts`, `use-case.ts` for the section and the hourly pass.
+- Watches live where `EditionWatch` lives already. One new shared collection,
+  `award-interests`, one document per genre and language somebody looked at in the last three
+  months: the hourly pass looks up only those winners, in both formats, after the awaited
+  editions and the sagas, within the same run.
+- No migration: a new collection and a new section.
 
 ## API
 
-- `awardSection(format: ReleaseFormat!, genre: Genre): AwardSection` — null when the reader has
-  no section. `genre` absent means the reader's own; the result names the genre it used and the
-  genres the capsule may switch to.
-- `awaitAwardWinner(winnerId: ID!, format: ReleaseFormat!): AwaitOutcome` — the existing outcome
-  union.
+- `awardShelf(format: ReleaseFormat!, genre: Genre): AwardShelf` — null when the reader has no
+  section. `genre` absent means the reader's own; the result names the genre it used, the
+  genres the capsule may switch to, the twelve latest winners not held, and each award in full.
+- No new mutation: `awaitScannedEdition` awaits a winner.
 
 ## Risks
 
@@ -118,6 +123,6 @@ hand from settings, friends' views.
 
 - Unit: the genre rule (weights, ties, threshold), the held rule (ISBN, title and author, the
   original title alone not matching), the cadence.
-- Integration: the section for a fake library, with the read budget asserted; awaiting a winner
-  creates one `AwaitedEdition` and never a second.
-- Feature: `awardSection` and `awaitAwardWinner` against the built schema.
+- Integration: the section for a fake library, with the read budget asserted; a winner awaited
+  shows as awaited; the hourly pass looks up only the genres looked at, within its budget.
+- Feature: `awardShelf` against the built schema.

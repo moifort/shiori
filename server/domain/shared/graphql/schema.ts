@@ -102,6 +102,11 @@ import '~/domain/awaited-edition/infrastructure/graphql/types'
 import '~/domain/awaited-edition/infrastructure/graphql/queries'
 import '~/domain/awaited-edition/infrastructure/graphql/mutations'
 
+// Award winners (the novels the awards of the reader's genre crowned). After
+// awaited editions, whose state enum it borrows.
+import '~/domain/award/infrastructure/graphql/types'
+import '~/domain/award/infrastructure/graphql/queries'
+
 // Changelog (application release notes)
 import '~/domain/changelog/infrastructure/graphql/types'
 import '~/domain/changelog/infrastructure/graphql/queries'
