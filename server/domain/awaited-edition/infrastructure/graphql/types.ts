@@ -84,13 +84,18 @@ export const AwaitedEditionType = builder
         nullable: true,
         description:
           'Where to get it: the recording’s page on the reader’s Audible store, which ' +
-          'the Audible app opens on the title, or the printed edition’s on Amazon. ' +
-          'Null until a store confirmed it.',
+          'the Audible app opens on the title, or a search for it on the store of its ' +
+          'language while Audible has not confirmed it; the printed edition’s page on ' +
+          'Amazon once its ISBN is known. Null until the edition is found.',
         resolve: async (view, _args, { userId }) => {
           const asin = view.format === 'audiobook' ? view.found?.asin : undefined
           const own = asin ? await AudibleQuery.recordingUrlOf(userId, asin) : undefined
           return (
-            own ?? (view.found ? storeUrlOf(view.format, view.language, view.found) : null) ?? null
+            own ??
+            (view.found
+              ? storeUrlOf(view.format, view.language, view.found, view.source.authors[0])
+              : null) ??
+            null
           )
         },
       }),

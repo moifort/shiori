@@ -1,4 +1,4 @@
-import { editionWatchKeyOf, stateOf } from '~/domain/awaited-edition/business-rules'
+import { editionWatchKeyOf, isConfirmed, stateOf } from '~/domain/awaited-edition/business-rules'
 import type { EditionWatch, FoundEdition } from '~/domain/awaited-edition/types'
 import { shelfKeyOf } from '~/domain/book/business-rules'
 import type { Book, BookLanguage, Genre } from '~/domain/book/types'
@@ -136,10 +136,15 @@ export const hasRead = (
 ): boolean => books.some((book) => book.status === 'read' && isWork(book, work, found))
 
 /** A watch the hourly pass is to look up: never looked up, or looked up too
- *  long ago for what it found. One found out is never looked up again. */
+ *  long ago for what it found. One found out and confirmed by its store is
+ *  never looked up again. */
 export const isDue = (watch: EditionWatch | undefined, now: Date, today: string): boolean => {
   if (!watch) return true
-  if (stateOf(watch.found, watch.format, today) === 'available') return false
+  if (
+    stateOf(watch.found, watch.format, today) === 'available' &&
+    isConfirmed(watch.found, watch.format)
+  )
+    return false
   const every = watch.found ? WATCH_EVERY_MS : UNFOUND_WATCH_EVERY_MS
   return now.getTime() - watch.checkedAt.getTime() >= every
 }

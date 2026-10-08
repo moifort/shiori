@@ -48,20 +48,28 @@ export const awaitableFormatsOf = (
   return book.format === 'audiobook' ? [] : ['audiobook']
 }
 
-/** Where an edition stands on a day. A recording is out only once Audible
- *  confirmed it; a printed edition once its date is past. An edition found
- *  with no date, or a recording out with no ASIN, is announced. */
+/** Where an edition stands on a day: out once its date is past, announced
+ *  before, or with no date. A recording past its date is out even when
+ *  Audible's catalogue did not confirm its ASIN: that catalogue misses French
+ *  recordings that exist, and a date gone by drawn as still to come is worse
+ *  than a link that searches the store. What only a confirmed recording earns
+ *  is the alert — see `isConfirmed`. */
 export const stateOf = (
   found: FoundEdition | undefined,
-  format: ReleaseFormat,
+  _format: ReleaseFormat,
   today: string,
 ): AwaitedState => {
   if (!found) return 'unannounced'
   if (!found.date) return 'announced'
   const out = found.date.length === 10 ? found.date <= today : lastDayOf(found.date) < today
-  if (!out) return 'announced'
-  return format === 'audiobook' && !found.asin ? 'announced' : 'available'
+  return out ? 'available' : 'announced'
 }
+
+/** Whether a store confirmed the edition: always for print, whose date Amazon
+ *  gives; for a recording, once Audible's catalogue answered for its ASIN. An
+ *  edition out but not confirmed is still looked up, and never alerted. */
+export const isConfirmed = (found: FoundEdition | undefined, format: ReleaseFormat): boolean =>
+  format !== 'audiobook' || found?.asin !== undefined
 
 export const viewOf = (
   awaited: AwaitedEdition,
@@ -99,8 +107,9 @@ export const isHeld = (
 }
 
 /** The watches the hourly pass looks up: the ones never looked up first, then
- *  the ones a week old, each once however many readers await it. An edition
- *  out is not looked up again: there is nothing left to learn. */
+ *  the ones two weeks old, each once however many readers await it. An edition
+ *  out and confirmed is not looked up again: there is nothing left to learn. A
+ *  recording out that Audible never confirmed still is, for its ASIN. */
 export const dueWatchesOf = (
   awaited: readonly AwaitedEdition[],
   watches: ReadonlyMap<string, EditionWatch>,
@@ -111,7 +120,12 @@ export const dueWatchesOf = (
   for (const edition of awaited) {
     if (due.has(edition.watchKey)) continue
     const watch = watches.get(edition.watchKey)
-    if (watch && stateOf(watch.found, watch.format, today) === 'available') continue
+    if (
+      watch &&
+      stateOf(watch.found, watch.format, today) === 'available' &&
+      isConfirmed(watch.found, watch.format)
+    )
+      continue
     if (watch && now.getTime() - watch.checkedAt.getTime() < WATCH_EVERY_MS) continue
     due.set(edition.watchKey, edition)
   }
@@ -123,10 +137,12 @@ export const dueWatchesOf = (
   )
 }
 
-/** Whether the alert for an edition out is due: never sent, and out on a
- *  known day in the last two weeks. An edition out earlier is passed over. */
+/** Whether the alert for an edition out is due: never sent, confirmed by its
+ *  store, and out on a known day in the last three weeks. An edition out
+ *  earlier is passed over. */
 export const alertIsDue = (view: AwaitedEditionView, today: string): boolean => {
   if (view.notifiedAt || view.state !== 'available') return false
+  if (!isConfirmed(view.found, view.format)) return false
   const date = view.found?.date
   return date !== undefined && date.length === 10 && date >= dayMinus(today, ALERT_GRACE_DAYS)
 }
@@ -202,16 +218,22 @@ const AUDIBLE_DOMAINS: Partial<Record<BookLanguage, string>> = {
 }
 
 /** Where to get an edition found, in its language's store: a recording's page
- *  on Audible, a printed edition's on Amazon, reached by the ISBN-10 Amazon files
- *  it under or else searched by its ISBN. Nothing before a store confirmed it. */
+ *  on Audible once its ASIN is confirmed, else a search for its title and
+ *  author on that store, out or still announced; a printed edition's page on
+ *  Amazon, reached by the ISBN-10 Amazon files it under or else searched by its
+ *  ISBN, nothing without one. */
 export const storeUrlOf = (
   format: ReleaseFormat,
   language: BookLanguage,
-  found: Pick<FoundEdition, 'asin' | 'isbn13'>,
+  found: Pick<FoundEdition, 'asin' | 'isbn13'> & { title?: string },
+  author?: string,
 ): string | undefined => {
   if (format === 'audiobook') {
     const domain = AUDIBLE_DOMAINS[language]
-    return found.asin && domain ? `https://www.${domain}/pd/${found.asin}` : undefined
+    if (!domain) return undefined
+    if (found.asin) return `https://www.${domain}/pd/${found.asin}`
+    const keywords = [found.title, author].filter(Boolean).join(' ')
+    return `https://www.${domain}/search?keywords=${encodeURIComponent(keywords)}`
   }
   const store = AMAZON_STORES[language]
   if (!found.isbn13 || !store) return undefined

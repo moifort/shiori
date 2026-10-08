@@ -91,14 +91,15 @@ export const AwardWinnerType = builder.objectRef<AwardedWorkView>('AwardWinner')
     storeUrl: t.string({
       nullable: true,
       description:
-        'Where to get it: the recording’s page on the reader’s Audible store, or the ' +
-        'printed edition’s on Amazon. Null until a store confirmed it.',
+        'Where to get it: the recording’s page on the reader’s Audible store, or a ' +
+        'search for it there while Audible has not confirmed it; the printed edition’s ' +
+        'page on Amazon once its ISBN is known. Null until the edition is found.',
       resolve: async (view, _args, { userId }) => {
         const found = view.watch?.found
         if (!found) return null
         const asin = view.format === 'audiobook' ? found.asin : undefined
         const own = asin ? await AudibleQuery.recordingUrlOf(userId, asin) : undefined
-        return own ?? storeUrlOf(view.format, view.language, found) ?? null
+        return own ?? storeUrlOf(view.format, view.language, found, view.work.authors[0]) ?? null
       },
     }),
     awaitable: t.boolean({

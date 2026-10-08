@@ -10,6 +10,7 @@ import {
   dueWatchesOf,
   editionWatchKeyOf,
   inShelfOrder,
+  isConfirmed,
   isHeld,
   stateOf,
   storeUrlOf,
@@ -95,12 +96,15 @@ describe('stateOf', () => {
     expect(stateOf(found({ date: '2026-08' as ReleaseDate }), 'book', today)).toBe('available')
   })
 
-  test('is available for a recording only once Audible confirmed it', () => {
+  test('is available for a recording past its date, confirmed by Audible or not', () => {
     const out = { date: '2026-09-01' as ReleaseDate }
-    expect(stateOf(found(out), 'audiobook', today)).toBe('announced')
+    expect(stateOf(found(out), 'audiobook', today)).toBe('available')
     expect(stateOf(found({ ...out, asin: 'B0DM67WR2V' as never }), 'audiobook', today)).toBe(
       'available',
     )
+    expect(isConfirmed(found(out), 'audiobook')).toBe(false)
+    expect(isConfirmed(found({ ...out, asin: 'B0DM67WR2V' as never }), 'audiobook')).toBe(true)
+    expect(isConfirmed(found(out), 'book')).toBe(true)
   })
 })
 
@@ -162,17 +166,41 @@ describe('dueWatchesOf', () => {
     ])
     expect(dueWatchesOf([awaited()], out, now, today)).toEqual([])
   })
+
+  test('keeps looking up a recording out that Audible never confirmed', () => {
+    const unconfirmed = new Map([
+      [
+        awaited().watchKey,
+        watch({
+          checkedAt: new Date('2026-09-01'),
+          found: found({ date: '2026-09-01' as ReleaseDate }),
+        }),
+      ],
+    ])
+    expect(dueWatchesOf([awaited()], unconfirmed, now, today)).toHaveLength(1)
+  })
 })
 
 describe('alerts', () => {
   const out = (date: string) =>
-    view({ state: 'available', found: found({ date: date as ReleaseDate }) })
+    view({
+      state: 'available',
+      found: found({ date: date as ReleaseDate, asin: 'B0DM67WR2V' as never }),
+    })
 
   test('are due for an edition out in the last three weeks, never sent', () => {
     expect(alertIsDue(out('2026-09-28'), today)).toBe(true)
     expect(alertIsDue(out('2026-09-01'), today)).toBe(false)
     expect(alertIsDue({ ...out('2026-09-28'), notifiedAt: new Date() }, today)).toBe(false)
     expect(alertIsDue(view({ state: 'announced' }), today)).toBe(false)
+  })
+
+  test('are never sent for a recording Audible did not confirm', () => {
+    const unconfirmed = view({
+      state: 'available',
+      found: found({ date: '2026-09-28' as ReleaseDate }),
+    })
+    expect(alertIsDue(unconfirmed, today)).toBe(false)
   })
 
   test('name the edition in the reader’s language', () => {
@@ -226,7 +254,9 @@ describe('storeUrlOf', () => {
     expect(storeUrlOf('audiobook', 'fr', { asin: 'B0DM67WR2V' as never })).toBe(
       'https://www.audible.fr/pd/B0DM67WR2V',
     )
-    expect(storeUrlOf('audiobook', 'fr', {})).toBeUndefined()
+    expect(storeUrlOf('audiobook', 'fr', { title: 'Vent et vérité' }, 'Brandon Sanderson')).toBe(
+      'https://www.audible.fr/search?keywords=Vent%20et%20v%C3%A9rit%C3%A9%20Brandon%20Sanderson',
+    )
   })
 
   test('points a printed edition to Amazon by the ISBN-10 it is filed under', () => {
