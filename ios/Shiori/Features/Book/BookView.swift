@@ -285,7 +285,7 @@ struct BookView: View {
             // As on an author's page: the book looked up again, for a record
             // scanned thin or before the scan knew better. Typed corrections
             // stay with "Modifier"; this one rewrites only what the web says.
-            Button("Mettre à jour la fiche", systemImage: "arrow.clockwise") {
+            Button("Mettre à jour", systemImage: "arrow.clockwise") {
                 run { await viewModel.refresh() }
             }
             .accessibilityIdentifier("book-refresh")
@@ -321,8 +321,8 @@ struct BookView: View {
             ForEach(offer.awaited) { edition in
                 Button(
                     edition.format == .audiobook
-                        ? String(localized: "Ne plus suivre l'audio")
-                        : String(localized: "Ne plus suivre la version française"),
+                        ? String(localized: "Ne plus guetter en audio")
+                        : String(localized: "Ne plus guetter en français"),
                     systemImage: "bell.slash"
                 ) {
                     Task { await stopAwaiting(edition) }

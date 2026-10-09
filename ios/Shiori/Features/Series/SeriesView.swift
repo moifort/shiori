@@ -685,12 +685,12 @@ struct SeriesView: View {
             Menu {
                 ForEach(takenFormat.takenAs, id: \.self) { format in
                     Section(format.label) {
-                        Button("Ajouter à ma pile", systemImage: "bookmark.fill") {
+                        Button("À lire", systemImage: "bookmark.fill") {
                             Task { await add(volume, author: author, as: format) }
                         }
                         .accessibilityIdentifier("series-volume-add-pile-\(format.rawValue)")
                         Button(
-                            format == .audiobook ? "Je l'ai déjà écouté" : "Je l'ai déjà lu",
+                            format == .audiobook ? "Déjà écouté" : "Déjà lu",
                             systemImage: "checkmark"
                         ) {
                             Task { await add(volume, author: author, as: format, status: .read) }

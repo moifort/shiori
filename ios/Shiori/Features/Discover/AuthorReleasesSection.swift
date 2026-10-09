@@ -90,7 +90,7 @@ struct AuthorReleasesSection: View {
                 .tint(.primary)
                 .contextMenu {
                     if let url = edition.storeURL {
-                        Button(edition.format.storeLabel, systemImage: "arrow.up.right.square") {
+                        Button(edition.format.storeName, systemImage: "arrow.up.right.square") {
                             openURL(url)
                         }
                     }

@@ -120,7 +120,7 @@ struct AuthorView: View {
             if page != nil {
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
-                        Button("Mettre à jour la fiche", systemImage: "arrow.clockwise") {
+                        Button("Mettre à jour", systemImage: "arrow.clockwise") {
                             Task { await refreshCatalogue() }
                         }
                         .accessibilityIdentifier("author-refresh")

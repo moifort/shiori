@@ -379,15 +379,15 @@ struct DiscoverView: View {
         .contextMenu {
             ForEach(works.map(\.work).filter { $0.audibleURL != nil }, id: \.title) { work in
                 if let audibleURL = work.audibleURL {
-                    Button("Ouvrir « \(work.title) » dans Audible", systemImage: "headphones") {
+                    Button(work.title, systemImage: "headphones") {
                         openURL(audibleURL)
                     }
                 }
             }
             ForEach(volumes) { opened in
-                Button("Ouvrir « \(opened.volume.title) »", systemImage: "book") { openVolume = opened }
+                Button(opened.volume.title, systemImage: "book") { openVolume = opened }
             }
-            Button("Ouvrir l'auteur", systemImage: "person") { openAuthor = destination }
+            Button("Auteur", systemImage: "person") { openAuthor = destination }
         }
         .accessibilityIdentifier("discover-author-row")
     }
@@ -408,7 +408,7 @@ struct DiscoverView: View {
             SagaReleasesSummary(releases: row.releases, missing: row.missing, section: section)
         }
         .contextMenu {
-            Button("Ouvrir la série", systemImage: "books.vertical") { openSeries = row }
+            Button("Série", systemImage: "books.vertical") { openSeries = row }
         }
         .accessibilityIdentifier("discover-series-row")
     }
@@ -547,9 +547,9 @@ struct SeriesNewsStrip: View {
                     .buttonStyle(.plain)
                     .contextMenu {
                         if let audibleURL = opened.volume.audibleURL {
-                            Button("Ouvrir dans Audible", systemImage: "headphones") { openURL(audibleURL) }
+                            Button("Audible", systemImage: "headphones") { openURL(audibleURL) }
                         }
-                        Button("Ouvrir la série", systemImage: "books.vertical") { onOpenSeries(opened.saga) }
+                        Button("Série", systemImage: "books.vertical") { onOpenSeries(opened.saga) }
                     }
                     .accessibilityIdentifier("discover-volume-row")
                 }

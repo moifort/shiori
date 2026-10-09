@@ -165,14 +165,6 @@ extension ReleaseFormat {
         case .audiobook: .audible
         }
     }
-
-    /// The action that opens where an edition out in this format is sold.
-    var storeLabel: String {
-        switch self {
-        case .book: String(localized: "Voir sur Amazon")
-        case .audiobook: String(localized: "Ouvrir dans Audible")
-        }
-    }
 }
 
 enum AwaitedAPI {

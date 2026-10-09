@@ -4325,6 +4325,22 @@
         }
       }
     },
+    "Déjà lu" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Already read"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Déjà lu"
+          }
+        }
+      }
+    },
     "Déjà présent" : {
       "localizations" : {
         "en" : {
@@ -4337,6 +4353,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Déjà présent"
+          }
+        }
+      }
+    },
+    "Déjà écouté" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Already listened"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Déjà écouté"
           }
         }
       }
@@ -5597,38 +5629,6 @@
         }
       }
     },
-    "Je l'ai déjà lu" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "I’ve already read it"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Je l'ai déjà lu"
-          }
-        }
-      }
-    },
-    "Je l'ai déjà écouté" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "I’ve already listened to it"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Je l'ai déjà écouté"
-          }
-        }
-      }
-    },
     "Je t'ouvre ma bibliothèque sur Shiori. Code : %@" : {
       "localizations" : {
         "en" : {
@@ -6665,22 +6665,6 @@
         }
       }
     },
-    "Mettre à jour la fiche" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Update the record"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mettre à jour la fiche"
-          }
-        }
-      }
-    },
     "Mise à jour de la fiche…" : {
       "localizations" : {
         "en" : {
@@ -6857,6 +6841,38 @@
         }
       }
     },
+    "Ne plus guetter en audio" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop watching for the audiobook"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ne plus guetter en audio"
+          }
+        }
+      }
+    },
+    "Ne plus guetter en français" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop watching for the English edition"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ne plus guetter en français"
+          }
+        }
+      }
+    },
     "Ne plus partager avec %@ ?" : {
       "localizations" : {
         "en" : {
@@ -6901,38 +6917,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ne plus suivre ce livre ?"
-          }
-        }
-      }
-    },
-    "Ne plus suivre l'audio" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stop following the audiobook"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ne plus suivre l'audio"
-          }
-        }
-      }
-    },
-    "Ne plus suivre la version française" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stop following the English edition"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ne plus suivre la version française"
           }
         }
       }
@@ -7577,54 +7561,6 @@
         }
       }
     },
-    "Ouvrir dans Audible" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open in Audible"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ouvrir dans Audible"
-          }
-        }
-      }
-    },
-    "Ouvrir l'auteur" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open the author"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ouvrir l'auteur"
-          }
-        }
-      }
-    },
-    "Ouvrir la série" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open the series"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ouvrir la série"
-          }
-        }
-      }
-    },
     "Ouvrir les réglages" : {
       "localizations" : {
         "en" : {
@@ -7637,38 +7573,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ouvrir les réglages"
-          }
-        }
-      }
-    },
-    "Ouvrir « %@ »" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open “%@”"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ouvrir « %@ »"
-          }
-        }
-      }
-    },
-    "Ouvrir « %@ » dans Audible" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open “%@” in Audible"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ouvrir « %@ » dans Audible"
           }
         }
       }
@@ -11093,22 +10997,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Voir ma bibliothèque"
-          }
-        }
-      }
-    },
-    "Voir sur Amazon" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "See on Amazon"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Voir sur Amazon"
           }
         }
       }
