@@ -142,14 +142,13 @@ final class DiscoverViewModel {
         Self.soonOrder(ReleaseFormat.allCases.flatMap(awaited))
     }
 
-    /// The editions awaited still to come with a date first, the soonest
-    /// first; then the ones out, the newest first; then the rest — announced
-    /// with no date, or not announced yet — in the order the reader awaited
-    /// them.
+    /// The editions awaited still to come first, the soonest first and the
+    /// undated last; then the ones out, the newest first; then the ones not
+    /// announced yet, the latest awaited first.
     static func soonOrder(_ editions: [AwaitedEdition]) -> [AwaitedEdition] {
         func rank(_ edition: AwaitedEdition) -> Int {
             switch edition.state {
-            case .announced where edition.date != nil: 0
+            case .announced: 0
             case .available: 1
             default: 2
             }
@@ -160,7 +159,11 @@ final class DiscoverViewModel {
             guard left == right else { return left < right }
             switch left {
             case 0:
-                if day(lhs) != day(rhs) { return (day(lhs) ?? "") < (day(rhs) ?? "") }
+                if day(lhs) != day(rhs) {
+                    guard let leftDay = day(lhs) else { return false }
+                    guard let rightDay = day(rhs) else { return true }
+                    return leftDay < rightDay
+                }
             case 1:
                 if day(lhs) != day(rhs) {
                     guard let leftDay = day(lhs) else { return false }
@@ -168,8 +171,8 @@ final class DiscoverViewModel {
                     return leftDay > rightDay
                 }
             default:
-                let (leftAt, rightAt) = (lhs.awaitedAt ?? .distantFuture, rhs.awaitedAt ?? .distantFuture)
-                if leftAt != rightAt { return leftAt < rightAt }
+                let (leftAt, rightAt) = (lhs.awaitedAt ?? .distantPast, rhs.awaitedAt ?? .distantPast)
+                if leftAt != rightAt { return leftAt > rightAt }
             }
             return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
         }

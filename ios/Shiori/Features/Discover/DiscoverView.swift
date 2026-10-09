@@ -27,8 +27,8 @@ import SwiftUI
 ///
 /// Under them, on the Books shelf, "Bientôt disponible": the books the reader
 /// awaits in the app's language, translated or recorded, as one strip of
-/// covers — the ones announced for a date first, then the ones out, then the
-/// rest in the order they were awaited. Then "Prix littéraires": the latest
+/// covers — the ones announced first, then the ones out, then the ones not
+/// announced yet, the latest awaited first. Then "Prix littéraires": the latest
 /// winners of the awards of the genre the reader reads most that they do not
 /// hold, a strip of covers with every award in full behind "Tout voir". Then
 /// "Nouveautés séries": the volumes out in the last two weeks the reader can
