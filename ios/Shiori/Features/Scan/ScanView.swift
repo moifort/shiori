@@ -84,7 +84,8 @@ struct ScanView: View {
                             if await viewModel.save(approved, series: series) != nil { onDismiss() }
                         }
                     },
-                    onRetake: viewModel.retake
+                    onRetake: viewModel.retake,
+                    onClose: onDismiss
                 )
             }
         case .noResult:

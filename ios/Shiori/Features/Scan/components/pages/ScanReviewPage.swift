@@ -17,11 +17,12 @@ import SwiftUI
 /// A book the reader already keeps is flagged on top, with the way to their
 /// copy: a second edition stays theirs to add, so nothing is refused.
 ///
-/// The "+" adds the book. When its edition in the app's language may be
-/// awaited, translated or recorded, it opens a menu that offers that too, as
-/// the book's page does once added: awaited from here at once, the book is not
-/// added — a reader who scanned it in a shop only wants to know when it comes
-/// out.
+/// The "+" opens a menu: add the book, or — when its edition in the app's
+/// language may be awaited, translated or recorded, as the book's page offers
+/// once added — await it instead. Awaited from here, the book is not added and
+/// the scan closes at once, the server told behind it: a reader who scanned it
+/// in a shop only wants to know when it comes out. The offer follows the
+/// language and the format as they are corrected.
 struct ScanReviewPage: View {
     @State private var draft: BookDraft
     let ownedCopy: Book?
@@ -29,6 +30,8 @@ struct ScanReviewPage: View {
     /// The draft, and the saga as the reader renamed it, if they did.
     let onSave: (BookDraft, SeriesPlacement?) -> Void
     let onRetake: () -> Void
+    /// The scan is over without a book added: an edition was awaited instead.
+    let onClose: () -> Void
 
     @State private var editsIdentity = false
     @State private var editsSeries = false
@@ -39,23 +42,21 @@ struct ScanReviewPage: View {
     /// The editions in the app's language this book may be awaited in, as the
     /// server says for its language and format.
     @State private var awaitable: [ReleaseFormat] = []
-    /// The editions awaited from this review, the pending ones included.
-    @State private var awaited: [AwaitedEdition] = []
-    @State private var awaiting: [ReleaseFormat: Task<AwaitedEdition?, Never>] = [:]
-    @State private var awaitFailed: String?
 
     init(
         draft: BookDraft,
         ownedCopy: Book? = nil,
         isSaving: Bool,
         onSave: @escaping (BookDraft, SeriesPlacement?) -> Void,
-        onRetake: @escaping () -> Void
+        onRetake: @escaping () -> Void,
+        onClose: @escaping () -> Void
     ) {
         _draft = State(initialValue: draft)
         self.ownedCopy = ownedCopy
         self.isSaving = isSaving
         self.onSave = onSave
         self.onRetake = onRetake
+        self.onClose = onClose
     }
 
     private var book: Book {
@@ -162,43 +163,18 @@ struct ScanReviewPage: View {
     }
 
     /// Awaits the book's edition in the app's language, the book itself left
-    /// out of the library. Shown awaited at once, as the book page does: the
-    /// server looks it up on the web behind, and its answer replaces it.
+    /// out of the library, and closes the scan: the server looks it up on the
+    /// web behind, so a failure is reported rather than shown.
     private func awaitEdition(_ format: ReleaseFormat) {
-        let pending = AwaitedEdition.pending(format: format, of: book)
-        awaited.append(pending)
         let scanned = draft
-        awaiting[format] = Task {
-            defer { awaiting[format] = nil }
+        Task {
             do {
-                let edition = try await AwaitedAPI.awaitScanned(scanned, format: format)
-                // Unless the reader gave it up meanwhile.
-                if let index = awaited.firstIndex(where: { $0.id == pending.id }) {
-                    awaited[index] = edition
-                }
-                return edition
+                _ = try await AwaitedAPI.awaitScanned(scanned, format: format)
             } catch {
-                awaited.removeAll { $0.id == pending.id }
-                awaitFailed = reportError(error)
-                return nil
+                _ = reportError(error)
             }
         }
-    }
-
-    private func stopAwaiting(_ edition: AwaitedEdition) async {
-        var edition = edition
-        // Given up before the server answered: stopped once it has.
-        if let pending = awaiting[edition.format] {
-            awaited.removeAll { $0.id == edition.id }
-            guard let answered = await pending.value else { return }
-            edition = answered
-        }
-        do {
-            try await AwaitedAPI.stop(id: edition.id)
-            awaited.removeAll { $0.id == edition.id }
-        } catch {
-            awaitFailed = reportError(error)
-        }
+        onClose()
     }
 
     private var canSave: Bool {
@@ -211,43 +187,22 @@ struct ScanReviewPage: View {
         onSave(approved, renamedSeries)
     }
 
-    @ViewBuilder
-    private var addButton: some View {
-        if awaitable.isEmpty {
-            ToolbarIconButton(title: "Ajouter", systemImage: "plus", action: save)
-                .disabled(!canSave)
-                .accessibilityIdentifier("review-save")
-        } else {
-            addMenu
-        }
-    }
-
     private var addMenu: some View {
         Menu {
-            Button("Ajouter à la bibliothèque", systemImage: "books.vertical", action: save)
+            Button("Ajouter à ma bibliothèque", systemImage: "books.vertical", action: save)
                 .disabled(!canSave)
                 .accessibilityIdentifier("review-save")
             ForEach(awaitable) { format in
-                if let edition = awaited.first(where: { $0.format == format }) {
-                    Button(
-                        edition.format == .audiobook
-                            ? String(localized: "Ne plus suivre l'audio")
-                            : String(localized: "Ne plus suivre la version française"),
-                        systemImage: "bell.slash"
-                    ) {
-                        Task { await stopAwaiting(edition) }
-                    }
-                } else {
-                    Button(format.awaitLabel, systemImage: format == .audiobook ? "headphones" : "character.book.closed") {
-                        awaitEdition(format)
-                    }
-                    .accessibilityIdentifier("review-await-\(format.rawValue)")
+                Button(format.awaitLabel, systemImage: format == .audiobook ? "headphones" : "character.book.closed") {
+                    awaitEdition(format)
                 }
+                .accessibilityIdentifier("review-await-\(format.rawValue)")
             }
         } label: {
             Label("Ajouter", systemImage: "plus")
                 .labelStyle(.iconOnly)
         }
+        .disabled(isSaving)
         .accessibilityIdentifier("review-add")
     }
 
@@ -348,14 +303,6 @@ struct ScanReviewPage: View {
         .navigationBarBackButtonHidden()
         .disabled(isSaving)
         .task(id: [draft.language?.rawValue, draft.format.rawValue]) { await loadAwaitable() }
-        .alert(
-            "Impossible de suivre ce livre",
-            isPresented: .init(get: { awaitFailed != nil }, set: { if !$0 { awaitFailed = nil } })
-        ) {
-            Button("OK", role: .cancel) { awaitFailed = nil }
-        } message: {
-            Text(awaitFailed ?? "")
-        }
         .sheet(isPresented: $editsIdentity) {
             ScanIdentitySheet(book: book) { draft.apply($0) }
         }
@@ -405,7 +352,7 @@ struct ScanReviewPage: View {
                 )
             }
             ToolbarItem(placement: .confirmationAction) {
-                addButton
+                addMenu
             }
         }
     }
@@ -529,7 +476,8 @@ private extension BookCorrection.Change {
             ownedCopy: Book(id: "dune", title: "Dune", authors: ["Frank Herbert"], status: .read),
             isSaving: false,
             onSave: { _, _ in },
-            onRetake: {}
+            onRetake: {},
+            onClose: {}
         )
     }
 }
@@ -551,7 +499,8 @@ private extension BookCorrection.Change {
             ),
             isSaving: false,
             onSave: { _, _ in },
-            onRetake: {}
+            onRetake: {},
+            onClose: {}
         )
     }
 }

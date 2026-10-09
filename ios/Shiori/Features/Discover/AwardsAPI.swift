@@ -125,6 +125,14 @@ struct AwardWinner: Identifiable, Hashable, Sendable {
     }
 }
 
+extension [AwardWinner] {
+    /// The latest prize first, whatever order the server sent: the strip reads
+    /// from this year's winner back. Two of a year keep the server's order.
+    var latestFirst: [AwardWinner] {
+        sorted { ($0.mentions.first?.year ?? 0) > ($1.mentions.first?.year ?? 0) }
+    }
+}
+
 /// One genre's section of Découvrir's award winners: the latest its awards
 /// crowned that the reader does not hold, none drawn in another section.
 struct AwardSection: Identifiable, Hashable, Sendable {
@@ -150,7 +158,9 @@ enum AwardsAPI {
         return data.awardSections.map { section in
             AwardSection(
                 genre: section.genre.asDomain,
-                winners: section.winners.map { AwardWinner(fields: $0.fragments.awardWinnerFields) }
+                winners: section.winners
+                    .map { AwardWinner(fields: $0.fragments.awardWinnerFields) }
+                    .latestFirst
             )
         }
     }

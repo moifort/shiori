@@ -114,11 +114,11 @@ final class ScreenshotTest: XCTestCase {
             try tap(allow)
         }
         try tap(app.descendants(matching: .any)["add-book-recent-photo-0"])
-        try wait(app.buttons["review-save"], timeout: 30)
+        try wait(app.buttons["review-add"], timeout: 30)
         settle()
         save("00-scan")
         try tap(app.navigationBars[label("Vérifier")].buttons["xmark"])
-        _ = app.buttons["review-save"].waitForNonExistence(timeout: 5)
+        _ = app.buttons["review-add"].waitForNonExistence(timeout: 5)
 
         // The paywall, for App Review: behind the settings, as the review notes say.
         try open("Accueil")

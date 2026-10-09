@@ -1305,22 +1305,6 @@
         }
       }
     },
-    "Action impossible" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Action failed"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Action impossible"
-          }
-        }
-      }
-    },
     "Activités récentes" : {
       "localizations" : {
         "en" : {
@@ -1553,22 +1537,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ajouter « %@ » à ma liste à lire"
-          }
-        }
-      }
-    },
-    "Ajouter à la bibliothèque" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add to library"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ajouter à la bibliothèque"
           }
         }
       }
@@ -5029,7 +4997,7 @@
         }
       }
     },
-    "Guetter la sortie de la version audio" : {
+    "Guetter la version française audio" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5040,12 +5008,12 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Guetter la sortie de la version audio"
+            "value" : "Guetter la version française audio"
           }
         }
       }
     },
-    "Guetter la sortie de la version française" : {
+    "Guetter la version française du livre" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5056,7 +5024,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Guetter la sortie de la version française"
+            "value" : "Guetter la version française du livre"
           }
         }
       }

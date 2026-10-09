@@ -32,18 +32,14 @@ struct AwardWinnersStrip: View {
 
 /// One winner, opened from the strip, drawn as a volume
 /// announced is: where its edition stands under the author, the store's tag
-/// once one sells it, the prizes it won and the title it won under. "+" puts it
-/// on the pile; "Guetter" awaits its edition in the app's language, as a
-/// book seen in a shop is awaited from its scan.
+/// once one sells it, the prizes it won and the title it won under. The "+"
+/// opens a menu: put it on the pile, or await its edition in the app's
+/// language, as a book seen in a shop is awaited from its scan. Either closes
+/// the page at once; the server is told behind it.
 struct AwardWinnerView: View {
     let winner: AwardWinner
 
     @Environment(\.dismiss) private var dismiss
-    @State private var isAdding = false
-    @State private var added = false
-    @State private var isAwaiting = false
-    @State private var awaited = false
-    @State private var failure: String?
     @State private var describer = ReleaseDescriber()
 
     /// The winner once described, as a book's page draws it.
@@ -55,7 +51,7 @@ struct AwardWinnerView: View {
                 book: shown,
                 state: state,
                 releaseDate: winner.state == .announced ? winner.date : nil,
-                isAwaited: awaited || winner.awaitedEditionId != nil,
+                isAwaited: winner.awaitedEditionId != nil,
                 storeLink: winner.storeURL.map {
                     .init(name: winner.format.storeName, url: $0, tint: winner.format.storeTint)
                 }
@@ -75,15 +71,6 @@ struct AwardWinnerView: View {
             } header: {
                 Text("Récompenses")
             }
-            if winner.awaitable && !awaited {
-                Section {
-                    Button(winner.format.awaitLabel, systemImage: "binoculars") {
-                        Task { await awaitEdition() }
-                    }
-                    .disabled(isAwaiting)
-                    .accessibilityIdentifier("award-winner-await")
-                }
-            }
         }
         .listStyle(.insetGrouped)
         .labelStyle(.row)
@@ -95,40 +82,48 @@ struct AwardWinnerView: View {
                 ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
             }
             ToolbarItem(placement: .primaryAction) {
-                if isAdding {
-                    ProgressView()
-                } else {
-                    Button("Ajouter à ma pile", systemImage: "plus") {
-                        Task { await add() }
-                    }
-                    .disabled(added)
-                    .accessibilityIdentifier("award-winner-add")
-                }
+                addMenu
             }
-        }
-        .alert(
-            "Action impossible",
-            isPresented: .init(get: { failure != nil }, set: { if !$0 { failure = nil } })
-        ) {
-            Button("OK", role: .cancel) { failure = nil }
-        } message: {
-            Text(failure ?? "")
         }
     }
 
-    /// Said under the author: once added, where the edition stands; a day
-    /// still to come is the calendar leaf's to say.
+    /// "+": on the pile, or awaited in the format on screen when its edition
+    /// is not out and not awaited yet.
+    private var addMenu: some View {
+        Menu {
+            Button("Ajouter à ma bibliothèque", systemImage: "books.vertical") {
+                Task { await add() }
+                dismiss()
+            }
+            .accessibilityIdentifier("award-winner-add")
+            if winner.awaitable {
+                Button(
+                    winner.format.awaitLabel,
+                    systemImage: winner.format == .audiobook ? "headphones" : "character.book.closed"
+                ) {
+                    Task { await awaitEdition() }
+                    dismiss()
+                }
+                .accessibilityIdentifier("award-winner-await")
+            }
+        } label: {
+            Label("Ajouter", systemImage: "plus")
+                .labelStyle(.iconOnly)
+        }
+        .accessibilityIdentifier("award-winner-menu")
+    }
+
+    /// Said under the author: where the edition stands; a day still to come is
+    /// the calendar leaf's to say.
     private var state: BookState? {
-        if added { return .addedToPile }
         if winner.state == .announced, let date = winner.date, ReleaseDateText.isUpcoming(date) { return nil }
         return BookState(text: winner.stateLine, tint: winner.stateTint)
     }
 
     /// Puts it on the pile: the edition found when there is one, in the app's
-    /// language, else the title it won under.
+    /// language, else the title it won under. The page is closed by then, so a
+    /// failure is reported rather than shown.
     private func add() async {
-        isAdding = true
-        defer { isAdding = false }
         var draft = winner.draft
         if winner.state != .unannounced {
             draft.title = winner.title
@@ -141,21 +136,17 @@ struct AwardWinnerView: View {
         do {
             _ = try await BookAPI.add(draft)
             track(.bookAdded(source: .discover))
-            added = true
         } catch {
-            failure = reportError(error)
+            _ = reportError(error)
         }
     }
 
     /// Awaits its edition in the app's language, in the format on screen.
     private func awaitEdition() async {
-        isAwaiting = true
-        defer { isAwaiting = false }
         do {
             _ = try await AwaitedAPI.awaitScanned(winner.draft, format: winner.format)
-            awaited = true
         } catch {
-            failure = reportError(error)
+            _ = reportError(error)
         }
     }
 }
