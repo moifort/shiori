@@ -2677,6 +2677,22 @@
         }
       }
     },
+    "Bientôt disponible" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coming soon"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bientôt disponible"
+          }
+        }
+      }
+    },
     "Bientôt en FR" : {
       "localizations" : {
         "en" : {
@@ -6201,22 +6217,6 @@
         }
       }
     },
-    "Les nouveautés et les prochains livres audio annoncés de vos auteurs apparaîtront ici." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "New releases and upcoming audiobooks from your authors will show up here."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Les nouveautés et les prochains livres audio annoncés de vos auteurs apparaîtront ici."
-          }
-        }
-      }
-    },
     "Les nouveautés et les prochains tomes annoncés de vos séries apparaîtront ici." : {
       "localizations" : {
         "en" : {
@@ -6229,22 +6229,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Les nouveautés et les prochains tomes annoncés de vos séries apparaîtront ici."
-          }
-        }
-      }
-    },
-    "Les nouveautés et les prochains tomes annoncés de vos séries audio apparaîtront ici." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "New releases and upcoming volumes of your audio series will show up here."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Les nouveautés et les prochains tomes annoncés de vos séries audio apparaîtront ici."
           }
         }
       }
@@ -6389,22 +6373,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Livres"
-          }
-        }
-      }
-    },
-    "Livres audio" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Audiobooks"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Livres audio"
           }
         }
       }
@@ -7365,6 +7333,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nouveautés"
+          }
+        }
+      }
+    },
+    "Nouveautés séries" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Series news"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nouveautés séries"
           }
         }
       }

@@ -141,17 +141,7 @@ extension ReleaseFormat {
         }
     }
 
-    /// The formats whose awaited editions Découvrir's Books shelf shows under
-    /// this one: the book format both, translated first; the audio format
-    /// only the recordings.
-    var awaitedShown: [ReleaseFormat] {
-        switch self {
-        case .book: [.book, .audiobook]
-        case .audiobook: [.audiobook]
-        }
-    }
-
-    /// The Découvrir section of the editions awaited in this format.
+    /// The format an edition is awaited in, over its title on a book's page.
     var awaitedTitle: String {
         switch self {
         case .book: String(localized: "Bientôt en FR")

@@ -172,9 +172,13 @@ struct AuthorNewsItem: Identifiable {
     let date: String?
     let coverURL: URL?
     let isComing: Bool
+    /// A recording: its cover carries the headphones.
+    let isAudio: Bool
 
-    init(work: DiscoveredWork) {
-        id = "work-\(work.id)"
+    /// The same title announced in print and recorded is two items.
+    init(work: DiscoveredWork, format: ReleaseFormat) {
+        id = "work-\(format.rawValue)-\(work.id)"
+        isAudio = format == .audiobook
         title = work.title
         date = work.date
         coverURL = work.coverURL
@@ -183,6 +187,7 @@ struct AuthorNewsItem: Identifiable {
 
     init(awaited: AwaitedEdition) {
         id = "awaited-\(awaited.id)"
+        isAudio = awaited.format == .audiobook
         title = awaited.title
         date = awaited.date
         coverURL = awaited.coverURL
@@ -191,6 +196,7 @@ struct AuthorNewsItem: Identifiable {
 
     init(volume: DiscoveryVolume, isComing: Bool) {
         id = "volume-\(volume.id)"
+        isAudio = volume.saga.series.isAudio
         title = volume.volume.title
         date = volume.volume.date
         coverURL = volume.volume.coverURL
@@ -201,12 +207,12 @@ struct AuthorNewsItem: Identifiable {
     /// shelf, in its order: the soonest first while announced, the undated
     /// last; the newest first once out.
     static func ordered(
-        works: [DiscoveredWork],
+        works: [(work: DiscoveredWork, format: ReleaseFormat)],
         awaited: [AwaitedEdition],
         volumes: [DiscoveryVolume] = [],
         section: SagaReleasesSummary.Section
     ) -> [AuthorNewsItem] {
-        let items = works.map(AuthorNewsItem.init(work:))
+        let items = works.map { AuthorNewsItem(work: $0.work, format: $0.format) }
             + awaited.map(AuthorNewsItem.init(awaited:))
             + volumes.map { AuthorNewsItem(volume: $0, isComing: section == .upcoming) }
         let day = { (item: AuthorNewsItem) in item.date.map(ReleaseDateText.lastDay) }
@@ -231,7 +237,6 @@ struct AuthorNewsItem: Identifiable {
 struct AuthorWorksStrip: View {
     let items: [AuthorNewsItem]
     let author: String
-    let isAudio: Bool
 
     var body: some View {
         ScrollView(.horizontal) {
@@ -243,7 +248,7 @@ struct AuthorWorksStrip: View {
                             id: "release-\(work.id)",
                             title: work.title,
                             authors: [author],
-                            format: isAudio ? .audiobook : .book,
+                            format: work.isAudio ? .audiobook : .book,
                             coverURL: work.coverURL,
                             status: .toRead
                         ),

@@ -1,8 +1,8 @@
 import Foundation
 import SwiftUI
 
-/// Owns the Découvrir tab's rows, one list per format, and the one in-flight
-/// load. The tab opens on everything it last showed — the rows, the friends'
+/// Owns the Découvrir tab's rows, one list per format drawn mixed, and the
+/// one in-flight load. The tab opens on everything it last showed — the rows, the friends'
 /// picks and the editions awaited: a `SnapshotCache` hands them back from disk
 /// before a byte is asked of the network, and the fetches bring them up to
 /// date silently underneath, the new rows sliding into place.
@@ -34,12 +34,19 @@ final class DiscoverViewModel {
     /// The rows of a format, nil until they were ever loaded.
     func rows(_ format: ReleaseFormat) -> [SagaDiscovery]? { feed.rows[format] }
 
-    /// The sagas of a format with a volume announced, for the Books shelf: the
-    /// soonest out first, a year alone read as its last day so "2027" comes
-    /// after "2027-02-19", and the volumes nobody found a date for last. Nil
-    /// until the format was ever loaded.
-    func upcoming(_ format: ReleaseFormat) -> [SagaDiscovery]? {
-        rows(format)?
+    /// The sagas of both formats, read and heard side by side: the tab draws
+    /// them mixed, the headphones on a recording's cover telling them apart.
+    /// Nil until neither format was ever loaded.
+    var rows: [SagaDiscovery]? {
+        guard !feed.rows.isEmpty else { return nil }
+        return ReleaseFormat.allCases.flatMap { feed.rows[$0] ?? [] }
+    }
+
+    /// The sagas with a volume announced, for the Books shelf: the soonest out
+    /// first, a year alone read as its last day so "2027" comes after
+    /// "2027-02-19", and the volumes nobody found a date for last.
+    var upcoming: [SagaDiscovery] {
+        (rows ?? [])
             .filter { $0.releases.next != nil }
             .sorted { lhs, rhs in
                 let left = lhs.releases.next?.date.map(ReleaseDateText.lastDay)
@@ -53,29 +60,42 @@ final class DiscoverViewModel {
             }
     }
 
-    /// Every volume just out of the sagas of a format, for the Books shelf,
-    /// each with its saga: the newest first. Nil until the format was ever
-    /// loaded.
-    func recentVolumes(_ format: ReleaseFormat) -> [DiscoveryVolume]? {
-        rows(format)?
+    /// Every volume just out of the sagas, for the Books shelf, each with its
+    /// saga: the newest first.
+    var recentVolumes: [DiscoveryVolume] {
+        (rows ?? [])
             .flatMap { saga in saga.recent.map { DiscoveryVolume(saga: saga, volume: $0) } }
             .sorted { ($0.volume.date ?? "", $0.volume.number) > ($1.volume.date ?? "", $1.volume.number) }
     }
 
-    /// The sagas of a format with a volume just out, for the Series shelf: the
-    /// newest out first. Nil until the format was ever loaded.
-    func recentSagas(_ format: ReleaseFormat) -> [SagaDiscovery]? {
-        rows(format)?
+    /// The sagas with a volume just out, for the Series shelf: the newest out
+    /// first.
+    var recentSagas: [SagaDiscovery] {
+        (rows ?? [])
             .filter { !$0.recent.isEmpty }
             .sorted { ($0.recent.first?.date ?? "") > ($1.recent.first?.date ?? "") }
     }
 
-    /// The authors of a format with a work announced, an edition awaited
-    /// announced or a saga's volume announced, for the Authors shelf: the soonest out first, as the Books
-    /// shelf orders its volumes. Nil until the format was ever loaded.
-    func upcomingAuthors(_ format: ReleaseFormat) -> [AuthorDiscovery]? {
-        feed.authors[format]?
-            .filter { $0.next != nil || !$0.awaitedComing.isEmpty || !$0.sagaComing.isEmpty }
+    /// The authors of both formats, one row per author: a writer read and
+    /// heard is one face on the shelf, their news in both formats under it.
+    private var authors: [AuthorNews] {
+        var order: [String] = []
+        var parts: [String: [AuthorNews.Part]] = [:]
+        for format in ReleaseFormat.allCases {
+            for row in feed.authors[format] ?? [] {
+                if parts[row.author.id] == nil { order.append(row.author.id) }
+                parts[row.author.id, default: []].append(AuthorNews.Part(format: format, row: row))
+            }
+        }
+        return order.compactMap { id in parts[id].map(AuthorNews.init) }
+    }
+
+    /// The authors with a work announced, an edition awaited announced or a
+    /// saga's volume announced, for the Authors shelf: the soonest out first,
+    /// as the Books shelf orders its volumes.
+    var upcomingAuthors: [AuthorNews] {
+        authors
+            .filter(\.hasComing)
             .sorted { lhs, rhs in
                 let left = lhs.soonestComing
                 let right = rhs.soonestComing
@@ -88,12 +108,11 @@ final class DiscoverViewModel {
             }
     }
 
-    /// The authors of a format with a work just out, an edition awaited out or
-    /// a saga's volume just out, for the Authors shelf: the newest out first. Nil until the format
-    /// was ever loaded.
-    func recentAuthors(_ format: ReleaseFormat) -> [AuthorDiscovery]? {
-        feed.authors[format]?
-            .filter { !$0.recent.isEmpty || !$0.awaitedOut.isEmpty || !$0.sagaOut.isEmpty }
+    /// The authors with a work just out, an edition awaited out or a saga's
+    /// volume just out, for the Authors shelf: the newest out first.
+    var recentAuthors: [AuthorNews] {
+        authors
+            .filter(\.hasOut)
             .sorted { ($0.newestOut ?? "") > ($1.newestOut ?? "") }
     }
 
@@ -117,6 +136,45 @@ final class DiscoverViewModel {
     /// picks.
     func awaited(_ format: ReleaseFormat) -> [AwaitedEdition] { feed.awaited[format] ?? [] }
 
+    /// "Bientôt disponible": the editions awaited in both formats, translated
+    /// and recorded together, in `soonOrder`.
+    var awaitedSoon: [AwaitedEdition] {
+        Self.soonOrder(ReleaseFormat.allCases.flatMap(awaited))
+    }
+
+    /// The editions awaited still to come with a date first, the soonest
+    /// first; then the ones out, the newest first; then the rest — announced
+    /// with no date, or not announced yet — in the order the reader awaited
+    /// them.
+    static func soonOrder(_ editions: [AwaitedEdition]) -> [AwaitedEdition] {
+        func rank(_ edition: AwaitedEdition) -> Int {
+            switch edition.state {
+            case .announced where edition.date != nil: 0
+            case .available: 1
+            default: 2
+            }
+        }
+        func day(_ edition: AwaitedEdition) -> String? { edition.date.map(ReleaseDateText.lastDay) }
+        return editions.sorted { lhs, rhs in
+            let (left, right) = (rank(lhs), rank(rhs))
+            guard left == right else { return left < right }
+            switch left {
+            case 0:
+                if day(lhs) != day(rhs) { return (day(lhs) ?? "") < (day(rhs) ?? "") }
+            case 1:
+                if day(lhs) != day(rhs) {
+                    guard let leftDay = day(lhs) else { return false }
+                    guard let rightDay = day(rhs) else { return true }
+                    return leftDay > rightDay
+                }
+            default:
+                let (leftAt, rightAt) = (lhs.awaitedAt ?? .distantFuture, rhs.awaitedAt ?? .distantFuture)
+                if leftAt != rightAt { return leftAt < rightAt }
+            }
+            return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
+        }
+    }
+
     func loadAwaited(_ format: ReleaseFormat) async {
         do {
             let found = try await AwaitedAPI.awaited(format: format)
@@ -132,6 +190,13 @@ final class DiscoverViewModel {
     /// loaded, and when the reader reads no genre with awards enough. Not kept
     /// in the snapshot: a suggestion, asked anew on each visit.
     private(set) var awards: [ReleaseFormat: AwardShelf] = [:]
+
+    /// The format the award winners are shown in: the book's, unless the
+    /// reader follows and awaits nothing read — a reader of recordings alone
+    /// wants to know which winners they can hear.
+    var awardsFormat: ReleaseFormat {
+        holdsNothing(in: .book) && !holdsNothing(in: .audiobook) ? .audiobook : .book
+    }
 
     func loadAwards(_ format: ReleaseFormat) async {
         do {
@@ -177,8 +242,8 @@ final class DiscoverViewModel {
     /// was loaded.
     func followed(_ format: ReleaseFormat) -> Int? { feed.followed[format] }
 
-    /// Whether last session's snapshot says the reader follows and awaits
-    /// nothing in a format, so the tab is better opened on the other one.
+    /// Whether the reader follows and awaits nothing in a format, as last
+    /// session's snapshot or the server says.
     func holdsNothing(in format: ReleaseFormat) -> Bool {
         followed(format) == 0 && awaited(format).isEmpty
     }
@@ -232,13 +297,19 @@ final class DiscoverViewModel {
         }
     }
 
-    /// The tab appeared, or its format changed: rows still showing last
-    /// session's snapshot are brought up to date, rows never loaded load.
-    /// Rows the server already answered ask nothing: every write posts the
-    /// change notice this tab listens to.
-    func loadOnAppear(_ format: ReleaseFormat) async {
-        guard !loaded.contains(format) else { return }
-        await load(format)
+    /// The tab appeared: the formats still showing last session's snapshot
+    /// are brought up to date, the ones never loaded load, one after the
+    /// other. The ones the server already answered ask nothing: every write
+    /// posts the change notice this tab listens to.
+    func loadOnAppear() async {
+        for format in ReleaseFormat.allCases where !loaded.contains(format) {
+            await load(format)
+        }
+    }
+
+    /// A pull: both formats are asked again.
+    func loadAll() async {
+        for format in ReleaseFormat.allCases { await load(format) }
     }
 
     /// The library changed: the formats already loaded are asked again.

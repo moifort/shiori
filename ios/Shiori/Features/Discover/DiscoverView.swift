@@ -5,34 +5,34 @@ import SwiftUI
 /// first. The volumes already out are not listed: the saga screen shows them
 /// under "Tomes", with the button that adds them.
 ///
-/// Laid out as the Library tab is, so nothing here has to be learnt twice: the
-/// capsule above the tab bar switches between "Livres" — each volume announced
-/// drawn as the Books tab draws a book, the soonest out first, a tap opening
-/// its page described on the spot — and "Séries" — the Series tab's rows, every
-/// cover of their strip; a tap opens the saga screen as a sheet — and
-/// "Auteurs" — the Authors shelf's rows, for the authors the reader holds with
-/// a book announced or just out, an edition of theirs they follow that is
-/// announced or out, or a volume of one of their sagas the Books shelf lists;
-/// a tap opens the
-/// author's page as the Library opens it. Read through one format at a time —
-/// the saga read or the saga heard — picked in the toolbar and kept between
-/// visits: an author is watched only in the formats the reader holds them in.
+/// Read and heard together: no format to pick, every section mixes the sagas
+/// read and the sagas heard, the headphones on a recording's cover telling
+/// them apart.
 ///
-/// Above what is announced, "Nouvelles parutions": the volumes out in the last
-/// two weeks the reader can have now, read off the same look on the web.
+/// Laid out as the Library tab is, so nothing here has to be learnt twice: the
+/// capsule above the tab bar switches between "Livres" — each volume drawn as
+/// the Books tab draws a book, a tap opening its page described on the spot —
+/// and "Séries" — the Series tab's rows, every cover of their strip; a tap
+/// opens the saga screen as a sheet — and "Auteurs" — the Authors shelf's
+/// rows, one per author whatever the formats they are followed in, for the
+/// authors the reader holds with a book announced or just out, an edition of
+/// theirs they follow that is announced or out, or a volume of one of their
+/// sagas the Books shelf lists; a tap opens the author's page as the Library
+/// opens it.
 ///
 /// Above everything, "Coups de cœur de vos amis": what the friends hearted and
 /// the reader holds in no format, as a strip that scrolls sideways so it takes
 /// one row — covers on the Books shelf, sagas on the Series shelf, faces on the
 /// Authors shelf, the newest heart first. A flame marks what many of them love.
 ///
-/// Under them, on the Books shelf, "Bientôt en FR" and "Bientôt en audio": the
-/// books the reader awaits in the app's language, as a strip of covers per
-/// format, the ones out first. The book format shows both — a book read on
-/// paper is as often awaited recorded as translated — the audio format only
-/// the recordings. Then "Prix littéraires": the latest winners of the awards
-/// of the genre the reader reads most that they do not hold, a strip of
-/// covers with every award in full behind "Tout voir".
+/// Under them, on the Books shelf, "Bientôt disponible": the books the reader
+/// awaits in the app's language, translated or recorded, as one strip of
+/// covers — the ones announced for a date first, then the ones out, then the
+/// rest in the order they were awaited. Then "Prix littéraires": the latest
+/// winners of the awards of the genre the reader reads most that they do not
+/// hold, a strip of covers with every award in full behind "Tout voir". Then
+/// "Nouveautés séries": the volumes out in the last two weeks the reader can
+/// have now, the newest first, then the ones announced, the soonest first.
 ///
 /// The server looks the sagas up on the web once a week. The tab opens on
 /// everything it last showed — the rows, the friends' picks, the books awaited
@@ -41,7 +41,7 @@ import SwiftUI
 /// is all looked up at once behind a full-screen message; a saga or an author
 /// followed since waits for the hourly pass.
 struct DiscoverView: View {
-    @State private var viewModel: DiscoverViewModel
+    @State private var viewModel = DiscoverViewModel()
     @State private var openSeries: SagaDiscovery?
     /// The volume whose page is open, announced or just out.
     @State private var openVolume: DiscoveryVolume?
@@ -52,30 +52,18 @@ struct DiscoverView: View {
     @State private var openWinner: AwardWinner?
     @State private var openAwards: AwardShelf?
     @Environment(\.openURL) private var openURL
-    @State private var format: ReleaseFormat
     /// Held by `ContentView`, which brings it back to the books on each visit.
     @Binding var shelf: LibraryShelf
-    /// The format was picked this session — by a tap, or once for the reader —
-    /// and is kept even when it holds no saga.
-    @State private var formatSettled: Bool
-
-    /// The tab opens on the format last session's snapshot says the reader
-    /// follows something in, so a reader of audio sagas alone never sees the
-    /// empty book format first, then the switch once the server has answered.
-    init(shelf: Binding<LibraryShelf>) {
-        _shelf = shelf
-        let viewModel = DiscoverViewModel()
-        let opensOnOther = viewModel.holdsNothing(in: .book)
-        _viewModel = State(initialValue: viewModel)
-        _format = State(initialValue: opensOnOther ? .audiobook : .book)
-        _formatSettled = State(initialValue: opensOnOther)
-    }
 
     var body: some View {
         NavigationStack {
             content
                 .navigationTitle("Découvrir")
-                .toolbar { toolbar }
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        DiscoverAlertsButton()
+                    }
+                }
                 .libraryShelfPicker($shelf, shelves: [.books, .series, .authors])
                 // A sheet, as a book opens from the library.
                 .sheet(item: $openSeries) { row in
@@ -124,7 +112,7 @@ struct DiscoverView: View {
                     NavigationStack { AwardWinnerView(winner: winner) }
                 }
                 .sheet(item: $openAwards) { awards in
-                    NavigationStack { AwardsListView(format: format, shelf: awards) }
+                    NavigationStack { AwardsListView(format: viewModel.awardsFormat, shelf: awards) }
                 }
                 // The Library's own author page, in its own stack so a saga
                 // pushes inside it.
@@ -134,28 +122,26 @@ struct DiscoverView: View {
                     }
                 }
         }
-        .task(id: format) {
-            await viewModel.loadOnAppear(format)
-            openOnAFollowedFormat()
-        }
+        .task { await viewModel.loadOnAppear() }
         .task { await viewModel.loadPicks() }
-        .task(id: format) {
-            for awaited in format.awaitedShown { await viewModel.loadAwaited(awaited) }
+        .task {
+            for format in ReleaseFormat.allCases { await viewModel.loadAwaited(format) }
         }
-        .task(id: format) { await viewModel.loadAwards(format) }
+        // The format follows what the reader holds, known once the rows are in.
+        .task(id: viewModel.awardsFormat) { await viewModel.loadAwards(viewModel.awardsFormat) }
         // The Authors shelf carries the editions awaited too.
         .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
             Task {
                 await viewModel.reloadAwaited()
                 await viewModel.reload()
-                await viewModel.loadAwards(format)
+                await viewModel.loadAwards(viewModel.awardsFormat)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
             Task {
                 await viewModel.reload()
                 await viewModel.loadPicks()
-                await viewModel.loadAwards(format)
+                await viewModel.loadAwards(viewModel.awardsFormat)
             }
         }
     }
@@ -167,18 +153,18 @@ struct DiscoverView: View {
             // web, and there is nothing to show until it is.
             DiscoverFirstLookView()
                 .accessibilityIdentifier("discover-looking-up")
-        } else if let rows = viewModel.rows(format) {
-            list(rows)
+        } else if viewModel.rows != nil {
+            list
         } else if let errorMessage = viewModel.errorMessage, !viewModel.isLoading {
             EmptyStateView.failure("Découvrir indisponible", message: errorMessage) {
-                await viewModel.load(format)
+                await viewModel.loadAll()
             }
         } else {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
-    private func list(_ rows: [SagaDiscovery]) -> some View {
+    private var list: some View {
         List {
             friendPicksSection
             if shelf == .books {
@@ -188,13 +174,13 @@ struct DiscoverView: View {
             if shelf == .authors {
                 authorSections
             } else {
-                sagaSections(rows)
+                sagaSections
             }
         }
         .listStyle(.insetGrouped)
         .refreshable {
             async let picks: Void = viewModel.loadPicks()
-            await viewModel.load(format)
+            await viewModel.loadAll()
             await picks
         }
     }
@@ -228,31 +214,29 @@ struct DiscoverView: View {
         }
     }
 
-    /// "Bientôt en FR" and "Bientôt en audio": the editions the reader awaits
-    /// in the formats the one on screen shows, a strip each like the friends'
-    /// favourites. A strip is absent when nothing is awaited in its format.
+    /// "Bientôt disponible": the editions the reader awaits, translated and
+    /// recorded in one strip like the friends' favourites, the headphones on a
+    /// recording's cover. Absent when nothing is awaited.
     @ViewBuilder
     private var awaitedSection: some View {
-        ForEach(format.awaitedShown) { awaited in
-            let editions = viewModel.awaited(awaited)
-            if !editions.isEmpty {
-                Section {
-                    AwaitedEditionsStrip(editions: editions) { openAwaited = $0 }
-                } header: {
-                    Text(awaited.awaitedTitle)
-                }
-                .accessibilityIdentifier("discover-awaited-\(awaited.rawValue)")
+        let editions = viewModel.awaitedSoon
+        if !editions.isEmpty {
+            Section {
+                AwaitedEditionsStrip(editions: editions) { openAwaited = $0 }
+            } header: {
+                Text("Bientôt disponible")
             }
+            .accessibilityIdentifier("discover-awaited")
         }
     }
 
     /// "Prix littéraires": the latest winners of the awards of the genre the
-    /// reader reads most, the ones they do not hold in the format on screen,
-    /// as a strip like the editions awaited. "Tout voir" opens every award in
+    /// reader reads most, the ones they do not hold — in print, or recorded
+    /// for a reader who only listens — as a strip like the editions awaited. "Tout voir" opens every award in
     /// full. Absent when the reader reads no genre with awards enough.
     @ViewBuilder
     private var awardsSection: some View {
-        if let awards = viewModel.awards[format], !awards.recent.isEmpty {
+        if let awards = viewModel.awards[viewModel.awardsFormat], !awards.recent.isEmpty {
             Section {
                 AwardWinnersStrip(winners: awards.recent) { openWinner = $0 }
             } header: {
@@ -270,51 +254,50 @@ struct DiscoverView: View {
     }
 
     /// The Books and Series shelves: the sagas' volumes just out, then the
-    /// ones announced.
+    /// ones announced, read and heard mixed. The Books shelf lists them as one
+    /// section, "Nouveautés séries"; the Series shelf, where one saga may be in
+    /// both, keeps them apart.
     @ViewBuilder
-    private func sagaSections(_ rows: [SagaDiscovery]) -> some View {
-        let upcoming = shelf == .books
-            ? viewModel.upcoming(format) ?? []
-            : rows.filter { $0.releases.next != nil }
-        let recentVolumes = viewModel.recentVolumes(format) ?? []
-        let recentSagas = viewModel.recentSagas(format) ?? []
+    private var sagaSections: some View {
+        let upcoming = viewModel.upcoming
+        let recentVolumes = viewModel.recentVolumes
+        let recentSagas = viewModel.recentSagas
         if upcoming.isEmpty && recentSagas.isEmpty {
             Section {
                 EmptyStateView(
-                    systemImage: format == .audiobook ? "headphones" : "sparkles",
+                    systemImage: "sparkles",
                     title: "Rien de neuf pour l'instant",
-                    message: format == .audiobook
-                        ? "Les nouveautés et les prochains tomes annoncés de vos séries audio apparaîtront ici."
-                        : "Les nouveautés et les prochains tomes annoncés de vos séries apparaîtront ici."
+                    message: "Les nouveautés et les prochains tomes annoncés de vos séries apparaîtront ici."
                 )
             }
             .listRowBackground(Color.clear)
-        }
-        if !recentSagas.isEmpty {
+        } else if shelf == .books {
             Section {
-                if shelf == .books {
-                    ForEach(recentVolumes) { volumeRow($0) }
-                } else {
-                    ForEach(recentSagas) { row($0, in: .recent) }
-                }
-            } header: {
-                Text("Nouvelles parutions")
-            }
-            .accessibilityIdentifier("discover-recent")
-        }
-        if !upcoming.isEmpty {
-            Section {
+                ForEach(recentVolumes) { volumeRow($0) }
                 ForEach(upcoming) { saga in
-                    if shelf == .books {
-                        if let next = saga.releases.next {
-                            volumeRow(DiscoveryVolume(saga: saga, volume: next))
-                        }
-                    } else {
-                        row(saga, in: .upcoming)
+                    if let next = saga.releases.next {
+                        volumeRow(DiscoveryVolume(saga: saga, volume: next))
                     }
                 }
             } header: {
-                Text("Prochaines sorties")
+                Text("Nouveautés séries")
+            }
+            .accessibilityIdentifier("discover-series-news")
+        } else {
+            if !recentSagas.isEmpty {
+                Section {
+                    ForEach(recentSagas) { row($0, in: .recent) }
+                } header: {
+                    Text("Nouvelles parutions")
+                }
+                .accessibilityIdentifier("discover-recent")
+            }
+            if !upcoming.isEmpty {
+                Section {
+                    ForEach(upcoming) { row($0, in: .upcoming) }
+                } header: {
+                    Text("Prochaines sorties")
+                }
             }
         }
     }
@@ -323,16 +306,14 @@ struct DiscoverView: View {
     /// a book announced, each drawn as the Library's Authors shelf draws them.
     @ViewBuilder
     private var authorSections: some View {
-        let upcoming = viewModel.upcomingAuthors(format) ?? []
-        let recent = viewModel.recentAuthors(format) ?? []
+        let upcoming = viewModel.upcomingAuthors
+        let recent = viewModel.recentAuthors
         if upcoming.isEmpty && recent.isEmpty {
             Section {
                 EmptyStateView(
-                    systemImage: format == .audiobook ? "headphones" : "person.2",
+                    systemImage: "person.2",
                     title: "Rien de neuf pour l'instant",
-                    message: format == .audiobook
-                        ? "Les nouveautés et les prochains livres audio annoncés de vos auteurs apparaîtront ici."
-                        : "Les nouveautés et les prochains livres annoncés de vos auteurs apparaîtront ici."
+                    message: "Les nouveautés et les prochains livres annoncés de vos auteurs apparaîtront ici."
                 )
             }
             .listRowBackground(Color.clear)
@@ -356,16 +337,17 @@ struct DiscoverView: View {
     /// An author's row: the Authors shelf's heading, then the covers of what
     /// the section it is in is about rather than the reader's own books — the
     /// works the web found, the editions the reader awaits and the volumes of
-    /// their sagas the Books shelf lists alike — and the first in words. A
+    /// their sagas the Books shelf lists alike, read and heard — and the first
+    /// in words. A
     /// long press opens one of those volumes. A tap opens the author's page, as the Library's Authors
     /// shelf does.
-    private func authorRow(_ row: AuthorDiscovery, in section: SagaReleasesSummary.Section) -> some View {
+    private func authorRow(_ row: AuthorNews, in section: SagaReleasesSummary.Section) -> some View {
         let destination = AuthorDestination(row.author)
-        let works = section == .recent ? row.recent : (row.next.map { [$0] } ?? [])
-        let volumes = section == .recent ? row.sagaOut : row.sagaComing
+        let works = row.works(in: section)
+        let volumes = row.volumes(in: section)
         let items = AuthorNewsItem.ordered(
             works: works,
-            awaited: section == .recent ? row.awaitedOut : row.awaitedComing,
+            awaited: row.awaited(in: section),
             volumes: volumes,
             section: section
         )
@@ -378,11 +360,11 @@ struct DiscoverView: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isButton)
                 .accessibilityAction { openAuthor = destination }
-            AuthorWorksStrip(items: items, author: row.author.name, isAudio: format == .audiobook)
+            AuthorWorksStrip(items: items, author: row.author.name)
             AuthorReleasesSummary(items: items, section: section)
         }
         .contextMenu {
-            ForEach(works.filter { $0.audibleURL != nil }) { work in
+            ForEach(works.map(\.work).filter { $0.audibleURL != nil }, id: \.title) { work in
                 if let audibleURL = work.audibleURL {
                     Button("Ouvrir « \(work.title) » dans Audible", systemImage: "headphones") {
                         openURL(audibleURL)
@@ -468,36 +450,6 @@ struct DiscoverView: View {
         .accessibilityIdentifier("discover-series-row")
     }
 
-    /// A reader who follows no saga in the format on screen — every saga of
-    /// theirs heard, say — sees the other one instead, once a session: a
-    /// format they tapped stays, and two empty formats do not bounce.
-    private func openOnAFollowedFormat() {
-        guard !formatSettled, viewModel.holdsNothing(in: format) else { return }
-        formatSettled = true
-        format = ReleaseFormat.allCases.first { $0 != format } ?? format
-    }
-
-    /// The two formats where the Library and Series tabs keep their views: icons
-    /// on the right, the one picked in the tint.
-    @ToolbarContentBuilder
-    private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .topBarLeading) {
-            DiscoverAlertsButton()
-        }
-        ToolbarItemGroup {
-            ForEach(ReleaseFormat.allCases) { item in
-                Button {
-                    formatSettled = true
-                    format = item
-                } label: {
-                    Label(item.filterLabel, systemImage: item.symbol)
-                }
-                .labelStyle(.iconOnly)
-                .tint(format == item ? .accentColor : .primary)
-                .accessibilityIdentifier("discover-format-\(item.rawValue)")
-            }
-        }
-    }
 }
 
 /// What a saga has for the reader, in a line under its covers, as the section

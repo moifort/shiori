@@ -1,17 +1,10 @@
 import Foundation
 
-/// The saga read or the saga heard: the filter the tab is read through, kept
-/// between visits.
+/// The saga read or the saga heard: Découvrir asks for each apart and draws
+/// them mixed.
 enum ReleaseFormat: String, Codable, Sendable, Hashable, CaseIterable, Identifiable {
     case book, audiobook
     var id: String { rawValue }
-
-    var filterLabel: String {
-        switch self {
-        case .book: String(localized: "Livres")
-        case .audiobook: String(localized: "Livres audio")
-        }
-    }
 
     var symbol: String {
         switch self {
@@ -147,6 +140,58 @@ struct AuthorDiscovery: Identifiable, Codable, Sendable {
     var newestOut: String? {
         (recent.map(\.date) + awaitedOut.map(\.date) + sagaOut.map(\.volume.date))
             .compactMap { $0.map(ReleaseDateText.lastDay) }.max()
+    }
+}
+
+/// One author on the Authors shelf, read and heard alike: their row in each
+/// format they are followed in, the book's first.
+struct AuthorNews: Identifiable {
+    struct Part {
+        let format: ReleaseFormat
+        let row: AuthorDiscovery
+    }
+
+    let parts: [Part]
+
+    init(parts: [Part]) {
+        precondition(!parts.isEmpty, "an author on the shelf has a row in some format")
+        self.parts = parts
+    }
+
+    var id: String { author.id }
+    var author: FollowedAuthor { parts[0].row.author }
+    private var rows: [AuthorDiscovery] { parts.map(\.row) }
+
+    /// Something announced in either format.
+    var hasComing: Bool {
+        rows.contains { $0.next != nil || !$0.awaitedComing.isEmpty || !$0.sagaComing.isEmpty }
+    }
+
+    /// Something just out in either format.
+    var hasOut: Bool {
+        rows.contains { !$0.recent.isEmpty || !$0.awaitedOut.isEmpty || !$0.sagaOut.isEmpty }
+    }
+
+    var soonestComing: String? { rows.compactMap(\.soonestComing).min() }
+    var newestOut: String? { rows.compactMap(\.newestOut).max() }
+
+    /// The works of one section in both formats: the next one announced of
+    /// each among the announcements, every one just out among the new releases.
+    func works(in section: SagaReleasesSummary.Section) -> [(work: DiscoveredWork, format: ReleaseFormat)] {
+        parts.flatMap { part in
+            let works = section == .recent ? part.row.recent : (part.row.next.map { [$0] } ?? [])
+            return works.map { (work: $0, format: part.format) }
+        }
+    }
+
+    /// The volumes of their sagas of one section, in both formats.
+    func volumes(in section: SagaReleasesSummary.Section) -> [DiscoveryVolume] {
+        rows.flatMap { section == .recent ? $0.sagaOut : $0.sagaComing }
+    }
+
+    /// The editions awaited of one section, in both formats.
+    func awaited(in section: SagaReleasesSummary.Section) -> [AwaitedEdition] {
+        rows.flatMap { section == .recent ? $0.awaitedOut : $0.awaitedComing }
     }
 }
 
