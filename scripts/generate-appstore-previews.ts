@@ -25,6 +25,11 @@
  * The scenes carry no text, so both languages share them: only the captures,
  * the cover on the book and the captions change.
  *
+ * Beside the panels, the product page's header: the 16:9 universal creative
+ * asset the App Store crops for the header (21:9) and the search results (3:2),
+ * three drawn phones and no text. It lands in screenshots/appstore/header/, out
+ * of the panels' directory, whose every PNG the upload sends as a screenshot.
+ *
  * Usage:
  *   bun scripts/generate-appstore-previews.ts                     # every French panel
  *   bun scripts/generate-appstore-previews.ts --language en       # every English panel
@@ -51,6 +56,7 @@ const captures = join(repoRoot, 'screenshots/captures', LANGUAGE)
 const appstoreDir = join(repoRoot, 'screenshots/appstore')
 const sceneDir = join(appstoreDir, 'scenes')
 const outputDir = join(appstoreDir, LANGUAGE)
+const headerDir = join(appstoreDir, 'header')
 const hyperionCover = join(
   appstoreDir,
   say('assets/hyperion-cover.jpg', 'assets/hyperion-cover-en.jpg'),
@@ -179,6 +185,7 @@ const regenerate = argv.includes('--regenerate')
 
 await mkdir(sceneDir, { recursive: true })
 await mkdir(outputDir, { recursive: true })
+await mkdir(headerDir, { recursive: true })
 const work = await mkdtemp(join(tmpdir(), 'shiori-panels-'))
 
 /** The scene's cached image, drawn first when it is missing or asked for again. */
@@ -247,5 +254,11 @@ for (const panel of DEVICES) {
     '08-partage.png',
     say('Partagez votre bibliothèque avec vos proches', 'Share your library with friends'),
   )
+}
+// The header: home, library and Découvrir, the library forward.
+{
+  const header = join(headerDir, `${LANGUAGE}.png`)
+  await $`swift ${devicePanel} header ${LIGHT_GREY} ${await capture('02-home.png')} ${await capture('01-library.png')} ${await capture('05-discover.png')} ${header}`.quiet()
+  console.log(`  ${header}`)
 }
 console.log('Done.')
