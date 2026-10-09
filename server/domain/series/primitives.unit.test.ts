@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
   isAudioSeries,
+  keyWithAuthorReversed,
   SeriesId,
   seriesIdFor,
   seriesKeyOf,
@@ -29,6 +30,20 @@ describe('seriesKeyOf', () => {
     expect(String(seriesKeyOf('Chronicles', 'Alice Ward', 'book'))).not.toBe(
       String(seriesKeyOf('Chronicles', 'Bob Stone', 'book')),
     )
+  })
+})
+
+describe('keyWithAuthorReversed', () => {
+  test('names the saga with its author family name first or last', () => {
+    const western = seriesKeyOf('Old Boy', 'Garon Tsuchiya', 'book')
+    expect(keyWithAuthorReversed(western)).toBe(seriesKeyOf('Old Boy', 'Tsuchiya Garon', 'book'))
+    expect(keyWithAuthorReversed(seriesKeyOf('One Piece', 'Oda Eiichiro', 'audiobook'))).toBe(
+      seriesKeyOf('One Piece', 'Eiichiro Oda', 'audiobook'),
+    )
+  })
+
+  test('has nothing to offer for an author of one name', () => {
+    expect(keyWithAuthorReversed(seriesKeyOf('Saga', 'Moebius', 'book'))).toBeUndefined()
   })
 })
 

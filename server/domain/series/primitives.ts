@@ -73,6 +73,23 @@ export const VolumeKindValue = (value: unknown): VolumeKind => z.enum(VOLUME_KIN
 export const seriesKeyOf = (name: string, author: string, format: BookFormat): SeriesIdType =>
   seriesIdFor(SeriesId(`${slugify(name)}--${slugify(author)}`), format)
 
+/** The same saga keyed with its author's names in the other order: "Garon
+ *  Tsuchiya" and "Tsuchiya Garon" are one author, family name first or last
+ *  as the edition prints it, and a scan of each would otherwise start a saga
+ *  and pay for a catalogue of its own. Undefined when the order changes
+ *  nothing — a single name. The key itself stays as it was: every stored id
+ *  would have to move for a case this rare, so the readers of the key look
+ *  this one up beside it. */
+export const keyWithAuthorReversed = (id: SeriesIdType): SeriesIdType | undefined => {
+  const heard = isAudioSeries(id)
+  const read = heard ? id.slice(0, -AUDIO_SUFFIX.length) : id
+  const [name, author] = read.split('--')
+  if (!name || !author) return undefined
+  const reversed = author.split('-').reverse().join('-')
+  if (reversed === author) return undefined
+  return SeriesId(`${name}--${reversed}${heard ? AUDIO_SUFFIX : ''}`)
+}
+
 /** Where a saga's catalogue in one edition is stored: the saga's key, then the
  *  language after a `~` no slug can produce. The volumes that record no
  *  language keep the bare key. */

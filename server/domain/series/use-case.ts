@@ -25,9 +25,21 @@ import {
   progressOf,
   withShelvedVolumes,
 } from '~/domain/series/business-rules'
-import { catalogueKeyOf, isAudioSeries, seriesIdFor, seriesKeyOf } from '~/domain/series/primitives'
+import {
+  catalogueKeyOf,
+  isAudioSeries,
+  keyWithAuthorReversed,
+  seriesIdFor,
+  seriesKeyOf,
+} from '~/domain/series/primitives'
 import { SeriesQuery } from '~/domain/series/query'
-import type { Series, SeriesId, SeriesName, SeriesState } from '~/domain/series/types'
+import type {
+  Series,
+  SeriesEdition,
+  SeriesId,
+  SeriesName,
+  SeriesState,
+} from '~/domain/series/types'
 import { editionUnfollowed } from '~/domain/series-opinion/business-rules'
 import { SeriesOpinionCommand } from '~/domain/series-opinion/command'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
@@ -72,8 +84,12 @@ export namespace SeriesUseCase {
    *  tab show, rather than as the scan or the import wrote it, and at the
    *  number the catalogue gives the volume it lists under that title — a saga
    *  published in cycles prints "cycle 2, tome 2" on its volume 5 (see
-   *  `numberInCatalogue`). The catalogues in one getAll; a saga with none in
-   *  that edition keeps the name and the numbers it came with. */
+   *  `numberInCatalogue`). A saga catalogued only under its author's names in
+   *  the other order — "Tsuchiya Garon" for "Garon Tsuchiya" — is that one,
+   *  and the book joins it (`keyWithAuthorReversed`). The catalogues in one
+   *  getAll, those of the other order in a second for the sagas the first
+   *  missed; a saga with none in that edition keeps the name and the numbers
+   *  it came with. */
   export const filedAfterCatalogues = async <
     Input extends Pick<NewBook, 'title' | 'series' | 'format' | 'language'>,
   >(
@@ -87,21 +103,38 @@ export namespace SeriesUseCase {
       }
     const editions = inputs.flatMap((input) => editionOf(input) ?? [])
     if (editions.length === 0) return [...inputs]
-    const catalogues = new Map(
-      (await SeriesQuery.byIds(editions)).map((catalogue) => [
-        catalogueKeyOf(catalogue.id, catalogue.language),
-        catalogue,
-      ]),
+    const catalogues = new Map<string, Series>()
+    const read = async (wanted: readonly SeriesEdition[]) => {
+      if (wanted.length === 0) return
+      for (const catalogue of await SeriesQuery.byIds(wanted))
+        catalogues.set(catalogueKeyOf(catalogue.id, catalogue.language), catalogue)
+    }
+    await read(editions)
+    const reversedOf = (edition: SeriesEdition) => {
+      const id = keyWithAuthorReversed(edition.id)
+      return id && { ...edition, id }
+    }
+    await read(
+      editions.flatMap((edition) =>
+        catalogues.has(catalogueKeyOf(edition.id, edition.language))
+          ? []
+          : (reversedOf(edition) ?? []),
+      ),
     )
     return inputs.map((input) => {
       const edition = editionOf(input)
-      const catalogue = edition && catalogues.get(catalogueKeyOf(edition.id, edition.language))
-      if (!input.series || !catalogue) return input
+      if (!input.series || !edition) return input
+      const reversed = reversedOf(edition)
+      const catalogue =
+        catalogues.get(catalogueKeyOf(edition.id, edition.language)) ??
+        (reversed && catalogues.get(catalogueKeyOf(reversed.id, reversed.language)))
+      if (!catalogue) return input
       const volume = numberInCatalogue(catalogue, input, edition.language)
       return {
         ...input,
         series: {
           ...input.series,
+          id: seriesIdFor(catalogue.id, input.format ?? 'book'),
           name: catalogue.name,
           ...(volume !== undefined ? { volume } : {}),
         },

@@ -592,6 +592,24 @@ describe('cataloguing a saga', () => {
     expect(calls).toEqual(['vision', 'enrichment'])
   })
 
+  // "Rothfuss Patrick" and "Patrick Rothfuss" are one author: the saga
+  // catalogued under one order is not paid for again under the other.
+  test('skips it when the saga is catalogued under its author’s names in the other order', async () => {
+    resetFakeFirestore().seed('series', 'chronique-du-tueur-de-roi--rothfuss-patrick~fr', {
+      id: 'chronique-du-tueur-de-roi--rothfuss-patrick',
+      language: 'fr',
+      name: 'Chronique du tueur de roi',
+      author: 'Rothfuss Patrick',
+      volumes: [],
+      catalogedAt: new Date(),
+    })
+    answers = [aCover, anEnrichment, aCatalogue]
+
+    await ScanCommand.scanWithCache(image, 'fr')
+
+    expect(calls).toEqual(['vision', 'enrichment'])
+  })
+
   // Each edition lists its own volumes: a saga catalogued in French says
   // nothing of what is out in English.
   test('catalogues the saga again for a cover in another language', async () => {

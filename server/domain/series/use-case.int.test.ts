@@ -242,6 +242,57 @@ describe('the name a saga goes by', () => {
     expect(fake.docReads - before).toBe(1)
   })
 
+  test('joins the saga catalogued under its author’s names in the other order', async () => {
+    const western = SeriesId('old-boy--garon-tsuchiya')
+    fake.seed('series', 'old-boy--tsuchiya-garon~fr', {
+      id: 'old-boy--tsuchiya-garon',
+      language: 'fr',
+      name: 'Old Boy',
+      author: 'Tsuchiya Garon',
+      volumes: [{ number: 2, title: 'Old Boy', kind: 'main' }],
+    })
+    const book = {
+      title: BookTitle('Old Boy'),
+      language: 'fr' as const,
+      series: {
+        id: western,
+        name: SeriesName('Old Boy'),
+        volume: VolumeNumber(2),
+        kind: 'main' as const,
+      },
+    }
+    const before = fake.docReads
+
+    const [filed] = await SeriesUseCase.filedAfterCatalogues([book])
+
+    expect(filed.series?.id).toBe(SeriesId('old-boy--tsuchiya-garon'))
+    expect(fake.docReads - before).toBe(2)
+  })
+
+  test('keeps its own key when the saga is catalogued under it', async () => {
+    for (const id of ['old-boy--garon-tsuchiya', 'old-boy--tsuchiya-garon'])
+      fake.seed('series', `${id}~fr`, {
+        id,
+        language: 'fr',
+        name: 'Old Boy',
+        author: 'A',
+        volumes: [],
+      })
+    const book = {
+      title: BookTitle('Old Boy'),
+      language: 'fr' as const,
+      series: {
+        id: SeriesId('old-boy--garon-tsuchiya'),
+        name: SeriesName('Old Boy'),
+        kind: 'main' as const,
+      },
+    }
+
+    const [filed] = await SeriesUseCase.filedAfterCatalogues([book])
+
+    expect(filed.series?.id).toBe(SeriesId('old-boy--garon-tsuchiya'))
+  })
+
   test('is written into every reader’s volumes once the saga is catalogued', async () => {
     const first = await volumeOf('Red Rising[French Edition]', reader, 1)
     const other = await volumeOf('Red Rising [French Edition]', 'reader-2' as UserId, 2)

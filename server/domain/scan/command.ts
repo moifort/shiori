@@ -53,6 +53,7 @@ import { withoutDuplicateVolumes } from '~/domain/series/business-rules'
 import { SeriesCommand } from '~/domain/series/command'
 import {
   isAudioSeries,
+  keyWithAuthorReversed,
   SeriesDescription,
   SeriesName,
   seriesKeyOf,
@@ -505,6 +506,12 @@ export namespace ScanCommand {
     // catalogue the reader opens next.
     const edition = result.language ?? language
     if (await SeriesCommand.isCatalogued({ id: series.id, language: edition })) return undefined
+    // The same saga under its author's names in the other order: the book
+    // joins it when it is added (`filedAfterCatalogues`), so it is not paid for
+    // twice.
+    const reversed = keyWithAuthorReversed(series.id)
+    if (reversed && (await SeriesCommand.isCatalogued({ id: reversed, language: edition })))
+      return undefined
 
     const { usage } = await catalogueSeries(
       series.id,
