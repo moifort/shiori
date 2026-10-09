@@ -30,7 +30,7 @@ import SwiftUI
 /// covers — the ones announced first, then the ones out, then the ones not
 /// announced yet, the latest awaited first. Then "Prix littéraires": the latest
 /// winners of the awards of the genre the reader reads most that they do not
-/// hold, a strip of covers with every award in full behind "Tout voir". Then
+/// hold, a strip of covers. Then
 /// "Nouveautés séries": the volumes out in the last two weeks the reader can
 /// have now, the newest first, then the ones announced, the soonest first.
 ///
@@ -50,7 +50,6 @@ struct DiscoverView: View {
     @State private var openFriendSaga: LovedSaga?
     @State private var openAwaited: AwaitedEdition?
     @State private var openWinner: AwardWinner?
-    @State private var openAwards: AwardShelf?
     @Environment(\.openURL) private var openURL
     /// Held by `ContentView`, which brings it back to the books on each visit.
     @Binding var shelf: LibraryShelf
@@ -108,11 +107,12 @@ struct DiscoverView: View {
                         }
                     }
                 }
-                .sheet(item: $openWinner) { winner in
+                // Closed, the strip is asked again: the cover the page found
+                // when it was described is drawn on the tile.
+                .sheet(item: $openWinner, onDismiss: {
+                    Task { await viewModel.loadAwards(viewModel.awardsFormat) }
+                }) { winner in
                     NavigationStack { AwardWinnerView(winner: winner) }
-                }
-                .sheet(item: $openAwards) { awards in
-                    NavigationStack { AwardsListView(format: viewModel.awardsFormat, shelf: awards) }
                 }
                 // The Library's own author page, in its own stack so a saga
                 // pushes inside it.
@@ -247,22 +247,15 @@ struct DiscoverView: View {
 
     /// "Prix littéraires": the latest winners of the awards of the genre the
     /// reader reads most, the ones they do not hold — in print, or recorded
-    /// for a reader who only listens — as a strip like the editions awaited. "Tout voir" opens every award in
-    /// full. Absent when the reader reads no genre with awards enough.
+    /// for a reader who only listens — as a strip like the editions awaited.
+    /// Absent when the reader reads no genre with awards enough.
     @ViewBuilder
     private var awardsSection: some View {
         if let awards = viewModel.awards[viewModel.awardsFormat], !awards.recent.isEmpty {
             Section {
                 AwardWinnersStrip(winners: awards.recent) { openWinner = $0 }
             } header: {
-                HStack {
-                    Text("Prix littéraires · \(awards.genre.label)")
-                    Spacer()
-                    Button("Tout voir") { openAwards = awards }
-                        .font(.footnote.weight(.semibold))
-                        .textCase(nil)
-                        .accessibilityIdentifier("discover-awards-all")
-                }
+                Text("Prix littéraires · \(awards.genre.label)")
             }
             .accessibilityIdentifier("discover-awards")
         }
