@@ -91,7 +91,7 @@ struct AwardWinnerView: View {
     /// is not out and not awaited yet.
     private var addMenu: some View {
         Menu {
-            Button("Ajouter à ma bibliothèque", systemImage: "books.vertical") {
+            Button("Ajouter", systemImage: "books.vertical") {
                 Task { await add() }
                 dismiss()
             }

@@ -4997,23 +4997,23 @@
         }
       }
     },
-    "Guetter la version française audio" : {
+    "Guetter en audio" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Watch for the English audiobook"
+            "value" : "Watch for the audiobook"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Guetter la version française audio"
+            "value" : "Guetter en audio"
           }
         }
       }
     },
-    "Guetter la version française du livre" : {
+    "Guetter en français" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5024,7 +5024,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Guetter la version française du livre"
+            "value" : "Guetter en français"
           }
         }
       }

@@ -136,8 +136,8 @@ extension ReleaseFormat {
     /// The action that awaits a book's edition in this format.
     var awaitLabel: String {
         switch self {
-        case .book: String(localized: "Guetter la version française du livre")
-        case .audiobook: String(localized: "Guetter la version française audio")
+        case .book: String(localized: "Guetter en français")
+        case .audiobook: String(localized: "Guetter en audio")
         }
     }
 

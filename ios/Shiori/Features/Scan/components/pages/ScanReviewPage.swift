@@ -189,7 +189,7 @@ struct ScanReviewPage: View {
 
     private var addMenu: some View {
         Menu {
-            Button("Ajouter à ma bibliothèque", systemImage: "books.vertical", action: save)
+            Button("Ajouter", systemImage: "books.vertical", action: save)
                 .disabled(!canSave)
                 .accessibilityIdentifier("review-save")
             ForEach(awaitable) { format in
