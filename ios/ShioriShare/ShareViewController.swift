@@ -56,14 +56,23 @@ final class ShareViewController: UIViewController {
     /// Brings Shiori to the front, so the reader lands on the book rather than
     /// having to go and find the app.
     ///
-    /// No public API lets a share extension open its app: `UIApplication` is
-    /// unavailable here, and `NSExtensionContext.open` only serves widgets. So
-    /// this walks the responder chain to whatever answers the system's
-    /// URL-opening message and sends it by hand. Apple does not support it and
-    /// iOS 18 already broke its older, shorter form, which is why anything other
-    /// than a confirmed opening — no responder, a refusal, no answer at all —
-    /// falls back to the sheet telling the reader to open Shiori themselves.
-    /// The handover is written before this runs, so a failure loses nothing.
+    /// `UIApplication` is unavailable here and `NSExtensionContext.open` only
+    /// serves widgets, but `UIScene.open` is not barred from extensions: the
+    /// scene the sheet is drawn in is asked, through the responder chain.
+    ///
+    /// The chain used to be walked to the first object answering the selector
+    /// and called by hand with a dictionary of options, which is the
+    /// `UIApplication` signature. On iOS 27 the first one to answer is the
+    /// scene, whose options are a `UISceneOpenExternalURLOptions`: handed a
+    /// dictionary, it sent it a message it did not know and took the extension
+    /// down, so the sheet vanished and the app never opened. The scene is now
+    /// called through its typed method, and the hand-made call is kept only
+    /// for a chain that reaches the application without a scene.
+    ///
+    /// Anything other than a confirmed opening — no responder, a refusal, no
+    /// answer at all — falls back to the sheet telling the reader to open
+    /// Shiori themselves. The handover is written before this runs, so a
+    /// failure loses nothing.
     private func openApp() async -> Bool {
         typealias OpenURL = @convention(c) (
             AnyObject, Selector, NSURL, NSDictionary, @convention(block) (Bool) -> Void
@@ -71,11 +80,10 @@ final class ShareViewController: UIViewController {
         let selector = NSSelectorFromString("openURL:options:completionHandler:")
 
         var responder: UIResponder? = self
-        while let current = responder, !current.responds(to: selector) {
+        while let current = responder, !(current is UIScene), !current.responds(to: selector) {
             responder = current.next
         }
         guard let opener = responder else { return false }
-        let open = unsafeBitCast(opener.method(for: selector), to: OpenURL.self)
 
         return await withCheckedContinuation { continuation in
             let gate = ResumeGate()
@@ -85,9 +93,15 @@ final class ShareViewController: UIViewController {
                 guard gate.claim() else { return }
                 continuation.resume(returning: false)
             }
-            open(opener, selector, appURL as NSURL, NSDictionary()) { success in
+            let answer: (Bool) -> Void = { success in
                 guard gate.claim() else { return }
                 continuation.resume(returning: success)
+            }
+            if let scene = opener as? UIScene {
+                scene.open(appURL, options: nil, completionHandler: answer)
+            } else {
+                let open = unsafeBitCast(opener.method(for: selector), to: OpenURL.self)
+                open(opener, selector, appURL as NSURL, NSDictionary(), answer)
             }
         }
     }
