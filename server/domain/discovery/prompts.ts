@@ -40,7 +40,7 @@ export const releasesPrompt = (
   return `Nous sommes le ${today}. Un lecteur suit la série « ${saga.name} »${author} en ${language}. Recherche sur le web CHACUN de ses tomes parus en ${language} ${format}, du tome 1 au dernier paru, puis ceux annoncés.
 
 Renseigne volumes : une entrée par tome numéroté de la série, la première édition en ${language} seulement. N'en saute aucun. Pour chacun :
-- number : son numéro dans la série.
+- number : son numéro dans la série. Une série publiée en cycles se numérote d'un bout à l'autre : si le premier cycle compte trois tomes, « cycle 2, tome 2 » est le tome 5.
 - title : son titre en ${language}, sans le nom de la série ni le numéro du tome.
 - date : la date de parution la plus précise connue, au format AAAA-MM-JJ, sinon AAAA-MM, sinon AAAA. Obligatoire pour un tome annoncé ; null pour un tome paru dont tu ne trouves pas la date.
 - isbn13 : l'ISBN-13 de cette édition en ${language}, celui de sa fiche sur la boutique Amazon de cette langue de préférence, sinon null. N'invente jamais un ISBN.${

@@ -127,7 +127,7 @@ Renseigne :
 - pageCount : le nombre de pages de CETTE édition, ou null.
 - isbn13 : l'ISBN-13 de CETTE édition. Un même livre a souvent plusieurs éditions dans une même langue (grand format, poche, édition québécoise ou belge) : l'ISBN d'une autre édition est faux ici, même s'il existe. Mets null si tu ne trouves pas celui de cette édition précise — un ISBN inventé ou celui d'une autre édition est pire qu'un ISBN absent, car il sert à retrouver la couverture de l'objet que le lecteur possède.
 - regularEditionIsbn13 : seulement si CETTE édition est une édition spéciale (collector, limitée, de luxe, reliée à tranche décorée ou jaspage, coffret) : l'ISBN-13 de l'édition courante du même livre, chez le même éditeur et dans la même langue. Il sert uniquement à afficher une couverture à plat, car celle d'une édition spéciale est souvent une photo de l'objet en perspective. Mets null pour une édition courante, ou si tu ne trouves pas cet ISBN avec certitude.
-- seriesName, volumeNumber, volumeKind : la série à laquelle ce livre appartient. C'est l'information la plus importante de cette fiche. Cherche-la activement : beaucoup de romans appartiennent à un cycle sans que la couverture le dise. volumeKind vaut 'main' pour un tome numéroté de l'histoire principale, 'prequel' pour une préquelle, 'spin-off' pour un récit dérivé, 'novella' pour un texte court rattaché, 'companion' pour un guide ou un artbook. Si le livre est indépendant, mets les trois à null.
+- seriesName, volumeNumber, volumeKind : la série à laquelle ce livre appartient. C'est l'information la plus importante de cette fiche. Cherche-la activement : beaucoup de romans appartiennent à un cycle sans que la couverture le dise. volumeNumber est le numéro du tome dans toute la série, même quand la couverture imprime celui de son cycle : si le premier cycle compte trois tomes, « cycle 2, tome 2 » est le tome 5. volumeKind vaut 'main' pour un tome numéroté de l'histoire principale, 'prequel' pour une préquelle, 'spin-off' pour un récit dérivé, 'novella' pour un texte court rattaché, 'companion' pour un guide ou un artbook. Si le livre est indépendant, mets les trois à null.
 
 Toutes les valeurs textuelles doivent être en ${LANGUAGE_NAMES[language]}.`
 
@@ -191,7 +191,7 @@ Renseigne :
 - name et author : le nom de la série et son auteur principal.
 - description : 2 à 3 phrases présentant la série, SANS révéler le dénouement.
 - volumes : TOUS les volumes DÉJÀ PARUS en ${edition}, dans l'ordre de PUBLICATION. Un volume annoncé mais pas encore paru n'en fait PAS partie, ni un volume paru dans une autre langue mais pas encore traduit en ${edition} : ne les liste pas. Pour chacun :
-  - number : le numéro du tome dans l'histoire principale, ou null pour tout ce qui est hors numérotation.
+  - number : le numéro du tome dans l'histoire principale, ou null pour tout ce qui est hors numérotation. Une série publiée en cycles se numérote d'un bout à l'autre : si le premier cycle compte trois tomes, « cycle 2, tome 2 » est le tome 5.
   - title : le titre du volume dans l'édition en ${edition}, sans le nom de la série ni le numéro du tome ; un tome sans titre propre porte le nom de la série.
   - publishedIn : l'année de parution en ${edition}, pas celle de l'édition originale.
   - kind : ${VOLUME_KINDS.map((kind) => `'${kind}'`).join(', ')}. 'main' pour un tome numéroté de l'histoire principale, 'prequel' pour une préquelle, 'spin-off' pour un récit dérivé, 'novella' pour un texte court, 'companion' pour un guide, un atlas ou un artbook.
@@ -224,7 +224,7 @@ Renseigne :
 - name et author : le nom de la série et son auteur principal.
 - description : 2 à 3 phrases présentant la série, SANS révéler le dénouement.
 - volumes : les volumes enregistrés en livre audio en ${edition} DÉJÀ SORTIS, dans l'ordre de PUBLICATION. Un tome paru en livre imprimé mais pas encore enregistré en ${edition} n'en fait PAS partie, ni un enregistrement annoncé mais pas encore sorti : ne les liste pas. Pour chacun :
-  - number : le numéro du tome dans l'histoire principale, ou null pour tout ce qui est hors numérotation.
+  - number : le numéro du tome dans l'histoire principale, ou null pour tout ce qui est hors numérotation. Une série publiée en cycles se numérote d'un bout à l'autre : si le premier cycle compte trois tomes, « cycle 2, tome 2 » est le tome 5.
   - title : le titre de l'enregistrement en ${edition}, sans le nom de la série ni le numéro du tome ; un tome sans titre propre porte le nom de la série.
   - publishedIn : l'année de sortie du livre audio, pas celle du livre imprimé.
   - kind : ${VOLUME_KINDS.map((kind) => `'${kind}'`).join(', ')}. 'main' pour un tome numéroté de l'histoire principale, 'prequel' pour une préquelle, 'spin-off' pour un récit dérivé, 'novella' pour un texte court, 'companion' pour un guide, un atlas ou un artbook.

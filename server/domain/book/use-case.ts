@@ -29,7 +29,7 @@ export namespace BookUseCase {
    *  Kindle title, the Kindle copy of a paperback — joins that record rather
    *  than landing beside it: paper or screen, it is one book. */
   export const add = async (userId: UserId, input: NewBook) => {
-    const [named] = await SeriesUseCase.namedAfterCatalogues([input])
+    const [named] = await SeriesUseCase.filedAfterCatalogues([input])
     const format = named.format ?? 'book'
     // A recording joins nothing, so the library is not read for it.
     const joined =

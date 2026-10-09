@@ -91,7 +91,7 @@ export namespace AudibleUseCase {
     const imported: Book[] = []
     if (chosen.length > 0) {
       // Each saga named as its catalogue names it, not as Audible titles it.
-      const named = await SeriesUseCase.namedAfterCatalogues(chosen.map(bookFrom))
+      const named = await SeriesUseCase.filedAfterCatalogues(chosen.map(bookFrom))
       await AnalyticsUseCase.whileStale(userId, () =>
         bulkSave(named, async (book) => {
           imported.push(await BookCommand.add(userId, book))
@@ -189,7 +189,7 @@ export namespace AudibleUseCase {
       await bulkSave(editionYears, async ({ bookId, editionYear }) =>
         BookCommand.edit(userId, bookId, { editionYear }, now),
       )
-      await bulkSave(await SeriesUseCase.namedAfterCatalogues(bought.map(bookFrom)), async (book) =>
+      await bulkSave(await SeriesUseCase.filedAfterCatalogues(bought.map(bookFrom)), async (book) =>
         BookCommand.add(userId, book, now),
       )
     }

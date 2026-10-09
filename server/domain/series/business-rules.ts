@@ -248,6 +248,35 @@ export const withShelvedVolumes = (
   return shelved.length === 0 ? series : { ...series, volumes: [...series.volumes, ...shelved] }
 }
 
+/** The number a volume brought to the shelf takes in its saga's catalogue,
+ *  when the catalogue lists that very volume — the one main volume titled
+ *  like it, in its language or in the catalogue's own — under another number.
+ *
+ *  A saga published in cycles prints its numbering per cycle: Sir Arthur
+ *  Benton's "cycle 2, tome 2" is Le Coup de Prague, the saga's volume 5. The
+ *  cover says 2, the scan wrote 2, and the book took the place of the saga's
+ *  real volume 2 while its own showed as missing. A title the catalogue holds
+ *  once is the better witness. One it holds twice, or the saga's own name —
+ *  what a volume without a title of its own carries — tells no volume apart,
+ *  and the book keeps its number. Undefined when nothing changes. */
+export const numberInCatalogue = (
+  catalogue: Pick<Series, 'name' | 'volumes'>,
+  book: { title: BookTitle; series?: { volume?: VolumeNumber; kind: VolumeKind } },
+  language?: BookLanguage,
+): VolumeNumber | undefined => {
+  if (book.series?.kind !== 'main') return undefined
+  const slug = slugify(bareTitleOf(book.title, catalogue.name))
+  if (slug === '' || slug === slugify(catalogue.name)) return undefined
+  const titled = catalogue.volumes.filter((volume) =>
+    [volume.title, language && volume.titles?.[language]].some(
+      (title) => title && slugify(bareTitleOf(title, catalogue.name)) === slug,
+    ),
+  )
+  const [only] = titled
+  if (titled.length !== 1 || only.kind !== 'main' || only.number === undefined) return undefined
+  return Number(only.number) === Number(book.series.volume) ? undefined : only.number
+}
+
 /** The catalogue each of the reader's sagas is drawn from, keyed by saga and
  *  edition language as `catalogueKeyOf` writes it: the world's when somebody
  *  has described that edition, else the one the reader's own count makes, else

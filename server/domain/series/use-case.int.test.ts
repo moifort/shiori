@@ -206,10 +206,40 @@ describe('the name a saga goes by', () => {
       title: BookTitle('Seul'),
     }
 
-    const [named, alone] = await SeriesUseCase.namedAfterCatalogues([book, standalone])
+    const [named, alone] = await SeriesUseCase.filedAfterCatalogues([book, standalone])
 
     expect(named.series?.name).toBe(SeriesName('Red Rising'))
     expect(alone).toEqual(standalone)
+  })
+
+  test('takes the catalogue’s number for a volume numbered within its cycle', async () => {
+    const benton = SeriesId('sir-arthur-benton--tarek')
+    fake.seed('series', `${benton}~fr`, {
+      id: benton,
+      language: 'fr',
+      name: 'Sir Arthur Benton',
+      author: 'Tarek',
+      volumes: [
+        { number: 2, title: 'Wannsee, 1942', kind: 'main' },
+        { number: 5, title: 'Le Coup de Prague', kind: 'main' },
+      ],
+    })
+    const book = {
+      title: BookTitle('Le Coup de Prague'),
+      language: 'fr' as const,
+      series: {
+        id: benton,
+        name: SeriesName('Sir Arthur Benton'),
+        volume: VolumeNumber(2),
+        kind: 'main' as const,
+      },
+    }
+    const before = fake.docReads
+
+    const [filed] = await SeriesUseCase.filedAfterCatalogues([book])
+
+    expect(filed.series?.volume).toBe(VolumeNumber(5))
+    expect(fake.docReads - before).toBe(1)
   })
 
   test('is written into every reader’s volumes once the saga is catalogued', async () => {
@@ -287,7 +317,7 @@ describe('a saga held in two languages', () => {
       },
     })
 
-    const [french, english] = await SeriesUseCase.namedAfterCatalogues([book('fr'), book('en')])
+    const [french, english] = await SeriesUseCase.filedAfterCatalogues([book('fr'), book('en')])
 
     expect(String(french?.series?.name)).toBe('Le Cycle de Dune')
     expect(String(english?.series?.name)).toBe('Dune Chronicles')

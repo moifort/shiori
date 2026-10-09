@@ -143,7 +143,7 @@ export namespace KindleUseCase {
       await linkAll(userId, links, now)
       await bulkSave(moves, async (bookId) => BookCommand.setStatus(userId, bookId, 'read', now))
       await bulkSave(
-        await SeriesUseCase.namedAfterCatalogues(acquired.map(bookFrom)),
+        await SeriesUseCase.filedAfterCatalogues(acquired.map(bookFrom)),
         async (book) => BookCommand.add(userId, book, now),
       )
     }
@@ -219,7 +219,7 @@ export namespace KindleUseCase {
     )
     const imported: Book[] = []
     if (chosen.length > 0) {
-      const named = await SeriesUseCase.namedAfterCatalogues(chosen.map(exportedBookFrom))
+      const named = await SeriesUseCase.filedAfterCatalogues(chosen.map(exportedBookFrom))
       await AnalyticsUseCase.whileStale(userId, () =>
         bulkSave(named, async (book) => {
           imported.push(await BookCommand.add(userId, book))
@@ -277,7 +277,7 @@ const catalogue = async (
 ): Promise<Book[]> => {
   const imported: Book[] = []
   if (chosen.length === 0) return imported
-  const named = await SeriesUseCase.namedAfterCatalogues(chosen.map(bookFrom))
+  const named = await SeriesUseCase.filedAfterCatalogues(chosen.map(bookFrom))
   await AnalyticsUseCase.whileStale(userId, () =>
     bulkSave(named, async (book) => {
       imported.push(await BookCommand.add(userId, book, now))

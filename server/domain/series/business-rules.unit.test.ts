@@ -11,6 +11,7 @@ import {
   isRecentMiss,
   keepingReleases,
   matchingFilter,
+  numberInCatalogue,
   progressOf,
   provisionalCatalogueOf,
   publishedVolumes,
@@ -868,5 +869,67 @@ describe('withBareTitles', () => {
       { title: 'One', titles: { fr: 'Un' } },
       { title: 'Side' },
     ])
+  })
+})
+
+describe('numberInCatalogue', () => {
+  // Two cycles of three, numbered through by the catalogue as by the publisher.
+  const benton = saga([
+    volume({ title: 'Opération Marmara', number: VolumeNumber(1) }),
+    volume({ title: 'Wannsee, 1942', number: VolumeNumber(2) }),
+    volume({ title: "L'Assaut final", number: VolumeNumber(3) }),
+    volume({ title: "L'Organisation", number: VolumeNumber(4) }),
+    volume({ title: 'Le Coup de Prague', number: VolumeNumber(5) }),
+    volume({ title: "La Mort de l'oncle Joe", number: VolumeNumber(6) }),
+  ])
+  const book = (title: string, number?: number) => ({
+    title: BookTitle(title),
+    series: {
+      volume: number === undefined ? undefined : VolumeNumber(number),
+      kind: 'main' as const,
+    },
+  })
+
+  test('a volume numbered within its cycle takes its number in the saga', () => {
+    expect(numberInCatalogue(benton, book('Le Coup de Prague', 2))).toBe(VolumeNumber(5))
+    expect(numberInCatalogue(benton, book("La Mort de l'Oncle Joe", 3))).toBe(VolumeNumber(6))
+  })
+
+  test('a volume the cover did not number takes the catalogue’s', () => {
+    expect(numberInCatalogue(benton, book("L'Organisation"))).toBe(VolumeNumber(4))
+  })
+
+  test('a volume already at its number, or titled like no volume, keeps it', () => {
+    expect(numberInCatalogue(benton, book('Wannsee, 1942', 2))).toBeUndefined()
+    expect(numberInCatalogue(benton, book('Un inédit', 7))).toBeUndefined()
+  })
+
+  test('the title in the book’s language finds the volume too', () => {
+    const translated = saga([
+      volume({ title: 'One', number: VolumeNumber(1) }),
+      { ...volume({ title: 'Two', number: VolumeNumber(2) }), titles: { fr: BookTitle('Deux') } },
+    ])
+    expect(numberInCatalogue(translated, book('Deux', 1), 'fr')).toBe(VolumeNumber(2))
+  })
+
+  test('a title that tells no volume apart leaves the number alone', () => {
+    const named = saga([
+      volume({ title: 'Saga', number: VolumeNumber(1) }),
+      volume({ title: 'Twice', number: VolumeNumber(2) }),
+      volume({ title: 'Twice', number: VolumeNumber(3) }),
+    ])
+    expect(numberInCatalogue(named, book('Saga', 4))).toBeUndefined()
+    expect(numberInCatalogue(named, book('Twice', 5))).toBeUndefined()
+  })
+
+  test('a related work, or a book titled like one, is not renumbered', () => {
+    const orbit = saga([
+      volume({ title: 'One', number: VolumeNumber(1) }),
+      volume({ title: 'Side', kind: 'novella' }),
+    ])
+    expect(numberInCatalogue(orbit, book('Side', 2))).toBeUndefined()
+    expect(
+      numberInCatalogue(orbit, { title: BookTitle('One'), series: { kind: 'novella' as const } }),
+    ).toBeUndefined()
   })
 })

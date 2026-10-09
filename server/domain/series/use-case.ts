@@ -21,6 +21,7 @@ import {
   inTabOrder,
   isRecentMiss,
   matchingFilter,
+  numberInCatalogue,
   progressOf,
   withShelvedVolumes,
 } from '~/domain/series/business-rules'
@@ -66,12 +67,15 @@ export type FollowedSeries = {
 export type SagaProgress = { readCount: number; totalCount: number }
 
 export namespace SeriesUseCase {
-  /** Books about to be added, each saga named as its catalogue in that
-   *  book's language names it — the name the saga screen and the Series tab
-   *  show — rather than as the scan or the import wrote it. The catalogues in
-   *  one getAll; a saga with none in that edition keeps the name it came with. */
-  export const namedAfterCatalogues = async <
-    Input extends Pick<NewBook, 'series' | 'format' | 'language'>,
+  /** Books about to be added, each filed in its saga as the catalogue in that
+   *  book's language files it: under the name the saga screen and the Series
+   *  tab show, rather than as the scan or the import wrote it, and at the
+   *  number the catalogue gives the volume it lists under that title — a saga
+   *  published in cycles prints "cycle 2, tome 2" on its volume 5 (see
+   *  `numberInCatalogue`). The catalogues in one getAll; a saga with none in
+   *  that edition keeps the name and the numbers it came with. */
+  export const filedAfterCatalogues = async <
+    Input extends Pick<NewBook, 'title' | 'series' | 'format' | 'language'>,
   >(
     inputs: readonly Input[],
   ): Promise<Input[]> => {
@@ -83,16 +87,25 @@ export namespace SeriesUseCase {
       }
     const editions = inputs.flatMap((input) => editionOf(input) ?? [])
     if (editions.length === 0) return [...inputs]
-    const names = new Map(
+    const catalogues = new Map(
       (await SeriesQuery.byIds(editions)).map((catalogue) => [
         catalogueKeyOf(catalogue.id, catalogue.language),
-        catalogue.name,
+        catalogue,
       ]),
     )
     return inputs.map((input) => {
       const edition = editionOf(input)
-      const name = edition && names.get(catalogueKeyOf(edition.id, edition.language))
-      return input.series && name ? { ...input, series: { ...input.series, name } } : input
+      const catalogue = edition && catalogues.get(catalogueKeyOf(edition.id, edition.language))
+      if (!input.series || !catalogue) return input
+      const volume = numberInCatalogue(catalogue, input, edition.language)
+      return {
+        ...input,
+        series: {
+          ...input.series,
+          name: catalogue.name,
+          ...(volume !== undefined ? { volume } : {}),
+        },
+      }
     })
   }
 
