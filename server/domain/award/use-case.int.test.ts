@@ -35,6 +35,8 @@ mock.module('~/domain/scan/published-cover', () => ({
 const { AwardUseCase } = await import('~/domain/award/use-case')
 const { AwaitedEditionUseCase } = await import('~/domain/awaited-edition/use-case')
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
+const { RECENT_COUNT } = await import('~/domain/award/business-rules')
+const { releaseDescriptionKeyOf } = await import('~/domain/discovery/business-rules')
 
 const reader = 'reader' as UserId
 const now = new Date('2026-10-08T08:00:00Z')
@@ -112,6 +114,34 @@ describe('the award shelf', () => {
     expect(shelf?.recent[0]?.work.title).toBe(BookTitle('The Everlasting'))
   })
 
+  test('draws a winner with no cover found with the one its page found when described', async () => {
+    sfReader()
+    const key = releaseDescriptionKeyOf(
+      {
+        title: BookTitle('The Everlasting'),
+        authors: [AuthorName('Alix E. Harrow')],
+        format: 'book',
+        language: 'en',
+      },
+      'fr',
+    )
+    fake.seed('release-descriptions', key, {
+      key,
+      description: {
+        book: { title: 'The Everlasting', coverUrl: 'https://covers.example/everlasting.jpg' },
+        narrators: [],
+      },
+      describedAt: now,
+    })
+
+    const shelf = await AwardUseCase.shelf(reader, 'book', 'fr', undefined, now)
+
+    expect(shelf?.recent[0]?.describedCoverUrl).toBe(
+      'https://covers.example/everlasting.jpg' as never,
+    )
+    expect(shelf?.recent[1]?.describedCoverUrl).toBeUndefined()
+  })
+
   test('is absent for a reader of no genre with awards', async () => {
     shelve('Le Mystère de la chambre jaune', 'Gaston Leroux', 'crime')
     expect(await AwardUseCase.shelf(reader, 'book', 'fr', undefined, now)).toBeNull()
@@ -179,7 +209,7 @@ describe('the award shelf', () => {
     expect(horror?.genre).toBe('science-fiction')
   })
 
-  test('reads the library, the awaited editions, the interest and one getAll of watches', async () => {
+  test('reads the library, the awaited editions, the interest and two getAlls', async () => {
     sfReader()
     await AwardUseCase.shelf(reader, 'book', 'fr', undefined, now)
     startFakeRequest()
@@ -189,9 +219,10 @@ describe('the award shelf', () => {
 
     const works = new Set(shelf?.awards.flatMap((list) => list.winners.map((v) => v.work.key)))
     expect(fake.queryReads - queryReads).toBe(2)
-    // One document per watch looked for, held or not, plus the interest.
+    // One document per watch looked for, held or not, plus the interest, plus
+    // one description per winner on the strip with no cover found.
     expect(fake.docReads - docReads).toBeGreaterThanOrEqual(works.size + 1)
-    expect(fake.docReads - docReads).toBeLessThanOrEqual(works.size + 3)
+    expect(fake.docReads - docReads).toBeLessThanOrEqual(works.size + 3 + RECENT_COUNT)
   })
 
   test('marks the genre as looked at, once a day', async () => {

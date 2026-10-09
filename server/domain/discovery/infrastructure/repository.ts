@@ -81,6 +81,19 @@ export const removeReader = async (userId: UserId): Promise<void> => {
 export const findDescription = async (key: string): Promise<KeptReleaseDescription | undefined> =>
   (await descriptions().doc(key).get()).data()
 
+export const findDescriptions = async (
+  keys: readonly string[],
+): Promise<KeptReleaseDescription[]> => {
+  const unique = [...new Set(keys)]
+  if (unique.length === 0) return []
+  const snapshots = await db().getAll(...unique.map((key) => descriptions().doc(key)))
+  // Typed loosely by getAll, though each ref carries the converter.
+  return snapshots.flatMap((snapshot) => {
+    const kept = snapshot.data() as KeptReleaseDescription | undefined
+    return kept ? [kept] : []
+  })
+}
+
 export const saveDescription = async (kept: KeptReleaseDescription): Promise<void> => {
   await descriptions().doc(kept.key).set(withoutAbsentFields(kept))
 }

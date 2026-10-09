@@ -6,7 +6,8 @@ import { AwardCommand } from '~/domain/award/command'
 import { AwardQuery } from '~/domain/award/query'
 import { BookQuery } from '~/domain/book/query'
 import type { BookLanguage, Genre } from '~/domain/book/types'
-import { todayOf } from '~/domain/discovery/business-rules'
+import { releaseDescriptionKeyOf, todayOf } from '~/domain/discovery/business-rules'
+import { DiscoveryQuery } from '~/domain/discovery/query'
 import type { ReleaseFormat } from '~/domain/discovery/types'
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
@@ -86,11 +87,15 @@ export namespace AwardUseCase {
       }),
     )
     const shown = (view: AwardedWorkView) => !isHeld(view.work, format, view.watch?.found, books)
+    const recent = await withDescribedCovers(
+      [...views.values()].filter(shown).slice(0, RECENT_COUNT),
+      appLanguage,
+    )
 
     return {
       genre,
       genres,
-      recent: [...views.values()].filter(shown).slice(0, RECENT_COUNT),
+      recent,
       awards: awards.map((award) => {
         const winners = works.filter((work) => work.mentions.some((m) => m.award === award))
         return {
@@ -186,6 +191,33 @@ const viewOf = (
     awaitable: state !== 'available' && !awaitedId && formats.includes(format),
     ...(awaitedId ? { awaitedId } : {}),
   }
+}
+
+/** The strip's winners with no cover found, given the one their page found
+ *  when a reader opened it: the description is kept under the key that page
+ *  asks it by, so one getAll reads them all. */
+const withDescribedCovers = async (
+  views: AwardedWorkView[],
+  appLanguage: Language,
+): Promise<AwardedWorkView[]> => {
+  const bare = views.filter((view) => !view.watch?.found?.coverUrl)
+  if (bare.length === 0) return views
+  const keyOf = (view: AwardedWorkView) =>
+    releaseDescriptionKeyOf(
+      {
+        title: view.watch?.found?.title ?? view.work.title,
+        authors: view.work.authors,
+        format: view.format,
+        ...(view.state === 'unannounced' ? { language: view.work.language } : {}),
+      },
+      appLanguage,
+    )
+  const kept = await DiscoveryQuery.descriptions(bare.map(keyOf))
+  return views.map((view) => {
+    if (view.watch?.found?.coverUrl) return view
+    const coverUrl = kept.get(keyOf(view))?.description.book.coverUrl
+    return coverUrl ? { ...view, describedCoverUrl: coverUrl } : view
+  })
 }
 
 const seedOf = (

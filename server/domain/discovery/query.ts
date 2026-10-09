@@ -21,6 +21,12 @@ export namespace DiscoveryQuery {
   export const description = (key: string): Promise<KeptReleaseDescription | undefined> =>
     repository.findDescription(key)
 
+  /** The descriptions kept under these keys, in one getAll, keyed by theirs. */
+  export const descriptions = async (
+    keys: readonly string[],
+  ): Promise<Map<string, KeptReleaseDescription>> =>
+    new Map((await repository.findDescriptions(keys)).map((kept) => [kept.key, kept]))
+
   /** The author watches under these keys, in one getAll, keyed by theirs. */
   export const authorWatches = async (keys: readonly string[]): Promise<Map<string, AuthorWatch>> =>
     new Map((await repository.findAuthorWatches(keys)).map((watch) => [watch.key, watch]))

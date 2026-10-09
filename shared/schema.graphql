@@ -661,7 +661,9 @@ type AwardWinner {
   """Every prize it won among the genre’s awards, the newest first."""
   awards: [AwardMention!]!
 
-  """The edition’s cover once found."""
+  """
+  The edition’s cover once found, else the one its page found when it was described.
+  """
   coverUrl: String
 
   """

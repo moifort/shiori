@@ -1,5 +1,5 @@
 import type { AwaitedEditionId, AwaitedState, EditionWatch } from '~/domain/awaited-edition/types'
-import type { BookLanguage, Genre } from '~/domain/book/types'
+import type { BookLanguage, CoverUrl, Genre } from '~/domain/book/types'
 import type { ReleaseFormat } from '~/domain/discovery/types'
 import type { AuthorName, BookTitle } from '~/domain/shared/types'
 
@@ -45,6 +45,9 @@ export type AwardedWorkView = {
   awaitable: boolean
   /** The edition the reader awaits already, when they do. */
   awaitedId?: AwaitedEditionId
+  /** The cover its page found when it was opened and described, drawn until
+   *  the watch finds the edition's own. */
+  describedCoverUrl?: CoverUrl
 }
 
 /** One award's winners on the full list: the ones the reader does not hold, and

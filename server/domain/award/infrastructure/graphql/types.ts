@@ -85,8 +85,9 @@ export const AwardWinnerType = builder.objectRef<AwardedWorkView>('AwardWinner')
     }),
     coverUrl: t.string({
       nullable: true,
-      description: 'The edition’s cover once found.',
-      resolve: (view) => view.watch?.found?.coverUrl ?? null,
+      description:
+        'The edition’s cover once found, else the one its page found when it was described.',
+      resolve: (view) => view.watch?.found?.coverUrl ?? view.describedCoverUrl ?? null,
     }),
     storeUrl: t.string({
       nullable: true,
