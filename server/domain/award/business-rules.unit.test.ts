@@ -8,6 +8,7 @@ import {
   hasRead,
   isDue,
   isHeld,
+  sectionGenreOf,
   watchKeyOf,
   worksOf,
 } from './business-rules'
@@ -167,5 +168,29 @@ describe('when a winner is looked up again', () => {
 
   test('shares the key an edition awaited from a scan uses', () => {
     expect(watchKeyOf(hyperion, 'book', 'fr')).toBe('hyperion--dan-simmons--book--fr')
+  })
+})
+
+describe('sectionGenreOf', () => {
+  const crowned = (...awards: (typeof AWARDS)[number][]) => ({
+    mentions: awards.map((award) => ({ award, year: 2026 })),
+  })
+
+  test('draws a work in the genre whose own award crowned it, wherever it ranks', () => {
+    const genres = ['science-fiction', 'fantasy'] as const
+    expect(sectionGenreOf(crowned('hugo', 'locus-fantasy'), genres)).toBe('fantasy')
+    expect(sectionGenreOf(crowned('nebula', 'clarke'), genres)).toBe('science-fiction')
+  })
+
+  test('draws a work only awards both genres show crowned where the reader reads most', () => {
+    expect(sectionGenreOf(crowned('hugo', 'nebula'), ['fantasy', 'science-fiction'])).toBe(
+      'fantasy',
+    )
+    expect(sectionGenreOf(crowned('hugo'), ['science-fiction', 'fantasy'])).toBe('science-fiction')
+  })
+
+  test('takes a shared award for the genre alone on the shelf', () => {
+    expect(sectionGenreOf(crowned('hugo'), ['fantasy'])).toBe('fantasy')
+    expect(sectionGenreOf(crowned('clarke'), ['fantasy'])).toBeUndefined()
   })
 })

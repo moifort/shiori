@@ -1,4 +1,4 @@
-import { AwardShelfType } from '~/domain/award/infrastructure/graphql/types'
+import { AwardSectionType, AwardShelfType } from '~/domain/award/infrastructure/graphql/types'
 import { AwardUseCase } from '~/domain/award/use-case'
 import { GenreEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { ReleaseFormatEnum } from '~/domain/discovery/infrastructure/graphql/types'
@@ -21,7 +21,20 @@ builder.queryFields((t) => ({
       format: t.arg({ type: ReleaseFormatEnum, required: true }),
       genre: t.arg({ type: GenreEnum, required: false }),
     },
+    deprecationReason: 'Use `awardSections`, one section per genre the reader reads most.',
     resolve: (_root, { format, genre }, context) =>
       AwardUseCase.shelf(context.userId, format, languageOf(context.event), genre ?? undefined),
+  }),
+  awardSections: t.field({
+    type: [AwardSectionType],
+    description:
+      'The novels the literary awards crowned, one section per genre the reader reads ' +
+      'most — three at most, the most read first — in one format, with where their ' +
+      'edition stands in the app’s language. A novel two genres’ awards crowned is in ' +
+      'one section only: the genre whose own award crowned it, else the one read most. ' +
+      'Empty when the reader reads no genre with awards enough.',
+    args: { format: t.arg({ type: ReleaseFormatEnum, required: true }) },
+    resolve: (_root, { format }, context) =>
+      AwardUseCase.sections(context.userId, format, languageOf(context.event)),
   }),
 }))

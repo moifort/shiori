@@ -20,11 +20,13 @@ import {
   INTEREST_RENEWED_AFTER_MS,
   isDue,
   isHeld,
+  MAX_AWARD_SECTIONS,
   RECENT_COUNT,
+  sectionGenreOf,
   watchKeyOf,
   worksOf,
 } from './business-rules'
-import type { AwardedWork, AwardedWorkView, AwardShelf } from './types'
+import type { AwardedWork, AwardedWorkView, AwardSection, AwardShelf } from './types'
 
 const logger = createLogger('award')
 
@@ -115,6 +117,69 @@ export namespace AwardUseCase {
         }
       }),
     }
+  }
+
+  /** One section per genre the reader reads most, three at most, the most
+   *  read first: the latest winners of its awards they do not hold, in one
+   *  format and the app's language. A work two genres' awards crowned is drawn
+   *  in one section only — see `sectionGenreOf`. Renews each genre's interest,
+   *  so the hourly pass keeps its winners looked up. */
+  export const sections = async (
+    userId: UserId,
+    format: ReleaseFormat,
+    appLanguage: Language,
+    now = new Date(),
+  ): Promise<AwardSection[]> => {
+    const books = await BookQuery.all(userId)
+    const genres = genresOf(books).slice(0, MAX_AWARD_SECTIONS)
+    if (genres.length === 0) return []
+    await Promise.all(genres.map((genre) => renewInterest(genre, appLanguage, now)))
+
+    const works = worksOf([...new Set(genres.flatMap((genre) => AWARDS_BY_GENRE[genre] ?? []))])
+    const keys = works.map((work) => watchKeyOf(work, format, appLanguage))
+    const [watches, awaited] = await Promise.all([
+      AwaitedEditionQuery.watches(keys),
+      AwaitedEditionQuery.byUser(userId),
+    ])
+    const awaitedByKey = new Map(
+      awaited
+        .filter((edition) => edition.format === format && edition.language === appLanguage)
+        .map((edition) => [edition.watchKey, edition.id]),
+    )
+    const today = todayOf(now)
+    const shown = works.flatMap((work, index) => {
+      const watchKey = keys[index]
+      const view = viewOf(
+        work,
+        format,
+        appLanguage,
+        watchKey,
+        watches.get(watchKey),
+        awaitedByKey.get(watchKey),
+        today,
+      )
+      return isHeld(work, format, view.watch?.found, books) ? [] : [view]
+    })
+    const picked = genres.map((genre) => ({
+      genre,
+      winners: shown
+        .filter((view) => sectionGenreOf(view.work, genres) === genre)
+        .slice(0, RECENT_COUNT),
+    }))
+    const described = new Map(
+      (
+        await withDescribedCovers(
+          picked.flatMap((section) => section.winners),
+          appLanguage,
+        )
+      ).map((view) => [view.work.key, view]),
+    )
+    return picked
+      .map(({ genre, winners }) => ({
+        genre,
+        winners: winners.map((view) => described.get(view.work.key) ?? view),
+      }))
+      .filter((section) => section.winners.length > 0)
   }
 
   /** The hourly pass's share: the winners of every genre somebody looked at in

@@ -23,6 +23,10 @@ export const MIN_GENRE_WEIGHT = 3
 /** How many winners the strip shows; the rest are on the full list. */
 export const RECENT_COUNT = 12
 
+/** How many genres Découvrir gives a section of award winners: the ones the
+ *  reader reads most. */
+export const MAX_AWARD_SECTIONS = 3
+
 /** A winner nobody found in a language is looked up again after this long: an
  *  old novel untranslated for decades rarely changes overnight. */
 export const UNFOUND_WATCH_EVERY_MS = 60 * 86_400_000
@@ -94,6 +98,27 @@ export const genresOf = (
     .filter(([, { weight }]) => weight >= MIN_GENRE_WEIGHT)
     .sort(([, left], [, right]) => right.weight - left.weight || right.latest - left.latest)
     .map(([genre]) => genre)
+}
+
+/** The section a work is shown in, among the reader's genres ranked: the first
+ *  whose own award crowned it — one no other of those genres shows — else the
+ *  first whose awards crowned it at all. A Hugo shared by science fiction and
+ *  fantasy is drawn once, where the reader reads most, unless the World
+ *  Fantasy says it is fantasy. Undefined for a work none of them crowned. */
+export const sectionGenreOf = (
+  work: Pick<AwardedWork, 'mentions'>,
+  genres: readonly Genre[],
+): Genre | undefined => {
+  const awardsOf = (genre: Genre) => AWARDS_BY_GENRE[genre] ?? []
+  const crowned = (genre: Genre, own: boolean) =>
+    work.mentions.some(
+      ({ award }) =>
+        awardsOf(genre).includes(award) &&
+        (!own || genres.every((other) => other === genre || !awardsOf(other).includes(award))),
+    )
+  return (
+    genres.find((genre) => crowned(genre, true)) ?? genres.find((genre) => crowned(genre, false))
+  )
 }
 
 /** The shared watch a work's edition in one format and language is kept under:

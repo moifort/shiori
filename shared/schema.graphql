@@ -624,6 +624,18 @@ type AwardMention {
 }
 
 """
+One genre’s section of Découvrir’s award winners: the latest novels its awards crowned that the reader does not hold, none of them drawn in another section.
+"""
+type AwardSection {
+  genre: Genre!
+
+  """
+  Its latest winners the reader does not hold in that format, twelve at most, the newest first.
+  """
+  winners: [AwardWinner!]!
+}
+
+"""
 Découvrir’s award winners: the novels the awards of the reader’s genre crowned, with where their edition stands in the app’s language.
 """
 type AwardShelf {
@@ -2939,11 +2951,16 @@ type Query {
   awaitedEditions(format: ReleaseFormat!): [AwaitedEdition!]!
 
   """
+  The novels the literary awards crowned, one section per genre the reader reads most — three at most, the most read first — in one format, with where their edition stands in the app’s language. A novel two genres’ awards crowned is in one section only: the genre whose own award crowned it, else the one read most. Empty when the reader reads no genre with awards enough.
+  """
+  awardSections(format: ReleaseFormat!): [AwardSection!]!
+
+  """
   The novels the literary awards of the reader’s genre crowned — Hugo, Nebula, Locus, Clarke, World Fantasy — in one format, with where their edition stands in the app’s language. The genre is the one asked for when the reader reads it enough, else the one they read most. Null when they read no genre with awards enough.
   
   Read off shared watches a scheduled pass looks up, so it answers at once: a novel never looked up comes back not `watched`.
   """
-  awardShelf(format: ReleaseFormat!, genre: Genre): AwardShelf
+  awardShelf(format: ReleaseFormat!, genre: Genre): AwardShelf @deprecated(reason: "Use `awardSections`, one section per genre the reader reads most.")
 
   """One book of the reader library. Null when they do not own it."""
   book(id: BookId!): Book

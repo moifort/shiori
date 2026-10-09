@@ -1,7 +1,13 @@
 import { AudibleQuery } from '~/domain/audible/query'
 import { storeUrlOf } from '~/domain/awaited-edition/business-rules'
 import { AwaitedStateEnum } from '~/domain/awaited-edition/infrastructure/graphql/types'
-import type { AwardedWorkView, AwardList, AwardMention, AwardShelf } from '~/domain/award/types'
+import type {
+  AwardedWorkView,
+  AwardList,
+  AwardMention,
+  AwardSection,
+  AwardShelf,
+} from '~/domain/award/types'
 import { BookLanguageEnum, GenreEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { ReleaseFormatEnum } from '~/domain/discovery/infrastructure/graphql/types'
 import { builder } from '~/domain/shared/graphql/builder'
@@ -161,6 +167,22 @@ export const AwardShelfType = builder.objectRef<AwardShelf>('AwardShelf').implem
       type: [AwardListType],
       description: 'Each of the genre’s awards in full, its own first.',
       resolve: (shelf) => shelf.awards,
+    }),
+  }),
+})
+
+export const AwardSectionType = builder.objectRef<AwardSection>('AwardSection').implement({
+  description:
+    'One genre’s section of Découvrir’s award winners: the latest novels its awards ' +
+    'crowned that the reader does not hold, none of them drawn in another section.',
+  fields: (t) => ({
+    genre: t.field({ type: GenreEnum, resolve: (section) => section.genre }),
+    winners: t.field({
+      type: [AwardWinnerType],
+      description:
+        'Its latest winners the reader does not hold in that format, twelve at most, the ' +
+        'newest first.',
+      resolve: (section) => section.winners,
     }),
   }),
 })

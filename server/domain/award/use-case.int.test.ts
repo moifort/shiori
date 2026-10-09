@@ -36,6 +36,8 @@ const { AwardUseCase } = await import('~/domain/award/use-case')
 const { AwaitedEditionUseCase } = await import('~/domain/awaited-edition/use-case')
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
 const { RECENT_COUNT } = await import('~/domain/award/business-rules')
+const { WINNERS } = await import('~/domain/award/winners')
+const { AWARDS: WINNER_AWARDS } = await import('~/domain/award/types')
 const { releaseDescriptionKeyOf } = await import('~/domain/discovery/business-rules')
 
 const reader = 'reader' as UserId
@@ -235,6 +237,71 @@ describe('the award shelf', () => {
       language: 'fr',
       requestedAt: now,
     })
+  })
+})
+
+describe('the award sections', () => {
+  const fantasyReader = () => {
+    shelve('Le Sorceleur', 'Andrzej Sapkowski', 'fantasy')
+    shelve('Le Nom du vent', 'Patrick Rothfuss', 'fantasy')
+    shelve('Assassin royal', 'Robin Hobb', 'fantasy')
+  }
+
+  test('gives each genre the reader reads enough a section, the most read first', async () => {
+    sfReader()
+    fantasyReader()
+    const sections = await AwardUseCase.sections(reader, 'book', 'fr', now)
+
+    expect(sections.map((section) => section.genre)).toEqual(['science-fiction', 'fantasy'])
+    expect(sections.every((section) => section.winners.length === RECENT_COUNT)).toBe(true)
+  })
+
+  test('draws every winner once, in the genre whose own award crowned it', async () => {
+    sfReader()
+    fantasyReader()
+    const [sf, fantasy] = await AwardUseCase.sections(reader, 'book', 'fr', now)
+    const titles = (section: typeof sf) => section?.winners.map((view) => view.work.title) ?? []
+
+    // Hugo and Locus Fantasy: fantasy, though science fiction is read more.
+    expect(titles(fantasy)).toContain(BookTitle('The Everlasting'))
+    expect(titles(sf)).not.toContain(BookTitle('The Everlasting'))
+    // A Nebula alone, both genres show it: where the reader reads most.
+    expect(titles(sf).slice(0, 2)).toEqual([
+      BookTitle('The Buffalo Hunter Hunter'),
+      BookTitle('Death of the Author'),
+    ])
+    expect(titles(sf).filter((title) => titles(fantasy).includes(title))).toEqual([])
+  })
+
+  test('is empty for a reader of no genre with awards', async () => {
+    shelve('Le Mystère de la chambre jaune', 'Gaston Leroux', 'crime')
+    expect(await AwardUseCase.sections(reader, 'book', 'fr', now)).toEqual([])
+  })
+
+  test('marks each genre shown as looked at', async () => {
+    sfReader()
+    fantasyReader()
+    await AwardUseCase.sections(reader, 'book', 'fr', now)
+
+    expect(fake.data('award-interests', 'science-fiction--fr')).toMatchObject({ language: 'fr' })
+    expect(fake.data('award-interests', 'fantasy--fr')).toMatchObject({ language: 'fr' })
+  })
+
+  test('reads the library, the awaited editions, the interests and two getAlls', async () => {
+    sfReader()
+    fantasyReader()
+    await AwardUseCase.sections(reader, 'book', 'fr', now)
+    startFakeRequest()
+    const [docReads, queryReads] = [fake.docReads, fake.queryReads]
+
+    await AwardUseCase.sections(reader, 'book', 'fr', now)
+
+    const works = new Set(
+      [...WINNER_AWARDS].flatMap((award) => WINNERS[award].map(([, title]) => title)),
+    )
+    expect(fake.queryReads - queryReads).toBe(2)
+    // One document per watch, the two interests, a description per winner shown.
+    expect(fake.docReads - docReads).toBeLessThanOrEqual(works.size + 2 + 2 * RECENT_COUNT)
   })
 })
 

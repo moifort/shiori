@@ -69,6 +69,13 @@ export type AwardShelf = {
   awards: AwardList[]
 }
 
+/** One genre's section on Découvrir: the latest winners of its awards the
+ *  reader does not hold, none of them drawn in another section. */
+export type AwardSection = {
+  genre: Genre
+  winners: AwardedWorkView[]
+}
+
 /** That somebody looked at a genre's winners in a language: what the hourly
  *  pass watches. Shared, keyed `{genre}--{language}`, naming nobody. */
 export type AwardInterest = {

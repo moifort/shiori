@@ -98,3 +98,39 @@ describe('awardShelf', () => {
     expect(result.data?.awardShelf).toBeNull()
   })
 })
+
+const SECTIONS = `
+  query ($format: ReleaseFormat!) {
+    awardSections(format: $format) {
+      genre
+      winners { title state awaitable awards { award year } }
+    }
+  }
+`
+
+describe('awardSections', () => {
+  test('gives the reader’s genre a section of its latest winners', async () => {
+    const result = await ask(SECTIONS, { format: 'BOOK' })
+    expect(result.errors).toBeUndefined()
+    const sections = result.data?.awardSections as {
+      genre: string
+      winners: { title: string; state: string; awaitable: boolean }[]
+    }[]
+
+    expect(sections.map((section) => section.genre)).toEqual(['SCIENCE_FICTION'])
+    expect(sections[0]?.winners[0]).toMatchObject({
+      title: 'The Everlasting',
+      state: 'UNANNOUNCED',
+      awaitable: true,
+    })
+    expect(sections[0]?.winners.map((winner) => winner.title)).not.toContain('Neuromancien')
+  })
+
+  test('is empty for a reader who reads no genre with awards enough', async () => {
+    fake = resetFakeFirestore()
+    shelve('one', 'Fondation', 'Isaac Asimov')
+    const result = await ask(SECTIONS, { format: 'AUDIOBOOK' })
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.awardSections).toEqual([])
+  })
+})
