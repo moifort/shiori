@@ -1,4 +1,9 @@
-import type { AuthorWatch, DiscoveryReader, SagaWatch } from '~/domain/discovery/types'
+import type {
+  AuthorWatch,
+  DiscoveryReader,
+  KeptReleaseDescription,
+  SagaWatch,
+} from '~/domain/discovery/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
@@ -13,6 +18,14 @@ const watches = () =>
 // language, holding no reference to any reader.
 const authorWatches = () =>
   db().collection('author-watches').withConverter(genericDataConverter<AuthorWatch>())
+
+// Shared as the saga watches are: a book's description is a fact about the
+// book, keyed by it and the language it is written in, holding no reference to
+// any reader, so the model call behind it is paid once.
+const descriptions = () =>
+  db()
+    .collection('release-descriptions')
+    .withConverter(genericDataConverter<KeptReleaseDescription>())
 
 // One document per reader, keyed by the reader.
 const readers = () =>
@@ -63,4 +76,11 @@ export const saveReader = async (reader: DiscoveryReader): Promise<DiscoveryRead
 
 export const removeReader = async (userId: UserId): Promise<void> => {
   await readers().doc(userId).delete()
+}
+
+export const findDescription = async (key: string): Promise<KeptReleaseDescription | undefined> =>
+  (await descriptions().doc(key).get()).data()
+
+export const saveDescription = async (kept: KeptReleaseDescription): Promise<void> => {
+  await descriptions().doc(kept.key).set(withoutAbsentFields(kept))
 }

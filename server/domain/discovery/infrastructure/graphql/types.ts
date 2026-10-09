@@ -7,6 +7,7 @@ import type {
   Discovery,
   FoundVolume,
   FoundWork,
+  ReleaseDescription,
   SagaDiscovery,
   SagaReleases,
 } from '~/domain/discovery/types'
@@ -279,6 +280,33 @@ export const AnnouncedVolumePreviewType = builder
           'on a recording Audible never confirmed, and without an Audible account.',
         resolve: async (preview, _args, { userId }) =>
           preview.asin ? ((await AudibleQuery.recordingUrlOf(userId, preview.asin)) ?? null) : null,
+      }),
+    }),
+  })
+
+export const ReleaseDescriptionType = builder
+  .objectRef<ReleaseDescription>('ReleaseDescription')
+  .implement({
+    description:
+      'A book Découvrir shows, described for its page: the record a scan would propose, ' +
+      'and what only a recording has.',
+    fields: (t) => ({
+      book: t.field({
+        type: ScanResultType,
+        description:
+          'The record, kept the book the app named — its title, format, edition, saga and ' +
+          'cover — with what the model found filled in.',
+        resolve: (description) => description.book,
+      }),
+      narrators: t.field({
+        type: ['NarratorName'],
+        description: 'Who reads the recording, as Audible lists them. Empty for a printed book.',
+        resolve: (description) => description.narrators,
+      }),
+      durationMinutes: t.int({
+        nullable: true,
+        description: 'The recording’s running time, as Audible gives it.',
+        resolve: (description) => description.durationMinutes ?? null,
       }),
     }),
   })

@@ -122,6 +122,29 @@ export namespace ScanUseCase {
     return lookUpEdition(userId, { ...seen, publisher }, language, hints)
   }
 
+  /** Describe a book Découvrir shows, for its page: the grounded step
+   *  `lookUpEdition` runs, but kept for every reader by the caller, so it
+   *  spends no scan. Refused once the allowance is used up, as `searchTitle`
+   *  is: a reader with nothing left keeps the plain page. */
+  export const describeShown = async (
+    userId: UserId,
+    seen: ScanResult,
+    language: ScanLanguage,
+    hints?: EditionHints,
+  ): Promise<ScanOutcome> => {
+    if (await isExhausted(userId)) return 'quota-exhausted'
+    try {
+      const { result, usage } = await ScanCommand.lookUpEdition(seen, language, hints)
+      await AdminCommand.recordAiUsage({ cacheHit: false, usage }).catch((error) =>
+        logger.warn('AI usage not recorded', { error }),
+      )
+      return result
+    } catch (error) {
+      logger.error('shown book description failed', { error, userId })
+      return { failed: error instanceof Error ? error.message : 'Scan failed' }
+    }
+  }
+
   /** Describe a book the reader ticked on a shelf photo. Never cached, so it
    *  always spends one scan — and only once the model answered. */
   export const describeDetected = (userId: UserId, seen: ScanResult, language: ScanLanguage) =>

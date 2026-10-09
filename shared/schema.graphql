@@ -2390,6 +2390,13 @@ type Mutation {
   describeDetectedBook(book: DetectedBookInput!): ScanResult!
 
   """
+  Describe a book Découvrir shows, for its page, as a scan describes one: the web-grounded model fills in its summary, genre, pages and publisher, and Audible the narrators and running time of a recording. About ten seconds the first time.
+  
+  Kept for every reader who opens the same book in the same language, for sixty days: the call is paid once and spends nobody’s scan. Refused with `QUOTA_EXHAUSTED` when the reader’s allowance is used up and nobody described it yet, `SCAN_FAILED` when the model call errors.
+  """
+  describeRelease(book: ReleaseInput!): ReleaseDescription!
+
+  """
   Find every book in one photo — spines on a shelf, or covers laid out flat — and where each sits, for the reader to tick the ones to add.
   
   One model call without web search: only what is printed is read, and a spine that cannot be read comes back with no title rather than a guess. At most 30 books, left to right and top to bottom. Books the reader already owns are flagged `owned`.
@@ -3428,6 +3435,24 @@ input RecommendationInput {
   recommenderName: PersonName
 }
 
+"""
+A book Découvrir shows, described for its page: the record a scan would propose, and what only a recording has.
+"""
+type ReleaseDescription {
+  """
+  The record, kept the book the app named — its title, format, edition, saga and cover — with what the model found filled in.
+  """
+  book: ScanResult!
+
+  """The recording’s running time, as Audible gives it."""
+  durationMinutes: Int
+
+  """
+  Who reads the recording, as Audible lists them. Empty for a printed book.
+  """
+  narrators: [NarratorName!]!
+}
+
 """How a saga reaches the reader."""
 enum ReleaseFormat {
   """Recorded: the saga heard."""
@@ -3435,6 +3460,32 @@ enum ReleaseFormat {
 
   """Printed or electronic: the saga read."""
   BOOK
+}
+
+"""
+A book Découvrir shows — a saga’s volume, an edition awaited, an award winner — named by what the app already knows of it.
+"""
+input ReleaseInput {
+  authors: [AuthorName!]!
+  coverUrl: CoverUrl
+  format: BookFormat!
+
+  """The ISBN the web search found, for the model to check."""
+  isbn13: Isbn13
+
+  """The edition’s language. Absent, the book is described in the app’s."""
+  language: BookLanguage
+
+  """
+  When it comes or came out, as found: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Ignored when it is none of them.
+  """
+  releasedOn: String
+
+  """The saga it is a volume of, with `seriesName` and `volume`."""
+  seriesId: SeriesId
+  seriesName: SeriesName
+  title: BookTitle!
+  volume: VolumeNumber
 }
 
 """

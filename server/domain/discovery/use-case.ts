@@ -20,6 +20,7 @@ import {
   dueWatches,
   formatOf,
   inDiscoveryOrder,
+  isDescriptionFresh,
   isDiscoverable,
   likelyLanguageOf,
   mergedVolumes,
@@ -29,6 +30,9 @@ import {
   onAudible,
   readerIsStale,
   recentReleasesOf,
+  releaseDescriptionKeyOf,
+  releaseDescriptionOf,
+  releaseEditionOf,
   releasesOf,
   sagasByAuthorOf,
   todayOf,
@@ -63,7 +67,9 @@ import type {
   DiscoveryReader,
   FoundVolume,
   FoundWork,
+  ReleaseDescription,
   ReleaseFormat,
+  ReleaseSeed,
   SagaDiscovery,
   SagaReleases,
   SagaWatch,
@@ -312,6 +318,46 @@ export namespace DiscoveryUseCase {
     )
     if (described === 'quota-exhausted' || 'failed' in described) return described
     return announcedPreviewOf(watch, volume, recording, described)
+  }
+
+  /** Describe a book Découvrir shows — a saga's volume, an edition awaited,
+   *  an award winner — for its page, as a scan describes a book: the grounded
+   *  model fills in its summary, genre, pages and publisher, and Audible its
+   *  narrators and running time for a recording. Kept for every reader who
+   *  opens the same book in the same language, so the call is paid once and
+   *  spends nobody's scan; a reader whose allowance is used up is refused one
+   *  nobody described yet, and keeps the plain page. */
+  export const describeRelease = async (
+    userId: UserId,
+    seed: ReleaseSeed,
+    appLanguage: Language,
+    now = new Date(),
+  ): Promise<ReleaseDescription | Exclude<ScanOutcome, ScanResult>> => {
+    const key = releaseDescriptionKeyOf(seed, appLanguage)
+    const kept = await DiscoveryQuery.description(key)
+    if (kept && isDescriptionFresh(kept, now)) return kept.description
+    const edition = seed.language
+    const [described, heard] = await Promise.all([
+      ScanUseCase.describeShown(userId, releaseEditionOf(seed), appLanguage, {
+        watchedIsbn13: seed.isbn13,
+        releasedOn: seed.releasedOn,
+        siblings: [],
+      }),
+      seed.format === 'audiobook' && edition
+        ? audibleEditionOf(seed.title, seed.authors[0], edition)
+        : undefined,
+    ])
+    if (described === 'quota-exhausted' || 'failed' in described) return described
+    const description = releaseDescriptionOf(
+      seed,
+      described,
+      typeof heard === 'object' ? heard : undefined,
+    )
+    // Best effort: a failed write only costs the next reader a model call.
+    await DiscoveryCommand.keepDescription({ key, description, describedAt: now }).catch((error) =>
+      logger.warn('release description not kept', { error, key }),
+    )
+    return description
   }
 
   /** The hourly pass. First every reader whose sagas and authors were last

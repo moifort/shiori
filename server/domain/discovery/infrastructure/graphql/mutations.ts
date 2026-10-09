@@ -1,17 +1,111 @@
 import { match, P } from 'ts-pattern'
-import { BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
+import {
+  BookFormatEnum,
+  BookLanguageEnum,
+  heldAs,
+} from '~/domain/book/infrastructure/graphql/enums'
 import {
   AnnouncedVolumePreviewType,
   DiscoveryType,
+  ReleaseDescriptionType,
   ReleaseFormatEnum,
   SagaReleasesType,
 } from '~/domain/discovery/infrastructure/graphql/types'
 import { DiscoveryUseCase } from '~/domain/discovery/use-case'
+import { ReleaseDate } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
 import { domainError, notFound } from '~/domain/shared/graphql/errors'
 import { languageOf } from '~/domain/shared/language'
 
+/** A book Découvrir shows, as the app names it. */
+const ReleaseInput = builder.inputType('ReleaseInput', {
+  description:
+    'A book Découvrir shows — a saga’s volume, an edition awaited, an award winner — named ' +
+    'by what the app already knows of it.',
+  fields: (t) => ({
+    title: t.field({ type: 'BookTitle', required: true }),
+    authors: t.field({ type: ['AuthorName'], required: true }),
+    format: t.field({ type: BookFormatEnum, required: true }),
+    language: t.field({
+      type: BookLanguageEnum,
+      required: false,
+      description: 'The edition’s language. Absent, the book is described in the app’s.',
+    }),
+    seriesId: t.field({
+      type: 'SeriesId',
+      required: false,
+      description: 'The saga it is a volume of, with `seriesName` and `volume`.',
+    }),
+    seriesName: t.field({ type: 'SeriesName', required: false }),
+    volume: t.field({ type: 'VolumeNumber', required: false }),
+    isbn13: t.field({
+      type: 'Isbn13',
+      required: false,
+      description: 'The ISBN the web search found, for the model to check.',
+    }),
+    releasedOn: t.string({
+      required: false,
+      description:
+        'When it comes or came out, as found: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Ignored ' +
+        'when it is none of them.',
+    }),
+    coverUrl: t.field({ type: 'CoverUrl', required: false }),
+  }),
+})
+
+/** A hint the model is told, dropped when it is not a date. */
+const releasedOnOf = (value: string | null | undefined) => {
+  if (!value) return undefined
+  try {
+    return ReleaseDate(value)
+  } catch {
+    return undefined
+  }
+}
+
 builder.mutationFields((t) => ({
+  describeRelease: t.field({
+    type: ReleaseDescriptionType,
+    description:
+      'Describe a book Découvrir shows, for its page, as a scan describes one: the ' +
+      'web-grounded model fills in its summary, genre, pages and publisher, and Audible the ' +
+      'narrators and running time of a recording. About ten seconds the first time.\n\n' +
+      'Kept for every reader who opens the same book in the same language, for sixty ' +
+      'days: the call is paid once and spends nobody’s scan. Refused with ' +
+      '`QUOTA_EXHAUSTED` when the reader’s allowance is used up and nobody described it ' +
+      'yet, `SCAN_FAILED` when the model call errors.',
+    args: { book: t.arg({ type: ReleaseInput, required: true }) },
+    resolve: async (_root, { book }, context) =>
+      match(
+        await DiscoveryUseCase.describeRelease(
+          context.userId,
+          {
+            title: book.title,
+            authors: book.authors,
+            format: heldAs(book.format).format ?? 'book',
+            ...(book.language ? { language: book.language } : {}),
+            ...(book.seriesId && book.seriesName
+              ? {
+                  series: {
+                    id: book.seriesId,
+                    name: book.seriesName,
+                    kind: 'main' as const,
+                    ...(book.volume != null ? { volume: book.volume } : {}),
+                  },
+                }
+              : {}),
+            ...(book.isbn13 ? { isbn13: book.isbn13 } : {}),
+            ...(releasedOnOf(book.releasedOn) ? { releasedOn: releasedOnOf(book.releasedOn) } : {}),
+            ...(book.coverUrl ? { coverUrl: book.coverUrl } : {}),
+          },
+          languageOf(context.event),
+        ),
+      )
+        .with('quota-exhausted', () => domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up'))
+        .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
+        .with({ book: P.any }, (description) => description)
+        .exhaustive(),
+  }),
   lookUpDiscovery: t.field({
     type: DiscoveryType,
     description:

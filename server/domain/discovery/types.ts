@@ -3,6 +3,7 @@ import type { AuthorKey } from '~/domain/author/types'
 import type { FollowedAuthor } from '~/domain/author/use-case'
 import type { AwaitedEditionView } from '~/domain/awaited-edition/types'
 import type {
+  BookFormat,
   BookLanguage,
   CoverUrl,
   Isbn13,
@@ -11,7 +12,7 @@ import type {
   Publisher,
   Synopsis,
 } from '~/domain/book/types'
-import type { ScanResult } from '~/domain/scan/types'
+import type { ScannedSeries, ScanResult } from '~/domain/scan/types'
 import type { ReleaseDate, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { FollowedSeries } from '~/domain/series/use-case'
 import type { Language } from '~/domain/shared/language'
@@ -211,4 +212,37 @@ export type AnnouncedVolumePreview = {
   releaseDate?: ReleaseDate
   /** The recording Audible confirmed, for its page on the reader's store. */
   asin?: AudibleAsin
+}
+
+/** A book Découvrir shows — a saga's volume, an edition awaited, an award
+ *  winner — named by what the app already knows of it, to be described for
+ *  its page. */
+export type ReleaseSeed = {
+  title: BookTitle
+  authors: AuthorName[]
+  format: BookFormat
+  /** The edition's language. Absent, the book is described in the app's. */
+  language?: BookLanguage
+  series?: ScannedSeries
+  /** The ISBN the web search found, for the model to check. */
+  isbn13?: Isbn13
+  /** When it comes or came out, as found. */
+  releasedOn?: ReleaseDate
+  coverUrl?: CoverUrl
+}
+
+/** A book described for its page: the record a scan would propose, and what
+ *  only a recording has. */
+export type ReleaseDescription = {
+  book: ScanResult
+  narrators: NarratorName[]
+  durationMinutes?: ListeningMinutes
+}
+
+/** A description kept for every reader who opens the same book in the same
+ *  language. Holds no reference to any reader. */
+export type KeptReleaseDescription = {
+  key: string
+  description: ReleaseDescription
+  describedAt: Date
 }

@@ -22,8 +22,11 @@ import type {
   DiscoveryReader,
   FoundVolume,
   FoundWork,
+  KeptReleaseDescription,
   ReleaseDate,
+  ReleaseDescription,
   ReleaseFormat,
+  ReleaseSeed,
   SagaReleases,
   SagaWatch,
   WatchedAuthor,
@@ -762,5 +765,77 @@ export const announcedPreviewOf = (
     durationMinutes: recording?.durationMinutes,
     releaseDate: volume.date,
     asin: volume.asin,
+  }
+}
+
+/** How long a book's description serves before it is asked again: an
+ *  announced book is described thinly, and grows a summary once it is out. */
+export const DESCRIPTION_KEPT_DAYS = 60
+
+/** The key a book's description is kept under: the title, the first author,
+ *  the format, the edition, the volume and the language it is written in. Two
+ *  readers who open the same book converge on one description; the same title
+ *  recorded, or in another edition, is another book. */
+export const releaseDescriptionKeyOf = (seed: ReleaseSeed, language: Language): string =>
+  [
+    slugify(seed.title),
+    slugify(seed.authors[0] ?? ''),
+    seed.format,
+    seed.language ?? '-',
+    seed.series?.volume ?? '-',
+    language,
+  ].join('~')
+
+/** Whether a kept description still serves. */
+export const isDescriptionFresh = (kept: KeptReleaseDescription, now: Date): boolean =>
+  now.getTime() - kept.describedAt.getTime() < DESCRIPTION_KEPT_DAYS * 86_400_000
+
+/** What the model is told of a book Découvrir shows: what the app already
+ *  knows, named so it describes this book and not another titled the same. */
+export const releaseEditionOf = (seed: ReleaseSeed): ScanResult => ({
+  recognized: true,
+  title: seed.title,
+  authors: seed.authors,
+  format: seed.format,
+  ...(seed.language ? { language: seed.language } : {}),
+  ...(seed.series ? { series: seed.series } : {}),
+  subgenres: [],
+})
+
+/** A shown book's page: what the model described, over what the app and
+ *  Audible already knew. The book stays the one the app showed — its title,
+ *  format, edition, saga and cover — whatever the model says. Audible's facts
+ *  about its own recording win over the model's; the model's summary wins over
+ *  Audible's blurb, which is marketing copy. */
+export const releaseDescriptionOf = (
+  seed: ReleaseSeed,
+  described: ScanResult,
+  recording: AudibleRecording | undefined,
+): ReleaseDescription => {
+  const heard = seed.format === 'audiobook'
+  const series = seed.series ?? described.series
+  const language = seed.language ?? described.language
+  const isbn13 = heard ? undefined : (seed.isbn13 ?? described.isbn13)
+  const coverUrl = seed.coverUrl ?? recording?.coverUrl ?? described.coverUrl
+  const publisher = recording?.publisher ?? described.publisher
+  const synopsis = described.synopsis ?? recording?.synopsis
+  const pageCount = heard ? undefined : described.pageCount
+  return {
+    book: {
+      ...described,
+      recognized: true,
+      title: seed.title,
+      authors: seed.authors.length > 0 ? seed.authors : described.authors,
+      format: seed.format,
+      publisher,
+      synopsis,
+      language,
+      pageCount,
+      isbn13,
+      coverUrl,
+      series,
+    },
+    narrators: recording?.narrators ?? [],
+    ...(recording?.durationMinutes ? { durationMinutes: recording.durationMinutes } : {}),
   }
 }
