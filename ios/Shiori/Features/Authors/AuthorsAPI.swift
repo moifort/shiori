@@ -40,7 +40,7 @@ enum AuthorsAPI {
                 SeriesAPI.followedRow(
                     saga.fragments.followedSeriesRow,
                     volumes: saga.volumes.map(\.fragments.followedVolume),
-                    spine: saga.catalogue?.spine.map(\.fragments.volumeEntry)
+                    catalogue: saga.catalogue?.fragments.catalogueSpine
                 )
             },
             printSagasNotHeld: page.printSagasNotHeld.map { AuthorSeries($0.fragments.authorSeriesFields) },

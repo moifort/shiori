@@ -117,7 +117,7 @@ enum SeriesAPI {
                 followedRow(
                     item.fragments.followedSeriesRow,
                     volumes: item.volumes.map(\.fragments.followedVolume),
-                    spine: item.catalogue?.spine.map(\.fragments.volumeEntry)
+                    catalogue: item.catalogue?.fragments.catalogueSpine
                 )
             },
             hasMore: data.mySeriesPage.hasMore
@@ -143,7 +143,7 @@ enum SeriesAPI {
             followedRow(
                 item.fragments.followedSeriesRow,
                 volumes: item.volumes.map(\.fragments.followedVolume),
-                spine: item.catalogue?.spine.map(\.fragments.volumeEntry)
+                catalogue: item.catalogue?.fragments.catalogueSpine
             )
         }
     }
@@ -153,16 +153,17 @@ enum SeriesAPI {
     static func followedRow(
         _ row: ShioriGraphQL.FollowedSeriesRow,
         volumes: [ShioriGraphQL.FollowedVolume],
-        spine: [ShioriGraphQL.VolumeEntry]?
+        catalogue: ShioriGraphQL.CatalogueSpine?
     ) -> FollowedSeries {
         var followed = FollowedSeries(row: row)
         followed.volumes = volumes.map(\.asBook)
-        followed.isCatalogued = spine != nil
+        followed.isCatalogued = catalogue != nil
         followed.strip = SeriesStripItem.strip(
             owned: followed.volumes,
-            spine: spine?.map(\.asVolume) ?? [],
+            spine: catalogue?.spine.map(\.fragments.volumeEntry.asVolume) ?? [],
             currentYear: Calendar.current.component(.year, from: .now),
-            language: followed.language
+            language: followed.language,
+            catalogedAt: catalogue.flatMap { GraphQLHelpers.parseISO8601($0.catalogedAt) }
         )
         return followed
     }
@@ -297,7 +298,8 @@ extension BookSeries {
             spine: catalogue.spine.map { $0.fragments.volumeEntry.asVolume },
             relatedWorks: catalogue.relatedWorks.map { $0.fragments.volumeEntry.asVolume },
             isProvisional: catalogue.provisional,
-            isAudio: catalogue.audio
+            isAudio: catalogue.audio,
+            catalogedAt: GraphQLHelpers.parseISO8601(catalogue.catalogedAt)
         )
     }
 }

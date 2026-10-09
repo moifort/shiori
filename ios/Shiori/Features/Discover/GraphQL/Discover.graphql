@@ -28,9 +28,7 @@ fragment DiscoveryFields on Discovery {
         ...FollowedVolume
       }
       catalogue {
-        spine {
-          ...VolumeEntry
-        }
+        ...CatalogueSpine
       }
     }
     next {

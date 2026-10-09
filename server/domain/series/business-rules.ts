@@ -24,12 +24,22 @@ import { slugify } from '~/utils/slug'
  *  as `editionOf` reads it off the catalogue. */
 export type Edition = { language?: BookLanguage; today?: string; datedUpTo?: number }
 
+/** When the catalogues began listing only the volumes out in their edition's
+ *  language: the deploy of one catalogue per edition. */
+export const EDITION_CATALOGUES_SINCE = new Date('2026-10-01T11:00:00Z')
+
 /** The edition as the saga's catalogue knows it: how far its release watch
  *  dated it. A translation comes out in order, so a volume past that point is
- *  not out in that language yet, however long ago it came out in another. */
+ *  not out in that language yet, however long ago it came out in another.
+ *
+ *  Only for a catalogue built before `EDITION_CATALOGUES_SINCE`, which listed
+ *  every edition's volumes. One built since lists its own edition's alone, and
+ *  its list is what is out: the watch may have dated another edition of the
+ *  same language — Old Boy's four-volume reissue of 2020 against the eight
+ *  volumes of 2005. */
 export const editionOf = (series: Series, edition: Edition = {}): Edition => {
   const { language } = edition
-  if (!language) return edition
+  if (!language || series.catalogedAt >= EDITION_CATALOGUES_SINCE) return edition
   const dated = series.volumes.flatMap((volume) =>
     volume.kind === 'main' && volume.number !== undefined && volume.releases?.[language]
       ? [Number(volume.number)]

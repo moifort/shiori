@@ -721,7 +721,7 @@ struct SeriesView: View {
 
     /// How far the edition opened was dated: past it, a volume out elsewhere
     /// is not out in this language yet.
-    private var datedUpTo: Int? { series?.spine.datedUpTo(in: language) }
+    private var datedUpTo: Int? { series?.spine.datedUpTo(in: language, catalogedAt: series?.catalogedAt) }
 
     /// The volume a saga is started with: the first of the spine already out.
     private func firstVolume(of series: BookSeries) -> Volume? {

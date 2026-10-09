@@ -58,9 +58,7 @@ query AuthorPage($key: AuthorKey!, $offered: AuthorName) {
         ...FollowedVolume
       }
       catalogue {
-        spine {
-          ...VolumeEntry
-        }
+        ...CatalogueSpine
       }
     }
     printSagasNotHeld: sagasNotHeld(audio: false) {

@@ -609,6 +609,28 @@ describe('release dates per edition', () => {
     expect(publishedVolumes(series, THIS_YEAR, { language: 'fr', today: TODAY })).toHaveLength(4)
   })
 
+  test('a catalogue of its edition alone is out up to its last volume, whatever was dated', () => {
+    // Old Boy in French: eight volumes from 2005, while the watch dated the
+    // four of a 2020 reissue.
+    const reissued = [1, 2, 3, 4].map((number) =>
+      volume({
+        title: `V${number}`,
+        number: VolumeNumber(number),
+        publishedIn: Year(2005),
+        releases: { fr: ReleaseDate(`2020-0${number}-01`) },
+      }),
+    )
+    const fifth = volume({ title: 'Five', number: VolumeNumber(5), publishedIn: Year(2006) })
+    const series = {
+      ...saga([...reissued, fifth]),
+      language: 'fr' as const,
+      catalogedAt: new Date('2026-10-04T06:49:48Z'),
+    }
+    const fr = editionOf(series, { language: 'fr', today: TODAY })
+    expect(isForthcoming(fifth, THIS_YEAR, fr)).toBe(false)
+    expect(publishedVolumes(series, THIS_YEAR, { language: 'fr', today: TODAY })).toHaveLength(5)
+  })
+
   test('an edition nobody dated yet falls back on the other editions', () => {
     const series = saga([announced])
     expect(

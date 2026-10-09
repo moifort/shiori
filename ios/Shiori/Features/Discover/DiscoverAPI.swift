@@ -310,7 +310,7 @@ private extension DiscoveryPage {
                     series: SeriesAPI.followedRow(
                         row.series.fragments.followedSeriesRow,
                         volumes: row.series.volumes.map(\.fragments.followedVolume),
-                        spine: row.series.catalogue?.spine.map(\.fragments.volumeEntry)
+                        catalogue: row.series.catalogue?.fragments.catalogueSpine
                     ),
                     releases: SagaReleases(
                         watched: true,

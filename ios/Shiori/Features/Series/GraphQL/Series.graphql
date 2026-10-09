@@ -46,6 +46,7 @@ fragment SeriesCatalogue on Series {
   author
   description
   provisional
+  catalogedAt
   spine {
     ...VolumeEntry
   }
@@ -70,9 +71,7 @@ query MySeriesPage($limit: Int, $offset: Int, $loved: Boolean, $state: SeriesSta
         ...FollowedVolume
       }
       catalogue {
-        spine {
-          ...VolumeEntry
-        }
+        ...CatalogueSpine
       }
     }
   }
@@ -88,10 +87,17 @@ query MyFollowedSeries($seriesId: SeriesId!, $language: BookLanguage) {
       ...FollowedVolume
     }
     catalogue {
-      spine {
-        ...VolumeEntry
-      }
+      ...CatalogueSpine
     }
+  }
+}
+
+# The catalogue behind a row's strip: its spine, and when it was built — one
+# built before the catalogues of each edition lists other editions' volumes.
+fragment CatalogueSpine on Series {
+  catalogedAt
+  spine {
+    ...VolumeEntry
   }
 }
 

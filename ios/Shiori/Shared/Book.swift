@@ -403,10 +403,11 @@ enum SeriesStripItem: Identifiable, Hashable, Codable, Sendable {
         owned: [Book],
         spine: [Volume],
         currentYear: Int,
-        language: BookLanguage? = nil
+        language: BookLanguage? = nil,
+        catalogedAt: Date? = nil
     ) -> [SeriesStripItem] {
         guard !spine.isEmpty else { return owned.map { .owned($0) } }
-        let datedUpTo = spine.datedUpTo(in: language)
+        let datedUpTo = spine.datedUpTo(in: language, catalogedAt: catalogedAt)
         var placed = Set<String>()
         var items: [SeriesStripItem] = []
         for volume in spine {
@@ -494,11 +495,19 @@ struct Volume: Identifiable, Hashable, Sendable {
 }
 
 extension [Volume] {
+    /// When the catalogues began listing only the volumes out in their
+    /// edition's language. The server's `EDITION_CATALOGUES_SINCE`.
+    static let editionCataloguesSince = Date(timeIntervalSince1970: 1_790_852_400) // 2026-10-01T11:00:00Z
+
     /// The highest volume the edition has a date for: how far its release
     /// watch dated it. A translation comes out in order, so a volume past it
-    /// is not out in that language yet.
-    func datedUpTo(in language: BookLanguage?) -> Int? {
+    /// is not out in that language yet. Only for a catalogue built before the
+    /// catalogues of each edition, which listed every edition's volumes: one
+    /// built since lists what is out in its own, whatever the watch dated —
+    /// Old Boy's four-volume reissue of 2020 against its eight volumes of 2005.
+    func datedUpTo(in language: BookLanguage?, catalogedAt: Date? = nil) -> Int? {
         guard let language else { return nil }
+        if let catalogedAt, catalogedAt >= Self.editionCataloguesSince { return nil }
         return filter { $0.release(in: language) != nil }.compactMap(\.number).max()
     }
 }
@@ -532,6 +541,9 @@ struct BookSeries: Identifiable, Sendable {
     /// audiobooks, dated by their recordings. The same saga in print is another
     /// saga, under another id.
     var isAudio = false
+    /// When the catalogue was built: one built before the catalogues of each
+    /// edition is read with `datedUpTo`'s caution.
+    var catalogedAt: Date?
 }
 
 /// What one reader makes of one saga — never part of the shared catalogue, which
