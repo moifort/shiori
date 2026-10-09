@@ -156,11 +156,15 @@ struct AwardWinnerView: View {
     @State private var isAwaiting = false
     @State private var awaited = false
     @State private var failure: String?
+    @State private var describer = ReleaseDescriber()
+
+    /// The winner once described, as a book's page draws it.
+    private var shown: Book { winner.cover.described(by: describer.description) }
 
     var body: some View {
         List {
             BookHeaderSection(
-                book: winner.cover,
+                book: shown,
                 state: state,
                 releaseDate: winner.state == .announced ? winner.date : nil,
                 isAwaited: awaited || winner.awaitedEditionId != nil,
@@ -168,6 +172,7 @@ struct AwardWinnerView: View {
                     .init(name: winner.format.storeName, url: $0, tint: winner.format.storeTint)
                 }
             )
+            ReleaseDescriptionSections(describer: describer, synopsis: shown.synopsis)
             Section {
                 ForEach(winner.mentions, id: \.self) { mention in
                     LabeledContent(mention.award.name) {
@@ -194,6 +199,7 @@ struct AwardWinnerView: View {
         }
         .listStyle(.insetGrouped)
         .labelStyle(.row)
+        .task { await describer.describe(winner.seed) }
         .navigationTitle(Text(verbatim: winner.mentions.first?.award.shortName ?? ""))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -263,5 +269,20 @@ struct AwardWinnerView: View {
         } catch {
             failure = reportError(error)
         }
+    }
+}
+
+extension AwardWinner {
+    /// What the model is told: the edition found in the app's language, else
+    /// the novel as it won.
+    var seed: ReleaseSeed {
+        ReleaseSeed(
+            title: title,
+            authors: authors,
+            format: format == .audiobook ? .audiobook : .book,
+            language: state == .unannounced ? originalLanguage : nil,
+            releasedOn: date,
+            coverURL: coverURL
+        )
     }
 }

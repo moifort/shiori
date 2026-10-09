@@ -4,8 +4,10 @@ import SwiftUI
 /// Découvrir, or from its row on the saga screen — drawn as every book page
 /// is, when it comes pinned on its cover — orange while announced, green once
 /// out — with Audible's tag in its corner for a recording, and the way to its
-/// saga where the book page has it. Only what the look on the web
-/// found is drawn: the page asks nothing of the model and opens at once.
+/// saga where the book page has it. It opens at once on what the look on the
+/// web found, then fills in as a book's page — summary, genre, pages,
+/// publisher, narrators — once the model described it, for every reader at
+/// once, so it spends no scan.
 ///
 /// "+" puts it on the pile, filed in its saga at its number; a recording goes
 /// through the reader's Audible account when there is one, as the saga screen
@@ -23,17 +25,20 @@ struct AnnouncedVolumeView: View {
     @State private var isAdding = false
     @State private var added = false
     @State private var addFailed: String?
+    @State private var describer = ReleaseDescriber()
 
     var body: some View {
         List {
             BookHeaderSection(
-                book: book,
+                book: shown,
                 state: state,
                 releaseDate: volume.date,
                 storeLink: volume.audibleURL.map { .init(name: "Audible", url: $0, tint: .audible) },
                 actions: .init(openSeries: linksToSaga ? { showsSaga = true } : nil)
             )
+            ReleaseDescriptionSections(describer: describer, synopsis: shown.synopsis)
         }
+        .task { await describer.describe(seed) }
         .listStyle(.insetGrouped)
         .labelStyle(.row)
         .navigationTitle(Text(verbatim: saga.series.name))
@@ -73,6 +78,23 @@ struct AnnouncedVolumeView: View {
         if added { return .addedToPile }
         if let date = volume.date, ReleaseDateText.isUpcoming(date) { return nil }
         return .release(volume.date)
+    }
+
+    /// The book once described, or as the look on the web knows it until then.
+    private var shown: Book { book.described(by: describer.description) }
+
+    /// What the model is told: the volume as the watch found it.
+    private var seed: ReleaseSeed {
+        ReleaseSeed(
+            title: book.title,
+            authors: book.authors,
+            format: book.format,
+            language: book.language,
+            series: book.series,
+            isbn13: volume.isbn13,
+            releasedOn: volume.date,
+            coverURL: volume.coverURL
+        )
     }
 
     /// What the look on the web knows: its title, author, cover and place in the
@@ -119,12 +141,17 @@ struct AnnouncedVolumeView: View {
                 if code != "NOT_FOUND" && code != "AUDIBLE_NOT_CONNECTED" { _ = reportError(error) }
             }
         }
-        let shown = book
+        let shown = shown
         var draft = BookDraft(title: shown.title, authors: shown.authors)
         draft.format = shown.format
-        // The saga's genre: the page does not draw it, but the book is filed
-        // under it as its saga is.
-        draft.genre = series.genre
+        // The description's genre, else the saga's: the book is filed under
+        // it as its saga is.
+        draft.genre = shown.genre ?? series.genre
+        draft.subgenres = shown.subgenres
+        draft.synopsis = shown.synopsis
+        draft.publisher = shown.publisher
+        draft.firstPublishedIn = shown.firstPublishedIn
+        draft.pageCount = shown.pageCount
         draft.isbn13 = shown.isbn13
         draft.language = series.language
         draft.series = shown.series

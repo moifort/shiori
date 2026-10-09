@@ -178,3 +178,16 @@ fragment FriendLovedAuthorLovers on FriendLovedAuthor {
   }
   lovedByMany
 }
+
+# A book Découvrir shows — a saga's volume, an edition awaited, an award
+# winner — described for its page by the model and Audible. Kept for every
+# reader, so it spends no scan; about ten seconds the first time.
+mutation DescribeRelease($book: ReleaseInput!) {
+  describeRelease(book: $book) {
+    book {
+      ...ScannedRecord
+    }
+    narrators
+    durationMinutes
+  }
+}

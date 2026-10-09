@@ -123,11 +123,15 @@ struct AwaitedEditionView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var confirmStop = false
+    @State private var describer = ReleaseDescriber()
+
+    /// The edition once described, as a book's page draws it.
+    private var shown: Book { edition.cover.described(by: describer.description) }
 
     var body: some View {
         List {
             BookHeaderSection(
-                book: edition.cover,
+                book: shown,
                 state: edition.pageState,
                 releaseDate: edition.announcedDate,
                 storeLink: edition.storeURL.map { .init(name: edition.format.storeName, url: $0, tint: edition.format.storeTint) }
@@ -143,9 +147,11 @@ struct AwaitedEditionView: View {
                     )
                 }
             }
+            ReleaseDescriptionSections(describer: describer, synopsis: shown.synopsis)
         }
         .listStyle(.insetGrouped)
         .labelStyle(.row)
+        .task { await describer.describe(edition.seed) }
         .navigationTitle(edition.format.awaitedTitle)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -180,6 +186,19 @@ struct AwaitedEditionView: View {
 }
 
 extension AwaitedEdition {
+    /// What the model is told: the edition awaited once found, else the book
+    /// it is awaited from, in its own language.
+    var seed: ReleaseSeed {
+        ReleaseSeed(
+            title: state == .unannounced ? originalTitle : title,
+            authors: authors,
+            format: format == .audiobook ? .audiobook : .book,
+            language: state == .unannounced ? originalLanguage : nil,
+            releasedOn: date,
+            coverURL: coverURL
+        )
+    }
+
     /// The day it comes, while it is still to come: the calendar leaf in the
     /// corner of its page.
     var announcedDate: String? {

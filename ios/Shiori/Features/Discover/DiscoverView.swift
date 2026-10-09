@@ -214,6 +214,21 @@ struct DiscoverView: View {
         }
     }
 
+    /// Whether the shelf on screen shows nothing above its news either: the
+    /// friends love nothing new, and on the Books shelf nothing is awaited and
+    /// no award winner is offered. Only then does the empty news say so — under
+    /// other sections it would read as a page with nothing on it.
+    private var isEmpty: Bool {
+        let picks = viewModel.picks
+        switch shelf {
+        case .books:
+            let awards = viewModel.awards[viewModel.awardsFormat]?.recent ?? []
+            return picks.books.isEmpty && viewModel.awaitedSoon.isEmpty && awards.isEmpty
+        case .series: return picks.sagas.isEmpty
+        case .authors: return picks.authors.isEmpty
+        }
+    }
+
     /// "Bientôt disponible": the editions the reader awaits, translated and
     /// recorded in one strip like the friends' favourites, the headphones on a
     /// recording's cover. Absent when nothing is awaited.
@@ -263,22 +278,26 @@ struct DiscoverView: View {
         let recentVolumes = viewModel.recentVolumes
         let recentSagas = viewModel.recentSagas
         if upcoming.isEmpty && recentSagas.isEmpty {
-            Section {
-                EmptyStateView(
-                    systemImage: "sparkles",
+            if isEmpty {
+                Section {
+                    EmptyStateView(
+                        systemImage: "sparkles",
                     title: "Rien de neuf pour l'instant",
-                    message: "Les nouveautés et les prochains tomes annoncés de vos séries apparaîtront ici."
-                )
-            }
-            .listRowBackground(Color.clear)
-        } else if shelf == .books {
-            Section {
-                ForEach(recentVolumes) { volumeRow($0) }
-                ForEach(upcoming) { saga in
-                    if let next = saga.releases.next {
-                        volumeRow(DiscoveryVolume(saga: saga, volume: next))
-                    }
+                        message: "Les nouveautés et les prochains tomes annoncés de vos séries apparaîtront ici."
+                    )
                 }
+                .listRowBackground(Color.clear)
+            }
+        } else if shelf == .books {
+            let coming = upcoming.compactMap { saga in
+                saga.releases.next.map { DiscoveryVolume(saga: saga, volume: $0) }
+            }
+            Section {
+                SeriesNewsStrip(
+                    volumes: recentVolumes + coming,
+                    onTapped: { openVolume = $0 },
+                    onOpenSeries: { openSeries = $0 }
+                )
             } header: {
                 Text("Nouveautés séries")
             }
@@ -308,7 +327,7 @@ struct DiscoverView: View {
     private var authorSections: some View {
         let upcoming = viewModel.upcomingAuthors
         let recent = viewModel.recentAuthors
-        if upcoming.isEmpty && recent.isEmpty {
+        if upcoming.isEmpty && recent.isEmpty && isEmpty {
             Section {
                 EmptyStateView(
                     systemImage: "person.2",
@@ -377,56 +396,6 @@ struct DiscoverView: View {
             Button("Ouvrir l'auteur", systemImage: "person") { openAuthor = destination }
         }
         .accessibilityIdentifier("discover-author-row")
-    }
-
-    /// A volume announced or just out, drawn as the Books tab draws a book: its
-    /// saga as a tag, the headphones on the cover of a recording, and on the
-    /// trailing edge the day it comes or came out. No genre: the saga already
-    /// says what it is.
-    ///
-    /// A tap opens the volume's page, described on the spot for a scan; a long
-    /// press offers its saga, and a recording's page on Audible.
-    private func volumeRow(_ opened: DiscoveryVolume) -> some View {
-        let saga = opened.saga
-        let volume = opened.volume
-        let series = saga.series
-        let membership = SeriesMembership(
-            id: series.seriesId,
-            name: series.name,
-            volume: volume.number,
-            kind: .main
-        )
-        return BookRow(
-            title: volume.title,
-            authorLine: series.author ?? "",
-            cover: Book(
-                id: "release-\(series.id)-\(volume.number)",
-                title: volume.title,
-                authors: series.author.map { [$0] } ?? [],
-                format: series.isAudio ? .audiobook : .book,
-                genre: series.genre,
-                language: series.language,
-                series: membership,
-                coverURL: volume.coverURL,
-                status: .toRead
-            ),
-            status: .toRead,
-            rating: nil,
-            series: membership,
-            language: series.language,
-            releaseDate: volume.date
-        )
-        .contentShape(Rectangle())
-        .onTapGesture { openVolume = opened }
-        .accessibilityAddTraits(.isButton)
-        .accessibilityAction { openVolume = opened }
-        .contextMenu {
-            if let audibleURL = volume.audibleURL {
-                Button("Ouvrir dans Audible", systemImage: "headphones") { openURL(audibleURL) }
-            }
-            Button("Ouvrir la série", systemImage: "books.vertical") { openSeries = saga }
-        }
-        .accessibilityIdentifier("discover-volume-row")
     }
 
     /// A saga's row: the Series tab's own, every cover of its strip, and
@@ -555,4 +524,72 @@ extension AuthorDiscovery {
 
 #Preview {
     DiscoverView(shelf: .constant(.books))
+}
+
+/// "Nouveautés séries": the volumes of the sagas followed, read and heard, as
+/// a strip of covers like the editions awaited — the ones just out first with
+/// their day in green, then the ones announced with theirs in orange. A tap
+/// opens the volume's page; a long press offers its saga, and a recording's
+/// page on Audible.
+struct SeriesNewsStrip: View {
+    let volumes: [DiscoveryVolume]
+    let onTapped: (DiscoveryVolume) -> Void
+    let onOpenSeries: (SagaDiscovery) -> Void
+
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(alignment: .top, spacing: 12) {
+                ForEach(volumes) { opened in
+                    Button { onTapped(opened) } label: {
+                        CoverTile(
+                            book: opened.cover,
+                            caption: opened.caption,
+                            showsTitle: false,
+                            captionTint: opened.isComing ? .orange : .green
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .contextMenu {
+                        if let audibleURL = opened.volume.audibleURL {
+                            Button("Ouvrir dans Audible", systemImage: "headphones") { openURL(audibleURL) }
+                        }
+                        Button("Ouvrir la série", systemImage: "books.vertical") { onOpenSeries(opened.saga) }
+                    }
+                    .accessibilityIdentifier("discover-volume-row")
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
+        .listRowInsets(EdgeInsets())
+    }
+}
+
+extension DiscoveryVolume {
+    /// Still to come: announced for a day not reached, or for none yet.
+    var isComing: Bool {
+        volume.date.map { ReleaseDateText.isUpcoming($0) } ?? true
+    }
+
+    /// Under its cover: the day it comes or came out, or that it is announced.
+    var caption: String {
+        volume.date.map(ReleaseDateText.short) ?? String(localized: "Annoncé")
+    }
+
+    /// Drawn as the Books tab draws a book, the headphones on a recording's
+    /// cover.
+    var cover: Book {
+        let series = saga.series
+        return Book(
+            id: "release-\(series.id)-\(volume.number)",
+            title: volume.title,
+            authors: series.author.map { [$0] } ?? [],
+            format: series.isAudio ? .audiobook : .book,
+            language: series.language,
+            coverURL: volume.coverURL,
+            status: .toRead
+        )
+    }
 }

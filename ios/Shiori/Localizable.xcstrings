@@ -8505,6 +8505,22 @@
         }
       }
     },
+    "Préparation de la fiche…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing the book page…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Préparation de la fiche…"
+          }
+        }
+      }
+    },
     "Préparation de votre bibliothèque" : {
       "localizations" : {
         "en" : {
