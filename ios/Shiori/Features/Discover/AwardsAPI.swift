@@ -125,58 +125,32 @@ struct AwardWinner: Identifiable, Hashable, Sendable {
     }
 }
 
-/// One award's winners the reader does not hold, and how many of all of them
-/// they have read.
-struct AwardList: Identifiable, Hashable, Sendable {
-    let award: LiteraryAward
-    let readCount: Int
-    let total: Int
-    let winners: [AwardWinner]
-
-    var id: String { award.id }
-}
-
-/// Découvrir's award winners: the genre shown, the others the reader reads
-/// enough to switch to, the latest winners and every award in full.
-struct AwardShelf: Identifiable, Hashable, Sendable {
+/// One genre's section of Découvrir's award winners: the latest its awards
+/// crowned that the reader does not hold, none drawn in another section.
+struct AwardSection: Identifiable, Hashable, Sendable {
     let genre: BookGenre
-    let genres: [BookGenre]
-    let recent: [AwardWinner]
-    let awards: [AwardList]
+    let winners: [AwardWinner]
 
     var id: String { "\(genre)" }
 }
 
 enum AwardsAPI {
-    /// The winners of the genre asked for, else of the reader's own. Nil when
-    /// the reader reads no genre with awards enough.
-    static func shelf(format: ReleaseFormat, genre: BookGenre?) async throws -> AwardShelf? {
+    /// One section per genre the reader reads most, the most read first.
+    /// Empty when the reader reads no genre with awards enough.
+    static func sections(format: ReleaseFormat) async throws -> [AwardSection] {
         #if DEBUG
         if Showcase.isOn {
-            return nil
+            return []
         }
         #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.AwardShelfQuery(
-                format: .case(format.graphQL),
-                genre: GraphQLHelpers.graphQLNullable(genre.map(LibraryAPI.graphQLGenre))
-            )
+            query: ShioriGraphQL.AwardSectionsQuery(format: .case(format.graphQL))
         )
-        return data.awardShelf.map { shelf in
-            AwardShelf(
-                genre: shelf.genre.asDomain,
-                genres: shelf.genres.map(\.asDomain),
-                recent: shelf.recent.map { AwardWinner(fields: $0.fragments.awardWinnerFields) },
-                awards: shelf.awards.compactMap { list in
-                    guard let award = LiteraryAward(rawValue: list.award.rawValue) else { return nil }
-                    return AwardList(
-                        award: award,
-                        readCount: list.readCount,
-                        total: list.total,
-                        winners: list.winners.map { AwardWinner(fields: $0.fragments.awardWinnerFields) }
-                    )
-                }
+        return data.awardSections.map { section in
+            AwardSection(
+                genre: section.genre.asDomain,
+                winners: section.winners.map { AwardWinner(fields: $0.fragments.awardWinnerFields) }
             )
         }
     }

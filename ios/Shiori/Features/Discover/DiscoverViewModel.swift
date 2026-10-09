@@ -189,10 +189,11 @@ final class DiscoverViewModel {
         }
     }
 
-    /// The award winners of the reader's genre in each format: nil until
-    /// loaded, and when the reader reads no genre with awards enough. Not kept
-    /// in the snapshot: a suggestion, asked anew on each visit.
-    private(set) var awards: [ReleaseFormat: AwardShelf] = [:]
+    /// The award winners in each format, one section per genre the reader
+    /// reads most: empty until loaded, and when the reader reads no genre with
+    /// awards enough. Not kept in the snapshot: a suggestion, asked anew on
+    /// each visit.
+    private(set) var awards: [ReleaseFormat: [AwardSection]] = [:]
 
     /// The format the award winners are shown in: the book's, unless the
     /// reader follows and awaits nothing read — a reader of recordings alone
@@ -203,7 +204,7 @@ final class DiscoverViewModel {
 
     func loadAwards(_ format: ReleaseFormat) async {
         do {
-            let found = try await AwardsAPI.shelf(format: format, genre: nil)
+            let found = try await AwardsAPI.sections(format: format)
             withAnimation(.smooth) { awards[format] = found }
         } catch {
             guard !isCancellation(error) else { return }

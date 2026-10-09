@@ -29,8 +29,8 @@ import SwiftUI
 /// awaits in the app's language, translated or recorded, as one strip of
 /// covers — the ones announced first, then the ones out, then the ones not
 /// announced yet, the latest awaited first. Then "Prix littéraires": the latest
-/// winners of the awards of the genre the reader reads most that they do not
-/// hold, a strip of covers. Then
+/// winners of the awards of each genre the reader reads most that they do not
+/// hold, a strip of covers per genre. Then
 /// "Nouveautés séries": the volumes out in the last two weeks the reader can
 /// have now, the newest first, then the ones announced, the soonest first.
 ///
@@ -222,7 +222,7 @@ struct DiscoverView: View {
         let picks = viewModel.picks
         switch shelf {
         case .books:
-            let awards = viewModel.awards[viewModel.awardsFormat]?.recent ?? []
+            let awards = viewModel.awards[viewModel.awardsFormat] ?? []
             return picks.books.isEmpty && viewModel.awaitedSoon.isEmpty && awards.isEmpty
         case .series: return picks.sagas.isEmpty
         case .authors: return picks.authors.isEmpty
@@ -245,17 +245,18 @@ struct DiscoverView: View {
         }
     }
 
-    /// "Prix littéraires": the latest winners of the awards of the genre the
-    /// reader reads most, the ones they do not hold — in print, or recorded
-    /// for a reader who only listens — as a strip like the editions awaited.
-    /// Absent when the reader reads no genre with awards enough.
+    /// "Prix littéraires", once per genre the reader reads most, three at
+    /// most: the latest winners of its awards they do not hold — in print, or
+    /// recorded for a reader who only listens — as a strip like the editions
+    /// awaited, none drawn twice. Absent when the reader reads no genre with
+    /// awards enough.
     @ViewBuilder
     private var awardsSection: some View {
-        if let awards = viewModel.awards[viewModel.awardsFormat], !awards.recent.isEmpty {
+        ForEach(viewModel.awards[viewModel.awardsFormat] ?? []) { section in
             Section {
-                AwardWinnersStrip(winners: awards.recent) { openWinner = $0 }
+                AwardWinnersStrip(winners: section.winners) { openWinner = $0 }
             } header: {
-                Text("Prix littéraires · \(awards.genre.label)")
+                Text("Prix littéraires · \(section.genre.label)")
             }
             .accessibilityIdentifier("discover-awards")
         }
