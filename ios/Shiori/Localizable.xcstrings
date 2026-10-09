@@ -481,22 +481,6 @@
         }
       }
     },
-    "%lld lauréats lus sur %lld" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld of %2$lld winners read"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld lauréats lus sur %2$lld"
-          }
-        }
-      }
-    },
     "%lld livre(s) ajouté(s), %lld mis à jour." : {
       "localizations" : {
         "en" : {
@@ -8393,22 +8377,6 @@
         }
       }
     },
-    "Prix littéraires" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Literary awards"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prix littéraires"
-          }
-        }
-      }
-    },
     "Prix littéraires · %@" : {
       "localizations" : {
         "en" : {
@@ -10857,22 +10825,6 @@
         }
       }
     },
-    "Tout voir" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "See all"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tout voir"
-          }
-        }
-      }
-    },
     "Toutes" : {
       "localizations" : {
         "en" : {
@@ -11381,22 +11333,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vous"
-          }
-        }
-      }
-    },
-    "Vous avez tous ses lauréats." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You hold all of its winners."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vous avez tous ses lauréats."
           }
         }
       }
