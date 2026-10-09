@@ -275,19 +275,31 @@ struct FriendRow: View {
     /// row, and a tap anywhere opens the friend's page.
     var onOpen: ((FriendBook) -> Void)?
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    /// Grown with the initials it holds, which otherwise spilled out of it.
+    @ScaledMetric(relativeTo: .subheadline) private var avatarSide: CGFloat = 40
+
+    /// The figures beside the name, or under it at the accessibility sizes,
+    /// where the two on one line left the name two letters long.
+    private var nameAndFigures: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 8))
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center, spacing: 12) {
                 Text(friend.initials)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.tint)
-                    .frame(width: 40, height: 40)
+                    .frame(width: avatarSide, height: avatarSide)
                     .background(.tint.opacity(0.15), in: .circle)
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                nameAndFigures {
                     Text(friend.displayName)
                         .font(.body.weight(.medium))
                         .lineLimit(1)
-                    Spacer(minLength: 0)
+                    if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 0) }
                     HStack(spacing: 10) {
                         Label("\(friend.favoriteCount)", systemImage: "heart")
                             .accessibilityLabel(Text("\(friend.favoriteCount) favoris"))

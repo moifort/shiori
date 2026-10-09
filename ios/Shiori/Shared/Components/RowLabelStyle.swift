@@ -9,15 +9,28 @@ import SwiftUI
 /// Applied per screen with `.labelStyle(.row)`, which every `Label` under it
 /// inherits — menu items are drawn by the system and keep their own layout.
 struct RowLabelStyle: LabelStyle {
-    /// Wide enough for the widest symbol the rows use at body size.
-    static let iconWidth: CGFloat = 26
-
     func makeBody(configuration: Configuration) -> some View {
+        RowLabel(configuration: configuration)
+    }
+}
+
+/// The style's body, a view of its own for the scaled column: held at a fixed
+/// width while the glyph grew with the text, it pushed the icon out past the
+/// row's left edge at the larger sizes.
+private struct RowLabel: View {
+    let configuration: LabelStyleConfiguration
+    /// Wide enough for the widest symbol the rows use, at every text size.
+    @ScaledMetric(relativeTo: .body) private var iconWidth: CGFloat = 26
+
+    var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             configuration.icon
                 .font(.body)
                 .imageScale(.medium)
-                .frame(width: Self.iconWidth)
+                // A floor, not a width: at the largest sizes the widest glyphs
+                // outgrow even the scaled column, and are better given room
+                // than pushed out of the row.
+                .frame(minWidth: iconWidth)
             configuration.title
         }
     }

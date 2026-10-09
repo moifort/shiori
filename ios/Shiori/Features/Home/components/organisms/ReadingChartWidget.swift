@@ -93,7 +93,11 @@ struct ReadingChartWidget: View {
         } content: {
             VStack(alignment: .leading, spacing: 10) {
                 total
+                // Its labels capped: twelve columns share the card's width and
+                // the plot's 84 points, and past this size the month letters ran
+                // into each other and out under the card. The total above grows.
                 chart.frame(height: 84)
+                    .dynamicTypeSize(...DynamicTypeSize.xxLarge)
             }
         }
         .accessibilityIdentifier("home-chart")

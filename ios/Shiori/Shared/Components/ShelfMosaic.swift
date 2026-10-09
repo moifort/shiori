@@ -239,6 +239,9 @@ struct MosaicGlyphs<Leading: View, Trailing: View>: View {
         // A notch below the text size: at full scale the glyphs covered too
         // much of a cover a third of the screen wide.
         .imageScale(.small)
+        // Capped, as Photos caps its own: past this size the glyphs hid the
+        // cover they annotate, and the tile's label already says it all aloud.
+        .dynamicTypeSize(...DynamicTypeSize.xLarge)
         .foregroundStyle(.white)
         .shadow(color: .black.opacity(0.5), radius: 2)
         .padding(.horizontal, 5)

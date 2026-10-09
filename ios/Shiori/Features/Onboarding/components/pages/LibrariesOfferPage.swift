@@ -17,6 +17,7 @@ struct LibrariesOfferPage: View {
     var onSkip: () -> Void
 
     @State private var appeared = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var hasChoice: Bool { connectsAudible || connectsKindle }
 
@@ -28,7 +29,7 @@ struct LibrariesOfferPage: View {
                 .frame(width: 88, height: 88)
                 .background(Color.orange, in: .rect(cornerRadius: 22))
                 .opacity(appeared ? 1 : 0)
-                .scaleEffect(appeared ? 1 : 0.8)
+                .scaleEffect(appeared || reduceMotion ? 1 : 0.8)
                 .animation(.spring(duration: 0.45, bounce: 0.3), value: appeared)
 
             VStack(alignment: .leading, spacing: 8) {

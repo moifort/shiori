@@ -9,9 +9,17 @@ import SwiftUI
 struct ReadingStatusPicker: View {
     @Binding var status: ReadingStatus
     @Namespace private var selection
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    /// Side by side, or one under the other at the accessibility sizes, where
+    /// a third of the width held "En" of "En cours".
+    private var stacked: Bool { dynamicTypeSize.isAccessibilitySize }
 
     var body: some View {
-        HStack(spacing: 0) {
+        let layout = stacked
+            ? AnyLayout(VStackLayout(spacing: 0))
+            : AnyLayout(HStackLayout(spacing: 0))
+        layout {
             ForEach(ReadingStatus.progression) { option in
                 Button {
                     withAnimation(.snappy(duration: 0.25)) { status = option }
@@ -43,7 +51,7 @@ struct ReadingStatusPicker: View {
             }
         }
         .padding(3)
-        .background(Color(.tertiarySystemFill), in: Capsule())
+        .background(Color(.tertiarySystemFill), in: .rect(cornerRadius: stacked ? 24 : 100))
         .sensoryFeedback(.selection, trigger: status)
     }
 }

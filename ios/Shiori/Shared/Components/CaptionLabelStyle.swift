@@ -7,10 +7,22 @@ import SwiftUI
 /// hand each icon the wide, centred column meant for a row of its own.
 struct CaptionLabelStyle: LabelStyle {
     func makeBody(configuration: Configuration) -> some View {
+        CaptionLabel(configuration: configuration)
+    }
+}
+
+/// The style's body, a view of its own for the scaled column: a fixed 14 points
+/// held at the larger text sizes while the glyph grew, which then spilled over
+/// its words.
+private struct CaptionLabel: View {
+    let configuration: LabelStyleConfiguration
+    @ScaledMetric(relativeTo: .caption) private var iconWidth: CGFloat = 14
+
+    var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
             configuration.icon
                 .imageScale(.small)
-                .frame(width: 14)
+                .frame(width: iconWidth)
             configuration.title
         }
     }

@@ -7,6 +7,7 @@ struct FirstNamePage: View {
 
     @FocusState private var focused: Bool
     @State private var appeared = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var trimmed: String {
         firstName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -21,7 +22,7 @@ struct FirstNamePage: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
-            .entrance(appeared, delay: 0)
+            .entrance(appeared, delay: 0, sliding: !reduceMotion)
 
             TextField("Prénom", text: $firstName)
                 .textContentType(.givenName)
@@ -33,7 +34,7 @@ struct FirstNamePage: View {
                 .background(Color(.systemGray6))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .accessibilityIdentifier("onboarding-firstname-field")
-                .entrance(appeared, delay: 0.08)
+                .entrance(appeared, delay: 0.08, sliding: !reduceMotion)
 
             Spacer()
 
@@ -45,7 +46,7 @@ struct FirstNamePage: View {
             .controlSize(.large)
             .disabled(trimmed.isEmpty)
             .accessibilityIdentifier("onboarding-firstname-next")
-            .entrance(appeared, delay: 0.16)
+            .entrance(appeared, delay: 0.16, sliding: !reduceMotion)
         }
         .padding()
         .navigationTitle("Prénom")
@@ -63,10 +64,11 @@ struct FirstNamePage: View {
 }
 
 private extension View {
-    /// One-shot staggered entrance: fade in while sliding up a few points.
-    func entrance(_ appeared: Bool, delay: Double) -> some View {
+    /// One-shot staggered entrance: fade in while sliding up a few points, or
+    /// only fade with Reduce Motion on.
+    func entrance(_ appeared: Bool, delay: Double, sliding: Bool) -> some View {
         opacity(appeared ? 1 : 0)
-            .offset(y: appeared ? 0 : 14)
+            .offset(y: appeared || !sliding ? 0 : 14)
             .animation(.spring(duration: 0.45, bounce: 0.2).delay(delay), value: appeared)
     }
 }
