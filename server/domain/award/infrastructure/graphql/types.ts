@@ -43,8 +43,9 @@ const AwardMentionType = builder.objectRef<AwardMention>('AwardMention').impleme
 
 export const AwardWinnerType = builder.objectRef<AwardedWorkView>('AwardWinner').implement({
   description:
-    'A novel that won one of the awards, as its edition stands in one format and the ' +
-    'app’s language. Looked up on the web by a scheduled pass, shared by every reader.',
+    'A novel crowned at the latest ceremony of one of the awards, as its edition stands ' +
+    'in one format and the app’s language. Looked up on the web only once a reader ' +
+    'awaits it, shared by every reader.',
   fields: (t) => ({
     id: t.string({
       description: 'The edition’s shared watch: stable for a novel, format and language.',
@@ -75,7 +76,7 @@ export const AwardWinnerType = builder.objectRef<AwardedWorkView>('AwardWinner')
       type: AwaitedStateEnum,
       description:
         'Where its edition stands: out, announced, or not found. Not found also for a ' +
-        'novel never looked up yet: `watched` tells them apart.',
+        'novel nobody awaited, never looked up: `watched` tells them apart.',
       resolve: (view) => view.state,
     }),
     watched: t.boolean({

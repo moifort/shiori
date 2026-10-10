@@ -1,12 +1,10 @@
 import { describe, expect, test } from 'bun:test'
-import type { EditionWatch } from '~/domain/awaited-edition/types'
 import type { Book } from '~/domain/book/types'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import {
   AWARDS_BY_GENRE,
   genresOf,
   hasRead,
-  isDue,
   isHeld,
   sectionGenreOf,
   watchKeyOf,
@@ -132,40 +130,6 @@ describe('what the reader holds', () => {
 })
 
 describe('when a winner is looked up again', () => {
-  const now = new Date('2026-10-08T00:00:00Z')
-  const today = '2026-10-08'
-  const days = (count: number) => new Date(now.getTime() - count * 86_400_000)
-  const watch = (checkedAt: Date, found?: EditionWatch['found']): EditionWatch => ({
-    key: watchKeyOf(hyperion, 'book', 'fr'),
-    title: hyperion.title,
-    originalLanguage: 'en',
-    format: 'book',
-    language: 'fr',
-    checkedAt,
-    ...(found ? { found } : {}),
-  })
-
-  test('never looked up: at once', () => {
-    expect(isDue(undefined, now, today)).toBe(true)
-  })
-
-  test('out: never again', () => {
-    expect(
-      isDue(watch(days(400), { title: found.title, date: '1991-01-01' as never }), now, today),
-    ).toBe(false)
-  })
-
-  test('announced: after two weeks', () => {
-    const announced = { title: found.title, date: '2027-01-01' as never }
-    expect(isDue(watch(days(13), announced), now, today)).toBe(false)
-    expect(isDue(watch(days(14), announced), now, today)).toBe(true)
-  })
-
-  test('not found: after two months', () => {
-    expect(isDue(watch(days(59)), now, today)).toBe(false)
-    expect(isDue(watch(days(60)), now, today)).toBe(true)
-  })
-
   test('shares the key an edition awaited from a scan uses', () => {
     expect(watchKeyOf(hyperion, 'book', 'fr')).toBe('hyperion--dan-simmons--book--fr')
   })

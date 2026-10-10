@@ -15,8 +15,9 @@ builder.queryFields((t) => ({
       'the app’s language. The genre is the one asked for when the reader reads it ' +
       'enough, else the one they read most. Null when they read no genre with awards ' +
       'enough.\n\n' +
-      'Read off shared watches a scheduled pass looks up, so it answers at once: a novel ' +
-      'never looked up comes back not `watched`.',
+      'Only the latest ceremony of each award. Read off shared watches, looked up once a ' +
+      'reader awaits the edition, so it answers at once: a novel nobody awaited comes ' +
+      'back not `watched`.',
     args: {
       format: t.arg({ type: ReleaseFormatEnum, required: true }),
       genre: t.arg({ type: GenreEnum, required: false }),
@@ -28,8 +29,8 @@ builder.queryFields((t) => ({
   awardSections: t.field({
     type: [AwardSectionType],
     description:
-      'The novels the literary awards crowned, one section per genre the reader reads ' +
-      'most — three at most, the most read first — in one format, with where their ' +
+      'The novels the latest ceremony of each literary award crowned, one section per ' +
+      'genre the reader reads most — three at most, the most read first — in one format, with where their ' +
       'edition stands in the app’s language. A novel two genres’ awards crowned is in ' +
       'one section only: the genre whose own award crowned it, else the one read most. ' +
       'Empty when the reader reads no genre with awards enough.',

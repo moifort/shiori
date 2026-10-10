@@ -1,12 +1,12 @@
-import { editionWatchKeyOf, isConfirmed, stateOf } from '~/domain/awaited-edition/business-rules'
-import type { EditionWatch, FoundEdition } from '~/domain/awaited-edition/types'
+import { editionWatchKeyOf } from '~/domain/awaited-edition/business-rules'
+import type { FoundEdition } from '~/domain/awaited-edition/types'
 import { shelfKeyOf } from '~/domain/book/business-rules'
 import type { Book, BookLanguage, Genre } from '~/domain/book/types'
-import { releaseFormatOf, WATCH_EVERY_MS } from '~/domain/discovery/business-rules'
+import { releaseFormatOf } from '~/domain/discovery/business-rules'
 import type { ReleaseFormat } from '~/domain/discovery/types'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
-import type { Award, AwardedWork, AwardMention } from './types'
-import { WINNERS } from './winners'
+import { AWARDS, type Award, type AwardedWork, type AwardMention, type FoundWinners } from './types'
+import { WINNERS, type WinnerEntry } from './winners'
 
 /** The awards each genre is shown, the genre's own first. Hugo and Nebula crown
  *  science fiction and fantasy alike, so both genres list them. A genre absent
@@ -27,25 +27,51 @@ export const RECENT_COUNT = 12
  *  reader reads most. */
 export const MAX_AWARD_SECTIONS = 3
 
-/** A winner nobody found in a language is looked up again after this long: an
- *  old novel untranslated for decades rarely changes overnight. */
-export const UNFOUND_WATCH_EVERY_MS = 60 * 86_400_000
-
-/** How long a genre stays watched after the last reader looked at it. */
-export const INTEREST_LASTS_MS = 90 * 86_400_000
-
-/** A look at the winners renews the genre's interest at most once a day. */
-export const INTEREST_RENEWED_AFTER_MS = 86_400_000
-
 const AUTHORS_SEPARATOR = ' & '
 
-/** Every work that won one of these awards, once, its mentions newest first,
+/** Every winner of an award: the versioned list, then the years the daily pass
+ *  found on Wikidata after it. A year the list holds is never taken from the
+ *  pass, whose source is not the authority. */
+export const winnersOf = (award: Award, found: readonly FoundWinners[]): WinnerEntry[] => {
+  const listed = WINNERS[award]
+  const years = new Set(listed.map(([year]) => year))
+  return [
+    ...listed,
+    ...found
+      .filter((entry) => entry.award === award && !years.has(entry.year))
+      .flatMap(({ year, winners }) =>
+        winners.map(
+          ({ title, authors }) => [year, title, authors.join(AUTHORS_SEPARATOR)] as const,
+        ),
+      ),
+  ]
+}
+
+/** The winners of an award's latest ceremony: what Découvrir shows of it. */
+export const latestWinnersOf = (award: Award, found: readonly FoundWinners[]): WinnerEntry[] => {
+  const winners = winnersOf(award, found)
+  const latest = Math.max(...winners.map(([year]) => year))
+  return winners.filter(([year]) => year === latest)
+}
+
+/** The latest year each award is known to have been given, by the list or by
+ *  the daily pass: the pass asks Wikidata only for what comes after it. */
+export const latestYearsOf = (found: readonly FoundWinners[]): Record<Award, number> =>
+  Object.fromEntries(
+    AWARDS.map((award) => [award, Math.max(...winnersOf(award, found).map(([year]) => year))]),
+  ) as Record<Award, number>
+
+/** Every work among the rows of these awards, once, its mentions newest first,
  *  the works themselves in the order of their latest award, newest first, and
- *  on one year in the order the awards are given. */
-export const worksOf = (awards: readonly Award[]): AwardedWork[] => {
+ *  on one year in the order the awards are given. The rows are every winner
+ *  unless told otherwise. */
+export const worksOf = (
+  awards: readonly Award[],
+  rowsOf: (award: Award) => readonly WinnerEntry[] = (award) => WINNERS[award],
+): AwardedWork[] => {
   const works = new Map<string, AwardedWork>()
   for (const award of awards)
-    for (const [year, title, authors] of WINNERS[award]) {
+    for (const [year, title, authors] of rowsOf(award)) {
       const names = authors.split(AUTHORS_SEPARATOR)
       const key = shelfKeyOf(title, names[0])
       const known = works.get(key)
@@ -159,17 +185,3 @@ export const hasRead = (
   found: FoundEdition | undefined,
   books: readonly ShelfBook[],
 ): boolean => books.some((book) => book.status === 'read' && isWork(book, work, found))
-
-/** A watch the hourly pass is to look up: never looked up, or looked up too
- *  long ago for what it found. One found out and confirmed by its store is
- *  never looked up again. */
-export const isDue = (watch: EditionWatch | undefined, now: Date, today: string): boolean => {
-  if (!watch) return true
-  if (
-    stateOf(watch.found, watch.format, today) === 'available' &&
-    isConfirmed(watch.found, watch.format)
-  )
-    return false
-  const every = watch.found ? WATCH_EVERY_MS : UNFOUND_WATCH_EVERY_MS
-  return now.getTime() - watch.checkedAt.getTime() >= every
-}

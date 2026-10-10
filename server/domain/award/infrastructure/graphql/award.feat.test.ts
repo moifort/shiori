@@ -38,17 +38,18 @@ beforeEach(() => {
   fake = resetFakeFirestore()
   shelve('one', 'Fondation', 'Isaac Asimov')
   shelve('two', 'La Stratégie Ender', 'Orson Scott Card')
-  shelve('three', 'Neuromancien', 'William Gibson')
-  // The French edition of Neuromancer, out, as the hourly pass kept it.
-  fake.seed('edition-watches', 'neuromancer--william-gibson--book--fr', {
-    key: 'neuromancer--william-gibson--book--fr',
-    title: 'Neuromancer',
-    author: 'William Gibson',
+  shelve('three', 'La Mort de l’auteur', 'Nnedi Okorafor')
+  // The French edition of Death of the Author, out, as the awaited editions'
+  // pass kept it once a reader awaited it.
+  fake.seed('edition-watches', 'death-of-the-author--nnedi-okorafor--book--fr', {
+    key: 'death-of-the-author--nnedi-okorafor--book--fr',
+    title: 'Death of the Author',
+    author: 'Nnedi Okorafor',
     originalLanguage: 'en',
     format: 'book',
     language: 'fr',
     checkedAt: new Date(),
-    found: { title: 'Neuromancien', date: '1985-01-01', isbn13: '9782290343890' },
+    found: { title: 'La Mort de l’auteur', date: '2026-03-01', isbn13: '9782290343890' },
   })
 })
 
@@ -64,7 +65,7 @@ const SHELF = `
 `
 
 describe('awardShelf', () => {
-  test('lists the winners of the reader’s genre, in French where found', async () => {
+  test('lists the latest winners of the reader’s genre, in French where found', async () => {
     const result = await ask(SHELF, { format: 'BOOK' })
     expect(result.errors).toBeUndefined()
     const shelf = result.data?.awardShelf as {
@@ -83,11 +84,9 @@ describe('awardShelf', () => {
       awaitable: true,
       awards: [{ award: 'HUGO', year: 2026 }],
     })
-    const hugo = shelf.awards.find((list) => list.award === 'HUGO')
-    // Neuromancer is held in French, so it is read and not listed.
-    expect(hugo?.readCount).toBe(1)
-    expect(hugo?.winners.map((winner) => winner.title)).not.toContain('Neuromancien')
-    expect(hugo?.winners.map((winner) => winner.title)).not.toContain('Neuromancer')
+    const locus = shelf.awards.find((list) => list.award === 'LOCUS_SF')
+    // Death of the Author is held in French, so it is read and not listed.
+    expect(locus).toMatchObject({ readCount: 1, total: 1, winners: [] })
   })
 
   test('is null for a reader who reads no genre with awards enough', async () => {
@@ -123,7 +122,7 @@ describe('awardSections', () => {
       state: 'UNANNOUNCED',
       awaitable: true,
     })
-    expect(sections[0]?.winners.map((winner) => winner.title)).not.toContain('Neuromancien')
+    expect(sections[0]?.winners.map((winner) => winner.title)).not.toContain('La Mort de l’auteur')
   })
 
   test('is empty for a reader who reads no genre with awards enough', async () => {

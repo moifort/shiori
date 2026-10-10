@@ -126,6 +126,34 @@ resource "google_cloud_scheduler_job" "refresh_discover" {
   depends_on = [google_project_service.apis]
 }
 
+# The winners of every award ceremony after the latest one known, read off
+# Wikidata once a morning, so a ceremony is shown within a day of Wikidata
+# recording it. No model call: a winner's edition is looked up only once a
+# reader awaits it, by the hourly pass.
+resource "google_cloud_scheduler_job" "watch_award_winners" {
+  project   = google_project.this.project_id
+  region    = var.region
+  name      = "watch-award-winners"
+  schedule  = "30 6 * * *"
+  time_zone = "Europe/Paris"
+
+  attempt_deadline = "180s"
+
+  retry_config {
+    retry_count = 1
+  }
+
+  http_target {
+    http_method = "POST"
+    uri         = "${google_cloudfunctions2_function.server.service_config[0].uri}/admin/watch-award-winners"
+    headers = {
+      Authorization = "Bearer ${local.admin_token_value}"
+    }
+  }
+
+  depends_on = [google_project_service.apis]
+}
+
 # Pushes the volumes that came out to the readers who follow their saga and left
 # the alert on, once a morning. No model call: the hourly pass already holds the
 # dates, and a volume is pushed once, so a retry sends nothing twice.

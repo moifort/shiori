@@ -191,15 +191,6 @@ export namespace AwaitedEditionUseCase {
     return { ...view, ...(await AwaitedEditionCommand.markNotified(awaited, now)) }
   }
 
-  /** Look one edition up on the web, as an awaited one is, and keep what was
-   *  found under its shared watch: what Découvrir's award winners are looked
-   *  up with, so a winner awaited later finds its watch already there. */
-  export const lookUpEdition = (
-    seed: WatchSeed,
-    previous: EditionWatch | undefined,
-    now = new Date(),
-  ): Promise<EditionWatch> => lookUp(seed, previous, now)
-
   /** Stop awaiting an edition. False when the reader awaits nothing by that id. */
   export const stopAwaiting = async (userId: UserId, id: AwaitedEditionId): Promise<boolean> => {
     const awaited = await AwaitedEditionQuery.byUser(userId)
@@ -330,7 +321,7 @@ const sourceOf = (
   }
 }
 
-export type WatchSeed = Omit<EditionWatch, 'checkedAt' | 'found'>
+type WatchSeed = Omit<EditionWatch, 'checkedAt' | 'found'>
 
 const seedOf = ({ watchKey, source, format, language }: AwaitedEdition): WatchSeed => ({
   key: watchKey,

@@ -657,7 +657,7 @@ type AwardShelf {
 }
 
 """
-A novel that won one of the awards, as its edition stands in one format and the app’s language. Looked up on the web by a scheduled pass, shared by every reader.
+A novel crowned at the latest ceremony of one of the awards, as its edition stands in one format and the app’s language. Looked up on the web only once a reader awaits it, shared by every reader.
 """
 type AwardWinner {
   authors: [AuthorName!]!
@@ -692,7 +692,7 @@ type AwardWinner {
   originalTitle: BookTitle!
 
   """
-  Where its edition stands: out, announced, or not found. Not found also for a novel never looked up yet: `watched` tells them apart.
+  Where its edition stands: out, announced, or not found. Not found also for a novel nobody awaited, never looked up: `watched` tells them apart.
   """
   state: AwaitedState!
 
@@ -2951,14 +2951,14 @@ type Query {
   awaitedEditions(format: ReleaseFormat!): [AwaitedEdition!]!
 
   """
-  The novels the literary awards crowned, one section per genre the reader reads most — three at most, the most read first — in one format, with where their edition stands in the app’s language. A novel two genres’ awards crowned is in one section only: the genre whose own award crowned it, else the one read most. Empty when the reader reads no genre with awards enough.
+  The novels the latest ceremony of each literary award crowned, one section per genre the reader reads most — three at most, the most read first — in one format, with where their edition stands in the app’s language. A novel two genres’ awards crowned is in one section only: the genre whose own award crowned it, else the one read most. Empty when the reader reads no genre with awards enough.
   """
   awardSections(format: ReleaseFormat!): [AwardSection!]!
 
   """
   The novels the literary awards of the reader’s genre crowned — Hugo, Nebula, Locus, Clarke, World Fantasy — in one format, with where their edition stands in the app’s language. The genre is the one asked for when the reader reads it enough, else the one they read most. Null when they read no genre with awards enough.
   
-  Read off shared watches a scheduled pass looks up, so it answers at once: a novel never looked up comes back not `watched`.
+  Only the latest ceremony of each award. Read off shared watches, looked up once a reader awaits the edition, so it answers at once: a novel nobody awaited comes back not `watched`.
   """
   awardShelf(format: ReleaseFormat!, genre: Genre): AwardShelf @deprecated(reason: "Use `awardSections`, one section per genre the reader reads most.")
 

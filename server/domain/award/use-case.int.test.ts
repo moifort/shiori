@@ -10,18 +10,28 @@ import {
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
 
-/** Stands in for Gemini: the edition asked about, as `answers` holds it by the
- *  title it won under, and every title asked about. */
+/** Stands in for Gemini: nothing here may ask it anything. */
 const asked: string[] = []
-let answers: Record<string, unknown> = {}
 mock.module('~/domain/scan/gemini', () => ({
-  generate: async ({ parts }: { parts: { text: string }[] }) => {
-    const title = parts[0]?.text.match(/« ([^»]+) »/)?.[1] ?? '?'
-    asked.push(title)
+  generate: async ({ step }: { step: string }) => {
+    asked.push(step)
     return {
       usage: { promptTokens: 1, outputTokens: 1, thinkingTokens: 0, searches: 1 },
-      value: answers[title] ?? { found: false },
+      value: { found: false },
     }
+  },
+}))
+
+/** Stands in for Wikidata: the winners it records of each award, and every
+ *  award and year it was asked after. */
+const wikidataAsked: string[] = []
+let wikidata: Record<string, { year: number; title: string; authors: string[] }[] | 'down'> = {}
+mock.module('~/domain/award/infrastructure/wikidata', () => ({
+  winnersAfter: async (award: string, after: number) => {
+    wikidataAsked.push(`${award}>${after}`)
+    const known = wikidata[award] ?? []
+    if (known === 'down') throw new Error('Wikidata answered 503')
+    return known.filter(({ year }) => year > after)
   },
 }))
 mock.module('~/domain/discovery/infrastructure/amazon-catalogue', () => ({
@@ -35,9 +45,7 @@ mock.module('~/domain/scan/published-cover', () => ({
 const { AwardUseCase } = await import('~/domain/award/use-case')
 const { AwaitedEditionUseCase } = await import('~/domain/awaited-edition/use-case')
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
-const { RECENT_COUNT } = await import('~/domain/award/business-rules')
-const { WINNERS } = await import('~/domain/award/winners')
-const { AWARDS: WINNER_AWARDS } = await import('~/domain/award/types')
+const { watchKeyOf } = await import('~/domain/award/business-rules')
 const { releaseDescriptionKeyOf } = await import('~/domain/discovery/business-rules')
 
 const reader = 'reader' as UserId
@@ -70,50 +78,61 @@ const shelve = (
   })
 }
 
-/** A science fiction reader: three novels read, one of them a Hugo winner in
- *  French, and Dune on the pile. */
+/** A science fiction reader: three novels read, none of them crowned lately. */
 const sfReader = () => {
   shelve('Les Cantos d’Hypérion', 'Dan Simmons', 'science-fiction')
   shelve('Fondation', 'Isaac Asimov', 'science-fiction')
   shelve('La Stratégie Ender', 'Orson Scott Card', 'science-fiction')
-  shelve('Dune', 'Frank Herbert', 'science-fiction', 'to-read')
 }
 
-/** What the web found of Hyperion in French, as the hourly pass kept it. */
-const hyperionFound = () =>
-  fake.seed('edition-watches', 'hyperion--dan-simmons--book--fr', {
-    key: 'hyperion--dan-simmons--book--fr',
-    title: 'Hyperion',
-    author: 'Dan Simmons',
+const deathOfTheAuthor = {
+  title: BookTitle('Death of the Author'),
+  authors: [AuthorName('Nnedi Okorafor')],
+}
+
+/** What the web found of Death of the Author in French, as the awaited
+ *  editions' pass kept it once a reader awaited it. */
+const deathOfTheAuthorFound = () => {
+  const key = watchKeyOf(deathOfTheAuthor, 'book', 'fr')
+  fake.seed('edition-watches', key, {
+    key,
+    title: 'Death of the Author',
+    author: 'Nnedi Okorafor',
     originalLanguage: 'en',
     format: 'book',
     language: 'fr',
     checkedAt: now,
-    found: { title: 'Les Cantos d’Hypérion', date: '1991-06-01' },
+    found: { title: 'La Mort de l’auteur', date: '2026-03-01' },
   })
+}
 
 beforeEach(() => {
   fake = resetFakeFirestore()
   asked.length = 0
-  answers = {}
+  wikidataAsked.length = 0
+  wikidata = {}
   shelved = 0
 })
 
 describe('the award shelf', () => {
-  test('is the genre the reader reads most, its own awards first', async () => {
+  test('is the latest ceremony of each award of the genre the reader reads most', async () => {
     sfReader()
     const shelf = await AwardUseCase.shelf(reader, 'book', 'fr', undefined, now)
 
     expect(shelf?.genre).toBe('science-fiction')
-    expect(shelf?.genres).toEqual(['science-fiction'])
     expect(shelf?.awards.map((list) => list.award)).toEqual([
       'hugo',
       'nebula',
       'locus-sf',
       'clarke',
     ])
-    expect(shelf?.recent).toHaveLength(12)
-    expect(shelf?.recent[0]?.work.title).toBe(BookTitle('The Everlasting'))
+    expect(shelf?.recent.map((view) => view.work.title)).toEqual([
+      BookTitle('The Everlasting'),
+      BookTitle('The Buffalo Hunter Hunter'),
+      BookTitle('Death of the Author'),
+      BookTitle('Annie Bot'),
+    ])
+    expect(asked).toEqual([])
   })
 
   test('draws a winner with no cover found with the one its page found when described', async () => {
@@ -151,28 +170,21 @@ describe('the award shelf', () => {
 
   test('leaves out what the reader holds in the format, by the edition found', async () => {
     sfReader()
-    hyperionFound()
+    shelve('La Mort de l’auteur', 'Nnedi Okorafor', 'science-fiction')
+    deathOfTheAuthorFound()
     const shelf = await AwardUseCase.shelf(reader, 'book', 'fr', undefined, now)
-    const hugo = shelf?.awards.find((list) => list.award === 'hugo')
-    const titles = hugo?.winners.map((view) => view.work.title) ?? []
+    const locus = shelf?.awards.find((list) => list.award === 'locus-sf')
 
-    expect(titles).not.toContain(BookTitle('Hyperion'))
-    expect(titles).not.toContain(BookTitle('Dune'))
-    expect(titles).toContain(BookTitle('Neuromancer'))
-    expect(hugo?.readCount).toBe(1)
-    expect(hugo?.total).toBe(hugo ? hugo.winners.length + 2 : 0)
+    expect(locus?.winners).toEqual([])
+    expect(locus?.readCount).toBe(1)
+    expect(locus?.total).toBe(1)
   })
 
   test('offers to await what is not out, and not what is awaited already', async () => {
     sfReader()
     const awaited = await AwaitedEditionUseCase.awaitScannedBook(
       reader,
-      {
-        title: BookTitle('Neuromancer'),
-        authors: [AuthorName('William Gibson')],
-        language: 'en',
-        format: 'book',
-      },
+      { ...deathOfTheAuthor, language: 'en', format: 'book' },
       'book',
       'fr',
       now,
@@ -181,14 +193,14 @@ describe('the award shelf', () => {
     startFakeRequest()
 
     const shelf = await AwardUseCase.shelf(reader, 'book', 'fr', undefined, now)
-    const views = shelf?.awards.flatMap((list) => list.winners) ?? []
-    const neuromancer = views.find((view) => view.work.title === 'Neuromancer')
-    const gateway = views.find((view) => view.work.title === 'Gateway')
+    const views = shelf?.recent ?? []
+    const death = views.find((view) => view.work.title === 'Death of the Author')
+    const annie = views.find((view) => view.work.title === 'Annie Bot')
 
-    expect(neuromancer?.awaitedId).toBe(awaited.id)
-    expect(neuromancer?.awaitable).toBe(false)
-    expect(gateway?.awaitable).toBe(true)
-    expect(gateway?.state).toBe('unannounced')
+    expect(death?.awaitedId).toBe(awaited.id)
+    expect(death?.awaitable).toBe(false)
+    expect(annie?.awaitable).toBe(true)
+    expect(annie?.state).toBe('unannounced')
   })
 
   test('in English, a printed winner cannot be awaited: it is in English already', async () => {
@@ -197,46 +209,17 @@ describe('the award shelf', () => {
     expect(shelf?.recent.every((view) => !view.awaitable)).toBe(true)
   })
 
-  test('switches to another genre the reader reads enough, never to one they do not', async () => {
+  test('reads the library, the awaited editions, the years found and two getAlls', async () => {
     sfReader()
-    shelve('Le Sorceleur', 'Andrzej Sapkowski', 'fantasy')
-    shelve('Le Nom du vent', 'Patrick Rothfuss', 'fantasy')
-    shelve('Assassin royal', 'Robin Hobb', 'fantasy')
-
-    const fantasy = await AwardUseCase.shelf(reader, 'book', 'fr', 'fantasy', now)
-    expect(fantasy?.genre).toBe('fantasy')
-    expect(fantasy?.awards[0]?.award).toBe('world-fantasy')
-
-    const horror = await AwardUseCase.shelf(reader, 'book', 'fr', 'horror', now)
-    expect(horror?.genre).toBe('science-fiction')
-  })
-
-  test('reads the library, the awaited editions, the interest and two getAlls', async () => {
-    sfReader()
-    await AwardUseCase.shelf(reader, 'book', 'fr', undefined, now)
     startFakeRequest()
     const [docReads, queryReads] = [fake.docReads, fake.queryReads]
 
     const shelf = await AwardUseCase.shelf(reader, 'book', 'fr', undefined, now)
 
-    const works = new Set(shelf?.awards.flatMap((list) => list.winners.map((v) => v.work.key)))
-    expect(fake.queryReads - queryReads).toBe(2)
-    // One document per watch looked for, held or not, plus the interest, plus
-    // one description per winner on the strip with no cover found.
-    expect(fake.docReads - docReads).toBeGreaterThanOrEqual(works.size + 1)
-    expect(fake.docReads - docReads).toBeLessThanOrEqual(works.size + 3 + RECENT_COUNT)
-  })
-
-  test('marks the genre as looked at, once a day', async () => {
-    sfReader()
-    await AwardUseCase.shelf(reader, 'book', 'fr', undefined, now)
-    await AwardUseCase.shelf(reader, 'audiobook', 'fr', undefined, new Date(now.getTime() + 1000))
-
-    expect(fake.data('award-interests', 'science-fiction--fr')).toMatchObject({
-      genre: 'science-fiction',
-      language: 'fr',
-      requestedAt: now,
-    })
+    expect(fake.queryReads - queryReads).toBe(3)
+    // One document per watch looked for, one description per winner with no
+    // cover found.
+    expect(fake.docReads - docReads).toBeLessThanOrEqual(2 * (shelf?.recent.length ?? 0))
   })
 })
 
@@ -247,99 +230,88 @@ describe('the award sections', () => {
     shelve('Assassin royal', 'Robin Hobb', 'fantasy')
   }
 
-  test('gives each genre the reader reads enough a section, the most read first', async () => {
+  test('draws each winner of the latest ceremonies once, in the genre whose own award crowned it', async () => {
     sfReader()
     fantasyReader()
     const sections = await AwardUseCase.sections(reader, 'book', 'fr', now)
+    const titles = (genre: string) =>
+      sections.find((section) => section.genre === genre)?.winners.map((view) => view.work.title)
 
     expect(sections.map((section) => section.genre)).toEqual(['science-fiction', 'fantasy'])
-    expect(sections.every((section) => section.winners.length === RECENT_COUNT)).toBe(true)
-  })
-
-  test('draws every winner once, in the genre whose own award crowned it', async () => {
-    sfReader()
-    fantasyReader()
-    const [sf, fantasy] = await AwardUseCase.sections(reader, 'book', 'fr', now)
-    const titles = (section: typeof sf) => section?.winners.map((view) => view.work.title) ?? []
-
-    // Hugo and Locus Fantasy: fantasy, though science fiction is read more.
-    expect(titles(fantasy)).toContain(BookTitle('The Everlasting'))
-    expect(titles(sf)).not.toContain(BookTitle('The Everlasting'))
     // A Nebula alone, both genres show it: where the reader reads most.
-    expect(titles(sf).slice(0, 2)).toEqual([
+    expect(titles('science-fiction')).toEqual([
       BookTitle('The Buffalo Hunter Hunter'),
       BookTitle('Death of the Author'),
+      BookTitle('Annie Bot'),
     ])
-    expect(titles(sf).filter((title) => titles(fantasy).includes(title))).toEqual([])
+    // Hugo and Locus Fantasy: fantasy, though science fiction is read more.
+    expect(titles('fantasy')).toEqual([BookTitle('The Everlasting'), BookTitle('The Tainted Cup')])
+    expect(asked).toEqual([])
+  })
+
+  test('shows a year found on Wikidata instead of the one before it', async () => {
+    sfReader()
+    fake.seed('award-winners', 'clarke~2026', {
+      key: 'clarke~2026',
+      award: 'clarke',
+      year: 2026,
+      winners: [{ title: 'When There Are Wolves Again', authors: ['E. J. Swift'] }],
+      foundAt: now,
+    })
+    const [sf] = await AwardUseCase.sections(reader, 'book', 'fr', now)
+    const titles = sf?.winners.map((view) => view.work.title)
+
+    expect(titles).toContain(BookTitle('When There Are Wolves Again'))
+    expect(titles).not.toContain(BookTitle('Annie Bot'))
   })
 
   test('is empty for a reader of no genre with awards', async () => {
     shelve('Le Mystère de la chambre jaune', 'Gaston Leroux', 'crime')
     expect(await AwardUseCase.sections(reader, 'book', 'fr', now)).toEqual([])
   })
-
-  test('marks each genre shown as looked at', async () => {
-    sfReader()
-    fantasyReader()
-    await AwardUseCase.sections(reader, 'book', 'fr', now)
-
-    expect(fake.data('award-interests', 'science-fiction--fr')).toMatchObject({ language: 'fr' })
-    expect(fake.data('award-interests', 'fantasy--fr')).toMatchObject({ language: 'fr' })
-  })
-
-  test('reads the library, the awaited editions, the interests and two getAlls', async () => {
-    sfReader()
-    fantasyReader()
-    await AwardUseCase.sections(reader, 'book', 'fr', now)
-    startFakeRequest()
-    const [docReads, queryReads] = [fake.docReads, fake.queryReads]
-
-    await AwardUseCase.sections(reader, 'book', 'fr', now)
-
-    const works = new Set(
-      [...WINNER_AWARDS].flatMap((award) => WINNERS[award].map(([, title]) => title)),
-    )
-    expect(fake.queryReads - queryReads).toBe(2)
-    // One document per watch, the two interests, a description per winner shown.
-    expect(fake.docReads - docReads).toBeLessThanOrEqual(works.size + 2 + 2 * RECENT_COUNT)
-  })
 })
 
-describe('the hourly pass', () => {
-  test('looks up nothing when nobody looked at any genre', async () => {
-    expect(await AwardUseCase.watchDue(now)).toEqual({ watched: 0, failed: 0, deferred: 0 })
+describe('the daily winners pass', () => {
+  test('asks Wikidata after the latest year known of each award, and keeps a new year', async () => {
+    wikidata = {
+      clarke: [
+        { year: 2024, title: 'In Ascension', authors: ['Martin MacInnes'] },
+        { year: 2026, title: 'When There Are Wolves Again', authors: ['E. J. Swift'] },
+      ],
+    }
+
+    expect(await AwardUseCase.watchWinners(now)).toEqual({ found: 1, failed: 0 })
+
+    expect(wikidataAsked).toContain('clarke>2025')
+    expect(wikidataAsked).toContain('hugo>2026')
+    expect(fake.data('award-winners', 'clarke~2026')).toMatchObject({
+      award: 'clarke',
+      year: 2026,
+      winners: [{ title: 'When There Are Wolves Again', authors: ['E. J. Swift'] }],
+    })
     expect(asked).toEqual([])
   })
 
-  test('looks up the winners of a genre looked at, both formats, until the budget is spent', async () => {
-    sfReader()
-    await AwardUseCase.shelf(reader, 'book', 'fr', undefined, now)
-    answers = { Hyperion: { found: true, title: 'Les Cantos d’Hypérion', date: '1991-06-01' } }
+  test('asks after the year it found the next day, and finds nothing twice', async () => {
+    wikidata = {
+      clarke: [{ year: 2026, title: 'When There Are Wolves Again', authors: ['E. J. Swift'] }],
+    }
+    await AwardUseCase.watchWinners(now)
+    wikidataAsked.length = 0
 
-    const run = await AwardUseCase.watchDue(now, 0, Date.now() - 1)
-    expect(run.watched).toBe(0)
-    expect(run.deferred).toBeGreaterThan(0)
-
-    const all = await AwardUseCase.watchDue(now)
-    expect(all.failed).toBe(0)
-    expect(all.deferred).toBe(0)
-    expect(asked.filter((title) => title === 'Hyperion')).toHaveLength(2)
-    expect(fake.data('edition-watches', 'hyperion--dan-simmons--book--fr')).toMatchObject({
-      found: { title: 'Les Cantos d’Hypérion' },
-    })
-
-    asked.length = 0
-    expect((await AwardUseCase.watchDue(now)).watched).toBe(0)
-    expect(asked).toEqual([])
+    expect(await AwardUseCase.watchWinners(now)).toEqual({ found: 0, failed: 0 })
+    expect(wikidataAsked).toContain('clarke>2026')
   })
 
-  test('forgets a genre nobody looked at for three months', async () => {
-    fake.seed('award-interests', 'science-fiction--fr', {
-      key: 'science-fiction--fr',
-      genre: 'science-fiction',
-      language: 'fr',
-      requestedAt: new Date(now.getTime() - 91 * 86_400_000),
-    })
-    expect((await AwardUseCase.watchDue(now)).watched).toBe(0)
+  test('keeps no year still to come, and goes on past an award Wikidata fails on', async () => {
+    wikidata = {
+      hugo: 'down',
+      nebula: [{ year: 2027, title: 'Tomorrow', authors: ['Somebody'] }],
+      'world-fantasy': [{ year: 2026, title: 'The Next One', authors: ['Somebody Else'] }],
+    }
+
+    expect(await AwardUseCase.watchWinners(now)).toEqual({ found: 1, failed: 1 })
+    expect(fake.data('award-winners', 'nebula~2027')).toBeNull()
+    expect(fake.data('award-winners', 'world-fantasy~2026')).not.toBeNull()
   })
 })

@@ -76,11 +76,13 @@ export type AwardSection = {
   winners: AwardedWorkView[]
 }
 
-/** That somebody looked at a genre's winners in a language: what the hourly
- *  pass watches. Shared, keyed `{genre}--{language}`, naming nobody. */
-export type AwardInterest = {
+/** One year of an award as the daily pass found it on Wikidata, after the
+ *  ceremony: the years the versioned list does not hold yet. Shared, keyed
+ *  `{award}~{year}`, naming nobody. */
+export type FoundWinners = {
   key: string
-  genre: Genre
-  language: BookLanguage
-  requestedAt: Date
+  award: Award
+  year: number
+  winners: { title: string; authors: string[] }[]
+  foundAt: Date
 }

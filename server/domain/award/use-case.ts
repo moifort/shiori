@@ -1,11 +1,10 @@
 import { awaitableFormatsOf, stateOf } from '~/domain/awaited-edition/business-rules'
 import { AwaitedEditionQuery } from '~/domain/awaited-edition/query'
 import type { AwaitedEditionId } from '~/domain/awaited-edition/types'
-import { AwaitedEditionUseCase, type WatchSeed } from '~/domain/awaited-edition/use-case'
 import { AwardCommand } from '~/domain/award/command'
 import { AwardQuery } from '~/domain/award/query'
 import { BookQuery } from '~/domain/book/query'
-import type { BookLanguage, Genre } from '~/domain/book/types'
+import type { Genre } from '~/domain/book/types'
 import { releaseDescriptionKeyOf, todayOf } from '~/domain/discovery/business-rules'
 import { DiscoveryQuery } from '~/domain/discovery/query'
 import type { ReleaseFormat } from '~/domain/discovery/types'
@@ -16,35 +15,31 @@ import {
   AWARDS_BY_GENRE,
   genresOf,
   hasRead,
-  INTEREST_LASTS_MS,
-  INTEREST_RENEWED_AFTER_MS,
-  isDue,
   isHeld,
+  latestWinnersOf,
+  latestYearsOf,
   MAX_AWARD_SECTIONS,
   RECENT_COUNT,
   sectionGenreOf,
   watchKeyOf,
   worksOf,
 } from './business-rules'
-import type { AwardedWork, AwardedWorkView, AwardSection, AwardShelf } from './types'
+import { winnersAfter } from './infrastructure/wikidata'
+import {
+  AWARDS,
+  type Award,
+  type AwardedWork,
+  type AwardedWorkView,
+  type AwardSection,
+  type AwardShelf,
+} from './types'
 
 const logger = createLogger('award')
 
-/** How many grounded calls run side by side, as the release watches run theirs. */
-const CALLS_AT_ONCE = 5
-
-/** Where the hourly pass stops looking winners up, counted from the start of
- *  the run: after the awaited editions and the sagas, which come first, and
- *  well inside the function's three minutes. */
-const SCHEDULED_BUDGET_MS = 140_000
-
-const FORMATS: readonly ReleaseFormat[] = ['book', 'audiobook']
-
 export namespace AwardUseCase {
-  /** The award winners of the reader's genre — or of the one asked for, when
-   *  the reader reads it enough — in one format and the app's language. Null
-   *  when the reader reads no genre with awards enough. Renews the genre's
-   *  interest, so the hourly pass keeps its winners looked up. */
+  /** The latest award winners of the reader's genre — or of the one asked
+   *  for, when the reader reads it enough — in one format and the app's
+   *  language. Null when the reader reads no genre with awards enough. */
   export const shelf = async (
     userId: UserId,
     format: ReleaseFormat,
@@ -57,9 +52,7 @@ export namespace AwardUseCase {
     const genre = asked && genres.includes(asked) ? asked : genres[0]
     if (!genre) return null
     const awards = AWARDS_BY_GENRE[genre] ?? []
-    await renewInterest(genre, appLanguage, now)
-
-    const works = worksOf(awards)
+    const works = await latestWorksOf(awards)
     const keys = works.map((work) => watchKeyOf(work, format, appLanguage))
     const [watches, awaited] = await Promise.all([
       AwaitedEditionQuery.watches(keys),
@@ -120,10 +113,11 @@ export namespace AwardUseCase {
   }
 
   /** One section per genre the reader reads most, three at most, the most
-   *  read first: the latest winners of its awards they do not hold, in one
-   *  format and the app's language. A work two genres' awards crowned is drawn
-   *  in one section only — see `sectionGenreOf`. Renews each genre's interest,
-   *  so the hourly pass keeps its winners looked up. */
+   *  read first: the winners of its awards' latest ceremony they do not hold,
+   *  in one format and the app's language. A work two genres' awards crowned is
+   *  drawn in one section only — see `sectionGenreOf`. Where an edition stands
+   *  is read off the shared watches, never looked up here: a winner is looked
+   *  up once a reader awaits it, by the awaited editions' own pass. */
   export const sections = async (
     userId: UserId,
     format: ReleaseFormat,
@@ -133,9 +127,9 @@ export namespace AwardUseCase {
     const books = await BookQuery.all(userId)
     const genres = genresOf(books).slice(0, MAX_AWARD_SECTIONS)
     if (genres.length === 0) return []
-    await Promise.all(genres.map((genre) => renewInterest(genre, appLanguage, now)))
-
-    const works = worksOf([...new Set(genres.flatMap((genre) => AWARDS_BY_GENRE[genre] ?? []))])
+    const works = await latestWorksOf([
+      ...new Set(genres.flatMap((genre) => AWARDS_BY_GENRE[genre] ?? [])),
+    ])
     const keys = works.map((work) => watchKeyOf(work, format, appLanguage))
     const [watches, awaited] = await Promise.all([
       AwaitedEditionQuery.watches(keys),
@@ -182,54 +176,48 @@ export namespace AwardUseCase {
       .filter((section) => section.winners.length > 0)
   }
 
-  /** The hourly pass's share: the winners of every genre somebody looked at in
-   *  the last three months, in both formats and the language they looked in —
-   *  the ones never looked up first — until the budget is spent. */
-  export const watchDue = async (
+  /** The daily pass: asks Wikidata, for every award, the winners of the
+   *  ceremonies after the latest one known, and keeps each new year. It runs
+   *  every day, so a ceremony is taken within a day of Wikidata recording it.
+   *  No model call. An award Wikidata fails on is logged and asked again the
+   *  next day. */
+  export const watchWinners = async (
     now = new Date(),
-    budgetMs = SCHEDULED_BUDGET_MS,
-    startedAt = Date.now(),
-  ): Promise<{ watched: number; failed: number; deferred: number }> => {
-    const overBudget = () => Date.now() - startedAt > budgetMs
-    const interests = (await AwardQuery.interests()).filter(
-      (interest) => now.getTime() - interest.requestedAt.getTime() < INTEREST_LASTS_MS,
-    )
-    const seeds = new Map<string, WatchSeed>()
-    for (const { genre, language } of interests)
-      for (const work of worksOf(AWARDS_BY_GENRE[genre] ?? []))
-        for (const format of FORMATS) {
-          const key = watchKeyOf(work, format, language)
-          if (!seeds.has(key)) seeds.set(key, seedOf(work, format, language, key))
-        }
-    if (seeds.size === 0) return { watched: 0, failed: 0, deferred: 0 }
-    const watches = await AwaitedEditionQuery.watches([...seeds.keys()])
-    const today = todayOf(now)
-    const due = [...seeds.values()]
-      .filter((seed) => isDue(watches.get(seed.key), now, today))
-      // Never looked up first, then the oldest look.
-      .sort(
-        (left, right) =>
-          (watches.get(left.key)?.checkedAt.getTime() ?? 0) -
-          (watches.get(right.key)?.checkedAt.getTime() ?? 0),
-      )
-    let watched = 0
+  ): Promise<{ found: number; failed: number }> => {
+    const latest = latestYearsOf(await AwardQuery.foundWinners())
+    let found = 0
     let failed = 0
-    for (let start = 0; start < due.length; start += CALLS_AT_ONCE) {
-      if (overBudget()) return { watched, failed, deferred: due.length - start }
-      await Promise.all(
-        due.slice(start, start + CALLS_AT_ONCE).map(async (seed) => {
-          try {
-            await AwaitedEditionUseCase.lookUpEdition(seed, watches.get(seed.key), now)
-            watched += 1
-          } catch (error) {
-            failed += 1
-            logger.warn('award winner lookup failed', { error, watchKey: seed.key })
-          }
-        }),
-      )
+    for (const award of AWARDS) {
+      try {
+        const winners = (await winnersAfter(award, latest[award])).filter(
+          ({ year }) => year <= now.getUTCFullYear(),
+        )
+        const byYear = Map.groupBy(winners, ({ year }) => year)
+        for (const [year, crowned] of byYear) {
+          await AwardCommand.saveWinners({
+            key: `${award}~${year}`,
+            award,
+            year,
+            winners: crowned.map(({ title, authors }) => ({ title, authors })),
+            foundAt: now,
+          })
+          found += 1
+          logger.info('award winners found', { award, year, count: crowned.length })
+        }
+      } catch (error) {
+        failed += 1
+        logger.warn('award winners not read', { error, award })
+      }
     }
-    return { watched, failed, deferred: 0 }
+    return { found, failed }
   }
+}
+
+/** The works of these awards' latest ceremonies, the years found by the daily
+ *  pass included. */
+const latestWorksOf = async (awards: readonly Award[]): Promise<AwardedWork[]> => {
+  const found = await AwardQuery.foundWinners()
+  return worksOf(awards, (award) => latestWinnersOf(award, found))
 }
 
 const yearOf = (work: AwardedWork, award: string) =>
@@ -283,30 +271,4 @@ const withDescribedCovers = async (
     const coverUrl = kept.get(keyOf(view))?.description.book.coverUrl
     return coverUrl ? { ...view, describedCoverUrl: coverUrl } : view
   })
-}
-
-const seedOf = (
-  work: AwardedWork,
-  format: ReleaseFormat,
-  language: BookLanguage,
-  key: string,
-): WatchSeed => ({
-  key,
-  title: work.title,
-  ...(work.authors[0] ? { author: work.authors[0] } : {}),
-  originalLanguage: work.language,
-  format,
-  language,
-})
-
-/** Marks the genre as looked at in that language, at most once a day. */
-const renewInterest = async (genre: Genre, language: BookLanguage, now: Date) => {
-  const key = `${genre}--${language}`
-  try {
-    const known = await AwardQuery.interest(key)
-    if (known && now.getTime() - known.requestedAt.getTime() < INTEREST_RENEWED_AFTER_MS) return
-    await AwardCommand.saveInterest({ key, genre, language, requestedAt: now })
-  } catch (error) {
-    logger.warn('award interest not renewed', { error, key })
-  }
 }

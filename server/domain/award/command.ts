@@ -1,7 +1,6 @@
 import * as repository from '~/domain/award/infrastructure/repository'
-import type { AwardInterest } from '~/domain/award/types'
+import type { FoundWinners } from '~/domain/award/types'
 
 export namespace AwardCommand {
-  export const saveInterest = (interest: AwardInterest): Promise<void> =>
-    repository.saveInterest(interest)
+  export const saveWinners = (found: FoundWinners): Promise<void> => repository.saveWinners(found)
 }

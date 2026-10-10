@@ -57,18 +57,19 @@ hand from settings, friends' views.
    ceremony, the English title it won under, its authors. Nebula rows are shifted by one year,
    since SFWA labels them by publication year. Checked against the Science Fiction Awards
    Database and Wikipedia; `scripts/check-award-winners.ts` compares it to Wikidata (award
-   received, P166, with point in time, P585). Updated by one commit after each ceremony.
+   received, P166, with point in time, P585). It holds the history; the years after it are
+   found by the daily pass (rule 6).
 
-4. **Availability.** For each winner, the section reads the `EditionWatch` keyed on the work,
-   the tab's format and the app's language. A winner whose watch was never looked up is looked
-   up by the hourly pass, after the awaited editions, within its budget. Cadence differs from
-   awaited editions, since nobody is waiting on these:
-   - out in that language and format: never looked up again;
-   - not found: every 60 days.
+4. **Availability.** Découvrir shows the winners of each award's **latest ceremony** only — a
+   dozen novels across both genres, not the history. For each, the section reads the
+   `EditionWatch` keyed on the work, the tab's format and the app's language, and never looks
+   one up: a winner is looked up once a reader awaits it (rule 5), by the awaited editions'
+   hourly pass, like any awaited edition. A winner nobody awaited shows no edition state.
 
-   The cost is one grounded call per winner and format, paid once for every reader. The SF and
-   fantasy table holds roughly 300 winners, so about 600 calls the first time, then a few
-   dozen a month.
+   *Revised 2026-10-10.* The first version looked up every winner since 1953 in both formats
+   in the background: 526 grounded calls, about four billed Google searches each, so 2,039 paid
+   searches and €25 in four hours on 2026-10-09, to show a dozen books. The background cost is
+   now zero; an awaited winner costs what any awaited edition costs.
 
 5. **Guetter.** A winner not out in the app's language shows "Guetter" on its row. The app
    calls the existing `awaitScannedEdition` with the winner's title, authors and language:
@@ -93,15 +94,21 @@ hand from settings, friends' views.
    - announced: the date, and "Guetter";
    - not found: the original title, "Non traduit" or "Pas encore en audio", and "Guetter".
 
+6. **The daily winners pass.** `POST /admin/watch-award-winners`, once a morning: for each
+   award, Wikidata is asked for the winners of the ceremonies after the latest year known — the
+   file's or one the pass found — and each new year is kept in `award-winners/{award}~{year}`.
+   Only works with an author are taken: Wikidata records the people who won as receiving the
+   award too, and a work entered without its author is taken on a later day. A year still to
+   come is never kept. No model call, so a ceremony costs nothing.
+
 ## Data
 
 - New domain `award`: `types.ts`, `winners.ts`, the genre table and the rules in
-  `business-rules.ts`, `use-case.ts` for the section and the hourly pass.
-- Watches live where `EditionWatch` lives already. One new shared collection,
-  `award-interests`, one document per genre and language somebody looked at in the last three
-  months: the hourly pass looks up only those winners, in both formats, after the awaited
-  editions and the sagas, within the same run.
-- No migration: a new collection and a new section.
+  `business-rules.ts`, `use-case.ts` for the section and the daily winners pass,
+  `infrastructure/wikidata.ts` for the SPARQL call.
+- Watches live where `EditionWatch` lives already. One shared collection, `award-winners`, one
+  document per award and year the daily pass found, naming nobody.
+- Migration 022 deletes `award-interests`, which the first version's background lookups read.
 
 ## API
 
@@ -122,7 +129,8 @@ hand from settings, friends' views.
 ## Tests
 
 - Unit: the genre rule (weights, ties, threshold), the held rule (ISBN, title and author, the
-  original title alone not matching), the cadence.
+  original title alone not matching), the SPARQL answer read.
 - Integration: the section for a fake library, with the read budget asserted; a winner awaited
-  shows as awaited; the hourly pass looks up only the genres looked at, within its budget.
+  shows as awaited; nothing calls Gemini; the daily pass keeps a new year, asks after the year
+  it found, keeps no year to come and goes on past an award Wikidata fails on.
 - Feature: `awardShelf` against the built schema.
