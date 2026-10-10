@@ -8457,22 +8457,6 @@
         }
       }
     },
-    "Recherche de l'édition en cours" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Looking for the edition"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recherche de l'édition en cours"
-          }
-        }
-      }
-    },
     "Recherche de la série..." : {
       "localizations" : {
         "en" : {

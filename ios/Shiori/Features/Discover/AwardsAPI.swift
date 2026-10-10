@@ -48,7 +48,7 @@ struct AwardMention: Hashable, Sendable {
 
 /// A novel an award crowned, as its edition stands in one format and the
 /// language of the app: out, announced, or not found — not found also while
-/// the server has not looked it up yet, which `watched` tells apart.
+/// nobody awaited it, so it was never looked up, which `watched` tells apart.
 struct AwardWinner: Identifiable, Hashable, Sendable {
     let id: String
     let format: ReleaseFormat
@@ -82,8 +82,7 @@ struct AwardWinner: Identifiable, Hashable, Sendable {
         case .announced:
             date.map(ReleaseDateText.coming) ?? String(localized: "Annoncé, sans date")
         case .unannounced:
-            if !watched { String(localized: "Recherche de l'édition en cours") }
-            else if format == .audiobook { String(localized: "Pas encore en audio") }
+            if format == .audiobook { String(localized: "Pas encore en audio") }
             else { String(localized: "Non traduit") }
         }
     }

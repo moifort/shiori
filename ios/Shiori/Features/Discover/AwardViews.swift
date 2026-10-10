@@ -15,8 +15,7 @@ struct AwardWinnersStrip: View {
                         CoverTile(
                             book: winner.cover,
                             caption: winner.caption,
-                            showsTitle: false,
-                            captionTint: winner.state == .available ? .green : nil
+                            showsTitle: false
                         )
                     }
                     .buttonStyle(.plain)
@@ -113,9 +112,11 @@ struct AwardWinnerView: View {
         .accessibilityIdentifier("award-winner-menu")
     }
 
-    /// Said under the author: where the edition stands; a day still to come is
-    /// the calendar leaf's to say.
+    /// Said under the author: where the edition stands, once a reader awaited
+    /// it and it was looked up; a day still to come is the calendar leaf's to
+    /// say. Nothing is looked up for a winner nobody awaits.
     private var state: BookState? {
+        if !winner.watched { return nil }
         if winner.state == .announced, let date = winner.date, ReleaseDateText.isUpcoming(date) { return nil }
         return BookState(text: winner.stateLine, tint: winner.stateTint)
     }
