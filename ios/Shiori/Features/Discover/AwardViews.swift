@@ -53,22 +53,20 @@ struct AwardWinnerView: View {
                 isAwaited: winner.awaitedEditionId != nil,
                 storeLink: winner.storeURL.map {
                     .init(name: winner.format.storeName, url: $0, tint: winner.format.storeTint)
+                },
+                tag: Label {
+                    Text(verbatim: winner.awardsLine)
+                } icon: {
+                    Image(systemName: "trophy")
                 }
             )
             ReleaseDescriptionSections(describer: describer, synopsis: shown.synopsis)
-            Section {
-                ForEach(winner.mentions, id: \.self) { mention in
-                    LabeledContent(mention.award.name) {
-                        Text(verbatim: String(mention.year))
-                    }
-                }
-                if winner.title != winner.originalTitle {
+            if winner.title != winner.originalTitle {
+                Section {
                     LabeledContent("Titre original") {
                         Text(winner.originalTitle)
                     }
                 }
-            } header: {
-                Text("Récompenses")
             }
         }
         .listStyle(.insetGrouped)

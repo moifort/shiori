@@ -47,6 +47,9 @@ struct BookHeaderSection<Extra: View>: View {
     /// Draws a row for every fact, known or not, so a page checking a scan
     /// can fill in what the cover did not say.
     var showsEmptyFacts = false
+    /// Said above the card, with its icon: what crowned the book, on a
+    /// winner's page.
+    var tag: Label<Text, Image>?
     var footer: LocalizedStringKey?
     @ViewBuilder var extra: Extra
 
@@ -76,6 +79,12 @@ struct BookHeaderSection<Extra: View>: View {
             identity
             facts
             extra
+        } header: {
+            if let tag {
+                tag
+                    .labelStyle(.titleAndIcon)
+                    .font(.footnote)
+            }
         } footer: {
             if let footer { Text(footer) }
         }
@@ -360,6 +369,7 @@ extension BookHeaderSection where Extra == EmptyView {
         storeLink: StoreLink? = nil,
         actions: Actions = Actions(),
         showsEmptyFacts: Bool = false,
+        tag: Label<Text, Image>? = nil,
         footer: LocalizedStringKey? = nil
     ) {
         self.init(
@@ -370,6 +380,7 @@ extension BookHeaderSection where Extra == EmptyView {
             storeLink: storeLink,
             actions: actions,
             showsEmptyFacts: showsEmptyFacts,
+            tag: tag,
             footer: footer
         ) { EmptyView() }
     }

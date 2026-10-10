@@ -8905,22 +8905,6 @@
         }
       }
     },
-    "Récompenses" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Awards"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Récompenses"
-          }
-        }
-      }
-    },
     "Réduire" : {
       "localizations" : {
         "en" : {

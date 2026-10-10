@@ -95,6 +95,12 @@ struct AwardWinner: Identifiable, Hashable, Sendable {
         }
     }
 
+    /// Every prize it won, named in full, in a line above its page:
+    /// "Prix Hugo 2026 · Prix Locus de la fantasy 2026".
+    var awardsLine: String {
+        mentions.map { "\($0.award.name) \($0.year)" }.joined(separator: " · ")
+    }
+
     /// Every prize it won, in a line: "Hugo 1990 · Locus 1990".
     var mentionsLine: String {
         mentions.map { "\($0.award.shortName) \($0.year)" }.joined(separator: " · ")
