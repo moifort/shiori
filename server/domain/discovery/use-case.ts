@@ -22,7 +22,9 @@ import {
   inDiscoveryOrder,
   isDescriptionFresh,
   isDiscoverable,
+  lastVolumeOutOf,
   likelyLanguageOf,
+  looksLeftToday,
   mergedVolumes,
   mergedWorks,
   missingVolumesOf,
@@ -362,12 +364,12 @@ export namespace DiscoveryUseCase {
 
   /** The hourly pass. First every reader whose sagas and authors were last
    *  worked out a day ago has their library read again, and every reader whose
-   *  account is gone forgotten; then every saga anybody follows whose watch is
-   *  two weeks old, or that a reader holds a volume of its last look missed, is
-   *  looked up on the web — the ones never looked up first — and what was
-   *  found written into its catalogue; then every author, the same way. All
-   *  stop when the budget is spent; whatever is not reached goes first next
-   *  hour. */
+   *  account is gone forgotten; then every saga anybody follows that is due —
+   *  two weeks old with news, two months quiet, or held further than its last
+   *  look found — is looked up on the web, the ones never looked up first, and
+   *  what was found written into its catalogue; then every author, the same
+   *  way. No more than `MAX_LOOKS_PER_DAY` in a day, and all stop when the
+   *  budget is spent; whatever is not reached goes first next time. */
   export const watchDueSagas = async (
     now = new Date(),
     budgetMs = SCHEDULED_BUDGET_MS,
@@ -399,18 +401,26 @@ export namespace DiscoveryUseCase {
         everyone.flatMap((reader) => (reader.authors ?? []).map(authorWatchKeyOf)),
       ),
     ])
-    const sagas = await lookUpAll(dueWatches(everyone, watches, now), watches, now, overBudget)
+    // The day's looks are shared: sagas first, then authors, whatever is left
+    // waiting for the next day.
+    const left = looksLeftToday([...watches.values(), ...authorWatches.values()], now)
+    const dueSagas = dueWatches(everyone, watches, now)
+    const sagas = await lookUpAll(dueSagas.slice(0, left), watches, now, overBudget)
+    const dueAuthors = dueAuthorWatches(everyone, authorWatches, now)
+    const authorsLeft = Math.max(0, left - Math.min(left, dueSagas.length))
     const authors = await lookUpAllAuthors(
-      dueAuthorWatches(everyone, authorWatches, now),
+      dueAuthors.slice(0, authorsLeft),
       authorWatches,
       now,
       overBudget,
     )
+    const capped =
+      Math.max(0, dueSagas.length - left) + Math.max(0, dueAuthors.length - authorsLeft)
     return {
       synced,
       watched: sagas.watched + authors.watched,
       failed: failed + sagas.failed + authors.failed,
-      deferred: sagas.deferred + authors.deferred,
+      deferred: sagas.deferred + authors.deferred + capped,
     }
   }
 
@@ -808,9 +818,10 @@ const lookUp = async (
   const direct = audio && entry ? await audibleSeriesOf(entry, saga.language) : undefined
   if (Array.isArray(direct))
     return keepWatch(saga, now, onAudible(direct, previous?.volumes ?? [], today))
+  const after = previous ? lastVolumeOutOf(previous.volumes, today) : undefined
   const { value, usage } = await generate<ReleasesOutput>({
     step: 'discovery-releases',
-    parts: [{ text: releasesPrompt({ ...saga }, today) }],
+    parts: [{ text: releasesPrompt({ ...saga }, today, after) }],
     responseSchema: RELEASES_SCHEMA,
     grounded: true,
   })

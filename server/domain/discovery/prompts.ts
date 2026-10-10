@@ -25,10 +25,14 @@ export const LANGUAGE_NAMES: Record<BookLanguage, string> = {
 }
 
 /** Every volume, out or announced, of one saga in one language and one
- *  format: its printed books for a saga read, its recordings for a saga heard. */
+ *  format: its printed books for a saga read, its recordings for a saga heard.
+ *  Given the furthest volume an earlier look found out, only the volumes after
+ *  it: the ones before do not change, and each volume asked for is searched
+ *  for, and billed. */
 export const releasesPrompt = (
   saga: Pick<SagaWatch, 'seriesId' | 'name' | 'author' | 'language'>,
   today: string,
+  after?: number,
 ) => {
   const language = LANGUAGE_NAMES[saga.language]
   const author = saga.author ? ` de ${saga.author}` : ''
@@ -37,9 +41,21 @@ export const releasesPrompt = (
   const format = audio
     ? `en livre audio, tels que le catalogue Audible de cette langue (${store}) les liste`
     : `en livre (papier ou numérique), tels que la boutique Amazon de cette langue (${AMAZON_STORES[saga.language] ?? 'Amazon'}) les liste`
-  return `Nous sommes le ${today}. Un lecteur suit la série « ${saga.name} »${author} en ${language}. Recherche sur le web CHACUN de ses tomes parus en ${language} ${format}, du tome 1 au dernier paru, puis ceux annoncés.
+  const wanted =
+    after === undefined
+      ? `CHACUN de ses tomes parus en ${language} ${format}, du tome 1 au dernier paru, puis ceux annoncés`
+      : `ses tomes parus en ${language} ${format} APRÈS le tome ${after}, puis ceux annoncés. Les tomes 1 à ${after} sont déjà connus : ne les cherche pas et ne les liste pas`
+  const entries =
+    after === undefined
+      ? 'une entrée par tome numéroté de la série'
+      : `une entrée par tome numéroté au-delà du tome ${after}`
+  const none =
+    after === undefined
+      ? 'Une série sans tome dans cette langue revient avec volumes vide.'
+      : `Une série sans tome paru ni annoncé après le tome ${after} revient avec volumes vide.`
+  return `Nous sommes le ${today}. Un lecteur suit la série « ${saga.name} »${author} en ${language}. Recherche sur le web ${wanted}.
 
-Renseigne volumes : une entrée par tome numéroté de la série, la première édition en ${language} seulement. N'en saute aucun. Pour chacun :
+Renseigne volumes : ${entries}, la première édition en ${language} seulement. N'en saute aucun. Pour chacun :
 - number : son numéro dans la série. Une série publiée en cycles se numérote d'un bout à l'autre : si le premier cycle compte trois tomes, « cycle 2, tome 2 » est le tome 5.
 - title : son titre en ${language}, sans le nom de la série ni le numéro du tome.
 - date : la date de parution la plus précise connue, au format AAAA-MM-JJ, sinon AAAA-MM, sinon AAAA. Obligatoire pour un tome annoncé ; null pour un tome paru dont tu ne trouves pas la date.
@@ -50,7 +66,7 @@ Renseigne volumes : une entrée par tome numéroté de la série, la première �
       : ''
   }
 
-Ne liste que des tomes confirmés par une source (éditeur, libraire, Audible, annonce de l'auteur ou du traducteur). Une série sans tome dans cette langue revient avec volumes vide. N'invente rien.`
+Ne liste que des tomes confirmés par une source (éditeur, libraire, Audible, annonce de l'auteur ou du traducteur). ${none} N'invente rien.`
 }
 
 /** Every book of one author, out in the last months or announced, in one

@@ -28,6 +28,7 @@ mock.module('~/system/apns', () => ({
  *  about answers a book of their own, the first volume of a new saga, the next
  *  volume of the saga the reader follows and a book the reader holds. */
 const calls: string[] = []
+const prompts: string[] = []
 const authorCalls: string[] = []
 mock.module('~/domain/scan/gemini', () => ({
   generate: async ({ parts }: { parts: { text: string }[] }) => {
@@ -55,6 +56,7 @@ mock.module('~/domain/scan/gemini', () => ({
       }
     }
     calls.push(text.match(/« ([^»]+) »/)?.[1] ?? '?')
+    prompts.push(text)
     return {
       usage: { promptTokens: 1, outputTokens: 1, thinkingTokens: 0, searches: 1 },
       value: {
@@ -120,6 +122,7 @@ const { SeriesOpinionCommand } = await import('~/domain/series-opinion/command')
 const { SeriesName, VolumeNumber, seriesKeyOf } = await import('~/domain/series/primitives')
 const { AuthorName, BookTitle, Year } = await import('~/domain/shared/primitives')
 const { authorKeyOf } = await import('~/domain/author/primitives')
+const { MAX_LOOKS_PER_DAY } = await import('~/domain/discovery/business-rules')
 
 const reader = 'reader' as UserId
 const other = 'other' as UserId
@@ -189,6 +192,7 @@ const awaits = (
 beforeEach(() => {
   fake = resetFakeFirestore()
   calls.length = 0
+  prompts.length = 0
   authorCalls.length = 0
   pushed.length = 0
   seriesAsked.length = 0
@@ -217,6 +221,72 @@ describe('the hourly pass', () => {
     expect(calls).toEqual([])
     await DiscoveryUseCase.watchDueSagas(new Date('2026-10-11T08:00:00Z'))
     expect(calls).toEqual(['Dungeon Crawler Carl'])
+  })
+
+  // Volumes 1 to 3 are out by then: asking for them again would search the web
+  // for each, and bill it, to learn nothing.
+  test('asks a saga looked up before only for the volumes after the last one out', async () => {
+    await stock(reader)
+    await DiscoveryUseCase.watchDueSagas(now)
+    expect(prompts[0]).toContain('du tome 1 au dernier paru')
+    prompts.length = 0
+
+    await DiscoveryUseCase.watchDueSagas(new Date('2026-10-11T08:00:00Z'))
+
+    expect(prompts[0]).toContain('APRÈS le tome 3')
+    expect(prompts[0]).not.toContain('du tome 1 au dernier paru')
+  })
+
+  test('looks a quiet saga up again only after two months', async () => {
+    await stock(reader)
+    fake.seed('saga-watches', `${carl}--fr`, {
+      key: `${carl}--fr`,
+      seriesId: carl,
+      name: 'Dungeon Crawler Carl',
+      author: 'Matt Dinniman',
+      language: 'fr',
+      checkedAt: new Date('2026-08-01T08:00:00Z'),
+      volumes: [{ number: 1, title: 'Carl 1', date: '2024-05-02' }],
+    })
+
+    await DiscoveryUseCase.watchDueSagas(now)
+    expect(calls).toEqual([])
+    await DiscoveryUseCase.watchDueSagas(new Date('2026-10-01T08:00:00Z'))
+    expect(calls).toEqual(['Dungeon Crawler Carl'])
+  })
+
+  // A library imported at once follows dozens of sagas: the rest wait for the
+  // next day rather than being paid for in one burst.
+  test('looks up no more than the day allows, and leaves the rest for the next day', async () => {
+    fake.seed('users', reader, { userId: reader, firstName: 'Bob' })
+    const sagas = Array.from({ length: MAX_LOOKS_PER_DAY + 2 }, (_, index) => ({
+      seriesId: seriesKeyOf(`Saga ${index}`, 'Matt Dinniman', 'book'),
+      language: 'fr',
+      name: `Saga ${index}`,
+    }))
+    // Read off the reader as stored: no library to work the sagas out again from.
+    const follows = (syncedAt: Date) =>
+      fake.seed('discovery-readers', reader, {
+        userId: reader,
+        language: 'fr',
+        sagas,
+        syncedAt,
+        notified: [],
+      })
+    follows(now)
+
+    const first = await DiscoveryUseCase.watchDueSagas(now)
+    expect(first).toMatchObject({ watched: MAX_LOOKS_PER_DAY, deferred: 2 })
+    calls.length = 0
+
+    expect(
+      (await DiscoveryUseCase.watchDueSagas(new Date(now.getTime() + 3_600_000))).watched,
+    ).toBe(0)
+    expect(calls).toEqual([])
+    const tomorrow = new Date(now.getTime() + 86_400_000 + 1)
+    follows(tomorrow)
+    const nextDay = await DiscoveryUseCase.watchDueSagas(tomorrow)
+    expect(nextDay.watched).toBe(2)
   })
 
   // The web stops at volume 4: a fifth the reader adds is worth one look the

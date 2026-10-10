@@ -18,11 +18,15 @@ import {
   alertOf,
   announcedPreviewOf,
   authorReleasesOf,
+  authorWatchIsStale,
   digestOf,
   dueAlertsOf,
   dueWatches,
   inDiscoveryOrder,
+  lastVolumeOutOf,
   likelyLanguageOf,
+  looksLeftToday,
+  MAX_LOOKS_PER_DAY,
   mergedVolumes,
   mergedWorks,
   missingVolumesOf,
@@ -30,10 +34,13 @@ import {
   onAudible,
   recentReleasesOf,
   releasesOf,
+  sagaIsLively,
   sagasByAuthorOf,
   watchedAuthorsOf,
   watchedSagasOf,
+  watchIsStale,
 } from './business-rules'
+import { releasesPrompt } from './prompts'
 import type {
   AuthorWatch,
   DiscoveryReader,
@@ -130,7 +137,7 @@ describe('the sagas watched for a reader', () => {
     const now = new Date('2026-09-26')
     const watches = new Map([
       ['fresh--fr', { ...watchOf('fresh' as SeriesId, []), checkedAt: new Date('2026-09-25') }],
-      ['old--fr', { ...watchOf('old' as SeriesId, []), checkedAt: new Date('2026-08-01') }],
+      ['old--fr', { ...watchOf('old' as SeriesId, []), checkedAt: new Date('2026-07-01') }],
     ])
     expect(
       dueWatches([reader([fresh, old]), reader([never, old])], watches, now).map(
@@ -860,5 +867,77 @@ describe('a fresh look at an author', () => {
       { title: 'Missed' as BookTitle, date: '2026-05-01' as ReleaseDate },
       { title: 'KAIJU' as BookTitle, date: '2026-11-04' as ReleaseDate, coverUrl: 'c' as never },
     ])
+  })
+})
+
+describe('how often a watch is looked up again', () => {
+  const now = new Date('2026-10-10T08:00:00Z')
+  const daysAgo = (days: number) => new Date(now.getTime() - days * 86_400_000)
+  const volume = (number: number, date?: string): FoundVolume => ({
+    number: number as VolumeNumber,
+    title: `Tome ${number}` as BookTitle,
+    ...(date ? { date: date as ReleaseDate } : {}),
+  })
+  const saga = (checkedAt: Date, volumes: FoundVolume[]) => ({
+    ...watchOf('carl' as SeriesId, volumes),
+    checkedAt,
+  })
+
+  test('a saga with a volume out lately or to come has news, an older one none', () => {
+    expect(sagaIsLively({ volumes: [volume(1, '2020'), volume(2, '2027-01')] }, now)).toBe(true)
+    expect(sagaIsLively({ volumes: [volume(1, '2026-06-01')] }, now)).toBe(true)
+    // `2026-04` may be its last day: within six months.
+    expect(sagaIsLively({ volumes: [volume(1, '2026-04')] }, now)).toBe(true)
+    expect(sagaIsLively({ volumes: [volume(1, '2019'), volume(2)] }, now)).toBe(false)
+    expect(sagaIsLively({ volumes: [] }, now)).toBe(false)
+  })
+
+  test('a saga with news every two weeks, a quiet one every two months', () => {
+    const lively = [volume(1, '2026-09-01')]
+    expect(watchIsStale(saga(daysAgo(13), lively), now)).toBe(false)
+    expect(watchIsStale(saga(daysAgo(15), lively), now)).toBe(true)
+    const quiet = [volume(1, '2019-01-01')]
+    expect(watchIsStale(saga(daysAgo(59), quiet), now)).toBe(false)
+    expect(watchIsStale(saga(daysAgo(61), quiet), now)).toBe(true)
+    expect(watchIsStale(undefined, now)).toBe(true)
+  })
+
+  test('an author with news every month, a quiet one every three months', () => {
+    const author = (checkedAt: Date, dates: string[]): AuthorWatch => ({
+      key: 'k',
+      authorKey: 'a' as AuthorKey,
+      name: 'A' as AuthorName,
+      format: 'book',
+      language: 'fr',
+      checkedAt,
+      works: dates.map((date) => ({ title: 'T' as BookTitle, date: date as ReleaseDate })),
+    })
+    expect(authorWatchIsStale(author(daysAgo(29), ['2026-12-01']), now)).toBe(false)
+    expect(authorWatchIsStale(author(daysAgo(31), ['2026-12-01']), now)).toBe(true)
+    expect(authorWatchIsStale(author(daysAgo(89), []), now)).toBe(false)
+    expect(authorWatchIsStale(author(daysAgo(91), []), now)).toBe(true)
+  })
+
+  test('the day allows so many looks, the ones of the last day counted', () => {
+    const looked = (count: number, at: Date) =>
+      Array.from({ length: count }, () => ({ checkedAt: at }))
+    expect(looksLeftToday([], now)).toBe(MAX_LOOKS_PER_DAY)
+    expect(looksLeftToday([...looked(10, daysAgo(0.5)), ...looked(50, daysAgo(2))], now)).toBe(
+      MAX_LOOKS_PER_DAY - 10,
+    )
+    expect(looksLeftToday(looked(MAX_LOOKS_PER_DAY + 5, daysAgo(0.1)), now)).toBe(0)
+  })
+
+  test('a fresh look asks for the volumes after the furthest one out', () => {
+    const today = '2026-10-10'
+    expect(lastVolumeOutOf([volume(1, '2024'), volume(2), volume(3, '2027-02')], today)).toBe(2)
+    expect(lastVolumeOutOf([volume(4, '2027-02')], today)).toBeUndefined()
+    const prompt = releasesPrompt(
+      { seriesId: 'carl' as SeriesId, name: 'Carl' as SeriesName, language: 'fr' },
+      today,
+      2,
+    )
+    expect(prompt).toContain('APRÈS le tome 2')
+    expect(prompt).not.toContain('du tome 1 au dernier paru')
   })
 })

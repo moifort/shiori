@@ -43,6 +43,22 @@ export const WATCH_EVERY_MS = 14 * 86_400_000
  *  few times a year and their shelf keeps three months of works out, so a
  *  month apart misses nothing a reader would see. */
 export const AUTHOR_WATCH_EVERY_MS = 30 * 86_400_000
+/** How often a quiet saga is searched again: nothing out in the last six
+ *  months and nothing announced. On 2026-10-10, 186 of the 283 sagas watched
+ *  were quiet; a publisher announces months ahead, so two months apart still
+ *  catches the next volume long before its day. */
+export const QUIET_WATCH_EVERY_MS = 60 * 86_400_000
+/** How often a quiet author is searched again: nothing out in the last six
+ *  months and nothing announced — 391 of the 568 watched on 2026-10-10. */
+export const QUIET_AUTHOR_WATCH_EVERY_MS = 90 * 86_400_000
+/** How far back a volume or a work out keeps its saga or author lively. */
+const LIVELY_WITHIN_MS = 183 * 86_400_000
+/** The most sagas and authors the hourly passes look up on the web in a day,
+ *  those looked up on opening the tab counted. A grounded call bills about
+ *  eight searches here, so thirty a day is at most 7,200 searches a month,
+ *  about €27 past the 5,000 free, whatever a library imported at once holds:
+ *  what is left waits for the next day, the longest unchecked first. */
+export const MAX_LOOKS_PER_DAY = 30
 /** How often the hourly pass reads a reader's library again to learn which
  *  sagas they follow. Opening the tab does it at once. */
 export const SYNC_EVERY_MS = 86_400_000
@@ -120,9 +136,52 @@ const furthestHeldOf = (
   return furthest
 }
 
-/** Whether a saga is due for another look on the web. */
-export const watchIsStale = (watch: SagaWatch | undefined, now: Date): boolean =>
-  !watch || now.getTime() - watch.checkedAt.getTime() > WATCH_EVERY_MS
+/** The last day a release date may fall on: `2026` may be any day of it. */
+const latestDayOf = (date: string) =>
+  date.length === 4 ? `${date}-12-31` : date.length === 7 ? `${date}-31` : date
+
+/** Whether something came out in the last six months or is announced: a date
+ *  that recent or still to come, or a release with no date yet. */
+const isLively = (dates: readonly (string | undefined)[], now: Date): boolean => {
+  const since = new Date(now.getTime() - LIVELY_WITHIN_MS).toISOString().slice(0, 10)
+  return dates.some((date) => date === undefined || latestDayOf(date) >= since)
+}
+
+/** Whether a saga has news: a volume out lately or to come. A volume with no
+ *  date is one out on a day nobody found — an announced one always has a date
+ *  — so it is not news. */
+export const sagaIsLively = (watch: Pick<SagaWatch, 'volumes'>, now: Date): boolean =>
+  isLively(
+    watch.volumes.flatMap((volume) => (volume.date ? [volume.date] : [])),
+    now,
+  )
+
+/** The furthest volume a look found out by today: the one a fresh look asks
+ *  for the volumes after, rather than the whole saga again. Undefined when
+ *  none was found out. */
+export const lastVolumeOutOf = (
+  volumes: readonly Pick<FoundVolume, 'number' | 'date'>[],
+  today: string,
+): number | undefined => {
+  const out = volumes.filter((volume) => !volume.date || volume.date <= today)
+  return out.length > 0 ? Math.max(...out.map((volume) => volume.number)) : undefined
+}
+
+/** Whether a saga is due for another look on the web: every two weeks while
+ *  it has news, every two months while quiet. */
+export const watchIsStale = (watch: SagaWatch | undefined, now: Date): boolean => {
+  if (!watch) return true
+  const every = sagaIsLively(watch, now) ? WATCH_EVERY_MS : QUIET_WATCH_EVERY_MS
+  return now.getTime() - watch.checkedAt.getTime() > every
+}
+
+/** How many more sagas and authors may be looked up today: the watches
+ *  checked in the last day count against `MAX_LOOKS_PER_DAY`. */
+export const looksLeftToday = (watches: readonly { checkedAt: Date }[], now: Date): number => {
+  const dayAgo = now.getTime() - 86_400_000
+  const done = watches.filter((watch) => watch.checkedAt.getTime() > dayAgo).length
+  return Math.max(0, MAX_LOOKS_PER_DAY - done)
+}
 
 /** Whether the hourly pass must read this reader's library again. */
 export const readerIsStale = (reader: DiscoveryReader | undefined, now: Date): boolean =>
@@ -197,9 +256,17 @@ export const watchedAuthorsOf = (
     })
   })
 
-/** Whether an author is due for another look on the web. */
-export const authorWatchIsStale = (watch: AuthorWatch | undefined, now: Date): boolean =>
-  !watch || now.getTime() - watch.checkedAt.getTime() > AUTHOR_WATCH_EVERY_MS
+/** Whether an author is due for another look on the web: every month while
+ *  they have news, every three months while quiet. */
+export const authorWatchIsStale = (watch: AuthorWatch | undefined, now: Date): boolean => {
+  if (!watch) return true
+  const lively = isLively(
+    watch.works.map((work) => work.date),
+    now,
+  )
+  const every = lively ? AUTHOR_WATCH_EVERY_MS : QUIET_AUTHOR_WATCH_EVERY_MS
+  return now.getTime() - watch.checkedAt.getTime() > every
+}
 
 /** The authors every reader holds, each once, the ones never looked up first,
  *  then the longest unchecked. */
