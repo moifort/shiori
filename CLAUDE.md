@@ -53,6 +53,17 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    cut, and only then.
 4. **Never push until the user explicitly says "push".**
 
+## Paid API calls
+
+Any feature that calls a paid API (Gemini above all) states its cost before it is built: how
+many calls the first run makes, how many per day or month after, multiplied out — rows × formats ×
+languages × searches per call — and priced. A grounded Gemini call bills about **four Google
+searches**, not one (≈ €0.012 each once the 5,000 free a month are spent), and the logged
+`searches` figure undercounts them. A background pass is sized to what a reader is shown, never to
+a whole dataset: on 2026-10-09 the award pass looked up every winner since 1953 — 526 calls,
+2,039 paid searches, €25 in four hours — to show a dozen books. The figure goes in the spec and
+in the commit message.
+
 ## API evolution
 
 The GraphQL schema is not versioned: installed builds keep asking for what they were built
