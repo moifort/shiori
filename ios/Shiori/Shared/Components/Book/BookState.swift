@@ -18,6 +18,10 @@ struct BookState: Equatable {
             : BookState(text: ReleaseDateText.out(date), tint: .green)
     }
 
+    /// A book on the pile whose edition is not out yet: grey, as a volume
+    /// with no date is on the saga screen.
+    static let forthcoming = BookState(text: String(localized: "Pas encore paru"), tint: .gray)
+
     static let owned = BookState(text: String(localized: "Déjà dans votre bibliothèque"), tint: .green)
     static let addedToPile = BookState(text: String(localized: "Ajouté à votre pile à lire"), tint: .green)
     static let addedAsRead = BookState(text: String(localized: "Ajouté à vos livres lus"), tint: .green)

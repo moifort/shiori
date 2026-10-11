@@ -8,6 +8,7 @@ import {
   inCatalogueOrder,
   inTabOrder,
   isForthcoming,
+  isHeldVolumeForthcoming,
   isRecentMiss,
   keepingReleases,
   matchingFilter,
@@ -953,5 +954,56 @@ describe('numberInCatalogue', () => {
     expect(
       numberInCatalogue(orbit, { title: BookTitle('One'), series: { kind: 'novella' as const } }),
     ).toBeUndefined()
+  })
+})
+
+describe('isHeldVolumeForthcoming', () => {
+  const TODAY = '2026-10-11'
+  // Dans la toile du temps in French: three volumes dated by the watch, the
+  // fourth listed under its English title, out in English only.
+  const translated = [1, 2, 3].map((number) =>
+    volume({
+      title: `V${number}`,
+      number: VolumeNumber(number),
+      publishedIn: Year(2018 + number),
+      releases: { fr: ReleaseDate(`${2018 + number}-03-12`) },
+    }),
+  )
+  const strife = volume({
+    title: 'Children of Strife',
+    number: VolumeNumber(4),
+    publishedIn: Year(2026),
+  })
+  const series = {
+    ...saga([...translated, strife]),
+    language: 'fr' as const,
+    catalogedAt: new Date('2026-09-22T15:38:08Z'),
+  }
+  const held = (number: number, title = 'Children of Strife') => ({
+    title: BookTitle(title),
+    series: { volume: VolumeNumber(number), kind: 'main' as const },
+    language: 'fr' as const,
+  })
+
+  test('a volume past the last one translated is not out in its edition', () => {
+    expect(isHeldVolumeForthcoming(series, held(4), THIS_YEAR, TODAY)).toBe(true)
+  })
+
+  test('a volume translated already is out', () => {
+    expect(isHeldVolumeForthcoming(series, held(3, 'V3'), THIS_YEAR, TODAY)).toBe(false)
+  })
+
+  test('a volume the catalogue does not list says nothing', () => {
+    expect(isHeldVolumeForthcoming(series, held(9, 'Nine'), THIS_YEAR, TODAY)).toBe(false)
+  })
+
+  test('an unnumbered work is found by its title', () => {
+    const novella = volume({ title: 'Hearts', kind: 'novella', publishedIn: Year(2027) })
+    const book = {
+      title: BookTitle('hearts'),
+      series: { kind: 'novella' as const },
+      language: 'fr' as const,
+    }
+    expect(isHeldVolumeForthcoming(saga([novella]), book, THIS_YEAR, TODAY)).toBe(true)
   })
 })

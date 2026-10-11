@@ -223,6 +223,7 @@ extension ShioriGraphQL.BookDetail {
             isbn13: isbn13,
             language: language?.asDomain,
             series: series?.asMembership,
+            forthcoming: forthcoming,
             coverURL: coverUrl.flatMap(URL.init(string:)),
             status: status.asDomain,
             rating: rating,

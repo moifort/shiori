@@ -889,3 +889,49 @@ describe('paper and screen through the API', () => {
     expect(ignored.data?.updateBook).toEqual({ media: ['PRINT', 'DIGITAL'] })
   })
 })
+
+describe('a volume not out yet in its edition', () => {
+  const saga = 'dans-la-toile-du-temps--adrian-tchaikovsky'
+
+  // Dans la toile du temps in French: three volumes translated, the fourth
+  // out in English only, kept by a reader on their French pile.
+  const seedFrenchCatalogue = () =>
+    resetFakeFirestore().seed('series', `${saga}~fr`, {
+      id: saga,
+      language: 'fr',
+      name: 'Dans la toile du temps',
+      author: 'Adrian Tchaikovsky',
+      catalogedAt: new Date('2026-09-22T15:38:08Z'),
+      volumes: [
+        ...[1, 2, 3].map((number) => ({
+          number,
+          title: `Tome ${number}`,
+          kind: 'main',
+          publishedIn: 2020 + number,
+          releases: { fr: `${2020 + number}-03-12` },
+        })),
+        { number: 4, title: 'Children of Strife', kind: 'main', publishedIn: 2026 },
+      ],
+    })
+
+  const addVolume = async (title: string, volume: number) => {
+    const result = await execute(
+      `mutation { addBook(input: { title: "${title}", authors: ["Adrian Tchaikovsky"], ` +
+        `language: FR, series: { id: "${saga}", name: "Dans la toile du temps", ` +
+        `volume: ${volume}, kind: MAIN } }) { forthcoming } }`,
+    )
+    expect(result.errors).toBeUndefined()
+    return (result.data as { addBook: { forthcoming: boolean } }).addBook.forthcoming
+  }
+
+  test('says so on the book, and says nothing of a volume translated already', async () => {
+    seedFrenchCatalogue()
+    expect(await addVolume('Children of Strife', 4)).toBe(true)
+    expect(await addVolume('Tome 3', 3)).toBe(false)
+  })
+
+  test('says nothing of a standalone book', async () => {
+    const result = await execute('mutation { addBook(input: { title: "Dune" }) { forthcoming } }')
+    expect(result.data?.addBook).toEqual({ forthcoming: false })
+  })
+})

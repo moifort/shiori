@@ -754,6 +754,13 @@ type Book {
   firstPublishedIn: Year
   format: BookFormat!
 
+  """
+  Whether the book is a volume not out yet in its own edition, as the saga's catalogue in that language says: a volume out in English that no French publisher has brought out, on a French record. False for a standalone book and for a volume its catalogue does not list.
+  
+  Reads the catalogue, one document per book: asked for by the book page, never by a list.
+  """
+  forthcoming: Boolean!
+
   """Null for a book added by hand, or when the reader cleared it."""
   genre: Genre
 

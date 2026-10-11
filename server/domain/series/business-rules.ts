@@ -114,6 +114,36 @@ export const publishedVolumes = (
   return series.volumes.filter((volume) => !isForthcoming(volume, currentYear, known))
 }
 
+/** Whether a book the reader holds is a volume not out yet in its own edition:
+ *  the volume it is, found in the saga's catalogue for that language, judged
+ *  as that catalogue judges its unowned volumes. A numbered volume is found by
+ *  its number, any other by its title. False when the catalogue does not list
+ *  it — the catalogue alone says what is to come. */
+export const isHeldVolumeForthcoming = (
+  series: Series,
+  book: {
+    title: BookTitle
+    series: { volume?: VolumeNumber; kind: VolumeKind }
+    language?: BookLanguage
+  },
+  currentYear: YearValue,
+  today?: string,
+): boolean => {
+  const { volume: number, kind } = book.series
+  const title = book.title.toLocaleLowerCase()
+  const volume = series.volumes.find((entry) =>
+    number !== undefined
+      ? entry.kind === kind && entry.number === number
+      : entry.kind === kind && entry.title.toLocaleLowerCase() === title,
+  )
+  if (!volume) return false
+  return isForthcoming(
+    volume,
+    currentYear,
+    editionOf(series, { language: book.language ?? series.language, today }),
+  )
+}
+
 /** The volumes a saga is measured on: the numbered main volumes already out,
  *  and the ones announced to the day in the reader's edition. Related works are
  *  left out — a novella the reader skipped would make a finished spine look

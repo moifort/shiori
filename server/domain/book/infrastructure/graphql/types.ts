@@ -19,10 +19,12 @@ import type {
   SeriesMembership,
   ShelfVocabulary,
 } from '~/domain/book/types'
+import { isHeldVolumeForthcoming } from '~/domain/series/business-rules'
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
+import { SeriesQuery } from '~/domain/series/query'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import { builder } from '~/domain/shared/graphql/builder'
-import { Percentage } from '~/domain/shared/primitives'
+import { Percentage, Year } from '~/domain/shared/primitives'
 
 export const RecommendationType = builder.objectRef<Recommendation>('Recommendation').implement({
   description:
@@ -196,6 +198,23 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
       nullable: true,
       description: 'Null for a standalone book.',
       resolve: (book) => book.series ?? null,
+    }),
+    forthcoming: t.boolean({
+      description:
+        'Whether the book is a volume not out yet in its own edition, as the ' +
+        "saga's catalogue in that language says: a volume out in English that " +
+        'no French publisher has brought out, on a French record. False for a ' +
+        'standalone book and for a volume its catalogue does not list.\n\n' +
+        'Reads the catalogue, one document per book: asked for by the book page, ' +
+        'never by a list.',
+      resolve: async (book) => {
+        if (!book.series) return false
+        const series = await SeriesQuery.byId({ id: book.series.id, language: book.language })
+        if (!series) return false
+        const today = new Date().toISOString().slice(0, 10)
+        const currentYear = Year(Number(today.slice(0, 4)))
+        return isHeldVolumeForthcoming(series, { ...book, series: book.series }, currentYear, today)
+      },
     }),
     coverUrl: t.field({
       type: 'CoverUrl',

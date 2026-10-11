@@ -297,6 +297,10 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
     /// closed list does not carry.
     var language: BookLanguage?
     var series: SeriesMembership?
+    /// A volume not out yet in this edition, as its saga's catalogue in that
+    /// language says: out in English, not yet in French. Only the book's own
+    /// screen carries it.
+    var forthcoming = false
     /// The cover to draw: the reader's own photo, or the publisher's cover found by
     /// ISBN at scan time. Absent for a book added by hand or from a catalogue, and
     /// either may fail to load — both cases get the typographic placeholder.

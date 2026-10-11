@@ -37,6 +37,8 @@ struct BookPage: View {
             BookStatusSection(status: book.status, onSetStatus: onSetStatus)
             BookHeaderSection(
                 book: book,
+                // Kept on the pile while only another language has it.
+                state: book.status == .toRead && book.forthcoming ? .forthcoming : nil,
                 isAwaited: !awaited.isEmpty,
                 actions: .init(
                     openSeries: onOpenSeries,

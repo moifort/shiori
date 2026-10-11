@@ -127,6 +127,7 @@ fragment BookDetail on Book {
     volume
     kind
   }
+  forthcoming
 }
 
 # The reader's own subgenre vocabulary, most used first: what the genre sheet
