@@ -4373,6 +4373,22 @@
         }
       }
     },
+    "Désactivées dans les réglages de l'iPhone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turned off in the iPhone’s Settings"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Désactivées dans les réglages de l'iPhone"
+          }
+        }
+      }
+    },
     "Développement personnel" : {
       "localizations" : {
         "en" : {
@@ -6137,22 +6153,6 @@
         }
       }
     },
-    "Les notifications de Shiori sont désactivées dans les réglages de l'iPhone." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shiori’s notifications are turned off in the iPhone’s Settings."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Les notifications de Shiori sont désactivées dans les réglages de l'iPhone."
-          }
-        }
-      }
-    },
     "Les nouveautés et les prochains livres annoncés de vos auteurs apparaîtront ici." : {
       "localizations" : {
         "en" : {
@@ -7225,6 +7225,22 @@
         }
       }
     },
+    "Notifications désactivées" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifications turned off"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifications désactivées"
+          }
+        }
+      }
+    },
     "Nous écrire" : {
       "localizations" : {
         "en" : {
@@ -7561,18 +7577,18 @@
         }
       }
     },
-    "Ouvrir les réglages" : {
+    "Ouvrir les réglages de l'iPhone" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open Settings"
+            "value" : "Open the iPhone’s Settings"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvrir les réglages"
+            "value" : "Ouvrir les réglages de l'iPhone"
           }
         }
       }
@@ -9477,6 +9493,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Shiori n'a rien trouvé de plus sur cet auteur. L'ancienne fiche est conservée ; réessayez plus tard."
+          }
+        }
+      }
+    },
+    "Shiori n'est pas autorisé à vous prévenir. Activez ses notifications dans les réglages de l'iPhone pour recevoir ces alertes." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shiori isn’t allowed to notify you. Turn its notifications on in the iPhone’s Settings to get these alerts."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shiori n'est pas autorisé à vous prévenir. Activez ses notifications dans les réglages de l'iPhone pour recevoir ces alertes."
           }
         }
       }

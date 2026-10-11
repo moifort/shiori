@@ -5,8 +5,10 @@ import UserNotifications
 /// default, and one that silences them all. Shown from the settings, and as a
 /// sheet from the bell in Découvrir. The system permission is asked the first
 /// time an alert is switched on; if the reader refused it once, the screen
-/// says so and leads to the system settings, the only place it can be given
-/// back.
+/// says so first and leads to the system settings, the only place it can be
+/// given back, and the switches stay in sight, greyed, so the reader still
+/// sees what they would get. Read again each time the app comes back, as it
+/// does from those settings.
 struct NotificationSettingsView: View {
     /// Set when shown as a sheet, which then closes on its leading cross.
     var onDone: (() -> Void)?
@@ -16,16 +18,31 @@ struct NotificationSettingsView: View {
     @State private var errorMessage: String?
     @State private var saving = false
     @Environment(\.openURL) private var openURL
+    @Environment(\.scenePhase) private var scenePhase
+
+    private var blocked: Bool { authorization == .denied }
 
     var body: some View {
         List {
-            if authorization == .denied {
+            if blocked {
                 Section {
-                    Label("Les notifications de Shiori sont désactivées dans les réglages de l'iPhone.", systemImage: "bell.slash")
-                        .foregroundStyle(.secondary)
-                    Button("Ouvrir les réglages") {
+                    Label {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Notifications désactivées")
+                                .font(.headline)
+                            Text("Shiori n'est pas autorisé à vous prévenir. Activez ses notifications dans les réglages de l'iPhone pour recevoir ces alertes.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: "bell.slash.fill")
+                            .foregroundStyle(.red)
+                    }
+                    .labelStyle(.row)
+                    Button("Ouvrir les réglages de l'iPhone") {
                         if let url = URL(string: UIApplication.openNotificationSettingsURLString) { openURL(url) }
                     }
+                    .accessibilityIdentifier("notification-open-system-settings")
                 }
             }
 
@@ -38,6 +55,8 @@ struct NotificationSettingsView: View {
                         .accessibilityIdentifier("notification-toggle-\(kind)")
                     }
                 }
+                .disabled(blocked)
+                .opacity(blocked ? 0.5 : 1)
 
                 Section {
                     Toggle(isOn: allOff(in: settings)) {
@@ -45,6 +64,8 @@ struct NotificationSettingsView: View {
                     }
                     .accessibilityIdentifier("notification-toggle-all-off")
                 }
+                .disabled(blocked)
+                .opacity(blocked ? 0.5 : 1)
             }
         }
         // An empty list draws no grouped background: kept here so the page
@@ -74,6 +95,10 @@ struct NotificationSettingsView: View {
             }
         }
         .task { await load() }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            Task { authorization = await PushRegistrar.shared.authorizationStatus() }
+        }
     }
 
     private func binding(_ kind: AlertKind, in settings: NotificationSettings) -> Binding<Bool> {

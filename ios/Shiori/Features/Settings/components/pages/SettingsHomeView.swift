@@ -11,6 +11,8 @@ struct SettingsHomeView: View {
     @State private var premiumShown = false
     @State private var feedbackShown = false
     @State private var openSource: ImportSource?
+    @State private var notificationsBlocked = false
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationStack {
@@ -45,9 +47,11 @@ struct SettingsHomeView: View {
                         NotificationSettingsView()
                     } label: {
                         SettingsRow(
-                            icon: "bell.badge.fill",
+                            icon: notificationsBlocked ? "bell.slash.fill" : "bell.badge.fill",
                             title: "Notifications",
-                            subtitle: String(localized: "Prochaine sortie et nouvelle disponibilité"),
+                            subtitle: notificationsBlocked
+                                ? String(localized: "Désactivées dans les réglages de l'iPhone")
+                                : String(localized: "Prochaine sortie et nouvelle disponibilité"),
                             tint: .red
                         )
                     }
@@ -118,7 +122,17 @@ struct SettingsHomeView: View {
                     ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
                 }
             }
+            .task { await readNotificationPermission() }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { Task { await readNotificationPermission() } }
+            }
         }
+    }
+
+    /// Read on opening and again when the app comes back, as it does from the
+    /// iPhone's settings where the permission is given or taken away.
+    private func readNotificationPermission() async {
+        notificationsBlocked = await PushRegistrar.shared.authorizationStatus() == .denied
     }
 
     private var profileSubtitle: String? {
