@@ -64,6 +64,9 @@ struct ContentView: View {
     /// app comes to the front. Nil the rest of the time.
     @State private var sharedStart: ScanView.Start?
     @Environment(\.scenePhase) private var scenePhase
+    /// When the app last left the screen, so that a return after a while asks
+    /// every list again. Nil while the app is in front.
+    @State private var backgroundedAt: Date?
 
     /// The trailing "Scanner" entry must stay detached from the content tabs.
     /// iOS 26 separates the `.search` role; iOS 27 folded `.search` back into the
@@ -144,7 +147,11 @@ struct ContentView: View {
             // A token APNs rotated reaches the server on the next launch.
             .task { await PushRegistrar.shared.refreshRegistration() }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { takeSharedIntake() }
+                if phase == .background, backgroundedAt == nil { backgroundedAt = .now }
+                if phase == .active {
+                    takeSharedIntake()
+                    refreshAfterAbsence()
+                }
             }
             // A release alert tapped: its book is on the Découvrir tab.
             .onReceive(NotificationCenter.default.publisher(for: .shioriOpenDiscover)) { _ in
@@ -166,6 +173,18 @@ struct ContentView: View {
                 if tab == .library { libraryShelf = seriesMode == nil ? .books : .series }
                 if tab == .discover { discoverShelf = .books }
             }
+    }
+
+    /// A return to the front after a while: iOS kept the app alive, so no
+    /// screen loads again by itself, yet the release watch, a Kindle or
+    /// Audible sync or a friend may have written in the meantime. The change
+    /// notice with no object says anything may have moved, and every list
+    /// reloads where the reader left it. A quick trip to another app does
+    /// not count: what it would ask again has hardly had time to change.
+    private func refreshAfterAbsence() {
+        defer { backgroundedAt = nil }
+        guard let backgroundedAt, Date.now.timeIntervalSince(backgroundedAt) >= 5 * 60 else { return }
+        NotificationCenter.default.post(name: .shioriDataDidChange, object: nil)
     }
 
     /// Whatever the share extension left, turned into the flow that suits it: a
