@@ -32,7 +32,7 @@ import SwiftUI
 /// in the app's language, translated or recorded; "Prix littéraires", the
 /// latest winners of the genres they read most that they do not hold; the
 /// friends' hearts, as covers. A tap opens the category as a page of its own,
-/// three covers a row. Under the lines, "Nouveautés séries" again as a strip of
+/// three covers a row — the award winners a strip per genre. Under the lines, "Nouveautés séries" again as a strip of
 /// covers: what is new is seen before anything is touched.
 ///
 /// The server looks the sagas up on the web once a week. The tab opens on
@@ -288,9 +288,34 @@ struct DiscoverView: View {
     }
 
     /// A category of the Books shelf on a page of its own, every tile opening
-    /// the sheet its strip opens.
+    /// the sheet its strip opens. The award winners keep a strip per genre, as
+    /// every shelf of the app scrolls; the others are one grid.
     @ViewBuilder
     private func categoryPage(_ category: DiscoverCategory) -> some View {
+        if category == .awards {
+            awardsPage
+        } else {
+            gridPage(category)
+        }
+    }
+
+    private var awardsPage: some View {
+        List {
+            ForEach(awardSections) { section in
+                Section {
+                    AwardWinnersStrip(winners: section.winners) { openWinner = $0 }
+                } header: {
+                    Text(verbatim: section.genre.label)
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle(DiscoverCategory.awards.title)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    @ViewBuilder
+    private func gridPage(_ category: DiscoverCategory) -> some View {
         let width = CoverTile.gridWidth
         DiscoverCategoryPage(category: category) {
             switch category {
@@ -311,20 +336,14 @@ struct DiscoverView: View {
                         AwaitedEditionTile(edition: edition, width: width) { openAwaited = edition }
                     }
                 }
-            case .awards:
-                ForEach(awardSections) { section in
-                    DiscoverCoverGrid(heading: section.genre.label) {
-                        ForEach(section.winners) { winner in
-                            AwardWinnerTile(winner: winner, width: width) { openWinner = winner }
-                        }
-                    }
-                }
             case .friends:
                 DiscoverCoverGrid {
                     ForEach(viewModel.picks.books) { loved in
                         LovedBookTile(loved: loved, width: width) { openFriendBook = loved }
                     }
                 }
+            case .awards:
+                EmptyView()
             }
         }
     }
