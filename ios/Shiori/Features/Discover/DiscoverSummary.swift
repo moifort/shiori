@@ -19,9 +19,9 @@ enum DiscoverCategory: Hashable {
 
     var systemImage: String {
         switch self {
-        case .soon: "clock"
-        case .awards: "trophy"
-        case .friends: "heart"
+        case .soon: "clock.fill"
+        case .awards: "trophy.fill"
+        case .friends: "heart.fill"
         }
     }
 

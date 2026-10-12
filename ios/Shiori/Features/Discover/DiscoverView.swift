@@ -253,7 +253,9 @@ struct DiscoverView: View {
         let width = CoverTile.summaryWidth
         let awaited = viewModel.awaitedSoon
         let awards = awardSections
-        let loved = viewModel.picks.books
+        // What many friends love first, the newest heart first within each.
+        let books = viewModel.picks.books
+        let loved = books.filter(\.lovers.lovedByMany) + books.filter { !$0.lovers.lovedByMany }
         if !awaited.isEmpty || !awards.isEmpty || !loved.isEmpty {
             Section {
                 if !awaited.isEmpty {
