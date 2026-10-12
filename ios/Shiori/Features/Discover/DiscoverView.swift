@@ -245,17 +245,18 @@ struct DiscoverView: View {
 
     /// The Books shelf at a glance: one line per category that holds
     /// something — the editions awaited, the award winners of the genres read
-    /// most, the friends' hearts — each over a strip of every cover it holds,
-    /// a tap opening its page. Absent when all three are empty; the sagas'
-    /// news has its own strip under it.
+    /// most, the latest prize first whatever its genre, the friends' hearts,
+    /// the newest first — each over a strip of every cover it holds, a tap
+    /// opening its page. Absent when all three are empty; the sagas' news has
+    /// its own strip under it.
     @ViewBuilder
     private var summarySection: some View {
         let width = CoverTile.summaryWidth
         let awaited = viewModel.awaitedSoon
         let awards = awardSections
-        // What many friends love first, the newest heart first within each.
-        let books = viewModel.picks.books
-        let loved = books.filter(\.lovers.lovedByMany) + books.filter { !$0.lovers.lovedByMany }
+        // The newest heart first, as the server sends them; the flame alone
+        // marks what many friends love.
+        let loved = viewModel.picks.books
         if !awaited.isEmpty || !awards.isEmpty || !loved.isEmpty {
             Section {
                 if !awaited.isEmpty {
@@ -274,7 +275,7 @@ struct DiscoverView: View {
                         category: .awards,
                         line: DiscoverSummaryLine.awards(awards)
                     ) {
-                        ForEach(awards.flatMap(\.winners)) { winner in
+                        ForEach(awards.flatMap(\.winners).latestFirst) { winner in
                             AwardWinnerTile(winner: winner, width: width) { openWinner = winner }
                         }
                     }
