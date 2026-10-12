@@ -24,6 +24,14 @@ enum DiscoverCategory: Hashable {
         case .friends: "heart"
         }
     }
+
+    var tint: Color {
+        switch self {
+        case .soon: .orange
+        case .awards: .yellow
+        case .friends: .red
+        }
+    }
 }
 
 /// The line under a category's name, saying at a glance what it holds.
@@ -95,22 +103,24 @@ struct DiscoverSummaryRow<Covers: View>: View {
         .alignmentGuide(.listRowSeparatorTrailing) { dimensions in dimensions.width }
     }
 
-    /// The symbol opens the name, in its colour; what the category holds is
-    /// written under both.
+    /// The name and what the category holds, its symbol in its colour on the
+    /// top trailing corner.
     private var heading: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Image(systemName: category.systemImage)
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(category.title)
+                    .font(.body.weight(.medium))
+                    .lineLimit(1)
+                Text(verbatim: line)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
-            .font(.body.weight(.medium))
-            Text(verbatim: line)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
+            Spacer(minLength: 0)
+            Image(systemName: category.systemImage)
+                .font(.title3)
+                .foregroundStyle(category.tint)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
     }
