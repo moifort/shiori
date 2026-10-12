@@ -12,22 +12,35 @@ struct AwaitedEditionsStrip: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(alignment: .top, spacing: 12) {
                 ForEach(editions) { edition in
-                    Button { onTapped(edition) } label: {
-                        CoverTile(
-                            book: edition.cover,
-                            caption: edition.caption,
-                            showsTitle: false,
-                            captionTint: edition.stateTint
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("discover-awaited-tile")
+                    AwaitedEditionTile(edition: edition) { onTapped(edition) }
                 }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
         }
         .listRowInsets(EdgeInsets())
+    }
+}
+
+/// One edition awaited, as the strip and Découvrir's "Bientôt disponible" page
+/// draw it.
+struct AwaitedEditionTile: View {
+    let edition: AwaitedEdition
+    var width: CGFloat = 84
+    let onTapped: () -> Void
+
+    var body: some View {
+        Button(action: onTapped) {
+            CoverTile(
+                book: edition.cover,
+                caption: edition.caption,
+                width: width,
+                showsTitle: false,
+                captionTint: edition.stateTint
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("discover-awaited-tile")
     }
 }
 

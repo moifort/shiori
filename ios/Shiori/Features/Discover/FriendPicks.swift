@@ -114,18 +114,30 @@ struct LovedBooksStrip: View {
     var body: some View {
         PicksStrip {
             ForEach(books) { loved in
-                Button { onTapped(loved) } label: {
-                    CoverTile(book: loved.book.book, caption: loved.lovers.caption, showsTitle: false)
-                        .overlay(alignment: .topLeading) {
-                            if loved.lovers.lovedByMany {
-                                LovedByManyBadge().offset(x: -6, y: -6)
-                            }
-                        }
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("discover-friend-book")
+                LovedBookTile(loved: loved) { onTapped(loved) }
             }
         }
+    }
+}
+
+/// One book the friends love, as the strip and Découvrir's "Coups de cœur"
+/// page draw it: the friend under the cover, the flame in its corner.
+struct LovedBookTile: View {
+    let loved: LovedBook
+    var width: CGFloat = 84
+    let onTapped: () -> Void
+
+    var body: some View {
+        Button(action: onTapped) {
+            CoverTile(book: loved.book.book, caption: loved.lovers.caption, width: width, showsTitle: false)
+                .overlay(alignment: .topLeading) {
+                    if loved.lovers.lovedByMany {
+                        LovedByManyBadge().offset(x: -6, y: -6)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("discover-friend-book")
     }
 }
 

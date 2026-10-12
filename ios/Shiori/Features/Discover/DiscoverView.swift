@@ -20,19 +20,20 @@ import SwiftUI
 /// sagas the Books shelf lists; a tap opens the author's page as the Library
 /// opens it.
 ///
-/// Above everything, "Coups de cœur de vos amis": what the friends hearted and
-/// the reader holds in no format, as a strip that scrolls sideways so it takes
-/// one row — covers on the Books shelf, sagas on the Series shelf, faces on the
-/// Authors shelf, the newest heart first. A flame marks what many of them love.
+/// On the Series and Authors shelves, above everything, "Coups de cœur de vos
+/// amis": what the friends hearted and the reader holds in no format, as a
+/// strip that scrolls sideways so it takes one row — sagas on the Series
+/// shelf, faces on the Authors shelf, the newest heart first. A flame marks
+/// what many of them love.
 ///
-/// Under them, on the Books shelf, "Bientôt disponible": the books the reader
-/// awaits in the app's language, translated or recorded, as one strip of
-/// covers — the ones announced first, then the ones out, then the ones not
-/// announced yet, the latest awaited first. Then "Prix littéraires": the latest
-/// winners of the awards of each genre the reader reads most that they do not
-/// hold, a strip of covers per genre. Then
-/// "Nouveautés séries": the volumes out in the last two weeks the reader can
-/// have now, the newest first, then the ones announced, the soonest first.
+/// The Books shelf is read at a glance rather than scrolled: one line per
+/// category, its first covers fanned out — "Nouveautés", the sagas' volumes
+/// just out then announced; "Bientôt disponible", the books the reader awaits
+/// in the app's language, translated or recorded; "Prix littéraires", the
+/// latest winners of the genres they read most that they do not hold; the
+/// friends' hearts, as covers. A tap opens the category as a page of its own,
+/// three covers a row. Under the lines, "Nouveautés séries" again as a strip of
+/// covers: what is new is seen before anything is touched.
 ///
 /// The server looks the sagas up on the web once a week. The tab opens on
 /// everything it last showed — the rows, the friends' picks, the books awaited
@@ -64,6 +65,7 @@ struct DiscoverView: View {
                     }
                 }
                 .libraryShelfPicker($shelf, shelves: [.books, .series, .authors])
+                .navigationDestination(for: DiscoverCategory.self) { categoryPage($0) }
                 // A sheet, as a book opens from the library.
                 .sheet(item: $openSeries) { row in
                     NavigationStack {
@@ -166,10 +168,10 @@ struct DiscoverView: View {
 
     private var list: some View {
         List {
-            friendPicksSection
             if shelf == .books {
-                awaitedSection
-                awardsSection
+                summarySection
+            } else {
+                friendPicksSection
             }
             if shelf == .authors {
                 authorSections
@@ -229,36 +231,101 @@ struct DiscoverView: View {
         }
     }
 
-    /// "Bientôt disponible": the editions the reader awaits, translated and
-    /// recorded in one strip like the friends' favourites, the headphones on a
-    /// recording's cover. Absent when nothing is awaited.
+    /// The Books shelf's volumes of the sagas followed: the ones just out,
+    /// the newest first, then the next of each saga announced, the soonest
+    /// first.
+    private var seriesNews: [DiscoveryVolume] {
+        let coming = viewModel.upcoming.compactMap { saga in
+            saga.releases.next.map { DiscoveryVolume(saga: saga, volume: $0) }
+        }
+        return viewModel.recentVolumes + coming
+    }
+
+    private var awardSections: [AwardSection] {
+        viewModel.awards[viewModel.awardsFormat] ?? []
+    }
+
+    /// The Books shelf at a glance: one line per category that holds
+    /// something — the sagas' news, the editions awaited, the award winners of
+    /// the genres read most, the friends' hearts — each opening its page.
+    /// Absent when all four are empty.
     @ViewBuilder
-    private var awaitedSection: some View {
-        let editions = viewModel.awaitedSoon
-        if !editions.isEmpty {
+    private var summarySection: some View {
+        let news = seriesNews
+        let awaited = viewModel.awaitedSoon
+        let awards = awardSections
+        let loved = viewModel.picks.books
+        if !news.isEmpty || !awaited.isEmpty || !awards.isEmpty || !loved.isEmpty {
             Section {
-                AwaitedEditionsStrip(editions: editions) { openAwaited = $0 }
-            } header: {
-                Text("Bientôt disponible")
+                if !news.isEmpty {
+                    summaryRow(.news, line: DiscoverSummaryLine.news(news), covers: news.map(\.cover))
+                        .accessibilityIdentifier("discover-summary-news")
+                }
+                if !awaited.isEmpty {
+                    summaryRow(.soon, line: DiscoverSummaryLine.soon(awaited), covers: awaited.map(\.cover))
+                        .accessibilityIdentifier("discover-awaited")
+                }
+                if !awards.isEmpty {
+                    summaryRow(
+                        .awards,
+                        line: DiscoverSummaryLine.awards(awards),
+                        covers: awards.flatMap(\.winners).map(\.cover)
+                    )
+                    .accessibilityIdentifier("discover-awards")
+                }
+                if !loved.isEmpty {
+                    summaryRow(.friends, line: DiscoverSummaryLine.friends(loved), covers: loved.map(\.book.book))
+                        .accessibilityIdentifier("discover-friend-picks")
+                }
             }
-            .accessibilityIdentifier("discover-awaited")
         }
     }
 
-    /// "Prix littéraires", once per genre the reader reads most, three at
-    /// most: the latest winners of its awards they do not hold — in print, or
-    /// recorded for a reader who only listens — as a strip like the editions
-    /// awaited, none drawn twice. Absent when the reader reads no genre with
-    /// awards enough.
+    private func summaryRow(_ category: DiscoverCategory, line: String, covers: [Book]) -> some View {
+        NavigationLink(value: category) {
+            DiscoverSummaryRow(category: category, line: line, covers: covers)
+        }
+    }
+
+    /// A category of the Books shelf on a page of its own, every tile opening
+    /// the sheet its strip opens.
     @ViewBuilder
-    private var awardsSection: some View {
-        ForEach(viewModel.awards[viewModel.awardsFormat] ?? []) { section in
-            Section {
-                AwardWinnersStrip(winners: section.winners) { openWinner = $0 }
-            } header: {
-                Text("Prix littéraires · \(section.genre.label)")
+    private func categoryPage(_ category: DiscoverCategory) -> some View {
+        let width = CoverTile.gridWidth
+        DiscoverCategoryPage(category: category) {
+            switch category {
+            case .news:
+                DiscoverCoverGrid {
+                    ForEach(seriesNews) { opened in
+                        SeriesNewsTile(
+                            opened: opened,
+                            width: width,
+                            onTapped: { openVolume = opened },
+                            onOpenSeries: { openSeries = opened.saga }
+                        )
+                    }
+                }
+            case .soon:
+                DiscoverCoverGrid {
+                    ForEach(viewModel.awaitedSoon) { edition in
+                        AwaitedEditionTile(edition: edition, width: width) { openAwaited = edition }
+                    }
+                }
+            case .awards:
+                ForEach(awardSections) { section in
+                    DiscoverCoverGrid(heading: section.genre.label) {
+                        ForEach(section.winners) { winner in
+                            AwardWinnerTile(winner: winner, width: width) { openWinner = winner }
+                        }
+                    }
+                }
+            case .friends:
+                DiscoverCoverGrid {
+                    ForEach(viewModel.picks.books) { loved in
+                        LovedBookTile(loved: loved, width: width) { openFriendBook = loved }
+                    }
+                }
             }
-            .accessibilityIdentifier("discover-awards")
         }
     }
 
@@ -269,7 +336,6 @@ struct DiscoverView: View {
     @ViewBuilder
     private var sagaSections: some View {
         let upcoming = viewModel.upcoming
-        let recentVolumes = viewModel.recentVolumes
         let recentSagas = viewModel.recentSagas
         if upcoming.isEmpty && recentSagas.isEmpty {
             if isEmpty {
@@ -283,12 +349,9 @@ struct DiscoverView: View {
                 .listRowBackground(Color.clear)
             }
         } else if shelf == .books {
-            let coming = upcoming.compactMap { saga in
-                saga.releases.next.map { DiscoveryVolume(saga: saga, volume: $0) }
-            }
             Section {
                 SeriesNewsStrip(
-                    volumes: recentVolumes + coming,
+                    volumes: seriesNews,
                     onTapped: { openVolume = $0 },
                     onOpenSeries: { openSeries = $0 }
                 )
@@ -530,34 +593,52 @@ struct SeriesNewsStrip: View {
     let onTapped: (DiscoveryVolume) -> Void
     let onOpenSeries: (SagaDiscovery) -> Void
 
-    @Environment(\.openURL) private var openURL
-
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(alignment: .top, spacing: 12) {
                 ForEach(volumes) { opened in
-                    Button { onTapped(opened) } label: {
-                        CoverTile(
-                            book: opened.cover,
-                            caption: opened.caption,
-                            showsTitle: false,
-                            captionTint: opened.isComing ? .orange : .green
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    .contextMenu {
-                        if let audibleURL = opened.volume.audibleURL {
-                            Button("Audible", systemImage: "headphones") { openURL(audibleURL) }
-                        }
-                        Button("Série", systemImage: "books.vertical") { onOpenSeries(opened.saga) }
-                    }
-                    .accessibilityIdentifier("discover-volume-row")
+                    SeriesNewsTile(
+                        opened: opened,
+                        onTapped: { onTapped(opened) },
+                        onOpenSeries: { onOpenSeries(opened.saga) }
+                    )
                 }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
         }
         .listRowInsets(EdgeInsets())
+    }
+}
+
+/// One volume of a saga followed, as the strip and Découvrir's "Nouveautés"
+/// page draw it: its day in green once out, in orange while announced.
+struct SeriesNewsTile: View {
+    let opened: DiscoveryVolume
+    var width: CGFloat = 84
+    let onTapped: () -> Void
+    let onOpenSeries: () -> Void
+
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        Button(action: onTapped) {
+            CoverTile(
+                book: opened.cover,
+                caption: opened.caption,
+                width: width,
+                showsTitle: false,
+                captionTint: opened.isComing ? .orange : .green
+            )
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            if let audibleURL = opened.volume.audibleURL {
+                Button("Audible", systemImage: "headphones") { openURL(audibleURL) }
+            }
+            Button("Série", systemImage: "books.vertical", action: onOpenSeries)
+        }
+        .accessibilityIdentifier("discover-volume-row")
     }
 }
 

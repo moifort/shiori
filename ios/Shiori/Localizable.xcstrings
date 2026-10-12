@@ -8265,18 +8265,18 @@
         }
       }
     },
-    "Prix littéraires · %@" : {
+    "Prix littéraires" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Literary awards · %@"
+            "value" : "Literary awards"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Prix littéraires · %@"
+            "value" : "Prix littéraires"
           }
         }
       }
@@ -8293,6 +8293,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Problème"
+          }
+        }
+      }
+    },
+    "Prochain : %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prochain : %@"
           }
         }
       }
@@ -11397,6 +11413,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "World Fantasy Award"
+          }
+        }
+      }
+    },
+    "^[%lld annoncé](inflect: true)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld announced"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "^[%lld annoncé](inflect: true)"
+          }
+        }
+      }
+    },
+    "^[%lld livre attendu](inflect: true)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "^[%lld book awaited](inflect: true)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "^[%lld livre attendu](inflect: true)"
+          }
+        }
+      }
+    },
+    "^[%lld sorti](inflect: true)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld out"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "^[%lld sorti](inflect: true)"
           }
         }
       }

@@ -11,21 +11,28 @@ struct AwardWinnersStrip: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(alignment: .top, spacing: 12) {
                 ForEach(winners) { winner in
-                    Button { onTapped(winner) } label: {
-                        CoverTile(
-                            book: winner.cover,
-                            caption: winner.caption,
-                            showsTitle: false
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("discover-award-tile")
+                    AwardWinnerTile(winner: winner) { onTapped(winner) }
                 }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
         }
         .listRowInsets(EdgeInsets())
+    }
+}
+
+/// One winner, as the strip and Découvrir's "Prix littéraires" page draw it.
+struct AwardWinnerTile: View {
+    let winner: AwardWinner
+    var width: CGFloat = 84
+    let onTapped: () -> Void
+
+    var body: some View {
+        Button(action: onTapped) {
+            CoverTile(book: winner.cover, caption: winner.caption, width: width, showsTitle: false)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("discover-award-tile")
     }
 }
 
