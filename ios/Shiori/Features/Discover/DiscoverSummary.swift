@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// What the Books shelf of Découvrir sums up in one line each, and opens as a
-/// page of its own.
+/// What the Books shelf of Découvrir sums up in one line each.
 enum DiscoverCategory: Hashable {
     /// "Bientôt disponible": the editions the reader awaits.
     case soon
@@ -14,15 +13,7 @@ enum DiscoverCategory: Hashable {
         switch self {
         case .soon: "Bientôt disponible"
         case .awards: "Prix littéraires"
-        case .friends: "Coups de cœur de vos amis"
-        }
-    }
-
-    /// Its name on its summary line, short enough to stand beside the covers.
-    var shortTitle: LocalizedStringKey {
-        switch self {
         case .friends: "Coups de cœur"
-        default: title
         }
     }
 
@@ -83,22 +74,20 @@ enum DiscoverSummaryLine {
 }
 
 /// One category of the Books shelf: its symbol, its name and what it holds
-/// in a few words over a strip of its covers. The heading opens the category's
-/// page; a cover opens its own, as the category's page would.
+/// in a few words over a strip of every cover it holds, a tap on one opening
+/// its page.
 struct DiscoverSummaryRow<Covers: View>: View {
     let category: DiscoverCategory
     let line: String
-    let onOpen: () -> Void
     @ViewBuilder let covers: Covers
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Button(action: onOpen) { heading }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 16)
+            heading
+                .padding(.horizontal, 12)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: 10) { covers }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, 12)
                     .padding(.top, 6)
             }
         }
@@ -107,13 +96,15 @@ struct DiscoverSummaryRow<Covers: View>: View {
     }
 
     private var heading: some View {
-        HStack(spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
             Image(systemName: category.systemImage)
                 .font(.title3)
                 .foregroundStyle(category.tint)
                 .frame(width: 28)
+                // Level with the name's first line rather than the pair's middle.
+                .padding(.top, 1)
             VStack(alignment: .leading, spacing: 2) {
-                Text(category.shortTitle)
+                Text(category.title)
                     .font(.body.weight(.medium))
                     .lineLimit(1)
                 Text(verbatim: line)
@@ -121,14 +112,10 @@ struct DiscoverSummaryRow<Covers: View>: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
-            Spacer(minLength: 8)
-            Image(systemName: "chevron.right")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(.tertiary)
+            Spacer(minLength: 0)
         }
-        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
+        .accessibilityAddTraits(.isHeader)
     }
 }
 
@@ -142,12 +129,12 @@ extension CoverTile {
 #Preview {
     List {
         Section {
-            DiscoverSummaryRow(category: .soon, line: DiscoverSummaryLine.soon([.preview]), onOpen: {}) {
+            DiscoverSummaryRow(category: .soon, line: DiscoverSummaryLine.soon([.preview])) {
                 ForEach(0..<6, id: \.self) { _ in
                     AwaitedEditionTile(edition: .preview, width: CoverTile.summaryWidth) {}
                 }
             }
-            DiscoverSummaryRow(category: .friends, line: "Marie, Paul +2", onOpen: {}) {
+            DiscoverSummaryRow(category: .friends, line: "Marie, Paul +2") {
                 ForEach(0..<6, id: \.self) { _ in
                     AwaitedEditionTile(edition: .preview, width: CoverTile.summaryWidth) {}
                 }

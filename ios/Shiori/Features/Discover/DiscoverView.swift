@@ -30,10 +30,9 @@ import SwiftUI
 /// line per category over a strip of its covers — "Bientôt disponible", the
 /// books the reader awaits in the app's language, translated or recorded;
 /// "Prix littéraires", the latest winners of the genres they read most that
-/// they do not hold; the friends' hearts. A cover opens its page; the line's
-/// heading opens the category as a page of its own, three covers a row — the
-/// award winners a strip per genre. Under the card, "Nouveautés séries": the
-/// sagas' volumes just out, then announced.
+/// they do not hold; the friends' hearts. Every cover is there, a tap opening
+/// its page. Under the card, "Nouveautés séries": the sagas' volumes just
+/// out, then announced.
 ///
 /// The server looks the sagas up on the web once a week. The tab opens on
 /// everything it last showed — the rows, the friends' picks, the books awaited
@@ -51,14 +50,12 @@ struct DiscoverView: View {
     @State private var openFriendSaga: LovedSaga?
     @State private var openAwaited: AwaitedEdition?
     @State private var openWinner: AwardWinner?
-    /// The categories of the Books shelf opened from its summary.
-    @State private var path: [DiscoverCategory] = []
     @Environment(\.openURL) private var openURL
     /// Held by `ContentView`, which brings it back to the books on each visit.
     @Binding var shelf: LibraryShelf
 
     var body: some View {
-        NavigationStack(path: $path) {
+        NavigationStack {
             content
                 .navigationTitle("Découvrir")
                 .toolbar {
@@ -67,7 +64,6 @@ struct DiscoverView: View {
                     }
                 }
                 .libraryShelfPicker($shelf, shelves: [.books, .series, .authors])
-                .navigationDestination(for: DiscoverCategory.self) { categoryPage($0) }
                 // A sheet, as a book opens from the library.
                 .sheet(item: $openSeries) { row in
                     NavigationStack {
@@ -249,9 +245,9 @@ struct DiscoverView: View {
 
     /// The Books shelf at a glance: one line per category that holds
     /// something — the editions awaited, the award winners of the genres read
-    /// most, the friends' hearts — each over a strip of its covers. The
-    /// heading opens the category's page, a cover its own page. Absent when all
-    /// three are empty; the sagas' news has its own strip under it.
+    /// most, the friends' hearts — each over a strip of every cover it holds,
+    /// a tap opening its page. Absent when all three are empty; the sagas'
+    /// news has its own strip under it.
     @ViewBuilder
     private var summarySection: some View {
         let width = CoverTile.summaryWidth
@@ -263,8 +259,7 @@ struct DiscoverView: View {
                 if !awaited.isEmpty {
                     DiscoverSummaryRow(
                         category: .soon,
-                        line: DiscoverSummaryLine.soon(awaited),
-                        onOpen: { path.append(.soon) }
+                        line: DiscoverSummaryLine.soon(awaited)
                     ) {
                         ForEach(awaited) { edition in
                             AwaitedEditionTile(edition: edition, width: width) { openAwaited = edition }
@@ -275,8 +270,7 @@ struct DiscoverView: View {
                 if !awards.isEmpty {
                     DiscoverSummaryRow(
                         category: .awards,
-                        line: DiscoverSummaryLine.awards(awards),
-                        onOpen: { path.append(.awards) }
+                        line: DiscoverSummaryLine.awards(awards)
                     ) {
                         ForEach(awards.flatMap(\.winners)) { winner in
                             AwardWinnerTile(winner: winner, width: width) { openWinner = winner }
@@ -287,8 +281,7 @@ struct DiscoverView: View {
                 if !loved.isEmpty {
                     DiscoverSummaryRow(
                         category: .friends,
-                        line: DiscoverSummaryLine.friends(loved),
-                        onOpen: { path.append(.friends) }
+                        line: DiscoverSummaryLine.friends(loved)
                     ) {
                         ForEach(loved) { picked in
                             LovedBookTile(loved: picked, width: width) { openFriendBook = picked }
@@ -296,56 +289,6 @@ struct DiscoverView: View {
                     }
                     .accessibilityIdentifier("discover-friend-picks")
                 }
-            }
-        }
-    }
-
-    /// A category of the Books shelf on a page of its own, every tile opening
-    /// the sheet its strip opens. The award winners keep a strip per genre, as
-    /// every shelf of the app scrolls; the others are one grid.
-    @ViewBuilder
-    private func categoryPage(_ category: DiscoverCategory) -> some View {
-        if category == .awards {
-            awardsPage
-        } else {
-            gridPage(category)
-        }
-    }
-
-    private var awardsPage: some View {
-        List {
-            ForEach(awardSections) { section in
-                Section {
-                    AwardWinnersStrip(winners: section.winners) { openWinner = $0 }
-                } header: {
-                    Text(verbatim: section.genre.label)
-                }
-            }
-        }
-        .listStyle(.insetGrouped)
-        .navigationTitle(DiscoverCategory.awards.title)
-        .navigationBarTitleDisplayMode(.inline)
-    }
-
-    @ViewBuilder
-    private func gridPage(_ category: DiscoverCategory) -> some View {
-        let width = CoverTile.gridWidth
-        DiscoverCategoryPage(category: category) {
-            switch category {
-            case .soon:
-                DiscoverCoverGrid {
-                    ForEach(viewModel.awaitedSoon) { edition in
-                        AwaitedEditionTile(edition: edition, width: width) { openAwaited = edition }
-                    }
-                }
-            case .friends:
-                DiscoverCoverGrid {
-                    ForEach(viewModel.picks.books) { loved in
-                        LovedBookTile(loved: loved, width: width) { openFriendBook = loved }
-                    }
-                }
-            case .awards:
-                EmptyView()
             }
         }
     }
