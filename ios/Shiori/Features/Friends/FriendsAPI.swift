@@ -367,6 +367,7 @@ enum FriendsAPI {
     static func libraryPage(
         friendId: String,
         status: ReadingStatus?,
+        loved: Bool = false,
         after: String?
     ) async throws -> (books: [FriendBook], hasMore: Bool) {
         let data = try await GraphQLHelpers.fetch(
@@ -374,6 +375,7 @@ enum FriendsAPI {
             query: ShioriGraphQL.FriendLibraryPageQuery(
                 userId: friendId,
                 status: GraphQLHelpers.graphQLNullable(status.map(LibraryAPI.graphQLStatus)),
+                loved: loved ? .some(true) : .none,
                 after: GraphQLHelpers.graphQLNullable(after)
             )
         )

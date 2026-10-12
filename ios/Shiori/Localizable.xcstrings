@@ -853,34 +853,6 @@
         }
       }
     },
-    "%lld séries" : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld series"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld series"
-                }
-              }
-            }
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld séries"
-          }
-        }
-      }
-    },
     "%lld tome(s)" : {
       "localizations" : {
         "en" : {
@@ -1113,22 +1085,6 @@
         }
       }
     },
-    "1 série" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 series"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 série"
-          }
-        }
-      }
-    },
     "1 étoile" : {
       "localizations" : {
         "en" : {
@@ -1301,22 +1257,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Achat impossible"
-          }
-        }
-      }
-    },
-    "Activités récentes" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recent activity"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Activités récentes"
           }
         }
       }
@@ -2149,22 +2089,6 @@
         }
       }
     },
-    "Aucun livre n'a ce statut." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No book has this status."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucun livre n'a ce statut."
-          }
-        }
-      }
-    },
     "Aucun livre n'a été ajouté à cette bibliothèque." : {
       "localizations" : {
         "en" : {
@@ -2177,6 +2101,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aucun livre n'a été ajouté à cette bibliothèque."
+          }
+        }
+      }
+    },
+    "Aucun livre ne correspond." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No book matches."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun livre ne correspond."
           }
         }
       }
@@ -3985,6 +3925,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Date"
+          }
+        }
+      }
+    },
+    "Dernier : %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Latest: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dernier : %@"
+          }
+        }
+      }
+    },
+    "Dernier ajout : %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last added: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dernier ajout : %@"
           }
         }
       }
@@ -6505,6 +6477,22 @@
         }
       }
     },
+    "Ma bibliothèque" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My library"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ma bibliothèque"
+          }
+        }
+      }
+    },
     "Ma bibliothèque sur Shiori" : {
       "localizations" : {
         "en" : {
@@ -6533,6 +6521,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ma lecture"
+          }
+        }
+      }
+    },
+    "Ma pile à lire" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My reading pile"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ma pile à lire"
           }
         }
       }
@@ -9033,6 +9037,38 @@
         }
       }
     },
+    "Sa bibliothèque" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Their library"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sa bibliothèque"
+          }
+        }
+      }
+    },
+    "Sa pile à lire" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Their reading pile"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sa pile à lire"
+          }
+        }
+      }
+    },
     "Sans date" : {
       "localizations" : {
         "en" : {
@@ -9349,6 +9385,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Servis par le cache"
+          }
+        }
+      }
+    },
+    "Ses favoris" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Their favorites"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ses favoris"
           }
         }
       }
@@ -11429,6 +11481,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "^[%lld livre attendu](inflect: true)"
+          }
+        }
+      }
+    },
+    "^[%lld livre](inflect: true)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "^[%lld book](inflect: true)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "^[%lld livre](inflect: true)"
+          }
+        }
+      }
+    },
+    "^[%lld série](inflect: true)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "^[%lld series](inflect: true)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "^[%lld série](inflect: true)"
           }
         }
       }

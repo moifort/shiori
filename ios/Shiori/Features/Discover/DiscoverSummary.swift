@@ -75,11 +75,40 @@ enum DiscoverSummaryLine {
 
 /// One category of the Books shelf: its symbol, its name and what it holds
 /// in a few words over a strip of every cover it holds, a tap on one opening
-/// its page.
+/// its page. A friend's page draws its shelves the same way; a line with no
+/// covers is the heading alone.
 struct DiscoverSummaryRow<Covers: View>: View {
-    let category: DiscoverCategory
+    let title: LocalizedStringKey
+    let systemImage: String
+    let tint: Color
     let line: String
+    private let hasCovers: Bool
     @ViewBuilder let covers: Covers
+
+    init(category: DiscoverCategory, line: String, @ViewBuilder covers: () -> Covers) {
+        self.init(
+            title: category.title,
+            systemImage: category.systemImage,
+            tint: category.tint,
+            line: line,
+            covers: covers
+        )
+    }
+
+    init(
+        title: LocalizedStringKey,
+        systemImage: String,
+        tint: Color,
+        line: String,
+        @ViewBuilder covers: () -> Covers
+    ) {
+        self.title = title
+        self.systemImage = systemImage
+        self.tint = tint
+        self.line = line
+        hasCovers = true
+        self.covers = covers()
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -88,13 +117,15 @@ struct DiscoverSummaryRow<Covers: View>: View {
             // Cut as far from the card's right edge as the first cover stands
             // from its left one; the room left of that cover is for the badges
             // overhanging its corner.
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(alignment: .top, spacing: 10) { covers }
-                    .padding(.leading, 6)
-                    .padding(.top, 6)
+            if hasCovers {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(alignment: .top, spacing: 10) { covers }
+                        .padding(.leading, 6)
+                        .padding(.top, 6)
+                }
+                .padding(.leading, 6)
+                .padding(.trailing, 12)
             }
-            .padding(.leading, 6)
-            .padding(.trailing, 12)
         }
         .padding(.vertical, 12)
         .listRowInsets(EdgeInsets())
@@ -108,7 +139,7 @@ struct DiscoverSummaryRow<Covers: View>: View {
     private var heading: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(category.title)
+                Text(title)
                     .font(.body.weight(.medium))
                     .lineLimit(1)
                 Text(verbatim: line)
@@ -117,12 +148,25 @@ struct DiscoverSummaryRow<Covers: View>: View {
                     .lineLimit(1)
             }
             Spacer(minLength: 0)
-            Image(systemName: category.systemImage)
+            Image(systemName: systemImage)
                 .font(.title3)
-                .foregroundStyle(category.tint)
+                .foregroundStyle(tint)
         }
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
+    }
+}
+
+extension DiscoverSummaryRow where Covers == EmptyView {
+    /// A line with nothing under its heading: a shelf too long to sum up in
+    /// covers, opened whole by a tap.
+    init(title: LocalizedStringKey, systemImage: String, tint: Color, line: String) {
+        self.title = title
+        self.systemImage = systemImage
+        self.tint = tint
+        self.line = line
+        hasCovers = false
+        covers = EmptyView()
     }
 }
 

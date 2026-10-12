@@ -1,13 +1,13 @@
 import SwiftUI
 
-/// One friend's shelf: what they are reading, their pile, what they keep close
-/// and the sagas they are working through — and the place to take any of it
-/// onto the reader's own shelf.
+/// One friend's shelf, summed up as Découvrir sums up its books: the figures,
+/// then one card — their whole library behind a line that opens it, Books and
+/// Series switched by the Library tab's capsule; their hearts, newest first;
+/// their pile, the last added first, each over a strip of its covers.
 ///
-/// Read-only as far as the friend's library goes. The books in progress and
-/// the hearted ones are bare covers side by side; a tap opens the friend's
+/// Read-only as far as the friend's library goes. A cover opens the friend's
 /// book on a page with no control that writes to it, which offers instead to
-/// add the book to the reader's pile. A hearted saga keeps its "+" on its row.
+/// add the book to the reader's pile.
 ///
 /// The page opens on the shelf it showed last time, kept on disk per friend,
 /// and the server's answer slides into place underneath.
@@ -26,9 +26,6 @@ struct FriendProfileView: View {
     @State private var isLoading: Bool
     @State private var errorMessage: String?
     @State private var openBook: FriendBook?
-    @State private var addFailed: String?
-    /// The sagas being added from their row, each showing its own spinner.
-    @State private var addingSagas: Set<String> = []
 
     /// The friend's shelf as it was last shown, so the page opens on it while
     /// the server is asked again underneath. Nil on the preview, which draws
@@ -87,14 +84,6 @@ struct FriendProfileView: View {
                 )
             }
         }
-        .alert(
-            "Ajout impossible",
-            isPresented: .init(get: { addFailed != nil }, set: { if !$0 { addFailed = nil } })
-        ) {
-            Button("OK", role: .cancel) { addFailed = nil }
-        } message: {
-            Text(addFailed ?? "")
-        }
     }
 
     private func shelves(_ profile: FriendProfile) -> some View {
@@ -108,93 +97,47 @@ struct FriendProfileView: View {
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
             }
-            // What moved lately, under the figures, so a friend coming back
-            // finds what changed rather than the same lists: the last book in
-            // progress, read, hearted, added and dropped, as covers side by side.
-            // A tap opens the book.
-            let recent = profile.recentActivity()
-            if !recent.isEmpty {
-                Section("Activités récentes") {
-                    RecentActivityStrip(activities: recent, inset: 16) { openBook = $0 }
-                        .padding(.vertical, 12)
-                        .listRowInsets(EdgeInsets())
+            // The shelf at a glance, as Découvrir sums up its books: the whole
+            // library behind one line, then the hearts and the pile, each over
+            // a strip of its covers, a tap opening the book.
+            Section {
+                NavigationLink {
+                    FriendShelfView(
+                        friendId: friend.userId,
+                        friendName: friend.displayName,
+                        isPreview: isPreview
+                    )
+                } label: {
+                    DiscoverSummaryRow(
+                        title: isPreview ? "Ma bibliothèque" : "Sa bibliothèque",
+                        systemImage: "books.vertical.fill",
+                        tint: .accentColor,
+                        line: libraryLine(profile)
+                    )
                 }
-            }
-            // Every book in progress, the one touched last first, as bare
-            // covers: the one the recent activity leads with included. A
-            // section with nothing in it is not drawn at all.
-            if !profile.reading.isEmpty {
-                Section("En cours") {
-                    FriendCoverStrip(books: profile.reading) { openBook = $0 }
-                }
-            }
-            // A hearted saga stands for its volumes: the books below it are
-            // the hearts it does not already cover.
-            if !profile.favoriteSagas.isEmpty {
-                Section {
-                    ForEach(profile.favoriteSagasByShelf) { saga in
-                        SagaRow(saga: saga, showsCovers: true) {
-                            TakeButton(
-                                owned: saga.inLibrary || isPreview || saga.volumes.isEmpty,
-                                isAdding: addingSagas.contains(saga.id),
-                                format: saga.takenFormat,
-                                addLabel: "Ajouter la série à mes séries",
-                                ownedLabel: "Série déjà dans votre bibliothèque"
-                            ) { format in
-                                await add(saga, as: format)
-                            }
-                        }
-                        .edgeToEdgeSeparator()
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 16))
+                .accessibilityIdentifier("friend-see-library")
+                if let latest = profile.favorites.first {
+                    DiscoverSummaryRow(
+                        title: isPreview ? "Mes favoris" : "Ses favoris",
+                        systemImage: "heart.fill",
+                        tint: .red,
+                        line: String(localized: "Dernier : \(latest.book.title)")
+                    ) {
+                        covers(profile.favorites)
                     }
-                } header: {
-                    hearted("Séries")
+                    .accessibilityIdentifier("friend-favorites")
                 }
-            }
-            if !profile.favorites.isEmpty {
-                Section("Favoris") {
-                    FriendCoverStrip(books: profile.favoritesByShelf) { openBook = $0 }
-                }
-            }
-            // The rest of the shelf is a list of its own, drawn as the
-            // reader's own Series and Library tabs.
-            if !profile.sagas.isEmpty || profile.bookCount > 0 {
-                Section {
-                    if !profile.sagas.isEmpty {
-                        NavigationLink {
-                            FriendSeriesListView(
-                                friendId: friend.userId,
-                                friendName: friend.displayName,
-                                isPreview: isPreview
-                            )
-                        } label: {
-                            Label(
-                                profile.sagas.count == 1
-                                    ? "1 série"
-                                    : "\(profile.sagas.count) séries",
-                                systemImage: "books.vertical"
-                            )
-                        }
-                        .edgeToEdgeSeparator()
-                        .accessibilityIdentifier("friend-see-series")
+                if let latest = profile.pile.first {
+                    DiscoverSummaryRow(
+                        title: isPreview ? "Ma pile à lire" : "Sa pile à lire",
+                        systemImage: "bookmark.fill",
+                        tint: ReadingStatus.toRead.tint,
+                        line: String(localized: "Dernier ajout : \(latest.book.title)")
+                    ) {
+                        covers(profile.pile)
                     }
-                    if profile.bookCount > 0 {
-                        NavigationLink {
-                            FriendLibraryView(
-                                friendId: friend.userId,
-                                friendName: friend.displayName,
-                                isPreview: isPreview
-                            )
-                        } label: {
-                            Label(
-                                profile.bookCount == 1
-                                    ? "1 livre"
-                                    : "\(profile.bookCount) livres",
-                                systemImage: "book"
-                            )
-                        }
-                        .edgeToEdgeSeparator()
-                        .accessibilityIdentifier("friend-see-library")
-                    }
+                    .accessibilityIdentifier("friend-pile")
                 }
             }
         }
@@ -233,11 +176,28 @@ struct FriendProfileView: View {
         .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 14))
     }
 
-    /// A section heading followed by a red heart: the favourites' sections.
-    private func hearted(_ title: LocalizedStringKey) -> some View {
-        HStack(spacing: 4) {
-            Text(title)
-            Image(systemName: "heart.fill").foregroundStyle(.red)
+    /// "12 séries · 80 livres", the sagas left out when there are none.
+    private func libraryLine(_ profile: FriendProfile) -> String {
+        let books = String(AttributedString(localized: "^[\(profile.bookCount) livre](inflect: true)").characters)
+        guard !profile.sagas.isEmpty else { return books }
+        let sagas = String(AttributedString(localized: "^[\(profile.sagas.count) série](inflect: true)").characters)
+        return "\(sagas) · \(books)"
+    }
+
+    /// The covers of a summary line, newest first as the server sends them,
+    /// each opening the book.
+    private func covers(_ books: [FriendBook]) -> some View {
+        ForEach(books) { entry in
+            Button { openBook = entry } label: {
+                BookCover(
+                    book: entry.book,
+                    width: CoverTile.summaryWidth,
+                    formatBadgeSize: CoverTile.formatBadgeSize
+                )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(entry.book.title)
+            .accessibilityIdentifier("friend-book-cover")
         }
     }
 
@@ -263,26 +223,6 @@ struct FriendProfileView: View {
     private func write() {
         guard let cache, let profile else { return }
         Task.detached { cache.write(profile) }
-    }
-
-    private func add(_ saga: FriendSaga, as format: BookFormat) async {
-        guard let first = saga.volumes.first else { return }
-        addingSagas.insert(saga.id)
-        defer { addingSagas.remove(saga.id) }
-        do {
-            try await FriendsAPI.addBook(
-                friendId: friend.userId,
-                bookId: first.id,
-                status: .toRead,
-                format: format
-            )
-            markOwned(first.id)
-            if let index = profile?.sagas.firstIndex(where: { $0.id == saga.id }) {
-                profile?.sagas[index].inLibrary = true
-            }
-        } catch {
-            addFailed = reportError(error)
-        }
     }
 
     /// The book is the reader's now: every shelf of this screen says so,
@@ -367,7 +307,7 @@ extension FriendProfile {
             userId: "camille",
             firstName: "Camille",
             reading: [hunter] + reading,
-            pile: [],
+            pile: [silo] + reading.prefix(2),
             favorites: [dune, wind] + favorites,
             sagas: [],
             lastFinished: wind,
@@ -379,7 +319,7 @@ extension FriendProfile {
     }()
 }
 
-#Preview("Recent activity") {
+#Preview("Shelf") {
     NavigationStack {
         FriendProfileView(preview: .preview)
     }

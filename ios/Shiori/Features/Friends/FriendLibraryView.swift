@@ -2,9 +2,11 @@ import SwiftUI
 
 /// A friend's whole library — or the reader's own, previewed — drawn as the
 /// reader's Library tab draws theirs: newest first on the day each book was
-/// shelved, cut into months, a status filter in the corner, the next page
-/// asked for as the list runs out. The dropped books show only through their
-/// filter, and a book marked "do not share" never.
+/// shelved, cut into months, or the favourites — hearts, then five stars down
+/// to one — the two views and a status filter in the corner, the next page
+/// asked for as the list runs out. No mosaic: the covers are the friend's
+/// page's own strips. The dropped books show only through their filter, and a
+/// book marked "do not share" never.
 ///
 /// Each row opens the book on the friend's read-only page and carries the "+"
 /// that puts it on the reader's pile, greyed out on a book they own.
@@ -15,6 +17,7 @@ struct FriendLibraryView: View {
     var isPreview = false
 
     @State private var books: [FriendBook] = []
+    @State private var mode: LibraryMode = .all
     @State private var status: ReadingStatus?
     @State private var hasMore = false
     @State private var isLoading = true
@@ -31,7 +34,11 @@ struct FriendLibraryView: View {
             } else if let errorMessage, books.isEmpty {
                 EmptyStateView.failure("Bibliothèque indisponible", message: errorMessage) { await load() }
             } else if books.isEmpty {
-                Text(status == nil ? "Aucun livre n'a été ajouté à cette bibliothèque." : "Aucun livre n'a ce statut.")
+                Text(
+                    status == nil && mode == .all
+                        ? "Aucun livre n'a été ajouté à cette bibliothèque."
+                        : "Aucun livre ne correspond."
+                )
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding()
@@ -43,6 +50,19 @@ struct FriendLibraryView: View {
         .navigationTitle("Bibliothèque")
         .navigationSubtitle(friendName)
         .toolbar {
+            ToolbarItemGroup {
+                ForEach(LibraryMode.allCases) { item in
+                    Button {
+                        mode = item
+                    } label: {
+                        Label(item.label, systemImage: item.icon)
+                    }
+                    .labelStyle(.iconOnly)
+                    .tint(mode == item ? .accentColor : .primary)
+                    .accessibilityIdentifier("friend-library-mode-\(item.rawValue)")
+                }
+            }
+            ToolbarSpacer(.fixed)
             ToolbarItem(placement: .primaryAction) {
                 Menu {
                     Picker("Statut", selection: $status) {
@@ -62,7 +82,7 @@ struct FriendLibraryView: View {
                 .accessibilityIdentifier("friend-library-filter")
             }
         }
-        .task(id: status) { await load() }
+        .task(id: "\(mode.rawValue)-\(status?.rawValue ?? "all")") { await load() }
         // A sheet, as a book opens from the reader's own library: its own
         // stack, so the saga pushes inside it.
         .sheet(item: $openBook) { book in
@@ -87,7 +107,7 @@ struct FriendLibraryView: View {
 
     private var list: some View {
         List {
-            ForEach(MonthSection.cut(books, on: { $0.book.shelvedAt })) { section in
+            ForEach(sections) { section in
                 Section(section.title) {
                     ForEach(section.rows) { entry in
                         row(entry)
@@ -104,6 +124,14 @@ struct FriendLibraryView: View {
         }
         .listStyle(.insetGrouped)
         .refreshable { await load() }
+    }
+
+    /// Cut into months — or, under the favourites, into the hearts and then
+    /// each count of stars, as the server ranked them.
+    private var sections: [ListSection<FriendBook>] {
+        mode == .favorites
+            ? ListSection.byRank(books, rank: \.book.lovedRank)
+            : ListSection.byMonth(books, on: \.book.shelvedAt)
     }
 
     private func row(_ entry: FriendBook) -> some View {
@@ -143,7 +171,9 @@ struct FriendLibraryView: View {
         errorMessage = nil
         loadMoreFailed = false
         do {
-            let page = try await FriendsAPI.libraryPage(friendId: friendId, status: status, after: nil)
+            let page = try await FriendsAPI.libraryPage(
+                friendId: friendId, status: status, loved: mode == .favorites, after: nil
+            )
             books = page.books
             hasMore = page.hasMore
         } catch {
@@ -155,7 +185,9 @@ struct FriendLibraryView: View {
     private func loadMore() async {
         loadMoreFailed = false
         do {
-            let page = try await FriendsAPI.libraryPage(friendId: friendId, status: status, after: books.last?.id)
+            let page = try await FriendsAPI.libraryPage(
+                friendId: friendId, status: status, loved: mode == .favorites, after: books.last?.id
+            )
             books.append(contentsOf: page.books.filter { new in !books.contains { $0.id == new.id } })
             hasMore = page.hasMore
         } catch {
