@@ -506,7 +506,6 @@ enum FriendsAPI {
         friendBook.book.isbn13 = row.isbn13
         friendBook.book.audibleURL = row.audibleUrl.flatMap(URL.init(string:))
         friendBook.book.amazonURL = URL(string: row.amazonUrl)
-        friendBook.book.listeningProgress = row.listeningProgress.map { Int($0) }
         friendBook.book.addedAt = GraphQLHelpers.parseISO8601(row.addedAt)
         friendBook.book.startedAt = row.startedAt.flatMap(GraphQLHelpers.parseISO8601)
         return friendBook
@@ -681,6 +680,7 @@ private extension Book {
             format: row.format.asDomain,
             genre: row.genre?.asDomain,
             subgenres: row.subgenres,
+            listeningProgress: row.listeningProgress.map { Int($0) },
             language: row.language?.asDomain,
             series: row.series.map {
                 SeriesMembership(

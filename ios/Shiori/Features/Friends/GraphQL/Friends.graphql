@@ -154,6 +154,7 @@ fragment FriendBookRow on FriendBook {
   finishedAt
   addedAt
   startedAt
+  listeningProgress
   inLibrary
   genre
   subgenres
@@ -201,7 +202,6 @@ query FriendBook($userId: UserId!, $bookId: BookId!) {
     isbn13
     audibleUrl
     amazonUrl
-    listeningProgress
     addedAt
     startedAt
   }

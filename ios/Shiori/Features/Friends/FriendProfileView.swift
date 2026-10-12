@@ -317,6 +317,7 @@ extension FriendProfile {
         let hunter = FriendBook(
             book: Book(
                 id: "hunter", title: "Primal Hunter", authors: ["Zogarth"], format: .audiobook,
+                listeningProgress: 32,
                 series: SeriesMembership(id: "ph", name: "Primal Hunter", volume: 6, kind: .main),
                 status: .reading
             ),
