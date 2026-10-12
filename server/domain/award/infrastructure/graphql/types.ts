@@ -114,7 +114,17 @@ export const AwardWinnerType = builder.objectRef<AwardedWorkView>('AwardWinner')
       description:
         'Whether it may be awaited from its row, with `awaitScannedEdition`: not out, not ' +
         'awaited already, and in a format its edition can be awaited in.',
+      deprecationReason: 'Use `awaitableFormats`, which holds `format` when this is true.',
       resolve: (view) => view.awaitable,
+    }),
+    awaitableFormats: t.field({
+      type: [ReleaseFormatEnum],
+      description:
+        'The formats its edition may be awaited in from its page, with ' +
+        '`awaitScannedEdition`, whatever the format listed: a novel in another language ' +
+        'translated and recorded, one in the app’s language recorded only — each left out ' +
+        'once out, or awaited already, in that format.',
+      resolve: (view) => view.awaitableFormats,
     }),
     awaitedEditionId: t.field({
       type: 'AwaitedEditionId',

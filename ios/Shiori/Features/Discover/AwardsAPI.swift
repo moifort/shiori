@@ -64,9 +64,11 @@ struct AwardWinner: Identifiable, Hashable, Sendable {
     let date: String?
     let coverURL: URL?
     let storeURL: URL?
-    /// Whether "Guetter" is offered: not out, not awaited yet, and a format
-    /// its edition can be awaited in.
-    let awaitable: Bool
+    /// The formats "Guetter" is offered in, whatever the one on screen: a
+    /// novel in another language translated and recorded, one in the app's
+    /// language recorded only — each left out once out, or awaited already, in
+    /// that format.
+    let awaitableFormats: [ReleaseFormat]
     let awaitedEditionId: String?
 
     /// Under its cover in the strip: the latest prize and its year.
@@ -193,7 +195,13 @@ extension AwardWinner {
             date: fields.date,
             coverURL: fields.coverUrl.flatMap(URL.init(string:)),
             storeURL: fields.storeUrl.flatMap(URL.init(string:)),
-            awaitable: fields.awaitable,
+            awaitableFormats: fields.awaitableFormats.compactMap { format -> ReleaseFormat? in
+                switch format.value {
+                case .book: return .book
+                case .audiobook: return .audiobook
+                case nil: return nil
+                }
+            },
             awaitedEditionId: fields.awaitedEditionId
         )
     }

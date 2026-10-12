@@ -40,9 +40,13 @@ export type AwardedWorkView = {
   watchKey: string
   watch?: EditionWatch
   state: AwaitedState
-  /** Whether the reader may await its edition from the row: not out, not
-   *  awaited already, and a format the edition can be awaited in. */
+  /** Whether the reader may await its edition from the row in the format
+   *  shown: `awaitableFormats` holds it. Kept for the builds that ask it. */
   awaitable: boolean
+  /** The formats the reader may await its edition in from its page, whatever
+   *  the format shown: the ones the edition can be awaited in — see
+   *  `awaitableFormatsOf` — not out and not awaited already in that format. */
+  awaitableFormats: ReleaseFormat[]
   /** The edition the reader awaits already, when they do. */
   awaitedId?: AwaitedEditionId
   /** The cover its page found when it was opened and described, drawn until

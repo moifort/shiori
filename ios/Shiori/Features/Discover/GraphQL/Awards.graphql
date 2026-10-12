@@ -26,6 +26,6 @@ fragment AwardWinnerFields on AwardWinner {
   date
   coverUrl
   storeUrl
-  awaitable
+  awaitableFormats
   awaitedEditionId
 }

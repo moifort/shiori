@@ -22,7 +22,8 @@ export type { ReleaseDate } from '~/domain/series/types'
 
 /** The two ways a saga reaches a reader: printed or electronic, and recorded.
  *  Read off the saga's id — a saga heard is its own saga. */
-export type ReleaseFormat = 'book' | 'audiobook'
+export const RELEASE_FORMATS = ['book', 'audiobook'] as const
+export type ReleaseFormat = (typeof RELEASE_FORMATS)[number]
 
 /** A saga in the language one reader follows it in: what the web is searched
  *  for, and the key the shared watch is stored under. */

@@ -29,7 +29,7 @@ struct AwardWinnerTile: View {
 
     var body: some View {
         Button(action: onTapped) {
-            CoverTile(book: winner.cover, caption: winner.caption, width: width, showsTitle: false)
+            CoverTile(book: winner.cover, caption: winner.caption, width: width)
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("discover-award-tile")
@@ -91,8 +91,8 @@ struct AwardWinnerView: View {
         }
     }
 
-    /// "+": on the pile, or awaited in the format on screen when its edition
-    /// is not out and not awaited yet.
+    /// "+": on the pile, or awaited in each format its edition is not out
+    /// and not awaited yet in, as a book's page offers it.
     private var addMenu: some View {
         Menu {
             Button("Ajouter", systemImage: "books.vertical") {
@@ -100,15 +100,15 @@ struct AwardWinnerView: View {
                 dismiss()
             }
             .accessibilityIdentifier("award-winner-add")
-            if winner.awaitable {
+            ForEach(winner.awaitableFormats) { format in
                 Button(
-                    winner.format.awaitLabel,
-                    systemImage: winner.format == .audiobook ? "headphones" : "character.book.closed"
+                    format.awaitLabel,
+                    systemImage: format == .audiobook ? "headphones" : "character.book.closed"
                 ) {
-                    Task { await awaitEdition() }
+                    Task { await awaitEdition(format) }
                     dismiss()
                 }
-                .accessibilityIdentifier("award-winner-await")
+                .accessibilityIdentifier("award-winner-await-\(format.rawValue)")
             }
         } label: {
             Label("Ajouter", systemImage: "plus")
@@ -147,10 +147,10 @@ struct AwardWinnerView: View {
         }
     }
 
-    /// Awaits its edition in the app's language, in the format on screen.
-    private func awaitEdition() async {
+    /// Awaits its edition in the app's language, in this format.
+    private func awaitEdition(_ format: ReleaseFormat) async {
         do {
-            _ = try await AwaitedAPI.awaitScanned(winner.draft, format: winner.format)
+            _ = try await AwaitedAPI.awaitScanned(winner.draft, format: format)
         } catch {
             _ = reportError(error)
         }
@@ -169,5 +169,31 @@ extension AwardWinner {
             releasedOn: date,
             coverURL: coverURL
         )
+    }
+}
+
+extension AwardWinner {
+    /// A winner in English nobody awaited yet: both formats left to await.
+    static let preview = AwardWinner(
+        id: "the-buffalo-hunter-hunter--stephen-graham-jones",
+        format: .book,
+        title: "The Buffalo Hunter Hunter",
+        originalTitle: "The Buffalo Hunter Hunter",
+        originalLanguage: .en,
+        authors: ["Stephen Graham Jones"],
+        mentions: [AwardMention(award: .nebula, year: 2026)],
+        state: .unannounced,
+        watched: false,
+        date: nil,
+        coverURL: nil,
+        storeURL: nil,
+        awaitableFormats: [.book, .audiobook],
+        awaitedEditionId: nil
+    )
+}
+
+#Preview("Award winner") {
+    NavigationStack {
+        AwardWinnerView(winner: .preview)
     }
 }

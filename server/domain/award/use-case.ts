@@ -1,13 +1,13 @@
 import { awaitableFormatsOf, stateOf } from '~/domain/awaited-edition/business-rules'
 import { AwaitedEditionQuery } from '~/domain/awaited-edition/query'
-import type { AwaitedEditionId } from '~/domain/awaited-edition/types'
+import type { AwaitedEditionId, EditionWatch } from '~/domain/awaited-edition/types'
 import { AwardCommand } from '~/domain/award/command'
 import { AwardQuery } from '~/domain/award/query'
 import { BookQuery } from '~/domain/book/query'
 import type { Genre } from '~/domain/book/types'
 import { releaseDescriptionKeyOf, todayOf } from '~/domain/discovery/business-rules'
 import { DiscoveryQuery } from '~/domain/discovery/query'
-import type { ReleaseFormat } from '~/domain/discovery/types'
+import { RELEASE_FORMATS, type ReleaseFormat } from '~/domain/discovery/types'
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
@@ -53,33 +53,10 @@ export namespace AwardUseCase {
     if (!genre) return null
     const awards = AWARDS_BY_GENRE[genre] ?? []
     const works = await latestWorksOf(awards)
-    const keys = works.map((work) => watchKeyOf(work, format, appLanguage))
-    const [watches, awaited] = await Promise.all([
-      AwaitedEditionQuery.watches(keys),
-      AwaitedEditionQuery.byUser(userId),
-    ])
-    const awaitedByKey = new Map(
-      awaited
-        .filter((edition) => edition.format === format && edition.language === appLanguage)
-        .map((edition) => [edition.watchKey, edition.id]),
-    )
+    const editions = await editionsOf(works, userId, appLanguage)
     const today = todayOf(now)
     const views = new Map(
-      works.map((work, index) => {
-        const watchKey = keys[index]
-        return [
-          work.key,
-          viewOf(
-            work,
-            format,
-            appLanguage,
-            watchKey,
-            watches.get(watchKey),
-            awaitedByKey.get(watchKey),
-            today,
-          ),
-        ] as const
-      }),
+      works.map((work) => [work.key, viewOf(work, format, appLanguage, editions, today)] as const),
     )
     const shown = (view: AwardedWorkView) => !isHeld(view.work, format, view.watch?.found, books)
     const recent = await withDescribedCovers(
@@ -130,28 +107,10 @@ export namespace AwardUseCase {
     const works = await latestWorksOf([
       ...new Set(genres.flatMap((genre) => AWARDS_BY_GENRE[genre] ?? [])),
     ])
-    const keys = works.map((work) => watchKeyOf(work, format, appLanguage))
-    const [watches, awaited] = await Promise.all([
-      AwaitedEditionQuery.watches(keys),
-      AwaitedEditionQuery.byUser(userId),
-    ])
-    const awaitedByKey = new Map(
-      awaited
-        .filter((edition) => edition.format === format && edition.language === appLanguage)
-        .map((edition) => [edition.watchKey, edition.id]),
-    )
+    const editions = await editionsOf(works, userId, appLanguage)
     const today = todayOf(now)
-    const shown = works.flatMap((work, index) => {
-      const watchKey = keys[index]
-      const view = viewOf(
-        work,
-        format,
-        appLanguage,
-        watchKey,
-        watches.get(watchKey),
-        awaitedByKey.get(watchKey),
-        today,
-      )
+    const shown = works.flatMap((work) => {
+      const view = viewOf(work, format, appLanguage, editions, today)
       return isHeld(work, format, view.watch?.found, books) ? [] : [view]
     })
     const picked = genres.map((genre) => ({
@@ -223,25 +182,59 @@ const latestWorksOf = async (awards: readonly Award[]): Promise<AwardedWork[]> =
 const yearOf = (work: AwardedWork, award: string) =>
   work.mentions.find((mention) => mention.award === award)?.year ?? 0
 
+/** The shared watches of these works in both formats, and the editions the
+ *  reader awaits, by watch key: one getAll and one query, whatever the format
+ *  shown, so a page offers to await the recording of a translation listed. */
+const editionsOf = async (
+  works: readonly AwardedWork[],
+  userId: UserId,
+  appLanguage: Language,
+): Promise<Editions> => {
+  const keys = works.flatMap((work) =>
+    RELEASE_FORMATS.map((format) => watchKeyOf(work, format, appLanguage)),
+  )
+  const [watches, awaited] = await Promise.all([
+    AwaitedEditionQuery.watches(keys),
+    AwaitedEditionQuery.byUser(userId),
+  ])
+  return {
+    watches,
+    awaitedByKey: new Map(awaited.map((edition) => [edition.watchKey, edition.id])),
+  }
+}
+
+type Editions = {
+  watches: Map<string, EditionWatch>
+  awaitedByKey: Map<string, AwaitedEditionId>
+}
+
 const viewOf = (
   work: AwardedWork,
   format: ReleaseFormat,
   language: Language,
-  watchKey: string,
-  watch: AwardedWorkView['watch'],
-  awaitedId: AwaitedEditionId | undefined,
+  editions: Editions,
   today: string,
 ): AwardedWorkView => {
-  const state = stateOf(watch?.found, format, today)
-  const formats = awaitableFormatsOf({ language: work.language, format: 'book' }, language)
+  const watchKey = watchKeyOf(work, format, language)
+  const watch = editions.watches.get(watchKey)
+  const awaitedId = editions.awaitedByKey.get(watchKey)
+  const awaitableFormats = awaitableFormatsOf(
+    { language: work.language, format: 'book' },
+    language,
+  ).filter((candidate) => {
+    const key = watchKeyOf(work, candidate, language)
+    const found = editions.watches.get(key)?.found
+    return stateOf(found, candidate, today) !== 'available' && !editions.awaitedByKey.has(key)
+  })
   return {
     work,
     format,
     language,
     watchKey,
     ...(watch ? { watch } : {}),
-    state,
-    awaitable: state !== 'available' && !awaitedId && formats.includes(format),
+    state: stateOf(watch?.found, format, today),
+    awaitable: awaitableFormats.includes(format),
+    awaitableFormats,
     ...(awaitedId ? { awaitedId } : {}),
   }
 }

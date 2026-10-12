@@ -203,10 +203,47 @@ describe('the award shelf', () => {
     expect(annie?.state).toBe('unannounced')
   })
 
+  test('offers every format left: the recording of a translation awaited or out', async () => {
+    sfReader()
+    const awaited = await AwaitedEditionUseCase.awaitScannedBook(
+      reader,
+      { ...deathOfTheAuthor, language: 'en', format: 'book' },
+      'book',
+      'fr',
+      now,
+    )
+    if (typeof awaited === 'string') throw new Error(awaited)
+    startFakeRequest()
+
+    const shelf = await AwardUseCase.shelf(reader, 'book', 'fr', undefined, now)
+    const views = shelf?.recent ?? []
+    const death = views.find((view) => view.work.title === 'Death of the Author')
+    const annie = views.find((view) => view.work.title === 'Annie Bot')
+
+    expect(death?.awaitableFormats).toEqual(['audiobook'])
+    expect(annie?.awaitableFormats).toEqual(['book', 'audiobook'])
+  })
+
+  test('offers the recording of a translation out, listed in audio', async () => {
+    shelve('Le Sorceleur', 'Andrzej Sapkowski', 'science-fiction', 'read', 'audiobook')
+    shelve('Fondation', 'Isaac Asimov', 'science-fiction', 'read', 'audiobook')
+    shelve('La Stratégie Ender', 'Orson Scott Card', 'science-fiction', 'read', 'audiobook')
+    deathOfTheAuthorFound()
+
+    const shelf = await AwardUseCase.shelf(reader, 'audiobook', 'fr', undefined, now)
+    const death = shelf?.recent.find((view) => view.work.title === 'Death of the Author')
+
+    expect(death?.state).toBe('unannounced')
+    expect(death?.awaitable).toBe(true)
+    expect(death?.awaitableFormats).toEqual(['audiobook'])
+  })
+
   test('in English, a printed winner cannot be awaited: it is in English already', async () => {
     sfReader()
     const shelf = await AwardUseCase.shelf(reader, 'book', 'en', undefined, now)
     expect(shelf?.recent.every((view) => !view.awaitable)).toBe(true)
+    expect(shelf?.recent.every((view) => view.awaitableFormats.length === 1)).toBe(true)
+    expect(shelf?.recent[0]?.awaitableFormats).toEqual(['audiobook'])
   })
 
   test('reads the library, the awaited editions, the years found and two getAlls', async () => {
@@ -217,9 +254,9 @@ describe('the award shelf', () => {
     const shelf = await AwardUseCase.shelf(reader, 'book', 'fr', undefined, now)
 
     expect(fake.queryReads - queryReads).toBe(3)
-    // One document per watch looked for, one description per winner with no
-    // cover found.
-    expect(fake.docReads - docReads).toBeLessThanOrEqual(2 * (shelf?.recent.length ?? 0))
+    // Two documents per winner, one watch per format, and one description per
+    // winner with no cover found.
+    expect(fake.docReads - docReads).toBeLessThanOrEqual(3 * (shelf?.recent.length ?? 0))
   })
 })
 

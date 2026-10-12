@@ -58,7 +58,7 @@ const SHELF = `
     awardShelf(format: $format, genre: $genre) {
       genre
       genres
-      recent { id title originalTitle authors state watched awaitable awards { award year } }
+      recent { id title originalTitle authors state watched awaitable awaitableFormats awards { award year } }
       awards { award readCount total winners { title } }
     }
   }
@@ -71,7 +71,13 @@ describe('awardShelf', () => {
     const shelf = result.data?.awardShelf as {
       genre: string
       genres: string[]
-      recent: { title: string; state: string; awaitable: boolean; awards: unknown[] }[]
+      recent: {
+        title: string
+        state: string
+        awaitable: boolean
+        awaitableFormats: string[]
+        awards: unknown[]
+      }[]
       awards: { award: string; readCount: number; total: number; winners: { title: string }[] }[]
     }
 
@@ -82,6 +88,7 @@ describe('awardShelf', () => {
       state: 'UNANNOUNCED',
       watched: false,
       awaitable: true,
+      awaitableFormats: ['BOOK', 'AUDIOBOOK'],
       awards: [{ award: 'HUGO', year: 2026 }],
     })
     const locus = shelf.awards.find((list) => list.award === 'LOCUS_SF')
@@ -102,7 +109,7 @@ const SECTIONS = `
   query ($format: ReleaseFormat!) {
     awardSections(format: $format) {
       genre
-      winners { title state awaitable awards { award year } }
+      winners { title state awaitable awaitableFormats awards { award year } }
     }
   }
 `
@@ -113,7 +120,7 @@ describe('awardSections', () => {
     expect(result.errors).toBeUndefined()
     const sections = result.data?.awardSections as {
       genre: string
-      winners: { title: string; state: string; awaitable: boolean }[]
+      winners: { title: string; state: string; awaitable: boolean; awaitableFormats: string[] }[]
     }[]
 
     expect(sections.map((section) => section.genre)).toEqual(['SCIENCE_FICTION'])
@@ -121,6 +128,7 @@ describe('awardSections', () => {
       title: 'The Everlasting',
       state: 'UNANNOUNCED',
       awaitable: true,
+      awaitableFormats: ['BOOK', 'AUDIOBOOK'],
     })
     expect(sections[0]?.winners.map((winner) => winner.title)).not.toContain('La Mort de l’auteur')
   })
