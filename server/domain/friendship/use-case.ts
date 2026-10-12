@@ -8,6 +8,7 @@ import {
   shelfDateOf,
   shelfKeyOf,
   shelfKeysOf,
+  shelfOrder,
   shelfPageOf,
   shelvedOf,
 } from '~/domain/book/business-rules'
@@ -262,24 +263,38 @@ export namespace FriendshipUseCase {
   /** One page of a friend's library — or of the reader's own, previewed —
    *  as their own Library tab draws it: newest first on the day each book was
    *  shelved, the dropped books left out unless asked for, the ones marked "do
-   *  not share" never. Null for a stranger. */
+   *  not share" never. `loved` is the favourites view: the books they hearted
+   *  or rated, hearts first and then five stars down to one, each rank newest
+   *  on the shelf first — on their own verdict alone, as a friend's row draws
+   *  it, never their saga's stars. Null for a stranger. */
   export const libraryPage = async (
     viewerId: UserId,
     ownerId: UserId,
     page: { limit: number; after?: BookId },
-    view: { status?: ReadingStatus; favorite?: boolean },
+    view: { status?: ReadingStatus; favorite?: boolean; loved?: boolean },
   ): Promise<FriendLibraryPage | null> => {
     if (!(await canRead(viewerId, ownerId))) return null
     const [books, owned] = await Promise.all([
       BookQuery.shared(ownerId),
       BookQuery.shelfKeys(viewerId),
     ])
-    const statuses = view.status ? [view.status] : view.favorite ? undefined : SHELVED_STATUSES
+    const statuses = view.status
+      ? [view.status]
+      : view.favorite || view.loved
+        ? undefined
+        : SHELVED_STATUSES
     const kept = books.filter(
       (book) =>
         (!view.favorite || book.favorite === true) && (!statuses || statuses.includes(book.status)),
     )
-    const { books: shown, hasMore } = shelfPageOf(shelvedOf(kept), page.limit, page.after)
+    const ordered = view.loved
+      ? lovedFirst(
+          kept,
+          (book) => lovedRankOf({ favorite: book.favorite, rating: book.rating }),
+          shelfOrder,
+        )
+      : shelvedOf(kept)
+    const { books: shown, hasMore } = shelfPageOf(ordered, page.limit, page.after)
     const signed = await BookQuery.withSignedCovers(shown)
     return {
       books: signed.map((book) => ({ ...book, inLibrary: ownsStory(owned, book) })),

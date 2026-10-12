@@ -3085,10 +3085,15 @@ type Query {
     after: BookId
 
     """Keep only the books they hearted."""
-    favorite: Boolean
+    favorite: Boolean @deprecated(reason: "Use `loved`, which follows the hearts with the stars.")
 
     """Maximum books in the page"""
     limit: Int = 60
+
+    """
+    The favourites view: the books they hearted or rated, hearts first, then five stars down to one, each rank newest on the shelf first.
+    """
+    loved: Boolean
 
     """Keep only books in this status. Omit for the whole library."""
     status: ReadingStatus

@@ -444,6 +444,29 @@ describe("the reader's own shelf, as friends see it", () => {
     expect(counted.data?.friendProfile).toEqual({ bookCount: 2 })
   })
 
+  test("ranks a friend's favourite books, hearts first, then their stars", async () => {
+    const unjudged = await addBook(alice, 'title: "Sans avis", status: READ')
+    const rated = await addBook(alice, 'title: "Quatre étoiles", status: READ')
+    const hearted = await addBook(alice, 'title: "Coup de cœur", status: READ')
+    await as(alice)(`mutation { rateBook(id: "${rated}", rating: 4) { id } }`)
+    await as(alice)(`mutation { setBookFavorite(id: "${hearted}", favorite: true) { id } }`)
+    await befriend()
+
+    const loved = await as(bob)(
+      '{ friendLibraryPage(userId: "alice", loved: true) { books { id title } hasMore } }',
+    )
+
+    expect(loved.errors).toBeUndefined()
+    expect(loved.data?.friendLibraryPage).toEqual({
+      books: [
+        { id: hearted, title: 'Coup de cœur' },
+        { id: rated, title: 'Quatre étoiles' },
+      ],
+      hasMore: false,
+    })
+    expect(JSON.stringify(loved.data)).not.toContain(unjudged)
+  })
+
   // "Voir ses N séries": every saga with all its covers, the one shelved last first.
   test('pages through a friend sagas, each with every volume', async () => {
     setSystemTime(new Date('2026-09-01T00:00:00Z'))
