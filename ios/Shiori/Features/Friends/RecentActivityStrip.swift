@@ -3,10 +3,10 @@ import SwiftUI
 /// A friend's recent activity as up to five covers scrolled sideways: the
 /// book in progress, the last one read, the last one hearted, the last one
 /// added and the last one dropped. Each is drawn as the home shelves draw a
-/// cover — its title under it, and under that, in the same grey, what
-/// happened: how far a recording got, else "En cours", "Lu", "Favori",
-/// "Ajouté" or "Abandonné". A tap on a cover opens its book; on the friends
-/// list, the rest of the row opens the friend's page.
+/// cover — no title, the cover already shows the book, but under it, in
+/// the same grey, what happened: how far a recording got, else "En cours",
+/// "Lu", "Favori", "Ajouté" or "Abandonné". A tap on a cover opens its book;
+/// on the friends list, the rest of the row opens the friend's page.
 struct RecentActivityStrip: View {
     let activities: [RecentActivity]
     /// Where the first cover starts, inside the scroll, so the covers slide
@@ -47,10 +47,15 @@ struct RecentActivityStrip: View {
         .padding(.top, -Self.badgeRoom)
     }
 
-    /// The home shelves' tile, cover and two lines, so a friend's recent book
-    /// reads like one of the reader's own.
+    /// The home shelves' tile without its title line, so what happened sits
+    /// right under the cover.
     private func tile(_ activity: RecentActivity) -> some View {
-        CoverTile(book: activity.book.book, caption: caption(activity), width: Self.coverWidth)
+        CoverTile(
+            book: activity.book.book,
+            caption: caption(activity),
+            width: Self.coverWidth,
+            showsTitle: false
+        )
     }
 
     /// What happened, worded as the home's "En cours" shelf words it: a
