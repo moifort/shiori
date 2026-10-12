@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// One friend's shelf, summed up as Découvrir sums up its books: one card —
-/// their whole library behind a line that opens it, Books and Series switched by the Library tab's capsule; their hearts, newest first;
-/// their pile, the last added first, each over a strip of its covers. Each
+/// their hearts, newest first; their pile, the last added first, each over a
+/// strip of its covers; last, their whole library behind a line that opens it,
+/// Books and Series switched by the Library tab's capsule. Each
 /// line says how many books it stands for, in place of the figures that used
 /// to head the page.
 ///
@@ -89,26 +90,10 @@ struct FriendProfileView: View {
 
     private func shelves(_ profile: FriendProfile) -> some View {
         List {
-            // The shelf at a glance, as Découvrir sums up its books: the whole
-            // library behind one line, then the hearts and the pile, each over
-            // a strip of its covers, a tap opening the book.
+            // The shelf at a glance, as Découvrir sums up its books: the hearts
+            // and the pile, each over a strip of its covers, a tap opening the
+            // book, then the whole library behind the last line.
             Section {
-                NavigationLink {
-                    FriendShelfView(
-                        friendId: friend.userId,
-                        friendName: friend.displayName,
-                        isPreview: isPreview
-                    )
-                } label: {
-                    DiscoverSummaryRow(
-                        title: isPreview ? "Ma bibliothèque" : "Sa bibliothèque",
-                        systemImage: "books.vertical.fill",
-                        tint: .accentColor,
-                        line: libraryLine(profile)
-                    )
-                }
-                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 16))
-                .accessibilityIdentifier("friend-see-library")
                 if !profile.favorites.isEmpty {
                     DiscoverSummaryRow(
                         title: isPreview ? "Mes favoris" : "Ses favoris",
@@ -131,6 +116,22 @@ struct FriendProfileView: View {
                     }
                     .accessibilityIdentifier("friend-pile")
                 }
+                NavigationLink {
+                    FriendShelfView(
+                        friendId: friend.userId,
+                        friendName: friend.displayName,
+                        isPreview: isPreview
+                    )
+                } label: {
+                    DiscoverSummaryRow(
+                        title: "Bibliothèque",
+                        systemImage: "books.vertical.fill",
+                        tint: .accentColor,
+                        line: libraryLine(profile)
+                    )
+                }
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 16))
+                .accessibilityIdentifier("friend-see-library")
             }
         }
         .listStyle(.insetGrouped)

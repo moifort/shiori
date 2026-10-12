@@ -20,7 +20,11 @@ struct FriendLibraryView: View {
     @State private var mode: LibraryMode = .all
     @State private var status: ReadingStatus?
     @State private var hasMore = false
-    @State private var isLoading = true
+    /// The view and filter the rows on screen were asked under. Until the
+    /// answer for a new one arrives, the rows of the last would be cut the
+    /// new way — hearts and stars over books listed by date — so a spinner
+    /// stands in for them.
+    @State private var loadedQuery: String?
     @State private var errorMessage: String?
     @State private var loadMoreFailed = false
     @State private var openBook: FriendBook?
@@ -29,9 +33,9 @@ struct FriendLibraryView: View {
 
     var body: some View {
         Group {
-            if isLoading && books.isEmpty {
+            if loadedQuery != query, errorMessage == nil {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let errorMessage, books.isEmpty {
+            } else if let errorMessage, loadedQuery != query || books.isEmpty {
                 EmptyStateView.failure("Bibliothèque indisponible", message: errorMessage) { await load() }
             } else if books.isEmpty {
                 Text(
@@ -82,7 +86,7 @@ struct FriendLibraryView: View {
                 .accessibilityIdentifier("friend-library-filter")
             }
         }
-        .task(id: "\(mode.rawValue)-\(status?.rawValue ?? "all")") { await load() }
+        .task(id: query) { await load() }
         // A sheet, as a book opens from the reader's own library: its own
         // stack, so the saga pushes inside it.
         .sheet(item: $openBook) { book in
@@ -166,8 +170,10 @@ struct FriendLibraryView: View {
         .accessibilityIdentifier("friend-library-row")
     }
 
+    private var query: String { "\(mode.rawValue)-\(status?.rawValue ?? "all")" }
+
     private func load() async {
-        isLoading = true
+        let asked = query
         errorMessage = nil
         loadMoreFailed = false
         do {
@@ -176,10 +182,12 @@ struct FriendLibraryView: View {
             )
             books = page.books
             hasMore = page.hasMore
+            loadedQuery = asked
         } catch {
+            // A switch of view called the last request off: the next one answers.
+            guard !isCancellation(error) else { return }
             errorMessage = reportError(error)
         }
-        isLoading = false
     }
 
     private func loadMore() async {

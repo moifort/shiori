@@ -6461,22 +6461,6 @@
         }
       }
     },
-    "Ma bibliothèque" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "My library"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ma bibliothèque"
-          }
-        }
-      }
-    },
     "Ma bibliothèque sur Shiori" : {
       "localizations" : {
         "en" : {
@@ -9033,22 +9017,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Résumé"
-          }
-        }
-      }
-    },
-    "Sa bibliothèque" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Their library"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sa bibliothèque"
           }
         }
       }

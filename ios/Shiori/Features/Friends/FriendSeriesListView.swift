@@ -19,7 +19,11 @@ struct FriendSeriesListView: View {
     @State private var mode: LibraryMode = .all
     @State private var state: SeriesState?
     @State private var hasMore = false
-    @State private var isLoading = true
+    /// The view and filter the rows on screen were asked under. Until the
+    /// answer for a new one arrives, the rows of the last would be cut the
+    /// new way — hearts and stars over books listed by date — so a spinner
+    /// stands in for them.
+    @State private var loadedQuery: String?
     @State private var errorMessage: String?
     @State private var loadMoreFailed = false
     @State private var openSaga: FriendSaga?
@@ -30,9 +34,9 @@ struct FriendSeriesListView: View {
 
     var body: some View {
         Group {
-            if isLoading && sagas.isEmpty {
+            if loadedQuery != query, errorMessage == nil {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let errorMessage, sagas.isEmpty {
+            } else if let errorMessage, loadedQuery != query || sagas.isEmpty {
                 EmptyStateView.failure("Séries indisponibles", message: errorMessage) { await load() }
             } else if sagas.isEmpty {
                 Text(
@@ -51,7 +55,7 @@ struct FriendSeriesListView: View {
         .navigationTitle("Séries")
         .navigationSubtitle(friendName)
         .toolbar { toolbar }
-        .task(id: "\(mode.rawValue)-\(state?.rawValue ?? "all")") { await load() }
+        .task(id: query) { await load() }
         // A sheet, as a saga opens from the reader's own Series tab.
         .sheet(item: $openSaga) { saga in
             NavigationStack {
@@ -202,8 +206,10 @@ struct FriendSeriesListView: View {
             : ListSection.byMonth(sagas, on: \.shelvedAt)
     }
 
+    private var query: String { "\(mode.rawValue)-\(state?.rawValue ?? "all")" }
+
     private func load() async {
-        isLoading = true
+        let asked = query
         errorMessage = nil
         loadMoreFailed = false
         do {
@@ -212,10 +218,12 @@ struct FriendSeriesListView: View {
             )
             sagas = page.sagas
             hasMore = page.hasMore
+            loadedQuery = asked
         } catch {
+            // A switch of view called the last request off: the next one answers.
+            guard !isCancellation(error) else { return }
             errorMessage = reportError(error)
         }
-        isLoading = false
     }
 
     private func loadMore() async {
