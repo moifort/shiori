@@ -3,8 +3,6 @@ import SwiftUI
 /// What the Books shelf of Découvrir sums up in one line each, and opens as a
 /// page of its own.
 enum DiscoverCategory: Hashable {
-    /// "Nouveautés": the volumes of the sagas followed, just out then announced.
-    case news
     /// "Bientôt disponible": the editions the reader awaits.
     case soon
     /// "Prix littéraires": the latest winners of the genres read most.
@@ -14,7 +12,6 @@ enum DiscoverCategory: Hashable {
 
     var title: LocalizedStringKey {
         switch self {
-        case .news: "Nouveautés"
         case .soon: "Bientôt disponible"
         case .awards: "Prix littéraires"
         case .friends: "Coups de cœur de vos amis"
@@ -31,7 +28,6 @@ enum DiscoverCategory: Hashable {
 
     var systemImage: String {
         switch self {
-        case .news: "sparkles"
         case .soon: "clock"
         case .awards: "trophy"
         case .friends: "heart"
@@ -40,7 +36,6 @@ enum DiscoverCategory: Hashable {
 
     var tint: Color {
         switch self {
-        case .news: .green
         case .soon: .orange
         case .awards: .yellow
         case .friends: .red
@@ -50,16 +45,6 @@ enum DiscoverCategory: Hashable {
 
 /// The line under a category's name, saying at a glance what it holds.
 enum DiscoverSummaryLine {
-    /// "2 sortis · 3 annoncés", either part left out when there is none.
-    static func news(_ volumes: [DiscoveryVolume]) -> String {
-        let coming = volumes.filter(\.isComing).count
-        let out = volumes.count - coming
-        var parts: [String] = []
-        if out > 0 { parts.append(inflected("^[\(out) sorti](inflect: true)")) }
-        if coming > 0 { parts.append(inflected("^[\(coming) annoncé](inflect: true)")) }
-        return parts.joined(separator: " · ")
-    }
-
     /// The day of the soonest edition announced; else how many are awaited.
     static func soon(_ editions: [AwaitedEdition]) -> String {
         if let date = editions.compactMap(\.announcedDate).min(by: { lhs, rhs in
@@ -97,14 +82,31 @@ enum DiscoverSummaryLine {
     }
 }
 
-/// One category of the Books shelf in a line: its symbol, its name, what it
-/// holds in a few words, and the first covers fanned out on the trailing edge.
-struct DiscoverSummaryRow: View {
+/// One category of the Books shelf: its symbol, its name and what it holds
+/// in a few words over a strip of its covers. The heading opens the category's
+/// page; a cover opens its own, as the category's page would.
+struct DiscoverSummaryRow<Covers: View>: View {
     let category: DiscoverCategory
     let line: String
-    let covers: [Book]
+    let onOpen: () -> Void
+    @ViewBuilder let covers: Covers
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button(action: onOpen) { heading }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 16)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: 10) { covers }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 6)
+            }
+        }
+        .padding(.vertical, 12)
+        .listRowInsets(EdgeInsets())
+    }
+
+    private var heading: some View {
         HStack(spacing: 12) {
             Image(systemName: category.systemImage)
                 .font(.title3)
@@ -120,53 +122,36 @@ struct DiscoverSummaryRow: View {
                     .lineLimit(1)
             }
             Spacer(minLength: 8)
-            CoverFan(books: Array(covers.prefix(3)))
+            Image(systemName: "chevron.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.tertiary)
         }
-        .padding(.vertical, 4)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
     }
 }
 
-/// A few covers overlapping, the first on top, as a hand of cards spread on a
-/// table: each edged in the row's background so it stands apart from the one
-/// under it.
-struct CoverFan: View {
-    let books: [Book]
-
-    private let width: CGFloat = 32
-
-    var body: some View {
-        HStack(spacing: -width * 0.55) {
-            ForEach(Array(books.enumerated()), id: \.offset) { index, book in
-                BookCover(book: book, width: width, showsFormatBadge: false)
-                    .padding(1.5)
-                    .background(
-                        Color(.secondarySystemGroupedBackground),
-                        in: .rect(cornerRadius: width * 0.07 + 1.5)
-                    )
-                    .rotationEffect(.degrees(Double(index) * 5 - 5), anchor: .bottom)
-                    .zIndex(Double(books.count - index))
-            }
-        }
-        .padding(.horizontal, 4)
-        .accessibilityHidden(true)
-    }
+extension CoverTile {
+    /// A tile on a summary line of Découvrir: larger than a library row's
+    /// cover, smaller than a shelf's, the strip summing the category up rather
+    /// than laying it out.
+    static let summaryWidth: CGFloat = 64
 }
 
 #Preview {
     List {
         Section {
-            DiscoverSummaryRow(
-                category: .news,
-                line: "2 sortis · 1 annoncé",
-                covers: [AwaitedEdition.preview.cover, AwaitedEdition.preview.cover]
-            )
-            DiscoverSummaryRow(
-                category: .soon,
-                line: DiscoverSummaryLine.soon([.preview]),
-                covers: [AwaitedEdition.preview.cover]
-            )
-            DiscoverSummaryRow(category: .awards, line: "Science-fiction · Fantastique", covers: [])
-            DiscoverSummaryRow(category: .friends, line: "Marie, Paul +2", covers: [])
+            DiscoverSummaryRow(category: .soon, line: DiscoverSummaryLine.soon([.preview]), onOpen: {}) {
+                ForEach(0..<6, id: \.self) { _ in
+                    AwaitedEditionTile(edition: .preview, width: CoverTile.summaryWidth) {}
+                }
+            }
+            DiscoverSummaryRow(category: .friends, line: "Marie, Paul +2", onOpen: {}) {
+                ForEach(0..<6, id: \.self) { _ in
+                    AwaitedEditionTile(edition: .preview, width: CoverTile.summaryWidth) {}
+                }
+            }
         }
     }
 }

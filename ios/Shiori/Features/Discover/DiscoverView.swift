@@ -26,14 +26,14 @@ import SwiftUI
 /// shelf, faces on the Authors shelf, the newest heart first. A flame marks
 /// what many of them love.
 ///
-/// The Books shelf is read at a glance rather than scrolled: one line per
-/// category, its first covers fanned out — "Nouveautés", the sagas' volumes
-/// just out then announced; "Bientôt disponible", the books the reader awaits
-/// in the app's language, translated or recorded; "Prix littéraires", the
-/// latest winners of the genres they read most that they do not hold; the
-/// friends' hearts, as covers. A tap opens the category as a page of its own,
-/// three covers a row — the award winners a strip per genre. Under the lines, "Nouveautés séries" again as a strip of
-/// covers: what is new is seen before anything is touched.
+/// The Books shelf is read at a glance rather than scrolled: one card, a
+/// line per category over a strip of its covers — "Bientôt disponible", the
+/// books the reader awaits in the app's language, translated or recorded;
+/// "Prix littéraires", the latest winners of the genres they read most that
+/// they do not hold; the friends' hearts. A cover opens its page; the line's
+/// heading opens the category as a page of its own, three covers a row — the
+/// award winners a strip per genre. Under the card, "Nouveautés séries": the
+/// sagas' volumes just out, then announced.
 ///
 /// The server looks the sagas up on the web once a week. The tab opens on
 /// everything it last showed — the rows, the friends' picks, the books awaited
@@ -51,12 +51,14 @@ struct DiscoverView: View {
     @State private var openFriendSaga: LovedSaga?
     @State private var openAwaited: AwaitedEdition?
     @State private var openWinner: AwardWinner?
+    /// The categories of the Books shelf opened from its summary.
+    @State private var path: [DiscoverCategory] = []
     @Environment(\.openURL) private var openURL
     /// Held by `ContentView`, which brings it back to the books on each visit.
     @Binding var shelf: LibraryShelf
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             content
                 .navigationTitle("Découvrir")
                 .toolbar {
@@ -246,44 +248,55 @@ struct DiscoverView: View {
     }
 
     /// The Books shelf at a glance: one line per category that holds
-    /// something — the sagas' news, the editions awaited, the award winners of
-    /// the genres read most, the friends' hearts — each opening its page.
-    /// Absent when all four are empty.
+    /// something — the editions awaited, the award winners of the genres read
+    /// most, the friends' hearts — each over a strip of its covers. The
+    /// heading opens the category's page, a cover its own page. Absent when all
+    /// three are empty; the sagas' news has its own strip under it.
     @ViewBuilder
     private var summarySection: some View {
-        let news = seriesNews
+        let width = CoverTile.summaryWidth
         let awaited = viewModel.awaitedSoon
         let awards = awardSections
         let loved = viewModel.picks.books
-        if !news.isEmpty || !awaited.isEmpty || !awards.isEmpty || !loved.isEmpty {
+        if !awaited.isEmpty || !awards.isEmpty || !loved.isEmpty {
             Section {
-                if !news.isEmpty {
-                    summaryRow(.news, line: DiscoverSummaryLine.news(news), covers: news.map(\.cover))
-                        .accessibilityIdentifier("discover-summary-news")
-                }
                 if !awaited.isEmpty {
-                    summaryRow(.soon, line: DiscoverSummaryLine.soon(awaited), covers: awaited.map(\.cover))
-                        .accessibilityIdentifier("discover-awaited")
+                    DiscoverSummaryRow(
+                        category: .soon,
+                        line: DiscoverSummaryLine.soon(awaited),
+                        onOpen: { path.append(.soon) }
+                    ) {
+                        ForEach(awaited) { edition in
+                            AwaitedEditionTile(edition: edition, width: width) { openAwaited = edition }
+                        }
+                    }
+                    .accessibilityIdentifier("discover-awaited")
                 }
                 if !awards.isEmpty {
-                    summaryRow(
-                        .awards,
+                    DiscoverSummaryRow(
+                        category: .awards,
                         line: DiscoverSummaryLine.awards(awards),
-                        covers: awards.flatMap(\.winners).map(\.cover)
-                    )
+                        onOpen: { path.append(.awards) }
+                    ) {
+                        ForEach(awards.flatMap(\.winners)) { winner in
+                            AwardWinnerTile(winner: winner, width: width) { openWinner = winner }
+                        }
+                    }
                     .accessibilityIdentifier("discover-awards")
                 }
                 if !loved.isEmpty {
-                    summaryRow(.friends, line: DiscoverSummaryLine.friends(loved), covers: loved.map(\.book.book))
-                        .accessibilityIdentifier("discover-friend-picks")
+                    DiscoverSummaryRow(
+                        category: .friends,
+                        line: DiscoverSummaryLine.friends(loved),
+                        onOpen: { path.append(.friends) }
+                    ) {
+                        ForEach(loved) { picked in
+                            LovedBookTile(loved: picked, width: width) { openFriendBook = picked }
+                        }
+                    }
+                    .accessibilityIdentifier("discover-friend-picks")
                 }
             }
-        }
-    }
-
-    private func summaryRow(_ category: DiscoverCategory, line: String, covers: [Book]) -> some View {
-        NavigationLink(value: category) {
-            DiscoverSummaryRow(category: category, line: line, covers: covers)
         }
     }
 
@@ -319,17 +332,6 @@ struct DiscoverView: View {
         let width = CoverTile.gridWidth
         DiscoverCategoryPage(category: category) {
             switch category {
-            case .news:
-                DiscoverCoverGrid {
-                    ForEach(seriesNews) { opened in
-                        SeriesNewsTile(
-                            opened: opened,
-                            width: width,
-                            onTapped: { openVolume = opened },
-                            onOpenSeries: { openSeries = opened.saga }
-                        )
-                    }
-                }
             case .soon:
                 DiscoverCoverGrid {
                     ForEach(viewModel.awaitedSoon) { edition in
