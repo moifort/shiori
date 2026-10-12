@@ -594,7 +594,6 @@ struct SeriesNewsTile: View {
                 book: opened.cover,
                 caption: opened.caption,
                 width: width,
-                showsTitle: false,
                 captionTint: opened.isComing ? .orange : .green
             )
         }

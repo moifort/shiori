@@ -35,7 +35,6 @@ struct AwaitedEditionTile: View {
                 book: edition.cover,
                 caption: edition.caption,
                 width: width,
-                showsTitle: false,
                 captionTint: edition.stateTint
             )
         }

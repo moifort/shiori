@@ -1,12 +1,11 @@
 import SwiftUI
 
-/// A cover with two short lines under it, for the horizontal shelves — or the
-/// caption alone, where the cover says enough.
+/// A cover with one short line under it, for the horizontal shelves: the cover
+/// already shows the title, so the line says what matters about the book here.
 struct CoverTile: View {
     let book: Book
     let caption: String
     var width: CGFloat = 84
-    var showsTitle = true
     /// Nil for the secondary grey.
     var captionTint: Color?
 
@@ -17,11 +16,6 @@ struct CoverTile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             BookCover(book: book, width: width, formatBadgeSize: Self.formatBadgeSize)
-            if showsTitle {
-                Text(book.title)
-                    .font(.caption.weight(.medium))
-                    .lineLimit(1)
-            }
             Text(caption)
                 .font(.caption2)
                 .foregroundStyle(captionTint.map(AnyShapeStyle.init) ?? AnyShapeStyle(.secondary))

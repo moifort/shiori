@@ -129,7 +129,7 @@ struct LovedBookTile: View {
 
     var body: some View {
         Button(action: onTapped) {
-            CoverTile(book: loved.book.book, caption: loved.lovers.caption, width: width, showsTitle: false)
+            CoverTile(book: loved.book.book, caption: loved.lovers.caption, width: width)
                 .overlay(alignment: .topLeading) {
                     if loved.lovers.lovedByMany {
                         LovedByManyBadge().offset(x: -6, y: -6)

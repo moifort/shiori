@@ -47,15 +47,9 @@ struct RecentActivityStrip: View {
         .padding(.top, -Self.badgeRoom)
     }
 
-    /// The home shelves' tile without its title line, so what happened sits
-    /// right under the cover.
+    /// The home shelves' tile, with what happened right under the cover.
     private func tile(_ activity: RecentActivity) -> some View {
-        CoverTile(
-            book: activity.book.book,
-            caption: caption(activity),
-            width: Self.coverWidth,
-            showsTitle: false
-        )
+        CoverTile(book: activity.book.book, caption: caption(activity), width: Self.coverWidth)
     }
 
     /// What happened, worded as the home's "En cours" shelf words it: a
