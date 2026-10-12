@@ -1,9 +1,10 @@
 import SwiftUI
 
-/// One friend's shelf, summed up as Découvrir sums up its books: the figures,
-/// then one card — their whole library behind a line that opens it, Books and
-/// Series switched by the Library tab's capsule; their hearts, newest first;
-/// their pile, the last added first, each over a strip of its covers.
+/// One friend's shelf, summed up as Découvrir sums up its books: one card —
+/// their whole library behind a line that opens it, Books and Series switched by the Library tab's capsule; their hearts, newest first;
+/// their pile, the last added first, each over a strip of its covers. Each
+/// line says how many books it stands for, in place of the figures that used
+/// to head the page.
 ///
 /// Read-only as far as the friend's library goes. A cover opens the friend's
 /// book on a page with no control that writes to it, which offers instead to
@@ -88,15 +89,6 @@ struct FriendProfileView: View {
 
     private func shelves(_ profile: FriendProfile) -> some View {
         List {
-            Section {
-                HStack(spacing: 8) {
-                    tile(friend.favoriteCount, "Favoris", systemImage: "heart.fill", tint: .red)
-                    tile(friend.readingCount, "En cours", systemImage: "book.fill", tint: ReadingStatus.reading.tint)
-                    tile(friend.toReadCount, "À lire", systemImage: "bookmark.fill", tint: ReadingStatus.toRead.tint)
-                }
-                .listRowInsets(EdgeInsets())
-                .listRowBackground(Color.clear)
-            }
             // The shelf at a glance, as Découvrir sums up its books: the whole
             // library behind one line, then the hearts and the pile, each over
             // a strip of its covers, a tap opening the book.
@@ -117,23 +109,23 @@ struct FriendProfileView: View {
                 }
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 16))
                 .accessibilityIdentifier("friend-see-library")
-                if let latest = profile.favorites.first {
+                if !profile.favorites.isEmpty {
                     DiscoverSummaryRow(
                         title: isPreview ? "Mes favoris" : "Ses favoris",
                         systemImage: "heart.fill",
                         tint: .red,
-                        line: String(localized: "Dernier : \(latest.book.title)")
+                        line: countLine(friend.favoriteCount)
                     ) {
                         covers(profile.favorites)
                     }
                     .accessibilityIdentifier("friend-favorites")
                 }
-                if let latest = profile.pile.first {
+                if !profile.pile.isEmpty {
                     DiscoverSummaryRow(
                         title: isPreview ? "Ma pile à lire" : "Sa pile à lire",
                         systemImage: "bookmark.fill",
                         tint: ReadingStatus.toRead.tint,
-                        line: String(localized: "Dernier ajout : \(latest.book.title)")
+                        line: countLine(friend.toReadCount)
                     ) {
                         covers(profile.pile)
                     }
@@ -165,23 +157,29 @@ struct FriendProfileView: View {
         }
     }
 
-    private func tile(_ count: Int, _ label: LocalizedStringKey, systemImage: String, tint: Color) -> some View {
-        VStack(spacing: 2) {
-            Image(systemName: systemImage).font(.subheadline).foregroundStyle(tint)
-            Text(verbatim: "\(count)").font(.title3.weight(.semibold))
-            Text(label).font(.caption).foregroundStyle(.secondary)
+    /// "2 séries · 80 livres · 3 en cours", the sagas and the books in
+    /// progress left out when there are none.
+    private func libraryLine(_ profile: FriendProfile) -> String {
+        var parts: [String] = []
+        if !profile.sagas.isEmpty {
+            parts.append(inflected("^[\(profile.sagas.count) série](inflect: true)"))
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 10)
-        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 14))
+        parts.append(inflected("^[\(profile.bookCount) livre](inflect: true)"))
+        if friend.readingCount > 0 {
+            parts.append(String(localized: "\(friend.readingCount) en cours"))
+        }
+        return parts.joined(separator: " · ")
     }
 
-    /// "12 séries · 80 livres", the sagas left out when there are none.
-    private func libraryLine(_ profile: FriendProfile) -> String {
-        let books = String(AttributedString(localized: "^[\(profile.bookCount) livre](inflect: true)").characters)
-        guard !profile.sagas.isEmpty else { return books }
-        let sagas = String(AttributedString(localized: "^[\(profile.sagas.count) série](inflect: true)").characters)
-        return "\(sagas) · \(books)"
+    /// "4 livres".
+    private func countLine(_ count: Int) -> String {
+        inflected("^[\(count) livre](inflect: true)")
+    }
+
+    /// The words agreed with their number: only an attributed string carries
+    /// out the inflection its markdown asks for.
+    private func inflected(_ resource: String.LocalizationValue) -> String {
+        String(AttributedString(localized: resource).characters)
     }
 
     /// The covers of a summary line, newest first as the server sends them,

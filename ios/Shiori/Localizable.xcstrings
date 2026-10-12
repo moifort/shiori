@@ -3929,38 +3929,6 @@
         }
       }
     },
-    "Dernier : %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Latest: %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dernier : %@"
-          }
-        }
-      }
-    },
-    "Dernier ajout : %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Last added: %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dernier ajout : %@"
-          }
-        }
-      }
-    },
     "Dernier livre terminé" : {
       "localizations" : {
         "en" : {
