@@ -85,11 +85,16 @@ struct DiscoverSummaryRow<Covers: View>: View {
         VStack(alignment: .leading, spacing: 10) {
             heading
                 .padding(.horizontal, 12)
+            // Cut as far from the card's right edge as the first cover stands
+            // from its left one; the room left of that cover is for the badges
+            // overhanging its corner.
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: 10) { covers }
-                    .padding(.horizontal, 12)
+                    .padding(.leading, 6)
                     .padding(.top, 6)
             }
+            .padding(.leading, 6)
+            .padding(.trailing, 12)
         }
         .padding(.vertical, 12)
         .listRowInsets(EdgeInsets())
