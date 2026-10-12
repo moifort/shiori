@@ -6269,6 +6269,22 @@
         }
       }
     },
+    "Livres audio" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audiobooks"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Livres audio"
+          }
+        }
+      }
+    },
     "Livres audio sur Audible" : {
       "localizations" : {
         "en" : {
@@ -6521,6 +6537,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Manga"
+          }
+        }
+      }
+    },
+    "Mangas" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manga"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mangas"
           }
         }
       }
