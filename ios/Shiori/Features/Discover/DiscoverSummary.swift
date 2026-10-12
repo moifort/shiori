@@ -24,14 +24,6 @@ enum DiscoverCategory: Hashable {
         case .friends: "heart"
         }
     }
-
-    var tint: Color {
-        switch self {
-        case .soon: .orange
-        case .awards: .yellow
-        case .friends: .red
-        }
-    }
 }
 
 /// The line under a category's name, saying at a glance what it holds.
@@ -98,27 +90,27 @@ struct DiscoverSummaryRow<Covers: View>: View {
         }
         .padding(.vertical, 12)
         .listRowInsets(EdgeInsets())
+        // The line between two categories runs from edge to edge of the card.
+        .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
+        .alignmentGuide(.listRowSeparatorTrailing) { dimensions in dimensions.width }
     }
 
+    /// The symbol opens the name, in its colour; what the category holds is
+    /// written under both.
     private var heading: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: category.systemImage)
-                .font(.title3)
-                .foregroundStyle(category.tint)
-                .frame(width: 28)
-                // Level with the name's first line rather than the pair's middle.
-                .padding(.top, 1)
-            VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Image(systemName: category.systemImage)
                 Text(category.title)
-                    .font(.body.weight(.medium))
-                    .lineLimit(1)
-                Text(verbatim: line)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
-            Spacer(minLength: 0)
+            .font(.body.weight(.medium))
+            Text(verbatim: line)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
     }
