@@ -38,6 +38,14 @@ enum LiteraryAward: String, Sendable, Hashable, Identifiable {
         case .worldFantasy: "World Fantasy"
         }
     }
+
+    /// Short enough to leave the year room under a cover of the strip.
+    var stripName: String {
+        switch self {
+        case .worldFantasy: "WFA"
+        default: shortName
+        }
+    }
 }
 
 /// One prize a novel won, and the year it was presented.
@@ -73,7 +81,7 @@ struct AwardWinner: Identifiable, Hashable, Sendable {
 
     /// Under its cover in the strip: the latest prize and its year.
     var caption: String {
-        mentions.first.map { "\($0.award.shortName) \($0.year)" } ?? ""
+        mentions.first.map { "\($0.award.stripName) \($0.year)" } ?? ""
     }
 
     /// Where its edition stands, in a sentence, for its page.

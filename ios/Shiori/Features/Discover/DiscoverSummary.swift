@@ -79,7 +79,8 @@ enum DiscoverSummaryLine {
 /// covers is the heading alone.
 struct DiscoverSummaryRow<Covers: View>: View {
     let title: LocalizedStringKey
-    let systemImage: String
+    /// Nil for a line whose name says enough on its own.
+    let systemImage: String?
     let tint: Color
     let line: String
     private let hasCovers: Bool
@@ -148,9 +149,11 @@ struct DiscoverSummaryRow<Covers: View>: View {
                     .lineLimit(1)
             }
             Spacer(minLength: 0)
-            Image(systemName: systemImage)
-                .font(.title3)
-                .foregroundStyle(tint)
+            if let systemImage {
+                Image(systemName: systemImage)
+                    .font(.title3)
+                    .foregroundStyle(tint)
+            }
         }
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
@@ -160,7 +163,7 @@ struct DiscoverSummaryRow<Covers: View>: View {
 extension DiscoverSummaryRow where Covers == EmptyView {
     /// A line with nothing under its heading: a shelf too long to sum up in
     /// covers, opened whole by a tap.
-    init(title: LocalizedStringKey, systemImage: String, tint: Color, line: String) {
+    init(title: LocalizedStringKey, systemImage: String? = nil, tint: Color = .accentColor, line: String) {
         self.title = title
         self.systemImage = systemImage
         self.tint = tint

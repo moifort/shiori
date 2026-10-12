@@ -123,12 +123,7 @@ struct FriendProfileView: View {
                         isPreview: isPreview
                     )
                 } label: {
-                    DiscoverSummaryRow(
-                        title: "Bibliothèque",
-                        systemImage: "books.vertical.fill",
-                        tint: .accentColor,
-                        line: libraryLine(profile)
-                    )
+                    DiscoverSummaryRow(title: "Bibliothèque", line: libraryLine(profile))
                 }
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 16))
                 .accessibilityIdentifier("friend-see-library")

@@ -276,7 +276,7 @@ struct DiscoverView: View {
                         line: DiscoverSummaryLine.awards(awards)
                     ) {
                         ForEach(awards.flatMap(\.winners).latestFirst) { winner in
-                            AwardWinnerTile(winner: winner, width: width) { openWinner = winner }
+                            AwardWinnerTile(winner: winner, width: AwardWinnerTile.summaryWidth) { openWinner = winner }
                         }
                     }
                     .accessibilityIdentifier("discover-awards")

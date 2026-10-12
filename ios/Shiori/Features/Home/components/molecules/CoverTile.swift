@@ -8,6 +8,9 @@ struct CoverTile: View {
     var width: CGFloat = 84
     /// Nil for the secondary grey.
     var captionTint: Color?
+    /// Where a caption too long for the cover gives way: its middle keeps
+    /// both ends, as a prize keeps its year.
+    var captionTruncation: Text.TruncationMode = .tail
 
     /// The headphones pill, a touch above a library row's rather than grown
     /// with the shelf's larger cover.
@@ -20,6 +23,7 @@ struct CoverTile: View {
                 .font(.caption2)
                 .foregroundStyle(captionTint.map(AnyShapeStyle.init) ?? AnyShapeStyle(.secondary))
                 .lineLimit(1)
+                .truncationMode(captionTruncation)
         }
         .frame(width: width, alignment: .leading)
         .accessibilityElement(children: .ignore)

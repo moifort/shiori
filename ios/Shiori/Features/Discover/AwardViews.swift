@@ -29,11 +29,15 @@ struct AwardWinnerTile: View {
 
     var body: some View {
         Button(action: onTapped) {
-            CoverTile(book: winner.cover, caption: winner.caption, width: width)
+            CoverTile(book: winner.cover, caption: winner.caption, width: width, captionTruncation: .middle)
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("discover-award-tile")
     }
+
+    /// On Découvrir's summary, a touch wider than the other strips' covers so
+    /// the prize and its year fit under it.
+    static let summaryWidth: CGFloat = 74
 }
 
 /// One winner, opened from the strip, drawn as a volume
