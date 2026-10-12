@@ -176,8 +176,8 @@ extension DiscoverSummaryRow where Covers == EmptyView {
 extension CoverTile {
     /// A tile on a summary line of Découvrir: larger than a library row's
     /// cover, smaller than a shelf's, the strip summing the category up rather
-    /// than laying it out.
-    static let summaryWidth: CGFloat = 64
+    /// than laying it out. Wide enough for a prize and its year under it.
+    static let summaryWidth: CGFloat = 74
 }
 
 #Preview {

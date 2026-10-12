@@ -34,10 +34,6 @@ struct AwardWinnerTile: View {
         .buttonStyle(.plain)
         .accessibilityIdentifier("discover-award-tile")
     }
-
-    /// On Découvrir's summary, a touch wider than the other strips' covers so
-    /// the prize and its year fit under it.
-    static let summaryWidth: CGFloat = 74
 }
 
 /// One winner, opened from the strip, drawn as a volume
