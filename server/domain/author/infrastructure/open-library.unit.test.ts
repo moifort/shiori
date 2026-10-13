@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
+import * as Sentry from '@sentry/node'
 import { openLibraryPortraitOf } from '~/domain/author/infrastructure/open-library'
 import { AuthorName } from '~/domain/shared/primitives'
 
@@ -19,8 +20,11 @@ const openLibraryAnswers = (docs: Doc[] | Error, photo = 200) => {
   return probed
 }
 
+const reported = () => spyOn(Sentry, 'captureException')
+
 afterEach(() => {
   ;(globalThis.fetch as unknown as { mockRestore?: () => void }).mockRestore?.()
+  ;(Sentry.captureException as unknown as { mockRestore?: () => void }).mockRestore?.()
 })
 
 const sanderson = AuthorName('Brandon Sanderson')
@@ -55,5 +59,23 @@ describe('openLibraryPortraitOf', () => {
   test('has no portrait when Open Library cannot be reached', async () => {
     openLibraryAnswers(new Error('The operation was aborted due to timeout'))
     expect(await openLibraryPortraitOf(sanderson)).toBeUndefined()
+  })
+
+  // The lookup gives Open Library three seconds and the author their initials
+  // past that: a timeout is that cutoff doing its job, and nobody has anything to fix.
+  test('gives up on a slow Open Library, and reports it to no one', async () => {
+    openLibraryAnswers(new DOMException('The operation was aborted due to timeout', 'TimeoutError'))
+    const reports = reported()
+
+    expect(await openLibraryPortraitOf(sanderson)).toBeUndefined()
+    expect(reports).not.toHaveBeenCalled()
+  })
+
+  test('reports Open Library failing for any other reason', async () => {
+    openLibraryAnswers(new Error('getaddrinfo ENOTFOUND openlibrary.org'))
+    const reports = reported()
+
+    expect(await openLibraryPortraitOf(sanderson)).toBeUndefined()
+    expect(reports).toHaveBeenCalledTimes(1)
   })
 })

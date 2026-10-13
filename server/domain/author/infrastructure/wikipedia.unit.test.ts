@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
+import * as Sentry from '@sentry/node'
 import { portraitOf } from '~/domain/author/infrastructure/wikipedia'
 import { AuthorName } from '~/domain/shared/primitives'
 
@@ -24,8 +25,11 @@ const photo = (name: string) => ({
   originalimage: { source: `https://upload.wikimedia.org/${name}.jpg` },
 })
 
+const reported = () => spyOn(Sentry, 'captureException')
+
 afterEach(() => {
   ;(globalThis.fetch as unknown as { mockRestore?: () => void }).mockRestore?.()
+  ;(Sentry.captureException as unknown as { mockRestore?: () => void }).mockRestore?.()
 })
 
 describe('portraitOf', () => {
@@ -94,5 +98,27 @@ describe('portraitOf', () => {
     }) as unknown as typeof fetch)
 
     expect(await portraitOf(AuthorName('Fred Vargas'))).toBeUndefined()
+  })
+
+  // The lookup gives Wikipedia four seconds and the author their initials past
+  // that: a timeout is that cutoff doing its job, and nobody has anything to fix.
+  test('gives up on a slow Wikipedia, and reports it to no one', async () => {
+    spyOn(globalThis, 'fetch').mockImplementation((async () => {
+      throw new DOMException('The operation was aborted due to timeout', 'TimeoutError')
+    }) as unknown as typeof fetch)
+    const reports = reported()
+
+    expect(await portraitOf(AuthorName('Fred Vargas'))).toBeUndefined()
+    expect(reports).not.toHaveBeenCalled()
+  })
+
+  test('reports Wikipedia failing for any other reason', async () => {
+    spyOn(globalThis, 'fetch').mockImplementation((async () => {
+      throw new Error('getaddrinfo ENOTFOUND en.wikipedia.org')
+    }) as unknown as typeof fetch)
+    const reports = reported()
+
+    expect(await portraitOf(AuthorName('Fred Vargas'))).toBeUndefined()
+    expect(reports).toHaveBeenCalled()
   })
 })

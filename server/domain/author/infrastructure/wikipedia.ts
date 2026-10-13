@@ -2,6 +2,7 @@ import { PortraitUrl } from '~/domain/author/primitives'
 import type { PortraitUrl as PortraitUrlType } from '~/domain/author/types'
 import type { AuthorName } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
+import { isTimeout } from '~/utils/fetch'
 
 const logger = createLogger('wikipedia')
 
@@ -86,7 +87,9 @@ const summaryPortrait = async ({
     const source = summary.thumbnail?.source ?? summary.originalimage?.source
     return source ? PortraitUrl(source) : undefined
   } catch (error) {
-    logger.warn('Wikipedia summary lookup failed', { error, wiki, title })
+    // Running out of time is the cutoff above doing its job, not a failure to look into.
+    if (isTimeout(error)) logger.info('Wikipedia summary lookup timed out', { wiki, title })
+    else logger.warn('Wikipedia summary lookup failed', { error, wiki, title })
     return undefined
   }
 }

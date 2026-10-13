@@ -2,6 +2,7 @@ import { authorKeyOf, PortraitUrl } from '~/domain/author/primitives'
 import type { PortraitUrl as PortraitUrlType } from '~/domain/author/types'
 import type { AuthorName } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
+import { isTimeout } from '~/utils/fetch'
 
 const logger = createLogger('open-library-author')
 
@@ -55,7 +56,9 @@ export const openLibraryPortraitOf = async (
     logger.warn('Open Library author photo lookup failed', { name, status: photo.status })
     return undefined
   } catch (error) {
-    logger.warn('Open Library author photo lookup failed', { error, name })
+    // Running out of time is the cutoff above doing its job, not a failure to look into.
+    if (isTimeout(error)) logger.info('Open Library author photo lookup timed out', { name })
+    else logger.warn('Open Library author photo lookup failed', { error, name })
     return undefined
   }
 }
