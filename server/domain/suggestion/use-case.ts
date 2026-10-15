@@ -25,7 +25,7 @@ import {
   tasteDigestOf,
 } from './business-rules'
 import { SuggestionCommand } from './command'
-import { catalogueEntryOf } from './infrastructure/catalogue'
+import { coverOf } from './infrastructure/catalogue'
 import { ask, isConfigured } from './infrastructure/claude'
 import { suggestionsOf } from './parsing'
 import { suggestionsPrompt } from './prompts'
@@ -34,9 +34,9 @@ import type { Dismissal, MonthlyDiscoveries, Suggestion, SuggestionView } from '
 
 const logger = createLogger('suggestion')
 
-/** How many catalogue checks run at once: twenty suggestions, two free
- *  catalogues, without hammering either. */
-const CHECKS_AT_ONCE = 5
+/** How many cover lookups run at once: twenty suggestions, without hammering
+ *  Open Library. */
+const LOOKUPS_AT_ONCE = 5
 
 export namespace SuggestionUseCase {
   /** The month's discoveries: every suggestion of the month's selection the
@@ -116,9 +116,10 @@ export namespace SuggestionUseCase {
   export const dismiss = (userId: UserId, key: string) => SuggestionCommand.dismiss(userId, key)
 }
 
-/** The model's suggestions for this library, each checked against the
- *  catalogues — one neither knows is taken for an invention and left out —
- *  and given the cover one found. Undefined when the model failed. */
+/** The model's suggestions for this library, each given the cover Open
+ *  Library has. None is left out for a catalogue not knowing it: the 2026-10-12
+ *  test found no invented book, and Open Library misses real ones. Undefined
+ *  when the model failed. */
 const generated = async (
   books: readonly Book[],
   opinions: readonly SeriesOpinion[],
@@ -132,28 +133,18 @@ const generated = async (
       appLanguage,
     )
     const answered = suggestionsOf(await ask(prompt))
-    const checked: (Suggestion | undefined)[] = []
-    for (let start = 0; start < answered.length; start += CHECKS_AT_ONCE) {
-      checked.push(
+    const covered: Suggestion[] = []
+    for (let start = 0; start < answered.length; start += LOOKUPS_AT_ONCE) {
+      covered.push(
         ...(await Promise.all(
-          answered.slice(start, start + CHECKS_AT_ONCE).map(async (suggestion) => {
-            const entry = await catalogueEntryOf(
-              suggestion.originalTitle,
-              suggestion.authors[0] ?? '',
-            )
-            if (entry.known === false) {
-              logger.info('suggestion unknown to the catalogues, left out', {
-                title: suggestion.originalTitle,
-                author: suggestion.authors[0],
-              })
-              return undefined
-            }
-            return entry.coverUrl ? { ...suggestion, coverUrl: entry.coverUrl } : suggestion
+          answered.slice(start, start + LOOKUPS_AT_ONCE).map(async (suggestion) => {
+            const coverUrl = await coverOf(suggestion.originalTitle, suggestion.authors[0] ?? '')
+            return coverUrl ? { ...suggestion, coverUrl } : suggestion
           }),
         )),
       )
     }
-    return checked.filter((suggestion): suggestion is Suggestion => suggestion !== undefined)
+    return covered
   } catch (error) {
     logger.error('discoveries not generated', { error })
     return undefined

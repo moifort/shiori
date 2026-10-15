@@ -25,7 +25,7 @@ mock.module('~/domain/suggestion/infrastructure/claude', () => ({
     ]),
 }))
 mock.module('~/domain/suggestion/infrastructure/catalogue', () => ({
-  catalogueEntryOf: async () => ({ known: true, coverUrl: 'https://covers.example/eiger.jpg' }),
+  coverOf: async () => 'https://covers.example/eiger.jpg',
 }))
 const { schema } = await import('~/domain/shared/graphql/schema')
 

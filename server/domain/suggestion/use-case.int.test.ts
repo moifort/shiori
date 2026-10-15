@@ -22,13 +22,11 @@ mock.module('~/domain/suggestion/infrastructure/claude', () => ({
   },
 }))
 
-/** Stands in for Open Library and Google Books: the books neither knows. */
-let unknown = new Set<string>()
+/** Stands in for Open Library: a cover for every book but the ones it misses. */
+let uncovered = new Set<string>()
 mock.module('~/domain/suggestion/infrastructure/catalogue', () => ({
-  catalogueEntryOf: async (title: string) =>
-    unknown.has(title)
-      ? { known: false }
-      : { known: true, coverUrl: `https://covers.example/${encodeURIComponent(title)}.jpg` },
+  coverOf: async (title: string) =>
+    uncovered.has(title) ? undefined : `https://covers.example/${encodeURIComponent(title)}.jpg`,
 }))
 
 const { SuggestionUseCase } = await import('~/domain/suggestion/use-case')
@@ -74,7 +72,7 @@ beforeEach(() => {
   fake = resetFakeFirestore()
   configured = true
   prompts.length = 0
-  unknown = new Set(['Les Possédés d’Illiers'])
+  uncovered = new Set()
   shelve('shibumi', 'Shibumi', 'Trevanian', {
     rating: 5,
     favorite: true,
@@ -84,7 +82,6 @@ beforeEach(() => {
   answering(
     suggested('Dune', 'Frank Herbert'),
     suggested('La Sanction', 'Trevanian', ['Shibumi']),
-    suggested('Les Possédés d’Illiers', 'Jean-Claude Izzo'),
     suggested('Silo', 'Hugh Howey', ['Dune']),
     suggested('Hypérion', 'Dan Simmons'),
     suggested('Ilium', 'Dan Simmons'),
@@ -101,7 +98,7 @@ const titles = (discoveries: { suggestions: { suggestion: { title: string } }[] 
   discoveries.suggestions.map((view) => view.suggestion.title)
 
 describe('the month’s discoveries', () => {
-  test('the first look at Découvrir asks the model and shows its whole selection, held and invented books left out', async () => {
+  test('the first look at Découvrir asks the model and shows its whole selection, held books left out', async () => {
     const discoveries = await look()
 
     expect(prompts).toHaveLength(1)
@@ -129,6 +126,19 @@ describe('the month’s discoveries', () => {
     expect(
       (fake.data('suggestion-queues', reader)?.suggestions as unknown[] | undefined)?.length,
     ).toBe(6)
+  })
+
+  test('a book Open Library misses is kept, without a cover', async () => {
+    uncovered = new Set(['Le Cercle'])
+    answering(suggested('Le Cercle', 'Bernard Minier'), suggested('Silo', 'Hugh Howey'))
+
+    const discoveries = await look()
+
+    expect(titles(discoveries)).toEqual(['Le Cercle', 'Silo'])
+    expect(discoveries.suggestions[0]?.describedCoverUrl).toBeUndefined()
+    expect(discoveries.suggestions[1]?.describedCoverUrl).toBe(
+      'https://covers.example/Silo.jpg' as never,
+    )
   })
 
   test('a look while another is making the selection says it is on its way', async () => {

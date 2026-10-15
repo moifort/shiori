@@ -56,8 +56,11 @@ blind, on his own library.
    languages.
 3. **Checked before shown.** A suggestion is dropped when:
    - the reader holds it, by shelf key against the whole library (any status);
-   - they dismissed it, awaited it, or it is a later volume of a saga they follow;
-   - neither Open Library nor Google Books knows the title and author.
+   - they dismissed it, awaited it, or it is a later volume of a saga they follow.
+
+   Open Library only lends a cover. No catalogue rejects a suggestion: Open Library misses real
+   books, Google Books answered 429 to anonymous callers, and in a month no suggestion was ever
+   found invented — Google Books was removed on 2026-10-15.
 4. **The queue.** The kept suggestions are stored in order, per reader. Découvrir shows the
    whole selection. Dismissing, adding or awaiting one removes it; the next one moves up. There is
    no refill: a month whose selection ran out shows the heading alone, "Plus de découvertes ce mois-ci :
@@ -120,7 +123,7 @@ blind, on his own library.
 
 Sonnet, at $3 / $15 per million tokens in / out. Measured on 2026-10-15 on a 192-book library:
 4,172 tokens in, 6,863 out — the twenty reasons are the bulk — in 53 s, **$0.116 ≈ €0.10 per
-generation**. Open Library and Google Books are free. The workspace "Shiori" on the Claude
+generation**. Open Library is free. The workspace "Shiori" on the Claude
 Console caps the spend at $20 a month.
 
 | | Generations | Cost |
