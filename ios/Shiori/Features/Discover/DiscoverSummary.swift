@@ -143,10 +143,11 @@ struct DiscoverSummaryRow<Covers: View>: View {
                 Text(title)
                     .font(.body.weight(.medium))
                     .lineLimit(1)
+                // A heading alone has room to say a little more.
                 Text(verbatim: line)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .lineLimit(hasCovers ? 1 : 2)
             }
             Spacer(minLength: 0)
             if let systemImage {

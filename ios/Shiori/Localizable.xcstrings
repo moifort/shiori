@@ -7421,22 +7421,6 @@
         }
       }
     },
-    "Nouvelle sélection en %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "New selection in %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nouvelle sélection en %@"
-          }
-        }
-      }
-    },
     "Nouvelles parutions" : {
       "localizations" : {
         "en" : {
@@ -8077,18 +8061,18 @@
         }
       }
     },
-    "Plus de découvertes pour ce mois-ci" : {
+    "Plus de découvertes ce mois-ci : prochaines en %@." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No more discoveries this month"
+            "value" : "No more discoveries this month: the next ones come in %@."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Plus de découvertes pour ce mois-ci"
+            "value" : "Plus de découvertes ce mois-ci : prochaines en %@."
           }
         }
       }

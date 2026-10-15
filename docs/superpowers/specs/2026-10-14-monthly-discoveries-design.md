@@ -60,8 +60,8 @@ blind, on his own library.
    - neither Open Library nor Google Books knows the title and author.
 4. **The queue.** The kept suggestions are stored in order, per reader. Découvrir shows the
    first five. Dismissing, adding or awaiting one removes it; the next one moves up. There is
-   no refill: a month whose selection ran out keeps its height: under "Nouvelle sélection en novembre", an icon and "Plus de découvertes
-   pour ce mois-ci" stand centred where the covers were, until the next month.
+   no refill: a month whose selection ran out shows the heading alone, "Plus de découvertes ce mois-ci :
+   prochaines en novembre.", until the next month.
 5. **A selection per month, made only from Découvrir.** The title names the month, so the
    selection is the month's. It is made when the reader opens Découvrir in a month that has
    none — `monthlyDiscoveries(lookUp: true)` — never twice a day, about a minute during which
