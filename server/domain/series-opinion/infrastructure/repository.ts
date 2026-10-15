@@ -18,12 +18,17 @@ const allCacheKey = (userId: UserId) => `series-opinions:all:${userId}`
 
 // The series tab reads every opinion at once, then the saga screen reads one of
 // them in the same request. Memoizing the scan means they cost one query between
-// them rather than one plus a lookup.
+// them rather than one plus a lookup. Shared in flight with the requests the
+// app sends alongside, which want them as well.
 export const findAllByUser = (userId: UserId): Promise<SeriesOpinion[]> =>
-  memoizedPerRequest(allCacheKey(userId), async () => {
-    const snapshot = await opinions().where('userId', '==', userId).get()
-    return snapshot.docs.map((doc) => doc.data())
-  })
+  memoizedPerRequest(
+    allCacheKey(userId),
+    async () => {
+      const snapshot = await opinions().where('userId', '==', userId).get()
+      return snapshot.docs.map((doc) => doc.data())
+    },
+    { shareInFlight: true },
+  )
 
 // One document, read by its id: the saga screen used to read every opinion of
 // the reader to keep one. Taken from the scan when this request already holds it.

@@ -16,12 +16,17 @@ const editionWatches = () =>
 
 const allCacheKey = (userId: UserId) => `awaited-editions:all:${userId}`
 
-// The Découvrir strip and a book's page read the same list in one request.
+// The Découvrir strip and a book's page read the same list in one request, and
+// Découvrir's other sections, sent alongside, read it too.
 export const findAllByUser = (userId: UserId): Promise<AwaitedEdition[]> =>
-  memoizedPerRequest(allCacheKey(userId), async () => {
-    const snapshot = await awaitedEditions().where('userId', '==', userId).get()
-    return snapshot.docs.map((doc) => doc.data())
-  })
+  memoizedPerRequest(
+    allCacheKey(userId),
+    async () => {
+      const snapshot = await awaitedEditions().where('userId', '==', userId).get()
+      return snapshot.docs.map((doc) => doc.data())
+    },
+    { shareInFlight: true },
+  )
 
 /** Every awaited edition, for the scheduled passes: read once per run. */
 export const findAll = async (): Promise<AwaitedEdition[]> =>

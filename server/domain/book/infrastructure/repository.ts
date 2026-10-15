@@ -45,12 +45,18 @@ const allCacheKey = (userId: UserId) => `books:all:${userId}`
 
 // The library list, the series sections and the home screen all want the same
 // rows in one request. Memoizing the scan means they cost one query between
-// them rather than one each.
+// them rather than one each. Shared in flight too: the app opens on some ten
+// requests at once — Découvrir's sections, the dashboard — each of which wants
+// the whole library, and a friend's shelf is read by two of them.
 export const findAllByUser = (userId: UserId): Promise<Book[]> =>
-  memoizedPerRequest(allCacheKey(userId), async () => {
-    const snapshot = await ownedBy(userId).get()
-    return snapshot.docs.map((doc) => asBook(doc.data()))
-  })
+  memoizedPerRequest(
+    allCacheKey(userId),
+    async () => {
+      const snapshot = await ownedBy(userId).get()
+      return snapshot.docs.map((doc) => asBook(doc.data()))
+    },
+    { shareInFlight: true },
+  )
 
 /** One page of the Library tab, newest on the shelf first, read with a cursor:
  *  `limit + 1` documents a page, whatever the size of the library, the extra

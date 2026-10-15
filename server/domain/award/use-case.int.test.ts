@@ -4,6 +4,7 @@ import type { UserId } from '~/domain/shared/types'
 import {
   type FakeFirestore,
   fakeDb,
+  inConcurrentFakeRequests,
   resetFakeFirestore,
   startFakeRequest,
 } from '~/test/fake-firestore'
@@ -350,5 +351,56 @@ describe('the daily winners pass', () => {
     expect(await AwardUseCase.watchWinners(now)).toEqual({ found: 1, failed: 1 })
     expect(fake.data('award-winners', 'nebula~2027')).toBeNull()
     expect(fake.data('award-winners', 'world-fantasy~2026')).not.toBeNull()
+  })
+})
+
+describe('Découvrir opening', () => {
+  /** The sections the app asks for at once, each as its own request. Each
+   *  reads the whole library; the awaited editions are read by all three. */
+  const opening = [
+    () => AwardUseCase.sections(reader, 'book', 'fr', now),
+    () => AwardUseCase.shelf(reader, 'book', 'fr', undefined, now),
+    () => AwaitedEditionUseCase.awaited(reader, 'book', now),
+  ]
+  const library = 3
+  const awaitedEditions = 1
+
+  /** The science fiction reader, awaiting a translation the web found. */
+  const awaitingTheTranslation = async () => {
+    sfReader()
+    deathOfTheAuthorFound()
+    const awaited = await AwaitedEditionUseCase.awaitScannedBook(
+      reader,
+      { ...deathOfTheAuthor, language: 'en', format: 'book' },
+      'book',
+      'fr',
+      now,
+    )
+    if (typeof awaited === 'string') throw new Error(awaited)
+  }
+
+  test('one after the other, each section scans the library', async () => {
+    await awaitingTheTranslation()
+    const before = { queries: fake.queryReads, docs: fake.queriedDocs }
+
+    for (const section of opening) await inConcurrentFakeRequests<unknown>([section])
+
+    // The library, the awaited editions and the award winners, three times.
+    expect(fake.queryReads - before.queries).toBe(8)
+    expect(fake.queriedDocs - before.docs).toBe(3 * library + 3 * awaitedEditions)
+  })
+
+  test('sent together, the sections scan the library once between them', async () => {
+    await awaitingTheTranslation()
+    // As in production, the library — the largest read — is the longest in flight.
+    fake.answerQueriesAfter(10)
+    const before = { queries: fake.queryReads, docs: fake.queriedDocs }
+
+    await inConcurrentFakeRequests<unknown>(opening)
+
+    // The awaited editions answer fast, so the sections reaching them after the
+    // first read answered read them again; the library, never.
+    expect(fake.queryReads - before.queries).toBe(5)
+    expect(fake.queriedDocs - before.docs).toBe(library + 2 * awaitedEditions)
   })
 })

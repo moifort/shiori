@@ -8,6 +8,7 @@
  * does not matter:
  *   mock.module('~/system/firebase', () => ({ db: fakeDb }))
  */
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { FieldValue, type Firestore } from 'firebase-admin/firestore'
 
 type Doc = Record<string, unknown>
@@ -83,6 +84,10 @@ export const createFakeFirestore = () => {
   let queriedDocs = 0
   // Handed to the next query instead of an answer, once.
   let queryError: Error | undefined
+  // How long a query takes per document it returns, as a real one takes longer
+  // the more it decodes: zero answers at once, which leaves no query in flight
+  // for requests sent together to share.
+  let queryMsPerDocument = 0
 
   const docsOf = (collection: string) => {
     const existing = store.get(collection)
@@ -266,6 +271,7 @@ export const createFakeFirestore = () => {
       if (state.offset !== undefined) matching = matching.slice(state.offset)
       if (state.limit !== undefined) matching = matching.slice(0, state.limit)
       queriedDocs += matching.length
+      if (queryMsPerDocument > 0) await Bun.sleep(queryMsPerDocument * matching.length)
       return {
         docs: matching.map(([id, data]) => ({ data: () => data, ref: makeRef(collection, id) })),
       }
@@ -430,6 +436,9 @@ export const createFakeFirestore = () => {
     failNextQueryWith: (error: Error) => {
       queryError = error
     },
+    answerQueriesAfter: (msPerDocument: number) => {
+      queryMsPerDocument = msPerDocument
+    },
   }
 }
 
@@ -449,6 +458,26 @@ export const resetFakeFirestore = () => {
 export const startFakeRequest = () => {
   const context: Record<string, unknown> = {}
   ;(globalThis as unknown as { useEvent: () => unknown }).useEvent = () => ({ context })
+}
+
+/** Run each call as its own HTTP request, all at once, as the app sends the
+ *  sections of a screen: each gets a request context of its own, as
+ *  `startFakeRequest` gives one, for as long as it runs. */
+export const inConcurrentFakeRequests = async <T>(
+  calls: readonly (() => Promise<T>)[],
+): Promise<T[]> => {
+  const requests = new AsyncLocalStorage<Record<string, unknown>>()
+  const global = globalThis as unknown as { useEvent: () => unknown }
+  const outside = global.useEvent
+  global.useEvent = () => {
+    const context = requests.getStore()
+    return context ? { context } : outside()
+  }
+  try {
+    return await Promise.all(calls.map((call) => requests.run({}, call)))
+  } finally {
+    global.useEvent = outside
+  }
 }
 
 export const fakeDb = () => holder.current.db

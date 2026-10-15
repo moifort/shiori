@@ -37,12 +37,17 @@ const friendsCacheKey = (userId: UserId) => `friendships:all:${userId}`
 
 // The friends list, the profile screen's permission check and the account
 // deletion all want the same rows in one request. Memoizing the scan means they
-// cost one query between them rather than one each.
+// cost one query between them rather than one each. Shared in flight too:
+// Découvrir and the dashboard ask for the friends' hearts together.
 export const findAllByUser = (userId: UserId): Promise<Friendship[]> =>
-  memoizedPerRequest(friendsCacheKey(userId), async () => {
-    const snapshot = await friendships().where('userIds', 'array-contains', userId).get()
-    return snapshot.docs.map((doc) => doc.data())
-  })
+  memoizedPerRequest(
+    friendsCacheKey(userId),
+    async () => {
+      const snapshot = await friendships().where('userIds', 'array-contains', userId).get()
+      return snapshot.docs.map((doc) => doc.data())
+    },
+    { shareInFlight: true },
+  )
 
 export const saveFriendship = async (
   friendship: Friendship,
