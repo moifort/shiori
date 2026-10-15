@@ -21,7 +21,8 @@ in line when it is next touched, one domain at a time — never a big-bang rewri
 
 - **Pure** — receives values and actions, draws them. No API call, no `.task` that fetches, no
   `.shared` singleton, no `NotificationCenter`. Renders in a `#Preview` from fixtures alone.
-  Everything under `components/` and `Shared/Components/` is pure.
+  Everything under `components/`, `Shared/Components/` and `Shared/Book/` is pure, and
+  `scripts/check-ios-components.ts` fails the iOS build when it is not.
 - **Connected** — the `{Feature}Screen` at the root of a feature. It owns the ViewModel, the
   `.task`s, the change notices, the navigation and the sheets, and hands values and actions to
   its `Page`. It draws nothing of its own.
@@ -37,10 +38,13 @@ ios/Shiori/
 ├── Generated/GraphQL/                 Apollo output, never edited
 ├── Shared/
 │   ├── Components/
-│   │   ├── atoms/                     StarRatingView, LanguageTag, RibbonMark…
-│   │   └── molecules/                 LabeledInfoRow, SeriesLinkRow, LoadMoreRow…
+│   │   ├── atoms/                     StarRatingView, LanguageTag, RibbonMark, AsyncButton…
+│   │   ├── molecules/                 LabeledInfoRow, SeriesLinkRow, LoadMoreRow, EmptyStateView…
+│   │   ├── organisms/                 ShelfMosaic: cross-domain sections
+│   │   └── styles/                    label styles, colours, view modifiers
 │   ├── Book/                          the book page's parts, shared by every book screen
 │   ├── Platform/                      UIKit wrappers: CameraPicker, MailComposeView, ContactPicker
+│   ├── Shell/                         the app around the tabs: LaunchCurtain, UpdateRequiredView…
 │   └── GraphQLClient.swift, SnapshotCache.swift, CoverImages.swift, DataChanges.swift…
 └── Features/{Domain}/                 Discover, Series, Authors, Friends, Library, Book, Scan…
     ├── {Feature}Screen.swift          connected: ViewModel, tasks, navigation, sheets
@@ -124,9 +128,13 @@ struct DiscoverScreen: View {
   `var onX: () -> Void = {}` closures compiles with one left unwired and silently does nothing
   — `HomePage`'s sixteen closures are the case this rule exists for.
 - An organism with one or two actions takes plain closures; the enum is for pages.
-- **Actions are `async`.** The component awaits them through `AsyncButton` /
-  `AsyncToolbarButton`, which draw the progress and disable the control while it runs. A
-  component never wraps an action in `Task {}` itself.
+- **An action the page waits on is `async`**, awaited through `AsyncButton` /
+  `AsyncToolbarButton`, which draw the progress and disable the control while it runs. A page
+  whose actions only open or switch something (`HomePage`, `SettingsHomePage`) takes a plain
+  `(Action) -> Void`. A tap on a row of an async page sends `Task { await onAction(…) }`: the
+  page starts it, the screen does the work.
+- A sheet that asks the server for proposals (a vocabulary, merge candidates) receives an
+  async loader — `loadVocabulary: () async -> BookVocabulary?` — rather than the client.
 - **Navigation state** (which sheet, which pushed destination) lives in the screen. The page
   only says what was tapped.
 
@@ -308,7 +316,10 @@ Previews check how a view looks; unit tests check what the app decides. They do 
 - **What is not**: a SwiftUI `body`. A test that inspects a view hierarchy breaks on every
   layout tweak and proves nothing a preview does not show better.
 - A test needs no network, no Firebase, no simulator state: the client is built inline, the
-  data comes from the fixtures.
+  data comes from the fixtures. A cached ViewModel takes `caching: false` (Discover's
+  `snapshots: .none`), so a test neither reads nor leaves a snapshot on disk.
+- The doubles every test shares — `Boom`, `Flag`, `Calls` — are in `ShioriTests/Support/`.
+- The Build workflow runs `ShioriTests` on every push.
 - `ShioriUITests` keeps the end-to-end screenshots; it is not where logic is tested.
 
 ## Design conventions
@@ -359,26 +370,20 @@ copy them from the main checkout. Never clear the build cache to unblock a broke
 
 ## Known divergences
 
-Code written before this guide, to be brought in line domain by domain:
+What is left, as of 2026-10-15, once every domain was brought in line:
 
-- **Views that call the network themselves**: `SeriesView` (fifteen calls over five APIs),
-  `AuthorView`, `SharedView`, `BookEditView`, `NotificationSettingsView`; in Discover,
-  `AwaitedEditionView` and `SuggestionView`, still on `ReleaseDescriber.live()` and the APIs;
-  and two pure-named components that fetch, `ScanReviewPage` and the `AddBookSheet` organism.
-- **"Look up, then add a book"** exists once, as `BookAddition.add` (`Features/Book/`), which
-  Discover reaches through `DiscoverClient.addBook`; `SeriesView` and `AuthorView` still write
-  their own lookup and `BookAPI.add`, and move to `BookAddition` with their domains.
-- **Several components per file**: `SharedView` (`FriendRow`, `SharedSummary`,
-  `InvitationSheet`), `SeriesView` (`SeriesRing`); in Discover, the older files not split yet —
-  `AwaitedEditionViews`, `FriendPicks`, `DiscoverSummary`, `AuthorReleasesSection`,
-  `SuggestionViews`.
-- **No `components/` folder** in Friends, Authors and Series; Discover has one, but the
-  strips and pages of the files above still sit at its root. `Shared/Components` is flat,
-  atoms beside organisms and platform wrappers.
-- **About fifty views without a `#Preview`**, among them all of `Shared/Components/Book/`.
-- **ViewModels hard-wired** to the `API` enums everywhere but Discover (`DiscoverClient`).
-  The unit-test target is `ShioriTests` (Swift Testing, hosted by the app); Discover's
-  ViewModels are the first tested there.
+- **Discover's older files** hold several components each and still reach the server from a
+  view: `AwaitedEditionViews` (`AwaitedEditionView`), `SuggestionViews`, `FriendPicks`,
+  `AuthorReleasesSection`, `ReleaseDescriber`. They sit at the domain's root, outside
+  `components/`, so the lint does not see them.
+- **Molecules inside domains**: `Library/components/molecules` (`BookRow`, `BookCover`,
+  `BookTile`) and `Home/components/molecules`. Used by several domains, they belong in
+  `Shared/Components`.
 - **Offset pagination** in the series and authors lists; the library and a friend's lists use
   the cursor. Moving them is a schema change: add `after`, deprecate `offset`.
-- **`…View` names** on both connected and pure views.
+- **`…View` names** kept: `LoginView`, `DiscoverFirstLookView`, the UIKit wrappers
+  `CameraView` and `AmazonSignInWebView` (which belong in `Shared/Platform`), and the atoms
+  `StarRatingView` and `EmptyStateView`.
+- **App-level services** still read their APIs directly — `OnboardingGate`,
+  `SubscriptionStore`, `PushRegistrar`, the Audible and Kindle background syncs. They are not
+  views; a client for them waits until they need tests.
