@@ -6,7 +6,9 @@ structural is transposed from `../vinarium` rather than invented.
 
 The design for the current scope is
 [docs/superpowers/specs/2026-09-14-shiori-design.md](docs/superpowers/specs/2026-09-14-shiori-design.md).
-What comes after it is in [docs/roadmap.md](docs/roadmap.md).
+What comes after it is in [docs/roadmap.md](docs/roadmap.md). The iOS app's rules — pure and
+connected views, atomic layout per domain, loading, snapshots, pagination, previews and tests —
+are in [docs/ios-guide.md](docs/ios-guide.md).
 
 ## Language
 
