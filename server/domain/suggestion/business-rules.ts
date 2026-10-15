@@ -30,18 +30,18 @@ export const monthOf = (now: Date): string => now.toISOString().slice(0, 7)
 
 const dayOf = (date: Date): string => date.toISOString().slice(0, 10)
 
-/** Whether the model is asked again: no selection yet, a new month, a
- *  selection written in another language than the app's, or fewer suggestions
- *  left than the line shows — never twice the same day. */
+/** Whether the model is asked, when the reader opens Découvrir: no selection
+ *  yet, none for this month, or one written in another language than the
+ *  app's — never twice the same day. A month whose selection ran out stays
+ *  empty until the next: there is no refill. */
 export const shouldGenerate = (
   queue: Pick<SuggestionQueue, 'month' | 'generatedAt' | 'language'> | undefined,
-  remaining: number,
   now: Date,
   language: Language,
 ): boolean => {
   if (!queue) return true
   if (dayOf(queue.generatedAt) === dayOf(now)) return false
-  return queue.month !== monthOf(now) || queue.language !== language || remaining < SHOWN_COUNT
+  return queue.month !== monthOf(now) || queue.language !== language
 }
 
 /** A heart, then stars, best first. */

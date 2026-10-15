@@ -113,18 +113,47 @@ struct MonthlyDiscoveries: Hashable, Sendable, Codable {
     var title: String { Self.title(month: month) }
 
     static func title(month: String, locale: Locale = .current) -> String {
+        let name = monthName(month, locale: locale)
+        return elided(name)
+            ? String(localized: "Les découvertes d’\(name)")
+            : String(localized: "Les découvertes de \(name)")
+    }
+
+    /// Under the title once the month's selection ran out: when the next one
+    /// comes.
+    var nextLine: String {
+        String(localized: "Prochaines découvertes en \(Self.monthName(Self.month(after: month)))")
+    }
+
+    /// `YYYY-MM` of the month a date falls in, in UTC as the server counts.
+    static func month(of date: Date) -> String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC") ?? .gmt
+        let parts = calendar.dateComponents([.year, .month], from: date)
+        return String(format: "%04d-%02d", parts.year ?? 2026, parts.month ?? 1)
+    }
+
+    static func month(after month: String) -> String {
+        let parts = month.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 2 else { return month }
+        let next = parts[1] == 12 ? (parts[0] + 1, 1) : (parts[0], parts[1] + 1)
+        return String(format: "%04d-%02d", next.0, next.1)
+    }
+
+    private static func monthName(_ month: String, locale: Locale = .current) -> String {
         let parser = DateFormatter()
         parser.locale = Locale(identifier: "en_US_POSIX")
+        parser.timeZone = TimeZone(identifier: "UTC")
         parser.dateFormat = "yyyy-MM"
         let formatter = DateFormatter()
         formatter.locale = locale
+        formatter.timeZone = TimeZone(identifier: "UTC")
         formatter.setLocalizedDateFormatFromTemplate("LLLL")
-        let date = parser.date(from: month) ?? .now
-        let name = formatter.string(from: date)
-        let elided = name.lowercased().first.map { "aeiouyéèh".contains($0) } ?? false
-        return elided
-            ? String(localized: "Les découvertes d’\(name)")
-            : String(localized: "Les découvertes de \(name)")
+        return formatter.string(from: parser.date(from: month) ?? .now)
+    }
+
+    private static func elided(_ name: String) -> Bool {
+        name.lowercased().first.map { "aeiouyéèh".contains($0) } ?? false
     }
 }
 
@@ -133,7 +162,9 @@ enum SuggestionsAPI {
     /// minute, and the catalogue checks after it.
     private static let requestTimeout: TimeInterval = 150
 
-    static func monthly(format: ReleaseFormat) async throws -> MonthlyDiscoveries {
+    /// `lookUp`, from Découvrir: a month with no selection yet gets one made.
+    /// Without it — the home page — the stored selection is read.
+    static func monthly(format: ReleaseFormat, lookUp: Bool) async throws -> MonthlyDiscoveries {
         #if DEBUG
         if Showcase.isOn {
             return MonthlyDiscoveries(month: "2026-10", suggestions: [])
@@ -141,7 +172,7 @@ enum SuggestionsAPI {
         #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.MonthlyDiscoveriesQuery(format: .case(format.graphQL)),
+            query: ShioriGraphQL.MonthlyDiscoveriesQuery(format: .case(format.graphQL), lookUp: .some(lookUp)),
             requestTimeout: requestTimeout
         )
         return MonthlyDiscoveries(

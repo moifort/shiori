@@ -8429,6 +8429,22 @@
         }
       }
     },
+    "Prochaines découvertes en %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next discoveries in %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prochaines découvertes en %@"
+          }
+        }
+      }
+    },
     "Prochaines sorties" : {
       "localizations" : {
         "en" : {
@@ -8601,6 +8617,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Recherche de la série..."
+          }
+        }
+      }
+    },
+    "Recherche de vos découvertes…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finding your discoveries…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recherche de vos découvertes…"
           }
         }
       }

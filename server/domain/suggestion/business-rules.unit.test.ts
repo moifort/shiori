@@ -89,24 +89,23 @@ describe('shouldGenerate', () => {
   })
 
   test('asks when there is no selection yet', () => {
-    expect(shouldGenerate(undefined, 0, now, 'fr')).toBe(true)
+    expect(shouldGenerate(undefined, now, 'fr')).toBe(true)
   })
 
-  test('never asks twice the same day', () => {
-    expect(shouldGenerate(queue('2026-09', '2026-10-15T01:00:00Z'), 0, now, 'en')).toBe(false)
-  })
-
-  test('asks in a new month, however many are left', () => {
-    expect(shouldGenerate(queue('2026-09', '2026-09-30T09:00:00Z'), 12, now, 'fr')).toBe(true)
+  test('asks in a new month', () => {
+    expect(shouldGenerate(queue('2026-09', '2026-09-30T09:00:00Z'), now, 'fr')).toBe(true)
   })
 
   test('asks when the app’s language is not the selection’s', () => {
-    expect(shouldGenerate(queue('2026-10', '2026-10-02T09:00:00Z'), 12, now, 'en')).toBe(true)
+    expect(shouldGenerate(queue('2026-10', '2026-10-02T09:00:00Z'), now, 'en')).toBe(true)
   })
 
-  test('asks within the month when fewer than five are left', () => {
-    expect(shouldGenerate(queue('2026-10', '2026-10-02T09:00:00Z'), 4, now, 'fr')).toBe(true)
-    expect(shouldGenerate(queue('2026-10', '2026-10-02T09:00:00Z'), 5, now, 'fr')).toBe(false)
+  test('never refills a month that has its selection', () => {
+    expect(shouldGenerate(queue('2026-10', '2026-10-02T09:00:00Z'), now, 'fr')).toBe(false)
+  })
+
+  test('never asks twice the same day', () => {
+    expect(shouldGenerate(queue('2026-09', '2026-10-15T01:00:00Z'), now, 'en')).toBe(false)
   })
 })
 

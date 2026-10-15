@@ -87,9 +87,10 @@ final class HomeViewModel {
     }
 
     /// The discoveries alone: read in the printed format, as Découvrir draws
-    /// its line by default. Kept as they were when they could not be read.
+    /// its line by default, never made here — only Découvrir asks for a month's
+    /// selection. Kept as they were when they could not be read.
     func loadDiscoveries() async {
-        guard let found = try? await SuggestionsAPI.monthly(format: .book) else { return }
+        guard let found = try? await SuggestionsAPI.monthly(format: .book, lookUp: false) else { return }
         withAnimation(.smooth) { discoveries = found }
         let cache = discoveriesCache
         Task.detached { cache.write(found) }

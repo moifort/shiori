@@ -89,20 +89,21 @@ beforeEach(() => {
   )
 })
 
+const look = (at: Date | string = october, language: 'fr' | 'en' = 'fr') =>
+  SuggestionUseCase.monthly(reader, 'audiobook', language, true, new Date(at))
+const read = (at: Date | string = october) =>
+  SuggestionUseCase.monthly(reader, 'audiobook', 'fr', false, new Date(at))
+const titles = (discoveries: { suggestions: { suggestion: { title: string } }[] }) =>
+  discoveries.suggestions.map((view) => view.suggestion.title)
+
 describe('the month’s discoveries', () => {
-  test('the first look asks the model and shows five, held and invented books left out', async () => {
-    const discoveries = await SuggestionUseCase.monthly(reader, 'audiobook', 'fr', october)
+  test('the first look at Découvrir asks the model and shows five, held and invented books left out', async () => {
+    const discoveries = await look()
 
     expect(prompts).toHaveLength(1)
     expect(prompts[0]).toContain('« Shibumi » — Trevanian')
     expect(discoveries.month).toBe('2026-10')
-    expect(discoveries.suggestions.map((view) => view.suggestion.title)).toEqual([
-      'La Sanction',
-      'Silo',
-      'Hypérion',
-      'Ilium',
-      'Seveneves',
-    ] as never)
+    expect(titles(discoveries)).toEqual(['La Sanction', 'Silo', 'Hypérion', 'Ilium', 'Seveneves'])
     const [sanction] = discoveries.suggestions
     expect(sanction?.references).toEqual([
       {
@@ -118,44 +119,38 @@ describe('the month’s discoveries', () => {
     ).toBe(6)
   })
 
-  test('a second look the same day reads the stored selection without asking', async () => {
-    await SuggestionUseCase.monthly(reader, 'audiobook', 'fr', october)
-    startFakeRequest()
-    const before = { doc: fake.docReads, query: fake.queryReads }
-    const again = await SuggestionUseCase.monthly(
-      reader,
-      'audiobook',
-      'fr',
-      new Date('2026-10-15T18:00:00Z'),
-    )
+  test('the home page reads what there is and never asks', async () => {
+    expect(titles(await read())).toEqual([])
+    expect(prompts).toHaveLength(0)
 
+    await look()
+    startFakeRequest()
+    const before = fake.queryReads
+    expect(titles(await read('2026-10-20T09:00:00Z'))).toHaveLength(5)
     expect(prompts).toHaveLength(1)
-    expect(again.suggestions).toHaveLength(5)
     // The library, the sagas' opinions, the dismissals and the awaited editions
     // are four queries; the queue one get, the watches and descriptions getAlls.
-    expect(fake.queryReads - before.query).toBe(4)
+    expect(fake.queryReads - before).toBe(4)
   })
 
-  test('a dismissal lets the next one in and is told to the model next time', async () => {
-    await SuggestionUseCase.monthly(reader, 'audiobook', 'fr', october)
+  test('a dismissal lets the next one in and is told to the model next month', async () => {
+    await look()
     expect(await SuggestionUseCase.dismiss(reader, 'silo--hugh-howey')).toMatchObject({
       key: 'silo--hugh-howey',
     })
-    const after = await SuggestionUseCase.monthly(reader, 'audiobook', 'fr', october)
-
-    expect(after.suggestions.map((view) => view.suggestion.title)).toEqual([
+    expect(titles(await look())).toEqual([
       'La Sanction',
       'Hypérion',
       'Ilium',
       'Seveneves',
       'Expiration',
-    ] as never)
-    await SuggestionUseCase.monthly(reader, 'audiobook', 'fr', new Date('2026-11-02T09:00:00Z'))
+    ])
+    await look('2026-11-02T09:00:00Z')
     expect(prompts[1]).toContain('## Déjà proposés, pas intéressé\n- « Silo » — Hugh Howey')
   })
 
   test('a book added or awaited leaves the line', async () => {
-    await SuggestionUseCase.monthly(reader, 'audiobook', 'fr', october)
+    await look()
     startFakeRequest()
     shelve('sanction', 'La Sanction', 'Trevanian', { status: 'to-read' })
     fake.seed('awaited-editions', 'awaited-silo', {
@@ -164,91 +159,60 @@ describe('the month’s discoveries', () => {
       watchKey: 'silo--hugh-howey--book--fr',
       format: 'book',
     })
-    const after = await SuggestionUseCase.monthly(reader, 'audiobook', 'fr', october)
 
-    expect(after.suggestions.map((view) => view.suggestion.title)).toEqual([
-      'Hypérion',
-      'Ilium',
-      'Seveneves',
-      'Expiration',
-    ] as never)
+    expect(titles(await look())).toEqual(['Hypérion', 'Ilium', 'Seveneves', 'Expiration'])
   })
 
-  test('within the month, too few left asks again the next day, keeping what is left first', async () => {
-    await SuggestionUseCase.monthly(reader, 'audiobook', 'fr', october)
-    for (const key of ['silo--hugh-howey', 'hyperion--dan-simmons'])
+  test('a month whose selection ran out stays empty until the next', async () => {
+    await look()
+    for (const key of [
+      'sanction--trevanian',
+      'silo--hugh-howey',
+      'hyperion--dan-simmons',
+      'ilium--dan-simmons',
+      'seveneves--neal-stephenson',
+      'expiration--ted-chiang',
+    ])
       await SuggestionUseCase.dismiss(reader, key)
-    answering(suggested('Neuromancien', 'William Gibson'), suggested('Ilium', 'Dan Simmons'))
-    const sameDay = await SuggestionUseCase.monthly(reader, 'audiobook', 'fr', october)
-    expect(sameDay.suggestions).toHaveLength(4)
 
-    const nextDay = await SuggestionUseCase.monthly(
-      reader,
-      'audiobook',
-      'fr',
-      new Date('2026-10-16T09:00:00Z'),
-    )
+    expect(titles(await look('2026-10-28T09:00:00Z'))).toEqual([])
+    expect(prompts).toHaveLength(1)
+
+    answering(suggested('Neuromancien', 'William Gibson'))
+    expect(titles(await look('2026-11-03T09:00:00Z'))).toEqual(['Neuromancien'])
     expect(prompts).toHaveLength(2)
-    expect(nextDay.suggestions.map((view) => view.suggestion.title)).toEqual([
-      'La Sanction',
-      'Ilium',
-      'Seveneves',
-      'Expiration',
-      'Neuromancien',
-    ] as never)
   })
 
-  test('a new month starts afresh', async () => {
-    await SuggestionUseCase.monthly(reader, 'audiobook', 'fr', october)
-    answering(suggested('Neuromancien', 'William Gibson'))
-    const november = await SuggestionUseCase.monthly(
-      reader,
-      'audiobook',
-      'fr',
-      new Date('2026-11-01T09:00:00Z'),
-    )
-
-    expect(november.month).toBe('2026-11')
-    expect(november.suggestions.map((view) => view.suggestion.title)).toEqual([
-      'Neuromancien',
-    ] as never)
+  test('a new month is not shown before Découvrir asks for it', async () => {
+    await look()
+    expect(titles(await read('2026-11-01T09:00:00Z'))).toEqual([])
+    expect(prompts).toHaveLength(1)
   })
 
   test('a reader who switched the app to English gets a selection written in English', async () => {
-    await SuggestionUseCase.monthly(reader, 'audiobook', 'fr', october)
+    await look()
     answering(suggested('Neuromancer', 'William Gibson'))
-    const english = await SuggestionUseCase.monthly(
-      reader,
-      'audiobook',
-      'en',
-      new Date('2026-10-16T09:00:00Z'),
-    )
+    const english = await look('2026-10-16T09:00:00Z', 'en')
 
     expect(prompts[1]).toContain('écrits en anglais')
-    expect(english.suggestions.map((view) => view.suggestion.title)).toEqual([
-      'Neuromancer',
-    ] as never)
+    expect(titles(english)).toEqual(['Neuromancer'])
     expect(fake.data('suggestion-queues', reader)?.language).toBe('en')
   })
 
-  test('a failed model keeps the selection there was', async () => {
-    await SuggestionUseCase.monthly(reader, 'audiobook', 'fr', october)
+  test('a failed model leaves the line empty and is asked again the next day', async () => {
+    await look()
     answer = new Error('Claude answered 529')
-    const november = await SuggestionUseCase.monthly(
-      reader,
-      'audiobook',
-      'fr',
-      new Date('2026-11-01T09:00:00Z'),
-    )
+    expect(titles(await look('2026-11-01T09:00:00Z'))).toEqual([])
+    expect(titles(await look('2026-11-01T18:00:00Z'))).toEqual([])
+    expect(prompts).toHaveLength(2)
 
-    expect(november.suggestions).toHaveLength(5)
+    answering(suggested('Neuromancien', 'William Gibson'))
+    expect(titles(await look('2026-11-02T09:00:00Z'))).toEqual(['Neuromancien'])
   })
 
   test('without a key, nothing is asked and the line is empty', async () => {
     configured = false
-    const discoveries = await SuggestionUseCase.monthly(reader, 'audiobook', 'fr', october)
-
-    expect(discoveries.suggestions).toEqual([])
+    expect(titles(await look())).toEqual([])
     expect(prompts).toHaveLength(0)
   })
 

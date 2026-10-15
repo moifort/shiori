@@ -11,6 +11,7 @@ import SwiftUI
 final class DiscoverViewModel {
     init() {
         feed = cache.read() ?? DiscoveryFeed()
+        discoveries = discoveriesCache.read()
     }
 
     private(set) var feed: DiscoveryFeed
@@ -212,16 +213,36 @@ final class DiscoverViewModel {
         }
     }
 
-    /// The month's discoveries, nil until loaded: three books chosen for the
-    /// reader, each with why. Not kept in the snapshot, as the awards: asked
-    /// anew on each visit, which reads the stored selection at once — only the
-    /// first look of a month waits for the model.
+    /// The month's discoveries as last shown, kept on disk so the line opens
+    /// on them: five books chosen for the reader, each with why.
     private(set) var discoveries: MonthlyDiscoveries?
+    /// The month's selection is being made: the first look of a month waits
+    /// for the model, about a minute.
+    private(set) var isLookingUpDiscoveries = false
 
+    /// Bump the version whenever `MonthlyDiscoveries` changes shape.
+    private let discoveriesCache = SnapshotCache<MonthlyDiscoveries>("discover-discoveries", version: 1)
+
+    /// What the line draws: the month's covers, the search under way, the
+    /// month's selection run out — or nothing.
+    var discoveriesLine: DiscoveriesLine? {
+        let month = MonthlyDiscoveries.month(of: .now)
+        if let discoveries, discoveries.month == month {
+            return discoveries.suggestions.isEmpty ? .ranOut(discoveries) : .shown(discoveries)
+        }
+        return isLookingUpDiscoveries ? .searching(month: month) : nil
+    }
+
+    /// Asks for the month's discoveries, making the selection when the month
+    /// has none yet.
     func loadDiscoveries(_ format: ReleaseFormat) async {
+        isLookingUpDiscoveries = true
+        defer { isLookingUpDiscoveries = false }
         do {
-            let found = try await SuggestionsAPI.monthly(format: format)
+            let found = try await SuggestionsAPI.monthly(format: format, lookUp: true)
             withAnimation(.smooth) { discoveries = found }
+            let cache = discoveriesCache
+            Task.detached { cache.write(found) }
         } catch {
             guard !isCancellation(error) else { return }
             _ = reportError(error)
@@ -385,3 +406,14 @@ final class DiscoverViewModel {
     }
 }
 
+
+/// What Découvrir's discoveries line draws.
+enum DiscoveriesLine {
+    /// The month's covers.
+    case shown(MonthlyDiscoveries)
+    /// The month's selection is being made.
+    case searching(month: String)
+    /// Every book of the month's selection was taken or set aside: the next
+    /// month brings new ones.
+    case ranOut(MonthlyDiscoveries)
+}

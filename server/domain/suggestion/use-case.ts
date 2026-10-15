@@ -39,15 +39,19 @@ const logger = createLogger('suggestion')
 const CHECKS_AT_ONCE = 5
 
 export namespace SuggestionUseCase {
-  /** The month's discoveries: the first five suggestions the reader neither
-   *  holds, dismissed nor awaits, in one format and the app's language. The
-   *  model is asked first when the month has none yet, or too few are left —
-   *  never twice a day — which takes about a minute; a failure keeps the
-   *  selection there was. Empty, and nothing asked, without an Anthropic key. */
+  /** The month's discoveries: the first five suggestions of the month's
+   *  selection the reader neither holds, dismissed nor awaits, in one format
+   *  and the app's language. Only Découvrir asks for a selection to be made —
+   *  `lookUp` — when the reader has none for this month, or one in another
+   *  language, never twice a day: that takes about a minute, and a failure
+   *  leaves the line empty until the next look. The home page only reads what
+   *  there is. A selection that ran out leaves the line empty until next
+   *  month. Empty, and nothing asked, without an Anthropic key. */
   export const monthly = async (
     userId: UserId,
     format: ReleaseFormat,
     appLanguage: Language,
+    lookUp: boolean,
     now = new Date(),
   ): Promise<MonthlyDiscoveries> => {
     const month = monthOf(now)
@@ -61,30 +65,23 @@ export namespace SuggestionUseCase {
     ])
     const dismissed = new Set(dismissals.map((dismissal) => dismissal.key))
     const awaitedKeys = new Set(awaited.map((edition) => edition.watchKey))
-    const isAwaited = (suggestion: Suggestion) =>
-      RELEASE_FORMATS.some((candidate) =>
-        awaitedKeys.has(watchKeyOf(suggestion, candidate, appLanguage)),
+    const shown = (candidates: readonly Suggestion[]) =>
+      shownOf(candidates, books, dismissed).filter(
+        (suggestion) =>
+          !RELEASE_FORMATS.some((candidate) =>
+            awaitedKeys.has(watchKeyOf(suggestion, candidate, appLanguage)),
+          ),
       )
-    const remaining = shownOf(queue?.suggestions ?? [], books, dismissed).filter(
-      (suggestion) => !isAwaited(suggestion),
-    )
-    const mayGenerate = (current: typeof queue) =>
-      shouldGenerate(current, remaining.length, now, appLanguage)
-    // A new month, or a new language, starts afresh; a refill within the
-    // month keeps what is left first. A failed generation keeps the selection there was.
-    let suggestions = remaining
+    const mayGenerate = (current: typeof queue) => shouldGenerate(current, now, appLanguage)
+    let suggestions = queue?.month === month ? shown(queue.suggestions) : []
     if (
+      lookUp &&
       mayGenerate(queue) &&
       (await SuggestionCommand.claimGeneration(userId, mayGenerate, now, month, appLanguage))
     ) {
       const answered = await generated(books, opinions, dismissals, appLanguage)
       if (answered) {
-        const kept = queue?.month === month && queue.language === appLanguage ? remaining : []
-        const fresh = shownOf(answered, books, dismissed).filter(
-          (suggestion) =>
-            !isAwaited(suggestion) && !kept.some((known) => known.key === suggestion.key),
-        )
-        suggestions = [...kept, ...fresh]
+        suggestions = shown(answered)
         await SuggestionCommand.saveQueue({
           userId,
           month,

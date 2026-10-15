@@ -57,7 +57,7 @@ beforeEach(() => {
 })
 
 const DISCOVERIES = `query {
-  monthlyDiscoveries(format: BOOK) {
+  monthlyDiscoveries(format: BOOK, lookUp: true) {
     month
     suggestions {
       id title originalTitle originalLanguage authors kind reason short coverUrl

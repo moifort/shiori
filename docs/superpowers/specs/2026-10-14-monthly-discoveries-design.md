@@ -59,11 +59,15 @@ blind, on his own library.
    - they dismissed it, awaited it, or it is a later volume of a saga they follow;
    - neither Open Library nor Google Books knows the title and author.
 4. **The queue.** The kept suggestions are stored in order, per reader. Découvrir shows the
-   first five. Dismissing, adding or awaiting one removes it; the next one moves up.
-5. **A selection per month.** The title names the month, so the selection is the month's: the
-   first look in a new month runs a new generation, whatever is left of the last. Within the
-   month the queue refills the strip; when fewer than five remain, a new generation runs —
-   **at most once a day per reader**. An empty queue hides the line until the next one.
+   first five. Dismissing, adding or awaiting one removes it; the next one moves up. There is
+   no refill: a month whose selection ran out shows the heading alone, "Prochaines découvertes
+   en novembre", until the next month.
+5. **A selection per month, made only from Découvrir.** The title names the month, so the
+   selection is the month's. It is made when the reader opens Découvrir in a month that has
+   none — `monthlyDiscoveries(lookUp: true)` — never twice a day, about a minute during which
+   the line shows "Recherche de vos découvertes…" over five blank covers. The home page only
+   reads what there is (`lookUp` left out): it shows nothing of a month Découvrir has not been
+   opened in yet. A failed generation leaves the line empty and is tried again the next day.
 6. **In the app's language.** The titles, the reasons and the "comme …" / "like …" line are
    written in the app's language (French or English, from `Accept-Language`), the French
    reasons addressing the reader as « tu ». The selection remembers its language: a reader who
@@ -115,9 +119,9 @@ Console caps the spend at $20 a month.
 | | Generations | Cost |
 |---|---|---|
 | First look, per reader | 1 | €0.10 |
-| Usual month, per reader (one selection, maybe one refill) | 1–2 | €0.10–0.20 |
-| Worst month, per reader (dismisses all, daily cap) | 30 | €3 |
-| 100 active readers, usual month | 100–200 | €10–20 |
+| Month, per reader who opens Découvrir | 1 | €0.10 |
+| A reader who switches the app's language that month | +1 | €0.10 |
+| 100 active readers, month | 100 | €10 |
 
 A suggestion's page also calls `describeRelease` the first time anybody opens that book in that
 language: one grounded Gemini call, ≈ 4 billed searches ≈ €0.05, paid once and shared, refused

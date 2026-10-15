@@ -273,9 +273,8 @@ struct DiscoverView: View {
         // The newest heart first, as the server sends them; the flame alone
         // marks what many friends love.
         let loved = viewModel.picks.books
-        let discoveries = viewModel.discoveries
-        let suggestions = discoveries?.suggestions ?? []
-        if !awaited.isEmpty || !suggestions.isEmpty || !awards.isEmpty || !loved.isEmpty {
+        let discoveries = viewModel.discoveriesLine
+        if !awaited.isEmpty || discoveries != nil || !awards.isEmpty || !loved.isEmpty {
             Section {
                 if !awaited.isEmpty {
                     DiscoverSummaryRow(
@@ -288,24 +287,8 @@ struct DiscoverView: View {
                     }
                     .accessibilityIdentifier("discover-awaited")
                 }
-                if let discoveries, !suggestions.isEmpty {
-                    // Bare covers, as the other lines: the reason is on the
-                    // book's page.
-                    DiscoverSummaryRow(
-                        title: "\(discoveries.title)",
-                        systemImage: "sparkles",
-                        tint: .purple,
-                        line: String(localized: "D’après vos préférences")
-                    ) {
-                        ForEach(suggestions) { suggestion in
-                            Button { openSuggestion = suggestion } label: {
-                                CoverTile(book: suggestion.cover, caption: "", width: width)
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityIdentifier("discover-suggestion")
-                        }
-                    }
-                    .accessibilityIdentifier("discover-discoveries")
+                if let discoveries {
+                    DiscoveriesSummaryRow(line: discoveries, width: width) { openSuggestion = $0 }
                 }
                 if !awards.isEmpty {
                     DiscoverSummaryRow(
