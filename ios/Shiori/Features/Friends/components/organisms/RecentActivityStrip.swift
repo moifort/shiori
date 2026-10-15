@@ -70,29 +70,9 @@ struct RecentActivityStrip: View {
     }
 }
 
-/// A friend's books as a strip of bare covers — no title, no badge — every
-/// one of them, scrolled sideways. A tap opens the book.
-struct FriendCoverStrip: View {
-    let books: [FriendBook]
-    let onOpen: (FriendBook) -> Void
-
-    private static let coverWidth: CGFloat = 76
-
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            LazyHStack(alignment: .top, spacing: 10) {
-                ForEach(books) { entry in
-                    Button { onOpen(entry) } label: {
-                        BookCover(book: entry.book, width: Self.coverWidth, showsFormatBadge: false)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(entry.book.title)
-                    .accessibilityIdentifier("friend-book-cover")
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-        }
-        .listRowInsets(EdgeInsets())
+#Preview {
+    List {
+        RecentActivityStrip(activities: Friend.previews[0].recentActivity, inset: 16) { _ in }
+            .padding(.horizontal, -16)
     }
 }

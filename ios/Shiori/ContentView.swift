@@ -141,7 +141,7 @@ struct ContentView: View {
             // came from somewhere the reader does not control, and accepting
             // opens their library to whoever sent it.
             .sheet(item: $invitation) { request in
-                InvitationAcceptSheet(request: request, onAccepted: {})
+                InvitationAcceptScreen(request: request, onAccepted: {})
             }
             .task { takeSharedIntake() }
             // A token APNs rotated reaches the server on the next launch.
@@ -240,7 +240,7 @@ struct ContentView: View {
                 DiscoverScreen(shelf: $discoverShelf)
             }
             Tab(TabSelection.shared.label, systemImage: TabSelection.shared.symbol, value: .shared) {
-                SharedView()
+                SharedScreen()
             }
             Tab(
                 TabSelection.scan.label,

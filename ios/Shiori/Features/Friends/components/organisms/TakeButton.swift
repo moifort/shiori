@@ -58,3 +58,11 @@ extension FriendSaga {
         volumes.first?.format ?? (isAudio ? .audiobook : .book)
     }
 }
+
+#Preview {
+    HStack(spacing: 24) {
+        TakeButton(owned: false, isAdding: false, format: .book) { _ in }
+        TakeButton(owned: false, isAdding: true, format: .book) { _ in }
+        TakeButton(owned: true, isAdding: false, format: .audiobook) { _ in }
+    }
+}

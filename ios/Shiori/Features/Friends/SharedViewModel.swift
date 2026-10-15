@@ -8,12 +8,15 @@ import SwiftUI
 @MainActor
 @Observable
 final class SharedViewModel {
-    init() {
+    init(client: FriendsClient) {
+        self.client = client
         if let snapshot = cache.read() {
             friends = snapshot.friends
             myShelf = snapshot.myShelf
         }
     }
+
+    private let client: FriendsClient
 
     private(set) var friends: [Friend] = []
     private(set) var myShelf: FriendProfile?
@@ -25,6 +28,15 @@ final class SharedViewModel {
     /// The server has answered at least once, so the rows are no longer the
     /// snapshot.
     private(set) var loaded = false
+
+    /// The invitation just created, ready to send; the screen shows it as a
+    /// sheet the moment it comes back.
+    var invitation: FriendInvitation?
+    private(set) var isInviting = false
+    /// The first name of the friend an invitation just joined.
+    var accepted: String?
+    /// A write that failed, said in an alert.
+    var errorMessage: String?
 
     /// What the tab opens on.
     private struct Snapshot: Codable {
@@ -46,12 +58,12 @@ final class SharedViewModel {
         defer { isLoading = false }
         // The two reads are independent: the preview still opens when the
         // friends list fails, and the other way round.
-        async let shelf = FriendsAPI.myShelf()
+        async let shelf = client.myShelf()
         var fetchedFriends: [Friend]?
         var fetchedShelf: FriendProfile?
         var failed = false
         do {
-            fetchedFriends = try await FriendsAPI.friends()
+            fetchedFriends = try await client.friends()
             loadFailed = nil
         } catch {
             if !isCancellation(error) {
@@ -86,19 +98,48 @@ final class SharedViewModel {
         await load()
     }
 
+    func invite() async {
+        isInviting = true
+        defer { isInviting = false }
+        do {
+            invitation = try await client.invite()
+        } catch {
+            errorMessage = reportError(error)
+        }
+    }
+
+    /// Takes an invitation up from the code or the link the reader pasted.
+    func accept(code: String) async {
+        let code = code.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !code.isEmpty else { return }
+        do {
+            let friend = try await client.accept(code)
+            accepted = friend.displayName
+            // The answer is the new row, rather than read back with the whole list.
+            add(friend)
+        } catch {
+            errorMessage = reportError(error)
+        }
+    }
+
+    /// Stops sharing with a friend, both ways.
+    func remove(_ friend: Friend) async {
+        do {
+            try await client.remove(friend.userId)
+            withAnimation(.smooth) { friends.removeAll { $0.userId == friend.userId } }
+            write()
+        } catch {
+            errorMessage = reportError(error)
+        }
+    }
+
     /// A friend the reader just accepted: filed where the server files it, by
     /// first name, rather than read back with the whole list.
-    func add(_ friend: Friend) {
+    private func add(_ friend: Friend) {
         withAnimation(.smooth) {
             friends = (friends.filter { $0.userId != friend.userId } + [friend])
                 .sorted { ($0.firstName ?? "").localizedCompare($1.firstName ?? "") == .orderedAscending }
         }
-        write()
-    }
-
-    /// A friend the reader stopped sharing with.
-    func remove(_ friend: Friend) {
-        withAnimation(.smooth) { friends.removeAll { $0.userId == friend.userId } }
         write()
     }
 

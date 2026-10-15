@@ -4,10 +4,11 @@ import SwiftUI
 /// Library tab: the capsule above the bottom edge switches between the books
 /// and the sagas, each shelf with its two views and its filter. No authors:
 /// a friend's shelf is read through what they hold.
-struct FriendShelfView: View {
+struct FriendShelfScreen: View {
     let friendId: String
     let friendName: String
     var isPreview = false
+    var client: FriendsClient = .live
 
     @State private var shelf: LibraryShelf = .books
 
@@ -15,11 +16,17 @@ struct FriendShelfView: View {
         Group {
             switch shelf {
             case .books, .authors:
-                FriendLibraryView(friendId: friendId, friendName: friendName, isPreview: isPreview)
+                FriendLibraryScreen(friendId: friendId, friendName: friendName, isPreview: isPreview, client: client)
             case .series:
-                FriendSeriesListView(friendId: friendId, friendName: friendName, isPreview: isPreview)
+                FriendSeriesListScreen(friendId: friendId, friendName: friendName, isPreview: isPreview, client: client)
             }
         }
         .libraryShelfPicker($shelf, shelves: [.books, .series])
+    }
+}
+
+#Preview {
+    NavigationStack {
+        FriendShelfScreen(friendId: "camille", friendName: "Camille", client: .preview)
     }
 }

@@ -1,43 +1,47 @@
 import SwiftUI
 
+/// Everything a friend's sagas page can ask for.
+enum FriendSeriesListAction {
+    case openSaga(FriendSaga)
+    /// The "+" of a row: the friend's first volume onto the reader's pile,
+    /// which makes the saga one of theirs.
+    case take(FriendSaga, as: BookFormat)
+    case loadMore
+    case refresh
+}
+
 /// A friend's sagas — or the reader's own, previewed — drawn as the reader's
 /// Series tab draws theirs: the saga shelved last first, cut into months, each
 /// with its name and author, the heart when they gave one, and every volume
-/// on their shelf as a cover carrying its status. The next page is asked for
-/// as the list runs out.
+/// on their shelf as a cover carrying its status.
 ///
-/// A row opens the saga on its own page; its "+" puts the friend's first
-/// volume on the reader's pile, which makes it one of their sagas, greyed out
-/// when they already hold a volume of it.
-struct FriendSeriesListView: View {
-    let friendId: String
+/// A row opens the saga on its own page; its "+" is greyed out when the reader
+/// already holds a volume of it.
+struct FriendSeriesListPage: View {
     let friendName: String
+    let sagas: [FriendSaga]
+    @Binding var mode: LibraryMode
+    @Binding var state: SeriesState?
+    /// The rows on screen answer another view or filter, or none yet.
+    let isWaiting: Bool
+    /// The page could not be read, with nothing of this view to show.
+    let loadFailed: String?
+    let hasMore: Bool
+    let loadMoreFailed: Bool
+    /// The rows whose "+" is turning.
+    let adding: Set<String>
     /// The reader's own sagas, previewed: every one is theirs already.
-    var isPreview = false
-
-    @State private var sagas: [FriendSaga] = []
-    @State private var mode: LibraryMode = .all
-    @State private var state: SeriesState?
-    @State private var hasMore = false
-    /// The view and filter the rows on screen were asked under. Until the
-    /// answer for a new one arrives, the rows of the last would be cut the
-    /// new way — hearts and stars over books listed by date — so a spinner
-    /// stands in for them.
-    @State private var loadedQuery: String?
-    @State private var errorMessage: String?
-    @State private var loadMoreFailed = false
-    @State private var openSaga: FriendSaga?
-    @State private var adding: Set<String> = []
-    @State private var addFailed: String?
+    let isPreview: Bool
+    let onAction: (FriendSeriesListAction) async -> Void
 
     private let coverWidth: CGFloat = 44
 
     var body: some View {
         Group {
-            if loadedQuery != query, errorMessage == nil {
+            if isWaiting {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let errorMessage, loadedQuery != query || sagas.isEmpty {
-                EmptyStateView.failure("Séries indisponibles", message: errorMessage) { await load() }
+            } else if let loadFailed {
+                EmptyStateView.failure("Séries indisponibles", message: loadFailed) { await onAction(.refresh) }
             } else if sagas.isEmpty {
                 Text(
                     state == nil && mode == .all
@@ -55,28 +59,6 @@ struct FriendSeriesListView: View {
         .navigationTitle("Séries")
         .navigationSubtitle(friendName)
         .toolbar { toolbar }
-        .task(id: query) { await load() }
-        // A sheet, as a saga opens from the reader's own Series tab.
-        .sheet(item: $openSaga) { saga in
-            NavigationStack {
-                // Where the saga stands is the friend's; previewed, the
-                // reader's own saga opens as it does from their Series tab.
-                SeriesView(
-                    seriesId: saga.seriesId,
-                    language: saga.language,
-                    isSheet: true,
-                    friend: isPreview ? nil : SeriesFriend(id: friendId, name: friendName)
-                )
-            }
-        }
-        .alert(
-            "Ajout impossible",
-            isPresented: .init(get: { addFailed != nil }, set: { if !$0 { addFailed = nil } })
-        ) {
-            Button("OK", role: .cancel) { addFailed = nil }
-        } message: {
-            Text(addFailed ?? "")
-        }
     }
 
     private var list: some View {
@@ -89,7 +71,7 @@ struct FriendSeriesListView: View {
                             // the drag that scrolls the cover strip.
                             row(saga)
                                 .contentShape(.rect)
-                                .onTapGesture { openSaga = saga }
+                                .onTapGesture { Task { await onAction(.openSaga(saga)) } }
                             TakeButton(
                                 owned: saga.inLibrary || isPreview || saga.volumes.isEmpty,
                                 isAdding: adding.contains(saga.id),
@@ -97,7 +79,7 @@ struct FriendSeriesListView: View {
                                 addLabel: "Ajouter la série à mes séries",
                                 ownedLabel: "Série déjà dans votre bibliothèque"
                             ) { format in
-                                await add(saga, as: format)
+                                await onAction(.take(saga, as: format))
                             }
                         }
                         .edgeToEdgeSeparator()
@@ -109,12 +91,12 @@ struct FriendSeriesListView: View {
                 LoadMoreRow(
                     failed: loadMoreFailed,
                     loadingLabel: "Chargement de la suite",
-                    onLoadMore: loadMore
+                    onLoadMore: { await onAction(.loadMore) }
                 )
             }
         }
         .listStyle(.insetGrouped)
-        .refreshable { await load() }
+        .refreshable { await onAction(.refresh) }
     }
 
     /// The same controls as the Series tab: the two views, the state filter
@@ -205,62 +187,19 @@ struct FriendSeriesListView: View {
             ? ListSection.byRank(sagas, rank: \.lovedRank)
             : ListSection.byMonth(sagas, on: \.shelvedAt)
     }
-
-    private var query: String { "\(mode.rawValue)-\(state?.rawValue ?? "all")" }
-
-    private func load() async {
-        let asked = query
-        errorMessage = nil
-        loadMoreFailed = false
-        do {
-            let page = try await FriendsAPI.sagaPage(
-                friendId: friendId, state: state, loved: mode == .favorites, after: nil
-            )
-            sagas = page.sagas
-            hasMore = page.hasMore
-            loadedQuery = asked
-        } catch {
-            // A switch of view called the last request off: the next one answers.
-            guard !isCancellation(error) else { return }
-            errorMessage = reportError(error)
-        }
-    }
-
-    private func loadMore() async {
-        loadMoreFailed = false
-        do {
-            let page = try await FriendsAPI.sagaPage(
-                friendId: friendId, state: state, loved: mode == .favorites, after: sagas.last?.id
-            )
-            sagas.append(contentsOf: page.sagas.filter { new in !sagas.contains { $0.id == new.id } })
-            hasMore = page.hasMore
-        } catch {
-            _ = reportError(error)
-            loadMoreFailed = true
-        }
-    }
-
-    private func add(_ saga: FriendSaga, as format: BookFormat) async {
-        guard let first = saga.volumes.first else { return }
-        adding.insert(saga.id)
-        defer { adding.remove(saga.id) }
-        do {
-            try await FriendsAPI.addBook(
-                friendId: friendId,
-                bookId: first.id,
-                status: .toRead,
-                format: format
-            )
-            if let index = sagas.firstIndex(where: { $0.id == saga.id }) {
-                sagas[index].inLibrary = true
-            }
-        } catch {
-            addFailed = reportError(error)
-        }
-    }
 }
 
 extension FriendSaga: Hashable {
     static func == (lhs: FriendSaga, rhs: FriendSaga) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
+}
+
+#Preview("Nothing matches") {
+    NavigationStack {
+        FriendSeriesListPage(
+            friendName: "Camille", sagas: [], mode: .constant(.all), state: .constant(.complete),
+            isWaiting: false, loadFailed: nil, hasMore: false, loadMoreFailed: false,
+            adding: [], isPreview: false
+        ) { _ in }
+    }
 }

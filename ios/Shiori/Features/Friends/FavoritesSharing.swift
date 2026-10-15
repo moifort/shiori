@@ -11,6 +11,13 @@ import SwiftUI
 /// the record does not know is left out rather than written as a blank, and a
 /// favourite with no genre goes under "Autres", last.
 enum FavoritesSharing {
+    /// A shelf's favourites as text; nil when nothing is hearted and there is
+    /// nothing to send.
+    static func text(of shelf: FriendProfile) -> String? {
+        guard !(shelf.favoriteSagas.isEmpty && shelf.favorites.isEmpty) else { return nil }
+        return text(sagas: shelf.favoriteSagas, books: shelf.favorites.map(\.book))
+    }
+
     static func text(sagas: [FriendSaga], books: [Book]) -> String {
         // A saga held in two languages is two rows on the shelf, but one work
         // to recommend.
@@ -98,28 +105,5 @@ enum FavoritesSharing {
     private static func line(title: String, isSaga: Bool, author: String?, subgenre: String?) -> String {
         let name = isSaga ? String(localized: "\(title) (série)") : title
         return "• " + [name, author, subgenre].compactMap(\.self).joined(separator: " — ")
-    }
-}
-
-/// The entries of a menu sharing the favourites: the system sheet, for a mail
-/// or a message, and a copy of its own, since the sheet does not always offer
-/// one for plain text.
-struct FavoritesShareItems: View {
-    let text: String
-
-    var body: some View {
-        ShareLink(
-            item: text,
-            subject: Text("Mes favoris"),
-            preview: SharePreview(Text("Mes favoris"))
-        ) {
-            Label("Envoyer…", systemImage: "paperplane")
-        }
-        Button {
-            UIPasteboard.general.string = text
-        } label: {
-            Label("Copier la liste", systemImage: "doc.on.doc")
-        }
-        .accessibilityIdentifier("my-shelf-copy-favorites")
     }
 }
