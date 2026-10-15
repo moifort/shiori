@@ -166,6 +166,10 @@ makes every stored connection unreadable, so readers would have to connect again
 alerts through APNs. Without them every alert is logged instead of sent, and nothing else
 changes.
 
+`NITRO_ANTHROPIC_API_KEY` lets Claude choose the month's discoveries in Découvrir. Without it the
+line is absent and nothing else changes; in production it is the GitHub secret
+`ANTHROPIC_API_KEY`, carried by Terraform into Secret Manager.
+
 The Firestore emulator needs a JDK and the Firebase CLI, neither of which is required for
 `bun test` — the integration tests run against the in-memory fake.
 

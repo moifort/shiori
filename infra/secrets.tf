@@ -34,13 +34,14 @@ locals {
   apns_private_key_value = var.apns_private_key_path != "" ? file(var.apns_private_key_path) : ""
 
   secret_values = {
-    google-api-key   = var.google_api_key
-    admin-token      = local.admin_token_value
-    sentry-dsn       = var.sentry_dsn
-    asc-private-key  = local.asc_private_key_value
-    audible-key      = random_bytes.audible_key.base64
-    kindle-key       = random_bytes.kindle_key.base64
-    apns-private-key = local.apns_private_key_value
+    google-api-key    = var.google_api_key
+    anthropic-api-key = var.anthropic_api_key
+    admin-token       = local.admin_token_value
+    sentry-dsn        = var.sentry_dsn
+    asc-private-key   = local.asc_private_key_value
+    audible-key       = random_bytes.audible_key.base64
+    kindle-key        = random_bytes.kindle_key.base64
+    apns-private-key  = local.apns_private_key_value
   }
 
   # Secret Manager rejects empty payloads, so we drive iteration off a
@@ -54,6 +55,7 @@ locals {
     "audible-key",
     "kindle-key",
     nonsensitive(var.sentry_dsn) != "" ? "sentry-dsn" : "",
+    nonsensitive(var.anthropic_api_key) != "" ? "anthropic-api-key" : "",
     local.asc_private_key_value != "" ? "asc-private-key" : "",
     local.apns_private_key_value != "" ? "apns-private-key" : "",
   ]))

@@ -1,5 +1,6 @@
 import {
   AdminToken,
+  AnthropicApiKey,
   ApiToken,
   ApnsKeyId,
   ApnsPrivateKey,
@@ -57,6 +58,9 @@ export const config = () => {
       : undefined,
     audibleKey: runtimeConfig.audibleKey ? AudibleKey(runtimeConfig.audibleKey) : undefined,
     kindleKey: runtimeConfig.kindleKey ? KindleKey(runtimeConfig.kindleKey) : undefined,
+    anthropicApiKey: runtimeConfig.anthropicApiKey
+      ? AnthropicApiKey(runtimeConfig.anthropicApiKey)
+      : undefined,
     apnsKeyId: runtimeConfig.apnsKeyId ? ApnsKeyId(runtimeConfig.apnsKeyId) : undefined,
     apnsPrivateKey: runtimeConfig.apnsPrivateKey
       ? ApnsPrivateKey(runtimeConfig.apnsPrivateKey)

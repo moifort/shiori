@@ -5,6 +5,7 @@ import { UserId } from '~/domain/shared/primitives'
 import type { UserId as UserIdType } from '~/domain/shared/types'
 import type {
   AdminToken as AdminTokenType,
+  AnthropicApiKey as AnthropicApiKeyType,
   ApiToken as ApiTokenType,
   ApnsKeyId as ApnsKeyIdType,
   ApnsPrivateKey as ApnsPrivateKeyType,
@@ -32,6 +33,11 @@ export const ApiToken = (value: unknown) => {
 export const AdminToken = (value: unknown) => {
   const v = z.string().min(1).parse(value)
   return make<AdminTokenType>()(v)
+}
+
+export const AnthropicApiKey = (value: unknown) => {
+  const v = z.string().min(1).parse(value)
+  return make<AnthropicApiKeyType>()(v)
 }
 
 export const GoogleApiKey = (value: unknown) => {

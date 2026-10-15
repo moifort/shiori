@@ -83,6 +83,13 @@ variable "google_api_key" {
   sensitive   = true
 }
 
+variable "anthropic_api_key" {
+  description = "Claude API key for the month's discoveries in Découvrir (Claude Sonnet). Empty leaves the line absent; nothing else reads it."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "sentry_dsn" {
   description = "Sentry DSN for error reporting and tracing (empty disables Sentry). Exposed to the function as NITRO_SENTRY_DSN, read via runtimeConfig in the Nitro plugin. The plugin also skips Sentry entirely in dev builds, so this only ever takes effect in the deployed function."
   type        = string

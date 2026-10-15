@@ -2262,6 +2262,19 @@ type MonthPages {
   pages: Int!
 }
 
+"""
+Découvrir’s discoveries of the month: books chosen for the reader by Claude from their hearts and stars, each with why.
+"""
+type MonthlyDiscoveries {
+  """`YYYY-MM`: the month the line is titled after."""
+  month: String!
+
+  """
+  The first three the reader neither holds, dismissed nor awaits. Empty when none are left, or the server has no model key.
+  """
+  suggestions: [Suggestion!]!
+}
+
 """The genre given up most often, out of the books of it ever opened."""
 type MostDroppedGenre {
   droppedCount: Int!
@@ -2447,6 +2460,11 @@ type Mutation {
   Only our copy of the credentials goes: the device stays registered on the Amazon side until the reader removes it from their account there. Returns false when there was nothing to disconnect.
   """
   disconnectKindle: Boolean!
+
+  """
+  "Pas intéressé": the suggestion leaves the discoveries for good, and the model is told not to suggest it again. `NOT_FOUND` when the reader has no such suggestion.
+  """
+  dismissSuggestion(id: String!): Boolean!
 
   """
   Catalogue the Audible titles the reader ticked, and return the books created.
@@ -3239,6 +3257,13 @@ type Query {
   me: Me!
 
   """
+  The discoveries of the month: three books chosen for the reader from their hearts, stars, drops and dismissals, each with why, in one format and the app’s language.
+  
+  The model is asked when the month has no selection yet or fewer than three are left, at most once a day: that answer takes about forty seconds. Every other one reads the stored selection.
+  """
+  monthlyDiscoveries(format: ReleaseFormat!): MonthlyDiscoveries!
+
+  """
   One page of the authors in the library, in the `order` asked — the ones the reader loves first unless told otherwise. `favorite` keeps the authors with at least one heart. Offset-paginated: pass the number of rows already shown. Reads the page’s author catalogues, for their portraits, in one getAll.
   """
   myAuthorsPage(
@@ -3862,6 +3887,87 @@ scalar StarRating
 One free label refining the genre, 1 to 100 characters, never translated: sent in the language of `Accept-Language`, served as it was written. Example: "Dark fantasy".
 """
 scalar Subgenre
+
+"""
+A book chosen for the reader from their library’s hearts and stars, with why, as its edition stands in one format and the app’s language.
+"""
+type Suggestion {
+  authors: [AuthorName!]!
+
+  """
+  The formats its edition may be awaited in from its page, with `awaitScannedEdition`.
+  """
+  awaitableFormats: [ReleaseFormat!]!
+  awaitedEditionId: AwaitedEditionId
+
+  """The edition’s cover once found, else its page’s, else a catalogue’s."""
+  coverUrl: String
+
+  """When the edition came out or comes out, once found."""
+  date: String
+  format: ReleaseFormat!
+
+  """Stable for a book: what `dismissSuggestion` takes."""
+  id: String!
+  kind: SuggestionKind!
+  originalLanguage: BookLanguage!
+  originalTitle: BookTitle!
+
+  """Why, in one sentence citing a book of the reader’s."""
+  reason: String!
+
+  """The reader’s books the reason draws on, in the order it cites them."""
+  references: [SuggestionReference!]!
+
+  """Two or three words: "comme Gagner la guerre"."""
+  short: String!
+
+  """
+  Where its edition stands: out, announced, or not found — not found also while nobody awaited it, which `watched` tells apart.
+  """
+  state: AwaitedState!
+
+  """Where to get it once its edition is found, as an award winner’s."""
+  storeUrl: String
+
+  """
+  Its title in the app’s language: the edition’s once found, else the model’s, which may be a guess for a recent translation.
+  """
+  title: BookTitle!
+  watched: Boolean!
+}
+
+"""What a suggested book is, as the model named it."""
+enum SuggestionKind {
+  """A bande dessinée or a comic."""
+  COMIC
+
+  """Non-fiction: an essay, history, a biography."""
+  ESSAY
+
+  """A manga."""
+  MANGA
+
+  """A novel, or any prose fiction."""
+  NOVEL
+}
+
+"""
+One of the reader’s own books a suggestion was drawn from, with how it ranks for them.
+"""
+type SuggestionReference {
+  """The reader’s book — a saga’s first volume when the saga was cited."""
+  bookId: BookId!
+  favorite: Boolean!
+  rating: StarRating
+  seriesId: SeriesId
+
+  """The saga’s name when a saga was cited, else the book’s title."""
+  title: String!
+
+  """Whether the heart or the stars are the saga’s, the book having none."""
+  viaSeries: Boolean!
+}
 
 """The book summary, 1 to 4000 characters, in the caller language."""
 scalar Synopsis

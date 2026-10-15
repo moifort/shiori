@@ -106,6 +106,9 @@ import '~/domain/awaited-edition/infrastructure/graphql/mutations'
 // awaited editions, whose state enum it borrows.
 import '~/domain/award/infrastructure/graphql/types'
 import '~/domain/award/infrastructure/graphql/queries'
+import '~/domain/suggestion/infrastructure/graphql/types'
+import '~/domain/suggestion/infrastructure/graphql/queries'
+import '~/domain/suggestion/infrastructure/graphql/mutations'
 
 // Changelog (application release notes)
 import '~/domain/changelog/infrastructure/graphql/types'
