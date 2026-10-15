@@ -362,17 +362,23 @@ copy them from the main checkout. Never clear the build cache to unblock a broke
 Code written before this guide, to be brought in line domain by domain:
 
 - **Views that call the network themselves**: `SeriesView` (fifteen calls over five APIs),
-  `AuthorView`, `AwardViews`, `AnnouncedVolumeView`, `SharedView`, `BookEditView`,
-  `NotificationSettingsView`, `DiscoverAlertsButton`; and two pure-named components that fetch,
-  `ScanReviewPage` and the `AddBookSheet` organism.
-- **"Look up, then add a book"** is written four times, in Series, Authors, Awards and the
-  announced volume.
-- **Several components per file**: `DiscoverView` (four strips and summaries), `SharedView`
-  (`FriendRow`, `SharedSummary`, `InvitationSheet`), `SeriesView` (`SeriesRing`).
-- **No `components/` folder** in Discover, Friends, Authors and Series; `Shared/Components`
-  is flat, atoms beside organisms and platform wrappers.
+  `AuthorView`, `SharedView`, `BookEditView`, `NotificationSettingsView`; in Discover,
+  `AwaitedEditionView` and `SuggestionView`, still on `ReleaseDescriber.live()` and the APIs;
+  and two pure-named components that fetch, `ScanReviewPage` and the `AddBookSheet` organism.
+- **"Look up, then add a book"** exists once, as `BookAddition.add` (`Features/Book/`), which
+  Discover reaches through `DiscoverClient.addBook`; `SeriesView` and `AuthorView` still write
+  their own lookup and `BookAPI.add`, and move to `BookAddition` with their domains.
+- **Several components per file**: `SharedView` (`FriendRow`, `SharedSummary`,
+  `InvitationSheet`), `SeriesView` (`SeriesRing`); in Discover, the older files not split yet —
+  `AwaitedEditionViews`, `FriendPicks`, `DiscoverSummary`, `AuthorReleasesSection`,
+  `SuggestionViews`.
+- **No `components/` folder** in Friends, Authors and Series; Discover has one, but the
+  strips and pages of the files above still sit at its root. `Shared/Components` is flat,
+  atoms beside organisms and platform wrappers.
 - **About fifty views without a `#Preview`**, among them all of `Shared/Components/Book/`.
-- **ViewModels hard-wired** to the `API` enums, and no unit-test target yet.
+- **ViewModels hard-wired** to the `API` enums everywhere but Discover (`DiscoverClient`).
+  The unit-test target is `ShioriTests` (Swift Testing, hosted by the app); Discover's
+  ViewModels are the first tested there.
 - **Offset pagination** in the series and authors lists; the library and a friend's lists use
   the cursor. Moving them is a schema change: add `after`, deprecate `offset`.
 - **`…View` names** on both connected and pure views.
