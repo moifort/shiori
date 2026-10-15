@@ -119,10 +119,10 @@ struct MonthlyDiscoveries: Hashable, Sendable, Codable {
             : String(localized: "Les découvertes de \(name)")
     }
 
-    /// Under the title once the month's selection ran out: that it did, and
-    /// when the next one comes.
+    /// Under the title once the month's selection ran out: when the next one
+    /// comes.
     var nextLine: String {
-        String(localized: "Plus de livres ce mois-ci : nouvelle sélection en \(Self.monthName(Self.month(after: month))).")
+        String(localized: "Nouvelle sélection en \(Self.monthName(Self.month(after: month)))")
     }
 
     /// `YYYY-MM` of the month a date falls in, in UTC as the server counts.

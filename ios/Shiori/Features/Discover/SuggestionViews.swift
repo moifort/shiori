@@ -45,12 +45,25 @@ struct DiscoveriesSummaryRow: View {
             }
             .accessibilityIdentifier("discover-discoveries-searching")
         case .ranOut(let discoveries):
+            // As tall as the covers it stands for, so the card keeps its size.
             DiscoverSummaryRow(
                 title: "\(discoveries.title)",
                 systemImage: "sparkles",
                 tint: .purple,
                 line: discoveries.nextLine
-            )
+            ) {
+                VStack(spacing: 8) {
+                    Image(systemName: "books.vertical")
+                        .font(.title2)
+                        .foregroundStyle(.purple.opacity(0.6))
+                    Text("Plus de découvertes pour ce mois-ci")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(height: width * 1.5)
+                .containerRelativeFrame(.horizontal) { length, _ in length - 12 }
+            }
             .accessibilityIdentifier("discover-discoveries-ran-out")
         }
     }

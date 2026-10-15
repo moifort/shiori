@@ -7421,6 +7421,22 @@
         }
       }
     },
+    "Nouvelle sélection en %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New selection in %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nouvelle sélection en %@"
+          }
+        }
+      }
+    },
     "Nouvelles parutions" : {
       "localizations" : {
         "en" : {
@@ -8061,18 +8077,18 @@
         }
       }
     },
-    "Plus de livres ce mois-ci : nouvelle sélection en %@." : {
+    "Plus de découvertes pour ce mois-ci" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No more books this month: a new selection in %@."
+            "value" : "No more discoveries this month"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Plus de livres ce mois-ci : nouvelle sélection en %@."
+            "value" : "Plus de découvertes pour ce mois-ci"
           }
         }
       }
