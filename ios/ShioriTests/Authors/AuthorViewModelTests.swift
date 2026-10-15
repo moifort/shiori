@@ -84,9 +84,9 @@ struct AuthorListViewModelTests {
     @Test func failureOverRowsKeepsThem() async {
         let fails = Flag()
         var client = AuthorsClient.preview
-        client.list = { limit, offset, order in
+        client.list = { limit, after, order in
             if fails.isOn { throw Boom() }
-            return try await AuthorsClient.preview.list(limit, offset, order)
+            return try await AuthorsClient.preview.list(limit, after, order)
         }
         let viewModel = AuthorListViewModel(client: client, caching: false)
         await viewModel.load()
@@ -95,5 +95,21 @@ struct AuthorListViewModelTests {
         await viewModel.load()
 
         #expect(viewModel.authors.count == FollowedAuthor.previews.count)
+    }
+
+    @Test func cappedPagesFollowOneAnother() async {
+        let cursors = Calls()
+        var client = AuthorsClient.preview
+        client.list = { _, after, order in
+            cursors.record(after ?? "top")
+            return try await AuthorsClient.preview.list(1, after, order)
+        }
+        let viewModel = AuthorListViewModel(client: client, caching: false)
+
+        await viewModel.load()
+
+        let ids = viewModel.authors.map(\.id)
+        #expect(ids.count == FollowedAuthor.previews.count)
+        #expect(cursors.all == ["top"] + ids.dropLast())
     }
 }

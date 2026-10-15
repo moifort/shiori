@@ -63,9 +63,8 @@ extension AuthorsClient {
         refresh: { _ in true },
         stopAwaiting: { _ in },
         addBook: { _, _ in .preview },
-        list: { limit, offset, _ in
-            let page = Array(FollowedAuthor.previews.dropFirst(offset).prefix(limit))
-            return (page, offset + page.count < FollowedAuthor.previews.count)
+        list: { limit, after, _ in
+            CursorPage(FollowedAuthor.previews, limit: limit, after: after, cursor: \.id)
         }
     )
 }

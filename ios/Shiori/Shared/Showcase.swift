@@ -564,14 +564,13 @@ enum Showcase {
         )
     }
 
-    static func seriesPage(limit: Int, offset: Int, mode: LibraryMode, state: SeriesState?)
-        -> (items: [FollowedSeries], hasMore: Bool)
+    static func seriesPage(limit: Int, after: String?, mode: LibraryMode, state: SeriesState?)
+        -> CursorPage<FollowedSeries>
     {
         let all = sagas.map(followed)
             .filter { (mode != .favorites || $0.opinion?.favorite == true) && (state == nil || $0.state == state) }
             .sorted { ($0.shelvedAt ?? .distantPast) > ($1.shelvedAt ?? .distantPast) }
-        let page = Array(all.dropFirst(offset).prefix(limit))
-        return (page, offset + page.count < all.count)
+        return CursorPage(all, limit: limit, after: after, cursor: \.id)
     }
 
     /// The saga page: its catalogue, what the reader thinks of it, their volumes.

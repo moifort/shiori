@@ -74,12 +74,16 @@ final class SeriesListViewModel {
         generation += 1
         followed = cache(for: mode, stateFilter)?.read() ?? []
         hasMore = false
+        nextCursor = nil
         loaded = false
         reloadTask = Task { await load() }
     }
 
     /// More rows follow the ones on screen.
     private(set) var hasMore = false
+    /// Where the server's next page starts: the last row it handed back. A row
+    /// placed or taken off since does not shift it, as an offset was shifted.
+    private var nextCursor: String?
     private(set) var isLoadingMore = false
     private(set) var loadMoreFailed = false
 
@@ -108,12 +112,14 @@ final class SeriesListViewModel {
             // swapped in at once so the rows never shrink in between.
             var fetched: [FollowedSeries] = []
             var more = true
+            var cursor: String?
             while more, fetched.count < wanted {
                 let page = try await client.page(
-                    min(wanted - fetched.count, maxPageSize), fetched.count, mode, stateFilter
+                    min(wanted - fetched.count, maxPageSize), cursor, mode, stateFilter
                 )
                 guard requested == generation else { return }
                 fetched += page.items
+                cursor = page.endCursor ?? cursor
                 more = page.hasMore && !page.items.isEmpty
             }
             // Over rows already on screen, the new ones slide into place and
@@ -122,6 +128,7 @@ final class SeriesListViewModel {
                 followed = fetched
                 hasMore = more
             }
+            nextCursor = cursor
             loaded = true
             if let cache = cache(for: mode, stateFilter) {
                 let firstPage = Array(fetched.prefix(pageSize))
@@ -144,9 +151,12 @@ final class SeriesListViewModel {
         isLoadingMore = true
         loadMoreFailed = false
         do {
-            let page = try await client.page(pageSize, followed.count, mode, stateFilter)
+            let page = try await client.page(pageSize, nextCursor, mode, stateFilter)
             guard requested == generation else { return }
-            followed.append(contentsOf: page.items)
+            // A row placed by a refresh may come again in its page.
+            let shown = Set(followed.map(\.id))
+            followed.append(contentsOf: page.items.filter { !shown.contains($0.id) })
+            nextCursor = page.endCursor ?? nextCursor
             hasMore = page.hasMore
         } catch is CancellationError {
             return

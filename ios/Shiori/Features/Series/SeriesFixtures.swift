@@ -4,7 +4,7 @@ import Foundation
 /// The sagas of the App Store showcase, for the previews and the tests.
 enum SeriesFixtures {
     static let followed: [FollowedSeries] =
-        Showcase.seriesPage(limit: 6, offset: 0, mode: .all, state: nil).items
+        Showcase.seriesPage(limit: 6, after: nil, mode: .all, state: nil).items
 
     /// The first saga of the showcase, as its page is drawn.
     static var screen: SeriesScreenData { Showcase.seriesScreen(id: followed[0].seriesId) }
@@ -35,8 +35,8 @@ extension SeriesClient {
         addAudibleVolume: { _, _, _ in .preview },
         addBook: { _, _ in .preview },
         subgenres: { [] },
-        page: { limit, offset, mode, state in
-            Showcase.seriesPage(limit: limit, offset: offset, mode: mode, state: state)
+        page: { limit, after, mode, state in
+            Showcase.seriesPage(limit: limit, after: after, mode: mode, state: state)
         },
         followedRow: { id, _ in SeriesFixtures.followed.first { $0.seriesId == id } }
     )

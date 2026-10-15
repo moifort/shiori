@@ -93,6 +93,7 @@ final class AuthorListViewModel {
         generation += 1
         authors = cache?.read() ?? []
         hasMore = false
+        nextCursor = nil
         loaded = false
         isLoading = false
         errorMessage = nil
@@ -101,6 +102,8 @@ final class AuthorListViewModel {
 
     /// More rows follow the ones on screen.
     private(set) var hasMore = false
+    /// Where the server's next page starts: the last author it handed back.
+    private var nextCursor: String?
     private(set) var isLoadingMore = false
     private(set) var loadMoreFailed = false
 
@@ -131,10 +134,12 @@ final class AuthorListViewModel {
             // swapped in at once so the rows never shrink in between.
             var fetched: [FollowedAuthor] = []
             var more = true
+            var cursor: String?
             while more, fetched.count < wanted {
-                let page = try await client.list(min(wanted - fetched.count, maxPageSize), fetched.count, order)
+                let page = try await client.list(min(wanted - fetched.count, maxPageSize), cursor, order)
                 guard requested == generation else { return }
                 fetched += page.items
+                cursor = page.endCursor ?? cursor
                 more = page.hasMore && !page.items.isEmpty
             }
             // Over rows already on screen, the new ones slide into place and
@@ -144,6 +149,7 @@ final class AuthorListViewModel {
                 authors = fetched
                 hasMore = more
             }
+            nextCursor = cursor
             loaded = true
             // By name the whole list is kept, as the whole list is drawn.
             if let cache {
@@ -167,9 +173,10 @@ final class AuthorListViewModel {
         isLoadingMore = true
         loadMoreFailed = false
         do {
-            let page = try await client.list(pageSize, authors.count, order)
+            let page = try await client.list(pageSize, nextCursor, order)
             guard requested == generation else { return }
             authors.append(contentsOf: page.items)
+            nextCursor = page.endCursor ?? nextCursor
             hasMore = page.hasMore
         } catch is CancellationError {
             return

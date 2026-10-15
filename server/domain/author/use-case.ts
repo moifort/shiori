@@ -27,6 +27,7 @@ import type { Book } from '~/domain/book/types'
 import { type FollowedSeries, SeriesUseCase } from '~/domain/series/use-case'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { Language } from '~/domain/shared/language'
+import { pageAfter } from '~/domain/shared/page'
 import type { AuthorName, UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
 
@@ -66,20 +67,18 @@ export namespace AuthorUseCase {
    *  author catalogues are read, in one getAll, for their portraits. */
   export const followedPage = async (
     userId: UserId,
-    page: { limit: number; offset: number },
+    page: { limit: number; after?: string; offset?: number },
     filter: { favorite?: boolean },
     order: AuthorOrder = 'loved',
-  ): Promise<{ items: FollowedAuthor[]; hasMore: boolean }> => {
+  ): Promise<{ items: FollowedAuthor[]; hasMore: boolean; endCursor: string | null }> => {
     const matching = matchingAuthorFilter(await shelvedAuthors(userId), filter)
     const ranked = match(order)
       .with('name', () => inNameOrder(matching))
       .with('recent', () => inActivityOrder(matching))
       .with('loved', () => inAuthorOrder(matching))
       .exhaustive()
-    return {
-      items: await withPortraits(ranked.slice(page.offset, page.offset + page.limit)),
-      hasMore: page.offset + page.limit < ranked.length,
-    }
+    const { items, ...rest } = pageAfter(ranked, page, (author) => author.key)
+    return { items: await withPortraits(items), ...rest }
   }
 
   /** An author's page, their catalogue built the first time anybody opens it:

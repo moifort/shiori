@@ -94,7 +94,7 @@ describe('a page of the Authors tab', () => {
     const docReads = fake.docReads
     const queryReads = fake.queryReads
 
-    const { items, hasMore } = await AuthorUseCase.followedPage(reader, { limit: 5, offset: 0 }, {})
+    const { items, hasMore } = await AuthorUseCase.followedPage(reader, { limit: 5 }, {})
 
     expect(items).toHaveLength(5)
     expect(hasMore).toBe(true)
@@ -106,7 +106,7 @@ describe('a page of the Authors tab', () => {
     await writeSagas(3)
     await SeriesOpinionCommand.setFavorite(reader, SeriesId('saga-2'), true)
 
-    const { items } = await AuthorUseCase.followedPage(reader, { limit: 10, offset: 0 }, {})
+    const { items } = await AuthorUseCase.followedPage(reader, { limit: 10 }, {})
 
     expect(items[0]?.name).toBe(AuthorName('Author 2'))
     expect(Number(items[0]?.favoriteCount)).toBe(1)
@@ -118,7 +118,7 @@ describe('a page of the Authors tab', () => {
 
     const { items, hasMore } = await AuthorUseCase.followedPage(
       reader,
-      { limit: 10, offset: 0 },
+      { limit: 10 },
       { favorite: true },
     )
 
@@ -129,8 +129,13 @@ describe('a page of the Authors tab', () => {
   test('answers the same rows as a whole list, cut to the page', async () => {
     await writeSagas(4)
 
-    const whole = await AuthorUseCase.followedPage(reader, { limit: 10, offset: 0 }, {})
-    const second = await AuthorUseCase.followedPage(reader, { limit: 2, offset: 2 }, {})
+    const whole = await AuthorUseCase.followedPage(reader, { limit: 10 }, {})
+    const first = await AuthorUseCase.followedPage(reader, { limit: 2 }, {})
+    const second = await AuthorUseCase.followedPage(
+      reader,
+      { limit: 2, after: first.endCursor ?? undefined },
+      {},
+    )
 
     expect(second.items.map((author) => author.key)).toEqual(
       whole.items.slice(2, 4).map((author) => author.key),

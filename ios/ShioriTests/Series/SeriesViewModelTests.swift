@@ -146,7 +146,7 @@ struct SeriesListViewModelTests {
 
         await viewModel.load()
 
-        let firstPage = Showcase.seriesPage(limit: 40, offset: 0, mode: .all, state: nil).items
+        let firstPage = Showcase.seriesPage(limit: 40, after: nil, mode: .all, state: nil).items
         #expect(viewModel.followed.map(\.id) == firstPage.map(\.id))
         #expect(viewModel.isLoading == false)
     }
@@ -154,9 +154,9 @@ struct SeriesListViewModelTests {
     @Test func failureOverRowsKeepsThem() async {
         let fails = Flag()
         var client = SeriesClient.preview
-        client.page = { limit, offset, mode, state in
+        client.page = { limit, after, mode, state in
             if fails.isOn { throw Boom() }
-            return Showcase.seriesPage(limit: limit, offset: offset, mode: mode, state: state)
+            return Showcase.seriesPage(limit: limit, after: after, mode: mode, state: state)
         }
         let viewModel = SeriesListViewModel(client: client, caching: false)
         await viewModel.load()
@@ -169,18 +169,19 @@ struct SeriesListViewModelTests {
     }
 
     @Test func cappedPagesFollowOneAnother() async {
-        let offsets = Calls()
+        let cursors = Calls()
         var client = SeriesClient.preview
-        client.page = { limit, offset, mode, state in
-            offsets.record("\(offset)")
-            return Showcase.seriesPage(limit: min(limit, 2), offset: offset, mode: mode, state: state)
+        client.page = { limit, after, mode, state in
+            cursors.record(after ?? "top")
+            return Showcase.seriesPage(limit: min(limit, 2), after: after, mode: mode, state: state)
         }
         let viewModel = SeriesListViewModel(client: client, caching: false)
 
         await viewModel.load()
 
-        let count = viewModel.followed.count
-        #expect(count > 2)
-        #expect(offsets.all == stride(from: 0, to: count, by: 2).map { "\($0)" })
+        // Each page starts after the last row of the one before.
+        let ids = viewModel.followed.map(\.id)
+        #expect(ids.count > 2)
+        #expect(cursors.all == ["top"] + stride(from: 1, to: ids.count - 1, by: 2).map { ids[$0] })
     }
 }

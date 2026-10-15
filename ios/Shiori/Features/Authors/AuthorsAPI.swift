@@ -71,21 +71,22 @@ enum AuthorsAPI {
     /// shelf is drawn in.
     static func myAuthorsPage(
         limit: Int,
-        offset: Int,
+        after: String?,
         order: AuthorListOrder
-    ) async throws -> (items: [FollowedAuthor], hasMore: Bool) {
+    ) async throws -> CursorPage<FollowedAuthor> {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.MyAuthorsPageQuery(
                 limit: .some(Int32(limit)),
-                offset: .some(Int32(offset)),
+                after: after.map { .some($0) } ?? .none,
                 favorite: .none,
                 order: .some(.case(order.graphQL))
             )
         )
-        return (
+        return CursorPage(
             items: data.myAuthorsPage.items.map { FollowedAuthor(row: $0.fragments.followedAuthorRow) },
-            hasMore: data.myAuthorsPage.hasMore
+            hasMore: data.myAuthorsPage.hasMore,
+            endCursor: data.myAuthorsPage.endCursor
         )
     }
 }

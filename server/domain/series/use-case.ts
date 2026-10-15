@@ -44,6 +44,7 @@ import { editionUnfollowed } from '~/domain/series-opinion/business-rules'
 import { SeriesOpinionCommand } from '~/domain/series-opinion/command'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
+import { pageAfter } from '~/domain/shared/page'
 import { Count, Year } from '~/domain/shared/primitives'
 import type { AuthorName, Count as CountValue, UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
@@ -196,9 +197,9 @@ export namespace SeriesUseCase {
    *  saga's state, and so every catalogue. */
   export const followedPage = async (
     userId: UserId,
-    page: { limit: number; offset: number },
+    page: { limit: number; after?: string; offset?: number },
     filter: { favorite?: boolean; loved?: boolean; state?: SeriesState },
-  ): Promise<{ items: FollowedSeries[]; hasMore: boolean }> => {
+  ): Promise<{ items: FollowedSeries[]; hasMore: boolean; endCursor: string | null }> => {
     const shelf = await shelfOf(userId)
     if (filter.state !== undefined) {
       const all = (await described(shelf, shelf.sagas)).map((saga) => ({
@@ -206,14 +207,18 @@ export namespace SeriesUseCase {
         favorite: saga.opinion?.favorite === true,
       }))
       const kept = matchingFilter(all, filter)
-      return pageOf(filter.loved ? inLovedOrder(kept) : inTabOrder(kept), page)
+      return pageAfter(filter.loved ? inLovedOrder(kept) : inTabOrder(kept), page, rowCursorOf)
     }
     const kept = matchingFilter(
       shelf.sagas.map((saga) => ({ ...saga, state: saga.unfollowed ? 'unfollowed' : null })),
       filter,
     )
-    const { items, hasMore } = pageOf(filter.loved ? inLovedOrder(kept) : inTabOrder(kept), page)
-    return { items: await described(shelf, items), hasMore }
+    const { items, ...rest } = pageAfter(
+      filter.loved ? inLovedOrder(kept) : inTabOrder(kept),
+      page,
+      rowCursorOf,
+    )
+    return { items: await described(shelf, items), ...rest }
   }
 
   /** Take a saga off the shelf: every volume the reader holds, or only those
@@ -517,7 +522,8 @@ const described = async (
   })
 }
 
-const pageOf = <Row>(rows: readonly Row[], page: { limit: number; offset: number }) => ({
-  items: rows.slice(page.offset, page.offset + page.limit),
-  hasMore: page.offset + page.limit < rows.length,
-})
+/** A row of the Series tab named for the next page to start after: the saga
+ *  and the edition, as a catalogue document is keyed — a saga held in two
+ *  languages is two rows. */
+const rowCursorOf = (saga: { id: SeriesId; language?: BookLanguage }) =>
+  `${saga.id}~${saga.language ?? ''}`

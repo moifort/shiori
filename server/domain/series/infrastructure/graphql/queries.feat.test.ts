@@ -75,12 +75,14 @@ type FollowedRow = {
   catalogue?: { name: string } | null
 }
 
-const mySeriesPage = async (limit: number, offset: number) => {
-  const result = await execute(
-    `{ mySeriesPage(limit: ${limit}, offset: ${offset}) { hasMore items { name } } }`,
-  )
+const mySeriesPage = async (args: string) => {
+  const result = await execute(`{ mySeriesPage(${args}) { hasMore endCursor items { name } } }`)
   expect(result.errors).toBeUndefined()
-  return result.data?.mySeriesPage as { hasMore: boolean; items: { name: string }[] }
+  return result.data?.mySeriesPage as {
+    hasMore: boolean
+    endCursor: string | null
+    items: { name: string }[]
+  }
 }
 
 const mySeries = async () => {
@@ -572,14 +574,29 @@ describe('the sagas a reader follows, a page at a time', () => {
       expect(result.errors).toBeUndefined()
     }
 
-    const whole = await mySeriesPage(10, 0)
+    const whole = await mySeriesPage('limit: 10')
     expect(whole.items).toHaveLength(3)
 
-    const first = await mySeriesPage(2, 0)
-    expect(first).toEqual({ hasMore: true, items: whole.items.slice(0, 2) })
+    const first = await mySeriesPage('limit: 2')
+    expect(first).toMatchObject({ hasMore: true, items: whole.items.slice(0, 2) })
 
-    const second = await mySeriesPage(2, 2)
-    expect(second).toEqual({ hasMore: false, items: whole.items.slice(2) })
+    const second = await mySeriesPage(`limit: 2, after: "${first.endCursor}"`)
+    expect(second).toMatchObject({ hasMore: false, items: whole.items.slice(2) })
+  })
+
+  test('still skips rows for the builds that send an offset', async () => {
+    for (const name of ['Dune', 'Fondation', 'Hypérion']) {
+      const result = await execute(
+        `mutation { addBook(input: { title: "${name} 1", authors: ["Auteur"], ` +
+          `series: { id: "${name.toLowerCase()}--auteur", name: "${name}", volume: 1, kind: MAIN } }) { id } }`,
+      )
+      expect(result.errors).toBeUndefined()
+    }
+
+    const whole = await mySeriesPage('limit: 10')
+    const second = await mySeriesPage('limit: 2, offset: 2')
+
+    expect(second).toMatchObject({ hasMore: false, items: whole.items.slice(2) })
   })
 })
 

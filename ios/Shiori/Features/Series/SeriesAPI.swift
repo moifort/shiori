@@ -94,25 +94,25 @@ enum SeriesAPI {
     /// one state.
     static func mySeriesPage(
         limit: Int,
-        offset: Int,
+        after: String?,
         mode: LibraryMode = .all,
         state: SeriesState? = nil
-    ) async throws -> (items: [FollowedSeries], hasMore: Bool) {
+    ) async throws -> CursorPage<FollowedSeries> {
         #if DEBUG
         if Showcase.isOn {
-            return Showcase.seriesPage(limit: limit, offset: offset, mode: mode, state: state)
+            return Showcase.seriesPage(limit: limit, after: after, mode: mode, state: state)
         }
         #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.MySeriesPageQuery(
                 limit: .some(Int32(limit)),
-                offset: .some(Int32(offset)),
+                after: after.map { .some($0) } ?? .none,
                 loved: mode == .favorites ? .some(true) : .none,
                 state: state.map { .some(.case(graphQLState($0))) } ?? .none
             )
         )
-        return (
+        return CursorPage(
             items: data.mySeriesPage.items.map { item in
                 followedRow(
                     item.fragments.followedSeriesRow,
@@ -120,7 +120,8 @@ enum SeriesAPI {
                     catalogue: item.catalogue?.fragments.catalogueSpine
                 )
             },
-            hasMore: data.mySeriesPage.hasMore
+            hasMore: data.mySeriesPage.hasMore,
+            endCursor: data.mySeriesPage.endCursor
         )
     }
 

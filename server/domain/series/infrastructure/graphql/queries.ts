@@ -20,12 +20,20 @@ const SagaProgressType = builder.objectRef<SagaProgress>('SagaProgress').impleme
 })
 
 const FollowedSeriesPageType = builder
-  .objectRef<{ items: FollowedSeries[]; hasMore: boolean }>('FollowedSeriesPage')
+  .objectRef<{ items: FollowedSeries[]; hasMore: boolean; endCursor: string | null }>(
+    'FollowedSeriesPage',
+  )
   .implement({
     description: 'One page of the sagas the reader follows, plus whether more follow it.',
     fields: (t) => ({
       items: t.field({ type: [FollowedSeriesType], resolve: (page) => page.items }),
       hasMore: t.exposeBoolean('hasMore', { description: 'Whether more sagas follow this page' }),
+      endCursor: t.string({
+        nullable: true,
+        description:
+          'The last row of the page, to pass as `after` for the next. Null on an empty page.',
+        resolve: (page) => page.endCursor,
+      }),
     }),
   })
 
@@ -216,10 +224,20 @@ builder.queryFields((t) => ({
       '`loved` ranks the judged sagas instead, `state` keeps one state ' +
       '(COMPLETE also keeps the sagas of unknown state). With no `state`, the ' +
       'sagas set aside are there too. ' +
-      'Offset-paginated: pass the number of rows already shown.',
+      'Read `hasMore`, then pass `endCursor` as `after` for the next page. A cursor ' +
+      'naming a row no longer there restarts from the top.',
     args: {
       limit: t.arg.int({ defaultValue: 40, description: 'Maximum sagas in the page' }),
-      offset: t.arg.int({ defaultValue: 0, description: 'Rows to skip' }),
+      after: t.arg.string({
+        required: false,
+        description: 'Cursor: the `endCursor` of the previous page',
+      }),
+      offset: t.arg.int({
+        defaultValue: 0,
+        description: 'Rows to skip',
+        deprecationReason:
+          'Use `after`, which a saga added or removed between two pages does not shift.',
+      }),
       favorite: t.arg.boolean({
         required: false,
         description: 'Only the hearted sagas',
@@ -239,6 +257,7 @@ builder.queryFields((t) => ({
         context.userId,
         {
           limit: Math.max(1, Math.min(args.limit ?? 40, 200)),
+          after: args.after ?? undefined,
           offset: Math.max(0, args.offset ?? 0),
         },
         {

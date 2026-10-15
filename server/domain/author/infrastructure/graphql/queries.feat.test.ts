@@ -56,15 +56,19 @@ type AuthorRow = {
   books: { title: string; status: string }[]
 }
 
-const myAuthorsPage = async (args = 'limit: 40, offset: 0') => {
+const myAuthorsPage = async (args = 'limit: 40') => {
   const result = await execute(
-    `{ myAuthorsPage(${args}) { hasMore items {
+    `{ myAuthorsPage(${args}) { hasMore endCursor items {
       key name bookCount seriesCount favoriteCount averageRating
       books { title status }
     } } }`,
   )
   expect(result.errors).toBeUndefined()
-  return (result.data as { myAuthorsPage: { hasMore: boolean; items: AuthorRow[] } }).myAuthorsPage
+  return (
+    result.data as {
+      myAuthorsPage: { hasMore: boolean; endCursor: string | null; items: AuthorRow[] }
+    }
+  ).myAuthorsPage
 }
 
 describe('the Authors tab', () => {
@@ -176,11 +180,20 @@ describe('the Authors tab', () => {
     for (const name of ['A', 'B', 'C']) await addBook(`title: "${name}", authors: ["${name}"]`)
 
     const whole = await myAuthorsPage()
-    const first = await myAuthorsPage('limit: 2, offset: 0')
+    const first = await myAuthorsPage('limit: 2')
+    const second = await myAuthorsPage(`limit: 2, after: "${first.endCursor}"`)
+
+    expect(first).toMatchObject({ hasMore: true, items: whole.items.slice(0, 2) })
+    expect(second).toMatchObject({ hasMore: false, items: whole.items.slice(2) })
+  })
+
+  test('still skips rows for the builds that send an offset', async () => {
+    for (const name of ['A', 'B', 'C']) await addBook(`title: "${name}", authors: ["${name}"]`)
+
+    const whole = await myAuthorsPage()
     const second = await myAuthorsPage('limit: 2, offset: 2')
 
-    expect(first).toEqual({ hasMore: true, items: whole.items.slice(0, 2) })
-    expect(second).toEqual({ hasMore: false, items: whole.items.slice(2) })
+    expect(second).toMatchObject({ hasMore: false, items: whole.items.slice(2) })
   })
 })
 

@@ -31,8 +31,9 @@ struct SeriesClient: Sendable {
     /// "Look the book up, then add it".
     var addBook: @Sendable (BookDraft, BookAddition.LookUp?) async throws -> Book
     var subgenres: @Sendable () async throws -> [String]
-    var page: @Sendable (_ limit: Int, _ offset: Int, LibraryMode, SeriesState?)
-        async throws -> (items: [FollowedSeries], hasMore: Bool)
+    /// One page of the Series tab after the given cursor, in the server's order.
+    var page: @Sendable (_ limit: Int, _ after: String?, LibraryMode, SeriesState?)
+        async throws -> CursorPage<FollowedSeries>
     /// One row of the Series tab, read again after a change.
     var followedRow: @Sendable (_ seriesId: String, BookLanguage?) async throws -> FollowedSeries?
 }
@@ -57,7 +58,7 @@ extension SeriesClient {
         addAudibleVolume: { try await SeriesAPI.addAudibleVolume(seriesId: $0, volume: $1, language: $2) },
         addBook: { try await BookAddition.add($0, lookingUp: $1, source: .series) },
         subgenres: { try await BookAPI.subgenres() },
-        page: { try await SeriesAPI.mySeriesPage(limit: $0, offset: $1, mode: $2, state: $3) },
+        page: { try await SeriesAPI.mySeriesPage(limit: $0, after: $1, mode: $2, state: $3) },
         followedRow: { try await SeriesAPI.followedSeries(seriesId: $0, language: $1) }
     )
 }

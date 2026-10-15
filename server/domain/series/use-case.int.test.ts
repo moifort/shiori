@@ -51,7 +51,7 @@ describe('a page of the Series tab', () => {
     await followSagas(12)
     const before = fake.docReads
 
-    const { items, hasMore } = await SeriesUseCase.followedPage(reader, { limit: 5, offset: 0 }, {})
+    const { items, hasMore } = await SeriesUseCase.followedPage(reader, { limit: 5 }, {})
 
     expect(items.map((saga) => String(saga.id))).toEqual([
       'saga-0',
@@ -68,7 +68,12 @@ describe('a page of the Series tab', () => {
   test('answers the same rows as the whole list, cut to the page', async () => {
     await followSagas(4)
 
-    const { items } = await SeriesUseCase.followedPage(reader, { limit: 2, offset: 2 }, {})
+    const first = await SeriesUseCase.followedPage(reader, { limit: 2 }, {})
+    const { items } = await SeriesUseCase.followedPage(
+      reader,
+      { limit: 2, after: first.endCursor ?? undefined },
+      {},
+    )
     const all = await SeriesUseCase.followed(reader)
 
     expect(items).toEqual(all.filter((saga) => ['saga-2', 'saga-3'].includes(String(saga.id))))
@@ -80,7 +85,7 @@ describe('a page of the Series tab', () => {
 
     const { items } = await SeriesUseCase.followedPage(
       reader,
-      { limit: 2, offset: 0 },
+      { limit: 2 },
       { state: 'not-started' },
     )
 

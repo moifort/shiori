@@ -13,8 +13,9 @@ struct AuthorsClient: Sendable {
     var stopAwaiting: @Sendable (_ editionId: String) async throws -> Void
     /// "Look the book up, then add it".
     var addBook: @Sendable (BookDraft, BookAddition.LookUp?) async throws -> Book
-    var list: @Sendable (_ limit: Int, _ offset: Int, AuthorListOrder)
-        async throws -> (items: [FollowedAuthor], hasMore: Bool)
+    /// One page of the Authors shelf after the given cursor, in that order.
+    var list: @Sendable (_ limit: Int, _ after: String?, AuthorListOrder)
+        async throws -> CursorPage<FollowedAuthor>
 }
 
 extension AuthorsClient {
@@ -24,6 +25,6 @@ extension AuthorsClient {
         refresh: { try await AuthorsAPI.refresh(key: $0) },
         stopAwaiting: { try await AwaitedAPI.stop(id: $0) },
         addBook: { try await BookAddition.add($0, lookingUp: $1, source: .author) },
-        list: { try await AuthorsAPI.myAuthorsPage(limit: $0, offset: $1, order: $2) }
+        list: { try await AuthorsAPI.myAuthorsPage(limit: $0, after: $1, order: $2) }
     )
 }

@@ -245,12 +245,20 @@ const AuthorOrderEnum = builder.enumType('AuthorOrder', {
 })
 
 const FollowedAuthorPageType = builder
-  .objectRef<{ items: FollowedAuthor[]; hasMore: boolean }>('FollowedAuthorPage')
+  .objectRef<{ items: FollowedAuthor[]; hasMore: boolean; endCursor: string | null }>(
+    'FollowedAuthorPage',
+  )
   .implement({
     description: 'One page of the authors the reader holds books of, plus whether more follow.',
     fields: (t) => ({
       items: t.field({ type: [FollowedAuthorType], resolve: (page) => page.items }),
       hasMore: t.exposeBoolean('hasMore', { description: 'Whether more authors follow this page' }),
+      endCursor: t.string({
+        nullable: true,
+        description:
+          'The last author of the page, to pass as `after` for the next. Null on an empty page.',
+        resolve: (page) => page.endCursor,
+      }),
     }),
   })
 
@@ -259,12 +267,22 @@ builder.queryFields((t) => ({
     type: FollowedAuthorPageType,
     description:
       'One page of the authors in the library, in the `order` asked — the ones the ' +
-      'reader loves first unless told otherwise. `favorite` keeps the authors with at least one heart. Offset-paginated: pass ' +
-      'the number of rows already shown. Reads the page’s author catalogues, for ' +
+      'reader loves first unless told otherwise. `favorite` keeps the authors with at least one heart. Read `hasMore`, ' +
+      'then pass `endCursor` as `after` for the next page; a cursor naming an author no ' +
+      'longer there restarts from the top. Reads the page’s author catalogues, for ' +
       'their portraits, in one getAll.',
     args: {
       limit: t.arg.int({ defaultValue: 40, description: 'Maximum authors in the page' }),
-      offset: t.arg.int({ defaultValue: 0, description: 'Rows to skip' }),
+      after: t.arg.string({
+        required: false,
+        description: 'Cursor: the `endCursor` of the previous page',
+      }),
+      offset: t.arg.int({
+        defaultValue: 0,
+        description: 'Rows to skip',
+        deprecationReason:
+          'Use `after`, which an author added or removed between two pages does not shift.',
+      }),
       favorite: t.arg.boolean({ required: false, description: 'Only the authors with a heart' }),
       order: t.arg({ type: AuthorOrderEnum, defaultValue: 'loved', description: 'Row order' }),
     },
@@ -273,6 +291,7 @@ builder.queryFields((t) => ({
         context.userId,
         {
           limit: Math.max(1, Math.min(args.limit ?? 40, 200)),
+          after: args.after ?? undefined,
           offset: Math.max(0, args.offset ?? 0),
         },
         { favorite: args.favorite ?? undefined },
