@@ -14,6 +14,8 @@ struct MergeSeriesSheet: View {
     let isAudio: Bool
     let author: String?
     let ownedCount: Int
+    /// The sagas of the library it may be folded into.
+    let loadCandidates: () async throws -> [FollowedSeries]
     /// Folds the duplicate into the saga picked. Answers an error message to
     /// show, or nil once merged.
     let onMerge: (FollowedSeries) async -> String?
@@ -139,7 +141,7 @@ struct MergeSeriesSheet: View {
     private func load() async {
         defer { isLoading = false }
         do {
-            candidates = try await SeriesAPI.mergeCandidates().filter {
+            candidates = try await loadCandidates().filter {
                 $0.seriesId != seriesId && $0.isAudio == isAudio
             }
         } catch {
@@ -164,6 +166,7 @@ struct MergeSeriesSheet: View {
         seriesName: "L'Assassin royal (French Edition)",
         isAudio: false,
         author: "Robin Hobb",
-        ownedCount: 2
+        ownedCount: 2,
+        loadCandidates: { [] }
     ) { _ in nil }
 }

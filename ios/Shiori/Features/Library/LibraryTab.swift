@@ -37,7 +37,7 @@ struct LibraryTab: View {
             case .books:
                 LibraryView(onAdd: onAdd, requestedMode: $libraryRequest, shelf: $shelf)
             case .series:
-                SeriesListView(onScan: onAdd, requested: $seriesRequest, shelf: $shelf)
+                SeriesListScreen(onScan: onAdd, requested: $seriesRequest, shelf: $shelf)
             case .authors:
                 AuthorListView(onScan: onAdd, shelf: $shelf)
             }

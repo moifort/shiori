@@ -104,7 +104,7 @@ struct AuthorView: View {
             Task { await load() }
         }
         .navigationDestination(item: $openSeries) {
-            SeriesView(seriesId: $0.seriesId, language: $0.language, proposal: $0.proposal)
+            SeriesScreen(seriesId: $0.seriesId, language: $0.language, proposal: $0.proposal)
         }
         // Back from a saga, read again: a volume added there moves the saga
         // among the reader's own, and a rating changes its row.

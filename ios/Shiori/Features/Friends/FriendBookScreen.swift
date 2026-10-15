@@ -62,7 +62,7 @@ struct FriendBookScreen: View {
         .task { await viewModel.loadOffer() }
         .navigationDestination(isPresented: $showsSaga) {
             if let series = viewModel.entry?.book.series {
-                SeriesView(
+                SeriesScreen(
                     seriesId: series.id,
                     language: viewModel.entry?.book.language,
                     friend: SeriesFriend(id: viewModel.friendId, name: friendName)

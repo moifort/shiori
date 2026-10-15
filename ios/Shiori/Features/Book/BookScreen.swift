@@ -168,7 +168,7 @@ struct BookScreen: View {
                 }
             }
             .navigationDestination(item: $openSeries) { destination in
-                SeriesView(seriesId: destination.seriesId, language: destination.language)
+                SeriesScreen(seriesId: destination.seriesId, language: destination.language)
             }
             .alert(
                 "Une erreur est survenue",

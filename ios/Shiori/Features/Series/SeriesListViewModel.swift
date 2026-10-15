@@ -18,9 +18,16 @@ struct SeriesRequest: Equatable {
 @Observable
 final class SeriesListViewModel {
     /// Opens on every saga, unfiltered, as the Books shelf does.
-    init() {
-        followed = cache(for: mode, stateFilter).read() ?? []
+    /// - Parameter caching: off in tests, which must neither read nor leave
+    ///   a snapshot on disk.
+    init(client: SeriesClient, caching: Bool = true) {
+        self.client = client
+        self.caching = caching
+        followed = cache(for: mode, stateFilter)?.read() ?? []
     }
+
+    private let client: SeriesClient
+    private let caching: Bool
 
     /// Any change of view or filter reloads the first page.
     var mode: LibraryMode = .all {
@@ -55,8 +62,9 @@ final class SeriesListViewModel {
 
     /// Each view's sagas on disk. Bump the version whenever `FollowedSeries`
     /// changes shape.
-    private func cache(for mode: LibraryMode, _ state: SeriesState?) -> SnapshotCache<[FollowedSeries]> {
-        SnapshotCache("series-\(mode.rawValue)-\(state?.rawValue ?? "all")", version: 9)
+    private func cache(for mode: LibraryMode, _ state: SeriesState?) -> SnapshotCache<[FollowedSeries]>? {
+        guard caching else { return nil }
+        return SnapshotCache("series-\(mode.rawValue)-\(state?.rawValue ?? "all")", version: 9)
     }
 
     /// Switching view: the new view's rows from its last visit at once, brought
@@ -64,7 +72,7 @@ final class SeriesListViewModel {
     private func scheduleReload() {
         reloadTask?.cancel()
         generation += 1
-        followed = cache(for: mode, stateFilter).read() ?? []
+        followed = cache(for: mode, stateFilter)?.read() ?? []
         hasMore = false
         loaded = false
         reloadTask = Task { await load() }
@@ -101,9 +109,8 @@ final class SeriesListViewModel {
             var fetched: [FollowedSeries] = []
             var more = true
             while more, fetched.count < wanted {
-                let page = try await SeriesAPI.mySeriesPage(
-                    limit: min(wanted - fetched.count, maxPageSize), offset: fetched.count,
-                    mode: mode, state: stateFilter
+                let page = try await client.page(
+                    min(wanted - fetched.count, maxPageSize), fetched.count, mode, stateFilter
                 )
                 guard requested == generation else { return }
                 fetched += page.items
@@ -116,9 +123,10 @@ final class SeriesListViewModel {
                 hasMore = more
             }
             loaded = true
-            let cache = cache(for: mode, stateFilter)
-            let firstPage = Array(fetched.prefix(pageSize))
-            Task.detached { cache.write(firstPage) }
+            if let cache = cache(for: mode, stateFilter) {
+                let firstPage = Array(fetched.prefix(pageSize))
+                Task.detached { cache.write(firstPage) }
+            }
         } catch {
             guard requested == generation else { return }
             isLoading = false
@@ -136,9 +144,7 @@ final class SeriesListViewModel {
         isLoadingMore = true
         loadMoreFailed = false
         do {
-            let page = try await SeriesAPI.mySeriesPage(
-                limit: pageSize, offset: followed.count, mode: mode, state: stateFilter
-            )
+            let page = try await client.page(pageSize, followed.count, mode, stateFilter)
             guard requested == generation else { return }
             followed.append(contentsOf: page.items)
             hasMore = page.hasMore
@@ -194,9 +200,7 @@ final class SeriesListViewModel {
         var volumes: Set<String> = []
         do {
             for language in languages {
-                let fresh = try await SeriesAPI.followedSeries(
-                    seriesId: destination.seriesId, language: language
-                )
+                let fresh = try await client.followedRow(destination.seriesId, language)
                 guard requested == generation else { return }
                 // The covers the catalogue brought slide into the strip rather
                 // than the row redrawing at once.

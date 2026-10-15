@@ -36,7 +36,7 @@ struct AnnouncedVolumeScreen: View {
         }
         .task { await viewModel.describe() }
         .navigationDestination(isPresented: $showsSaga) {
-            SeriesView(seriesId: viewModel.opened.saga.series.seriesId, language: viewModel.opened.saga.series.language)
+            SeriesScreen(seriesId: viewModel.opened.saga.series.seriesId, language: viewModel.opened.saga.series.language)
         }
         .alert(
             "Ajout impossible",

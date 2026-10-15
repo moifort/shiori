@@ -45,7 +45,7 @@ struct FriendSeriesListScreen: View {
             NavigationStack {
                 // Where the saga stands is the friend's; previewed, the
                 // reader's own saga opens as it does from their Series tab.
-                SeriesView(
+                SeriesScreen(
                     seriesId: saga.seriesId,
                     language: saga.language,
                     isSheet: true,

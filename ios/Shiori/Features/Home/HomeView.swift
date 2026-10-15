@@ -106,7 +106,7 @@ struct HomeView: View {
         // catalogue is no write, so no notice says so.
         .sheet(item: $openSeries, onDismiss: { Task { await viewModel.load() } }) { opened in
             NavigationStack {
-                SeriesView(seriesId: opened.id, isSheet: true)
+                SeriesScreen(seriesId: opened.id, isSheet: true)
             }
         }
         .sheet(item: $openRelease) { opened in
