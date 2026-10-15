@@ -6,6 +6,10 @@ import SwiftUI
 /// picks and the editions awaited: a `SnapshotCache` hands them back from disk
 /// before a byte is asked of the network, and the fetches bring them up to
 /// date silently underneath, the new rows sliding into place.
+///
+/// Every section loads through one `LoadGate`: the appearance, the change
+/// notices and the sheets closing all ask for the same sections, and each
+/// used to send its own request beside the one already on its way.
 @MainActor
 @Observable
 final class DiscoverViewModel {
@@ -21,15 +25,30 @@ final class DiscoverViewModel {
     private let snapshots: DiscoverSnapshots
 
     private(set) var feed: DiscoveryFeed
-    private(set) var isLoading = false
+    /// The rows of a format are being asked for.
+    var isLoading: Bool { !rowsInFlight.isEmpty }
+    private var rowsInFlight: Set<ReleaseFormat> = []
     private(set) var errorMessage: String?
     /// The first look at a format: everything the reader follows in it is
     /// being looked up on the web, and the tab has nothing to show until it is.
     private(set) var isLookingUp = false
 
-    /// The formats the server has answered for since launch, so their rows are
-    /// no longer the snapshot.
-    private var loaded: Set<ReleaseFormat> = []
+    /// The sections a request may be on its way for.
+    enum Section: Hashable {
+        case rows(ReleaseFormat)
+        case picks
+        case awaited(ReleaseFormat)
+        case awards(ReleaseFormat)
+        case discoveries(ReleaseFormat)
+    }
+
+    private let gate = LoadGate<Section>()
+    /// The sections the server has answered for since launch, so they are no
+    /// longer the snapshot. A discoveries line counts once its selection is
+    /// made: one left searching is asked again on the next appearance.
+    private var answered: Set<Section> = []
+    /// The formats whose rows the server has answered for.
+    private var loaded: [ReleaseFormat] { ReleaseFormat.allCases.filter { answered.contains(.rows($0)) } }
     /// The formats already looked up this session: a lookup that left sagas
     /// behind — out of budget, or failed — is not started again on every
     /// look, and the hourly pass takes the rest.
@@ -44,9 +63,14 @@ final class DiscoverViewModel {
     var picks: FriendPicks { feed.picks }
 
     func loadPicks() async {
+        await gate.run(.picks, again: true) { await fetchPicks() }
+    }
+
+    private func fetchPicks() async {
         do {
             let found = try await client.picks()
             withAnimation(.smooth) { feed.picks = found }
+            markAnswered(.picks)
             saveSnapshot()
         } catch {
             _ = reportError(error)
@@ -59,9 +83,14 @@ final class DiscoverViewModel {
     var awaitedSoon: [AwaitedEdition] { feed.awaitedSoon }
 
     func loadAwaited(_ format: ReleaseFormat) async {
+        await gate.run(.awaited(format), again: true) { await fetchAwaited(format) }
+    }
+
+    private func fetchAwaited(_ format: ReleaseFormat) async {
         do {
             let found = try await client.awaited(format)
             withAnimation(.smooth) { feed.awaited[format] = found }
+            markAnswered(.awaited(format))
             saveSnapshot()
         } catch {
             guard !isCancellation(error) else { return }
@@ -72,7 +101,7 @@ final class DiscoverViewModel {
     /// The award winners in each format, one section per genre the reader
     /// reads most: empty until loaded, and when the reader reads no genre with
     /// awards enough. Kept on disk so the line opens with the tab rather than
-    /// sliding in seconds later, and asked anew on each visit.
+    /// sliding in seconds later, and asked anew on each write.
     private(set) var awards: [ReleaseFormat: [AwardSection]] = [:]
 
     /// The format the award winners and the month's discoveries are shown in.
@@ -82,9 +111,14 @@ final class DiscoverViewModel {
     var shownAwards: [AwardSection] { awards[awardsFormat] ?? [] }
 
     func loadAwards(_ format: ReleaseFormat) async {
+        await gate.run(.awards(format), again: true) { await fetchAwards(format) }
+    }
+
+    private func fetchAwards(_ format: ReleaseFormat) async {
         do {
             let found = try await client.awards(format)
             withAnimation(.smooth) { awards[format] = found }
+            markAnswered(.awards(format))
             if let cache = snapshots.awards {
                 let kept = awards
                 Task.detached { cache.write(kept) }
@@ -128,6 +162,10 @@ final class DiscoverViewModel {
     /// has none yet. A look that finds it being made — Découvrir asks again as
     /// it settles — waits for it, asking every few seconds.
     func loadDiscoveries(_ format: ReleaseFormat) async {
+        await gate.run(.discoveries(format), again: true) { await fetchDiscoveries(format) }
+    }
+
+    private func fetchDiscoveries(_ format: ReleaseFormat) async {
         isLookingUpDiscoveries = true
         defer { isLookingUpDiscoveries = false }
         // A request given up on while the server still makes the selection
@@ -139,6 +177,7 @@ final class DiscoverViewModel {
                 let found = try await client.discoveries(format)
                 withAnimation(.smooth) { discoveries = found }
                 guard found.status == .searching else {
+                    markAnswered(.discoveries(format))
                     if let cache = snapshots.discoveries { Task.detached { cache.write(found) } }
                     return
                 }
@@ -178,7 +217,7 @@ final class DiscoverViewModel {
 
     /// Every format already shown is asked again.
     func reloadAwaited() async {
-        for format in feed.awaited.keys { await loadAwaited(format) }
+        for format in ReleaseFormat.allCases where feed.awaited[format] != nil { await loadAwaited(format) }
     }
 
     /// Gives the wait up, taking the edition off at once and putting it back
@@ -207,24 +246,27 @@ final class DiscoverViewModel {
     }
 
     func load(_ format: ReleaseFormat) async {
-        guard !isLoading else { return }
-        isLoading = true
+        await gate.run(.rows(format), again: true) { await fetchRows(format) }
+    }
+
+    private func fetchRows(_ format: ReleaseFormat) async {
+        rowsInFlight.insert(format)
         errorMessage = nil
         let page: DiscoveryPage
         do {
             page = try await client.discovery(format)
             feed.followed[format] = page.followed
             show(page, in: format)
-            loaded.insert(format)
+            markAnswered(.rows(format))
         } catch {
-            isLoading = false
+            rowsInFlight.remove(format)
             guard !isCancellation(error) else { return }
             // The last rows stay on screen and say nothing: blanking good rows
             // because a refresh failed reads as data loss, and a pull tries again.
             errorMessage = reportError(error)
             return
         }
-        isLoading = false
+        rowsInFlight.remove(format)
         // The very first look, when nothing the reader follows in this format
         // was ever looked up, is looked up now rather than leaving the tab
         // empty until the hourly pass. A saga or an author followed since is
@@ -255,17 +297,39 @@ final class DiscoverViewModel {
         }
     }
 
-    /// The tab appeared: the formats still showing last session's snapshot
-    /// are brought up to date, the ones never loaded load, one after the
-    /// other. The ones the server already answered ask nothing: every write
-    /// posts the change notice this tab listens to.
+    /// The tab appeared: every section still showing last session's snapshot
+    /// is brought up to date, every one never loaded loads — each once, the
+    /// rows of the two formats one after the other. The sections the server
+    /// already answered ask nothing: every write posts the change notice this
+    /// tab listens to. Only the bell is read on each appearance, the system
+    /// setting being changed outside the app.
     func loadOnAppear() async {
-        for format in ReleaseFormat.allCases where !loaded.contains(format) {
-            await load(format)
-        }
+        async let alerts: Void = loadAlerts()
+        async let picks: Void = loadIfMissing(.picks)
+        async let printed: Void = loadIfMissing(.awaited(.book))
+        async let recorded: Void = loadIfMissing(.awaited(.audiobook))
+        // Over last session's rows the format shown is known at once; over
+        // nothing, it waits for the rows to say which one the reader holds.
+        let overSnapshot = feed.sagas != nil
+        async let shown: Void = overSnapshot ? loadShownIfMissing() : ()
+        for format in ReleaseFormat.allCases { await loadIfMissing(.rows(format)) }
+        await shown
+        // The rows may have moved the format shown.
+        await loadShownIfMissing()
+        _ = await (alerts, picks, printed, recorded)
     }
 
-    /// A pull: both formats are asked again.
+    /// A pull: the rows of both formats and the friends' picks are asked
+    /// again, and the award winners and the month's discoveries of a format
+    /// the rows just moved to.
+    func refresh() async {
+        async let picks: Void = loadPicks()
+        await loadAll()
+        await loadShownIfMissing()
+        await picks
+    }
+
+    /// Both formats are asked again, one after the other.
     func loadAll() async {
         for format in ReleaseFormat.allCases { await load(format) }
     }
@@ -273,6 +337,59 @@ final class DiscoverViewModel {
     /// The library changed: the formats already loaded are asked again.
     func reload() async {
         for format in loaded { await load(format) }
+    }
+
+    /// A write landed anywhere: the rows, the friends' picks, and the award
+    /// winners and the month's discoveries, which leave out what the reader
+    /// now holds.
+    func libraryChanged() async {
+        await reload()
+        await loadPicks()
+        await loadShown()
+    }
+
+    /// An edition was awaited or given up: the Authors shelf carries them too.
+    func awaitedChanged() async {
+        await reloadAwaited()
+        await reload()
+        await loadShown()
+    }
+
+    /// The award winners and the month's discoveries of the format shown,
+    /// asked again.
+    func loadShown() async {
+        await loadAwards(awardsFormat)
+        await loadDiscoveries(awardsFormat)
+    }
+
+    private func loadShownIfMissing() async {
+        let format = awardsFormat
+        async let awards: Void = loadIfMissing(.awards(format))
+        await loadIfMissing(.discoveries(format))
+        await awards
+    }
+
+    /// A write that landed while the answer was on its way leaves the section
+    /// unanswered: the load runs again for it, and should a departure from the
+    /// tab call that off, the next appearance asks.
+    private func markAnswered(_ section: Section) {
+        guard !gate.isStale(section) else { return }
+        answered.insert(section)
+    }
+
+    /// Loads a section the server never answered for, unless a request for
+    /// it is already on its way.
+    private func loadIfMissing(_ section: Section) async {
+        guard !answered.contains(section) else { return }
+        await gate.run(section, again: false) {
+            switch section {
+            case let .rows(format): await fetchRows(format)
+            case .picks: await fetchPicks()
+            case let .awaited(format): await fetchAwaited(format)
+            case let .awards(format): await fetchAwards(format)
+            case let .discoveries(format): await fetchDiscoveries(format)
+            }
+        }
     }
 
     /// Over rows already on screen, the new ones slide into place and push the

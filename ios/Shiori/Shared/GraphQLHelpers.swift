@@ -9,18 +9,24 @@ enum GraphQLHelpers {
     // `requestTimeout` overrides the session's 60 s idle limit for a query that
     // may legitimately keep the server silent for longer: a saga catalogued on
     // its first opening.
+    //
+    // The same query with the same variables, asked while one is on its way,
+    // shares that request (`SharedRequests`): the tabs that open together ask
+    // for the same rows, and the server answered each apart.
     static func fetch<Q: GraphQLQuery>(
         _ client: ApolloClient,
         query: Q,
         requestTimeout: TimeInterval? = nil
     ) async throws -> Q.Data
     where Q.ResponseFormat == SingleResponseFormat {
-        let response = try await calledOffWhenCancelled {
-            try await client.fetch(
-                query: query,
-                cachePolicy: .networkOnly,
-                requestConfiguration: requestTimeout.map { RequestConfiguration(requestTimeout: $0) }
-            )
+        let response = try await SharedRequests.shared.run(AnyHashable(query)) {
+            try await calledOffWhenCancelled {
+                try await client.fetch(
+                    query: query,
+                    cachePolicy: .networkOnly,
+                    requestConfiguration: requestTimeout.map { RequestConfiguration(requestTimeout: $0) }
+                )
+            }
         }
         return try unwrap(response)
     }

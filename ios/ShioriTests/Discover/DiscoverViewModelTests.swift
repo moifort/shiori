@@ -129,6 +129,136 @@ struct DiscoverViewModelTests {
 
         #expect(viewModel.alertsSilenced)
     }
+
+    // MARK: One request per section
+
+    @Test func anAppearanceAsksEachSectionOnce() async {
+        let requests = Requests()
+        let viewModel = DiscoverViewModel(client: .counting(requests), snapshots: .none)
+
+        await viewModel.loadOnAppear()
+
+        #expect(requests.counts == [
+            "alerts": 1, "awaited book": 1, "awaited audiobook": 1, "awards book": 1,
+            "discoveries book": 1, "discovery book": 1, "discovery audiobook": 1, "picks": 1,
+        ])
+        #expect(requests.mostAtOnce <= 1)
+    }
+
+    @Test func comingBackAsksOnlyTheBell() async {
+        let requests = Requests()
+        let viewModel = DiscoverViewModel(client: .counting(requests), snapshots: .none)
+        await viewModel.loadOnAppear()
+        requests.reset()
+
+        await viewModel.loadOnAppear()
+
+        #expect(requests.counts == ["alerts": 1])
+    }
+
+    @Test func aSectionThatFailedIsAskedOnTheNextAppearance() async {
+        let requests = Requests()
+        let fails = Flag()
+        fails.isOn = true
+        var client = DiscoverClient.counting(requests)
+        let awards = client.awards
+        client.awards = { format in
+            if fails.isOn { throw Boom() }
+            return try await awards(format)
+        }
+        let viewModel = DiscoverViewModel(client: client, snapshots: .none)
+        await viewModel.loadOnAppear()
+        fails.isOn = false
+        requests.reset()
+
+        await viewModel.loadOnAppear()
+
+        #expect(requests.counts == ["alerts": 1, "awards book": 1])
+    }
+
+    @Test func aNoticeDuringTheAppearanceNeverAsksTwiceAtOnce() async {
+        let requests = Requests()
+        let viewModel = DiscoverViewModel(client: .counting(requests), snapshots: .none)
+
+        async let appeared: Void = viewModel.loadOnAppear()
+        async let changed: Void = viewModel.libraryChanged()
+        async let awaited: Void = viewModel.awaitedChanged()
+        _ = await (appeared, changed, awaited)
+
+        #expect(requests.mostAtOnce <= 1)
+        #expect(viewModel.isLoading == false)
+    }
+
+    @Test func aWriteWhileALoadRunsAsksOnceMoreAfterIt() async {
+        let requests = Requests()
+        let viewModel = DiscoverViewModel(client: .counting(requests), snapshots: .none)
+        await viewModel.loadOnAppear()
+        requests.reset()
+
+        async let first: Void = viewModel.loadDiscoveries(.book)
+        async let second: Void = viewModel.loadDiscoveries(.book)
+        async let third: Void = viewModel.loadDiscoveries(.book)
+        _ = await (first, second, third)
+
+        #expect(requests.counts == ["discoveries book": 2])
+        #expect(requests.mostAtOnce == 1)
+    }
+
+    @Test func aWriteAsksTheSectionsItMoves() async {
+        let requests = Requests()
+        let viewModel = DiscoverViewModel(client: .counting(requests), snapshots: .none)
+        await viewModel.loadOnAppear()
+        requests.reset()
+
+        await viewModel.libraryChanged()
+
+        #expect(requests.counts == [
+            "awards book": 1, "discoveries book": 1, "discovery book": 1, "discovery audiobook": 1, "picks": 1,
+        ])
+    }
+}
+
+/// Every request a client was sent, by name, and how many of the same ran at
+/// once at most.
+final class Requests: @unchecked Sendable {
+    private let lock = NSLock()
+    private var sent: [String: Int] = [:]
+    private var running: [String: Int] = [:]
+    private var most = 0
+
+    var counts: [String: Int] { lock.withLock { sent } }
+    var mostAtOnce: Int { lock.withLock { most } }
+
+    func reset() { lock.withLock { sent = [:]; most = 0 } }
+
+    /// Runs the request a little while, long enough for another to overlap it.
+    func record<Value>(_ name: String, _ answer: () async throws -> Value) async rethrows -> Value {
+        lock.withLock {
+            sent[name, default: 0] += 1
+            running[name, default: 0] += 1
+            most = max(most, running[name] ?? 0)
+        }
+        defer { lock.withLock { running[name, default: 0] -= 1 } }
+        try? await Task.sleep(for: .milliseconds(20))
+        return try await answer()
+    }
+}
+
+extension DiscoverClient {
+    /// The preview client, every read counted.
+    static func counting(_ requests: Requests) -> DiscoverClient {
+        let preview = DiscoverClient.preview
+        var client = preview
+        client.discovery = { format in try await requests.record("discovery \(format)") { try await preview.discovery(format) } }
+        client.picks = { try await requests.record("picks") { try await preview.picks() } }
+        client.awaited = { format in try await requests.record("awaited \(format)") { try await preview.awaited(format) } }
+        client.awards = { format in try await requests.record("awards \(format)") { try await preview.awards(format) } }
+        client.discoveries = { format in
+            try await requests.record("discoveries \(format)") { try await preview.discoveries(format) }
+        }
+        client.alertsSilenced = { await requests.record("alerts") { await preview.alertsSilenced() } }
+        return client
+    }
 }
 
 @MainActor
