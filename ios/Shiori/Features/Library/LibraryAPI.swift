@@ -117,7 +117,7 @@ enum LibraryAPI {
 }
 
 /// One page of the library, mirroring the server's `LibraryPage` payload.
-struct LibraryPageResult {
+struct LibraryPageResult: Sendable {
     let books: [Book]
     let hasMore: Bool
 }

@@ -54,9 +54,16 @@ struct LibraryRequest: Equatable {
 final class LibraryViewModel {
     /// Opens on every book, unfiltered: a view or filter left from an earlier
     /// visit would hide books without the reader remembering why.
-    init() {
-        books = cache(for: mode, statusFilter).read() ?? []
+    /// - Parameter caching: off in tests, which must neither read nor leave
+    ///   a snapshot on disk.
+    init(client: LibraryClient, caching: Bool = true) {
+        self.client = client
+        self.caching = caching
+        books = cache(for: mode, statusFilter)?.read() ?? []
     }
+
+    private let client: LibraryClient
+    private let caching: Bool
 
     private(set) var books: [Book] = []
     /// The books whose edition in the app's language the reader awaits, in
@@ -89,8 +96,9 @@ final class LibraryViewModel {
     /// switching between them shows the rows of the last visit at once under
     /// the refresh spinner rather than an empty list reloading. Bump the
     /// version whenever `Book` changes shape.
-    private func cache(for mode: LibraryMode, _ status: ReadingStatus?) -> SnapshotCache<[Book]> {
-        SnapshotCache("library-\(mode.rawValue)-\(status?.rawValue ?? "all")", version: 5)
+    private func cache(for mode: LibraryMode, _ status: ReadingStatus?) -> SnapshotCache<[Book]>? {
+        guard caching else { return nil }
+        return SnapshotCache("library-\(mode.rawValue)-\(status?.rawValue ?? "all")", version: 5)
     }
 
     /// More rows follow the ones on screen.
@@ -147,7 +155,7 @@ final class LibraryViewModel {
         generation += 1
         // The new view's rows from its last visit, when there were any: shown at
         // once and brought up to date silently, as on launch.
-        books = cache(for: mode, statusFilter).read() ?? []
+        books = cache(for: mode, statusFilter)?.read() ?? []
         hasMore = false
         loaded = false
         reloadTask = Task { await load() }
@@ -174,9 +182,8 @@ final class LibraryViewModel {
             var fetched: [Book] = []
             var more = true
             while more, fetched.count < wanted {
-                let page = try await LibraryAPI.libraryPage(
-                    mode: mode, status: statusFilter,
-                    limit: min(wanted - fetched.count, maxPageSize), after: fetched.last?.id
+                let page = try await client.page(
+                    mode, statusFilter, min(wanted - fetched.count, maxPageSize), fetched.last?.id
                 )
                 guard requested == generation else { return }
                 fetched += page.books
@@ -190,10 +197,11 @@ final class LibraryViewModel {
             }
             loaded = true
             CoverImages.prefetch(fetched.compactMap(\.coverURL))
-            let cache = cache(for: mode, statusFilter)
-            // Enough for a first screen of either layout.
-            let firstPage = Array(fetched.prefix(max(pageSize, Self.mosaicPageSize)))
-            Task.detached { cache.write(firstPage) }
+            if let cache = cache(for: mode, statusFilter) {
+                // Enough for a first screen of either layout.
+                let firstPage = Array(fetched.prefix(max(pageSize, Self.mosaicPageSize)))
+                Task.detached { cache.write(firstPage) }
+            }
         } catch {
             guard requested == generation else { return }
             isLoading = false
@@ -208,8 +216,8 @@ final class LibraryViewModel {
 
     func loadAwaited() async {
         do {
-            async let printed = AwaitedAPI.awaited(format: .book)
-            async let recorded = AwaitedAPI.awaited(format: .audiobook)
+            async let printed = client.awaited(.book)
+            async let recorded = client.awaited(.audiobook)
             awaitedBookIds = Set(try await (printed + recorded).compactMap(\.bookId))
         } catch {
             guard !isCancellation(error) else { return }
@@ -224,9 +232,7 @@ final class LibraryViewModel {
         isLoadingMore = true
         loadMoreFailed = false
         do {
-            let page = try await LibraryAPI.libraryPage(
-                mode: mode, status: statusFilter, limit: pageSize, after: last.id
-            )
+            let page = try await client.page(mode, statusFilter, pageSize, last.id)
             guard requested == generation else { return }
             books += page.books
             hasMore = page.hasMore

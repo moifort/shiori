@@ -1,5 +1,15 @@
 import SwiftUI
 
+/// Everything the library list can ask for.
+enum LibraryAction {
+    case openBook(Book)
+    /// A row came into sight: the next page may be due.
+    case reached(String)
+    case loadMore
+    case refresh
+    case add
+}
+
 /// The library list. Pure and previewable: it takes what to draw and what to
 /// call, and knows nothing about the network.
 ///
@@ -26,11 +36,7 @@ struct LibraryPage: View {
     /// asks for them as it appears.
     var hasMore: Bool = false
     var loadMoreFailed: Bool = false
-    let onRetry: () async -> Void
-    var onPrefetch: (String) -> Void = { _ in }
-    var onLoadMore: () async -> Void = {}
-    let onAdd: () -> Void
-    let onBookTapped: (Book) -> Void
+    let onAction: (LibraryAction) async -> Void
 
     /// The shelf is narrowed: an empty list says nothing matches, not that the
     /// library is empty.
@@ -42,21 +48,21 @@ struct LibraryPage: View {
                 ProgressView("Chargement de votre bibliothèque...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let errorMessage, sections.isEmpty {
-                EmptyStateView.failure("Bibliothèque indisponible", message: errorMessage, retry: onRetry)
+                EmptyStateView.failure("Bibliothèque indisponible", message: errorMessage, retry: { await onAction(.refresh) })
             } else if sections.isEmpty {
                 if mode == .favorites {
                     EmptyStateView(
                         systemImage: "heart",
                         title: "Aucun favori",
                         message: "Touchez le cœur d'un livre pour le retrouver ici.",
-                        primary: .init("Scanner un livre", systemImage: "camera") { onAdd() }
+                        primary: .init("Scanner un livre", systemImage: "camera") { Task { await onAction(.add) } }
                     )
                 } else if isNarrowed {
                     EmptyStateView(
                         systemImage: statusFilter?.symbol ?? "books.vertical",
                         title: "Aucun livre",
                         message: "Aucun livre de votre bibliothèque n'a ce statut.",
-                        primary: .init("Scanner un livre", systemImage: "camera") { onAdd() }
+                        primary: .init("Scanner un livre", systemImage: "camera") { Task { await onAction(.add) } }
                     )
                 } else {
                     emptyState
@@ -117,24 +123,24 @@ struct LibraryPage: View {
         // The tightest grid: most of the shelf at a glance.
         ShelfMosaic(rows: sections.flatMap(\.rows), columns: 7, date: { $0.shelvedAt }) { book, width in
             Button {
-                onBookTapped(book)
+                Task { await onAction(.openBook(book)) }
             } label: {
                 BookTile(book: book, width: width, showsStatus: showsStatus)
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("book-tile")
-            .onAppear { onPrefetch(book.id) }
+            .onAppear { Task { await onAction(.reached(book.id)) } }
         } bottom: {
             if hasMore {
                 LoadMoreRow(
                     failed: loadMoreFailed,
                     loadingLabel: "Chargement de la suite",
-                    onLoadMore: onLoadMore
+                    onLoadMore: { await onAction(.loadMore) }
                 )
                 .padding(.bottom)
             }
         }
-        .refreshable { await onRetry() }
+        .refreshable { await onAction(.refresh) }
     }
 
     private var list: some View {
@@ -148,12 +154,12 @@ struct LibraryPage: View {
                 LoadMoreRow(
                     failed: loadMoreFailed,
                     loadingLabel: "Chargement de la suite",
-                    onLoadMore: onLoadMore
+                    onLoadMore: { await onAction(.loadMore) }
                 )
             }
         }
         .listStyle(.insetGrouped)
-        .refreshable { await onRetry() }
+        .refreshable { await onAction(.refresh) }
     }
 
     private func rows(of section: ListSection<Book>) -> some View {
@@ -161,7 +167,7 @@ struct LibraryPage: View {
         // the list, so the row carries no disclosure chevron promising a push.
         ForEach(section.rows) { book in
             Button {
-                onBookTapped(book)
+                Task { await onAction(.openBook(book)) }
             } label: {
                 BookRow(
                     title: book.title,
@@ -183,7 +189,7 @@ struct LibraryPage: View {
             }
             .tint(.primary)
             // Starts the next page a few rows before the end is reached.
-            .onAppear { onPrefetch(book.id) }
+            .onAppear { Task { await onAction(.reached(book.id)) } }
         }
     }
 
@@ -192,7 +198,7 @@ struct LibraryPage: View {
             systemImage: "books.vertical",
             title: "Votre bibliothèque est vide",
             message: "Scannez la couverture d'un livre pour commencer.",
-            primary: .init("Scanner un livre", systemImage: "camera") { onAdd() }
+            primary: .init("Scanner un livre", systemImage: "camera") { Task { await onAction(.add) } }
         )
     }
 }
@@ -217,15 +223,12 @@ struct LibraryPage: View {
             sections: ListSection.byMonth(books, on: \.shelvedAt),
             showsStatus: true,
             isLoading: false,
-            errorMessage: nil,
-            onRetry: {},
-            onAdd: {},
-            onBookTapped: { _ in }
-        )
+            errorMessage: nil
+        ) { _ in }
     }
 }
 
-#Preview("Vide") {
+#Preview("Empty") {
     @Previewable @State var mode: LibraryMode = .all
     @Previewable @State var statusFilter: ReadingStatus?
 
@@ -236,10 +239,7 @@ struct LibraryPage: View {
             layout: .constant(.list),
             sections: [],
             isLoading: false,
-            errorMessage: nil,
-            onRetry: {},
-            onAdd: {},
-            onBookTapped: { _ in }
-        )
+            errorMessage: nil
+        ) { _ in }
     }
 }

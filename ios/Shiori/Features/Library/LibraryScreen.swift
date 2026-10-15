@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// The Library tab's coordinator: owns the view model, the navigation stack and
+/// The Library tab's books, connected: owns the view model, the navigation stack and
 /// the sheets, and maps between the domain and the pure page below it. A book
 /// opens as a sheet over the list, as a wine does in Vinarium.
-struct LibraryView: View {
+struct LibraryScreen: View {
     /// Opens the add sheet, which the tab bar's scan button owns: every way a
     /// book gets in sits behind that one entry, on every tab.
     let onAdd: () -> Void
@@ -14,8 +14,20 @@ struct LibraryView: View {
     /// the list stands alone.
     var shelf: Binding<LibraryShelf>? = nil
 
-    @State private var viewModel = LibraryViewModel()
+    @State private var viewModel: LibraryViewModel
     @State private var selectedBook: Book?
+
+    init(
+        onAdd: @escaping () -> Void,
+        requestedMode: Binding<LibraryRequest?>,
+        shelf: Binding<LibraryShelf>? = nil,
+        client: LibraryClient = .live
+    ) {
+        self.onAdd = onAdd
+        _requestedMode = requestedMode
+        self.shelf = shelf
+        _viewModel = State(initialValue: LibraryViewModel(client: client))
+    }
 
     var body: some View {
         NavigationStack {
@@ -30,13 +42,16 @@ struct LibraryView: View {
                 isLoading: viewModel.isLoading,
                 errorMessage: viewModel.errorMessage,
                 hasMore: viewModel.hasMore,
-                loadMoreFailed: viewModel.loadMoreFailed,
-                onRetry: { await viewModel.load() },
-                onPrefetch: { viewModel.prefetchIfNeeded(for: $0) },
-                onLoadMore: { await viewModel.loadMore() },
-                onAdd: onAdd,
-                onBookTapped: { selectedBook = $0 }
-            )
+                loadMoreFailed: viewModel.loadMoreFailed
+            ) { action in
+                switch action {
+                case let .openBook(book): selectedBook = book
+                case let .reached(id): viewModel.prefetchIfNeeded(for: id)
+                case .loadMore: await viewModel.loadMore()
+                case .refresh: await viewModel.load()
+                case .add: onAdd()
+                }
+            }
             .libraryShelfPicker(shelf)
             .sheet(item: $selectedBook) { book in
                 // An edit to this book patches its own row from what the sheet
