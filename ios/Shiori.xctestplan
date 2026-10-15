@@ -18,6 +18,13 @@
   },
   "testTargets" : [
     {
+      "target" : {
+        "containerPath" : "container:Shiori.xcodeproj",
+        "identifier" : "E40000060000000000000001",
+        "name" : "ShioriTests"
+      }
+    },
+    {
       "parallelizable" : false,
       "target" : {
         "containerPath" : "container:Shiori.xcodeproj",
