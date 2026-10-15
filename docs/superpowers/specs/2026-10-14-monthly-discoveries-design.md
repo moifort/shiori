@@ -28,7 +28,7 @@ every list worth having; one bought books from his within days. What the test ta
 
 "Les découvertes d'octobre" — the month named — in Découvrir's Books summary, right under
 "Bientôt disponible": three suggestions as rows — cover, title, author, and why. The same three
-open the home page as a strip of covers. Each suggestion opens the standard book
+open the home page as a strip of bare covers. Each suggestion opens the standard book
 page with two more sections. Every action on a suggestion — dismiss it, add it, await it in
 French or in audio — removes it and lets the next one in.
 
@@ -78,8 +78,9 @@ blind, on his own library.
   then "♥ comme **Gagner la guerre** — …" — the referenced book's rank, the "comme" line in
   bold, the reason. Swipe left: "Pas intéressé", red, `eye.slash`. The next suggestion slides
   in.
-- **Home.** The same three as a `BookShelfSection` of covers, after "En cours": the caption
-  is the "comme …" line, the heading opens Découvrir, a cover the suggestion's page. Absent
+- **Home.** The same three as a `BookShelfSection` of covers, after "En cours", with no line
+  under the covers — the only home shelf without one, so the section gains a caption-less
+  form. The heading opens Découvrir, a cover the suggestion's page. Absent
   when the queue is empty, as "Nouveautés" is.
 - **A suggestion's page is the standard book page** — `BookHeaderSection`, then the
   description and synopsis sections as on an award winner's page — with two sections added:
