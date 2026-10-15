@@ -1,4 +1,4 @@
-# "Pour vous" — design
+# "Les découvertes du mois" — design
 
 ## Problem
 
@@ -26,8 +26,9 @@ every list worth having; one bought books from his within days. What the test ta
 
 ## Decision
 
-A "Pour vous" line in Découvrir's Books summary, right under "Bientôt disponible": three
-suggestions as rows — cover, title, author, and why. Each suggestion opens the standard book
+"Les découvertes d'octobre" — the month named — in Découvrir's Books summary, right under
+"Bientôt disponible": three suggestions as rows — cover, title, author, and why. The same three
+open the home page as a strip of covers. Each suggestion opens the standard book
 page with two more sections. Every action on a suggestion — dismiss it, add it, await it in
 French or in audio — removes it and lets the next one in.
 
@@ -59,9 +60,10 @@ blind, on his own library.
    - neither Open Library nor Google Books knows the title and author.
 4. **The queue.** The kept suggestions are stored in order, per reader. Découvrir shows the
    first three. Dismissing, adding or awaiting one removes it; the next one moves up.
-5. **Regeneration.** When fewer than three remain, or the library's ranks changed (a new heart,
-   rating or drop) and the queue is a week old, a new generation runs — **at most once a day per
-   reader**. An empty queue hides the line until the next one.
+5. **A selection per month.** The title names the month, so the selection is the month's: the
+   first look in a new month runs a new generation, whatever is left of the last. Within the
+   month the queue refills the three rows; when fewer than three remain, a new generation runs —
+   **at most once a day per reader**. An empty queue hides the line until the next one.
 6. **Dismissal is forever.** "Pas intéressé" is stored per reader and never suggested again;
    the model is told the last 100.
 7. **The references are the reader's own books.** A referenced title is matched back to the
@@ -70,11 +72,15 @@ blind, on his own library.
 
 ## iOS
 
-- **Découvrir › Livres summary.** "Pour vous" after "Bientôt disponible", symbol `sparkles`,
-  violet, line "D'après vos coups de cœur". Three rows, no cover strip: cover, title, author,
+- **Découvrir › Livres summary.** "Les découvertes d'octobre" (`Les découvertes de {mois}`,
+  elided before a vowel: d'août, d'avril, d'octobre) after "Bientôt disponible", symbol
+  `sparkles`, violet, line "D'après vos coups de cœur". Three rows, no cover strip: cover, title, author,
   then "♥ comme **Gagner la guerre** — …" — the referenced book's rank, the "comme" line in
   bold, the reason. Swipe left: "Pas intéressé", red, `eye.slash`. The next suggestion slides
   in.
+- **Home.** The same three as a `BookShelfSection` of covers, after "En cours": the caption
+  is the "comme …" line, the heading opens Découvrir, a cover the suggestion's page. Absent
+  when the queue is empty, as "Nouveautés" is.
 - **A suggestion's page is the standard book page** — `BookHeaderSection`, then the
   description and synopsis sections as on an award winner's page — with two sections added:
   - **Pourquoi ce livre**: the reason sentence;
@@ -106,9 +112,9 @@ Books are free.
 | | Generations | Cost |
 |---|---|---|
 | First look, per reader | 1 | €0.05 |
-| Usual month, per reader (≈ weekly) | 4 | €0.20 |
+| Usual month, per reader (one selection, maybe one refill) | 1–2 | €0.05–0.10 |
 | Worst month, per reader (dismisses all, daily cap) | 30 | €1.50 |
-| 100 active readers, usual month | 400 | €20 |
+| 100 active readers, usual month | 100–200 | €5–10 |
 
 A suggestion's page also calls `describeRelease` the first time anybody opens that book in that
 language: one grounded Gemini call, ≈ 4 billed searches ≈ €0.05, paid once and shared, refused
