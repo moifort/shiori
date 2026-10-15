@@ -9,10 +9,11 @@ import SwiftUI
 /// It is kept as a wizard rather than a single field because of what completing
 /// it does — it grants the welcome scans — and because the welcome step is the
 /// one place to say what the app is for before asking for anything.
-struct OnboardingView: View {
+struct OnboardingScreen: View {
     /// Handed the first name the reader gave, so the app knows it without
     /// asking the server.
     var onCompleted: (String) -> Void
+    var client: OnboardingClient = .live
 
     @Environment(AuthSession.self) private var session
     @State private var step: Step = .welcome
@@ -134,10 +135,7 @@ struct OnboardingView: View {
         isConnecting = true
         defer { isConnecting = false }
         do {
-            signIn = switch source {
-            case .audible: try await ImportAPI.startSignIn(on: marketplace)
-            case .kindle: try await KindleAPI.startSignIn(on: marketplace)
-            }
+            signIn = try await client.startSignIn(source, marketplace)
         } catch {
             connectionError = reportError(error)
         }
@@ -151,14 +149,7 @@ struct OnboardingView: View {
         guard let source = signingIn else { return }
         isConnecting = true
         do {
-            switch source {
-            case .audible:
-                _ = try await ImportAPI.completeSignIn(authorizationCode: code)
-                AudibleBackgroundSync.shared.start()
-            case .kindle:
-                _ = try await KindleAPI.completeSignIn(authorizationCode: code)
-                KindleBackgroundSync.shared.start()
-            }
+            try await client.completeSignIn(source, code)
         } catch {
             isConnecting = false
             connectionError = reportError(error)
@@ -171,7 +162,7 @@ struct OnboardingView: View {
     /// Into the app by way of the preparation screen, which the dashboard
     /// draws until the library is ready to be shown.
     private func enterApp() {
-        LibraryPreparation.shared.begin()
+        client.beginPreparation()
         onCompleted(firstName.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
@@ -181,7 +172,7 @@ struct OnboardingView: View {
         isSaving = true
         defer { isSaving = false }
         do {
-            try await OnboardingAPI.completeOnboarding(firstName: name)
+            try await client.complete(name)
             track(.onboardingCompleted)
             withAnimation { step = .libraries }
         } catch {
@@ -197,5 +188,5 @@ struct OnboardingView: View {
     // `AuthSession` reads `Auth.auth()` on init, which traps when Firebase was
     // never configured: the canvas does not run `ShioriApp.init`.
     if FirebaseApp.app() == nil { FirebaseApp.configure() }
-    return OnboardingView(onCompleted: { _ in }).environment(AuthSession())
+    return OnboardingScreen(onCompleted: { _ in }, client: .preview).environment(AuthSession())
 }

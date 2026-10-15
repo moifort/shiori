@@ -80,7 +80,7 @@ struct AuthRoot: View {
         case .loading:
             StartupLoadingView()
         case .required:
-            OnboardingView(onCompleted: { gate.markCompleted(firstName: $0) })
+            OnboardingScreen(onCompleted: { gate.markCompleted(firstName: $0) })
         case .ready:
             ContentView(invitation: $invitationRequest)
         case .failed(let message):
