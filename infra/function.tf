@@ -164,3 +164,45 @@ resource "google_cloud_run_service_iam_member" "invoker" {
 
   depends_on = [google_org_policy_policy.allow_public_iam]
 }
+
+# Every deploy builds a container image into this repository, which Cloud
+# Functions creates on its first deploy and never prunes: 273 images and 10 GB
+# by 2026-10-15, the only infrastructure line growing on the bill. Any image is
+# rebuilt from its commit, so only the running one is worth keeping — and the
+# one before it: a deploy that fails after its build leaves a newer image than
+# the running one, which a keep count of one would then delete.
+import {
+  to = google_artifact_registry_repository.functions
+  id = "projects/${var.project_id}/locations/${var.region}/repositories/gcf-artifacts"
+}
+
+resource "google_artifact_registry_repository" "functions" {
+  project       = google_project.this.project_id
+  location      = var.region
+  repository_id = "gcf-artifacts"
+  format        = "DOCKER"
+  description   = "This repository is created and used by Cloud Functions for storing function docker images."
+
+  cleanup_policy_dry_run = false
+
+  cleanup_policies {
+    id     = "delete-every-version"
+    action = "DELETE"
+    condition {
+      tag_state = "ANY"
+    }
+  }
+
+  cleanup_policies {
+    id     = "keep-the-two-latest"
+    action = "KEEP"
+    most_recent_versions {
+      keep_count = 2
+    }
+  }
+
+  lifecycle {
+    # Cloud Functions labels the repository it created; leave its label alone.
+    ignore_changes = [labels]
+  }
+}
