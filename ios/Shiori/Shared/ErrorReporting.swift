@@ -21,11 +21,17 @@ func isCancellation(_ error: Error) -> Bool {
 
 /// The device lost its network, not the app its way: a request that timed out,
 /// a connection cut when the reader left the app mid-upload, a phone offline.
-/// The reader is told; Sentry has nothing to fix.
+/// The reader is told; Sentry has nothing to fix. The URL error may come
+/// wrapped: offline, the Firebase ID token fetch fails first, with its own
+/// network error carrying the URL one as its underlying error.
 private func isConnectivityLoss(_ error: NSError) -> Bool {
-    error.domain == NSURLErrorDomain && [
+    if error.domain == NSURLErrorDomain && [
         NSURLErrorTimedOut,
         NSURLErrorNetworkConnectionLost,
         NSURLErrorNotConnectedToInternet,
-    ].contains(error.code)
+    ].contains(error.code) {
+        return true
+    }
+    guard let underlying = error.userInfo[NSUnderlyingErrorKey] as? NSError else { return false }
+    return isConnectivityLoss(underlying)
 }
