@@ -1,9 +1,13 @@
 import SwiftUI
 
 /// The genre page, opened from the dashboard's genre card as a sheet, like a
-/// book: loads the figures and hands them to the page. Reloads on any write, as the dashboard does —
-/// the server works them out from the library on each read.
-struct GenreInsightsView: View {
+/// book: loads the figures and hands them to `GenreInsightsPage`. Reloads on
+/// any write, as the dashboard does — the server works them out from the
+/// library on each read.
+struct GenreInsightsScreen: View {
+    /// Reads the figures.
+    let load: () async throws -> GenreInsights
+
     @Environment(\.dismiss) private var dismiss
     @State private var insights: GenreInsights?
     @State private var errorMessage: String?
@@ -13,7 +17,7 @@ struct GenreInsightsView: View {
             if let insights {
                 GenreInsightsPage(insights: insights)
             } else if let errorMessage {
-                EmptyStateView.failure("Genres indisponibles", message: errorMessage) { await load() }
+                EmptyStateView.failure("Genres indisponibles", message: errorMessage) { await reload() }
                     .navigationTitle("Genres lus")
             } else {
                 ProgressView()
@@ -27,16 +31,16 @@ struct GenreInsightsView: View {
                 ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
             }
         }
-        .task { await load() }
+        .task { await reload() }
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
-            Task { await load() }
+            Task { await reload() }
         }
     }
 
-    private func load() async {
+    private func reload() async {
         errorMessage = nil
         do {
-            insights = try await HomeAPI.genreInsights()
+            insights = try await load()
         } catch {
             errorMessage = reportError(error)
         }

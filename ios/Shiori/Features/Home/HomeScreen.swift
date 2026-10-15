@@ -5,7 +5,7 @@ import SwiftUI
 /// Reading progress is still not tracked — keeping it truthful would mean asking
 /// the reader for a page number every evening. The page figures spread each
 /// finished book over the days it was open instead.
-struct HomeView: View {
+struct HomeScreen: View {
     /// Opens the Series tab on one of its views: the sagas in progress from
     /// the progress card.
     let onShowSeries: (SeriesRequest) -> Void
@@ -19,7 +19,7 @@ struct HomeView: View {
     /// Opens Partagé, from the friends' favourites header.
     var onShowShared: () -> Void = {}
 
-    @State private var viewModel = HomeViewModel()
+    @State private var viewModel: HomeViewModel
     @State private var selectedBook: Book?
     @State private var showSettings = false
     /// The month's costs and readers, behind a toolbar button only an admin
@@ -44,6 +44,22 @@ struct HomeView: View {
     @State private var openDiscovery: Suggestion?
     /// The genre page, opened from the genre card as a sheet.
     @State private var showGenres = false
+
+    init(
+        onShowSeries: @escaping (SeriesRequest) -> Void,
+        onShowLibrary: @escaping (LibraryRequest) -> Void,
+        onScan: @escaping () -> Void,
+        onShowDiscover: @escaping () -> Void = {},
+        onShowShared: @escaping () -> Void = {},
+        client: HomeClient = .live
+    ) {
+        self.onShowSeries = onShowSeries
+        self.onShowLibrary = onShowLibrary
+        self.onScan = onScan
+        self.onShowDiscover = onShowDiscover
+        self.onShowShared = onShowShared
+        _viewModel = State(initialValue: HomeViewModel(client: client))
+    }
 
     var body: some View {
         NavigationStack {
@@ -92,7 +108,7 @@ struct HomeView: View {
             Text("\(audibleSync.errorMessage ?? kindleSync.errorMessage ?? "") Vous pouvez relancer la synchronisation depuis les réglages.")
         }
         .sheet(isPresented: $showGenres) {
-            NavigationStack { GenreInsightsView() }
+            NavigationStack { GenreInsightsScreen(load: viewModel.genreInsights) }
         }
         .sheet(item: $selectedBook) { book in
             // The book's own writes post the change notice this screen
@@ -131,19 +147,14 @@ struct HomeView: View {
             NavigationStack {
                 SuggestionView(suggestion: suggestion) { outcome in
                     guard outcome == .dismissed else { return }
-                    Task {
-                        do { try await SuggestionsAPI.dismiss(id: suggestion.id) } catch { _ = reportError(error) }
-                        await viewModel.loadDiscoveries()
-                    }
+                    Task { await viewModel.dismiss(suggestion) }
                 }
             }
         }
         .sheet(item: $openAwaited) { edition in
             NavigationStack {
                 AwaitedEditionView(edition: edition) {
-                    Task {
-                        do { try await AwaitedAPI.stop(id: edition.id) } catch { _ = reportError(error) }
-                    }
+                    Task { await viewModel.stopAwaiting(edition) }
                 }
             }
         }
@@ -156,7 +167,7 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showAdmin) {
             NavigationStack {
-                AdminView()
+                AdminScreen()
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
                             ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) {
@@ -180,29 +191,23 @@ struct HomeView: View {
                     dashboard: dashboard,
                     releases: viewModel.releases,
                     friendFavorites: viewModel.friendFavorites,
-                    discoveries: viewModel.discoveries,
-                    onReadingTapped: { onShowLibrary(LibraryRequest(status: .reading)) },
-                    onSeriesTapped: { onShowSeries(SeriesRequest(state: .inProgress)) },
-                    onPileTapped: { onShowLibrary(LibraryRequest(status: .toRead)) },
-                    onRatingTapped: { onShowLibrary(LibraryRequest(mode: .favorites)) },
-                    onReadTapped: { onShowLibrary(LibraryRequest(status: .read)) },
-                    onFavoritesTapped: { onShowLibrary(LibraryRequest(mode: .favorites)) },
-                    onDroppedTapped: { onShowLibrary(LibraryRequest(status: .dropped)) },
-                    onGenresTapped: { showGenres = true },
-                    onScan: onScan,
-                    onBookTapped: { selectedBook = $0 },
-                    onSeriesOpened: { openSeries = OpenedSeries(id: $0) },
-                    onReleasesTapped: onShowDiscover,
-                    onReleaseTapped: { release in
-                        switch release {
-                        case let .volume(volume): openRelease = volume
-                        case let .awaited(edition): openAwaited = edition
-                        }
-                    },
-                    onFriendFavoritesTapped: onShowShared,
-                    onFriendFavoriteTapped: { openFavorite = $0 },
-                    onDiscoveryTapped: { openDiscovery = $0 }
-                )
+                    discoveries: viewModel.discoveries
+                ) { action in
+                    switch action {
+                    case let .showLibrary(request): onShowLibrary(request)
+                    case let .showSeries(request): onShowSeries(request)
+                    case let .openSeries(id): openSeries = OpenedSeries(id: id)
+                    case let .openBook(book): selectedBook = book
+                    case .openGenres: showGenres = true
+                    case .scan: onScan()
+                    case .showDiscover: onShowDiscover()
+                    case let .openRelease(.volume(volume)): openRelease = volume
+                    case let .openRelease(.awaited(edition)): openAwaited = edition
+                    case .showShared: onShowShared()
+                    case let .openFriendFavorite(favorite): openFavorite = favorite
+                    case let .openDiscovery(suggestion): openDiscovery = suggestion
+                    }
+                }
                 .refreshable { await viewModel.load() }
         } else if let errorMessage = viewModel.errorMessage {
             EmptyStateView.failure("Accueil indisponible", message: errorMessage) {

@@ -1,5 +1,27 @@
 import SwiftUI
 
+/// Everything the dashboard can ask for: each card opens the list it counts.
+enum HomeAction {
+    /// A tile or a shelf: the Library tab on the books it counts.
+    case showLibrary(LibraryRequest)
+    /// The progress card's header: the Series tab on the sagas in progress.
+    case showSeries(SeriesRequest)
+    /// A row of the progress card.
+    case openSeries(String)
+    case openBook(Book)
+    case openGenres
+    /// The prompt that leads an empty library.
+    case scan
+    /// The releases header.
+    case showDiscover
+    /// A volume just out or announced, or a recording awaited.
+    case openRelease(HomeRelease)
+    /// The friends' favourites header.
+    case showShared
+    case openFriendFavorite(FriendFavorite)
+    case openDiscovery(Suggestion)
+}
+
 /// The dashboard laid out top to bottom. Stateless: the coordinator hands it the
 /// figures and receives the taps. Every widget is drawn from the first book on;
 /// one with nothing to show yet says what will fill it.
@@ -12,34 +34,7 @@ struct HomePage: View {
     var friendFavorites: [FriendFavorite] = []
     /// The month's discoveries, three books chosen for the reader.
     var discoveries: MonthlyDiscoveries?
-    /// The "reading" shelf: opens the library on the books being read.
-    let onReadingTapped: () -> Void
-    /// The progress card: opens the Series tab on the sagas in progress.
-    let onSeriesTapped: () -> Void
-    /// The pile tile and the suggestions shelf, which is drawn from the pile:
-    /// open the library on the books to read.
-    var onPileTapped: () -> Void = {}
-    /// The average rating tile: opens the library on the rated books, best first.
-    let onRatingTapped: () -> Void
-    var onReadTapped: () -> Void = {}
-    var onFavoritesTapped: () -> Void = {}
-    var onDroppedTapped: () -> Void = {}
-    let onGenresTapped: () -> Void
-    /// Opens the add sheet from the prompt that leads an empty library.
-    var onScan: () -> Void = {}
-    let onBookTapped: (Book) -> Void
-    /// A row of the progress card: opens that saga.
-    var onSeriesOpened: (String) -> Void = { _ in }
-    /// The releases header: opens Découvrir.
-    var onReleasesTapped: () -> Void = {}
-    /// A volume just out or announced, or a recording awaited: opens its page.
-    var onReleaseTapped: (HomeRelease) -> Void = { _ in }
-    /// The friends' favourites header: opens Partagé.
-    var onFriendFavoritesTapped: () -> Void = {}
-    /// A friend's favourite: opens the book, or a saga's first volume.
-    var onFriendFavoriteTapped: (FriendFavorite) -> Void = { _ in }
-    /// A discovery's cover: opens its page.
-    var onDiscoveryTapped: (Suggestion) -> Void = { _ in }
+    let onAction: (HomeAction) -> Void
 
     var body: some View {
         ScrollView {
@@ -65,8 +60,8 @@ struct HomePage: View {
                     books: dashboard.reading,
                     caption: Self.startedCaption,
                     emptyMessage: "Aucun livre en cours de lecture.",
-                    onHeaderTapped: onReadingTapped,
-                    onBookTapped: onBookTapped
+                    onHeaderTapped: { onAction(.showLibrary(LibraryRequest(status: .reading))) },
+                    onBookTapped: { onAction(.openBook($0)) }
                 )
                 .accessibilityIdentifier("home-reading")
 
@@ -78,10 +73,10 @@ struct HomePage: View {
                         books: discoveries.suggestions.map(\.cover),
                         caption: { _ in "" },
                         emptyMessage: "",
-                        onHeaderTapped: onReleasesTapped,
+                        onHeaderTapped: { onAction(.showDiscover) },
                         onBookTapped: { tile in
                             if let suggestion = discoveries.suggestions.first(where: { $0.cover.id == tile.id }) {
-                                onDiscoveryTapped(suggestion)
+                                onAction(.openDiscovery(suggestion))
                             }
                         }
                     )
@@ -109,9 +104,9 @@ struct HomePage: View {
                                 ? .orange : .green
                         },
                         emptyMessage: "",
-                        onHeaderTapped: onReleasesTapped,
+                        onHeaderTapped: { onAction(.showDiscover) },
                         onBookTapped: { tile in
-                            if let release = release(of: tile) { onReleaseTapped(release) }
+                            if let release = release(of: tile) { onAction(.openRelease(release)) }
                         }
                     )
                     .accessibilityIdentifier("home-releases")
@@ -125,17 +120,17 @@ struct HomePage: View {
                             friendFavorites.first { $0.tile.id == tile.id }?.friendDisplayName ?? ""
                         },
                         emptyMessage: "",
-                        onHeaderTapped: onFriendFavoritesTapped,
+                        onHeaderTapped: { onAction(.showShared) },
                         onBookTapped: { tile in
                             if let favorite = friendFavorites.first(where: { $0.tile.id == tile.id }) {
-                                onFriendFavoriteTapped(favorite)
+                                onAction(.openFriendFavorite(favorite))
                             }
                         }
                     )
                     .accessibilityIdentifier("home-friend-favorites")
                 }
 
-                LastFinishedCard(book: dashboard.lastFinished, onTapped: onBookTapped)
+                LastFinishedCard(book: dashboard.lastFinished) { onAction(.openBook($0)) }
 
                 TrendsWidget(booksRead: dashboard.booksRead)
 
@@ -147,22 +142,22 @@ struct HomePage: View {
                     readCount: dashboard.readCount,
                     favoriteCount: dashboard.favoriteCount,
                     droppedCount: dashboard.droppedCount,
-                    onPileTapped: onPileTapped,
-                    onRatingTapped: onRatingTapped,
-                    onReadTapped: onReadTapped,
-                    onFavoritesTapped: onFavoritesTapped,
-                    onDroppedTapped: onDroppedTapped
+                    onPileTapped: { onAction(.showLibrary(LibraryRequest(status: .toRead))) },
+                    onRatingTapped: { onAction(.showLibrary(LibraryRequest(mode: .favorites))) },
+                    onReadTapped: { onAction(.showLibrary(LibraryRequest(status: .read))) },
+                    onFavoritesTapped: { onAction(.showLibrary(LibraryRequest(mode: .favorites))) },
+                    onDroppedTapped: { onAction(.showLibrary(LibraryRequest(status: .dropped))) }
                 )
 
                 GenresWidget(
                     genres: dashboard.genres,
-                    onTapped: onGenresTapped
+                    onTapped: { onAction(.openGenres) }
                 )
 
                 SeriesProgressWidget(
                     series: dashboard.series,
-                    onHeaderTapped: onSeriesTapped,
-                    onSeriesTapped: onSeriesOpened
+                    onHeaderTapped: { onAction(.showSeries(SeriesRequest(state: .inProgress))) },
+                    onSeriesTapped: { onAction(.openSeries($0)) }
                 )
             }
             .padding(.horizontal)
@@ -181,7 +176,7 @@ struct HomePage: View {
             Text("Scannez la couverture d'un livre pour commencer. Chaque carte ci-dessous se remplira avec vos lectures.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-            Button(action: onScan) {
+            Button { onAction(.scan) } label: {
                 Label("Scanner un livre", systemImage: "camera")
                     .frame(maxWidth: .infinity)
             }
@@ -307,14 +302,14 @@ extension Dashboard {
 
 #Preview("With data") {
     NavigationStack {
-        HomePage(dashboard: .preview, onReadingTapped: {}, onSeriesTapped: {}, onRatingTapped: {}, onGenresTapped: {}, onBookTapped: { _ in })
+        HomePage(dashboard: .preview) { _ in }
             .navigationTitle("Accueil")
     }
 }
 
 #Preview("First book") {
     NavigationStack {
-        HomePage(dashboard: .firstBook, onReadingTapped: {}, onSeriesTapped: {}, onRatingTapped: {}, onGenresTapped: {}, onBookTapped: { _ in })
+        HomePage(dashboard: .firstBook) { _ in }
             .navigationTitle("Accueil")
     }
 }

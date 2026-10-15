@@ -1,0 +1,46 @@
+import Foundation
+
+/// Everything the Home tab asks of the server, as closures: `.live` goes
+/// through the APIs, `.preview` answers from the fixtures, and a test builds
+/// the one it needs inline.
+struct HomeClient: Sendable {
+    var dashboard: @Sendable () async throws -> Dashboard
+    var recentFavorites: @Sendable () async throws -> [FriendFavorite]
+    /// The month's discoveries, read, never made: only Découvrir asks for them.
+    var discoveries: @Sendable () async throws -> MonthlyDiscoveries
+    var discovery: @Sendable (ReleaseFormat) async throws -> DiscoveryPage
+    var awaited: @Sendable (ReleaseFormat) async throws -> [AwaitedEdition]
+    var dismissSuggestion: @Sendable (_ id: String) async throws -> Void
+    var stopAwaiting: @Sendable (_ editionId: String) async throws -> Void
+    var genreInsights: @Sendable () async throws -> GenreInsights
+}
+
+extension HomeClient {
+    static let live = HomeClient(
+        dashboard: { try await HomeAPI.dashboard() },
+        recentFavorites: { try await FriendsAPI.recentFavorites() },
+        discoveries: { try await SuggestionsAPI.monthly(format: .book, lookUp: false) },
+        discovery: { try await DiscoverAPI.discovery(format: $0) },
+        awaited: { try await AwaitedAPI.awaited(format: $0) },
+        dismissSuggestion: { try await SuggestionsAPI.dismiss(id: $0) },
+        stopAwaiting: { try await AwaitedAPI.stop(id: $0) },
+        genreInsights: { try await HomeAPI.genreInsights() }
+    )
+}
+
+extension HomeClient {
+    /// Answers from the fixtures: the dashboard, one saga with a volume
+    /// announced, no friend favourite, and the month's discoveries.
+    static let preview = HomeClient(
+        dashboard: { .preview },
+        recentFavorites: { [] },
+        discoveries: { .preview },
+        discovery: { format in
+            DiscoveryPage(rows: format == .book ? [.preview] : [], authors: [], unwatched: 0, followed: 1)
+        },
+        awaited: { _ in [] },
+        dismissSuggestion: { _ in },
+        stopAwaiting: { _ in },
+        genreInsights: { .preview }
+    )
+}

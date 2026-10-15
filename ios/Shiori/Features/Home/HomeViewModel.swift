@@ -4,12 +4,25 @@ import SwiftUI
 @MainActor
 @Observable
 final class HomeViewModel {
-    init() {
-        dashboard = cache.read()
-        releases = releasesCache.read() ?? []
-        friendFavorites = favoritesCache.read() ?? []
-        discoveries = discoveriesCache.read()
+    /// - Parameter caching: off in tests, which must neither read nor leave
+    ///   a snapshot on disk.
+    init(client: HomeClient, caching: Bool = true) {
+        self.client = client
+        if caching {
+            cache = SnapshotCache("dashboard", version: 4)
+            releasesCache = SnapshotCache("dashboard-releases", version: 3)
+            favoritesCache = SnapshotCache("dashboard-friend-favorites", version: 1)
+            discoveriesCache = SnapshotCache("dashboard-discoveries", version: 2)
+        } else {
+            (cache, releasesCache, favoritesCache, discoveriesCache) = (nil, nil, nil, nil)
+        }
+        dashboard = cache?.read()
+        releases = releasesCache?.read() ?? []
+        friendFavorites = favoritesCache?.read() ?? []
+        discoveries = discoveriesCache?.read()
     }
+
+    private let client: HomeClient
 
     private(set) var dashboard: Dashboard?
     /// What is new in the sagas followed, read or heard: the volumes just out,
@@ -30,10 +43,10 @@ final class HomeViewModel {
 
     /// The last dashboard on disk. Bump the version whenever `Dashboard`
     /// changes shape.
-    private let cache = SnapshotCache<Dashboard>("dashboard", version: 4)
-    private let releasesCache = SnapshotCache<[HomeRelease]>("dashboard-releases", version: 3)
-    private let favoritesCache = SnapshotCache<[FriendFavorite]>("dashboard-friend-favorites", version: 1)
-    private let discoveriesCache = SnapshotCache<MonthlyDiscoveries>("dashboard-discoveries", version: 2)
+    private let cache: SnapshotCache<Dashboard>?
+    private let releasesCache: SnapshotCache<[HomeRelease]>?
+    private let favoritesCache: SnapshotCache<[FriendFavorite]>?
+    private let discoveriesCache: SnapshotCache<MonthlyDiscoveries>?
 
     /// How many releases the dashboard lines up; the rest are Découvrir's.
     private static let releasesShown = 10
@@ -47,16 +60,16 @@ final class HomeViewModel {
         Task { await loadDiscoveries() }
         // Side by side with the figures, and never in their way: a section
         // that could not be brought up to date keeps what it last showed.
-        async let releases = Self.fetchReleases()
-        async let favorites = try? FriendsAPI.recentFavorites()
+        let client = client
+        async let releases = Self.fetchReleases(client)
+        async let favorites = try? client.recentFavorites()
         do {
-            let fetched = try await HomeAPI.dashboard()
+            let fetched = try await client.dashboard()
             // Over figures already on screen, the cards change in place rather
             // than the whole page redrawing at once.
             withAnimation(dashboard == nil ? nil : .smooth) { dashboard = fetched }
             loaded = true
-            let cache = cache
-            Task.detached { cache.write(fetched) }
+            if let cache { Task.detached { cache.write(fetched) } }
         } catch {
             keep(releases: await releases, favorites: await favorites)
             isLoading = false
@@ -76,13 +89,11 @@ final class HomeViewModel {
     private func keep(releases: [HomeRelease]?, favorites: [FriendFavorite]?) {
         if let releases {
             withAnimation(.smooth) { self.releases = releases }
-            let cache = releasesCache
-            Task.detached { cache.write(releases) }
+            if let cache = releasesCache { Task.detached { cache.write(releases) } }
         }
         if let favorites {
             withAnimation(.smooth) { friendFavorites = favorites }
-            let cache = favoritesCache
-            Task.detached { cache.write(favorites) }
+            if let cache = favoritesCache { Task.detached { cache.write(favorites) } }
         }
     }
 
@@ -90,16 +101,15 @@ final class HomeViewModel {
     /// its line by default, never made here — only Découvrir asks for a month's
     /// selection. Kept as they were when they could not be read.
     func loadDiscoveries() async {
-        guard let found = try? await SuggestionsAPI.monthly(format: .book, lookUp: false) else { return }
+        guard let found = try? await client.discoveries() else { return }
         withAnimation(.smooth) { discoveries = found }
-        let cache = discoveriesCache
-        Task.detached { cache.write(found) }
+        if let cache = discoveriesCache { Task.detached { cache.write(found) } }
     }
 
     /// The releases alone, when an edition was awaited or given up: the
     /// figures around them have not moved.
     func reloadReleases() async {
-        keep(releases: await Self.fetchReleases(), favorites: nil)
+        keep(releases: await Self.fetchReleases(client), favorites: nil)
     }
 
     /// Découvrir's rows in both formats and the editions the reader awaits: the
@@ -109,11 +119,11 @@ final class HomeViewModel {
     /// it comes out, rather than leaving the card. Nil when either format of
     /// the rows could not be read; the editions awaited are left out when they
     /// could not.
-    private static func fetchReleases() async -> [HomeRelease]? {
-        async let books = try? DiscoverAPI.discovery(format: .book)
-        async let audiobooks = try? DiscoverAPI.discovery(format: .audiobook)
-        async let awaitedRecordings = try? AwaitedAPI.awaited(format: .audiobook)
-        async let awaitedTranslations = try? AwaitedAPI.awaited(format: .book)
+    private static func fetchReleases(_ client: HomeClient) async -> [HomeRelease]? {
+        async let books = try? client.discovery(.book)
+        async let audiobooks = try? client.discovery(.audiobook)
+        async let awaitedRecordings = try? client.awaited(.audiobook)
+        async let awaitedTranslations = try? client.awaited(.book)
         guard let books = await books, let audiobooks = await audiobooks else { return nil }
         let rows = books.rows + audiobooks.rows
         let awaited = (await awaitedRecordings ?? []) + (await awaitedTranslations ?? [])
@@ -160,6 +170,21 @@ final class HomeViewModel {
     func loadOnAppear() async {
         guard !loaded, !isLoading else { return }
         await load()
+    }
+
+    /// A discovery turned down from its page: off the strip, and the next
+    /// one comes in.
+    func dismiss(_ suggestion: Suggestion) async {
+        do { try await client.dismissSuggestion(suggestion.id) } catch { _ = reportError(error) }
+        await loadDiscoveries()
+    }
+
+    func stopAwaiting(_ edition: AwaitedEdition) async {
+        do { try await client.stopAwaiting(edition.id) } catch { _ = reportError(error) }
+    }
+
+    func genreInsights() async throws -> GenreInsights {
+        try await client.genreInsights()
     }
 }
 

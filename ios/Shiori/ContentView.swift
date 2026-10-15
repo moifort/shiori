@@ -199,7 +199,7 @@ struct ContentView: View {
     private var tabs: some View {
         TabView(selection: $selectedTab) {
             Tab(TabSelection.home.label, systemImage: TabSelection.home.symbol, value: .home) {
-                HomeView(
+                HomeScreen(
                     onShowSeries: { request in
                         seriesMode = request
                         selectedTab = .library

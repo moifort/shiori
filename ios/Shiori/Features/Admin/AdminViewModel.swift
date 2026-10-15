@@ -7,12 +7,18 @@ final class AdminViewModel {
     private(set) var isLoading = false
     private(set) var errorMessage: String?
 
+    private let client: AdminClient
+
+    init(client: AdminClient) {
+        self.client = client
+    }
+
     func load() async {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
         do {
-            metrics = try await AdminAPI.metrics()
+            metrics = try await client.metrics()
         } catch {
             errorMessage = reportError(error)
         }
