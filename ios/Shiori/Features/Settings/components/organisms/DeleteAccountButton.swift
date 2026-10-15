@@ -21,3 +21,10 @@ struct DeleteAccountButton: View {
         .accessibilityIdentifier("delete-account")
     }
 }
+
+#Preview {
+    List {
+        DeleteAccountButton(isDeleting: false) {}
+        DeleteAccountButton(isDeleting: true) {}
+    }
+}

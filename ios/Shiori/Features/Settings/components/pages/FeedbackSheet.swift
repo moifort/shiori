@@ -6,6 +6,9 @@ import SwiftUI
 /// The send is fire-and-forget: the SDK queues the message and retries on its
 /// own, so there is nothing to await and the confirmation below is optimistic.
 struct FeedbackSheet: View {
+    /// Sends the message; `sendFeedback` in the app, nothing in a preview.
+    let onSend: (FeedbackKind, String) -> Void
+
     @Environment(\.dismiss) private var dismiss
 
     @State private var kind: FeedbackKind = .bug
@@ -105,11 +108,11 @@ struct FeedbackSheet: View {
     }
 
     private func send() {
-        sendFeedback(kind: kind, message: trimmedMessage)
+        onSend(kind, trimmedMessage)
         sent = true
     }
 }
 
 #Preview {
-    FeedbackSheet()
+    FeedbackSheet { _, _ in }
 }

@@ -1,12 +1,12 @@
 import SwiftUI
 
-/// What each version changed, served by the backend in the reader's language
-/// from the changelog the release was cut from. The newest version first, and
-/// a pending section on top when one is being written.
-struct ChangelogListView: View {
-    @State private var entries: [ChangelogEntry] = []
-    @State private var isLoading = true
-    @State private var errorMessage: String?
+/// What each version changed, the newest version first, and a pending
+/// section on top when one is being written.
+struct ChangelogPage: View {
+    let entries: [ChangelogEntry]
+    let isLoading: Bool
+    let errorMessage: String?
+    let onRefresh: () async -> Void
 
     var body: some View {
         Group {
@@ -15,7 +15,7 @@ struct ChangelogListView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let errorMessage, entries.isEmpty {
                 EmptyStateView.failure("Notes de version indisponibles", message: errorMessage) {
-                    await load()
+                    await onRefresh()
                 }
             } else {
                 List(entries) { entry in
@@ -44,26 +44,16 @@ struct ChangelogListView: View {
                     }
                 }
                 .listStyle(.insetGrouped)
-                .refreshable { await load() }
+                .refreshable { await onRefresh() }
             }
         }
         .navigationTitle("Nouveautés")
         .navigationBarTitleDisplayMode(.inline)
-        .task { await load() }
-    }
-
-    private func load() async {
-        isLoading = true
-        errorMessage = nil
-        do {
-            entries = try await SettingsAPI.changelog()
-        } catch {
-            errorMessage = reportError(error)
-        }
-        isLoading = false
     }
 }
 
 #Preview {
-    NavigationStack { ChangelogListView() }
+    NavigationStack {
+        ChangelogPage(entries: ChangelogEntry.previews, isLoading: false, errorMessage: nil) {}
+    }
 }

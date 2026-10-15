@@ -118,7 +118,7 @@ struct DiscoverScreen: View {
             // again when they close.
             .sheet(isPresented: $showsAlerts, onDismiss: { Task { await viewModel.loadAlerts() } }) {
                 NavigationStack {
-                    NotificationSettingsView(onDone: { showsAlerts = false })
+                    NotificationSettingsScreen(onDone: { showsAlerts = false })
                 }
                 .presentationDetents([.medium, .large])
             }

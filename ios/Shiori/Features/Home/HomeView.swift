@@ -152,7 +152,7 @@ struct HomeView: View {
             Task { await viewModel.reloadReleases() }
         }
         .sheet(isPresented: $showSettings) {
-            SettingsHomeView()
+            SettingsHomeScreen()
         }
         .sheet(isPresented: $showAdmin) {
             NavigationStack {

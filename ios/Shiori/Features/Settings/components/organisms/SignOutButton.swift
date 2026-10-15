@@ -15,3 +15,9 @@ struct SignOutButton: View {
         .accessibilityIdentifier("sign-out")
     }
 }
+
+#Preview {
+    List {
+        SignOutButton {}
+    }
+}
