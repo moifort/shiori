@@ -41,7 +41,7 @@ struct SharedPage: View {
     @ViewBuilder
     private var content: some View {
         if let loadFailed {
-            EmptyStateView.failure("Amis indisponibles", message: loadFailed) { await onAction(.refresh) }
+            EmptyState.failure("Amis indisponibles", message: loadFailed) { await onAction(.refresh) }
         } else if isWaiting {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -28,7 +28,7 @@ struct LastFinishedCard: View {
                     Text(book.title).font(.headline).lineLimit(2)
                     Text(detailLine(of: book)).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
                     if let rating = book.rating {
-                        StarRatingView(rating: rating)
+                        RatingStars(rating: rating)
                     }
                 }
                 Spacer(minLength: 0)

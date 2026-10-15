@@ -33,26 +33,26 @@ struct SeriesListPage: View {
                 ProgressView("Chargement de vos séries...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let errorMessage = errorMessage, followed.isEmpty {
-                EmptyStateView.failure("Séries indisponibles", message: errorMessage) {
+                EmptyState.failure("Séries indisponibles", message: errorMessage) {
                     await onAction(.refresh)
                 }
             } else if followed.isEmpty {
                 if mode == .favorites {
-                    EmptyStateView(
+                    EmptyState(
                         systemImage: "heart",
                         title: "Aucune série favorite",
                         message: "Touchez le cœur d'une série pour la retrouver ici.",
                         primary: .init("Scanner un livre", systemImage: "camera") { Task { await onAction(.scan) } }
                     )
                 } else if stateFilter != nil {
-                    EmptyStateView(
+                    EmptyState(
                         systemImage: stateFilter?.symbol ?? "square.stack",
                         title: "Aucune série",
                         message: "Aucune de vos séries n'est dans cet état.",
                         primary: .init("Scanner un livre", systemImage: "camera") { Task { await onAction(.scan) } }
                     )
                 } else {
-                    EmptyStateView(
+                    EmptyState(
                         systemImage: "square.stack",
                         title: "Aucune série",
                         message: "Scannez un tome d'une saga et elle apparaîtra ici, avec tous ses volumes.",

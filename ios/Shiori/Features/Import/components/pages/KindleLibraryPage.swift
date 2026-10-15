@@ -23,7 +23,7 @@ struct KindleLibraryPage: View {
                 ProgressView("Lecture de votre bibliothèque Kindle...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if books.isEmpty {
-                EmptyStateView(
+                EmptyState(
                     systemImage: "book.closed",
                     title: "Bibliothèque vide",
                     message: "Aucun livre Kindle sur ce compte."

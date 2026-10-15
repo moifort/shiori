@@ -8,7 +8,7 @@ import SwiftUI
 ///
 /// `failure` is the same shape for a list that could not load: the reason in
 /// the sentence, "Réessayer" as the button.
-struct EmptyStateView: View {
+struct EmptyState: View {
     let systemImage: String
     let title: LocalizedStringKey
     let message: Text
@@ -63,8 +63,8 @@ struct EmptyStateView: View {
         _ title: LocalizedStringKey,
         message: String,
         retry: @escaping () async -> Void
-    ) -> EmptyStateView {
-        EmptyStateView(
+    ) -> EmptyState {
+        EmptyState(
             systemImage: "wifi.exclamationmark",
             title: title,
             verbatim: message,
@@ -110,7 +110,7 @@ struct EmptyStateView: View {
 }
 
 #Preview {
-    EmptyStateView(
+    EmptyState(
         systemImage: "books.vertical",
         title: "Votre bibliothèque est vide",
         message: "Scannez la couverture d'un livre pour commencer.",

@@ -28,7 +28,7 @@ struct OpinionMark: View {
                 .foregroundStyle(.secondary)
                 .accessibilityLabel(Text("Série favorite"))
         } else if let rating {
-            StarRatingView(rating: rating, font: font, inherited: ratingIsInherited)
+            RatingStars(rating: rating, font: font, inherited: ratingIsInherited)
         }
     }
 }

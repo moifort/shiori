@@ -2,7 +2,7 @@ import FirebaseCore
 import SwiftUI
 
 /// Top-level gate: shows the blocking update screen when the backend no longer
-/// supports this build; otherwise `LoginView` when no Firebase user is signed in;
+/// supports this build; otherwise `LoginScreen` when no Firebase user is signed in;
 /// once signed in, reads the onboarding state and shows the wizard until it is
 /// completed, otherwise the main TabView (`ContentView`).
 ///
@@ -28,7 +28,7 @@ struct AuthRoot: View {
             } else if isShowcase {
                 signedIn
             } else if session.user == nil {
-                LoginView()
+                LoginScreen()
             } else {
                 signedIn
             }

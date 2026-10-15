@@ -14,7 +14,7 @@ struct ChangelogPage: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let errorMessage, entries.isEmpty {
-                EmptyStateView.failure("Notes de version indisponibles", message: errorMessage) {
+                EmptyState.failure("Notes de version indisponibles", message: errorMessage) {
                     await onRefresh()
                 }
             } else {

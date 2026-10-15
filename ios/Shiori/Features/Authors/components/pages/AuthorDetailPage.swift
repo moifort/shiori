@@ -40,7 +40,7 @@ struct AuthorDetailPage: View {
             } else if let page {
                 content(page)
             } else {
-                EmptyStateView.failure(
+                EmptyState.failure(
                     "Fiche indisponible",
                     message: errorMessage ?? String(localized: "Aucun livre de cet auteur dans votre bibliothèque.")
                 ) { await onAction(.refresh) }
@@ -126,7 +126,7 @@ struct AuthorDetailPage: View {
                 Label {
                     LabeledContent("Note moyenne") {
                         HStack(spacing: 6) {
-                            StarRatingView(rating: Int(rating.rounded()), font: .subheadline)
+                            RatingStars(rating: Int(rating.rounded()), font: .subheadline)
                             Text(rating, format: .number.precision(.fractionLength(1)))
                                 .foregroundStyle(.secondary)
                         }

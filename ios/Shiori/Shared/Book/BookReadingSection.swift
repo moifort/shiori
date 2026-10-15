@@ -56,7 +56,7 @@ struct BookReadingSection<Extra: View>: View {
     private var rating: some View {
         if let rating = book.rating {
             ratingRow(accessibility: "book-rating") {
-                LabeledContent("Note") { StarRatingView(rating: rating) }
+                LabeledContent("Note") { RatingStars(rating: rating) }
             }
         } else if let seriesRating = book.seriesRating {
             // The saga's stars, lent to this volume: grey, named as such, and

@@ -95,7 +95,7 @@ struct DiscoverPage: View {
         } else if feed.sagas != nil {
             list
         } else if let errorMessage, !isLoading {
-            EmptyStateView.failure("Découvrir indisponible", message: errorMessage) {
+            EmptyState.failure("Découvrir indisponible", message: errorMessage) {
                 await onAction(.retry)
             }
         } else {
@@ -228,7 +228,7 @@ struct DiscoverPage: View {
         if upcoming.isEmpty && recentSagas.isEmpty {
             if isEmpty {
                 Section {
-                    EmptyStateView(
+                    EmptyState(
                         systemImage: "sparkles",
                         title: "Rien de neuf pour l'instant",
                         message: "Les nouveautés et les prochains tomes annoncés de vos séries apparaîtront ici."
@@ -274,7 +274,7 @@ struct DiscoverPage: View {
         let recent = feed.recentAuthors
         if upcoming.isEmpty && recent.isEmpty && isEmpty {
             Section {
-                EmptyStateView(
+                EmptyState(
                     systemImage: "person.2",
                     title: "Rien de neuf pour l'instant",
                     message: "Les nouveautés et les prochains livres annoncés de vos auteurs apparaîtront ici."

@@ -210,7 +210,7 @@ struct HomeScreen: View {
                 }
                 .refreshable { await viewModel.load() }
         } else if let errorMessage = viewModel.errorMessage {
-            EmptyStateView.failure("Accueil indisponible", message: errorMessage) {
+            EmptyState.failure("Accueil indisponible", message: errorMessage) {
                 await viewModel.load()
             }
         } else {

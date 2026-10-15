@@ -40,7 +40,7 @@ struct FriendLibraryPage: View {
             if isWaiting {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let loadFailed {
-                EmptyStateView.failure("Bibliothèque indisponible", message: loadFailed) {
+                EmptyState.failure("Bibliothèque indisponible", message: loadFailed) {
                     await onAction(.refresh)
                 }
             } else if books.isEmpty {

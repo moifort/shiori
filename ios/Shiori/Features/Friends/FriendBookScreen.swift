@@ -48,9 +48,9 @@ struct FriendBookScreen: View {
                     }
                 }
             } else if let errorMessage = viewModel.errorMessage {
-                EmptyStateView.failure("Livre indisponible", message: errorMessage) { await viewModel.load() }
+                EmptyState.failure("Livre indisponible", message: errorMessage) { await viewModel.load() }
             } else {
-                EmptyStateView(
+                EmptyState(
                     systemImage: "book.closed",
                     title: "Livre introuvable",
                     message: "Ce livre n'est plus partagé."

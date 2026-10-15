@@ -3,7 +3,7 @@ import FirebaseAuth
 import FirebaseCore
 import SwiftUI
 
-struct LoginView: View {
+struct LoginScreen: View {
     @Environment(AuthSession.self) private var session
     @State private var nonce: String = ""
     @State private var error: String?
@@ -77,5 +77,5 @@ struct LoginView: View {
     // `AuthSession` reads `Auth.auth()` on init, which traps when Firebase was
     // never configured: the canvas does not run `ShioriApp.init`.
     if FirebaseApp.app() == nil { FirebaseApp.configure() }
-    return LoginView().environment(AuthSession())
+    return LoginScreen().environment(AuthSession())
 }

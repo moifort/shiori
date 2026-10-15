@@ -17,7 +17,7 @@ struct GenreInsightsScreen: View {
             if let insights {
                 GenreInsightsPage(insights: insights)
             } else if let errorMessage {
-                EmptyStateView.failure("Genres indisponibles", message: errorMessage) { await reload() }
+                EmptyState.failure("Genres indisponibles", message: errorMessage) { await reload() }
                     .navigationTitle("Genres lus")
             } else {
                 ProgressView()

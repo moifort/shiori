@@ -68,7 +68,7 @@ struct BookScreen: View {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    EmptyStateView(
+                    EmptyState(
                         systemImage: "book.closed",
                         title: "Livre introuvable",
                         verbatim: viewModel.errorMessage ?? String(localized: "Ce livre n'est plus dans votre bibliothèque.")

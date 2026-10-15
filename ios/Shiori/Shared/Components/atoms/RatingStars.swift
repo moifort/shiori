@@ -3,7 +3,7 @@ import SwiftUI
 /// Stars as a row draws them. Inherited ones — a saga's rating lent to a
 /// volume the reader left unrated — are grey rather than yellow, so a
 /// judgement given is told from one lent at a glance.
-struct StarRatingView: View {
+struct RatingStars: View {
     let rating: Int
     var total: Int = 5
     var font: Font = .caption2
@@ -29,17 +29,17 @@ struct StarRatingView: View {
 }
 
 #Preview("Inherited") {
-    StarRatingView(rating: 4, inherited: true)
+    RatingStars(rating: 4, inherited: true)
 }
 
 #Preview("None") {
-    StarRatingView(rating: 0)
+    RatingStars(rating: 0)
 }
 
 #Preview("3 of 5") {
-    StarRatingView(rating: 3)
+    RatingStars(rating: 3)
 }
 
 #Preview("5 of 5") {
-    StarRatingView(rating: 5)
+    RatingStars(rating: 5)
 }

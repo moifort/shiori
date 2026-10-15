@@ -14,7 +14,7 @@ struct AdminPage: View {
             if let metrics {
                 content(metrics)
             } else if let errorMessage {
-                EmptyStateView.failure("Métriques indisponibles", message: errorMessage, retry: onRetry)
+                EmptyState.failure("Métriques indisponibles", message: errorMessage, retry: onRetry)
             } else {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

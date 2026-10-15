@@ -37,7 +37,7 @@ struct FriendProfilePage: View {
             } else if let profile, !profile.isEmpty {
                 shelves(profile)
             } else if let errorMessage {
-                EmptyStateView.failure("Bibliothèque indisponible", message: errorMessage) {
+                EmptyState.failure("Bibliothèque indisponible", message: errorMessage) {
                     await onAction(.refresh)
                 }
             } else {

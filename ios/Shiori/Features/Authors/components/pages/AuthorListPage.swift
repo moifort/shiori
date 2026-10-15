@@ -37,11 +37,11 @@ struct AuthorListPage: View {
                 ProgressView("Chargement de vos auteurs...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let errorMessage = errorMessage, authors.isEmpty {
-                EmptyStateView.failure("Auteurs indisponibles", message: errorMessage) {
+                EmptyState.failure("Auteurs indisponibles", message: errorMessage) {
                     await onAction(.refresh)
                 }
             } else if authors.isEmpty {
-                EmptyStateView(
+                EmptyState(
                     systemImage: "person.2",
                     title: "Aucun auteur",
                     message: "Scannez un livre et son auteur apparaîtra ici, avec tous ses livres.",

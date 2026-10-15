@@ -48,17 +48,17 @@ struct LibraryPage: View {
                 ProgressView("Chargement de votre bibliothèque...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let errorMessage, sections.isEmpty {
-                EmptyStateView.failure("Bibliothèque indisponible", message: errorMessage, retry: { await onAction(.refresh) })
+                EmptyState.failure("Bibliothèque indisponible", message: errorMessage, retry: { await onAction(.refresh) })
             } else if sections.isEmpty {
                 if mode == .favorites {
-                    EmptyStateView(
+                    EmptyState(
                         systemImage: "heart",
                         title: "Aucun favori",
                         message: "Touchez le cœur d'un livre pour le retrouver ici.",
                         primary: .init("Scanner un livre", systemImage: "camera") { Task { await onAction(.add) } }
                     )
                 } else if isNarrowed {
-                    EmptyStateView(
+                    EmptyState(
                         systemImage: statusFilter?.symbol ?? "books.vertical",
                         title: "Aucun livre",
                         message: "Aucun livre de votre bibliothèque n'a ce statut.",
@@ -194,7 +194,7 @@ struct LibraryPage: View {
     }
 
     private var emptyState: some View {
-        EmptyStateView(
+        EmptyState(
             systemImage: "books.vertical",
             title: "Votre bibliothèque est vide",
             message: "Scannez la couverture d'un livre pour commencer.",

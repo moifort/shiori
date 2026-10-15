@@ -59,7 +59,7 @@ struct SeriesPage: View {
             } else {
                 // The world could not describe the saga: the reader can count
                 // its volumes themselves and have their screen drawn from that.
-                EmptyStateView(
+                EmptyState(
                     systemImage: "square.stack.3d.up.slash",
                     title: "Série non cataloguée",
                     verbatim: errorMessage ?? String(localized: "Shiori n'a pas réussi à constituer le catalogue de cette série. Réessayez plus tard, ou scannez la couverture d'un de ses tomes."),
@@ -202,7 +202,7 @@ struct SeriesPage: View {
         if let rating = opinion?.rating {
             Button { Task { await onAction(.rate) } } label: {
                 Label {
-                    LabeledContent("Note") { StarRatingView(rating: rating) }
+                    LabeledContent("Note") { RatingStars(rating: rating) }
                 } icon: {
                     Image(systemName: "star").foregroundStyle(.secondary)
                 }
@@ -223,7 +223,7 @@ struct SeriesPage: View {
     private func friendOpinion(_ friend: SeriesFriend) -> some View {
         if let rating = opinion?.rating {
             Label {
-                LabeledContent("Note de \(friend.name)") { StarRatingView(rating: rating) }
+                LabeledContent("Note de \(friend.name)") { RatingStars(rating: rating) }
             } icon: {
                 Image(systemName: "star").foregroundStyle(.secondary)
             }
