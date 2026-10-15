@@ -263,41 +263,6 @@ struct BookRow: View {
     }
 }
 
-/// Says the reader awaits a book's edition in the app's language: grey
-/// binoculars in the corner, beside the status, as the hidden eye is — on its
-/// row and on its page alike.
-struct AwaitedMark: View {
-    var body: some View {
-        Image(systemName: "binoculars")
-            .foregroundStyle(.secondary)
-            .fixedSize()
-            .accessibilityLabel(Text("Suivi"))
-    }
-}
-
-/// The small tinted capsule a list row draws its tags in — genre, subgenre,
-/// status, saga — smaller than a `Pill`, which is sized for a detail screen.
-struct RowChip: View {
-    let text: String
-    let tint: Color
-    var systemImage: String?
-
-    var body: some View {
-        HStack(spacing: 3) {
-            if let systemImage {
-                Image(systemName: systemImage)
-                    .imageScale(.small)
-                    .accessibilityHidden(true)
-            }
-            Text(text)
-        }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 1)
-        .foregroundStyle(tint)
-        .background(tint.opacity(0.15), in: Capsule())
-    }
-}
-
 #Preview {
     List {
         BookRow(
@@ -338,18 +303,5 @@ struct RowChip: View {
             subgenre: "Space opera",
             language: .en
         )
-    }
-}
-
-extension View {
-    /// A list row whose separator runs from one edge of the card to the other,
-    /// rather than starting at the text: the inset is pinned rather than left
-    /// to the list, so the guides know exactly how far the edges are. Put on
-    /// the outermost view of the row — a book row followed by a button would
-    /// otherwise stop its line short of the button.
-    func edgeToEdgeSeparator(inset: CGFloat = 16) -> some View {
-        listRowInsets(.horizontal, inset)
-            .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] - inset }
-            .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] + inset }
     }
 }
