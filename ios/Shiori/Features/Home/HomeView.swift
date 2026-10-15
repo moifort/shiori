@@ -40,6 +40,8 @@ struct HomeView: View {
     @State private var openAwaited: AwaitedEdition?
     /// The friend's favourite opened, on its read-only page.
     @State private var openFavorite: FriendFavorite?
+    /// A discovery of the month opened from its cover, as Découvrir opens it.
+    @State private var openDiscovery: Suggestion?
     /// The genre page, opened from the genre card as a sheet.
     @State private var showGenres = false
 
@@ -123,6 +125,19 @@ struct HomeView: View {
                 }
             }
         }
+        // Closed, the strip is asked again: an addition, a wait or a
+        // dismissal takes the book off, and the next one comes in.
+        .sheet(item: $openDiscovery, onDismiss: { Task { await viewModel.loadDiscoveries() } }) { suggestion in
+            NavigationStack {
+                SuggestionView(suggestion: suggestion) { outcome in
+                    guard outcome == .dismissed else { return }
+                    Task {
+                        do { try await SuggestionsAPI.dismiss(id: suggestion.id) } catch { _ = reportError(error) }
+                        await viewModel.loadDiscoveries()
+                    }
+                }
+            }
+        }
         .sheet(item: $openAwaited) { edition in
             NavigationStack {
                 AwaitedEditionView(edition: edition) {
@@ -165,6 +180,7 @@ struct HomeView: View {
                     dashboard: dashboard,
                     releases: viewModel.releases,
                     friendFavorites: viewModel.friendFavorites,
+                    discoveries: viewModel.discoveries,
                     onReadingTapped: { onShowLibrary(LibraryRequest(status: .reading)) },
                     onSeriesTapped: { onShowSeries(SeriesRequest(state: .inProgress)) },
                     onPileTapped: { onShowLibrary(LibraryRequest(status: .toRead)) },
@@ -184,7 +200,8 @@ struct HomeView: View {
                         }
                     },
                     onFriendFavoritesTapped: onShowShared,
-                    onFriendFavoriteTapped: { openFavorite = $0 }
+                    onFriendFavoriteTapped: { openFavorite = $0 },
+                    onDiscoveryTapped: { openDiscovery = $0 }
                 )
                 .refreshable { await viewModel.load() }
         } else if let errorMessage = viewModel.errorMessage {

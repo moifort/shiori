@@ -10,6 +10,8 @@ struct HomePage: View {
     var releases: [HomeRelease] = []
     /// What the reader's friends hearted lately, the newest first.
     var friendFavorites: [FriendFavorite] = []
+    /// The month's discoveries, three books chosen for the reader.
+    var discoveries: MonthlyDiscoveries?
     /// The "reading" shelf: opens the library on the books being read.
     let onReadingTapped: () -> Void
     /// The progress card: opens the Series tab on the sagas in progress.
@@ -36,6 +38,8 @@ struct HomePage: View {
     var onFriendFavoritesTapped: () -> Void = {}
     /// A friend's favourite: opens the book, or a saga's first volume.
     var onFriendFavoriteTapped: (FriendFavorite) -> Void = { _ in }
+    /// A discovery's cover: opens its page.
+    var onDiscoveryTapped: (Suggestion) -> Void = { _ in }
 
     var body: some View {
         ScrollView {
@@ -65,6 +69,24 @@ struct HomePage: View {
                     onBookTapped: onBookTapped
                 )
                 .accessibilityIdentifier("home-reading")
+
+                // The covers alone: the reason is Découvrir's, where the
+                // heading leads.
+                if let discoveries, !discoveries.suggestions.isEmpty {
+                    BookShelfSection(
+                        title: "\(discoveries.title)",
+                        books: discoveries.suggestions.map(\.cover),
+                        caption: { _ in "" },
+                        emptyMessage: "",
+                        onHeaderTapped: onReleasesTapped,
+                        onBookTapped: { tile in
+                            if let suggestion = discoveries.suggestions.first(where: { $0.cover.id == tile.id }) {
+                                onDiscoveryTapped(suggestion)
+                            }
+                        }
+                    )
+                    .accessibilityIdentifier("home-discoveries")
+                }
 
                 // Unlike the reader's own cards, these two are news: with
                 // nothing to announce they are left out rather than sketched.

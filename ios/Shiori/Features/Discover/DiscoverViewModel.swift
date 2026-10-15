@@ -212,6 +212,44 @@ final class DiscoverViewModel {
         }
     }
 
+    /// The month's discoveries, nil until loaded: three books chosen for the
+    /// reader, each with why. Not kept in the snapshot, as the awards: asked
+    /// anew on each visit, which reads the stored selection at once — only the
+    /// first look of a month waits for the model.
+    private(set) var discoveries: MonthlyDiscoveries?
+
+    func loadDiscoveries(_ format: ReleaseFormat) async {
+        do {
+            let found = try await SuggestionsAPI.monthly(format: format)
+            withAnimation(.smooth) { discoveries = found }
+        } catch {
+            guard !isCancellation(error) else { return }
+            _ = reportError(error)
+        }
+    }
+
+    /// "Pas intéressé": the row leaves at once, and the line is asked again
+    /// for the next suggestion once the server took note. Put back if it
+    /// refused.
+    func dismiss(_ suggestion: Suggestion, format: ReleaseFormat) async {
+        let before = discoveries
+        withAnimation(.smooth) {
+            discoveries = discoveries.map { current in
+                MonthlyDiscoveries(
+                    month: current.month,
+                    suggestions: current.suggestions.filter { $0.id != suggestion.id }
+                )
+            }
+        }
+        do {
+            try await SuggestionsAPI.dismiss(id: suggestion.id)
+            await loadDiscoveries(format)
+        } catch {
+            withAnimation(.smooth) { discoveries = before }
+            errorMessage = reportError(error)
+        }
+    }
+
     /// Every format already shown is asked again.
     func reloadAwaited() async {
         for format in feed.awaited.keys { await loadAwaited(format) }

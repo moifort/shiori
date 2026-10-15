@@ -50,6 +50,7 @@ struct DiscoverView: View {
     @State private var openFriendSaga: LovedSaga?
     @State private var openAwaited: AwaitedEdition?
     @State private var openWinner: AwardWinner?
+    @State private var openSuggestion: Suggestion?
     @Environment(\.openURL) private var openURL
     /// Held by `ContentView`, which brings it back to the books on each visit.
     @Binding var shelf: LibraryShelf
@@ -109,6 +110,18 @@ struct DiscoverView: View {
                 }
                 // Closed, the strip is asked again: the cover the page found
                 // when it was described is drawn on the tile.
+                // Closed, the line is asked again: an addition or a wait takes
+                // the suggestion off, and the next one comes in.
+                .sheet(item: $openSuggestion, onDismiss: {
+                    Task { await viewModel.loadDiscoveries(viewModel.awardsFormat) }
+                }) { suggestion in
+                    NavigationStack {
+                        SuggestionView(suggestion: suggestion) { outcome in
+                            guard outcome == .dismissed else { return }
+                            Task { await viewModel.dismiss(suggestion, format: viewModel.awardsFormat) }
+                        }
+                    }
+                }
                 .sheet(item: $openWinner, onDismiss: {
                     Task { await viewModel.loadAwards(viewModel.awardsFormat) }
                 }) { winner in
@@ -129,12 +142,14 @@ struct DiscoverView: View {
         }
         // The format follows what the reader holds, known once the rows are in.
         .task(id: viewModel.awardsFormat) { await viewModel.loadAwards(viewModel.awardsFormat) }
+        .task(id: viewModel.awardsFormat) { await viewModel.loadDiscoveries(viewModel.awardsFormat) }
         // The Authors shelf carries the editions awaited too.
         .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
             Task {
                 await viewModel.reloadAwaited()
                 await viewModel.reload()
                 await viewModel.loadAwards(viewModel.awardsFormat)
+                await viewModel.loadDiscoveries(viewModel.awardsFormat)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
@@ -142,6 +157,7 @@ struct DiscoverView: View {
                 await viewModel.reload()
                 await viewModel.loadPicks()
                 await viewModel.loadAwards(viewModel.awardsFormat)
+                await viewModel.loadDiscoveries(viewModel.awardsFormat)
             }
         }
     }
@@ -257,7 +273,9 @@ struct DiscoverView: View {
         // The newest heart first, as the server sends them; the flame alone
         // marks what many friends love.
         let loved = viewModel.picks.books
-        if !awaited.isEmpty || !awards.isEmpty || !loved.isEmpty {
+        let discoveries = viewModel.discoveries
+        let suggestions = discoveries?.suggestions ?? []
+        if !awaited.isEmpty || !suggestions.isEmpty || !awards.isEmpty || !loved.isEmpty {
             Section {
                 if !awaited.isEmpty {
                     DiscoverSummaryRow(
@@ -269,6 +287,30 @@ struct DiscoverView: View {
                         }
                     }
                     .accessibilityIdentifier("discover-awaited")
+                }
+                if let discoveries, !suggestions.isEmpty {
+                    DiscoverSummaryRow(
+                        title: "\(discoveries.title)",
+                        systemImage: "sparkles",
+                        tint: .purple,
+                        line: String(localized: "D’après vos coups de cœur")
+                    )
+                    .accessibilityIdentifier("discover-discoveries")
+                    // Rows rather than a strip: the reason is what sells the
+                    // book. A swipe says "Pas intéressé", and the next one
+                    // comes in.
+                    ForEach(suggestions) { suggestion in
+                        Button { openSuggestion = suggestion } label: {
+                            SuggestionRow(suggestion: suggestion)
+                        }
+                        .buttonStyle(.plain)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button("Pas intéressé", systemImage: "eye.slash", role: .destructive) {
+                                Task { await viewModel.dismiss(suggestion, format: viewModel.awardsFormat) }
+                            }
+                        }
+                        .accessibilityIdentifier("discover-suggestion")
+                    }
                 }
                 if !awards.isEmpty {
                     DiscoverSummaryRow(

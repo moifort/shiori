@@ -1,0 +1,43 @@
+# The month's discoveries: three books Claude chose from the reader's hearts
+# and stars, each with why, in one format. The first look of a month waits for
+# the model, about forty seconds.
+query MonthlyDiscoveries($format: ReleaseFormat!) {
+  monthlyDiscoveries(format: $format) {
+    month
+    suggestions {
+      ...SuggestionFields
+    }
+  }
+}
+
+# "Pas intéressé": never suggested again.
+mutation DismissSuggestion($id: String!) {
+  dismissSuggestion(id: $id)
+}
+
+fragment SuggestionFields on Suggestion {
+  id
+  format
+  title
+  originalTitle
+  originalLanguage
+  authors
+  kind
+  reason
+  short
+  references {
+    bookId
+    seriesId
+    title
+    favorite
+    rating
+    viaSeries
+  }
+  state
+  watched
+  date
+  coverUrl
+  storeUrl
+  awaitableFormats
+  awaitedEditionId
+}

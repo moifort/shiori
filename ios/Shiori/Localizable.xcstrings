@@ -17,6 +17,38 @@
         }
       }
     },
+    "%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@"
+          }
+        }
+      }
+    },
+    "%@ %@ — %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$@ — %3$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@ — %3$@"
+          }
+        }
+      }
+    },
     "%@ (série)" : {
       "localizations" : {
         "en" : {
@@ -4153,6 +4185,22 @@
         }
       }
     },
+    "Découverte" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discovery"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Découverte"
+          }
+        }
+      }
+    },
     "Découvrir" : {
       "localizations" : {
         "en" : {
@@ -4341,6 +4389,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Développement personnel"
+          }
+        }
+      }
+    },
+    "D’après vos coups de cœur" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From your favourites"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "D’après vos coups de cœur"
           }
         }
       }
@@ -6073,6 +6137,38 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Les %1$lld livres de « %2$@ » passeront dans « %3$@ », et « %4$@ » sera supprimée avec votre note."
+          }
+        }
+      }
+    },
+    "Les découvertes de %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@’s discoveries"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les découvertes de %@"
+          }
+        }
+      }
+    },
+    "Les découvertes d’%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@’s discoveries"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les découvertes d’%@"
           }
         }
       }
@@ -7821,6 +7917,22 @@
         }
       }
     },
+    "Pas intéressé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not interested"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas intéressé"
+          }
+        }
+      }
+    },
     "Pas maintenant" : {
       "localizations" : {
         "en" : {
@@ -8089,6 +8201,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pourquoi ce conseil ?"
+          }
+        }
+      }
+    },
+    "Pourquoi ce livre" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Why this book"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pourquoi ce livre"
           }
         }
       }
@@ -11085,6 +11213,22 @@
         }
       }
     },
+    "Vos livres de référence" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your books it draws on"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos livres de référence"
+          }
+        }
+      }
+    },
     "Vos livres numériques, avec ceux que vous avez finis." : {
       "localizations" : {
         "en" : {
@@ -11793,6 +11937,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "sur %lld livres notés"
+          }
+        }
+      }
+    },
+    "série" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "series"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "série"
           }
         }
       }

@@ -19,15 +19,18 @@ struct CoverTile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             BookCover(book: book, width: width, formatBadgeSize: Self.formatBadgeSize)
-            Text(caption)
-                .font(.caption2)
-                .foregroundStyle(captionTint.map(AnyShapeStyle.init) ?? AnyShapeStyle(.secondary))
-                .lineLimit(1)
-                .truncationMode(captionTruncation)
+            // No caption at all where a shelf shows bare covers.
+            if !caption.isEmpty {
+                Text(caption)
+                    .font(.caption2)
+                    .foregroundStyle(captionTint.map(AnyShapeStyle.init) ?? AnyShapeStyle(.secondary))
+                    .lineLimit(1)
+                    .truncationMode(captionTruncation)
+            }
         }
         .frame(width: width, alignment: .leading)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(book.title), \(caption)")
+        .accessibilityLabel(caption.isEmpty ? book.title : "\(book.title), \(caption)")
     }
 }
 

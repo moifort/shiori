@@ -8,6 +8,7 @@ final class HomeViewModel {
         dashboard = cache.read()
         releases = releasesCache.read() ?? []
         friendFavorites = favoritesCache.read() ?? []
+        discoveries = discoveriesCache.read()
     }
 
     private(set) var dashboard: Dashboard?
@@ -18,6 +19,8 @@ final class HomeViewModel {
     private(set) var releases: [HomeRelease] = []
     /// What the reader's friends hearted lately, the newest first.
     private(set) var friendFavorites: [FriendFavorite] = []
+    /// The month's discoveries, drawn as covers alone.
+    private(set) var discoveries: MonthlyDiscoveries?
     private(set) var isLoading = false
     private(set) var errorMessage: String?
 
@@ -30,6 +33,7 @@ final class HomeViewModel {
     private let cache = SnapshotCache<Dashboard>("dashboard", version: 4)
     private let releasesCache = SnapshotCache<[HomeRelease]>("dashboard-releases", version: 3)
     private let favoritesCache = SnapshotCache<[FriendFavorite]>("dashboard-friend-favorites", version: 1)
+    private let discoveriesCache = SnapshotCache<MonthlyDiscoveries>("dashboard-discoveries", version: 1)
 
     /// How many releases the dashboard lines up; the rest are Découvrir's.
     private static let releasesShown = 10
@@ -38,6 +42,9 @@ final class HomeViewModel {
         guard !isLoading else { return }
         isLoading = true
         errorMessage = nil
+        // Apart from the rest: the first look of a month waits for the model,
+        // and the figures must not wait with it.
+        Task { await loadDiscoveries() }
         // Side by side with the figures, and never in their way: a section
         // that could not be brought up to date keeps what it last showed.
         async let releases = Self.fetchReleases()
@@ -77,6 +84,15 @@ final class HomeViewModel {
             let cache = favoritesCache
             Task.detached { cache.write(favorites) }
         }
+    }
+
+    /// The discoveries alone: read in the printed format, as Découvrir draws
+    /// its line by default. Kept as they were when they could not be read.
+    func loadDiscoveries() async {
+        guard let found = try? await SuggestionsAPI.monthly(format: .book) else { return }
+        withAnimation(.smooth) { discoveries = found }
+        let cache = discoveriesCache
+        Task.detached { cache.write(found) }
     }
 
     /// The releases alone, when an edition was awaited or given up: the
