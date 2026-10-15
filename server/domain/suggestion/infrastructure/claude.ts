@@ -9,11 +9,12 @@ const CLAUDE_MODEL = 'claude-sonnet-5-5'
 
 const API_URL = 'https://api.anthropic.com/v1/messages'
 
-/** Twenty suggestions with their reasons come to about 3,000 tokens; the
- *  ceiling leaves room without letting a runaway answer bill without end. */
-const MAX_TOKENS = 8000
+/** Twenty suggestions with their reasons came to 6,863 tokens on 2026-10-15;
+ *  an answer cut short is unreadable JSON, so the ceiling leaves room without
+ *  letting a runaway answer bill without end. */
+const MAX_TOKENS = 12_000
 
-/** A generation was measured at about forty seconds; past two minutes the
+/** A generation was measured at 53 s on 2026-10-15; past two minutes the
  *  reader has left and the call is abandoned. */
 const TIMEOUT_MS = 120_000
 

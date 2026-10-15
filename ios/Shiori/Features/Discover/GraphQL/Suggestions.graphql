@@ -1,6 +1,6 @@
 # The month's discoveries: three books Claude chose from the reader's hearts
 # and stars, each with why, in one format. The first look of a month waits for
-# the model, about forty seconds.
+# the model, about a minute.
 query MonthlyDiscoveries($format: ReleaseFormat!) {
   monthlyDiscoveries(format: $format) {
     month

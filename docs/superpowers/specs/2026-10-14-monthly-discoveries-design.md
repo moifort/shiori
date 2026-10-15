@@ -103,16 +103,17 @@ blind, on his own library.
 
 ## Cost
 
-Sonnet, assumed at $3 / $15 per million tokens in / out; ≈ 3,000 in, 3,000 out per generation
-(20 suggestions with reasons) ≈ **$0.054 ≈ €0.05 per generation**. Open Library and Google
-Books are free.
+Sonnet, at $3 / $15 per million tokens in / out. Measured on 2026-10-15 on a 192-book library:
+4,172 tokens in, 6,863 out — the twenty reasons are the bulk — in 53 s, **$0.116 ≈ €0.10 per
+generation**. Open Library and Google Books are free. The workspace "Shiori" on the Claude
+Console caps the spend at $20 a month.
 
 | | Generations | Cost |
 |---|---|---|
-| First look, per reader | 1 | €0.05 |
-| Usual month, per reader (one selection, maybe one refill) | 1–2 | €0.05–0.10 |
-| Worst month, per reader (dismisses all, daily cap) | 30 | €1.50 |
-| 100 active readers, usual month | 100–200 | €5–10 |
+| First look, per reader | 1 | €0.10 |
+| Usual month, per reader (one selection, maybe one refill) | 1–2 | €0.10–0.20 |
+| Worst month, per reader (dismisses all, daily cap) | 30 | €3 |
+| 100 active readers, usual month | 100–200 | €10–20 |
 
 A suggestion's page also calls `describeRelease` the first time anybody opens that book in that
 language: one grounded Gemini call, ≈ 4 billed searches ≈ €0.05, paid once and shared, refused

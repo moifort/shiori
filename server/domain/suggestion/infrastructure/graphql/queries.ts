@@ -11,7 +11,7 @@ builder.queryFields((t) => ({
       'The discoveries of the month: five books chosen for the reader from their hearts, ' +
       'stars, drops and dismissals, each with why, in one format and the app’s language.\n\n' +
       'The model is asked when the month has no selection yet or fewer than five are left, ' +
-      'at most once a day: that answer takes about forty seconds. Every other one reads the ' +
+      'at most once a day: that answer takes about a minute. Every other one reads the ' +
       'stored selection.',
     args: { format: t.arg({ type: ReleaseFormatEnum, required: true }) },
     resolve: (_root, { format }, context) =>

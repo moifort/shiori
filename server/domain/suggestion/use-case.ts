@@ -42,7 +42,7 @@ export namespace SuggestionUseCase {
   /** The month's discoveries: the first five suggestions the reader neither
    *  holds, dismissed nor awaits, in one format and the app's language. The
    *  model is asked first when the month has none yet, or too few are left —
-   *  never twice a day — which takes about forty seconds; a failure keeps the
+   *  never twice a day — which takes about a minute; a failure keeps the
    *  selection there was. Empty, and nothing asked, without an Anthropic key. */
   export const monthly = async (
     userId: UserId,

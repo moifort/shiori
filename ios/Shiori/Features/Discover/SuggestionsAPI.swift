@@ -129,8 +129,8 @@ struct MonthlyDiscoveries: Hashable, Sendable, Codable {
 }
 
 enum SuggestionsAPI {
-    /// The first look of a month waits for the model to choose, about forty
-    /// seconds, and the catalogue checks after it.
+    /// The first look of a month waits for the model to choose, about a
+    /// minute, and the catalogue checks after it.
     private static let requestTimeout: TimeInterval = 150
 
     static func monthly(format: ReleaseFormat) async throws -> MonthlyDiscoveries {
