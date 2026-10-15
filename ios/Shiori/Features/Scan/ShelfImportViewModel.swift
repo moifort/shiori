@@ -19,12 +19,7 @@ final class ShelfImportViewModel {
         case adding
     }
 
-    enum Progress: Equatable {
-        case waiting
-        case adding
-        case added
-        case failed(String)
-    }
+    typealias Progress = ShelfAddProgress
 
     /// The photo is sent at this size: a spine's title is a few pixels tall,
     /// where a cover's reads fine at 1000.
@@ -44,6 +39,11 @@ final class ShelfImportViewModel {
     private(set) var failure: String?
     var paywallShown = false
     @ObservationIgnored private var crops: [Int: UIImage] = [:]
+    private let client: ScanClient
+
+    init(client: ScanClient) {
+        self.client = client
+    }
 
     var tickedCount: Int { ticked.count }
 
@@ -65,10 +65,10 @@ final class ShelfImportViewModel {
         failure = nil
         step = .detecting
         do {
-            async let found = ShelfAPI.detect(jpeg: jpeg)
-            async let quota = try? SubscriptionAPI.quota()
+            async let found = client.detectShelf(jpeg)
+            async let remaining = client.remainingScans()
             books = try await found
-            remainingScans = await quota?.totalRemaining
+            remainingScans = await remaining
             track(.shelfDetected(books: books.count))
             ticked = Set(books.filter { !$0.owned && $0.isNamed }.map(\.id))
             crops = await Self.cut(books, from: photo)
@@ -164,8 +164,8 @@ final class ShelfImportViewModel {
     private func addOne(_ book: DetectedBook) async {
         progress[book.id] = .adding
         do {
-            let scanned = try await ShelfAPI.describe(book)
-            _ = try await BookAPI.add(scanned.asDraft)
+            let scanned = try await client.describeDetected(book)
+            _ = try await client.add(scanned.asDraft)
             track(.bookAdded(source: .shelf))
             progress[book.id] = .added
         } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {
@@ -175,38 +175,3 @@ final class ShelfImportViewModel {
         }
     }
 }
-
-#if DEBUG
-extension ShelfImportViewModel {
-    /// A checklist as a shelf photo leaves it, for the previews: a book to add,
-    /// one already owned, and a spine the model could not read.
-    static func preview(step: Step = .checklist) -> ShelfImportViewModel {
-        let model = ShelfImportViewModel()
-        let size = CGSize(width: 600, height: 400)
-        let colors: [UIColor] = [.systemRed, .systemBlue, .systemGreen, .systemOrange, .systemPurple]
-        model.photo = UIGraphicsImageRenderer(size: size).image { context in
-            UIColor.darkGray.setFill()
-            context.fill(CGRect(origin: .zero, size: size))
-            for (index, color) in colors.enumerated() {
-                color.setFill()
-                context.fill(CGRect(x: 60 + index * 100, y: 40, width: 70, height: 320))
-            }
-        }
-        let box = { (index: Int) in CGRect(x: (60 + Double(index) * 100) / 600, y: 0.1, width: 70.0 / 600, height: 0.8) }
-        model.books = [
-            DetectedBook(id: 0, title: "Dune", authors: ["Frank Herbert"], publisher: nil, language: nil, format: nil, seriesName: "Dune", volume: 1, box: box(0), owned: false),
-            DetectedBook(id: 1, title: "Le Messie de Dune", authors: ["Frank Herbert"], publisher: nil, language: nil, format: nil, seriesName: "Dune", volume: 2, box: box(1), owned: false),
-            DetectedBook(id: 2, title: "Fondation", authors: ["Isaac Asimov"], publisher: nil, language: nil, format: nil, seriesName: nil, volume: nil, box: box(2), owned: true),
-            DetectedBook(id: 3, title: nil, authors: [], publisher: nil, language: nil, format: nil, seriesName: nil, volume: nil, box: box(3), owned: false),
-            DetectedBook(id: 4, title: "L'Étranger", authors: ["Albert Camus"], publisher: nil, language: nil, format: nil, seriesName: nil, volume: nil, box: box(4), owned: false),
-        ]
-        model.ticked = [0, 1, 4]
-        model.remainingScans = 94
-        if step == .adding {
-            model.progress = [0: .added, 1: .adding, 4: .failed("Le scan a échoué")]
-        }
-        model.step = step
-        return model
-    }
-}
-#endif

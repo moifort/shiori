@@ -3,22 +3,27 @@ import SwiftUI
 /// One line per ticked book as it is described and saved. The sheet can be
 /// closed at any point: the work belongs to the view model, not this page.
 struct ShelfAddingPage: View {
-    let viewModel: ShelfImportViewModel
+    /// The books of the photo; only those with a progress are drawn.
+    let books: [DetectedBook]
+    let progress: [Int: ShelfAddProgress]
+    /// Every chosen book is in the library.
+    let isDone: Bool
+    let onRetry: (Int) -> Void
     let onDone: () -> Void
 
     private var chosen: [DetectedBook] {
-        viewModel.books.filter { viewModel.progress[$0.id] != nil }
+        books.filter { progress[$0.id] != nil }
     }
 
     var body: some View {
         List(chosen) { book in
             HStack(spacing: 12) {
-                icon(for: viewModel.progress[book.id] ?? .waiting)
+                icon(for: progress[book.id] ?? .waiting)
                     .frame(width: 24)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(book.title ?? "")
                         .lineLimit(2)
-                    if case let .failed(reason) = viewModel.progress[book.id] {
+                    if case let .failed(reason) = progress[book.id] {
                         Text(reason)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
@@ -26,8 +31,8 @@ struct ShelfAddingPage: View {
                     }
                 }
                 Spacer(minLength: 0)
-                if case .failed = viewModel.progress[book.id] {
-                    Button("Réessayer") { viewModel.retryAdding(book.id) }
+                if case .failed = progress[book.id] {
+                    Button("Réessayer") { onRetry(book.id) }
                         .buttonStyle(.borderless)
                         .accessibilityIdentifier("shelf-retry-\(book.id)")
                 }
@@ -35,7 +40,7 @@ struct ShelfAddingPage: View {
         }
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 8) {
-                if !viewModel.isDone {
+                if !isDone {
                     Text("Vous pouvez fermer : l'ajout continue et les livres apparaissent dans la bibliothèque.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
@@ -57,7 +62,7 @@ struct ShelfAddingPage: View {
     }
 
     @ViewBuilder
-    private func icon(for progress: ShelfImportViewModel.Progress) -> some View {
+    private func icon(for progress: ShelfAddProgress) -> some View {
         switch progress {
         case .waiting:
             Image(systemName: "clock").foregroundStyle(.secondary)
@@ -74,7 +79,13 @@ struct ShelfAddingPage: View {
 #if DEBUG
 #Preview {
     NavigationStack {
-        ShelfAddingPage(viewModel: .preview(step: .adding), onDone: {})
+        ShelfAddingPage(
+            books: ShelfImportFixtures.books,
+            progress: ShelfImportFixtures.progress,
+            isDone: false,
+            onRetry: { _ in },
+            onDone: {}
+        )
     }
 }
 #endif

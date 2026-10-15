@@ -24,12 +24,10 @@ enum AddBookSource {
 /// several books lists them under the field for the reader to pick, so the
 /// long lookup that follows runs on the right one.
 struct AddBookSheet: View {
-    var onCamera: () -> Void = {}
-    var onShelf: () -> Void = {}
-    var onAllPhotos: () -> Void = {}
-    var onPickedPhoto: (Data) -> Void = { _ in }
-    var onTitle: (String) -> Void = { _ in }
-    var onManual: () -> Void = {}
+    /// The books a typed title may name, asked before the sheet closes.
+    let searchTitle: (String) async throws -> [TitleCandidate]
+    /// The way in the reader chose.
+    let onChoose: (AddBookSource) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @Environment(SubscriptionStore.self) private var subscriptions
@@ -115,7 +113,7 @@ struct AddBookSheet: View {
 
             Spacer(minLength: 8)
 
-            Button("Toutes les photos") { onAllPhotos() }
+            Button("Toutes les photos") { onChoose(.library) }
                 .font(.subheadline)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
@@ -147,7 +145,7 @@ struct AddBookSheet: View {
     }
 
     private var cameraTile: some View {
-        Button { onCamera() } label: {
+        Button { onChoose(.camera) } label: {
             tileBackground {
                 VStack(spacing: 8) {
                     Image(systemName: "camera.viewfinder")
@@ -170,7 +168,7 @@ struct AddBookSheet: View {
     /// whose tap opens the offer rather than the camera. Offered without a
     /// camera too: its own screen can pick a photo from the library.
     private var shelfTile: some View {
-        Button { onShelf() } label: {
+        Button { onChoose(.shelf) } label: {
             tileBackground {
                 VStack(spacing: 6) {
                     Image(systemName: "books.vertical")
@@ -325,7 +323,7 @@ struct AddBookSheet: View {
     }
 
     private func candidateRow(_ candidate: TitleCandidate, at index: Int) -> some View {
-        Button { onTitle(candidate.lookUpQuery) } label: {
+        Button { onChoose(.title(candidate.lookUpQuery)) } label: {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(candidate.title)
@@ -377,7 +375,7 @@ struct AddBookSheet: View {
     }
 
     private var manualRow: some View {
-        Button { onManual() } label: {
+        Button { onChoose(.manual) } label: {
             HStack(spacing: 12) {
                 Image(systemName: "square.and.pencil")
                     .font(.title3)
@@ -411,17 +409,17 @@ struct AddBookSheet: View {
         search = .searching
         Task {
             do {
-                let candidates = try await ScanAPI.searchTitle(typed)
+                let candidates = try await searchTitle(typed)
                 switch candidates.count {
                 case 0: search = .noMatch
                 case 1:
                     search = .idle
-                    onTitle(candidates[0].lookUpQuery)
+                    onChoose(.title(candidates[0].lookUpQuery))
                 default: search = .candidates(candidates)
                 }
             } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {
                 search = .idle
-                onTitle(typed)
+                onChoose(.title(typed))
             } catch {
                 search = .failed(reportError(error))
             }
@@ -438,14 +436,14 @@ struct AddBookSheet: View {
             let jpeg = image?.resized(maxDimension: 1000).jpegData(compressionQuality: 0.7)
             loadingPhotoId = nil
             guard let jpeg else { return }
-            onPickedPhoto(jpeg)
+            onChoose(.photo(jpeg))
         }
     }
 }
 
 #Preview {
     Color.clear.sheet(isPresented: .constant(true)) {
-        AddBookSheet()
+        AddBookSheet(searchTitle: { _ in [] }) { _ in }
             .environment(SubscriptionStore())
     }
 }

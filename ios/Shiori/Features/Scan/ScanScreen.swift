@@ -6,7 +6,7 @@ import SwiftUI
 /// The review step is not a formality. The model reads a cover it has never seen
 /// under whatever light the reader had, and this is where a wrong title gets
 /// fixed before it becomes a record they live with.
-struct ScanView: View {
+struct ScanScreen: View {
     /// Where the pass begins: on the camera, on a photo already taken, or on a
     /// title typed as remembered. The camera is what the tab bar opens; the
     /// other two come from the library's add sheet.
@@ -30,8 +30,14 @@ struct ScanView: View {
     var start: Start = .camera
     var onDismiss: () -> Void
 
-    @State private var viewModel = ScanViewModel()
+    @State private var viewModel: ScanViewModel
     @State private var shouldCapture = false
+
+    init(start: Start = .camera, onDismiss: @escaping () -> Void, client: ScanClient = .live) {
+        self.start = start
+        self.onDismiss = onDismiss
+        _viewModel = State(initialValue: ScanViewModel(client: client))
+    }
 
     var body: some View {
         NavigationStack {
@@ -79,14 +85,21 @@ struct ScanView: View {
                     draft: draft,
                     ownedCopy: viewModel.ownedCopy,
                     isSaving: viewModel.isSaving,
-                    onSave: { approved, series in
-                        Task {
-                            if await viewModel.save(approved, series: series) != nil { onDismiss() }
-                        }
-                    },
-                    onRetake: viewModel.retake,
-                    onClose: onDismiss
-                )
+                    awaitable: viewModel.awaitable,
+                    loadSubgenres: viewModel.subgenres,
+                    loadVocabulary: viewModel.vocabulary
+                ) { action in
+                    switch action {
+                    case let .save(approved, series):
+                        if await viewModel.save(approved, series: series) != nil { onDismiss() }
+                    case .retake: viewModel.retake()
+                    case let .awaitEdition(draft, format):
+                        viewModel.awaitEdition(of: draft, format: format)
+                        onDismiss()
+                    case let .languageOrFormatChanged(language, format):
+                        await viewModel.loadAwaitable(language: language, format: format)
+                    }
+                }
             }
         case .noResult:
             ScanNoResultPage(onRetake: viewModel.retake, onDismiss: onDismiss)

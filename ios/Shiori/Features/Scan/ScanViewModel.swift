@@ -36,13 +36,22 @@ final class ScanViewModel {
     var error: String?
     var paywallShown = false
     private(set) var isSaving = false
+    /// The editions in the app's language the book under review may be
+    /// awaited in, as the server says for its language and format.
+    private(set) var awaitable: [ReleaseFormat] = []
+
+    private let client: ScanClient
+
+    init(client: ScanClient) {
+        self.client = client
+    }
 
     func capture(_ jpeg: Data) async {
         capturedCover = jpeg
         step = .analyzing
         track(.scanStarted)
         do {
-            let scanned = try await ScanAPI.scan(jpeg: jpeg)
+            let scanned = try await client.scan(jpeg)
             guard scanned.recognized, let title = scanned.title, !title.isEmpty else {
                 track(.scanNoResult)
                 step = .noResult
@@ -71,7 +80,7 @@ final class ScanViewModel {
         step = .analyzing
         track(.scanStarted)
         do {
-            let scanned = try await ScanAPI.lookUp(link: link)
+            let scanned = try await client.lookUpLink(link)
             guard scanned.recognized, let found = scanned.title, !found.isEmpty else {
                 track(.scanNoResult)
                 step = .noResult
@@ -100,7 +109,7 @@ final class ScanViewModel {
         step = .analyzing
         track(.scanStarted)
         do {
-            let scanned = try await ScanAPI.lookUp(title: title)
+            let scanned = try await client.lookUpTitle(title)
             guard scanned.recognized, let found = scanned.title, !found.isEmpty else {
                 track(.scanNoResult)
                 step = .noResult
@@ -150,13 +159,13 @@ final class ScanViewModel {
         do {
             var added = draft
             if placement != nil { added.series = nil }
-            var book = try await BookAPI.add(added)
+            var book = try await client.add(added)
             track(.bookAdded(source: .scan))
             if let placement {
                 var correction = BookCorrection()
                 correction.series = .set(placement)
                 do {
-                    book = try await BookAPI.update(id: book.id, correction: correction)
+                    book = try await client.update(book.id, correction)
                 } catch {
                     // The book is in: only its saga is missing, which its
                     // sheet can file afterwards.
@@ -167,10 +176,10 @@ final class ScanViewModel {
                 do {
                     // The stars first: the heart then keeps them.
                     if draft.rating > 0 {
-                        book = try await BookAPI.rate(id: book.id, stars: draft.rating)
+                        book = try await client.rate(book.id, draft.rating)
                     }
                     if draft.favorite {
-                        book = try await BookAPI.setFavorite(id: book.id, favorite: true)
+                        book = try await client.setFavorite(book.id, true)
                     }
                 } catch {
                     // The book is in: only its stars or its heart are missing,
@@ -183,6 +192,44 @@ final class ScanViewModel {
             self.error = reportError(error)
             return nil
         }
+    }
+
+    /// Asked again whenever the language or the format is corrected: a book
+    /// switched to the app's language is left only its recording to await. A
+    /// failure leaves the offer out — the book's page makes it once added.
+    func loadAwaitable(language: BookLanguage?, format: BookFormat) async {
+        guard let language else {
+            awaitable = []
+            return
+        }
+        do {
+            awaitable = try await client.awaitableFormats(language, format)
+        } catch {
+            _ = reportError(error)
+        }
+    }
+
+    /// Awaits the book's edition in the app's language, the book itself left
+    /// out of the library: the server looks it up on the web behind, so a
+    /// failure is reported rather than shown, and the scan closes at once.
+    func awaitEdition(of draft: BookDraft, format: ReleaseFormat) {
+        let client = client
+        Task {
+            do {
+                try await client.awaitScanned(draft, format)
+            } catch {
+                _ = reportError(error)
+            }
+        }
+    }
+
+    /// The proposals under the review's sheets: a convenience, nil on failure.
+    func vocabulary() async -> BookVocabulary? {
+        try? await client.vocabulary()
+    }
+
+    func subgenres() async -> [String] {
+        (try? await client.subgenres()) ?? []
     }
 
     func retake() {

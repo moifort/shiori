@@ -1,49 +1,71 @@
 import SwiftUI
 
+/// Everything the shelf checklist can ask for.
+enum ShelfChecklistAction {
+    case toggle(Int)
+    /// A spine read wrong, or not at all, typed by the reader.
+    case correct(Int, title: String, authors: [String])
+    case addTicked
+}
+
 /// Every book of the photo, ticked unless the reader owns it already or its
 /// title could not be read. The button says what the run will cost.
 ///
 /// The tick is its own control, and the rest of the row opens the correction
 /// sheet: a tap meant to tick never opens a sheet by accident.
 struct ShelfChecklistPage: View {
-    let viewModel: ShelfImportViewModel
+    let photo: UIImage?
+    let books: [DetectedBook]
+    let ticked: Set<Int>
+    /// What is left of the allowance; nil when unknown.
+    let remainingScans: Int?
+    /// The book's spine cut out of the photo, when it could be.
+    let crop: (DetectedBook) -> UIImage?
+    let onAction: (ShelfChecklistAction) -> Void
+
     @State private var highlighted: Int?
     @State private var correcting: DetectedBook?
     @State private var allowanceAlert = false
 
+    /// More books ticked than scans left: the page says how many remain rather
+    /// than starting a run that would stop halfway.
+    private var exceedsAllowance: Bool {
+        remainingScans.map { ticked.count > $0 } ?? false
+    }
+
     var body: some View {
         List {
-            if let photo = viewModel.photo {
+            if let photo {
                 Section {
-                    ShelfPhoto(photo: photo, books: viewModel.books, highlighted: highlighted)
+                    ShelfPhoto(photo: photo, books: books, highlighted: highlighted)
                         .listRowInsets(EdgeInsets())
                 }
             }
             Section {
-                ForEach(viewModel.books) { book in
+                ForEach(books) { book in
                     row(book)
                 }
             }
         }
         .safeAreaInset(edge: .bottom) { addButton }
-        .navigationTitle("\(viewModel.books.count) livres trouvés")
+        .navigationTitle("\(books.count) livres trouvés")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $correcting) { book in
-            DetectedBookSheet(book: book, crop: viewModel.crop(of: book)) { title, authors in
-                viewModel.correct(book.id, title: title, authors: authors)
+            DetectedBookSheet(book: book, crop: crop(book)) { title, authors in
+                onAction(.correct(book.id, title: title, authors: authors))
             }
         }
         .alert("Pas assez de scans", isPresented: $allowanceAlert) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Il vous reste \(viewModel.remainingScans ?? 0) scans ce mois-ci. Décochez des livres pour continuer.")
+            Text("Il vous reste \(remainingScans ?? 0) scans ce mois-ci. Décochez des livres pour continuer.")
         }
     }
 
     private func row(_ book: DetectedBook) -> some View {
-        let isTicked = viewModel.ticked.contains(book.id)
+        let isTicked = ticked.contains(book.id)
         return HStack(spacing: 12) {
-            Button { viewModel.toggle(book.id) } label: {
+            Button { onAction(.toggle(book.id)) } label: {
                 Image(systemName: isTicked ? "checkmark.circle.fill" : "circle")
                     .font(.title2)
                     .foregroundStyle(isTicked ? Color.accentColor : .secondary)
@@ -53,7 +75,7 @@ struct ShelfChecklistPage: View {
             .accessibilityIdentifier("shelf-tick-\(book.id)")
 
             Group {
-                if let crop = viewModel.crop(of: book) {
+                if let crop = crop(book) {
                     Image(uiImage: crop).resizable().scaledToFit()
                 } else {
                     Color(.secondarySystemBackground)
@@ -103,14 +125,14 @@ struct ShelfChecklistPage: View {
 
     private var addButton: some View {
         Button {
-            if viewModel.exceedsAllowance { allowanceAlert = true } else { viewModel.addTicked() }
+            if exceedsAllowance { allowanceAlert = true } else { onAction(.addTicked) }
         } label: {
-            Text("Ajouter \(viewModel.tickedCount) livres · \(viewModel.tickedCount) scans")
+            Text("Ajouter \(ticked.count) livres · \(ticked.count) scans")
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
-        .disabled(viewModel.tickedCount == 0)
+        .disabled(ticked.isEmpty)
         .padding()
         .background(.bar)
         .accessibilityIdentifier("shelf-add")
@@ -120,7 +142,13 @@ struct ShelfChecklistPage: View {
 #if DEBUG
 #Preview {
     NavigationStack {
-        ShelfChecklistPage(viewModel: .preview())
+        ShelfChecklistPage(
+            photo: ShelfImportFixtures.photo,
+            books: ShelfImportFixtures.books,
+            ticked: ShelfImportFixtures.ticked,
+            remainingScans: 94,
+            crop: { _ in nil }
+        ) { _ in }
     }
 }
 #endif

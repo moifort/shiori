@@ -23,15 +23,29 @@ import SwiftUI
 /// the scan closes at once, the server told behind it: a reader who scanned it
 /// in a shop only wants to know when it comes out. The offer follows the
 /// language and the format as they are corrected.
+/// Everything the review can ask for.
+enum ScanReviewAction {
+    /// The draft, and the saga as the reader renamed it, if they did.
+    case save(BookDraft, SeriesPlacement?)
+    case retake
+    /// The edition in the app's language awaited instead of the book added:
+    /// the scan is then over.
+    case awaitEdition(BookDraft, ReleaseFormat)
+    /// The language or the format was corrected: what may be awaited is asked again.
+    case languageOrFormatChanged(BookLanguage?, BookFormat)
+}
+
 struct ScanReviewPage: View {
     @State private var draft: BookDraft
     let ownedCopy: Book?
     let isSaving: Bool
-    /// The draft, and the saga as the reader renamed it, if they did.
-    let onSave: (BookDraft, SeriesPlacement?) -> Void
-    let onRetake: () -> Void
-    /// The scan is over without a book added: an edition was awaited instead.
-    let onClose: () -> Void
+    /// The editions in the app's language this book may be awaited in, as the
+    /// server says for its language and format.
+    let awaitable: [ReleaseFormat]
+    /// The proposals under the genre and saga sheets.
+    let loadSubgenres: () async -> [String]
+    let loadVocabulary: () async -> BookVocabulary?
+    let onAction: (ScanReviewAction) async -> Void
 
     @State private var editsIdentity = false
     @State private var editsSeries = false
@@ -39,24 +53,23 @@ struct ScanReviewPage: View {
     @State private var renamedSeries: SeriesPlacement?
     @State private var askedDate: ReadingStatus?
     @State private var rates = false
-    /// The editions in the app's language this book may be awaited in, as the
-    /// server says for its language and format.
-    @State private var awaitable: [ReleaseFormat] = []
 
     init(
         draft: BookDraft,
         ownedCopy: Book? = nil,
         isSaving: Bool,
-        onSave: @escaping (BookDraft, SeriesPlacement?) -> Void,
-        onRetake: @escaping () -> Void,
-        onClose: @escaping () -> Void
+        awaitable: [ReleaseFormat] = [],
+        loadSubgenres: @escaping () async -> [String] = { [] },
+        loadVocabulary: @escaping () async -> BookVocabulary? = { nil },
+        onAction: @escaping (ScanReviewAction) async -> Void
     ) {
         _draft = State(initialValue: draft)
         self.ownedCopy = ownedCopy
         self.isSaving = isSaving
-        self.onSave = onSave
-        self.onRetake = onRetake
-        self.onClose = onClose
+        self.awaitable = awaitable
+        self.loadSubgenres = loadSubgenres
+        self.loadVocabulary = loadVocabulary
+        self.onAction = onAction
     }
 
     private var book: Book {
@@ -147,36 +160,6 @@ struct ScanReviewPage: View {
         return draft.media.filter { !copy.media.contains($0) }
     }
 
-    /// Asked again whenever the language or the format is corrected: a book
-    /// switched to the app's language is left only its recording to await. A
-    /// failure leaves the offer out — the book's page makes it once added.
-    private func loadAwaitable() async {
-        guard let language = draft.language else {
-            awaitable = []
-            return
-        }
-        do {
-            awaitable = try await AwaitedAPI.formats(language: language, format: draft.format)
-        } catch {
-            _ = reportError(error)
-        }
-    }
-
-    /// Awaits the book's edition in the app's language, the book itself left
-    /// out of the library, and closes the scan: the server looks it up on the
-    /// web behind, so a failure is reported rather than shown.
-    private func awaitEdition(_ format: ReleaseFormat) {
-        let scanned = draft
-        Task {
-            do {
-                _ = try await AwaitedAPI.awaitScanned(scanned, format: format)
-            } catch {
-                _ = reportError(error)
-            }
-        }
-        onClose()
-    }
-
     private var canSave: Bool {
         !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isSaving
     }
@@ -184,7 +167,7 @@ struct ScanReviewPage: View {
     private func save() {
         var approved = draft
         approved.startedAt = draft.startedAt.map { min($0, latestStart) }
-        onSave(approved, renamedSeries)
+        Task { await onAction(.save(approved, renamedSeries)) }
     }
 
     private var addMenu: some View {
@@ -194,7 +177,7 @@ struct ScanReviewPage: View {
                 .accessibilityIdentifier("review-save")
             ForEach(awaitable) { format in
                 Button(format.awaitLabel, systemImage: format == .audiobook ? "headphones" : "character.book.closed") {
-                    awaitEdition(format)
+                    Task { await onAction(.awaitEdition(draft, format)) }
                 }
                 .accessibilityIdentifier("review-await-\(format.rawValue)")
             }
@@ -302,18 +285,20 @@ struct ScanReviewPage: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
         .disabled(isSaving)
-        .task(id: [draft.language?.rawValue, draft.format.rawValue]) { await loadAwaitable() }
+        .task(id: [draft.language?.rawValue, draft.format.rawValue]) {
+            await onAction(.languageOrFormatChanged(draft.language, draft.format))
+        }
         .sheet(isPresented: $editsIdentity) {
             ScanIdentitySheet(book: book) { draft.apply($0) }
         }
         .sheet(isPresented: $editsGenre) {
-            GenreEditSheet(book: book, loadSubgenres: { (try? await BookClient.live.subgenres()) ?? [] }) { correction in
+            GenreEditSheet(book: book, loadSubgenres: loadSubgenres) { correction in
                 draft.apply(correction)
                 return nil
             }
         }
         .sheet(isPresented: $editsSeries) {
-            SeriesJoinSheet(book: book, loadVocabulary: { try? await BookClient.live.vocabulary() }) { correction in
+            SeriesJoinSheet(book: book, loadVocabulary: loadVocabulary) { correction in
                 if case let .set(placement) = correction.series { renamedSeries = placement }
                 return nil
             }
@@ -348,7 +333,7 @@ struct ScanReviewPage: View {
                     title: "Reprendre",
                     systemImage: "arrow.counterclockwise",
                     role: .cancel,
-                    action: onRetake
+                    action: { Task { await onAction(.retake) } }
                 )
             }
             ToolbarItem(placement: .confirmationAction) {
@@ -469,16 +454,13 @@ private extension BookCorrection.Change {
     }
 }
 
-#Preview("Déjà possédé") {
+#Preview("Owned already") {
     NavigationStack {
         ScanReviewPage(
             draft: BookDraft(title: "Dune", authors: ["Frank Herbert"], genre: .scienceFiction),
             ownedCopy: Book(id: "dune", title: "Dune", authors: ["Frank Herbert"], status: .read),
-            isSaving: false,
-            onSave: { _, _ in },
-            onRetake: {},
-            onClose: {}
-        )
+            isSaving: false
+        ) { _ in }
     }
 }
 
@@ -498,9 +480,7 @@ private extension BookCorrection.Change {
                 series: SeriesMembership(id: "kkc", name: "Chronique du tueur de roi", volume: 1, kind: .main)
             ),
             isSaving: false,
-            onSave: { _, _ in },
-            onRetake: {},
-            onClose: {}
-        )
+            awaitable: [.audiobook]
+        ) { _ in }
     }
 }

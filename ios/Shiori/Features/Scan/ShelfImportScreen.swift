@@ -2,10 +2,10 @@ import PhotosUI
 import SwiftUI
 
 /// A shelf in one photo: the camera or a picked photo, the books found, the
-/// checklist, then the run that adds them. Beside `ScanView` rather than
+/// checklist, then the run that adds them. Beside `ScanScreen` rather than
 /// inside it: one book reviewed field by field and thirty ticked in a list
 /// share a camera and nothing else.
-struct ShelfImportView: View {
+struct ShelfImportScreen: View {
     enum Start {
         case camera
         case photo(Data)
@@ -14,9 +14,15 @@ struct ShelfImportView: View {
     var start: Start = .camera
     var onDismiss: () -> Void
 
-    @State private var viewModel = ShelfImportViewModel()
+    @State private var viewModel: ShelfImportViewModel
     @State private var shouldCapture = false
     @State private var pickedPhoto: PhotosPickerItem?
+
+    init(start: Start = .camera, onDismiss: @escaping () -> Void, client: ScanClient = .live) {
+        self.start = start
+        self.onDismiss = onDismiss
+        _viewModel = State(initialValue: ShelfImportViewModel(client: client))
+    }
 
     var body: some View {
         NavigationStack {
@@ -51,7 +57,19 @@ struct ShelfImportView: View {
         case .detecting:
             ShelfDetectingPage(photo: viewModel.photo)
         case .checklist:
-            ShelfChecklistPage(viewModel: viewModel)
+            ShelfChecklistPage(
+                photo: viewModel.photo,
+                books: viewModel.books,
+                ticked: viewModel.ticked,
+                remainingScans: viewModel.remainingScans,
+                crop: viewModel.crop(of:)
+            ) { action in
+                switch action {
+                case let .toggle(id): viewModel.toggle(id)
+                case let .correct(id, title, authors): viewModel.correct(id, title: title, authors: authors)
+                case .addTicked: viewModel.addTicked()
+                }
+            }
         case .noResult:
             ScanNoResultPage(
                 hint: "Photographiez les tranches de face, bien éclairées, ou posez les couvertures à plat sans qu'elles se chevauchent. Rien n'a été décompté.",
@@ -65,7 +83,13 @@ struct ShelfImportView: View {
                 onRetake: viewModel.retake
             )
         case .adding:
-            ShelfAddingPage(viewModel: viewModel, onDone: onDismiss)
+            ShelfAddingPage(
+                books: viewModel.books,
+                progress: viewModel.progress,
+                isDone: viewModel.isDone,
+                onRetry: viewModel.retryAdding,
+                onDone: onDismiss
+            )
         }
     }
 

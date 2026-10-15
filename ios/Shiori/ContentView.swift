@@ -62,7 +62,7 @@ struct ContentView: View {
     @State private var showManualAdd = false
     /// A page shared into Shiori from elsewhere on the phone, picked up when the
     /// app comes to the front. Nil the rest of the time.
-    @State private var sharedStart: ScanView.Start?
+    @State private var sharedStart: ScanScreen.Start?
     @Environment(\.scenePhase) private var scenePhase
     /// When the app last left the screen, so that a return after a while asks
     /// every list again. Nil while the app is in front.
@@ -85,32 +85,25 @@ struct ContentView: View {
     /// The scanner's opening step, boxed so a cover can be keyed on it.
     private struct ScanStart: Identifiable {
         let id = UUID()
-        let start: ScanView.Start
+        let start: ScanScreen.Start
     }
 
     /// The shelf import's opening step, boxed for the same reason.
     private struct ShelfStart: Identifiable {
         let id = UUID()
-        let start: ShelfImportView.Start
+        let start: ShelfImportScreen.Start
     }
 
     var body: some View {
         tabs
             .sheet(isPresented: $showAddSheet, onDismiss: actOnPendingSource) {
-                AddBookSheet(
-                    onCamera: { choose(.camera) },
-                    onShelf: { choose(.shelf) },
-                    onAllPhotos: { choose(.library) },
-                    onPickedPhoto: { choose(.photo($0)) },
-                    onTitle: { choose(.title($0)) },
-                    onManual: { choose(.manual) }
-                )
+                AddBookSheet(searchTitle: ScanClient.live.searchTitle, onChoose: choose)
             }
             .fullScreenCover(item: $scanStart) { boxed in
-                ScanView(start: boxed.start, onDismiss: { scanStart = nil })
+                ScanScreen(start: boxed.start, onDismiss: { scanStart = nil })
             }
             .fullScreenCover(item: $shelfStart) { boxed in
-                ShelfImportView(start: boxed.start, onDismiss: { shelfStart = nil })
+                ShelfImportScreen(start: boxed.start, onDismiss: { shelfStart = nil })
             }
             .sheet(isPresented: $shelfPaywall) {
                 PremiumSheet(trigger: .shelfImport)
@@ -135,7 +128,7 @@ struct ContentView: View {
             // bring the app forward itself — the reader shares, then opens
             // Shiori, and the book is waiting for them.
             .fullScreenCover(item: $sharedStart) { start in
-                ScanView(start: start, onDismiss: { sharedStart = nil })
+                ScanScreen(start: start, onDismiss: { sharedStart = nil })
             }
             // The invitation is asked about rather than accepted: the link
             // came from somewhere the reader does not control, and accepting
