@@ -67,7 +67,7 @@ struct SharedScreen: View {
         .sheet(item: $openedBook) { opened in
             if let friend = opened.friend {
                 NavigationStack {
-                    FriendBookView(friendId: friend.userId, bookId: opened.book.id, friendName: friend.displayName)
+                    FriendBookScreen(friendId: friend.userId, bookId: opened.book.id, friendName: friend.displayName)
                 }
             } else {
                 BookView(bookId: opened.book.id)

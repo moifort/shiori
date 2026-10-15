@@ -62,7 +62,7 @@ struct DiscoverScreen: View {
             }
             .sheet(item: $openFriendBook) { loved in
                 NavigationStack {
-                    FriendBookView(
+                    FriendBookScreen(
                         friendId: loved.lovers.first?.userId ?? "",
                         bookId: loved.book.id,
                         friendName: loved.lovers.first?.displayName ?? ""

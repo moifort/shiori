@@ -117,7 +117,7 @@ struct HomeView: View {
         .sheet(item: $openFavorite) { favorite in
             if let book = favorite.openedBook {
                 NavigationStack {
-                    FriendBookView(
+                    FriendBookScreen(
                         friendId: favorite.friendId,
                         bookId: book.id,
                         friendName: favorite.friendDisplayName

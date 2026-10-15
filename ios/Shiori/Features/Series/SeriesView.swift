@@ -136,7 +136,7 @@ struct SeriesView: View {
             if let friend {
                 // The friend's volume, as their shelf opens it.
                 NavigationStack {
-                    FriendBookView(friendId: friend.id, bookId: book.id, friendName: friend.name)
+                    FriendBookScreen(friendId: friend.id, bookId: book.id, friendName: friend.name)
                 }
             } else {
                 BookView(

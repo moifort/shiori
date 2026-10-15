@@ -6,7 +6,7 @@ import SwiftUI
 ///
 /// Always opened as a sheet, as a book opens from the reader's own library:
 /// a close button in the corner.
-struct FriendBookView: View {
+struct FriendBookScreen: View {
     let friendName: String
     /// Called once the book is on the reader's shelf, so the screen that
     /// opened this one can say "Chez vous" without asking again.
@@ -103,6 +103,6 @@ struct FriendBookView: View {
 
 #Preview {
     NavigationStack {
-        FriendBookView(friendId: "camille", bookId: "preview", friendName: "Camille", client: .preview)
+        FriendBookScreen(friendId: "camille", bookId: "preview", friendName: "Camille", client: .preview)
     }
 }

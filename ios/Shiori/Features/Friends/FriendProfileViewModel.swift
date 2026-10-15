@@ -20,14 +20,16 @@ final class FriendProfileViewModel {
     /// Nil on the preview, which draws the shelf already in hand.
     private let cache: SnapshotCache<FriendProfile>?
 
-    init(friend: Friend, client: FriendsClient) {
+    /// - Parameter caching: off in tests, which must neither read nor leave
+    ///   a snapshot on disk.
+    init(friend: Friend, client: FriendsClient, caching: Bool = true) {
         self.friend = friend
         self.client = client
         isPreview = false
         // Bump the version whenever `FriendProfile` changes shape.
-        let cache = SnapshotCache<FriendProfile>("friend-\(friend.userId)", version: 1)
+        let cache = caching ? SnapshotCache<FriendProfile>("friend-\(friend.userId)", version: 1) : nil
         self.cache = cache
-        profile = cache.read()
+        profile = cache?.read()
         isLoading = true
     }
 

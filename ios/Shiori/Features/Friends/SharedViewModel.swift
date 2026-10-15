@@ -8,9 +8,12 @@ import SwiftUI
 @MainActor
 @Observable
 final class SharedViewModel {
-    init(client: FriendsClient) {
+    /// - Parameter caching: off in tests, which must neither read nor leave
+    ///   a snapshot on disk.
+    init(client: FriendsClient, caching: Bool = true) {
         self.client = client
-        if let snapshot = cache.read() {
+        cache = caching ? SnapshotCache<Snapshot>("shared", version: 5) : nil
+        if let snapshot = cache?.read() {
             friends = snapshot.friends
             myShelf = snapshot.myShelf
         }
@@ -46,7 +49,7 @@ final class SharedViewModel {
 
     /// The last rows on disk. Bump the version whenever `Friend` or
     /// `FriendProfile` changes shape.
-    private let cache = SnapshotCache<Snapshot>("shared", version: 5)
+    private let cache: SnapshotCache<Snapshot>?
 
     var isEmpty: Bool { friends.isEmpty && myShelf == nil }
 
@@ -144,7 +147,7 @@ final class SharedViewModel {
     }
 
     private func write() {
-        let cache = cache
+        guard let cache else { return }
         let snapshot = Snapshot(friends: friends, myShelf: myShelf)
         Task.detached { cache.write(snapshot) }
     }

@@ -41,7 +41,7 @@ struct FriendProfileScreen: View {
         // stack, so the saga pushes inside it.
         .sheet(item: $openBook) { book in
             NavigationStack {
-                FriendBookView(
+                FriendBookScreen(
                     friendId: friend.userId,
                     bookId: book.id,
                     friendName: friend.displayName,
