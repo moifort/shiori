@@ -34,6 +34,7 @@ fragment SuggestionFields on Suggestion {
     favorite
     rating
     viaSeries
+    coverUrl
   }
   state
   watched

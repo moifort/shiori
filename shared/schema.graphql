@@ -3980,6 +3980,9 @@ One of the reader’s own books a suggestion was drawn from, with how it ranks f
 type SuggestionReference {
   """The reader’s book — a saga’s first volume when the saga was cited."""
   bookId: BookId!
+
+  """The reader’s own cover of the book, signed when it is their photo."""
+  coverUrl: String
   favorite: Boolean!
   rating: StarRating
   seriesId: SeriesId

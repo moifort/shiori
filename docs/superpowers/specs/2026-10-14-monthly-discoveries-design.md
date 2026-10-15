@@ -96,9 +96,12 @@ blind, on his own library.
   it, then the description and synopsis sections as on an award winner's page — with one
   section added, **Pourquoi ce livre**: the reason sentence, then each referenced book of the
   library with its rank (♥, ★, "série"), a tap opening the reader's own page of it.
-- **Actions live in the "+" menu**, top right, as on every book page: Ajouter (to the pile,
-  per format), Guetter la version française, Guetter la version audio, then Pas intéressé
-  (red). Any of them closes the page and the suggestion leaves the line.
+- **Actions.** The "+" menu, top right as on every book page: Ajouter (to the pile, per
+  format), Guetter la version française, Guetter la version audio. Beside it, a thumbs-down
+  menu: Déjà lu (put on the shelf as read) and Pas intéressé (red). Any of them closes the page
+  and the suggestion leaves the line.
+- **References.** Each referenced book under the reason shows the reader's own cover of it,
+  its title and its heart or stars — the saga's when the book has none, with no word saying so.
 
 ## Server
 

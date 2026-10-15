@@ -11,8 +11,14 @@ struct SuggestionReference: Identifiable, Hashable, Sendable, Codable {
     let favorite: Bool
     let rating: Int?
     let viaSeries: Bool
+    var coverURL: URL?
 
     var id: String { bookId }
+
+    /// Drawn as the reader's own book, its cover theirs.
+    var cover: Book {
+        Book(id: bookId, title: title, authors: [], coverURL: coverURL, status: .read)
+    }
 }
 
 /// A book Claude chose for the reader from their hearts and stars, with why,
@@ -233,7 +239,8 @@ extension Suggestion {
                     title: reference.title,
                     favorite: reference.favorite,
                     rating: reference.rating,
-                    viaSeries: reference.viaSeries
+                    viaSeries: reference.viaSeries,
+                    coverURL: reference.coverUrl.flatMap(URL.init(string:))
                 )
             },
             state: state,

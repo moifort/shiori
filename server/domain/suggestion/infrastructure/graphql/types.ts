@@ -46,6 +46,11 @@ const SuggestionReferenceType = builder
         nullable: true,
         resolve: (reference) => reference.rank.rating ?? null,
       }),
+      coverUrl: t.string({
+        nullable: true,
+        description: 'The reader’s own cover of the book, signed when it is their photo.',
+        resolve: (reference) => reference.coverUrl ?? null,
+      }),
       viaSeries: t.boolean({
         description: 'Whether the heart or the stars are the saga’s, the book having none.',
         resolve: (reference) => reference.rank.viaSeries,

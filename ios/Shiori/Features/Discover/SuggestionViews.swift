@@ -117,6 +117,9 @@ struct SuggestionView: View {
                 ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
             }
             ToolbarItem(placement: .primaryAction) {
+                notForMeMenu
+            }
+            ToolbarItem(placement: .primaryAction) {
                 actionsMenu
             }
         }
@@ -125,20 +128,14 @@ struct SuggestionView: View {
         }
     }
 
-    /// A reference: the book's or saga's name, then its mark — the heart or
-    /// the stars, "série" when they are the saga's.
+    /// A reference: the reader's own cover of it, its name, then its mark —
+    /// the heart or the stars, the saga's when the book has none.
     private func referenceRow(_ reference: SuggestionReference) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: reference.seriesId != nil ? "books.vertical" : "book.closed")
-                .foregroundStyle(.secondary)
+        HStack(spacing: 12) {
+            BookCover(book: reference.cover, width: 32, showsFormatBadge: false)
             Text(reference.title)
-                .lineLimit(1)
+                .lineLimit(2)
             Spacer(minLength: 8)
-            if reference.viaSeries {
-                Text("série")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
             OpinionMark(rating: reference.rating, isFavorite: reference.favorite, font: .caption)
             Image(systemName: "chevron.right")
                 .font(.caption.weight(.semibold))
@@ -147,12 +144,12 @@ struct SuggestionView: View {
         .contentShape(.rect)
     }
 
-    /// "+": on the pile, awaited in each format its edition is not out and not
-    /// awaited yet in, or "Pas intéressé", as a book's page offers it.
+    /// "+": on the pile, or awaited in each format its edition is not out and
+    /// not awaited yet in, as a book's page offers it.
     private var actionsMenu: some View {
         Menu {
             Button("Ajouter", systemImage: "books.vertical") {
-                Task { await add() }
+                Task { await add(status: .toRead) }
                 close(.added)
             }
             .accessibilityIdentifier("suggestion-add")
@@ -166,17 +163,31 @@ struct SuggestionView: View {
                 }
                 .accessibilityIdentifier("suggestion-await-\(format.rawValue)")
             }
-            Divider()
-            Button("Pas intéressé", systemImage: "eye.slash", role: .destructive) {
-                close(.dismissed)
-            }
-            .tint(.red)
-            .accessibilityIdentifier("suggestion-dismiss")
         } label: {
             Label("Ajouter", systemImage: "plus")
                 .labelStyle(.iconOnly)
         }
         .accessibilityIdentifier("suggestion-menu")
+    }
+
+    /// Beside the "+": the two ways of saying no — read already, which puts
+    /// it on the shelf as read, or not interested, which is told to the model.
+    private var notForMeMenu: some View {
+        Menu {
+            Button("Déjà lu", systemImage: "checkmark.circle") {
+                Task { await add(status: .read) }
+                close(.added)
+            }
+            .accessibilityIdentifier("suggestion-already-read")
+            Button("Pas intéressé", systemImage: "eye.slash", role: .destructive) {
+                close(.dismissed)
+            }
+            .accessibilityIdentifier("suggestion-dismiss")
+        } label: {
+            Label("Pas pour moi", systemImage: "hand.thumbsdown")
+                .labelStyle(.iconOnly)
+        }
+        .accessibilityIdentifier("suggestion-not-for-me")
     }
 
     private func close(_ outcome: SuggestionOutcome) {
@@ -194,17 +205,17 @@ struct SuggestionView: View {
         return BookState(text: suggestion.stateLine, tint: suggestion.stateTint)
     }
 
-    /// Puts it on the pile, in the format the line is drawn in, under its
-    /// title in the app's language. The page is closed by then, so a failure
-    /// is reported rather than shown.
-    private func add() async {
+    /// Puts it on the shelf — on the pile, or read already — in the format the
+    /// line is drawn in, under its title in the app's language. The page is
+    /// closed by then, so a failure is reported rather than shown.
+    private func add(status: ReadingStatus) async {
         var draft = suggestion.draft
         draft.title = suggestion.title
         draft.language = nil
         draft.coverURL = suggestion.coverURL
         draft.format = suggestion.format == .audiobook ? .audiobook : .book
         if draft.format == .audiobook { draft.media = [] }
-        draft.status = .toRead
+        draft.status = status
         do {
             _ = try await BookAPI.add(draft)
             track(.bookAdded(source: .discover))

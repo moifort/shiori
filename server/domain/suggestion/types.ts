@@ -76,6 +76,8 @@ export type SuggestionReference = {
   /** The saga's name when the reference is a saga, else the book's title. */
   title: string
   rank: ReferenceRank
+  /** The reader's own cover of the book, signed when it is their photo. */
+  coverUrl?: string
 }
 
 /** A suggestion as one reader sees it in one format and the app's language:

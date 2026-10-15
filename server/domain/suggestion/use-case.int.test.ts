@@ -75,7 +75,11 @@ beforeEach(() => {
   configured = true
   prompts.length = 0
   unknown = new Set(['Les Possédés d’Illiers'])
-  shelve('shibumi', 'Shibumi', 'Trevanian', { rating: 5, favorite: true })
+  shelve('shibumi', 'Shibumi', 'Trevanian', {
+    rating: 5,
+    favorite: true,
+    publishedCoverUrl: 'https://covers.example/shibumi.jpg',
+  })
   shelve('dune', 'Dune', 'Frank Herbert', { rating: 4 })
   answering(
     suggested('Dune', 'Frank Herbert'),
@@ -117,6 +121,7 @@ describe('the month’s discoveries', () => {
         bookId: 'shibumi',
         title: 'Shibumi',
         rank: { favorite: true, rating: 5, viaSeries: false },
+        coverUrl: 'https://covers.example/shibumi.jpg',
       },
     ] as never)
     expect(sanction?.describedCoverUrl).toBe('https://covers.example/La%20Sanction.jpg' as never)

@@ -62,7 +62,7 @@ const DISCOVERIES = `query {
     suggestions {
       id title originalTitle originalLanguage authors kind reason short coverUrl
       awaitableFormats state watched
-      references { bookId title favorite rating viaSeries }
+      references { bookId title favorite rating viaSeries coverUrl }
     }
   }
 }`
@@ -92,7 +92,14 @@ describe('monthlyDiscoveries', () => {
         state: 'UNANNOUNCED',
         watched: false,
         references: [
-          { bookId: 'shibumi', title: 'Shibumi', favorite: true, rating: 5, viaSeries: false },
+          {
+            bookId: 'shibumi',
+            title: 'Shibumi',
+            favorite: true,
+            rating: 5,
+            viaSeries: false,
+            coverUrl: null,
+          },
         ],
       },
     ])

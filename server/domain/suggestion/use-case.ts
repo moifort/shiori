@@ -206,6 +206,22 @@ const viewsOf = async (
   ])
   const awaitedByKey = new Map(context.awaited.map((edition) => [edition.watchKey, edition.id]))
   const today = todayOf(now)
+  // The covers of the books cited, signed once for every row: a photo's URL
+  // is signed per request.
+  const referencesBySuggestion = new Map(
+    suggestions.map((suggestion) => [
+      suggestion.key,
+      referencesOf(suggestion, [...context.books], context.opinions),
+    ]),
+  )
+  const cited = new Set(
+    [...referencesBySuggestion.values()].flat().map((reference) => reference.bookId),
+  )
+  const covers = new Map(
+    (await BookQuery.withSignedCovers(context.books.filter((book) => cited.has(book.id)))).flatMap(
+      (book) => (book.coverUrl ? [[book.id, book.coverUrl as string] as const] : []),
+    ),
+  )
   return suggestions.map((suggestion) => {
     const watchKey = watchKeyOf(suggestion, format, appLanguage)
     const watch: EditionWatch | undefined = watches.get(watchKey)
@@ -231,7 +247,10 @@ const viewsOf = async (
       }),
       ...(awaitedId ? { awaitedId } : {}),
       ...(describedCoverUrl ? { describedCoverUrl } : {}),
-      references: referencesOf(suggestion, [...context.books], context.opinions),
+      references: (referencesBySuggestion.get(suggestion.key) ?? []).map((reference) => {
+        const coverUrl = covers.get(reference.bookId)
+        return coverUrl ? { ...reference, coverUrl } : reference
+      }),
     }
   })
 }
