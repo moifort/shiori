@@ -8061,6 +8061,22 @@
         }
       }
     },
+    "Plus de livres ce mois-ci : nouvelle sélection en %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No more books this month: a new selection in %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plus de livres ce mois-ci : nouvelle sélection en %@."
+          }
+        }
+      }
+    },
     "Plus tard" : {
       "localizations" : {
         "en" : {
@@ -8425,22 +8441,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prochaine sortie et nouvelle disponibilité"
-          }
-        }
-      }
-    },
-    "Prochaines découvertes en %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Next discoveries in %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prochaines découvertes en %@"
           }
         }
       }
