@@ -111,7 +111,7 @@ struct DiscoverScreen: View {
             // pushes inside it.
             .sheet(item: $openAuthor) { opened in
                 NavigationStack {
-                    AuthorView(key: opened.key, name: opened.name, isSheet: true, isOffered: opened.isOffered)
+                    AuthorScreen(key: opened.key, name: opened.name, isSheet: true, isOffered: opened.isOffered)
                 }
             }
             // The release alerts, where the releases are; the bell is read

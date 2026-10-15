@@ -33,3 +33,11 @@ struct AuthorAvatar: View {
 extension FollowedAuthor {
     var avatar: AuthorAvatar { AuthorAvatar(initials: initials, portraitURL: portraitURL) }
 }
+
+#Preview {
+    HStack(spacing: 16) {
+        AuthorAvatar(initials: "RH", portraitURL: nil)
+        AuthorAvatar(initials: "UG", portraitURL: nil, size: 84)
+    }
+    .padding()
+}

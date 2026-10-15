@@ -39,7 +39,7 @@ struct LibraryTab: View {
             case .series:
                 SeriesListScreen(onScan: onAdd, requested: $seriesRequest, shelf: $shelf)
             case .authors:
-                AuthorListView(onScan: onAdd, shelf: $shelf)
+                AuthorListScreen(onScan: onAdd, shelf: $shelf)
             }
         }
         // Another tab asking for a view of one shelf brings that shelf forward;

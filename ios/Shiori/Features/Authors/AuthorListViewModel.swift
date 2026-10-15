@@ -50,9 +50,16 @@ enum AuthorListOrder: String, CaseIterable, Identifiable {
 @Observable
 final class AuthorListViewModel {
     /// Opens by date, as the Books and Series shelves do.
-    init() {
-        authors = Self.cache(for: order).read() ?? []
+    /// - Parameter caching: off in tests, which must neither read nor leave
+    ///   a snapshot on disk.
+    init(client: AuthorsClient, caching: Bool = true) {
+        self.client = client
+        self.caching = caching
+        authors = cache?.read() ?? []
     }
+
+    private let client: AuthorsClient
+    private let caching: Bool
 
     /// How the rows are listed. By name, every author is loaded at once: the
     /// alphabet down the side must reach Z without waiting for a page.
@@ -68,7 +75,7 @@ final class AuthorListViewModel {
 
     /// The authors on disk, one snapshot per order. Bump the version whenever
     /// `FollowedAuthor` changes shape.
-    private var cache: SnapshotCache<[FollowedAuthor]> { Self.cache(for: order) }
+    private var cache: SnapshotCache<[FollowedAuthor]>? { caching ? Self.cache(for: order) : nil }
 
     private static func cache(for order: AuthorListOrder) -> SnapshotCache<[FollowedAuthor]> {
         switch order {
@@ -84,7 +91,7 @@ final class AuthorListViewModel {
         guard order != self.order else { return }
         self.order = order
         generation += 1
-        authors = cache.read() ?? []
+        authors = cache?.read() ?? []
         hasMore = false
         loaded = false
         isLoading = false
@@ -125,10 +132,7 @@ final class AuthorListViewModel {
             var fetched: [FollowedAuthor] = []
             var more = true
             while more, fetched.count < wanted {
-                let page = try await AuthorsAPI.myAuthorsPage(
-                    limit: min(wanted - fetched.count, maxPageSize), offset: fetched.count,
-                    order: order
-                )
+                let page = try await client.list(min(wanted - fetched.count, maxPageSize), fetched.count, order)
                 guard requested == generation else { return }
                 fetched += page.items
                 more = page.hasMore && !page.items.isEmpty
@@ -142,9 +146,10 @@ final class AuthorListViewModel {
             }
             loaded = true
             // By name the whole list is kept, as the whole list is drawn.
-            let cache = cache
-            let snapshot = order == .name ? fetched : Array(fetched.prefix(pageSize))
-            Task.detached { cache.write(snapshot) }
+            if let cache {
+                let snapshot = order == .name ? fetched : Array(fetched.prefix(pageSize))
+                Task.detached { cache.write(snapshot) }
+            }
         } catch {
             guard requested == generation else { return }
             isLoading = false
@@ -162,9 +167,7 @@ final class AuthorListViewModel {
         isLoadingMore = true
         loadMoreFailed = false
         do {
-            let page = try await AuthorsAPI.myAuthorsPage(
-                limit: pageSize, offset: authors.count, order: order
-            )
+            let page = try await client.list(pageSize, authors.count, order)
             guard requested == generation else { return }
             authors.append(contentsOf: page.items)
             hasMore = page.hasMore

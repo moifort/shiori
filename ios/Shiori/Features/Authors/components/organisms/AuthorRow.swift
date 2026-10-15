@@ -109,3 +109,9 @@ struct AuthorRow: View {
 
     private let coverWidth: CGFloat = 44
 }
+
+#Preview {
+    List(FollowedAuthor.previews) { author in
+        AuthorRow(author: author)
+    }
+}
