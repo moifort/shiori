@@ -60,9 +60,28 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
+      - name: Unit tests
+        # The ViewModels driven over inline clients (ShioriTests): no network, no
+        # Firebase, only a simulator to host the bundle — the first iPhone the
+        # runner has.
+        run: |
+          set -euo pipefail
+          udid=$(xcrun simctl list devices available | grep -m1 -E '^ +iPhone' \
+            | grep -oE '[0-9A-F]{8}(-[0-9A-F]{4}){3}-[0-9A-F]{12}')
+          xcodebuild test -project ios/Shiori.xcodeproj -scheme Shiori \
+            -destination "id=$udid" \
+            -only-testing:ShioriTests \
+            CODE_SIGNING_ALLOWED=NO
+
       - uses: oven-sh/setup-bun@v2
 
       - name: Every string has its French and its English
         # Reads the strings the build just extracted: one added to the code and
         # left out of the catalogue fails here, as does one with no English.
         run: bun scripts/check-strings.ts "$HOME/Library/Developer/Xcode/DerivedData"
+
+      - name: Components stay pure and previewed
+        # docs/ios-guide.md: nothing under components/, Shared/Components or
+        # Shared/Book calls the server, reads a singleton or holds a ViewModel,
+        # and every view there has a #Preview.
+        run: bun scripts/check-ios-components.ts
