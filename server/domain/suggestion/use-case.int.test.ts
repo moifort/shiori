@@ -97,13 +97,20 @@ const titles = (discoveries: { suggestions: { suggestion: { title: string } }[] 
   discoveries.suggestions.map((view) => view.suggestion.title)
 
 describe('the month’s discoveries', () => {
-  test('the first look at Découvrir asks the model and shows five, held and invented books left out', async () => {
+  test('the first look at Découvrir asks the model and shows its whole selection, held and invented books left out', async () => {
     const discoveries = await look()
 
     expect(prompts).toHaveLength(1)
     expect(prompts[0]).toContain('« Shibumi » — Trevanian')
     expect(discoveries.month).toBe('2026-10')
-    expect(titles(discoveries)).toEqual(['La Sanction', 'Silo', 'Hypérion', 'Ilium', 'Seveneves'])
+    expect(titles(discoveries)).toEqual([
+      'La Sanction',
+      'Silo',
+      'Hypérion',
+      'Ilium',
+      'Seveneves',
+      'Expiration',
+    ])
     const [sanction] = discoveries.suggestions
     expect(sanction?.references).toEqual([
       {
@@ -126,7 +133,7 @@ describe('the month’s discoveries', () => {
     await look()
     startFakeRequest()
     const before = fake.queryReads
-    expect(titles(await read('2026-10-20T09:00:00Z'))).toHaveLength(5)
+    expect(titles(await read('2026-10-20T09:00:00Z'))).toHaveLength(6)
     expect(prompts).toHaveLength(1)
     // The library, the sagas' opinions, the dismissals and the awaited editions
     // are four queries; the queue one get, the watches and descriptions getAlls.

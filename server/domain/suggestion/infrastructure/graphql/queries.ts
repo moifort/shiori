@@ -8,7 +8,7 @@ builder.queryFields((t) => ({
   monthlyDiscoveries: t.field({
     type: MonthlyDiscoveriesType,
     description:
-      'The discoveries of the month: five books chosen for the reader from their hearts, ' +
+      'The discoveries of the month: the books chosen for the reader from their hearts, ' +
       'stars, drops and dismissals, each with why, in one format and the app’s language.\n\n' +
       'A month whose selection ran out stays empty until the next: the model is asked ' +
       'only with `lookUp`, for a month that has no selection yet.',

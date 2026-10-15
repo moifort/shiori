@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// Découvrir's line of the month's discoveries: five bare covers, as the
-/// other lines — or, while the month's selection is being made, five covers
-/// still blank under "Recherche de vos découvertes…", and once it ran out,
-/// the heading alone saying when the next ones come.
+/// Découvrir's line of the month's discoveries: every cover of the month's
+/// selection, bare, as the other lines — or, while the selection is being
+/// made, five covers still blank under "Recherche de vos découvertes…", and
+/// once it ran out, the heading alone saying when the next ones come.
 struct DiscoveriesSummaryRow: View {
     let line: DiscoveriesLine
     let width: CGFloat

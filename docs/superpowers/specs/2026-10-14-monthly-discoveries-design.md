@@ -27,8 +27,8 @@ every list worth having; one bought books from his within days. What the test ta
 ## Decision
 
 "Les découvertes d'octobre" — the month named — in Découvrir's Books summary, right under
-"Bientôt disponible": five suggestions as a strip of bare covers, like the other lines. The
-same five open the home page, also as bare covers. Each suggestion opens the standard book
+"Bientôt disponible": the whole selection, up to twenty, as a strip of bare covers like the
+other lines. The same covers open the home page, also as bare covers. Each suggestion opens the standard book
 page with why it was chosen. Every action on a suggestion — dismiss it, add it, await it in
 French or in audio — removes it and lets the next one in.
 
@@ -59,7 +59,7 @@ blind, on his own library.
    - they dismissed it, awaited it, or it is a later volume of a saga they follow;
    - neither Open Library nor Google Books knows the title and author.
 4. **The queue.** The kept suggestions are stored in order, per reader. Découvrir shows the
-   first five. Dismissing, adding or awaiting one removes it; the next one moves up. There is
+   whole selection. Dismissing, adding or awaiting one removes it; the next one moves up. There is
    no refill: a month whose selection ran out shows the heading alone, "Plus de découvertes ce mois-ci :
    prochaines en novembre.", until the next month.
 5. **A selection per month, made only from Découvrir.** The title names the month, so the
@@ -82,9 +82,9 @@ blind, on his own library.
 
 - **Découvrir › Livres summary.** "Les découvertes d'octobre" (`Les découvertes de {mois}`,
   elided before a vowel: d'août, d'avril, d'octobre) between "Bientôt disponible" and "Prix
-  littéraires", symbol `sparkles`, violet, line "D'après vos préférences". Five bare covers,
+  littéraires", symbol `sparkles`, violet, line "D'après vos préférences". Every cover of the selection,
   no caption under them, as the other lines' strips. A cover opens the suggestion's page.
-- **Home.** The same five as a `BookShelfSection` of covers, after "En cours", with no line
+- **Home.** The same covers as a `BookShelfSection` of covers, after "En cours", with no line
   under the covers — the only home shelf without one, so the section gains a caption-less
   form. The heading opens Découvrir, a cover the suggestion's page. Absent
   when the queue is empty, as "Nouveautés" is.
@@ -103,7 +103,7 @@ blind, on his own library.
   flat with its `userId`.
 - `ANTHROPIC_API_KEY` as `NITRO_ANTHROPIC_KEY`; without it the line is absent and nothing else
   breaks, as APNs works today.
-- Query `monthlyDiscoveries(format)` — the first five, generation triggered behind it when
+- Query `monthlyDiscoveries(format)` — the whole selection, generation triggered behind it when
   rule 5 allows. Mutation `dismissSuggestion(id)`. Adding and awaiting reuse `addBook` and
   `awaitScanned`, and remove the suggestion server-side.
 - The page's description reuses `describeRelease`, which also gives the edition's real French

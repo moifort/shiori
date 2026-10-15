@@ -214,7 +214,7 @@ final class DiscoverViewModel {
     }
 
     /// The month's discoveries as last shown, kept on disk so the line opens
-    /// on them: five books chosen for the reader, each with why.
+    /// on them: the books chosen for the reader, each with why.
     private(set) var discoveries: MonthlyDiscoveries?
     /// The month's selection is being made: the first look of a month waits
     /// for the model, about a minute.

@@ -2270,7 +2270,7 @@ type MonthlyDiscoveries {
   month: String!
 
   """
-  The first five the reader neither holds, dismissed nor awaits. Empty when none are left, or the server has no model key.
+  Every one of the month’s selection the reader neither holds, dismissed nor awaits. Empty when none are left, or the server has no model key.
   """
   suggestions: [Suggestion!]!
 }
@@ -3257,7 +3257,7 @@ type Query {
   me: Me!
 
   """
-  The discoveries of the month: five books chosen for the reader from their hearts, stars, drops and dismissals, each with why, in one format and the app’s language.
+  The discoveries of the month: the books chosen for the reader from their hearts, stars, drops and dismissals, each with why, in one format and the app’s language.
   
   A month whose selection ran out stays empty until the next: the model is asked only with `lookUp`, for a month that has no selection yet.
   """

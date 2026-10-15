@@ -19,7 +19,6 @@ import {
   monthOf,
   readerProfileOf,
   referencesOf,
-  SHOWN_COUNT,
   shouldGenerate,
   shownOf,
   tasteDigestOf,
@@ -39,7 +38,7 @@ const logger = createLogger('suggestion')
 const CHECKS_AT_ONCE = 5
 
 export namespace SuggestionUseCase {
-  /** The month's discoveries: the first five suggestions of the month's
+  /** The month's discoveries: every suggestion of the month's
    *  selection the reader neither holds, dismissed nor awaits, in one format
    *  and the app's language. Only Découvrir asks for a selection to be made —
    *  `lookUp` — when the reader has none for this month, or one in another
@@ -93,7 +92,7 @@ export namespace SuggestionUseCase {
     }
     return {
       month,
-      suggestions: await viewsOf(suggestions.slice(0, SHOWN_COUNT), {
+      suggestions: await viewsOf(suggestions, {
         userId,
         format,
         appLanguage,
