@@ -6,6 +6,12 @@ import Foundation
 @MainActor
 @Observable
 final class KindleImportViewModel {
+    private let client: KindleClient
+
+    init(client: KindleClient) {
+        self.client = client
+    }
+
     private(set) var account: KindleAccount?
     private(set) var books: [ImportableKindleBook] = []
     private(set) var isLoading = false
@@ -44,7 +50,7 @@ final class KindleImportViewModel {
         errorMessage = nil
         lastSyncOutcome = nil
         do {
-            let connection = try await KindleAPI.connection()
+            let connection = try await client.connection()
             account = connection?.account
             books = connection?.library ?? []
             hasReadLibrary = connection != nil
@@ -65,7 +71,7 @@ final class KindleImportViewModel {
     func startSignIn() async {
         errorMessage = nil
         do {
-            signIn = try await KindleAPI.startSignIn(on: account?.marketplace ?? marketplace)
+            signIn = try await client.startSignIn(account?.marketplace ?? marketplace)
         } catch {
             errorMessage = reportError(error)
         }
@@ -79,7 +85,7 @@ final class KindleImportViewModel {
         isLoading = true
         errorMessage = nil
         do {
-            account = try await KindleAPI.completeSignIn(authorizationCode: code)
+            account = try await client.completeSignIn(code)
         } catch {
             errorMessage = reportError(error)
             isLoading = false
@@ -112,7 +118,7 @@ final class KindleImportViewModel {
         errorMessage = nil
         defer { isImporting = false }
         do {
-            return try await KindleAPI.importBooks(asins: Array(selected))
+            return try await client.importBooks(Array(selected))
         } catch {
             errorMessage = reportError(error)
             return []
@@ -124,7 +130,7 @@ final class KindleImportViewModel {
         guard account != nil else { return }
         errorMessage = nil
         do {
-            account = try await KindleAPI.setAutoSync(enabled)
+            account = try await client.setAutoSync(enabled)
         } catch {
             errorMessage = reportError(error)
         }
@@ -137,7 +143,7 @@ final class KindleImportViewModel {
         errorMessage = nil
         defer { isSyncing = false }
         do {
-            let (outcome, synced, library) = try await KindleAPI.syncNow(withLibrary: true)
+            let (outcome, synced, library) = try await client.syncNow()
             account = synced
             books = library ?? []
             hasReadLibrary = true
@@ -151,7 +157,7 @@ final class KindleImportViewModel {
     func disconnect() async {
         errorMessage = nil
         do {
-            try await KindleAPI.disconnect()
+            try await client.disconnect()
             account = nil
             books = []
             selected = []

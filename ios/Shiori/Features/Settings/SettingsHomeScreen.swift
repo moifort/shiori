@@ -47,9 +47,9 @@ struct SettingsHomeScreen: View {
             .sheet(item: $openSource) { source in
                 switch source {
                 case .audible:
-                    AudibleImportView(onImported: { _ in openSource = nil })
+                    AudibleImportScreen(onImported: { _ in openSource = nil })
                 case .kindle:
-                    KindleImportView(onImported: { _ in openSource = nil })
+                    KindleImportScreen(onImported: { _ in openSource = nil })
                 }
             }
             .toolbar {

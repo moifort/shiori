@@ -6,6 +6,12 @@ import Foundation
 @MainActor
 @Observable
 final class AudibleImportViewModel {
+    private let client: AudibleClient
+
+    init(client: AudibleClient) {
+        self.client = client
+    }
+
     private(set) var account: AudibleAccount?
     private(set) var books: [ImportableBook] = []
     private(set) var isLoading = false
@@ -59,7 +65,7 @@ final class AudibleImportViewModel {
         errorMessage = nil
         lastSyncOutcome = nil
         do {
-            let connection = try await ImportAPI.connection()
+            let connection = try await client.connection()
             account = connection?.account
             books = connection?.library ?? []
             hasReadLibrary = connection != nil
@@ -83,7 +89,7 @@ final class AudibleImportViewModel {
     func startSignIn() async {
         errorMessage = nil
         do {
-            signIn = try await ImportAPI.startSignIn(on: marketplace)
+            signIn = try await client.startSignIn(marketplace)
         } catch {
             errorMessage = reportError(error)
         }
@@ -97,7 +103,7 @@ final class AudibleImportViewModel {
         isLoading = true
         errorMessage = nil
         do {
-            account = try await ImportAPI.completeSignIn(authorizationCode: code)
+            account = try await client.completeSignIn(code)
         } catch {
             errorMessage = reportError(error)
             isLoading = false
@@ -133,7 +139,7 @@ final class AudibleImportViewModel {
         errorMessage = nil
         defer { isImporting = false }
         do {
-            let imported = try await ImportAPI.importBooks(asins: Array(selected))
+            let imported = try await client.importBooks(Array(selected))
             importedCount = imported.count
             return imported
         } catch {
@@ -153,7 +159,7 @@ final class AudibleImportViewModel {
         guard account != nil else { return }
         errorMessage = nil
         do {
-            account = try await ImportAPI.setAutoSync(enabled)
+            account = try await client.setAutoSync(enabled)
         } catch {
             errorMessage = reportError(error)
         }
@@ -168,7 +174,7 @@ final class AudibleImportViewModel {
         errorMessage = nil
         defer { isSyncing = false }
         do {
-            let (outcome, synced, library) = try await ImportAPI.syncNow(withLibrary: true)
+            let (outcome, synced, library) = try await client.syncNow()
             account = synced
             books = library ?? []
             selected = Set(importable.map(\.asin))
@@ -183,7 +189,7 @@ final class AudibleImportViewModel {
     func disconnect() async {
         errorMessage = nil
         do {
-            try await ImportAPI.disconnect()
+            try await client.disconnect()
             account = nil
             books = []
             selected = []

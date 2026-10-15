@@ -1,25 +1,27 @@
 import SwiftUI
 
-/// The Audible source's coordinator: owns the view model, the navigation stack
+/// The Kindle source's coordinator: owns the view model, the navigation stack
 /// and the sign-in sheet, and maps between the domain and the pure pages below
-/// it — the shape the Library tab already has.
+/// it — the shape `AudibleImportView` has.
 ///
-/// Opens on the source card, not on the picker. A connected library keeps itself
-/// up to date, so what a reader comes here to do is check on it; ticking titles
-/// is one push further in.
-struct AudibleImportView: View {
+/// Opens on the source card, not on the picker: a connected library keeps
+/// itself up to date, so what a reader comes here to do is check on it.
+struct KindleImportScreen: View {
     /// Called with the books that were catalogued, so the library refreshes
-    /// itself without a second round trip. Not called when nothing was imported.
+    /// itself. Not called when nothing was imported.
     let onImported: ([Book]) -> Void
 
-    /// The one screen that is pushed rather than shown. An enum for it because the
-    /// next import source will push its own.
     private enum Step: Hashable {
         case pickBooks
     }
 
     @Environment(\.dismiss) private var dismiss
-    @State private var viewModel = AudibleImportViewModel()
+    @State private var viewModel: KindleImportViewModel
+
+    init(onImported: @escaping ([Book]) -> Void, client: KindleClient = .live) {
+        self.onImported = onImported
+        _viewModel = State(initialValue: KindleImportViewModel(client: client))
+    }
     @State private var path: [Step] = []
 
     var body: some View {
@@ -60,7 +62,7 @@ struct AudibleImportView: View {
     @ViewBuilder
     private var content: some View {
         if let account = viewModel.account {
-            AudibleSourcePage(
+            KindleSourcePage(
                 account: account,
                 totalCount: viewModel.totalCount,
                 catalogedCount: viewModel.catalogedCount,
@@ -70,15 +72,14 @@ struct AudibleImportView: View {
                 onAutoSyncChange: { enabled in Task { await viewModel.setAutoSync(enabled) } },
                 onSyncNow: { Task { await viewModel.syncNow() } },
                 onPickBooks: { path.append(.pickBooks) },
+                onReconnect: { Task { await viewModel.startSignIn() } },
                 onDisconnect: {
-                    // Popped first: the picker behind this card has no account to
-                    // stand on once the connection is gone.
                     path = []
                     await viewModel.disconnect()
                 }
             )
         } else {
-            AudibleConnectPage(
+            KindleConnectPage(
                 marketplace: $viewModel.marketplace,
                 isWorking: viewModel.isLoading,
                 onConnect: { Task { await viewModel.startSignIn() } }
@@ -87,15 +88,14 @@ struct AudibleImportView: View {
     }
 
     private var picker: some View {
-        AudibleLibraryPage(
+        KindleLibraryPage(
             books: viewModel.books,
             isLoading: viewModel.isLoading,
             isImporting: viewModel.isImporting,
             selectedCount: viewModel.selected.count,
             canImport: viewModel.canImport,
-            // Wrapped rather than passed as method references: the pages take
-            // plain closures, and handing them a main-actor-isolated function
-            // would drop its isolation.
+            // Wrapped rather than passed as method references, which would drop
+            // their main-actor isolation.
             isSelected: { viewModel.isSelected($0) },
             onToggle: { viewModel.toggle($0) },
             onSelectAll: { viewModel.selectAll() },
