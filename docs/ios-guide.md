@@ -38,14 +38,14 @@ ios/Shiori/
 ├── Generated/GraphQL/                 Apollo output, never edited
 ├── Shared/
 │   ├── Components/
-│   │   ├── atoms/                     StarRatingView, LanguageTag, RibbonMark, AsyncButton…
-│   │   ├── molecules/                 LabeledInfoRow, SeriesLinkRow, LoadMoreRow, EmptyStateView…
-│   │   ├── organisms/                 ShelfMosaic: cross-domain sections
+│   │   ├── atoms/                     RatingStars, LanguageTag, RibbonMark, AsyncButton…
+│   │   ├── molecules/                 LabeledInfoRow, SeriesLinkRow, LoadMoreRow, EmptyState…
+│   │   ├── organisms/                 BookCover, BookRow, CoverTile, ShelfMosaic: take a Book
 │   │   └── styles/                    label styles, colours, view modifiers
 │   ├── Book/                          the book page's parts, shared by every book screen
-│   ├── Platform/                      UIKit wrappers: CameraPicker, MailComposeView, ContactPicker
+│   ├── Platform/                      UIKit wrappers: CameraView, CameraPicker, AmazonSignInWebView…
 │   ├── Shell/                         the app around the tabs: LaunchCurtain, UpdateRequiredView…
-│   └── GraphQLClient.swift, SnapshotCache.swift, CoverImages.swift, DataChanges.swift…
+│   └── GraphQLClient.swift, SnapshotCache.swift, CursorPage.swift, DataChanges.swift…
 └── Features/{Domain}/                 Discover, Series, Authors, Friends, Library, Book, Scan…
     ├── {Feature}Screen.swift          connected: ViewModel, tasks, navigation, sheets
     ├── {Feature}ViewModel.swift       state + actions, init(client:)
@@ -68,7 +68,7 @@ carries business meaning is an organism of its domain.
 
 | Level | Where | Receives | Examples |
 |---|---|---|---|
-| Atom | `Shared/Components/atoms/` | Primitives | `StarRatingView`, `LanguageTag` |
+| Atom | `Shared/Components/atoms/` | Primitives | `RatingStars`, `LanguageTag` |
 | Molecule | `Shared/Components/molecules/` | Primitives, atoms | `LabeledInfoRow`, `LoadMoreRow` |
 | Organism | `Features/{D}/components/organisms/` | An `Item` or a domain model, actions | `AwardWinnersStrip`, `SagaReleasesSummary` |
 | Page | `Features/{D}/components/pages/` | Values, bindings, one action handler | `HomePage`, `DiscoverPage` |
@@ -80,7 +80,8 @@ page receives what they produce, never the wrapper's own state.
 
 **Naming carries the category.** `Screen` = connected, `Page` = pure whole screen,
 `Section` / `Card` / `Strip` / `Row` / `Tile` = organism or molecule. A file named `…View`
-says nothing; new files never use it.
+says nothing; new files never use it. The UIKit wrappers in `Shared/Platform` are the exception:
+they are named after what they wrap (`MailComposeView`, `AmazonSignInWebView`).
 
 **One component per file**, named after it. A reusable view hidden at the bottom of a
 600-line screen file is a view nobody finds. A `private` helper view only that file uses may
@@ -202,7 +203,7 @@ final class DiscoverViewModel {
 - **Over content already on screen, a failure says nothing.** The rows stay as they were;
   replacing a good library with an empty one because a refresh failed reads as data loss. The
   error is still reported to Sentry.
-- **Over an empty screen**, `EmptyStateView.failure(title, message:, retry:)`.
+- **Over an empty screen**, `EmptyState.failure(title, message:, retry:)`.
 - **Every screen that loads is pullable**, empty or not: `.refreshable` is the retry.
 - A cancellation is not a failure: check `isCancellation(error)` and return.
 
@@ -252,9 +253,11 @@ placeholder in a preview, and that is enough.
 
 Long lists — the library, the sagas, the authors, a friend's shelf and sagas — load by pages.
 
-- **Cursor, not offset.** Read `hasMore`, pass the id of the last row as `after`. A cursor
-  naming a row no longer there restarts from the top. An offset shifts under a list that
-  changed between two pages and drops or repeats rows; new lists page by cursor.
+- **Cursor, not offset.** Read `hasMore`, pass the cursor of the last row as `after` — its id,
+  or the page's `endCursor` where a row has no single id (a saga row is a saga and an
+  edition). A cursor naming a row no longer there restarts from the top. An offset shifts
+  under a list that changed between two pages and drops or repeats rows; every list pages by
+  cursor, and `CursorPage` carries a page and its cursor to the ViewModel.
 - **Page size is sized to the screen, not to the dataset.** Sixty rows fill several screens of
   the list on the smallest phone; the mosaic shows some seventy covers a screen, so its page is
   140. The server caps a page (200 for the library).
@@ -370,20 +373,8 @@ copy them from the main checkout. Never clear the build cache to unblock a broke
 
 ## Known divergences
 
-What is left, as of 2026-10-15, once every domain was brought in line:
+What is left, as of 2026-10-15, once every domain and the leftovers were brought in line:
 
-- **Discover's older files** hold several components each and still reach the server from a
-  view: `AwaitedEditionViews` (`AwaitedEditionView`), `SuggestionViews`, `FriendPicks`,
-  `AuthorReleasesSection`, `ReleaseDescriber`. They sit at the domain's root, outside
-  `components/`, so the lint does not see them.
-- **Molecules inside domains**: `Library/components/molecules` (`BookRow`, `BookCover`,
-  `BookTile`) and `Home/components/molecules`. Used by several domains, they belong in
-  `Shared/Components`.
-- **Offset pagination** in the series and authors lists; the library and a friend's lists use
-  the cursor. Moving them is a schema change: add `after`, deprecate `offset`.
-- **`…View` names** kept: `LoginView`, `DiscoverFirstLookView`, the UIKit wrappers
-  `CameraView` and `AmazonSignInWebView` (which belong in `Shared/Platform`), and the atoms
-  `StarRatingView` and `EmptyStateView`.
 - **App-level services** still read their APIs directly — `OnboardingGate`,
   `SubscriptionStore`, `PushRegistrar`, the Audible and Kindle background syncs. They are not
   views; a client for them waits until they need tests.
