@@ -82,3 +82,7 @@ struct ScanIdentitySheet: View {
         return correction
     }
 }
+
+#Preview {
+    ScanIdentitySheet(book: .preview) { _ in }
+}

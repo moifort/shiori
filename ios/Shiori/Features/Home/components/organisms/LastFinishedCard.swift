@@ -63,3 +63,11 @@ struct LastFinishedCard: View {
         return "\(book.authorLine) · " + String(localized: "lu en \(days) jours")
     }
 }
+
+#Preview {
+    ScrollView {
+        LastFinishedCard(book: .preview) { _ in }
+        LastFinishedCard(book: nil) { _ in }
+    }
+    .padding()
+}

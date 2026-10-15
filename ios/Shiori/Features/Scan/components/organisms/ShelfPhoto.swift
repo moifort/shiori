@@ -27,3 +27,10 @@ struct ShelfPhoto: View {
             .accessibilityHidden(true)
     }
 }
+
+#if DEBUG
+#Preview {
+    ShelfPhoto(photo: ShelfImportFixtures.photo, books: ShelfImportFixtures.books, highlighted: 1)
+        .padding()
+}
+#endif

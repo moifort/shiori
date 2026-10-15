@@ -385,3 +385,11 @@ extension BookHeaderSection where Extra == EmptyView {
         ) { EmptyView() }
     }
 }
+
+#Preview {
+    List {
+        BookHeaderSection(book: .preview, state: .owned)
+    }
+    .listStyle(.insetGrouped)
+    .labelStyle(.row)
+}

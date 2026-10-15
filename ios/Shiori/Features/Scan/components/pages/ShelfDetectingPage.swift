@@ -37,3 +37,11 @@ struct ShelfDetectingPage: View {
         .navigationBarBackButtonHidden()
     }
 }
+
+#if DEBUG
+#Preview {
+    NavigationStack {
+        ShelfDetectingPage(photo: ShelfImportFixtures.photo)
+    }
+}
+#endif

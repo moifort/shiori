@@ -39,3 +39,10 @@ struct SeriesProgressWidget: View {
         .accessibilityIdentifier("home-series")
     }
 }
+
+#Preview {
+    ScrollView {
+        SeriesProgressWidget(series: Dashboard.preview.series, onHeaderTapped: {})
+    }
+    .padding()
+}

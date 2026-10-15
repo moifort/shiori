@@ -23,3 +23,9 @@ struct SeriesLinkRow: View {
         .tint(.primary)
     }
 }
+
+#Preview {
+    List {
+        SeriesLinkRow(name: "Chronique du tueur de roi") {}
+    }
+}

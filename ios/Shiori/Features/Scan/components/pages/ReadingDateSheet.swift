@@ -43,3 +43,7 @@ struct ReadingDateSheet: View {
         .presentationDetents([.height(480)])
     }
 }
+
+#Preview {
+    ReadingDateSheet(title: "Terminé le", date: .now, range: .distantPast...Date.now) { _ in }
+}

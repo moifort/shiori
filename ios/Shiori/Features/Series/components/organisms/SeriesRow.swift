@@ -154,3 +154,11 @@ struct SeriesRow: View {
         }
     }
 }
+
+#if DEBUG
+#Preview {
+    List(SeriesFixtures.followed) { entry in
+        SeriesRow(entry: entry)
+    }
+}
+#endif

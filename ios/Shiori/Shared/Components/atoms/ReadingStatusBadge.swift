@@ -57,3 +57,12 @@ extension ReadingStatus {
         }
     }
 }
+
+#Preview {
+    HStack(spacing: 16) {
+        ForEach([ReadingStatus.toRead, .reading, .read, .dropped], id: \.self) { status in
+            ReadingStatusBadge(status: status)
+        }
+    }
+    .padding()
+}

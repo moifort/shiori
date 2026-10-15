@@ -119,3 +119,12 @@ extension BookReadingSection where Extra == EmptyView {
         self.init(title: title, book: book, footer: footer) { EmptyView() }
     }
 }
+
+#Preview {
+    List {
+        BookStatusSection(status: .read)
+        BookReadingSection(title: "Lecture", book: .preview)
+    }
+    .listStyle(.insetGrouped)
+    .labelStyle(.row)
+}

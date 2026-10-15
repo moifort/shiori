@@ -23,3 +23,15 @@ struct AmazonSignInSheet: View {
         }
     }
 }
+
+#Preview {
+    AmazonSignInSheet(
+        login: AmazonLogin(
+            url: "https://www.amazon.fr",
+            redirectURL: "https://www.amazon.fr/ap/maplanding",
+            cookies: []
+        ),
+        onCode: { _ in },
+        onCancel: {}
+    )
+}

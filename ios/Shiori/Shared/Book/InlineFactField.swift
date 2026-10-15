@@ -137,3 +137,12 @@ struct InlineFactField: View {
         if !correction.isEmpty { onCorrect(correction) }
     }
 }
+
+#Preview {
+    List {
+        ForEach(BookFact.allCases, id: \.self) { fact in
+            InlineFactField(fact: fact, book: .preview) { _ in }
+        }
+    }
+    .labelStyle(.row)
+}

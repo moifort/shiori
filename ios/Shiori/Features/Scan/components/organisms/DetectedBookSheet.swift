@@ -65,3 +65,9 @@ struct DetectedBookSheet: View {
         .presentationDetents([.medium, .large])
     }
 }
+
+#if DEBUG
+#Preview {
+    DetectedBookSheet(book: ShelfImportFixtures.books[3], crop: nil) { _, _ in }
+}
+#endif

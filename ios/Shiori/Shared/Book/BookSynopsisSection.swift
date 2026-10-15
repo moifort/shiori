@@ -28,3 +28,9 @@ struct BookSynopsisSection: View {
         }
     }
 }
+
+#Preview {
+    List {
+        BookSynopsisSection(synopsis: "Kvothe raconte sa propre légende, de la troupe de comédiens où il a grandi à l'Université.")
+    }
+}

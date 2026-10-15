@@ -49,3 +49,10 @@ struct SeriesNameField: View {
         )
     }
 }
+
+#Preview {
+    @Previewable @State var text = "Fond"
+    Form {
+        SeriesNameField(text: $text, suggestions: ["Fondation", "Dune", "Hypérion"])
+    }
+}

@@ -19,3 +19,8 @@ struct ShelfFilterLabel: View {
         .padding(.horizontal, 4)
     }
 }
+
+#Preview {
+    ShelfFilterLabel(symbol: "tray.full", title: "Tous")
+        .padding()
+}

@@ -252,3 +252,16 @@ struct MosaicGlyphs<Leading: View, Trailing: View>: View {
         }
     }
 }
+
+#Preview {
+    @Previewable @State var layout = ShelfLayout.mosaic
+    let books = (0..<24).map { Book(id: "b\($0)", title: "Livre \($0)", authors: ["Auteur"], status: .read) }
+    NavigationStack {
+        ShelfMosaic(rows: books, columns: 4) { book, width in
+            BookCover(book: book, width: width, showsFormatBadge: false)
+        } bottom: {
+            EmptyView()
+        }
+        .toolbar { MosaicModeButton(layout: $layout) }
+    }
+}
