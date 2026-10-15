@@ -214,6 +214,23 @@ describe('the month’s discoveries', () => {
     ] as never)
   })
 
+  test('a reader who switched the app to English gets a selection written in English', async () => {
+    await SuggestionUseCase.monthly(reader, 'audiobook', 'fr', october)
+    answering(suggested('Neuromancer', 'William Gibson'))
+    const english = await SuggestionUseCase.monthly(
+      reader,
+      'audiobook',
+      'en',
+      new Date('2026-10-16T09:00:00Z'),
+    )
+
+    expect(prompts[1]).toContain('écrits en anglais')
+    expect(english.suggestions.map((view) => view.suggestion.title)).toEqual([
+      'Neuromancer',
+    ] as never)
+    expect(fake.data('suggestion-queues', reader)?.language).toBe('en')
+  })
+
   test('a failed model keeps the selection there was', async () => {
     await SuggestionUseCase.monthly(reader, 'audiobook', 'fr', october)
     answer = new Error('Claude answered 529')

@@ -68,23 +68,30 @@ export namespace SuggestionUseCase {
     const remaining = shownOf(queue?.suggestions ?? [], books, dismissed).filter(
       (suggestion) => !isAwaited(suggestion),
     )
-    const mayGenerate = (current: typeof queue) => shouldGenerate(current, remaining.length, now)
-    // A new month starts afresh; a refill within the month keeps what is left
-    // first. A failed generation keeps the selection there was.
+    const mayGenerate = (current: typeof queue) =>
+      shouldGenerate(current, remaining.length, now, appLanguage)
+    // A new month, or a new language, starts afresh; a refill within the
+    // month keeps what is left first. A failed generation keeps the selection there was.
     let suggestions = remaining
     if (
       mayGenerate(queue) &&
-      (await SuggestionCommand.claimGeneration(userId, mayGenerate, now, month))
+      (await SuggestionCommand.claimGeneration(userId, mayGenerate, now, month, appLanguage))
     ) {
       const answered = await generated(books, opinions, dismissals, appLanguage)
       if (answered) {
-        const kept = queue?.month === month ? remaining : []
+        const kept = queue?.month === month && queue.language === appLanguage ? remaining : []
         const fresh = shownOf(answered, books, dismissed).filter(
           (suggestion) =>
             !isAwaited(suggestion) && !kept.some((known) => known.key === suggestion.key),
         )
         suggestions = [...kept, ...fresh]
-        await SuggestionCommand.saveQueue({ userId, month, generatedAt: now, suggestions })
+        await SuggestionCommand.saveQueue({
+          userId,
+          month,
+          language: appLanguage,
+          generatedAt: now,
+          suggestions,
+        })
       }
     }
     return {

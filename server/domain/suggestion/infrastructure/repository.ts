@@ -1,3 +1,4 @@
+import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import { genericDataConverter, transactionally } from '~/utils/firestore'
@@ -26,6 +27,7 @@ export const claimGeneration = async (
   mayGenerate: (queue: SuggestionQueue | undefined) => boolean,
   now: Date,
   month: string,
+  language: Language,
 ): Promise<boolean> =>
   transactionally(async (tx) => {
     const ref = queues().doc(userId)
@@ -34,6 +36,7 @@ export const claimGeneration = async (
     tx.set(ref, {
       userId,
       month: queue?.month ?? month,
+      language: queue?.language ?? language,
       generatedAt: now,
       suggestions: queue?.suggestions ?? [],
     })

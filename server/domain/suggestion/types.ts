@@ -2,6 +2,7 @@ import type { AwaitedEditionId, AwaitedState, EditionWatch } from '~/domain/awai
 import type { BookId, BookLanguage, CoverUrl, StarRating } from '~/domain/book/types'
 import type { ReleaseFormat } from '~/domain/discovery/types'
 import type { SeriesId } from '~/domain/series/types'
+import type { Language } from '~/domain/shared/language'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 
 /** What a suggested book is, as the model names it. */
@@ -41,6 +42,9 @@ export type SuggestionQueue = {
   userId: UserId
   /** `YYYY-MM`: the month the line is titled after. */
   month: string
+  /** The app's language the reasons were written in: a reader who changes it
+   *  is given a selection in the new one. */
+  language: Language
   generatedAt: Date
   /** In the order the model ranked them, checked against the library and the
    *  catalogues when they were kept. */

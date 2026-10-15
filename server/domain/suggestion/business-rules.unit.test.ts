@@ -82,30 +82,31 @@ describe('monthOf', () => {
 
 describe('shouldGenerate', () => {
   const now = new Date('2026-10-15T09:00:00Z')
+  const queue = (month: string, generatedAt: string, language: 'fr' | 'en' = 'fr') => ({
+    month,
+    generatedAt: new Date(generatedAt),
+    language,
+  })
 
   test('asks when there is no selection yet', () => {
-    expect(shouldGenerate(undefined, 0, now)).toBe(true)
+    expect(shouldGenerate(undefined, 0, now, 'fr')).toBe(true)
   })
 
   test('never asks twice the same day', () => {
-    expect(
-      shouldGenerate({ month: '2026-09', generatedAt: new Date('2026-10-15T01:00:00Z') }, 0, now),
-    ).toBe(false)
+    expect(shouldGenerate(queue('2026-09', '2026-10-15T01:00:00Z'), 0, now, 'en')).toBe(false)
   })
 
   test('asks in a new month, however many are left', () => {
-    expect(
-      shouldGenerate({ month: '2026-09', generatedAt: new Date('2026-09-30T09:00:00Z') }, 12, now),
-    ).toBe(true)
+    expect(shouldGenerate(queue('2026-09', '2026-09-30T09:00:00Z'), 12, now, 'fr')).toBe(true)
+  })
+
+  test('asks when the app’s language is not the selection’s', () => {
+    expect(shouldGenerate(queue('2026-10', '2026-10-02T09:00:00Z'), 12, now, 'en')).toBe(true)
   })
 
   test('asks within the month when fewer than five are left', () => {
-    expect(
-      shouldGenerate({ month: '2026-10', generatedAt: new Date('2026-10-02T09:00:00Z') }, 4, now),
-    ).toBe(true)
-    expect(
-      shouldGenerate({ month: '2026-10', generatedAt: new Date('2026-10-02T09:00:00Z') }, 5, now),
-    ).toBe(false)
+    expect(shouldGenerate(queue('2026-10', '2026-10-02T09:00:00Z'), 4, now, 'fr')).toBe(true)
+    expect(shouldGenerate(queue('2026-10', '2026-10-02T09:00:00Z'), 5, now, 'fr')).toBe(false)
   })
 })
 

@@ -64,9 +64,13 @@ blind, on his own library.
    first look in a new month runs a new generation, whatever is left of the last. Within the
    month the queue refills the strip; when fewer than five remain, a new generation runs —
    **at most once a day per reader**. An empty queue hides the line until the next one.
-6. **Dismissal is forever.** "Pas intéressé" is stored per reader and never suggested again;
+6. **In the app's language.** The titles, the reasons and the "comme …" / "like …" line are
+   written in the app's language (French or English, from `Accept-Language`), the French
+   reasons addressing the reader as « tu ». The selection remembers its language: a reader who
+   switches the app is given a new one, within the daily cap.
+7. **Dismissal is forever.** "Pas intéressé" is stored per reader and never suggested again;
    the model is told the last 100.
-7. **The references are the reader's own books.** A referenced title is matched back to the
+8. **The references are the reader's own books.** A referenced title is matched back to the
    library and shown with its rank (heart, stars, or "série" when the rank is the saga's). A
    reference that matches nothing is dropped from the list, the sentence kept.
 

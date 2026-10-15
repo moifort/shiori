@@ -1,5 +1,6 @@
 import type { Book, StarRating } from '~/domain/book/types'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
+import type { Language } from '~/domain/shared/language'
 import { slugify } from '~/utils/slug'
 import type {
   Dismissal,
@@ -29,16 +30,18 @@ export const monthOf = (now: Date): string => now.toISOString().slice(0, 7)
 
 const dayOf = (date: Date): string => date.toISOString().slice(0, 10)
 
-/** Whether the model is asked again: no selection yet, a new month, or fewer
- *  suggestions left than the line shows — never twice the same day. */
+/** Whether the model is asked again: no selection yet, a new month, a
+ *  selection written in another language than the app's, or fewer suggestions
+ *  left than the line shows — never twice the same day. */
 export const shouldGenerate = (
-  queue: Pick<SuggestionQueue, 'month' | 'generatedAt'> | undefined,
+  queue: Pick<SuggestionQueue, 'month' | 'generatedAt' | 'language'> | undefined,
   remaining: number,
   now: Date,
+  language: Language,
 ): boolean => {
   if (!queue) return true
   if (dayOf(queue.generatedAt) === dayOf(now)) return false
-  return queue.month !== monthOf(now) || remaining < SHOWN_COUNT
+  return queue.month !== monthOf(now) || queue.language !== language || remaining < SHOWN_COUNT
 }
 
 /** A heart, then stars, best first. */

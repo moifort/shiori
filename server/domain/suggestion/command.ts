@@ -1,3 +1,4 @@
+import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 import * as repository from './infrastructure/repository'
 import type { Dismissal, SuggestionQueue } from './types'
@@ -10,7 +11,8 @@ export namespace SuggestionCommand {
     mayGenerate: (queue: SuggestionQueue | undefined) => boolean,
     now: Date,
     month: string,
-  ) => repository.claimGeneration(userId, mayGenerate, now, month)
+    language: Language,
+  ) => repository.claimGeneration(userId, mayGenerate, now, month, language)
 
   /** "Pas intéressé": the suggestion leaves the queue for good. Not-found when
    *  the queue holds no such suggestion. */
