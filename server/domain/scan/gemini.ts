@@ -286,16 +286,21 @@ const capturedUsage = (
 ): AiStepUsage | undefined => {
   const usage = response.usageMetadata
   if (!usage) return undefined
-  const searches = billedSearches(response, grounded)
-  logger.info(
-    `${step}: ${usage.promptTokenCount ?? 0} in, ${usage.candidatesTokenCount ?? 0} out, ${usage.thoughtsTokenCount ?? 0} thinking, ${searches} searches`,
-  )
-  return {
+  const figures = {
     promptTokens: usage.promptTokenCount ?? 0,
     outputTokens: usage.candidatesTokenCount ?? 0,
     thinkingTokens: usage.thoughtsTokenCount ?? 0,
-    searches,
+    searches: billedSearches(response, grounded),
   }
+  // The figures go as fields, so Cloud Logging can sum `jsonPayload.searches` per step.
+  logger.info('gemini usage', {
+    step,
+    inputTokens: figures.promptTokens,
+    outputTokens: figures.outputTokens,
+    thinkingTokens: figures.thinkingTokens,
+    searches: figures.searches,
+  })
+  return figures
 }
 
 /** How many Google searches this call is billed for.

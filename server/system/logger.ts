@@ -48,18 +48,72 @@ export const flushReports = async (): Promise<void> => {
   await Sentry.flush(2000)
 }
 
-export const createLogger = (tag: string, report: Report = sentryReport) => {
-  const logger = consola.withTag(tag)
-  const line = (context?: LogContext) => (context === undefined ? [] : [context])
-  return {
-    info: (message: string, context?: LogContext) => logger.info(message, ...line(context)),
-    warn: (message: string, context?: LogContext) => {
-      logger.warn(message, ...line(context))
-      report('warning', tag, message, context ?? {})
-    },
-    error: (message: string, context?: LogContext) => {
-      logger.error(message, ...line(context))
-      report('error', tag, message, context ?? {})
-    },
+export type Severity = 'INFO' | 'WARNING' | 'ERROR'
+
+const serializedError = (error: unknown) =>
+  error instanceof Error
+    ? { name: error.name, message: error.message, stack: error.stack }
+    : String(error)
+
+/** One log as the single JSON line Cloud Logging parses into a structured
+ *  entry: `severity` makes `severity>=WARNING` work, the context keys land
+ *  under `jsonPayload` where they can be filtered and summed, and the stack
+ *  travels inside the one entry instead of being split into one per line. */
+export const structuredLine = (
+  severity: Severity,
+  tag: string,
+  message: string,
+  { error, ...context }: LogContext = {},
+): string => {
+  const entry = {
+    ...context,
+    ...(error === undefined ? {} : { error: serializedError(error) }),
+    severity,
+    message: `[${tag}] ${message}`,
+    tag,
+  }
+  try {
+    return JSON.stringify(entry)
+  } catch {
+    // A context that cannot be serialized (a cycle, a bigint) still logs its message.
+    return JSON.stringify({ severity, message: entry.message, tag })
   }
 }
+
+type Write = (severity: Severity, tag: string, message: string, context?: LogContext) => void
+
+const prettyWrite = (tag: string): Write => {
+  const logger = consola.withTag(tag)
+  return (severity, _tag, message, context) => {
+    const rest = context === undefined ? [] : [context]
+    if (severity === 'INFO') logger.info(message, ...rest)
+    else if (severity === 'WARNING') logger.warn(message, ...rest)
+    else logger.error(message, ...rest)
+  }
+}
+
+const structuredWrite: Write = (severity, tag, message, context) => {
+  process.stdout.write(`${structuredLine(severity, tag, message, context)}\n`)
+}
+
+/** A built bundle writes JSON lines for Cloud Logging; a dev server keeps
+ *  consola's pretty output. `import.meta.dev` is compiled to `false` in a
+ *  build and left undefined under `bun test`, which keeps the pretty output. */
+const writeFor = (tag: string): Write =>
+  import.meta.dev === false ? structuredWrite : prettyWrite(tag)
+
+export const createLogger = (
+  tag: string,
+  report: Report = sentryReport,
+  write: Write = writeFor(tag),
+) => ({
+  info: (message: string, context?: LogContext) => write('INFO', tag, message, context),
+  warn: (message: string, context?: LogContext) => {
+    write('WARNING', tag, message, context)
+    report('warning', tag, message, context ?? {})
+  },
+  error: (message: string, context?: LogContext) => {
+    write('ERROR', tag, message, context)
+    report('error', tag, message, context ?? {})
+  },
+})
