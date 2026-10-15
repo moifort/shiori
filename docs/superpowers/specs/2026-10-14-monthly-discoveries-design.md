@@ -27,9 +27,9 @@ every list worth having; one bought books from his within days. What the test ta
 ## Decision
 
 "Les découvertes d'octobre" — the month named — in Découvrir's Books summary, right under
-"Bientôt disponible": three suggestions as rows — cover, title, author, and why. The same three
-open the home page as a strip of bare covers. Each suggestion opens the standard book
-page with two more sections. Every action on a suggestion — dismiss it, add it, await it in
+"Bientôt disponible": five suggestions as a strip of bare covers, like the other lines. The
+same five open the home page, also as bare covers. Each suggestion opens the standard book
+page with why it was chosen. Every action on a suggestion — dismiss it, add it, await it in
 French or in audio — removes it and lets the next one in.
 
 Model: **Claude Sonnet**, through the Anthropic API. It was the reader's pick of the four,
@@ -59,10 +59,10 @@ blind, on his own library.
    - they dismissed it, awaited it, or it is a later volume of a saga they follow;
    - neither Open Library nor Google Books knows the title and author.
 4. **The queue.** The kept suggestions are stored in order, per reader. Découvrir shows the
-   first three. Dismissing, adding or awaiting one removes it; the next one moves up.
+   first five. Dismissing, adding or awaiting one removes it; the next one moves up.
 5. **A selection per month.** The title names the month, so the selection is the month's: the
    first look in a new month runs a new generation, whatever is left of the last. Within the
-   month the queue refills the three rows; when fewer than three remain, a new generation runs —
+   month the queue refills the strip; when fewer than five remain, a new generation runs —
    **at most once a day per reader**. An empty queue hides the line until the next one.
 6. **Dismissal is forever.** "Pas intéressé" is stored per reader and never suggested again;
    the model is told the last 100.
@@ -73,20 +73,17 @@ blind, on his own library.
 ## iOS
 
 - **Découvrir › Livres summary.** "Les découvertes d'octobre" (`Les découvertes de {mois}`,
-  elided before a vowel: d'août, d'avril, d'octobre) after "Bientôt disponible", symbol
-  `sparkles`, violet, line "D'après vos coups de cœur". Three rows, no cover strip: cover, title, author,
-  then "♥ comme **Gagner la guerre** — …" — the referenced book's rank, the "comme" line in
-  bold, the reason. Swipe left: "Pas intéressé", red, `eye.slash`. The next suggestion slides
-  in.
-- **Home.** The same three as a `BookShelfSection` of covers, after "En cours", with no line
+  elided before a vowel: d'août, d'avril, d'octobre) between "Bientôt disponible" and "Prix
+  littéraires", symbol `sparkles`, violet, line "D'après vos préférences". Five bare covers,
+  no caption under them, as the other lines' strips. A cover opens the suggestion's page.
+- **Home.** The same five as a `BookShelfSection` of covers, after "En cours", with no line
   under the covers — the only home shelf without one, so the section gains a caption-less
   form. The heading opens Découvrir, a cover the suggestion's page. Absent
   when the queue is empty, as "Nouveautés" is.
-- **A suggestion's page is the standard book page** — `BookHeaderSection`, then the
-  description and synopsis sections as on an award winner's page — with two sections added:
-  - **Pourquoi ce livre**: the reason sentence;
-  - **Vos livres de référence**: each referenced book of the library, its cover and its rank
-    (♥, ★, "série"), a tap opening the reader's own page of it.
+- **A suggestion's page is the standard book page** — `BookHeaderSection` with no tag above
+  it, then the description and synopsis sections as on an award winner's page — with one
+  section added, **Pourquoi ce livre**: the reason sentence, then each referenced book of the
+  library with its rank (♥, ★, "série"), a tap opening the reader's own page of it.
 - **Actions live in the "+" menu**, top right, as on every book page: Ajouter (to the pile,
   per format), Guetter la version française, Guetter la version audio, then Pas intéressé
   (red). Any of them closes the page and the suggestion leaves the line.
@@ -98,7 +95,7 @@ blind, on his own library.
   flat with its `userId`.
 - `ANTHROPIC_API_KEY` as `NITRO_ANTHROPIC_KEY`; without it the line is absent and nothing else
   breaks, as APNs works today.
-- Query `suggestions: [Suggestion!]!` — the first three, generation triggered behind it when
+- Query `monthlyDiscoveries(format)` — the first five, generation triggered behind it when
   rule 5 allows. Mutation `dismissSuggestion(id)`. Adding and awaiting reuse `addBook` and
   `awaitScanned`, and remove the suggestion server-side.
 - The page's description reuses `describeRelease`, which also gives the edition's real French
@@ -137,5 +134,5 @@ before release, beside Google's Gemini.
 - **Int:** a generation against a stubbed model — owned, dismissed and invented books dropped,
   the queue stored; dismiss and add each moving the queue up; reads budgeted.
 - **Feat:** `suggestions` and `dismissSuggestion` through the schema.
-- **iOS:** fixtures and `#Preview` for the line, the swipe and the page; screenshots for
+- **iOS:** fixtures and `#Preview` for the strip and the page; screenshots for
   validation.

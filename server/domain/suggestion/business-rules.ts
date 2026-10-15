@@ -10,7 +10,7 @@ import type {
 } from './types'
 
 /** How many suggestions the line shows at once. */
-export const SHOWN_COUNT = 3
+export const SHOWN_COUNT = 5
 
 /** How many suggestions the model is asked for: enough that the checks and the
  *  reader's dismissals leave the line full for the month. */

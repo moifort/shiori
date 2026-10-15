@@ -289,28 +289,23 @@ struct DiscoverView: View {
                     .accessibilityIdentifier("discover-awaited")
                 }
                 if let discoveries, !suggestions.isEmpty {
+                    // Bare covers, as the other lines: the reason is on the
+                    // book's page.
                     DiscoverSummaryRow(
                         title: "\(discoveries.title)",
                         systemImage: "sparkles",
                         tint: .purple,
-                        line: String(localized: "D’après vos coups de cœur")
-                    )
-                    .accessibilityIdentifier("discover-discoveries")
-                    // Rows rather than a strip: the reason is what sells the
-                    // book. A swipe says "Pas intéressé", and the next one
-                    // comes in.
-                    ForEach(suggestions) { suggestion in
-                        Button { openSuggestion = suggestion } label: {
-                            SuggestionRow(suggestion: suggestion)
-                        }
-                        .buttonStyle(.plain)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button("Pas intéressé", systemImage: "eye.slash", role: .destructive) {
-                                Task { await viewModel.dismiss(suggestion, format: viewModel.awardsFormat) }
+                        line: String(localized: "D’après vos préférences")
+                    ) {
+                        ForEach(suggestions) { suggestion in
+                            Button { openSuggestion = suggestion } label: {
+                                CoverTile(book: suggestion.cover, caption: "", width: width)
                             }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("discover-suggestion")
                         }
-                        .accessibilityIdentifier("discover-suggestion")
                     }
+                    .accessibilityIdentifier("discover-discoveries")
                 }
                 if !awards.isEmpty {
                     DiscoverSummaryRow(

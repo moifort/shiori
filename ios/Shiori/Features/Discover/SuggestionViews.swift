@@ -1,53 +1,8 @@
 import SwiftUI
 
-/// One suggestion of the month as a row of Découvrir: its cover, its title
-/// and author, then the mark of the book it is drawn from, the "comme …" line
-/// and why.
-struct SuggestionRow: View {
-    let suggestion: Suggestion
-
-    private static let coverWidth: CGFloat = 44
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            BookCover(book: suggestion.cover, width: Self.coverWidth, showsFormatBadge: false)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(suggestion.title)
-                    .font(.body.weight(.medium))
-                    .lineLimit(2)
-                Text(suggestion.authors.joined(separator: ", "))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                why
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(3)
-                    .padding(.top, 2)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.vertical, 4)
-        .contentShape(.rect)
-    }
-
-    /// "♥ comme **Gagner la guerre** — un héros rusé…": the lead reference's
-    /// mark, the line in bold, the reason.
-    private var why: Text {
-        let mark: Text = if let lead = suggestion.leadReference {
-            lead.favorite
-                ? Text(Image(systemName: "heart.fill")).foregroundStyle(.red)
-                : Text(Image(systemName: "star.fill")).foregroundStyle(.yellow)
-        } else {
-            Text(Image(systemName: "sparkles")).foregroundStyle(.purple)
-        }
-        return Text("\(mark) \(Text(suggestion.short).bold().foregroundStyle(.primary)) — \(suggestion.reason)")
-    }
-}
-
 /// A suggestion's page: the standard book page — its header, its description
-/// once written — with why it was chosen and the reader's books it was drawn
-/// from. The "+" holds every action: add it, await it, or say "Pas
+/// once written — with why it was chosen, the reader's books it was drawn
+/// from under it. The "+" holds every action: add it, await it, or say "Pas
 /// intéressé". Each closes the page and lets the next suggestion in.
 struct SuggestionView: View {
     let suggestion: Suggestion
@@ -70,26 +25,19 @@ struct SuggestionView: View {
                 isAwaited: suggestion.awaitedEditionId != nil,
                 storeLink: suggestion.storeURL.map {
                     .init(name: suggestion.format.storeName, url: $0, tint: suggestion.format.storeTint)
-                },
-                tag: Label {
-                    Text(suggestion.short)
-                } icon: {
-                    Image(systemName: "sparkles")
                 }
             )
+            // Why, then the reader's own books it draws on, each opening its
+            // page.
             Section("Pourquoi ce livre") {
                 Text(suggestion.reason)
                     .accessibilityIdentifier("suggestion-reason")
-            }
-            if !suggestion.references.isEmpty {
-                Section("Vos livres de référence") {
-                    ForEach(suggestion.references) { reference in
-                        Button { openReference = reference } label: {
-                            referenceRow(reference)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("suggestion-reference")
+                ForEach(suggestion.references) { reference in
+                    Button { openReference = reference } label: {
+                        referenceRow(reference)
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("suggestion-reference")
                 }
             }
             ReleaseDescriptionSections(describer: describer, synopsis: shown.synopsis)
@@ -222,14 +170,6 @@ enum SuggestionOutcome {
     case added
     case awaited
     case dismissed
-}
-
-#Preview("Row") {
-    List {
-        ForEach(MonthlyDiscoveries.preview.suggestions) { suggestion in
-            SuggestionRow(suggestion: suggestion)
-        }
-    }
 }
 
 #Preview("Page") {

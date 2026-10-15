@@ -34,7 +34,7 @@ export type Suggestion = {
   coverUrl?: CoverUrl
 }
 
-/** The reader's suggestions of the month: the queue the line draws its three
+/** The reader's suggestions of the month: the queue the line draws its five
  *  rows from, the month it was chosen for, and when the model was last asked —
  *  never twice in a day. One document per reader. */
 export type SuggestionQueue = {
@@ -87,7 +87,7 @@ export type SuggestionView = {
 }
 
 /** The line Découvrir and the home page draw: the month it is titled after
- *  and its first three suggestions. */
+ *  and its first five suggestions. */
 export type MonthlyDiscoveries = {
   month: string
   suggestions: SuggestionView[]

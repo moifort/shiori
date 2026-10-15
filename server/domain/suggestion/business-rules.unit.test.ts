@@ -99,12 +99,12 @@ describe('shouldGenerate', () => {
     ).toBe(true)
   })
 
-  test('asks within the month when fewer than three are left', () => {
+  test('asks within the month when fewer than five are left', () => {
     expect(
-      shouldGenerate({ month: '2026-10', generatedAt: new Date('2026-10-02T09:00:00Z') }, 2, now),
+      shouldGenerate({ month: '2026-10', generatedAt: new Date('2026-10-02T09:00:00Z') }, 4, now),
     ).toBe(true)
     expect(
-      shouldGenerate({ month: '2026-10', generatedAt: new Date('2026-10-02T09:00:00Z') }, 3, now),
+      shouldGenerate({ month: '2026-10', generatedAt: new Date('2026-10-02T09:00:00Z') }, 5, now),
     ).toBe(false)
   })
 })

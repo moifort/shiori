@@ -206,7 +206,7 @@ extension Suggestion {
 }
 
 extension MonthlyDiscoveries {
-    /// Three suggestions drawn from the blind test of 2026-10-12, for the
+    /// Five suggestions drawn from the blind test of 2026-10-12, for the
     /// previews and the screenshot harness.
     static let preview = MonthlyDiscoveries(
         month: "2026-10",
@@ -233,6 +233,22 @@ extension MonthlyDiscoveries {
                 reason: "Un autre roman de Trevanian, après Shibumi : espionnage, alpinisme et ironie mordante.",
                 references: [
                     SuggestionReference(bookId: "shibumi", seriesId: nil, title: "Shibumi", favorite: true, rating: 5, viaSeries: false),
+                ]
+            ),
+            .sample(
+                id: "dark-matter", title: "Dark Matter", original: "Dark Matter", author: "Blake Crouch",
+                short: "comme Projet Dernière chance",
+                reason: "Un thriller de science-fiction haletant et vertigineux, qui plaira au lecteur de Projet Dernière chance.",
+                references: [
+                    SuggestionReference(bookId: "hail-mary", seriesId: nil, title: "Projet Dernière chance", favorite: true, rating: 5, viaSeries: false),
+                ]
+            ),
+            .sample(
+                id: "fire-deep", title: "Un feu sur l’abîme", original: "A Fire Upon the Deep", author: "Vernor Vinge",
+                short: "comme Dans la toile du temps",
+                reason: "Un space opera aux idées audacieuses et aux extraterrestres inoubliables, proche de Dans la toile du temps.",
+                references: [
+                    SuggestionReference(bookId: "children-time", seriesId: "children-time", title: "Dans la toile du temps", favorite: true, rating: 5, viaSeries: true),
                 ]
             ),
         ]

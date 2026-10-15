@@ -8,9 +8,9 @@ builder.queryFields((t) => ({
   monthlyDiscoveries: t.field({
     type: MonthlyDiscoveriesType,
     description:
-      'The discoveries of the month: three books chosen for the reader from their hearts, ' +
+      'The discoveries of the month: five books chosen for the reader from their hearts, ' +
       'stars, drops and dismissals, each with why, in one format and the app’s language.\n\n' +
-      'The model is asked when the month has no selection yet or fewer than three are left, ' +
+      'The model is asked when the month has no selection yet or fewer than five are left, ' +
       'at most once a day: that answer takes about forty seconds. Every other one reads the ' +
       'stored selection.',
     args: { format: t.arg({ type: ReleaseFormatEnum, required: true }) },

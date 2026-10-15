@@ -84,11 +84,13 @@ beforeEach(() => {
     suggested('Silo', 'Hugh Howey', ['Dune']),
     suggested('Hypérion', 'Dan Simmons'),
     suggested('Ilium', 'Dan Simmons'),
+    suggested('Seveneves', 'Neal Stephenson'),
+    suggested('Expiration', 'Ted Chiang'),
   )
 })
 
 describe('the month’s discoveries', () => {
-  test('the first look asks the model and shows three, held and invented books left out', async () => {
+  test('the first look asks the model and shows five, held and invented books left out', async () => {
     const discoveries = await SuggestionUseCase.monthly(reader, 'audiobook', 'fr', october)
 
     expect(prompts).toHaveLength(1)
@@ -98,6 +100,8 @@ describe('the month’s discoveries', () => {
       'La Sanction',
       'Silo',
       'Hypérion',
+      'Ilium',
+      'Seveneves',
     ] as never)
     const [sanction] = discoveries.suggestions
     expect(sanction?.references).toEqual([
@@ -111,7 +115,7 @@ describe('the month’s discoveries', () => {
     expect(sanction?.awaitableFormats).toEqual(['book', 'audiobook'])
     expect(
       (fake.data('suggestion-queues', reader)?.suggestions as unknown[] | undefined)?.length,
-    ).toBe(4)
+    ).toBe(6)
   })
 
   test('a second look the same day reads the stored selection without asking', async () => {
@@ -126,7 +130,7 @@ describe('the month’s discoveries', () => {
     )
 
     expect(prompts).toHaveLength(1)
-    expect(again.suggestions).toHaveLength(3)
+    expect(again.suggestions).toHaveLength(5)
     // The library, the sagas' opinions, the dismissals and the awaited editions
     // are four queries; the queue one get, the watches and descriptions getAlls.
     expect(fake.queryReads - before.query).toBe(4)
@@ -143,6 +147,8 @@ describe('the month’s discoveries', () => {
       'La Sanction',
       'Hypérion',
       'Ilium',
+      'Seveneves',
+      'Expiration',
     ] as never)
     await SuggestionUseCase.monthly(reader, 'audiobook', 'fr', new Date('2026-11-02T09:00:00Z'))
     expect(prompts[1]).toContain('## Déjà proposés, pas intéressé\n- « Silo » — Hugh Howey')
@@ -163,6 +169,8 @@ describe('the month’s discoveries', () => {
     expect(after.suggestions.map((view) => view.suggestion.title)).toEqual([
       'Hypérion',
       'Ilium',
+      'Seveneves',
+      'Expiration',
     ] as never)
   })
 
@@ -170,9 +178,9 @@ describe('the month’s discoveries', () => {
     await SuggestionUseCase.monthly(reader, 'audiobook', 'fr', october)
     for (const key of ['silo--hugh-howey', 'hyperion--dan-simmons'])
       await SuggestionUseCase.dismiss(reader, key)
-    answering(suggested('Seveneves', 'Neal Stephenson'), suggested('Ilium', 'Dan Simmons'))
+    answering(suggested('Neuromancien', 'William Gibson'), suggested('Ilium', 'Dan Simmons'))
     const sameDay = await SuggestionUseCase.monthly(reader, 'audiobook', 'fr', october)
-    expect(sameDay.suggestions).toHaveLength(2)
+    expect(sameDay.suggestions).toHaveLength(4)
 
     const nextDay = await SuggestionUseCase.monthly(
       reader,
@@ -185,12 +193,14 @@ describe('the month’s discoveries', () => {
       'La Sanction',
       'Ilium',
       'Seveneves',
+      'Expiration',
+      'Neuromancien',
     ] as never)
   })
 
   test('a new month starts afresh', async () => {
     await SuggestionUseCase.monthly(reader, 'audiobook', 'fr', october)
-    answering(suggested('Seveneves', 'Neal Stephenson'))
+    answering(suggested('Neuromancien', 'William Gibson'))
     const november = await SuggestionUseCase.monthly(
       reader,
       'audiobook',
@@ -200,7 +210,7 @@ describe('the month’s discoveries', () => {
 
     expect(november.month).toBe('2026-11')
     expect(november.suggestions.map((view) => view.suggestion.title)).toEqual([
-      'Seveneves',
+      'Neuromancien',
     ] as never)
   })
 
@@ -214,7 +224,7 @@ describe('the month’s discoveries', () => {
       new Date('2026-11-01T09:00:00Z'),
     )
 
-    expect(november.suggestions).toHaveLength(3)
+    expect(november.suggestions).toHaveLength(5)
   })
 
   test('without a key, nothing is asked and the line is empty', async () => {

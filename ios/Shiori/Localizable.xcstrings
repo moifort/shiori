@@ -33,22 +33,6 @@
         }
       }
     },
-    "%@ %@ — %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ %2$@ — %3$@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ %2$@ — %3$@"
-          }
-        }
-      }
-    },
     "%@ (série)" : {
       "localizations" : {
         "en" : {
@@ -4393,18 +4377,18 @@
         }
       }
     },
-    "D’après vos coups de cœur" : {
+    "D’après vos préférences" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "From your favourites"
+            "value" : "From your tastes"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "D’après vos coups de cœur"
+            "value" : "D’après vos préférences"
           }
         }
       }
@@ -11209,22 +11193,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vos livres audio, avec ce que vous avez déjà écouté."
-          }
-        }
-      }
-    },
-    "Vos livres de référence" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your books it draws on"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vos livres de référence"
           }
         }
       }

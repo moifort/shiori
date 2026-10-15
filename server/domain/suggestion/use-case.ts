@@ -39,7 +39,7 @@ const logger = createLogger('suggestion')
 const CHECKS_AT_ONCE = 5
 
 export namespace SuggestionUseCase {
-  /** The month's discoveries: the first three suggestions the reader neither
+  /** The month's discoveries: the first five suggestions the reader neither
    *  holds, dismissed nor awaits, in one format and the app's language. The
    *  model is asked first when the month has none yet, or too few are left —
    *  never twice a day — which takes about forty seconds; a failure keeps the

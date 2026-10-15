@@ -149,7 +149,7 @@ export const MonthlyDiscoveriesType = builder
       suggestions: t.field({
         type: [SuggestionType],
         description:
-          'The first three the reader neither holds, dismissed nor awaits. Empty when none ' +
+          'The first five the reader neither holds, dismissed nor awaits. Empty when none ' +
           'are left, or the server has no model key.',
         resolve: (discoveries) => discoveries.suggestions,
       }),
