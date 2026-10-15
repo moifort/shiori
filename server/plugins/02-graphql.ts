@@ -4,7 +4,11 @@ import * as Sentry from '@sentry/node'
 import { GraphQLError } from 'graphql'
 import type { GraphQLContext } from '~/domain/shared/graphql/builder'
 import { schema } from '~/domain/shared/graphql/schema'
+import { createLogger } from '~/system/logger'
+import { startReadMeter } from '~/system/read-meter'
 import { setApollo } from '~/utils/apollo'
+
+const logger = createLogger('graphql')
 
 // Apollo answers resolver exceptions with HTTP 200 + errors[], so Nitro's
 // `error` hook never sees them. Capture unexpected ones (anything that is not
@@ -24,8 +28,31 @@ const sentryErrorCapture = {
   }),
 }
 
+// One line per operation, to find the slow screens: which operation, how long
+// it took, and the Firestore reads it made. Info level, so never sent to Sentry;
+// in a built bundle the context keys land under `jsonPayload`, where Cloud
+// Logging can sum them per operation.
+const operationMetrics: ApolloServerPlugin<GraphQLContext> = {
+  requestDidStart: async ({ contextValue }) => {
+    const started = performance.now()
+    const reads = startReadMeter(contextValue.event.context)
+    return {
+      willSendResponse: async ({ operationName, operation, errors }) => {
+        logger.info('operation served', {
+          operation: operationName ?? 'anonymous',
+          type: operation?.operation,
+          durationMs: Math.round(performance.now() - started),
+          ...reads,
+          reads: reads.docReads + reads.queryDocs,
+          errors: errors?.length ?? 0,
+        })
+      },
+    }
+  },
+}
+
 export default defineNitroPlugin(async () => {
-  const plugins: ApolloServerPlugin<GraphQLContext>[] = [sentryErrorCapture]
+  const plugins: ApolloServerPlugin<GraphQLContext>[] = [sentryErrorCapture, operationMetrics]
   // Dev-only: serve the embedded Apollo Sandbox on GET /graphql (Accept: text/html).
   if (import.meta.dev) plugins.push(ApolloServerPluginLandingPageLocalDefault({ embed: true }))
   const apollo = new ApolloServer<GraphQLContext>({
