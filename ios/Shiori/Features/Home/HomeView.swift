@@ -97,7 +97,7 @@ struct HomeView: View {
         .sheet(item: $selectedBook) { book in
             // The book's own writes post the change notice this screen
             // reloads on: reloading here as well asked the server twice.
-            BookView(bookId: book.id)
+            BookScreen(bookId: book.id)
         }
         // An import or a sync asked for from the settings posts the change
         // notice as it lands: nothing is left to reload on dismissal.

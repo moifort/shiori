@@ -13,10 +13,13 @@ import SwiftUI
 ///
 /// The form edits text as the reader sees it and works out the difference only
 /// on save, so a field left alone is never sent and one emptied is cleared.
-struct BookEditView: View {
+struct BookEditSheet: View {
     let book: Book
     /// Answers nil once saved, or the message to show when the save failed.
     let onSave: (BookCorrection, Int?) async -> String?
+    /// The reader's subgenres and saga names, offered under the fields; nil
+    /// when the read failed, since the proposals are a convenience.
+    let loadVocabulary: () async -> BookVocabulary?
     @Environment(\.dismiss) private var dismiss
 
     @State private var title: String
@@ -53,9 +56,14 @@ struct BookEditView: View {
     /// so a missed volume joins its siblings under the name they already carry.
     @State private var seriesSuggestions: [String] = []
 
-    init(book: Book, onSave: @escaping (BookCorrection, Int?) async -> String?) {
+    init(
+        book: Book,
+        loadVocabulary: @escaping () async -> BookVocabulary?,
+        onSave: @escaping (BookCorrection, Int?) async -> String?
+    ) {
         self.book = book
         self.onSave = onSave
+        self.loadVocabulary = loadVocabulary
         _title = State(initialValue: book.title)
         _authors = State(initialValue: book.authors.joined(separator: ", "))
         _format = State(initialValue: book.format)
@@ -244,7 +252,7 @@ struct BookEditView: View {
             // Both proposal lists in one request. Empty when the read failed,
             // since the proposals are a convenience.
             .task {
-                guard let vocabulary = try? await BookAPI.vocabulary() else { return }
+                guard let vocabulary = await loadVocabulary() else { return }
                 subgenreSuggestions = vocabulary.subgenres
                 seriesSuggestions = vocabulary.sagas
             }
@@ -536,7 +544,7 @@ private struct LabeledField<Field: View>: View {
 }
 
 #Preview {
-    BookEditView(
+    BookEditSheet(
         book: Book(
             id: "1",
             title: "Le Nom du vent",
@@ -551,6 +559,7 @@ private struct LabeledField<Field: View>: View {
             status: .read,
             rating: 4
         ),
+        loadVocabulary: { (["Roman initiatique"], ["Chronique du tueur de roi"]) },
         onSave: { _, _ in nil }
     )
 }

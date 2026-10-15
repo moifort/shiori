@@ -17,10 +17,20 @@ final class BookViewModel {
     /// seconds, so the screen says what it is waiting for.
     private(set) var isRefreshing = false
 
-    private let bookId: String
+    /// What the page offers to await in the app's language, and what it awaits.
+    private(set) var offer = EditionOffer()
+    /// An await refused, said in its own alert.
+    var awaitFailed: String?
 
-    init(bookId: String) {
+    private let bookId: String
+    private let client: BookClient
+    /// The awaits sent and not answered yet, by format: the page already shows
+    /// them, so giving one up waits for the server's id.
+    private var awaiting: [ReleaseFormat: Task<AwaitedEdition?, Never>] = [:]
+
+    init(bookId: String, client: BookClient) {
         self.bookId = bookId
+        self.client = client
     }
 
     /// The book alone: its saga's catalogue is the series screen's business,
@@ -29,7 +39,7 @@ final class BookViewModel {
         isLoading = true
         errorMessage = nil
         do {
-            book = try await BookAPI.book(id: bookId)
+            book = try await client.book(bookId)
         } catch {
             errorMessage = reportError(error)
         }
@@ -37,11 +47,11 @@ final class BookViewModel {
     }
 
     func setStatus(_ status: ReadingStatus) async {
-        await mutate { try await BookAPI.setStatus(id: self.bookId, status: status) }
+        await mutate { [client, bookId] in try await client.setStatus(bookId, status) }
     }
 
     func rate(_ stars: Int) async {
-        await mutate { try await BookAPI.rate(id: self.bookId, stars: stars) }
+        await mutate { [client, bookId] in try await client.rate(bookId, stars) }
     }
 
     /// Saves the edit form: the corrected facts first, then the rating when it
@@ -55,11 +65,7 @@ final class BookViewModel {
         do {
             // One request for the whole sheet: the stars ride the correction,
             // and only when they changed.
-            let saved = try await BookAPI.save(
-                id: bookId,
-                correction: correction,
-                rating: rating != book.rating ? .some(rating) : .none
-            )
+            let saved = try await client.save(bookId, correction, rating != book.rating ? .some(rating) : .none)
             if let saved { self.book = saved }
             return true
         } catch {
@@ -74,7 +80,7 @@ final class BookViewModel {
         isRefreshing = true
         defer { isRefreshing = false }
         do {
-            book = try await BookAPI.refresh(id: bookId)
+            book = try await client.refresh(bookId)
         } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {
             errorMessage = String(localized: "Vous avez utilisé tous vos scans. La mise à jour d'une fiche en consomme un.")
         } catch let APIError.domain(code, _) where code == "SCAN_FAILED" {
@@ -85,7 +91,7 @@ final class BookViewModel {
     }
 
     func setFavorite(_ favorite: Bool) async {
-        await mutate { try await BookAPI.setFavorite(id: self.bookId, favorite: favorite) }
+        await mutate { [client, bookId] in try await client.setFavorite(bookId, favorite) }
     }
 
     /// Returns false when the call failed, so the sheet stays open with what
@@ -94,7 +100,7 @@ final class BookViewModel {
         isSaving = true
         defer { isSaving = false }
         do {
-            book = try await BookAPI.setRecommendation(id: bookId, recommendation: recommendation)
+            book = try await client.setRecommendation(bookId, recommendation)
             return true
         } catch {
             errorMessage = reportError(error)
@@ -108,7 +114,7 @@ final class BookViewModel {
         isSaving = true
         defer { isSaving = false }
         do {
-            book = try await BookAPI.setNote(id: bookId, note: note)
+            book = try await client.setNote(bookId, note)
             return true
         } catch {
             errorMessage = reportError(error)
@@ -117,14 +123,14 @@ final class BookViewModel {
     }
 
     func setHidden(_ hidden: Bool) async {
-        await mutate { try await BookAPI.setHidden(id: self.bookId, hidden: hidden) }
+        await mutate { [client, bookId] in try await client.setHidden(bookId, hidden) }
     }
 
     func delete() async -> Bool {
         isSaving = true
         defer { isSaving = false }
         do {
-            try await BookAPI.delete(id: bookId)
+            try await client.delete(bookId)
             return true
         } catch {
             errorMessage = reportError(error)
@@ -132,7 +138,7 @@ final class BookViewModel {
         }
     }
 
-    private func mutate(_ operation: @escaping () async throws -> Book) async {
+    private func mutate(_ operation: @escaping @Sendable () async throws -> Book) async {
         isSaving = true
         defer { isSaving = false }
         do {
@@ -144,5 +150,56 @@ final class BookViewModel {
 
     func dismissError() {
         errorMessage = nil
+    }
+
+    // MARK: - Awaited editions
+
+    func loadOffer() async {
+        do {
+            offer = try await client.offer(bookId) ?? EditionOffer()
+        } catch {
+            _ = reportError(error)
+        }
+    }
+
+    /// Awaits the book's edition in the app's language. The page shows it
+    /// awaited at once, with no loader: the server looks it up on the web
+    /// behind, and its answer replaces the line when it comes.
+    func awaitEdition(_ format: ReleaseFormat) {
+        guard let book else { return }
+        let pending = AwaitedEdition.pending(format: format, of: book)
+        offer.awaited.append(pending)
+        let (client, bookId) = (client, bookId)
+        awaiting[format] = Task {
+            defer { awaiting[format] = nil }
+            do {
+                let edition = try await client.awaitEdition(bookId, format)
+                // Unless the reader gave it up meanwhile.
+                if let index = offer.awaited.firstIndex(where: { $0.id == pending.id }) {
+                    offer.awaited[index] = edition
+                }
+                return edition
+            } catch {
+                offer.awaited.removeAll { $0.id == pending.id }
+                awaitFailed = reportError(error)
+                return nil
+            }
+        }
+    }
+
+    func stopAwaiting(_ edition: AwaitedEdition) async {
+        var edition = edition
+        // Given up before the server answered: stopped once it has.
+        if let pending = awaiting[edition.format] {
+            offer.awaited.removeAll { $0.id == edition.id }
+            guard let answered = await pending.value else { return }
+            edition = answered
+        }
+        do {
+            try await client.stopAwaiting(edition.id)
+            offer.awaited.removeAll { $0.id == edition.id }
+        } catch {
+            awaitFailed = reportError(error)
+        }
     }
 }

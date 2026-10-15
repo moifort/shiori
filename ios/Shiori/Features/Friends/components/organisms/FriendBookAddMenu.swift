@@ -58,7 +58,7 @@ struct FriendBookAddMenu: View {
 
 #Preview {
     NavigationStack {
-        Text("Chez Camille")
+        Text(verbatim: "Chez Camille")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     FriendBookAddMenu(

@@ -8,6 +8,9 @@ struct GenreEditSheet: View {
     let book: Book
     /// Answers nil once saved, or the message to show when the save failed.
     let onSave: (BookCorrection) async -> String?
+    /// The reader's subgenres, offered under the field; empty when the read
+    /// failed, since the proposals are a convenience.
+    let loadSubgenres: () async -> [String]
     @Environment(\.dismiss) private var dismiss
 
     @State private var genre: BookGenre?
@@ -16,9 +19,14 @@ struct GenreEditSheet: View {
     @State private var isSaving = false
     @State private var errorMessage: String?
 
-    init(book: Book, onSave: @escaping (BookCorrection) async -> String?) {
+    init(
+        book: Book,
+        loadSubgenres: @escaping () async -> [String],
+        onSave: @escaping (BookCorrection) async -> String?
+    ) {
         self.book = book
         self.onSave = onSave
+        self.loadSubgenres = loadSubgenres
         _genre = State(initialValue: book.genre)
         _subgenres = State(initialValue: book.subgenres.joined(separator: ", "))
     }
@@ -80,7 +88,7 @@ struct GenreEditSheet: View {
             }
             // The vocabulary is a convenience: a failed read leaves the field
             // plain rather than the sheet unusable.
-            .task { suggestions = (try? await BookAPI.subgenres()) ?? [] }
+            .task { suggestions = await loadSubgenres() }
         }
         .presentationDetents([.medium, .large])
     }
@@ -118,6 +126,7 @@ struct GenreEditSheet: View {
             series: SeriesMembership(id: "s1", name: "Chronique du tueur de roi", volume: 1, kind: .main),
             status: .reading
         ),
+        loadSubgenres: { ["Roman initiatique", "Fantasy urbaine"] },
         onSave: { _ in nil }
     )
 }

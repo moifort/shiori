@@ -307,19 +307,19 @@ struct ScanReviewPage: View {
             ScanIdentitySheet(book: book) { draft.apply($0) }
         }
         .sheet(isPresented: $editsGenre) {
-            GenreEditSheet(book: book) { correction in
+            GenreEditSheet(book: book, loadSubgenres: { (try? await BookClient.live.subgenres()) ?? [] }) { correction in
                 draft.apply(correction)
                 return nil
             }
         }
         .sheet(isPresented: $editsSeries) {
-            SeriesJoinSheet(book: book) { correction in
+            SeriesJoinSheet(book: book, loadVocabulary: { try? await BookClient.live.vocabulary() }) { correction in
                 if case let .set(placement) = correction.series { renamedSeries = placement }
                 return nil
             }
         }
         .sheet(isPresented: $rates) {
-            RatingPromptView(
+            RatingPromptSheet(
                 current: draft.rating > 0 ? draft.rating : nil,
                 onRemove: {
                     rates = false
@@ -389,7 +389,7 @@ private struct OwnedCopySection: View {
     var body: some View {
         Section {
             NavigationLink {
-                BookView(bookId: copy.id)
+                BookScreen(bookId: copy.id)
             } label: {
                 Label {
                     VStack(alignment: .leading, spacing: 2) {

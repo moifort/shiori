@@ -7,7 +7,7 @@ import SwiftUI
 ///
 /// The sheet carries its own NavigationStack, so the series screen pushes inside
 /// it and closing the sheet always lands back on the row the reader tapped.
-struct BookView: View {
+struct BookScreen: View {
     let bookId: String
     var onChanged: (Book) -> Void = { _ in }
     var onDeleted: (String) -> Void = { _ in }
@@ -20,21 +20,21 @@ struct BookView: View {
     @State private var showNote = false
     @State private var showRatingPrompt = false
     @State private var editedField: BookField?
-    @State private var confirmDelete = false
     @State private var openSeries: SeriesDestination?
-    /// What the page offers to await in the app's language, and what it awaits.
-    @State private var offer = EditionOffer()
-    /// The awaits sent and not answered yet, by format: the page already shows
-    /// them, so giving one up waits for the server's id.
-    @State private var awaiting: [ReleaseFormat: Task<AwaitedEdition?, Never>] = [:]
-    @State private var awaitFailed: String?
     @Environment(\.dismiss) private var dismiss
+    private let client: BookClient
 
-    init(bookId: String, onChanged: @escaping (Book) -> Void = { _ in }, onDeleted: @escaping (String) -> Void = { _ in }) {
+    init(
+        bookId: String,
+        onChanged: @escaping (Book) -> Void = { _ in },
+        onDeleted: @escaping (String) -> Void = { _ in },
+        client: BookClient = .live
+    ) {
         self.bookId = bookId
         self.onChanged = onChanged
         self.onDeleted = onDeleted
-        _viewModel = State(wrappedValue: BookViewModel(bookId: bookId))
+        self.client = client
+        _viewModel = State(wrappedValue: BookViewModel(bookId: bookId, client: client))
     }
 
     var body: some View {
@@ -59,8 +59,8 @@ struct BookView: View {
                         onCorrect: { correction in
                             run { _ = await viewModel.save(correction, rating: book.rating) }
                         },
-                        awaited: offer.awaited,
-                        onStopAwaiting: { edition in Task { await stopAwaiting(edition) } }
+                        awaited: viewModel.offer.awaited,
+                        onStopAwaiting: { edition in Task { await viewModel.stopAwaiting(edition) } }
                     )
                 } else if viewModel.isLoading {
                     ProgressView()
@@ -95,7 +95,7 @@ struct BookView: View {
             .disabled(viewModel.isRefreshing)
             .sheet(isPresented: $showEditor) {
                 if let book = viewModel.book {
-                    BookEditView(book: book) { correction, rating in
+                    BookEditSheet(book: book, loadVocabulary: loadVocabulary) { correction, rating in
                         let saved = await viewModel.save(correction, rating: rating)
                         if let book = viewModel.book { onChanged(book) }
                         guard !saved else { return nil }
@@ -108,7 +108,7 @@ struct BookView: View {
             }
             .sheet(isPresented: $showGenreEditor) {
                 if let book = viewModel.book {
-                    GenreEditSheet(book: book) { correction in
+                    GenreEditSheet(book: book, loadSubgenres: loadSubgenres) { correction in
                         let saved = await viewModel.save(correction, rating: book.rating)
                         if let book = viewModel.book { onChanged(book) }
                         guard !saved else { return nil }
@@ -119,7 +119,7 @@ struct BookView: View {
             }
             .sheet(isPresented: $showSeriesJoin) {
                 if let book = viewModel.book {
-                    SeriesJoinSheet(book: book) { correction in
+                    SeriesJoinSheet(book: book, loadVocabulary: loadVocabulary) { correction in
                         let saved = await viewModel.save(correction, rating: book.rating)
                         if let book = viewModel.book { onChanged(book) }
                         guard !saved else { return nil }
@@ -162,7 +162,7 @@ struct BookView: View {
                 }
             }
             .sheet(isPresented: $showRatingPrompt) {
-                RatingPromptView(current: viewModel.book?.rating) { stars in
+                RatingPromptSheet(current: viewModel.book?.rating) { stars in
                     showRatingPrompt = false
                     run { await viewModel.rate(stars) }
                 }
@@ -183,67 +183,33 @@ struct BookView: View {
             }
         }
         .task { await viewModel.load() }
-        .task { await loadOffer() }
+        .task { await viewModel.loadOffer() }
         .alert(
             "Impossible de suivre ce livre",
-            isPresented: .init(get: { awaitFailed != nil }, set: { if !$0 { awaitFailed = nil } })
+            isPresented: .init(
+                get: { viewModel.awaitFailed != nil },
+                set: { if !$0 { viewModel.awaitFailed = nil } }
+            )
         ) {
-            Button("OK", role: .cancel) { awaitFailed = nil }
+            Button("OK", role: .cancel) { viewModel.awaitFailed = nil }
         } message: {
-            Text(awaitFailed ?? "")
+            Text(viewModel.awaitFailed ?? "")
         }
         .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
-            Task { await loadOffer() }
+            Task { await viewModel.loadOffer() }
         }
     }
 
-    // MARK: - Awaited editions
+    // MARK: - Vocabulary
 
-    private func loadOffer() async {
-        do {
-            offer = try await AwaitedAPI.offer(bookId: bookId) ?? EditionOffer()
-        } catch {
-            _ = reportError(error)
-        }
+    /// The proposals under the edit forms' fields: a convenience, so a failed
+    /// read is nil rather than an error.
+    private func loadVocabulary() async -> BookVocabulary? {
+        try? await client.vocabulary()
     }
 
-    /// Awaits the book's edition in the app's language. The page shows it
-    /// awaited at once, with no loader: the server looks it up on the web
-    /// behind, and its answer replaces the line when it comes.
-    private func awaitEdition(_ format: ReleaseFormat, of book: Book) {
-        let pending = AwaitedEdition.pending(format: format, of: book)
-        offer.awaited.append(pending)
-        awaiting[format] = Task {
-            defer { awaiting[format] = nil }
-            do {
-                let edition = try await AwaitedAPI.awaitEdition(bookId: bookId, format: format)
-                // Unless the reader gave it up meanwhile.
-                if let index = offer.awaited.firstIndex(where: { $0.id == pending.id }) {
-                    offer.awaited[index] = edition
-                }
-                return edition
-            } catch {
-                offer.awaited.removeAll { $0.id == pending.id }
-                awaitFailed = reportError(error)
-                return nil
-            }
-        }
-    }
-
-    private func stopAwaiting(_ edition: AwaitedEdition) async {
-        var edition = edition
-        // Given up before the server answered: stopped once it has.
-        if let pending = awaiting[edition.format] {
-            offer.awaited.removeAll { $0.id == edition.id }
-            guard let answered = await pending.value else { return }
-            edition = answered
-        }
-        do {
-            try await AwaitedAPI.stop(id: edition.id)
-            offer.awaited.removeAll { $0.id == edition.id }
-        } catch {
-            awaitFailed = reportError(error)
-        }
+    private func loadSubgenres() async -> [String] {
+        (try? await client.subgenres()) ?? []
     }
 
     // MARK: - Toolbar
@@ -274,92 +240,16 @@ struct BookView: View {
     }
 
     private func menu(for book: Book) -> some View {
-        Menu {
-            // Status and sharing are switched on the page itself, and the series
-            // opens from its row: the menu only holds what the page cannot do.
-            Button("Modifier", systemImage: "pencil") {
-                showEditor = true
-            }
-            .accessibilityIdentifier("book-edit")
-
-            // As on an author's page: the book looked up again, for a record
-            // scanned thin or before the scan knew better. Typed corrections
-            // stay with "Modifier"; this one rewrites only what the web says.
-            Button("Mettre à jour", systemImage: "arrow.clockwise") {
-                run { await viewModel.refresh() }
-            }
-            .accessibilityIdentifier("book-refresh")
-
-            // A volume the scan did not recognise as one is filed from here,
-            // without going through the whole edit form. Only for a book in no
-            // saga: a filed one changes series from the edit form.
-            if book.series == nil {
-                Button("Ajouter à une série", systemImage: "square.stack") {
-                    showSeriesJoin = true
-                }
-                .accessibilityIdentifier("book-join-series")
-            }
-
-            // As in Vinarium: who pressed the book on the reader, picked from
-            // their contacts. Once recorded, it is also corrected from its own
-            // section on the page.
-            Button("Conseillé par…", systemImage: "person.badge.plus") {
-                showRecommendation = true
-            }
-            .accessibilityIdentifier("book-recommend")
-
-            // Its French edition watched for and announced the day it is out:
-            // translated or recorded for a book in another language, recorded
-            // for a printed one in French, shown out at once when a store
-            // sells it already.
-            ForEach(offer.awaitable) { format in
-                Button(format.awaitLabel, systemImage: format == .audiobook ? "headphones" : "character.book.closed") {
-                    awaitEdition(format, of: book)
-                }
-                .accessibilityIdentifier("book-await-\(format.rawValue)")
-            }
-            ForEach(offer.awaited) { edition in
-                Button(
-                    edition.format == .audiobook
-                        ? String(localized: "Ne plus guetter en audio")
-                        : String(localized: "Ne plus guetter en français"),
-                    systemImage: "bell.slash"
-                ) {
-                    Task { await stopAwaiting(edition) }
-                }
-            }
-
-            // Not on the segmented picker, which holds the states a book moves
-            // through: dropping one is an ending, chosen once, from here.
-            if book.status == .dropped {
-                Button("Reprendre", systemImage: "arrow.uturn.backward") {
-                    run { await viewModel.setStatus(.reading) }
-                }
-                .accessibilityIdentifier("book-resume")
-            } else {
-                Button("Abandonner", systemImage: "hand.thumbsdown") {
-                    run { await viewModel.setStatus(.dropped) }
-                }
-                .accessibilityIdentifier("book-drop")
-            }
-
-            Button("Supprimer", systemImage: "trash", role: .destructive) {
-                confirmDelete = true
-            }
-            .accessibilityIdentifier("book-delete")
-        } label: {
-            Image(systemName: "ellipsis")
-        }
-        .accessibilityLabel(Text("Plus d'actions"))
-        .accessibilityIdentifier("book-detail-menu")
-        // Attached to the menu, as in Vinarium: a dialog hung on the sheet's root
-        // would anchor to the whole screen instead of the button that asked.
-        .confirmationDialog(
-            "Supprimer ce livre ?",
-            isPresented: $confirmDelete,
-            titleVisibility: .visible
-        ) {
-            Button("Supprimer", role: .destructive) {
+        BookActionsMenu(book: book, offer: viewModel.offer) { action in
+            switch action {
+            case .edit: showEditor = true
+            case .refresh: run { await viewModel.refresh() }
+            case .joinSeries: showSeriesJoin = true
+            case .recommend: showRecommendation = true
+            case let .awaitEdition(format): viewModel.awaitEdition(format)
+            case let .stopAwaiting(edition): Task { await viewModel.stopAwaiting(edition) }
+            case let .setStatus(status): run { await viewModel.setStatus(status) }
+            case .delete:
                 Task {
                     if await viewModel.delete() {
                         onDeleted(bookId)
@@ -367,10 +257,6 @@ struct BookView: View {
                     }
                 }
             }
-            .accessibilityIdentifier("choice-delete")
-            Button("Annuler", role: .cancel) {}
-        } message: {
-            Text("Votre note sera perdue. Cette action est définitive.")
         }
     }
 
@@ -382,4 +268,8 @@ struct BookView: View {
             if let book = viewModel.book { onChanged(book) }
         }
     }
+}
+
+#Preview {
+    BookScreen(bookId: "preview", client: .preview)
 }

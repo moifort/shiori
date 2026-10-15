@@ -152,7 +152,7 @@ struct FieldEditSheet: View {
             String(localized: "L'année doit être un nombre.")
         case .pageCount where !trimmed.isEmpty && (Int(trimmed) ?? 0) < 1:
             String(localized: "Le nombre de pages doit être un nombre positif.")
-        case .isbn13 where !isbnDigits.isEmpty && !BookEditView.isValidIsbn13(isbnDigits):
+        case .isbn13 where !isbnDigits.isEmpty && !BookEditSheet.isValidIsbn13(isbnDigits):
             String(localized: "L'ISBN doit compter 13 chiffres valides.")
         default:
             nil

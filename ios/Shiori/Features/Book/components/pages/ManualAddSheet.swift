@@ -6,8 +6,9 @@ import SwiftUI
 ///
 /// Only the title is required. A book remembered from a conversation is still a
 /// book, and demanding an author would send the reader back to a notes app.
-struct ManualAddView: View {
-    var onAdded: (Book) -> Void
+struct ManualAddSheet: View {
+    /// Adds the book; answers nil once added, or the message to show.
+    let onAdd: (BookDraft) async -> String?
     @Environment(\.dismiss) private var dismiss
 
     @State private var title = ""
@@ -83,25 +84,21 @@ struct ManualAddView: View {
     private func add() async {
         isSaving = true
         defer { isSaving = false }
-        do {
-            let book = try await BookAPI.add(
-                BookDraft(
-                    title: trimmedTitle,
-                    authors: trimmedAuthor.isEmpty ? [] : [trimmedAuthor],
-                    format: format,
-                    media: media,
-                    status: status
-                )
-            )
-            track(.bookAdded(source: .manual))
-            onAdded(book)
+        let draft = BookDraft(
+            title: trimmedTitle,
+            authors: trimmedAuthor.isEmpty ? [] : [trimmedAuthor],
+            format: format,
+            media: media,
+            status: status
+        )
+        if let failure = await onAdd(draft) {
+            errorMessage = failure
+        } else {
             dismiss()
-        } catch {
-            errorMessage = reportError(error)
         }
     }
 }
 
 #Preview {
-    ManualAddView(onAdded: { _ in })
+    ManualAddSheet { _ in nil }
 }

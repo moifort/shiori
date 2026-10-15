@@ -12,6 +12,9 @@ struct SeriesJoinSheet: View {
     let book: Book
     /// Answers nil once saved, or the message to show when the save failed.
     let onSave: (BookCorrection) async -> String?
+    /// The reader's subgenres and saga names, offered under the fields; nil
+    /// when the read failed, since the proposals are a convenience.
+    let loadVocabulary: () async -> BookVocabulary?
     @Environment(\.dismiss) private var dismiss
 
     @State private var name: String
@@ -22,9 +25,14 @@ struct SeriesJoinSheet: View {
 
     /// Opens on the saga the book is filed in, if any: a scan being checked
     /// may have read it wrong.
-    init(book: Book, onSave: @escaping (BookCorrection) async -> String?) {
+    init(
+        book: Book,
+        loadVocabulary: @escaping () async -> BookVocabulary?,
+        onSave: @escaping (BookCorrection) async -> String?
+    ) {
         self.book = book
         self.onSave = onSave
+        self.loadVocabulary = loadVocabulary
         _name = State(initialValue: book.series?.name ?? "")
         _volume = State(initialValue: book.series?.volume.map(String.init) ?? "")
     }
@@ -85,7 +93,7 @@ struct SeriesJoinSheet: View {
             }
             // The proposals are a convenience: a failed read leaves the field
             // plain rather than the sheet unusable.
-            .task { suggestions = (try? await BookAPI.vocabulary())?.sagas ?? [] }
+            .task { suggestions = await loadVocabulary()?.sagas ?? [] }
         }
         .presentationDetents([.medium, .large])
     }
@@ -125,6 +133,7 @@ struct SeriesJoinSheet: View {
 #Preview {
     SeriesJoinSheet(
         book: Book(id: "1", title: "Gataca", authors: ["Franck Thilliez"], status: .read),
+        loadVocabulary: { ([], ["Franck Sharko et Lucie Henebelle"]) },
         onSave: { _ in nil }
     )
 }

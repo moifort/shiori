@@ -124,7 +124,7 @@ struct SuggestionView: View {
             }
         }
         .sheet(item: $openReference) { reference in
-            BookView(bookId: reference.bookId)
+            BookScreen(bookId: reference.bookId)
         }
     }
 

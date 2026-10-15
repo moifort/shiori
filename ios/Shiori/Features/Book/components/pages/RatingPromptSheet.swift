@@ -13,7 +13,7 @@ import SwiftUI
 /// separate confirm button would only be a second tap for the same decision.
 /// Taking a rating back is its own button, offered only where the caller can
 /// honour it: a saga's rating can be withdrawn, a book's cannot.
-struct RatingPromptView: View {
+struct RatingPromptSheet: View {
     enum Subject { case book, series }
 
     var subject: Subject = .book
@@ -80,6 +80,6 @@ struct RatingPromptView: View {
 
 #Preview {
     Color.clear.sheet(isPresented: .constant(true)) {
-        RatingPromptView(onRate: { _ in })
+        RatingPromptSheet(onRate: { _ in })
     }
 }

@@ -3,6 +3,9 @@ import Foundation
 /// Everything the app does to one book. Each call returns the whole record, so
 /// a screen never has to guess what the server changed alongside what it asked
 /// for — rating a book also marks it read, and the answer says so.
+/// The subgenres and saga names the reader already used, offered as they type.
+typealias BookVocabulary = (subgenres: [String], sagas: [String])
+
 enum BookAPI {
     static func book(id: String) async throws -> Book? {
         #if DEBUG
@@ -153,7 +156,7 @@ enum BookAPI {
     /// field proposes: a vocabulary drawn from their own shelf.
     /// The edit form's proposals, both lists in one request: the subgenres the
     /// reader has used and the sagas they hold, each saga named once.
-    static func vocabulary() async throws -> (subgenres: [String], sagas: [String]) {
+    static func vocabulary() async throws -> BookVocabulary {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.EditVocabularyQuery()

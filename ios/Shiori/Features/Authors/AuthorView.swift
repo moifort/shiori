@@ -87,7 +87,7 @@ struct AuthorView: View {
         .task { await load() }
         .refreshable { await load() }
         .sheet(item: $selectedBook) { book in
-            BookView(
+            BookScreen(
                 bookId: book.id,
                 onChanged: { _ in Task { await load() } },
                 onDeleted: { _ in Task { await load() } }

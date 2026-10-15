@@ -42,7 +42,7 @@ struct LibraryView: View {
                 // An edit to this book patches its own row from what the sheet
                 // already holds, and the list lets the change notice it posts
                 // pass: reloading would cost a request per edit.
-                BookView(
+                BookScreen(
                     bookId: book.id,
                     onChanged: { viewModel.apply($0) },
                     onDeleted: { viewModel.remove(id: $0) }

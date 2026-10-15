@@ -127,7 +127,7 @@ struct ContentView: View {
             // Every list redraws itself on the data-change notice the mutation
             // posts, so the form only has to close.
             .sheet(isPresented: $showManualAdd) {
-                ManualAddView(onAdded: { _ in showManualAdd = false })
+                ManualAddScreen(onAdded: { _ in showManualAdd = false })
             }
             // A page shared from Safari or a bookshop app: the extension left it
             // in the container both halves see, and this is where it is picked

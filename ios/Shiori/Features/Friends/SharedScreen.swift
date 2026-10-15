@@ -70,7 +70,7 @@ struct SharedScreen: View {
                     FriendBookScreen(friendId: friend.userId, bookId: opened.book.id, friendName: friend.displayName)
                 }
             } else {
-                BookView(bookId: opened.book.id)
+                BookScreen(bookId: opened.book.id)
             }
         }
         .alert("J'ai reçu une invitation", isPresented: $showAccept) {

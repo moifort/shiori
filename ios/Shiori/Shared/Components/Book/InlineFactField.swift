@@ -75,7 +75,7 @@ enum BookFact: String, CaseIterable {
             correction.pageCount = change(from: book.pageCount, to: Int(trimmed))
         case .isbn13:
             let digits = trimmed.filter { !$0.isWhitespace && $0 != "-" }
-            guard digits.isEmpty || BookEditView.isValidIsbn13(digits) else { return nil }
+            guard digits.isEmpty || BookEditSheet.isValidIsbn13(digits) else { return nil }
             correction.isbn13 = change(from: book.isbn13, to: digits.isEmpty ? nil : digits)
         }
         return correction

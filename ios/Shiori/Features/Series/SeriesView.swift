@@ -139,7 +139,7 @@ struct SeriesView: View {
                     FriendBookScreen(friendId: friend.id, bookId: book.id, friendName: friend.name)
                 }
             } else {
-                BookView(
+                BookScreen(
                     bookId: book.id,
                     onChanged: { _ in Task { await load() } },
                     onDeleted: { _ in Task { await load() } }
@@ -147,7 +147,7 @@ struct SeriesView: View {
             }
         }
         .sheet(isPresented: $isRating) {
-            RatingPromptView(
+            RatingPromptSheet(
                 subject: .series,
                 current: opinion?.rating,
                 onRemove: {
@@ -195,7 +195,7 @@ struct SeriesView: View {
                 // answer says what the saga now carries, and every volume on
                 // screen takes it, field by field as the server does: a genre
                 // changed alone leaves each volume's subgenres its own.
-                GenreEditSheet(book: volume) { correction in
+                GenreEditSheet(book: volume, loadSubgenres: { (try? await BookClient.live.subgenres()) ?? [] }) { correction in
                     do {
                         let updated = try await BookAPI.update(id: volume.id, correction: correction)
                         owned = owned.map { book in
