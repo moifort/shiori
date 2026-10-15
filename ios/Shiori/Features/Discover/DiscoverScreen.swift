@@ -123,14 +123,31 @@ struct DiscoverScreen: View {
                 .presentationDetents([.medium, .large])
             }
         }
-        // One task for every section: six side by side asked the same
-        // sections again on each visit, and twice when the format moved.
         .task { await viewModel.loadOnAppear() }
+        .task { await viewModel.loadPicks() }
+        .task { await viewModel.loadAlerts() }
+        .task {
+            for format in ReleaseFormat.allCases { await viewModel.loadAwaited(format) }
+        }
+        // The format follows what the reader holds, known once the rows are in.
+        .task(id: viewModel.awardsFormat) { await viewModel.loadAwards(viewModel.awardsFormat) }
+        .task(id: viewModel.awardsFormat) { await viewModel.loadDiscoveries(viewModel.awardsFormat) }
+        // The Authors shelf carries the editions awaited too.
         .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
-            Task { await viewModel.awaitedChanged() }
+            Task {
+                await viewModel.reloadAwaited()
+                await viewModel.reload()
+                await viewModel.loadAwards(viewModel.awardsFormat)
+                await viewModel.loadDiscoveries(viewModel.awardsFormat)
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
-            Task { await viewModel.libraryChanged() }
+            Task {
+                await viewModel.reload()
+                await viewModel.loadPicks()
+                await viewModel.loadAwards(viewModel.awardsFormat)
+                await viewModel.loadDiscoveries(viewModel.awardsFormat)
+            }
         }
     }
 
@@ -145,7 +162,10 @@ struct DiscoverScreen: View {
         case let .openWinner(winner): openWinner = winner
         case let .openSuggestion(suggestion): openSuggestion = suggestion
         case .openAlerts: showsAlerts = true
-        case .refresh: await viewModel.refresh()
+        case .refresh:
+            async let picks: Void = viewModel.loadPicks()
+            await viewModel.loadAll()
+            await picks
         case .retry: await viewModel.loadAll()
         }
     }
