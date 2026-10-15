@@ -55,37 +55,14 @@ extension Book {
     }
 }
 
-/// Asks for a shown book's description when its page opens, and keeps it for
-/// the page to draw. A page that could not have one — the allowance used up,
-/// or the model failing — stays the plain page it opened as.
-@MainActor
-@Observable
-final class ReleaseDescriber {
-    private(set) var description: ReleaseDescription?
-    private(set) var isDescribing = false
-
-    func describe(_ seed: ReleaseSeed) async {
-        guard description == nil, !isDescribing else { return }
-        isDescribing = true
-        defer { isDescribing = false }
-        do {
-            let found = try await ReleaseAPI.describe(seed)
-            withAnimation(.smooth) { description = found }
-        } catch {
-            guard !isCancellation(error), (error as? APIError)?.domainCode != "QUOTA_EXHAUSTED" else { return }
-            _ = reportError(error)
-        }
-    }
-}
-
 /// Under a shown book's facts: a row while its description is being written,
 /// then its summary.
 struct ReleaseDescriptionSections: View {
-    let describer: ReleaseDescriber
+    let isDescribing: Bool
     let synopsis: String?
 
     var body: some View {
-        if describer.isDescribing {
+        if isDescribing {
             Section {
                 HStack(alignment: .top, spacing: 12) {
                     ProgressView()
@@ -97,6 +74,13 @@ struct ReleaseDescriptionSections: View {
         } else if let synopsis, !synopsis.isEmpty {
             BookSynopsisSection(synopsis: synopsis)
         }
+    }
+}
+
+#Preview("Release description") {
+    List {
+        ReleaseDescriptionSections(isDescribing: true, synopsis: nil)
+        ReleaseDescriptionSections(isDescribing: false, synopsis: ReleaseDescription.preview.book.synopsis)
     }
 }
 

@@ -215,7 +215,7 @@ struct SeriesView: View {
         .sheet(item: $announced, onDismiss: { Task { await load() } }) { volume in
             if let saga = announcedSaga {
                 NavigationStack {
-                    AnnouncedVolumeView(saga: saga, volume: volume, linksToSaga: false)
+                    AnnouncedVolumeScreen(saga: saga, volume: volume, linksToSaga: false)
                 }
             }
         }

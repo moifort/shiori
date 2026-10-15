@@ -237,7 +237,7 @@ struct ContentView: View {
                 systemImage: TabSelection.discover.symbol,
                 value: .discover
             ) {
-                DiscoverView(shelf: $discoverShelf)
+                DiscoverScreen(shelf: $discoverShelf)
             }
             Tab(TabSelection.shared.label, systemImage: TabSelection.shared.symbol, value: .shared) {
                 SharedView()

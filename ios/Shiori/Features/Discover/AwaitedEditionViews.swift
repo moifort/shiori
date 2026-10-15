@@ -135,7 +135,7 @@ struct AwaitedEditionView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var confirmStop = false
-    @State private var describer = ReleaseDescriber()
+    @State private var describer = ReleaseDescriber.live()
 
     /// The edition once described, as a book's page draws it.
     private var shown: Book { edition.cover.described(by: describer.description) }
@@ -159,7 +159,7 @@ struct AwaitedEditionView: View {
                     )
                 }
             }
-            ReleaseDescriptionSections(describer: describer, synopsis: shown.synopsis)
+            ReleaseDescriptionSections(isDescribing: describer.isDescribing, synopsis: shown.synopsis)
         }
         .listStyle(.insetGrouped)
         .labelStyle(.row)

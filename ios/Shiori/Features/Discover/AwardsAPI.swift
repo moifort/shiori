@@ -140,6 +140,36 @@ struct AwardWinner: Identifiable, Hashable, Sendable, Codable {
     }
 }
 
+extension AwardWinner {
+    /// What the model is told: the edition found in the app's language, else
+    /// the novel as it won.
+    var seed: ReleaseSeed {
+        ReleaseSeed(
+            title: title,
+            authors: authors,
+            format: format == .audiobook ? .audiobook : .book,
+            language: state == .unannounced ? originalLanguage : nil,
+            releasedOn: date,
+            coverURL: coverURL
+        )
+    }
+
+    /// What putting it on the pile sends: the edition found when there is
+    /// one, in the app's language, else the title it won under.
+    var pileDraft: BookDraft {
+        var draft = draft
+        if state != .unannounced {
+            draft.title = title
+            draft.language = nil
+            draft.coverURL = coverURL
+        }
+        draft.format = format == .audiobook ? .audiobook : .book
+        if draft.format == .audiobook { draft.media = [] }
+        draft.status = .toRead
+        return draft
+    }
+}
+
 extension [AwardWinner] {
     /// The latest prize first, whatever order the server sent: the strip reads
     /// from this year's winner back. Two of a year keep the server's order.

@@ -68,7 +68,7 @@ struct SuggestionView: View {
     var onDone: (SuggestionOutcome) -> Void = { _ in }
 
     @Environment(\.dismiss) private var dismiss
-    @State private var describer = ReleaseDescriber()
+    @State private var describer = ReleaseDescriber.live()
     @State private var openReference: SuggestionReference?
 
     /// The suggestion once described, as a book's page draws it.
@@ -98,7 +98,7 @@ struct SuggestionView: View {
                     .accessibilityIdentifier("suggestion-reference")
                 }
             }
-            ReleaseDescriptionSections(describer: describer, synopsis: shown.synopsis)
+            ReleaseDescriptionSections(isDescribing: describer.isDescribing, synopsis: shown.synopsis)
             if suggestion.title != suggestion.originalTitle {
                 Section {
                     LabeledContent("Titre original") {
@@ -217,8 +217,7 @@ struct SuggestionView: View {
         if draft.format == .audiobook { draft.media = [] }
         draft.status = status
         do {
-            _ = try await BookAPI.add(draft)
-            track(.bookAdded(source: .discover))
+            _ = try await BookAddition.add(draft, source: .discover)
         } catch {
             _ = reportError(error)
         }

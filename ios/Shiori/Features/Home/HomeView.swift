@@ -111,7 +111,7 @@ struct HomeView: View {
         }
         .sheet(item: $openRelease) { opened in
             NavigationStack {
-                AnnouncedVolumeView(saga: opened.saga, volume: opened.volume)
+                AnnouncedVolumeScreen(saga: opened.saga, volume: opened.volume)
             }
         }
         .sheet(item: $openFavorite) { favorite in
