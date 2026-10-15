@@ -15,6 +15,7 @@ struct FriendBookScreen: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel: FriendBookViewModel
     @State private var showsSaga = false
+    @State private var openAwaited: AwaitedEdition?
 
     init(
         friendId: String,
@@ -42,6 +43,7 @@ struct FriendBookScreen: View {
                 ) { action in
                     switch action {
                     case .openSeries: showsSaga = true
+                    case let .openAwaited(edition): openAwaited = edition
                     case let .stopAwaiting(edition): await viewModel.stopAwaiting(edition)
                     }
                 }
@@ -60,6 +62,13 @@ struct FriendBookScreen: View {
         .task { await viewModel.load() }
         .task { await viewModel.loadAudio() }
         .task { await viewModel.loadOffer() }
+        .sheet(item: $openAwaited) { edition in
+            NavigationStack {
+                AwaitedEditionScreen(edition: edition) {
+                    Task { await viewModel.stopAwaiting(edition) }
+                }
+            }
+        }
         .navigationDestination(isPresented: $showsSaga) {
             if let series = viewModel.entry?.book.series {
                 SeriesScreen(

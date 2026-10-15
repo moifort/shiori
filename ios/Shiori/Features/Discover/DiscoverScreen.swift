@@ -83,7 +83,7 @@ struct DiscoverScreen: View {
             }
             .sheet(item: $openAwaited) { edition in
                 NavigationStack {
-                    AwaitedEditionView(edition: edition) {
+                    AwaitedEditionScreen(edition: edition, client: client) {
                         Task { await viewModel.stopAwaiting(edition) }
                     }
                 }
@@ -94,7 +94,7 @@ struct DiscoverScreen: View {
                 Task { await viewModel.loadDiscoveries(viewModel.awardsFormat) }
             }) { suggestion in
                 NavigationStack {
-                    SuggestionView(suggestion: suggestion) { outcome in
+                    SuggestionScreen(suggestion: suggestion, client: client) { outcome in
                         guard outcome == .dismissed else { return }
                         Task { await viewModel.dismiss(suggestion, format: viewModel.awardsFormat) }
                     }

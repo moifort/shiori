@@ -132,6 +132,34 @@ extension AwaitedEdition {
     }
 }
 
+extension AwaitedEdition {
+    /// What the model is told: the edition awaited once found, else the book
+    /// it is awaited from, in its own language.
+    var seed: ReleaseSeed {
+        ReleaseSeed(
+            title: state == .unannounced ? originalTitle : title,
+            authors: authors,
+            format: format == .audiobook ? .audiobook : .book,
+            language: state == .unannounced ? originalLanguage : nil,
+            releasedOn: date,
+            coverURL: coverURL
+        )
+    }
+
+    /// The day it comes, while it is still to come: the calendar leaf in the
+    /// corner of its page.
+    var announcedDate: String? {
+        guard state == .announced, let date, ReleaseDateText.isUpcoming(date) else { return nil }
+        return date
+    }
+
+    /// Where it stands, under the author on its page — unless the calendar
+    /// leaf in the corner says it already.
+    var pageState: BookState? {
+        announcedDate == nil ? BookState(text: stateLine, tint: stateTint ?? .gray) : nil
+    }
+}
+
 extension ReleaseFormat {
     /// The action that awaits a book's edition in this format.
     var awaitLabel: String {

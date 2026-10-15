@@ -8,7 +8,7 @@ import SwiftUI
 /// mountains, sea, forests, towns, bookshops — faded out at both edges, and a
 /// line under the title changes every few seconds to say where the search has
 /// got to. Reduce Motion holds the landscape still; the lines still change.
-struct DiscoverFirstLookView: View {
+struct FirstLookProgress: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Anchor for elapsed time so the landscape starts from its beginning.
     @State private var start = Date()
@@ -139,9 +139,9 @@ struct DiscoverFirstLookView: View {
 }
 
 #Preview {
-    DiscoverFirstLookView()
+    FirstLookProgress()
 }
 
 #Preview("Dark") {
-    DiscoverFirstLookView().preferredColorScheme(.dark)
+    FirstLookProgress().preferredColorScheme(.dark)
 }

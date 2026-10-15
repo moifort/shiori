@@ -53,7 +53,7 @@ struct AuthorScreen: View {
         }
         .sheet(item: $openAwaited) { edition in
             NavigationStack {
-                AwaitedEditionView(edition: edition) {
+                AwaitedEditionScreen(edition: edition) {
                     Task { await viewModel.stopAwaiting(edition) }
                 }
             }

@@ -27,10 +27,3 @@ final class ReleaseDescriber {
         }
     }
 }
-
-extension ReleaseDescriber {
-    /// Through the server, for the pages not moved to a client yet.
-    static func live() -> ReleaseDescriber {
-        ReleaseDescriber { try await ReleaseAPI.describe($0) }
-    }
-}

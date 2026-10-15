@@ -95,6 +95,25 @@ extension AuthorDiscovery {
     }()
 }
 
+extension AwaitedEdition {
+    /// A recording of the next Dungeon Crawler Carl, announced.
+    static let preview = AwaitedEdition(
+        id: "preview",
+        format: .audiobook,
+        state: .announced,
+        title: "Opération Bounce House",
+        originalTitle: "Operation Bounce House",
+        originalLanguage: .en,
+        authors: ["Matt Dinniman"],
+        date: "2026-11-05",
+        coverURL: nil,
+        storeURL: nil,
+        awaitedAt: .now.addingTimeInterval(-3 * 86400),
+        bookId: "book",
+        ownerId: "me"
+    )
+}
+
 extension AwardWinner {
     /// A winner in English nobody awaited yet: both formats left to await.
     static let preview = AwardWinner(
@@ -120,13 +139,31 @@ extension AwardSection {
 }
 
 extension FriendPicks {
-    /// One book a friend hearted.
-    static let preview = FriendPicks(books: [
-        LovedBook(
-            book: .preview,
-            lovers: FriendLovers(friends: [.init(userId: "lea", firstName: "Léa")], lovedByMany: false)
-        ),
-    ])
+    /// A book a friend hearted, a saga two friends love and its author.
+    static let preview: FriendPicks = {
+        let lea = FriendLovers.Lover(userId: "lea", firstName: "Léa")
+        let paul = FriendLovers.Lover(userId: "paul", firstName: "Paul")
+        let many = FriendLovers(friends: [paul, lea], lovedByMany: true)
+        return FriendPicks(
+            books: [LovedBook(book: .preview, lovers: FriendLovers(friends: [lea], lovedByMany: false))],
+            sagas: [LovedSaga(
+                saga: FriendSaga(
+                    id: "kingkiller",
+                    seriesId: "kingkiller",
+                    name: "Chronique du Tueur de Roi",
+                    author: "Patrick Rothfuss",
+                    language: .fr,
+                    ownedCount: 2,
+                    favorite: true,
+                    genre: .fantasy,
+                    subgenre: nil,
+                    volumes: [Book(id: "wind", title: "Le Nom du vent", authors: ["Patrick Rothfuss"], status: .read)]
+                ),
+                lovers: many
+            )],
+            authors: [LovedAuthor(key: "patrick-rothfuss", name: "Patrick Rothfuss", portraitURL: nil, lovers: many)]
+        )
+    }()
 }
 
 extension DiscoveryFeed {

@@ -60,3 +60,14 @@ struct SagaReleasesSection: View {
         .padding(.vertical, 4)
     }
 }
+
+#Preview {
+    List {
+        SagaReleasesSection(
+            releases: SagaDiscovery.preview.releases,
+            author: "Matt Dinniman",
+            held: [],
+            isAudio: true
+        ) { _ in }
+    }
+}

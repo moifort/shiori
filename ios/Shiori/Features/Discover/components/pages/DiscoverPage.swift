@@ -90,7 +90,7 @@ struct DiscoverPage: View {
         if isLookingUp {
             // The first look: everything followed is being looked up on the
             // web, and there is nothing to show until it is.
-            DiscoverFirstLookView()
+            FirstLookProgress()
                 .accessibilityIdentifier("discover-looking-up")
         } else if feed.sagas != nil {
             list

@@ -145,7 +145,7 @@ struct HomeScreen: View {
         // dismissal takes the book off, and the next one comes in.
         .sheet(item: $openDiscovery, onDismiss: { Task { await viewModel.loadDiscoveries() } }) { suggestion in
             NavigationStack {
-                SuggestionView(suggestion: suggestion) { outcome in
+                SuggestionScreen(suggestion: suggestion) { outcome in
                     guard outcome == .dismissed else { return }
                     Task { await viewModel.dismiss(suggestion) }
                 }
@@ -153,7 +153,7 @@ struct HomeScreen: View {
         }
         .sheet(item: $openAwaited) { edition in
             NavigationStack {
-                AwaitedEditionView(edition: edition) {
+                AwaitedEditionScreen(edition: edition) {
                     Task { await viewModel.stopAwaiting(edition) }
                 }
             }

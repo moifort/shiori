@@ -4,6 +4,8 @@ import SwiftUI
 enum FriendBookAction {
     /// The saga the book belongs to, pushed inside the sheet.
     case openSeries
+    /// An edition awaited, opened as Découvrir opens it.
+    case openAwaited(AwaitedEdition)
     case stopAwaiting(AwaitedEdition)
 }
 
@@ -43,7 +45,11 @@ struct FriendBookPage: View {
                 state: state,
                 actions: .init(openSeries: { Task { await onAction(.openSeries) } })
             )
-            AwaitedEditionsSection(awaited: awaited) { edition in Task { await onAction(.stopAwaiting(edition)) } }
+            AwaitedEditionsSection(
+                awaited: awaited,
+                onOpen: { edition in Task { await onAction(.openAwaited(edition)) } },
+                onStop: { edition in Task { await onAction(.stopAwaiting(edition)) } }
+            )
             BookReadingSection(
                 title: "Lecture de \(friendName)",
                 book: entry.book,

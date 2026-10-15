@@ -30,6 +30,7 @@ struct BookPage: View {
     let onCorrect: (BookCorrection) -> Void
     /// The editions of this book the reader awaits in the app's language.
     var awaited: [AwaitedEdition] = []
+    var onOpenAwaited: (AwaitedEdition) -> Void = { _ in }
     var onStopAwaiting: (AwaitedEdition) -> Void = { _ in }
 
     var body: some View {
@@ -46,7 +47,7 @@ struct BookPage: View {
                     correct: onCorrect
                 )
             )
-            AwaitedEditionsSection(awaited: awaited, onStop: onStopAwaiting)
+            AwaitedEditionsSection(awaited: awaited, onOpen: onOpenAwaited, onStop: onStopAwaiting)
             BookReadingSection(
                 title: "Ma lecture",
                 book: book,

@@ -21,6 +21,7 @@ struct BookScreen: View {
     @State private var showRatingPrompt = false
     @State private var editedField: BookField?
     @State private var openSeries: SeriesDestination?
+    @State private var openAwaited: AwaitedEdition?
     @Environment(\.dismiss) private var dismiss
     private let client: BookClient
 
@@ -60,6 +61,7 @@ struct BookScreen: View {
                             run { _ = await viewModel.save(correction, rating: book.rating) }
                         },
                         awaited: viewModel.offer.awaited,
+                        onOpenAwaited: { openAwaited = $0 },
                         onStopAwaiting: { edition in Task { await viewModel.stopAwaiting(edition) } }
                     )
                 } else if viewModel.isLoading {
@@ -93,6 +95,13 @@ struct BookScreen: View {
                 }
             }
             .disabled(viewModel.isRefreshing)
+            .sheet(item: $openAwaited) { edition in
+                NavigationStack {
+                    AwaitedEditionScreen(edition: edition) {
+                        Task { await viewModel.stopAwaiting(edition) }
+                    }
+                }
+            }
             .sheet(isPresented: $showEditor) {
                 if let book = viewModel.book {
                     BookEditSheet(book: book, loadVocabulary: loadVocabulary) { correction, rating in
