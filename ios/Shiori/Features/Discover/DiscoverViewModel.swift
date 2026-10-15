@@ -12,6 +12,7 @@ final class DiscoverViewModel {
     init() {
         feed = cache.read() ?? DiscoveryFeed()
         discoveries = discoveriesCache.read()
+        awards = awardsCache.read() ?? [:]
     }
 
     private(set) var feed: DiscoveryFeed
@@ -192,9 +193,12 @@ final class DiscoverViewModel {
 
     /// The award winners in each format, one section per genre the reader
     /// reads most: empty until loaded, and when the reader reads no genre with
-    /// awards enough. Not kept in the snapshot: a suggestion, asked anew on
-    /// each visit.
+    /// awards enough. Kept on disk so the line opens with the tab rather than
+    /// sliding in seconds later, and asked anew on each visit.
     private(set) var awards: [ReleaseFormat: [AwardSection]] = [:]
+
+    /// Bump the version whenever `AwardSection` changes shape.
+    private let awardsCache = SnapshotCache<[ReleaseFormat: [AwardSection]]>("discover-awards", version: 1)
 
     /// The format the award winners are shown in: the book's, unless the
     /// reader follows and awaits nothing read — a reader of recordings alone
@@ -207,6 +211,9 @@ final class DiscoverViewModel {
         do {
             let found = try await AwardsAPI.sections(format: format)
             withAnimation(.smooth) { awards[format] = found }
+            let cache = awardsCache
+            let kept = awards
+            Task.detached { cache.write(kept) }
         } catch {
             guard !isCancellation(error) else { return }
             _ = reportError(error)
@@ -221,31 +228,58 @@ final class DiscoverViewModel {
     private(set) var isLookingUpDiscoveries = false
 
     /// Bump the version whenever `MonthlyDiscoveries` changes shape.
-    private let discoveriesCache = SnapshotCache<MonthlyDiscoveries>("discover-discoveries", version: 1)
+    private let discoveriesCache = SnapshotCache<MonthlyDiscoveries>("discover-discoveries", version: 2)
 
     /// What the line draws: the month's covers, the search under way, the
-    /// month's selection run out — or nothing.
+    /// month's selection run out — or nothing, when the month has none.
     var discoveriesLine: DiscoveriesLine? {
         let month = MonthlyDiscoveries.month(of: .now)
-        if let discoveries, discoveries.month == month {
-            return discoveries.suggestions.isEmpty ? .ranOut(discoveries) : .shown(discoveries)
+        guard let discoveries, discoveries.month == month else {
+            return isLookingUpDiscoveries ? .searching(month: month) : nil
         }
-        return isLookingUpDiscoveries ? .searching(month: month) : nil
+        switch discoveries.status {
+        case .ready:
+            return discoveries.suggestions.isEmpty ? .ranOut(discoveries) : .shown(discoveries)
+        case .searching:
+            return .searching(month: month)
+        case .none:
+            return isLookingUpDiscoveries ? .searching(month: month) : nil
+        }
     }
 
+    /// How often a look that found the selection being made asks again, and
+    /// for how long at most: a generation runs about a minute and a half.
+    private static let searchPoll: Duration = .seconds(5)
+    private static let searchPolls = 40
+
     /// Asks for the month's discoveries, making the selection when the month
-    /// has none yet.
+    /// has none yet. A look that finds it being made — Découvrir asks again as
+    /// it settles — waits for it, asking every few seconds.
     func loadDiscoveries(_ format: ReleaseFormat) async {
         isLookingUpDiscoveries = true
         defer { isLookingUpDiscoveries = false }
-        do {
-            let found = try await SuggestionsAPI.monthly(format: format, lookUp: true)
-            withAnimation(.smooth) { discoveries = found }
-            let cache = discoveriesCache
-            Task.detached { cache.write(found) }
-        } catch {
-            guard !isCancellation(error) else { return }
-            _ = reportError(error)
+        // A request given up on while the server still makes the selection
+        // — a slow generation outlasting the app's wait — is asked again a
+        // few times before the failure is reported.
+        var failures = 0
+        for _ in 0..<Self.searchPolls {
+            do {
+                let found = try await SuggestionsAPI.monthly(format: format, lookUp: true)
+                withAnimation(.smooth) { discoveries = found }
+                guard found.status == .searching else {
+                    let cache = discoveriesCache
+                    Task.detached { cache.write(found) }
+                    return
+                }
+            } catch {
+                guard !isCancellation(error) else { return }
+                failures += 1
+                guard failures < 3 else {
+                    _ = reportError(error)
+                    return
+                }
+            }
+            do { try await Task.sleep(for: Self.searchPoll) } catch { return }
         }
     }
 

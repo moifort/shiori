@@ -41,6 +41,26 @@ export const shouldGenerate = (
   return queue.month !== monthOf(now) || queue.language !== language
 }
 
+/** How long a selection is taken to be on its way: a generation runs about a
+ *  minute, two at most; past five, the instance that ran it is gone. */
+export const GENERATION_WINDOW_MS = 5 * 60 * 1000
+
+/** Where the month's selection stands for a reader in the app's language:
+ *  made for this month, being made, or none. */
+export const statusOf = (
+  queue: Pick<SuggestionQueue, 'month' | 'language' | 'generatingSince'> | undefined,
+  now: Date,
+  language: Language,
+): 'ready' | 'searching' | 'none' => {
+  const current = queue?.month === monthOf(now) && queue.language === language
+  const generating =
+    queue?.generatingSince !== undefined &&
+    now.getTime() - queue.generatingSince.getTime() < GENERATION_WINDOW_MS
+  if (generating && !current) return 'searching'
+  if (queue?.month === monthOf(now)) return 'ready'
+  return 'none'
+}
+
 /** A heart, then stars, best first. */
 type Tier = 'favorite' | '5' | '4' | '3' | 'low'
 const TIERS: readonly Tier[] = ['favorite', '5', '4', '3', 'low']

@@ -135,6 +135,26 @@ export const SuggestionType = builder.objectRef<SuggestionView>('Suggestion').im
   }),
 })
 
+const DiscoveriesStatusEnum = builder.enumType('DiscoveriesStatus', {
+  description: 'Where the month’s selection of discoveries stands.',
+  values: {
+    READY: {
+      value: 'ready',
+      description: 'Made for this month: its suggestions, or none once they ran out.',
+    },
+    SEARCHING: {
+      value: 'searching',
+      description: 'Being made by another request: ask again in a few seconds.',
+    },
+    NONE: {
+      value: 'none',
+      description:
+        'Not made for this month: Découvrir was not opened yet, the model failed, or the ' +
+        'server has no model key.',
+    },
+  } as const,
+})
+
 export const MonthlyDiscoveriesType = builder
   .objectRef<MonthlyDiscoveries>('MonthlyDiscoveries')
   .implement({
@@ -145,6 +165,10 @@ export const MonthlyDiscoveriesType = builder
       month: t.string({
         description: '`YYYY-MM`: the month the line is titled after.',
         resolve: (discoveries) => discoveries.month,
+      }),
+      status: t.field({
+        type: DiscoveriesStatusEnum,
+        resolve: (discoveries) => discoveries.status,
       }),
       suggestions: t.field({
         type: [SuggestionType],

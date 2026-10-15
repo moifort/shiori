@@ -26,21 +26,33 @@ export const claimGeneration = async (
   userId: UserId,
   mayGenerate: (queue: SuggestionQueue | undefined) => boolean,
   now: Date,
-  month: string,
   language: Language,
 ): Promise<boolean> =>
   transactionally(async (tx) => {
     const ref = queues().doc(userId)
     const queue = (await tx.get(ref)).data()
     if (!mayGenerate(queue)) return false
+    // The month and its suggestions stay what they were until the new
+    // selection is saved: only the date and the mark of the search change.
     tx.set(ref, {
       userId,
-      month: queue?.month ?? month,
+      month: queue?.month ?? '',
       language: queue?.language ?? language,
       generatedAt: now,
+      generatingSince: now,
       suggestions: queue?.suggestions ?? [],
     })
     return true
+  })
+
+/** The search failed: its mark is taken off, the selection left as it was. */
+export const endGeneration = async (userId: UserId): Promise<void> =>
+  transactionally(async (tx) => {
+    const ref = queues().doc(userId)
+    const queue = (await tx.get(ref)).data()
+    if (!queue) return
+    const { generatingSince: _, ...rest } = queue
+    tx.set(ref, rest)
   })
 
 export const findDismissals = async (userId: UserId): Promise<Dismissal[]> =>

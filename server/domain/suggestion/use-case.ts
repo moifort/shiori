@@ -21,6 +21,7 @@ import {
   referencesOf,
   shouldGenerate,
   shownOf,
+  statusOf,
   tasteDigestOf,
 } from './business-rules'
 import { SuggestionCommand } from './command'
@@ -38,14 +39,16 @@ const logger = createLogger('suggestion')
 const CHECKS_AT_ONCE = 5
 
 export namespace SuggestionUseCase {
-  /** The month's discoveries: every suggestion of the month's
-   *  selection the reader neither holds, dismissed nor awaits, in one format
-   *  and the app's language. Only Découvrir asks for a selection to be made —
-   *  `lookUp` — when the reader has none for this month, or one in another
-   *  language, never twice a day: that takes about a minute, and a failure
-   *  leaves the line empty until the next look. The home page only reads what
-   *  there is. A selection that ran out leaves the line empty until next
-   *  month. Empty, and nothing asked, without an Anthropic key. */
+  /** The month's discoveries: every suggestion of the month's selection the
+   *  reader neither holds, dismissed nor awaits, in one format and the app's
+   *  language, and where the selection stands. Only Découvrir asks for a
+   *  selection to be made — `lookUp` — when the reader has none for this
+   *  month, or one in another language, never twice a day: that takes about a
+   *  minute. A look while another is making it answers `searching`, for the
+   *  app to ask again; a failure answers `none` and is tried the next day. The
+   *  home page only reads what there is. A selection that ran out is `ready`
+   *  and empty until next month. `none`, and nothing asked, without an
+   *  Anthropic key. */
   export const monthly = async (
     userId: UserId,
     format: ReleaseFormat,
@@ -54,7 +57,7 @@ export namespace SuggestionUseCase {
     now = new Date(),
   ): Promise<MonthlyDiscoveries> => {
     const month = monthOf(now)
-    if (!isConfigured()) return { month, suggestions: [] }
+    if (!isConfigured()) return { month, status: 'none', suggestions: [] }
     const [books, opinions, dismissals, queue, awaited] = await Promise.all([
       BookQuery.all(userId),
       SeriesOpinionQuery.all(userId),
@@ -73,14 +76,16 @@ export namespace SuggestionUseCase {
       )
     const mayGenerate = (current: typeof queue) => shouldGenerate(current, now, appLanguage)
     let suggestions = queue?.month === month ? shown(queue.suggestions) : []
+    let status = statusOf(queue, now, appLanguage)
     if (
       lookUp &&
       mayGenerate(queue) &&
-      (await SuggestionCommand.claimGeneration(userId, mayGenerate, now, month, appLanguage))
+      (await SuggestionCommand.claimGeneration(userId, mayGenerate, now, appLanguage))
     ) {
       const answered = await generated(books, opinions, dismissals, appLanguage)
       if (answered) {
         suggestions = shown(answered)
+        status = 'ready'
         await SuggestionCommand.saveQueue({
           userId,
           month,
@@ -88,10 +93,14 @@ export namespace SuggestionUseCase {
           generatedAt: now,
           suggestions,
         })
+      } else {
+        await SuggestionCommand.endGeneration(userId)
+        status = queue?.month === month ? 'ready' : 'none'
       }
     }
     return {
       month,
+      status,
       suggestions: await viewsOf(suggestions, {
         userId,
         format,

@@ -11,6 +11,7 @@ import {
   referencesOf,
   shouldGenerate,
   shownOf,
+  statusOf,
   tasteDigestOf,
 } from './business-rules'
 import type { Dismissal, Suggestion } from './types'
@@ -106,6 +107,37 @@ describe('shouldGenerate', () => {
 
   test('never asks twice the same day', () => {
     expect(shouldGenerate(queue('2026-09', '2026-10-15T01:00:00Z'), now, 'en')).toBe(false)
+  })
+})
+
+describe('statusOf', () => {
+  const now = new Date('2026-10-15T09:00:00Z')
+
+  test('is none with no selection for this month', () => {
+    expect(statusOf(undefined, now, 'fr')).toBe('none')
+    expect(statusOf({ month: '2026-09', language: 'fr' }, now, 'fr')).toBe('none')
+  })
+
+  test('is searching while a selection is being made, for a few minutes at most', () => {
+    const since = (at: string) => ({
+      month: '',
+      language: 'fr' as const,
+      generatingSince: new Date(at),
+    })
+    expect(statusOf(since('2026-10-15T08:58:00Z'), now, 'fr')).toBe('searching')
+    expect(statusOf(since('2026-10-15T08:50:00Z'), now, 'fr')).toBe('none')
+  })
+
+  test('is ready once this month has its selection, a new language being made aside', () => {
+    expect(statusOf({ month: '2026-10', language: 'fr' }, now, 'fr')).toBe('ready')
+    expect(
+      statusOf(
+        { month: '2026-10', language: 'fr', generatingSince: new Date('2026-10-15T08:59:00Z') },
+        now,
+        'en',
+      ),
+    ).toBe('searching')
+    expect(statusOf({ month: '2026-10', language: 'fr' }, now, 'en')).toBe('ready')
   })
 })
 

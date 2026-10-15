@@ -1207,6 +1207,20 @@ type DiscoveredWork {
   volume: VolumeNumber
 }
 
+"""Where the month’s selection of discoveries stands."""
+enum DiscoveriesStatus {
+  """
+  Not made for this month: Découvrir was not opened yet, the model failed, or the server has no model key.
+  """
+  NONE
+
+  """Made for this month: its suggestions, or none once they ran out."""
+  READY
+
+  """Being made by another request: ask again in a few seconds."""
+  SEARCHING
+}
+
 """The Découvrir tab in one format."""
 type Discovery {
   """
@@ -2268,6 +2282,7 @@ Découvrir’s discoveries of the month: books chosen for the reader by Claude f
 type MonthlyDiscoveries {
   """`YYYY-MM`: the month the line is titled after."""
   month: String!
+  status: DiscoveriesStatus!
 
   """
   Every one of the month’s selection the reader neither holds, dismissed nor awaits. Empty when none are left, or the server has no model key.

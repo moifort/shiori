@@ -50,7 +50,7 @@ Propose ${ASKED_COUNT} livres qu'il n'a PAS dans sa bibliothèque et qui ont de 
 Le titre, la raison et la ligne courte sont écrits en ${written}, quelle que soit la langue de ce message.
 
 Réponds UNIQUEMENT par un tableau JSON, sans texte autour, de ${ASKED_COUNT} objets, le plus sûr d'abord :
-{"title": titre de l'édition en ${written} si elle existe, sinon le titre original, "originalTitle": titre original, "author": auteur (plusieurs séparés par des virgules), "language": code ISO 639-1 de la langue d'écriture, "kind": "novel" | "essay" | "comic" | "manga", "reason": une phrase courte en ${written}, ${tone}, qui dit pourquoi en citant un livre ou une série de sa bibliothèque, "short": "${like} " suivi du titre court du livre ou de la série cité, en ${written}, "references": les titres exacts, tels qu'écrits ci-dessous, des livres ou séries de sa bibliothèque cités}
+{"title": titre de l'édition en ${written} si elle existe, sinon le titre original, "originalTitle": titre original, "author": auteur (plusieurs séparés par des virgules), "language": code ISO 639-1 de la langue d'écriture, "kind": "novel" | "essay" | "comic" | "manga", "reason": une phrase de 25 mots au plus, en ${written}, ${tone}, qui dit pourquoi en citant un livre ou une série de sa bibliothèque, "short": "${like} " suivi du titre court du livre ou de la série cité, en ${written}, "references": les titres exacts, tels qu'écrits ci-dessous, des livres ou séries de sa bibliothèque cités}
 
 Bibliothèque :
 

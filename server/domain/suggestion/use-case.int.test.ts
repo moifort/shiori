@@ -126,6 +126,29 @@ describe('the month’s discoveries', () => {
     ).toBe(6)
   })
 
+  test('a look while another is making the selection says it is on its way', async () => {
+    fake.seed('suggestion-queues', reader, {
+      userId: reader,
+      month: '',
+      language: 'fr',
+      generatedAt: new Date('2026-10-15T08:59:30Z'),
+      generatingSince: new Date('2026-10-15T08:59:30Z'),
+      suggestions: [],
+    })
+    const meanwhile = await look()
+
+    expect(meanwhile.status).toBe('searching')
+    expect(titles(meanwhile)).toEqual([])
+    expect(prompts).toHaveLength(0)
+  })
+
+  test('the selection made is ready, and the mark of the search gone', async () => {
+    const discoveries = await look()
+
+    expect(discoveries.status).toBe('ready')
+    expect(fake.data('suggestion-queues', reader)?.generatingSince).toBeUndefined()
+  })
+
   test('the home page reads what there is and never asks', async () => {
     expect(titles(await read())).toEqual([])
     expect(prompts).toHaveLength(0)
@@ -182,7 +205,9 @@ describe('the month’s discoveries', () => {
     ])
       await SuggestionUseCase.dismiss(reader, key)
 
-    expect(titles(await look('2026-10-28T09:00:00Z'))).toEqual([])
+    const ranOut = await look('2026-10-28T09:00:00Z')
+    expect(ranOut.status).toBe('ready')
+    expect(titles(ranOut)).toEqual([])
     expect(prompts).toHaveLength(1)
 
     answering(suggested('Neuromancien', 'William Gibson'))
@@ -209,7 +234,10 @@ describe('the month’s discoveries', () => {
   test('a failed model leaves the line empty and is asked again the next day', async () => {
     await look()
     answer = new Error('Claude answered 529')
-    expect(titles(await look('2026-11-01T09:00:00Z'))).toEqual([])
+    const failed = await look('2026-11-01T09:00:00Z')
+    expect(failed.status).toBe('none')
+    expect(titles(failed)).toEqual([])
+    expect(fake.data('suggestion-queues', reader)?.generatingSince).toBeUndefined()
     expect(titles(await look('2026-11-01T18:00:00Z'))).toEqual([])
     expect(prompts).toHaveLength(2)
 

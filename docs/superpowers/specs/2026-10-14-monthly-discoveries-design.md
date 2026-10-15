@@ -68,6 +68,10 @@ blind, on his own library.
    the line shows "Recherche de vos découvertes…" over five blank covers. The home page only
    reads what there is (`lookUp` left out): it shows nothing of a month Découvrir has not been
    opened in yet. A failed generation leaves the line empty and is tried again the next day.
+   The answer carries where the selection stands — `ready` (maybe run out), `searching` (another
+   look is making it: Découvrir asks again every 5 s), `none` (not made: the line is hidden) — so
+   a look made while the selection is under way is never taken for one that ran out, as happened
+   on the first production look of 2026-10-15.
 6. **In the app's language.** The titles, the reasons and the "comme …" / "like …" line are
    written in the app's language (French or English, from `Accept-Language`), the French
    reasons addressing the reader as « tu ». The selection remembers its language: a reader who

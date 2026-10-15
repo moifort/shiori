@@ -104,8 +104,19 @@ struct Suggestion: Identifiable, Hashable, Sendable, Codable {
 /// The month's discoveries: the month the line is titled after and its
 /// suggestions, three at most.
 struct MonthlyDiscoveries: Hashable, Sendable, Codable {
+    /// Where the month's selection stands.
+    enum Status: String, Hashable, Sendable, Codable {
+        /// Made for this month: its suggestions, or none once they ran out.
+        case ready
+        /// Being made by another look: ask again in a few seconds.
+        case searching
+        /// Not made for this month: Découvrir not opened yet, or it failed.
+        case none
+    }
+
     /// `YYYY-MM`.
     let month: String
+    var status: Status = .ready
     let suggestions: [Suggestion]
 
     /// "Les découvertes d'octobre", "Les découvertes de novembre" — "October's
@@ -175,8 +186,14 @@ enum SuggestionsAPI {
             query: ShioriGraphQL.MonthlyDiscoveriesQuery(format: .case(format.graphQL), lookUp: .some(lookUp)),
             requestTimeout: requestTimeout
         )
+        let status: MonthlyDiscoveries.Status = switch data.monthlyDiscoveries.status.value {
+        case .ready: .ready
+        case .searching: .searching
+        case .none?, nil: .none
+        }
         return MonthlyDiscoveries(
             month: data.monthlyDiscoveries.month,
+            status: status,
             suggestions: data.monthlyDiscoveries.suggestions.map {
                 Suggestion(fields: $0.fragments.suggestionFields)
             }

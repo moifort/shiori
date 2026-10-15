@@ -10,9 +10,10 @@ export namespace SuggestionCommand {
     userId: UserId,
     mayGenerate: (queue: SuggestionQueue | undefined) => boolean,
     now: Date,
-    month: string,
     language: Language,
-  ) => repository.claimGeneration(userId, mayGenerate, now, month, language)
+  ) => repository.claimGeneration(userId, mayGenerate, now, language)
+
+  export const endGeneration = (userId: UserId) => repository.endGeneration(userId)
 
   /** "Pas intéressé": the suggestion leaves the queue for good. Not-found when
    *  the queue holds no such suggestion. */

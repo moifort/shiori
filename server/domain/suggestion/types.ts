@@ -46,6 +46,10 @@ export type SuggestionQueue = {
    *  is given a selection in the new one. */
   language: Language
   generatedAt: Date
+  /** Set while the model is being asked, so a second look — Découvrir's view
+   *  asks again as it settles — knows a selection is on its way rather than
+   *  taking the month for one with none. */
+  generatingSince?: Date
   /** In the order the model ranked them, checked against the library and the
    *  catalogues when they were kept. */
   suggestions: Suggestion[]
@@ -90,9 +94,16 @@ export type SuggestionView = {
   references: SuggestionReference[]
 }
 
+/** Where the month's selection stands: made — its suggestions may have run
+ *  out — being made, or not made at all: never asked for this month, failed,
+ *  or no model key. */
+export const DISCOVERIES_STATUSES = ['ready', 'searching', 'none'] as const
+export type DiscoveriesStatus = (typeof DISCOVERIES_STATUSES)[number]
+
 /** The line Découvrir and the home page draw: the month it is titled after
  *  and every suggestion of the month's selection still to show. */
 export type MonthlyDiscoveries = {
   month: string
+  status: DiscoveriesStatus
   suggestions: SuggestionView[]
 }

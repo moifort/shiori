@@ -5,6 +5,7 @@
 query MonthlyDiscoveries($format: ReleaseFormat!, $lookUp: Boolean) {
   monthlyDiscoveries(format: $format, lookUp: $lookUp) {
     month
+    status
     suggestions {
       ...SuggestionFields
     }

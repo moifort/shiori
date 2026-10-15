@@ -33,7 +33,7 @@ final class HomeViewModel {
     private let cache = SnapshotCache<Dashboard>("dashboard", version: 4)
     private let releasesCache = SnapshotCache<[HomeRelease]>("dashboard-releases", version: 3)
     private let favoritesCache = SnapshotCache<[FriendFavorite]>("dashboard-friend-favorites", version: 1)
-    private let discoveriesCache = SnapshotCache<MonthlyDiscoveries>("dashboard-discoveries", version: 1)
+    private let discoveriesCache = SnapshotCache<MonthlyDiscoveries>("dashboard-discoveries", version: 2)
 
     /// How many releases the dashboard lines up; the rest are Découvrir's.
     private static let releasesShown = 10

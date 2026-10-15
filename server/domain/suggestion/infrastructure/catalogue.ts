@@ -29,7 +29,10 @@ export const catalogueEntryOf = async (title: string, author: string): Promise<C
     const coverUrl = openLibrary?.coverUrl ?? google.coverUrl
     return { known: true, ...(coverUrl ? { coverUrl } : {}) }
   }
-  if (openLibrary === undefined && google === undefined) return { known: undefined }
+  // Only two answers both saying no make an invention: one catalogue that
+  // could not be asked — Google Books' 429, Open Library's timeout — says
+  // nothing.
+  if (openLibrary === undefined || google === undefined) return { known: undefined }
   return { known: false }
 }
 

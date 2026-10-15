@@ -6,7 +6,7 @@ import SwiftUI
 /// A literary award whose novel winners Découvrir lists. Its raw value is the
 /// one the server spells it with, so a new award the server adds is skipped
 /// rather than misread.
-enum LiteraryAward: String, Sendable, Hashable, Identifiable {
+enum LiteraryAward: String, Sendable, Hashable, Identifiable, Codable {
     case hugo = "HUGO"
     case nebula = "NEBULA"
     case locusScienceFiction = "LOCUS_SF"
@@ -49,7 +49,7 @@ enum LiteraryAward: String, Sendable, Hashable, Identifiable {
 }
 
 /// One prize a novel won, and the year it was presented.
-struct AwardMention: Hashable, Sendable {
+struct AwardMention: Hashable, Sendable, Codable {
     let award: LiteraryAward
     let year: Int
 }
@@ -57,7 +57,7 @@ struct AwardMention: Hashable, Sendable {
 /// A novel an award crowned, as its edition stands in one format and the
 /// language of the app: out, announced, or not found — not found also while
 /// nobody awaited it, so it was never looked up, which `watched` tells apart.
-struct AwardWinner: Identifiable, Hashable, Sendable {
+struct AwardWinner: Identifiable, Hashable, Sendable, Codable {
     let id: String
     let format: ReleaseFormat
     /// Its title in the app's language once found, else the one it won under.
@@ -150,7 +150,7 @@ extension [AwardWinner] {
 
 /// One genre's section of Découvrir's award winners: the latest its awards
 /// crowned that the reader does not hold, none drawn in another section.
-struct AwardSection: Identifiable, Hashable, Sendable {
+struct AwardSection: Identifiable, Hashable, Sendable, Codable {
     let genre: BookGenre
     let winners: [AwardWinner]
 

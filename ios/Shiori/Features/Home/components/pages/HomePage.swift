@@ -72,7 +72,7 @@ struct HomePage: View {
 
                 // The covers alone: the reason is Découvrir's, where the
                 // heading leads.
-                if let discoveries, !discoveries.suggestions.isEmpty {
+                if let discoveries, discoveries.status == .ready, !discoveries.suggestions.isEmpty {
                     BookShelfSection(
                         title: "\(discoveries.title)",
                         books: discoveries.suggestions.map(\.cover),
