@@ -57,14 +57,6 @@ jobs:
           mkdir -p ios/ShioriUITests/Support
           cp ios/Shiori/Shared/Secrets.swift.example ios/ShioriUITests/Support/TestSecrets.swift
 
-      # The SPM checkouts (Firebase above all) are what -resolvePackageDependencies
-      # spends its time cloning: kept between runs, keyed on the pinned versions.
-      - name: Restore the Swift packages
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.temp }}/SourcePackages
-          key: spm-${{ runner.os }}-${{ hashFiles('ios/Shiori.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
-
       - name: Generate Apollo GraphQL code (gitignored, regenerated per build)
         run: |
           set -euo pipefail
