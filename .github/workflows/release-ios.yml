@@ -30,6 +30,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       marketing: ${{ steps.version.outputs.marketing }}
+      submitted: ${{ steps.submitted.outputs.submitted }}
     steps:
       - name: Take the marketing version from the tag, or from the manual run
         id: version
@@ -45,11 +46,34 @@ jobs:
           echo "marketing=$MARKETING" >> "$GITHUB_OUTPUT"
           echo "Releasing Shiori $MARKETING"
 
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+
+      # A version sent to App Review by hand (1.1 was, with its first subscriptions, which
+      # only the web can attach) is with Apple or on sale: nothing can be uploaded to it or
+      # submitted on it. Its tag then only records the release — the GitHub release is
+      # published, the upload and the submission are skipped.
+      - name: Is the version already with Apple?
+        id: submitted
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          MARKETING: ${{ steps.version.outputs.marketing }}
+        run: |
+          set -euo pipefail
+          bun scripts/testflight.ts submitted "$MARKETING" | tee -a "$GITHUB_OUTPUT"
+          if grep -q '^submitted=true' "$GITHUB_OUTPUT"; then
+            echo "::notice::Shiori $MARKETING is already with Apple — recording the tag, nothing uploaded or submitted"
+          fi
+
   # Archive, sign and upload, shared with the nightly TestFlight build. When the tagged
   # commit already went up as a nightly build of the same version, that binary is the one
   # submitted: nothing is rebuilt.
   release:
     needs: version
+    if: needs.version.outputs.submitted != 'true'
     uses: ./.github/workflows/ios-upload.yml
     with:
       marketing_version: ${{ needs.version.outputs.marketing }}
@@ -67,8 +91,10 @@ jobs:
   # job checks they are there before submitting rather than learn it from App Review.
   submit:
     name: 🍎 iOS submit
-    needs: release
-    if: startsWith(github.ref, 'refs/tags/ios-v')
+    needs: [version, release]
+    # Runs after a skipped upload too (the version is already with Apple), never after a
+    # failed one.
+    if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/ios-v') && needs.release.result != 'failure' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
@@ -76,18 +102,21 @@ jobs:
     env:
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      SUBMIT: ${{ needs.version.outputs.submitted != 'true' }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0   # git rev-list --count HEAD must see the full history
 
       - uses: ruby/setup-ruby@v1
+        if: env.SUBMIT == 'true'
         with:
           ruby-version: '3.4.11'
           bundler-cache: true
           working-directory: infra
 
       - name: Install the App Store Connect API key
+        if: env.SUBMIT == 'true'
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/asc"
@@ -115,6 +144,7 @@ jobs:
           fi
 
       - name: Build the "What's New" notes for every App Store locale
+        if: env.SUBMIT == 'true'
         run: |
           set -euo pipefail
           # One release_notes.txt per declared App Store locale. App Store Connect asks for
@@ -145,10 +175,13 @@ jobs:
           done
 
       - uses: oven-sh/setup-bun@v2
+        if: env.SUBMIT == 'true'
 
       - name: Refuse a version without its App Store panels
+        if: env.SUBMIT == 'true'
         run: bun scripts/upload-appstore-panels.ts --check
 
       - name: Attach build and submit for review
+        if: env.SUBMIT == 'true'
         working-directory: infra
         run: bundle exec fastlane ios submit

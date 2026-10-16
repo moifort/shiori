@@ -18,6 +18,13 @@
  *     version has passed review, Apple usually approves its later builds within minutes.
  *     Safe to rerun: a build already submitted is left alone.
  *
+ *   bun scripts/testflight.ts submitted <marketing>
+ *     Prints `submitted=true|false` and `state=<App Store version state>` as GitHub step
+ *     outputs. A version is submitted once it left the states a developer can still edit:
+ *     waiting for review, in review, pending release, on sale. The release workflow then
+ *     records the tag without uploading or submitting anything, since the version went to
+ *     App Review by hand (the first subscriptions can only be attached from the web).
+ *
  * Reads ASC_KEY_ID, ASC_ISSUER_ID and ASC_KEY_P8 (the .p8 contents) from the environment.
  */
 
@@ -98,6 +105,28 @@ const check = async (marketing: string, build: string) => {
   output([`exists=${existing !== undefined}`, `previous=${latest?.attributes.version ?? ''}`])
 }
 
+// The states App Store Connect still lets a developer edit and submit; anything else means
+// the version is with Apple or on the store, and deliver would be refused on it.
+const EDITABLE_STATES = [
+  'PREPARE_FOR_SUBMISSION',
+  'READY_FOR_REVIEW',
+  'DEVELOPER_REJECTED',
+  'REJECTED',
+  'METADATA_REJECTED',
+  'INVALID_BINARY',
+]
+
+const submitted = async (marketing: string) => {
+  const app = await appId()
+  const [version] = await list(
+    `/v1/apps/${app}/appStoreVersions?filter[platform]=IOS&filter[versionString]=${marketing}` +
+      '&fields[appStoreVersions]=appVersionState',
+  )
+  const state = String(version?.attributes.appVersionState ?? 'NONE')
+  const done = version !== undefined && !EDITABLE_STATES.includes(state)
+  output([`submitted=${done}`, `state=${state}`])
+}
+
 const poll = async <T>(what: string, attempt: () => Promise<T | undefined>) => {
   // App Store Connect usually lists a build within five minutes of the upload and finishes
   // processing it within twenty; an hour means something is wrong on Apple's side.
@@ -172,10 +201,13 @@ const share = async (marketing: string, build: string) => {
 }
 
 const [command, marketing, build, file] = process.argv.slice(2)
-if (!marketing || !build) {
-  throw new Error('Usage: testflight.ts check|notes|share <marketing> <build>')
+if (!marketing || (command !== 'submitted' && !build)) {
+  throw new Error(
+    'Usage: testflight.ts check|notes|share <marketing> <build> | submitted <marketing>',
+  )
 }
-if (command === 'check') await check(marketing, build)
+if (command === 'submitted') await submitted(marketing)
+else if (command === 'check') await check(marketing, build)
 else if (command === 'notes' && file) await notes(marketing, build, file)
 else if (command === 'share') await share(marketing, build)
 else throw new Error(`Unknown command: ${command}`)
