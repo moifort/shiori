@@ -11,7 +11,6 @@ Entries are written when an App Store release is cut, never ahead of it.
 
 - Photograph a book's cover and its record fills itself in: title, author, summary, genre and series.
 - Photograph a whole shelf to add several books at once.
-- Share a cover photo from another app to catalogue the book.
 - Your series volume by volume, with the volumes you're missing and the ones still to come.
 - An alert when the next volume of a series you follow comes out.
 - A book not yet out in French or as an audiobook: be told the day it comes out.
