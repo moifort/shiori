@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [main]
 
+# A newer push to the same branch, or to the same pull request, makes this run
+# pointless: it is cancelled rather than left to use a runner for nothing. Keyed on
+# the workflow file and the ref, since the three test workflows share one name.
+concurrency:
+  group: ${{ github.workflow_ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
