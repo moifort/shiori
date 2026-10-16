@@ -26,7 +26,9 @@ jobs:
   ios:
     name: 📱 iOS
     runs-on: macos-26
-    timeout-minutes: 30
+    # The simulator's first boot on a fresh runner takes ten minutes and more,
+    # on top of a cold build: 30 cut a run short on 2026-10-16.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
 
@@ -34,6 +36,17 @@ jobs:
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest-stable
+
+      # Booted first, so its ten-minute first start runs alongside the Apollo
+      # generation and the build rather than after them, where it sat as eleven
+      # silent minutes before the tests on 2026-10-16.
+      - name: Boot the simulator the tests run on
+        run: |
+          set -euo pipefail
+          udid=$(xcrun simctl list devices available | grep -m1 -E '^ +iPhone' \
+            | grep -oE '[0-9A-F]{8}(-[0-9A-F]{4}){3}-[0-9A-F]{12}')
+          echo "SIMULATOR_UDID=$udid" >> "$GITHUB_ENV"
+          xcrun simctl boot "$udid"
 
       - name: Materialize gitignored build files
         run: |
@@ -68,21 +81,15 @@ jobs:
 
       - name: Build the app and its tests
         # Compiled once, for the simulator the tests then run on: no signing
-        # identity needed (release-ios.yml owns those). The simulator boots in the
-        # background while the compiler works.
+        # identity needed (release-ios.yml owns those).
         run: |
           set -euo pipefail
-          udid=$(xcrun simctl list devices available | grep -m1 -E '^ +iPhone' \
-            | grep -oE '[0-9A-F]{8}(-[0-9A-F]{4}){3}-[0-9A-F]{12}')
-          echo "SIMULATOR_UDID=$udid" >> "$GITHUB_ENV"
-          (xcrun simctl boot "$udid" || true) &
           xcodebuild -project ios/Shiori.xcodeproj -scheme Shiori \
-            -destination "id=$udid" \
+            -destination "id=$SIMULATOR_UDID" \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/SourcePackages" \
             CODE_SIGNING_ALLOWED=NO \
             build-for-testing
-          wait
 
       - name: Unit tests
         # The ViewModels driven over inline clients (ShioriTests): no network, no
@@ -90,6 +97,10 @@ jobs:
         # built, without compiling anything again.
         run: |
           set -euo pipefail
+          # Says how long the boot still had to go, so a slow one shows here.
+          start=$SECONDS
+          xcrun simctl bootstatus "$SIMULATOR_UDID" -b
+          echo "Simulator ready after a further $((SECONDS - start)) s"
           xcodebuild -project ios/Shiori.xcodeproj -scheme Shiori \
             -destination "id=$SIMULATOR_UDID" \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
