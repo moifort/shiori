@@ -37,48 +37,66 @@ jobs:
           mkdir -p ios/ShioriUITests/Support
           cp ios/Shiori/Shared/Secrets.swift.example ios/ShioriUITests/Support/TestSecrets.swift
 
+      # The SPM checkouts (Firebase above all) are what -resolvePackageDependencies
+      # spends its time cloning: kept between runs, keyed on the pinned versions.
+      - name: Restore the Swift packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/SourcePackages
+          key: spm-${{ runner.os }}-${{ hashFiles('ios/Shiori.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+
       - name: Generate Apollo GraphQL code (gitignored, regenerated per build)
         run: |
           set -euo pipefail
           # Resolve SPM so the apollo-ios checkout (and its bundled CLI) exists.
           xcodebuild -resolvePackageDependencies \
-            -project ios/Shiori.xcodeproj -scheme Shiori
+            -project ios/Shiori.xcodeproj -scheme Shiori \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/SourcePackages"
           # Apollo 2.x ships the CLI as a tarball inside the checkout — extract it.
-          CLI_DIR=$(find "$HOME/Library/Developer/Xcode/DerivedData" -type d \
-            -path "*/SourcePackages/checkouts/apollo-ios/CLI" | head -1)
+          CLI_DIR="$RUNNER_TEMP/SourcePackages/checkouts/apollo-ios/CLI"
           tar -xzf "$CLI_DIR/apollo-ios-cli.tar.gz" -C "$CLI_DIR"
           chmod +x "$CLI_DIR/apollo-ios-cli"
           (cd ios && "$CLI_DIR/apollo-ios-cli" generate)
 
-      - name: Build the app
-        run: |
-          set -euo pipefail
-          # A generic simulator destination: the check is that the app compiles, so it
-          # needs no booted device and no signing identity (release-ios.yml owns those).
-          xcodebuild -project ios/Shiori.xcodeproj -scheme Shiori \
-            -destination 'generic/platform=iOS Simulator' \
-            CODE_SIGNING_ALLOWED=NO \
-            build
-
-      - name: Unit tests
-        # The ViewModels driven over inline clients (ShioriTests): no network, no
-        # Firebase, only a simulator to host the bundle — the first iPhone the
-        # runner has.
+      - name: Build the app and its tests
+        # Compiled once, for the simulator the tests then run on: no signing
+        # identity needed (release-ios.yml owns those). The simulator boots in the
+        # background while the compiler works.
         run: |
           set -euo pipefail
           udid=$(xcrun simctl list devices available | grep -m1 -E '^ +iPhone' \
             | grep -oE '[0-9A-F]{8}(-[0-9A-F]{4}){3}-[0-9A-F]{12}')
-          xcodebuild test -project ios/Shiori.xcodeproj -scheme Shiori \
+          echo "SIMULATOR_UDID=$udid" >> "$GITHUB_ENV"
+          (xcrun simctl boot "$udid" || true) &
+          xcodebuild -project ios/Shiori.xcodeproj -scheme Shiori \
             -destination "id=$udid" \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/SourcePackages" \
+            CODE_SIGNING_ALLOWED=NO \
+            build-for-testing
+          wait
+
+      - name: Unit tests
+        # The ViewModels driven over inline clients (ShioriTests): no network, no
+        # Firebase, only a simulator to host the bundle. Runs what the step above
+        # built, without compiling anything again.
+        run: |
+          set -euo pipefail
+          xcodebuild -project ios/Shiori.xcodeproj -scheme Shiori \
+            -destination "id=$SIMULATOR_UDID" \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/SourcePackages" \
             -only-testing:ShioriTests \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            test-without-building
 
       - uses: oven-sh/setup-bun@v2
 
       - name: Every string has its French and its English
         # Reads the strings the build just extracted: one added to the code and
         # left out of the catalogue fails here, as does one with no English.
-        run: bun scripts/check-strings.ts "$HOME/Library/Developer/Xcode/DerivedData"
+        run: bun scripts/check-strings.ts "$RUNNER_TEMP/DerivedData"
 
       - name: Components stay pure and previewed
         # docs/ios-guide.md: nothing under components/, Shared/Components or
