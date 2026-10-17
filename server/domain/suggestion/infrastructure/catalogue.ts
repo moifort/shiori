@@ -1,6 +1,7 @@
 import { CoverUrl } from '~/domain/book/primitives'
 import type { CoverUrl as CoverUrlType } from '~/domain/book/types'
 import { createLogger } from '~/system/logger'
+import { isTimeout } from '~/utils/fetch'
 
 const logger = createLogger('suggestion')
 
@@ -28,7 +29,9 @@ export const coverOf = async (title: string, author: string): Promise<CoverUrlTy
       ? CoverUrl(`https://covers.openlibrary.org/b/id/${coverId}-M.jpg?default=false`)
       : undefined
   } catch (error) {
-    logger.warn('Open Library search failed', { error, title })
+    // Running out of time is the cutoff above doing its job, not a failure to look into.
+    if (isTimeout(error)) logger.info('Open Library search timed out', { title })
+    else logger.warn('Open Library search failed', { error, title })
     return undefined
   }
 }
