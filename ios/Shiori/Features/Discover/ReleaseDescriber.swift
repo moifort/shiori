@@ -12,12 +12,29 @@ final class ReleaseDescriber {
 
     private let describeSeed: @Sendable (ReleaseSeed) async throws -> ReleaseDescription
     private(set) var description: ReleaseDescription?
+    /// The AI is writing the description, and has been for long enough to be
+    /// worth saying: a page answered from the server's cache in a blink never
+    /// shows it, where announcing it on every opening made the bar flash.
     private(set) var isDescribing = false
+    private var inFlight = false
+
+    /// How long a call may run before the AI is said to be at work. A cached
+    /// answer is back well within it; a model call never is.
+    private static let grace: Duration = .milliseconds(400)
 
     func describe(_ seed: ReleaseSeed) async {
-        guard description == nil, !isDescribing else { return }
-        isDescribing = true
-        defer { isDescribing = false }
+        guard description == nil, !inFlight else { return }
+        inFlight = true
+        defer {
+            inFlight = false
+            isDescribing = false
+        }
+        let announce = Task { [weak self] in
+            try? await Task.sleep(for: Self.grace)
+            guard !Task.isCancelled else { return }
+            self?.isDescribing = true
+        }
+        defer { announce.cancel() }
         do {
             let found = try await describeSeed(seed)
             withAnimation(.smooth) { description = found }

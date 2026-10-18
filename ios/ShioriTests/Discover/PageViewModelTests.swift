@@ -57,6 +57,35 @@ struct SuggestionViewModelTests {
 }
 
 @MainActor
+struct ReleaseDescriberTests {
+    @Test func aCachedAnswerNeverSaysTheAIIsAtWork() async {
+        let seen = Calls()
+        let describer = ReleaseDescriber { _ in .preview }
+        // Observed as the page would: the flag is sampled when the answer lands.
+        await describer.describe(Suggestion.preview.seed)
+        seen.record(describer.isDescribing ? "on" : "off")
+
+        #expect(seen.all == ["off"])
+        #expect(describer.description != nil)
+    }
+
+    @Test func aSlowAnswerSaysTheAIIsAtWorkThenStops() async {
+        let describer = ReleaseDescriber { _ in
+            try await Task.sleep(for: .milliseconds(700))
+            return .preview
+        }
+        async let done: Void = describer.describe(Suggestion.preview.seed)
+        try? await Task.sleep(for: .milliseconds(550))
+        let midway = describer.isDescribing
+        await done
+
+        #expect(midway == true)
+        #expect(describer.isDescribing == false)
+        #expect(describer.description != nil)
+    }
+}
+
+@MainActor
 struct AwaitedEditionViewModelTests {
     @Test func theDescriptionFillsThePage() async {
         let viewModel = AwaitedEditionViewModel(edition: .preview, client: .preview)
