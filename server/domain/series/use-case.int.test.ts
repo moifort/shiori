@@ -488,7 +488,7 @@ describe('a saga opened without waiting for its catalogue', () => {
       },
     })
 
-  test('answers the volumes held, awaiting its catalogue, with no model call', async () => {
+  test('answers the volumes held and no gap, awaiting its catalogue, with no model call', async () => {
     await holdVolume(3)
 
     // No Gemini mock here: a model call would fail the test.
@@ -503,7 +503,7 @@ describe('a saga opened without waiting for its catalogue', () => {
       awaitingCatalogue: true,
     })
     expect(drawn?.provisional).toBeUndefined()
-    expect(drawn?.volumes.map((volume) => Number(volume.number))).toEqual([1, 2, 3])
+    expect(drawn?.volumes.map((volume) => Number(volume.number))).toEqual([3])
     expect(fake.snapshot('series').size).toBe(0)
   })
 

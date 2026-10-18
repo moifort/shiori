@@ -1042,7 +1042,7 @@ describe('a saga opened without waiting for its catalogue', () => {
         name: 'Dune',
         awaitingCatalogue: true,
         provisional: false,
-        spine: [{ number: 1 }, { number: 2 }],
+        spine: [{ number: 2 }],
       },
     })
     expect(calls).toEqual([])

@@ -360,9 +360,11 @@ export namespace SeriesUseCase {
   }
 
   /** A saga nobody catalogued, for a screen that draws at once and asks for
-   *  the catalogue next: the reader's own volumes at their numbers, under the
-   *  name and author the catalogue would be asked for with. Null when there is
-   *  nothing to ask with, as the catalogue call would answer. */
+   *  the catalogue next: the reader's own volumes at their numbers and nothing
+   *  between them — a gap would be a volume to add under the saga's name, for
+   *  the few seconds before the catalogue names it — under the name and author
+   *  the catalogue would be asked for with. Null when there is nothing to ask
+   *  with, as the catalogue call would answer. */
   const awaitingCatalogue = (
     seriesId: SeriesId,
     held: readonly Book[],
@@ -381,11 +383,16 @@ export namespace SeriesUseCase {
       held,
       VolumeNumber(1),
     )
-    // No volume numbered: nothing stands for a first volume nobody listed yet.
-    const volumes = held.some((book) => book.series?.volume !== undefined) ? drawn.volumes : []
+    const numbers = new Set(
+      held.flatMap((book) =>
+        book.series?.kind === 'main' && book.series.volume !== undefined
+          ? [Number(book.series.volume)]
+          : [],
+      ),
+    )
     return {
       ...drawn,
-      volumes,
+      volumes: drawn.volumes.filter((volume) => numbers.has(Number(volume.number))),
       ...(edition ? { language: edition } : {}),
       awaitingCatalogue: true,
     }
