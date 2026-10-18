@@ -109,6 +109,7 @@ Shiori is free, with scans included every month. **Premium** unlocks:
 Choose a monthly or a yearly plan; the yearly plan starts with a free month.
 
 <p align="center">
-  <a href="https://moifort.github.io/shiori/">Privacy Policy</a> ·
+  <a href="https://moifort.github.io/shiori/">Website</a> ·
+  <a href="https://moifort.github.io/shiori/privacy.html">Privacy Policy</a> ·
   <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/">Terms of Use</a>
 </p>
