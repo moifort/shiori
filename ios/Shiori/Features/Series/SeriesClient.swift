@@ -7,6 +7,8 @@ typealias SeriesScreenData = (series: BookSeries?, opinion: SeriesOpinion?, owne
 /// through `SeriesAPI` and its neighbours, a test builds the one it needs.
 struct SeriesClient: Sendable {
     var screen: @Sendable (_ id: String, BookLanguage?, SeriesProposal?) async throws -> SeriesScreenData
+    /// The catalogue the AI builds for a saga the screen found awaiting one.
+    var catalogue: @Sendable (_ id: String, BookLanguage?, SeriesProposal?) async throws -> BookSeries?
     /// A saga opened from a friend's shelf: the catalogue, and where they stand.
     var friendScreen: @Sendable (_ friendId: String, _ seriesId: String, BookLanguage?)
         async throws -> (series: BookSeries?, saga: FriendSaga?)
@@ -41,6 +43,7 @@ struct SeriesClient: Sendable {
 extension SeriesClient {
     static let live = SeriesClient(
         screen: { try await SeriesAPI.screen(id: $0, language: $1, proposal: $2) },
+        catalogue: { try await SeriesAPI.catalogue(id: $0, language: $1, proposal: $2) },
         friendScreen: { try await FriendsAPI.sagaScreen(friendId: $0, seriesId: $1, language: $2) },
         releases: { try await DiscoverAPI.sagaReleases(seriesId: $0, language: $1) },
         lookUpReleases: { try await DiscoverAPI.lookUpSaga(seriesId: $0, language: $1) },

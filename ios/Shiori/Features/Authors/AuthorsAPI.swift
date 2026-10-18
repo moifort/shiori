@@ -10,10 +10,16 @@ enum AuthorsAPI {
     /// An author's page. Nil when the reader no longer holds a book of theirs,
     /// unless `offered` names them: an author a friend loves, opened from
     /// Découvrir, whose page is then built for a reader who holds nothing.
-    static func page(key: String, offered: String? = nil) async throws -> AuthorPage? {
+    /// `waitForCatalogue` false answers at once for an author nobody described,
+    /// with `isAwaitingCatalogue` set; true waits while the AI builds it.
+    static func page(key: String, offered: String? = nil, waitForCatalogue: Bool = false) async throws -> AuthorPage? {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.AuthorPageQuery(key: key, offered: offered.map { .some($0) } ?? .none),
+            query: ShioriGraphQL.AuthorPageQuery(
+                key: key,
+                offered: offered.map { .some($0) } ?? .none,
+                waitForCatalogue: waitForCatalogue
+            ),
             requestTimeout: firstOpeningTimeout
         )
         guard let page = data.authorPage else { return nil }
@@ -49,7 +55,8 @@ enum AuthorsAPI {
                     title: $0.title,
                     publishedIn: $0.publishedIn,
                     coverURL: $0.coverUrl.flatMap(URL.init(string:))
-                ) }
+                ) },
+            isAwaitingCatalogue: page.awaitingCatalogue
         )
     }
 

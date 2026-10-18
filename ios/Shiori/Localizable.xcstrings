@@ -2905,22 +2905,6 @@
         }
       }
     },
-    "Chargement de la fiche…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Loading the page…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chargement de la fiche…"
-          }
-        }
-      }
-    },
     "Chargement de la suite" : {
       "localizations" : {
         "en" : {
@@ -2997,22 +2981,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chargement de votre bibliothèque..."
-          }
-        }
-      }
-    },
-    "Chargement du catalogue…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Loading the catalogue…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chargement du catalogue…"
           }
         }
       }
@@ -5681,6 +5649,22 @@
         }
       }
     },
+    "L'IA cherche les parutions" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI is looking for new releases"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'IA cherche les parutions"
+          }
+        }
+      }
+    },
     "L'IA complète la fiche" : {
       "localizations" : {
         "en" : {
@@ -5693,6 +5677,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "L'IA complète la fiche"
+          }
+        }
+      }
+    },
+    "L'IA complète le catalogue" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI is completing the catalogue"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'IA complète le catalogue"
           }
         }
       }
@@ -6745,38 +6745,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mettre à jour"
-          }
-        }
-      }
-    },
-    "Mise à jour de la fiche…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Updating the record…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mise à jour de la fiche…"
-          }
-        }
-      }
-    },
-    "Mise à jour du catalogue…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Updating the catalogue…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mise à jour du catalogue…"
           }
         }
       }
@@ -8521,22 +8489,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prénom"
-          }
-        }
-      }
-    },
-    "Préparation de la fiche…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Preparing the book page…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Préparation de la fiche…"
           }
         }
       }

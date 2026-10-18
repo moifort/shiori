@@ -20,6 +20,43 @@ struct SeriesViewModelTests {
         #expect(viewModel.isLoading == false)
     }
 
+    @Test func sagaAwaitingItsCatalogueIsBuiltWhileTheVolumesShow() async {
+        let full = SeriesFixtures.screen
+        var awaiting = full.series
+        awaiting?.isAwaitingCatalogue = true
+        let asked = Calls()
+        var client = SeriesClient.preview
+        client.screen = { [awaiting] _, _, _ in (awaiting, full.opinion, full.owned) }
+        client.catalogue = { _, _, _ in
+            asked.record("catalogue")
+            return full.series
+        }
+        let viewModel = model(client)
+        await viewModel.load()
+        #expect(viewModel.series?.isAwaitingCatalogue == true)
+
+        await viewModel.buildCatalogueIfAwaiting()
+
+        #expect(asked.all == ["catalogue"])
+        #expect(viewModel.series?.isAwaitingCatalogue == false)
+        #expect(viewModel.generating == nil)
+    }
+
+    @Test func storedCatalogueIsNotBuiltAgain() async {
+        let asked = Calls()
+        var client = SeriesClient.preview
+        client.catalogue = { _, _, _ in
+            asked.record("catalogue")
+            return nil
+        }
+        let viewModel = model(client)
+        await viewModel.load()
+
+        await viewModel.buildCatalogueIfAwaiting()
+
+        #expect(asked.all.isEmpty)
+    }
+
     @Test func friendsShelfAsksTheirSaga() async {
         let asked = Calls()
         var client = SeriesClient.preview

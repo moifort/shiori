@@ -47,6 +47,7 @@ struct AwardWinnerPage: View {
             }
         }
         .listStyle(.insetGrouped)
+        .generatingInBar(isDescribing ? "L'IA complète la fiche" : nil)
         .labelStyle(.row)
         .navigationTitle(Text(verbatim: winner.mentions.first?.award.shortName ?? ""))
         .navigationBarTitleDisplayMode(.inline)

@@ -22,6 +22,22 @@ struct AuthorViewModelTests {
         #expect(asked.all == ["nil", "Robin Hobb"])
     }
 
+    @Test func authorAwaitingTheCatalogueIsBuiltWhileTheBooksShow() async {
+        var awaiting = AuthorPage.preview
+        awaiting.isAwaitingCatalogue = true
+        var client = AuthorsClient.preview
+        client.page = { [awaiting] _, _ in awaiting }
+        client.catalogue = { _, _ in .preview }
+        let viewModel = model(client)
+        await viewModel.load()
+        #expect(viewModel.page?.isAwaitingCatalogue == true)
+
+        await viewModel.buildCatalogueIfAwaiting()
+
+        #expect(viewModel.page?.isAwaitingCatalogue == false)
+        #expect(viewModel.isGenerating == false)
+    }
+
     @Test func pageWithoutReleasesStillShows() async {
         var client = AuthorsClient.preview
         client.releases = { _ in throw Boom() }

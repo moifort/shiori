@@ -545,6 +545,9 @@ struct BookSeries: Identifiable, Sendable {
     /// has. Their volumes sit at their numbers and the saga's name stands in
     /// for the rest, with no year and no description.
     var isProvisional = false
+    /// Nobody had catalogued the saga: only the volumes held, while the AI
+    /// builds the catalogue the screen asks for next.
+    var isAwaitingCatalogue = false
     /// The saga heard rather than read: its volumes are the ones recorded as
     /// audiobooks, dated by their recordings. The same saga in print is another
     /// saga, under another id.

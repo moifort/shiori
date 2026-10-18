@@ -50,9 +50,9 @@ struct SeriesPage: View {
     var body: some View {
         Group {
             if isLoading && series == nil && owned.isEmpty {
-                // Labelled because the first opening of a saga an import named
-                // is where the server builds its catalogue, which takes a while.
-                ProgressView("Chargement du catalogue…")
+                // Reading what is stored: the AI building a catalogue nobody
+                // had is said in the bar, over the volumes held.
+                ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let series {
                 catalogue(series)

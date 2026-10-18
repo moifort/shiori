@@ -59,6 +59,7 @@ extension AuthorsClient {
     /// Answers from the fixtures and accepts every write.
     static let preview = AuthorsClient(
         page: { _, _ in .preview },
+        catalogue: { _, _ in .preview },
         releases: { _ in [:] },
         refresh: { _ in true },
         stopAwaiting: { _ in },

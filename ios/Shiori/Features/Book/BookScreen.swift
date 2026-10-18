@@ -77,24 +77,22 @@ struct BookScreen: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
+            // The AI at work — a shelf book described on its first opening, or a
+            // refresh: said in the bar, so the page under it stays readable and
+            // every action stays at hand.
+            .generatingInBar(
+                viewModel.isDescribing || viewModel.isRefreshing ? "L'IA complète la fiche" : nil
+            )
             // Toolbar actions close their menu before the mutation leaves, so the
             // call is made visible by a scrim rather than by the control itself.
             .overlay {
-                if viewModel.isRefreshing {
-                    ZStack {
-                        Color.black.opacity(0.1).ignoresSafeArea()
-                        ProgressView("Mise à jour de la fiche…")
-                            .padding()
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-                    }
-                } else if viewModel.isSaving {
+                if viewModel.isSaving {
                     ZStack {
                         Color.black.opacity(0.1).ignoresSafeArea()
                         ProgressView()
                     }
                 }
             }
-            .disabled(viewModel.isRefreshing)
             .sheet(item: $openAwaited) { edition in
                 NavigationStack {
                     AwaitedEditionScreen(edition: edition) {
@@ -231,14 +229,6 @@ struct BookScreen: View {
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
             ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
-        }
-        // A shelf book described on its first opening: said in the bar, so the
-        // page under it stays readable and every action stays at hand.
-        if viewModel.isDescribing {
-            ToolbarItem(placement: .principal) {
-                GeneratingLabel(text: "L'IA complète la fiche")
-                    .accessibilityIdentifier("book-describing")
-            }
         }
         if let book = viewModel.book {
             // The heart gets the corner to itself rather than a line in the menu:

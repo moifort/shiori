@@ -5,7 +5,8 @@ import SwiftUI
 /// draws it.
 ///
 /// The first opening, by anyone, builds the author's shared catalogue on the
-/// server, portrait included, which takes a few seconds; every later one reads it.
+/// server, portrait included, which takes a few seconds: the reader's books are
+/// drawn first, and the bar says the AI is at work. Every later opening reads it.
 struct AuthorScreen: View {
     /// Opened as a sheet — from the Authors shelf, as a book opens from the
     /// library — rather than pushed: a close button in the corner.
@@ -43,7 +44,10 @@ struct AuthorScreen: View {
             case .refresh: await viewModel.load()
             }
         }
-        .task { await viewModel.load() }
+        .task {
+            await viewModel.load()
+            await viewModel.buildCatalogueIfAwaiting()
+        }
         .sheet(item: $selectedBook) { book in
             BookScreen(
                 bookId: book.id,
@@ -90,22 +94,14 @@ struct AuthorScreen: View {
                 }
             }
         }
+        // What the AI is writing, said in the bar: the page under it stays
+        // readable and every action at hand.
+        .generatingInBar(viewModel.isGenerating ? "L'IA complète la fiche" : nil)
         .alert("Fiche non mise à jour", isPresented: $viewModel.refreshFailed) {
             Button("OK", role: .cancel) {}
         } message: {
             Text("Shiori n'a rien trouvé de plus sur cet auteur. L'ancienne fiche est conservée ; réessayez plus tard.")
         }
-        .overlay {
-            if viewModel.isRefreshing {
-                ZStack {
-                    Color.black.opacity(0.1).ignoresSafeArea()
-                    ProgressView("Mise à jour de la fiche…")
-                        .padding()
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-                }
-            }
-        }
-        .disabled(viewModel.isRefreshing)
         .alert(
             "Une erreur est survenue",
             isPresented: .init(

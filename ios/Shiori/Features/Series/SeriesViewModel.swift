@@ -26,6 +26,12 @@ final class SeriesViewModel {
     /// A rating, a heart, a refresh or the removal is on its way.
     private(set) var isSaving = false
     private(set) var isRefreshing = false
+    /// The AI is building the catalogue of a saga nobody had catalogued: the
+    /// volumes held are on screen meanwhile, and every action stays at hand.
+    private(set) var isCataloguing = false
+    /// The AI is looking for the saga's next volume in an edition nobody
+    /// watched yet.
+    private(set) var isLookingUpReleases = false
     /// The refresh came back with nothing: the catalogue on screen is the old one.
     var refreshFailed = false
     /// The next volume announced in the edition opened. Last opening's at
@@ -71,6 +77,14 @@ final class SeriesViewModel {
         return series.spine.first { !$0.isForthcoming(asOf: year, in: language, datedUpTo: datedUpTo) }
     }
 
+    /// What the AI is writing for this screen, said in its bar; nil when
+    /// nothing is being written.
+    var generating: LocalizedStringKey? {
+        if isCataloguing || isRefreshing { return "L'IA complète le catalogue" }
+        if isLookingUpReleases { return "L'IA cherche les parutions" }
+        return nil
+    }
+
     /// The saga's name, from the catalogue or else from a volume held.
     var name: String { series?.name ?? owned.first?.series?.name ?? "" }
 
@@ -92,6 +106,22 @@ final class SeriesViewModel {
             owned = screen.owned
         } catch {
             errorMessage = reportError(error)
+        }
+    }
+
+    /// Builds the catalogue of a saga the screen found awaiting one: the
+    /// volumes held stay on screen while the AI writes it, then it slides in.
+    /// Nil from the model leaves the saga uncatalogued, as a first opening that
+    /// waited would have.
+    func buildCatalogueIfAwaiting() async {
+        guard series?.isAwaitingCatalogue == true, !isCataloguing else { return }
+        isCataloguing = true
+        defer { isCataloguing = false }
+        do {
+            let built = try await client.catalogue(seriesId, language, proposal)
+            withAnimation(.smooth) { series = built }
+        } catch {
+            _ = reportError(error)
         }
     }
 
@@ -123,6 +153,8 @@ final class SeriesViewModel {
             // Nobody ever looked the saga up in this edition: it is looked up
             // now, and the section slides in when the web has answered.
             if !fetched.watched {
+                isLookingUpReleases = true
+                defer { isLookingUpReleases = false }
                 fetched = try await client.lookUpReleases(seriesId, language)
                 withAnimation(.smooth) { releases = fetched }
             }
@@ -185,15 +217,13 @@ final class SeriesViewModel {
     /// Asks the world about the saga again. When it could not be rebuilt the
     /// old catalogue stays, and the reader is told.
     func refreshCatalogue() async {
-        isSaving = true
+        // The page stays usable meanwhile: the bar says the AI is at work.
+        guard !isRefreshing, !isCataloguing else { return }
         isRefreshing = true
-        defer {
-            isSaving = false
-            isRefreshing = false
-        }
+        defer { isRefreshing = false }
         do {
             if let refreshed = try await client.refresh(seriesId, language) {
-                series = refreshed
+                withAnimation(.smooth) { series = refreshed }
             } else {
                 refreshFailed = true
             }

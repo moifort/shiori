@@ -34,8 +34,12 @@ fragment FollowedAuthorRow on FollowedAuthor {
 # reads it. The sagas come as the Series tab draws them; the books outside any
 # saga with everything their row shows. `offered` names an author a friend
 # loves whom the reader holds nothing of, opened from Découvrir.
-query AuthorPage($key: AuthorKey!, $offered: AuthorName) {
-  authorPage(key: $key, offered: $offered) {
+# `waitForCatalogue: false` answers at once for an author nobody described,
+# `awaitingCatalogue` set; the screen then asks again with true, and the AI
+# builds the catalogue while the reader's books are on screen.
+query AuthorPage($key: AuthorKey!, $offered: AuthorName, $waitForCatalogue: Boolean!) {
+  authorPage(key: $key, offered: $offered, waitForCatalogue: $waitForCatalogue) {
+    awaitingCatalogue
     author {
       key
       name

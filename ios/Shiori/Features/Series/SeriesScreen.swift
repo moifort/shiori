@@ -86,25 +86,21 @@ struct SeriesScreen: View {
             }
             if viewModel.friend == nil { ownerToolbar }
         }
+        // What the AI is writing, said in the bar: the page under it stays
+        // readable and every action at hand.
+        .generatingInBar(viewModel.generating)
         .alert("Catalogue non mis à jour", isPresented: $viewModel.refreshFailed) {
             Button("OK", role: .cancel) {}
         } message: {
             Text("Shiori n'a pas réussi à reconstituer le catalogue de cette série. L'ancien est conservé ; réessayez plus tard.")
         }
         // The stars commit on the tap and the control cannot show the call
-        // itself, so the wait is made visible by a scrim. A refresh is one
-        // grounded model call and takes a while, so its scrim says so.
+        // itself, so the wait is made visible by a scrim.
         .overlay {
             if viewModel.isSaving {
                 ZStack {
                     Color.black.opacity(0.1).ignoresSafeArea()
-                    if viewModel.isRefreshing {
-                        ProgressView("Mise à jour du catalogue…")
-                            .padding()
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-                    } else {
-                        ProgressView()
-                    }
+                    ProgressView()
                 }
             }
         }
@@ -175,7 +171,10 @@ struct SeriesScreen: View {
                 }
             }
         }
-        .task { await viewModel.load() }
+        .task {
+            await viewModel.load()
+            await viewModel.buildCatalogueIfAwaiting()
+        }
         .task { await viewModel.loadReleases() }
     }
 

@@ -70,6 +70,9 @@ struct AuthorPage: Sendable {
     let books: [Book]
     /// Their other books outside any saga, which the reader does not hold.
     let booksNotHeld: [AuthorWork]
+    /// Nobody had described the author: only the reader's books, while the AI
+    /// builds the catalogue the screen asks for next.
+    var isAwaitingCatalogue = false
 }
 
 /// A saga the author wrote that the reader holds nothing of.

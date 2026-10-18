@@ -99,12 +99,14 @@ final class BookViewModel {
     /// Brings the record up to date from the web. A refusal the reader can act
     /// on is told in their words rather than the server's.
     func refresh() async {
-        // The description under way is that very lookup, and free.
-        guard !isDescribing else { return }
+        // The description under way is that very lookup, and free; a refresh
+        // under way is already asking.
+        guard !isDescribing, !isRefreshing else { return }
         isRefreshing = true
         defer { isRefreshing = false }
         do {
-            book = try await client.refresh(bookId)
+            let refreshed = try await client.refresh(bookId)
+            withAnimation(.smooth) { book = refreshed }
         } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {
             errorMessage = String(localized: "Vous avez utilisé tous vos scans. La mise à jour d'une fiche en consomme un.")
         } catch let APIError.domain(code, _) where code == "SCAN_FAILED" {

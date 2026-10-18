@@ -37,6 +37,7 @@ struct AnnouncedVolumePage: View {
             ReleaseDescriptionSections(isDescribing: isDescribing, synopsis: shown.synopsis)
         }
         .listStyle(.insetGrouped)
+        .generatingInBar(isDescribing ? "L'IA complète la fiche" : nil)
         .labelStyle(.row)
         .navigationTitle(Text(verbatim: opened.saga.series.name))
         .navigationBarTitleDisplayMode(.inline)

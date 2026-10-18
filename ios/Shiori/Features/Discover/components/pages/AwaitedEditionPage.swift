@@ -45,6 +45,7 @@ struct AwaitedEditionPage: View {
             ReleaseDescriptionSections(isDescribing: isDescribing, synopsis: shown.synopsis)
         }
         .listStyle(.insetGrouped)
+        .generatingInBar(isDescribing ? "L'IA complète la fiche" : nil)
         .labelStyle(.row)
         .navigationTitle(edition.format.awaitedTitle)
         .navigationBarTitleDisplayMode(.inline)

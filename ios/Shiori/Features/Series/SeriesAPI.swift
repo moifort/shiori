@@ -45,6 +45,27 @@ enum SeriesAPI {
         )
     }
 
+    /// The catalogue of a saga the screen found awaiting one, built by the AI
+    /// on this call. Nil when the model found nothing to say.
+    static func catalogue(
+        id: String,
+        language: BookLanguage? = nil,
+        proposal: SeriesProposal? = nil
+    ) async throws -> BookSeries? {
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.SeriesCatalogueBuiltQuery(
+                id: id,
+                language: graphQLLanguage(language),
+                proposed: proposal.map {
+                    .some(ShioriGraphQL.ProposedSagaInput(author: $0.author, name: $0.name))
+                } ?? .none
+            ),
+            requestTimeout: firstOpeningTimeout
+        )
+        return data.series.map { BookSeries(catalogue: $0.fragments.seriesCatalogue) }
+    }
+
     /// Asks the world about the saga again: a fresh catalogue replaces the
     /// stored one, for everyone. Nil when it could not be rebuilt — the model
     /// failed or found nothing — in which case the previous catalogue stands.
@@ -299,6 +320,7 @@ extension BookSeries {
             spine: catalogue.spine.map { $0.fragments.volumeEntry.asVolume },
             relatedWorks: catalogue.relatedWorks.map { $0.fragments.volumeEntry.asVolume },
             isProvisional: catalogue.provisional,
+            isAwaitingCatalogue: catalogue.awaitingCatalogue,
             isAudio: catalogue.audio,
             catalogedAt: GraphQLHelpers.parseISO8601(catalogue.catalogedAt)
         )

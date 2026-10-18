@@ -14,6 +14,7 @@ extension SeriesClient {
     /// Answers from the showcase library and accepts every write.
     static let preview = SeriesClient(
         screen: { id, _, _ in Showcase.seriesScreen(id: id) },
+        catalogue: { id, _, _ in Showcase.seriesScreen(id: id).series },
         friendScreen: { _, id, _ in (Showcase.seriesScreen(id: id).series, nil) },
         releases: { id, _ in Showcase.sagaReleases(seriesId: id) },
         lookUpReleases: { id, _ in Showcase.sagaReleases(seriesId: id) },

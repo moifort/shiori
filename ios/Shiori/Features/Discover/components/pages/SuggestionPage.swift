@@ -58,6 +58,7 @@ struct SuggestionPage: View {
             }
         }
         .listStyle(.insetGrouped)
+        .generatingInBar(isDescribing ? "L'IA complète la fiche" : nil)
         .labelStyle(.row)
         .navigationTitle(Text("Découverte"))
         .navigationBarTitleDisplayMode(.inline)

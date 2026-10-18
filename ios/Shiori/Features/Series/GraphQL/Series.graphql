@@ -4,9 +4,10 @@
 # is the edition the reader opened: a catalogue built on this opening titles its
 # volumes as that edition does, and only that edition's volumes answer. A saga
 # the reader holds nothing of — offered on an author's page — is catalogued from
-# the `proposed` name and author.
+# the `proposed` name and author. A saga nobody catalogued answers at once with
+# the volumes held, `awaitingCatalogue` set: SeriesCatalogueBuilt follows.
 query SeriesScreen($id: SeriesId!, $language: BookLanguage, $proposed: ProposedSagaInput) {
-  series(id: $id, language: $language, proposed: $proposed) {
+  series(id: $id, language: $language, proposed: $proposed, waitForCatalogue: false) {
     ...SeriesCatalogue
   }
   seriesOpinion(seriesId: $id) {
@@ -31,6 +32,14 @@ mutation AddAudibleSeriesVolume(
   }
 }
 
+# The catalogue of a saga nobody had catalogued, built by the AI on this call:
+# one grounded model call, while the screen shows the volumes held.
+query SeriesCatalogueBuilt($id: SeriesId!, $language: BookLanguage, $proposed: ProposedSagaInput) {
+  series(id: $id, language: $language, proposed: $proposed) {
+    ...SeriesCatalogue
+  }
+}
+
 # Ask the world about the saga again. The fresh catalogue replaces the stored
 # one for everyone; null means it could not be rebuilt and the old one stands.
 mutation RefreshSeries($seriesId: SeriesId!, $language: BookLanguage) {
@@ -46,6 +55,7 @@ fragment SeriesCatalogue on Series {
   author
   description
   provisional
+  awaitingCatalogue
   catalogedAt
   spine {
     ...VolumeEntry
