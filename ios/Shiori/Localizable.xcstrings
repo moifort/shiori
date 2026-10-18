@@ -5649,6 +5649,22 @@
         }
       }
     },
+    "L'IA cherche les livres" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI is finding the books"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'IA cherche les livres"
+          }
+        }
+      }
+    },
     "L'IA cherche les parutions" : {
       "localizations" : {
         "en" : {
@@ -5693,6 +5709,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "L'IA complète le catalogue"
+          }
+        }
+      }
+    },
+    "L'IA lit la couverture" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI is reading the cover"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'IA lit la couverture"
           }
         }
       }
@@ -8617,22 +8649,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Recherche de vos découvertes…"
-          }
-        }
-      }
-    },
-    "Recherche des livres…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Looking for books…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recherche des livres…"
           }
         }
       }

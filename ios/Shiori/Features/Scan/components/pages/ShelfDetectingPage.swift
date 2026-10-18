@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// The wait while a shelf photo is read: the reader's own photo, dimmed, with
-/// the one thing happening said under it. A single ungrounded call, so there
-/// are no phases to walk through as a cover scan has.
+/// The wait while a shelf photo is read: the reader's own photo swept by the
+/// `ScanBeam`, as a cover is, with the one thing happening said under it. A
+/// single ungrounded call, so there are no phases to walk through as a cover
+/// scan has.
 struct ShelfDetectingPage: View {
     let photo: UIImage?
 
@@ -12,21 +13,15 @@ struct ShelfDetectingPage: View {
                 Image(uiImage: photo)
                     .resizable()
                     .scaledToFit()
+                    .overlay { ScanBeam() }
                     .clipShape(.rect(cornerRadius: 12))
-                    .overlay {
-                        ZStack {
-                            Color.black.opacity(0.35)
-                            ProgressView().tint(.white).controlSize(.large)
-                        }
-                        .clipShape(.rect(cornerRadius: 12))
-                    }
+                    .shadow(color: .black.opacity(0.18), radius: 14, y: 8)
                     .padding(.horizontal, 24)
             } else {
-                ProgressView().controlSize(.large)
+                CoverScanLoader()
             }
-            VStack(spacing: 4) {
-                Text("Recherche des livres…")
-                    .font(.headline)
+            VStack(spacing: 6) {
+                GeneratingLabel(text: "L'IA cherche les livres", font: .headline)
                 Text("Aucun scan n'est décompté pendant la lecture.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)

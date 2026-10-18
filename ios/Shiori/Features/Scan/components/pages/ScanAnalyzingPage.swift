@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// Shown while the three model calls run. A cold scan takes the better part of a
+/// Shown while the model calls run. A cold scan takes the better part of a
 /// minute, so this shows the reader's own cover being swept by the scan and says
-/// what is happening, rather than a bare spinner over an unexplained wait.
+/// what is happening, rather than a bare spinner over an unexplained wait. The
+/// headline wears the glow, as the bar does elsewhere when the AI is writing.
 struct ScanAnalyzingPage: View {
     /// The JPEG that was sent for analysis, decoded once here for the loader.
     var coverData: Data?
@@ -20,10 +21,13 @@ struct ScanAnalyzingPage: View {
     var body: some View {
         VStack(spacing: 32) {
             CoverScanLoader(cover: cover)
-            Text(Self.phases[min(phase, Self.phases.count - 1)])
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .contentTransition(.opacity)
+            VStack(spacing: 6) {
+                GeneratingLabel(text: "L'IA lit la couverture", font: .headline)
+                Text(Self.phases[min(phase, Self.phases.count - 1)])
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .contentTransition(.opacity)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .task {
