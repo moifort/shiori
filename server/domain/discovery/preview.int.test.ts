@@ -31,6 +31,7 @@ mock.module('~/domain/scan/gemini', () => ({
   },
 }))
 mock.module('~/domain/scan/published-cover', () => ({
+  shelfCoverOf: async () => undefined,
   publishedCoverOf: async () => undefined,
   isCoverGone: async () => false,
 }))

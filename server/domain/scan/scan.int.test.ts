@@ -40,6 +40,7 @@ let covers: Record<string, string> = {}
 const coverLookups: string[] = []
 
 mock.module('~/domain/scan/open-library', () => ({
+  openLibraryIsbnsOf: async () => [],
   openLibraryCoverOf: async () => undefined,
   openLibraryCoverByTitle: async () => undefined,
 }))
@@ -51,6 +52,7 @@ mock.module('~/domain/author/infrastructure/open-library', () => ({
 }))
 
 mock.module('~/domain/scan/published-cover', () => ({
+  shelfCoverOf: async () => undefined,
   publishedCoverOf: async (isbn13: string) => {
     coverLookups.push(isbn13)
     return covers[isbn13]

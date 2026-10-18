@@ -107,6 +107,7 @@ mock.module('~/domain/discovery/infrastructure/amazon-catalogue', () => ({
         : 'unreachable',
 }))
 mock.module('~/domain/scan/published-cover', () => ({
+  shelfCoverOf: async () => undefined,
   publishedCoverOf: async () => 'https://covers.example/carl1.jpg',
   isCoverGone: async () => false,
 }))
