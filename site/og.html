@@ -1,0 +1,41 @@
+<!doctype html>
+<!-- The share image: rendered once at 1200×630 into og.jpg, never served as a page. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="style.css">
+<style>
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: var(--bg); }
+  .og { position: relative; width: 1200px; height: 630px; overflow: hidden; }
+  .og-text { position: absolute; left: 72px; top: 64px; z-index: 2; }
+  .og-brand { display: flex; align-items: center; gap: 14px; font-weight: 600; font-size: 26px; margin-bottom: 26px; }
+  .og-brand img { width: 44px; height: 44px; border-radius: 11px; box-shadow: 0 0 0 1px rgba(0,0,0,0.06); }
+  .og h1 { font-family: var(--serif); font-size: 92px; line-height: 0.98; letter-spacing: -0.025em; font-weight: 600; margin: 0 0 22px; }
+  .og p { font-size: 26px; color: var(--text-muted); margin: 0; max-width: 640px; line-height: 1.35; }
+  .og .wall { position: absolute; left: 0; right: 0; bottom: -150px; height: 380px; width: 1200px; margin: 0; z-index: 0; }
+  .og .wall-plane { transform: rotateX(30deg) rotateZ(-4deg); top: 10px; }
+  .og .wall-row img { width: 118px; }
+  .og .wall-fade { height: 30%; z-index: 2; }
+  .og .wall::before, .og .wall::after { width: 10%; }
+  .og-top-fade { position: absolute; left: 0; right: 0; top: 0; height: 420px; background: linear-gradient(var(--bg) 82%, rgba(255,253,248,0)); z-index: 1; }
+</style>
+</head>
+<body>
+<div class="og">
+  <div class="og-text">
+    <div class="og-brand"><img src="icon-256.png" alt="">Shiori</div>
+    <h1>One photo.<br><span class="gradient-text">Your whole library.</span></h1>
+    <p>Snap a cover: title, author, series and summary fill themselves in. Free on iPhone.</p>
+  </div>
+  <div class="og-top-fade"></div>
+  <div class="wall">
+    <div class="wall-fade"></div>
+    <div class="wall-plane">
+      <div class="wall-row" style="transform: translate3d(-40px, 0, 0)"><img src="covers/dune.jpg" alt="" loading="eager"><img src="covers/veiller-sur-elle.jpg" alt="" loading="eager"><img src="covers/chateau-animaux-01.jpg" alt="" loading="eager"><img src="covers/frieren-03.jpg" alt="" loading="eager"><img src="covers/nom-du-vent.jpg" alt="" loading="eager"><img src="covers/one-piece-01.jpg" alt="" loading="eager"><img src="covers/dcc-01.jpg" alt="" loading="eager"><img src="covers/spy-family-01.jpg" alt="" loading="eager"><img src="covers/blacksad-01.jpg" alt="" loading="eager"><img src="covers/trois-corps.jpg" alt="" loading="eager"><img src="covers/fourth-wing.jpg" alt="" loading="eager"><img src="covers/sapiens.jpg" alt="" loading="eager"><img src="covers/blue-lock-01.jpg" alt="" loading="eager"><img src="covers/hyperion.jpg" alt="" loading="eager"></div>
+      <div class="wall-row" style="transform: translate3d(-120px, 0, 0)"><img src="covers/one-piece-12.jpg" alt="" loading="eager"><img src="covers/jacaranda.jpg" alt="" loading="eager"><img src="covers/frieren-07.jpg" alt="" loading="eager"><img src="covers/projet-derniere-chance.jpg" alt="" loading="eager"><img src="covers/blue-lock-35.jpg" alt="" loading="eager"><img src="covers/monte-cristo.jpg" alt="" loading="eager"><img src="covers/chateau-animaux-02.jpg" alt="" loading="eager"><img src="covers/dcc-04.jpg" alt="" loading="eager"><img src="covers/demain-et-demain.jpg" alt="" loading="eager"><img src="covers/blacksad-05.jpg" alt="" loading="eager"><img src="covers/peur-du-sage.jpg" alt="" loading="eager"><img src="covers/frieren-15.jpg" alt="" loading="eager"><img src="covers/one-piece-114.jpg" alt="" loading="eager"><img src="covers/horde-du-contrevent.jpg" alt="" loading="eager"></div>
+      <div class="wall-row" style="transform: translate3d(-70px, 0, 0)"><img src="covers/sorceleur-01.jpg" alt="" loading="eager"><img src="covers/blue-lock-09.jpg" alt="" loading="eager"><img src="covers/foret-sombre.jpg" alt="" loading="eager"><img src="covers/one-piece-100.jpg" alt="" loading="eager"><img src="covers/frieren-01.jpg" alt="" loading="eager"><img src="covers/shibumi.jpg" alt="" loading="eager"><img src="covers/dcc-06.jpg" alt="" loading="eager"><img src="covers/blacksad-03.jpg" alt="" loading="eager"><img src="covers/fondation.jpg" alt="" loading="eager"><img src="covers/furtifs.jpg" alt="" loading="eager"><img src="covers/chateau-animaux-04.jpg" alt="" loading="eager"><img src="covers/one-piece-05.jpg" alt="" loading="eager"><img src="covers/messie-de-dune.jpg" alt="" loading="eager"><img src="covers/blue-lock-32.jpg" alt="" loading="eager"></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
