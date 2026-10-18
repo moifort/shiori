@@ -428,6 +428,11 @@ enum AuthorOrder {
 type AuthorPage {
   author: FollowedAuthor!
 
+  """
+  Answered to `authorPage(waitForCatalogue: false)` when nobody has described the author yet: `catalogue` is null and the page shows the reader’s own books. The app asks `authorPage` again with the default, which builds it.
+  """
+  awaitingCatalogue: Boolean!
+
   """The reader’s books of this author outside any saga, read ones first."""
   books: [Book!]!
 
@@ -3020,6 +3025,11 @@ type Query {
     The author as Découvrir offers one a friend loves, for an author the reader holds nothing of: their catalogue is asked for with this name, and all of it is something to add. Ignored unless it folds into `key`, and whenever the reader holds a book of theirs.
     """
     offered: AuthorName
+
+    """
+    False answers at once when nobody has described the author: the reader’s books with `awaitingCatalogue` set, and no model call. The app draws them, then asks again with the default to build the catalogue.
+    """
+    waitForCatalogue: Boolean = true
   ): AuthorPage
 
   """
@@ -3449,6 +3459,11 @@ type Query {
     The saga as an author’s page offers it, for a saga the reader holds nothing of: its catalogue is asked for with this name and author. Ignored unless they fold into `id`, and whenever the reader holds a volume.
     """
     proposed: ProposedSagaInput
+
+    """
+    False answers at once for a saga nobody catalogued: the reader’s own volumes with `awaitingCatalogue` set, and no model call. The app draws them, then asks again with the default to build the catalogue.
+    """
+    waitForCatalogue: Boolean = true
   ): Series
 
   """
@@ -3755,6 +3770,11 @@ type Series {
   """
   audio: Boolean!
   author: AuthorName!
+
+  """
+  Answered to `series(waitForCatalogue: false)` for a saga nobody has catalogued yet: only the reader's own volumes, at their numbers. The app shows them and asks `series` again, which builds the catalogue.
+  """
+  awaitingCatalogue: Boolean!
   catalogedAt: DateTime!
   description: SeriesDescription
 

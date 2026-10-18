@@ -1024,3 +1024,27 @@ describe('one row of the Series tab', () => {
     expect(await followedRow('EN')).toBeNull()
   })
 })
+
+describe('a saga opened without waiting for its catalogue', () => {
+  test('answers the volumes held, awaiting, with no model call', async () => {
+    await addVolume('Le Messie de Dune', 2)
+    calls.length = 0
+
+    const result = await execute(
+      `{ series(id: "dune--frank-herbert", waitForCatalogue: false) {
+        name awaitingCatalogue provisional spine { number }
+      } }`,
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data).toEqual({
+      series: {
+        name: 'Dune',
+        awaitingCatalogue: true,
+        provisional: false,
+        spine: [{ number: 1 }, { number: 2 }],
+      },
+    })
+    expect(calls).toEqual([])
+  })
+})

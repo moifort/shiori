@@ -23,6 +23,7 @@ import {
   matchingFilter,
   numberInCatalogue,
   progressOf,
+  provisionalCatalogueOf,
   withShelvedVolumes,
 } from '~/domain/series/business-rules'
 import {
@@ -31,6 +32,7 @@ import {
   keyWithAuthorReversed,
   seriesIdFor,
   seriesKeyOf,
+  VolumeNumber,
 } from '~/domain/series/primitives'
 import { SeriesQuery } from '~/domain/series/query'
 import type {
@@ -332,6 +334,7 @@ export namespace SeriesUseCase {
     language: ScanLanguage,
     edition?: BookLanguage,
     proposed?: ProposedSaga,
+    { waitForCatalogue = true }: { waitForCatalogue?: boolean } = {},
   ): Promise<Series | null> => {
     const shelf = await BookQuery.bySeries(userId, seriesId)
     const opened = { id: seriesId, language: editionOpened(shelf, language, edition) }
@@ -352,7 +355,40 @@ export namespace SeriesUseCase {
     // lists no recording of: asking again would make every opening wait on the
     // same empty answer. `recatalogue` asks regardless.
     if (isRecentMiss(await SeriesQuery.lastMiss(opened), new Date())) return null
+    if (!waitForCatalogue) return awaitingCatalogue(seriesId, held, opened.language, proposed)
     return catalogueFromLibrary(userId, seriesId, held, language, opened.language, proposed)
+  }
+
+  /** A saga nobody catalogued, for a screen that draws at once and asks for
+   *  the catalogue next: the reader's own volumes at their numbers, under the
+   *  name and author the catalogue would be asked for with. Null when there is
+   *  nothing to ask with, as the catalogue call would answer. */
+  const awaitingCatalogue = (
+    seriesId: SeriesId,
+    held: readonly Book[],
+    edition: BookLanguage | undefined,
+    proposed?: ProposedSaga,
+  ): Series | null => {
+    const volume = held.find((book) => book.series && book.authors.length > 0)
+    const source = volume?.series
+      ? { name: volume.series.name, author: volume.authors[0] }
+      : proposed && namesSaga(proposed, seriesId)
+        ? proposed
+        : undefined
+    if (!source) return null
+    const { provisional: _, ...drawn } = provisionalCatalogueOf(
+      { id: seriesId, name: source.name, author: source.author },
+      held,
+      VolumeNumber(1),
+    )
+    // No volume numbered: nothing stands for a first volume nobody listed yet.
+    const volumes = held.some((book) => book.series?.volume !== undefined) ? drawn.volumes : []
+    return {
+      ...drawn,
+      volumes,
+      ...(edition ? { language: edition } : {}),
+      awaitingCatalogue: true,
+    }
   }
 
   /** The catalogue of one edition asked of the world again, replacing the

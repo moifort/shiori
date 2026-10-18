@@ -61,6 +61,10 @@ export type Series = {
    *  standing in for the rest. Never stored — the shared catalogue holds what
    *  the world says, and a guess typed by one reader is not that. */
   provisional?: true
+  /** Answered to a screen that would not wait for the model: nobody has
+   *  catalogued the saga yet, so this is only the reader's own volumes, and the
+   *  catalogue is being asked for. Never stored. */
+  awaitingCatalogue?: true
 }
 
 /** A saga in one edition language: what a catalogue is looked up by. The

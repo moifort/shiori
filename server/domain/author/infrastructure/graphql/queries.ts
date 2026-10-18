@@ -183,6 +183,13 @@ const AuthorPageType = builder.objectRef<AuthorPage>('AuthorPage').implement({
         'reader’s own books, and only `refreshAuthor` asks again.',
       resolve: (page) => page.catalogue,
     }),
+    awaitingCatalogue: t.boolean({
+      description:
+        'Answered to `authorPage(waitForCatalogue: false)` when nobody has described ' +
+        'the author yet: `catalogue` is null and the page shows the reader’s own ' +
+        'books. The app asks `authorPage` again with the default, which builds it.',
+      resolve: (page) => page.awaitingCatalogue,
+    }),
     sagas: t.field({
       type: [FollowedSeriesType],
       description:
@@ -320,8 +327,18 @@ builder.queryFields((t) => ({
           'is something to add. Ignored unless it folds into `key`, and whenever the ' +
           'reader holds a book of theirs.',
       }),
+      waitForCatalogue: t.arg.boolean({
+        required: false,
+        defaultValue: true,
+        description:
+          'False answers at once when nobody has described the author: the reader’s ' +
+          'books with `awaitingCatalogue` set, and no model call. The app draws ' +
+          'them, then asks again with the default to build the catalogue.',
+      }),
     },
     resolve: (_root, args, { userId, event }) =>
-      AuthorUseCase.page(userId, args.key, languageOf(event), args.offered ?? undefined),
+      AuthorUseCase.page(userId, args.key, languageOf(event), args.offered ?? undefined, {
+        waitForCatalogue: args.waitForCatalogue ?? true,
+      }),
   }),
 }))

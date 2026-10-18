@@ -21,6 +21,7 @@ const coverSearches: string[] = []
 /** Set, Open Library times out on every search. */
 let openLibraryDown = false
 mock.module('~/domain/scan/open-library', () => ({
+  openLibraryIsbnsOf: async () => [],
   openLibraryCoverOf: async () => undefined,
   openLibraryCoverByTitle: async (title: string) => {
     coverSearches.push(title)
@@ -175,6 +176,41 @@ describe('an author’s page', () => {
       authors: [AuthorName('Brandon Sanderson')],
     })
   }
+
+  test('answers at once without the model when asked not to wait, then builds', async () => {
+    await holdSanderson()
+    const key = authorKeyOf('Brandon Sanderson')
+
+    const drawn = await AuthorUseCase.page(reader, key, 'fr', undefined, {
+      waitForCatalogue: false,
+    })
+
+    expect(calls).toEqual([])
+    expect(drawn?.catalogue).toBeNull()
+    expect(drawn?.awaitingCatalogue).toBe(true)
+    expect(drawn?.books.map((book) => String(book.title))).toEqual(['Elantris'])
+
+    answers = [sanderson]
+    const built = await AuthorUseCase.page(reader, key, 'fr')
+
+    expect(calls).toEqual(['author'])
+    expect(built?.awaitingCatalogue).toBe(false)
+    expect(built?.catalogue).not.toBeNull()
+  })
+
+  test('does not await a catalogue already stored, or one the model just failed', async () => {
+    await holdSanderson()
+    const key = authorKeyOf('Brandon Sanderson')
+    answers = [sanderson]
+    await AuthorUseCase.page(reader, key, 'fr')
+
+    const stored = await AuthorUseCase.page(reader, key, 'fr', undefined, {
+      waitForCatalogue: false,
+    })
+
+    expect(stored?.awaitingCatalogue).toBe(false)
+    expect(stored?.catalogue).not.toBeNull()
+  })
 
   test('is built on the first opening, portrait included, and read after', async () => {
     await holdSanderson()

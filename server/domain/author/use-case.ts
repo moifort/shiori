@@ -48,6 +48,9 @@ export type AuthorPage = {
   /** Null when the model could not describe the author: the page still shows
    *  the reader's own books, and only a refresh asks again. */
   catalogue: Author | null
+  /** Nobody has described the author yet, and the page would not wait for the
+   *  model: it draws the reader's books, and asks again for the catalogue. */
+  awaitingCatalogue: boolean
   /** The reader's sagas of this author, read into first. */
   sagas: FollowedSeries[]
   /** The reader's books of this author outside any saga, read first. */
@@ -94,18 +97,22 @@ export namespace AuthorUseCase {
     key: AuthorKey,
     language: Language,
     offered?: AuthorName,
+    { waitForCatalogue = true }: { waitForCatalogue?: boolean } = {},
   ): Promise<AuthorPage | null> => {
     const shelved =
       (await shelvedAuthors(userId)).find((author) => author.key === key) ??
       (offered ? unshelvedAuthorOf<Book>(key, offered, new Date()) : null)
     if (!shelved) return null
-    const [catalogue, sagas] = await Promise.all([
-      catalogueOf(shelved, language),
+    const [found, sagas] = await Promise.all([
+      waitForCatalogue ? catalogueOf(shelved, language) : storedCatalogueOf(shelved),
       SeriesUseCase.followedAmong(userId, new Set(shelved.seriesIds)),
     ])
+    const awaitingCatalogue = found === 'unasked'
+    const catalogue = found === 'unasked' ? null : found
     return {
       author: { ...shelved, portraitUrl: catalogue?.portraitUrl },
       catalogue,
+      awaitingCatalogue,
       sagas: inPageOrder(sagas),
       books: standaloneBooksOf(shelved.books),
       booksNotHeld: catalogue ? worksNotHeldOf(catalogue, shelved.books) : [],
@@ -164,6 +171,18 @@ export namespace AuthorUseCase {
       return isPortraitWorthSeeking(known, new Date()) ? AuthorCommand.seekPortrait(known) : known
     if (await AuthorQuery.lastMiss(shelved.key)) return null
     return askTheWeb(shelved, language)
+  }
+
+  /** The stored catalogue, as `catalogueOf` reads it, without asking the
+   *  model: `unasked` when building one is what would come next. */
+  const storedCatalogueOf = async (
+    shelved: ShelvedAuthor<Book>,
+  ): Promise<Author | null | 'unasked'> => {
+    const known = await AuthorQuery.byKey(shelved.key)
+    if (known)
+      return isPortraitWorthSeeking(known, new Date()) ? AuthorCommand.seekPortrait(known) : known
+    if (await AuthorQuery.lastMiss(shelved.key)) return null
+    return 'unasked'
   }
 
   const askTheWeb = async (

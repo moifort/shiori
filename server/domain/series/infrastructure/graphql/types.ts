@@ -140,5 +140,12 @@ export const SeriesType = builder.objectRef<Series>('Series').implement({
         'description. `refreshSeries` asks the world for the real one.',
       resolve: (series) => series.provisional === true,
     }),
+    awaitingCatalogue: t.boolean({
+      description:
+        'Answered to `series(waitForCatalogue: false)` for a saga nobody has ' +
+        "catalogued yet: only the reader's own volumes, at their numbers. The app " +
+        'shows them and asks `series` again, which builds the catalogue.',
+      resolve: (series) => series.awaitingCatalogue === true,
+    }),
   }),
 })

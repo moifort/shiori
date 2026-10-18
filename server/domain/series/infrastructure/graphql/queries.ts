@@ -181,6 +181,14 @@ builder.queryFields((t) => ({
           'of: its catalogue is asked for with this name and author. Ignored unless ' +
           'they fold into `id`, and whenever the reader holds a volume.',
       }),
+      waitForCatalogue: t.arg.boolean({
+        required: false,
+        defaultValue: true,
+        description:
+          'False answers at once for a saga nobody catalogued: the reader’s own ' +
+          'volumes with `awaitingCatalogue` set, and no model call. The app draws ' +
+          'them, then asks again with the default to build the catalogue.',
+      }),
     },
     resolve: (_root, args, { userId, event }) =>
       SeriesUseCase.describe(
@@ -189,6 +197,7 @@ builder.queryFields((t) => ({
         languageOf(event),
         args.language ?? undefined,
         args.proposed ?? undefined,
+        { waitForCatalogue: args.waitForCatalogue ?? true },
       ),
   }),
 

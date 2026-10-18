@@ -7,7 +7,7 @@ mock.module('~/system/firebase', () => ({ db: fakeDb }))
 const { SeriesUseCase } = await import('~/domain/series/use-case')
 const { BookCommand } = await import('~/domain/book/command')
 const { SeriesId, SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
-const { BookTitle } = await import('~/domain/shared/primitives')
+const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
 const { BookQuery } = await import('~/domain/book/query')
 const { SeriesOpinionCommand } = await import('~/domain/series-opinion/command')
 const { SeriesOpinionQuery } = await import('~/domain/series-opinion/query')
@@ -470,5 +470,73 @@ describe('merging a duplicate saga', () => {
       await SeriesUseCase.mergeInto(reader, duplicate, undefined, SeriesId(`${kept}--audio`)),
     ).toBe('other-format')
     expect(await BookQuery.bySeries(reader, duplicate)).toHaveLength(1)
+  })
+})
+
+describe('a saga opened without waiting for its catalogue', () => {
+  const sweetTooth = SeriesId('sweet-tooth--jeff-lemire')
+  const holdVolume = (volume?: number) =>
+    BookCommand.add(reader, {
+      title: BookTitle('Sweet Tooth 3'),
+      authors: [AuthorName('Jeff Lemire')],
+      language: 'fr',
+      series: {
+        id: sweetTooth,
+        name: SeriesName('Sweet Tooth'),
+        volume: volume === undefined ? undefined : VolumeNumber(volume),
+        kind: 'main',
+      },
+    })
+
+  test('answers the volumes held, awaiting its catalogue, with no model call', async () => {
+    await holdVolume(3)
+
+    // No Gemini mock here: a model call would fail the test.
+    const drawn = await SeriesUseCase.describe(reader, sweetTooth, 'fr', 'fr', undefined, {
+      waitForCatalogue: false,
+    })
+
+    expect(drawn).toMatchObject({
+      name: 'Sweet Tooth',
+      author: 'Jeff Lemire',
+      language: 'fr',
+      awaitingCatalogue: true,
+    })
+    expect(drawn?.provisional).toBeUndefined()
+    expect(drawn?.volumes.map((volume) => Number(volume.number))).toEqual([1, 2, 3])
+    expect(fake.snapshot('series').size).toBe(0)
+  })
+
+  test('draws no spine when no volume held is numbered', async () => {
+    await holdVolume()
+
+    const drawn = await SeriesUseCase.describe(reader, sweetTooth, 'fr', 'fr', undefined, {
+      waitForCatalogue: false,
+    })
+
+    expect(drawn?.volumes).toEqual([])
+    expect(drawn?.awaitingCatalogue).toBe(true)
+  })
+
+  test('answers the stored catalogue as it is, not awaiting', async () => {
+    await holdVolume(3)
+    fake.seed('series', `${sweetTooth}~fr`, {
+      id: sweetTooth,
+      language: 'fr',
+      name: 'Sweet Tooth',
+      author: 'Jeff Lemire',
+      volumes: [1, 2, 3, 4, 5, 6].map((number) => ({
+        number,
+        title: `Tome ${number}`,
+        kind: 'main',
+      })),
+    })
+
+    const known = await SeriesUseCase.describe(reader, sweetTooth, 'fr', 'fr', undefined, {
+      waitForCatalogue: false,
+    })
+
+    expect(known?.awaitingCatalogue).toBeUndefined()
+    expect(known?.volumes).toHaveLength(6)
   })
 })

@@ -18,6 +18,7 @@ mock.module('~/domain/scan/gemini', () => ({
   },
 }))
 mock.module('~/domain/scan/open-library', () => ({
+  openLibraryIsbnsOf: async () => [],
   openLibraryCoverOf: async () => undefined,
   openLibraryCoverByTitle: async () => undefined,
 }))
@@ -321,6 +322,23 @@ describe('an author’s page', () => {
         books: [],
         booksNotHeld: [{ title: 'Destination vide' }],
       },
+    })
+  })
+})
+
+describe('an author opened without waiting for the catalogue', () => {
+  test('answers the reader’s books, awaiting, with no model call', async () => {
+    await addBook('title: "Dune", authors: ["Frank Herbert"]')
+
+    const result = await execute(
+      `{ authorPage(key: "frank-herbert", waitForCatalogue: false) {
+        awaitingCatalogue catalogue { biography } books { title }
+      } }`,
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data).toEqual({
+      authorPage: { awaitingCatalogue: true, catalogue: null, books: [{ title: 'Dune' }] },
     })
   })
 })
