@@ -65,6 +65,29 @@ struct BookViewModelTests {
         #expect(viewModel.errorMessage == nil)
     }
 
+    @Test func writeAnsweredBeforeTheDescriptionKeepsIt() async {
+        let described = {
+            var book = Book.previewFromShelf
+            book.synopsis = "Luffy prend la mer."
+            book.awaitingDescription = false
+            return book
+        }()
+        var client = BookClient.preview
+        client.book = { _ in described }
+        // The stars were written before the description landed on the server.
+        client.rate = { _, stars in
+            var book = Book.previewFromShelf
+            book.rating = stars
+            return book
+        }
+        let viewModel = BookViewModel(bookId: "2", client: client)
+        await viewModel.load()
+
+        await viewModel.rate(4)
+
+        #expect(viewModel.book?.synopsis == "Luffy prend la mer.")
+    }
+
     @Test func mutationTakesTheServersRecord() async {
         let viewModel = BookViewModel(bookId: "preview", client: .preview)
         await viewModel.load()

@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// Owns one book's screen. Every mutation returns the whole record, so the
 /// model replaces its book wholesale rather than patching the field it asked
@@ -17,7 +18,7 @@ final class BookViewModel {
     /// seconds, so the screen says what it is waiting for.
     private(set) var isRefreshing = false
     /// Set while a book added from a shelf photo is described, on its first
-    /// opening: the page stays usable and says where the summary will come.
+    /// opening: the page stays readable and usable, and says so in its bar.
     private(set) var isDescribing = false
 
     /// What the page offers to await in the app's language, and what it awaits.
@@ -58,7 +59,8 @@ final class BookViewModel {
         isDescribing = true
         defer { isDescribing = false }
         do {
-            book = try await client.describe(bookId)
+            let described = try await client.describe(bookId)
+            withAnimation(.snappy) { book = described }
             return true
         } catch {
             _ = reportError(error)
@@ -97,6 +99,8 @@ final class BookViewModel {
     /// Brings the record up to date from the web. A refusal the reader can act
     /// on is told in their words rather than the server's.
     func refresh() async {
+        // The description under way is that very lookup, and free.
+        guard !isDescribing else { return }
         isRefreshing = true
         defer { isRefreshing = false }
         do {
@@ -162,7 +166,13 @@ final class BookViewModel {
         isSaving = true
         defer { isSaving = false }
         do {
-            book = try await operation()
+            let answer = try await operation()
+            // A write made while the book was being described may answer with
+            // the record from before the description: read it again rather than
+            // show the spine alone.
+            book = answer.awaitingDescription && book?.awaitingDescription == false
+                ? (try? await client.book(bookId)) ?? answer
+                : answer
         } catch {
             errorMessage = reportError(error)
         }

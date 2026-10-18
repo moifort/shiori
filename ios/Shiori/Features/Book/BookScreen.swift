@@ -45,7 +45,6 @@ struct BookScreen: View {
                     BookPage(
                         book: book,
                         isSaving: viewModel.isSaving,
-                        isDescribing: viewModel.isDescribing,
                         onSetStatus: { status in run { await viewModel.setStatus(status) } },
                         onRate: { showRatingPrompt = true },
                         onToggleHidden: { run { await viewModel.setHidden(!book.hidden) } },
@@ -232,6 +231,14 @@ struct BookScreen: View {
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
             ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
+        }
+        // A shelf book described on its first opening: said in the bar, so the
+        // page under it stays readable and every action stays at hand.
+        if viewModel.isDescribing {
+            ToolbarItem(placement: .principal) {
+                GeneratingLabel(text: "L'IA complète la fiche")
+                    .accessibilityIdentifier("book-describing")
+            }
         }
         if let book = viewModel.book {
             // The heart gets the corner to itself rather than a line in the menu:

@@ -4761,22 +4761,6 @@
         }
       }
     },
-    "Fiche en cours de complétion…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Completing the record…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fiche en cours de complétion…"
-          }
-        }
-      }
-    },
     "Fiche indisponible" : {
       "localizations" : {
         "en" : {
@@ -5693,6 +5677,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kindle"
+          }
+        }
+      }
+    },
+    "L'IA complète la fiche" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI is completing the record"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'IA complète la fiche"
           }
         }
       }

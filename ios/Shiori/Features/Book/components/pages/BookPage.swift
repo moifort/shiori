@@ -17,8 +17,6 @@ import SwiftUI
 struct BookPage: View {
     let book: Book
     let isSaving: Bool
-    /// A book added from a shelf photo being described on its first opening.
-    var isDescribing = false
     let onSetStatus: (ReadingStatus) -> Void
     let onRate: () -> Void
     let onToggleHidden: () -> Void
@@ -70,20 +68,7 @@ struct BookPage: View {
                 }
                 .accessibilityIdentifier("book-hidden")
             }
-            if let synopsis = book.synopsis {
-                BookSynopsisSection(synopsis: synopsis)
-            } else if isDescribing {
-                Section("Résumé") {
-                    Label {
-                        Text("Fiche en cours de complétion…")
-                            .foregroundStyle(.secondary)
-                    } icon: {
-                        ProgressView()
-                    }
-                    .font(.callout)
-                    .accessibilityIdentifier("book-describing")
-                }
-            }
+            if let synopsis = book.synopsis { BookSynopsisSection(synopsis: synopsis) }
         }
         .listStyle(.insetGrouped)
         .labelStyle(.row)
@@ -182,25 +167,6 @@ extension Book {
         status: .toRead,
         awaitingDescription: true
     )
-}
-
-#Preview("Described on first opening") {
-    NavigationStack {
-        BookPage(
-            book: .previewFromShelf,
-            isSaving: false,
-            isDescribing: true,
-            onSetStatus: { _ in },
-            onRate: {},
-            onToggleHidden: {},
-            onOpenSeries: {},
-            onEditGenre: {},
-            onEditRecommendation: {},
-            onEditNote: {},
-            onEditField: { _ in },
-            onCorrect: { _ in }
-        )
-    }
 }
 
 #Preview {
