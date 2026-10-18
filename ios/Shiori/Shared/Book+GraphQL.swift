@@ -234,6 +234,7 @@ extension ShioriGraphQL.BookDetail {
                 BookRecommendation(recommenderName: $0.recommenderName, comment: $0.comment)
             },
             hidden: hidden,
+            awaitingDescription: awaitingDescription,
             addedAt: GraphQLHelpers.parseISO8601(addedAt),
             startedAt: startedAt.flatMap(GraphQLHelpers.parseISO8601),
             finishedAt: finishedAt.flatMap(GraphQLHelpers.parseISO8601)

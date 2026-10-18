@@ -66,25 +66,26 @@ enum ShelfAPI {
         }
     }
 
-    /// Spends one scan. The answer is saved with `BookAPI.add`, as a scan's is.
-    static func describe(_ book: DetectedBook) async throws -> ScannedBook {
+    /// Saves a ticked book from what its spine printed, with a cover found by
+    /// title; its page is described the first time it opens. Spends one scan;
+    /// throws `APIError.domain(code: "QUOTA_EXHAUSTED")` once nothing is left.
+    static func add(_ book: DetectedBook) async throws -> Book {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.DescribeDetectedBookMutation(
+            mutation: ShioriGraphQL.AddDetectedBookMutation(
                 book: ShioriGraphQL.DetectedBookInput(
                     authors: book.authors,
                     format: GraphQLHelpers.graphQLNullable(book.format.map(LibraryAPI.graphQLFormat)),
                     language: GraphQLHelpers.graphQLNullable(book.language.map(LibraryAPI.graphQLLanguage)),
                     media: book.media.isEmpty ? .none : .some(LibraryAPI.graphQLMedia(book.media)),
                     publisher: GraphQLHelpers.graphQLNullable(book.publisher),
-                    title: book.title ?? ""
+                    seriesName: GraphQLHelpers.graphQLNullable(book.seriesName),
+                    title: book.title ?? "",
+                    volume: GraphQLHelpers.graphQLNullable(book.volume)
                 )
-            ),
-            requestTimeout: requestTimeout,
-            // A proposal: the view model saves it with `addBook` right after.
-            changesLibrary: false
+            )
         )
-        return ScannedBook(fields: data.describeDetectedBook.fragments.scannedRecord)
+        return data.addDetectedBook.fragments.bookDetail.asBook
     }
 }
 

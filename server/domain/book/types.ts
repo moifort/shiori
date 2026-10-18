@@ -235,6 +235,11 @@ export type Book = {
    *  when there is no photo; absent when no cover was found, and the app then
    *  draws the placeholder. */
   publishedCoverUrl?: CoverUrl
+  /** A book added from a shelf photo, holding only what its spine printed: no
+   *  summary, genre or ISBN yet, and maybe another printing's cover. Its first
+   *  opening describes it, free — the scan was spent on adding it — and clears
+   *  the flag. Present only when true. */
+  awaitingDescription?: true
   status: ReadingStatus
   rating?: StarRating
   /** A book the reader keeps close. Always on five stars: the heart is the top

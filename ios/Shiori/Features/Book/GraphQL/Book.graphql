@@ -22,6 +22,14 @@ mutation RefreshBook($id: BookId!) {
   }
 }
 
+# A book added from a shelf photo, described the first time its page opens.
+# Free: the scan was spent on adding it.
+mutation DescribeBook($id: BookId!) {
+  describeBook(id: $id) {
+    ...BookDetail
+  }
+}
+
 # The edit sheet, saved in one request: the correction and the stars ride one
 # document, which the server runs field by field in order, and only what the
 # reader changed is sent. `rating` defaults so a sheet that clears or keeps the
@@ -118,6 +126,7 @@ fragment BookDetail on Book {
     comment
   }
   hidden
+  awaitingDescription
   addedAt
   startedAt
   finishedAt

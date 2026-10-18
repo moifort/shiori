@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import { graphql } from 'graphql'
 import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
@@ -180,6 +180,102 @@ describe('describeDetectedBook', () => {
     })
     const month = fake.data('ai-quotas', `${userId}_${monthOf(new Date())}`) as { scans: number }
     expect(month.scans).toBe(1)
+  })
+})
+
+describe('adding a shelf book, then opening it', () => {
+  beforeEach(() => {
+    // Open Library finds nothing and no cover source has one: no network here.
+    spyOn(globalThis, 'fetch').mockImplementation((async (url: string) =>
+      url.includes('search.json')
+        ? Response.json({ docs: [] })
+        : new Response(null, { status: 404 })) as unknown as typeof fetch)
+  })
+  afterEach(() => {
+    ;(globalThis.fetch as unknown as { mockRestore?: () => void }).mockRestore?.()
+  })
+
+  const scans = () =>
+    (fake.data('ai-quotas', `${userId}_${monthOf(new Date())}`) as { scans: number } | null)
+      ?.scans ?? 0
+
+  const addDetectedBook = () =>
+    graphql({
+      schema,
+      source: `mutation($book: DetectedBookInput!) {
+        addDetectedBook(book: $book) { id title awaitingDescription series { name volume } }
+      }`,
+      variableValues: {
+        book: {
+          title: 'One Piece',
+          authors: ['Eiichiro Oda'],
+          format: 'MANGA',
+          seriesName: 'One Piece',
+          volume: 5,
+        },
+      },
+      contextValue: { event: undefined, userId },
+    })
+
+  const idOf = (added: Awaited<ReturnType<typeof addDetectedBook>>) =>
+    String((added.data?.addDetectedBook as { id: string } | undefined)?.id)
+
+  const describeBook = (id: string) =>
+    graphql({
+      schema,
+      source: `mutation($id: BookId!) {
+        describeBook(id: $id) { synopsis awaitingDescription }
+      }`,
+      variableValues: { id },
+      contextValue: { event: undefined, userId },
+    })
+
+  test('saves the book awaiting its description, for one scan and no model call', async () => {
+    const result = await addDetectedBook()
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.addDetectedBook).toMatchObject({
+      title: 'One Piece',
+      awaitingDescription: true,
+      series: { name: 'One Piece', volume: 5 },
+    })
+    expect(prompts).toEqual([])
+    expect(scans()).toBe(1)
+  })
+
+  test('describes it on its first opening without spending a scan', async () => {
+    const id = idOf(await addDetectedBook())
+    answers = [{ title: 'One Piece', authors: ['Eiichiro Oda'], synopsis: 'Luffy prend la mer.' }]
+
+    const result = await describeBook(id)
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data).toEqual({
+      describeBook: { synopsis: 'Luffy prend la mer.', awaitingDescription: false },
+    })
+    expect(scans()).toBe(1)
+  })
+
+  test('refuses to add once the allowance is used up', async () => {
+    fake.seed('ai-quotas', `${userId}_${monthOf(new Date())}`, {
+      userId,
+      month: monthOf(new Date()),
+      scans: 5,
+    })
+
+    const result = await addDetectedBook()
+
+    expect(result.errors?.[0]?.extensions?.code).toBe('QUOTA_EXHAUSTED')
+  })
+
+  test('answers SCAN_FAILED and keeps the book awaiting when the lookup fails', async () => {
+    const id = idOf(await addDetectedBook())
+    answers = [new Error('model unavailable')]
+
+    const result = await describeBook(id)
+
+    expect(result.errors?.[0]?.extensions?.code).toBe('SCAN_FAILED')
+    expect(fake.data('books', id)).toMatchObject({ awaitingDescription: true })
   })
 })
 

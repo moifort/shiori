@@ -16,6 +16,9 @@ final class BookViewModel {
     /// Set while the record is looked up again: a web search that takes
     /// seconds, so the screen says what it is waiting for.
     private(set) var isRefreshing = false
+    /// Set while a book added from a shelf photo is described, on its first
+    /// opening: the page stays usable and says where the summary will come.
+    private(set) var isDescribing = false
 
     /// What the page offers to await in the app's language, and what it awaits.
     private(set) var offer = EditionOffer()
@@ -44,6 +47,23 @@ final class BookViewModel {
             errorMessage = reportError(error)
         }
         isLoading = false
+    }
+
+    /// Describes a book added from a shelf photo, the first time its page
+    /// opens. Free, and silent when it fails: the page keeps what the spine
+    /// gave, and the next opening asks again. True when the book changed, for
+    /// the list behind the page to follow.
+    func describeIfAwaiting() async -> Bool {
+        guard book?.awaitingDescription == true else { return false }
+        isDescribing = true
+        defer { isDescribing = false }
+        do {
+            book = try await client.describe(bookId)
+            return true
+        } catch {
+            _ = reportError(error)
+            return false
+        }
     }
 
     func setStatus(_ status: ReadingStatus) async {

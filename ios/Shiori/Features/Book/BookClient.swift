@@ -11,6 +11,8 @@ struct BookClient: Sendable {
     /// The corrected facts and, when it moved, the rating, in one request.
     var save: @Sendable (_ id: String, BookCorrection, _ rating: Int??) async throws -> Book?
     var refresh: @Sendable (_ id: String) async throws -> Book
+    /// A shelf book's description, asked when its page first opens.
+    var describe: @Sendable (_ id: String) async throws -> Book
     var setFavorite: @Sendable (_ id: String, Bool) async throws -> Book
     var setRecommendation: @Sendable (_ id: String, BookRecommendation?) async throws -> Book
     var setNote: @Sendable (_ id: String, String?) async throws -> Book
@@ -33,6 +35,7 @@ extension BookClient {
         rate: { try await BookAPI.rate(id: $0, stars: $1) },
         save: { try await BookAPI.save(id: $0, correction: $1, rating: $2) },
         refresh: { try await BookAPI.refresh(id: $0) },
+        describe: { try await BookAPI.describe(id: $0) },
         setFavorite: { try await BookAPI.setFavorite(id: $0, favorite: $1) },
         setRecommendation: { try await BookAPI.setRecommendation(id: $0, recommendation: $1) },
         setNote: { try await BookAPI.setNote(id: $0, note: $1) },
@@ -61,6 +64,7 @@ extension BookClient {
         },
         save: { _, _, _ in .preview },
         refresh: { _ in .preview },
+        describe: { _ in .preview },
         setFavorite: { _, favorite in
             var book = Book.preview
             book.favorite = favorite

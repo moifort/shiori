@@ -220,11 +220,13 @@ export namespace ScanCommand {
   }
 
   /** A book ticked on a shelf photo, described as a scanned cover is once it
-   *  was read: the grounded step, the published cover, and the saga's and
-   *  author's pages when nobody built them — what the reader opens next is the
-   *  same whether the book came alone or with its shelf. Unlike
-   *  `lookUpEdition`, whose saga the release watch already knows. Never cached:
-   *  there is no image of this one book to hash. */
+   *  was read: the grounded step and the published cover. Its saga's and
+   *  author's pages are left to their first opening, as an Audible import
+   *  leaves them: a shelf names twenty books at once, and building both pages
+   *  for each doubled what the shelf cost. Never cached: there is no image of
+   *  this one book to hash.
+   *
+   *  Only builds that predate `addDetectedBook` still ask. */
   export const describeDetected = async (
     seen: ScanResult,
     language: ScanLanguage,
@@ -233,8 +235,7 @@ export namespace ScanCommand {
 
     const { result: enriched, regularEdition, usage: enrichment } = await enrich(seen, language)
     const result = { ...enriched, coverUrl: await coverOf(enriched.isbn13, regularEdition) }
-    const { catalogue, author } = await catalogueWhatOpensNext(result, language, true)
-    return { result, usage: { enrichment, catalogue, author } }
+    return { result, usage: { enrichment } }
   }
 
   /** Every book of a shelf photo, read as the cover's first step reads one:
@@ -464,8 +465,9 @@ export namespace ScanCommand {
    *  shared, both paid once for everyone. The two calls run side by side, so
    *  the author costs the scan no more time than the saga already did.
    *
-   *  Only a scan asks: an Audible import names a whole library at once, and
-   *  its sagas and authors are built when somebody opens them. */
+   *  Only a scan of one book asks: an Audible import or a shelf photo names many
+   *  books at once, and their sagas and authors are built when somebody opens
+   *  them. */
   const catalogueWhatOpensNext = async (
     result: ScanResult,
     language: ScanLanguage,

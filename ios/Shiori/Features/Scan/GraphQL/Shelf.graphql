@@ -1,5 +1,5 @@
 # Every book in one shelf photo, with where it sits. Premium only; spends
-# nothing — each book kept is its own DescribeDetectedBook.
+# nothing — each book kept is its own AddDetectedBook.
 mutation DetectBooks($imageBase64: String!) {
   detectBooks(imageBase64: $imageBase64) {
     title
@@ -20,9 +20,10 @@ mutation DetectBooks($imageBase64: String!) {
   }
 }
 
-# The record of one ticked book, as a scanned cover's. Spends one scan.
-mutation DescribeDetectedBook($book: DetectedBookInput!) {
-  describeDetectedBook(book: $book) {
-    ...ScannedRecord
+# One ticked book, saved from what its spine printed, its page described on
+# its first opening. Spends one scan, and no model call.
+mutation AddDetectedBook($book: DetectedBookInput!) {
+  addDetectedBook(book: $book) {
+    ...BookDetail
   }
 }

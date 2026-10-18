@@ -17,6 +17,8 @@ import SwiftUI
 struct BookPage: View {
     let book: Book
     let isSaving: Bool
+    /// A book added from a shelf photo being described on its first opening.
+    var isDescribing = false
     let onSetStatus: (ReadingStatus) -> Void
     let onRate: () -> Void
     let onToggleHidden: () -> Void
@@ -68,7 +70,20 @@ struct BookPage: View {
                 }
                 .accessibilityIdentifier("book-hidden")
             }
-            if let synopsis = book.synopsis { BookSynopsisSection(synopsis: synopsis) }
+            if let synopsis = book.synopsis {
+                BookSynopsisSection(synopsis: synopsis)
+            } else if isDescribing {
+                Section("Résumé") {
+                    Label {
+                        Text("Fiche en cours de complétion…")
+                            .foregroundStyle(.secondary)
+                    } icon: {
+                        ProgressView()
+                    }
+                    .font(.callout)
+                    .accessibilityIdentifier("book-describing")
+                }
+            }
         }
         .listStyle(.insetGrouped)
         .labelStyle(.row)
@@ -151,6 +166,41 @@ extension Book {
         hidden: true,
         startedAt: .now.addingTimeInterval(-86400 * 20)
     )
+}
+
+extension Book {
+    /// A manga volume just added from a shelf photo: what its spine printed,
+    /// a cover found by title, nothing described yet.
+    static let previewFromShelf = Book(
+        id: "2",
+        title: "One Piece",
+        authors: ["Eiichiro Oda"],
+        format: .manga,
+        language: .fr,
+        series: SeriesMembership(id: "s2", name: "One Piece", volume: 5, kind: .main),
+        coverURL: URL(string: "https://m.media-amazon.com/images/P/2723434826.01._SCLZZZZZZZ_.jpg"),
+        status: .toRead,
+        awaitingDescription: true
+    )
+}
+
+#Preview("Described on first opening") {
+    NavigationStack {
+        BookPage(
+            book: .previewFromShelf,
+            isSaving: false,
+            isDescribing: true,
+            onSetStatus: { _ in },
+            onRate: {},
+            onToggleHidden: {},
+            onOpenSeries: {},
+            onEditGenre: {},
+            onEditRecommendation: {},
+            onEditNote: {},
+            onEditField: { _ in },
+            onCorrect: { _ in }
+        )
+    }
 }
 
 #Preview {

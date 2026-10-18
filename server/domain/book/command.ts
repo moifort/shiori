@@ -85,6 +85,8 @@ export type NewBook = {
   series?: SeriesMembership
   coverPath?: ObjectPath
   publishedCoverUrl?: CoverUrl
+  /** Only a book added from a shelf photo, saved before anything looked it up. */
+  awaitingDescription?: true
   status?: ReadingStatus
   hidden?: boolean
   /** Who put the book in the reader's hands — a friend whose shelf it was
@@ -132,6 +134,7 @@ export type BookEdit = Partial<
     | 'isbn13'
     | 'language'
     | 'publishedCoverUrl'
+    | 'awaitingDescription'
     | 'addedAt'
     | 'startedAt'
     | 'finishedAt'
@@ -183,6 +186,7 @@ const recordOf = (userId: UserId, input: NewBook, now: Date): Book => {
     series: seriesInFormat(input.series, input.format ?? 'book'),
     coverPath: input.coverPath,
     publishedCoverUrl: input.publishedCoverUrl,
+    awaitingDescription: input.awaitingDescription,
     // A book lands on the "to read" pile unless the reader says otherwise. It is
     // the only status that is true of every book the moment it is catalogued.
     status: input.status ?? 'to-read',

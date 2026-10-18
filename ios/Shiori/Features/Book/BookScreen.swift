@@ -45,6 +45,7 @@ struct BookScreen: View {
                     BookPage(
                         book: book,
                         isSaving: viewModel.isSaving,
+                        isDescribing: viewModel.isDescribing,
                         onSetStatus: { status in run { await viewModel.setStatus(status) } },
                         onRate: { showRatingPrompt = true },
                         onToggleHidden: { run { await viewModel.setHidden(!book.hidden) } },
@@ -191,7 +192,11 @@ struct BookScreen: View {
                 Text(viewModel.errorMessage ?? "")
             }
         }
-        .task { await viewModel.load() }
+        .task {
+            await viewModel.load()
+            // The row behind the page follows: a shelf book's cover may change.
+            if await viewModel.describeIfAwaiting(), let book = viewModel.book { onChanged(book) }
+        }
         .task { await viewModel.loadOffer() }
         .alert(
             "Impossible de suivre ce livre",

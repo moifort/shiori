@@ -80,6 +80,42 @@ export namespace ScanUseCase {
     seen: ScanResult & { series: ScannedSeries },
     language: ScanLanguage,
   ) => {
+    const { named, hints } = await volumeKnownAs(userId, seen)
+    return lookUpEdition(userId, named, language, hints)
+  }
+
+  /** Describe a book added from a shelf photo, the first time its page is
+   *  opened: the lookup a refresh runs, a saga volume with what is known of its
+   *  saga beside it. Spends nothing and is not refused once the allowance is
+   *  used up — the scan was spent when the book was added. */
+  export const describeOnFirstOpening = async (
+    userId: UserId,
+    seen: ScanResult,
+    language: ScanLanguage,
+  ): Promise<ScanOutcome> => {
+    const { series } = seen
+    const { named, hints } = series
+      ? await volumeKnownAs(userId, { ...seen, series })
+      : { named: seen, hints: undefined }
+    try {
+      const { result, usage } = await ScanCommand.lookUpEdition(named, language, hints)
+      await AdminCommand.recordAiUsage({ cacheHit: false, usage }).catch((error) =>
+        logger.warn('AI usage not recorded', { error }),
+      )
+      return result
+    } catch (error) {
+      logger.error('shelf book description failed', { error, userId })
+      return { failed: error instanceof Error ? error.message : 'Scan failed' }
+    }
+  }
+
+  /** A saga volume as it is looked up: with the ISBN and date the release watch
+   *  found, and the reader's other volumes, whose ISBNs are not this one's and
+   *  whose publisher is most likely this one's too. */
+  const volumeKnownAs = async (
+    userId: UserId,
+    seen: ScanResult & { series: ScannedSeries },
+  ): Promise<{ named: ScanResult; hints: EditionHints }> => {
     const { series } = seen
     // Numbered, a volume is its number; unnumbered, its title.
     const sameVolume = (other: { kind: VolumeKind; volume?: VolumeNumber; title: string }) =>
@@ -119,7 +155,7 @@ export namespace ScanUseCase {
     const publisher =
       seen.publisher ??
       others.find((book) => book.publisher && book.language === edition)?.publisher
-    return lookUpEdition(userId, { ...seen, publisher }, language, hints)
+    return { named: { ...seen, publisher }, hints }
   }
 
   /** Describe a book Découvrir shows, for its page: the grounded step

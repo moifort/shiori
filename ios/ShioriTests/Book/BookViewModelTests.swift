@@ -24,6 +24,47 @@ struct BookViewModelTests {
         #expect(viewModel.errorMessage != nil)
     }
 
+    @Test func shelfBookIsDescribedOnFirstOpening() async {
+        var client = BookClient.preview
+        client.book = { _ in .previewFromShelf }
+        client.describe = { _ in
+            var book = Book.previewFromShelf
+            book.synopsis = "Luffy prend la mer."
+            book.awaitingDescription = false
+            return book
+        }
+        let viewModel = BookViewModel(bookId: "2", client: client)
+        await viewModel.load()
+
+        let changed = await viewModel.describeIfAwaiting()
+
+        #expect(changed)
+        #expect(viewModel.book?.synopsis == "Luffy prend la mer.")
+        #expect(viewModel.isDescribing == false)
+    }
+
+    @Test func describedBookIsNotAskedAgain() async {
+        var client = BookClient.preview
+        client.describe = { _ in throw Boom() }
+        let viewModel = BookViewModel(bookId: "preview", client: client)
+        await viewModel.load()
+
+        #expect(await viewModel.describeIfAwaiting() == false)
+        #expect(viewModel.errorMessage == nil)
+    }
+
+    @Test func failedDescriptionKeepsTheSpineSilently() async {
+        var client = BookClient.preview
+        client.book = { _ in .previewFromShelf }
+        client.describe = { _ in throw Boom() }
+        let viewModel = BookViewModel(bookId: "2", client: client)
+        await viewModel.load()
+
+        #expect(await viewModel.describeIfAwaiting() == false)
+        #expect(viewModel.book?.awaitingDescription == true)
+        #expect(viewModel.errorMessage == nil)
+    }
+
     @Test func mutationTakesTheServersRecord() async {
         let viewModel = BookViewModel(bookId: "preview", client: .preview)
         await viewModel.load()

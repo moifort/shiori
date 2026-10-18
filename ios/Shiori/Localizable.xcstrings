@@ -4761,6 +4761,22 @@
         }
       }
     },
+    "Fiche en cours de complétion…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completing the record…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fiche en cours de complétion…"
+          }
+        }
+      }
+    },
     "Fiche indisponible" : {
       "localizations" : {
         "en" : {

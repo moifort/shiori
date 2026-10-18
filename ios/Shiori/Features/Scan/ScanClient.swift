@@ -20,7 +20,8 @@ struct ScanClient: Sendable {
     var vocabulary: @Sendable () async throws -> BookVocabulary
     var subgenres: @Sendable () async throws -> [String]
     var detectShelf: @Sendable (_ jpeg: Data) async throws -> [DetectedBook]
-    var describeDetected: @Sendable (DetectedBook) async throws -> ScannedBook
+    /// Saves a ticked book from what its spine printed; spends one scan.
+    var addDetected: @Sendable (DetectedBook) async throws -> Book
     /// Scans left, month and granted together; nil when unknown.
     var remainingScans: @Sendable () async -> Int?
 }
@@ -40,7 +41,7 @@ extension ScanClient {
         vocabulary: { try await BookAPI.vocabulary() },
         subgenres: { try await BookAPI.subgenres() },
         detectShelf: { try await ShelfAPI.detect(jpeg: $0) },
-        describeDetected: { try await ShelfAPI.describe($0) },
+        addDetected: { try await ShelfAPI.add($0) },
         remainingScans: { (try? await SubscriptionAPI.quota())?.totalRemaining }
     )
 }
@@ -70,7 +71,7 @@ extension ScanClient {
         vocabulary: { ([], []) },
         subgenres: { [] },
         detectShelf: { _ in ShelfImportFixtures.books },
-        describeDetected: { _ in .preview },
+        addDetected: { _ in .preview },
         remainingScans: { 94 }
     )
 }

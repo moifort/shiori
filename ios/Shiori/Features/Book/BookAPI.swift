@@ -62,6 +62,19 @@ enum BookAPI {
         return data.refreshBook.fragments.bookDetail.asBook
     }
 
+    /// Describes a book added from a shelf photo, on its first opening: the
+    /// lookup a refresh runs, free. A book already described comes back as it
+    /// is. Throws `APIError.domain(code: "SCAN_FAILED")` when the lookup failed
+    /// and the book still awaits its description.
+    static func describe(id: String) async throws -> Book {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            concerning: .book(id: id),
+            mutation: ShioriGraphQL.DescribeBookMutation(id: id)
+        )
+        return data.describeBook.fragments.bookDetail.asBook
+    }
+
     /// Saves the edit sheet in one request: the correction when there is one,
     /// then the stars when they changed — `rating` nil takes them back. Answers
     /// with the book as the last write left it, or nil when there was nothing

@@ -320,6 +320,10 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
     /// was: the server never keeps one that names nobody and says nothing.
     var recommendation: BookRecommendation?
     var hidden: Bool = false
+    /// Added from a shelf photo and not described yet: only what the spine
+    /// printed, no summary or genre. The page asks for its description when it
+    /// opens.
+    var awaitingDescription = false
     var addedAt: Date?
     var startedAt: Date?
     var finishedAt: Date?

@@ -735,6 +735,11 @@ type Book {
   authors: [AuthorName!]!
 
   """
+  Added from a shelf photo and not described yet: the record holds what its spine printed — no summary, genre or ISBN — and maybe another printing's cover. The app calls `describeBook` when its page opens.
+  """
+  awaitingDescription: Boolean!
+
+  """
   The cover to draw: the reader own photo when there is one, otherwise the publisher cover found by ISBN at scan time. Null when neither exists, and the app draws a typographic placeholder — as it must when the URL fails to load, since a published cover can disappear from its source.
   """
   coverUrl: CoverUrl
@@ -1142,7 +1147,15 @@ input DetectedBookInput {
   language: BookLanguage
   media: [BookMedium!]
   publisher: Publisher
+
+  """
+  The saga printed on the spine, which `addDetectedBook` files the book in.
+  """
+  seriesName: SeriesName
   title: BookTitle!
+
+  """Its number, when printed."""
+  volume: VolumeNumber
 }
 
 """
@@ -2340,6 +2353,13 @@ type Mutation {
   addBook(input: NewBookInput!): Book!
 
   """
+  Catalogue a book ticked on the shelf checklist from what its spine printed, with no model call: a cover found by title and volume through Open Library, the saga keyed from its printed name, and `awaitingDescription` set until `describeBook` describes it on its first opening. A book the reader keeps on another medium joins that record, as with `addBook`.
+  
+  Spends one scan of the allowance once saved. Fails with `QUOTA_EXHAUSTED` once nothing is left.
+  """
+  addDetectedBook(book: DetectedBookInput!): Book!
+
+  """
   Put a friend's book on the reader's own shelf, on the pile or among the books read, in the format the reader takes it in.
   
   Only the friend and the book are named: the server re-reads the book and copies its catalogue facts, never what the friend made of it — no status, rating, heart or note. The copy records the friend as who recommended it. Fails with `NOT_FOUND` for a stranger, a missing book or one marked "do not share", and `ALREADY_IN_LIBRARY` when the reader owns the story.
@@ -2447,11 +2467,18 @@ type Mutation {
   ): Int!
 
   """
-  Build the record of a book ticked on the shelf checklist, as `scanBook` does once a cover is read: web-grounded enrichment, published cover, and the saga and author catalogues when nobody built them yet. Nothing is saved; `addBook` persists it.
+  Describe a book added from a shelf photo (`awaitingDescription`), the first time its page opens: looked up on the web as `refreshBook` looks it up, and its summary, genre, subgenres, page count, first publication, ISBN and published cover written, the cover sought again by the ISBN found. `awaitingDescription` is then false.
+  
+  Spends nothing, and is not refused once the allowance is used up: the scan was spent on adding the book. A book not awaiting its description comes back as it is, with no lookup. Fails with `SCAN_FAILED` when the model call errors — the record is then untouched and still awaiting.
+  """
+  describeBook(id: BookId!): Book!
+
+  """
+  Build the record of a book ticked on the shelf checklist, as `scanBook` does once a cover is read: web-grounded enrichment and published cover. The saga and author catalogues are left to their first opening. Nothing is saved; `addBook` persists it.
   
   Never cached, and spends one scan of the allowance once the model answered. Fails with `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` when the model call errors.
   """
-  describeDetectedBook(book: DetectedBookInput!): ScanResult!
+  describeDetectedBook(book: DetectedBookInput!): ScanResult! @deprecated(reason: "Use `addDetectedBook`, which saves the book at once and leaves its description to its first opening.")
 
   """
   Describe a book Découvrir shows, for its page, as a scan describes one: the web-grounded model fills in its summary, genre, pages and publisher, and Audible the narrators and running time of a recording. About ten seconds the first time.

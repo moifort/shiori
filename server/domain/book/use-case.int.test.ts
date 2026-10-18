@@ -22,8 +22,20 @@ mock.module('~/domain/scan/gemini', () => ({
 const publishedCovers: Record<string, string> = {}
 const goneCovers = new Set<string>()
 const probed: string[] = []
+/** The covers Open Library leads to, by the title asked, and every search made. */
+const shelfCovers: Record<string, string> = {}
+const shelfSearches: { title: string; author: string; volume?: number; language: string }[] = []
 mock.module('~/domain/scan/published-cover', () => ({
   publishedCoverOf: async (isbn13: string) => publishedCovers[isbn13],
+  shelfCoverOf: async (book: {
+    title: string
+    author: string
+    volume?: number
+    language: string
+  }) => {
+    shelfSearches.push(book)
+    return shelfCovers[book.title]
+  },
   isCoverGone: async (url: string) => {
     probed.push(url)
     return goneCovers.has(url)
@@ -35,6 +47,7 @@ const { BookCommand } = await import('~/domain/book/command')
 const { BookId, CoverUrl, Isbn13, Synopsis } = await import('~/domain/book/primitives')
 const { monthOf } = await import('~/domain/quota/business-rules')
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
+const { SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
 
 const reader = 'reader-1' as UserId
 let fake = resetFakeFirestore()
@@ -45,6 +58,8 @@ beforeEach(() => {
   for (const isbn of Object.keys(publishedCovers)) delete publishedCovers[isbn]
   goneCovers.clear()
   probed.length = 0
+  for (const title of Object.keys(shelfCovers)) delete shelfCovers[title]
+  shelfSearches.length = 0
 })
 
 const spent = () =>
@@ -211,5 +226,134 @@ describe('changing where a book is held', () => {
     expect(await BookUseCase.edit(reader, book.id, { format: 'audiobook' })).toMatchObject({
       media: [],
     })
+  })
+})
+
+describe('a book added from a shelf photo', () => {
+  const onePiece = {
+    title: BookTitle('One Piece'),
+    authors: [AuthorName('Eiichiro Oda')],
+    language: 'fr' as const,
+    format: 'manga' as const,
+    seriesName: SeriesName('One Piece'),
+    volume: VolumeNumber(5),
+  }
+  const cover = 'https://m.media-amazon.com/images/P/2723434826.01._SCLZZZZZZZ_.jpg'
+
+  test('is saved from its spine, flagged, with no model call, for one scan', async () => {
+    shelfCovers['One Piece'] = cover
+
+    const added = await BookUseCase.addFromShelf(reader, onePiece)
+
+    if (added === 'quota-exhausted') throw new Error('the allowance was not used up')
+    expect(fake.data('books', added.id)).toMatchObject({
+      format: 'manga',
+      language: 'fr',
+      series: { name: 'One Piece', volume: 5, kind: 'main' },
+      publishedCoverUrl: cover,
+      awaitingDescription: true,
+    })
+    expect(shelfSearches).toEqual([
+      { title: 'One Piece', author: 'Eiichiro Oda', volume: 5, language: 'fr' },
+    ])
+    expect(spent()).toBe(1)
+  })
+
+  test('is refused, and nothing saved, once the allowance is used up', async () => {
+    fake.seed('ai-quotas', `${reader}_${monthOf(new Date())}`, {
+      userId: reader,
+      month: monthOf(new Date()),
+      scans: 5,
+    })
+
+    expect(await BookUseCase.addFromShelf(reader, onePiece)).toBe('quota-exhausted')
+    expect(fake.snapshot('books').size).toBe(0)
+  })
+
+  test('joins the copy the reader keeps on another medium, which stays described', async () => {
+    const paperback = await aBook()
+
+    const added = await BookUseCase.addFromShelf(reader, {
+      title: BookTitle('Le Nom du vent'),
+      authors: [AuthorName('Patrick Rothfuss')],
+      language: 'fr',
+      media: ['digital'],
+    })
+
+    if (added === 'quota-exhausted') throw new Error('the allowance was not used up')
+    expect(added.id).toBe(paperback.id)
+    expect(fake.data('books', paperback.id)).not.toHaveProperty('awaitingDescription')
+  })
+
+  const shelved = async () => {
+    const added = await BookUseCase.addFromShelf(reader, {
+      title: BookTitle('Le Nom du vent'),
+      authors: [AuthorName('Patrick Rothfuss')],
+      language: 'fr',
+    })
+    if (added === 'quota-exhausted') throw new Error('the allowance was not used up')
+    return added
+  }
+  const description = {
+    title: 'Le Nom du vent',
+    authors: ['Patrick Rothfuss'],
+    synopsis: 'A fresh summary.',
+    genre: 'fantasy',
+    pageCount: 662,
+    isbn13: '9782352942832',
+  }
+
+  test('is described on its first opening, free, even once the allowance is used up', async () => {
+    const book = await shelved()
+    fake.seed('ai-quotas', `${reader}_${monthOf(new Date())}`, {
+      userId: reader,
+      month: monthOf(new Date()),
+      scans: 5,
+    })
+    publishedCovers['9782352942832'] = 'https://m.media-amazon.com/images/P/2352942837.jpg'
+    answers = [description]
+
+    await BookUseCase.describe(reader, book.id, 'fr')
+
+    const stored = fake.data('books', book.id)
+    expect(stored).toMatchObject({
+      synopsis: 'A fresh summary.',
+      genre: 'fantasy',
+      pageCount: 662,
+      isbn13: '9782352942832',
+      publishedCoverUrl: 'https://m.media-amazon.com/images/P/2352942837.jpg',
+    })
+    expect(stored).not.toHaveProperty('awaitingDescription')
+    expect(spent()).toBe(5)
+  })
+
+  test('stays flagged, untouched, when the lookup fails', async () => {
+    const book = await shelved()
+    answers = [new Error('model unavailable')]
+
+    expect(await BookUseCase.describe(reader, book.id, 'fr')).toEqual({
+      failed: 'model unavailable',
+    })
+    expect(fake.data('books', book.id)).toMatchObject({ awaitingDescription: true })
+  })
+
+  test('is never a free refresh: a described book comes back as it is', async () => {
+    const book = await aBook()
+
+    // No answer is queued: a model call would throw.
+    expect(await BookUseCase.describe(reader, book.id, 'fr')).toMatchObject({
+      id: book.id,
+      synopsis: 'An old summary.',
+    })
+    expect(spent()).toBe(0)
+  })
+
+  test('is described by a refresh too, which clears the flag', async () => {
+    const book = await shelved()
+    answers = [description]
+
+    await BookUseCase.refresh(reader, book.id, 'fr')
+
+    expect(fake.data('books', book.id)).not.toHaveProperty('awaitingDescription')
   })
 })

@@ -4,17 +4,42 @@ import { mediaFor, recordJoinedBy, refreshedFacts } from '~/domain/book/business
 import { BookCommand, type BookEdit, type NewBook } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
 import type {
+  Book,
+  BookFormat,
   BookId,
+  BookLanguage,
+  BookMedium,
+  Publisher,
   ReadingNote,
   ReadingStatus,
   Recommendation,
   StarRating,
 } from '~/domain/book/types'
-import { isCoverGone, publishedCoverOf } from '~/domain/scan/published-cover'
+import { exhausted } from '~/domain/quota/business-rules'
+import { QuotaCommand } from '~/domain/quota/command'
+import { QuotaQuery } from '~/domain/quota/query'
+import { isCoverGone, publishedCoverOf, shelfCoverOf } from '~/domain/scan/published-cover'
+import type { ScanResult } from '~/domain/scan/types'
 import { ScanUseCase } from '~/domain/scan/use-case'
+import { seriesKeyOf } from '~/domain/series/primitives'
+import type { SeriesName, VolumeNumber } from '~/domain/series/types'
 import { SeriesUseCase } from '~/domain/series/use-case'
 import type { Language } from '~/domain/shared/language'
-import type { UserId } from '~/domain/shared/types'
+import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
+
+/** A book ticked on a shelf photo, as the checklist left it: what its spine
+ *  printed, with the title and authors the reader may have corrected. */
+export type ShelfPick = {
+  title: BookTitle
+  authors: AuthorName[]
+  publisher?: Publisher
+  /** The edition's: printed on the spine, else the language of the app. */
+  language: BookLanguage
+  format?: BookFormat
+  media?: BookMedium[]
+  seriesName?: SeriesName
+  volume?: VolumeNumber
+}
 
 /** Every change a reader makes to their library, kept in step with the analytics
  *  view behind the home dashboard. The GraphQL layer writes books through here,
@@ -54,6 +79,66 @@ export namespace BookUseCase {
   export const edit = (userId: UserId, bookId: BookId, edit: BookEdit) =>
     withAnalytics(userId, (batch) => BookCommand.edit(userId, bookId, edit, undefined, batch))
 
+  /** Catalogue a book ticked on a shelf photo from what its spine printed, with
+   *  no model call: a cover found by title through Open Library, the saga keyed
+   *  from its printed name, and the record flagged until its first opening
+   *  describes it (`describe`). Spends one scan once saved, as describing it
+   *  up front did, so the allowance means what it meant; refused once nothing
+   *  is left. Like any addition, a book the reader keeps on another medium
+   *  joins that record. */
+  export const addFromShelf = async (userId: UserId, pick: ShelfPick) => {
+    const { plan, quota, credit } = await QuotaQuery.allowanceOf(userId)
+    if (exhausted(plan, quota, credit)) return 'quota-exhausted' as const
+    const format = pick.format ?? 'book'
+    const author = pick.authors[0]
+    // Without an author a title alone is too loose a search to trust a cover from.
+    const publishedCoverUrl = author
+      ? await shelfCoverOf({
+          title: pick.title,
+          author,
+          volume: pick.volume,
+          language: pick.language,
+        })
+      : undefined
+    // Keyed as a scan keys it; without an author there is no stable key.
+    const series =
+      pick.seriesName && author
+        ? {
+            id: seriesKeyOf(pick.seriesName, author, format),
+            name: pick.seriesName,
+            volume: pick.volume,
+            kind: 'main' as const,
+          }
+        : undefined
+    const book = await add(userId, {
+      title: pick.title,
+      authors: pick.authors,
+      format,
+      media: pick.media,
+      publisher: pick.publisher,
+      language: pick.language,
+      series,
+      publishedCoverUrl,
+      awaitingDescription: true,
+    })
+    await QuotaCommand.record(userId, plan)
+    return book
+  }
+
+  /** Describe a book added from a shelf photo, the first time its page is
+   *  opened: looked up as a refresh looks it up, its facts written, the flag
+   *  cleared. Free — the scan was spent on adding it. A book not flagged comes
+   *  back as it is, with no model call: this is never a free refresh. A failed
+   *  lookup writes nothing and leaves the flag, for the next opening to retry. */
+  export const describe = async (userId: UserId, bookId: BookId, language: Language) => {
+    const book = await BookQuery.byId(userId, bookId)
+    if (!book) return 'not-found' as const
+    if (!book.awaitingDescription) return book
+    const found = await ScanUseCase.describeOnFirstOpening(userId, seenOf(book), language)
+    if (typeof found === 'string' || 'failed' in found) return found
+    return rewrittenFrom(userId, book, found, language)
+  }
+
   /** Bring a record up to date: the book is looked up again, from what names
    *  it, as a volume the release watch announced is, and the facts that
    *  describe the work are rewritten from what was found — see
@@ -67,32 +152,14 @@ export namespace BookUseCase {
   export const refresh = async (userId: UserId, bookId: BookId, language: Language) => {
     const book = await BookQuery.byId(userId, bookId)
     if (!book) return 'not-found' as const
-    const seen = {
-      recognized: true,
-      title: book.title,
-      authors: book.authors,
-      format: book.format,
-      publisher: book.publisher,
-      language: book.language,
-      subgenres: [],
-    }
+    const seen = seenOf(book)
     // A volume is looked up as the volume it is, or a refresh of volume 2 of a
     // saga whose volumes are all titled after it brings back volume 1's ISBN.
     const found = book.series
       ? await ScanUseCase.lookUpVolume(userId, { ...seen, series: book.series }, language)
       : await ScanUseCase.lookUpEdition(userId, seen, language)
     if (typeof found === 'string' || 'failed' in found) return found
-    const coverUrl =
-      found.coverUrl ??
-      (book.isbn13 && book.isbn13 !== found.isbn13
-        ? await publishedCoverOf(book.isbn13)
-        : undefined)
-    const facts = refreshedFacts(book, { ...found, coverUrl }, language)
-    const coverGone =
-      !coverUrl &&
-      book.publishedCoverUrl !== undefined &&
-      (await isCoverGone(book.publishedCoverUrl))
-    return edit(userId, bookId, coverGone ? { ...facts, publishedCoverUrl: undefined } : facts)
+    return rewrittenFrom(userId, book, found, language)
   }
 
   export const setStatus = (userId: UserId, bookId: BookId, status: ReadingStatus) =>
@@ -130,6 +197,38 @@ export namespace BookUseCase {
 
   export const remove = (userId: UserId, bookId: BookId) =>
     withAnalytics(userId, (batch) => BookCommand.remove(userId, bookId, batch))
+}
+
+/** What names a book, to look it up again. */
+const seenOf = (book: Book): ScanResult => ({
+  recognized: true,
+  title: book.title,
+  authors: book.authors,
+  format: book.format,
+  publisher: book.publisher,
+  language: book.language,
+  series: book.series,
+  subgenres: [],
+})
+
+/** The facts that describe the work rewritten from what a lookup found — see
+ *  `refreshedFacts` — and the book described from then on. The published cover
+ *  is sought by the ISBN the lookup found, then by the one already on the
+ *  record, which the lookup may not have named. When neither has one, a stored
+ *  cover that no longer loads is dropped, so the app draws its placeholder at
+ *  once rather than failing on a dead link. */
+const rewrittenFrom = async (userId: UserId, book: Book, found: ScanResult, language: Language) => {
+  const coverUrl =
+    found.coverUrl ??
+    (book.isbn13 && book.isbn13 !== found.isbn13 ? await publishedCoverOf(book.isbn13) : undefined)
+  const facts = refreshedFacts(book, { ...found, coverUrl }, language)
+  const coverGone =
+    !coverUrl && book.publishedCoverUrl !== undefined && (await isCoverGone(book.publishedCoverUrl))
+  return BookUseCase.edit(userId, book.id, {
+    ...facts,
+    ...(coverGone ? { publishedCoverUrl: undefined } : {}),
+    awaitingDescription: undefined,
+  })
 }
 
 // A book that was not found, or an edit refused, wrote nothing, so the view

@@ -192,6 +192,29 @@ builder.mutationFields((t) => ({
         .otherwise((book) => readBack(context.userId, book.id)),
   }),
 
+  describeBook: t.field({
+    type: BookType,
+    description:
+      'Describe a book added from a shelf photo (`awaitingDescription`), the first time ' +
+      'its page opens: looked up on the web as `refreshBook` looks it up, and its ' +
+      'summary, genre, subgenres, page count, first publication, ISBN and published ' +
+      'cover written, the cover sought again by the ISBN found. `awaitingDescription` ' +
+      'is then false.\n\n' +
+      'Spends nothing, and is not refused once the allowance is used up: the scan was ' +
+      'spent on adding the book. A book not awaiting its description comes back as it ' +
+      'is, with no lookup. Fails with `SCAN_FAILED` when the model call errors — the ' +
+      'record is then untouched and still awaiting.',
+    args: { id: t.arg({ type: 'BookId', required: true }) },
+    resolve: async (_root, args, context) =>
+      match(await BookUseCase.describe(context.userId, args.id, languageOf(context.event)))
+        .with('not-found', () => notFound('Book not found'))
+        .with('quota-exhausted', 'no-author', 'bad-dates', () => {
+          throw new Error('a description is free and touches neither the saga nor the dates')
+        })
+        .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
+        .otherwise((book) => readBack(context.userId, book.id)),
+  }),
+
   setReadingStatus: t.field({
     type: BookType,
     description:

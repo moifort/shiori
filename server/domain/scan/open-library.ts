@@ -75,3 +75,49 @@ export const openLibraryCoverByTitle = async (
     ? CoverUrl(`https://covers.openlibrary.org/b/id/${coverId}-M.jpg?default=false`)
     : undefined
 }
+
+/** What names a book on a spine, to search Open Library with. */
+export type PrintedBook = {
+  title: string
+  author: string
+  /** The volume number printed beside a saga's name: without it, a search for
+   *  "Naruto" answers volume 33. */
+  volume?: number
+  /** ISO 639-1, the edition's language: Open Library ranks that edition first. */
+  language: string
+}
+
+type IsbnAnswer = { docs?: { isbn?: string[] }[] }
+
+/** The ISBNs Open Library files under the work a spine names, every edition and
+ *  language mixed, in the order Open Library gives them; empty when it finds
+ *  nothing. For a book added from a shelf photo, whose cover is looked up
+ *  without the model that would otherwise name its ISBN.
+ *
+ *  Asked twice at most: by title and author fields first, which finds a volume
+ *  by its number ("ONE PIECE 5"), then, when that finds nothing, by a query on
+ *  both, which finds a translated title the fields miss ("L'Apprenti assassin").
+ *
+ *  Never throws: a failed search is a book without a cover, not a failed add. */
+export const openLibraryIsbnsOf = async (book: PrintedBook): Promise<string[]> => {
+  const title = book.volume ? `${book.title} ${book.volume}` : book.title
+  const narrow = { title, author: book.author }
+  const broad = { q: `title:(${title}) author:(${book.author})` }
+  try {
+    const first = await isbnsFound(narrow, book.language)
+    return first.length > 0 ? first : await isbnsFound(broad, book.language)
+  } catch (error) {
+    logger.warn('Open Library ISBN search failed', { error, title: book.title })
+    return []
+  }
+}
+
+const isbnsFound = async (search: Record<string, string>, language: string) => {
+  const query = new URLSearchParams({ ...search, lang: language, fields: 'isbn', limit: '1' })
+  const response = await fetch(`https://openlibrary.org/search.json?${query}`, {
+    headers: { 'user-agent': 'Shiori/1.0 (https://github.com/moifort/shiori)' },
+    signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
+  })
+  if (!response.ok) throw new Error(`Open Library search answered ${response.status}`)
+  return ((await response.json()) as IsbnAnswer).docs?.[0]?.isbn ?? []
+}

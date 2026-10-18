@@ -270,6 +270,13 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
       description: 'Excluded from any shared view. Sharing itself is not built yet.',
       resolve: (book) => book.hidden,
     }),
+    awaitingDescription: t.boolean({
+      description:
+        'Added from a shelf photo and not described yet: the record holds what its ' +
+        "spine printed — no summary, genre or ISBN — and maybe another printing's " +
+        'cover. The app calls `describeBook` when its page opens.',
+      resolve: (book) => book.awaitingDescription ?? false,
+    }),
     addedAt: t.field({ type: 'DateTime', resolve: (book) => book.addedAt }),
     updatedAt: t.field({
       type: 'DateTime',

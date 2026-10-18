@@ -5,13 +5,16 @@ import {
   BookMediumEnum,
   heldAs,
 } from '~/domain/book/infrastructure/graphql/enums'
+import { BookType } from '~/domain/book/infrastructure/graphql/types'
+import { BookQuery } from '~/domain/book/query'
+import { BookUseCase } from '~/domain/book/use-case'
 import { imageWithinSizeLimit } from '~/domain/scan/limits'
 import type { ScanOutcome, ShelfOutcome } from '~/domain/scan/use-case'
 import { ScanUseCase } from '~/domain/scan/use-case'
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { builder } from '~/domain/shared/graphql/builder'
-import { domainError } from '~/domain/shared/graphql/errors'
-import { languageFrom } from '~/domain/shared/language'
+import { domainError, notFound } from '~/domain/shared/graphql/errors'
+import { languageFrom, languageOf } from '~/domain/shared/language'
 import { DetectedBookType, ScanResultType, TitleCandidateType } from './types'
 
 const answered = (outcome: ScanOutcome) =>
@@ -154,6 +157,11 @@ const DetectedBookInput = builder.inputType('DetectedBookInput', {
     language: t.field({ type: BookLanguageEnum }),
     format: t.field({ type: BookFormatEnum }),
     media: t.field({ type: [BookMediumEnum] }),
+    seriesName: t.field({
+      type: 'SeriesName',
+      description: 'The saga printed on the spine, which `addDetectedBook` files the book in.',
+    }),
+    volume: t.field({ type: 'VolumeNumber', description: 'Its number, when printed.' }),
   }),
 })
 
@@ -201,14 +209,47 @@ builder.mutationField('detectBooks', (t) =>
   }),
 )
 
+builder.mutationField('addDetectedBook', (t) =>
+  t.field({
+    type: BookType,
+    description:
+      'Catalogue a book ticked on the shelf checklist from what its spine printed, ' +
+      'with no model call: a cover found by title and volume through Open Library, ' +
+      'the saga keyed from its printed name, and `awaitingDescription` set until ' +
+      '`describeBook` describes it on its first opening. A book the reader keeps on ' +
+      'another medium joins that record, as with `addBook`.\n\n' +
+      'Spends one scan of the allowance once saved. Fails with `QUOTA_EXHAUSTED` once ' +
+      'nothing is left.',
+    args: { book: t.arg({ type: DetectedBookInput, required: true }) },
+    resolve: async (_root, { book }, { userId, event }) => {
+      const added = await BookUseCase.addFromShelf(userId, {
+        title: book.title,
+        authors: book.authors,
+        publisher: book.publisher ?? undefined,
+        // An edition the spine does not name is in the language the reader's app speaks.
+        language: book.language ?? languageOf(event),
+        ...heldAs(book.format, book.media),
+        seriesName: book.seriesName ?? undefined,
+        volume: book.volume ?? undefined,
+      })
+      if (added === 'quota-exhausted')
+        return domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up')
+      return (await BookQuery.byId(userId, added.id)) ?? notFound('Book not found')
+    },
+  }),
+)
+
 builder.mutationField('describeDetectedBook', (t) =>
   t.field({
     type: ScanResultType,
+    deprecationReason:
+      'Use `addDetectedBook`, which saves the book at once and leaves its description ' +
+      'to its first opening.',
     description:
       'Build the record of a book ticked on the shelf checklist, as `scanBook` does ' +
-      'once a cover is read: web-grounded enrichment, published cover, and the saga ' +
-      'and author catalogues when nobody built them yet. Nothing is saved; `addBook` ' +
-      'persists it.\n\n' +
+      'once a cover is read: web-grounded enrichment and published cover. The saga ' +
+      'and author catalogues are left to their first opening. Nothing is saved; ' +
+      '`addBook` persists it.\n\n' +
       'Never cached, and spends one scan of the allowance once the model answered. ' +
       'Fails with `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` when the ' +
       'model call errors.',

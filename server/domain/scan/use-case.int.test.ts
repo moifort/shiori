@@ -246,18 +246,13 @@ describe('a book ticked on a shelf photo', () => {
     subgenres: [],
   }
 
-  test('is enriched and its saga catalogued as a scanned cover is, for one scan', async () => {
+  test('is enriched for one scan, its saga and author left to their first opening', async () => {
     answers = [
       {
         ...anEnrichment,
         seriesName: 'Chronique du tueur de roi',
         volumeNumber: 1,
         volumeKind: 'main',
-      },
-      {
-        name: 'Chronique du tueur de roi',
-        author: 'Patrick Rothfuss',
-        volumes: [{ kind: 'main', number: 1, title: 'Le Nom du vent' }],
       },
     ]
 
@@ -268,7 +263,7 @@ describe('a book ticked on a shelf photo', () => {
       title: 'Le Nom du vent',
       series: { name: 'Chronique du tueur de roi', volume: 1 },
     })
-    expect(calls).toEqual(['enrichment', 'catalogue'])
+    expect(calls).toEqual(['enrichment'])
     expect(spent()).toBe(1)
   })
 

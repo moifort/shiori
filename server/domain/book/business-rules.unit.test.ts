@@ -1150,6 +1150,16 @@ describe('two copies of one book as one record', () => {
     })
   })
 
+  test('awaits its description only when both copies were added from a shelf photo', () => {
+    const fromShelf = { ...kindle, awaitingDescription: true as const }
+    expect(mergedCopies(paperback, fromShelf, LATER).awaitingDescription).toBeUndefined()
+    expect(mergedCopies(fromShelf, paperback, LATER).awaitingDescription).toBeUndefined()
+    expect(
+      mergedCopies({ ...paperback, awaitingDescription: true }, fromShelf, LATER)
+        .awaitingDescription,
+    ).toBe(true)
+  })
+
   test('keeps the furthest reading: status, dates, rating, heart, both notes', () => {
     expect(mergedCopies(paperback, kindle, LATER)).toMatchObject({
       status: 'read',

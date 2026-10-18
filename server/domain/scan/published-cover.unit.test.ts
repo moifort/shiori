@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
 import { CoverUrl, Isbn13 } from '~/domain/book/primitives'
-import { isCoverGone, publishedCoverOf } from '~/domain/scan/published-cover'
+import {
+  isbnsInLanguage,
+  isCoverGone,
+  publishedCoverOf,
+  shelfCoverOf,
+} from '~/domain/scan/published-cover'
 
 const isbn = Isbn13('9782070612758')
 /** A 979 ISBN has no ISBN-10, so Amazon cannot be asked for it at all. */
@@ -106,5 +111,84 @@ describe('isCoverGone', () => {
   test('is kept when the source answers an error of its own', async () => {
     coverAnswers(new Response(null, { status: 503 }))
     expect(await isCoverGone(stored)).toBe(false)
+  })
+})
+
+describe('isbnsInLanguage', () => {
+  // Le Petit Prince: an English, a French and a Japanese edition, and an ISBN-10.
+  const work = ['9780156012195', '9782070612758', '9784001156768', '2070612759', '9791030703184']
+
+  test('keeps the editions published in the language, in their order', () => {
+    expect(isbnsInLanguage(work, 'fr').map(String)).toEqual(['9782070612758', '9791030703184'])
+    expect(isbnsInLanguage(work, 'en').map(String)).toEqual(['9780156012195'])
+  })
+
+  test('keeps nothing for a language with no group to trust', () => {
+    expect(isbnsInLanguage(work, 'ko')).toEqual([])
+  })
+
+  test('drops an ISBN whose check digit does not match', () => {
+    expect(isbnsInLanguage(['9782070612750'], 'fr')).toEqual([])
+  })
+})
+
+/** Answers Open Library's search with these ISBNs, and each cover source by
+ *  whether the ISBN asked is one that has a cover. */
+const shelfAnswers = (search: string[][], covered: string[]) => {
+  const searches: string[] = []
+  spyOn(globalThis, 'fetch').mockImplementation((async (url: string) => {
+    if (url.includes('search.json')) {
+      searches.push(url)
+      const isbn = search[searches.length - 1] ?? []
+      return Response.json({ docs: isbn.length > 0 ? [{ isbn }] : [] })
+    }
+    const has = covered.some((isbn) => url.includes(isbn))
+    if (url.includes('openlibrary.org')) return new Response(null, { status: has ? 302 : 404 })
+    return new Response(null, {
+      status: 200,
+      headers: { 'content-type': has ? 'image/jpeg' : 'image/gif' },
+    })
+  }) as unknown as typeof fetch)
+  return searches
+}
+
+describe('shelfCoverOf', () => {
+  const onePiece = {
+    title: 'One Piece',
+    author: 'Eiichiro Oda',
+    volume: 5,
+    language: 'fr' as const,
+  }
+
+  test('takes the cover of the first edition in the language that has one', async () => {
+    // The Japanese original comes first and must be skipped; the first French
+    // edition has no cover, the second does.
+    shelfAnswers([['9784088725093', '9782723433358', '9782723434829']], ['2723434826'])
+
+    const cover = await shelfCoverOf(onePiece)
+
+    expect(String(cover)).toContain('2723434826')
+  })
+
+  test('searches with the volume number, then broadly when that finds nothing', async () => {
+    const searches = shelfAnswers([[], ['9782723434829']], ['2723434826'])
+
+    const cover = await shelfCoverOf(onePiece)
+
+    expect(cover).toBeDefined()
+    expect(new URL(searches[0]).searchParams.get('title')).toBe('One Piece 5')
+    expect(new URL(searches[1]).searchParams.get('q')).toBe(
+      'title:(One Piece 5) author:(Eiichiro Oda)',
+    )
+  })
+
+  test('has no cover when the work has no edition in the language', async () => {
+    shelfAnswers([['9781421539898']], ['1421539896'])
+    expect(await shelfCoverOf(onePiece)).toBeUndefined()
+  })
+
+  test('has no cover when Open Library cannot be reached', async () => {
+    coverAnswers(new Error('The operation was aborted due to timeout'))
+    expect(await shelfCoverOf(onePiece)).toBeUndefined()
   })
 })

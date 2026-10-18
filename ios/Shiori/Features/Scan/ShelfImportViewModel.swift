@@ -146,7 +146,7 @@ final class ShelfImportViewModel {
         Task { await add([book]) }
     }
 
-    /// Three at a time: each book is a grounded model call of several seconds,
+    /// Three at a time: each book waits on a cover search of a second or so,
     /// and a shelf one after the other would take minutes.
     private func add(_ chosen: [DetectedBook]) async {
         await withTaskGroup(of: Void.self) { group in
@@ -164,8 +164,7 @@ final class ShelfImportViewModel {
     private func addOne(_ book: DetectedBook) async {
         progress[book.id] = .adding
         do {
-            let scanned = try await client.describeDetected(book)
-            _ = try await client.add(scanned.asDraft)
+            _ = try await client.addDetected(book)
             track(.bookAdded(source: .shelf))
             progress[book.id] = .added
         } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {
