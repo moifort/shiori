@@ -153,6 +153,13 @@ Forward-only, sequential, no rollback, in `server/system/migration/migrations/`,
 stale data. **No migration needed** for a new optional field, a new collection, or changed
 query logic.
 
+## Backups and recovery
+
+The `(default)` database has delete protection and seven-day point-in-time recovery; there is
+no backup outside it. When data is lost — deleted documents, a failed migration, a deleted
+database or project — follow [docs/data-recovery.md](docs/data-recovery.md) before acting, and
+never restore the whole database over live writes.
+
 ## Local development
 
 `bun run dev` serves on port 3000. `.env` (gitignored, see `.env.example`) needs
