@@ -160,10 +160,14 @@ struct LibrarySearchPage: View {
 
     private var help: some View {
         Section {
-            Text("Cherchez un titre, un auteur ou une série de votre bibliothèque.")
-                .font(.subheadline)
+            VStack(spacing: 12) {
+                Image(systemName: "binoculars")
+                    .font(.system(size: 40))
+                Text("Cherchez un titre, un auteur ou une série de votre bibliothèque.")
+                    .font(.subheadline)
+                    .multilineTextAlignment(.center)
+            }
                 .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 24)
                 .listRowBackground(Color.clear)
