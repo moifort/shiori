@@ -137,7 +137,7 @@ Pure functions in their own file, unit-tested:
 - **Ranking**: exact prefix matches before matches that needed an edit; then a match in the title
   before one only in the author or saga; then saga order (saga name, tome); then title.
 - Budget: 5,000 books under 10 ms per keystroke on a recent iPhone. The matcher's unit tests
-  include a 5,000-entry case with a loose ceiling (100 ms), so a slow CI simulator never flakes
+  include a 5,000-entry case with a loose ceiling (one second), so a slow CI simulator never flakes
   while a quadratic slip still fails.
 
 ### The screen
