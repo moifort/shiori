@@ -146,8 +146,8 @@ struct HomeScreen: View {
         .sheet(item: $openDiscovery, onDismiss: { Task { await viewModel.loadDiscoveries() } }) { suggestion in
             NavigationStack {
                 SuggestionScreen(suggestion: suggestion) { outcome in
-                    guard outcome == .dismissed else { return }
-                    Task { await viewModel.dismiss(suggestion) }
+                    guard case let .dismissed(reason) = outcome else { return }
+                    Task { await viewModel.dismiss(suggestion, reason: reason) }
                 }
             }
         }

@@ -30,7 +30,13 @@ import { ask, isConfigured } from './infrastructure/claude'
 import { suggestionsOf } from './parsing'
 import { suggestionsPrompt } from './prompts'
 import { SuggestionQuery } from './query'
-import type { Dismissal, MonthlyDiscoveries, Suggestion, SuggestionView } from './types'
+import type {
+  Dismissal,
+  DismissalReason,
+  MonthlyDiscoveries,
+  Suggestion,
+  SuggestionView,
+} from './types'
 
 const logger = createLogger('suggestion')
 
@@ -113,7 +119,8 @@ export namespace SuggestionUseCase {
     }
   }
 
-  export const dismiss = (userId: UserId, key: string) => SuggestionCommand.dismiss(userId, key)
+  export const dismiss = (userId: UserId, key: string, reason: DismissalReason) =>
+    SuggestionCommand.dismiss(userId, key, reason)
 }
 
 /** The model's suggestions for this library, each given the cover Open

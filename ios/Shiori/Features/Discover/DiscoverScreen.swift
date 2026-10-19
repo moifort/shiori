@@ -95,8 +95,10 @@ struct DiscoverScreen: View {
             }) { suggestion in
                 NavigationStack {
                     SuggestionScreen(suggestion: suggestion, client: client) { outcome in
-                        guard outcome == .dismissed else { return }
-                        Task { await viewModel.dismiss(suggestion, format: viewModel.awardsFormat) }
+                        guard case let .dismissed(reason) = outcome else { return }
+                        Task {
+                            await viewModel.dismiss(suggestion, reason: reason, format: viewModel.awardsFormat)
+                        }
                     }
                 }
             }

@@ -113,8 +113,23 @@ describe('dismissSuggestion', () => {
       id: 'eiger-sanction--trevanian',
     })
     expect(dismissed.errors).toBeUndefined()
+    expect(fake.data('suggestion-dismissals', `${reader}~eiger-sanction--trevanian`)).toMatchObject(
+      { reason: 'not-interested' },
+    )
     const { data } = await ask(DISCOVERIES)
     expect(data?.monthlyDiscoveries).toEqual({ month: expect.any(String), suggestions: [] })
+  })
+
+  test('keeps "Je n’aime pas" when said', async () => {
+    await ask(DISCOVERIES)
+    const dismissed = await ask(
+      'mutation ($id: String!) { dismissSuggestion(id: $id, reason: DISLIKED) }',
+      { id: 'eiger-sanction--trevanian' },
+    )
+    expect(dismissed.errors).toBeUndefined()
+    expect(fake.data('suggestion-dismissals', `${reader}~eiger-sanction--trevanian`)).toMatchObject(
+      { reason: 'disliked' },
+    )
   })
 
   test('is NOT_FOUND for a suggestion the reader does not have', async () => {

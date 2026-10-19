@@ -180,7 +180,9 @@ describe('the month’s discoveries', () => {
 
   test('a dismissal lets the next one in and is told to the model next month', async () => {
     await look()
-    expect(await SuggestionUseCase.dismiss(reader, 'silo--hugh-howey')).toMatchObject({
+    expect(
+      await SuggestionUseCase.dismiss(reader, 'silo--hugh-howey', 'not-interested'),
+    ).toMatchObject({
       key: 'silo--hugh-howey',
     })
     expect(titles(await look())).toEqual([
@@ -218,7 +220,7 @@ describe('the month’s discoveries', () => {
       'seveneves--neal-stephenson',
       'expiration--ted-chiang',
     ])
-      await SuggestionUseCase.dismiss(reader, key)
+      await SuggestionUseCase.dismiss(reader, key, 'not-interested')
 
     const ranOut = await look('2026-10-28T09:00:00Z')
     expect(ranOut.status).toBe('ready')
@@ -267,6 +269,6 @@ describe('the month’s discoveries', () => {
   })
 
   test('dismissing a suggestion the reader does not have is not-found', async () => {
-    expect(await SuggestionUseCase.dismiss(reader, 'nothing')).toBe('not-found')
+    expect(await SuggestionUseCase.dismiss(reader, 'nothing', 'disliked')).toBe('not-found')
   })
 })

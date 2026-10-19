@@ -59,16 +59,16 @@ struct HomeViewModelTests {
     @Test func dismissedDiscoveryIsToldThenTheStripAskedAgain() async {
         let calls = Calls()
         var client = HomeClient.preview
-        client.dismissSuggestion = { id in calls.record("dismiss \(id)") }
+        client.dismissSuggestion = { id, reason in calls.record("dismiss \(id) \(reason)") }
         client.discoveries = {
             calls.record("discoveries")
             throw Boom()
         }
         let viewModel = HomeViewModel(client: client, caching: false)
 
-        await viewModel.dismiss(.preview)
+        await viewModel.dismiss(.preview, reason: .disliked)
 
-        #expect(calls.all == ["dismiss \(Suggestion.preview.id)", "discoveries"])
+        #expect(calls.all == ["dismiss \(Suggestion.preview.id) disliked", "discoveries"])
     }
 }
 

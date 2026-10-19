@@ -193,10 +193,10 @@ final class DiscoverViewModel {
         }
     }
 
-    /// "Pas intéressé": the row leaves at once, and the line is asked again
+    /// "Pas intéressé" or "Je n'aime pas": the row leaves at once, and the line is asked again
     /// for the next suggestion once the server took note. Put back if it
     /// refused.
-    func dismiss(_ suggestion: Suggestion, format: ReleaseFormat) async {
+    func dismiss(_ suggestion: Suggestion, reason: DismissalReason, format: ReleaseFormat) async {
         let before = discoveries
         withAnimation(.smooth) {
             discoveries = discoveries.map { current in
@@ -207,7 +207,7 @@ final class DiscoverViewModel {
             }
         }
         do {
-            try await client.dismissSuggestion(suggestion.id)
+            try await client.dismissSuggestion(suggestion.id, reason)
             await loadDiscoveries(format)
         } catch {
             withAnimation(.smooth) { discoveries = before }

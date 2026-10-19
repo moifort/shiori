@@ -45,7 +45,7 @@ export const suggestionsPrompt = (digest: string, profile: Profile, appLanguage:
 
 Il lit surtout : ${formats}. En ${languages}. Propose des livres qu'il peut avoir dans ces formats, disponibles en ${written} de préférence.
 
-Propose ${ASKED_COUNT} livres qu'il n'a PAS dans sa bibliothèque et qui ont de fortes chances de lui plaire. Pas de tome suivant d'une saga qu'il lit déjà : il les connaît. Rien de ce qu'il a refusé. Évite les évidences qu'un lecteur de ce profil a forcément croisées ; vise juste plutôt que large. Tiens compte de ses abandons et de ses déceptions pour savoir ce qui ne lui plaît pas. Ne propose que des livres qui existent : en cas de doute sur un titre ou un auteur, choisis-en un autre.
+Propose ${ASKED_COUNT} livres qu'il n'a PAS dans sa bibliothèque et qui ont de fortes chances de lui plaire. Pas de tome suivant d'une saga qu'il lit déjà : il les connaît. Rien de ce qu'il a refusé. Évite les évidences qu'un lecteur de ce profil a forcément croisées ; vise juste plutôt que large. Tiens compte de ses abandons, de ses déceptions et des suggestions qu'il n'aime pas pour savoir ce qui ne lui plaît pas : évite les livres qui leur ressemblent. Ne propose que des livres qui existent : en cas de doute sur un titre ou un auteur, choisis-en un autre.
 
 Le titre, la raison et la ligne courte sont écrits en ${written}, quelle que soit la langue de ce message.
 

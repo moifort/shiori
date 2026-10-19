@@ -21,6 +21,15 @@ struct SuggestionReference: Identifiable, Hashable, Sendable, Codable {
     }
 }
 
+/// Why the reader turned a suggestion down, told to the model next month:
+/// not for now, or not their kind of book.
+enum DismissalReason: Hashable, Sendable {
+    /// "Pas intéressé": the model only leaves it out.
+    case notInterested
+    /// "Je n'aime pas": the model steers clear of its like.
+    case disliked
+}
+
 /// A book Claude chose for the reader from their hearts and stars, with why,
 /// as its edition stands in one format and the app's language.
 struct Suggestion: Identifiable, Hashable, Sendable, Codable {
@@ -206,11 +215,15 @@ enum SuggestionsAPI {
         )
     }
 
-    /// "Pas intéressé": never suggested again.
-    static func dismiss(id: String) async throws {
+    /// "Pas intéressé" or "Je n'aime pas": never suggested again.
+    static func dismiss(id: String, reason: DismissalReason) async throws {
+        let told: ShioriGraphQL.DismissalReason = switch reason {
+        case .notInterested: .notInterested
+        case .disliked: .disliked
+        }
         _ = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.DismissSuggestionMutation(id: id),
+            mutation: ShioriGraphQL.DismissSuggestionMutation(id: id, reason: .init(told)),
             changesLibrary: false
         )
     }

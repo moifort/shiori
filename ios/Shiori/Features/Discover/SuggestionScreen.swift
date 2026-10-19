@@ -4,7 +4,8 @@ import SwiftUI
 enum SuggestionOutcome {
     case added
     case awaited
-    case dismissed
+    /// "Pas intéressé" or "Je n'aime pas".
+    case dismissed(DismissalReason)
 }
 
 /// A suggestion, connected: opened from Découvrir's discoveries line or the
@@ -41,8 +42,8 @@ struct SuggestionScreen: View {
             case let .awaitEdition(format):
                 close(.awaited)
                 await model.awaitEdition(format)
-            case .dismiss:
-                close(.dismissed)
+            case let .dismiss(reason):
+                close(.dismissed(reason))
             case let .openReference(reference):
                 openReference = reference
             }

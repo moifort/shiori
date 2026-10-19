@@ -1,7 +1,7 @@
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 import * as repository from './infrastructure/repository'
-import type { Dismissal, SuggestionQueue } from './types'
+import type { Dismissal, DismissalReason, SuggestionQueue } from './types'
 
 export namespace SuggestionCommand {
   export const saveQueue = (queue: SuggestionQueue) => repository.saveQueue(queue)
@@ -15,9 +15,14 @@ export namespace SuggestionCommand {
 
   export const endGeneration = (userId: UserId) => repository.endGeneration(userId)
 
-  /** "Pas intéressé": the suggestion leaves the queue for good. Not-found when
-   *  the queue holds no such suggestion. */
-  export const dismiss = async (userId: UserId, key: string, now = new Date()) => {
+  /** "Pas intéressé" or "Je n'aime pas": the suggestion leaves the queue for
+   *  good. Not-found when the queue holds no such suggestion. */
+  export const dismiss = async (
+    userId: UserId,
+    key: string,
+    reason: DismissalReason,
+    now = new Date(),
+  ) => {
     const queue = await repository.findQueue(userId)
     const suggestion = queue?.suggestions.find((candidate) => candidate.key === key)
     if (!queue || !suggestion) return 'not-found' as const
@@ -26,6 +31,7 @@ export namespace SuggestionCommand {
       key,
       title: suggestion.title,
       authors: suggestion.authors,
+      reason,
       dismissedAt: now,
     }
     await repository.saveDismissal(dismissal)

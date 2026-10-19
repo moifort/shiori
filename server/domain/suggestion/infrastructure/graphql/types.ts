@@ -20,6 +20,21 @@ export const SuggestionKindEnum = builder.enumType('SuggestionKind', {
   } as const,
 })
 
+export const DismissalReasonEnum = builder.enumType('DismissalReason', {
+  description: 'Why the reader turned a suggestion down, told to the model next month.',
+  values: {
+    NOT_INTERESTED: {
+      value: 'not-interested',
+      description: 'Said “Pas intéressé”: not for now — the model only leaves it out.',
+    },
+    DISLIKED: {
+      value: 'disliked',
+      description:
+        'Said “Je n’aime pas”: not their kind of book — the model steers clear of its like.',
+    },
+  } as const,
+})
+
 const SuggestionReferenceType = builder
   .objectRef<SuggestionReference>('SuggestionReference')
   .implement({

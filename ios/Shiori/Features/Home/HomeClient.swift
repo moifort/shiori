@@ -10,7 +10,7 @@ struct HomeClient: Sendable {
     var discoveries: @Sendable () async throws -> MonthlyDiscoveries
     var discovery: @Sendable (ReleaseFormat) async throws -> DiscoveryPage
     var awaited: @Sendable (ReleaseFormat) async throws -> [AwaitedEdition]
-    var dismissSuggestion: @Sendable (_ id: String) async throws -> Void
+    var dismissSuggestion: @Sendable (_ id: String, DismissalReason) async throws -> Void
     var stopAwaiting: @Sendable (_ editionId: String) async throws -> Void
     var genreInsights: @Sendable () async throws -> GenreInsights
 }
@@ -22,7 +22,7 @@ extension HomeClient {
         discoveries: { try await SuggestionsAPI.monthly(format: .book, lookUp: false) },
         discovery: { try await DiscoverAPI.discovery(format: $0) },
         awaited: { try await AwaitedAPI.awaited(format: $0) },
-        dismissSuggestion: { try await SuggestionsAPI.dismiss(id: $0) },
+        dismissSuggestion: { try await SuggestionsAPI.dismiss(id: $0, reason: $1) },
         stopAwaiting: { try await AwaitedAPI.stop(id: $0) },
         genreInsights: { try await HomeAPI.genreInsights() }
     )
@@ -39,7 +39,7 @@ extension HomeClient {
             DiscoveryPage(rows: format == .book ? [.preview] : [], authors: [], unwatched: 0, followed: 1)
         },
         awaited: { _ in [] },
-        dismissSuggestion: { _ in },
+        dismissSuggestion: { _, _ in },
         stopAwaiting: { _ in },
         genreInsights: { .preview }
     )

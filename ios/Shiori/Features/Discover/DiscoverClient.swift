@@ -14,7 +14,7 @@ struct DiscoverClient: Sendable {
     var awards: @Sendable (ReleaseFormat) async throws -> [AwardSection]
     /// The month's discoveries, the selection made when the month has none.
     var discoveries: @Sendable (ReleaseFormat) async throws -> MonthlyDiscoveries
-    var dismissSuggestion: @Sendable (_ id: String) async throws -> Void
+    var dismissSuggestion: @Sendable (_ id: String, DismissalReason) async throws -> Void
     var describe: @Sendable (ReleaseSeed) async throws -> ReleaseDescription
     /// Onto the pile, through the one "look up, then add" use case.
     var addBook: @Sendable (BookDraft) async throws -> Void
@@ -37,7 +37,7 @@ extension DiscoverClient {
         awaitEdition: { _ = try await AwaitedAPI.awaitScanned($0, format: $1) },
         awards: { try await AwardsAPI.sections(format: $0) },
         discoveries: { try await SuggestionsAPI.monthly(format: $0, lookUp: true) },
-        dismissSuggestion: { try await SuggestionsAPI.dismiss(id: $0) },
+        dismissSuggestion: { try await SuggestionsAPI.dismiss(id: $0, reason: $1) },
         describe: { try await ReleaseAPI.describe($0) },
         addBook: { _ = try await BookAddition.add($0, source: .discover) },
         addAudibleVolume: { seriesId, volume, language in
@@ -61,7 +61,7 @@ extension DiscoverClient {
         awaitEdition: { _, _ in },
         awards: { _ in AwardSection.previews },
         discoveries: { _ in .preview },
-        dismissSuggestion: { _ in },
+        dismissSuggestion: { _, _ in },
         describe: { _ in .preview },
         addBook: { _ in },
         addAudibleVolume: { _, _, _ in },

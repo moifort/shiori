@@ -174,8 +174,8 @@ final class HomeViewModel {
 
     /// A discovery turned down from its page: off the strip, and the next
     /// one comes in.
-    func dismiss(_ suggestion: Suggestion) async {
-        do { try await client.dismissSuggestion(suggestion.id) } catch { _ = reportError(error) }
+    func dismiss(_ suggestion: Suggestion, reason: DismissalReason) async {
+        do { try await client.dismissSuggestion(suggestion.id, reason) } catch { _ = reportError(error) }
         await loadDiscoveries()
     }
 

@@ -7,16 +7,18 @@ enum SuggestionAction {
     case add(ReadingStatus)
     /// Its edition awaited in this format: the page closes behind it.
     case awaitEdition(ReleaseFormat)
-    /// "Pas intéressé": the page closes and the line lets the next one in.
-    case dismiss
+    /// "Pas intéressé" or "Je n'aime pas": the page closes and the line lets
+    /// the next one in.
+    case dismiss(DismissalReason)
     /// One of the reader's own books it was drawn from.
     case openReference(SuggestionReference)
 }
 
 /// A suggestion's page: the standard book page — its header, its description
 /// once written — with why it was chosen, the reader's books it was drawn
-/// from under it. The "+" holds every action: add it, await it, or say "Pas
-/// intéressé". Each closes the page and lets the next suggestion in.
+/// from under it. The "+" adds it — on the pile or read already — or awaits
+/// it; the thumb turns it down. Each closes the page and lets the next
+/// suggestion in.
 struct SuggestionPage: View {
     let suggestion: Suggestion
     /// The suggestion once described, as a book's page draws it.
@@ -95,12 +97,14 @@ struct SuggestionPage: View {
         .contentShape(.rect)
     }
 
-    /// "+": on the pile, or awaited in each format its edition is not out and
-    /// not awaited yet in, as a book's page offers it.
+    /// "+": on the pile, on the shelf as read, or awaited in each format its
+    /// edition is not out and not awaited yet in, as a book's page offers it.
     private var actionsMenu: some View {
         Menu {
             Button("Ajouter", systemImage: "books.vertical") { act(.add(.toRead)) }
                 .accessibilityIdentifier("suggestion-add")
+            Button("Déjà lu", systemImage: "checkmark.circle") { act(.add(.read)) }
+                .accessibilityIdentifier("suggestion-already-read")
             ForEach(suggestion.awaitableFormats) { format in
                 Button(
                     format.awaitLabel,
@@ -117,14 +121,19 @@ struct SuggestionPage: View {
         .accessibilityIdentifier("suggestion-menu")
     }
 
-    /// Beside the "+": the two ways of saying no — read already, which puts
-    /// it on the shelf as read, or not interested, which is told to the model.
+    /// Beside the "+": the two ways of saying no, each told to the model —
+    /// not their kind of book, which steers it clear of its like, or merely
+    /// not for now.
     private var notForMeMenu: some View {
         Menu {
-            Button("Déjà lu", systemImage: "checkmark.circle") { act(.add(.read)) }
-                .accessibilityIdentifier("suggestion-already-read")
-            Button("Pas intéressé", systemImage: "eye.slash", role: .destructive) { act(.dismiss) }
-                .accessibilityIdentifier("suggestion-dismiss")
+            Button("Je n'aime pas", systemImage: "hand.thumbsdown", role: .destructive) {
+                act(.dismiss(.disliked))
+            }
+            .accessibilityIdentifier("suggestion-dislike")
+            Button("Pas intéressé", systemImage: "eye.slash", role: .destructive) {
+                act(.dismiss(.notInterested))
+            }
+            .accessibilityIdentifier("suggestion-dismiss")
         } label: {
             Label("Pas pour moi", systemImage: "hand.thumbsdown")
                 .labelStyle(.iconOnly)

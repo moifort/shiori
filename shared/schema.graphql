@@ -1262,6 +1262,17 @@ type Discovery {
   unwatched: Int!
 }
 
+"""Why the reader turned a suggestion down, told to the model next month."""
+enum DismissalReason {
+  """
+  Said “Je n’aime pas”: not their kind of book — the model steers clear of its like.
+  """
+  DISLIKED
+
+  """Said “Pas intéressé”: not for now — the model only leaves it out."""
+  NOT_INTERESTED
+}
+
 """
 What a book’s page offers to await: its edition in the language of the app, in each format it may be awaited in, and the ones the reader awaits already.
 """
@@ -2519,9 +2530,14 @@ type Mutation {
   disconnectKindle: Boolean!
 
   """
-  "Pas intéressé": the suggestion leaves the discoveries for good, and the model is told not to suggest it again. `NOT_FOUND` when the reader has no such suggestion.
+  "Pas intéressé" or "Je n’aime pas": the suggestion leaves the discoveries for good, and the model is told why next month. `NOT_FOUND` when the reader has no such suggestion.
   """
-  dismissSuggestion(id: String!): Boolean!
+  dismissSuggestion(
+    id: String!
+
+    """Why; "Pas intéressé" when left out, as builds before it ask."""
+    reason: DismissalReason! = NOT_INTERESTED
+  ): Boolean!
 
   """
   Catalogue the Audible titles the reader ticked, and return the books created.

@@ -55,13 +55,22 @@ export type SuggestionQueue = {
   suggestions: Suggestion[]
 }
 
-/** A suggestion the reader said "Pas intéressé" to: never suggested again,
- *  and the latest ones told to the model. */
+/** Why the reader turned a suggestion down: "Pas intéressé" — not for now,
+ *  says little of their taste — or "Je n'aime pas" — not their kind of book,
+ *  which the model reads as a disappointment. */
+export const DISMISSAL_REASONS = ['not-interested', 'disliked'] as const
+export type DismissalReason = (typeof DISMISSAL_REASONS)[number]
+
+/** A suggestion the reader turned down: never suggested again, and the latest
+ *  ones told to the model with why. */
 export type Dismissal = {
   userId: UserId
   key: string
   title: BookTitle
   authors: AuthorName[]
+  /** Absent on the dismissals saved before the reason was asked: each was a
+   *  "Pas intéressé". */
+  reason?: DismissalReason
   dismissedAt: Date
 }
 

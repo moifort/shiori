@@ -5601,6 +5601,22 @@
         }
       }
     },
+    "Je n'aime pas" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I don’t like it"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Je n'aime pas"
+          }
+        }
+      }
+    },
     "Je t'ouvre ma bibliothèque sur Shiori. Code : %@" : {
       "localizations" : {
         "en" : {

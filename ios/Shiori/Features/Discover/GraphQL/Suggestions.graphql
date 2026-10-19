@@ -12,9 +12,10 @@ query MonthlyDiscoveries($format: ReleaseFormat!, $lookUp: Boolean) {
   }
 }
 
-# "Pas intéressé": never suggested again.
-mutation DismissSuggestion($id: String!) {
-  dismissSuggestion(id: $id)
+# "Pas intéressé" or "Je n'aime pas": never suggested again, and why told to
+# the model.
+mutation DismissSuggestion($id: String!, $reason: DismissalReason!) {
+  dismissSuggestion(id: $id, reason: $reason)
 }
 
 fragment SuggestionFields on Suggestion {

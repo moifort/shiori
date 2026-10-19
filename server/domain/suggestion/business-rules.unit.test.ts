@@ -231,6 +231,26 @@ describe('tasteDigestOf', () => {
     expect(digest.indexOf('Neuf')).toBeLessThan(digest.indexOf('Vieux'))
   })
 
+  test('tells what the reader does not like apart from what they passed on', () => {
+    const dismissal = (title: string, reason?: Dismissal['reason']): Dismissal => ({
+      userId: reader,
+      key: title,
+      title: title as BookTitle,
+      authors: ['A' as AuthorName],
+      reason,
+      dismissedAt: new Date('2026-09-01'),
+    })
+    const digest = tasteDigestOf(
+      [],
+      [],
+      [dismissal('Ancien'), dismissal('Passé', 'not-interested'), dismissal('Détesté', 'disliked')],
+    )
+    expect(digest).toBe(
+      "## Déjà proposés, n'aime pas ce genre de livre\n- « Détesté » — A\n\n" +
+        '## Déjà proposés, pas intéressé\n- « Ancien » — A\n- « Passé » — A',
+    )
+  })
+
   test('reads at most so many lines, the best ranked kept', () => {
     const books = Array.from({ length: MAX_DIGEST_LINES + 50 }, (_, index) =>
       book(`Livre ${index}`, 'Auteur', { rating: index < 10 ? 5 : 3 }),

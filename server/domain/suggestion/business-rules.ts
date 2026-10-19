@@ -4,6 +4,7 @@ import type { Language } from '~/domain/shared/language'
 import { slugify } from '~/utils/slug'
 import type {
   Dismissal,
+  DismissalReason,
   ReferenceRank,
   Suggestion,
   SuggestionQueue,
@@ -21,6 +22,13 @@ export const MAX_DIGEST_LINES = 300
 /** How many dismissals the model is told: the latest ones. Every one is still
  *  filtered out, however old. */
 export const TOLD_DISMISSALS = 100
+
+/** How the digest heads each kind of dismissal: what the reader does not
+ *  like, a taste the model steers clear of, then what they merely passed on. */
+const DISMISSAL_TITLES: readonly (readonly [DismissalReason, string])[] = [
+  ['disliked', "Déjà proposés, n'aime pas ce genre de livre"],
+  ['not-interested', 'Déjà proposés, pas intéressé'],
+]
 
 /** The month a selection is titled after: `YYYY-MM`, in UTC. */
 export const monthOf = (now: Date): string => now.toISOString().slice(0, 7)
@@ -168,13 +176,16 @@ export const tasteDigestOf = (
   const told = [...dismissals]
     .sort((left, right) => right.dismissedAt.getTime() - left.dismissedAt.getTime())
     .slice(0, TOLD_DISMISSALS)
-  if (told.length)
-    sections.push(
-      [
-        '## Déjà proposés, pas intéressé',
-        ...told.map((dismissal) => `- « ${dismissal.title} » — ${dismissal.authors.join(', ')}`),
-      ].join('\n'),
-    )
+  for (const [reason, title] of DISMISSAL_TITLES) {
+    const said = told.filter((dismissal) => (dismissal.reason ?? 'not-interested') === reason)
+    if (said.length)
+      sections.push(
+        [
+          `## ${title}`,
+          ...said.map((dismissal) => `- « ${dismissal.title} » — ${dismissal.authors.join(', ')}`),
+        ].join('\n'),
+      )
+  }
   return sections.join('\n\n')
 }
 
