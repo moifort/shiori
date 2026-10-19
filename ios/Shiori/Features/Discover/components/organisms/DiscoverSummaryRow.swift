@@ -3,38 +3,35 @@ import SwiftUI
 /// One category of the Books shelf: its symbol, its name and what it holds
 /// in a few words over a strip of every cover it holds, a tap on one opening
 /// its page. A friend's page draws its shelves the same way; a line with no
-/// covers is the heading alone.
-struct DiscoverSummaryRow<Covers: View>: View {
+/// covers is the heading alone. A line may set a few of its books apart,
+/// drawn whole between the heading and the strip.
+struct DiscoverSummaryRow<Lead: View, Covers: View>: View {
     let title: LocalizedStringKey
     /// Nil for a line whose name says enough on its own.
     let systemImage: String?
     let tint: Color
     let line: String
     private let hasCovers: Bool
+    @ViewBuilder let lead: Lead
     @ViewBuilder let covers: Covers
 
-    init(category: DiscoverCategory, line: String, @ViewBuilder covers: () -> Covers) {
-        self.init(
-            title: category.title,
-            systemImage: category.systemImage,
-            tint: category.tint,
-            line: line,
-            covers: covers
-        )
-    }
-
+    /// A line whose first books are drawn whole above the strip of the
+    /// others; no strip once those first books are all it holds.
     init(
         title: LocalizedStringKey,
         systemImage: String,
         tint: Color,
         line: String,
+        hasCovers: Bool,
+        @ViewBuilder lead: () -> Lead,
         @ViewBuilder covers: () -> Covers
     ) {
         self.title = title
         self.systemImage = systemImage
         self.tint = tint
         self.line = line
-        hasCovers = true
+        self.hasCovers = hasCovers
+        self.lead = lead()
         self.covers = covers()
     }
 
@@ -47,6 +44,7 @@ struct DiscoverSummaryRow<Covers: View>: View {
         VStack(alignment: .leading, spacing: 16 - Self.badgeRoom) {
             heading
                 .padding(.horizontal, 12)
+            lead
             // Cut as far from the card's right edge as the first cover stands
             // from its left one; the room left of that cover is for the badges
             // overhanging its corner.
@@ -96,7 +94,37 @@ struct DiscoverSummaryRow<Covers: View>: View {
     }
 }
 
-extension DiscoverSummaryRow where Covers == EmptyView {
+extension DiscoverSummaryRow where Lead == EmptyView {
+    init(category: DiscoverCategory, line: String, @ViewBuilder covers: () -> Covers) {
+        self.init(
+            title: category.title,
+            systemImage: category.systemImage,
+            tint: category.tint,
+            line: line,
+            covers: covers
+        )
+    }
+
+    init(
+        title: LocalizedStringKey,
+        systemImage: String,
+        tint: Color,
+        line: String,
+        @ViewBuilder covers: () -> Covers
+    ) {
+        self.init(
+            title: title,
+            systemImage: systemImage,
+            tint: tint,
+            line: line,
+            hasCovers: true,
+            lead: { EmptyView() },
+            covers: covers
+        )
+    }
+}
+
+extension DiscoverSummaryRow where Lead == EmptyView, Covers == EmptyView {
     /// A line with nothing under its heading: a shelf too long to sum up in
     /// covers, opened whole by a tap.
     init(title: LocalizedStringKey, systemImage: String? = nil, tint: Color = .accentColor, line: String) {
@@ -105,6 +133,7 @@ extension DiscoverSummaryRow where Covers == EmptyView {
         self.tint = tint
         self.line = line
         hasCovers = false
+        lead = EmptyView()
         covers = EmptyView()
     }
 }
