@@ -190,6 +190,8 @@ struct BookScreen: View {
             }
         }
         .task {
+            // What the search offers first, before a word is typed.
+            RecentlyViewed().remember(bookId)
             await viewModel.load()
             // The row behind the page follows: a shelf book's cover may change.
             if await viewModel.describeIfAwaiting(), let book = viewModel.book { onChanged(book) }

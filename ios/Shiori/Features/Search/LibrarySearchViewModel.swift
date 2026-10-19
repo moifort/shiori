@@ -13,11 +13,13 @@ final class LibrarySearchViewModel {
         index: LibrarySearchIndex,
         client: LibrarySearchClient,
         recents: RecentSearches = RecentSearches(),
+        viewed: RecentlyViewed = RecentlyViewed(),
         coverDelay: Duration = .milliseconds(300)
     ) {
         self.index = index
         self.client = client
         self.recents = recents
+        self.viewed = viewed
         self.coverDelay = coverDelay
         recentSearches = recents.all
     }
@@ -25,6 +27,7 @@ final class LibrarySearchViewModel {
     private let index: LibrarySearchIndex
     private let client: LibrarySearchClient
     private let recents: RecentSearches
+    private let viewed: RecentlyViewed
     private let coverDelay: Duration
 
     var query = "" {
@@ -42,6 +45,8 @@ final class LibrarySearchViewModel {
 
     private(set) var results = SearchResults.empty
     private(set) var recentSearches: [String]
+    /// The books opened last, from anywhere in the app, as the index knows them.
+    private(set) var recentlyViewed: [Book] = []
     /// Covers fetched for this screen, by book id: a signature lasts the hour.
     private(set) var covers: [String: URL] = [:]
     private var asked: Set<String> = []
@@ -85,6 +90,16 @@ final class LibrarySearchViewModel {
         query = recent
     }
 
+    func clearRecentSearches() {
+        recents.clear()
+        recentSearches = []
+    }
+
+    /// A book page was closed: the one just opened leads the list.
+    func refreshViewed() {
+        recompute()
+    }
+
     /// A result was opened from the current query: it becomes a recent search.
     func opened() {
         recents.remember(query)
@@ -93,13 +108,15 @@ final class LibrarySearchViewModel {
 
     private func recompute() {
         results = LibrarySearchMatcher.results(for: query, in: index.entries, filter: filter)
+        let byId = Dictionary(index.entries.map { ($0.id, $0.book) }, uniquingKeysWith: { first, _ in first })
+        recentlyViewed = viewed.ids.compactMap { byId[$0] }
         scheduleCovers()
     }
 
     /// The covers of the rows on top, once the typing pauses.
     private func scheduleCovers() {
         coverTask?.cancel()
-        let shown = results.series.compactMap(\.books.first) + results.books
+        let shown = recentlyViewed + results.series.compactMap(\.books.first) + results.books
         let missing = Array(shown.map(\.id).filter { !asked.contains($0) }.uniqued().prefix(Self.coverBatch))
         guard !missing.isEmpty else { return }
         coverTask = Task { [client, coverDelay] in

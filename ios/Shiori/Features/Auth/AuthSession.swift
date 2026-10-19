@@ -72,6 +72,7 @@ final class AuthSession {
         SnapshotCaches.clear()
         LibrarySearchIndex.shared.forget()
         RecentSearches().clear()
+        RecentlyViewed().clear()
         CoverImages.clear()
         SharedIntake.clear()
     }

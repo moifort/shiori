@@ -20,6 +20,7 @@ struct LibrarySearchScreen: View {
                 filter: viewModel.filter,
                 results: viewModel.results,
                 recentSearches: viewModel.recentSearches,
+                recentlyViewed: viewModel.recentlyViewed,
                 covers: viewModel.covers,
                 isPreparing: viewModel.isPreparing,
                 failed: viewModel.failed,
@@ -36,6 +37,7 @@ struct LibrarySearchScreen: View {
                 case let .select(status): viewModel.select(status)
                 case .clearFilter: viewModel.clearFilter()
                 case let .useRecent(recent): viewModel.useRecent(recent)
+                case .clearRecentSearches: viewModel.clearRecentSearches()
                 case .retry: await viewModel.retry()
                 case .close: dismiss()
                 }
@@ -44,7 +46,7 @@ struct LibrarySearchScreen: View {
                 SeriesScreen(seriesId: hit.id, language: hit.books.first?.language)
             }
         }
-        .sheet(item: $selectedBook) { book in
+        .sheet(item: $selectedBook, onDismiss: { viewModel.refreshViewed() }) { book in
             BookScreen(bookId: book.id)
         }
         .task { await viewModel.appear() }

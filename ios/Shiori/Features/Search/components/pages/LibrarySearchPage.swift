@@ -8,6 +8,8 @@ struct LibrarySearchPage: View {
     let filter: SearchFilter
     let results: SearchResults
     let recentSearches: [String]
+    /// The books opened last, anywhere in the app: offered before a word is typed.
+    var recentlyViewed: [Book] = []
     /// Covers fetched for the rows, by book id: the index carries none.
     let covers: [String: URL]
     let isPreparing: Bool
@@ -22,6 +24,7 @@ struct LibrarySearchPage: View {
         case select(ReadingStatus)
         case clearFilter
         case useRecent(String)
+        case clearRecentSearches
         case retry
         case close
     }
@@ -119,11 +122,51 @@ struct LibrarySearchPage: View {
 
     @ViewBuilder
     private var content: some View {
-        if SearchText.normalized(query).isEmpty, !recentSearches.isEmpty {
+        let typed = !SearchText.normalized(query).isEmpty
+        if !typed, !filter.isActive, !recentlyViewed.isEmpty {
+            viewed
+        }
+        if !typed, !recentSearches.isEmpty {
             recents
+        }
+        if !typed, !filter.isActive, recentlyViewed.isEmpty, recentSearches.isEmpty {
+            help
         }
         if isSearching {
             found
+        }
+    }
+
+    private var viewed: some View {
+        Section("Vus récemment") {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: 12) {
+                    ForEach(recentlyViewed) { book in
+                        Button {
+                            Task { await onAction(.openBook(book)) }
+                        } label: {
+                            CoverTile(book: withCover(book), caption: book.title, width: 72)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("search-viewed")
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            .scrollClipDisabled()
+            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+        }
+    }
+
+    private var help: some View {
+        Section {
+            Text("Cherchez un titre, un auteur ou une série de votre bibliothèque.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+                .listRowBackground(Color.clear)
         }
     }
 
@@ -132,7 +175,7 @@ struct LibrarySearchPage: View {
     }
 
     private var recents: some View {
-        Section("Récentes") {
+        Section {
             ForEach(recentSearches, id: \.self) { recent in
                 Button {
                     Task { await onAction(.useRecent(recent)) }
@@ -140,6 +183,17 @@ struct LibrarySearchPage: View {
                     Label(recent, systemImage: "clock.arrow.circlepath")
                 }
                 .tint(.primary)
+            }
+        } header: {
+            HStack {
+                Text("Recherches récentes")
+                Spacer()
+                Button("Effacer") {
+                    Task { await onAction(.clearRecentSearches) }
+                }
+                .font(.subheadline)
+                .textCase(nil)
+                .accessibilityIdentifier("search-clear-recents")
             }
         }
     }
@@ -298,6 +352,7 @@ private struct PagePreview: View {
     var filter = SearchFilter()
     var isPreparing = false
     var recents: [String] = []
+    var viewed: [Book] = []
 
     var body: some View {
         let entries = SearchFixtures.library.map(SearchEntry.init)
@@ -307,6 +362,7 @@ private struct PagePreview: View {
                 filter: filter,
                 results: LibrarySearchMatcher.results(for: query, in: entries, filter: filter),
                 recentSearches: recents,
+                recentlyViewed: viewed,
                 covers: Dictionary(uniqueKeysWithValues: SearchFixtures.library.compactMap { book in
                     book.coverURL.map { (book.id, $0) }
                 }),
@@ -318,6 +374,8 @@ private struct PagePreview: View {
     }
 }
 
+#Preview("Vide") { PagePreview(query: "", recents: ["sanderson", "frieren"], viewed: Array(SearchFixtures.library.prefix(8))) }
+#Preview("Première ouverture") { PagePreview(query: "") }
 #Preview("Préparation") { PagePreview(query: "", isPreparing: true) }
 #Preview("Favoris") { PagePreview(query: "", filter: SearchFilter(favorites: true), recents: ["sanderson", "frieren"]) }
 #Preview("Résultats") { PagePreview(query: "dungeon crawler card") }

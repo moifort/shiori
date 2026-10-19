@@ -32,6 +32,11 @@ private func serving(_ books: [Book] = shelf, indexCalls: Calls = Calls(), cover
     )
 }
 
+private func viewedStore() -> RecentlyViewed {
+    let suite = "viewed-tests-\(UUID().uuidString)"
+    return RecentlyViewed(key: "viewed", defaults: { UserDefaults(suiteName: suite)! })
+}
+
 private func recents() -> RecentSearches {
     let suite = "search-tests-\(UUID().uuidString)"
     return RecentSearches(key: "recents", defaults: { UserDefaults(suiteName: suite)! })
@@ -158,6 +163,39 @@ struct LibrarySearchViewModelTests {
         }
 
         #expect(viewModel.recentSearches == ["deux", "six", "cinq", "quatre", "trois"])
+    }
+}
+
+extension LibrarySearchViewModelTests {
+    @Test func offersTheBooksViewedLastAndDropsOnesGone() async {
+        let viewed = viewedStore()
+        for id in ["vent", "gone", "carl"] { viewed.remember(id) }
+        viewed.remember("vent")
+        let index = await SearchFixtures.readyIndex(shelf)
+        let viewModel = LibrarySearchViewModel(index: index, client: serving(), recents: recents(), viewed: viewed, coverDelay: .zero)
+
+        await viewModel.appear()
+
+        #expect(viewModel.recentlyViewed.map(\.id) == ["vent", "carl"])
+    }
+
+    @Test func keepsTenViewedBooksAtMost() {
+        let viewed = viewedStore()
+        for index in 0..<12 { viewed.remember("b\(index)") }
+        #expect(viewed.ids.count == RecentlyViewed.limit)
+        #expect(viewed.ids.first == "b11")
+    }
+
+    @Test func clearsTheRecentSearches() async {
+        let index = await SearchFixtures.readyIndex(shelf)
+        let store = recents()
+        store.remember("carl")
+        let viewModel = LibrarySearchViewModel(index: index, client: serving(), recents: store, coverDelay: .zero)
+
+        viewModel.clearRecentSearches()
+
+        #expect(viewModel.recentSearches.isEmpty)
+        #expect(store.all.isEmpty)
     }
 }
 

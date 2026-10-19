@@ -4421,6 +4421,22 @@
         }
       }
     },
+    "Effacer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effacer"
+          }
+        }
+      }
+    },
     "Email" : {
       "localizations" : {
         "en" : {
@@ -8929,6 +8945,22 @@
         }
       }
     },
+    "Recherches récentes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recent searches"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recherches récentes"
+          }
+        }
+      }
+    },
     "Reconnecter mon compte Amazon" : {
       "localizations" : {
         "en" : {
@@ -9245,22 +9277,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Russe"
-          }
-        }
-      }
-    },
-    "Récentes" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recent"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Récentes"
           }
         }
       }
@@ -11773,6 +11789,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Voyage"
+          }
+        }
+      }
+    },
+    "Vus récemment" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recently viewed"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vus récemment"
           }
         }
       }
