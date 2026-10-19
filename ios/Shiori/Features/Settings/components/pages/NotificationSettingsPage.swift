@@ -49,7 +49,7 @@ struct NotificationSettingsPage: View {
 
             if let settings {
                 Section("Me prévenir") {
-                    ForEach([AlertKind.digest, .translation]) { kind in
+                    ForEach([AlertKind.digest, .translation, .discoveries]) { kind in
                         Toggle(isOn: binding(settings.enabled.contains(kind)) { .set(kind, enabled: $0) }) {
                             Label(kind.title, systemImage: kind.symbol)
                         }

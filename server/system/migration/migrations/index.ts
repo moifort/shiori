@@ -17,6 +17,7 @@ import { alertsNoDeviceHeard } from '~/system/migration/migrations/019-alerts-no
 import { volumesNumberedThroughTheirSaga } from '~/system/migration/migrations/020-volumes-numbered-through-their-saga'
 import { cataloguesUnderTheAuthorReversed } from '~/system/migration/migrations/021-catalogues-under-the-author-reversed'
 import { awardInterestsDropped } from '~/system/migration/migrations/022-award-interests-dropped'
+import { discoveriesAlertStartsOn } from '~/system/migration/migrations/023-discoveries-alert-starts-on'
 import type { Migration } from '~/system/migration/types'
 
 // Forward-only, sequential, no rollback. Adding a new optional field or a new
@@ -46,4 +47,5 @@ export const migrations: Migration[] = [
   volumesNumberedThroughTheirSaga,
   cataloguesUnderTheAuthorReversed,
   awardInterestsDropped,
+  discoveriesAlertStartsOn,
 ]

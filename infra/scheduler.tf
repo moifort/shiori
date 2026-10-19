@@ -207,3 +207,34 @@ resource "google_cloud_scheduler_job" "send_release_digest" {
 
   depends_on = [google_project_service.apis]
 }
+
+# Makes the month's discoveries on the first and tells the readers they are
+# there: every ten minutes from ten in the morning to eight at night, so the
+# notification lands while readers are awake, a few readers a run — a
+# selection is a minute or two of Claude, about €0.10 each. Only readers who
+# had a selection before and left the alert on are visited; the second day
+# takes the ones a failed generation left behind. Answers 200 with the counts,
+# and a retry would only find the readers already made, so none is set.
+resource "google_cloud_scheduler_job" "generate_discoveries" {
+  project   = google_project.this.project_id
+  region    = var.region
+  name      = "generate-discoveries"
+  schedule  = "*/10 10-19 1,2 * *"
+  time_zone = "Europe/Paris"
+
+  attempt_deadline = "180s"
+
+  retry_config {
+    retry_count = 0
+  }
+
+  http_target {
+    http_method = "POST"
+    uri         = "${google_cloudfunctions2_function.server.service_config[0].uri}/admin/generate-discoveries"
+    headers = {
+      Authorization = "Bearer ${local.admin_token_value}"
+    }
+  }
+
+  depends_on = [google_project_service.apis]
+}

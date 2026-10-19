@@ -15,6 +15,11 @@ const dismissals = () =>
 export const findQueue = async (userId: UserId): Promise<SuggestionQueue | undefined> =>
   (await queues().doc(userId).get()).data()
 
+/** Every reader's selection, whatever its month: the monthly pass picks the
+ *  readers it renews from them. */
+export const allQueues = async (): Promise<SuggestionQueue[]> =>
+  (await queues().get()).docs.map((doc) => doc.data())
+
 export const saveQueue = async (queue: SuggestionQueue): Promise<void> => {
   await queues().doc(queue.userId).set(queue)
 }

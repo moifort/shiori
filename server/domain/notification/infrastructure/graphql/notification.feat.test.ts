@@ -25,6 +25,7 @@ describe('the notification settings', () => {
       alerts: [
         { kind: 'TRANSLATION', enabled: true },
         { kind: 'DIGEST', enabled: true },
+        { kind: 'DISCOVERIES', enabled: true },
       ],
       deviceCount: 0,
     })
@@ -46,6 +47,7 @@ describe('the notification settings', () => {
       alerts: [
         { kind: 'TRANSLATION', enabled: false },
         { kind: 'DIGEST', enabled: true },
+        { kind: 'DISCOVERIES', enabled: true },
       ],
     })
   })

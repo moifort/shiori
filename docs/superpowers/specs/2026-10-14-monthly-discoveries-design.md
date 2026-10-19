@@ -140,6 +140,27 @@ to a reader whose scan allowance is spent. A reader opening five new suggestions
 
 No pass over existing readers: the first generation runs on the first look at Découvrir.
 
+### The first of the month (added 2026-10-19)
+
+From then on, the month's selection is also made on the first, without waiting for Découvrir,
+and the reader is told by a push — "Voici les nouvelles découvertes de ce mois-ci." — behind a
+third alert switch, "Découvertes du mois", on by default (migration 023 switches it on for the
+readers who hear any alert). `POST /admin/generate-discoveries` runs every ten minutes from 10:00
+to 19:50, Paris time, on the 1st and the 2nd, five readers a run: 300 a day, the rest given theirs
+by Découvrir as before. Only a reader who had a selection before, left the alert on and has a
+device is visited — the pass is sized to the readers who will hear of it.
+
+| | Generations | Cost |
+|---|---|---|
+| Per reader visited, month | 1 | €0.10 |
+| Today (3 readers with a selection, 2026-10-19) | 3 | €0.30 at most |
+| 100 readers visited, month | 100 | €10 at most |
+
+Most of these were paid anyway when the reader opened Découvrir; the pass adds the cost of the
+readers who would not have opened it that month. A generation that fails is tried on the 2nd,
+then left to Découvrir. Every pass stays under the Console's $20 monthly cap up to about 180
+readers; past that, the cap needs raising.
+
 ## Privacy
 
 The library leaves for Anthropic. The App Store privacy answers and the privacy policy name it

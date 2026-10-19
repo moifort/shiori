@@ -4169,6 +4169,22 @@
         }
       }
     },
+    "Découvertes du mois" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monthly discoveries"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Découvertes du mois"
+          }
+        }
+      }
+    },
     "Découvrir" : {
       "localizations" : {
         "en" : {

@@ -22,6 +22,17 @@ mock.module('~/domain/suggestion/infrastructure/claude', () => ({
   },
 }))
 
+/** Stands in for APNs: every notification pushed. */
+const pushed: { token: string; title: string; body: string }[] = []
+mock.module('~/system/apns', () => ({
+  Apns: {
+    send: async (device: { token: string }, message: { title: string; body: string }) => {
+      pushed.push({ token: device.token, title: message.title, body: message.body })
+      return 'sent'
+    },
+  },
+}))
+
 /** Stands in for Open Library: a cover for every book but the ones it misses. */
 let uncovered = new Set<string>()
 mock.module('~/domain/suggestion/infrastructure/catalogue', () => ({
@@ -72,6 +83,7 @@ beforeEach(() => {
   fake = resetFakeFirestore()
   configured = true
   prompts.length = 0
+  pushed.length = 0
   uncovered = new Set()
   shelve('shibumi', 'Shibumi', 'Trevanian', {
     rating: 5,
@@ -270,5 +282,83 @@ describe('the month’s discoveries', () => {
 
   test('dismissing a suggestion the reader does not have is not-found', async () => {
     expect(await SuggestionUseCase.dismiss(reader, 'nothing', 'disliked')).toBe('not-found')
+  })
+})
+
+describe('the first of the month’s pass', () => {
+  const november = new Date('2026-11-01T09:00:00Z')
+  const hears = (alerts: string[], devices = 1) =>
+    fake.seed('notification-settings', reader, {
+      userId: reader,
+      devices: Array.from({ length: devices }, (_, index) => ({
+        token: String(index).repeat(64),
+        environment: 'production',
+        registeredAt: new Date('2026-10-01'),
+      })),
+      alerts,
+      updatedAt: new Date('2026-10-01'),
+    })
+
+  test('makes the month’s selection for a reader who had one, and tells them once', async () => {
+    await look()
+    hears(['translation', 'digest', 'discoveries'])
+    answering(suggested('Neuromancien', 'William Gibson'))
+
+    expect(await SuggestionUseCase.generateForEveryReader(november)).toEqual({ due: 1, told: 1 })
+    expect(pushed).toEqual([
+      {
+        token: '0'.repeat(64),
+        title: 'Nouvelles découvertes',
+        body: 'Voici les nouvelles découvertes de ce mois-ci.',
+      },
+    ])
+    expect(fake.data('suggestion-queues', reader)?.month).toBe('2026-11')
+    expect(titles(await read(november))).toEqual(['Neuromancien'])
+
+    expect(await SuggestionUseCase.generateForEveryReader(november)).toEqual({ due: 0, told: 0 })
+    expect(prompts).toHaveLength(2)
+    expect(pushed).toHaveLength(1)
+  })
+
+  test('writes in the language of the reader’s last selection', async () => {
+    await look(october, 'en')
+    hears(['discoveries'])
+
+    await SuggestionUseCase.generateForEveryReader(november)
+
+    expect(prompts[1]).toContain('écrits en anglais')
+    expect(pushed[0]?.body).toBe("Here are this month's new discoveries.")
+  })
+
+  test('leaves a reader who switched the alert off, or has no device, to Découvrir', async () => {
+    await look()
+    hears(['translation', 'digest'])
+    expect(await SuggestionUseCase.generateForEveryReader(november)).toEqual({ due: 0, told: 0 })
+
+    hears(['discoveries'], 0)
+    expect(await SuggestionUseCase.generateForEveryReader(november)).toEqual({ due: 0, told: 0 })
+    expect(prompts).toHaveLength(1)
+    expect(pushed).toHaveLength(0)
+  })
+
+  test('asks nothing for a reader who never opened Découvrir', async () => {
+    hears(['discoveries'])
+    expect(await SuggestionUseCase.generateForEveryReader(november)).toEqual({ due: 0, told: 0 })
+    expect(prompts).toHaveLength(0)
+  })
+
+  test('tells nobody when the model failed, and tries again the next day', async () => {
+    await look()
+    hears(['discoveries'])
+    answer = new Error('Claude answered 529')
+
+    expect(await SuggestionUseCase.generateForEveryReader(november)).toEqual({ due: 1, told: 0 })
+    expect(pushed).toHaveLength(0)
+    expect(await SuggestionUseCase.generateForEveryReader(november)).toEqual({ due: 0, told: 0 })
+
+    answering(suggested('Neuromancien', 'William Gibson'))
+    expect(
+      await SuggestionUseCase.generateForEveryReader(new Date('2026-11-02T09:00:00Z')),
+    ).toEqual({ due: 1, told: 1 })
   })
 })

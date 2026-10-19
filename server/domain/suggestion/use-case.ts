@@ -10,12 +10,16 @@ import type { Book } from '~/domain/book/types'
 import { releaseDescriptionKeyOf, todayOf } from '~/domain/discovery/business-rules'
 import { DiscoveryQuery } from '~/domain/discovery/query'
 import { RELEASE_FORMATS, type ReleaseFormat } from '~/domain/discovery/types'
+import { wantsAlert } from '~/domain/notification/business-rules'
+import { NotificationQuery } from '~/domain/notification/query'
+import { NotificationUseCase } from '~/domain/notification/use-case'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
 import {
+  discoveriesAlertOf,
   monthOf,
   readerProfileOf,
   referencesOf,
@@ -35,6 +39,7 @@ import type {
   DismissalReason,
   MonthlyDiscoveries,
   Suggestion,
+  SuggestionQueue,
   SuggestionView,
 } from './types'
 
@@ -64,43 +69,21 @@ export namespace SuggestionUseCase {
   ): Promise<MonthlyDiscoveries> => {
     const month = monthOf(now)
     if (!isConfigured()) return { month, status: 'none', suggestions: [] }
-    const [books, opinions, dismissals, queue, awaited] = await Promise.all([
-      BookQuery.all(userId),
-      SeriesOpinionQuery.all(userId),
-      SuggestionQuery.dismissals(userId),
-      SuggestionQuery.queue(userId),
-      AwaitedEditionQuery.byUser(userId),
-    ])
-    const dismissed = new Set(dismissals.map((dismissal) => dismissal.key))
-    const awaitedKeys = new Set(awaited.map((edition) => edition.watchKey))
-    const shown = (candidates: readonly Suggestion[]) =>
-      shownOf(candidates, books, dismissed).filter(
-        (suggestion) =>
-          !RELEASE_FORMATS.some((candidate) =>
-            awaitedKeys.has(watchKeyOf(suggestion, candidate, appLanguage)),
-          ),
-      )
+    const [library, queue] = await Promise.all([libraryOf(userId), SuggestionQuery.queue(userId)])
+    const { books, opinions, awaited } = library
     const mayGenerate = (current: typeof queue) => shouldGenerate(current, now, appLanguage)
-    let suggestions = queue?.month === month ? shown(queue.suggestions) : []
+    let suggestions = queue?.month === month ? keptOf(queue.suggestions, library, appLanguage) : []
     let status = statusOf(queue, now, appLanguage)
     if (
       lookUp &&
       mayGenerate(queue) &&
       (await SuggestionCommand.claimGeneration(userId, mayGenerate, now, appLanguage))
     ) {
-      const answered = await generated(books, opinions, dismissals, appLanguage)
-      if (answered) {
-        suggestions = shown(answered)
+      const selection = await newSelection(userId, library, appLanguage, now)
+      if (selection) {
+        suggestions = selection
         status = 'ready'
-        await SuggestionCommand.saveQueue({
-          userId,
-          month,
-          language: appLanguage,
-          generatedAt: now,
-          suggestions,
-        })
       } else {
-        await SuggestionCommand.endGeneration(userId)
         status = queue?.month === month ? 'ready' : 'none'
       }
     }
@@ -121,6 +104,126 @@ export namespace SuggestionUseCase {
 
   export const dismiss = (userId: UserId, key: string, reason: DismissalReason) =>
     SuggestionCommand.dismiss(userId, key, reason)
+
+  /** The first of the month's pass, called by Cloud Scheduler: the month's
+   *  discoveries made, in the language of their last ones, for the readers
+   *  who had a selection before, have none for this month, and left the alert
+   *  on with a device to hear it — then they are told. The others are given
+   *  theirs when they open Découvrir, as before: nobody is asked for whom the
+   *  model would be paid with nothing to say.
+   *
+   *  A generation takes a minute or two, so a run makes a few at once and
+   *  leaves the rest to the next run; a reader whose generation failed is
+   *  given theirs the day after, or by Découvrir. Answers the counts. */
+  export const generateForEveryReader = async (
+    now = new Date(),
+  ): Promise<{ due: number; told: number }> => {
+    if (!isConfigured()) return { due: 0, told: 0 }
+    const month = monthOf(now)
+    const mayGenerate = (queue: SuggestionQueue | undefined, language: Language) =>
+      queue !== undefined && queue.month !== month && shouldGenerate(queue, now, language)
+    const stale = (await SuggestionQuery.all()).filter((queue) =>
+      mayGenerate(queue, queue.language),
+    )
+    const due = (
+      await Promise.all(
+        stale.map(async (queue) =>
+          wantsAlert(await NotificationQuery.settings(queue.userId, now), 'discoveries')
+            ? queue
+            : undefined,
+        ),
+      )
+    ).filter((queue) => queue !== undefined)
+    const told = await Promise.all(
+      due.slice(0, READERS_PER_PASS).map(async ({ userId, language }) => {
+        try {
+          const claimed = await SuggestionCommand.claimGeneration(
+            userId,
+            (queue) => mayGenerate(queue, language),
+            now,
+            language,
+          )
+          if (!claimed) return false
+          const selection = await newSelection(userId, await libraryOf(userId), language, now)
+          if (!selection || selection.length === 0) return false
+          await NotificationUseCase.notify(userId, {
+            kind: 'discoveries',
+            ...discoveriesAlertOf(language),
+            link: 'shiori://discover',
+          })
+          return true
+        } catch (error) {
+          logger.warn('monthly discoveries pass failed', { error, userId })
+          return false
+        }
+      }),
+    )
+    return { due: due.length, told: told.filter(Boolean).length }
+  }
+}
+
+/** How many readers one run of the monthly pass makes a selection for, at
+ *  once: each is a minute or two of the model, inside the function's three. */
+const READERS_PER_PASS = 5
+
+type Library = {
+  books: Book[]
+  opinions: SeriesOpinion[]
+  dismissals: Dismissal[]
+  awaited: Awaited<ReturnType<typeof AwaitedEditionQuery.byUser>>
+}
+
+/** What the selection is made from and checked against. */
+const libraryOf = async (userId: UserId): Promise<Library> => {
+  const [books, opinions, dismissals, awaited] = await Promise.all([
+    BookQuery.all(userId),
+    SeriesOpinionQuery.all(userId),
+    SuggestionQuery.dismissals(userId),
+    AwaitedEditionQuery.byUser(userId),
+  ])
+  return { books, opinions, dismissals, awaited }
+}
+
+/** The suggestions the reader neither holds, dismissed nor awaits in any
+ *  format. */
+const keptOf = (
+  candidates: readonly Suggestion[],
+  { books, dismissals, awaited }: Library,
+  language: Language,
+): Suggestion[] => {
+  const dismissed = new Set(dismissals.map((dismissal) => dismissal.key))
+  const awaitedKeys = new Set(awaited.map((edition) => edition.watchKey))
+  return shownOf(candidates, books, dismissed).filter(
+    (suggestion) =>
+      !RELEASE_FORMATS.some((candidate) =>
+        awaitedKeys.has(watchKeyOf(suggestion, candidate, language)),
+      ),
+  )
+}
+
+/** The model asked for the month's selection, once the generation is
+ *  claimed: saved as the reader's queue, or the claim let go when the model
+ *  failed, and undefined. */
+const newSelection = async (
+  userId: UserId,
+  library: Library,
+  language: Language,
+  now: Date,
+): Promise<Suggestion[] | undefined> => {
+  const answered = await generated(library.books, library.opinions, library.dismissals, language)
+  if (!answered) {
+    await SuggestionCommand.endGeneration(userId)
+    return undefined
+  }
+  const suggestions = keptOf(answered, library, language)
+  await SuggestionCommand.saveQueue({
+    userId,
+    month: monthOf(now),
+    language,
+    generatedAt: now,
+    suggestions,
+  })
+  return suggestions
 }
 
 /** The model's suggestions for this library, each given the cover Open

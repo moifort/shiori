@@ -1,19 +1,22 @@
 import Foundation
 
-/// The alerts a reader can switch off; every one starts on. Every one is about
-/// a book coming out.
+/// The alerts a reader can switch off; every one starts on. Each says something
+/// new: a book coming out, or the month's discoveries made.
 enum AlertKind: CaseIterable, Identifiable, Sendable {
     /// Stored as `translation` for what it first announced: a new volume of a
     /// saga the reader follows, the day it comes out.
     case translation
     /// The Sunday digest of the volumes newly announced.
     case digest
+    /// The month's discoveries, made on the first.
+    case discoveries
     var id: Self { self }
 
     var title: String {
         switch self {
         case .translation: String(localized: "Nouvelle sortie")
         case .digest: String(localized: "Nouveauté hebdomadaire")
+        case .discoveries: String(localized: "Découvertes du mois")
         }
     }
 
@@ -21,6 +24,7 @@ enum AlertKind: CaseIterable, Identifiable, Sendable {
         switch self {
         case .translation: "book.closed"
         case .digest: "calendar"
+        case .discoveries: "sparkles"
         }
     }
 
@@ -28,6 +32,7 @@ enum AlertKind: CaseIterable, Identifiable, Sendable {
         switch self {
         case .translation: .translation
         case .digest: .digest
+        case .discoveries: .discoveries
         }
     }
 
@@ -35,6 +40,7 @@ enum AlertKind: CaseIterable, Identifiable, Sendable {
         switch kind {
         case .translation: self = .translation
         case .digest: self = .digest
+        case .discoveries: self = .discoveries
         }
     }
 }

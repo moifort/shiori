@@ -49,6 +49,12 @@ export const shouldGenerate = (
   return queue.month !== monthOf(now) || queue.language !== language
 }
 
+/** The alert the monthly pass sends once the month's discoveries are made. */
+export const discoveriesAlertOf = (language: Language): { title: string; body: string } =>
+  language === 'fr'
+    ? { title: 'Nouvelles découvertes', body: 'Voici les nouvelles découvertes de ce mois-ci.' }
+    : { title: 'New discoveries', body: "Here are this month's new discoveries." }
+
 /** How long a selection is taken to be on its way: a generation runs about a
  *  minute, two at most; past five, the instance that ran it is gone. */
 export const GENERATION_WINDOW_MS = 5 * 60 * 1000

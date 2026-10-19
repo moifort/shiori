@@ -2,8 +2,8 @@ import type { Brand } from 'ts-brand'
 import type { UserId } from '~/domain/shared/types'
 import type { PushEnvironment } from '~/system/apns'
 
-/** The alerts a reader can switch off, one switch each. Every one of them is
- *  about a book coming out: Shiori never pushes to bring a reader back. */
+/** The alerts a reader can switch off, one switch each. Each says something
+ *  new for the reader: a book coming out, or the month's discoveries made. */
 export const ALERT_KINDS = [
   /** A new volume of a saga the reader follows. Named for what it first
    *  announced; the stored value stays, since renaming it costs a migration. */
@@ -11,6 +11,9 @@ export const ALERT_KINDS = [
   /** The Sunday digest of the volumes newly announced in the sagas the reader
    *  follows. */
   'digest',
+  /** The month's discoveries, made on the first for a reader who had some
+   *  before. */
+  'discoveries',
 ] as const
 export type AlertKind = (typeof ALERT_KINDS)[number]
 

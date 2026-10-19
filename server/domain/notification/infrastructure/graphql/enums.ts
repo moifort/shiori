@@ -2,8 +2,8 @@ import { builder } from '~/domain/shared/graphql/builder'
 
 export const AlertKindEnum = builder.enumType('AlertKind', {
   description:
-    'An alert the reader can switch off; every one starts on. Every one is ' +
-    'about a book coming out: Shiori never pushes to bring a reader back.',
+    'An alert the reader can switch off; every one starts on. Each says ' +
+    'something new for the reader: a book coming out, or the month’s discoveries made.',
   values: {
     TRANSLATION: {
       value: 'translation',
@@ -13,6 +13,10 @@ export const AlertKindEnum = builder.enumType('AlertKind', {
       value: 'digest',
       description:
         'The Sunday digest of the volumes newly announced in the sagas the reader follows.',
+    },
+    DISCOVERIES: {
+      value: 'discoveries',
+      description: 'The month’s discoveries, made on the first for a reader who had some before.',
     },
   } as const,
 })
