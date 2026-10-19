@@ -14,6 +14,9 @@ struct EmptyState: View {
     let message: Text
     var primary: Action?
     var secondary: Action?
+    /// A symbol of the asset catalog drawn in place of `systemImage`: one of
+    /// the app's own, made by `ios/tools/generate-symbols.swift`.
+    private var assetSymbol: String?
 
     /// A button of the empty state. Async so that a retry can show it is
     /// running rather than being tapped again.
@@ -74,7 +77,11 @@ struct EmptyState: View {
 
     var body: some View {
         ContentUnavailableView {
-            Label(title, systemImage: systemImage)
+            if let assetSymbol {
+                Label(title, image: assetSymbol)
+            } else {
+                Label(title, systemImage: systemImage)
+            }
         } description: {
             message
         } actions: {
@@ -97,6 +104,13 @@ struct EmptyState: View {
                 .accessibilityIdentifier("empty-secondary")
             }
         }
+    }
+
+    /// The same state, drawn with one of the app's own symbols.
+    func assetSymbol(_ name: String) -> EmptyState {
+        var drawn = self
+        drawn.assetSymbol = name
+        return drawn
     }
 
     @ViewBuilder

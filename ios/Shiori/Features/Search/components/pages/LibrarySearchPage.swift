@@ -73,7 +73,7 @@ struct LibrarySearchPage: View {
     private var chips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                FilterChip(title: "Favoris", systemImage: "heart", isOn: filter.favorites) {
+                FilterChip(title: "Favoris", systemImage: "heart.fill", isOn: filter.favorites) {
                     Task { await onAction(.toggleFavorites) }
                 }
                 ForEach(SearchFilter.statuses) { status in
@@ -201,12 +201,14 @@ struct LibrarySearchPage: View {
                 verbatim: String(localized: "Hors de ce filtre, \(results.hiddenByFilter) livres correspondent."),
                 primary: .init("Retirer le filtre", systemImage: "xmark.circle") { await onAction(.clearFilter) }
             )
+            .assetSymbol("book-search")
         } else {
             EmptyState(
                 systemImage: "magnifyingglass",
                 title: "Aucun livre ne correspond",
                 message: "Cherchez un titre, un auteur ou une série de votre bibliothèque."
             )
+            .assetSymbol("book-search")
         }
     }
 

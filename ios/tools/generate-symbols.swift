@@ -1,4 +1,4 @@
-// Generates the custom SF-style symbols of the app (rocket, ghost, feather) as
+// Generates the custom SF-style symbols of the app (rocket, ghost, feather, book-search) as
 // SF Symbols templates, one .symbolset per symbol, into a target directory.
 // Shapes are drawn as centerlines at 100 pt, stroked with CoreGraphics at the
 // Ultralight / Regular / Black widths measured on Apple's own "circle" symbol,
@@ -107,6 +107,36 @@ func feather(_ w: Weight) -> CGPath {
 }
 
 // ---------- SVG emission ----------
+/// An open book under a magnifying glass that finds nothing: the search's empty
+/// result. The lens is cut out of the pages, as Apple's own badged symbols are.
+func bookSearch(_ w: Weight) -> CGPath {
+    let s = w.stroke
+    let spine: CGFloat = -10
+    let book = CGMutablePath()
+    book.move(to: P(spine, 24))
+    book.addCurve(to: P(-46, 28), control1: P(spine - 10, 32), control2: P(-34, 32))
+    book.addLine(to: P(-46, -20))
+    book.addCurve(to: P(spine, -24), control1: P(-34, -16), control2: P(spine - 10, -16))
+    book.addLine(to: P(spine, 24))
+    book.addCurve(to: P(26, 28), control1: P(spine + 10, 32), control2: P(14, 32))
+    book.addLine(to: P(26, -20))
+    book.addCurve(to: P(spine, -24), control1: P(14, -16), control2: P(spine + 10, -16))
+    let center = P(22, -14)
+    let radius: CGFloat = 15
+    let lens = CGPath(ellipseIn: CGRect(x: center.x - radius, y: center.y - radius, width: 2 * radius, height: 2 * radius), transform: nil)
+    let handle = CGMutablePath()
+    handle.move(to: P(center.x + radius * 0.72, center.y - radius * 0.72))
+    handle.addLine(to: P(44, -38))
+    let gap = radius + s * 1.6
+    let cutout = CGPath(ellipseIn: CGRect(x: center.x - gap, y: center.y - gap, width: 2 * gap, height: 2 * gap), transform: nil)
+    let pages = stroked(book, s).subtracting(cutout)
+    let all = union([pages, stroked(lens, s), stroked(handle, s * 1.25)])
+    // Drawn small enough to read the cut-out, then brought to the size of
+    // Apple's symbols beside it.
+    var grown = CGAffineTransform(scaleX: 1.2, y: 1.2)
+    return all.copy(using: &grown)!
+}
+
 func fmt(_ v: CGFloat) -> String { String(format: "%.2f", v) }
 func svgPathData(_ path: CGPath) -> (String, CGRect) {
     var d = ""
@@ -166,7 +196,7 @@ func template(name: String, make: (Weight) -> CGPath) -> String {
 }
 
 let out = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "/tmp/shiori-symbols"
-let symbols: [(String, (Weight) -> CGPath)] = [("rocket", rocket), ("ghost", ghost), ("feather", feather)]
+let symbols: [(String, (Weight) -> CGPath)] = [("rocket", rocket), ("ghost", ghost), ("feather", feather), ("book-search", bookSearch)]
 for (name, make) in symbols {
     let dir = "\(out)/\(name).symbolset"
     try! FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
