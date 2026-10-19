@@ -1032,17 +1032,17 @@ Read from a view rebuilt on every book write, then set against today, so it cost
 """
 type Dashboard {
   """One decimal. Null when no finished book is rated."""
-  averageRating: Float
+  averageRating: Float @deprecated(reason: "The home screen no longer shows an average rating.")
 
   """From the first finished book to this year, nine years at most."""
   booksPerYear: [YearCount!]!
 
   """Books finished this year to date. Null `current` before the first one."""
-  booksRead: Trend!
+  booksRead: Trend! @deprecated(reason: "The home screen no longer compares the year with the last.")
   currentYear: Int!
 
   """Books the reader dropped because they did not like them."""
-  droppedCount: Int!
+  droppedCount: Int! @deprecated(reason: "The home screen shows `toReadCount` in its place.")
 
   """Books and sagas the reader hearted, together."""
   favoriteCount: Int!
@@ -1070,11 +1070,11 @@ type Dashboard {
   libraryIsEmpty: Boolean!
 
   """At the pace of the last twelve months. Null with no pile or no pace."""
-  monthsToClearPile: Int
+  monthsToClearPile: Int @deprecated(reason: "The home screen shows the pile as a bare `toReadCount`.")
 
   """The twelve months of the current year."""
   pagesPerMonth: [MonthPages!]!
-  ratedCount: Int!
+  ratedCount: Int! @deprecated(reason: "The home screen no longer shows an average rating.")
 
   """Every book finished since the first, whatever the year."""
   readCount: Int!
@@ -3317,8 +3317,10 @@ type Query {
     """Cursor: the last book of the previous page"""
     after: BookId
 
-    """Keep only the books the reader marked as favourites."""
-    favorite: Boolean @deprecated(reason: "Use `loved`, which follows the hearts with the stars.")
+    """
+    Keep only the books the reader hearted, newest first as everywhere else: the "Favoris" filter, where `loved` is the favourites view.
+    """
+    favorite: Boolean
 
     """Maximum books in the page"""
     limit: Int = 60

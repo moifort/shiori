@@ -26,20 +26,6 @@ struct Dashboard: Codable, Sendable {
         let hours: Int
     }
 
-    /// This year to date against the same span of last year. No `previous`, no
-    /// arrow: a comparison with nothing is not a trend.
-    struct Trend: Hashable, Codable, Sendable {
-        let current: Int?
-        let previous: Int?
-
-        var direction: Direction? {
-            guard let current, let previous, current != previous else { return nil }
-            return current > previous ? .up : .down
-        }
-
-        enum Direction { case up, down }
-    }
-
     /// One segment of the genre bar; a nil genre is the "others" segment.
     struct GenreSlice: Identifiable, Hashable, Codable, Sendable {
         var id: String { genre?.rawValue ?? "others" }
@@ -67,19 +53,13 @@ struct Dashboard: Codable, Sendable {
     let hoursPerMonth: [MonthHours]
     let reading: [Book]
     let lastFinished: Book?
-    let booksRead: Trend
     let toReadCount: Int
     /// Every book finished since the first, whatever the year.
     var readCount: Int = 0
-    let monthsToClearPile: Int?
-    let averageRating: Double?
-    let ratedCount: Int
     let genres: [GenreSlice]
     let series: [SeriesProgress]
     /// Books and sagas the reader hearted, together.
     var favoriteCount: Int = 0
-    /// Books the reader dropped, not having liked them.
-    var droppedCount: Int = 0
     /// Whether a single recording is on the shelf: without one the listening
     /// hours have nothing to chart and the picker leaves them out.
     var hasAudiobooks: Bool = false

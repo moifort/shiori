@@ -7,7 +7,6 @@ enum DashboardPalette {
     static let pages = Color.green
     static let duration = Color.cyan
     static let pile = Color.orange
-    static let rating = Color.yellow
     static let series = Color.mint
     // No mint here: that hue belongs to the series widget just below.
     static let genres: [Color] = [.blue, .orange, .teal, .brown]

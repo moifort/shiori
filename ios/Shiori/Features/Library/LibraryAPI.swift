@@ -6,18 +6,19 @@ enum LibraryAPI {
     /// One page of the Library tab, in the order the server shelved it.
     static func libraryPage(
         mode: LibraryMode,
-        status: ReadingStatus?,
+        filter: LibraryFilter?,
         limit: Int,
         after: String?
     ) async throws -> LibraryPageResult {
         #if DEBUG
         if Showcase.isOn {
-            return Showcase.libraryPage(mode: mode, status: status, limit: limit, after: after)
+            return Showcase.libraryPage(mode: mode, filter: filter, limit: limit, after: after)
         }
         #endif
         let query = ShioriGraphQL.LibraryPageQuery(
+            favorite: filter == .favorites ? .some(true) : .none,
             loved: mode == .favorites ? .some(true) : .none,
-            status: GraphQLHelpers.graphQLNullable(status.map(Self.graphQLStatus)),
+            status: GraphQLHelpers.graphQLNullable(filter?.status.map(Self.graphQLStatus)),
             limit: .some(Int32(limit)),
             after: GraphQLHelpers.graphQLNullable(after)
         )

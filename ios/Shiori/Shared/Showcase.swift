@@ -485,11 +485,11 @@ enum Showcase {
 
     // MARK: - Library
 
-    static func libraryPage(mode: LibraryMode, status: ReadingStatus?, limit: Int, after: String?)
+    static func libraryPage(mode: LibraryMode, filter: LibraryFilter?, limit: Int, after: String?)
         -> LibraryPageResult
     {
         let matching = shelved.filter { book in
-            (mode != .favorites || book.favorite) && (status == nil || book.status == status)
+            (mode != .favorites || book.favorite) && (filter?.keeps(book) ?? true)
         }
         let start = after.flatMap { id in matching.firstIndex { $0.id == id }.map { $0 + 1 } } ?? 0
         let page = Array(matching.dropFirst(start).prefix(limit))
@@ -656,14 +656,8 @@ enum Showcase {
         let read = books.filter { $0.status == .read }
         func finishedYear(_ book: Book) -> Int? { book.finishedAt.map { calendar.component(.year, from: $0) } }
         let thisYear = read.filter { finishedYear($0) == year }
-        let lastYearSoFar = read.filter { book in
-            guard let finished = book.finishedAt, finishedYear(book) == year - 1 else { return false }
-            return calendar.date(byAdding: .year, value: 1, to: finished).map { $0 <= .now } ?? false
-        }
         let firstYear = read.compactMap(finishedYear).min() ?? year
-        let rated = books.compactMap(\.rating)
         let pile = books.filter { $0.status == .toRead }
-        let lastTwelveMonths = read.filter { ($0.finishedAt ?? .distantPast) > daysAgo(365) }.count
         let genres = Dictionary(grouping: read, by: \.genre).mapValues(\.count)
             .sorted { $0.value > $1.value }
         let topGenres = genres.prefix(4).map { Dashboard.GenreSlice(genre: $0.key, count: $0.value) }
@@ -686,14 +680,8 @@ enum Showcase {
             reading: books.filter { $0.status == .reading }
                 .sorted { ($0.startedAt ?? .distantPast) > ($1.startedAt ?? .distantPast) },
             lastFinished: read.max { ($0.finishedAt ?? .distantPast) < ($1.finishedAt ?? .distantPast) },
-            booksRead: .init(current: thisYear.count, previous: lastYearSoFar.count),
             toReadCount: pile.count,
             readCount: read.count,
-            monthsToClearPile: lastTwelveMonths == 0
-                ? nil
-                : max(1, Int((Double(pile.count) / (Double(lastTwelveMonths) / 12)).rounded(.up))),
-            averageRating: rated.isEmpty ? nil : Double(rated.reduce(0, +)) / Double(rated.count),
-            ratedCount: rated.count,
             genres: topGenres + (others > 0 ? [.init(genre: nil, count: others)] : []),
             series: sagas.map(followed).filter { $0.state == .inProgress }.map { series in
                 let saga = sagas.first { $0.id == series.seriesId }
@@ -708,7 +696,6 @@ enum Showcase {
                 )
             },
             favoriteCount: books.filter(\.favorite).count + sagas.filter(\.favorite).count,
-            droppedCount: books.filter { $0.status == .dropped }.count,
             hasAudiobooks: books.contains { $0.format == .audiobook },
             hasPrintedBooks: true,
             libraryIsEmpty: false

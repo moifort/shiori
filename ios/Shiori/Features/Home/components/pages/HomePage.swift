@@ -46,6 +46,21 @@ struct HomePage: View {
                     scanPrompt
                 }
 
+                // The library at a glance first, then what it is made of.
+                StatTilesRow(
+                    readCount: dashboard.readCount,
+                    favoriteCount: dashboard.favoriteCount,
+                    toReadCount: dashboard.toReadCount,
+                    onReadTapped: { onAction(.showLibrary(LibraryRequest(filter: .status(.read)))) },
+                    onFavoritesTapped: { onAction(.showLibrary(LibraryRequest(filter: .favorites))) },
+                    onPileTapped: { onAction(.showLibrary(LibraryRequest(filter: .status(.toRead)))) }
+                )
+
+                GenresWidget(
+                    genres: dashboard.genres,
+                    onTapped: { onAction(.openGenres) }
+                )
+
                 ReadingChartWidget(
                     currentYear: dashboard.currentYear,
                     booksPerYear: dashboard.booksPerYear,
@@ -60,7 +75,7 @@ struct HomePage: View {
                     books: dashboard.reading,
                     caption: Self.startedCaption,
                     emptyMessage: "Aucun livre en cours de lecture.",
-                    onHeaderTapped: { onAction(.showLibrary(LibraryRequest(status: .reading))) },
+                    onHeaderTapped: { onAction(.showLibrary(LibraryRequest(filter: .status(.reading)))) },
                     onBookTapped: { onAction(.openBook($0)) }
                 )
                 .accessibilityIdentifier("home-reading")
@@ -124,28 +139,6 @@ struct HomePage: View {
                 }
 
                 LastFinishedCard(book: dashboard.lastFinished) { onAction(.openBook($0)) }
-
-                TrendsWidget(booksRead: dashboard.booksRead)
-
-                StatTilesRow(
-                    toReadCount: dashboard.toReadCount,
-                    monthsToClearPile: dashboard.monthsToClearPile,
-                    averageRating: dashboard.averageRating,
-                    ratedCount: dashboard.ratedCount,
-                    readCount: dashboard.readCount,
-                    favoriteCount: dashboard.favoriteCount,
-                    droppedCount: dashboard.droppedCount,
-                    onPileTapped: { onAction(.showLibrary(LibraryRequest(status: .toRead))) },
-                    onRatingTapped: { onAction(.showLibrary(LibraryRequest(mode: .favorites))) },
-                    onReadTapped: { onAction(.showLibrary(LibraryRequest(status: .read))) },
-                    onFavoritesTapped: { onAction(.showLibrary(LibraryRequest(mode: .favorites))) },
-                    onDroppedTapped: { onAction(.showLibrary(LibraryRequest(status: .dropped))) }
-                )
-
-                GenresWidget(
-                    genres: dashboard.genres,
-                    onTapped: { onAction(.openGenres) }
-                )
 
                 SeriesProgressWidget(
                     series: dashboard.series,
@@ -251,12 +244,8 @@ extension Dashboard {
             id: "9", title: "Le Nom du vent", authors: ["Patrick Rothfuss"], status: .read, rating: 5,
             startedAt: .now.addingTimeInterval(-13 * 86400), finishedAt: .now.addingTimeInterval(-4 * 86400)
         ),
-        booksRead: .init(current: 18, previous: 14),
         toReadCount: 27,
         readCount: 142,
-        monthsToClearPile: 9,
-        averageRating: 4.2,
-        ratedCount: 18,
         genres: [
             .init(genre: .fantasy, count: 7), .init(genre: .scienceFiction, count: 4),
             .init(genre: .adventure, count: 3), .init(genre: .crime, count: 2), .init(genre: nil, count: 2),
@@ -266,7 +255,6 @@ extension Dashboard {
             .init(id: "b", name: "Chronique du tueur de roi", readCount: 1, totalCount: 2, rating: 4),
         ],
         favoriteCount: 6,
-        droppedCount: 2,
         hasAudiobooks: true,
         libraryIsEmpty: false
     )
@@ -282,11 +270,7 @@ extension Dashboard {
         hoursPerMonth: (1...12).map { .init(month: $0, hours: 0) },
         reading: [],
         lastFinished: nil,
-        booksRead: .init(current: nil, previous: nil),
         toReadCount: 1,
-        monthsToClearPile: nil,
-        averageRating: nil,
-        ratedCount: 0,
         genres: [],
         series: [],
         libraryIsEmpty: false

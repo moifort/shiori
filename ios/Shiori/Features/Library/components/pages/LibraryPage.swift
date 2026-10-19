@@ -16,14 +16,15 @@ enum LibraryAction {
 /// Two views, switched from the toolbar as in Vinarium: everything, or the
 /// favourites, both sectioned by month as Vinarium's wine list is — newest
 /// first, on the day each book was finished, else started, else added; each
-/// row carries its status as a tag. A filter narrows any of them to one status.
+/// row carries its status as a tag. A filter narrows any of them to one status,
+/// or to the books hearted.
 /// A third view, first in the toolbar, lays every book out as a mosaic of
 /// covers, as the Photos app lays out a library.
 /// Sagas are not gathered here: the Series tab reads a saga whole, and a row
 /// names its saga in a tag.
 struct LibraryPage: View {
     @Binding var mode: LibraryMode
-    @Binding var statusFilter: ReadingStatus?
+    @Binding var filter: LibraryFilter?
     @Binding var layout: ShelfLayout
     let sections: [ListSection<Book>]
     /// The books whose edition in the app's language the reader awaits.
@@ -40,7 +41,7 @@ struct LibraryPage: View {
 
     /// The shelf is narrowed: an empty list says nothing matches, not that the
     /// library is empty.
-    private var isNarrowed: Bool { mode != .all || statusFilter != nil }
+    private var isNarrowed: Bool { mode != .all || filter != nil }
 
     var body: some View {
         Group {
@@ -50,7 +51,7 @@ struct LibraryPage: View {
             } else if let errorMessage, sections.isEmpty {
                 EmptyState.failure("Bibliothèque indisponible", message: errorMessage, retry: { await onAction(.refresh) })
             } else if sections.isEmpty {
-                if mode == .favorites {
+                if mode == .favorites || filter == .favorites {
                     EmptyState(
                         systemImage: "heart",
                         title: "Aucun favori",
@@ -59,7 +60,7 @@ struct LibraryPage: View {
                     )
                 } else if isNarrowed {
                     EmptyState(
-                        systemImage: statusFilter?.symbol ?? "books.vertical",
+                        systemImage: filter?.symbol ?? "books.vertical",
                         title: "Aucun livre",
                         message: "Aucun livre de votre bibliothèque n'a ce statut.",
                         primary: .init("Scanner un livre", systemImage: "camera") { Task { await onAction(.add) } }
@@ -99,18 +100,21 @@ struct LibraryPage: View {
             ToolbarSpacer(.fixed)
             ToolbarItemGroup {
                 Menu {
-                    Picker("Statut", selection: $statusFilter) {
-                        Label("Tous", systemImage: "tray.full").tag(ReadingStatus?.none)
+                    Picker("Statut", selection: $filter) {
+                        Label("Tous", systemImage: "tray.full").tag(LibraryFilter?.none)
                         // In the order a book lives through them, not the enum's.
                         ForEach([ReadingStatus.reading, .toRead, .read, .dropped]) { status in
                             Label(status.shelfTitle, systemImage: status.symbol)
-                                .tag(ReadingStatus?.some(status))
+                                .tag(LibraryFilter?.some(.status(status)))
                         }
+                        Divider()
+                        Label(LibraryFilter.favorites.title, systemImage: LibraryFilter.favorites.symbol)
+                            .tag(LibraryFilter?.some(.favorites))
                     }
                 } label: {
                     ShelfFilterLabel(
-                        symbol: statusFilter?.symbol ?? "tray.full",
-                        title: statusFilter?.shelfTitle ?? String(localized: "Tous")
+                        symbol: filter?.symbol ?? "tray.full",
+                        title: filter?.title ?? String(localized: "Tous")
                     )
                 }
                 .accessibilityIdentifier("library-filter-menu")
@@ -205,7 +209,7 @@ struct LibraryPage: View {
 
 #Preview("Par date") {
     @Previewable @State var mode: LibraryMode = .all
-    @Previewable @State var statusFilter: ReadingStatus?
+    @Previewable @State var filter: LibraryFilter?
     @Previewable @State var layout: ShelfLayout = .list
     let saga = SeriesMembership(id: "s1", name: "Chronique du tueur de roi", volume: 1, kind: .main)
     let saga2 = SeriesMembership(id: "s1", name: "Chronique du tueur de roi", volume: 2, kind: .main)
@@ -218,7 +222,7 @@ struct LibraryPage: View {
     NavigationStack {
         LibraryPage(
             mode: $mode,
-            statusFilter: $statusFilter,
+            filter: $filter,
             layout: $layout,
             sections: ListSection.byMonth(books, on: \.shelvedAt),
             showsStatus: true,
@@ -230,12 +234,12 @@ struct LibraryPage: View {
 
 #Preview("Empty") {
     @Previewable @State var mode: LibraryMode = .all
-    @Previewable @State var statusFilter: ReadingStatus?
+    @Previewable @State var filter: LibraryFilter?
 
     NavigationStack {
         LibraryPage(
             mode: $mode,
-            statusFilter: $statusFilter,
+            filter: $filter,
             layout: .constant(.list),
             sections: [],
             isLoading: false,

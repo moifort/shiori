@@ -21,12 +21,8 @@ enum HomeAPI {
             hoursPerMonth: dashboard.hoursPerMonth.map { .init(month: $0.month, hours: $0.hours) },
             reading: dashboard.reading.map { $0.fragments.dashboardBookCard.asBook(status: .reading) },
             lastFinished: dashboard.lastFinished?.fragments.dashboardBookCard.asBook(status: .read),
-            booksRead: .init(current: dashboard.booksRead.current, previous: dashboard.booksRead.previous),
             toReadCount: dashboard.toReadCount,
             readCount: dashboard.readCount,
-            monthsToClearPile: dashboard.monthsToClearPile,
-            averageRating: dashboard.averageRating,
-            ratedCount: dashboard.ratedCount,
             genres: dashboard.genres.map { .init(genre: $0.genre?.asDomain, count: $0.count) },
             series: dashboard.series.map {
                 .init(
@@ -40,7 +36,6 @@ enum HomeAPI {
                 )
             },
             favoriteCount: dashboard.favoriteCount,
-            droppedCount: dashboard.droppedCount,
             hasAudiobooks: dashboard.hasAudiobooks,
             hasPrintedBooks: dashboard.hasPrintedBooks,
             libraryIsEmpty: dashboard.libraryIsEmpty

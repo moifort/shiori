@@ -33,12 +33,13 @@ struct LibraryScreen: View {
         NavigationStack {
             LibraryPage(
                 mode: $viewModel.mode,
-                statusFilter: $viewModel.statusFilter,
+                filter: $viewModel.filter,
                 // A shelf opens on its mosaic, every time its pill is tapped.
                 layout: $viewModel.layout,
                 sections: viewModel.sections,
                 awaitedBookIds: viewModel.awaitedBookIds,
-                showsStatus: viewModel.statusFilter == nil,
+                // The favourites mix every status: their rows still say which.
+                showsStatus: viewModel.filter?.status == nil,
                 isLoading: viewModel.isLoading,
                 errorMessage: viewModel.errorMessage,
                 hasMore: viewModel.hasMore,

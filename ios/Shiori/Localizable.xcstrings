@@ -669,34 +669,6 @@
         }
       }
     },
-    "%lld livres à lire" : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld book to read"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld books to read"
-                }
-              }
-            }
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld livres à lire"
-          }
-        }
-      }
-    },
     "%lld min" : {
       "localizations" : {
         "en" : {
@@ -1209,22 +1181,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Abandonné"
-          }
-        }
-      }
-    },
-    "Abandonnés" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dropped"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abandonnés"
           }
         }
       }
@@ -10477,22 +10433,6 @@
         }
       }
     },
-    "Terminez un livre cette année pour voir vos tendances." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Finish a book this year to see your trends."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Terminez un livre cette année pour voir vos tendances."
-          }
-        }
-      }
-    },
     "Terminez un livre pour le retrouver ici." : {
       "localizations" : {
         "en" : {
@@ -11977,50 +11917,6 @@
         }
       }
     },
-    "sur %lld livres notés" : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "across %lld rated book"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "across %lld rated books"
-                }
-              }
-            }
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sur %lld livres notés"
-          }
-        }
-      }
-    },
-    "vs %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "vs %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "vs %@"
-          }
-        }
-      }
-    },
     "À creuser" : {
       "localizations" : {
         "en" : {
@@ -12241,34 +12137,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "≈ %@ fin de mois"
-          }
-        }
-      }
-    },
-    "≈ %lld mois au rythme actuel" : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "≈ %lld month at the current pace"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "≈ %lld months at the current pace"
-                }
-              }
-            }
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "≈ %lld mois au rythme actuel"
           }
         }
       }

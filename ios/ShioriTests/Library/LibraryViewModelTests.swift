@@ -40,9 +40,9 @@ struct LibraryViewModelTests {
         let served = serving()
         let viewModel = LibraryViewModel(
             client: LibraryClient(
-                page: { mode, status, limit, after in
+                page: { mode, filter, limit, after in
                     if fails.isOn { throw Boom() }
-                    return try await served.page(mode, status, limit, after)
+                    return try await served.page(mode, filter, limit, after)
                 },
                 awaited: { _ in [] }
             ),
@@ -70,7 +70,7 @@ struct LibraryViewModelTests {
 
     @Test func bookNoLongerInTheFilterLeavesIt() async {
         let viewModel = LibraryViewModel(client: serving(), caching: false)
-        viewModel.statusFilter = .read
+        viewModel.filter = .status(.read)
         await viewModel.load()
         var dropped = shelf[1]
         dropped.status = .dropped
@@ -78,6 +78,29 @@ struct LibraryViewModelTests {
         viewModel.apply(dropped)
 
         #expect(!viewModel.books.contains { $0.id == "b1" })
+    }
+
+    @Test func bookUnheartedLeavesTheFavorites() async {
+        let viewModel = LibraryViewModel(client: serving(), caching: false)
+        viewModel.filter = .favorites
+        await viewModel.load()
+        var unhearted = shelf[2]
+        unhearted.favorite = false
+
+        viewModel.apply(unhearted)
+
+        #expect(!viewModel.books.contains { $0.id == "b2" })
+    }
+
+    @Test func requestOpensTheListByDate() {
+        let viewModel = LibraryViewModel(client: serving(), caching: false)
+        viewModel.mode = .favorites
+
+        viewModel.show(LibraryRequest(filter: .favorites))
+
+        #expect(viewModel.mode == .all)
+        #expect(viewModel.filter == .favorites)
+        #expect(viewModel.layout == .list)
     }
 
     @Test func awaitedBooksAreMarked() async {

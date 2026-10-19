@@ -33,10 +33,51 @@ enum LibraryMode: String, CaseIterable, Identifiable {
     }
 }
 
-/// A view of the Library tab another screen asks it to open on.
+/// What the Library tab's filter keeps: one reading status, or the books the
+/// reader hearted. Either way the list stays in its own order.
+enum LibraryFilter: Hashable {
+    case status(ReadingStatus)
+    case favorites
+
+    var status: ReadingStatus? {
+        if case let .status(status) = self { status } else { nil }
+    }
+
+    var symbol: String {
+        switch self {
+        case let .status(status): status.symbol
+        case .favorites: "heart.fill"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case let .status(status): status.shelfTitle
+        case .favorites: String(localized: "Favoris")
+        }
+    }
+
+    /// The name of the view's snapshot on disk.
+    fileprivate var cacheKey: String {
+        switch self {
+        case let .status(status): status.rawValue
+        case .favorites: "favorites"
+        }
+    }
+
+    func keeps(_ book: Book) -> Bool {
+        switch self {
+        case let .status(status): book.status == status
+        case .favorites: book.favorite
+        }
+    }
+}
+
+/// A view of the Library tab another screen asks it to open on: the list by
+/// date unless a mode says otherwise, narrowed by the filter.
 struct LibraryRequest: Equatable {
     var mode: LibraryMode = .all
-    var status: ReadingStatus?
+    var filter: LibraryFilter?
 }
 
 /// Owns the library list: what is on screen, how it is arranged, and the one
@@ -59,7 +100,7 @@ final class LibraryViewModel {
     init(client: LibraryClient, caching: Bool = true) {
         self.client = client
         self.caching = caching
-        books = cache(for: mode, statusFilter)?.read() ?? []
+        books = cache(for: mode, filter)?.read() ?? []
     }
 
     private let client: LibraryClient
@@ -80,10 +121,11 @@ final class LibraryViewModel {
             scheduleReload()
         }
     }
-    /// Narrows the list to one reading status; nil shows them all.
-    var statusFilter: ReadingStatus? {
+    /// Narrows the list to one reading status or to the favourites; nil shows
+    /// them all.
+    var filter: LibraryFilter? {
         didSet {
-            guard oldValue != statusFilter else { return }
+            guard oldValue != filter else { return }
             scheduleReload()
         }
     }
@@ -96,9 +138,9 @@ final class LibraryViewModel {
     /// switching between them shows the rows of the last visit at once under
     /// the refresh spinner rather than an empty list reloading. Bump the
     /// version whenever `Book` changes shape.
-    private func cache(for mode: LibraryMode, _ status: ReadingStatus?) -> SnapshotCache<[Book]>? {
+    private func cache(for mode: LibraryMode, _ filter: LibraryFilter?) -> SnapshotCache<[Book]>? {
         guard caching else { return nil }
-        return SnapshotCache("library-\(mode.rawValue)-\(status?.rawValue ?? "all")", version: 5)
+        return SnapshotCache("library-\(mode.rawValue)-\(filter?.cacheKey ?? "all")", version: 5)
     }
 
     /// More rows follow the ones on screen.
@@ -138,13 +180,14 @@ final class LibraryViewModel {
     }
 
     /// Opens the view another screen asks for, as the dashboard does: the
-    /// favourites behind the rating tile, the pile behind its tile, the
-    /// favourites and the dropped books behind theirs, the whole shelf behind
-    /// the genre bar. A status filter left from an earlier visit is replaced,
-    /// since it would hide half of what was asked for.
+    /// books read, the favourites and the pile behind their boxes, each as the
+    /// list by date. A filter left from an earlier visit is replaced, since it
+    /// would hide half of what was asked for, and the mosaic gives way to the
+    /// list, whose headings say the dates.
     func show(_ request: LibraryRequest) {
-        statusFilter = request.status
+        filter = request.filter
         mode = request.mode
+        layout = .list
     }
 
     /// Reloads the first page for a new view or filter, cancelling a reload
@@ -155,7 +198,7 @@ final class LibraryViewModel {
         generation += 1
         // The new view's rows from its last visit, when there were any: shown at
         // once and brought up to date silently, as on launch.
-        books = cache(for: mode, statusFilter)?.read() ?? []
+        books = cache(for: mode, filter)?.read() ?? []
         hasMore = false
         loaded = false
         reloadTask = Task { await load() }
@@ -183,7 +226,7 @@ final class LibraryViewModel {
             var more = true
             while more, fetched.count < wanted {
                 let page = try await client.page(
-                    mode, statusFilter, min(wanted - fetched.count, maxPageSize), fetched.last?.id
+                    mode, filter, min(wanted - fetched.count, maxPageSize), fetched.last?.id
                 )
                 guard requested == generation else { return }
                 fetched += page.books
@@ -197,7 +240,7 @@ final class LibraryViewModel {
             }
             loaded = true
             CoverImages.prefetch(fetched.compactMap(\.coverURL))
-            if let cache = cache(for: mode, statusFilter) {
+            if let cache = cache(for: mode, filter) {
                 // Enough for a first screen of either layout.
                 let firstPage = Array(fetched.prefix(max(pageSize, Self.mosaicPageSize)))
                 Task.detached { cache.write(firstPage) }
@@ -232,7 +275,7 @@ final class LibraryViewModel {
         isLoadingMore = true
         loadMoreFailed = false
         do {
-            let page = try await client.page(mode, statusFilter, pageSize, last.id)
+            let page = try await client.page(mode, filter, pageSize, last.id)
             guard requested == generation else { return }
             books += page.books
             hasMore = page.hasMore
@@ -271,7 +314,8 @@ final class LibraryViewModel {
     /// row keeps the reader's place unless the edit moved it — a new status
     /// stamps a new reading date, and the book goes where the server would
     /// now shelve it. One that no longer belongs in the view — left unjudged
-    /// under the favourites, given another status under a filter — leaves
+    /// under the favourites, given another status or unhearted under a
+    /// filter — leaves
     /// it, and one shelved past the last loaded row waits for its page.
     func apply(_ book: Book) {
         guard let current = books.firstIndex(where: { $0.id == book.id }) else { return }
@@ -280,7 +324,7 @@ final class LibraryViewModel {
             ?? books[current].shelvedAt
         books.remove(at: current)
         let belongs = (mode != .favorites || updated.lovedRank != nil)
-            && (statusFilter == nil || statusFilter == updated.status)
+            && (filter?.keeps(updated) ?? true)
         guard belongs else { return }
         let index = books.firstIndex { comesBefore(updated, $0) } ?? books.endIndex
         guard index < books.endIndex || !hasMore else { return }

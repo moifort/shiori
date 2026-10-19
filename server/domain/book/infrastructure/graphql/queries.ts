@@ -41,8 +41,9 @@ builder.queryFields((t) => ({
     args: {
       favorite: t.arg.boolean({
         required: false,
-        description: 'Keep only the books the reader marked as favourites.',
-        deprecationReason: 'Use `loved`, which follows the hearts with the stars.',
+        description:
+          'Keep only the books the reader hearted, newest first as everywhere else: the ' +
+          '"Favoris" filter, where `loved` is the favourites view.',
       }),
       loved: t.arg.boolean({
         required: false,

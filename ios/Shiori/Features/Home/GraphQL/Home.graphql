@@ -21,15 +21,8 @@ query Dashboard($timeZone: TimeZone!) {
     lastFinished {
       ...DashboardBookCard
     }
-    booksRead {
-      current
-      previous
-    }
     toReadCount
     readCount
-    monthsToClearPile
-    averageRating
-    ratedCount
     genres {
       genre
       count
@@ -44,7 +37,6 @@ query Dashboard($timeZone: TimeZone!) {
       favorite
     }
     favoriteCount
-    droppedCount
     hasAudiobooks
     hasPrintedBooks
     libraryIsEmpty

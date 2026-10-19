@@ -2,10 +2,17 @@
 # list the server has already ordered, newest first, which the app cuts into
 # month sections wherever the month of `shelvedAt` changes. The last book of a
 # page is the cursor for the next.
-# `rated` is the "Notés" view: the books that show stars, best first, which the
-# app cuts into sections by stars rather than by month.
-query LibraryPage($loved: Boolean, $status: ReadingStatus, $limit: Int, $after: BookId) {
-  libraryPage(loved: $loved, status: $status, limit: $limit, after: $after) {
+# `loved` is the favourites view: the books judged, hearts first then stars,
+# which the app cuts into sections by rank rather than by month. `favorite` is
+# the "Favoris" filter: the hearted books alone, by date.
+query LibraryPage(
+  $favorite: Boolean
+  $loved: Boolean
+  $status: ReadingStatus
+  $limit: Int
+  $after: BookId
+) {
+  libraryPage(favorite: $favorite, loved: $loved, status: $status, limit: $limit, after: $after) {
     hasMore
     books {
       ...BookSummary

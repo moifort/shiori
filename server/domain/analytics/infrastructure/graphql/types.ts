@@ -180,6 +180,7 @@ export const DashboardType = builder.objectRef<Dashboard>('Dashboard').implement
     booksRead: t.field({
       type: TrendType,
       description: 'Books finished this year to date. Null `current` before the first one.',
+      deprecationReason: 'The home screen no longer compares the year with the last.',
       resolve: (dashboard) => dashboard.booksRead,
     }),
     toReadCount: t.exposeInt('toReadCount'),
@@ -189,14 +190,18 @@ export const DashboardType = builder.objectRef<Dashboard>('Dashboard').implement
     monthsToClearPile: t.int({
       nullable: true,
       description: 'At the pace of the last twelve months. Null with no pile or no pace.',
+      deprecationReason: 'The home screen shows the pile as a bare `toReadCount`.',
       resolve: (dashboard) => dashboard.monthsToClearPile ?? null,
     }),
     averageRating: t.float({
       nullable: true,
       description: 'One decimal. Null when no finished book is rated.',
+      deprecationReason: 'The home screen no longer shows an average rating.',
       resolve: (dashboard) => dashboard.averageRating ?? null,
     }),
-    ratedCount: t.exposeInt('ratedCount'),
+    ratedCount: t.exposeInt('ratedCount', {
+      deprecationReason: 'The home screen no longer shows an average rating.',
+    }),
     genres: t.field({
       type: [GenreCountType],
       description:
@@ -220,6 +225,7 @@ export const DashboardType = builder.objectRef<Dashboard>('Dashboard').implement
     }),
     droppedCount: t.exposeInt('droppedCount', {
       description: 'Books the reader dropped because they did not like them.',
+      deprecationReason: 'The home screen shows `toReadCount` in its place.',
     }),
     hasPrintedBooks: t.exposeBoolean('hasPrintedBooks', {
       description:
