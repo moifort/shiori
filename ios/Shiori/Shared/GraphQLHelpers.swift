@@ -159,6 +159,10 @@ enum APIError: LocalizedError {
             return String(localized: "Réponse invalide du serveur")
         case .httpError(let code):
             return String(localized: "Erreur serveur (\(code))")
+        // The server's AI credit is spent: nothing about the reader's book, and
+        // the same words on every screen that asks the model.
+        case .domain(let code, _) where code == "AI_UNAVAILABLE":
+            return String(localized: "L'IA de Shiori est momentanément indisponible. Rien n'a été décompté ; réessayez dans un moment.")
         case .graphQL(let messages), .domain(_, let messages):
             return messages.joined(separator: " — ")
         }

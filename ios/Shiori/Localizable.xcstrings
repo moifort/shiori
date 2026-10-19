@@ -5713,6 +5713,22 @@
         }
       }
     },
+    "L'IA de Shiori est momentanément indisponible. Rien n'a été décompté ; réessayez dans un moment." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shiori's AI is unavailable for the moment. Nothing was counted; try again in a little while."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'IA de Shiori est momentanément indisponible. Rien n'a été décompté ; réessayez dans un moment."
+          }
+        }
+      }
+    },
     "L'IA lit la couverture" : {
       "localizations" : {
         "en" : {

@@ -14,7 +14,7 @@ import {
 import { DiscoveryUseCase } from '~/domain/discovery/use-case'
 import { ReleaseDate } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
-import { domainError, notFound } from '~/domain/shared/graphql/errors'
+import { aiUnavailable, domainError, notFound } from '~/domain/shared/graphql/errors'
 import { languageOf } from '~/domain/shared/language'
 
 /** A book Découvrir shows, as the app names it. */
@@ -73,7 +73,8 @@ builder.mutationFields((t) => ({
       'Kept for every reader who opens the same book in the same language, for sixty ' +
       'days: the call is paid once and spends nobody’s scan. Refused with ' +
       '`QUOTA_EXHAUSTED` when the reader’s allowance is used up and nobody described it ' +
-      'yet, `SCAN_FAILED` when the model call errors.',
+      'yet, `SCAN_FAILED` ' +
+      '(`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.',
     args: { book: t.arg({ type: ReleaseInput, required: true }) },
     resolve: async (_root, { book }, context) =>
       match(
@@ -102,6 +103,7 @@ builder.mutationFields((t) => ({
         ),
       )
         .with('quota-exhausted', () => domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up'))
+        .with('ai-unavailable', aiUnavailable)
         .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
         .with({ book: P.any }, (description) => description)
         .exhaustive(),
@@ -139,7 +141,8 @@ builder.mutationFields((t) => ({
       'genre and first publication. A few seconds. Nothing is saved.\n\n' +
       'Spends one scan of the allowance, as a typed title does. Fails with `NOT_FOUND` for ' +
       'a volume no watch announced in that edition, `QUOTA_EXHAUSTED` once nothing is left, ' +
-      'or `SCAN_FAILED` when the model call errors.',
+      'or `SCAN_FAILED` ' +
+      '(`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.',
     deprecationReason:
       'The volume page draws what `discovery` already carries, with no model call.',
     args: {
@@ -157,6 +160,7 @@ builder.mutationFields((t) => ({
       )
         .with('not-found', () => notFound('No such volume announced'))
         .with('quota-exhausted', () => domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up'))
+        .with('ai-unavailable', aiUnavailable)
         .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
         .with({ book: P.any }, (preview) => preview)
         .exhaustive(),

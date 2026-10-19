@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { BookId } from '~/domain/book/types'
+import { SpendCapReached } from '~/domain/scan/spend-cap'
 import type { UserId } from '~/domain/shared/types'
 import {
   type FakeFirestore,
@@ -27,10 +28,13 @@ mock.module('~/system/apns', () => ({
  *  original title, and every title asked about. */
 const asked: string[] = []
 let answers: Record<string, unknown> = {}
+/** Set, every call is asked and refused: the Gemini credit is spent. */
+let capped = false
 mock.module('~/domain/scan/gemini', () => ({
   generate: async ({ parts }: { parts: { text: string }[] }) => {
     const title = parts[0]?.text.match(/« ([^»]+) »/)?.[1] ?? '?'
     asked.push(`${title} (${parts[0]?.text.includes('livre audio') ? 'audio' : 'livre'})`)
+    if (capped) throw new SpendCapReached('prepaid-credits')
     return {
       usage: { promptTokens: 1, outputTokens: 1, thinkingTokens: 0, searches: 1 },
       value: answers[title] ?? { found: false },
@@ -93,6 +97,7 @@ beforeEach(() => {
   asked.length = 0
   pushed.length = 0
   answers = {}
+  capped = false
 })
 
 describe('awaiting a book of one’s own', () => {
@@ -199,6 +204,33 @@ describe('awaiting a book of one’s own', () => {
 })
 
 describe('the scheduled passes', () => {
+  // Every edition after the first would be refused too, and reported as its
+  // own failure: the first refusal ends the pass, the rest left for next hour.
+  test('stop at the first refusal for want of credit', async () => {
+    for (const index of Array.from({ length: 7 }, (_, at) => at))
+      fake.seed('awaited-editions', `${reader}--book-${index}--audiobook--fr`, {
+        id: `${reader}--book-${index}--audiobook--fr`,
+        userId: reader,
+        format: 'audiobook',
+        language: 'fr',
+        source: {
+          bookId: `book-${index}`,
+          ownerId: reader,
+          title: `Book ${index}`,
+          authors: ['Brandon Sanderson'],
+          language: 'en',
+        },
+        watchKey: `book-${index}--audiobook--fr`,
+        awaitedAt: now,
+      })
+    capped = true
+
+    const result = await AwaitedEditionUseCase.watchDue(now)
+
+    expect(asked).toHaveLength(5)
+    expect(result).toEqual({ watched: 0, failed: 5, deferred: 2 })
+  })
+
   test('keep an edition out for the morning a device can hear it', async () => {
     await AwaitedEditionUseCase.awaitOwnBook(reader, await stock(reader), 'audiobook', 'fr', now)
     answers = { 'Wind and Truth': { ...recorded } }

@@ -3,7 +3,9 @@ import Sentry
 
 func reportError(_ error: Error) -> String {
     let nsError = error as NSError
+    // An AI out of credit is reported by the server, once, where it is fixed.
     let isIgnored = isCancellation(error) || isConnectivityLoss(nsError)
+        || (error as? APIError)?.domainCode == "AI_UNAVAILABLE"
     if !isIgnored {
         SentrySDK.capture(error: error)
     }

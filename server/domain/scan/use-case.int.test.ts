@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { SpendCapReached } from '~/domain/scan/spend-cap'
 import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
 
@@ -109,6 +110,15 @@ describe('a metered scan', () => {
     })
     expect(spent()).toBe(0)
   })
+
+  // Nothing about the book: our Gemini bill is unpaid, and the reader is told
+  // so rather than that their book could not be found.
+  test('says the model is out of credit apart from any other failure, and spends nothing', async () => {
+    answers = [new SpendCapReached('prepaid-credits')]
+
+    expect(await ScanUseCase.scanCover(reader, image, 'fr')).toBe('ai-unavailable')
+    expect(spent()).toBe(0)
+  })
 })
 
 describe('a title search', () => {
@@ -140,6 +150,12 @@ describe('a title search', () => {
     expect(await ScanUseCase.searchTitle(reader, BookTitle('Dune'), 'fr')).toEqual({
       failed: 'model unavailable',
     })
+  })
+
+  test('says the model is out of credit', async () => {
+    answers = [new SpendCapReached('prepaid-credits')]
+
+    expect(await ScanUseCase.searchTitle(reader, BookTitle('Dune'), 'fr')).toBe('ai-unavailable')
   })
 })
 
@@ -236,6 +252,13 @@ describe('a shelf photo', () => {
     expect(await ScanUseCase.detectBooks(reader, image, 'fr')).toEqual({
       failed: 'model unavailable',
     })
+  })
+
+  test('says the model is out of credit', async () => {
+    premiumUserIds = [reader]
+    answers = [new SpendCapReached('prepaid-credits')]
+
+    expect(await ScanUseCase.detectBooks(reader, image, 'fr')).toBe('ai-unavailable')
   })
 })
 

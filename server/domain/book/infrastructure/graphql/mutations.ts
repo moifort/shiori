@@ -13,7 +13,7 @@ import { BookQuery } from '~/domain/book/query'
 import type { BookId } from '~/domain/book/types'
 import { BookUseCase } from '~/domain/book/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
-import { badUserInput, domainError, notFound } from '~/domain/shared/graphql/errors'
+import { aiUnavailable, badUserInput, domainError, notFound } from '~/domain/shared/graphql/errors'
 import { languageOf } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 
@@ -178,13 +178,15 @@ builder.mutationFields((t) => ({
       'published cover is also sought by the ISBN already on the record, and one ' +
       'that no longer loads is dropped when no other is found.\n\n' +
       'Spends one scan of the allowance, only once the model answered. Fails with ' +
-      '`QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` when the model call ' +
+      '`QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` ' +
+      '(`AI_UNAVAILABLE` while the AI is out of credit) when the model call ' +
       'errors — the record is then untouched.',
     args: { id: t.arg({ type: 'BookId', required: true }) },
     resolve: async (_root, args, context) =>
       match(await BookUseCase.refresh(context.userId, args.id, languageOf(context.event)))
         .with('not-found', () => notFound('Book not found'))
         .with('quota-exhausted', () => domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up'))
+        .with('ai-unavailable', aiUnavailable)
         .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
         .with('no-author', 'bad-dates', () => {
           throw new Error('a refresh touches neither the saga nor the dates')
@@ -202,7 +204,8 @@ builder.mutationFields((t) => ({
       'is then false.\n\n' +
       'Spends nothing, and is not refused once the allowance is used up: the scan was ' +
       'spent on adding the book. A book not awaiting its description comes back as it ' +
-      'is, with no lookup. Fails with `SCAN_FAILED` when the model call errors — the ' +
+      'is, with no lookup. Fails with `SCAN_FAILED` ' +
+      '(`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors — the ' +
       'record is then untouched and still awaiting.',
     args: { id: t.arg({ type: 'BookId', required: true }) },
     resolve: async (_root, args, context) =>
@@ -211,6 +214,7 @@ builder.mutationFields((t) => ({
         .with('quota-exhausted', 'no-author', 'bad-dates', () => {
           throw new Error('a description is free and touches neither the saga nor the dates')
         })
+        .with('ai-unavailable', aiUnavailable)
         .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
         .otherwise((book) => readBack(context.userId, book.id)),
   }),

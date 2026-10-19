@@ -306,6 +306,7 @@ describe('a call Google could not serve', () => {
       const failure = await generate(asked).catch((error) => error)
 
       expect(failure).toBeInstanceOf(SpendCapReached)
+      expect(failure.message).toBe('Gemini monthly spending cap reached (429)')
       expect(failure.fingerprint).toEqual(['gemini-spend-cap'])
       expect(calls).toHaveBeenCalledTimes(1)
     })
@@ -331,8 +332,9 @@ describe('a call Google could not serve', () => {
       setSystemTime(new Date('2026-01-02T12:00:00Z'))
       const calls = failing(402, undefined)
 
-      await expect(generate(asked)).rejects.toBeInstanceOf(SpendCapReached)
-      await expect(generate(asked)).rejects.toBeInstanceOf(SpendCapReached)
+      await expect(generate(asked)).rejects.toThrow('Gemini prepaid credits spent (402)')
+      // The pause names what it waits on, or every log after the first says nothing.
+      await expect(generate(asked)).rejects.toThrow('Gemini prepaid credits spent (402)')
       expect(calls).toHaveBeenCalledTimes(1)
     })
 

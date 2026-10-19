@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import * as Sentry from '@sentry/node'
+import { SpendCapReached } from '~/domain/scan/spend-cap'
 import type { UserId } from '~/domain/shared/types'
 import {
   type FakeFirestore,
@@ -30,6 +31,8 @@ mock.module('~/system/apns', () => ({
 const calls: string[] = []
 const prompts: string[] = []
 const authorCalls: string[] = []
+/** Set, every call is asked and refused: the Gemini credit is spent. */
+let capped = false
 mock.module('~/domain/scan/gemini', () => ({
   generate: async ({ parts }: { parts: { text: string }[] }) => {
     const text = parts[0]?.text ?? ''
@@ -37,6 +40,7 @@ mock.module('~/domain/scan/gemini', () => ({
     const author = text.match(/suit l'auteur (.+?) en /)?.[1]
     if (author) {
       authorCalls.push(`${author} (${heard ? 'audio' : 'livre'})`)
+      if (capped) throw new SpendCapReached('prepaid-credits')
       return {
         usage: { promptTokens: 1, outputTokens: 1, thinkingTokens: 0, searches: 1 },
         value: {
@@ -57,6 +61,7 @@ mock.module('~/domain/scan/gemini', () => ({
     }
     calls.push(text.match(/« ([^»]+) »/)?.[1] ?? '?')
     prompts.push(text)
+    if (capped) throw new SpendCapReached('prepaid-credits')
     return {
       usage: { promptTokens: 1, outputTokens: 1, thinkingTokens: 0, searches: 1 },
       value: {
@@ -198,6 +203,7 @@ beforeEach(() => {
   pushed.length = 0
   seriesAsked.length = 0
   audibleSeries = 'unknown'
+  capped = false
 })
 
 describe('the hourly pass', () => {
@@ -254,6 +260,46 @@ describe('the hourly pass', () => {
     expect(calls).toEqual([])
     await DiscoveryUseCase.watchDueSagas(new Date('2026-10-01T08:00:00Z'))
     expect(calls).toEqual(['Dungeon Crawler Carl'])
+  })
+
+  // On 2026-10-18 the prepaid credit ran out, and every hour the pass asked
+  // for thirty sagas the model was bound to refuse: thirty Sentry events an
+  // hour for one empty credit. The first refusal ends the pass; what it did not
+  // reach is next hour's, as on a spent budget.
+  test('stops at the first refusal for want of credit, the authors left alone', async () => {
+    fake.seed('users', reader, { userId: reader, firstName: 'Bob' })
+    fake.seed('discovery-readers', reader, {
+      userId: reader,
+      language: 'fr',
+      sagas: Array.from({ length: 12 }, (_, index) => ({
+        seriesId: seriesKeyOf(`Saga ${index}`, 'Matt Dinniman', 'book'),
+        language: 'fr',
+        name: `Saga ${index}`,
+      })),
+      authors: [
+        {
+          authorKey: authorKeyOf('Matt Dinniman'),
+          name: 'Matt Dinniman',
+          format: 'book',
+          language: 'fr',
+        },
+      ],
+      syncedAt: now,
+      notified: [],
+    })
+    capped = true
+    const reports = spyOn(Sentry, 'captureException')
+
+    try {
+      const result = await DiscoveryUseCase.watchDueSagas(now)
+
+      expect(calls).toHaveLength(5)
+      expect(authorCalls).toEqual([])
+      expect(result).toMatchObject({ watched: 0, failed: 5, deferred: 8 })
+      expect(reports).toHaveBeenCalledTimes(1)
+    } finally {
+      reports.mockRestore()
+    }
   })
 
   // A library imported at once follows dozens of sagas: the rest wait for the

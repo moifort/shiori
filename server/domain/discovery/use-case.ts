@@ -81,6 +81,7 @@ import type {
 import { NotificationUseCase } from '~/domain/notification/use-case'
 import { generate } from '~/domain/scan/gemini'
 import { publishedCoverOf } from '~/domain/scan/published-cover'
+import { isSpendCapReached } from '~/domain/scan/spend-cap'
 import type { ScanResult } from '~/domain/scan/types'
 import { type ScanOutcome, ScanUseCase } from '~/domain/scan/use-case'
 import { SeriesCommand } from '~/domain/series/command'
@@ -318,7 +319,7 @@ export namespace DiscoveryUseCase {
       announcedEditionOf(watch, volume, recording),
       appLanguage,
     )
-    if (described === 'quota-exhausted' || 'failed' in described) return described
+    if (typeof described === 'string' || 'failed' in described) return described
     return announcedPreviewOf(watch, volume, recording, described)
   }
 
@@ -349,7 +350,7 @@ export namespace DiscoveryUseCase {
         ? audibleEditionOf(seed.title, seed.authors[0], edition)
         : undefined,
     ])
-    if (described === 'quota-exhausted' || 'failed' in described) return described
+    if (typeof described === 'string' || 'failed' in described) return described
     const description = releaseDescriptionOf(
       seed,
       described,
@@ -408,11 +409,13 @@ export namespace DiscoveryUseCase {
     const sagas = await lookUpAll(dueSagas.slice(0, left), watches, now, overBudget)
     const dueAuthors = dueAuthorWatches(everyone, authorWatches, now)
     const authorsLeft = Math.max(0, left - Math.min(left, dueSagas.length))
+    // The credit the sagas found spent is spent for the authors too: they wait
+    // for next hour, as on a spent budget.
     const authors = await lookUpAllAuthors(
       dueAuthors.slice(0, authorsLeft),
       authorWatches,
       now,
-      overBudget,
+      sagas.refused ? () => true : overBudget,
     )
     const capped =
       Math.max(0, dueSagas.length - left) + Math.max(0, dueAuthors.length - authorsLeft)
@@ -646,24 +649,33 @@ const authorRowsOf = async (
 
 /** Look these sagas up on the web, a few side by side, until the budget is
  *  spent, keeping each watch in `watches` and writing what was found into the
- *  sagas' catalogues. A lookup that fails leaves its saga as it was. */
+ *  sagas' catalogues. A lookup that fails leaves its saga as it was. A refusal
+ *  for want of Gemini credit ends the pass: every saga after it would be
+ *  refused too, each its own Sentry event, every hour until someone tops the
+ *  credit up. What it did not reach is deferred, and `refused` says why. */
 const lookUpAll = async (
   sagas: readonly WatchedSaga[],
   watches: Map<string, SagaWatch>,
   now: Date,
   overBudget: () => boolean,
-): Promise<{ watched: number; failed: number; deferred: number }> => {
+): Promise<{ watched: number; failed: number; deferred: number; refused: boolean }> => {
   let watched = 0
   let failed = 0
+  let refusal: unknown
   for (let start = 0; start < sagas.length; start += CALLS_AT_ONCE) {
-    if (overBudget()) return { watched, failed, deferred: sagas.length - start }
+    if (refusal) {
+      logger.warn('release watch stopped, AI credit spent', { error: refusal })
+      return { watched, failed, deferred: sagas.length - start, refused: true }
+    }
+    if (overBudget()) return { watched, failed, deferred: sagas.length - start, refused: false }
     const found = await Promise.all(
       sagas.slice(start, start + CALLS_AT_ONCE).map(async (saga) => {
         try {
           return await lookUp(saga, watches.get(watchKeyOf(saga)), now)
         } catch (error) {
           failed += 1
-          logger.warn('saga release lookup failed', { error, saga: watchKeyOf(saga) })
+          if (isSpendCapReached(error)) refusal = error
+          else logger.warn('saga release lookup failed', { error, saga: watchKeyOf(saga) })
           return undefined
         }
       }),
@@ -685,7 +697,8 @@ const lookUpAll = async (
       }
     }
   }
-  return { watched, failed, deferred: 0 }
+  if (refusal) logger.warn('release watch stopped, AI credit spent', { error: refusal })
+  return { watched, failed, deferred: 0, refused: refusal !== undefined }
 }
 
 /** The readers whose account still exists, by id; the others are forgotten. A
@@ -907,7 +920,8 @@ const withoutAsin = <Found extends { asin?: unknown }>(volume: Found): Found => 
 
 /** Look these authors up on the web, a few side by side, until the budget is
  *  spent, keeping each watch in `watches`. A lookup that fails leaves its
- *  author as they were. */
+ *  author as they were; a refusal for want of Gemini credit ends the pass, as
+ *  it ends the sagas'. */
 const lookUpAllAuthors = async (
   authors: readonly WatchedAuthor[],
   watches: Map<string, AuthorWatch>,
@@ -916,15 +930,21 @@ const lookUpAllAuthors = async (
 ): Promise<{ watched: number; failed: number; deferred: number }> => {
   let watched = 0
   let failed = 0
+  let refusal: unknown
   for (let start = 0; start < authors.length; start += CALLS_AT_ONCE) {
-    if (overBudget()) return { watched, failed, deferred: authors.length - start }
+    if (refusal || overBudget()) {
+      if (refusal) logger.warn('release watch stopped, AI credit spent', { error: refusal })
+      return { watched, failed, deferred: authors.length - start }
+    }
     const found = await Promise.all(
       authors.slice(start, start + CALLS_AT_ONCE).map(async (author) => {
         try {
           return await lookUpAuthor(author, watches.get(authorWatchKeyOf(author)), now)
         } catch (error) {
           failed += 1
-          logger.warn('author release lookup failed', { error, author: authorWatchKeyOf(author) })
+          if (isSpendCapReached(error)) refusal = error
+          else
+            logger.warn('author release lookup failed', { error, author: authorWatchKeyOf(author) })
           return undefined
         }
       }),
@@ -935,6 +955,7 @@ const lookUpAllAuthors = async (
       watches.set(watch.key, watch)
     }
   }
+  if (refusal) logger.warn('release watch stopped, AI credit spent', { error: refusal })
   return { watched, failed, deferred: 0 }
 }
 

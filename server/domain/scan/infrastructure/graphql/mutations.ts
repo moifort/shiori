@@ -13,13 +13,14 @@ import type { ScanOutcome, ShelfOutcome } from '~/domain/scan/use-case'
 import { ScanUseCase } from '~/domain/scan/use-case'
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { builder } from '~/domain/shared/graphql/builder'
-import { domainError, notFound } from '~/domain/shared/graphql/errors'
+import { aiUnavailable, domainError, notFound } from '~/domain/shared/graphql/errors'
 import { languageFrom, languageOf } from '~/domain/shared/language'
 import { DetectedBookType, ScanResultType, TitleCandidateType } from './types'
 
 const answered = (outcome: ScanOutcome) =>
   match(outcome)
     .with('quota-exhausted', () => domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up'))
+    .with('ai-unavailable', aiUnavailable)
     .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
     .with({ recognized: P.boolean }, (result) => result)
     .exhaustive()
@@ -63,7 +64,8 @@ builder.mutationField('scanTitle', (t) =>
       'Two model calls at most — the web-grounded enrichment, and a series ' +
       'catalogue only when the saga is not already known. Never cached, and always ' +
       'spends one scan of the allowance. Fails with `QUOTA_EXHAUSTED` once nothing ' +
-      'is left, or `SCAN_FAILED` when the model call errors.',
+      'is left, or `SCAN_FAILED` ' +
+      '(`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.',
     args: {
       title: t.arg({ type: 'BookTitle', required: true, description: 'The title as remembered' }),
     },
@@ -88,7 +90,8 @@ builder.mutationField('searchTitle', (t) =>
       'means nothing matched; a single entry means the title was unambiguous.\n\n' +
       'Spends nothing — the scan is the `scanTitle` that follows — but is refused ' +
       'with `QUOTA_EXHAUSTED` once the allowance is used up, since that lookup ' +
-      'would be. Fails with `SCAN_FAILED` when the model call errors.',
+      'would be. Fails with `SCAN_FAILED` ' +
+      '(`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.',
     args: {
       title: t.arg({ type: 'BookTitle', required: true, description: 'The title as remembered' }),
     },
@@ -101,6 +104,7 @@ builder.mutationField('searchTitle', (t) =>
         ),
       )
         .with('quota-exhausted', () => domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up'))
+        .with('ai-unavailable', aiUnavailable)
         .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
         .with(P.array(), (candidates) => candidates)
         .exhaustive(),
@@ -123,7 +127,8 @@ builder.mutationField('scanBook', (t) =>
       'then the scans granted at onboarding. Only a real model call is charged — ' +
       'a cached cover is free, and so is a failure. Fails with `QUOTA_EXHAUSTED` ' +
       'once nothing is left, `IMAGE_TOO_LARGE` above the 10 MB limit, or ' +
-      '`SCAN_FAILED` when the model call errors.',
+      '`SCAN_FAILED` ' +
+      '(`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.',
     args: {
       imageBase64: t.arg.string({
         required: true,
@@ -171,6 +176,7 @@ const shelfAnswered = (outcome: ShelfOutcome) =>
       domainError('PREMIUM_REQUIRED', 'Importing a shelf is a Premium feature'),
     )
     .with('quota-exhausted', () => domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up'))
+    .with('ai-unavailable', aiUnavailable)
     .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
     .with(P.array(), (books) => books)
     .exhaustive()
@@ -188,7 +194,8 @@ builder.mutationField('detectBooks', (t) =>
       'Premium only: fails with `PREMIUM_REQUIRED` for a free account. Spends nothing ' +
       '— each book kept costs its own `describeDetectedBook` — but fails with ' +
       '`QUOTA_EXHAUSTED` once the allowance is used up, `IMAGE_TOO_LARGE` above the ' +
-      '10 MB limit, or `SCAN_FAILED` when the model call errors.',
+      '10 MB limit, or `SCAN_FAILED` ' +
+      '(`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.',
     args: {
       imageBase64: t.arg.string({
         required: true,
@@ -251,7 +258,8 @@ builder.mutationField('describeDetectedBook', (t) =>
       'and author catalogues are left to their first opening. Nothing is saved; ' +
       '`addBook` persists it.\n\n' +
       'Never cached, and spends one scan of the allowance once the model answered. ' +
-      'Fails with `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` when the ' +
+      'Fails with `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` ' +
+      '(`AI_UNAVAILABLE` while the AI is out of credit) when the ' +
       'model call errors.',
     args: { book: t.arg({ type: DetectedBookInput, required: true }) },
     resolve: async (_root, { book }, { userId, event }) =>
@@ -302,7 +310,8 @@ builder.mutationField('scanSeriesVolume', (t) =>
       'is saved; `addBook` persists it.\n\n' +
       'One web-grounded model call, never cached, spending one scan of the ' +
       'allowance once the model answered. Fails with `QUOTA_EXHAUSTED` once nothing ' +
-      'is left, or `SCAN_FAILED` when the model call errors.',
+      'is left, or `SCAN_FAILED` ' +
+      '(`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.',
     args: { volume: t.arg({ type: SeriesVolumeInput, required: true }) },
     resolve: async (_root, { volume }, { userId, event }) => {
       const series = {

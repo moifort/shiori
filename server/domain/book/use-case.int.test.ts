@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { CoverUrl as CoverUrlType, Isbn13 as Isbn13Type } from '~/domain/book/types'
+import { SpendCapReached } from '~/domain/scan/spend-cap'
 import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
 
@@ -118,6 +119,17 @@ describe('bringing a record up to date', () => {
     const refreshed = await BookUseCase.refresh(reader, book.id, 'fr')
 
     expect(refreshed).toEqual({ failed: 'model down' })
+    expect(fake.data('books', book.id)).toMatchObject({ synopsis: 'An old summary.' })
+    expect(spent()).toBe(0)
+  })
+
+  test('says the model is out of credit, and leaves the record untouched', async () => {
+    const book = await aBook()
+    answers = [new SpendCapReached('prepaid-credits')]
+
+    const refreshed = await BookUseCase.refresh(reader, book.id, 'fr')
+
+    expect(refreshed).toBe('ai-unavailable')
     expect(fake.data('books', book.id)).toMatchObject({ synopsis: 'An old summary.' })
     expect(spent()).toBe(0)
   })

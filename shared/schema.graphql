@@ -2474,21 +2474,21 @@ type Mutation {
   """
   Describe a book added from a shelf photo (`awaitingDescription`), the first time its page opens: looked up on the web as `refreshBook` looks it up, and its summary, genre, subgenres, page count, first publication, ISBN and published cover written, the cover sought again by the ISBN found. `awaitingDescription` is then false.
   
-  Spends nothing, and is not refused once the allowance is used up: the scan was spent on adding the book. A book not awaiting its description comes back as it is, with no lookup. Fails with `SCAN_FAILED` when the model call errors — the record is then untouched and still awaiting.
+  Spends nothing, and is not refused once the allowance is used up: the scan was spent on adding the book. A book not awaiting its description comes back as it is, with no lookup. Fails with `SCAN_FAILED` (`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors — the record is then untouched and still awaiting.
   """
   describeBook(id: BookId!): Book!
 
   """
   Build the record of a book ticked on the shelf checklist, as `scanBook` does once a cover is read: web-grounded enrichment and published cover. The saga and author catalogues are left to their first opening. Nothing is saved; `addBook` persists it.
   
-  Never cached, and spends one scan of the allowance once the model answered. Fails with `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` when the model call errors.
+  Never cached, and spends one scan of the allowance once the model answered. Fails with `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` (`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.
   """
   describeDetectedBook(book: DetectedBookInput!): ScanResult! @deprecated(reason: "Use `addDetectedBook`, which saves the book at once and leaves its description to its first opening.")
 
   """
   Describe a book Découvrir shows, for its page, as a scan describes one: the web-grounded model fills in its summary, genre, pages and publisher, and Audible the narrators and running time of a recording. About ten seconds the first time.
   
-  Kept for every reader who opens the same book in the same language, for sixty days: the call is paid once and spends nobody’s scan. Refused with `QUOTA_EXHAUSTED` when the reader’s allowance is used up and nobody described it yet, `SCAN_FAILED` when the model call errors.
+  Kept for every reader who opens the same book in the same language, for sixty days: the call is paid once and spends nobody’s scan. Refused with `QUOTA_EXHAUSTED` when the reader’s allowance is used up and nobody described it yet, `SCAN_FAILED` (`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.
   """
   describeRelease(book: ReleaseInput!): ReleaseDescription!
 
@@ -2497,7 +2497,7 @@ type Mutation {
   
   One model call without web search: only what is printed is read, and a spine that cannot be read comes back with no title rather than a guess. At most 30 books, left to right and top to bottom. Books the reader already owns are flagged `owned`.
   
-  Premium only: fails with `PREMIUM_REQUIRED` for a free account. Spends nothing — each book kept costs its own `describeDetectedBook` — but fails with `QUOTA_EXHAUSTED` once the allowance is used up, `IMAGE_TOO_LARGE` above the 10 MB limit, or `SCAN_FAILED` when the model call errors.
+  Premium only: fails with `PREMIUM_REQUIRED` for a free account. Spends nothing — each book kept costs its own `describeDetectedBook` — but fails with `QUOTA_EXHAUSTED` once the allowance is used up, `IMAGE_TOO_LARGE` above the 10 MB limit, or `SCAN_FAILED` (`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.
   """
   detectBooks(
     """The photo as a base64-encoded JPEG (no data URL prefix), up to 10 MB"""
@@ -2600,7 +2600,7 @@ type Mutation {
   """
   Describe a volume the release watch announced, for its page before the reader adds it. A printed volume is described by the web-grounded model; a recording Audible confirmed is read off Audible’s catalogue first, and the model adds its summary, genre and first publication. A few seconds. Nothing is saved.
   
-  Spends one scan of the allowance, as a typed title does. Fails with `NOT_FOUND` for a volume no watch announced in that edition, `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` when the model call errors.
+  Spends one scan of the allowance, as a typed title does. Fails with `NOT_FOUND` for a volume no watch announced in that edition, `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` (`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.
   """
   previewAnnouncedVolume(language: BookLanguage!, number: VolumeNumber!, seriesId: SeriesId!): AnnouncedVolumePreview! @deprecated(reason: "The volume page draws what `discovery` already carries, with no model call.")
 
@@ -2638,7 +2638,7 @@ type Mutation {
   """
   Bring a record up to date: the book is looked up again on the web from its title, authors, format, publisher and language, and what describes the work is rewritten from what was found — summary, genre, subgenres, page count, year of first publication, published cover, and the ISBN when the record has none. What names the book, the saga, and everything the reader recorded stay as they were; a field the lookup did not find keeps its value. The published cover is also sought by the ISBN already on the record, and one that no longer loads is dropped when no other is found.
   
-  Spends one scan of the allowance, only once the model answered. Fails with `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` when the model call errors — the record is then untouched.
+  Spends one scan of the allowance, only once the model answered. Fails with `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` (`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors — the record is then untouched.
   """
   refreshBook(id: BookId!): Book!
 
@@ -2676,7 +2676,7 @@ type Mutation {
   
   Three model calls at most — the cover, a web-grounded enrichment, and a series catalogue only when the saga is not already known. Results are cached by SHA-256 and language, so scanning the same cover twice calls nothing.
   
-  Spends one scan of the allowance (see the `quota` query): the month first, then the scans granted at onboarding. Only a real model call is charged — a cached cover is free, and so is a failure. Fails with `QUOTA_EXHAUSTED` once nothing is left, `IMAGE_TOO_LARGE` above the 10 MB limit, or `SCAN_FAILED` when the model call errors.
+  Spends one scan of the allowance (see the `quota` query): the month first, then the scans granted at onboarding. Only a real model call is charged — a cached cover is free, and so is a failure. Fails with `QUOTA_EXHAUSTED` once nothing is left, `IMAGE_TOO_LARGE` above the 10 MB limit, or `SCAN_FAILED` (`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.
   """
   scanBook(
     """Cover photo as a base64-encoded JPEG (no data URL prefix), up to 10 MB"""
@@ -2698,7 +2698,7 @@ type Mutation {
   """
   Build the record of a volume the reader adds from its saga page, as `scanTitle` does from a typed title, but told which saga, which volume and which format it is: the volumes of a comic are often all titled after the saga, and the title alone found volume 1 for every one of them, with its ISBN and its cover. The answer stays filed at the volume asked for. Nothing is saved; `addBook` persists it.
   
-  One web-grounded model call, never cached, spending one scan of the allowance once the model answered. Fails with `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` when the model call errors.
+  One web-grounded model call, never cached, spending one scan of the allowance once the model answered. Fails with `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` (`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.
   """
   scanSeriesVolume(volume: SeriesVolumeInput!): ScanResult!
 
@@ -2707,7 +2707,7 @@ type Mutation {
   
   The title can be approximate: the model looks for the most likely book and answers with its exact title. Nothing is saved; the reader corrects the proposal and `addBook` persists it.
   
-  Two model calls at most — the web-grounded enrichment, and a series catalogue only when the saga is not already known. Never cached, and always spends one scan of the allowance. Fails with `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` when the model call errors.
+  Two model calls at most — the web-grounded enrichment, and a series catalogue only when the saga is not already known. Never cached, and always spends one scan of the allowance. Fails with `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` (`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.
   """
   scanTitle(
     """The title as remembered"""
@@ -2719,7 +2719,7 @@ type Mutation {
   
   One model call without web search, so it answers in seconds. An empty list means nothing matched; a single entry means the title was unambiguous.
   
-  Spends nothing — the scan is the `scanTitle` that follows — but is refused with `QUOTA_EXHAUSTED` once the allowance is used up, since that lookup would be. Fails with `SCAN_FAILED` when the model call errors.
+  Spends nothing — the scan is the `scanTitle` that follows — but is refused with `QUOTA_EXHAUSTED` once the allowance is used up, since that lookup would be. Fails with `SCAN_FAILED` (`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.
   """
   searchTitle(
     """The title as remembered"""

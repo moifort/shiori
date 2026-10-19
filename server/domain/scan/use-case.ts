@@ -8,6 +8,7 @@ import { QuotaCommand } from '~/domain/quota/command'
 import { QuotaQuery } from '~/domain/quota/query'
 import { ScanCommand } from '~/domain/scan/command'
 import { pageTitleOf } from '~/domain/scan/page-title'
+import { isSpendCapReached } from '~/domain/scan/spend-cap'
 import type {
   DetectedBook,
   EditionHints,
@@ -26,15 +27,15 @@ import { slugify } from '~/utils/slug'
 
 const logger = createLogger('scan')
 
+/** Why the model gave no answer: out of credit — our bill, nothing the reader
+ *  can act on but wait — or any other failure, named. */
+export type ModelFailure = 'ai-unavailable' | { failed: string }
+
 /** What a metered scan answers: the record to review, or why there is none. */
-export type ScanOutcome = ScanResult | 'quota-exhausted' | { failed: string }
+export type ScanOutcome = ScanResult | 'quota-exhausted' | ModelFailure
 
 /** What a shelf photo answers: its books, or why there are none. */
-export type ShelfOutcome =
-  | DetectedBook[]
-  | 'premium-required'
-  | 'quota-exhausted'
-  | { failed: string }
+export type ShelfOutcome = DetectedBook[] | 'premium-required' | 'quota-exhausted' | ModelFailure
 
 /** Every way a reader asks the model for a book — a cover, a typed title, a
  *  shared link — metered the same way: the allowance is checked before the
@@ -105,7 +106,7 @@ export namespace ScanUseCase {
       return result
     } catch (error) {
       logger.error('shelf book description failed', { error, userId })
-      return { failed: error instanceof Error ? error.message : 'Scan failed' }
+      return failureOf(error, 'Scan failed')
     }
   }
 
@@ -177,7 +178,7 @@ export namespace ScanUseCase {
       return result
     } catch (error) {
       logger.error('shown book description failed', { error, userId })
-      return { failed: error instanceof Error ? error.message : 'Scan failed' }
+      return failureOf(error, 'Scan failed')
     }
   }
 
@@ -197,7 +198,7 @@ export namespace ScanUseCase {
     userId: UserId,
     title: BookTitleValue,
     language: ScanLanguage,
-  ): Promise<TitleCandidate[] | 'quota-exhausted' | { failed: string }> => {
+  ): Promise<TitleCandidate[] | 'quota-exhausted' | ModelFailure> => {
     if (await isExhausted(userId)) return 'quota-exhausted'
     try {
       const { candidates, usage } = await ScanCommand.findCandidates(title, language)
@@ -208,7 +209,7 @@ export namespace ScanUseCase {
       return candidates
     } catch (error) {
       logger.error('title search failed', { error, userId })
-      return { failed: error instanceof Error ? error.message : 'Search failed' }
+      return failureOf(error, 'Search failed')
     }
   }
 
@@ -240,7 +241,7 @@ export namespace ScanUseCase {
       }))
     } catch (error) {
       logger.error('shelf detection failed', { error, userId })
-      return { failed: error instanceof Error ? error.message : 'Detection failed' }
+      return failureOf(error, 'Detection failed')
     }
   }
 
@@ -289,6 +290,13 @@ const metered = async (
   } catch (error) {
     // The reader is told the scan failed; we are told why.
     logger.error(failure, { error, userId })
-    return { failed: error instanceof Error ? error.message : 'Scan failed' }
+    return failureOf(error, 'Scan failed')
   }
 }
+
+/** What a reader is told of a model call that threw. Still logged by the
+ *  caller: an empty credit is ours to top up, and Sentry is where we hear it. */
+export const failureOf = (error: unknown, fallback: string): ModelFailure =>
+  isSpendCapReached(error)
+    ? 'ai-unavailable'
+    : { failed: error instanceof Error ? error.message : fallback }

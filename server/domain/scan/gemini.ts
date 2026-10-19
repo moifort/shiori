@@ -1,4 +1,5 @@
 import { setTimeout } from 'node:timers/promises'
+import { SpendCapReached } from '~/domain/scan/spend-cap'
 import type { AiStepUsage } from '~/domain/scan/types'
 import { config } from '~/system/config'
 import { createLogger } from '~/system/logger'
@@ -134,32 +135,28 @@ const RETRY_PAUSE_MS = 1000
  *  raised, and nothing else would tell an instance it was. */
 const SPEND_CAP_PAUSE_MS = 15 * 60 * 1000
 let pausedUntil = 0
+let pausedOn: SpendCapReached['spent'] = 'monthly-cap'
 
-export class SpendCapReached extends Error {
-  /** Read by the logger: one issue for the cap, whichever caller hit it. */
-  readonly fingerprint = ['gemini-spend-cap']
-  constructor(options?: ErrorOptions) {
-    super('Gemini spending cap reached or prepaid credits spent', options)
-    this.name = 'SpendCapReached'
-  }
-}
+export { SpendCapReached }
 
 /** The cap, or its prepaid twin: a project billed in advance answers 402 once
  *  its credits are spent, and is as stuck until someone tops them up. */
-const isSpendCap = (error: unknown): boolean => {
+const spendCapOf = (error: unknown): SpendCapReached['spent'] | undefined => {
   const { statusCode, data } = error as {
     statusCode?: number
     data?: { error?: { message?: string } }
   }
-  if (statusCode === 402) return true
+  if (statusCode === 402) return 'prepaid-credits'
   return statusCode === 429 && /spend(ing)? cap/i.test(data?.error?.message ?? '')
+    ? 'monthly-cap'
+    : undefined
 }
 
 /** The key travels in a header, never in the URL: the URL is what a failed
  *  `$fetch` names in its error message, and that message is what Sentry shows
  *  as the issue's title — which is where a query-string key was leaked. */
 const requested = async (options: GenerateOptions): Promise<GeminiResponse> => {
-  if (Date.now() < pausedUntil) throw new SpendCapReached()
+  if (Date.now() < pausedUntil) throw new SpendCapReached(pausedOn)
   const { googleApiKey } = config()
   const call = () =>
     $fetch<GeminiResponse>(GEMINI_API_URL, {
@@ -170,9 +167,11 @@ const requested = async (options: GenerateOptions): Promise<GeminiResponse> => {
   try {
     return await call()
   } catch (error) {
-    if (isSpendCap(error)) {
+    const spent = spendCapOf(error)
+    if (spent) {
       pausedUntil = Date.now() + SPEND_CAP_PAUSE_MS
-      throw new SpendCapReached({ cause: error })
+      pausedOn = spent
+      throw new SpendCapReached(spent, { cause: error })
     }
     const status = (error as { statusCode?: number }).statusCode
     if (status === undefined || !TRANSIENT_STATUSES.has(status)) throw error

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import { graphql } from 'graphql'
+import { SpendCapReached } from '~/domain/scan/spend-cap'
 import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
 
@@ -111,6 +112,14 @@ describe('searchTitle', () => {
     const result = await searchTitle('Dune')
 
     expect(result.errors?.[0]?.extensions?.code).toBe('SCAN_FAILED')
+  })
+
+  test('fails with AI_UNAVAILABLE when the model is out of credit', async () => {
+    answers = [new SpendCapReached('prepaid-credits')]
+
+    const result = await searchTitle('Dune')
+
+    expect(result.errors?.[0]?.extensions?.code).toBe('AI_UNAVAILABLE')
   })
 })
 
@@ -275,6 +284,16 @@ describe('adding a shelf book, then opening it', () => {
     const result = await describeBook(id)
 
     expect(result.errors?.[0]?.extensions?.code).toBe('SCAN_FAILED')
+    expect(fake.data('books', id)).toMatchObject({ awaitingDescription: true })
+  })
+
+  test('answers AI_UNAVAILABLE and keeps the book awaiting when the model is out of credit', async () => {
+    const id = idOf(await addDetectedBook())
+    answers = [new SpendCapReached('prepaid-credits')]
+
+    const result = await describeBook(id)
+
+    expect(result.errors?.[0]?.extensions?.code).toBe('AI_UNAVAILABLE')
     expect(fake.data('books', id)).toMatchObject({ awaitingDescription: true })
   })
 })

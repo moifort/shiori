@@ -33,6 +33,7 @@ import type { ReleaseFormat } from '~/domain/discovery/types'
 import { DiscoveryUseCase } from '~/domain/discovery/use-case'
 import { NotificationUseCase } from '~/domain/notification/use-case'
 import { generate } from '~/domain/scan/gemini'
+import { isSpendCapReached } from '~/domain/scan/spend-cap'
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
@@ -213,7 +214,9 @@ export namespace AwaitedEditionUseCase {
 
   /** The hourly pass's share: every edition anybody awaits whose watch was
    *  never looked up, then every one two weeks old, until the budget is spent;
-   *  whatever is not reached goes first next hour. */
+   *  whatever is not reached goes first next hour. A refusal for want of
+   *  Gemini credit ends the pass the same way: every edition after it would be
+   *  refused too, each its own Sentry event. */
   export const watchDue = async (
     now = new Date(),
     budgetMs = SCHEDULED_BUDGET_MS,
@@ -225,8 +228,12 @@ export namespace AwaitedEditionUseCase {
     const due = dueWatchesOf(all, watches, now, todayOf(now))
     let watched = 0
     let failed = 0
+    let refusal: unknown
     for (let start = 0; start < due.length; start += CALLS_AT_ONCE) {
-      if (overBudget()) return { watched, failed, deferred: due.length - start }
+      if (refusal || overBudget()) {
+        if (refusal) logger.warn('edition watch stopped, AI credit spent', { error: refusal })
+        return { watched, failed, deferred: due.length - start }
+      }
       await Promise.all(
         due.slice(start, start + CALLS_AT_ONCE).map(async (awaited) => {
           try {
@@ -234,11 +241,13 @@ export namespace AwaitedEditionUseCase {
             watched += 1
           } catch (error) {
             failed += 1
-            logger.warn('edition lookup failed', { error, watchKey: awaited.watchKey })
+            if (isSpendCapReached(error)) refusal = error
+            else logger.warn('edition lookup failed', { error, watchKey: awaited.watchKey })
           }
         }),
       )
     }
+    if (refusal) logger.warn('edition watch stopped, AI credit spent', { error: refusal })
     return { watched, failed, deferred: 0 }
   }
 

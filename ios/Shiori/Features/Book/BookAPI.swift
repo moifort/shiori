@@ -51,8 +51,9 @@ enum BookAPI {
     /// Looks the book up again on the web and rewrites what describes it —
     /// summary, genre, pages, cover — leaving what names it and what the reader
     /// recorded alone. Spends one scan; throws
-    /// `APIError.domain(code: "QUOTA_EXHAUSTED")` once nothing is left, and
-    /// `"SCAN_FAILED"` when the lookup failed and the record is untouched.
+    /// `APIError.domain(code: "QUOTA_EXHAUSTED")` once nothing is left,
+    /// `"SCAN_FAILED"` when the lookup failed and the record is untouched, and
+    /// `"AI_UNAVAILABLE"` while the server's AI is out of credit.
     static func refresh(id: String) async throws -> Book {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
