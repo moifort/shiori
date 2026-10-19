@@ -5,6 +5,9 @@ import SwiftUI
 /// previews without a network and reads the same in every list that uses it.
 struct BookRow: View {
     let title: String
+    /// The title with the words a search matched marked, drawn in its place.
+    /// Nil everywhere but the search's results.
+    var highlightedTitle: AttributedString?
     let authorLine: String
     let cover: Book
     let status: ReadingStatus
@@ -186,7 +189,7 @@ struct BookRow: View {
     /// one more mark in the corner.
     private var titleText: some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text(title)
+            Text(highlightedTitle ?? AttributedString(title))
                 .font(.body.weight(.medium))
                 .lineLimit(2)
             if let language, language.isForeign {

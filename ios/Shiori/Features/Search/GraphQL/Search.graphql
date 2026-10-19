@@ -1,0 +1,16 @@
+# The whole library, for the search the app runs on the phone: fetched once and
+# kept on disk, never asked per keystroke. `coverUrl` comes back null here, as
+# the server signs no cover for an index kept for days.
+query LibrarySearchIndex {
+  librarySearchIndex {
+    ...BookSummary
+  }
+}
+
+# The covers of the rows a search result draws, at most fifty at once.
+query BookCovers($ids: [BookId!]!) {
+  bookCovers(ids: $ids) {
+    id
+    coverUrl
+  }
+}

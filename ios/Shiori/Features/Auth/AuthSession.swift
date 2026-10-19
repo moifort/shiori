@@ -70,6 +70,8 @@ final class AuthSession {
     private func forgetAccount() {
         appleGivenName = nil
         SnapshotCaches.clear()
+        LibrarySearchIndex.shared.forget()
+        RecentSearches().clear()
         CoverImages.clear()
         SharedIntake.clear()
     }

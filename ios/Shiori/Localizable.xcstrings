@@ -885,6 +885,46 @@
         }
       }
     },
+    "%lld tomes" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld volume"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld volumes"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld tome"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld tomes"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld tomes lus sur %lld parus" : {
       "localizations" : {
         "en" : {
@@ -2093,6 +2133,22 @@
         }
       }
     },
+    "Aucun livre ne correspond" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No book matches"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun livre ne correspond"
+          }
+        }
+      }
+    },
     "Aucun livre ne correspond." : {
       "localizations" : {
         "en" : {
@@ -2969,6 +3025,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chargement..."
+          }
+        }
+      }
+    },
+    "Cherchez un titre, un auteur ou une série de votre bibliothèque." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search a title, an author or a series from your library."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cherchez un titre, un auteur ou une série de votre bibliothèque."
           }
         }
       }
@@ -5101,6 +5173,46 @@
         }
       }
     },
+    "Hors de ce filtre, %lld livres correspondent." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book outside this filter matches."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books outside this filter match."
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Hors de ce filtre, %lld livre correspond."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Hors de ce filtre, %lld livres correspondent."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Hors-série" : {
       "localizations" : {
         "en" : {
@@ -6477,6 +6589,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Livres sur Kindle"
+          }
+        }
+      }
+    },
+    "Livres · %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Books · %lld"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Livres · %lld"
           }
         }
       }
@@ -8545,6 +8673,22 @@
         }
       }
     },
+    "Préparation de vos livres…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing your books…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Préparation de vos livres…"
+          }
+        }
+      }
+    },
     "Préparation de votre bibliothèque" : {
       "localizations" : {
         "en" : {
@@ -8701,6 +8845,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Recherche en cours"
+          }
+        }
+      }
+    },
+    "Recherche indisponible" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search unavailable"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recherche indisponible"
           }
         }
       }
@@ -8961,6 +9121,22 @@
         }
       }
     },
+    "Retirer le filtre" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove the filter"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retirer le filtre"
+          }
+        }
+      }
+    },
     "Retour" : {
       "localizations" : {
         "en" : {
@@ -9069,6 +9245,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Russe"
+          }
+        }
+      }
+    },
+    "Récentes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recent"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Récentes"
           }
         }
       }
@@ -10673,6 +10865,22 @@
         }
       }
     },
+    "Titre, auteur, série" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Title, author, series"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titre, auteur, série"
+          }
+        }
+      }
+    },
     "Tome" : {
       "localizations" : {
         "en" : {
@@ -11245,6 +11453,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vos livres numériques, avec ceux que vous avez finis."
+          }
+        }
+      }
+    },
+    "Vos livres n’ont pas pu être chargés." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your books couldn’t be loaded."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos livres n’ont pas pu être chargés."
           }
         }
       }

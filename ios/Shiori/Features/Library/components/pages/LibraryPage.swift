@@ -8,6 +8,7 @@ enum LibraryAction {
     case loadMore
     case refresh
     case add
+    case search
 }
 
 /// The library list. Pure and previewable: it takes what to draw and what to
@@ -80,6 +81,15 @@ struct LibraryPage: View {
         .navigationSubtitle(layout == .mosaic ? "" : mode.subtitle)
         .navigationBarTitleDisplayMode(layout == .mosaic ? .inline : .automatic)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    Task { await onAction(.search) }
+                } label: {
+                    Label("Rechercher", systemImage: "magnifyingglass")
+                }
+                .labelStyle(.iconOnly)
+                .accessibilityIdentifier("library-search")
+            }
             ToolbarItemGroup {
                 // Every book, newest first: the mosaic is drawn from the view
                 // by date.

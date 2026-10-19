@@ -16,6 +16,7 @@ struct LibraryScreen: View {
 
     @State private var viewModel: LibraryViewModel
     @State private var selectedBook: Book?
+    @State private var showSearch = false
 
     init(
         onAdd: @escaping () -> Void,
@@ -51,9 +52,13 @@ struct LibraryScreen: View {
                 case .loadMore: await viewModel.loadMore()
                 case .refresh: await viewModel.load()
                 case .add: onAdd()
+                case .search: showSearch = true
                 }
             }
             .libraryShelfPicker(shelf)
+            .sheet(isPresented: $showSearch) {
+                LibrarySearchScreen()
+            }
             .sheet(item: $selectedBook) { book in
                 // An edit to this book patches its own row from what the sheet
                 // already holds, and the list lets the change notice it posts

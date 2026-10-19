@@ -22,6 +22,8 @@ struct HomeScreen: View {
     @State private var viewModel: HomeViewModel
     @State private var selectedBook: Book?
     @State private var showSettings = false
+    /// The search over the reader's books, from the loupe in the corner.
+    @State private var showSearch = false
     /// The month's costs and readers, behind a toolbar button only an admin
     /// account sees.
     @State private var showAdmin = false
@@ -66,6 +68,13 @@ struct HomeScreen: View {
             content
                 .navigationTitle("Accueil")
                 .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button { showSearch = true } label: {
+                            Label("Rechercher", systemImage: "magnifyingglass")
+                        }
+                        .labelStyle(.iconOnly)
+                        .accessibilityIdentifier("home-search")
+                    }
                     if isAdmin {
                         ToolbarItem(placement: .topBarTrailing) {
                             ToolbarIconButton(title: "Admin", systemImage: "shield") {
@@ -106,6 +115,9 @@ struct HomeScreen: View {
             Button("OK", role: .cancel) { dismissSyncError() }
         } message: {
             Text("\(audibleSync.errorMessage ?? kindleSync.errorMessage ?? "") Vous pouvez relancer la synchronisation depuis les réglages.")
+        }
+        .sheet(isPresented: $showSearch) {
+            LibrarySearchScreen()
         }
         .sheet(isPresented: $showGenres) {
             NavigationStack { GenreInsightsScreen(load: viewModel.genreInsights) }
