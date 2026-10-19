@@ -36,13 +36,19 @@ struct LibrarySearchPage: View {
             .listSectionSpacing(.compact)
             if isPreparing {
                 preparing
-            } else if failed {
-                failure
-            } else {
+            } else if !failed {
                 content
             }
         }
+        .overlay {
+            if failed {
+                failure
+            } else if showsNoResult {
+                noResult
+            }
+        }
         .listStyle(.insetGrouped)
+        .contentMargins(.top, 4, for: .scrollContent)
         .navigationTitle("Rechercher")
         .navigationBarTitleDisplayMode(.inline)
         .searchable(
@@ -76,8 +82,8 @@ struct LibrarySearchPage: View {
                     }
                 }
             }
-            .padding(.horizontal, 20)
         }
+        .scrollClipDisabled()
     }
 
     private func chipTitle(_ status: ReadingStatus) -> LocalizedStringKey {
@@ -105,13 +111,10 @@ struct LibrarySearchPage: View {
     }
 
     private var failure: some View {
-        Section {
-            EmptyState.failure(
-                "Recherche indisponible",
-                message: String(localized: "Vos livres n’ont pas pu être chargés.")
-            ) { await onAction(.retry) }
-            .listRowBackground(Color.clear)
-        }
+        EmptyState.failure(
+            "Recherche indisponible",
+            message: String(localized: "Vos livres n’ont pas pu être chargés.")
+        ) { await onAction(.retry) }
     }
 
     @ViewBuilder
@@ -120,12 +123,12 @@ struct LibrarySearchPage: View {
             recents
         }
         if isSearching {
-            if results.series.isEmpty, results.books.isEmpty {
-                noResult
-            } else {
-                found
-            }
+            found
         }
+    }
+
+    private var showsNoResult: Bool {
+        !isPreparing && isSearching && results.series.isEmpty && results.books.isEmpty
     }
 
     private var recents: some View {
@@ -189,24 +192,22 @@ struct LibrarySearchPage: View {
         }
     }
 
+    @ViewBuilder
     private var noResult: some View {
-        Section {
-            if results.hiddenByFilter > 0 {
-                EmptyState(
-                    systemImage: "line.3.horizontal.decrease.circle",
-                    title: "Aucun livre ne correspond",
-                    verbatim: String(localized: "Hors de ce filtre, \(results.hiddenByFilter) livres correspondent."),
-                    primary: .init("Retirer le filtre", systemImage: "xmark.circle") { await onAction(.clearFilter) }
-                )
-            } else {
-                EmptyState(
-                    systemImage: "magnifyingglass",
-                    title: "Aucun livre ne correspond",
-                    message: "Cherchez un titre, un auteur ou une série de votre bibliothèque."
-                )
-            }
+        if results.hiddenByFilter > 0 {
+            EmptyState(
+                systemImage: "line.3.horizontal.decrease.circle",
+                title: "Aucun livre ne correspond",
+                verbatim: String(localized: "Hors de ce filtre, \(results.hiddenByFilter) livres correspondent."),
+                primary: .init("Retirer le filtre", systemImage: "xmark.circle") { await onAction(.clearFilter) }
+            )
+        } else {
+            EmptyState(
+                systemImage: "magnifyingglass",
+                title: "Aucun livre ne correspond",
+                message: "Cherchez un titre, un auteur ou une série de votre bibliothèque."
+            )
         }
-        .listRowBackground(Color.clear)
     }
 
     // MARK: - Rows
@@ -243,7 +244,10 @@ private struct FilterChip: View {
 
     var body: some View {
         Button(action: action) {
-            Label(title, systemImage: systemImage)
+            HStack(spacing: 5) {
+                Image(systemName: systemImage)
+                Text(title)
+            }
                 .font(.subheadline)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
