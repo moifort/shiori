@@ -32,7 +32,7 @@ struct HomePage: View {
     var releases: [HomeRelease] = []
     /// What the reader's friends hearted lately, the newest first.
     var friendFavorites: [FriendFavorite] = []
-    /// The month's discoveries, three books chosen for the reader.
+    /// The month's discoveries, chosen for the reader.
     var discoveries: MonthlyDiscoveries?
     let onAction: (HomeAction) -> Void
 
@@ -65,20 +65,13 @@ struct HomePage: View {
                 )
                 .accessibilityIdentifier("home-reading")
 
-                // The covers alone: the reason is Découvrir's, where the
-                // heading leads.
+                // As Découvrir draws them: the first two with why, the
+                // others' covers under them.
                 if let discoveries, discoveries.status == .ready, !discoveries.suggestions.isEmpty {
-                    BookShelfSection(
-                        title: "\(discoveries.title)",
-                        books: discoveries.suggestions.map(\.cover),
-                        caption: { _ in "" },
-                        emptyMessage: "",
+                    DiscoveriesShelfSection(
+                        discoveries: discoveries,
                         onHeaderTapped: { onAction(.showDiscover) },
-                        onBookTapped: { tile in
-                            if let suggestion = discoveries.suggestions.first(where: { $0.cover.id == tile.id }) {
-                                onAction(.openDiscovery(suggestion))
-                            }
-                        }
+                        onOpen: { onAction(.openDiscovery($0)) }
                     )
                     .accessibilityIdentifier("home-discoveries")
                 }
@@ -302,7 +295,7 @@ extension Dashboard {
 
 #Preview("With data") {
     NavigationStack {
-        HomePage(dashboard: .preview) { _ in }
+        HomePage(dashboard: .preview, discoveries: .preview) { _ in }
             .navigationTitle("Accueil")
     }
 }

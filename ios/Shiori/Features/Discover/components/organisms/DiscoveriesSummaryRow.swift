@@ -11,14 +11,11 @@ struct DiscoveriesSummaryRow: View {
     let width: CGFloat
     let onOpen: (Suggestion) -> Void
 
-    /// How many of the month's discoveries are drawn with their reason.
-    private static let drawnWhole = 2
-
     var body: some View {
         switch line {
         case .shown(let discoveries):
-            let first = discoveries.suggestions.prefix(Self.drawnWhole)
-            let rest = discoveries.suggestions.dropFirst(Self.drawnWhole)
+            let first = discoveries.suggestions.prefix(DiscoverySuggestionRows.count)
+            let rest = discoveries.suggestions.dropFirst(DiscoverySuggestionRows.count)
             DiscoverSummaryRow(
                 title: "\(discoveries.title)",
                 systemImage: "sparkles",
@@ -26,21 +23,9 @@ struct DiscoveriesSummaryRow: View {
                 line: String(localized: "D’après vos préférences"),
                 hasCovers: !rest.isEmpty
             ) {
-                VStack(alignment: .leading, spacing: 12) {
-                    ForEach(first) { suggestion in
-                        if suggestion.id != first.first?.id { Divider().padding(.leading, 68) }
-                        Button { onOpen(suggestion) } label: {
-                            DiscoverySuggestionRow(suggestion: suggestion)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("discover-suggestion")
-                    }
-                    // The rows end on a line across the card's width, over
-                    // the strip of the others.
-                    if !rest.isEmpty { Divider() }
-                }
-                .padding(.top, 8)
-                .padding(.horizontal, 12)
+                DiscoverySuggestionRows(suggestions: Array(first), isClosed: !rest.isEmpty, onOpen: onOpen)
+                    .padding(.top, 8)
+                    .padding(.horizontal, 12)
             } covers: {
                 ForEach(rest) { suggestion in
                     Button { onOpen(suggestion) } label: {
