@@ -35,6 +35,9 @@ struct DiscoveriesSummaryRow: View {
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("discover-suggestion")
                     }
+                    // The rows end on a line across the card's width, over
+                    // the strip of the others.
+                    if !rest.isEmpty { Divider() }
                 }
                 .padding(.top, 8)
                 .padding(.horizontal, 12)

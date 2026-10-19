@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// One of the month's first discoveries, drawn whole above the strip: its
-/// cover, its title, then the mark of the reader's book it is drawn from, the
-/// "comme …" line and why. No author: the room is the reason's.
+/// cover, then the mark of the reader's book it is drawn from, the "comme …"
+/// line and why. No title nor author beside it: the cover carries them, and
+/// the room is the reason's.
 struct DiscoverySuggestionRow: View {
     let suggestion: Suggestion
 
@@ -11,18 +12,20 @@ struct DiscoverySuggestionRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             BookCover(book: suggestion.cover, width: Self.coverWidth)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(suggestion.title)
-                    .font(.subheadline.weight(.medium))
-                    .lineLimit(2)
-                why
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(4)
-            }
+            why
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .lineLimit(5)
+                // Its full height: the list row would otherwise hold it to a
+                // line or two.
+                .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
         .contentShape(.rect)
+        // The title the cover shows, then why.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: suggestion.title))
+        .accessibilityValue(why)
     }
 
     /// "♥ comme **Gagner la guerre** — un héros rusé…": the lead reference's
