@@ -38,8 +38,13 @@ struct DiscoverSummaryRow<Covers: View>: View {
         self.covers = covers()
     }
 
+    /// What the headphones overhang a tile's cover by, as on the home shelves.
+    private static var badgeRoom: CGFloat { (CoverTile.formatBadgeSize / 3).rounded(.up) }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        // The covers stand 16 points under the heading, the badge room
+        // included.
+        VStack(alignment: .leading, spacing: 16 - Self.badgeRoom) {
             heading
                 .padding(.horizontal, 12)
             // Cut as far from the card's right edge as the first cover stands
@@ -49,7 +54,10 @@ struct DiscoverSummaryRow<Covers: View>: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(alignment: .top, spacing: 10) { covers }
                         .padding(.leading, 6)
-                        .padding(.top, 6)
+                        // Room for the headphones, which overhang a
+                        // recording's corner and the scroll view would
+                        // otherwise clip.
+                        .padding(.top, Self.badgeRoom)
                 }
                 .padding(.leading, 6)
                 .padding(.trailing, 12)
