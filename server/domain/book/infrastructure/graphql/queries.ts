@@ -1,5 +1,6 @@
 import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
 import {
+  BookCoverType,
   BookType,
   LibraryPageType,
   LibrarySectionType,
@@ -7,7 +8,11 @@ import {
 } from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
 import { builder } from '~/domain/shared/graphql/builder'
+import { badUserInput } from '~/domain/shared/graphql/errors'
 import { languageOf } from '~/domain/shared/language'
+
+/** Covers a search result asks for at once: the rows on one screen, with margin. */
+const MAX_COVERS = 50
 
 builder.queryFields((t) => ({
   library: t.field({
@@ -75,6 +80,30 @@ builder.queryFields((t) => ({
           status: args.status ?? undefined,
         },
       ),
+  }),
+
+  librarySearchIndex: t.field({
+    type: [BookType],
+    description:
+      'Every book of the reader, for the search the app runs on the phone as they ' +
+      'type: fetched once and kept on the device, never asked per keystroke.\n\n' +
+      '`coverUrl` is always null here: signing the whole library would cost more than ' +
+      'the search, and a signature outlives no index kept for days. Ask `bookCovers` ' +
+      'for the rows drawn. One scan of the library.',
+    resolve: (_root, _args, context) => BookQuery.searchIndex(context.userId),
+  }),
+
+  bookCovers: t.field({
+    type: [BookCoverType],
+    description:
+      'The covers of the reader books named, signed for these alone: what a search ' +
+      'result draws, the index carrying none. A book not theirs is left out. At most ' +
+      `${MAX_COVERS} ids; one document read each.`,
+    args: { ids: t.arg({ type: ['BookId'], required: true }) },
+    resolve: (_root, args, context) => {
+      if (args.ids.length > MAX_COVERS) badUserInput(`At most ${MAX_COVERS} covers per request`)
+      return BookQuery.covers(context.userId, args.ids)
+    },
   }),
 
   book: t.field({

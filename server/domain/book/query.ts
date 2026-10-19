@@ -119,6 +119,24 @@ export namespace BookQuery {
     return { books: await withCovers(books), hasMore }
   }
 
+  /** Every book of the reader, for the search the app runs on the phone: one
+   *  query, one document read per book. Covers are not signed — a signature
+   *  lives an hour while the app keeps the index for days, and signing the
+   *  whole library to draw a dozen rows is the cost the search avoids. The
+   *  rows drawn ask `covers`. */
+  export const searchIndex = async (userId: UserId): Promise<Book[]> =>
+    repository.findAllByUser(userId)
+
+  /** The covers of the reader's books among `ids`, signed for those alone. A
+   *  book not theirs is left out rather than refused. */
+  export const covers = async (
+    userId: UserId,
+    ids: readonly BookId[],
+  ): Promise<{ id: BookId; coverUrl?: BookView['coverUrl'] }[]> =>
+    (await withCovers(await repository.findByIds(userId, ids))).map(({ id, coverUrl }) =>
+      coverUrl ? { id, coverUrl } : { id },
+    )
+
   export const bySeries = async (userId: UserId, seriesId: SeriesId): Promise<Book[]> =>
     repository.findBySeries(userId, seriesId)
 

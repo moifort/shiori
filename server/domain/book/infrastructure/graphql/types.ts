@@ -13,6 +13,7 @@ import {
   ReadingStatusEnum,
 } from '~/domain/book/infrastructure/graphql/enums'
 import type {
+  BookId,
   BookView,
   LibrarySection,
   Recommendation,
@@ -420,3 +421,18 @@ export const ShelfVocabularyType = builder.objectRef<ShelfVocabulary>('ShelfVoca
     }),
   }),
 })
+
+export const BookCoverType = builder
+  .objectRef<{ id: BookId; coverUrl?: BookView['coverUrl'] }>('BookCover')
+  .implement({
+    description: "One book's cover, signed for the row about to draw it.",
+    fields: (t) => ({
+      id: t.field({ type: 'BookId', resolve: (cover) => cover.id }),
+      coverUrl: t.field({
+        type: 'CoverUrl',
+        nullable: true,
+        description: 'Null when the book has no cover, as on `Book.coverUrl`.',
+        resolve: (cover) => cover.coverUrl ?? null,
+      }),
+    }),
+  })

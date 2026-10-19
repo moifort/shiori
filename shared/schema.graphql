@@ -853,6 +853,13 @@ type Book {
   updatedAt: DateTime!
 }
 
+"""One book's cover, signed for the row about to draw it."""
+type BookCover {
+  """Null when the book has no cover, as on `Book.coverUrl`."""
+  coverUrl: CoverUrl
+  id: BookId!
+}
+
 """
 Corrections to a book record. Omitted fields are left as they are; null clears a field (an empty list for authors, subgenres and narrators). Title and format ignore null.
 """
@@ -3079,6 +3086,11 @@ type Query {
   book(id: BookId!): Book
 
   """
+  The covers of the reader books named, signed for these alone: what a search result draws, the index carrying none. A book not theirs is left out. At most 50 ids; one document read each.
+  """
+  bookCovers(ids: [BookId!]!): [BookCover!]!
+
+  """
   What the page of one of the reader’s own books offers to await in the app’s language. Null for a book that is not theirs.
   """
   bookEditionOffer(bookId: BookId!): EditionOffer
@@ -3333,6 +3345,13 @@ type Query {
     """Keep only books in this status. Omit for the whole library."""
     status: ReadingStatus
   ): LibraryPage!
+
+  """
+  Every book of the reader, for the search the app runs on the phone as they type: fetched once and kept on the device, never asked per keystroke.
+  
+  `coverUrl` is always null here: signing the whole library would cost more than the search, and a signature outlives no index kept for days. Ask `bookCovers` for the rows drawn. One scan of the library.
+  """
+  librarySearchIndex: [Book!]!
 
   """
   The signed-in user, resolved from the auth token.

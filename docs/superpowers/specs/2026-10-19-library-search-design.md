@@ -68,21 +68,19 @@ reads at any realistic scale. A 300-book library costs nothing measurable.
 
 Two additive queries in the book domain. No field is removed, so no deprecation.
 
-### `librarySearchIndex: [SearchableBook!]!`
+### `librarySearchIndex: [Book!]!`
 
-Every book of the reader, with only what a search row draws. `BookQuery.searchIndex(userId)`
-reads `repository.findAllByUser` — one query, N document reads — and returns the books as they
-are, **without signing any cover**: signing 5,000 URLs would cost more than the whole search, and
-a signed URL lives an hour while the index lives on disk for days.
+Every book of the reader. `BookQuery.searchIndex(userId)` reads `repository.findAllByUser` — one
+query, N document reads — and returns the books as they are, **without signing any cover**:
+signing 5,000 URLs would cost more than the whole search, and a signed URL lives an hour while the
+index lives on disk for days. `coverUrl` is therefore always null on this query, which its
+description says; `BookQuery.shared` already hands unsigned books the same way.
 
-`SearchableBook` is its own GraphQL type so that no client can ask it for a cover it does not
-draw. Its fields, all already on `Book`:
-
-`id`, `title`, `authors`, `format`, `media`, `language`, `status`, `listeningProgress`, `rating`,
-`seriesRating`, `favorite`, `shelvedAt`, `series { id name volume kind }`.
-
-`seriesRating` resolves exactly as `Book.seriesRating` does (`SeriesOpinionQuery.of`, whose
-opinions are scanned once per request), so the index costs one opinion scan whatever its size.
+It returns the existing `Book` type rather than a dedicated one: a second type would restate a
+dozen field resolvers (`shelvedAt`, `seriesRating`, `listeningProgress`…) for no gain. The app asks
+only for what a row draws: `id`, `title`, `authors`, `format`, `media`, `language`, `status`,
+`listeningProgress`, `rating`, `seriesRating`, `favorite`, `shelvedAt`,
+`series { id name volume kind }`. `seriesRating` scans the saga opinions once per request.
 
 About 200 bytes a book in JSON: 1 MB for 5,000 books, a fifth of that compressed.
 
@@ -158,8 +156,8 @@ As drawn in the mockup of 2026-10-19 (states 1 to 4):
     with the reader's held volume count ("5 tomes"). It opens `SeriesScreen`, pushed in the search's
     stack.
   - **Livres** next: the matching books, ranked as above, drawn with the existing `BookRow`, its
-    status tag included. A `SearchableBook` maps to the app's `Book` with no cover, and the
-    fields the type leaves out at their empty value. The matched part of the title is highlighted. A tap opens `BookScreen` as
+    status tag included. An index entry maps to the app's `Book` with no cover, and the fields
+    the index does not ask for at their empty value. The matched part of the title is highlighted. A tap opens `BookScreen` as
     a sheet, as the Library does.
 - **No result**: "Aucun livre ne correspond". When a filter hides books that match, the screen says
   how many ("1 livre hors favoris correspond.") and offers "Retirer le filtre".

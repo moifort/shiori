@@ -100,6 +100,17 @@ export const findById = async (userId: UserId, bookId: BookId): Promise<Book | n
   return book?.userId === userId ? asBook(book) : null
 }
 
+/** The reader's books among `ids`, in the order asked, by id: one document read
+ *  each. A book owned by someone else, or gone, is left out. */
+export const findByIds = async (userId: UserId, ids: readonly BookId[]): Promise<Book[]> => {
+  if (ids.length === 0) return []
+  const snapshots = await db().getAll(...ids.map((id) => books().doc(id)))
+  return snapshots.flatMap((snapshot) => {
+    const book = snapshot.data() as StoredBook | undefined
+    return book?.userId === userId ? [asBook(book)] : []
+  })
+}
+
 // The saga's volumes alone, by a query on the saga: the saga screen used to load
 // the whole library to keep a handful of rows. Taken from the library when this
 // request already holds it, where filtering in memory costs nothing.

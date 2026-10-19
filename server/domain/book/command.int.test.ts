@@ -8,9 +8,8 @@ const { BookCommand } = await import('~/domain/book/command')
 const { BookQuery } = await import('~/domain/book/query')
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
 const { SeriesId, SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
-const { StarRating, ReadingNote, Publisher, PageCount, RecommendationComment } = await import(
-  '~/domain/book/primitives'
-)
+const { CoverUrl, StarRating, ReadingNote, Publisher, PageCount, RecommendationComment } =
+  await import('~/domain/book/primitives')
 const { PersonName } = await import('~/domain/shared/primitives')
 const { SeriesOpinionCommand } = await import('~/domain/series-opinion/command')
 
@@ -883,5 +882,62 @@ describe('deleting', () => {
     await BookCommand.deleteAllForUser(reader)
 
     expect(await BookQuery.all(reader)).toHaveLength(0)
+  })
+})
+
+describe('searching the library', () => {
+  // The app keeps the index for days: a signature would expire inside it.
+  test('hands every book in one query, covers left unsigned', async () => {
+    await BookCommand.add(
+      reader,
+      {
+        title: BookTitle('Dungeon Crawler Carl'),
+        publishedCoverUrl: CoverUrl('https://covers.example/dcc.jpg'),
+      },
+      NOW,
+    )
+    await add('Le Nom du vent')
+    startFakeRequest()
+    const before = { docs: fake.docReads, queries: fake.queryReads, queried: fake.queriedDocs }
+
+    const index = await BookQuery.searchIndex(reader)
+
+    expect(index.map((book) => String(book.title)).sort()).toEqual([
+      'Dungeon Crawler Carl',
+      'Le Nom du vent',
+    ])
+    expect(index[0]).not.toHaveProperty('coverUrl')
+    expect(fake.queryReads - before.queries).toBe(1)
+    expect(fake.queriedDocs - before.queried).toBe(2)
+    expect(fake.docReads - before.docs).toBe(0)
+  })
+
+  test('signs the covers of the books asked for, by id, and no other', async () => {
+    const asked = await BookCommand.add(
+      reader,
+      {
+        title: BookTitle('Dungeon Crawler Carl'),
+        publishedCoverUrl: CoverUrl('https://covers.example/dcc.jpg'),
+      },
+      NOW,
+    )
+    const bare = await add('Le Nom du vent')
+    await add('Hypérion')
+    const someoneElses = await BookCommand.add(
+      'reader-2' as UserId,
+      { title: BookTitle('Dune') },
+      NOW,
+    )
+    startFakeRequest()
+    const before = { docs: fake.docReads, queries: fake.queryReads }
+
+    const covers = await BookQuery.covers(reader, [asked.id, bare.id, someoneElses.id])
+
+    expect(covers).toEqual([
+      { id: asked.id, coverUrl: CoverUrl('https://covers.example/dcc.jpg') },
+      { id: bare.id },
+    ])
+    expect(fake.docReads - before.docs).toBe(3)
+    expect(fake.queryReads - before.queries).toBe(0)
   })
 })
