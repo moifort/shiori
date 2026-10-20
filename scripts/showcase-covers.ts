@@ -28,6 +28,9 @@ type Cover = {
   avoid?: string
   /** A second search, for a volume the first one does not reach. */
   alternative?: string
+  /** The edition to take among those that match, from 0: a classic is sold in
+   *  bare reprints with a plain coloured cover as readily as in a real one. */
+  nth?: number
   media?: 'ebook' | 'audiobook'
 }
 
@@ -104,6 +107,106 @@ const COVERS: Cover[] = [
   { slug: 'shibumi', term: 'shibumi trevanian', match: 'shibumi' },
   { slug: 'monte-cristo', term: 'le comte de monte-cristo dumas', match: 'monte cristo tome i' },
   { slug: 'sorceleur-01', term: 'sorceleur dernier voeu', match: 'sorceleur dernier voeu' },
+  // The science-fiction classics and the great French novels, so the shelf
+  // reads as a reader's, not as a manga collection.
+  { slug: '1984', term: '1984 orwell', match: '1984' },
+  {
+    slug: 'meilleur-des-mondes',
+    term: 'le meilleur des mondes aldous huxley',
+    match: 'meilleur des mondes',
+    avoid: 'retour fiche analyse etude universalis',
+  },
+  { slug: 'fahrenheit-451', term: 'fahrenheit 451 bradbury', match: 'fahrenheit 451' },
+  { slug: 'neuromancien', term: 'neuromancien gibson', match: 'neuromancien' },
+  {
+    slug: 'androides',
+    term: 'blade runner philip k dick',
+    match: 'blade runner',
+    avoid: 'exegesis',
+  },
+  { slug: 'ender', term: 'la stratégie ender card', match: 'strategie ender' },
+  // Rendez-vous avec Rama is not sold as a French ebook: Ravage stands in for it.
+  { slug: 'rama', term: 'ravage barjavel', match: 'ravage', avoid: 'tome fiche analyse' },
+  { slug: 'solaris', term: 'solaris lem', match: 'solaris' },
+  // The month's discoveries: books the shelf does not hold, chosen from it.
+  { slug: 'toile-du-temps', term: 'dans la toile du temps tchaikovsky', match: 'toile du temps' },
+  {
+    slug: 'main-gauche-nuit',
+    term: 'la main gauche de la nuit le guin',
+    match: 'main gauche de la nuit',
+  },
+  { slug: 'leviathan', term: 'eveil du leviathan corey', match: 'eveil du leviathan' },
+  { slug: 'ubik', term: 'ubik philip k dick', match: 'ubik' },
+  { slug: 'fourmis', term: 'les fourmis werber', match: 'fourmis' },
+  { slug: 'planete-des-singes', term: 'la planète des singes boulle', match: 'planete des singes' },
+  { slug: 'nuit-des-temps', term: 'la nuit des temps barjavel', match: 'nuit des temps' },
+  { slug: 'seul-sur-mars', term: 'seul sur mars weir', match: 'seul sur mars' },
+  { slug: 'silo', term: 'silo hugh howey', match: 'silo', avoid: 'origines generations' },
+  {
+    slug: 'guide-galactique',
+    term: 'le guide du voyageur galactique adams',
+    match: 'guide du voyageur galactique',
+  },
+  {
+    slug: 'chroniques-martiennes',
+    term: 'chroniques martiennes bradbury',
+    match: 'chroniques martiennes',
+  },
+  { slug: 'station-eleven', term: 'station eleven mandel', match: 'station eleven' },
+  { slug: 'murderbot', term: 'défaillances systèmes martha wells', match: 'defaillances systemes' },
+  { slug: 'depossedes', term: 'les dépossédés le guin', match: 'depossedes' },
+  { slug: 'servante-ecarlate', term: 'la servante écarlate atwood', match: 'servante ecarlate' },
+  { slug: 'miserables', term: 'les misérables folio', match: 'miserables tome 1' },
+  { slug: 'madame-bovary', term: 'madame bovary flaubert', match: 'madame bovary' },
+  {
+    slug: 'rouge-et-noir',
+    term: 'le rouge et le noir stendhal',
+    match: 'rouge et le noir',
+    nth: 1,
+  },
+  { slug: 'germinal', term: 'germinal livre de poche', match: 'germinal', avoid: 'abrege' },
+  { slug: 'etranger', term: "l'étranger camus", match: 'etranger' },
+  { slug: 'peste', term: 'la peste camus', match: 'peste' },
+  { slug: 'petit-prince', term: 'le petit prince saint-exupéry', match: 'petit prince' },
+  { slug: 'bel-ami', term: 'bel-ami livre de poche', match: 'bel ami' },
+  {
+    slug: 'notre-dame',
+    term: 'notre-dame de paris livre de poche',
+    match: 'notre dame de paris',
+    avoid: 'abrege',
+  },
+  {
+    slug: 'trois-mousquetaires',
+    term: 'les trois mousquetaires alexandre dumas',
+    match: 'trois mousquetaires',
+    nth: 1,
+  },
+  { slug: 'candide', term: 'candide ou l optimisme voltaire', match: 'candide', nth: 1 },
+  {
+    slug: 'pere-goriot',
+    term: 'le père goriot livre de poche',
+    match: 'pere goriot',
+    avoid: 'abrege',
+  },
+  {
+    slug: 'vingt-mille-lieues',
+    term: 'vingt mille lieues sous les mers verne',
+    match: 'vingt mille lieues',
+    avoid: 'bibliocollege analyse fiche',
+  },
+  { slug: 'promesse-de-l-aube', term: "la promesse de l'aube gary", match: 'promesse de l aube' },
+  { slug: 'anomalie', term: "l'anomalie le tellier", match: 'anomalie' },
+  {
+    slug: 'liaisons-dangereuses',
+    term: 'les liaisons dangereuses laclos',
+    match: 'liaisons dangereuses',
+  },
+  {
+    slug: 'swann',
+    term: 'du côté de chez swann marcel proust',
+    match: 'cote de chez swann',
+    nth: 6,
+  },
   // Read on a Kindle: the French edition exists as an ebook only up to its
   // sixth volume.
   ...[
@@ -179,6 +282,102 @@ const ENGLISH_COVERS: Cover[] = [
   { slug: 'shibumi', term: 'shibumi trevanian', match: 'shibumi' },
   { slug: 'monte-cristo', term: 'the count of monte cristo dumas', match: 'count of monte cristo' },
   { slug: 'sorceleur-01', term: 'the last wish sapkowski', match: 'last wish' },
+  { slug: '1984', term: '1984 george orwell', match: '1984' },
+  {
+    slug: 'meilleur-des-mondes',
+    term: 'brave new world huxley',
+    match: 'brave new world',
+    avoid: 'revisited',
+  },
+  { slug: 'fahrenheit-451', term: 'fahrenheit 451 bradbury', match: 'fahrenheit 451' },
+  { slug: 'neuromancien', term: 'neuromancer gibson', match: 'neuromancer' },
+  {
+    slug: 'androides',
+    term: 'do androids dream of electric sheep dick',
+    match: 'androids dream electric sheep',
+  },
+  { slug: 'ender', term: 'enders game orson scott card', match: 'ender s game', avoid: 'shadow' },
+  { slug: 'rama', term: 'rendezvous with rama clarke', match: 'rendezvous with rama' },
+  { slug: 'solaris', term: 'solaris stanislaw lem', match: 'solaris' },
+  { slug: 'toile-du-temps', term: 'children of time tchaikovsky', match: 'children of time' },
+  {
+    slug: 'main-gauche-nuit',
+    term: 'the left hand of darkness le guin',
+    match: 'left hand of darkness',
+  },
+  { slug: 'leviathan', term: 'leviathan wakes corey', match: 'leviathan wakes' },
+  { slug: 'ubik', term: 'ubik philip k dick', match: 'ubik' },
+  // Two French novels the American store lacks give their place to Flowers for
+  // Algernon and Childhood's End.
+  {
+    slug: 'fourmis',
+    term: 'flowers for algernon keyes',
+    match: 'flowers for algernon',
+    avoid: 'study guide sparknotes trivia facts english',
+  },
+  {
+    slug: 'planete-des-singes',
+    term: 'planet of the apes pierre boulle',
+    match: 'planet of the apes',
+  },
+  {
+    slug: 'nuit-des-temps',
+    term: 'childhood s end clarke',
+    match: 'childhood s end',
+    avoid: 'sparknotes',
+  },
+  { slug: 'seul-sur-mars', term: 'the martian andy weir', match: 'martian', avoid: 'chronicles' },
+  { slug: 'silo', term: 'wool hugh howey', match: 'wool', avoid: 'shift dust' },
+  {
+    slug: 'guide-galactique',
+    term: 'the hitchhiker s guide to the galaxy adams',
+    match: 'hitchhiker s guide to the galaxy',
+    avoid: 'ultimate complete trilogy',
+  },
+  {
+    slug: 'chroniques-martiennes',
+    term: 'the martian chronicles bradbury',
+    match: 'martian chronicles',
+  },
+  { slug: 'station-eleven', term: 'station eleven mandel', match: 'station eleven' },
+  { slug: 'murderbot', term: 'all systems red martha wells', match: 'all systems red' },
+  { slug: 'depossedes', term: 'the dispossessed le guin', match: 'dispossessed' },
+  {
+    slug: 'servante-ecarlate',
+    term: 'the handmaid s tale atwood',
+    match: 'handmaid s tale',
+    avoid: 'graphic',
+  },
+  { slug: 'miserables', term: 'les miserables victor hugo', match: 'miserables' },
+  { slug: 'madame-bovary', term: 'madame bovary flaubert', match: 'madame bovary' },
+  { slug: 'rouge-et-noir', term: 'the red and the black stendhal', match: 'red and the black' },
+  { slug: 'germinal', term: 'germinal zola', match: 'germinal' },
+  { slug: 'etranger', term: 'the stranger albert camus', match: 'stranger' },
+  { slug: 'peste', term: 'the plague albert camus', match: 'plague' },
+  { slug: 'petit-prince', term: 'the little prince saint-exupery', match: 'little prince' },
+  { slug: 'bel-ami', term: 'bel-ami maupassant', match: 'bel ami' },
+  {
+    slug: 'notre-dame',
+    term: 'the hunchback of notre-dame hugo',
+    match: 'hunchback of notre dame',
+  },
+  {
+    slug: 'trois-mousquetaires',
+    term: 'the three musketeers penguin classics',
+    match: 'three musketeers',
+    nth: 5,
+  },
+  { slug: 'candide', term: 'candide voltaire', match: 'candide' },
+  { slug: 'pere-goriot', term: 'pere goriot balzac', match: 'goriot' },
+  {
+    slug: 'vingt-mille-lieues',
+    term: 'twenty thousand leagues under the sea verne',
+    match: 'twenty thousand leagues',
+  },
+  { slug: 'promesse-de-l-aube', term: 'promise at dawn romain gary', match: 'promise at dawn' },
+  { slug: 'anomalie', term: 'the anomaly le tellier', match: 'anomaly' },
+  { slug: 'liaisons-dangereuses', term: 'dangerous liaisons laclos', match: 'dangerous liaisons' },
+  { slug: 'swann', term: 'swann s way penguin classics', match: 'swann s way', nth: 2 },
   ...[
     'dungeon crawler carl',
     'carl s doomsday scenario',
@@ -265,7 +464,7 @@ for (const cover of english ? ENGLISH_COVERS : COVERS) {
       limit: '25',
     })}`
     const { results } = await search(url)
-    return results.find((result) => {
+    const matching = results.filter((result) => {
       const tokens = plain(`${result.trackName ?? ''} ${result.collectionName ?? ''}`).split(' ')
       return (
         words.every((word) => tokens.includes(word)) &&
@@ -275,6 +474,7 @@ for (const cover of english ? ENGLISH_COVERS : COVERS) {
         result.artworkUrl100
       )
     })
+    return matching[cover.nth ?? 0]
   }
   const found =
     (await lookFor(cover.term)) ??

@@ -52,6 +52,11 @@ enum BookAPI {
     /// what the record holds and what Amazon and Open Library have for it.
     /// Free — no AI, no scan spent.
     static func coverChoices(id: String) async throws -> [CoverChoice] {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.coverChoices(id: id)
+        }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.BookCoverChoicesQuery(id: id)

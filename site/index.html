@@ -22,7 +22,7 @@
   <meta name="twitter:title" content="Shiori — Snap a cover, your library sorts itself">
   <meta name="twitter:description" content="One photo of a cover and the record fills itself in. Series volume by volume, release alerts, Kindle and Audible in sync, reading shared with friends. Free on iPhone.">
   <meta name="twitter:image" content="https://moifort.github.io/shiori/og.jpg">
-  <meta name="theme-color" content="#fffdf8">
+  <meta name="theme-color" content="#ffffff">
   <link rel="icon" href="favicon.png" type="image/png">
   <link rel="apple-touch-icon" href="icon-256.png">
   <script>
@@ -34,7 +34,7 @@
       if (!/^fr\b/i.test(lang)) document.documentElement.classList.add("i18n-en", "i18n-pending");
     })();
   </script>
-  <link rel="stylesheet" href="style.css?v=20261018-1">
+  <link rel="stylesheet" href="style.css?v=20261020-75">
 </head>
 <body>
 
@@ -44,7 +44,7 @@
     <span>Shiori</span>
   </a>
   <nav class="nav-links" aria-label="Sections">
-    <a href="#demo" data-i18n="nav.demo">Démo</a>
+    <a href="#tour" data-i18n="nav.tour">Aperçu</a>
     <a href="#features" data-i18n="nav.features">Fonctionnalités</a>
     <a href="#compare" data-i18n="nav.compare">Comparatif</a>
     <a href="#faq" data-i18n="nav.faq">Questions</a>
@@ -55,115 +55,131 @@
 
 <main id="top">
 
-  <!-- Hero -->
-  <section class="hero">
-    <p class="eyebrow" data-i18n="hero.eyebrow">Votre bibliothèque dans votre poche</p>
-    <h1 class="hero-title" data-i18n="hero.title">Une photo.<br><span class="gradient-text">Toute votre bibliothèque.</span></h1>
-    <p class="hero-subtitle" data-i18n="hero.subtitle">
-      Photographiez une couverture : titre, auteur, série et résumé se remplissent tout seuls. Vos sagas tome par tome, vos sorties surveillées, vos lectures partagées.
-    </p>
-    <div class="hero-actions">
-      <a class="store-badge" href="https://apps.apple.com/app/id6811938144" data-store aria-label="Télécharger dans l'App Store" data-i18n-aria="aria.store">
-        <svg class="apple-mark" viewBox="0 0 17 20" width="22" height="26" aria-hidden="true"><path fill="currentColor" d="M14.2 10.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.4 1.2 0 1.6-.8 3.1-.8 1.4 0 1.8.8 3.1.7 1.3 0 2.1-1.1 2.8-2.3.9-1.3 1.3-2.6 1.3-2.7-.1 0-2.7-1-2.7-3.7ZM11.9 3.8c.6-.8 1.1-1.9 1-3-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-1 2.9 1 .1 2.1-.5 2.7-1.3Z"/></svg>
-        <span class="store-text"><small data-i18n="store.small">Télécharger dans</small><b>App Store</b></span>
-      </a>
-      <a class="button ghost" href="#demo" data-i18n="hero.seeDemo">Voir la démo</a>
-    </div>
-    <p class="hero-meta" data-i18n="hero.meta">
-      Gratuit · Premium 1,99&nbsp;€ / mois · iPhone · iOS 26 · Français et anglais
-    </p>
-  </section>
+  <!-- The first screen: the hero, then the three iPhones sized to the height
+       left under it. -->
+  <div class="first-screen">
 
-  <!-- The wall: every cover of a reader's library, gliding in rows. -->
-  <div class="wall" aria-hidden="true" data-wall>
-    <div class="wall-plane">
-      <div class="wall-row" data-wall-row data-speed="1"></div>
-      <div class="wall-row" data-wall-row data-speed="-0.8"></div>
-      <div class="wall-row" data-wall-row data-speed="1.2"></div>
-      <div class="wall-row" data-wall-row data-speed="-0.9"></div>
+    <!-- Hero -->
+    <section class="hero">
+      <h1 class="hero-title" data-i18n="hero.title"><span class="gradient-text">Votre bibliothèque<br>dans votre poche.</span></h1>
+      <p class="hero-subtitle" data-i18n="hero.subtitle">Romans, mangas, BD ou livres audio&nbsp;: vos séries rangées, chaque sortie annoncée, vos lectures partagées entre amis.</p>
+      <div class="hero-actions">
+        <a class="store-badge" href="https://apps.apple.com/app/id6811938144" data-store aria-label="Télécharger dans l'App Store" data-i18n-aria="aria.store">
+          <svg class="apple-mark" viewBox="0 0 17 20" width="22" height="26" aria-hidden="true"><path fill="currentColor" d="M14.2 10.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.4 1.2 0 1.6-.8 3.1-.8 1.4 0 1.8.8 3.1.7 1.3 0 2.1-1.1 2.8-2.3.9-1.3 1.3-2.6 1.3-2.7-.1 0-2.7-1-2.7-3.7ZM11.9 3.8c.6-.8 1.1-1.9 1-3-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-1 2.9 1 .1 2.1-.5 2.7-1.3Z"/></svg>
+          <span class="store-text"><small data-i18n="store.small">Télécharger dans</small><b>App Store</b></span>
+        </a>
+      </div>
+      <p class="hero-meta" data-i18n="hero.meta">iPhone · iOS 26</p>
+    </section>
+
+    <!-- The app on three iPhones. -->
+    <div class="showcase">
+      <div class="trio">
+        <figure class="device device-side"><img data-shot="02-home" width="660" height="1434" alt="L'accueil : les pages lues dans l'année, les lectures en cours et les nouveautés" data-i18n-alt="alt.home"></figure>
+        <figure class="device device-main"><img data-shot="01-library" width="660" height="1434" alt="La bibliothèque : un mur de couvertures, mois par mois" data-i18n-alt="alt.library"></figure>
+        <figure class="device device-side"><img data-shot="05-discover" width="660" height="1434" alt="Découvrir : les coups de cœur des amis, les nouvelles parutions et les prochaines sorties" data-i18n-alt="alt.discover"></figure>
+      </div>
+      <script>
+        // Each visitor downloads the screens in their own language, and only those.
+        for (const img of document.querySelectorAll("[data-shot]")) {
+          const lang = document.documentElement.classList.contains("i18n-en") ? "en" : "fr";
+          img.src = `screens/${lang}-${img.dataset.shot}.jpg?v=20261020d`;
+        }
+      </script>
     </div>
+
   </div>
 
-  <!-- Live demo -->
-  <section class="demo" id="demo" aria-label="Démonstration" data-i18n-aria="aria.demo">
-    <div class="desktop">
-      <div class="demo-head">
-        <p class="live-badge" data-i18n="demo.badge"><span class="live-tag"><i aria-hidden="true"></i>Live</span>Démo</p>
-        <h2 class="section-title" data-i18n="demo.title">De la couverture à la fiche.</h2>
-        <p class="section-lead" data-i18n="demo.lead">Pas de code-barres à chercher, pas d'ISBN à taper. La couverture suffit, même sur une vieille édition.</p>
-      </div>
+  <!-- The tour: one screen of the app per tile, as Apple presents its own
+       apps. The screens are the App Store captures (scripts/screenshots.sh). -->
+  <section class="tour" id="tour">
+    <h2 class="section-title" data-i18n="tour.title">Toute votre lecture.<br>Dans une seule app.</h2>
+    <p class="section-lead" data-i18n="tour.lead">Romans, BD, mangas ou livres audio&nbsp;: voici les fonctionnalités principales.</p>
 
-      <div class="demo-stage">
-        <div class="phone" data-phone>
-          <div class="phone-screen">
-            <div class="status-bar"><span>9:41</span><span class="status-icons"><i></i><i></i><i></i></span></div>
-
-            <!-- The camera, then the record, in the same screen. -->
-            <div class="camera" data-camera>
-              <div class="camera-table">
-                <img class="camera-cover" data-camera-cover src="covers/hyperion.jpg" alt="">
-                <div class="camera-frame"><i></i><i></i><i></i><i></i></div>
-                <div class="camera-flash" data-flash></div>
-              </div>
-              <div class="camera-bar">
-                <span class="camera-hint" data-i18n="demo.hint">Cadrez la couverture</span>
-                <span class="shutter" data-shutter><i></i></span>
-              </div>
-            </div>
-
-            <div class="record" data-record>
-              <div class="record-nav">
-                <span class="record-x">✕</span>
-                <b data-i18n="demo.verify">Vérifier</b>
-                <span class="record-ok" data-record-ok>✓</span>
-              </div>
-              <div class="record-status"><span class="on" data-i18n="demo.toRead">À lire</span><span data-i18n="demo.reading">En cours</span><span data-i18n="demo.read">Lu</span></div>
-              <div class="record-card">
-                <div class="record-head">
-                  <img class="record-cover" data-record-cover src="covers/hyperion.jpg" alt="">
-                  <div class="record-titles">
-                    <b data-field="title"></b>
-                    <span data-field="author"></span>
-                  </div>
-                </div>
-                <div class="record-rows">
-                  <div><span data-i18n="demo.f.series">Série</span><em data-field="series"></em></div>
-                  <div><span data-i18n="demo.f.genre">Genre</span><em data-field="genre"></em></div>
-                  <div><span data-i18n="demo.f.publisher">Éditeur</span><em data-field="publisher"></em></div>
-                  <div><span data-i18n="demo.f.year">Première parution</span><em data-field="year"></em></div>
-                  <div><span data-i18n="demo.f.pages">Pages</span><em data-field="pages"></em></div>
-                  <div><span data-i18n="demo.f.language">Langue</span><em data-field="language"></em></div>
-                </div>
-              </div>
-              <p class="record-summary" data-field="summary"></p>
-            </div>
-
-            <div class="shelf-screen" data-shelf>
-              <div class="shelf-title" data-i18n="demo.library">Bibliothèque</div>
-              <div class="shelf-grid" data-shelf-grid></div>
-            </div>
-
-            <div class="ai-orb" data-orb aria-hidden="true"></div>
-          </div>
+    <div class="tour-grid">
+      <article class="tile tile-wide">
+        <div class="tile-text">
+          <h3 data-i18n="tour.scan.title">Une photo, et la fiche se remplit.</h3>
+          <p data-i18n="tour.scan.text">Pas de code-barres à chercher, pas d'ISBN à taper. Titre, auteur, série, genre, éditeur et nombre de pages sont lus sur la couverture, même celle d'une vieille édition. Une ligne fausse ? Touchez-la pour la corriger.</p>
         </div>
-      </div>
-
-      <div class="desk-bar">
-        <ol class="timeline" aria-label="Comment ça marche" data-i18n-aria="aria.timeline">
-          <li data-step="frame"><span class="tl-dot"><span class="tl-icon" aria-hidden="true"><svg viewBox="0 0 16 16" width="13" height="13"><path d="M2 5V3.5A1.5 1.5 0 0 1 3.5 2H5M11 2h1.5A1.5 1.5 0 0 1 14 3.5V5M14 11v1.5a1.5 1.5 0 0 1-1.5 1.5H11M5 14H3.5A1.5 1.5 0 0 1 2 12.5V11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span></span><span class="tl-label" data-i18n="tl.frame">Photographiez</span></li>
-          <li data-step="recognize"><span class="tl-dot"><span class="tl-icon" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 1c.6 4.2 2.8 6.4 7 7-4.2.6-6.4 2.8-7 7-.6-4.2-2.8-6.4-7-7 4.2-.6 6.4-2.8 7-7Z" fill="currentColor"/></svg></span></span><span class="tl-label" data-i18n="tl.recognize">Reconnu par l'IA</span></li>
-          <li data-step="fill"><span class="tl-dot"><span class="tl-icon" aria-hidden="true">≡</span></span><span class="tl-label" data-i18n="tl.fill">Fiche remplie</span></li>
-          <li data-step="shelf"><span class="tl-dot"><span class="tl-icon" aria-hidden="true">✓</span></span><span class="tl-label" data-i18n="tl.shelf">Dans la bibliothèque</span></li>
-        </ol>
-        <p class="tl-caption" data-tl-caption aria-hidden="true"></p>
-      </div>
+        <figure class="device tile-device"><img data-shot="00-scan" width="660" height="1434" loading="lazy" alt="La fiche d'Hypérion, remplie à partir de la photo de sa couverture" data-i18n-alt="tour.scan.alt"></figure>
+      </article>
+      <article class="tile">
+        <div class="tile-text">
+          <h3 data-i18n="tour.library.title">Toute la bibliothèque, d'un coup d'œil.</h3>
+          <p data-i18n="tour.library.text">Votre bibliothèque en mosaïque, classée par date. Retrouvez vos favoris d'un geste, filtrez et triez pour tomber sur le livre que vous cherchez.</p>
+        </div>
+        <figure class="device tile-device"><img data-shot="01-library" width="660" height="1434" loading="lazy" alt="La bibliothèque : un mur de couvertures, mois par mois" data-i18n-alt="tour.library.alt"></figure>
+      </article>
+      <article class="tile">
+        <div class="tile-text">
+          <h3 data-i18n="tour.series.title">Vos séries et vos auteurs se rangent tout seuls.</h3>
+          <p data-i18n="tour.series.text">Chaque tome rejoint sa série dès qu'il entre, chaque livre son auteur. Une coche sur ceux que vous avez lus, la note que vous avez donnée, et où vous en êtes.</p>
+        </div>
+        <figure class="device tile-device"><img data-shot="03-series" width="660" height="1434" loading="lazy" alt="Les séries : Dungeon Crawler Carl, Les Cantos d'Hypérion et leurs tomes" data-i18n-alt="tour.series.alt"></figure>
+      </article>
+      <article class="tile tile-wide">
+        <div class="tile-text">
+          <h3 data-i18n="tour.search.title">Retrouvez n'importe quel livre.</h3>
+          <p data-i18n="tour.search.text">Un titre, un auteur, une série&nbsp;: la recherche trouve dès les premières lettres. Filtrez vos favoris, vos lectures en cours, à lire ou lues, et retrouvez d'un geste les livres vus récemment et vos dernières recherches.</p>
+        </div>
+        <figure class="device tile-device"><img data-shot="11-search" width="660" height="1434" loading="lazy" alt="La recherche : les filtres, les livres vus récemment et les dernières recherches" data-i18n-alt="tour.search.alt"></figure>
+      </article>
+      <article class="tile tile-wide">
+        <div class="tile-text">
+          <h3 data-i18n="tour.discovery.title">Chaque mois, de nouvelles lectures sur mesure pour vous.</h3>
+          <p data-i18n="tour.discovery.text">Des livres que vous n'avez pas encore, choisis à partir de votre bibliothèque, de vos coups de cœur et de vos notes, chacun avec la raison de ce choix.</p>
+        </div>
+        <figure class="device tile-device"><img data-shot="05-discover" width="660" height="1434" loading="lazy" alt="Les découvertes d'octobre : des livres choisis d'après Projet Dernière Chance et Les Cantos d'Hypérion" data-i18n-alt="tour.discovery.alt"></figure>
+      </article>
+      <article class="tile">
+        <div class="tile-text">
+          <h3 data-i18n="tour.home.title">Vos statistiques de lecture.</h3>
+          <p data-i18n="tour.home.text">Livres lus, pages tournées, heures écoutées, lectures en cours&nbsp;: votre année en chiffres. Les dates se déduisent de vos gestes, vous ne tapez jamais rien.</p>
+        </div>
+        <figure class="device tile-device"><img data-shot="02-home" width="660" height="1434" loading="lazy" alt="L'accueil : les livres lus, les pages de l'année et les lectures en cours" data-i18n-alt="tour.home.alt"></figure>
+      </article>
+      <article class="tile">
+        <div class="tile-text">
+          <h3 data-i18n="tour.stats.title">Des statistiques approfondies.</h3>
+          <p data-i18n="tour.stats.text">Votre signature de lecteur, les genres que vous lisez vraiment et ceux qui restent à explorer, vos formats, vos notes moyennes et vos lectures les plus rapides.</p>
+        </div>
+        <figure class="device tile-device"><img data-shot="02-stats" width="660" height="1434" loading="lazy" alt="Les genres lus : la science-fiction en tête, et la signature du lecteur" data-i18n-alt="tour.stats.alt"></figure>
+      </article>
+      <article class="tile tile-wide">
+        <div class="tile-text">
+          <h3 data-i18n="tour.saga.title">Le prochain tome, avant sa sortie.</h3>
+          <p data-i18n="tour.saga.text">Chacune de vos séries est suivie&nbsp;: le prochain tome annoncé avec sa date, et ceux déjà sortis qui vous manquent. Vous êtes prévenu le jour où il paraît.</p>
+        </div>
+        <figure class="device tile-device"><img data-shot="10-discover-series" width="660" height="1434" loading="lazy" alt="Découvrir, côté séries : le prochain tome de chaque série, avec sa date" data-i18n-alt="tour.saga.alt"></figure>
+      </article>
+      <article class="tile">
+        <div class="tile-text">
+          <h3 data-i18n="tour.discover.title">Découvrez de nouvelles lectures.</h3>
+          <p data-i18n="tour.discover.text">Les coups de cœur de vos amis, les sorties de vos séries préférées, les prix littéraires de vos genres et, chaque mois, une sélection sur mesure tirée de vos livres, séries et auteurs préférés.</p>
+        </div>
+        <figure class="device tile-device"><img data-shot="08-discover-more" width="660" height="1434" loading="lazy" alt="Découvrir : les coups de cœur des amis et les nouveautés des séries" data-i18n-alt="tour.discover.alt"></figure>
+      </article>
+      <article class="tile">
+        <div class="tile-text">
+          <h3 data-i18n="tour.shared.title">La lecture, entre amis.</h3>
+          <p data-i18n="tour.shared.text">Invitez vos amis&nbsp;: partagez vos coups de cœur et vos lectures du moment, et lancez-vous un défi pour l'année. Vos notes restent privées.</p>
+        </div>
+        <figure class="device tile-device"><img data-shot="06-shared" width="660" height="1434" loading="lazy" alt="Partagé : vos dernières lectures et le défi lecture entre amis" data-i18n-alt="tour.shared.alt"></figure>
+      </article>
     </div>
+    <script>
+      for (const img of document.querySelectorAll(".tour [data-shot]")) {
+        const lang = document.documentElement.classList.contains("i18n-en") ? "en" : "fr";
+        img.src = `screens/${lang}-${img.dataset.shot}.jpg?v=20261020d`;
+      }
+    </script>
   </section>
 
   <!-- Features -->
   <section class="features" id="features">
     <h2 class="section-title" data-i18n="feat.title">Tout ce qu'un lecteur attend.</h2>
-    <p class="section-lead" data-i18n="feat.lead">Romans, BD, mangas, comics ou livres audio : chaque livre trouve sa place, et Shiori s'occupe du reste.</p>
+    <p class="section-lead" data-i18n="feat.lead">Romans, BD, mangas, comics ou livres audio&nbsp;: chaque livre trouve sa place, le reste se fait tout seul.</p>
 
     <div class="bento">
       <article class="card wide">
@@ -171,15 +187,15 @@
           <div class="shelf-demo" aria-hidden="true" data-shelf-demo>
             <div class="spines">
               <i style="--c:#2a3a6b;--w:22px"><span>Dune</span></i>
-              <i style="--c:#c9412f;--w:18px"><span>Le Nom du vent</span></i>
-              <i style="--c:#f2c230;--w:20px;--t:#1d1d1f"><span>One Piece 1</span></i>
-              <i style="--c:#1f8a5b;--w:16px"><span>Sapiens</span></i>
-              <i style="--c:#141414;--w:24px"><span>Blacksad</span></i>
+              <i style="--c:#c9412f;--w:18px"><span>1984</span></i>
+              <i style="--c:#f2c230;--w:20px;--t:#1d1d1f"><span>Fahrenheit 451</span></i>
+              <i style="--c:#1f8a5b;--w:16px"><span>Solaris</span></i>
+              <i style="--c:#141414;--w:24px"><span>Neuromancien</span></i>
               <i style="--c:#e86f2d;--w:17px"><span>Projet Dernière Chance</span></i>
-              <i style="--c:#6b4ba1;--w:21px"><span>Frieren 1</span></i>
+              <i style="--c:#6b4ba1;--w:21px"><span>La Nuit des temps</span></i>
               <i style="--c:#d9d2c2;--w:19px;--t:#1d1d1f"><span>Hypérion</span></i>
-              <i style="--c:#0f6bb5;--w:15px"><span>Blue Lock 1</span></i>
-              <i style="--c:#8a1c2b;--w:23px"><span>Monte-Cristo</span></i>
+              <i style="--c:#0f6bb5;--w:15px"><span>Silo</span></i>
+              <i style="--c:#8a1c2b;--w:23px"><span>Seul sur Mars</span></i>
               <i style="--c:#2f7f7a;--w:18px"><span>Les Furtifs</span></i>
               <i style="--c:#e5a640;--w:16px;--t:#1d1d1f"><span>Fondation</span></i>
             </div>
@@ -193,79 +209,105 @@
 
       <article class="card">
         <div class="card-visual">
-          <div class="series-demo" aria-hidden="true" data-series-demo>
-            <div class="series-ring"><svg viewBox="0 0 48 48" width="52" height="52"><circle cx="24" cy="24" r="20" fill="none" stroke="rgba(0,0,0,0.08)" stroke-width="5"/><circle data-series-arc cx="24" cy="24" r="20" fill="none" stroke="url(#ring-grad)" stroke-width="5" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" transform="rotate(-90 24 24)"/><defs><linearGradient id="ring-grad" x1="0" x2="1"><stop offset="0" stop-color="#c93b45"/><stop offset="1" stop-color="#e8873a"/></linearGradient></defs></svg><span><b data-series-count>0</b>/114</span></div>
-            <div class="series-strip">
-              <img src="covers/one-piece-01.jpg" alt="" class="owned"><img src="covers/one-piece-02.jpg" alt="" class="owned"><img src="covers/one-piece-03.jpg" alt="" class="owned"><img src="covers/one-piece-04.jpg" alt="" class="missing"><img src="covers/one-piece-05.jpg" alt="" class="owned"><img src="covers/one-piece-06.jpg" alt="" class="missing"><img src="covers/one-piece-07.jpg" alt="" class="owned"><img src="covers/one-piece-08.jpg" alt="" class="owned"><img src="covers/one-piece-114.jpg" alt="" class="next">
-            </div>
-            <div class="series-legend"><span class="owned" data-i18n="series.owned">Lu</span><span class="missing" data-i18n="series.missing">Manquant</span><span class="next" data-i18n="series.next">Tome 115 · 10 déc.</span></div>
-          </div>
+          <div class="card-parts"><img class="card-part" data-part="series" alt="La série Dungeon Crawler Carl dans l'onglet Séries : cinq tomes lus, le sixième au 1er novembre" data-i18n-alt="part.series" loading="lazy"></div>
         </div>
         <h3 data-i18n="series.title">Vos sagas, tome par tome</h3>
         <p data-i18n="series.text">Vos livres se rangent sous leur série. Ouvrez-en une : les tomes que vous avez, ceux qui vous manquent, et le prochain annoncé avec sa date.</p>
       </article>
 
-      <article class="card dark">
+      <article class="card">
         <div class="card-visual">
-          <div class="notif-demo" aria-hidden="true" data-notif-demo>
-            <div class="notif" data-notif>
-              <img src="icon-256.png" width="38" height="38" alt="">
-              <div class="notif-text">
-                <div class="notif-top"><b>Shiori</b><span data-notif-when data-i18n="notif.now">maintenant</span></div>
-                <div data-notif-title></div>
-                <div class="notif-body" data-notif-body></div>
+          <div class="card-parts"><img class="card-part" data-part="authors" alt="Les auteurs de la bibliothèque, chacun avec ses livres" data-i18n-alt="part.authors" loading="lazy"></div>
+        </div>
+        <h3 data-i18n="authors.title">Vos auteurs, livre par livre</h3>
+        <p data-i18n="authors.text">Vos livres se rangent aussi sous leur auteur. Ouvrez-en un&nbsp;: ses sagas, les livres que vous avez, ceux qui vous manquent, et ce qu'il publie ensuite.</p>
+      </article>
+
+      <article class="card dark wide">
+        <div class="card-visual">
+          <figure class="device lock-device" aria-hidden="true">
+            <div class="lock-screen">
+              <div class="lock-clock"><span data-i18n="notif.date">mardi 20 octobre</span><b>9:41</b></div>
+              <div class="notif-demo" data-notif-demo>
+                <div class="notif" data-notif>
+                  <img src="icon-256.png" width="38" height="38" alt="">
+                  <div class="notif-text">
+                    <div class="notif-top"><b>Shiori</b><span data-notif-when data-i18n="notif.now">maint.</span></div>
+                    <div data-notif-title></div>
+                    <div class="notif-body" data-notif-body></div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          </figure>
         </div>
-        <h3 data-i18n="notif.title">Prévenu le jour de la sortie</h3>
-        <p data-i18n="notif.text">Shiori surveille les séries que vous suivez et vous alerte le jour où le prochain tome paraît. Un livre pas encore traduit, ou pas encore en audio : vous saurez quand il l'est.</p>
+        <h3 data-i18n="notif.title">Prévenu des sorties et des découvertes</h3>
+        <p data-i18n="notif.text">Le jour où paraît le prochain tome d'une série que vous suivez, sa traduction ou sa version audio. Chaque dimanche, les tomes nouvellement annoncés. Et chaque mois, vos nouvelles découvertes. Chaque alerte se désactive à part.</p>
       </article>
 
       <article class="card">
         <div class="card-visual">
-          <div class="sync-demo" aria-hidden="true" data-sync-demo>
-            <div class="sync-source">
-              <span class="sync-chip kindle"><svg viewBox="0 0 24 24" width="16" height="16"><rect x="4" y="2" width="16" height="20" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="7" y="5" width="10" height="11" rx="1" fill="currentColor" opacity="0.25"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>Kindle</span>
-              <span class="sync-chip audible"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M4 13a8 8 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="3" y="12" width="4.5" height="7" rx="1.8" fill="currentColor"/><rect x="16.5" y="12" width="4.5" height="7" rx="1.8" fill="currentColor"/></svg>Audible</span>
+          <div class="sync-demo" aria-hidden="true">
+            <svg class="sync-beams" viewBox="0 0 320 170">
+              <path class="sync-track" d="M66 40C150 40 156 85 212 85"/>
+              <path class="sync-track" d="M66 130C150 130 156 85 212 85"/>
+              <clipPath id="sync-cover-clip" clipPathUnits="objectBoundingBox"><rect width="1" height="1" rx="0.1"/></clipPath>
+              <image class="sync-cover" href="covers/dcc-01.jpg" x="-11" y="-16.5" width="22" height="33" clip-path="url(#sync-cover-clip)" preserveAspectRatio="xMidYMid slice" opacity="0">
+                <animateMotion dur="3.2s" begin="0s" repeatCount="indefinite" path="M66 40C150 40 156 85 212 85" keyPoints="0;1" keyTimes="0;1" calcMode="spline" keySplines="0.45 0 0.35 1"/>
+                <animate attributeName="opacity" dur="3.2s" begin="0s" repeatCount="indefinite" values="0;1;1;0" keyTimes="0;0.12;0.85;1"/>
+              </image>
+              <image class="sync-cover" href="covers/hyperion-audio-01.jpg" x="-14" y="-14" width="28" height="28" clip-path="url(#sync-cover-clip)" preserveAspectRatio="xMidYMid slice" opacity="0">
+                <animateMotion dur="3.2s" begin="0.8s" repeatCount="indefinite" path="M66 130C150 130 156 85 212 85" keyPoints="0;1" keyTimes="0;1" calcMode="spline" keySplines="0.45 0 0.35 1"/>
+                <animate attributeName="opacity" dur="3.2s" begin="0.8s" repeatCount="indefinite" values="0;1;1;0" keyTimes="0;0.12;0.85;1"/>
+              </image>
+              <image class="sync-cover" href="covers/fourth-wing.jpg" x="-11" y="-16.5" width="22" height="33" clip-path="url(#sync-cover-clip)" preserveAspectRatio="xMidYMid slice" opacity="0">
+                <animateMotion dur="3.2s" begin="1.6s" repeatCount="indefinite" path="M66 40C150 40 156 85 212 85" keyPoints="0;1" keyTimes="0;1" calcMode="spline" keySplines="0.45 0 0.35 1"/>
+                <animate attributeName="opacity" dur="3.2s" begin="1.6s" repeatCount="indefinite" values="0;1;1;0" keyTimes="0;0.12;0.85;1"/>
+              </image>
+              <image class="sync-cover" href="covers/hyperion-audio-03.jpg" x="-14" y="-14" width="28" height="28" clip-path="url(#sync-cover-clip)" preserveAspectRatio="xMidYMid slice" opacity="0">
+                <animateMotion dur="3.2s" begin="2.4s" repeatCount="indefinite" path="M66 130C150 130 156 85 212 85" keyPoints="0;1" keyTimes="0;1" calcMode="spline" keySplines="0.45 0 0.35 1"/>
+                <animate attributeName="opacity" dur="3.2s" begin="2.4s" repeatCount="indefinite" values="0;1;1;0" keyTimes="0;0.12;0.85;1"/>
+              </image>
+            </svg>
+            <img class="sync-app kindle" src="brands/kindle.jpg" alt="">
+            <img class="sync-app audible" src="brands/audible.jpg" alt="">
+            <div class="sync-hub">
+              <span class="sync-halo"></span><span class="sync-halo"></span>
+              <img src="icon-256.png" alt="">
+              <span class="sync-badge"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg></span>
             </div>
-            <div class="sync-flow">
-              <img src="covers/dcc-01.jpg" alt="" style="--d:0s;--x:-60px"><img src="covers/hyperion-audio-01.jpg" alt="" style="--d:1.1s;--x:40px" class="square"><img src="covers/fourth-wing.jpg" alt="" style="--d:2.2s;--x:-20px"><img src="covers/hyperion-audio-03.jpg" alt="" style="--d:3.3s;--x:65px" class="square"><img src="covers/dcc-04.jpg" alt="" style="--d:4.4s;--x:15px">
-            </div>
-            <div class="sync-target"><img src="icon-256.png" width="26" height="26" alt=""><span data-i18n="sync.target">Votre bibliothèque</span></div>
           </div>
         </div>
         <h3 data-i18n="sync.title">Kindle et Audible, synchronisés</h3>
-        <p data-i18n="sync.text">Connectez vos comptes : votre bibliothèque existante arrive avec ses couvertures et ses sagas, puis reste à jour chaque nuit. Vous choisissez ce qui entre, et le mot de passe ne passe jamais par Shiori.</p>
+        <p data-i18n="sync.text">Connectez vos comptes&nbsp;: votre bibliothèque existante arrive avec ses couvertures et ses sagas, puis reste à jour chaque nuit. Vous choisissez ce qui entre, et votre mot de passe ne nous est jamais transmis.</p>
       </article>
 
       <article class="card">
         <div class="card-visual">
           <div class="one-demo" aria-hidden="true">
-            <div class="one-sources">
-              <span class="one-src" style="--i:0"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M5 3h11a3 3 0 0 1 3 3v15H8a3 3 0 0 1-3-3V3Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 18h14" stroke="currentColor" stroke-width="1.8"/></svg><em data-i18n="one.paper">Papier</em></span>
-              <span class="one-src" style="--i:1"><svg viewBox="0 0 24 24" width="18" height="18"><rect x="4" y="2" width="16" height="20" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="7" y="5" width="10" height="11" rx="1" fill="currentColor" opacity="0.25"/></svg><em>Kindle</em></span>
-              <span class="one-src" style="--i:2"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 13a8 8 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="3" y="12" width="4.5" height="7" rx="1.8" fill="currentColor"/><rect x="16.5" y="12" width="4.5" height="7" rx="1.8" fill="currentColor"/></svg><em>Audio</em></span>
-            </div>
-            <div class="one-record">
-              <img src="covers/projet-derniere-chance.jpg" alt="">
-              <div><b data-i18n="one.book">Projet Dernière Chance</b><span>Andy Weir</span><span class="one-chips"><i data-i18n="one.paper">Papier</i><i>Kindle</i><i>Audio</i></span></div>
-            </div>
+            <span class="one-src" style="--i:0"><img src="formats/paper.jpg" alt="" loading="lazy"><em data-i18n="one.paper">Papier</em></span>
+            <span class="one-src" style="--i:1"><img src="formats/ebook.jpg" alt="" loading="lazy"><em data-i18n="one.ebook">Liseuse</em></span>
+            <span class="one-src" style="--i:2"><img src="formats/audio.jpg" alt="" loading="lazy"><em data-i18n="one.audio">Audio</em></span>
+            <span class="one-src" style="--i:3"><img src="formats/manga.jpg" alt="" loading="lazy"><em data-i18n="one.manga">Manga</em></span>
+            <span class="one-src" style="--i:4"><img src="formats/bd.jpg" alt="" loading="lazy"><em data-i18n="one.bd">BD</em></span>
+            <span class="one-src" style="--i:5"><img src="formats/comics.jpg" alt="" loading="lazy"><em data-i18n="one.comics">Comics</em></span>
           </div>
         </div>
         <h3 data-i18n="one.title">Papier ou écran, un seul livre</h3>
-        <p data-i18n="one.text">Le poche sur l'étagère, la copie Kindle et la version audio sont une seule fiche, avec un seul statut, une seule note et un seul avis.</p>
+        <p data-i18n="one.text">Roman, manga, BD ou comics, sur papier, sur liseuse ou en audio&nbsp;: un livre est une seule fiche, avec un seul statut, une seule note et un seul avis.</p>
+      </article>
+
+      <article class="card wide">
+        <div class="card-visual">
+          <div class="card-parts"><img class="card-part" data-part="cover" alt="Le choix de la couverture : l'actuelle, une autre édition cochée, et l'adresse d'une image à coller" data-i18n-alt="part.cover" loading="lazy"></div>
+        </div>
+        <h3 data-i18n="cover.title">La couverture de votre choix</h3>
+        <p data-i18n="cover.text">Shiori rassemble les couvertures trouvées pour un livre&nbsp;: Kindle, Amazon, Open Library, d'autres éditions. Choisissez celle qui vous plaît, ou collez l'adresse d'une image.</p>
       </article>
 
       <article class="card">
         <div class="card-visual">
-          <div class="stats-demo" aria-hidden="true" data-stats-demo>
-            <div class="stats-head"><span data-i18n="stats.pages">Pages lues</span><b><span data-stats-total>0</span> <small data-i18n="stats.unit">pages en 2026</small></b></div>
-            <div class="stats-bars">
-              <i style="--v:0.42"></i><i style="--v:0.31"></i><i style="--v:0.51"></i><i style="--v:0.26"></i><i style="--v:0.44"></i><i style="--v:0.3"></i><i style="--v:0.36"></i><i style="--v:1"></i><i style="--v:0.56"></i><i style="--v:0.2"></i><i></i><i></i>
-            </div>
-            <div class="stats-months"><span>J</span><span>F</span><span>M</span><span>A</span><span>M</span><span>J</span><span>J</span><span>A</span><span>S</span><span>O</span><span>N</span><span>D</span></div>
-          </div>
+          <div class="card-parts"><img class="card-part" data-part="stats" alt="Pages lues : 16 264 pages en 2026, mois par mois" data-i18n-alt="part.stats" loading="lazy"></div>
         </div>
         <h3 data-i18n="stats.title">Vos lectures en chiffres</h3>
         <p data-i18n="stats.text">Livres lus par an, pages lues, heures écoutées, genres préférés et votre signature de lecteur. Les dates se déduisent de vos gestes : vous ne tapez jamais rien.</p>
@@ -273,43 +315,156 @@
 
       <article class="card">
         <div class="card-visual">
-          <div class="friends-demo" aria-hidden="true" data-friends-demo>
-            <div class="friend-row" data-friend>
-              <span class="avatar" style="--a:#e8873a">L</span>
-              <img src="covers/nom-du-vent.jpg" alt="">
-              <div><b>Léa</b><span data-i18n="friends.loved">a adoré</span><em data-i18n="friends.b1">Le Nom du vent</em></div>
-              <i class="heart">♥</i>
-            </div>
-            <div class="friend-row" data-friend>
-              <span class="avatar" style="--a:#3b82c9">H</span>
-              <img src="covers/spy-family-01.jpg" alt="">
-              <div><b>Hugo</b><span data-i18n="friends.reading">commence</span><em>Spy × Family</em></div>
-              <i class="heart">♥</i>
-            </div>
-            <div class="challenge"><span data-i18n="friends.challenge">Défi lecture 2026</span><div class="challenge-bars"><i style="--v:0.82;--a:#e8873a">Léa · 41</i><i style="--v:0.78;--a:#c93b45" data-i18n="friends.you">Vous · 39</i></div></div>
-          </div>
+          <div class="card-parts"><img class="card-part" data-part="discoveries" alt="Les découvertes d'octobre, chacune avec sa raison" data-i18n-alt="part.discoveries" loading="lazy"></div>
         </div>
-        <h3 data-i18n="friends.title">Entre amis</h3>
-        <p data-i18n="friends.text">Invitez vos amis : chacun voit la bibliothèque de l'autre, ses coups de cœur et ses lectures du moment, et vous vous lancez un défi pour l'année. Vos notes restent privées, et un livre masqué n'est jamais partagé.</p>
+        <h3 data-i18n="discover.title">Rien que pour vous</h3>
+        <p data-i18n="discover.text">Chaque mois, quelques livres choisis d'après ce que vous avez aimé, les lauréats des prix dans vos genres, et les coups de cœur de vos amis.</p>
       </article>
 
-      <article class="card fill">
+      <article class="card">
         <div class="card-visual">
-          <div class="discover-demo" aria-hidden="true">
-            <div class="fan">
-              <img src="covers/veiller-sur-elle.jpg" alt="" style="--r:-14deg;--x:-70px">
-              <img src="covers/jacaranda.jpg" alt="" style="--r:-4deg;--x:-24px">
-              <img src="covers/demain-et-demain.jpg" alt="" style="--r:5deg;--x:24px">
-              <img src="covers/horde-du-contrevent.jpg" alt="" style="--r:14deg;--x:70px">
-            </div>
-            <span class="award-ribbon"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 1.5l1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.3l-3.8 2 .7-4.3-3.1-3 4.3-.6z" fill="currentColor"/></svg><span data-i18n="discover.award">Prix Goncourt 2024</span></span>
+          <ul class="awards" aria-label="Prix Hugo, Nebula, Locus, Arthur C. Clarke, World Fantasy et Goncourt" data-i18n-aria="awards.aria">
+            <li class="award"><span class="award-logo" style="--logo: url(awards/hugo.png)"></span></li>
+            <li class="award"><span class="award-logo" style="--logo: url(awards/nebula.png)"></span></li>
+            <li class="award"><span class="award-logo" style="--logo: url(awards/locus.png)"></span></li>
+            <li class="award"><span class="award-logo" style="--logo: url(awards/clarke.png)"></span></li>
+            <li class="award"><span class="award-logo" style="--logo: url(awards/wfc.png)"></span></li>
+            <li class="award"><span class="award-logo" style="--logo: url(awards/goncourt.png)"></span></li>
+          </ul>
+        </div>
+        <h3 data-i18n="awards.title">Les grands prix, dans vos genres</h3>
+        <p data-i18n="awards.text">Goncourt, Hugo, Nebula, Locus, Arthur C. Clarke et World Fantasy&nbsp;: tous les lauréats depuis la création de chaque prix, ceux que vous avez lus, et ceux qu'il vous reste à découvrir.</p>
+      </article>
+
+      <article class="card">
+        <div class="card-visual">
+          <div class="watch-demo" aria-hidden="true">
+            <div class="watch-book"><img src="covers/en/projet-derniere-chance.jpg" alt=""><div><span class="watch-title">Project Hail Mary <i class="lang-tag">EN</i></span><span class="watch-author">Andy Weir</span></div></div>
+            <div class="watch-row on"><span class="watch-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/><path d="M9.6 13.5 12 6.8l2.4 6.7M10.4 11.3h3.2" stroke-width="1.6"/></svg></span><em data-i18n="watch.book">Guetter en français</em><i class="watch-switch"></i></div>
+            <div class="watch-row cycle"><span class="watch-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 15v-2.5a8.5 8.5 0 0 1 17 0V15"/><path d="M3.5 14.5h2.2a1.3 1.3 0 0 1 1.3 1.3v3.9A1.3 1.3 0 0 1 5.7 21H4.8a1.3 1.3 0 0 1-1.3-1.3z" fill="currentColor"/><path d="M20.5 14.5h-2.2a1.3 1.3 0 0 0-1.3 1.3v3.9a1.3 1.3 0 0 0 1.3 1.3h.9a1.3 1.3 0 0 0 1.3-1.3z" fill="currentColor"/></svg></span><em data-i18n="watch.audio">Guetter en audio</em><i class="watch-switch"></i></div>
           </div>
         </div>
-        <h3 data-i18n="discover.title">Découvrir</h3>
-        <p data-i18n="discover.text">Chaque mois, quelques livres choisis d'après ce que vous avez aimé, les lauréats des prix dans vos genres, et les coups de cœur de vos amis.</p>
+        <h3 data-i18n="watch.title">Guettez la VF ou l'audio</h3>
+        <p data-i18n="watch.text">Un livre pas encore traduit, ou pas encore sorti en audio&nbsp;? Guettez sa version française ou son livre audio, et soyez prévenu le jour de sa sortie.</p>
+      </article>
+
+      <article class="card">
+        <div class="card-visual">
+          <div class="share-demo" aria-hidden="true">
+            <figure class="device share-device"><img src="screens/share-sheet.jpg?v=2" width="660" height="1434" alt="" loading="lazy"></figure>
+            <div class="share-toast"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="3" y="4" width="4" height="16" rx="1"/><rect x="8.5" y="4" width="4" height="16" rx="1"/><rect x="14" y="5" width="4" height="15" rx="1" transform="rotate(-12 16 12.5)"/></svg><span data-i18n="share.kept">Gardé pour Shiori</span></div>
+          </div>
+        </div>
+        <h3 data-i18n="share.title">Partagez, Shiori retrouve le livre</h3>
+        <p data-i18n="share.text">Une capture d'écran, une page Amazon ou un titre copié&nbsp;: depuis n'importe quelle app, touchez Partager puis Shiori. Le livre est retrouvé et vous attend dans l'app, prêt à vérifier avant d'entrer dans votre bibliothèque.</p>
+      </article>
+
+      <article class="card">
+        <div class="card-visual">
+          <div class="watch-demo lang-demo" aria-hidden="true"><div class="watch-book"><span class="lang-cover"><img src="covers/nom-du-vent.jpg" alt=""></span><div><span class="watch-title">Le Nom du vent</span><span class="watch-author">Patrick Rothfuss</span></div></div><div class="watch-book"><span class="lang-cover"><img src="covers/en/nom-du-vent.jpg" alt=""><span class="audio-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4.5" height="7" rx="1.5" fill="currentColor"/><rect x="16.5" y="14" width="4.5" height="7" rx="1.5" fill="currentColor"/></svg></span></span><div><span class="watch-title">The Name of the Wind <i class="lang-tag">EN</i></span><span class="watch-author">Patrick Rothfuss</span></div></div><div class="watch-book"><span class="lang-cover"><img src="covers/en/frieren-01.jpg" alt=""></span><div><span class="watch-title">Frieren <i class="lang-tag">EN</i></span><span class="watch-author">Kanehito Yamada</span></div></div></div>
+        </div>
+        <h3 data-i18n="lang.title">Dans toutes les langues</h3>
+        <p data-i18n="lang.text">Une VO sur l'étagère, un livre audio en anglais&nbsp;: chaque édition garde sa langue, et Shiori retrouve sa couverture, son résumé et sa série dans cette langue.</p>
+      </article>
+
+      <article class="card">
+        <div class="card-visual">
+          <div class="share-demo filter-phone" aria-hidden="true">
+            <figure class="device share-device"><img src="screens/fr-filter-menu.jpg" width="660" height="1434" alt="" loading="lazy"></figure>
+          </div>
+        </div>
+        <h3 data-i18n="filter.title">Filtrez, triez, retrouvez</h3>
+        <p data-i18n="filter.text">Livres, sagas et auteurs se filtrent sur En cours, À lire, Lu, Abandonné ou vos favoris. Les auteurs se trient par date, par ordre alphabétique ou par coups de cœur.</p>
+      </article>
+
+      <article class="card">
+        <div class="card-visual">
+          <div class="search-demo" aria-hidden="true">
+            <div class="search-field"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.8-4.8"/></svg><span class="search-typed"></span><i class="search-caret"></i></div>
+            <div class="search-results">
+              <span class="search-head" data-i18n="search.series">Séries</span>
+              <div class="search-row"><img src="covers/hyperion-audio-01.jpg" alt=""><div><span class="watch-title"><mark>Hypér</mark>ion</span><span class="watch-author">Les Cantos d'Hypérion · 4 tomes</span></div></div>
+              <span class="search-head" data-i18n="search.books">Livres</span>
+              <div class="search-row"><img src="covers/hyperion.jpg" alt=""><div><span class="watch-title"><mark>Hypér</mark>ion</span><span class="watch-author">Dan Simmons</span></div></div>
+              <div class="search-row"><img src="covers/hyperion-audio-03.jpg" alt=""><div><span class="watch-title">La Chute d'<mark>Hypér</mark>ion</span><span class="watch-author">Dan Simmons</span></div></div>
+            </div>
+          </div>
+        </div>
+        <h3 data-i18n="search.title">Toute votre bibliothèque, en un mot</h3>
+        <p data-i18n="search.text">Un titre, un auteur ou une série&nbsp;: tapez quelques lettres, les sagas puis les livres apparaissent, le mot trouvé surligné. Vos dernières recherches vous attendent avant même de taper.</p>
+      </article>
+
+      <article class="card">
+        <div class="card-visual">
+          <div class="note-demo" aria-hidden="true">
+            <div class="note-book"><img src="covers/horde-du-contrevent.jpg" alt=""><div><span class="watch-title">La Horde du Contrevent</span><span class="watch-author">Alain Damasio</span></div></div>
+            <div class="note-text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-9l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="M7.5 9.5h9M7.5 12.5h6"/></svg><span data-i18n="note.sample">Les cinquante premières pages demandent un effort, puis on ne lâche plus la Horde. Prêté à Hugo en mars.</span></div>
+          </div>
+        </div>
+        <h3 data-i18n="note.title">Un commentaire sur chaque livre</h3>
+        <p data-i18n="note.text">Ce que vous en avez pensé, une citation, à qui vous l'avez prêté&nbsp;: chaque livre garde votre commentaire. Il reste à vous, jamais montré à vos amis.</p>
+      </article>
+
+      <article class="card">
+        <div class="card-visual">
+          <div class="note-demo" aria-hidden="true">
+            <div class="note-book"><img src="covers/projet-derniere-chance.jpg" alt=""><div><span class="watch-title">Projet Dernière Chance</span><span class="watch-author">Andy Weir</span></div></div>
+            <div class="note-text rec-by"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.3-6 6.5-6s5.9 2.4 6.5 6M19 8v6M16 11h6"/></svg><span data-i18n="rec.by">Conseillé par</span><b data-i18n="rec.name">Camille</b></div>
+            <div class="note-text"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 11.5C4 7.9 6 5.6 9.4 5l.6 1.6C8 7.3 7 8.6 6.9 10.3H10V17H4zm10 0c0-3.6 2-5.9 5.4-6.5l.6 1.6c-2 .7-3 2-3.1 3.7H20V17h-6z"/></svg><span data-i18n="rec.sample">Lis-le sans rien savoir, surtout pas la quatrième de couverture.</span></div>
+          </div>
+        </div>
+        <h3 data-i18n="rec.title">Qui vous l'a conseillé</h3>
+        <p data-i18n="rec.text">Notez sur la fiche qui vous a conseillé le livre, et ce qu'on vous en a dit. Un livre repris dans la bibliothèque d'un ami porte son nom tout seul.</p>
+      </article>
+
+      <article class="card">
+        <div class="card-visual">
+          <div class="card-parts"><img class="card-part" data-part="hearts" alt="Les coups de cœur de Léa, Hugo et Camille" data-i18n-alt="part.hearts" loading="lazy"></div>
+        </div>
+        <h3 data-i18n="friends.title">Entre amis</h3>
+        <p data-i18n="friends.text">Invitez vos amis&nbsp;: chacun voit la bibliothèque de l'autre, ses coups de cœur et ses lectures du moment. Vos notes restent privées, et un livre masqué n'est jamais partagé.</p>
+      </article>
+
+      <article class="card">
+        <div class="card-visual">
+          <div class="card-parts"><img class="card-part" data-part="challenge" alt="Le défi lecture 2026 entre amis" data-i18n-alt="part.challenge" loading="lazy"></div>
+        </div>
+        <h3 data-i18n="challenge.title">Un défi pour l'année</h3>
+        <p data-i18n="challenge.text">Lancez-vous un défi entre amis&nbsp;: chacun lit à son rythme, et le classement de l'année montre qui mène la course, livre après livre.</p>
+      </article>
+
+      <article class="card">
+        <div class="card-visual">
+          <div class="rate-demo" aria-hidden="true">
+            <div class="rate-row book"><img src="covers/dune.jpg" alt=""><div><span class="watch-title">Dune</span><span class="watch-author">Frank Herbert</span><span class="rate-stars"><i class="rate-star" style="--i:0"><svg viewBox="0 0 24 24"><path d="m12 2.8 2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3-4.6-4.4 6.3-.9z"/></svg></i><i class="rate-star" style="--i:1"><svg viewBox="0 0 24 24"><path d="m12 2.8 2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3-4.6-4.4 6.3-.9z"/></svg></i><i class="rate-star" style="--i:2"><svg viewBox="0 0 24 24"><path d="m12 2.8 2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3-4.6-4.4 6.3-.9z"/></svg></i><i class="rate-star" style="--i:3"><svg viewBox="0 0 24 24"><path d="m12 2.8 2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3-4.6-4.4 6.3-.9z"/></svg></i><i class="rate-star" style="--i:4"><svg viewBox="0 0 24 24"><path d="m12 2.8 2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3-4.6-4.4 6.3-.9z"/></svg></i></span></div><i class="rate-heart"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.8 4.5c2.2 0 3.6 1.2 5.2 3 1.6-1.8 3-3 5.2-3 3.8 0 5.9 3.9 4.4 7.3C19.5 16.4 12 21 12 21z"/></svg></i></div>
+            <div class="rate-row saga"><div><span class="watch-title">Dungeon Crawler Carl</span><span class="watch-author" data-i18n="rate.saga">Matt Dinniman · 6 tomes</span><span class="rate-strip"><img src="covers/dcc-01.jpg" alt=""><img src="covers/dcc-02.jpg" alt=""><img src="covers/dcc-03.jpg" alt=""><img src="covers/dcc-04.jpg" alt=""><img src="covers/dcc-05.jpg" alt=""><img src="covers/dcc-06.jpg" alt=""></span><span class="rate-stars"><i class="rate-star" style="--i:0"><svg viewBox="0 0 24 24"><path d="m12 2.8 2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3-4.6-4.4 6.3-.9z"/></svg></i><i class="rate-star" style="--i:1"><svg viewBox="0 0 24 24"><path d="m12 2.8 2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3-4.6-4.4 6.3-.9z"/></svg></i><i class="rate-star" style="--i:2"><svg viewBox="0 0 24 24"><path d="m12 2.8 2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3-4.6-4.4 6.3-.9z"/></svg></i><i class="rate-star" style="--i:3"><svg viewBox="0 0 24 24"><path d="m12 2.8 2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3-4.6-4.4 6.3-.9z"/></svg></i><i class="rate-star" style="--i:4"><svg viewBox="0 0 24 24"><path d="m12 2.8 2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3-4.6-4.4 6.3-.9z"/></svg></i></span></div><i class="rate-heart"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.8 4.5c2.2 0 3.6 1.2 5.2 3 1.6-1.8 3-3 5.2-3 3.8 0 5.9 3.9 4.4 7.3C19.5 16.4 12 21 12 21z"/></svg></i></div>
+            <div class="rate-row dropped"><img src="covers/fourth-wing.jpg" alt=""><div><span class="watch-title">Fourth Wing</span><span class="watch-author">Rebecca Yarros</span><span class="drop-tag"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M15 3H7.5a2 2 0 0 0-1.9 1.4l-2 7A2 2 0 0 0 5.5 14H10l-.8 3.6A2.4 2.4 0 0 0 11.5 21l3.5-6.5V3zM17 3h2.5A1.5 1.5 0 0 1 21 4.5v9a1.5 1.5 0 0 1-1.5 1.5H17z"/></svg><span data-i18n="rate.dropped">Abandonné</span></span></div></div>
+          </div>
+        </div>
+        <h3 data-i18n="rate.title">Des étoiles, des cœurs, et le droit d'abandonner</h3>
+        <p data-i18n="rate.text">Notez de une à cinq étoiles un livre, ou une saga entière d'un coup. Un cœur pour vos favoris&nbsp;: ils se retrouvent d'un geste dans vos filtres, et vos amis découvrent vos coups de cœur. Un livre qui ne vous tient pas&nbsp;: marquez-le abandonné, il quitte vos lectures en cours. Vos notes restent privées.</p>
+      </article>
+
+      <article class="card">
+        <div class="card-visual">
+          <div class="activity-demo" aria-hidden="true">
+            <div class="activity-row"><span class="activity-friend"><i class="activity-avatar" style="background:#e8873a" data-i18n="activity.lea.initial">L</i><span class="watch-title" data-i18n="activity.lea">Léa</span></span><span class="activity-strip"><span class="activity-tile"><img src="covers/hyperion.jpg" alt=""><span data-i18n="activity.hearted">Favori</span></span><span class="activity-tile"><img src="covers/dcc-03.jpg" alt=""><span data-i18n="activity.reading">En cours</span></span><span class="activity-tile"><img src="covers/trois-corps.jpg" alt=""><span data-i18n="activity.added">Ajouté</span></span><span class="activity-tile"><img src="covers/sapiens.jpg" alt=""><span data-i18n="activity.dropped">Abandonné</span></span></span></div>
+            <div class="activity-row"><span class="activity-friend"><i class="activity-avatar" style="background:#5e8fd6" data-i18n="activity.hugo.initial">H</i><span class="watch-title" data-i18n="activity.hugo">Hugo</span></span><span class="activity-strip"><span class="activity-tile"><img src="covers/one-piece-01.jpg" alt=""><span data-i18n="activity.reading">En cours</span></span><span class="activity-tile"><img src="covers/nom-du-vent.jpg" alt=""><span data-i18n="activity.hearted">Favori</span></span><span class="activity-tile"><img src="covers/blacksad-01.jpg" alt=""><span data-i18n="activity.added">Ajouté</span></span><span class="activity-tile"><img src="covers/fondation.jpg" alt=""><span data-i18n="activity.dropped">Abandonné</span></span></span></div>
+            <div class="activity-row activity-hide"><img src="covers/shibumi.jpg" alt=""><span class="activity-hide-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 5.1A10.5 10.5 0 0 1 12 5c5.5 0 9.5 5 10 7a13 13 0 0 1-2.6 3.6M6.6 6.6C3.9 8.2 2.3 10.8 2 12c.5 2 4.5 7 10 7 1.9 0 3.6-.6 5-1.5M9.9 9.9a3 3 0 0 0 4.2 4.2M3 3l18 18"/></svg><span data-i18n="activity.hide">Ne pas partager</span></span><i class="activity-switch"></i></div>
+          </div>
+        </div>
+        <h3 data-i18n="activity.title">Suivez leurs lectures</h3>
+        <p data-i18n="activity.text">L'activité de chaque ami d'un coup d'œil&nbsp;: nouveaux favoris, lectures en cours, livres tout juste ajoutés ou abandonnés. Ouvrez la page d'un ami&nbsp;: toute sa bibliothèque est là. Et un livre que vous gardez pour vous&nbsp;: «&nbsp;Ne pas partager&nbsp;», vos amis ne le voient jamais.</p>
       </article>
     </div>
   </section>
+
+  <script>
+    for (const img of document.querySelectorAll("[data-part]")) {
+      const lang = document.documentElement.classList.contains("i18n-en") ? "en" : "fr";
+      img.src = `screens/${lang}-part-${img.dataset.part}.jpg?v=20261020l`;
+    }
+  </script>
 
   <!-- Comparison -->
   <section class="compare" id="compare">
@@ -328,10 +483,6 @@
           <tr><th scope="row" data-i18n="cmp.row.price">Prix</th><td class="plain"><span data-i18n="price.goodreads">Gratuit, avec pub</span></td><td class="plain"><span data-i18n="price.storygraph">3,99&nbsp;€ / mois</span></td><td class="plain"><span data-i18n="price.bookly">4,99&nbsp;€ / mois</span></td><td class="plain"><span data-i18n="price.gleeph">1,99&nbsp;€ / mois</span></td><td class="yes"><span data-i18n="cmp.free">Gratuit</span><small data-i18n="cmp.premium">Premium 1,99&nbsp;€ / mois</small></td></tr>
         </tbody>
       </table>
-    </div>
-    <div class="offline-callout">
-      <div class="offline-callout-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2M8 8h8v8H8z"/></svg></div>
-      <p><b data-i18n="cmp.calloutTitle">Pas de code-barres à trouver.</b> <span data-i18n="cmp.calloutText">Une édition ancienne, un livre de bibliothèque, un manga sans code au dos : la couverture suffit. Et comme Shiori lit la couverture, elle sait aussi de quelle série et de quel tome il s'agit.</span></p>
     </div>
     <p class="prices-note" data-i18n="cmp.note">D'après les fiches App Store françaises au 18&nbsp;octobre&nbsp;2026 : prix de l'offre payante de chaque app, toutes ayant aussi une offre gratuite. Goodreads lit la progression d'un Kindle, pas d'Audible.</p>
   </section>
@@ -377,8 +528,8 @@
       <div class="icon-wall" data-icon-wall></div>
       <img src="icon-256.png" width="120" height="120" alt="">
     </div>
-    <h2 class="section-title" data-i18n="dl.title">Gratuit, avec Premium</h2>
-    <p class="section-lead" data-i18n="dl.lead">Les autres se paient au mois pour lire un code-barres. Shiori lit la couverture, gratuitement.</p>
+    <h2 class="section-title" data-i18n="dl.title">Gratuit, ou Premium sans limite</h2>
+    <p class="section-lead" data-i18n="dl.lead">Gratuit avec un nombre de scans limité, ou Premium avec des scans illimités*.</p>
 
     <div class="prices" aria-label="Prix des alternatives" data-i18n-aria="aria.prices">
       <div class="price-row"><span>Goodreads</span><span data-i18n="price.goodreads">Gratuit, avec pub</span></div>
@@ -387,7 +538,7 @@
       <div class="price-row"><span>Gleeph</span><span data-i18n="price.gleeph">1,99&nbsp;€ / mois</span></div>
       <div class="price-row us"><span><img src="icon-256.png" width="22" height="22" alt="">Shiori</span><span data-i18n="price.us"><b class="gradient-text">Gratuit</b> · Premium 1,99&nbsp;€ / mois</span></div>
     </div>
-    <p class="prices-note" data-i18n="price.note">Prix des formules payantes, relevés le 18&nbsp;octobre&nbsp;2026 sur l'App Store français. Premium Shiori : 1,99&nbsp;€ par mois ou 17,99&nbsp;€ par an, premier mois offert.</p>
+    <p class="prices-note" data-i18n="price.note">Prix des formules payantes, relevés le 18&nbsp;octobre&nbsp;2026 sur l'App Store français. Premium Shiori : 1,99&nbsp;€ par mois ou 17,99&nbsp;€ par an, premier mois offert. *&nbsp;Dans la limite de 2&nbsp;500 scans par mois.</p>
 
     <div class="hero-actions">
       <a class="store-badge" href="https://apps.apple.com/app/id6811938144" data-store aria-label="Télécharger dans l'App Store" data-i18n-aria="aria.store">
@@ -406,7 +557,7 @@
   <p><a href="https://github.com/moifort/shiori" data-i18n="footer.source">Code source</a> · <a href="https://github.com/moifort/shiori/issues" data-i18n="footer.issues">Signaler un problème</a> · <a href="privacy.html" data-i18n="footer.privacy">Confidentialité</a></p>
 </footer>
 
-<script src="i18n.js?v=20261018-1"></script>
-<script src="main.js?v=20261018-1" defer></script>
+<script src="i18n.js?v=20261020-74"></script>
+<script src="main.js?v=20261020-63" defer></script>
 </body>
 </html>

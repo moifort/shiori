@@ -49,6 +49,11 @@ final class ScreenshotTest: XCTestCase {
             "-showcase",
             "-AppleLanguages", "(\(language))",
             "-AppleLocale", language == "en" ? "en_US" : "fr_FR",
+            // The search opens on what a reader who uses it sees: books looked
+            // at lately and the last searches, read from the defaults.
+            "-recently-viewed-books",
+            "(dungeon-crawler-carl-5, horde-du-contrevent, projet-derniere-chance, trois-corps, dune, frieren-1, fondation, sapiens)",
+            "-library-search-recents", #"(damasio, frieren, "liu cixin")"#,
         ]
         app.launch()
     }
@@ -78,6 +83,11 @@ final class ScreenshotTest: XCTestCase {
         settle()
         save("01-library")
 
+        // The authors: each with the books held and the sagas they write.
+        try tap(shelves.buttons.element(boundBy: 2), until: app.descendants(matching: .any)["author-row"].firstMatch)
+        settle()
+        save("09-authors")
+
         // The sagas: their strips of covers, the volumes to come.
         try tap(shelves.buttons.element(boundBy: 1), until: app.descendants(matching: .any)["series-row"].firstMatch)
         settle()
@@ -94,6 +104,30 @@ final class ScreenshotTest: XCTestCase {
         try wait(app.descendants(matching: .any)["discover-volume-row"].firstMatch)
         settle()
         save("05-discover")
+
+        // One of the month's discoveries: the book Claude chose, and why.
+        try tap(
+            app.descendants(matching: .any)["discover-suggestion"].firstMatch,
+            until: app.descendants(matching: .any)["suggestion-reason"]
+        )
+        settle()
+        save("07-discovery")
+        try tap(app.navigationBars.buttons["xmark"].firstMatch, ifPresent: true)
+        _ = app.descendants(matching: .any)["suggestion-reason"].waitForNonExistence(timeout: 5)
+
+        // Further down Découvrir: the friends' favorites and the series' next volumes.
+        app.swipeUp()
+        settle()
+        save("08-discover-more")
+
+        // Découvrir's Séries shelf: each saga followed, its next volume dated.
+        let discoverShelves = app.segmentedControls["library-shelf-picker"]
+        try tap(
+            discoverShelves.buttons.element(boundBy: 1),
+            until: app.descendants(matching: .any)["discover-series-row"].firstMatch
+        )
+        settle()
+        save("10-discover-series")
 
         try open("Partagé")
         try wait(app.descendants(matching: .any)["shared-my-page"])
@@ -129,7 +163,31 @@ final class ScreenshotTest: XCTestCase {
         save("paywall")
     }
 
+    /// The search, and the cover picker reached from a book it finds: the
+    /// landing page's tour, not the App Store's.
+    func testCaptureSearchAndCover() throws {
+        try open("Bibliothèque")
+        try tap(app.descendants(matching: .any)["library-search"], until: app.descendants(matching: .any)["search-viewed"].firstMatch)
+        settle()
+        save("11-search")
+
+        let field = app.searchFields.firstMatch
+        try tap(field)
+        field.typeText("rothfuss")
+        let book = app.descendants(matching: .any).matching(identifier: "search-book")
+            .matching(NSPredicate(format: "label CONTAINS %@", language == "en" ? "Name of the Wind" : "Nom du vent"))
+            .firstMatch
+        try tap(book, until: app.descendants(matching: .any)["book-detail-menu"].firstMatch)
+        try tap(app.descendants(matching: .any)["book-detail-menu"].firstMatch, until: app.descendants(matching: .any)["book-cover"].firstMatch)
+        try tap(app.descendants(matching: .any)["book-cover"].firstMatch, until: app.buttons["cover-choose"])
+        let other = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", language == "en" ? "Other edition" : "Autre édition")).firstMatch
+        try tap(other)
+        settle()
+        save("12-cover")
+    }
+
     // MARK: - Steps
+
 
     /// A screen that never came: the run stops there rather than photograph it.
     private struct Missing: Error {}

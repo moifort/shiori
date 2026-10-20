@@ -60,6 +60,11 @@ enum ReleaseAPI {
     private static let requestTimeout: TimeInterval = 90
 
     static func describe(_ seed: ReleaseSeed) async throws -> ReleaseDescription {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.description(of: seed)
+        }
+        #endif
         let membership = seed.series.flatMap { $0.id.isEmpty ? nil : $0 }
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,

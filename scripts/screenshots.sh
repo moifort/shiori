@@ -27,7 +27,7 @@ case "$LANGUAGE" in
   *) echo "error: no captures in '$LANGUAGE', only fr and en." >&2; exit 1 ;;
 esac
 DESTINATION_DIR="screenshots/captures/$LANGUAGE"
-EXPECTED=9
+EXPECTED=15
 
 udid=$(xcrun simctl list devices available -j | bun -e '
   const { devices } = JSON.parse(await Bun.stdin.text())

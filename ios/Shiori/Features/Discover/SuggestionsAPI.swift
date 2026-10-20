@@ -193,7 +193,7 @@ enum SuggestionsAPI {
     static func monthly(format: ReleaseFormat, lookUp: Bool) async throws -> MonthlyDiscoveries {
         #if DEBUG
         if Showcase.isOn {
-            return MonthlyDiscoveries(month: "2026-10", suggestions: [])
+            return Showcase.monthlyDiscoveries
         }
         #endif
         let data = try await GraphQLHelpers.fetch(

@@ -1,12 +1,11 @@
-/* Shiori landing page — paper white, a serif for the headlines, one accent taken
+/* Shiori landing page — white, San Francisco as on apple.com, one accent taken
    from the app icon: the red of the bookmark, warmed towards amber. The covers
    are the colour of the page; everything else stays quiet. */
 
 :root {
-  --bg: #fffdf8;
-  --bg-elevated: #f7f2e7;
-  --bg-card: #f6f1e6;
-  --paper: #f4eddc;
+  --bg: #fff;
+  --bg-elevated: #fafafc;
+  --bg-card: #f5f5f7;
   --line: rgba(40, 30, 20, 0.09);
   --text: #1c1a17;
   --text-muted: #6b665d;
@@ -17,8 +16,10 @@
   --radius: 28px;
   --nav-h: 52px;
   --max: 1080px;
-  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Inter, sans-serif;
-  --serif: ui-serif, "New York", "Iowan Old Style", "Palatino", Georgia, serif;
+  /* Apple's own stacks: San Francisco on Apple devices, Helvetica elsewhere,
+     since SF Pro may not be served as a web font. */
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, monospace;
 }
 
@@ -61,7 +62,7 @@ img { -webkit-user-drag: none; user-select: none; }
   align-items: center;
   justify-content: space-between;
   padding: 0 max(20px, calc((100% - var(--max)) / 2));
-  background: rgba(255, 253, 248, 0.72);
+  background: rgba(255, 255, 255, 0.72);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   border-bottom: 1px solid var(--line);
@@ -95,10 +96,10 @@ section {
 }
 
 .section-title {
-  font-family: var(--serif);
+  font-family: var(--display);
   font-size: clamp(36px, 6vw, 64px);
-  line-height: 1.05;
-  letter-spacing: -0.02em;
+  line-height: 1.0625;
+  letter-spacing: -0.015em;
   font-weight: 600;
   margin: 0 0 20px;
 }
@@ -113,38 +114,36 @@ section {
 
 /* ---------- Hero ---------- */
 
-.eyebrow {
-  margin: 0 0 18px;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-dim);
+/* The hero and the three iPhones fill the first screen, whatever its height:
+   the text scales with the height as well as the width, and the phones take
+   what is left under it. */
+.first-screen {
+  min-height: calc(100svh - var(--nav-h));
+  display: flex;
+  flex-direction: column;
 }
 
-/* The text alone; the wall of covers follows below, so that with the nav the
-   two fill one screen. */
 .hero {
-  padding-top: clamp(64px, 10vh, 120px);
+  padding-top: clamp(16px, 3vh, 56px);
   padding-bottom: 0;
   position: relative;
-  z-index: 1;
+  z-index: 3;
 }
 
 .hero-title {
-  font-family: var(--serif);
-  font-size: clamp(50px, 9vw, 104px);
-  line-height: 1;
-  letter-spacing: -0.025em;
+  font-family: var(--display);
+  font-size: clamp(34px, min(6vw, 5.4vh), 66px);
+  line-height: 1.05;
+  letter-spacing: -0.015em;
   font-weight: 600;
-  margin: 0 0 24px;
+  margin: 0 0 clamp(8px, 1.4vh, 16px);
 }
 
 .hero-subtitle {
-  font-size: clamp(19px, 2.4vw, 25px);
+  font-size: clamp(16px, min(2vw, 2vh), 20px);
   color: var(--text-muted);
-  max-width: 720px;
-  margin: 0 auto 36px;
+  max-width: 700px;
+  margin: 0 auto clamp(12px, 2vh, 22px);
   line-height: 1.4;
 }
 
@@ -185,452 +184,183 @@ section {
 .store-text small { font-size: 10px; letter-spacing: 0.02em; margin-bottom: 3px; opacity: 0.9; }
 .store-text b { font-size: 19px; font-weight: 600; letter-spacing: -0.01em; }
 
-.hero-meta { margin: 22px 0 0; font-size: 14px; color: var(--text-dim); }
+.hero-meta { margin: clamp(8px, 1.2vh, 14px) 0 0; font-size: 14px; color: var(--text-dim); }
 
-/* ---------- The wall of covers ---------- */
+/* ---------- The showcase: three iPhones ---------- */
 
-/* A plane tilted away from the reader, four rows of covers gliding across it
-   in alternate directions, melting into the page at both sides and at the
-   bottom, where the demo begins. */
-.wall {
-  position: relative;
-  width: 100vw;
-  height: clamp(300px, 46vw, 560px);
-  margin-top: 36px;
-  overflow: hidden;
-  perspective: 1400px;
-  perspective-origin: 50% 0%;
-  z-index: 0;
+/* What the hero leaves of the first screen, measured as a container so the
+   phones can size themselves to its height. Below a floor it stops shrinking
+   them and lets them run past the fold. */
+.showcase {
+  flex: 1 1 0;
+  min-height: 460px;
+  container-type: size;
+  margin-top: clamp(14px, 2.2vh, 32px);
+  padding-bottom: clamp(20px, 3vh, 48px);
+  overflow-x: clip;
 }
-.wall-plane {
-  position: absolute;
-  left: -12vw;
-  right: -12vw;
-  top: 24px;
+
+/* Home, library, Discover: the library in front, the other two tucked behind
+   it, fanning out as the page scrolls (--fan, 0 to 1, set by main.js). A main
+   phone is 2.24 times as tall as it is wide, frame included. */
+.trio {
+  --pw: min(clamp(260px, 34vw, 420px), 100cqh / 2.24);
+  --fan: 1;
+  position: relative;
+  z-index: 2;
   display: flex;
-  flex-direction: column;
-  gap: clamp(10px, 1.4vw, 18px);
-  transform: rotateX(28deg) rotateZ(-4deg) translateY(-10px);
-  transform-origin: 50% 0%;
-}
-.wall-row { display: flex; gap: clamp(10px, 1.4vw, 18px); width: max-content; will-change: transform; }
-.wall-row img {
-  display: block;
-  width: clamp(78px, 11vw, 136px);
-  aspect-ratio: 2 / 3;
-  object-fit: cover;
-  border-radius: 6px;
-  box-shadow: 0 14px 30px rgba(40, 30, 20, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.06);
-  background: var(--bg-card);
-}
-.wall-row img.square { aspect-ratio: 1; }
-.wall::before, .wall::after {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 16%;
-  z-index: 1;
-  pointer-events: none;
-  background: linear-gradient(90deg, var(--bg), transparent);
-}
-.wall::after { inset: 0 0 0 auto; transform: scaleX(-1); }
-.wall-fade {
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
-  height: 45%;
-  z-index: 1;
-  pointer-events: none;
-  background: linear-gradient(rgba(255, 253, 248, 0), var(--bg));
-}
-
-/* ---------- Demo: a tinted stage with one iPhone ---------- */
-
-.demo {
-  padding: 0;
-  position: relative;
-  scroll-margin-top: var(--nav-h);
-  /* The icon's colours under the phone: red to the left, amber to the right,
-     a warm paper between. */
-  background:
-    radial-gradient(45% 55% at 14% 58%, rgba(201, 59, 69, 0.16), transparent 70%),
-    radial-gradient(55% 60% at 50% 55%, rgba(232, 135, 58, 0.14), transparent 70%),
-    radial-gradient(45% 55% at 86% 58%, rgba(201, 59, 69, 0.12), transparent 70%),
-    linear-gradient(180deg, #f6efe2, #efe5d2);
-}
-.demo::before {
-  content: "";
-  position: absolute;
-  left: 0; right: 0; top: 0;
-  height: 260px;
-  background: linear-gradient(var(--bg), rgba(255, 253, 248, 0));
-  pointer-events: none;
-}
-.demo::after {
-  content: "";
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
-  height: 340px;
-  background: linear-gradient(
-    rgba(255, 253, 248, 0) 0%,
-    rgba(255, 253, 248, 0.08) 18%,
-    rgba(255, 253, 248, 0.25) 35%,
-    rgba(255, 253, 248, 0.5) 52%,
-    rgba(255, 253, 248, 0.75) 68%,
-    rgba(255, 253, 248, 0.92) 84%,
-    var(--bg) 100%
-  );
-  pointer-events: none;
-}
-
-.desktop {
-  position: relative;
-  min-height: calc(100vh - var(--nav-h));
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  padding: 120px 20px 200px;
-  text-align: left;
+  align-items: flex-start;
 }
-
-.demo-head { text-align: center; margin-bottom: 40px; position: relative; z-index: 1; }
-.demo-head .section-title { font-size: clamp(32px, 4.6vw, 52px); margin-bottom: 12px; }
-.demo-head .section-lead { margin-bottom: 0; max-width: 560px; }
-
-.live-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0 0 18px;
-  padding: 5px 14px 5px 5px;
-  border-radius: 99px;
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 4px 14px rgba(80, 50, 30, 0.08);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--text-muted);
-}
-.live-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 9px 3px 7px;
-  border-radius: 99px;
-  background: var(--red);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-.live-tag i { width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: live-pulse 1.4s ease-in-out infinite; }
-@keyframes live-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.8); } }
-@media (prefers-reduced-motion: reduce) { .live-tag i { animation: none; } }
-@media (max-width: 560px) { .desktop { padding: 90px 20px 120px; } .demo-head { margin-bottom: 28px; } .demo::after { height: 200px; } }
-
-.demo-stage { position: relative; z-index: 1; display: flex; justify-content: center; }
-
-/* The iPhone: titanium band, black border, Dynamic Island, at 320 points wide. */
-.phone {
-  --w: 320px;
-  width: var(--w);
-  aspect-ratio: 320 / 660;
-  border-radius: 54px;
-  background: #0d0d0f;
-  padding: 11px;
-  box-shadow:
-    0 0 0 2px #3a3a3f,
-    0 0 0 3.5px #6c6c72,
-    0 40px 80px rgba(60, 40, 20, 0.35),
-    0 10px 24px rgba(0, 0, 0, 0.2);
+.device {
+  --dw: var(--pw);
   position: relative;
+  flex: none;
+  width: var(--dw);
+  margin: 0;
+  padding: calc(var(--dw) * 0.03);
+  border-radius: calc(var(--dw) * 0.175);
+  background: #0b0b0c;
+  /* The black glass, a hairline, then the titanium band, then the shadow
+     the phone casts on the page. */
+  box-shadow:
+    0 0 0 1px #3a3a3d,
+    0 0 0 calc(var(--dw) * 0.011) #c4c4c9,
+    0 0 0 calc(var(--dw) * 0.016) #8e8e93,
+    0 calc(var(--dw) * 0.18) calc(var(--dw) * 0.3) calc(var(--dw) * -0.06) rgba(60, 40, 20, 0.4),
+    0 calc(var(--dw) * 0.03) calc(var(--dw) * 0.07) rgba(0, 0, 0, 0.16);
 }
-.phone::before {
-  /* The Dynamic Island. */
+.device > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: calc(var(--dw) * 0.148);
+  background: #f2f2f7;
+}
+.device::before {
+  /* The Dynamic Island, over the screenshot's empty top centre. */
   content: "";
   position: absolute;
-  top: 22px;
+  top: calc(var(--dw) * 0.062);
   left: 50%;
-  width: 100px;
-  height: 30px;
-  border-radius: 20px;
+  width: calc(var(--dw) * 0.29);
+  height: calc(var(--dw) * 0.085);
+  border-radius: 99px;
   background: #000;
   transform: translateX(-50%);
-  z-index: 3;
 }
-.phone-screen {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  border-radius: 44px;
-  background: #f2f2f7;
-  overflow: hidden;
-  font-size: 13px;
-  color: #1d1d1f;
-}
-.status-bar {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 54px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 30px 0;
-  font-size: 14px;
-  font-weight: 600;
-  z-index: 4;
-  pointer-events: none;
-  transition: color 0.3s ease;
-}
-.status-icons { display: inline-flex; gap: 5px; align-items: center; }
-.status-icons i { display: block; width: 16px; height: 10px; border-radius: 2px; background: currentColor; opacity: 0.9; }
-.status-icons i:first-child { width: 14px; clip-path: polygon(0 100%, 25% 100%, 25% 55%, 50% 55%, 50% 30%, 75% 30%, 75% 10%, 100% 10%, 100% 100%); }
-.status-icons i:nth-child(2) { width: 14px; border-radius: 50% 50% 0 0; height: 9px; }
-.status-icons i:last-child { width: 22px; border-radius: 3px; box-shadow: inset 0 0 0 1.5px currentColor; background: #30d158; background-clip: content-box; padding: 2px; }
-.phone.camera-on .status-bar { color: #fff; }
-
-/* The camera: a table top, the cover lying on it, the framing corners. */
-.camera {
-  position: absolute;
-  inset: 0;
-  background: #121214;
-  display: flex;
-  flex-direction: column;
-  transition: opacity 0.35s ease;
-}
-.camera.hidden { opacity: 0; pointer-events: none; }
-.camera-table {
-  flex: 1;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background:
-    radial-gradient(70% 60% at 50% 40%, rgba(255, 255, 255, 0.07), transparent 70%),
-    linear-gradient(170deg, #3b3128, #241e19 60%, #17130f);
-  overflow: hidden;
-}
-.camera-cover {
-  width: 150px;
-  aspect-ratio: 2 / 3;
-  object-fit: cover;
-  border-radius: 4px;
-  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08);
-  transform: perspective(600px) rotateX(6deg) rotateZ(-3deg) scale(1.08);
-  transition: transform 1.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease;
-}
-.camera.framed .camera-cover { transform: perspective(600px) rotateX(0deg) rotateZ(0deg) scale(1); }
-.camera-frame { position: absolute; width: 190px; height: 270px; pointer-events: none; opacity: 0.7; transition: opacity 0.3s ease, transform 0.6s ease; transform: scale(1.12); }
-.camera.framed .camera-frame { opacity: 1; transform: scale(1); }
-.camera-frame i { position: absolute; width: 26px; height: 26px; border: 3px solid #fff; border-radius: 3px; }
-.camera-frame i:nth-child(1) { top: 0; left: 0; border-right: 0; border-bottom: 0; }
-.camera-frame i:nth-child(2) { top: 0; right: 0; border-left: 0; border-bottom: 0; }
-.camera-frame i:nth-child(3) { bottom: 0; left: 0; border-right: 0; border-top: 0; }
-.camera-frame i:nth-child(4) { bottom: 0; right: 0; border-left: 0; border-top: 0; }
-.camera.framed .camera-frame i { border-color: #ffd60a; }
-.camera-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
-.camera-flash.on { animation: flash 0.5s ease-out; }
-@keyframes flash { 0% { opacity: 0.95; } 100% { opacity: 0; } }
-.camera-bar {
-  height: 118px;
-  background: #0a0a0b;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  color: #fff;
-}
-.camera-hint { font-size: 12px; font-weight: 500; color: rgba(255, 255, 255, 0.7); }
-.shutter { width: 60px; height: 60px; border-radius: 50%; border: 3.5px solid #fff; display: grid; place-items: center; transition: transform 0.12s ease; }
-.shutter i { width: 48px; height: 48px; border-radius: 50%; background: #fff; display: block; transition: transform 0.12s ease; }
-.shutter.pressed i { transform: scale(0.84); }
-
-/* The record: the "Vérifier" screen, lines filling one after the other. */
-.record {
-  position: absolute;
-  inset: 0;
-  padding: 58px 12px 0;
-  background: #f2f2f7;
-  opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 0.2s ease, transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
-  pointer-events: none;
-  z-index: 1;
-}
-.record.visible { opacity: 1; transform: none; transition-duration: 0.4s, 0.45s; }
-.record-nav { display: flex; align-items: center; justify-content: space-between; height: 36px; margin-bottom: 6px; font-size: 14px; }
-.record-x { width: 30px; height: 30px; border-radius: 50%; background: #e3e3e8; display: grid; place-items: center; font-size: 12px; }
-.record-ok { width: 30px; height: 30px; border-radius: 50%; background: #0a84ff; color: #fff; display: grid; place-items: center; font-size: 14px; font-weight: 700; transform: scale(0.6); opacity: 0.35; transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease; }
-.record-ok.ready { transform: scale(1); opacity: 1; }
-.record-status { display: flex; background: #e3e3e8; border-radius: 9px; padding: 2px; margin-bottom: 12px; font-size: 11.5px; font-weight: 500; }
-.record-status span { flex: 1; text-align: center; padding: 5px 0; border-radius: 7px; color: #6e6e73; }
-.record-status span.on { background: #fff; color: #1d1d1f; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
-.record-card { background: #fff; border-radius: 14px; padding: 12px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04); }
-.record-head { display: flex; gap: 12px; align-items: center; padding-bottom: 10px; border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
-.record-cover { width: 44px; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); }
-.record-titles { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.record-titles b { font-size: 14px; font-weight: 600; min-height: 17px; }
-.record-titles span { font-size: 12px; color: #6e6e73; min-height: 15px; }
-.record-rows div { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(0, 0, 0, 0.06); font-size: 12.5px; }
-.record-rows div:last-child { border-bottom: 0; }
-.record-rows span { color: #1d1d1f; }
-.record-rows em { font-style: normal; color: #6e6e73; text-align: right; min-height: 15px; }
-.record-rows em.filled { color: #1d1d1f; }
-.record-rows em.live { color: #0a84ff; }
-.record-summary { margin: 12px 4px 0; font-size: 11.5px; line-height: 1.4; color: #6e6e73; min-height: 48px; }
-/* A line not yet filled shows a shimmering placeholder. */
-.record [data-field]:empty::before {
+.device::after {
+  /* The side button on the right; its shadows are the volume buttons on the left. */
   content: "";
-  display: inline-block;
-  width: var(--ph, 70px);
-  height: 0.75em;
-  border-radius: 4px;
-  background: linear-gradient(90deg, #ececf0, #f7f7fa, #ececf0);
-  background-size: 200% 100%;
-  animation: shimmer 1.2s linear infinite;
-  vertical-align: -0.05em;
-}
-.record-titles b:empty::before { --ph: 120px; }
-.record-summary:empty::before { --ph: 100%; height: 3.2em; }
-@keyframes shimmer { to { background-position: -200% 0; } }
-
-/* The library: the cover slides into the mosaic. */
-.shelf-screen {
   position: absolute;
-  inset: 0;
-  padding: 58px 12px 0;
-  background: #f2f2f7;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.4s ease;
-  z-index: 2;
+  top: 27%;
+  right: calc(var(--dw) * -0.024);
+  width: calc(var(--dw) * 0.014);
+  height: calc(var(--dw) * 0.3);
+  border-radius: 0 3px 3px 0;
+  background: #a6a6ab;
+  box-shadow:
+    calc(var(--dw) * -1.034) calc(var(--dw) * -0.02) 0 #a6a6ab,
+    calc(var(--dw) * -1.034) calc(var(--dw) * 0.34) 0 #a6a6ab;
 }
-.shelf-screen.visible { opacity: 1; }
-.shelf-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin: 6px 4px 12px; }
-.shelf-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.shelf-grid img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 4px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15); background: #e3e3e8; }
-.shelf-grid img.arriving { animation: arrive 0.6s cubic-bezier(0.34, 1.4, 0.64, 1); }
-@keyframes arrive { 0% { transform: scale(1.6) translateY(-30px); opacity: 0; } 100% { transform: none; opacity: 1; } }
-
-/* The AI at work: a warm orb breathing behind the screen while the cover is read. */
-.ai-orb {
-  position: absolute;
-  left: 50%;
-  top: 46%;
-  width: 240px;
-  height: 240px;
-  border-radius: 50%;
-  transform: translate(-50%, -50%) scale(0.6);
-  background: radial-gradient(circle, rgba(232, 135, 58, 0.55), rgba(201, 59, 69, 0.35) 45%, transparent 70%);
-  filter: blur(18px);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 2;
-  transition: opacity 0.4s ease, transform 0.4s ease;
+.device-main { z-index: 2; }
+.device-side {
+  --dw: calc(var(--pw) * 0.86);
+  z-index: 1;
+  margin-top: calc(var(--pw) * 0.24);
+  transform: translateX(calc((1 - var(--fan)) * var(--pw) * 0.55)) scale(calc(0.9 + var(--fan) * 0.1));
+  transform-origin: 50% 100%;
 }
-.ai-orb.on { opacity: 1; animation: orb 1.6s ease-in-out infinite; }
-@keyframes orb { 0%, 100% { transform: translate(-50%, -50%) scale(0.9); } 50% { transform: translate(-50%, -50%) scale(1.15); } }
+.device-side:first-child { margin-right: calc(var(--pw) * -0.1); }
+.device-side:last-child {
+  margin-left: calc(var(--pw) * -0.1);
+  transform: translateX(calc((1 - var(--fan)) * var(--pw) * -0.55)) scale(calc(0.9 + var(--fan) * 0.1));
+}
+@media (max-width: 560px) {
+  .trio { --pw: min(56vw, 100cqh / 2.24); }
+  .device-side:first-child { margin-right: calc(var(--pw) * -0.3); }
+  .device-side:last-child { margin-left: calc(var(--pw) * -0.3); }
+}
 
-@media (max-width: 420px) { .phone { --w: 280px; } .camera-cover { width: 130px; } .camera-frame { width: 166px; height: 236px; } }
+/* ---------- Tour: one screen of the app per tile ---------- */
 
-/* Under the phone: the timeline. */
-.desk-bar {
-  width: 100%;
-  max-width: 1040px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+/* As Apple presents its own apps: grey tiles on the white page, a short bold
+   line, a few quiet words, and the screen itself on an iPhone that the tile
+   cuts off at its foot. */
+.tour-grid {
+  max-width: var(--max);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
-  margin-top: 44px;
-  position: relative;
-  z-index: 1;
+  text-align: left;
 }
-
-.timeline { margin: 0; padding: 0; list-style: none; display: flex; justify-content: center; gap: 0; }
-.timeline li {
+.tile {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  width: 168px;
-  font-size: 14px;
-  color: rgba(40, 30, 20, 0.45);
-  transition: color 0.25s ease;
+  padding: 48px 44px 0;
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  overflow: hidden;
 }
-.timeline li + li::before {
-  content: "";
-  position: absolute;
-  top: 5px;
-  right: calc(50% + 10px);
-  width: calc(100% - 20px);
-  height: 2px;
-  background: rgba(40, 30, 20, 0.12);
-  transition: background 0.3s ease;
+.tile-text { align-self: stretch; }
+.tile h3 {
+  font-family: var(--display);
+  font-size: clamp(24px, 2.6vw, 32px);
+  line-height: 1.125;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+  margin: 0 0 12px;
 }
-.tl-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.7);
-  border: 2px solid rgba(40, 30, 20, 0.18);
-  box-sizing: border-box;
-  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+.tile p { margin: 0; max-width: 440px; font-size: 17px; line-height: 1.47; color: var(--text-muted); }
+/* The phone stands at the foot of the tile and sinks into it: every tile
+   shows the same phone, cut at the same height, whatever its text. A phone
+   is 2.1 times as tall as it is wide; 1.45 widths of it show. */
+.tour { --tile-phone: clamp(220px, 27vw, 300px); }
+.tile-device {
+  --dw: var(--tile-phone);
+  margin-top: auto;
+  margin-bottom: calc(var(--dw) * (1.45 - 2.102));
+  flex: none;
 }
-.tl-label { text-align: center; line-height: 1.3; }
-.timeline { --grad: linear-gradient(90deg, #a0303a, #c93b45 50%, #e8873a); }
-.timeline li:nth-child(1) { --pos: 0%; }
-.timeline li:nth-child(2) { --pos: 33.3%; }
-.timeline li:nth-child(3) { --pos: 66.6%; }
-.timeline li:nth-child(4) { --pos: 100%; }
-.timeline li.active .tl-dot, .timeline li.done .tl-dot {
-  background: var(--grad);
-  background-size: 400% 100%;
-  background-position: var(--pos) 0;
-  background-origin: border-box;
-  background-repeat: no-repeat;
-  border-color: transparent;
+.tile-text { margin-bottom: 44px; }
+.tile-wide {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 48px;
+  padding: 0 64px;
 }
-.timeline li.active .tl-dot { box-shadow: 0 0 0 5px rgba(201, 59, 69, 0.18); }
-.timeline li.done + li::before, .timeline li.active + li.done::before {
-  background: var(--grad);
-  background-size: 400% 100%;
-  background-position: calc(var(--pos) - 16.6%) 0;
-}
-.tl-icon { display: none; }
-.tl-caption { display: none; margin: -8px 0 0; min-height: 24px; text-align: center; font-size: 15px; font-weight: 500; color: var(--text); line-height: 1.3; }
-.timeline li.active { color: var(--text); }
-.timeline li.done { color: rgba(40, 30, 20, 0.6); }
-
+.tile-wide .tile-text { align-self: center; max-width: 420px; }
+.tile-wide h3 { font-size: clamp(28px, 3.4vw, 40px); }
+.tile-wide p { font-size: 19px; }
+.tile-wide .tile-text { margin-bottom: 0; }
+.tile-wide .tile-device { align-self: end; justify-self: center; margin-top: 64px; }
 @media (max-width: 760px) {
-  .timeline { width: 100%; max-width: 300px; }
-  .timeline li { width: 25%; }
-  .tl-label { display: none; }
-  .tl-dot { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.85); }
-  .tl-icon { display: flex; font-size: 15px; line-height: 1; color: rgba(40, 30, 20, 0.4); transition: color 0.25s ease; }
-  .timeline li.active .tl-icon, .timeline li.done .tl-icon { color: #fff; }
-  .timeline li + li::before { top: 16px; right: calc(50% + 19px); width: calc(100% - 38px); }
-  .tl-caption { display: block; }
+  .tour-grid { grid-template-columns: 1fr; gap: 16px; }
+  .tile, .tile-wide { display: flex; padding: 36px 28px 0; }
+  .tile-wide .tile-text { align-self: stretch; }
+  .tile-wide .tile-device { align-self: center; margin-top: auto; }
+  .tour { --tile-phone: min(270px, 68vw); }
+  .tile-text, .tile-wide .tile-text { margin-bottom: 36px; }
 }
 
 /* ---------- Features ---------- */
 
 .features { padding-top: 64px; }
 
+/* Two columns, so each card is wide enough for its piece of the app to read
+   as it does on the phone. */
 .bento {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-auto-rows: auto;
   gap: 16px;
   text-align: left;
 }
-@media (max-width: 900px) { .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .bento { grid-template-columns: 1fr; gap: 14px; } }
 
 .card {
@@ -661,11 +391,12 @@ section {
 @media (max-width: 900px) {
   .card.wide { display: flex; }
   .card.wide .card-visual { padding-top: 16px; }
-  .card.fill { grid-column: span 2; }
 }
+/* Across the page, its two parts side by side and whole. */
+.card.duo { grid-column: span 2; }
 @media (max-width: 560px) {
   .card { padding: 24px 22px 22px; min-height: 0; }
-  .card.wide, .card.fill { grid-column: span 1; }
+  .card.wide, .card.duo { grid-column: span 1; }
 }
 
 .card.dark { background: #1c1a17; }
@@ -726,153 +457,280 @@ section {
 }
 .shelf-count b { font-variant-numeric: tabular-nums; }
 
-/* The series: the ring fills to the volumes read, the strip shows what is
-   owned, what is missing and what is announced. */
-.series-demo { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.series-ring { position: relative; width: 52px; height: 52px; display: grid; place-items: center; }
-.series-ring svg { position: absolute; inset: 0; }
-.series-ring span { font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.series-ring b { font-size: 12px; }
-.series-strip { display: flex; gap: 5px; width: 100%; justify-content: center; }
-.series-strip img { width: 32px; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 3px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18); position: relative; }
-.series-strip img.missing { opacity: 0.3; filter: grayscale(1); outline: 1.5px dashed rgba(40, 30, 20, 0.35); outline-offset: -1.5px; }
-.series-strip img.next { outline: 2px solid var(--amber); outline-offset: 1px; }
-.series-legend { display: flex; gap: 12px; font-size: 11px; color: var(--text-muted); }
-.series-legend span { display: inline-flex; align-items: center; gap: 5px; }
-.series-legend span::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #22a35a; }
-.series-legend .missing::before { background: transparent; border: 1.5px dashed rgba(40, 30, 20, 0.4); box-sizing: border-box; }
-.series-legend .next::before { background: var(--amber); }
-.series-legend .next { color: var(--amber); font-weight: 600; }
+/* Parts of the app's own screens: its type, its colours, its cards, cut
+   from the captures by scripts/site-screens.sh. */
+/* Whole, across the card. Each is the app's white card alone; the page
+   rounds its corners at the app's radius (76 of 1200 pixels) and casts its
+   shadow on the card behind. */
+.card-visual:has(.card-parts) { justify-content: flex-start; align-items: flex-end; padding-top: 32px; padding-bottom: 6px; }
+.card-parts {
+  flex: none;
+  width: 100%;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.card-part {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 6.4cqi;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.13), 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+/* Cut under their section's title, the discoveries and the favorites sit
+   closer to their card's edge than the saga does: the page gives them back
+   the saga's margins, in the capture's pixels over its 1200. */
+.card-part[data-part="discoveries"], .card-part[data-part="hearts"] { box-sizing: border-box; background: #fff; }
+.card-part[data-part="discoveries"] { padding: 4.25cqi 3.5cqi 0; }
+.card-part[data-part="hearts"] { padding: 1.75cqi 1cqi 0; }
+/* The cover picker reads at the size of a phone's sheet, not the card's width. */
+.card-parts:has([data-part="cover"]) { max-width: 400px; margin: 0 auto; }
+.card-part[data-part="challenge"] { box-sizing: border-box; padding: 1.9cqi 1.9cqi 0; background: #fff; }
+@media (max-width: 560px) {
+  .card.duo .card-part[data-part="hearts"] { padding: 2.8cqi 1.1cqi 0; }
+  .card.duo .card-part[data-part="challenge"] { padding: 1.92cqi 1.92cqi 0; }
+}
+/* The author's row is shorter than the saga's beside it: drawn in a box of
+   the saga's proportions, white below, the two cards line up. */
+.card-part[data-part="authors"] { aspect-ratio: 1200 / 507; object-fit: contain; object-position: top; background: #fff; }
+.card.duo .card-parts { flex-direction: row; align-items: stretch; gap: 16px; }
+/* Side by side, the two stand as tall as the taller: the shorter keeps its
+   proportions at the top, white below. */
+.card.duo .card-part { object-fit: contain; object-position: top; background: #fff; }
+.card.duo .card-part { flex: 1 1 0; min-width: 0; border-radius: 3.3cqi; }
+@media (max-width: 560px) {
+  .card.duo .card-parts { flex-direction: column; gap: 12px; }
+  .card.duo .card-part { flex: none; border-radius: 6.4cqi; }
+}
+
+/* An iPhone's lock screen, standing at the foot of the card and sinking into
+   it: the clock, and the notification sliding down from the top. */
+.card-visual:has(.lock-device) { align-items: flex-end; padding-top: 28px; }
+/* Wide, the phone takes the larger share, for a notification as wide as iOS draws it. */
+.card.wide:has(.lock-device) { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); }
+.lock-device {
+  --dw: min(400px, 76vw);
+  margin-bottom: calc(var(--dw) * (0.84 - 2.172) - 26px);
+}
+.lock-device::before { z-index: 2; }
+.lock-screen {
+  position: relative;
+  aspect-ratio: 660 / 1434;
+  border-radius: calc(var(--dw) * 0.148);
+  overflow: hidden;
+  background:
+    radial-gradient(120% 60% at 20% 0%, rgba(255, 196, 120, 0.55), transparent 60%),
+    linear-gradient(165deg, #5a1f2c 0%, #a0303a 40%, #d9733f 75%, #f0b267 100%);
+}
+.lock-clock { position: absolute; top: calc(var(--dw) * 0.41); left: 0; right: 0; display: flex; flex-direction: column; align-items: center; color: rgba(255, 255, 255, 0.92); }
+.lock-clock span { font-size: calc(var(--dw) * 0.052); font-weight: 600; }
+.lock-clock b { font-size: calc(var(--dw) * 0.23); font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+/* The awards the app follows, each by its own logo, drawn in one ink: the
+   logo is a mask, light where the mark is, and the page fills it in gold. */
+.awards { list-style: none; margin: 0; padding: 0; width: 100%; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.award { width: calc((100% - 24px) / 3); display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px 10px 12px; border-radius: 18px; background: #fff; box-shadow: 0 10px 30px rgba(40, 30, 20, 0.08); }
+.award-logo { display: block; width: 100%; height: 64px; background: #8a6d1d; -webkit-mask: var(--logo) center / contain no-repeat; mask: var(--logo) center / contain no-repeat; mask-mode: luminance; }
+
+/* iOS's share sheet, captured on an iPhone with a cover shared from Photos,
+   and the extension's own answer sliding in over it. */
+/* The whole iPhone, standing at the foot of the card and sinking into it:
+   the sheet shows down to its row of apps. */
+.card-visual:has(.share-demo) { align-items: flex-end; padding-top: 28px; }
+.share-demo { position: relative; display: flex; justify-content: center; width: 100%; margin-bottom: calc(var(--share-dw) * (1.28 - 2.172) - 26px); --share-dw: min(300px, 72vw); }
+.share-device { --dw: var(--share-dw); }
+.share-toast { bottom: calc(var(--share-dw) * (2.172 - 1.18) + 40px); }
+.share-toast { position: absolute; left: 50%; bottom: 0; display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 99px; background: #1c1a17; color: #fff; font-size: 14px; font-weight: 600; white-space: nowrap; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2); transform: translate(-50%, 12px); opacity: 0; animation: share-toast 5s ease-in-out infinite; }
+.share-toast svg { color: #f0b267; }
+@keyframes share-toast { 0%, 32% { opacity: 0; transform: translate(-50%, 12px); } 40%, 88% { opacity: 1; transform: translate(-50%, 0); } 96%, 100% { opacity: 0; transform: translate(-50%, 12px); } }
+
+/* Editions in several languages, as the app's rows tag them: the language
+   after the title, the headphones badge on a recording's cover. */
+.lang-demo .watch-book:last-child { border-bottom: 0; }
+.lang-cover { position: relative; flex: none; }
+.lang-cover img { display: block; }
+.audio-badge { position: absolute; top: -1.6cqi; right: -1.6cqi; display: grid; place-items: center; width: 5.6cqi; height: 5.6cqi; border-radius: 50%; background: #ff9500; color: #fff; box-shadow: 0 0 0 0.6cqi #fff; }
+.audio-badge svg { width: 3.3cqi; height: 3.3cqi; }
+
+/* The library search: a few letters typed, the sagas then the books found,
+   the match marked as the app marks it. */
+.search-demo { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 10px; container-type: inline-size; }
+.search-field { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 99px; background: #fff; box-shadow: 0 6px 18px rgba(40, 30, 20, 0.08); color: rgba(60, 60, 67, 0.6); font-size: 16px; }
+.search-typed { color: #000; }
+.search-typed::after { content: ""; animation: search-type 6s steps(1) infinite; }
+.search-caret { width: 2px; height: 20px; margin-left: -6px; background: #007aff; animation: search-caret 1s steps(1) infinite; }
+@keyframes search-type { 0% { content: ""; } 8% { content: "H"; } 14% { content: "Hy"; } 20% { content: "Hyp"; } 26%, 100% { content: "Hypér"; } }
+@keyframes search-caret { 50% { opacity: 0; } }
+.search-results { padding: 4px 0 8px; border-radius: 22px; background: #fff; box-shadow: 0 10px 30px rgba(40, 30, 20, 0.1); opacity: 0; animation: search-results 6s ease infinite; }
+@keyframes search-results { 0%, 18% { opacity: 0; transform: translateY(6px); } 28%, 92% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+.search-head { display: block; padding: 10px 16px 4px; font-size: 13px; font-weight: 600; color: rgba(60, 60, 67, 0.6); }
+.search-row { display: flex; gap: 12px; align-items: flex-start; padding: 6px 16px; }
+.search-row img { flex: none; width: 34px; height: 51px; object-fit: cover; border-radius: 3px; outline: 0.5px solid rgba(60, 60, 67, 0.29); outline-offset: -0.5px; }
+.search-row div { display: flex; flex-direction: column; gap: 1px; margin-top: -2px; }
+.search-row .watch-title { display: block; font-size: 15px; }
+.search-row .watch-author { font-size: 13px; }
+.search-row mark { background: rgba(255, 204, 0, 0.35); color: inherit; border-radius: 3px; }
+
+/* Rating a book or a whole saga: the stars fill one by one, the heart beats. */
+.rate-demo { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 10px; }
+.rate-row { display: flex; align-items: flex-start; gap: 14px; padding: 12px 16px; border-radius: 22px; background: #fff; box-shadow: 0 10px 30px rgba(40, 30, 20, 0.08); }
+.rate-row img { flex: none; width: 48px; height: 72px; object-fit: cover; border-radius: 4px; outline: 0.5px solid rgba(60, 60, 67, 0.29); outline-offset: -0.5px; }
+.rate-row > div { flex: 1; display: flex; flex-direction: column; gap: 2px; margin-top: -2px; }
+.rate-row .watch-title { font-size: 17px; }
+.rate-row .watch-author { font-size: 14px; }
+.rate-stars { display: flex; gap: 3px; margin-top: 6px; }
+.rate-star svg { display: block; width: 20px; height: 20px; fill: rgba(120, 120, 128, 0.2); animation: rate-fill 5s ease infinite; animation-delay: calc(var(--i) * 0.18s); }
+.saga .rate-star svg { animation-delay: calc(2.5s + var(--i) * 0.18s); }
+.saga .rate-star:nth-child(5) svg { animation-name: rate-fill-four; }
+@keyframes rate-fill { 0%, 6% { fill: rgba(120, 120, 128, 0.2); transform: scale(0.8); } 12% { fill: #ffcc00; transform: scale(1.15); } 16%, 90% { fill: #ffcc00; transform: none; } 100% { fill: rgba(120, 120, 128, 0.2); } }
+@keyframes rate-fill-four { 0%, 100% { fill: rgba(120, 120, 128, 0.2); } }
+/* A saga as the Series tab draws it: its name, then the strip of its volumes. */
+.rate-strip { display: flex; gap: 6px; margin-top: 8px; }
+.rate-strip img { width: 34px; height: 51px; object-fit: cover; border-radius: 3px; outline: 0.5px solid rgba(60, 60, 67, 0.29); outline-offset: -0.5px; }
+.rate-row.saga { align-items: flex-start; }
+.rate-row .rate-heart { margin-top: 2px; }
+.drop-tag { display: inline-flex; align-self: flex-start; align-items: center; gap: 5px; margin-top: 6px; padding: 3px 9px; border-radius: 99px; background: rgba(142, 142, 147, 0.16); color: #636366; font-size: 12px; font-weight: 600; }
+
+/* A book's comment, as its page shows it: the book, then the speech bubble and the text. */
+.note-demo { width: 100%; max-width: 380px; display: flex; flex-direction: column; padding: 4px 16px; border-radius: 22px; background: #fff; box-shadow: 0 10px 30px rgba(40, 30, 20, 0.08); }
+.note-book { display: flex; align-items: flex-start; gap: 14px; padding: 10px 0; border-bottom: 0.5px solid rgba(60, 60, 67, 0.29); }
+.note-book img { flex: none; width: 48px; height: 72px; object-fit: cover; border-radius: 4px; outline: 0.5px solid rgba(60, 60, 67, 0.29); outline-offset: -0.5px; }
+.note-book > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; margin-top: -2px; }
+.note-book .watch-title { font-size: 17px; white-space: normal; }
+.note-book .watch-author { font-size: 14px; }
+.note-text { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; font-size: 15px; line-height: 1.35; color: #000; }
+.note-text svg { flex: none; width: 22px; height: 22px; margin-top: -1px; color: rgba(60, 60, 67, 0.6); }
+
+.note-text + .note-text { border-top: 0.5px solid rgba(60, 60, 67, 0.29); }
+.rec-by { align-items: center; }
+.rec-by span { flex: 1; }
+.rec-by b { font-weight: 400; color: #007aff; }
+
+/* A friend's recent activity, as the friends list draws it: the friend, then
+   one cover per move with what happened under it, in the app's grey. */
+.activity-demo { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 10px; }
+.activity-row { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px 12px; border-radius: 22px; background: #fff; box-shadow: 0 10px 30px rgba(40, 30, 20, 0.08); }
+.activity-friend { display: flex; align-items: center; gap: 10px; }
+.activity-row .watch-title { font-size: 17px; }
+.activity-avatar { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; color: #fff; font-size: 14px; font-style: normal; font-weight: 600; }
+.activity-strip { display: flex; gap: 12px; }
+.activity-tile { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: rgba(60, 60, 67, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.activity-tile img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 4px; outline: 0.5px solid rgba(60, 60, 67, 0.29); outline-offset: -0.5px; }
+/* The book's own switch, as its page draws it: on, the book stays off every friend's screen. */
+.activity-row.activity-hide { flex-direction: row; align-items: center; gap: 14px; padding: 10px 16px; }
+.activity-hide img { flex: none; width: 34px; height: 51px; object-fit: cover; border-radius: 3px; outline: 0.5px solid rgba(60, 60, 67, 0.29); outline-offset: -0.5px; }
+.activity-hide-label { flex: 1; display: flex; align-items: center; gap: 10px; font-size: 17px; color: #000; }
+.activity-hide-label svg { flex: none; width: 20px; height: 20px; color: rgba(60, 60, 67, 0.6); }
+.activity-switch { flex: none; position: relative; width: 51px; height: 31px; border-radius: 99px; background: #34c759; animation: hide-track 5s ease infinite; }
+.activity-switch::after { content: ""; position: absolute; top: 2px; right: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0, 0, 0, 0.16); animation: hide-knob 5s ease infinite; }
+/* Off, then on: the eye appears with the switch, and goes with it. */
+.activity-hide-label svg { animation: hide-eye 5s ease infinite; }
+@keyframes hide-track { 0%, 30% { background: rgba(120, 120, 128, 0.16); } 38%, 88% { background: #34c759; } 96%, 100% { background: rgba(120, 120, 128, 0.16); } }
+@keyframes hide-knob { 0%, 30% { transform: translateX(-20px); } 38%, 88% { transform: none; } 96%, 100% { transform: translateX(-20px); } }
+@keyframes hide-eye { 0%, 30% { opacity: 0; transform: scale(0.6); } 38%, 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; transform: scale(0.6); } }
+.rate-heart svg { display: block; width: 26px; height: 26px; fill: rgba(120, 120, 128, 0.2); animation: rate-heart 5s ease infinite; animation-delay: 1.2s; }
+.saga .rate-heart svg { animation-delay: 3.7s; }
+@keyframes rate-heart { 0%, 4% { fill: rgba(120, 120, 128, 0.2); transform: none; } 10% { fill: #ff3b30; transform: scale(1.3); } 16%, 85% { fill: #ff3b30; transform: none; } 100% { fill: rgba(120, 120, 128, 0.2); } }
+
+/* Watching a book for its translation or its recording: the two switches the
+   book's menu offers, the audio one turning itself on. */
+.watch-demo { width: 100%; max-width: 380px; padding: 6px 0; border-radius: 22px; container-type: inline-size; background: #fff; box-shadow: 0 10px 30px rgba(40, 30, 20, 0.1); }
+/* Drawn at 360 points and scaled with the card, as the captures are: every
+   length below is its iPhone size over 3.6. The book as the app's rows draw
+   it: the cover at 56 points, the title top-aligned beside it with its
+   edition's language tagged, the author below. */
+.watch-book { display: flex; gap: 2.6cqi; align-items: flex-start; padding: 1.4cqi 4.4cqi 3.3cqi; border-bottom: 1px solid var(--line); }
+.watch-book img { flex: none; width: 15.6cqi; height: 23.3cqi; object-fit: cover; border-radius: 1.1cqi; outline: 0.5px solid rgba(60, 60, 67, 0.29); outline-offset: -0.5px; }
+.watch-book > div { display: flex; flex-direction: column; gap: 0.3cqi; margin-top: -0.9cqi; }
+.watch-title { display: flex; align-items: baseline; gap: 1.7cqi; line-height: 1.2; font-size: 4.7cqi; font-weight: 500; letter-spacing: -0.02em; color: #000; white-space: nowrap; }
+.watch-author { line-height: 1.2; font-size: 4.2cqi; letter-spacing: -0.01em; color: rgba(60, 60, 67, 0.6); }
+.lang-tag { align-self: baseline; line-height: 1.25; font-style: normal; font-size: 3.6cqi; font-weight: 600; padding: 0.2cqi 1.3cqi; border-radius: 1.2cqi; background: rgba(120, 120, 128, 0.2); color: rgba(60, 60, 67, 0.6); }
+.watch-row { display: flex; align-items: center; gap: 3.3cqi; padding: 3cqi 4.4cqi; font-size: 4.7cqi; letter-spacing: -0.02em; white-space: nowrap; }
+.watch-row + .watch-row { border-top: 1px solid var(--line); }
+.watch-row em { flex: 1; font-style: normal; color: #000; }
+.watch-icon { display: grid; place-items: center; width: 6.7cqi; color: #007aff; }
+.watch-icon svg { width: 5cqi; height: 5cqi; }
+.watch-switch { position: relative; flex: none; width: 12.2cqi; height: 7.2cqi; border-radius: 99px; background: #e5e5ea; }
+.watch-switch::after { content: ""; position: absolute; top: 0.55cqi; left: 0.55cqi; width: 6.1cqi; height: 6.1cqi; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
+.watch-row.on .watch-switch { background: #34c759; }
+.watch-row.on .watch-switch::after { transform: translateX(5cqi); }
+.watch-row.cycle .watch-switch { animation: watch-bg 4s ease-in-out infinite; }
+.watch-row.cycle .watch-switch::after { animation: watch-knob 4s ease-in-out infinite; }
+@keyframes watch-bg { 0%, 35% { background: #e5e5ea; } 45%, 90% { background: #34c759; } 100% { background: #e5e5ea; } }
+@keyframes watch-knob { 0%, 35% { transform: none; } 45%, 90% { transform: translateX(5cqi); } 100% { transform: none; } }
 
 /* The notification, as iOS shows it, sliding down from the top. */
-.notif-demo { width: 100%; min-height: 120px; display: flex; align-items: flex-start; justify-content: center; }
+.notif-demo { position: absolute; top: calc(var(--dw) * 0.14); left: calc(var(--dw) * 0.03); right: calc(var(--dw) * 0.03); z-index: 1; }
+.notif-demo .notif img { width: 36px; height: 36px; }
 .notif {
   width: 100%;
-  max-width: 300px;
   display: flex;
   gap: 10px;
   align-items: flex-start;
   padding: 12px 14px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  backdrop-filter: blur(20px) saturate(1.6);
   color: #1d1d1f;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   transform: translateY(-140%);
   opacity: 0;
   transition: transform 0.55s cubic-bezier(0.2, 0.9, 0.2, 1.1), opacity 0.3s ease;
 }
 .notif.in { transform: none; opacity: 1; }
 .notif img { border-radius: 9px; flex: none; }
-.notif-text { min-width: 0; font-size: 13px; line-height: 1.3; }
+.notif-text { flex: 1; min-width: 0; font-size: 13px; line-height: 1.3; }
 .notif-top { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; }
 .notif-top b { font-weight: 600; }
-.notif-top span { color: #6e6e73; }
+.notif-top span { color: #6e6e73; white-space: nowrap; }
 .notif-body { color: #3a3a3c; }
+/* Title and body run on as one paragraph, the title in bold. */
+.notif-text [data-notif-title], .notif-text .notif-body { display: inline; }
+.notif-text [data-notif-title] { font-weight: 600; }
+.notif-text [data-notif-title]::after { content: " "; }
 
-/* Kindle and Audible: the covers pour from the two sources into the Shiori shelf. */
-.sync-demo { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.sync-source { display: flex; gap: 8px; }
-.sync-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px 6px 9px; border-radius: 99px; font-size: 12px; font-weight: 600; background: #fff; border: 1px solid var(--line); color: var(--text); }
-.sync-chip.audible { color: #f8991d; }
-.sync-chip.kindle { color: #2d7bd1; }
-.sync-flow { position: relative; width: 100%; height: 86px; overflow: hidden; }
-.sync-flow img {
+/* Kindle and Audible: covers travel from each app's icon to Shiori's, which
+   glows as they arrive. Drawn on a 320x170 grid that scales with the card. */
+.sync-demo { position: relative; width: 100%; max-width: 340px; aspect-ratio: 320 / 170; }
+.sync-beams { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.sync-beams path { fill: none; stroke-linecap: round; }
+.sync-track { stroke: rgba(0, 0, 0, 0.1); stroke-width: 2; }
+.sync-cover { filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25)); }
+.sync-app, .sync-hub img { position: absolute; display: block; border-radius: 22.5%; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.1); }
+.sync-app { left: 4.375%; width: 16.25%; }
+.sync-app.kindle { top: 8.235%; }
+.sync-app.audible { top: 61.176%; }
+.sync-hub { position: absolute; left: 66.25%; top: 27.647%; width: 23.75%; aspect-ratio: 1; }
+.sync-hub img { inset: 0; width: 100%; height: 100%; box-shadow: 0 14px 34px rgba(0, 0, 0, 0.16), 0 0 0 0.5px rgba(0, 0, 0, 0.1); }
+/* The halo: one ring per beam, leaving the icon as the beam reaches it. */
+.sync-halo { position: absolute; inset: 0; border-radius: 22.5%; background: rgba(201, 59, 69, 0.22); opacity: 0; animation: sync-halo 2.4s ease-out infinite; animation-delay: 1.8s; }
+.sync-halo + .sync-halo { animation-delay: 3s; }
+@keyframes sync-halo { 0% { transform: scale(1); opacity: 0.9; } 70%, 100% { transform: scale(1.55); opacity: 0; } }
+.sync-badge {
   position: absolute;
-  left: 50%;
-  top: 0;
-  width: 34px;
-  aspect-ratio: 2 / 3;
-  object-fit: cover;
-  border-radius: 3px;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
-  animation: pour 5.5s ease-in-out infinite;
-  animation-delay: var(--d);
-  opacity: 0;
+  right: -9px;
+  bottom: -9px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--red);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
 }
-.sync-flow img.square { aspect-ratio: 1; }
-@keyframes pour {
-  0% { transform: translate(calc(-50% + var(--x, 0px) * 1.6), -40px) scale(0.8); opacity: 0; }
-  12% { opacity: 1; }
-  70% { opacity: 1; }
-  100% { transform: translate(-50%, 70px) scale(0.95); opacity: 0; }
-}
-.sync-target { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px 8px 8px; border-radius: 14px; background: #fff; border: 1px solid var(--line); font-size: 13px; font-weight: 600; }
-.sync-target img { border-radius: 7px; }
+.sync-badge svg { animation: sync-turn 2.4s linear infinite; }
+@keyframes sync-turn { to { transform: rotate(360deg); } }
 
 /* One book: three sources funnel into one record card. */
-.one-demo { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 14px; }
-.one-sources { display: flex; gap: 10px; }
-.one-src { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 12px 8px; border-radius: 14px; background: #fff; border: 1px solid var(--line); font-size: 11px; color: var(--text-muted); animation: one-pulse 4.5s ease-in-out infinite; animation-delay: calc(var(--i) * 1.5s); }
-.one-src em { font-style: normal; font-weight: 500; }
-@keyframes one-pulse { 0%, 100% { transform: none; color: var(--text-muted); } 12% { transform: translateY(-4px); color: var(--red); } 24% { transform: none; color: var(--text-muted); } }
-.one-record { display: flex; gap: 12px; align-items: center; width: 100%; max-width: 280px; padding: 10px 12px; border-radius: 16px; background: #fff; border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(40, 30, 20, 0.08); }
-.one-record img { width: 40px; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); }
-.one-record div { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--text-muted); }
-.one-record b { font-size: 14px; color: var(--text); }
-.one-chips { display: flex; gap: 4px; margin-top: 4px; }
-.one-chips i { font-style: normal; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 99px; background: rgba(201, 59, 69, 0.1); color: var(--red); }
-
-/* The statistics: the home screen's bar chart, bars growing in turn. */
-.stats-demo { width: 100%; max-width: 300px; background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px 12px; }
-.stats-head { display: flex; flex-direction: column; gap: 2px; text-align: left; font-size: 12px; color: var(--text-muted); font-weight: 500; }
-.stats-head b { font-size: 24px; color: #22a35a; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.stats-head small { font-size: 12px; color: var(--text-dim); font-weight: 500; }
-.stats-bars { display: flex; align-items: flex-end; gap: 6px; height: 70px; margin-top: 12px; }
-.stats-bars i { flex: 1; height: calc(var(--v, 0) * 100%); min-height: 3px; border-radius: 3px 3px 0 0; background: #22a35a; transform: scaleY(0); transform-origin: bottom; transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
-.stats-bars i:nth-child(n+11) { background: rgba(0, 0, 0, 0.08); }
-.stats-demo.in .stats-bars i { transform: none; }
-.stats-months { display: flex; gap: 6px; margin-top: 6px; font-size: 9px; color: var(--text-dim); }
-.stats-months span { flex: 1; text-align: center; }
-
-/* Friends: a heart pops on a friend's favourite, then the challenge bars. */
-.friends-demo { width: 100%; max-width: 300px; display: flex; flex-direction: column; gap: 8px; }
-.friend-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px; background: #fff; border: 1px solid var(--line); font-size: 12px; color: var(--text-muted); position: relative; }
-.friend-row img { width: 30px; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 3px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18); }
-.friend-row div { display: flex; flex-wrap: wrap; gap: 0 4px; line-height: 1.3; min-width: 0; }
-.friend-row b { color: var(--text); }
-.friend-row em { font-style: normal; color: var(--text); width: 100%; }
-.avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--a); color: #fff; font-size: 12px; font-weight: 700; display: grid; place-items: center; flex: none; }
-.heart { position: absolute; right: 12px; font-style: normal; color: var(--red); font-size: 16px; transform: scale(0); transition: transform 0.4s cubic-bezier(0.34, 1.8, 0.64, 1); }
-.friend-row.loved .heart { transform: scale(1); }
-.challenge { padding: 10px 12px; border-radius: 14px; background: #fff; border: 1px solid var(--line); font-size: 11px; font-weight: 600; color: var(--text-muted); text-align: left; }
-.challenge-bars { display: flex; flex-direction: column; gap: 5px; margin-top: 7px; }
-.challenge-bars i { position: relative; display: block; height: 16px; border-radius: 99px; background: rgba(40, 30, 20, 0.06); font-style: normal; font-size: 10px; line-height: 16px; padding-left: 8px; color: var(--text); overflow: hidden; }
-.challenge-bars i::before { content: ""; position: absolute; inset: 0; width: calc(var(--v) * 100%); background: var(--a); opacity: 0.35; border-radius: 99px; transform: scaleX(0); transform-origin: left; transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s; }
-.friends-demo.in .challenge-bars i::before { transform: none; }
-
-/* Discover: a fan of covers, the prize ribbon on top. */
-.discover-demo { position: relative; width: 100%; height: 190px; display: flex; align-items: center; justify-content: center; }
-.fan { position: relative; width: 100%; height: 150px; }
-.fan img {
-  position: absolute;
-  left: 50%;
-  top: 10px;
-  width: 84px;
-  aspect-ratio: 2 / 3;
-  object-fit: cover;
-  border-radius: 5px;
-  box-shadow: 0 14px 30px rgba(40, 30, 20, 0.25);
-  transform: translateX(calc(-50% + var(--x))) rotate(var(--r));
-  transform-origin: 50% 120%;
-  transition: transform 0.5s cubic-bezier(0.34, 1.3, 0.64, 1);
-}
-.card:hover .fan img { transform: translateX(calc(-50% + var(--x) * 1.25)) rotate(calc(var(--r) * 1.3)); }
-.award-ribbon {
-  position: absolute;
-  bottom: 4px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 99px;
-  background: linear-gradient(135deg, var(--red-deep), var(--red));
-  color: #fff;
-  font-size: 12px;
-  font-weight: 600;
-  box-shadow: 0 8px 20px rgba(160, 48, 58, 0.35);
-}
+.one-demo { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+/* Every form a book takes in Shiori, each a photograph of it in hand. */
+.one-src { position: relative; aspect-ratio: 1; overflow: hidden; border-radius: 20px; background: #ddd; box-shadow: 0 10px 30px rgba(40, 30, 20, 0.1); animation: one-pulse 6s ease-in-out infinite; animation-delay: calc(var(--i) * 1s); }
+.one-src img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.one-src em { position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 10px 9px; background: linear-gradient(transparent, rgba(0, 0, 0, 0.6)); color: #fff; font-style: normal; font-size: 13px; font-weight: 600; text-align: center; white-space: nowrap; }
+@keyframes one-pulse { 0%, 100% { transform: none; } 8% { transform: translateY(-5px); } 16% { transform: none; } }
 
 /* ---------- Comparison ---------- */
 
@@ -918,23 +776,7 @@ section {
 .compare-table td:last-child { color: var(--text); font-weight: 600; }
 .compare-table td:last-child small { color: var(--text-muted); }
 
-.offline-callout {
-  max-width: 760px;
-  margin: 0 auto 18px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  text-align: left;
-  padding: 18px 22px;
-  border-radius: 18px;
-  background: var(--bg-card);
-  border: 1px solid var(--line);
-}
-.offline-callout-icon { flex: none; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, var(--red-deep), var(--red) 60%, var(--amber)); }
-.offline-callout p { margin: 0; font-size: 15px; line-height: 1.5; color: var(--text-muted); }
-.offline-callout b { color: var(--text); font-weight: 600; }
 .compare .prices-note { max-width: 620px; }
-@media (max-width: 560px) { .offline-callout { flex-direction: column; align-items: flex-start; } }
 
 /* ---------- FAQ ---------- */
 
@@ -977,7 +819,7 @@ section {
   border-radius: 22.5%;
   overflow: hidden;
   margin: 0 auto 28px;
-  background: #f4eddc;
+  background: var(--bg-card);
   box-shadow: 0 20px 50px rgba(40, 30, 20, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.06);
 }
 .download-icon img { position: relative; display: block; width: 100%; height: 100%; z-index: 1; }
@@ -1017,7 +859,17 @@ section {
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; transform: none; transition: none; }
   html { scroll-behavior: auto; }
-  .sync-flow img, .one-src, .record [data-field]:empty::before { animation: none; }
-  .sync-flow img { opacity: 1; transform: translate(-50%, 20px); }
-  .stats-bars i, .challenge-bars i::before { transform: none; }
+  .sync-badge svg, .sync-halo, .one-src, .watch-switch, .watch-switch::after, .search-caret { animation: none; }
+  .rate-star svg, .rate-heart svg { animation: none; fill: #ffcc00; }
+  .rate-heart svg { fill: #ff3b30; }
+  .activity-switch, .activity-switch::after, .activity-hide-label svg { animation: none; }
+  .search-typed::after { animation: none; content: "Hypér"; }
+  .search-results { animation: none; opacity: 1; }
+  .share-toast { animation: none; opacity: 1; transform: translate(-50%, 0); }
+  .sync-cover { display: none; }
 }
+
+/* The filter menu: the phone hangs from just under the text and runs off the
+   card's bottom edge, so a taller card shows more of it. */
+.card-visual:has(.filter-phone) { position: relative; align-items: flex-start; min-height: 280px; margin-bottom: -26px; padding: 0; overflow: hidden; }
+.filter-phone { position: absolute; top: 20px; left: 0; right: 0; margin: 0; }

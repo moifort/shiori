@@ -81,6 +81,11 @@ enum AuthorsAPI {
         after: String?,
         order: AuthorListOrder
     ) async throws -> CursorPage<FollowedAuthor> {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.authorsPage(limit: limit, after: after, order: order)
+        }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.MyAuthorsPageQuery(

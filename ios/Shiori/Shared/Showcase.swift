@@ -124,7 +124,7 @@ enum Showcase {
         Saga(
             id: "one-piece", name: "One Piece", authors: ["Eiichirō Oda"], format: .manga,
             publisher: local("Glénat", "Viz Media"), genre: .adventure, subgenres: ["Shōnen", "Pirates"], pages: 208,
-            published: 113, owned: 113, read: 22, readBetween: (900, 20), readingSince: 3,
+            published: 113, owned: 10, read: 8, readBetween: (500, 20), readingSince: 30,
             announced: (114, nil, 68), rating: 5, favorite: true, slug: "one-piece",
             firstPublishedIn: 1997,
             description: local(
@@ -142,16 +142,16 @@ enum Showcase {
             id: "frieren", name: local("Frieren", "Frieren: Beyond Journey’s End"),
             authors: ["Kanehito Yamada", "Tsukasa Abe"],
             format: .manga, publisher: local("Ki-oon", "Viz Media"), genre: .fantasy, subgenres: ["Shōnen"], pages: 192,
-            published: 15, owned: 14, read: 14, readBetween: (420, 16),
-            outDaysAgo: 4, rating: 5, favorite: true, slug: "frieren",
+            published: 15, owned: 14, read: 14, readBetween: (420, 45),
+            rating: 5, favorite: true, slug: "frieren",
             firstPublishedIn: 2020
         ),
         Saga(
             id: "blue-lock", name: "Blue Lock", authors: ["Muneyuki Kaneshiro", "Yusuke Nomura"],
             format: .manga, publisher: local("Pika", "Kodansha"), genre: .adventure,
             subgenres: [local("Sport", "Sports"), "Shōnen"],
-            pages: 192, published: 34, owned: 34, read: 10, readBetween: (610, 5),
-            announced: (35, nil, 12), rating: 4, slug: "blue-lock", firstPublishedIn: 2018
+            pages: 192, published: 34, owned: 8, read: 6, readBetween: (610, 25),
+            announced: (35, nil, 40), rating: 4, slug: "blue-lock", firstPublishedIn: 2018
         ),
         Saga(
             id: "dungeon-crawler-carl", name: "Dungeon Crawler Carl", authors: ["Matt Dinniman"],
@@ -168,8 +168,8 @@ enum Showcase {
                     5: "The Butcher’s Masquerade", 6: "The Eye of the Bedlam Bride",
                 ]
             ),
-            published: 5, owned: 5, read: 5, readBetween: (300, 38),
-            announced: (6, nil, 47), rating: 5, favorite: true, slug: "dcc", firstPublishedIn: 2020,
+            published: 5, owned: 5, read: 5, readBetween: (300, 1),
+            announced: (6, nil, 12), rating: 5, favorite: true, slug: "dcc", firstPublishedIn: 2020,
             description: local(
                 """
                 Quand la Terre est rasée pour devenir le décor d'un jeu télévisé intergalactique, \
@@ -226,7 +226,7 @@ enum Showcase {
                 [1: "Hypérion", 2: "La Chute d'Hypérion", 3: "Endymion", 4: "L'Éveil d'Endymion"],
                 [1: "Hyperion", 2: "The Fall of Hyperion", 3: "Endymion", 4: "The Rise of Endymion"]
             ),
-            published: 4, owned: 4, read: 2, readBetween: (130, 64), readingSince: 9,
+            published: 4, owned: 4, read: 2, readBetween: (130, 64), readingSince: 2,
             listeningProgress: 46, rating: 5, slug: "hyperion-audio", firstPublishedIn: 1989
         ),
     ]
@@ -469,7 +469,214 @@ enum Showcase {
             year: local(2019, 1969), genre: .scienceFiction, pages: local(704, 304),
             status: .toRead, days: 70
         ),
+    ] + classics + frenchNovels
+
+    /// The science-fiction classics, old and new: the shelf is a reader's first.
+    private static let classics: [Book] = [
+        single(
+            "1984", "1984", ["George Orwell"], publisher: local("Folio", "Signet Classics"), year: 1949,
+            genre: .scienceFiction, subgenres: [local("Dystopie", "Dystopia")], pages: local(432, 328),
+            status: .read, days: 8, rating: 5, favorite: true
+        ),
+        single(
+            "meilleur-des-mondes", local("Le Meilleur des mondes", "Brave New World"), ["Aldous Huxley"],
+            publisher: local("Pocket", "Harper Perennial"), year: 1932, genre: .scienceFiction,
+            subgenres: [local("Dystopie", "Dystopia")], pages: 288, status: .read, days: 120, rating: 4
+        ),
+        single(
+            "fahrenheit-451", "Fahrenheit 451", ["Ray Bradbury"],
+            publisher: local("Folio SF", "Simon & Schuster"), year: 1953, genre: .scienceFiction,
+            subgenres: [local("Dystopie", "Dystopia")], pages: local(224, 256), status: .read, days: 19,
+            rating: 4
+        ),
+        single(
+            "neuromancien", local("Neuromancien", "Neuromancer"), ["William Gibson"],
+            publisher: local("J'ai lu", "Ace"), year: 1984, genre: .scienceFiction, subgenres: ["Cyberpunk"],
+            pages: local(320, 271), status: .read, days: 340, rating: 4
+        ),
+        single(
+            "androides",
+            local("Blade Runner", "Do Androids Dream of Electric Sheep?"),
+            ["Philip K. Dick"], publisher: local("J'ai lu", "Del Rey"), year: 1968, genre: .scienceFiction,
+            subgenres: ["Cyberpunk"], pages: local(256, 240), status: .toRead, days: 25
+        ),
+        single(
+            "ender", local("La Stratégie Ender", "Ender’s Game"), ["Orson Scott Card"],
+            publisher: local("J'ai lu", "Tor"), year: 1985, genre: .scienceFiction,
+            subgenres: [local("SF militaire", "Military SF")], pages: local(416, 324), status: .read, days: 260,
+            rating: 5, favorite: true
+        ),
+        // Rendezvous with Rama has no French ebook to draw: Ravage stands in for it.
+        single(
+            "rama", local("Ravage", "Rendezvous with Rama"), local(["René Barjavel"], ["Arthur C. Clarke"]),
+            publisher: local("Folio", "Del Rey"), year: local(1943, 1973), genre: .scienceFiction,
+            subgenres: [local("Post-apocalyptique", "Hard SF")], pages: local(320, 256), status: .read,
+            days: 400, rating: 4
+        ),
+        single(
+            "solaris", "Solaris", ["Stanisław Lem"], publisher: local("Folio SF", "Harvest"), year: 1961,
+            genre: .scienceFiction, subgenres: [local("Premier contact", "First contact")],
+            pages: local(352, 204), status: .toRead, days: 75
+        ),
+        // Two French novels with no American ebook give their place, in English,
+        // to Flowers for Algernon and Childhood's End.
+        single(
+            "fourmis", local("Les Fourmis", "Flowers for Algernon"), local(["Bernard Werber"], ["Daniel Keyes"]),
+            publisher: local("Le Livre de Poche", "Mariner"), year: local(1991, 1966), genre: .scienceFiction,
+            pages: local(320, 311), status: .read, days: 600, rating: 4
+        ),
+        single(
+            "planete-des-singes", local("La Planète des singes", "Planet of the Apes"), ["Pierre Boulle"],
+            publisher: local("Pocket", "Vintage"), year: 1963, genre: .scienceFiction,
+            pages: local(192, 272), status: .read, days: 160, rating: 4
+        ),
+        single(
+            "nuit-des-temps", local("La Nuit des temps", "Childhood’s End"),
+            local(["René Barjavel"], ["Arthur C. Clarke"]), publisher: local("Pocket", "Del Rey"),
+            year: local(1968, 1953), genre: .scienceFiction, pages: local(416, 224), status: .read, days: 75,
+            rating: 5, favorite: true
+        ),
+        single(
+            "seul-sur-mars", local("Seul sur Mars", "The Martian"), ["Andy Weir"],
+            publisher: local("Bragelonne", "Broadway"), year: 2011, genre: .scienceFiction, subgenres: ["Hard SF"],
+            pages: local(416, 387), status: .read, days: 28, rating: 5
+        ),
+        single(
+            "silo", local("Silo", "Wool"), ["Hugh Howey"], publisher: local("Actes Sud", "Mariner"), year: 2011,
+            genre: .scienceFiction, subgenres: [local("Post-apocalyptique", "Post-apocalyptic")],
+            pages: local(576, 528), status: .reading, days: 6
+        ),
+        single(
+            "guide-galactique",
+            local("Le Guide du voyageur galactique", "The Hitchhiker’s Guide to the Galaxy"), ["Douglas Adams"],
+            publisher: local("Folio SF", "Del Rey"), year: 1979, genre: .scienceFiction,
+            subgenres: [local("Humour", "Humor")], pages: local(288, 208), status: .read, days: 220,
+            rating: 5, favorite: true
+        ),
+        single(
+            "chroniques-martiennes", local("Chroniques martiennes", "The Martian Chronicles"), ["Ray Bradbury"],
+            publisher: local("Folio SF", "Simon & Schuster"), year: 1950, genre: .scienceFiction,
+            pages: local(320, 256), status: .toRead, days: 160
+        ),
+        single(
+            "station-eleven", "Station Eleven", ["Emily St. John Mandel"],
+            publisher: local("Rivages", "Vintage"), year: 2014, genre: .scienceFiction,
+            subgenres: [local("Post-apocalyptique", "Post-apocalyptic")], pages: local(480, 352),
+            status: .read, days: 52, rating: 4
+        ),
+        single(
+            "murderbot", local("Défaillances systèmes", "All Systems Red"), ["Martha Wells"],
+            publisher: local("L'Atalante", "Tor.com"), year: 2017, genre: .scienceFiction,
+            subgenres: ["Space opera"], pages: 160, series: (murderbot, 1), status: .read, days: 14, rating: 5
+        ),
+        single(
+            "depossedes", local("Les Dépossédés", "The Dispossessed"), ["Ursula K. Le Guin"],
+            publisher: local("Le Livre de Poche", "Harper Voyager"), year: 1974, genre: .scienceFiction,
+            subgenres: [local("Utopie", "Utopia")], pages: local(448, 387), status: .toRead, days: 95
+        ),
+        single(
+            "servante-ecarlate", local("La Servante écarlate", "The Handmaid’s Tale"), ["Margaret Atwood"],
+            publisher: local("Robert Laffont", "Anchor"), year: 1985, genre: .scienceFiction,
+            subgenres: [local("Dystopie", "Dystopia")], pages: local(544, 311), status: .read, days: 300,
+            rating: 4
+        ),
     ]
+
+    /// The great French novels, in their American translations in English.
+    private static let frenchNovels: [Book] = [
+        single(
+            "etranger", local("L'Étranger", "The Stranger"), ["Albert Camus"],
+            publisher: local("Folio", "Vintage"), year: 1942, genre: .literaryFiction, pages: local(192, 123),
+            status: .read, days: 33, rating: 5, favorite: true
+        ),
+        single(
+            "peste", local("La Peste", "The Plague"), ["Albert Camus"], publisher: local("Folio", "Vintage"),
+            year: 1947, genre: .literaryFiction, pages: local(352, 308), status: .toRead, days: 10
+        ),
+        single(
+            "miserables", "Les Misérables", ["Victor Hugo"],
+            publisher: local("Folio classique", "Signet Classics"), year: 1862, genre: .literaryFiction,
+            subgenres: [local("Classique", "Classic")], pages: local(1664, 1463), status: .toRead, days: 40
+        ),
+        single(
+            "madame-bovary", "Madame Bovary", ["Gustave Flaubert"],
+            publisher: local("Folio classique", "Penguin Classics"), year: 1857, genre: .literaryFiction,
+            subgenres: [local("Classique", "Classic")], pages: local(528, 384), status: .read, days: 140,
+            rating: 4
+        ),
+        single(
+            "rouge-et-noir", local("Le Rouge et le Noir", "The Red and the Black"), ["Stendhal"],
+            publisher: local("Folio classique", "Penguin Classics"), year: 1830, genre: .literaryFiction,
+            subgenres: [local("Classique", "Classic")], pages: local(752, 576), status: .read, days: 480,
+            rating: 4
+        ),
+        single(
+            "germinal", "Germinal", ["Émile Zola"], publisher: local("Le Livre de Poche", "Penguin Classics"),
+            year: 1885, genre: .literaryFiction, subgenres: [local("Classique", "Classic")],
+            pages: local(608, 544), status: .read, days: 36, rating: 5, favorite: true
+        ),
+        single(
+            "petit-prince", local("Le Petit Prince", "The Little Prince"), ["Antoine de Saint-Exupéry"],
+            publisher: local("Folio", "Mariner"), year: 1943, genre: .literaryFiction,
+            subgenres: [local("Conte", "Fable")], pages: local(128, 96), status: .read, days: 180, rating: 5,
+            favorite: true
+        ),
+        single(
+            "bel-ami", "Bel-Ami", ["Guy de Maupassant"], publisher: local("Le Livre de Poche", "Penguin Classics"),
+            year: 1885, genre: .literaryFiction, subgenres: [local("Classique", "Classic")],
+            pages: local(448, 416), status: .read, days: 380, rating: 4
+        ),
+        single(
+            "notre-dame", local("Notre-Dame de Paris", "The Hunchback of Notre-Dame"), ["Victor Hugo"],
+            publisher: local("Le Livre de Poche", "Penguin Classics"), year: 1831, genre: .historicalFiction,
+            pages: local(960, 940), status: .read, days: 550, rating: 4
+        ),
+        single(
+            "trois-mousquetaires", local("Les Trois Mousquetaires", "The Three Musketeers"), ["Alexandre Dumas"],
+            publisher: local("Folio classique", "Penguin Classics"), year: 1844, genre: .adventure,
+            pages: local(896, 736), status: .read, days: 650, rating: 5
+        ),
+        single(
+            "candide", "Candide", ["Voltaire"], publisher: local("Folio classique", "Penguin Classics"),
+            year: 1759, genre: .literaryFiction, subgenres: [local("Conte philosophique", "Philosophical tale")],
+            pages: local(192, 144), status: .read, days: 90, rating: 4
+        ),
+        single(
+            "pere-goriot", local("Le Père Goriot", "Père Goriot"), ["Honoré de Balzac"],
+            publisher: local("Le Livre de Poche", "Oxford World’s Classics"), year: 1835,
+            genre: .literaryFiction, subgenres: [local("Classique", "Classic")], pages: local(416, 320),
+            status: .toRead, days: 210
+        ),
+        single(
+            "vingt-mille-lieues",
+            local("Vingt mille lieues sous les mers", "Twenty Thousand Leagues Under the Sea"), ["Jules Verne"],
+            publisher: local("Le Livre de Poche", "Penguin Classics"), year: 1870, genre: .adventure,
+            pages: local(608, 480), status: .read, days: 720, rating: 4
+        ),
+        single(
+            "promesse-de-l-aube", local("La Promesse de l'aube", "Promise at Dawn"), ["Romain Gary"],
+            publisher: local("Folio", "New Directions"), year: 1960, genre: .literaryFiction,
+            pages: local(400, 352), status: .read, days: 240, rating: 5
+        ),
+        single(
+            "anomalie", local("L'Anomalie", "The Anomaly"), ["Hervé Le Tellier"],
+            publisher: local("Gallimard", "Other Press"), year: 2020, genre: .literaryFiction,
+            pages: local(336, 400), status: .read, days: 65, rating: 4
+        ),
+        single(
+            "liaisons-dangereuses", local("Les Liaisons dangereuses", "Dangerous Liaisons"),
+            ["Choderlos de Laclos"], publisher: local("Folio classique", "Penguin Classics"), year: 1782,
+            genre: .literaryFiction, subgenres: [local("Classique", "Classic")], pages: local(544, 432),
+            status: .toRead, days: 130
+        ),
+        single(
+            "swann", local("Du côté de chez Swann", "Swann’s Way"), ["Marcel Proust"],
+            publisher: local("Folio classique", "Penguin Classics"), year: 1913, genre: .literaryFiction,
+            subgenres: [local("Classique", "Classic")], pages: local(560, 496), status: .toRead, days: 300
+        ),
+    ]
+
+    private static let murderbot = local("Journal d'un AssaSynth", "The Murderbot Diaries")
 
     private static let kingkiller = local("Chronique du tueur de roi", "The Kingkiller Chronicle")
     private static let threeBody = local("Le Problème à trois corps", "Remembrance of Earth’s Past")
@@ -481,6 +688,17 @@ enum Showcase {
 
     static func book(id: String) -> Book? {
         books.first { $0.id == id }
+    }
+
+    /// What the cover picker offers a book: the cover it is drawn with, then
+    /// the other edition's when the shelf holds one, so the picker has a choice.
+    static func coverChoices(id: String) -> [CoverChoice] {
+        guard let current = book(id: id)?.coverURL else { return [] }
+        let file = current.lastPathComponent
+        let others = [covers.appending(path: "en/\(file)"), covers.appending(path: file)]
+            .filter { $0.path != current.path && FileManager.default.fileExists(atPath: $0.path) }
+        return [CoverChoice(source: .amazon, url: current, isCurrent: true)]
+            + others.map { CoverChoice(source: .otherEdition, url: $0, isCurrent: false) }
     }
 
     // MARK: - Library
@@ -571,6 +789,38 @@ enum Showcase {
             .filter { (mode != .favorites || $0.opinion?.favorite == true) && (state == nil || $0.state == state) }
             .sorted { ($0.shelvedAt ?? .distantPast) > ($1.shelvedAt ?? .distantPast) }
         return CursorPage(all, limit: limit, after: after, cursor: \.id)
+    }
+
+    // MARK: - Authors
+
+    /// The Authors shelf, derived from the books as the server derives it: one
+    /// row per author, their books newest shelved first.
+    static func authorsPage(limit: Int, after: String?, order: AuthorListOrder) -> CursorPage<FollowedAuthor> {
+        let names = Array(Set(books.flatMap(\.authors)))
+        let authors = names.map { name -> FollowedAuthor in
+            let theirs = shelved.filter { $0.authors.contains(name) }
+            let ratings = theirs.compactMap(\.shownRating)
+            let surname = name.split(separator: " ").last.map(String.init) ?? name
+            return FollowedAuthor(
+                key: name.lowercased(),
+                name: name,
+                indexLetter: String(surname.prefix(1)).uppercased(),
+                // As Wikipedia shows them, where `screenshots/covers` holds one.
+                portraitURL: cover("portrait-" + name.lowercased().replacingOccurrences(of: " ", with: "-")),
+                bookCount: theirs.count,
+                seriesCount: Set(theirs.compactMap(\.series?.id)).count,
+                favoriteCount: theirs.filter(\.favorite).count,
+                averageRating: ratings.isEmpty ? nil : Double(ratings.reduce(0, +)) / Double(ratings.count),
+                shelvedAt: theirs.compactMap(\.shelvedAt).max(),
+                books: theirs
+            )
+        }
+        let sorted = switch order {
+        case .recent: authors.sorted { ($0.shelvedAt ?? .distantPast) > ($1.shelvedAt ?? .distantPast) }
+        case .name: authors.sorted { ($0.indexLetter, $0.name) < ($1.indexLetter, $1.name) }
+        case .loved: authors.sorted { ($0.favoriteCount, $0.bookCount) > ($1.favoriteCount, $1.bookCount) }
+        }
+        return CursorPage(sorted, limit: limit, after: after, cursor: \.id)
     }
 
     /// The saga page: its catalogue, what the reader thinks of it, their volumes.
@@ -857,9 +1107,9 @@ enum Showcase {
         let hugoLover = FriendLovers.Lover(userId: "hugo", firstName: hugo)
         let camilleLover = FriendLovers.Lover(userId: "camille", firstName: camille)
         return FriendPicks(books: [
-            LovedBook(book: friendBook(sorceleur, activity: 1),
+            LovedBook(book: friendBook(shared("nuit-des-temps"), activity: 1),
                       lovers: FriendLovers(friends: [leaLover, hugoLover], lovedByMany: true)),
-            LovedBook(book: friendBook(spyFamily, activity: 2),
+            LovedBook(book: friendBook(shared("seul-sur-mars"), activity: 2),
                       lovers: FriendLovers(friends: [hugoLover], lovedByMany: false)),
             LovedBook(book: friendBook(shared("furtifs"), activity: 3),
                       lovers: FriendLovers(friends: [leaLover, camilleLover], lovedByMany: true)),
@@ -948,5 +1198,177 @@ enum Showcase {
         isPremium: false, used: 3, limit: 5, remaining: 2, welcomeRemaining: 38,
         totalRemaining: 40, renewsOn: calendar.date(byAdding: .day, value: 29, to: .now)
     )
+
+    // MARK: - The month's discoveries
+
+    /// A book Claude chose this month, as the captures show it: on no shelf
+    /// yet, drawn from a book the reader loved, with what its page tells.
+    private struct Pick {
+        let slug: String
+        let title: String
+        let original: String
+        let authors: [String]
+        let short: String
+        let reason: String
+        let reference: SuggestionReference
+        let publisher: String
+        let year: Int
+        let pages: Int
+        let subgenre: String
+        let synopsis: String
+    }
+
+    private static func reference(
+        _ bookId: String, _ title: String, cover slug: String, rating: Int, favorite: Bool = false,
+        series: String? = nil
+    ) -> SuggestionReference {
+        SuggestionReference(
+            bookId: bookId, seriesId: series, title: title, favorite: favorite, rating: rating,
+            viaSeries: series != nil, coverURL: cover(slug)
+        )
+    }
+
+    private static let discoveryPicks: [Pick] = [
+        Pick(
+            slug: "toile-du-temps", title: local("Dans la toile du temps", "Children of Time"),
+            original: "Children of Time", authors: ["Adrian Tchaikovsky"],
+            short: local("comme Projet Dernière Chance", "like Project Hail Mary"),
+            reason: local(
+                "Un premier contact vertigineux, raconté du côté des araignées : l'émerveillement scientifique de Projet Dernière Chance, à l'échelle de millénaires.",
+                "A dizzying first contact, told from the spiders' side: the scientific wonder of Project Hail Mary, across millennia."
+            ),
+            reference: reference(
+                "projet-derniere-chance", local("Projet Dernière Chance", "Project Hail Mary"),
+                cover: "projet-derniere-chance", rating: 5, favorite: true
+            ),
+            publisher: local("Denoël", "Orbit"), year: 2015, pages: local(576, 600),
+            subgenre: local("Premier contact", "First contact"),
+            synopsis: local(
+                """
+                Les derniers humains fuient une Terre morte et visent une planète terraformée \
+                il y a des siècles. Ils ignorent qu'une autre espèce y a pris son essor, \
+                génération après génération, et qu'elle les attend.
+                """,
+                """
+                The last humans flee a dead Earth for a planet terraformed centuries ago. They \
+                do not know that another species has risen there, generation after generation, \
+                and that it is waiting for them.
+                """
+            )
+        ),
+        Pick(
+            slug: "leviathan", title: local("L'Éveil du Léviathan", "Leviathan Wakes"),
+            original: "Leviathan Wakes", authors: ["James S. A. Corey"],
+            short: local("comme Les Cantos d'Hypérion", "like the Hyperion Cantos"),
+            reason: local(
+                "Un space opera ample et politique, porté par un équipage attachant, pour qui a aimé le souffle des Cantos d'Hypérion.",
+                "A sweeping, political space opera carried by a crew you grow fond of, for a reader who loved the scope of the Hyperion Cantos."
+            ),
+            reference: reference(
+                "cantos-hyperion-1", local("Les Cantos d'Hypérion", "Hyperion Cantos"),
+                cover: "hyperion-audio-01", rating: 5, series: "cantos-hyperion"
+            ),
+            publisher: local("Actes Sud", "Orbit"), year: 2011, pages: local(672, 592),
+            subgenre: "Space opera",
+            synopsis: local(
+                """
+                Dans un système solaire colonisé, l'équipage d'un remorqueur de glace découvre \
+                un vaisseau abandonné, et un secret qui pourrait déclencher la guerre entre la \
+                Terre, Mars et la Ceinture.
+                """,
+                """
+                In a colonised solar system, the crew of an ice hauler finds a derelict ship, \
+                and a secret that could start a war between Earth, Mars and the Belt.
+                """
+            )
+        ),
+        Pick(
+            slug: "ubik", title: "Ubik", original: "Ubik", authors: ["Philip K. Dick"],
+            short: local("comme Neuromancien", "like Neuromancer"),
+            reason: local(
+                "Une réalité qui se dérobe page après page : le vertige paranoïaque que vous avez aimé dans Neuromancien.",
+                "A reality that slips away page after page: the paranoid vertigo you liked in Neuromancer."
+            ),
+            reference: reference(
+                "neuromancien", local("Neuromancien", "Neuromancer"), cover: "neuromancien", rating: 4
+            ),
+            publisher: local("J'ai lu", "Mariner"), year: 1969, pages: local(288, 288),
+            subgenre: local("Réalité truquée", "Simulated reality"),
+            synopsis: local(
+                """
+                Après un attentat sur la Lune, Joe Chip voit le monde se défaire autour de lui : \
+                les pièces vieillissent, le temps recule, et des messages lui parviennent d'un \
+                patron qu'il croyait mort.
+                """,
+                """
+                After a bombing on the Moon, Joe Chip watches the world come undone around him: \
+                coins age, time runs backwards, and messages reach him from a boss he thought \
+                was dead.
+                """
+            )
+        ),
+        Pick(
+            slug: "main-gauche-nuit",
+            title: local("La Main gauche de la nuit", "The Left Hand of Darkness"),
+            original: "The Left Hand of Darkness", authors: ["Ursula K. Le Guin"],
+            short: local("comme Fondation", "like Foundation"),
+            reason: local(
+                "Une planète gelée, un envoyé seul et toute une société à comprendre : la science-fiction des idées, dans la lignée de Fondation.",
+                "A frozen world, a lone envoy and a whole society to understand: science fiction of ideas, in the line of Foundation."
+            ),
+            reference: reference("fondation", local("Fondation", "Foundation"), cover: "fondation", rating: 4),
+            publisher: local("Le Livre de Poche", "Ace"), year: 1969, pages: local(352, 304),
+            subgenre: local("Anthropologique", "Anthropological"),
+            synopsis: local(
+                """
+                Envoyé seul sur Nivôse, un monde de glace dont les habitants n'ont pas de sexe \
+                fixe, Genly Aï doit convaincre ses rois de rejoindre une alliance de planètes.
+                """,
+                """
+                Sent alone to Winter, an ice world whose people have no fixed sex, Genly Ai \
+                must persuade its rulers to join an alliance of worlds.
+                """
+            )
+        ),
+    ]
+
+    /// This month's selection, all four still to be seen.
+    static var monthlyDiscoveries: MonthlyDiscoveries {
+        MonthlyDiscoveries(
+            month: MonthlyDiscoveries.month(of: .now),
+            suggestions: discoveryPicks.map { pick in
+                Suggestion(
+                    id: pick.slug, format: .book, title: pick.title, originalTitle: pick.original,
+                    originalLanguage: .en, authors: pick.authors, reason: pick.reason, short: pick.short,
+                    references: [pick.reference], state: .available, watched: false, date: nil,
+                    coverURL: cover(pick.slug), storeURL: nil, awaitableFormats: [.audiobook],
+                    awaitedEditionId: nil
+                )
+            }
+        )
+    }
+
+    /// What a suggestion's page tells once described.
+    static func description(of seed: ReleaseSeed) -> ReleaseDescription {
+        let pick = discoveryPicks.first { $0.title == seed.title }
+        return ReleaseDescription(
+            book: ScannedBook(
+                recognized: true,
+                title: seed.title,
+                authors: seed.authors,
+                format: .book,
+                publisher: pick?.publisher,
+                firstPublishedIn: pick?.year,
+                synopsis: pick?.synopsis,
+                genre: .scienceFiction,
+                subgenres: pick.map { [$0.subgenre] } ?? [],
+                pageCount: pick?.pages,
+                language: language,
+                coverURL: seed.coverURL
+            ),
+            narrators: [],
+            durationMinutes: nil
+        )
+    }
 }
 #endif
