@@ -299,7 +299,7 @@
 
       <article class="card wide">
         <div class="card-visual">
-          <div class="card-parts"><img class="card-part" data-part="cover" alt="Le choix de la couverture : l'actuelle, une autre édition cochée, et l'adresse d'une image à coller" data-i18n-alt="part.cover" loading="lazy"></div>
+          <figure class="device card-device"><img data-shot="12-cover" width="660" height="1434" loading="lazy" alt="Le choix de la couverture : l'actuelle, une autre édition cochée, et l'adresse d'une image à coller" data-i18n-alt="cover.alt"></figure>
         </div>
         <h3 data-i18n="cover.title">La couverture de votre choix</h3>
         <p data-i18n="cover.text">Shiori rassemble les couvertures trouvées pour un livre&nbsp;: Kindle, Amazon, Open Library, d'autres éditions. Choisissez celle qui vous plaît, ou collez l'adresse d'une image.</p>
@@ -463,6 +463,10 @@
     for (const img of document.querySelectorAll("[data-part]")) {
       const lang = document.documentElement.classList.contains("i18n-en") ? "en" : "fr";
       img.src = `screens/${lang}-part-${img.dataset.part}.jpg?v=20261020l`;
+    }
+    for (const img of document.querySelectorAll(".features [data-shot]")) {
+      const lang = document.documentElement.classList.contains("i18n-en") ? "en" : "fr";
+      img.src = `screens/${lang}-${img.dataset.shot}.jpg?v=20261020l`;
     }
   </script>
 

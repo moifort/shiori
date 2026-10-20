@@ -63,7 +63,7 @@
     "shelf.text": "Photograph a full row: every spine is recognized, every book gets its record, and you tick the ones that come in. Thirty books at once, without pulling a single one off the shelf.",
     "part.series": "The Dungeon Crawler Carl series in the Series tab: five volumes read, the sixth on November 1",
     "part.stats": "Pages read: 15,515 pages in 2026, month by month",
-    "part.cover": "Choosing the cover: the current one, another edition ticked, and an image address to paste",
+    "cover.alt": "Choosing the cover: the current one, another edition ticked, and an image address to paste",
     "part.hearts": "Emma, Jack and Chloe's favorites",
     "part.challenge": "The 2026 reading challenge among friends",
     "part.discoveries": "October's discoveries, each with its reason",

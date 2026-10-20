@@ -12,7 +12,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-SCREENS="00-scan 01-library 02-home 02-stats 03-series 05-discover 06-shared 08-discover-more 10-discover-series 11-search"
+SCREENS="00-scan 01-library 02-home 02-stats 03-series 05-discover 06-shared 08-discover-more 10-discover-series 11-search 12-cover"
 
 # name, capture, then the part as y x height width, in the capture's pixels
 # (1320x2868), and the language when the two captures differ. Each part is
@@ -28,7 +28,6 @@ PARTS=(
   "challenge 06-shared 1606 83 572 1154 fr"
   "challenge 06-shared 1606 83 512 1154 en"
   "discoveries 05-discover 534 90 816 1140"
-  "cover 12-cover 430 0 845 1320"
 )
 
 work=$(mktemp -d)

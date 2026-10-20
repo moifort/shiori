@@ -485,8 +485,11 @@ section {
 .card-part[data-part="discoveries"], .card-part[data-part="hearts"] { box-sizing: border-box; background: #fff; }
 .card-part[data-part="discoveries"] { padding: 4.25cqi 3.5cqi 0; }
 .card-part[data-part="hearts"] { padding: 1.75cqi 1cqi 0; }
-/* The cover picker reads at the size of a phone's sheet, not the card's width. */
-.card-parts:has([data-part="cover"]) { max-width: 400px; margin: 0 auto; }
+/* The cover picker on the top of an iPhone standing at the foot of the card
+   and sinking into it, as the tour's tiles show theirs: a phone is 2.1 times
+   as tall as it is wide, and 1.05 widths of it show. */
+.card-visual:has(.card-device) { align-items: flex-end; padding-bottom: 0; }
+.card-device { --dw: 290px; margin-bottom: calc(var(--dw) * (1.05 - 2.102) - 26px); }
 .card-part[data-part="challenge"] { box-sizing: border-box; padding: 1.9cqi 1.9cqi 0; background: #fff; }
 @media (max-width: 560px) {
   .card.duo .card-part[data-part="hearts"] { padding: 2.8cqi 1.1cqi 0; }
