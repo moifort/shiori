@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title data-i18n="meta.title">Shiori — Photographiez un livre, votre bibliothèque se range toute seule</title>
-  <meta name="description" content="Une photo de la couverture et la fiche se remplit : titre, auteur, série, résumé. Vos sagas tome par tome, une alerte à chaque sortie, Kindle et Audible synchronisés, vos lectures partagées entre amis. Gratuit sur iPhone.">
+  <meta name="description" content="Scannez une couverture : tous les détails du livre sont récupérés, avec sa série et son auteur. Vous êtes automatiquement alerté à chaque nouvelle sortie. Kindle et Audible synchronisés toutes les nuits. Partagez le tout avec vos amis. Gratuit sur iPhone.">
   <!-- Share previews: crawlers run no JavaScript, so the English copy is the
        static one here and French is declared as the alternate. -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://moifort.github.io/shiori/">
   <meta property="og:site_name" content="Shiori">
   <meta property="og:title" content="Shiori — Snap a cover, your library sorts itself">
-  <meta property="og:description" content="One photo of a cover and the record fills itself in: title, author, series, summary. Your series volume by volume, an alert on release day, Kindle and Audible in sync, your reading shared with friends. Free on iPhone.">
+  <meta property="og:description" content="Scan a cover: every detail of the book is pulled in, with its series and author. You are alerted automatically at every new release. Kindle and Audible synced every night. Share it all with your friends. Free on iPhone.">
   <meta property="og:image" content="https://moifort.github.io/shiori/og.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -20,7 +20,7 @@
   <meta property="og:locale:alternate" content="fr_FR">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Shiori — Snap a cover, your library sorts itself">
-  <meta name="twitter:description" content="One photo of a cover and the record fills itself in. Series volume by volume, release alerts, Kindle and Audible in sync, reading shared with friends. Free on iPhone.">
+  <meta name="twitter:description" content="Scan a cover: every detail of the book, with its series and author. Alerts at every new release, Kindle and Audible synced every night, reading shared with friends. Free on iPhone.">
   <meta name="twitter:image" content="https://moifort.github.io/shiori/og.jpg">
   <meta name="theme-color" content="#ffffff">
   <link rel="icon" href="favicon.png" type="image/png">
@@ -61,8 +61,8 @@
 
     <!-- Hero -->
     <section class="hero">
-      <h1 class="hero-title" data-i18n="hero.title"><span class="gradient-text">Votre bibliothèque<br>dans votre poche.</span></h1>
-      <p class="hero-subtitle" data-i18n="hero.subtitle">Romans, mangas, BD ou livres audio&nbsp;: vos séries rangées, chaque sortie annoncée, vos lectures partagées entre amis.</p>
+      <h1 class="hero-title" data-i18n="hero.title"><span class="gradient-text">Votre bibliothèque<br>dans la poche.</span></h1>
+      <p class="hero-subtitle" data-i18n="hero.subtitle">Une photo suffit. Vos séries se rangent, chaque sortie est annoncée. Partagez le tout avec vos amis.</p>
       <div class="hero-actions">
         <a class="store-badge" href="https://apps.apple.com/app/id6811938144" data-store aria-label="Télécharger dans l'App Store" data-i18n-aria="aria.store">
           <svg class="apple-mark" viewBox="0 0 17 20" width="22" height="26" aria-hidden="true"><path fill="currentColor" d="M14.2 10.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.4 1.2 0 1.6-.8 3.1-.8 1.4 0 1.8.8 3.1.7 1.3 0 2.1-1.1 2.8-2.3.9-1.3 1.3-2.6 1.3-2.7-.1 0-2.7-1-2.7-3.7ZM11.9 3.8c.6-.8 1.1-1.9 1-3-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-1 2.9 1 .1 2.1-.5 2.7-1.3Z"/></svg>
@@ -94,76 +94,76 @@
        apps. The screens are the App Store captures (scripts/screenshots.sh). -->
   <section class="tour" id="tour">
     <h2 class="section-title" data-i18n="tour.title">Toute votre lecture.<br>Dans une seule app.</h2>
-    <p class="section-lead" data-i18n="tour.lead">Les fonctionnalités principales, écran par écran.</p>
+    <p class="section-lead" data-i18n="tour.lead">L'essentiel, écran par écran.</p>
 
     <div class="tour-grid">
       <article class="tile tile-wide">
         <div class="tile-text">
-          <h3 data-i18n="tour.scan.title">Une photo, et la fiche se remplit.</h3>
-          <p data-i18n="tour.scan.text">Pas de code-barres à chercher, pas d'ISBN à taper. Titre, auteur, série, genre, éditeur et nombre de pages sont lus sur la couverture, même celle d'une vieille édition. Une ligne fausse ? Touchez-la pour la corriger.</p>
+          <h3 data-i18n="tour.scan.title">Une photo, le reste suit.</h3>
+          <p data-i18n="tour.scan.text">Pas de code-barres à chercher. La couverture suffit, même sur une vieille édition&nbsp;: titre, auteur, série, genre, éditeur, nombre de pages. Une coquille&nbsp;? Modifiez-la&nbsp;!</p>
         </div>
         <figure class="device tile-device"><img data-shot="00-scan" width="660" height="1434" loading="lazy" alt="La fiche d'Hypérion, remplie à partir de la photo de sa couverture" data-i18n-alt="tour.scan.alt"></figure>
       </article>
       <article class="tile">
         <div class="tile-text">
-          <h3 data-i18n="tour.library.title">Toute la bibliothèque, d'un coup d'œil.</h3>
-          <p data-i18n="tour.library.text">Votre bibliothèque en mosaïque, classée par date. Retrouvez vos favoris d'un geste, filtrez et triez pour tomber sur le livre que vous cherchez.</p>
+          <h3 data-i18n="tour.library.title">Votre bibliothèque, d'un coup d'œil.</h3>
+          <p data-i18n="tour.library.text">Toute votre bibliothèque d'un coup d'œil en mosaïque, le détail dans la vue par date. Filtrez pour affiner.</p>
         </div>
         <figure class="device tile-device"><img data-shot="01-library" width="660" height="1434" loading="lazy" alt="La bibliothèque : un mur de couvertures, mois par mois" data-i18n-alt="tour.library.alt"></figure>
       </article>
       <article class="tile">
         <div class="tile-text">
-          <h3 data-i18n="tour.series.title">Vos séries et vos auteurs se rangent tout seuls.</h3>
-          <p data-i18n="tour.series.text">Chaque tome rejoint sa série dès qu'il entre, chaque livre son auteur. Une coche sur ceux que vous avez lus, la note que vous avez donnée, et où vous en êtes.</p>
+          <h3 data-i18n="tour.series.title">Chaque tome trouve sa série.</h3>
+          <p data-i18n="tour.series.text">Un tome est ajouté, il rejoint automatiquement sa série et son auteur. Lus, notés, en cours&nbsp;: tout se lit au premier coup d'œil.</p>
         </div>
         <figure class="device tile-device"><img data-shot="03-series" width="660" height="1434" loading="lazy" alt="Les séries : Dungeon Crawler Carl, Les Cantos d'Hypérion et leurs tomes" data-i18n-alt="tour.series.alt"></figure>
       </article>
       <article class="tile tile-wide">
         <div class="tile-text">
-          <h3 data-i18n="tour.search.title">Retrouvez n'importe quel livre.</h3>
-          <p data-i18n="tour.search.text">Un titre, un auteur, une série&nbsp;: la recherche trouve dès les premières lettres. Filtrez vos favoris, vos lectures en cours, à lire ou lues, et retrouvez d'un geste les livres vus récemment et vos dernières recherches.</p>
+          <h3 data-i18n="tour.search.title">Trois lettres suffisent.</h3>
+          <p data-i18n="tour.search.text">Titre, auteur ou série&nbsp;: la recherche répond dès les premières lettres. Affinez en filtrant par favoris, en cours, à lire ou lus.</p>
         </div>
         <figure class="device tile-device"><img data-shot="11-search" width="660" height="1434" loading="lazy" alt="La recherche : les filtres, les livres vus récemment et les dernières recherches" data-i18n-alt="tour.search.alt"></figure>
       </article>
       <article class="tile tile-wide">
         <div class="tile-text">
-          <h3 data-i18n="tour.discovery.title">Chaque mois, de nouvelles lectures sur mesure pour vous.</h3>
-          <p data-i18n="tour.discovery.text">Des livres que vous n'avez pas encore, choisis à partir de votre bibliothèque, de vos coups de cœur et de vos notes, chacun avec la raison de ce choix.</p>
+          <h3 data-i18n="tour.discovery.title">Chaque mois, des lectures choisies rien que pour vous.</h3>
+          <p data-i18n="tour.discovery.text">Des livres que vous n'avez pas encore lus vous attendent, choisis d'après vos lectures et vos coups de cœur.</p>
         </div>
         <figure class="device tile-device"><img data-shot="05-discover" width="660" height="1434" loading="lazy" alt="Les découvertes d'octobre : des livres choisis d'après Projet Dernière Chance et Les Cantos d'Hypérion" data-i18n-alt="tour.discovery.alt"></figure>
       </article>
       <article class="tile">
         <div class="tile-text">
-          <h3 data-i18n="tour.home.title">Vos statistiques de lecture.</h3>
-          <p data-i18n="tour.home.text">Livres lus, pages tournées, heures écoutées, lectures en cours&nbsp;: votre année en chiffres. Les dates se déduisent de vos gestes, vous ne tapez jamais rien.</p>
+          <h3 data-i18n="tour.home.title">Vos lectures en chiffres.</h3>
+          <p data-i18n="tour.home.text">Livres lus, pages tournées, heures écoutées, lectures en cours.</p>
         </div>
         <figure class="device tile-device"><img data-shot="02-home" width="660" height="1434" loading="lazy" alt="L'accueil : les livres lus, les pages de l'année et les lectures en cours" data-i18n-alt="tour.home.alt"></figure>
       </article>
       <article class="tile">
         <div class="tile-text">
-          <h3 data-i18n="tour.stats.title">Des statistiques approfondies.</h3>
-          <p data-i18n="tour.stats.text">Votre signature de lecteur, les genres que vous lisez vraiment et ceux qui restent à explorer, vos formats, vos notes moyennes et vos lectures les plus rapides.</p>
+          <h3 data-i18n="tour.stats.title">Et plus en détail.</h3>
+          <p data-i18n="tour.stats.text">Les genres que vous lisez vraiment et ceux qu'il vous reste à explorer, vos formats, vos notes moyennes, vos lectures les plus rapides.</p>
         </div>
         <figure class="device tile-device"><img data-shot="02-stats" width="660" height="1434" loading="lazy" alt="Les genres lus : la science-fiction en tête, et la signature du lecteur" data-i18n-alt="tour.stats.alt"></figure>
       </article>
       <article class="tile tile-wide">
         <div class="tile-text">
-          <h3 data-i18n="tour.saga.title">Le prochain tome, avant sa sortie.</h3>
-          <p data-i18n="tour.saga.text">Chacune de vos séries est suivie&nbsp;: le prochain tome annoncé avec sa date, et ceux déjà sortis qui vous manquent. Vous êtes prévenu le jour où il paraît.</p>
+          <h3 data-i18n="tour.saga.title">Soyez alerté dès la sortie du prochain tome.</h3>
+          <p data-i18n="tour.saga.text">Vos séries préférées sont suivies&nbsp;: vous êtes averti dès l'annonce d'un nouveau tome, et le jour de sa sortie, en livre ou en audio.</p>
         </div>
         <figure class="device tile-device"><img data-shot="10-discover-series" width="660" height="1434" loading="lazy" alt="Découvrir, côté séries : le prochain tome de chaque série, avec sa date" data-i18n-alt="tour.saga.alt"></figure>
       </article>
       <article class="tile">
         <div class="tile-text">
-          <h3 data-i18n="tour.discover.title">Découvrez de nouvelles lectures.</h3>
-          <p data-i18n="tour.discover.text">Les coups de cœur de vos amis, les sorties de vos séries préférées, les prix littéraires de vos genres et, chaque mois, une sélection sur mesure tirée de vos livres, séries et auteurs préférés.</p>
+          <h3 data-i18n="tour.discover.title">Votre prochaine lecture est là.</h3>
+          <p data-i18n="tour.discover.text">Coups de cœur de vos amis, sorties de vos séries favorites, lauréats des prix dans vos genres préférés, et chaque mois une sélection de livres rien que pour vous.</p>
         </div>
         <figure class="device tile-device"><img data-shot="08-discover-more" width="660" height="1434" loading="lazy" alt="Découvrir : les coups de cœur des amis et les nouveautés des séries" data-i18n-alt="tour.discover.alt"></figure>
       </article>
       <article class="tile">
         <div class="tile-text">
-          <h3 data-i18n="tour.shared.title">La lecture, entre amis.</h3>
-          <p data-i18n="tour.shared.text">Invitez vos amis&nbsp;: partagez vos coups de cœur et vos lectures du moment, et lancez-vous un défi pour l'année. Vos notes restent privées.</p>
+          <h3 data-i18n="tour.shared.title">Vos amis lisent quoi&nbsp;?</h3>
+          <p data-i18n="tour.shared.text">Invitez vos amis&nbsp;: coups de cœur et lectures du moment se partagent, un défi lecture rythme l'année.</p>
         </div>
         <figure class="device tile-device"><img data-shot="06-shared" width="660" height="1434" loading="lazy" alt="Partagé : vos dernières lectures et le défi lecture entre amis" data-i18n-alt="tour.shared.alt"></figure>
       </article>
@@ -203,16 +203,16 @@
             <div class="shelf-count" data-shelf-count><b>0</b> <span data-i18n="shelf.books">livres</span></div>
           </div>
         </div>
-        <h3 data-i18n="shelf.title">Toute l'étagère en une photo</h3>
-        <p data-i18n="shelf.text">Photographiez un rayon entier : chaque tranche est reconnue, chaque livre reçoit sa fiche, et vous cochez ceux qui entrent. Trente livres d'un coup, sans en sortir un seul de l'étagère.</p>
+        <h3 data-i18n="shelf.title">Une étagère entière en une photo</h3>
+        <p data-i18n="shelf.text">Photographiez un rayon&nbsp;: chaque tranche est reconnue, chaque livre reçoit sa fiche, vous cochez ceux qui entrent. Trente livres sans en sortir un seul.</p>
       </article>
 
       <article class="card">
         <div class="card-visual">
           <div class="card-parts"><img class="card-part" data-part="series" alt="La série Dungeon Crawler Carl dans l'onglet Séries : cinq tomes lus, le sixième au 1er novembre" data-i18n-alt="part.series" loading="lazy"></div>
         </div>
-        <h3 data-i18n="series.title">Vos sagas, tome par tome</h3>
-        <p data-i18n="series.text">Vos livres se rangent sous leur série. Ouvrez-en une : les tomes que vous avez, ceux qui vous manquent, et le prochain annoncé avec sa date.</p>
+        <h3 data-i18n="series.title">Vos séries, tome par tome</h3>
+        <p data-i18n="series.text">Chaque livre se range sous sa série. Suivez votre avancement tome par tome, et soyez prévenu des prochaines sorties.</p>
       </article>
 
       <article class="card">
@@ -220,7 +220,7 @@
           <div class="card-parts"><img class="card-part" data-part="authors" alt="Les auteurs de la bibliothèque, chacun avec ses livres" data-i18n-alt="part.authors" loading="lazy"></div>
         </div>
         <h3 data-i18n="authors.title">Vos auteurs, livre par livre</h3>
-        <p data-i18n="authors.text">Vos livres se rangent aussi sous leur auteur. Ouvrez-en un&nbsp;: ses sagas, les livres que vous avez, ceux qui vous manquent, et ce qu'il publie ensuite.</p>
+        <p data-i18n="authors.text">Ouvrez un auteur&nbsp;: ses séries, les livres que vous avez, ceux qui manquent, et sa prochaine parution.</p>
       </article>
 
       <article class="card dark wide">
@@ -241,8 +241,8 @@
             </div>
           </figure>
         </div>
-        <h3 data-i18n="notif.title">Prévenu des sorties et des découvertes</h3>
-        <p data-i18n="notif.text">Le jour où paraît le prochain tome d'une série que vous suivez, sa traduction ou sa version audio. Chaque dimanche, les tomes nouvellement annoncés. Et chaque mois, vos nouvelles découvertes. Chaque alerte se désactive à part.</p>
+        <h3 data-i18n="notif.title">Prévenu le jour de la sortie</h3>
+        <p data-i18n="notif.text">Le jour de sortie d'un tome, d'une traduction ou d'une version audio que vous attendez. Le dimanche, les tomes nouvellement annoncés. Chaque mois, vos découvertes. Chaque alerte se coupe à part.</p>
       </article>
 
       <article class="card">
@@ -278,8 +278,8 @@
             </div>
           </div>
         </div>
-        <h3 data-i18n="sync.title">Kindle et Audible, synchronisés</h3>
-        <p data-i18n="sync.text">Connectez vos comptes&nbsp;: votre bibliothèque existante arrive avec ses couvertures et ses sagas, puis reste à jour chaque nuit. Vous choisissez ce qui entre, et votre mot de passe ne nous est jamais transmis.</p>
+        <h3 data-i18n="sync.title">Kindle et Audible, importés et à jour</h3>
+        <p data-i18n="sync.text">Vos achats Kindle et Audible arrivent avec leurs couvertures et leurs séries, et restent à jour chaque nuit. Vous choisissez ce qui entre.</p>
       </article>
 
       <article class="card">
@@ -293,8 +293,8 @@
             <span class="one-src" style="--i:5"><img src="formats/comics.jpg" alt="" loading="lazy"><em data-i18n="one.comics">Comics</em></span>
           </div>
         </div>
-        <h3 data-i18n="one.title">Papier ou écran, un seul livre</h3>
-        <p data-i18n="one.text">Roman, manga, BD ou comics, sur papier, sur liseuse ou en audio&nbsp;: un livre est une seule fiche, avec un seul statut, une seule note et un seul avis.</p>
+        <h3 data-i18n="one.title">Un livre, une seule fiche</h3>
+        <p data-i18n="one.text">Un roman en poche et sa version Kindle, c'est une seule fiche&nbsp;: un statut, une note, un commentaire. La version audio et chaque autre langue ont la leur.</p>
       </article>
 
       <article class="card wide">
@@ -302,15 +302,15 @@
           <figure class="device card-device"><img data-shot="12-cover" width="660" height="1434" loading="lazy" alt="Le choix de la couverture : l'actuelle, une autre édition cochée, et l'adresse d'une image à coller" data-i18n-alt="cover.alt"></figure>
         </div>
         <h3 data-i18n="cover.title">La couverture de votre choix</h3>
-        <p data-i18n="cover.text">Shiori rassemble les couvertures trouvées pour un livre&nbsp;: Kindle, Amazon, Open Library, d'autres éditions. Choisissez celle qui vous plaît, ou collez l'adresse d'une image.</p>
+        <p data-i18n="cover.text">Kindle, Amazon, Open Library&nbsp;: sélectionnez votre couverture préférée, ou collez l'adresse de celle que vous voulez.</p>
       </article>
 
       <article class="card">
         <div class="card-visual">
           <div class="card-parts"><img class="card-part" data-part="stats" alt="Pages lues : 16 264 pages en 2026, mois par mois" data-i18n-alt="part.stats" loading="lazy"></div>
         </div>
-        <h3 data-i18n="stats.title">Vos lectures en chiffres</h3>
-        <p data-i18n="stats.text">Livres lus par an, pages lues, heures écoutées, genres préférés et votre signature de lecteur. Les dates se déduisent de vos gestes : vous ne tapez jamais rien.</p>
+        <h3 data-i18n="stats.title">Votre année de lecture</h3>
+        <p data-i18n="stats.text">Livres, pages, heures écoutées, genres préférés, signature de lecteur&nbsp;: tout se calcule tout seul.</p>
       </article>
 
       <article class="card">
@@ -318,7 +318,7 @@
           <div class="card-parts"><img class="card-part" data-part="discoveries" alt="Les découvertes d'octobre, chacune avec sa raison" data-i18n-alt="part.discoveries" loading="lazy"></div>
         </div>
         <h3 data-i18n="discover.title">Rien que pour vous</h3>
-        <p data-i18n="discover.text">Chaque mois, quelques livres choisis d'après ce que vous avez aimé, les lauréats des prix dans vos genres, et les coups de cœur de vos amis.</p>
+        <p data-i18n="discover.text">Recevez chaque mois une sélection de livres choisis rien que pour vous, d'après vos lectures et vos coups de cœur.</p>
       </article>
 
       <article class="card">
@@ -332,8 +332,8 @@
             <li class="award"><span class="award-logo" style="--logo: url(awards/goncourt.png)"></span></li>
           </ul>
         </div>
-        <h3 data-i18n="awards.title">Les grands prix, dans vos genres</h3>
-        <p data-i18n="awards.text">Goncourt, Hugo, Nebula, Locus, Arthur C. Clarke et World Fantasy&nbsp;: tous les lauréats depuis la création de chaque prix, ceux que vous avez lus, et ceux qu'il vous reste à découvrir.</p>
+        <h3 data-i18n="awards.title">Les grands prix, dans vos genres préférés</h3>
+        <p data-i18n="awards.text">Goncourt, Hugo, Nebula, Locus, Arthur C. Clarke, World Fantasy&nbsp;: les nouveaux lauréats de l'année, dès leur annonce.</p>
       </article>
 
       <article class="card">
@@ -344,8 +344,8 @@
             <div class="watch-row cycle"><span class="watch-icon"><i class="sf" style="--sf: url(symbols/headphones.png)"></i></span><em data-i18n="watch.audio">Guetter en audio</em><i class="watch-switch"></i></div>
           </div>
         </div>
-        <h3 data-i18n="watch.title">Guettez la VF ou l'audio</h3>
-        <p data-i18n="watch.text">Un livre pas encore traduit, ou pas encore sorti en audio&nbsp;? Guettez sa version française ou son livre audio, et soyez prévenu le jour de sa sortie.</p>
+        <h3 data-i18n="watch.title">La VF ou l'audio, dès leur sortie</h3>
+        <p data-i18n="watch.text">Pas encore traduit, pas encore en audio&nbsp;? Attendez la version française ou le livre audio&nbsp;: vous êtes prévenu le jour de sa sortie.</p>
       </article>
 
       <article class="card">
@@ -355,16 +355,16 @@
             <div class="share-toast"><i class="sf" style="--sf: url(symbols/books.vertical.fill.png); width: 18px; height: 18px"></i><span data-i18n="share.kept">Gardé pour Shiori</span></div>
           </div>
         </div>
-        <h3 data-i18n="share.title">Partagez, Shiori retrouve le livre</h3>
-        <p data-i18n="share.text">Une capture d'écran, une page Amazon ou un titre copié&nbsp;: depuis n'importe quelle app, touchez Partager puis Shiori. Le livre est retrouvé et vous attend dans l'app, prêt à vérifier avant d'entrer dans votre bibliothèque.</p>
+        <h3 data-i18n="share.title">Partagez, il rejoint votre bibliothèque</h3>
+        <p data-i18n="share.text">Une capture d'écran, une page Amazon, un titre copié&nbsp;: touchez «&nbsp;Partager&nbsp;» depuis n'importe quelle app. Le livre est automatiquement trouvé, prêt à être ajouté à votre bibliothèque.</p>
       </article>
 
       <article class="card">
         <div class="card-visual">
           <div class="watch-demo lang-demo" aria-hidden="true"><div class="watch-book"><span class="lang-cover"><img src="covers/nom-du-vent.jpg" alt=""></span><div><span class="watch-title">Le Nom du vent</span><span class="watch-author">Patrick Rothfuss</span></div></div><div class="watch-book"><span class="lang-cover"><img src="covers/en/nom-du-vent.jpg" alt=""><span class="audio-badge"><i class="sf" style="--sf: url(symbols/headphones.png)"></i></span></span><div><span class="watch-title">The Name of the Wind <i class="lang-tag">EN</i></span><span class="watch-author">Patrick Rothfuss</span></div></div><div class="watch-book"><span class="lang-cover"><img src="covers/en/frieren-01.jpg" alt=""></span><div><span class="watch-title">Frieren <i class="lang-tag">EN</i></span><span class="watch-author">Kanehito Yamada</span></div></div></div>
         </div>
-        <h3 data-i18n="lang.title">Dans toutes les langues</h3>
-        <p data-i18n="lang.text">Une VO sur l'étagère, un livre audio en anglais&nbsp;: chaque édition garde sa langue, et Shiori retrouve sa couverture, son résumé et sa série dans cette langue.</p>
+        <h3 data-i18n="lang.title">Chaque édition garde sa langue</h3>
+        <p data-i18n="lang.text">Une VO sur l'étagère, un livre audio en anglais&nbsp;: chaque édition garde sa langue, avec sa couverture, son résumé et sa série dans cette langue.</p>
       </article>
 
       <article class="card">
@@ -374,7 +374,7 @@
           </div>
         </div>
         <h3 data-i18n="filter.title">Filtrez, triez, retrouvez</h3>
-        <p data-i18n="filter.text">Livres, sagas et auteurs se filtrent sur En cours, À lire, Lu, Abandonné ou vos favoris. Les auteurs se trient par date, par ordre alphabétique ou par coups de cœur.</p>
+        <p data-i18n="filter.text">Un filtre par statut ou par favoris, un tri par date, par nom ou par coups de cœur.</p>
       </article>
 
       <article class="card">
@@ -390,8 +390,8 @@
             </div>
           </div>
         </div>
-        <h3 data-i18n="search.title">Toute votre bibliothèque, en un mot</h3>
-        <p data-i18n="search.text">Un titre, un auteur ou une série&nbsp;: tapez quelques lettres, les sagas puis les livres apparaissent, le mot trouvé surligné. Vos dernières recherches vous attendent avant même de taper.</p>
+        <h3 data-i18n="search.title">Tapez, c'est trouvé</h3>
+        <p data-i18n="search.text">Retrouvez en quelques secondes votre livre, série ou auteur.</p>
       </article>
 
       <article class="card">
@@ -402,7 +402,7 @@
           </div>
         </div>
         <h3 data-i18n="note.title">Un commentaire sur chaque livre</h3>
-        <p data-i18n="note.text">Ce que vous en avez pensé, une citation, à qui vous l'avez prêté&nbsp;: chaque livre garde votre commentaire. Il reste à vous, jamais montré à vos amis.</p>
+        <p data-i18n="note.text">Ce que vous en avez pensé, une citation, à qui vous l'avez prêté&nbsp;: gardez un souvenir de chaque lecture.</p>
       </article>
 
       <article class="card">
@@ -413,8 +413,8 @@
             <div class="note-text"><i class="sf" style="--sf: url(symbols/text.quote.png)"></i><span data-i18n="rec.sample">Lis-le sans rien savoir, surtout pas la quatrième de couverture.</span></div>
           </div>
         </div>
-        <h3 data-i18n="rec.title">Qui vous l'a conseillé</h3>
-        <p data-i18n="rec.text">Notez sur la fiche qui vous a conseillé le livre, et ce qu'on vous en a dit. Un livre repris dans la bibliothèque d'un ami porte son nom tout seul.</p>
+        <h3 data-i18n="rec.title">Conseillé par</h3>
+        <p data-i18n="rec.text">Gardez une trace de qui vous a conseillé le livre, et pourquoi.</p>
       </article>
 
       <article class="card">
@@ -422,15 +422,15 @@
           <div class="card-parts"><img class="card-part" data-part="hearts" alt="Les coups de cœur de Léa, Hugo et Camille" data-i18n-alt="part.hearts" loading="lazy"></div>
         </div>
         <h3 data-i18n="friends.title">Entre amis</h3>
-        <p data-i18n="friends.text">Invitez vos amis&nbsp;: chacun voit la bibliothèque de l'autre, ses coups de cœur et ses lectures du moment. Vos notes restent privées, et un livre masqué n'est jamais partagé.</p>
+        <p data-i18n="friends.text">Invitez vos amis&nbsp;: chacun voit la bibliothèque de l'autre, ses coups de cœur et ses lectures du moment.</p>
       </article>
 
       <article class="card">
         <div class="card-visual">
           <div class="card-parts"><img class="card-part" data-part="challenge" alt="Le défi lecture 2026 entre amis" data-i18n-alt="part.challenge" loading="lazy"></div>
         </div>
-        <h3 data-i18n="challenge.title">Un défi pour l'année</h3>
-        <p data-i18n="challenge.text">Lancez-vous un défi entre amis&nbsp;: chacun lit à son rythme, et le classement de l'année montre qui mène la course, livre après livre.</p>
+        <h3 data-i18n="challenge.title">Qui lira le plus cette année&nbsp;?</h3>
+        <p data-i18n="challenge.text">Lancez un défi à vos amis, et suivez jour après jour qui est en tête.</p>
       </article>
 
       <article class="card">
@@ -441,8 +441,8 @@
             <div class="rate-row dropped"><img src="covers/fourth-wing.jpg" alt=""><div><span class="watch-title">Fourth Wing</span><span class="watch-author">Rebecca Yarros</span><span class="drop-tag"><i class="sf drop-thumb" style="--sf: url(symbols/hand.thumbsdown.fill.png)"></i><span data-i18n="rate.dropped">Abandonné</span></span></div></div>
           </div>
         </div>
-        <h3 data-i18n="rate.title">Des étoiles, des cœurs, et le droit d'abandonner</h3>
-        <p data-i18n="rate.text">Notez de une à cinq étoiles un livre, ou une saga entière d'un coup. Un cœur pour vos favoris&nbsp;: ils se retrouvent d'un geste dans vos filtres, et vos amis découvrent vos coups de cœur. Un livre qui ne vous tient pas&nbsp;: marquez-le abandonné, il quitte vos lectures en cours. Vos notes restent privées.</p>
+        <h3 data-i18n="rate.title">Noter, aimer, abandonner</h3>
+        <p data-i18n="rate.text">Notez un livre, ou une série entière, de une à cinq étoiles. Un cœur marque vos favoris et les montre à vos amis. Et abandonnez une lecture sans culpabiliser.</p>
       </article>
 
       <article class="card">
@@ -453,8 +453,8 @@
             <div class="activity-row activity-hide"><span class="activity-hide-label"><i class="sf" style="--sf: url(symbols/eye.slash.png)"></i><span data-i18n="activity.hide">Ne pas partager</span></span><i class="activity-switch"></i></div>
           </div>
         </div>
-        <h3 data-i18n="activity.title">Suivez leurs lectures</h3>
-        <p data-i18n="activity.text">L'activité de chaque ami d'un coup d'œil&nbsp;: nouveaux favoris, lectures en cours, livres tout juste ajoutés ou abandonnés. Ouvrez la page d'un ami&nbsp;: toute sa bibliothèque est là. Et un livre que vous gardez pour vous&nbsp;: «&nbsp;Ne pas partager&nbsp;», vos amis ne le voient jamais.</p>
+        <h3 data-i18n="activity.title">Ce que lisent vos amis</h3>
+        <p data-i18n="activity.text">Favoris, lectures en cours, livres ajoutés ou abandonnés&nbsp;: l'activité de vos amis d'un coup d'œil, et toute leur bibliothèque à portée de main. Gardez votre jardin secret avec «&nbsp;Ne pas partager&nbsp;».</p>
       </article>
     </div>
   </section>
@@ -472,8 +472,8 @@
 
   <!-- Comparison -->
   <section class="compare" id="compare">
-    <h2 class="section-title" data-i18n="cmp.title">Shiori face aux autres</h2>
-    <p class="section-lead" data-i18n="cmp.lead">Les autres lisent un code-barres. Shiori lit la couverture, et sait de quelle série et de quel tome il s'agit.</p>
+    <h2 class="section-title" data-i18n="cmp.title">Comparatif</h2>
+    <p class="section-lead" data-i18n="cmp.lead">Un code-barres donne une édition. Une photo donne le tome et la série.</p>
     <div class="compare-scroll">
       <table class="compare-table">
         <thead><tr><th></th><th>Goodreads</th><th>StoryGraph</th><th>Bookly</th><th>Gleeph</th><th class="us"><span><img src="icon-256.png" width="22" height="22" alt="">Shiori</span></th></tr></thead>
@@ -488,7 +488,7 @@
         </tbody>
       </table>
     </div>
-    <p class="prices-note" data-i18n="cmp.note">D'après les fiches App Store françaises au 18&nbsp;octobre&nbsp;2026 : prix de l'offre payante de chaque app, toutes ayant aussi une offre gratuite. Goodreads lit la progression d'un Kindle, pas d'Audible.</p>
+    <p class="prices-note" data-i18n="cmp.note">Prix des offres payantes relevés sur l'App Store français le 18&nbsp;octobre&nbsp;2026&nbsp;; chaque app a aussi une offre gratuite. Goodreads lit la progression d'un Kindle, pas d'Audible.</p>
   </section>
 
   <!-- FAQ -->
@@ -496,32 +496,32 @@
     <h2 class="section-title" data-i18n="faq.title">Questions fréquentes</h2>
     <div class="faq-list">
       <details>
-        <summary data-i18n="faq.q1">Pourquoi photographier la couverture plutôt que le code-barres ?</summary>
-        <p data-i18n="faq.a1">Parce que le code-barres ne dit pas grand-chose : un numéro d'édition, et rien sur la série ni le tome. La couverture, elle, porte le titre, l'auteur, le numéro du tome et l'éditeur. Shiori la lit, retrouve l'édition et remplit la fiche, y compris pour une édition ancienne, un livre de bibliothèque ou un manga sans code au dos. Vous vérifiez, vous corrigez une ligne si besoin, et le livre entre.</p>
+        <summary data-i18n="faq.q1">Pourquoi la couverture plutôt que le code-barres ?</summary>
+        <p data-i18n="faq.a1">Le code-barres dit l'édition, pas la série ni le tome. La couverture dit tout : titre, auteur, tome, éditeur. Elle suffit, même ancienne ou sans code au dos. Vous vérifiez, et le livre entre.</p>
       </details>
       <details>
         <summary data-i18n="faq.q2">Combien ça coûte ?</summary>
-        <p data-i18n="faq.a2">Shiori est gratuite, avec cinquante scans offerts à l'inscription puis cinq chaque mois : de quoi tenir sa bibliothèque à jour. Premium, à 1,99&nbsp;€ par mois ou 17,99&nbsp;€ par an avec le premier mois offert, débloque les scans illimités, le scan d'une étagère entière et le catalogue complet de vos séries, tomes à paraître compris. Tout le reste, suivi, statistiques, Kindle, Audible, partage, est gratuit.</p>
+        <p data-i18n="faq.a2">Gratuit, avec 50 scans à l'inscription puis 5 par mois. Premium, 1,99&nbsp;€ par mois ou 17,99&nbsp;€ par an, premier mois offert, lève la limite, lit une étagère entière et complète vos séries avec les tomes à paraître. Tout le reste est gratuit.</p>
       </details>
       <details>
         <summary data-i18n="faq.q3">Comment marche la connexion Kindle et Audible ?</summary>
-        <p data-i18n="faq.a3">Vous vous connectez à Amazon dans sa propre page, comme dans l'app Kindle : votre mot de passe ne passe jamais par Shiori. Votre bibliothèque s'affiche, vous cochez ce qui entre, et chaque nuit Shiori va chercher les nouveaux achats et met à jour ce que vous avez lu ou écouté. Vous pouvez déconnecter à tout moment ; les identifiants sont chiffrés et supprimés avec votre compte.</p>
+        <p data-i18n="faq.a3">La connexion se fait sur la page d'Amazon, comme dans l'app Kindle ; votre mot de passe reste chez Amazon. Vous cochez ce qui entre, puis chaque nuit les nouveaux achats et votre progression arrivent tout seuls. Déconnexion à tout moment, identifiants chiffrés et supprimés avec le compte.</p>
       </details>
       <details>
-        <summary data-i18n="faq.q4">Comment Shiori sait qu'un tome sort ?</summary>
-        <p data-i18n="faq.a4">Pour chaque série que vous lisez, Shiori cherche sur le web, une fois par semaine, le prochain tome annoncé dans la langue où vous la lisez, et sa traduction dans la vôtre si vous la lisez dans une autre. Une date est gardée telle qu'elle est annoncée, un mois ou un jour, et seule une date au jour déclenche une alerte, le matin de la sortie.</p>
+        <summary data-i18n="faq.q4">Comment une sortie est-elle détectée ?</summary>
+        <p data-i18n="faq.a4">Une fois par semaine, le web est consulté pour chaque série que vous lisez : le prochain tome annoncé dans sa langue, et sa traduction si vous lisez dans une autre. La date est gardée telle qu'annoncée, au mois ou au jour ; seule une date au jour déclenche une alerte, le matin de la sortie.</p>
       </details>
       <details>
         <summary data-i18n="faq.q5">Que voient mes amis ?</summary>
-        <p data-i18n="faq.a5">Vos livres, vos favoris et vos lectures du moment, avec vos étoiles. Pas vos notes, qui restent privées. Un livre que vous masquez n'apparaît jamais chez personne. Vos amis ne voient pas non plus le catalogue de vos séries : seulement les livres.</p>
+        <p data-i18n="faq.a5">Vos livres, vos favoris, vos lectures du moment et vos étoiles. Pas vos commentaires, qui restent privés. Un livre masqué n'apparaît chez personne, et le catalogue de vos séries n'est pas partagé : seulement les livres.</p>
       </details>
       <details>
         <summary data-i18n="faq.q6">Où vont mes données ?</summary>
-        <p data-i18n="faq.a6">Vous vous connectez avec votre compte Apple, qui peut masquer votre adresse e-mail. Votre bibliothèque est stockée en Europe, à Francfort. La photo d'une couverture sert à la reconnaître et n'est pas conservée. Supprimer votre compte efface tout, Kindle et Audible compris. Le détail est dans la <a href="privacy.html">politique de confidentialité</a>.</p>
+        <p data-i18n="faq.a6">Connexion avec votre compte Apple, e-mail masquable. Bibliothèque stockée en Europe, à Francfort. La photo d'une couverture sert à la reconnaître puis disparaît. Supprimer le compte efface tout, Kindle et Audible compris. Le détail est dans la <a href="privacy.html">politique de confidentialité</a>.</p>
       </details>
       <details>
         <summary data-i18n="faq.q7">Sur quels appareils ?</summary>
-        <p data-i18n="faq.a7">iPhone, avec iOS 26. L'app parle français et anglais, selon la langue de votre téléphone, et reconnaît les couvertures dans toutes les langues.</p>
+        <p data-i18n="faq.a7">iPhone, iOS 26. En français ou en anglais selon la langue du téléphone ; les couvertures sont reconnues dans toutes les langues.</p>
       </details>
     </div>
   </section>
@@ -533,13 +533,13 @@
       <img src="icon-256.png" width="120" height="120" alt="">
     </div>
     <h2 class="section-title" data-i18n="dl.title">Gratuit, ou Premium sans limite</h2>
-    <p class="section-lead" data-i18n="dl.lead">Tout Shiori est gratuit. Premium lève la limite des scans et lit une étagère entière d'un coup.</p>
+    <p class="section-lead" data-i18n="dl.lead">Tout est gratuit. Premium lève la limite de scans et lit une étagère entière d'un coup.</p>
 
     <table class="plan-table">
       <thead>
         <tr>
           <td></td>
-          <th scope="col"><span data-i18n="plan.free.name">Gratuit</span><b>0&nbsp;€</b><small data-i18n="plan.free.lead">pour toujours</small></th>
+          <th scope="col"><span data-i18n="plan.free.name">Gratuit</span><b>0&nbsp;€</b><small data-i18n="plan.free.lead">Tout, sans limite de temps.</small></th>
           <th scope="col" class="premium"><span class="plan-tag" data-i18n="plan.premium.tag">Premier mois offert</span><span>Premium</span><b data-i18n="plan.premium.price">1,99&nbsp;€&nbsp;/&nbsp;mois</b><small data-i18n="plan.premium.lead">ou 17,99&nbsp;€ par an</small></th>
         </tr>
       </thead>
@@ -554,7 +554,7 @@
         <tr><th scope="row" data-i18n="plan.row.ads">Publicité</th><td><span data-i18n="plan.none">Aucune</span></td><td class="premium"><span data-i18n="plan.none">Aucune</span></td></tr>
       </tbody>
     </table>
-    <p class="prices-note" data-i18n="plan.note">*&nbsp;Usage raisonnable&nbsp;: jusqu'à 100 scans par mois, et 500 offerts le jour où vous passez Premium. L'abonnement se gère et se résilie dans les réglages de l'App Store.</p>
+    <p class="prices-note" data-i18n="plan.note">*&nbsp;Usage raisonnable&nbsp;: 100 scans par mois, et 500 offerts le jour du passage à Premium. Abonnement géré et résilié dans l'App Store.</p>
 
     <div class="hero-actions">
       <a class="store-badge" href="https://apps.apple.com/app/id6811938144" data-store aria-label="Télécharger dans l'App Store" data-i18n-aria="aria.store">
