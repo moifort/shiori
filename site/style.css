@@ -594,6 +594,10 @@ section {
 .rate-row.saga { align-items: flex-start; }
 .rate-row .rate-heart { margin-top: 2px; }
 .drop-tag { display: inline-flex; align-self: flex-start; align-items: center; gap: 5px; margin-top: 6px; padding: 3px 9px; border-radius: 99px; background: rgba(142, 142, 147, 0.16); color: #636366; font-size: 12px; font-weight: 600; }
+/* The thumb tips down once the book is dropped, after the stars and hearts
+   above it have filled, on the same five-second loop. */
+.drop-thumb { width: 14px; height: 14px; transform-origin: 60% 30%; animation: drop-thumb 5s ease infinite; animation-delay: 4.2s; }
+@keyframes drop-thumb { 0%, 4% { transform: none; } 9% { transform: rotate(-22deg) translateY(2px) scale(1.25); } 14% { transform: rotate(6deg); } 18%, 100% { transform: none; } }
 
 /* An SF Symbol, rendered from macOS into site/symbols and painted in the
    text's colour, so an icon is the one the app draws. */
@@ -866,7 +870,7 @@ section {
   .sync-badge svg, .sync-halo, .one-src, .watch-switch, .watch-switch::after, .search-caret { animation: none; }
   .rate-star svg, .rate-heart svg { animation: none; fill: #ffcc00; }
   .rate-heart svg { fill: #ff3b30; }
-  .activity-switch, .activity-switch::after { animation: none; }
+  .activity-switch, .activity-switch::after, .drop-thumb { animation: none; }
   .search-typed::after { animation: none; content: "Hypér"; }
   .search-results { animation: none; opacity: 1; }
   .share-toast { animation: none; opacity: 1; transform: translate(-50%, 0); }
