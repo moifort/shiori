@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { editionsIn, pagesIn } from '~/domain/scan/bnf'
-import { isbn13Of } from '~/domain/scan/business-rules'
+import { editionsIn, isbn13Of, pagesIn } from '~/domain/scan/bnf'
 
 const field = (tag: string, subfields: Record<string, string>) =>
   `<mxc:datafield tag="${tag}" ind1=" " ind2=" ">${Object.entries(subfields)

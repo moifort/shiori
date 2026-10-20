@@ -63,16 +63,6 @@ mock.module('~/domain/scan/bnf', () => ({
   },
 }))
 
-/** The editions Google Books lists, asked after the BnF; none by default. */
-let googleEditions: unknown[] = []
-const googleLookups: unknown[] = []
-mock.module('~/domain/scan/google-books', () => ({
-  googleBooksEditionsOf: async (book: unknown) => {
-    googleLookups.push(book)
-    return googleEditions
-  },
-}))
-
 mock.module('~/domain/scan/published-cover', () => ({
   shelfCoverOf: async () => undefined,
   publishedCoverOf: async (isbn13: string) => {
@@ -146,8 +136,6 @@ beforeEach(() => {
   coverLookups.length = 0
   bnfEditions = []
   bnfLookups.length = 0
-  googleEditions = []
-  googleLookups.length = 0
 })
 
 describe('scanning a cover', () => {
@@ -512,37 +500,6 @@ describe('describing a named book from the BnF', () => {
     expect(result.isbn13).toBe(Isbn13('9782352943556'))
   })
 
-  test('asks Google Books when the BnF has no blurb for a book never described', async () => {
-    bnfEditions = [{ ...bragelonne, summary: undefined }]
-    googleEditions = [{ ...bragelonne, summary: 'Kvothe se raconte.' }]
-    answers = [{ ...aPick, synopsis: null }, aPick]
-
-    const { result, usage } = await ScanCommand.lookUpEdition(named, 'fr')
-
-    expect(calls).toEqual(['enrichment-library', 'enrichment-library'])
-    expect(prompts['enrichment-library']).toContain('les éditions que Google Books en recense')
-    expect(result.synopsis).toBe(Synopsis('Kvothe, devenu aubergiste, raconte sa propre légende.'))
-    // Both catalogue calls are billed to the one lookup, and nothing else.
-    expect(usage.enrichment?.promptTokens).toBe(20)
-  })
-
-  test('describes an English edition from Google Books, never from the BnF', async () => {
-    googleEditions = [{ isbn13: '9780593135228', publisher: 'Ballantine Books', summary: 'Alone.' }]
-    answers = [{ ...aPick, synopsis: 'Ryland Grace se réveille seul.' }]
-
-    const { result } = await ScanCommand.lookUpEdition(
-      { ...named, title: BookTitle('Project Hail Mary'), language: 'en' } as ScanResult,
-      'fr',
-    )
-
-    expect(bnfLookups).toEqual([])
-    expect(googleLookups).toEqual([
-      { title: 'Project Hail Mary', author: 'Patrick Rothfuss', volume: undefined, language: 'en' },
-    ])
-    expect(calls).toEqual(['enrichment-library'])
-    expect(result.isbn13).toBe(Isbn13('9780593135228'))
-  })
-
   test('never asks the BnF about an edition in another language', async () => {
     answers = [anEnrichment]
 
@@ -552,13 +509,12 @@ describe('describing a named book from the BnF', () => {
     expect(calls).toEqual(['enrichment'])
   })
 
-  test('asks no catalogue about a recording', async () => {
+  test('never asks the BnF about a recording', async () => {
     answers = [anEnrichment]
 
     await ScanCommand.lookUpEdition({ ...named, format: 'audiobook' } as ScanResult, 'fr')
 
     expect(bnfLookups).toEqual([])
-    expect(googleLookups).toEqual([])
   })
 
   // The catalogue numbers a manga's volumes; the reader's other volumes are
@@ -592,9 +548,7 @@ describe('describing a named book from the BnF', () => {
       siblings: [{ volume: VolumeNumber(5), kind: 'main', isbn13: Isbn13('9782723489928') }],
     })
 
-    expect(bnfLookups).toEqual([
-      { title: 'One Piece', author: 'Eiichirō Oda', volume: 5, language: 'fr' },
-    ])
+    expect(bnfLookups).toEqual([{ title: 'One Piece', author: 'Eiichirō Oda', volume: 5 }])
     expect(prompts['enrichment-library']).toContain('[0] ISBN 9782723434829')
     // The sibling is named only as what this volume is not.
     expect(prompts['enrichment-library']).not.toContain('[1]')

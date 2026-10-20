@@ -1,4 +1,4 @@
-import { BookFormatValue, Isbn13 } from '~/domain/book/primitives'
+import { BookFormatValue } from '~/domain/book/primitives'
 import type { BookFormat, BookMedium } from '~/domain/book/types'
 import { BOOK_FORMATS } from '~/domain/book/types'
 import type { AiStepUsage, DetectedBox } from '~/domain/scan/types'
@@ -73,17 +73,3 @@ export const summedUsage = (
         searches: first.searches + second.searches,
       }
     : (first ?? second)
-
-/** The ISBN-13 of an ISBN as a catalogue writes it: hyphenated, and ten digits
- *  long on anything printed before 2007. */
-export const isbn13Of = (raw: string | undefined) => {
-  const digits = (raw ?? '').replace(/[^0-9X]/gi, '')
-  if (digits.length === 13) return optionally(digits, Isbn13)
-  if (digits.length !== 10) return undefined
-  const core = `978${digits.slice(0, 9)}`
-  const sum = [...core].reduce(
-    (total, digit, index) => total + Number(digit) * (index % 2 ? 3 : 1),
-    0,
-  )
-  return optionally(`${core}${(10 - (sum % 10)) % 10}`, Isbn13)
-}

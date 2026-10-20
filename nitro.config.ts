@@ -64,9 +64,6 @@ export default defineNitroConfig({
     audibleKey: '',
     // The same, for the Kindle device credentials, under a key of its own.
     kindleKey: '',
-    // Google Books, where an edition in another language than French is looked
-    // up before any paid web search. Blank and those go to the web search.
-    googleBooksKey: '',
     // Claude's API key, for the month's discoveries in Découvrir. Blank and the
     // line is simply absent; nothing else reads it.
     anthropicApiKey: '',

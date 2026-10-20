@@ -22,7 +22,6 @@ import {
   summedUsage,
 } from '~/domain/scan/business-rules'
 import { generate } from '~/domain/scan/gemini'
-import { googleBooksEditionsOf } from '~/domain/scan/google-books'
 import * as repository from '~/domain/scan/infrastructure/repository'
 import { hashImage } from '~/domain/scan/primitives'
 import {
@@ -231,10 +230,10 @@ export namespace ScanCommand {
    *  is already known, and its author's page is left to its first opening,
    *  since the reader is only looking.
    *
-   *  Free catalogues are asked first, in `LIBRARY_SOURCES` order, each for
-   *  half a thousandth of a euro of ungrounded model call, where the grounded
-   *  step bills six Google searches, eight cents. The grounded step runs only
-   *  when none of them described the book — see `describedFrom`. */
+   *  A French edition is described from the BnF's catalogue first, which costs
+   *  half a thousandth of a euro where the grounded step bills six Google
+   *  searches, eight cents. The grounded step runs only when the catalogue
+   *  left the book undescribed — see `describedFromLibrary`. */
   export const lookUpEdition = async (
     seen: ScanResult,
     language: ScanLanguage,
@@ -242,84 +241,41 @@ export namespace ScanCommand {
   ): Promise<{ result: ScanResult; usage: ScanUsage }> => {
     if (import.meta.dev && config().scanStub) return { result: STUBBED_SCAN, usage: {} }
 
-    let spent: AiStepUsage | undefined
-    let described: Enriched | undefined
-    for (const source of LIBRARY_SOURCES) {
-      const attempt = await describedFrom(source, seen, language, hints)
-      spent = summedUsage(spent, attempt.usage)
-      described = attempt.found
-      if (described) break
-    }
-    if (!described) {
-      described = await enrich(seen, language, 'cover', hints)
-      spent = summedUsage(spent, described.usage)
-    }
-    const enrichment = spent
+    const library = await describedFromLibrary(seen, language, hints)
+    const described = library.found ?? (await enrich(seen, language, 'cover', hints))
     const { result: enriched, regularEdition } = described
     const result = { ...enriched, coverUrl: await coverOf(enriched.isbn13, regularEdition) }
+    const enrichment = library.found ? library.usage : summedUsage(library.usage, described.usage)
     return { result, usage: { enrichment } }
   }
 
-  /** A catalogue a named book is looked up in before the web: the editions it
-   *  lists, and the languages whose editions it holds. */
-  type LibrarySource = {
-    /** How the prompt names it. */
-    name: string
-    holds: (language: string) => boolean
-    editionsOf: (book: {
-      title: string
-      author: string
-      volume?: number
-      language: string
-    }) => Promise<LibraryEdition[]>
-  }
-
-  /** The BnF first for a French edition: the legal deposit names the exact
-   *  printing and most often its blurb. Google Books next, for every language:
-   *  the publishers' feeds, and a blurb the BnF lacked. */
-  const LIBRARY_SOURCES: LibrarySource[] = [
-    {
-      name: 'le catalogue de la Bibliothèque nationale de France',
-      holds: (language) => language === 'fr',
-      // Called through rather than held, so the binding is read at each call.
-      editionsOf: (book) => bnfEditionsOf(book),
-    },
-    {
-      name: 'Google Books',
-      holds: () => true,
-      editionsOf: (book) => googleBooksEditionsOf(book),
-    },
-  ]
-
-  /** A book described from the editions one catalogue lists for it, with no web
+  /** A book described from the editions the BnF lists for it, with no web
    *  search: the model, ungrounded, picks the edition by its index and writes
    *  the synopsis from the publishers' blurbs. `found` is absent whenever the
-   *  next source should be asked — and `usage` says what asking cost.
+   *  grounded step should run instead — and `usage` says what asking cost.
    *
-   *  A recording is never asked about: neither catalogue tells one apart from
-   *  the printed book. The description stands only with an edition picked, and
-   *  with a synopsis — the catalogue's, or the one the record already carries,
-   *  which a lookup that found none leaves in place. A book never described,
-   *  with no blurb anywhere, is looked up on the web, so it is never left
-   *  without a summary. */
-  const describedFrom = async (
-    source: LibrarySource,
+   *  Only a printed French edition is asked about: the BnF is the French legal
+   *  deposit, and holds no recording. The description stands only with an
+   *  edition picked, and with a synopsis — the catalogue's, or the one the
+   *  record already carries, which a lookup that found none leaves in place.
+   *  A book never described, with no blurb at the BnF, is looked up on the web,
+   *  so it is never left without a summary. */
+  const describedFromLibrary = async (
     seen: ScanResult,
     language: ScanLanguage,
     hints?: EditionHints,
   ): Promise<{ found?: Enriched; usage?: AiStepUsage }> => {
     const author = seen.authors[0]
     const edition = seen.language ?? language
-    if (!seen.title || !author || seen.format === 'audiobook' || !source.holds(edition)) return {}
+    if (!seen.title || !author || edition !== 'fr' || seen.format === 'audiobook') return {}
 
     const { series } = seen
     const titledAfterSaga = series !== undefined && slugify(series.name) === slugify(seen.title)
     const editions = volumeEditionsOf(
-      await source.editionsOf({
+      await bnfEditionsOf({
         title: seen.title,
         author,
         volume: titledAfterSaga ? series.volume : undefined,
-        language: edition,
       }),
       seen,
       hints,
@@ -329,7 +285,7 @@ export namespace ScanCommand {
     try {
       const { value, usage } = await generate<EditionsOutput>({
         step: 'enrichment-library',
-        parts: [{ text: editionsPrompt(seen, editions, source.name, language, hints) }],
+        parts: [{ text: editionsPrompt(seen, editions, language, hints) }],
         responseSchema: EDITIONS_SCHEMA,
       })
       const picked = value.edition != null ? editions[value.edition] : undefined
@@ -363,8 +319,8 @@ export namespace ScanCommand {
         },
       }
     } catch (error) {
-      // The next source is asked; a refusal the grounded step shares, it reports.
-      logger.warn('library description failed', { error, source: source.name, title: seen.title })
+      // The grounded step is asked next; a refusal it shares, it reports.
+      logger.warn('library description failed', { error, title: seen.title })
       return {}
     }
   }
