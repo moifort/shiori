@@ -80,7 +80,48 @@ final class DiscoverViewModel {
     /// "Bientôt disponible": the editions awaited in both formats — last
     /// session's until loaded, and last load's when a later one fails, as the
     /// friends' picks.
-    var awaitedSoon: [AwaitedEdition] { feed.awaitedSoon }
+    /// The editions asked for from a scan whose answer is still on its way —
+    /// the server looks them up on the web first — drawn among the others
+    /// meanwhile. Kept apart from the feed: a reload in the meantime would
+    /// drop them, and they never go to disk.
+    var awaitedSoon: [AwaitedEdition] {
+        pendingAwaited.isEmpty ? feed.awaitedSoon : (feed.awaitedSoon + pendingAwaited).soonOrder
+    }
+
+    private var pendingAwaited: [AwaitedEdition] = []
+
+    /// The edition the strip scrolls to: the one a scan just asked to await,
+    /// its pending tile, then the server's once it answers.
+    private(set) var focusedAwaited: String?
+
+    /// The reader left the tab: the strip stays where they leave it.
+    func dropFocus() {
+        focusedAwaited = nil
+    }
+
+    /// A scan's review asked to await a book it left out of the library: its
+    /// tile shows at once, scrolled to, and the server's edition takes its
+    /// place once found. A refusal takes the tile off again.
+    func awaitScanned(_ request: AwaitRequest) async {
+        let pending = AwaitedEdition.pending(format: request.format, of: request.draft)
+        withAnimation(.smooth) { pendingAwaited.append(pending) }
+        focusedAwaited = pending.id
+        do {
+            let edition = try await client.awaitEdition(request.draft, request.format)
+            withAnimation(.smooth) {
+                pendingAwaited.removeAll { $0.id == pending.id }
+                var awaited = feed.awaited[edition.format] ?? []
+                awaited.removeAll { $0.id == edition.id }
+                feed.awaited[edition.format] = awaited + [edition]
+            }
+            if focusedAwaited == pending.id { focusedAwaited = edition.id }
+            saveSnapshot()
+        } catch {
+            withAnimation(.smooth) { pendingAwaited.removeAll { $0.id == pending.id } }
+            if focusedAwaited == pending.id { focusedAwaited = nil }
+            _ = reportError(error)
+        }
+    }
 
     func loadAwaited(_ format: ReleaseFormat) async {
         await gate.run(.awaited(format), again: true) { await fetchAwaited(format) }
@@ -443,6 +484,17 @@ struct DiscoverSnapshots: Sendable {
     )
 
     static let none = DiscoverSnapshots()
+}
+
+/// A book a scan's review asked to await, handed to Découvrir with the reader:
+/// the tab asks for it and shows its tile. Its own id, so that the same book
+/// asked twice is two requests.
+struct AwaitRequest: Identifiable, Equatable {
+    let id = UUID()
+    let draft: BookDraft
+    let format: ReleaseFormat
+
+    static func == (lhs: AwaitRequest, rhs: AwaitRequest) -> Bool { lhs.id == rhs.id }
 }
 
 /// What Découvrir's discoveries line draws.

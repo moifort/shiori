@@ -78,6 +78,9 @@ enum LibraryFilter: Hashable {
 struct LibraryRequest: Equatable {
     var mode: LibraryMode = .all
     var filter: LibraryFilter?
+    /// A book just added, scrolled to wherever its date shelves it: every
+    /// book, in the layout the reader left.
+    var focus: String?
 }
 
 /// Owns the library list: what is on screen, how it is arranged, and the one
@@ -113,6 +116,9 @@ final class LibraryViewModel {
     private(set) var awaitedBookIds: Set<String> = []
     private(set) var isLoading = false
     private(set) var errorMessage: String?
+    /// The book the shelf scrolls to: one a scan just added. Dropped when the
+    /// view or the filter changes, which may leave it out.
+    private(set) var focusedBookId: String?
 
     /// Any change of view or filter reloads the first page.
     var mode: LibraryMode = .all {
@@ -187,13 +193,36 @@ final class LibraryViewModel {
     func show(_ request: LibraryRequest) {
         filter = request.filter
         mode = request.mode
-        layout = .list
+        if request.focus == nil { layout = .list }
+    }
+
+    /// The most pages asked for to reach a book shelved deep in the list: a
+    /// book read years ago is a few pages down, not the whole library.
+    private static let focusPages = 10
+
+    /// Scrolls to a book just added: the list is asked again as deep as it
+    /// already goes, then page after page until the book is in it — a book
+    /// read long ago is shelved far down.
+    func focus(on bookId: String) async {
+        focusedBookId = bookId
+        await load(keepingDepth: true)
+        var pages = 0
+        while focusedBookId == bookId, !books.contains(where: { $0.id == bookId }),
+              hasMore, !loadMoreFailed, pages < Self.focusPages {
+            if isLoadingMore {
+                try? await Task.sleep(for: .milliseconds(100))
+                continue
+            }
+            await loadMore()
+            pages += 1
+        }
     }
 
     /// Reloads the first page for a new view or filter, cancelling a reload
     /// still in flight. The rows go at once: the old view's books under the new
     /// view's headings would be wrong for as long as the request takes.
     private func scheduleReload() {
+        focusedBookId = nil
         reloadTask?.cancel()
         generation += 1
         // The new view's rows from its last visit, when there were any: shown at

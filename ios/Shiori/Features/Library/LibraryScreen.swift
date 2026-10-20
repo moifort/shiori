@@ -39,6 +39,7 @@ struct LibraryScreen: View {
                 layout: $viewModel.layout,
                 sections: viewModel.sections,
                 awaitedBookIds: viewModel.awaitedBookIds,
+                focusedBookId: viewModel.focusedBookId,
                 // The favourites mix every status: their rows still say which.
                 showsStatus: viewModel.filter?.status == nil,
                 isLoading: viewModel.isLoading,
@@ -97,5 +98,8 @@ struct LibraryScreen: View {
         guard let requestedMode else { return }
         viewModel.show(requestedMode)
         self.requestedMode = nil
+        if let focus = requestedMode.focus {
+            Task { await viewModel.focus(on: focus) }
+        }
     }
 }

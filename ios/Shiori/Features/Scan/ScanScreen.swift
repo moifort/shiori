@@ -29,13 +29,27 @@ struct ScanScreen: View {
 
     var start: Start = .camera
     var onDismiss: () -> Void
+    /// The review asked to await the book rather than add it: the scan closes
+    /// and Découvrir takes the request, showing the reader its tile.
+    var onAwait: (BookDraft, ReleaseFormat) -> Void
+    /// The book went into the library: the scan closes and the Library shows
+    /// the reader where it was shelved.
+    var onAdded: (Book) -> Void
 
     @State private var viewModel: ScanViewModel
     @State private var shouldCapture = false
 
-    init(start: Start = .camera, onDismiss: @escaping () -> Void, client: ScanClient = .live) {
+    init(
+        start: Start = .camera,
+        onDismiss: @escaping () -> Void,
+        onAwait: @escaping (BookDraft, ReleaseFormat) -> Void,
+        onAdded: @escaping (Book) -> Void,
+        client: ScanClient = .live
+    ) {
         self.start = start
         self.onDismiss = onDismiss
+        self.onAwait = onAwait
+        self.onAdded = onAdded
         _viewModel = State(initialValue: ScanViewModel(client: client))
     }
 
@@ -91,11 +105,10 @@ struct ScanScreen: View {
                 ) { action in
                     switch action {
                     case let .save(approved, series):
-                        if await viewModel.save(approved, series: series) != nil { onDismiss() }
+                        if let book = await viewModel.save(approved, series: series) { onAdded(book) }
                     case .retake: viewModel.retake()
                     case let .awaitEdition(draft, format):
-                        viewModel.awaitEdition(of: draft, format: format)
-                        onDismiss()
+                        onAwait(draft, format)
                     case let .languageOrFormatChanged(language, format):
                         await viewModel.loadAwaitable(language: language, format: format)
                     }

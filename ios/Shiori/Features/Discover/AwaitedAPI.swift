@@ -130,6 +130,27 @@ extension AwaitedEdition {
             ownerId: ""
         )
     }
+
+    /// The tile Découvrir draws the moment a scan's review asks to await a
+    /// book it left out of the library: the scanned cover, nothing announced
+    /// yet, until the server's answer takes its place.
+    static func pending(format: ReleaseFormat, of draft: BookDraft) -> AwaitedEdition {
+        AwaitedEdition(
+            id: "pending-\(UUID().uuidString)",
+            format: format,
+            state: .unannounced,
+            title: draft.title,
+            originalTitle: draft.title,
+            originalLanguage: draft.language,
+            authors: draft.authors,
+            date: nil,
+            coverURL: draft.coverURL,
+            storeURL: nil,
+            awaitedAt: .now,
+            bookId: nil,
+            ownerId: ""
+        )
+    }
 }
 
 extension AwaitedEdition {

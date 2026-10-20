@@ -1,5 +1,13 @@
 import SwiftUI
 
+/// A cover a strip scrolls to, by the id its tile carries, and where it
+/// stands in the strip: covers loading in around it move it, and the strip
+/// follows.
+struct CoverFocus: Equatable {
+    let id: String
+    let place: Int
+}
+
 /// One category of the Books shelf: its symbol, its name and what it holds
 /// in a few words over a strip of every cover it holds, a tap on one opening
 /// its page. A friend's page draws its shelves the same way; a line with no
@@ -11,6 +19,9 @@ struct DiscoverSummaryRow<Lead: View, Covers: View>: View {
     let systemImage: String?
     let tint: Color
     let line: String
+    /// The cover the strip scrolls to: one the reader just added, shown to
+    /// them. Nil leaves the strip where it is.
+    var scrolledTo: CoverFocus?
     private let hasCovers: Bool
     @ViewBuilder let lead: Lead
     @ViewBuilder let covers: Covers
@@ -22,6 +33,7 @@ struct DiscoverSummaryRow<Lead: View, Covers: View>: View {
         systemImage: String,
         tint: Color,
         line: String,
+        scrolledTo: CoverFocus? = nil,
         hasCovers: Bool,
         @ViewBuilder lead: () -> Lead,
         @ViewBuilder covers: () -> Covers
@@ -30,6 +42,7 @@ struct DiscoverSummaryRow<Lead: View, Covers: View>: View {
         self.systemImage = systemImage
         self.tint = tint
         self.line = line
+        self.scrolledTo = scrolledTo
         self.hasCovers = hasCovers
         self.lead = lead()
         self.covers = covers()
@@ -49,13 +62,21 @@ struct DiscoverSummaryRow<Lead: View, Covers: View>: View {
             // from its left one; the room left of that cover is for the badges
             // overhanging its corner.
             if hasCovers {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(alignment: .top, spacing: 10) { covers }
-                        .padding(.leading, 6)
-                        // Room for the headphones, which overhang a
-                        // recording's corner and the scroll view would
-                        // otherwise clip.
-                        .padding(.top, Self.badgeRoom)
+                ScrollViewReader { proxy in
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(alignment: .top, spacing: 10) { covers }
+                            .padding(.leading, 6)
+                            // Room for the headphones, which overhang a
+                            // recording's corner and the scroll view would
+                            // otherwise clip — the last cover's too, once the
+                            // strip is scrolled to its end.
+                            .padding(.top, Self.badgeRoom)
+                            .padding(.trailing, Self.badgeRoom)
+                    }
+                    .onChange(of: scrolledTo, initial: true) { _, cover in
+                        guard let cover else { return }
+                        withAnimation(.smooth) { proxy.scrollTo(cover.id, anchor: .center) }
+                    }
                 }
                 .padding(.leading, 6)
                 .padding(.trailing, 12)
@@ -95,12 +116,18 @@ struct DiscoverSummaryRow<Lead: View, Covers: View>: View {
 }
 
 extension DiscoverSummaryRow where Lead == EmptyView {
-    init(category: DiscoverCategory, line: String, @ViewBuilder covers: () -> Covers) {
+    init(
+        category: DiscoverCategory,
+        line: String,
+        scrolledTo: CoverFocus? = nil,
+        @ViewBuilder covers: () -> Covers
+    ) {
         self.init(
             title: category.title,
             systemImage: category.systemImage,
             tint: category.tint,
             line: line,
+            scrolledTo: scrolledTo,
             covers: covers
         )
     }
@@ -110,6 +137,7 @@ extension DiscoverSummaryRow where Lead == EmptyView {
         systemImage: String,
         tint: Color,
         line: String,
+        scrolledTo: CoverFocus? = nil,
         @ViewBuilder covers: () -> Covers
     ) {
         self.init(
@@ -117,6 +145,7 @@ extension DiscoverSummaryRow where Lead == EmptyView {
             systemImage: systemImage,
             tint: tint,
             line: line,
+            scrolledTo: scrolledTo,
             hasCovers: true,
             lead: { EmptyView() },
             covers: covers

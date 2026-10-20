@@ -92,6 +92,42 @@ struct DiscoverViewModelTests {
         #expect(viewModel.errorMessage == nil)
     }
 
+    @Test func aScanAwaitedShowsItsTileAtOnceThenTheServersEdition() async {
+        let draft = BookDraft(title: "Project Hail Mary", authors: ["Andy Weir"], format: .book)
+        var client = DiscoverClient.preview
+        client.awaitEdition = { _, _ in
+            try await Task.sleep(for: .seconds(30))
+            return .preview
+        }
+        let viewModel = DiscoverViewModel(client: client, snapshots: .none)
+
+        let asked = Task { await viewModel.awaitScanned(AwaitRequest(draft: draft, format: .audiobook)) }
+        while viewModel.awaitedSoon.isEmpty { await Task.yield() }
+
+        let pending = viewModel.awaitedSoon.first
+        #expect(pending?.title == "Project Hail Mary")
+        #expect(pending?.format == .audiobook)
+        #expect(viewModel.focusedAwaited == pending?.id)
+
+        // Cancelled, the request is refused: the tile goes again.
+        asked.cancel()
+        await asked.value
+        #expect(viewModel.awaitedSoon.isEmpty)
+        #expect(viewModel.focusedAwaited == nil)
+    }
+
+    @Test func aScanAwaitedIsFocusedOnTheServersEdition() async {
+        let draft = BookDraft(title: "Project Hail Mary", authors: ["Andy Weir"], format: .book)
+        var client = DiscoverClient.preview
+        client.awaitEdition = { _, _ in .preview }
+        let viewModel = DiscoverViewModel(client: client, snapshots: .none)
+
+        await viewModel.awaitScanned(AwaitRequest(draft: draft, format: .audiobook))
+
+        #expect(viewModel.awaitedSoon.map(\.id) == [AwaitedEdition.preview.id])
+        #expect(viewModel.focusedAwaited == AwaitedEdition.preview.id)
+    }
+
     @Test func stopAwaitingRefusedPutsItBack() async {
         var client = DiscoverClient.preview
         client.stopAwaiting = { _ in throw Boom() }

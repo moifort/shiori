@@ -34,7 +34,7 @@ final class AwardWinnerViewModel {
     /// Awaits its edition in the app's language, in this format.
     func awaitEdition(_ format: ReleaseFormat) async {
         do {
-            try await client.awaitEdition(winner.draft, format)
+            _ = try await client.awaitEdition(winner.draft, format)
         } catch {
             _ = reportError(error)
         }

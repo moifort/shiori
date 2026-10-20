@@ -209,20 +209,6 @@ final class ScanViewModel {
         }
     }
 
-    /// Awaits the book's edition in the app's language, the book itself left
-    /// out of the library: the server looks it up on the web behind, so a
-    /// failure is reported rather than shown, and the scan closes at once.
-    func awaitEdition(of draft: BookDraft, format: ReleaseFormat) {
-        let client = client
-        Task {
-            do {
-                try await client.awaitScanned(draft, format)
-            } catch {
-                _ = reportError(error)
-            }
-        }
-    }
-
     /// The proposals under the review's sheets: a convenience, nil on failure.
     func vocabulary() async -> BookVocabulary? {
         try? await client.vocabulary()

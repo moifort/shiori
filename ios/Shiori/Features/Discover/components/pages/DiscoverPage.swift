@@ -57,6 +57,11 @@ struct DiscoverPage: View {
     /// Held by `ContentView`, which brings it back to the books on each visit.
     @Binding var shelf: LibraryShelf
     let feed: DiscoveryFeed
+    /// "Bientôt disponible": the feed's editions awaited, and the ones a scan
+    /// just asked for while the server looks them up.
+    let awaited: [AwaitedEdition]
+    /// The edition awaited the page scrolls to: the one a scan just asked for.
+    var focusedAwaited: String?
     /// The award winners of the format shown.
     let awards: [AwardSection]
     let discoveries: DiscoveriesLine?
@@ -103,21 +108,31 @@ struct DiscoverPage: View {
         }
     }
 
+    /// The "Bientôt disponible" line, scrolled to when a scan hands an
+    /// edition over.
+    private static let awaitedRow = "discover-awaited"
+
     private var list: some View {
-        List {
-            if shelf == .books {
-                summarySection
-            } else {
-                friendPicksSection
+        ScrollViewReader { proxy in
+            List {
+                if shelf == .books {
+                    summarySection
+                } else {
+                    friendPicksSection
+                }
+                if shelf == .authors {
+                    authorSections
+                } else {
+                    sagaSections
+                }
             }
-            if shelf == .authors {
-                authorSections
-            } else {
-                sagaSections
+            .listStyle(.insetGrouped)
+            .refreshable { await onAction(.refresh) }
+            .onChange(of: focusedAwaited, initial: true) { _, focused in
+                guard focused != nil, shelf == .books else { return }
+                withAnimation(.smooth) { proxy.scrollTo(Self.awaitedRow, anchor: .top) }
             }
         }
-        .listStyle(.insetGrouped)
-        .refreshable { await onAction(.refresh) }
     }
 
     /// "Coups de cœur de vos amis", in the shape of the shelf on screen. Absent
@@ -156,7 +171,7 @@ struct DiscoverPage: View {
     private var isEmpty: Bool {
         let picks = feed.picks
         switch shelf {
-        case .books: return picks.books.isEmpty && feed.awaitedSoon.isEmpty && awards.isEmpty
+        case .books: return picks.books.isEmpty && awaited.isEmpty && awards.isEmpty
         case .series: return picks.sagas.isEmpty
         case .authors: return picks.authors.isEmpty
         }
@@ -171,7 +186,6 @@ struct DiscoverPage: View {
     @ViewBuilder
     private var summarySection: some View {
         let width = CoverTile.summaryWidth
-        let awaited = feed.awaitedSoon
         // The newest heart first, as the server sends them; the flame alone
         // marks what many friends love.
         let loved = feed.picks.books
@@ -180,12 +194,17 @@ struct DiscoverPage: View {
                 if !awaited.isEmpty {
                     DiscoverSummaryRow(
                         category: .soon,
-                        line: DiscoverSummaryLine.soon(awaited)
+                        line: DiscoverSummaryLine.soon(awaited),
+                        scrolledTo: focusedAwaited.flatMap { id in
+                            awaited.firstIndex { $0.id == id }.map { CoverFocus(id: id, place: $0) }
+                        }
                     ) {
                         ForEach(awaited) { edition in
                             AwaitedEditionTile(edition: edition, width: width) { act(.openAwaited(edition)) }
+                                .id(edition.id)
                         }
                     }
+                    .id(Self.awaitedRow)
                     .accessibilityIdentifier("discover-awaited")
                 }
                 if let discoveries {
@@ -392,6 +411,7 @@ private struct DiscoverPagePreview: View {
             DiscoverPage(
                 shelf: $shelf,
                 feed: feed,
+                awaited: feed.awaitedSoon,
                 awards: awards,
                 discoveries: discoveries,
                 isLookingUp: isLookingUp,

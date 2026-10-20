@@ -38,7 +38,10 @@ struct SuggestionViewModelTests {
     @Test func aWaitIsAskedInTheFormatChosen() async {
         let calls = Calls()
         var client = DiscoverClient.preview
-        client.awaitEdition = { draft, format in calls.record("await \(draft.title) \(format.rawValue)") }
+        client.awaitEdition = { draft, format in
+            calls.record("await \(draft.title) \(format.rawValue)")
+            return .pending(format: format, of: draft)
+        }
         let viewModel = SuggestionViewModel(suggestion: .preview, client: client)
 
         await viewModel.awaitEdition(.audiobook)

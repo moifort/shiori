@@ -45,6 +45,9 @@ struct ContentView: View {
     /// reader left it on.
     @State private var libraryShelf: LibraryShelf = .books
     @State private var discoverShelf: LibraryShelf = .books
+    /// A book a scan's review asked to await, handed to Découvrir, which
+    /// shows the reader its tile.
+    @State private var awaitRequest: AwaitRequest?
     /// The add sheet, behind the tab bar's scan button: the camera, the last
     /// photos, a title and a record typed by hand, from every tab.
     @State private var showAddSheet = false
@@ -100,7 +103,18 @@ struct ContentView: View {
                 AddBookSheet(searchTitle: ScanClient.live.searchTitle, onChoose: choose)
             }
             .fullScreenCover(item: $scanStart) { boxed in
-                ScanScreen(start: boxed.start, onDismiss: { scanStart = nil })
+                ScanScreen(
+                    start: boxed.start,
+                    onDismiss: { scanStart = nil },
+                    onAwait: { draft, format in
+                        scanStart = nil
+                        showAwaited(draft, format)
+                    },
+                    onAdded: { book in
+                        scanStart = nil
+                        showAdded(book)
+                    }
+                )
             }
             .fullScreenCover(item: $shelfStart) { boxed in
                 ShelfImportScreen(start: boxed.start, onDismiss: { shelfStart = nil })
@@ -128,7 +142,18 @@ struct ContentView: View {
             // bring the app forward itself — the reader shares, then opens
             // Shiori, and the book is waiting for them.
             .fullScreenCover(item: $sharedStart) { start in
-                ScanScreen(start: start, onDismiss: { sharedStart = nil })
+                ScanScreen(
+                    start: start,
+                    onDismiss: { sharedStart = nil },
+                    onAwait: { draft, format in
+                        sharedStart = nil
+                        showAwaited(draft, format)
+                    },
+                    onAdded: { book in
+                        sharedStart = nil
+                        showAdded(book)
+                    }
+                )
             }
             // The invitation is asked about rather than accepted: the link
             // came from somewhere the reader does not control, and accepting
@@ -230,7 +255,7 @@ struct ContentView: View {
                 systemImage: TabSelection.discover.symbol,
                 value: .discover
             ) {
-                DiscoverScreen(shelf: $discoverShelf)
+                DiscoverScreen(shelf: $discoverShelf, awaitRequest: $awaitRequest)
             }
             Tab(TabSelection.shared.label, systemImage: TabSelection.shared.symbol, value: .shared) {
                 SharedScreen()
@@ -246,6 +271,21 @@ struct ContentView: View {
                 Color.clear
             }
         }
+    }
+
+    /// A book awaited from a scan's review: Découvrir's books, where its tile
+    /// shows among the editions awaited, so the reader sees it was taken.
+    private func showAwaited(_ draft: BookDraft, _ format: ReleaseFormat) {
+        selectedTab = .discover
+        discoverShelf = .books
+        awaitRequest = AwaitRequest(draft: draft, format: format)
+    }
+
+    /// A book added from a scan: the Library's books, scrolled to where its
+    /// date shelves it.
+    private func showAdded(_ book: Book) {
+        libraryMode = LibraryRequest(focus: book.id)
+        selectedTab = .library
     }
 
     private func choose(_ source: AddBookSource) {

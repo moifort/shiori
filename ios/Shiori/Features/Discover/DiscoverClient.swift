@@ -10,7 +10,9 @@ struct DiscoverClient: Sendable {
     var picks: @Sendable () async throws -> FriendPicks
     var awaited: @Sendable (ReleaseFormat) async throws -> [AwaitedEdition]
     var stopAwaiting: @Sendable (_ editionId: String) async throws -> Void
-    var awaitEdition: @Sendable (BookDraft, ReleaseFormat) async throws -> Void
+    /// Awaits a book not in the library, and answers with the edition the
+    /// server now watches.
+    var awaitEdition: @Sendable (BookDraft, ReleaseFormat) async throws -> AwaitedEdition
     var awards: @Sendable (ReleaseFormat) async throws -> [AwardSection]
     /// The month's discoveries, the selection made when the month has none.
     var discoveries: @Sendable (ReleaseFormat) async throws -> MonthlyDiscoveries
@@ -34,7 +36,7 @@ extension DiscoverClient {
         picks: { try await FriendsAPI.picks() },
         awaited: { try await AwaitedAPI.awaited(format: $0) },
         stopAwaiting: { try await AwaitedAPI.stop(id: $0) },
-        awaitEdition: { _ = try await AwaitedAPI.awaitScanned($0, format: $1) },
+        awaitEdition: { try await AwaitedAPI.awaitScanned($0, format: $1) },
         awards: { try await AwardsAPI.sections(format: $0) },
         discoveries: { try await SuggestionsAPI.monthly(format: $0, lookUp: true) },
         dismissSuggestion: { try await SuggestionsAPI.dismiss(id: $0, reason: $1) },
@@ -58,7 +60,7 @@ extension DiscoverClient {
         picks: { DiscoveryFeed.preview.picks },
         awaited: { DiscoveryFeed.preview.awaited[$0] ?? [] },
         stopAwaiting: { _ in },
-        awaitEdition: { _, _ in },
+        awaitEdition: { draft, format in .pending(format: format, of: draft) },
         awards: { _ in AwardSection.previews },
         discoveries: { _ in .preview },
         dismissSuggestion: { _, _ in },

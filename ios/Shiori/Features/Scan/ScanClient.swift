@@ -16,7 +16,6 @@ struct ScanClient: Sendable {
     /// The editions in the app's language a book in this language and format
     /// may be awaited in.
     var awaitableFormats: @Sendable (BookLanguage, BookFormat) async throws -> [ReleaseFormat]
-    var awaitScanned: @Sendable (BookDraft, ReleaseFormat) async throws -> Void
     var vocabulary: @Sendable () async throws -> BookVocabulary
     var subgenres: @Sendable () async throws -> [String]
     var detectShelf: @Sendable (_ jpeg: Data) async throws -> [DetectedBook]
@@ -37,7 +36,6 @@ extension ScanClient {
         rate: { try await BookAPI.rate(id: $0, stars: $1) },
         setFavorite: { try await BookAPI.setFavorite(id: $0, favorite: $1) },
         awaitableFormats: { try await AwaitedAPI.formats(language: $0, format: $1) },
-        awaitScanned: { _ = try await AwaitedAPI.awaitScanned($0, format: $1) },
         vocabulary: { try await BookAPI.vocabulary() },
         subgenres: { try await BookAPI.subgenres() },
         detectShelf: { try await ShelfAPI.detect(jpeg: $0) },
@@ -67,7 +65,6 @@ extension ScanClient {
             return book
         },
         awaitableFormats: { _, _ in [.audiobook] },
-        awaitScanned: { _, _ in },
         vocabulary: { ([], []) },
         subgenres: { [] },
         detectShelf: { _ in ShelfImportFixtures.books },

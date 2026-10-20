@@ -12,6 +12,9 @@ import SwiftUI
 struct DiscoverScreen: View {
     /// Held by `ContentView`, which brings it back to the books on each visit.
     @Binding var shelf: LibraryShelf
+    /// A book a scan's review asked to await, handed over by `ContentView`:
+    /// taken at once, its tile shown and scrolled to.
+    @Binding var awaitRequest: AwaitRequest?
     private let client: DiscoverClient
 
     @State private var viewModel: DiscoverViewModel
@@ -26,8 +29,14 @@ struct DiscoverScreen: View {
     @State private var openSuggestion: Suggestion?
     @State private var showsAlerts = false
 
-    init(shelf: Binding<LibraryShelf>, client: DiscoverClient = .live, snapshots: DiscoverSnapshots = .disk) {
+    init(
+        shelf: Binding<LibraryShelf>,
+        awaitRequest: Binding<AwaitRequest?> = .constant(nil),
+        client: DiscoverClient = .live,
+        snapshots: DiscoverSnapshots = .disk
+    ) {
         _shelf = shelf
+        _awaitRequest = awaitRequest
         self.client = client
         _viewModel = State(initialValue: DiscoverViewModel(client: client, snapshots: snapshots))
     }
@@ -37,6 +46,8 @@ struct DiscoverScreen: View {
             DiscoverPage(
                 shelf: $shelf,
                 feed: viewModel.feed,
+                awaited: viewModel.awaitedSoon,
+                focusedAwaited: viewModel.focusedAwaited,
                 awards: viewModel.shownAwards,
                 discoveries: viewModel.discoveriesLine,
                 isLookingUp: viewModel.isLookingUp,
@@ -128,6 +139,14 @@ struct DiscoverScreen: View {
         // One task for every section: six side by side asked the same
         // sections again on each visit, and twice when the format moved.
         .task { await viewModel.loadOnAppear() }
+        .onDisappear { viewModel.dropFocus() }
+        // Apart from the view's task: the server looks the edition up on the
+        // web before it answers, and leaving the tab must not call that off.
+        .onChange(of: awaitRequest, initial: true) { _, request in
+            guard let request else { return }
+            awaitRequest = nil
+            Task { await viewModel.awaitScanned(request) }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
             Task { await viewModel.awaitedChanged() }
         }

@@ -35,6 +35,20 @@ struct LibraryViewModelTests {
         #expect(viewModel.hasMore == false)
     }
 
+    @Test func aBookJustAddedIsFocusedWhereverItIsShelved() async {
+        let viewModel = LibraryViewModel(client: serving(cap: 2), caching: false)
+        viewModel.show(LibraryRequest(focus: "b4"))
+
+        await viewModel.focus(on: "b4")
+
+        #expect(viewModel.books.contains { $0.id == "b4" })
+        #expect(viewModel.focusedBookId == "b4")
+        #expect(viewModel.layout == .mosaic)
+
+        viewModel.filter = .favorites
+        #expect(viewModel.focusedBookId == nil)
+    }
+
     @Test func failureOverRowsKeepsThem() async {
         let fails = Flag()
         let served = serving()

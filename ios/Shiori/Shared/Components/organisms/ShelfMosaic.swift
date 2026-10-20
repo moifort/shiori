@@ -57,6 +57,9 @@ struct ShelfMosaic<Row: Identifiable, Tile: View, Bottom: View>: View {
     var tileAspect: CGFloat = 1.5
     /// The date a row is shelved on. Nil draws no month tag at all.
     var date: ((Row) -> Date?)? = nil
+    /// The tile the grid scrolls to, centred: a book just added. Nil leaves
+    /// the grid where it is.
+    var scrolledTo: Row.ID?
     @ViewBuilder let tile: (Row, CGFloat) -> Tile
     @ViewBuilder var bottom: () -> Bottom
 
@@ -81,7 +84,28 @@ struct ShelfMosaic<Row: Identifiable, Tile: View, Bottom: View>: View {
         let isCompact = tileWidth < 80
         let pitch = tileWidth * tileAspect + spacing
         let taggedIndices = tags.keys.sorted()
-        return ScrollView {
+        return ScrollViewReader { reader in
+            scroll(
+                width: width, count: count, tileWidth: tileWidth, tags: tags,
+                isCompact: isCompact, pitch: pitch, taggedIndices: taggedIndices
+            )
+            .onChange(of: scrolledTo, initial: true) { _, row in
+                guard let row else { return }
+                withAnimation(.smooth) { reader.scrollTo(row, anchor: .center) }
+            }
+        }
+    }
+
+    private func scroll(
+        width: CGFloat,
+        count: Int,
+        tileWidth: CGFloat,
+        tags: [Int: Date],
+        isCompact: Bool,
+        pitch: CGFloat,
+        taggedIndices: [Int]
+    ) -> some View {
+        ScrollView {
             VStack(spacing: 0) {
                 if width > 0 {
                     LazyVGrid(

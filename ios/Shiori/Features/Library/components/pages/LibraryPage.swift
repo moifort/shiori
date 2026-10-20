@@ -30,6 +30,8 @@ struct LibraryPage: View {
     let sections: [ListSection<Book>]
     /// The books whose edition in the app's language the reader awaits.
     var awaitedBookIds: Set<String> = []
+    /// The book the shelf scrolls to once its row is drawn: one just added.
+    var focusedBookId: String?
     /// Rows say their own status, unless a filter already says which.
     var showsStatus: Bool = false
     let isLoading: Bool
@@ -43,6 +45,14 @@ struct LibraryPage: View {
     /// The shelf is narrowed: an empty list says nothing matches, not that the
     /// library is empty.
     private var isNarrowed: Bool { mode != .all || filter != nil }
+
+    /// The book to scroll to, once a loaded page holds it.
+    private var shownFocus: String? {
+        guard let focusedBookId,
+              sections.contains(where: { $0.rows.contains { $0.id == focusedBookId } })
+        else { return nil }
+        return focusedBookId
+    }
 
     var body: some View {
         Group {
@@ -135,7 +145,12 @@ struct LibraryPage: View {
     /// Every book of the view as a cover, in the list's order.
     private var mosaic: some View {
         // The tightest grid: most of the shelf at a glance.
-        ShelfMosaic(rows: sections.flatMap(\.rows), columns: 7, date: { $0.shelvedAt }) { book, width in
+        ShelfMosaic(
+            rows: sections.flatMap(\.rows),
+            columns: 7,
+            date: { $0.shelvedAt },
+            scrolledTo: shownFocus
+        ) { book, width in
             Button {
                 Task { await onAction(.openBook(book)) }
             } label: {
@@ -158,22 +173,28 @@ struct LibraryPage: View {
     }
 
     private var list: some View {
-        List {
-            ForEach(sections) { section in
-                Section(section.title) {
-                    rows(of: section)
+        ScrollViewReader { proxy in
+            List {
+                ForEach(sections) { section in
+                    Section(section.title) {
+                        rows(of: section)
+                    }
+                }
+                if hasMore {
+                    LoadMoreRow(
+                        failed: loadMoreFailed,
+                        loadingLabel: "Chargement de la suite",
+                        onLoadMore: { await onAction(.loadMore) }
+                    )
                 }
             }
-            if hasMore {
-                LoadMoreRow(
-                    failed: loadMoreFailed,
-                    loadingLabel: "Chargement de la suite",
-                    onLoadMore: { await onAction(.loadMore) }
-                )
+            .listStyle(.insetGrouped)
+            .refreshable { await onAction(.refresh) }
+            .onChange(of: shownFocus, initial: true) { _, focused in
+                guard let focused else { return }
+                withAnimation(.smooth) { proxy.scrollTo(focused, anchor: .center) }
             }
         }
-        .listStyle(.insetGrouped)
-        .refreshable { await onAction(.refresh) }
     }
 
     private func rows(of section: ListSection<Book>) -> some View {
