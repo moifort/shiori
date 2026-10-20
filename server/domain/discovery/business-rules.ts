@@ -33,13 +33,14 @@ import type {
   WatchedSaga,
 } from './types'
 
-/** How often the web is searched again for a saga with a volume announced: a
- *  publisher moves dates, and the grounded call is the expensive part — every
+/** How often the web is searched again for a saga with a volume due within
+ *  two months: a publisher moves dates, and the grounded call is the expensive part — every
  *  search it runs is billed, about a cent each. Weekly, these looks were the
  *  one Gemini cost that came back every month without anybody scanning; two
  *  weeks halves it and still follows a date long before the day. */
 export const WATCH_EVERY_MS = 14 * 86_400_000
-/** How often the web is searched again for an author with a work announced.
+/** How often the web is searched again for an author with a work due within
+ *  two months.
  *  An author publishes a few times a year and their shelf keeps three months
  *  of works out, so a month apart misses nothing a reader would see. */
 export const AUTHOR_WATCH_EVERY_MS = 30 * 86_400_000
@@ -142,18 +143,34 @@ const furthestHeldOf = (
 const latestDayOf = (date: string) =>
   date.length === 4 ? `${date}-12-31` : date.length === 7 ? `${date}-31` : date
 
-/** Whether something is announced: a date still to come, or a release with no
- *  date yet. */
-const isAnnounced = (dates: readonly (string | undefined)[], now: Date): boolean => {
+/** The first day a release date may fall on: `2026` may be its first. */
+const earliestDayOf = (date: string) =>
+  date.length === 4 ? `${date}-01-01` : date.length === 7 ? `${date}-01` : date
+
+/** How close a release must be announced for its saga or author to be looked
+ *  up on the short cadence: a date is followed while it may still slip before
+ *  the alert goes out. On 2026-10-20, 28 of the 42 sagas with a volume
+ *  announced had it three months away or more, and were searched fortnightly
+ *  for a date that does not move that early. */
+const SOON_MS = 60 * 86_400_000
+
+/** Whether a release is announced within two months: a date still to come
+ *  whose first possible day is that close. A release with no date yet is
+ *  waiting for one, and is not soon. */
+const isAnnouncedSoon = (dates: readonly (string | undefined)[], now: Date): boolean => {
   const today = now.toISOString().slice(0, 10)
-  return dates.some((date) => date === undefined || latestDayOf(date) > today)
+  const soon = new Date(now.getTime() + SOON_MS).toISOString().slice(0, 10)
+  return dates.some(
+    (date) => date !== undefined && latestDayOf(date) > today && earliestDayOf(date) <= soon,
+  )
 }
 
-/** Whether a saga has news: a volume to come. A volume with no date is one out
- *  on a day nobody found — an announced one always has a date — so it is not
- *  news; nor is a volume just out, which says nothing of the next. */
+/** Whether a saga has news: a volume due within two months. A volume with no
+ *  date is one out on a day nobody found — an announced one always has a date
+ *  — so it is not news; nor is a volume just out, which says nothing of the
+ *  next, nor one announced for next year, whose date does not move yet. */
 export const sagaIsLively = (watch: Pick<SagaWatch, 'volumes'>, now: Date): boolean =>
-  isAnnounced(
+  isAnnouncedSoon(
     watch.volumes.flatMap((volume) => (volume.date ? [volume.date] : [])),
     now,
   )
@@ -170,7 +187,7 @@ export const lastVolumeOutOf = (
 }
 
 /** Whether a saga is due for another look on the web: every two weeks while
- *  a volume is announced, every two months otherwise. */
+ *  a volume is due within two months, every two months otherwise. */
 export const watchIsStale = (watch: SagaWatch | undefined, now: Date): boolean => {
   if (!watch) return true
   const every = sagaIsLively(watch, now) ? WATCH_EVERY_MS : QUIET_WATCH_EVERY_MS
@@ -273,10 +290,10 @@ export const watchedAuthorsOf = (
   })
 
 /** Whether an author is due for another look on the web: every month while a
- *  work is announced, every three months otherwise. */
+ *  work is due within two months, every three months otherwise. */
 export const authorWatchIsStale = (watch: AuthorWatch | undefined, now: Date): boolean => {
   if (!watch) return true
-  const lively = isAnnounced(
+  const lively = isAnnouncedSoon(
     watch.works.map((work) => work.date),
     now,
   )

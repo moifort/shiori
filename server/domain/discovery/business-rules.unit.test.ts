@@ -907,16 +907,21 @@ describe('how often a watch is looked up again', () => {
     checkedAt,
   })
 
-  test('a saga with a volume to come has news; one just out, an older one or none, not', () => {
-    expect(sagaIsLively({ volumes: [volume(1, '2020'), volume(2, '2027-01')] }, now)).toBe(true)
+  test('a saga with a volume due within two months has news; one just out, a later one or none, not', () => {
+    expect(sagaIsLively({ volumes: [volume(1, '2020'), volume(2, '2026-11-20')] }, now)).toBe(true)
+    // `2026-12` may be its first day: within two months.
+    expect(sagaIsLively({ volumes: [volume(2, '2026-12')] }, now)).toBe(true)
+    // Announced for next year: the date does not move that early.
+    expect(sagaIsLively({ volumes: [volume(2, '2027-03-12')] }, now)).toBe(false)
+    expect(sagaIsLively({ volumes: [volume(2, '2027')] }, now)).toBe(false)
     // A volume just out says nothing of the next one.
     expect(sagaIsLively({ volumes: [volume(1, '2026-06-01')] }, now)).toBe(false)
     expect(sagaIsLively({ volumes: [volume(1, '2019'), volume(2)] }, now)).toBe(false)
     expect(sagaIsLively({ volumes: [] }, now)).toBe(false)
   })
 
-  test('a saga with a volume announced every two weeks, any other every two months', () => {
-    const lively = [volume(1, '2026-09-01'), volume(2, '2027-03')]
+  test('a saga with a volume due soon every two weeks, any other every two months', () => {
+    const lively = [volume(1, '2026-09-01'), volume(2, '2026-11-15')]
     expect(watchIsStale(saga(daysAgo(13), lively), now)).toBe(false)
     expect(watchIsStale(saga(daysAgo(15), lively), now)).toBe(true)
     const quiet = [volume(1, '2019-01-01')]
@@ -924,10 +929,13 @@ describe('how often a watch is looked up again', () => {
     expect(watchIsStale(saga(daysAgo(61), quiet), now)).toBe(true)
     const justOut = [volume(1, '2026-09-01')]
     expect(watchIsStale(saga(daysAgo(15), justOut), now)).toBe(false)
+    const farOff = [volume(2, '2027-06-01')]
+    expect(watchIsStale(saga(daysAgo(15), farOff), now)).toBe(false)
+    expect(watchIsStale(saga(daysAgo(61), farOff), now)).toBe(true)
     expect(watchIsStale(undefined, now)).toBe(true)
   })
 
-  test('an author with a work announced every month, any other every three months', () => {
+  test('an author with a work due soon every month, any other every three months', () => {
     const author = (checkedAt: Date, dates: string[]): AuthorWatch => ({
       key: 'k',
       authorKey: 'a' as AuthorKey,
@@ -937,8 +945,10 @@ describe('how often a watch is looked up again', () => {
       checkedAt,
       works: dates.map((date) => ({ title: 'T' as BookTitle, date: date as ReleaseDate })),
     })
-    expect(authorWatchIsStale(author(daysAgo(29), ['2026-12-01']), now)).toBe(false)
-    expect(authorWatchIsStale(author(daysAgo(31), ['2026-12-01']), now)).toBe(true)
+    expect(authorWatchIsStale(author(daysAgo(29), ['2026-11-20']), now)).toBe(false)
+    expect(authorWatchIsStale(author(daysAgo(31), ['2026-11-20']), now)).toBe(true)
+    // Announced for next year: every three months, as a quiet one.
+    expect(authorWatchIsStale(author(daysAgo(31), ['2027-05-01']), now)).toBe(false)
     expect(authorWatchIsStale(author(daysAgo(89), []), now)).toBe(false)
     expect(authorWatchIsStale(author(daysAgo(91), []), now)).toBe(true)
     // A work just out says nothing of the next one.

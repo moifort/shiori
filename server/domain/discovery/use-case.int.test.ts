@@ -224,14 +224,16 @@ describe('the hourly pass', () => {
     expect(authorCalls).toEqual(['Matt Dinniman (livre)'])
   })
 
-  test('looks a saga up again only once its watch is two weeks old', async () => {
+  // Volume 4 is announced for February: its date does not move two weeks on,
+  // so the saga waits two months as a quiet one does.
+  test('looks a saga whose next volume is months away up again two months later', async () => {
     await stock(reader)
     await DiscoveryUseCase.watchDueSagas(now)
     calls.length = 0
 
-    await DiscoveryUseCase.watchDueSagas(new Date('2026-10-04T08:00:00Z'))
-    expect(calls).toEqual([])
     await DiscoveryUseCase.watchDueSagas(new Date('2026-10-11T08:00:00Z'))
+    expect(calls).toEqual([])
+    await DiscoveryUseCase.watchDueSagas(new Date('2026-11-26T08:00:00Z'))
     expect(calls).toEqual(['Dungeon Crawler Carl'])
   })
 
@@ -243,7 +245,7 @@ describe('the hourly pass', () => {
     expect(prompts[0]).toContain('du tome 1 au dernier paru')
     prompts.length = 0
 
-    await DiscoveryUseCase.watchDueSagas(new Date('2026-10-11T08:00:00Z'))
+    await DiscoveryUseCase.watchDueSagas(new Date('2026-11-26T08:00:00Z'))
 
     expect(prompts[0]).toContain('APRÈS le tome 3')
     expect(prompts[0]).not.toContain('du tome 1 au dernier paru')
@@ -508,7 +510,7 @@ describe('a saga heard', () => {
     await DiscoveryUseCase.watchDueSagas(now)
     calls.length = 0
 
-    await DiscoveryUseCase.watchDueSagas(new Date('2026-10-11T08:00:00Z'))
+    await DiscoveryUseCase.watchDueSagas(new Date('2026-11-26T08:00:00Z'))
 
     expect(calls).toEqual([])
     expect(seriesAsked).toEqual(['B0DM67WR2V', 'B0DM67WR2V'])
