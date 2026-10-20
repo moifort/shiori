@@ -5,8 +5,20 @@ name: Schema
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'site/**'
+      - 'docs/**'
+      - 'screenshots/**'
+      - 'README.md'
+      - 'CLAUDE.md'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - 'site/**'
+      - 'docs/**'
+      - 'screenshots/**'
+      - 'README.md'
+      - 'CLAUDE.md'
 
 # A newer push to the same branch, or to the same pull request, makes this run
 # pointless: it is cancelled rather than left to use a runner for nothing. Keyed on

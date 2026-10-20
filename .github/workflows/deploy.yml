@@ -1,10 +1,19 @@
 name: Deploy
 
-# Every push to main redeploys, as on Vinarium. The backend is never applied from
-# a workstation: the Terraform state lives in GCS and this job is its only writer.
+# Every push to main redeploys, as on Vinarium, except one that touches only the
+# landing page, the docs or the captures: none of them reaches the backend, and
+# the Pages workflow publishes the site on its own. The backend is never applied
+# from a workstation: the Terraform state lives in GCS and this job is its only
+# writer.
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'site/**'
+      - 'docs/**'
+      - 'screenshots/**'
+      - 'README.md'
+      - 'CLAUDE.md'
   workflow_dispatch:
 
 permissions:
