@@ -15,6 +15,7 @@ import {
   Ga4PropertyId,
   GcpBillingTable,
   GoogleApiKey,
+  GoogleBooksKey,
   KindleKey,
   PremiumUserIds,
   PublicBaseUrl,
@@ -58,6 +59,9 @@ export const config = () => {
       : undefined,
     audibleKey: runtimeConfig.audibleKey ? AudibleKey(runtimeConfig.audibleKey) : undefined,
     kindleKey: runtimeConfig.kindleKey ? KindleKey(runtimeConfig.kindleKey) : undefined,
+    googleBooksKey: runtimeConfig.googleBooksKey
+      ? GoogleBooksKey(runtimeConfig.googleBooksKey)
+      : undefined,
     anthropicApiKey: runtimeConfig.anthropicApiKey
       ? AnthropicApiKey(runtimeConfig.anthropicApiKey)
       : undefined,

@@ -146,20 +146,21 @@ const editionLineOf = (edition: LibraryEdition, index: number) =>
     .join(', ')}`
 
 /** Step 2 without a web search: a book already named, described from what a
- *  library catalogue recorded of its editions. The model only picks and
+ *  catalogue — the BnF, Google Books — recorded of its editions. The model only picks and
  *  writes — the edition by its index, so an ISBN is never typed by the model,
  *  and the synopsis from the publisher's blurbs, never from memory: a book the
  *  catalogue has no blurb for goes to the grounded step instead. */
 export const editionsPrompt = (
   { title, authors, publisher, language: editionLanguage, format, series }: EditionSeen,
   editions: LibraryEdition[],
+  source: string,
   language: ScanLanguage,
   hints?: EditionHints,
 ) => {
   const blurbs = editions.flatMap((edition, index) =>
     edition.summary ? [`- résumé de l'éditeur, édition [${index}] : ${edition.summary}`] : [],
   )
-  return `Voici un livre, et les éditions que le catalogue de la Bibliothèque nationale de France en recense. Renseigne sa fiche à partir de ces sources.
+  return `Voici un livre, et les éditions que ${source} en recense. Renseigne sa fiche à partir de ces sources.
 
 Livre : « ${title} »${authors.length > 0 ? ` de ${authors.join(', ')}` : ''}
 ${sagaLineOf(series)}${formatLineOf(format)}${hintLinesOf(hints)}Édition : ${publisher ? `éditeur « ${publisher} », ` : ''}en ${languageNames.of(editionLanguage ?? language)}.

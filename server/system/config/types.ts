@@ -27,6 +27,7 @@ export type KindleKey = Brand<string, 'KindleKey'>
 /** The id of the Apple key with the APNs service enabled (10 characters). */
 /** Claude's API key, for the month's discoveries. */
 export type AnthropicApiKey = Brand<string, 'AnthropicApiKey'>
+export type GoogleBooksKey = Brand<string, 'GoogleBooksKey'>
 export type ApnsKeyId = Brand<string, 'ApnsKeyId'>
 /** That key's .p8 PEM content, which signs the provider tokens. */
 export type ApnsPrivateKey = Brand<string, 'ApnsPrivateKey'>

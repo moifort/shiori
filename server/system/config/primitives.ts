@@ -19,6 +19,7 @@ import type {
   Ga4PropertyId as Ga4PropertyIdType,
   GcpBillingTable as GcpBillingTableType,
   GoogleApiKey as GoogleApiKeyType,
+  GoogleBooksKey as GoogleBooksKeyType,
   KindleKey as KindleKeyType,
   PublicBaseUrl as PublicBaseUrlType,
   SentryDsn as SentryDsnType,
@@ -38,6 +39,11 @@ export const AdminToken = (value: unknown) => {
 export const AnthropicApiKey = (value: unknown) => {
   const v = z.string().min(1).parse(value)
   return make<AnthropicApiKeyType>()(v)
+}
+
+export const GoogleBooksKey = (value: unknown) => {
+  const v = z.string().min(1).parse(value)
+  return make<GoogleBooksKeyType>()(v)
 }
 
 export const GoogleApiKey = (value: unknown) => {
