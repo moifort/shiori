@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { Book } from '~/domain/book/types'
+import { ReleaseDate } from '~/domain/series/primitives'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import {
   AWARDS_BY_GENRE,
@@ -8,6 +9,7 @@ import {
   isHeld,
   sectionGenreOf,
   watchKeyOf,
+  winnerStateOf,
   worksOf,
 } from './business-rules'
 import { AWARDS } from './types'
@@ -44,6 +46,17 @@ describe('the winners', () => {
     expect(works[0]?.title).toBe(BookTitle('The Everlasting'))
     const clifton = works.find((work) => work.title === "They'd Rather Be Right")
     expect(clifton?.authors).toEqual([AuthorName('Mark Clifton'), AuthorName('Frank Riley')])
+  })
+
+  test('a Goncourt is listed in French, under the title it won with', () => {
+    const [latest] = worksOf(['goncourt'])
+    expect(latest?.title).toBe(BookTitle('La Maison vide'))
+    expect(latest?.language).toBe('fr')
+    expect(worksOf(['hugo'])[0]?.language).toBe('en')
+  })
+
+  test('literary fiction is shown the Goncourt', () => {
+    expect(AWARDS_BY_GENRE['literary-fiction']).toEqual(['goncourt'])
   })
 
   test('every genre with awards names only known awards', () => {
@@ -156,5 +169,30 @@ describe('sectionGenreOf', () => {
   test('takes a shared award for the genre alone on the shelf', () => {
     expect(sectionGenreOf(crowned('hugo'), ['fantasy'])).toBe('fantasy')
     expect(sectionGenreOf(crowned('clarke'), ['fantasy'])).toBeUndefined()
+  })
+})
+
+describe('where a winner’s edition stands', () => {
+  const today = '2026-10-20'
+
+  test('in print in the language it won in, it is out without being looked up', () => {
+    expect(winnerStateOf({ language: 'fr' }, 'book', 'fr', undefined, today)).toBe('available')
+    expect(winnerStateOf({ language: 'en' }, 'book', 'en', undefined, today)).toBe('available')
+  })
+
+  test('translated or recorded, it stands where the watch found it', () => {
+    expect(winnerStateOf({ language: 'fr' }, 'book', 'en', undefined, today)).toBe('unannounced')
+    expect(winnerStateOf({ language: 'fr' }, 'audiobook', 'fr', undefined, today)).toBe(
+      'unannounced',
+    )
+    expect(
+      winnerStateOf(
+        { language: 'fr' },
+        'audiobook',
+        'fr',
+        { title: BookTitle('La Maison vide'), date: ReleaseDate('2025-09-01') },
+        today,
+      ),
+    ).toBe('available')
   })
 })

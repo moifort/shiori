@@ -1,3 +1,4 @@
+import { AWARD_LANGUAGES } from '~/domain/award/business-rules'
 import type { Award } from '~/domain/award/types'
 
 /** The English label of each award's item on Wikidata: looked up by label
@@ -9,16 +10,17 @@ const LABELS: Record<Award, string> = {
   'locus-fantasy': 'Locus Award for Best Fantasy Novel',
   clarke: 'Arthur C. Clarke Award',
   'world-fantasy': 'World Fantasy Award for Best Novel',
+  goncourt: 'Prix Goncourt',
 }
 
 const ENDPOINT = 'https://query.wikidata.org/sparql'
 
 const AUTHORS_SEPARATOR = '|'
 
-/** Every work that received the award after a year, with its English title
- *  and authors. Only works with an author: the people who won are recorded as
- *  receiving the award too, and a work entered without its author yet is
- *  taken on a later day, once it has one. */
+/** Every work that received the award after a year, with its title and
+ *  authors in the language the award crowns. Only works with an author: the
+ *  people who won are recorded as receiving the award too, and a work entered
+ *  without its author yet is taken on a later day, once it has one. */
 const queryOf = (award: Award, after: number) => `
 SELECT ?title ?year (GROUP_CONCAT(DISTINCT ?authorName; separator="${AUTHORS_SEPARATOR}") AS ?authors) WHERE {
   ?award rdfs:label "${LABELS[award]}"@en .
@@ -27,8 +29,8 @@ SELECT ?title ?year (GROUP_CONCAT(DISTINCT ?authorName; separator="${AUTHORS_SEP
   BIND(YEAR(?date) AS ?year)
   FILTER(?year > ${after})
   ?work wdt:P50 ?author .
-  ?author rdfs:label ?authorName . FILTER(LANG(?authorName) = "en")
-  ?work rdfs:label ?title . FILTER(LANG(?title) = "en")
+  ?author rdfs:label ?authorName . FILTER(LANG(?authorName) = "${AWARD_LANGUAGES[award]}")
+  ?work rdfs:label ?title . FILTER(LANG(?title) = "${AWARD_LANGUAGES[award]}")
 } GROUP BY ?work ?title ?year`
 
 type Binding = { title: { value: string }; year: { value: string }; authors: { value: string } }

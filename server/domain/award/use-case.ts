@@ -22,6 +22,7 @@ import {
   RECENT_COUNT,
   sectionGenreOf,
   watchKeyOf,
+  winnerStateOf,
   worksOf,
 } from './business-rules'
 import { winnersAfter } from './infrastructure/wikidata'
@@ -232,7 +233,7 @@ const viewOf = (
     language,
     watchKey,
     ...(watch ? { watch } : {}),
-    state: stateOf(watch?.found, format, today),
+    state: winnerStateOf(work, format, language, watch?.found, today),
     awaitable: awaitableFormats.includes(format),
     awaitableFormats,
     ...(awaitedId ? { awaitedId } : {}),

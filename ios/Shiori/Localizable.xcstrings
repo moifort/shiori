@@ -8625,6 +8625,22 @@
         }
       }
     },
+    "Prix Goncourt" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prix Goncourt"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prix Goncourt"
+          }
+        }
+      }
+    },
     "Prix Hugo" : {
       "localizations" : {
         "en" : {

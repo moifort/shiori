@@ -1,5 +1,5 @@
-import { editionWatchKeyOf } from '~/domain/awaited-edition/business-rules'
-import type { FoundEdition } from '~/domain/awaited-edition/types'
+import { editionWatchKeyOf, stateOf } from '~/domain/awaited-edition/business-rules'
+import type { AwaitedState, FoundEdition } from '~/domain/awaited-edition/types'
 import { shelfKeyOf } from '~/domain/book/business-rules'
 import type { Book, BookLanguage, Genre } from '~/domain/book/types'
 import { releaseFormatOf } from '~/domain/discovery/business-rules'
@@ -14,6 +14,19 @@ import { WINNERS, type WinnerEntry } from './winners'
 export const AWARDS_BY_GENRE: Partial<Record<Genre, readonly Award[]>> = {
   'science-fiction': ['hugo', 'nebula', 'locus-sf', 'clarke'],
   fantasy: ['world-fantasy', 'locus-fantasy', 'hugo', 'nebula'],
+  'literary-fiction': ['goncourt'],
+}
+
+/** The language each award crowns novels written in: its winners are listed
+ *  under the title they won with, in that language. */
+export const AWARD_LANGUAGES: Record<Award, BookLanguage> = {
+  hugo: 'en',
+  nebula: 'en',
+  'locus-sf': 'en',
+  'locus-fantasy': 'en',
+  clarke: 'en',
+  'world-fantasy': 'en',
+  goncourt: 'fr',
 }
 
 /** How much of a genre a reader must have read or be reading before its awards
@@ -82,7 +95,7 @@ export const worksOf = (
           key,
           title: BookTitle(title),
           authors: names.map(AuthorName),
-          language: 'en',
+          language: AWARD_LANGUAGES[award],
           mentions: [mention],
         })
     }
@@ -169,6 +182,19 @@ const isWork = (book: ShelfBook, work: AwardedWork, found: FoundEdition | undefi
     key === work.key || (found !== undefined && key === shelfKeyOf(found.title, work.authors[0]))
   )
 }
+
+/** Where a winner's edition stands in one format and the app's language. The
+ *  printed novel in the language it won in is out — it was crowned in print —
+ *  so it is never looked up: a Goncourt is in French bookshops already. Any
+ *  other edition stands where the shared watch found it. */
+export const winnerStateOf = (
+  work: Pick<AwardedWork, 'language'>,
+  format: ReleaseFormat,
+  language: BookLanguage,
+  found: FoundEdition | undefined,
+  today: string,
+): AwaitedState =>
+  format === 'book' && work.language === language ? 'available' : stateOf(found, format, today)
 
 /** Whether the reader holds the work in the format on screen, in any status. */
 export const isHeld = (

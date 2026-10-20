@@ -11,7 +11,7 @@ builder.queryFields((t) => ({
     nullable: true,
     description:
       'The novels the literary awards of the reader’s genre crowned — Hugo, Nebula, ' +
-      'Locus, Clarke, World Fantasy — in one format, with where their edition stands in ' +
+      'Locus, Clarke, World Fantasy, Goncourt — in one format, with where their edition stands in ' +
       'the app’s language. The genre is the one asked for when the reader reads it ' +
       'enough, else the one they read most. Null when they read no genre with awards ' +
       'enough.\n\n' +

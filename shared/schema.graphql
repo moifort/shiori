@@ -595,6 +595,9 @@ enum Award {
   """The Arthur C. Clarke Award."""
   CLARKE
 
+  """The Prix Goncourt, crowning a French novel."""
+  GONCOURT
+
   """The Hugo Award for Best Novel."""
   HUGO
 
@@ -703,7 +706,7 @@ type AwardWinner {
   id: String!
   originalLanguage: BookLanguage!
 
-  """The title it won under, in English."""
+  """The title it won under, in the language the award crowns."""
   originalTitle: BookTitle!
 
   """
@@ -3112,7 +3115,7 @@ type Query {
   awardSections(format: ReleaseFormat!): [AwardSection!]!
 
   """
-  The novels the literary awards of the reader’s genre crowned — Hugo, Nebula, Locus, Clarke, World Fantasy — in one format, with where their edition stands in the app’s language. The genre is the one asked for when the reader reads it enough, else the one they read most. Null when they read no genre with awards enough.
+  The novels the literary awards of the reader’s genre crowned — Hugo, Nebula, Locus, Clarke, World Fantasy, Goncourt — in one format, with where their edition stands in the app’s language. The genre is the one asked for when the reader reads it enough, else the one they read most. Null when they read no genre with awards enough.
   
   Only the latest ceremony of each award. Read off shared watches, looked up once a reader awaits the edition, so it answers at once: a novel nobody awaited comes back not `watched`.
   """

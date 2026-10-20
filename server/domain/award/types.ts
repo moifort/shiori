@@ -11,6 +11,7 @@ export const AWARDS = [
   'locus-fantasy',
   'clarke',
   'world-fantasy',
+  'goncourt',
 ] as const
 export type Award = (typeof AWARDS)[number]
 
@@ -25,7 +26,7 @@ export type AwardedWork = {
   key: string
   title: BookTitle
   authors: AuthorName[]
-  /** The language it won in: English for every award listed. */
+  /** The language it won in: the award's — see `AWARD_LANGUAGES`. */
   language: BookLanguage
   /** Newest first. */
   mentions: AwardMention[]

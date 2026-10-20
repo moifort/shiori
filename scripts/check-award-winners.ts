@@ -11,6 +11,7 @@
  * Exits 1 when something differs, 0 otherwise.
  */
 
+import { AWARD_LANGUAGES } from '../server/domain/award/business-rules'
 import type { Award } from '../server/domain/award/types'
 import { WINNERS } from '../server/domain/award/winners'
 
@@ -23,17 +24,22 @@ const LABELS: Record<Award, string> = {
   'locus-fantasy': 'Locus Award for Best Fantasy Novel',
   clarke: 'Arthur C. Clarke Award',
   'world-fantasy': 'World Fantasy Award for Best Novel',
+  goncourt: 'Prix Goncourt',
 }
 
 const ENDPOINT = 'https://query.wikidata.org/sparql'
 
-const queryOf = (label: string) => `
+/** The titles in the language the award crowns: the ones `WINNERS` lists.
+ *  Only works with an author: the people who won are recorded as receiving the
+ *  award too. */
+const queryOf = (award: Award) => `
 SELECT ?title ?year WHERE {
-  ?award rdfs:label "${label}"@en .
+  ?award rdfs:label "${LABELS[award]}"@en .
   ?work p:P166 ?statement .
   ?statement ps:P166 ?award ; pq:P585 ?date .
   BIND(YEAR(?date) AS ?year)
-  ?work rdfs:label ?title . FILTER(LANG(?title) = "en")
+  ?work wdt:P50 [] .
+  ?work rdfs:label ?title . FILTER(LANG(?title) = "${AWARD_LANGUAGES[award]}")
 }`
 
 const normalized = (title: string) =>
@@ -45,7 +51,7 @@ const normalized = (title: string) =>
     .trim()
 
 const winnersOnWikidata = async (award: Award): Promise<Map<number, Set<string>>> => {
-  const response = await fetch(`${ENDPOINT}?query=${encodeURIComponent(queryOf(LABELS[award]))}`, {
+  const response = await fetch(`${ENDPOINT}?query=${encodeURIComponent(queryOf(award))}`, {
     headers: {
       Accept: 'application/sparql-results+json',
       'User-Agent': 'shiori-award-check/1.0 (https://github.com/moifort/shiori)',

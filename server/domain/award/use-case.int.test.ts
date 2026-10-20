@@ -310,6 +310,32 @@ describe('the award sections', () => {
     shelve('Le Mystère de la chambre jaune', 'Gaston Leroux', 'crime')
     expect(await AwardUseCase.sections(reader, 'book', 'fr', now)).toEqual([])
   })
+
+  test('shows a reader of literary fiction the latest Goncourt, out in French', async () => {
+    shelve('L’Étranger', 'Albert Camus', 'literary-fiction')
+    shelve('Madame Bovary', 'Gustave Flaubert', 'literary-fiction')
+    shelve('Belle du Seigneur', 'Albert Cohen', 'literary-fiction')
+
+    const [section] = await AwardUseCase.sections(reader, 'book', 'fr', now)
+    expect(section?.genre).toBe('literary-fiction')
+    expect(section?.winners.map((view) => view.work.title)).toEqual([BookTitle('La Maison vide')])
+    expect(section?.winners[0]?.work.mentions).toEqual([{ award: 'goncourt', year: 2025 }])
+    expect(section?.winners[0]?.state).toBe('available')
+    expect(section?.winners[0]?.awaitableFormats).toEqual(['audiobook'])
+
+    const [english] = await AwardUseCase.sections(reader, 'book', 'en', now)
+    expect(english?.winners[0]?.state).toBe('unannounced')
+    expect(english?.winners[0]?.awaitableFormats).toEqual(['book', 'audiobook'])
+    expect(asked).toEqual([])
+  })
+
+  test('leaves out the Goncourt a reader holds', async () => {
+    shelve('L’Étranger', 'Albert Camus', 'literary-fiction')
+    shelve('Madame Bovary', 'Gustave Flaubert', 'literary-fiction')
+    shelve('La Maison vide', 'Laurent Mauvignier', 'literary-fiction')
+
+    expect(await AwardUseCase.sections(reader, 'book', 'fr', now)).toEqual([])
+  })
 })
 
 describe('the daily winners pass', () => {
@@ -325,6 +351,7 @@ describe('the daily winners pass', () => {
 
     expect(wikidataAsked).toContain('clarke>2025')
     expect(wikidataAsked).toContain('hugo>2026')
+    expect(wikidataAsked).toContain('goncourt>2025')
     expect(fake.data('award-winners', 'clarke~2026')).toMatchObject({
       award: 'clarke',
       year: 2026,

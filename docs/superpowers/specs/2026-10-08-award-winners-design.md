@@ -50,7 +50,10 @@ hand from settings, friends' views.
    | `literary-fiction` | Booker, Goncourt |
 
    The first version ships `science-fiction` and `fantasy` only. The other rows are added when
-   their data is. The Grand Prix de l'Imaginaire is left out until its full list of French
+   their data is. `literary-fiction` got the Goncourt on 2026-10-20, alone for now: its winners
+   are listed in French under the title they won with, and in a French app the printed novel is
+   out without being looked up — only its recording, or its translation in another app
+   language, is awaited. The Grand Prix de l'Imaginaire is left out until its full list of French
    winners is checked: no source reachable when this was built gave every year.
 
 3. **The winners file.** `server/domain/award/winners.ts`, one row per winner: the year of the

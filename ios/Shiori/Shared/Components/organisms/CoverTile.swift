@@ -25,6 +25,9 @@ struct CoverTile: View {
                     .font(.caption2)
                     .foregroundStyle(captionTint.map(AnyShapeStyle.init) ?? AnyShapeStyle(.secondary))
                     .lineLimit(1)
+                    // A little smaller before it gives way: "Goncourt 2025"
+                    // fits whole under a summary cover.
+                    .minimumScaleFactor(0.8)
                     .truncationMode(captionTruncation)
             }
         }

@@ -13,6 +13,7 @@ enum LiteraryAward: String, Sendable, Hashable, Identifiable, Codable {
     case locusFantasy = "LOCUS_FANTASY"
     case clarke = "CLARKE"
     case worldFantasy = "WORLD_FANTASY"
+    case goncourt = "GONCOURT"
 
     var id: String { rawValue }
 
@@ -25,6 +26,7 @@ enum LiteraryAward: String, Sendable, Hashable, Identifiable, Codable {
         case .locusFantasy: String(localized: "Prix Locus de la fantasy")
         case .clarke: String(localized: "Prix Arthur C. Clarke")
         case .worldFantasy: String(localized: "World Fantasy Award")
+        case .goncourt: String(localized: "Prix Goncourt")
         }
     }
 
@@ -36,6 +38,7 @@ enum LiteraryAward: String, Sendable, Hashable, Identifiable, Codable {
         case .locusScienceFiction, .locusFantasy: "Locus"
         case .clarke: "Clarke"
         case .worldFantasy: "World Fantasy"
+        case .goncourt: "Goncourt"
         }
     }
 

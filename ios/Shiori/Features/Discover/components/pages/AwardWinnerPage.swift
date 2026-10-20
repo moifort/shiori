@@ -104,6 +104,16 @@ struct AwardWinnerPage: View {
     }
 }
 
+#Preview("Goncourt") {
+    NavigationStack {
+        AwardWinnerPage(
+            winner: .goncourtPreview,
+            shown: AwardWinner.goncourtPreview.cover,
+            isDescribing: false
+        ) { _ in }
+    }
+}
+
 #Preview("Describing") {
     NavigationStack {
         AwardWinnerPage(winner: .preview, shown: AwardWinner.preview.cover, isDescribing: true) { _ in }

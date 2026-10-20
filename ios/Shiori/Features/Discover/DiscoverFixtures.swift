@@ -132,10 +132,31 @@ extension AwardWinner {
         awaitableFormats: [.book, .audiobook],
         awaitedEditionId: nil
     )
+
+    /// A Goncourt in a French app: out in print, only its recording to await.
+    static let goncourtPreview = AwardWinner(
+        id: "la-maison-vide--laurent-mauvignier",
+        format: .book,
+        title: "La Maison vide",
+        originalTitle: "La Maison vide",
+        originalLanguage: .fr,
+        authors: ["Laurent Mauvignier"],
+        mentions: [AwardMention(award: .goncourt, year: 2025)],
+        state: .available,
+        watched: false,
+        date: nil,
+        coverURL: nil,
+        storeURL: nil,
+        awaitableFormats: [.audiobook],
+        awaitedEditionId: nil
+    )
 }
 
 extension AwardSection {
-    static let previews = [AwardSection(genre: .fantasy, winners: [.preview])]
+    static let previews = [
+        AwardSection(genre: .fantasy, winners: [.preview]),
+        AwardSection(genre: .literaryFiction, winners: [.goncourtPreview]),
+    ]
 }
 
 extension FriendPicks {

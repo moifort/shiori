@@ -27,6 +27,7 @@ export const AwardEnum = builder.enumType('Award', {
       value: 'world-fantasy',
       description: 'The World Fantasy Award for Best Novel.',
     },
+    GONCOURT: { value: 'goncourt', description: 'The Prix Goncourt, crowning a French novel.' },
   } as const,
 })
 
@@ -59,7 +60,7 @@ export const AwardWinnerType = builder.objectRef<AwardedWorkView>('AwardWinner')
     }),
     originalTitle: t.field({
       type: 'BookTitle',
-      description: 'The title it won under, in English.',
+      description: 'The title it won under, in the language the award crowns.',
       resolve: (view) => view.work.title,
     }),
     originalLanguage: t.field({
