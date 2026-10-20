@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'bun:test'
-import { boxOf, heldFormatOf, inReadingOrder } from '~/domain/scan/business-rules'
+import {
+  boxOf,
+  freeSearchesSpent,
+  heldFormatOf,
+  inReadingOrder,
+} from '~/domain/scan/business-rules'
 
 describe('boxOf', () => {
   test('turns Gemini’s [ymin, xmin, ymax, xmax] on 0–1000 into fractions of the photo', () => {
@@ -48,5 +53,18 @@ describe('heldFormatOf', () => {
     expect(heldFormatOf('manga')).toEqual({ format: 'manga' })
     expect(heldFormatOf(null)).toEqual({})
     expect(heldFormatOf('scroll')).toEqual({})
+  })
+})
+
+describe("when Gemini's free searches are spent", () => {
+  // 6.3 searches a call: 714 calls is 4,498 searches, 715 is 4,504.
+  test('not before the margin under the 5,000 free', () => {
+    expect(freeSearchesSpent(0)).toBe(false)
+    expect(freeSearchesSpent(714)).toBe(false)
+  })
+
+  test('from the margin on, and for the rest of the month', () => {
+    expect(freeSearchesSpent(715)).toBe(true)
+    expect(freeSearchesSpent(2000)).toBe(true)
   })
 })

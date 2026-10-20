@@ -1,16 +1,18 @@
 /**
- * Compares, book by book, the two ways a named book is described: from the
+ * Compares, book by book, the ways a named book can be described: from the
  * BnF's catalogue with an ungrounded model call, as `lookUpEdition` does first
- * for a French edition, and from the grounded web search it falls back on.
- * Runs the real code against the real Gemini API and the real catalogue, with
- * the Firestore fake standing in for storage.
+ * for a French edition; from Gemini's grounded web search; and from Claude's
+ * web search, which takes over once Gemini's free searches are spent. Runs the
+ * real code against the real APIs, with the Firestore fake standing in for
+ * storage. The BnF column falls back on Gemini as production does.
  *
- * A manual check, never part of `bun test`: the grounded side bills four to
- * six Google searches a book (≈ €0.08), thirty books ≈ €2.40. `--cheap`
- * runs the catalogue side alone, for about a cent. Writes
- * `.context-enrichment-bench.html`, covers side by side.
+ * A manual check, never part of `bun test`: the Gemini column bills four to
+ * six Google searches a book (≈ €0.08), thirty books ≈ €2.40; the Claude column
+ * about $0.04 a book on Anthropic credit. `--no-gemini` leaves Gemini's column
+ * out. Writes `.context-enrichment-bench.html`.
  *
- * Usage: NITRO_GOOGLE_API_KEY=... bun scripts/bench-enrichment.ts [--cheap]
+ * Usage: NITRO_GOOGLE_API_KEY=... NITRO_ANTHROPIC_API_KEY=... \
+ *          bun scripts/bench-enrichment.ts [--no-gemini]
  */
 
 import { mock } from 'bun:test'
@@ -18,32 +20,54 @@ import { writeFileSync } from 'node:fs'
 import { fakeDb, resetFakeFirestore } from '../server/test/fake-firestore'
 
 const apiKey = process.env.NITRO_GOOGLE_API_KEY
-if (!apiKey) {
-  process.stderr.write('NITRO_GOOGLE_API_KEY is unset\n')
+const anthropicApiKey = process.env.NITRO_ANTHROPIC_API_KEY
+if (!apiKey || !anthropicApiKey) {
+  process.stderr.write('NITRO_GOOGLE_API_KEY and NITRO_ANTHROPIC_API_KEY must be set\n')
   process.exit(1)
 }
-const cheap = process.argv.includes('--cheap')
+const withGemini = !process.argv.includes('--no-gemini')
 
 // `$fetch` is a Nitro auto-import, provided as the deployed function has it.
 const { ofetch } = await import('ofetch')
 ;(globalThis as unknown as { $fetch: typeof ofetch }).$fetch = ofetch
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
-mock.module('~/system/config', () => ({ config: () => ({ googleApiKey: apiKey }) }))
+mock.module('~/system/config', () => ({
+  config: () => ({ googleApiKey: apiKey, anthropicApiKey }),
+}))
 resetFakeFirestore()
 
-// The grounded side is the same lookup with a catalogue that lists nothing.
+type Column = 'bnf' | 'gemini' | 'claude'
+let column: Column = 'bnf'
+const lookedUp: string[] = []
+
+// The web columns are the same lookup with a catalogue that lists nothing.
 const bnf = await import('~/domain/scan/bnf')
 const catalogueOf = bnf.bnfEditionsOf
-let catalogueOn = true
-const lookedUp: string[] = []
 mock.module('~/domain/scan/bnf', () => ({
   ...bnf,
   bnfEditionsOf: async (book: Parameters<typeof catalogueOf>[0]) => {
-    if (!catalogueOn) return []
+    if (column !== 'bnf') return []
     const editions = await catalogueOf(book)
-    lookedUp.push(`${editions.length} editions, ${editions.filter((e) => e.summary).length} blurbs`)
+    lookedUp.push(
+      `BnF : ${editions.length} éditions, ${editions.filter((e) => e.summary).length} résumés`,
+    )
     return editions
   },
+}))
+// Claude's column sends the grounded step to Claude, as the switch does.
+const gemini = await import('~/domain/scan/gemini')
+const generateOf = gemini.generate
+const { searchedWithClaude } = await import('~/domain/scan/claude-search')
+mock.module('~/domain/scan/gemini', () => ({
+  ...gemini,
+  generate: (options: Parameters<typeof generateOf>[0]) =>
+    column === 'claude' && options.grounded
+      ? searchedWithClaude({
+          step: options.step,
+          prompt: options.parts.map((part) => ('text' in part ? part.text : '')).join(''),
+          responseSchema: options.responseSchema,
+        })
+      : generateOf(options),
 }))
 
 const { ScanCommand } = await import('~/domain/scan/command')
@@ -322,8 +346,8 @@ const seenOf = (book: Case) => {
 
 type Side = { result?: ScanResult; searches: number; ms: number; failed?: string; via?: string }
 
-const described = async (book: Case, withCatalogue: boolean): Promise<Side> => {
-  catalogueOn = withCatalogue
+const described = async (book: Case, side: Column): Promise<Side> => {
+  column = side
   lookedUp.length = 0
   const started = Date.now()
   try {
@@ -332,24 +356,29 @@ const described = async (book: Case, withCatalogue: boolean): Promise<Side> => {
       result,
       searches: usage.enrichment?.searches ?? 0,
       ms: Date.now() - started,
-      via: withCatalogue ? (lookedUp[0] ?? 'not asked') : undefined,
+      via: lookedUp[0],
     }
   } catch (error) {
-    return { searches: 0, ms: Date.now() - started, failed: String(error) }
+    return { searches: 0, ms: Date.now() - started, failed: (error as Error).message }
   }
 }
 
-const rows: { book: Case; catalogue: Side; web?: Side }[] = []
+const rows: { book: Case; sides: Partial<Record<Column, Side>> }[] = []
 for (const book of CASES) {
-  const catalogue = await described(book, true)
-  const web = cheap ? undefined : await described(book, false)
-  rows.push({ book, catalogue, web })
+  const sides: Partial<Record<Column, Side>> = {
+    bnf: await described(book, 'bnf'),
+    ...(withGemini && { gemini: await described(book, 'gemini') }),
+    claude: await described(book, 'claude'),
+  }
+  rows.push({ book, sides })
   const line = (side: Side | undefined) =>
     side
-      ? `${side.result?.isbn13 ?? '—'} ${side.result?.coverUrl ? 'cover' : 'no cover'} s=${side.searches}`
+      ? side.result
+        ? `${side.result.isbn13 ?? '—'}${side.result.coverUrl ? '' : ' (pas de couv.)'} s=${side.searches}`
+        : 'échec'
       : '—'
   process.stdout.write(
-    `${book.title} (${book.reader}) | catalogue ${line(catalogue)} [${catalogue.via}] | web ${line(web)}\n`,
+    `${book.title} (${book.language}→${book.reader}) | BnF ${line(sides.bnf)} | Gemini ${line(sides.gemini)} | Claude ${line(sides.claude)}\n`,
   )
 }
 
@@ -359,43 +388,61 @@ const escaped = (text: unknown) =>
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string,
   )
 
-const column = (label: string, side: Side | undefined) => {
-  if (!side) return `<div class="side"><h3>${label}</h3><p>(non lancé)</p></div>`
-  const r = side.result
-  const fellBack = side.via !== undefined && side.searches > 0
-  return `<div class="side"><h3>${label}${fellBack ? ' — repli sur le web' : ''}</h3>
-<img src="${escaped(r?.coverUrl ?? '')}" alt="pas de couverture">
-<dl>
-<dt>ISBN</dt><dd>${escaped(r?.isbn13)}</dd>
-<dt>Éditeur</dt><dd>${escaped(r?.publisher)}</dd>
-<dt>Pages</dt><dd>${escaped(r?.pageCount)}</dd>
-<dt>1re publication</dt><dd>${escaped(r?.firstPublishedIn)}</dd>
-<dt>Genre</dt><dd>${escaped(r?.genre)} — ${escaped(r?.subgenres?.join(', '))}</dd>
-<dt>Coût</dt><dd>${side.searches} recherche(s) · ${(side.ms / 1000).toFixed(1)} s${side.via ? ` · BnF : ${escaped(side.via)}` : ''}</dd>
-</dl>
-<p>${escaped(r?.synopsis)}</p>${side.failed ? `<p class="err">${escaped(side.failed)}</p>` : ''}</div>`
+const LABELS: Record<Column, string> = {
+  bnf: 'BnF d’abord, repli Gemini',
+  gemini: 'Gemini groundé',
+  claude: 'Claude Haiku + recherche web',
 }
+
+const cell = (side: Column, found: Side | undefined) => {
+  if (!found) return `<div class="side"><h3>${LABELS[side]}</h3><p>(non lancé)</p></div>`
+  const r = found.result
+  if (!r)
+    return `<div class="side off"><h3>${LABELS[side]}</h3><p class="err">${escaped(found.failed)}</p></div>`
+  const fellBack = side === 'bnf' && found.searches > 0
+  return `<div class="side"><h3>${LABELS[side]}${fellBack ? ' — repli web' : ''}</h3>
+<img src="${escaped(r.coverUrl ?? '')}" alt="pas de couverture">
+<dl>
+<dt>ISBN</dt><dd>${escaped(r.isbn13)}</dd>
+<dt>Éditeur</dt><dd>${escaped(r.publisher)}</dd>
+<dt>Pages</dt><dd>${escaped(r.pageCount)}</dd>
+<dt>1re publ.</dt><dd>${escaped(r.firstPublishedIn)}</dd>
+<dt>Genre</dt><dd>${escaped(r.genre)} — ${escaped(r.subgenres?.join(', '))}</dd>
+<dt>Coût</dt><dd>${found.searches} recherche(s) déclarée(s) · ${(found.ms / 1000).toFixed(1)} s${found.via ? ` · ${escaped(found.via)}` : ''}</dd>
+</dl>
+<p>${escaped(r.synopsis)}</p></div>`
+}
+
+const described_ = (side: Column) => rows.filter(({ sides }) => sides[side]?.result).length
+const covered = (side: Column) => rows.filter(({ sides }) => sides[side]?.result?.coverUrl).length
 
 const html = `<!doctype html><meta charset="utf-8"><title>Banc enrichment</title>
 <style>
 body{font:14px -apple-system,system-ui;margin:24px;color:#222}
 .row{border-top:1px solid #ddd;padding:16px 0}
 .row h2{font-size:16px;margin:0 0 8px}
-.pair{display:grid;grid-template-columns:1fr 1fr;gap:24px}
-.side img{height:180px;float:left;margin:0 12px 8px 0;background:#eee;min-width:110px}
-dl{display:grid;grid-template-columns:110px 1fr;margin:0;font-size:12px}dt{color:#888}dd{margin:0}
-.side p{clear:both;font-size:13px;line-height:1.4}.err{color:#b00}
+.trio{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+.side img{height:150px;float:left;margin:0 10px 8px 0;background:#eee;min-width:96px}
+dl{display:grid;grid-template-columns:70px 1fr;margin:0;font-size:12px}dt{color:#888}dd{margin:0}
+.side p{clear:both;font-size:13px;line-height:1.4}.off{opacity:.6}.err{color:#b00}
 h3{font-size:12px;text-transform:uppercase;color:#888;margin:0 0 6px}
+table{border-collapse:collapse;margin:8px 0 16px}td,th{border:1px solid #ddd;padding:4px 10px}
 </style>
-<h1>Enrichment : catalogue BnF + Flash-Lite vs recherche web</h1>
+<h1>Enrichment : BnF, Gemini groundé, Claude + recherche web</h1>
+<table><tr><th></th><th>Décrits</th><th>Avec couverture</th></tr>
+${(['bnf', 'gemini', 'claude'] as Column[])
+  .map(
+    (side) =>
+      `<tr><th>${LABELS[side]}</th><td>${described_(side)}/${rows.length}</td><td>${covered(side)}/${rows.length}</td></tr>`,
+  )
+  .join('')}</table>
 ${rows
   .map(
     ({
       book,
-      catalogue,
-      web,
-    }) => `<div class="row"><h2>${escaped(book.title)} — ${escaped(book.author)}${book.series ? ` · ${escaped(book.series.name)} ${book.series.volume ?? ''}` : ''} · ${escaped(book.publisher)} · lecteur ${book.reader}</h2>
-<div class="pair">${column('Catalogue d’abord (nouveau)', catalogue)}${column('Recherche web (avant)', web)}</div></div>`,
+      sides,
+    }) => `<div class="row"><h2>${escaped(book.title)} — ${escaped(book.author)}${book.series ? ` · ${escaped(book.series.name)} ${book.series.volume ?? ''}` : ''} · ${escaped(book.publisher)} · édition ${book.language}, lecteur ${book.reader}</h2>
+<div class="trio">${cell('bnf', sides.bnf)}${cell('gemini', sides.gemini)}${cell('claude', sides.claude)}</div></div>`,
   )
   .join('\n')}`
 

@@ -1,12 +1,20 @@
 import { afterEach, describe, expect, mock, setSystemTime, test } from 'bun:test'
-import {
-  answerOf,
+import { answerOf } from '~/domain/scan/json-answer'
+
+// The month's grounded calls are counted in Firestore; a unit test counts none.
+mock.module('~/domain/scan/infrastructure/repository', () => ({
+  countGroundedCall: async () => {},
+  groundedCallsIn: async () => 0,
+}))
+
+const {
   billedSearches,
-  type GeminiResponse,
+
   generate,
   requestBodyOf,
   SpendCapReached,
-} from '~/domain/scan/gemini'
+} = await import('~/domain/scan/gemini')
+type GeminiResponse = import('~/domain/scan/gemini').GeminiResponse
 
 const answered = (parts: Partial<GeminiResponse>): GeminiResponse => ({
   candidates: [{ content: { parts: [{ text: '{}' }] } }],

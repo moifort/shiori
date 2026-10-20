@@ -1,5 +1,8 @@
 import { setTimeout } from 'node:timers/promises'
-import { summedUsage } from '~/domain/scan/business-rules'
+import { freeSearchesSpent, summedUsage } from '~/domain/scan/business-rules'
+import { searchedWithClaude } from '~/domain/scan/claude-search'
+import * as repository from '~/domain/scan/infrastructure/repository'
+import { answerOf, answerShape } from '~/domain/scan/json-answer'
 import { SpendCapReached } from '~/domain/scan/spend-cap'
 import type { AiStepUsage } from '~/domain/scan/types'
 import { config } from '~/system/config'
@@ -77,6 +80,18 @@ type GenerateOptions = {
 export const generate = async <T>(
   options: GenerateOptions,
 ): Promise<{ value: T; usage?: AiStepUsage }> => {
+  if (options.grounded && (await searchesOnClaude())) {
+    try {
+      return await searchedWithClaude<T>({
+        step: options.step,
+        prompt: options.parts.map((part) => ('text' in part ? part.text : '')).join(''),
+        responseSchema: options.responseSchema,
+      })
+    } catch (error) {
+      // Credit spent or Claude down: Gemini answers, billed, rather than nobody.
+      logger.warn('Claude search failed, Gemini asked instead', { error, step: options.step })
+    }
+  }
   try {
     return await answeredOnce<T>(options)
   } catch (error) {
@@ -85,6 +100,30 @@ export const generate = async <T>(
     const { value, usage } = await answeredOnce<T>(options)
     return { value, usage: summedUsage(error.usage, usage) }
   }
+}
+
+/** Whether a grounded step goes to Claude: once this month's grounded calls
+ *  have spent Gemini's free searches, and only with an Anthropic key. Every
+ *  search past them is billed, where Claude's are paid from the Anthropic
+ *  credit and capped per call. A counter that cannot be read keeps Gemini. */
+const searchesOnClaude = async (): Promise<boolean> => {
+  if (!config().anthropicApiKey) return false
+  try {
+    return freeSearchesSpent(await repository.groundedCallsIn(thisMonth()))
+  } catch (error) {
+    logger.warn('grounded calls not read', { error })
+    return false
+  }
+}
+
+const thisMonth = () => new Date().toISOString().slice(0, 7)
+
+/** One more grounded call on this month's count. A count lost is a few
+ *  searches the switch learns of late, never a failed step. */
+const countedGroundedCall = async () => {
+  await repository
+    .countGroundedCall(thisMonth())
+    .catch((error) => logger.warn('grounded call not counted', { error }))
 }
 
 /** An answer with nothing in it, or nothing JSON can read. Kept apart from a
@@ -166,7 +205,9 @@ const requested = async (options: GenerateOptions): Promise<GeminiResponse> => {
       body: requestBodyOf(options),
     })
   try {
-    return await call()
+    const response = await call()
+    if (options.grounded) await countedGroundedCall()
+    return response
   } catch (error) {
     const spent = spendCapOf(error)
     if (spent) {
@@ -178,7 +219,9 @@ const requested = async (options: GenerateOptions): Promise<GeminiResponse> => {
     if (status === undefined || !TRANSIENT_STATUSES.has(status)) throw error
     logger.warn('Gemini unavailable, asked again', { error, status, step: options.step })
     await setTimeout(RETRY_PAUSE_MS)
-    return await call()
+    const response = await call()
+    if (options.grounded) await countedGroundedCall()
+    return response
   }
 }
 
@@ -203,68 +246,6 @@ export const requestBodyOf = ({ parts, responseSchema, grounded }: GenerateOptio
         tools: undefined,
         generationConfig: { responseMimeType: 'application/json', responseSchema },
       }
-
-/** Said as a description, because the model shown a bare schema sometimes
- *  answers with the schema itself. */
-const answerShape = (schema: unknown) =>
-  `Réponds UNIQUEMENT par l'objet JSON demandé, sans aucun texte autour. Le schéma JSON ci-dessous décrit la forme de cet objet ; c'est une description, ne le recopie pas :
-${JSON.stringify(schema)}`
-
-/** The JSON object in an answer. JSON mode returns it bare; free text may fence
- *  it, say a word around it, repeat it, or close it with one brace too many —
- *  seen on September 27th 2026 — so the object read is the one that opens at
- *  the first brace and closes where its own braces balance, whatever follows.
- *  It may also explain itself in a block comment inside the object, as it did
- *  on September 28th 2026; the comment is dropped rather than paid for
- *  twice. */
-export const answerOf = (text: string): unknown => {
-  const start = text.indexOf('{')
-  if (start === -1) throw new Error('Gemini answered without a JSON object')
-  const json = withoutComments(text.slice(start))
-  return JSON.parse(json.slice(0, closingBraceOf(json, 0) + 1))
-}
-
-/** The text with its block comments removed, those inside strings aside. */
-const withoutComments = (json: string): string => {
-  let kept = ''
-  let inString = false
-  for (let index = 0; index < json.length; index += 1) {
-    const char = json[index]
-    if (inString) {
-      kept += char
-      if (char === '\\') kept += json[++index] ?? ''
-      else if (char === '"') inString = false
-    } else if (char === '/' && json[index + 1] === '*') {
-      const end = json.indexOf('*/', index + 2)
-      if (end === -1) return kept
-      index = end + 1
-    } else {
-      if (char === '"') inString = true
-      kept += char
-    }
-  }
-  return kept
-}
-
-/** Where the object opening at `start` closes, braces inside strings aside;
- *  the text's end when it never does, so that JSON.parse says what is wrong. */
-const closingBraceOf = (text: string, start: number): number => {
-  let depth = 0
-  let inString = false
-  for (let index = start; index < text.length; index += 1) {
-    const char = text[index]
-    if (inString) {
-      if (char === '\\') index += 1
-      else if (char === '"') inString = false
-    } else if (char === '"') inString = true
-    else if (char === '{') depth += 1
-    else if (char === '}') {
-      depth -= 1
-      if (depth === 0) return index
-    }
-  }
-  return text.length - 1
-}
 
 const capturedUsage = (
   step: string,
