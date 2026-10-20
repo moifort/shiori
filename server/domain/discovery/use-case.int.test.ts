@@ -721,14 +721,14 @@ describe('the Authors shelf', () => {
     expect(authorCalls).toEqual([])
   })
 
-  test('looks an author up once a month for every reader who holds them', async () => {
+  test('looks an author up once every three months for every reader who holds them', async () => {
     await stock(reader)
     await stock(other)
     await DiscoveryUseCase.watchDueSagas(now)
-    await DiscoveryUseCase.watchDueSagas(new Date('2026-10-20T08:00:00Z'))
+    await DiscoveryUseCase.watchDueSagas(new Date('2026-12-20T08:00:00Z'))
 
     expect(authorCalls).toEqual(['Matt Dinniman (livre)'])
-    await DiscoveryUseCase.watchDueSagas(new Date('2026-10-27T08:00:00Z'))
+    await DiscoveryUseCase.watchDueSagas(new Date('2026-12-27T08:00:00Z'))
     expect(authorCalls).toEqual(['Matt Dinniman (livre)', 'Matt Dinniman (livre)'])
   })
 })

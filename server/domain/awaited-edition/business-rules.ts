@@ -2,7 +2,7 @@ import { authorKeyOf } from '~/domain/author/primitives'
 import type { AuthorKey } from '~/domain/author/types'
 import { shelfKeyOf } from '~/domain/book/business-rules'
 import type { Book, BookFormat, BookLanguage } from '~/domain/book/types'
-import { lastDayOf, releaseFormatOf, WATCH_EVERY_MS } from '~/domain/discovery/business-rules'
+import { lastDayOf, releaseFormatOf } from '~/domain/discovery/business-rules'
 import type { ReleaseFormat } from '~/domain/discovery/types'
 import { isbn10Of } from '~/domain/scan/amazon-cover'
 import { AMAZON_STORES } from '~/domain/shared/amazon-stores'
@@ -17,6 +17,10 @@ import type {
   EditionWatch,
   FoundEdition,
 } from './types'
+
+/** How often the web is searched again for an edition awaited and not yet out
+ *  or confirmed: every two weeks, as the saga watch did until 2026-10-20. */
+const EDITION_WATCH_EVERY_MS = 14 * 86_400_000
 
 /** How many editions one reader may await: each one is a grounded call every
  *  two weeks. */
@@ -126,7 +130,7 @@ export const dueWatchesOf = (
       isConfirmed(watch.found, watch.format)
     )
       continue
-    if (watch && now.getTime() - watch.checkedAt.getTime() < WATCH_EVERY_MS) continue
+    if (watch && now.getTime() - watch.checkedAt.getTime() < EDITION_WATCH_EVERY_MS) continue
     due.set(edition.watchKey, edition)
   }
   return [...due.values()].sort(
