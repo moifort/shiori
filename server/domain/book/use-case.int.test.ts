@@ -368,4 +368,17 @@ describe('a book added from a shelf photo', () => {
 
     expect(fake.data('books', book.id)).not.toHaveProperty('awaitingDescription')
   })
+
+  test('is looked up beside its saga alone, never the whole library', async () => {
+    const volume = await BookUseCase.addFromShelf(reader, onePiece)
+    await BookUseCase.addFromShelf(reader, { ...onePiece, volume: VolumeNumber(6) })
+    for (let index = 0; index < 5; index++) await aBook()
+    if (volume === 'quota-exhausted') throw new Error('the allowance was not used up')
+    answers = [{ title: 'One Piece', authors: ['Eiichiro Oda'], subgenres: [] }]
+    const before = fake.queriedDocs
+
+    await BookUseCase.refresh(reader, volume.id, 'fr')
+
+    expect(fake.queriedDocs - before).toBe(2)
+  })
 })
