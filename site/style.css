@@ -545,7 +545,7 @@ section {
 .share-device { --dw: var(--share-dw); }
 .share-toast { bottom: calc(var(--share-dw) * (2.172 - 1.18) + 40px); }
 .share-toast { position: absolute; left: 50%; bottom: 0; display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 99px; background: #1c1a17; color: #fff; font-size: 14px; font-weight: 600; white-space: nowrap; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2); transform: translate(-50%, 12px); opacity: 0; animation: share-toast 5s ease-in-out infinite; }
-.share-toast svg { color: #f0b267; }
+.share-toast .sf { color: #f0b267; }
 @keyframes share-toast { 0%, 32% { opacity: 0; transform: translate(-50%, 12px); } 40%, 88% { opacity: 1; transform: translate(-50%, 0); } 96%, 100% { opacity: 0; transform: translate(-50%, 12px); } }
 
 /* Editions in several languages, as the app's rows tag them: the language
@@ -554,7 +554,7 @@ section {
 .lang-cover { position: relative; flex: none; }
 .lang-cover img { display: block; }
 .audio-badge { position: absolute; top: -1.6cqi; right: -1.6cqi; display: grid; place-items: center; width: 5.6cqi; height: 5.6cqi; border-radius: 50%; background: #ff9500; color: #fff; box-shadow: 0 0 0 0.6cqi #fff; }
-.audio-badge svg { width: 3.3cqi; height: 3.3cqi; }
+.audio-badge .sf { width: 3.3cqi; height: 3.3cqi; }
 
 /* The library search: a few letters typed, the sagas then the books found,
    the match marked as the app marks it. */
@@ -583,11 +583,11 @@ section {
 .rate-row .watch-title { font-size: 17px; }
 .rate-row .watch-author { font-size: 14px; }
 .rate-stars { display: flex; gap: 3px; margin-top: 6px; }
-.rate-star svg { display: block; width: 20px; height: 20px; fill: rgba(120, 120, 128, 0.2); animation: rate-fill 5s ease infinite; animation-delay: calc(var(--i) * 0.18s); }
-.saga .rate-star svg { animation-delay: calc(2.5s + var(--i) * 0.18s); }
-.saga .rate-star:nth-child(5) svg { animation-name: rate-fill-four; }
-@keyframes rate-fill { 0%, 6% { fill: rgba(120, 120, 128, 0.2); transform: scale(0.8); } 12% { fill: #ffcc00; transform: scale(1.15); } 16%, 90% { fill: #ffcc00; transform: none; } 100% { fill: rgba(120, 120, 128, 0.2); } }
-@keyframes rate-fill-four { 0%, 100% { fill: rgba(120, 120, 128, 0.2); } }
+.rate-star .sf { width: 20px; height: 19px; background-color: rgba(120, 120, 128, 0.2); animation: rate-fill 5s ease infinite; animation-delay: calc(var(--i) * 0.18s); }
+.saga .rate-star .sf { animation-delay: calc(2.5s + var(--i) * 0.18s); }
+.saga .rate-star:nth-child(5) .sf { animation-name: rate-fill-four; }
+@keyframes rate-fill { 0%, 6% { background-color: rgba(120, 120, 128, 0.2); transform: scale(0.8); } 12% { background-color: #ffcc00; transform: scale(1.15); } 16%, 90% { background-color: #ffcc00; transform: none; } 100% { background-color: rgba(120, 120, 128, 0.2); } }
+@keyframes rate-fill-four { 0%, 100% { background-color: rgba(120, 120, 128, 0.2); } }
 /* A saga as the Series tab draws it: its name, then the strip of its volumes. */
 .rate-strip { display: flex; gap: 6px; margin-top: 8px; }
 .rate-strip img { width: 34px; height: 51px; object-fit: cover; border-radius: 3px; outline: 0.5px solid rgba(60, 60, 67, 0.29); outline-offset: -0.5px; }
@@ -637,9 +637,9 @@ section {
 /* Off, then on, as a reader flips it. */
 @keyframes hide-track { 0%, 30% { background: rgba(120, 120, 128, 0.16); } 38%, 88% { background: #34c759; } 96%, 100% { background: rgba(120, 120, 128, 0.16); } }
 @keyframes hide-knob { 0%, 30% { transform: translateX(-20px); } 38%, 88% { transform: none; } 96%, 100% { transform: translateX(-20px); } }
-.rate-heart svg { display: block; width: 26px; height: 26px; fill: rgba(120, 120, 128, 0.2); animation: rate-heart 5s ease infinite; animation-delay: 1.2s; }
-.saga .rate-heart svg { animation-delay: 3.7s; }
-@keyframes rate-heart { 0%, 4% { fill: rgba(120, 120, 128, 0.2); transform: none; } 10% { fill: #ff3b30; transform: scale(1.3); } 16%, 85% { fill: #ff3b30; transform: none; } 100% { fill: rgba(120, 120, 128, 0.2); } }
+.rate-heart .sf { width: 26px; height: 23px; background-color: rgba(120, 120, 128, 0.2); animation: rate-heart 5s ease infinite; animation-delay: 1.2s; }
+.saga .rate-heart .sf { animation-delay: 3.7s; }
+@keyframes rate-heart { 0%, 4% { background-color: rgba(120, 120, 128, 0.2); transform: none; } 10% { background-color: #ff3b30; transform: scale(1.3); } 16%, 85% { background-color: #ff3b30; transform: none; } 100% { background-color: rgba(120, 120, 128, 0.2); } }
 
 /* Watching a book for its translation or its recording: the two switches the
    book's menu offers, the audio one turning itself on. */
@@ -658,7 +658,7 @@ section {
 .watch-row + .watch-row { border-top: 1px solid var(--line); }
 .watch-row em { flex: 1; font-style: normal; color: #000; }
 .watch-icon { display: grid; place-items: center; width: 6.7cqi; color: #007aff; }
-.watch-icon svg { width: 5cqi; height: 5cqi; }
+.watch-icon .sf { width: 5cqi; height: 5cqi; }
 .watch-switch { position: relative; flex: none; width: 12.2cqi; height: 7.2cqi; border-radius: 99px; background: #e5e5ea; }
 .watch-switch::after { content: ""; position: absolute; top: 0.55cqi; left: 0.55cqi; width: 6.1cqi; height: 6.1cqi; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
 .watch-row.on .watch-switch { background: #34c759; }
@@ -729,7 +729,7 @@ section {
   color: var(--red);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
 }
-.sync-badge svg { animation: sync-turn 2.4s linear infinite; }
+.sync-badge .sf { animation: sync-turn 2.4s linear infinite; }
 @keyframes sync-turn { to { transform: rotate(360deg); } }
 
 /* One book: three sources funnel into one record card. */
@@ -772,7 +772,9 @@ section {
 .compare-table td small { display: block; margin-top: 5px; font-size: 12px; color: var(--text-dim); font-weight: 400; }
 .compare-table td span::before { content: ""; flex: none; width: 16px; height: 16px; border-radius: 50%; box-sizing: border-box; }
 .compare-table td.yes span::before {
-  background: #22a35a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M4.5 8.3l2.3 2.3 4.7-4.9'/%3E%3C/svg%3E") center / 100% no-repeat;
+  background: #22a35a;
+  -webkit-mask: url(symbols/checkmark.circle.fill.png) center / contain no-repeat;
+  mask: url(symbols/checkmark.circle.fill.png) center / contain no-repeat;
 }
 .compare-table td.no span::before { border: 1.5px solid rgba(40, 30, 20, 0.18); }
 .compare-table td.some span::before { background: linear-gradient(90deg, #e8a200 50%, transparent 50%); border: 1.5px solid #e8a200; }
@@ -867,9 +869,9 @@ section {
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; transform: none; transition: none; }
   html { scroll-behavior: auto; }
-  .sync-badge svg, .sync-halo, .one-src, .watch-switch, .watch-switch::after, .search-caret { animation: none; }
-  .rate-star svg, .rate-heart svg { animation: none; fill: #ffcc00; }
-  .rate-heart svg { fill: #ff3b30; }
+  .sync-badge .sf, .sync-halo, .one-src, .watch-switch, .watch-switch::after, .search-caret { animation: none; }
+  .rate-star .sf, .rate-heart .sf { animation: none; background-color: #ffcc00; }
+  .rate-heart .sf { background-color: #ff3b30; }
   .activity-switch, .activity-switch::after, .drop-thumb { animation: none; }
   .search-typed::after { animation: none; content: "Hypér"; }
   .search-results { animation: none; opacity: 1; }

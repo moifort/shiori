@@ -116,6 +116,7 @@
     "activity.reading": "Reading",
     "activity.added": "Added",
     "activity.dropped": "Dropped",
+    "activity.read": "Read",
     "discover.title": "Just for you",
     "watch.title": "Watch for the translation or the audio",
     "watch.text": "A book not yet translated, or not yet out as an audiobook? Watch for its edition in your language or its audiobook, and be told the day it comes out.",
