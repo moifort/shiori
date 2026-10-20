@@ -229,19 +229,19 @@ const newSelection = async (
 /** The model's suggestions for this library, each given the cover Open
  *  Library has. None is left out for a catalogue not knowing it: the 2026-10-12
  *  test found no invented book, and Open Library misses real ones. Undefined
- *  when the model failed. */
+ *  when the model failed, or was not asked: a library with nothing ranked,
+ *  dropped or dismissed gives it nothing to go on, and it answers asking for
+ *  the list instead of suggesting. */
 const generated = async (
   books: readonly Book[],
   opinions: readonly SeriesOpinion[],
   dismissals: readonly Dismissal[],
   appLanguage: Language,
 ): Promise<Suggestion[] | undefined> => {
+  const digest = tasteDigestOf(books, opinions, dismissals)
+  if (!digest) return undefined
   try {
-    const prompt = suggestionsPrompt(
-      tasteDigestOf(books, opinions, dismissals),
-      readerProfileOf(books),
-      appLanguage,
-    )
+    const prompt = suggestionsPrompt(digest, readerProfileOf(books), appLanguage)
     const answered = suggestionsOf(await ask(prompt))
     const covered: Suggestion[] = []
     for (let start = 0; start < answered.length; start += LOOKUPS_AT_ONCE) {

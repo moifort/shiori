@@ -280,6 +280,23 @@ describe('the month’s discoveries', () => {
     expect(prompts).toHaveLength(0)
   })
 
+  test('a library with nothing ranked, dropped or dismissed asks nothing, and is asked again the next day', async () => {
+    fake = resetFakeFirestore()
+    shelve('pile', 'Silo', 'Hugh Howey', { status: 'to-read' })
+    shelve('unrated', 'Dune', 'Frank Herbert')
+
+    const discoveries = await look()
+
+    expect(prompts).toHaveLength(0)
+    expect(discoveries.status).toBe('none')
+    expect(fake.data('suggestion-queues', reader)?.generatingSince).toBeUndefined()
+
+    shelve('shibumi', 'Shibumi', 'Trevanian', { rating: 5 })
+    startFakeRequest()
+    await look('2026-10-16T09:00:00Z')
+    expect(prompts).toHaveLength(1)
+  })
+
   test('dismissing a suggestion the reader does not have is not-found', async () => {
     expect(await SuggestionUseCase.dismiss(reader, 'nothing', 'disliked')).toBe('not-found')
   })
