@@ -535,32 +535,25 @@
     <h2 class="section-title" data-i18n="dl.title">Gratuit, ou Premium sans limite</h2>
     <p class="section-lead" data-i18n="dl.lead">Tout Shiori est gratuit. Premium lève la limite des scans et lit une étagère entière d'un coup.</p>
 
-    <div class="plans">
-      <div class="plan">
-        <h3 data-i18n="plan.free.name">Gratuit</h3>
-        <p class="plan-price"><b>0&nbsp;€</b></p>
-        <p class="plan-lead" data-i18n="plan.free.lead">Tout Shiori, pour toujours.</p>
-        <ul>
-          <li><i class="sf" style="--sf: url(symbols/checkmark.png)"></i><span data-i18n="plan.free.1">50 scans offerts à l'inscription, puis 5 par mois</span></li>
-          <li><i class="sf" style="--sf: url(symbols/checkmark.png)"></i><span data-i18n="plan.free.2">Bibliothèque, séries et auteurs sans limite</span></li>
-          <li><i class="sf" style="--sf: url(symbols/checkmark.png)"></i><span data-i18n="plan.free.3">Sorties annoncées et découvertes du mois</span></li>
-          <li><i class="sf" style="--sf: url(symbols/checkmark.png)"></i><span data-i18n="plan.free.4">Kindle et Audible synchronisés</span></li>
-          <li><i class="sf" style="--sf: url(symbols/checkmark.png)"></i><span data-i18n="plan.free.5">Amis, coups de cœur et défi lecture</span></li>
-        </ul>
-      </div>
-      <div class="plan premium">
-        <span class="plan-tag" data-i18n="plan.premium.tag">Premier mois offert</span>
-        <h3>Premium</h3>
-        <p class="plan-price"><b data-i18n="plan.premium.price">1,99&nbsp;€</b><span data-i18n="plan.premium.per">/ mois</span></p>
-        <p class="plan-lead" data-i18n="plan.premium.lead">ou 17,99&nbsp;€ par an, soit 1,50&nbsp;€ par mois.</p>
-        <ul>
-          <li><i class="sf" style="--sf: url(symbols/checkmark.png)"></i><span data-i18n="plan.premium.0">Tout ce qu'offre la formule gratuite</span></li>
-          <li><i class="sf" style="--sf: url(symbols/checkmark.png)"></i><span data-i18n="plan.premium.1">Scans illimités*</span></li>
-          <li><i class="sf" style="--sf: url(symbols/checkmark.png)"></i><span data-i18n="plan.premium.2">Une étagère entière en une seule photo</span></li>
-          <li><i class="sf" style="--sf: url(symbols/checkmark.png)"></i><span data-i18n="plan.premium.3">Une app indépendante, sans pub, que vous faites vivre</span></li>
-        </ul>
-      </div>
-    </div>
+    <table class="plan-table">
+      <thead>
+        <tr>
+          <td></td>
+          <th scope="col"><span data-i18n="plan.free.name">Gratuit</span><b>0&nbsp;€</b><small data-i18n="plan.free.lead">pour toujours</small></th>
+          <th scope="col" class="premium"><span class="plan-tag" data-i18n="plan.premium.tag">Premier mois offert</span><span>Premium</span><b data-i18n="plan.premium.price">1,99&nbsp;€&nbsp;/&nbsp;mois</b><small data-i18n="plan.premium.lead">ou 17,99&nbsp;€ par an</small></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><th scope="row" data-i18n="plan.row.scan">Scan d'une couverture</th><td><span data-i18n="plan.row.scan.free">50 offerts, puis 5&nbsp;/&nbsp;mois</span></td><td class="premium"><b data-i18n="plan.row.scan.premium">Illimité*</b></td></tr>
+        <tr><th scope="row" data-i18n="plan.row.shelf">Une étagère entière en une photo</th><td><i class="sf no" style="--sf: url(symbols/minus.png)"></i></td><td class="premium"><i class="sf yes" style="--sf: url(symbols/checkmark.png)"></i></td></tr>
+        <tr><th scope="row" data-i18n="plan.row.library">Bibliothèque, séries et auteurs</th><td><i class="sf yes" style="--sf: url(symbols/checkmark.png)"></i></td><td class="premium"><i class="sf yes" style="--sf: url(symbols/checkmark.png)"></i></td></tr>
+        <tr><th scope="row" data-i18n="plan.row.releases">Sorties annoncées et alertes</th><td><i class="sf yes" style="--sf: url(symbols/checkmark.png)"></i></td><td class="premium"><i class="sf yes" style="--sf: url(symbols/checkmark.png)"></i></td></tr>
+        <tr><th scope="row" data-i18n="plan.row.discover">Découvertes du mois et grands prix</th><td><i class="sf yes" style="--sf: url(symbols/checkmark.png)"></i></td><td class="premium"><i class="sf yes" style="--sf: url(symbols/checkmark.png)"></i></td></tr>
+        <tr><th scope="row" data-i18n="plan.row.sync">Kindle et Audible synchronisés</th><td><i class="sf yes" style="--sf: url(symbols/checkmark.png)"></i></td><td class="premium"><i class="sf yes" style="--sf: url(symbols/checkmark.png)"></i></td></tr>
+        <tr><th scope="row" data-i18n="plan.row.friends">Amis, coups de cœur et défi lecture</th><td><i class="sf yes" style="--sf: url(symbols/checkmark.png)"></i></td><td class="premium"><i class="sf yes" style="--sf: url(symbols/checkmark.png)"></i></td></tr>
+        <tr><th scope="row" data-i18n="plan.row.ads">Publicité</th><td><span data-i18n="plan.none">Aucune</span></td><td class="premium"><span data-i18n="plan.none">Aucune</span></td></tr>
+      </tbody>
+    </table>
     <p class="prices-note" data-i18n="plan.note">*&nbsp;Usage raisonnable&nbsp;: jusqu'à 100 scans par mois, et 500 offerts le jour où vous passez Premium. L'abonnement se gère et se résilie dans les réglages de l'App Store.</p>
 
     <div class="hero-actions">

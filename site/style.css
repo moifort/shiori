@@ -836,22 +836,27 @@ section {
 .icon-wall { position: absolute; inset: -20% -40%; display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; display: none; }
 .icon-wall img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 2px; }
 
-/* The two plans side by side, the paid one marked: what each holds, ticked
-   with the app's own check. */
-.plans { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 760px; margin: 0 auto 14px; text-align: left; }
-@media (max-width: 640px) { .plans { grid-template-columns: 1fr; } }
-.plan { position: relative; display: flex; flex-direction: column; padding: 28px 28px 24px; border-radius: 24px; background: var(--bg-card); border: 1px solid var(--line); }
-.plan.premium { background: #fff; border: 1.5px solid transparent; background-image: linear-gradient(#fff, #fff), linear-gradient(120deg, var(--red-deep), var(--red), var(--amber)); background-origin: border-box; background-clip: padding-box, border-box; box-shadow: 0 18px 44px rgba(160, 48, 58, 0.12); }
-.plan h3 { margin: 0 0 10px; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
-.plan-price { margin: 0; display: flex; align-items: baseline; gap: 6px; }
-.plan-price b { font-family: var(--display); font-size: 40px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.plan-price span { font-size: 16px; color: var(--text-muted); }
-.plan-lead { margin: 6px 0 20px; font-size: 14px; color: var(--text-muted); }
-.plan ul { list-style: none; margin: 0; padding: 18px 0 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; }
-.plan li { display: flex; align-items: flex-start; gap: 10px; font-size: 15px; line-height: 1.35; }
-.plan li .sf { width: 16px; height: 16px; margin-top: 2px; color: #34c759; }
-.plan.premium li .sf { color: var(--red); }
-.plan-tag { position: absolute; top: -12px; right: 24px; padding: 5px 12px; border-radius: 99px; background: linear-gradient(120deg, var(--red-deep), var(--red), var(--amber)); color: #fff; font-size: 12px; font-weight: 600; }
+/* Free and Premium as an App Store paywall compares them: a short table of
+   what each holds, limits in numbers, the Premium column lifted out. */
+.plan-table { width: 100%; max-width: 680px; margin: 0 auto 14px; border-collapse: separate; border-spacing: 0; font-size: 15px; text-align: center; }
+.plan-table thead th { padding: 26px 12px 18px; vertical-align: bottom; font-weight: 600; }
+.plan-table thead th span { display: block; font-size: 15px; color: var(--text-muted); font-weight: 600; }
+.plan-table thead th b { display: block; margin-top: 4px; font-family: var(--display); font-size: 26px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.plan-table thead th small { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; color: var(--text-dim); }
+.plan-table th[scope="row"] { text-align: left; font-weight: 400; color: var(--text); padding: 13px 16px 13px 0; }
+.plan-table td { padding: 13px 12px; color: var(--text-muted); width: 26%; }
+.plan-table tbody tr + tr > * { border-top: 1px solid var(--line); }
+.plan-table .premium { position: relative; background: #fff; }
+.plan-table thead .premium { border-radius: 20px 20px 0 0; box-shadow: inset 0 1.5px 0 var(--red), inset 1.5px 0 0 var(--red), inset -1.5px 0 0 var(--red); }
+.plan-table tbody .premium { box-shadow: inset 1.5px 0 0 var(--red), inset -1.5px 0 0 var(--red); color: var(--text); }
+.plan-table tbody tr:last-child .premium { border-radius: 0 0 20px 20px; box-shadow: inset 1.5px 0 0 var(--red), inset -1.5px 0 0 var(--red), inset 0 -1.5px 0 var(--red); }
+.plan-table thead .premium span:not(.plan-tag) { color: var(--red); }
+.plan-table .sf { width: 17px; height: 17px; margin: 0 auto; }
+.plan-table .sf.yes { color: #34c759; }
+.plan-table .premium .sf.yes { color: var(--red); }
+.plan-table .sf.no { color: rgba(60, 60, 67, 0.3); }
+.plan-tag { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); white-space: nowrap; padding: 5px 12px; border-radius: 99px; background: linear-gradient(120deg, var(--red-deep), var(--red), var(--amber)); color: #fff !important; font-size: 12px !important; font-weight: 600; }
+@media (max-width: 560px) { .plan-table { font-size: 14px; } .plan-table td { width: 30%; } .plan-table thead th b { font-size: 20px; } }
 .prices-note { max-width: 460px; margin: 0 auto 44px; font-size: 12px; color: var(--text-dim); line-height: 1.5; }
 
 /* ---------- Footer ---------- */
