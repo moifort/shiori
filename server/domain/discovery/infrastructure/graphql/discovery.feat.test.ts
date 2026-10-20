@@ -11,7 +11,7 @@ mock.module('~/system/object-store', () => ({
 const { schema } = await import('~/domain/shared/graphql/schema')
 const { BookUseCase } = await import('~/domain/book/use-case')
 const { SeriesName, VolumeNumber, seriesKeyOf } = await import('~/domain/series/primitives')
-const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
+const { AuthorName, BookTitle, StarRating } = await import('~/domain/shared/primitives')
 const { authorKeyOf } = await import('~/domain/author/primitives')
 
 const bob = 'bob' as UserId
@@ -25,7 +25,8 @@ let fake = resetFakeFirestore()
 
 beforeEach(async () => {
   fake = resetFakeFirestore()
-  await BookUseCase.add(bob, {
+  // Rated five stars: an author held by one book is followed only once loved.
+  const added = await BookUseCase.add(bob, {
     title: BookTitle('Carl 1'),
     authors: [AuthorName('Matt Dinniman')],
     status: 'read',
@@ -37,6 +38,8 @@ beforeEach(async () => {
       kind: 'main',
     },
   })
+  if (typeof added === 'object' && 'id' in added)
+    await BookUseCase.rate(bob, added.id, StarRating(5))
   fake.seed('saga-watches', `${carl}--fr`, {
     key: `${carl}--fr`,
     seriesId: carl,

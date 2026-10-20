@@ -13,7 +13,7 @@ import type {
 import { seriesKeyOf } from '~/domain/series/primitives'
 import type { ReleaseDate, Series, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { FollowedSeries } from '~/domain/series/use-case'
-import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
+import type { AuthorName, BookTitle, StarRating, UserId } from '~/domain/shared/types'
 import {
   alertOf,
   announcedPreviewOf,
@@ -23,6 +23,7 @@ import {
   dueAlertsOf,
   dueWatches,
   inDiscoveryOrder,
+  isFollowedAuthor,
   lastVolumeOutOf,
   likelyLanguageOf,
   looksLeftToday,
@@ -729,6 +730,29 @@ describe('the authors watched for a reader', () => {
   })
 })
 
+describe('the authors a reader follows', () => {
+  const held = (...books: Pick<Book, 'status' | 'rating' | 'favorite'>[]) => ({ books })
+
+  test('are the ones held by two books or more', () => {
+    expect(isFollowedAuthor(held({ status: 'read' }, { status: 'to-read' }))).toBe(true)
+  })
+
+  test('are the ones held by one book rated four stars or more, or loved', () => {
+    expect(isFollowedAuthor(held({ status: 'read', rating: 4 as StarRating }))).toBe(true)
+    expect(isFollowedAuthor(held({ status: 'read', favorite: true }))).toBe(true)
+  })
+
+  // Most often a title an Audible or Kindle import brought in.
+  test('are not the ones held by one book alone, unrated or rated low', () => {
+    expect(isFollowedAuthor(held({ status: 'read' }))).toBe(false)
+    expect(isFollowedAuthor(held({ status: 'to-read', rating: 3 as StarRating }))).toBe(false)
+  })
+
+  test('count no book the reader gave up on', () => {
+    expect(isFollowedAuthor(held({ status: 'dropped' }, { status: 'read' }))).toBe(false)
+  })
+})
+
 describe('what an author has for the reader', () => {
   const work = (title: string, date: string, extra: Partial<FoundWork> = {}): FoundWork => ({
     title: title as BookTitle,
@@ -883,26 +907,27 @@ describe('how often a watch is looked up again', () => {
     checkedAt,
   })
 
-  test('a saga with a volume out lately or to come has news, an older one none', () => {
+  test('a saga with a volume to come has news; one just out, an older one or none, not', () => {
     expect(sagaIsLively({ volumes: [volume(1, '2020'), volume(2, '2027-01')] }, now)).toBe(true)
-    expect(sagaIsLively({ volumes: [volume(1, '2026-06-01')] }, now)).toBe(true)
-    // `2026-04` may be its last day: within six months.
-    expect(sagaIsLively({ volumes: [volume(1, '2026-04')] }, now)).toBe(true)
+    // A volume just out says nothing of the next one.
+    expect(sagaIsLively({ volumes: [volume(1, '2026-06-01')] }, now)).toBe(false)
     expect(sagaIsLively({ volumes: [volume(1, '2019'), volume(2)] }, now)).toBe(false)
     expect(sagaIsLively({ volumes: [] }, now)).toBe(false)
   })
 
-  test('a saga with news every two weeks, a quiet one every two months', () => {
-    const lively = [volume(1, '2026-09-01')]
+  test('a saga with a volume announced every two weeks, any other every two months', () => {
+    const lively = [volume(1, '2026-09-01'), volume(2, '2027-03')]
     expect(watchIsStale(saga(daysAgo(13), lively), now)).toBe(false)
     expect(watchIsStale(saga(daysAgo(15), lively), now)).toBe(true)
     const quiet = [volume(1, '2019-01-01')]
     expect(watchIsStale(saga(daysAgo(59), quiet), now)).toBe(false)
     expect(watchIsStale(saga(daysAgo(61), quiet), now)).toBe(true)
+    const justOut = [volume(1, '2026-09-01')]
+    expect(watchIsStale(saga(daysAgo(15), justOut), now)).toBe(false)
     expect(watchIsStale(undefined, now)).toBe(true)
   })
 
-  test('an author with news every month, a quiet one every three months', () => {
+  test('an author with a work announced every month, any other every three months', () => {
     const author = (checkedAt: Date, dates: string[]): AuthorWatch => ({
       key: 'k',
       authorKey: 'a' as AuthorKey,
@@ -916,6 +941,8 @@ describe('how often a watch is looked up again', () => {
     expect(authorWatchIsStale(author(daysAgo(31), ['2026-12-01']), now)).toBe(true)
     expect(authorWatchIsStale(author(daysAgo(89), []), now)).toBe(false)
     expect(authorWatchIsStale(author(daysAgo(91), []), now)).toBe(true)
+    // A work just out says nothing of the next one.
+    expect(authorWatchIsStale(author(daysAgo(31), ['2026-09-01']), now)).toBe(false)
   })
 
   test('the day allows so many looks, the ones of the last day counted', () => {

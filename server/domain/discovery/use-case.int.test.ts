@@ -128,7 +128,7 @@ const { SeriesCommand } = await import('~/domain/series/command')
 const { SeriesQuery } = await import('~/domain/series/query')
 const { SeriesOpinionCommand } = await import('~/domain/series-opinion/command')
 const { SeriesName, VolumeNumber, seriesKeyOf } = await import('~/domain/series/primitives')
-const { AuthorName, BookTitle, Year } = await import('~/domain/shared/primitives')
+const { AuthorName, BookTitle, StarRating, Year } = await import('~/domain/shared/primitives')
 const { authorKeyOf } = await import('~/domain/author/primitives')
 const { MAX_LOOKS_PER_DAY } = await import('~/domain/discovery/business-rules')
 
@@ -139,14 +139,15 @@ const carl = seriesKeyOf('Dungeon Crawler Carl', 'Matt Dinniman', 'book')
 const carlHeard = seriesKeyOf('Dungeon Crawler Carl', 'Matt Dinniman', 'audiobook')
 let fake: FakeFirestore
 
-/** An account, and the first volume of Dungeon Crawler Carl read in French. */
+/** An account, and the first volume of Dungeon Crawler Carl read in French,
+ *  rated five stars: an author held by one book is followed only once loved. */
 const stock = async (
   userId: UserId,
   format: 'book' | 'audiobook' = 'book',
   status: 'read' | 'dropped' = 'read',
 ) => {
   fake.seed('users', userId, { userId, firstName: 'Bob' })
-  await BookUseCase.add(userId, {
+  const added = await BookUseCase.add(userId, {
     title: BookTitle('Carl 1'),
     authors: [AuthorName('Matt Dinniman')],
     status,
@@ -159,6 +160,8 @@ const stock = async (
       kind: 'main',
     },
   })
+  if (typeof added === 'object' && 'id' in added)
+    await BookUseCase.rate(userId, added.id, StarRating(5))
 }
 
 /** The reader awaits a book of Matt Dinniman's in French, in one format: found

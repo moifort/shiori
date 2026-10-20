@@ -22,6 +22,7 @@ import {
   inDiscoveryOrder,
   isDescriptionFresh,
   isDiscoverable,
+  isFollowedAuthor,
   lastVolumeOutOf,
   likelyLanguageOf,
   looksLeftToday,
@@ -521,7 +522,7 @@ const libraryOf = async (userId: UserId, known?: DiscoveryReader): Promise<Libra
     followed,
     shelved,
     sagas: watchedSagasOf(followed),
-    authors: watchedAuthorsOf(shelved),
+    authors: watchedAuthorsOf(shelved.filter(isFollowedAuthor)),
     known: reader,
   }
 }

@@ -33,26 +33,28 @@ import type {
   WatchedSaga,
 } from './types'
 
-/** How often the web is searched again for one saga: a publisher announces a
- *  volume months ahead, and the grounded call is the expensive part — every
+/** How often the web is searched again for a saga with a volume announced: a
+ *  publisher moves dates, and the grounded call is the expensive part — every
  *  search it runs is billed, about a cent each. Weekly, these looks were the
  *  one Gemini cost that came back every month without anybody scanning; two
- *  weeks halves it and still catches an announcement long before the day. */
+ *  weeks halves it and still follows a date long before the day. */
 export const WATCH_EVERY_MS = 14 * 86_400_000
-/** How often the web is searched again for one author. An author publishes a
- *  few times a year and their shelf keeps three months of works out, so a
- *  month apart misses nothing a reader would see. */
+/** How often the web is searched again for an author with a work announced.
+ *  An author publishes a few times a year and their shelf keeps three months
+ *  of works out, so a month apart misses nothing a reader would see. */
 export const AUTHOR_WATCH_EVERY_MS = 30 * 86_400_000
-/** How often a quiet saga is searched again: nothing out in the last six
- *  months and nothing announced. On 2026-10-10, 186 of the 283 sagas watched
- *  were quiet; a publisher announces months ahead, so two months apart still
- *  catches the next volume long before its day. */
+/** How often a quiet saga is searched again: nothing announced. A volume
+ *  just out announces nothing about the next, so it no longer counts as news:
+ *  on 2026-10-20, 38 of the 308 sagas watched had a volume out lately and none
+ *  announced, and were searched every two weeks for it. A publisher announces
+ *  months ahead, so two months apart still catches the next volume long
+ *  before its day. */
 export const QUIET_WATCH_EVERY_MS = 60 * 86_400_000
-/** How often a quiet author is searched again: nothing out in the last six
- *  months and nothing announced — 391 of the 568 watched on 2026-10-10. */
+/** How often a quiet author is searched again: nothing announced — 563 of
+ *  the 608 watched on 2026-10-20, 141 of them monthly until then for a work
+ *  out lately. Three months is the most it can be: the shelf keeps a work out
+ *  for three months, and one found later would never be shown. */
 export const QUIET_AUTHOR_WATCH_EVERY_MS = 90 * 86_400_000
-/** How far back a volume or a work out keeps its saga or author lively. */
-const LIVELY_WITHIN_MS = 183 * 86_400_000
 /** The most sagas and authors the hourly passes look up on the web in a day,
  *  those looked up on opening the tab counted. A grounded call bills about
  *  eight searches here, so thirty a day is at most 7,200 searches a month,
@@ -140,18 +142,18 @@ const furthestHeldOf = (
 const latestDayOf = (date: string) =>
   date.length === 4 ? `${date}-12-31` : date.length === 7 ? `${date}-31` : date
 
-/** Whether something came out in the last six months or is announced: a date
- *  that recent or still to come, or a release with no date yet. */
-const isLively = (dates: readonly (string | undefined)[], now: Date): boolean => {
-  const since = new Date(now.getTime() - LIVELY_WITHIN_MS).toISOString().slice(0, 10)
-  return dates.some((date) => date === undefined || latestDayOf(date) >= since)
+/** Whether something is announced: a date still to come, or a release with no
+ *  date yet. */
+const isAnnounced = (dates: readonly (string | undefined)[], now: Date): boolean => {
+  const today = now.toISOString().slice(0, 10)
+  return dates.some((date) => date === undefined || latestDayOf(date) > today)
 }
 
-/** Whether a saga has news: a volume out lately or to come. A volume with no
- *  date is one out on a day nobody found — an announced one always has a date
- *  — so it is not news. */
+/** Whether a saga has news: a volume to come. A volume with no date is one out
+ *  on a day nobody found — an announced one always has a date — so it is not
+ *  news; nor is a volume just out, which says nothing of the next. */
 export const sagaIsLively = (watch: Pick<SagaWatch, 'volumes'>, now: Date): boolean =>
-  isLively(
+  isAnnounced(
     watch.volumes.flatMap((volume) => (volume.date ? [volume.date] : [])),
     now,
   )
@@ -168,7 +170,7 @@ export const lastVolumeOutOf = (
 }
 
 /** Whether a saga is due for another look on the web: every two weeks while
- *  it has news, every two months while quiet. */
+ *  a volume is announced, every two months otherwise. */
 export const watchIsStale = (watch: SagaWatch | undefined, now: Date): boolean => {
   if (!watch) return true
   const every = sagaIsLively(watch, now) ? WATCH_EVERY_MS : QUIET_WATCH_EVERY_MS
@@ -238,6 +240,20 @@ export const releaseFormatOf = (format: BookFormat | undefined): ReleaseFormat =
 
 type HeldBook = Pick<Book, 'format' | 'language' | 'status'>
 
+/** Whether the reader cares for an author enough to have the web searched for
+ *  them: two of their books held, or one rated four stars or more, or loved.
+ *  An author held by one book alone, unrated — most often a title an Audible
+ *  or Kindle import brought in — is not: on 2026-10-20 that was 252 of the 538
+ *  authors held, each searched for every one to three months, for a shelf that
+ *  showed news for 45 of all 608 watched. Their page still shows a look made
+ *  before. */
+export const isFollowedAuthor = (
+  author: Pick<ShelvedAuthor<Pick<Book, 'status' | 'rating' | 'favorite'>>, 'books'>,
+): boolean => {
+  const kept = author.books.filter((book) => book.status !== 'dropped')
+  return kept.length >= 2 || kept.some((book) => (book.rating ?? 0) >= 4 || book.favorite === true)
+}
+
 /** Every author the reader holds, in each format they hold them in and the
  *  language most of those books are in: an author only heard is watched among
  *  the recordings, one only read among the books, one both in both. Not an
@@ -256,11 +272,11 @@ export const watchedAuthorsOf = (
     })
   })
 
-/** Whether an author is due for another look on the web: every month while
- *  they have news, every three months while quiet. */
+/** Whether an author is due for another look on the web: every month while a
+ *  work is announced, every three months otherwise. */
 export const authorWatchIsStale = (watch: AuthorWatch | undefined, now: Date): boolean => {
   if (!watch) return true
-  const lively = isLively(
+  const lively = isAnnounced(
     watch.works.map((work) => work.date),
     now,
   )
