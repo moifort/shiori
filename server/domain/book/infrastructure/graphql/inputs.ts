@@ -171,9 +171,11 @@ export const BookEditInput = builder.inputType('BookEditInput', {
     coverUrl: t.field({
       type: 'CoverUrl',
       required: false,
+      deprecationReason: 'Use `chooseBookCover`, which also offers the covers found.',
       description:
         'Where to draw the cover from, typed by the reader when the scan found none or ' +
-        'found the wrong one. Null clears it, and the app draws its placeholder.',
+        'found the wrong one: picked as `chooseBookCover` picks it. Null drops both the ' +
+        'picked and the publisher cover.',
     }),
     addedAt: t.field({
       type: 'DateTime',

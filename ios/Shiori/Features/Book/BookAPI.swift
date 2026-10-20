@@ -48,19 +48,29 @@ enum BookAPI {
         return data.updateBook.fragments.bookDetail.asBook
     }
 
-    /// Looks the book up again on the web and rewrites what describes it —
-    /// summary, genre, pages, cover — leaving what names it and what the reader
-    /// recorded alone. Spends one scan; throws
-    /// `APIError.domain(code: "QUOTA_EXHAUSTED")` once nothing is left,
-    /// `"SCAN_FAILED"` when the lookup failed and the record is untouched, and
-    /// `"AI_UNAVAILABLE"` while the server's AI is out of credit.
-    static func refresh(id: String) async throws -> Book {
+    /// The covers the reader may pick for the book, the one drawn now first:
+    /// what the record holds and what Amazon and Open Library have for it.
+    /// Free — no AI, no scan spent.
+    static func coverChoices(id: String) async throws -> [CoverChoice] {
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.BookCoverChoicesQuery(id: id)
+        )
+        return data.bookCoverChoices.compactMap(\.asDomain)
+    }
+
+    /// Draws the book with the cover picked: the image at `url`, or the photo
+    /// taken at the scan when `url` is nil.
+    static func chooseCover(id: String, url: URL?) async throws -> Book {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
             concerning: .book(id: id),
-            mutation: ShioriGraphQL.RefreshBookMutation(id: id)
+            mutation: ShioriGraphQL.ChooseBookCoverMutation(
+                id: id,
+                url: GraphQLHelpers.graphQLNullable(url?.absoluteString)
+            )
         )
-        return data.refreshBook.fragments.bookDetail.asBook
+        return data.chooseBookCover.fragments.bookDetail.asBook
     }
 
     /// Describes a book added from a shelf photo, on its first opening: the
@@ -301,8 +311,6 @@ struct BookCorrection: Equatable, Sendable {
     var narrators: [String]?
     var isbn13: Change<String>?
     var language: Change<BookLanguage>?
-    /// Where the cover is drawn from, as an HTTPS address.
-    var coverURL: Change<String>?
     /// The saga as the reader names it. The server works out which saga that
     /// is, so the book joins the one its siblings already sit in.
     var series: Change<SeriesPlacement>?
@@ -318,7 +326,6 @@ struct BookCorrection: Equatable, Sendable {
         ShioriGraphQL.BookEditInput(
             addedAt: Self.nullable(addedAt.map(GraphQLHelpers.iso8601)),
             authors: Self.nullable(authors),
-            coverUrl: Self.nullable(coverURL),
             durationMinutes: Self.nullable(durationMinutes),
             editionYear: Self.nullable(editionYear),
             finishedAt: Self.nullable(finishedAt.map(GraphQLHelpers.iso8601)),

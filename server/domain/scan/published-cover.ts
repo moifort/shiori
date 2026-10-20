@@ -24,6 +24,18 @@ const BLANK_IMAGE_BYTES = 1000
 export const publishedCoverOf = async (isbn13: Isbn13): Promise<CoverUrl | undefined> =>
   (await amazonCoverOf(isbn13)) ?? (await openLibraryCoverOf(isbn13))
 
+/** Both sources' covers for an ISBN, asked at once, for the reader to pick
+ *  between: each is undefined when its source has none. Never throws. */
+export const isbnCoversOf = async (
+  isbn13: Isbn13,
+): Promise<{ amazon?: CoverUrl; openLibrary?: CoverUrl }> => {
+  const [amazon, openLibrary] = await Promise.all([
+    amazonCoverOf(isbn13),
+    openLibraryCoverOf(isbn13),
+  ])
+  return { amazon, openLibrary }
+}
+
 /** The ISBN registration groups an edition in each language is published under:
  *  978-2 and 979-10 are French-speaking publishers, 978-0 and 978-1 English-
  *  speaking ones. A language missing here has no group a cover can be trusted
@@ -71,6 +83,24 @@ export const shelfCoverOf = async (book: {
     if (cover) return cover
   }
   return undefined
+}
+
+/** The covers of a book's other editions in its language, for the reader to
+ *  pick from: Open Library names the work's ISBNs, the edition's own is left
+ *  out, and the first few go through `publishedCoverOf` at once. Free — no
+ *  model, no search billed — and never throws. */
+export const otherEditionCoversOf = async (book: {
+  title: string
+  author: string
+  volume?: number
+  language: BookLanguage
+  isbn13?: Isbn13
+}): Promise<CoverUrl[]> => {
+  const isbns = isbnsInLanguage(await openLibraryIsbnsOf(book), book.language)
+    .filter((isbn) => isbn !== book.isbn13)
+    .slice(0, ISBNS_TRIED)
+  const covers = await Promise.all(isbns.map(publishedCoverOf))
+  return covers.filter(isPresent)
 }
 
 /** Whether a published cover stored earlier no longer loads: the source dropped

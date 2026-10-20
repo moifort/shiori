@@ -1,6 +1,11 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
-import { mediaFor, recordJoinedBy, refreshedFacts } from '~/domain/book/business-rules'
+import {
+  coverCandidatesOf,
+  mediaFor,
+  recordJoinedBy,
+  refreshedFacts,
+} from '~/domain/book/business-rules'
 import { BookCommand, type BookEdit, type NewBook } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
 import type {
@@ -9,16 +14,25 @@ import type {
   BookId,
   BookLanguage,
   BookMedium,
+  ChosenCover,
+  CoverChoice,
   Publisher,
   ReadingNote,
   ReadingStatus,
   Recommendation,
   StarRating,
 } from '~/domain/book/types'
+import { DEFAULT_BOOK_LANGUAGE } from '~/domain/book/types'
 import { exhausted } from '~/domain/quota/business-rules'
 import { QuotaCommand } from '~/domain/quota/command'
 import { QuotaQuery } from '~/domain/quota/query'
-import { isCoverGone, publishedCoverOf, shelfCoverOf } from '~/domain/scan/published-cover'
+import {
+  isbnCoversOf,
+  isCoverGone,
+  otherEditionCoversOf,
+  publishedCoverOf,
+  shelfCoverOf,
+} from '~/domain/scan/published-cover'
 import type { ScanResult } from '~/domain/scan/types'
 import { ScanUseCase } from '~/domain/scan/use-case'
 import { seriesKeyOf } from '~/domain/series/primitives'
@@ -26,6 +40,7 @@ import type { SeriesName, VolumeNumber } from '~/domain/series/types'
 import { SeriesUseCase } from '~/domain/series/use-case'
 import type { Language } from '~/domain/shared/language'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
+import { objectStore } from '~/system/object-store'
 
 /** A book ticked on a shelf photo, as the checklist left it: what its spine
  *  printed, with the title and authors the reader may have corrected. */
@@ -162,6 +177,47 @@ export namespace BookUseCase {
     return rewrittenFrom(userId, book, found, language)
   }
 
+  /** The covers the reader may pick for a book, the one drawn now first:
+   *  what the record holds, and what Amazon and Open Library have for its
+   *  ISBN and for its other editions in its language. Free — no model call,
+   *  no scan spent — and a source that fails is a cover not offered. */
+  export const coverChoices = async (
+    userId: UserId,
+    bookId: BookId,
+  ): Promise<CoverChoice[] | 'not-found'> => {
+    const book = await BookQuery.byId(userId, bookId)
+    if (!book) return 'not-found'
+    const author = book.authors[0]
+    const [byIsbn, otherEditions] = await Promise.all([
+      book.isbn13 ? isbnCoversOf(book.isbn13) : {},
+      // Without an author a title alone is too loose a search to trust a cover from.
+      author
+        ? otherEditionCoversOf({
+            title: book.title,
+            author,
+            volume: book.series?.volume,
+            language: book.language ?? DEFAULT_BOOK_LANGUAGE,
+            isbn13: book.isbn13,
+          })
+        : [],
+    ])
+    const { coverPath } = book
+    return Promise.all(
+      coverCandidatesOf(book, { ...byIsbn, otherEditions }).map(
+        async (candidate): Promise<CoverChoice> => {
+          if (candidate.source !== 'photo') return candidate
+          if (!coverPath) throw new Error('a photo is offered only for a book that has one')
+          return { ...candidate, url: await objectStore().downloadUrl(coverPath) }
+        },
+      ),
+    )
+  }
+
+  export const chooseCover = (userId: UserId, bookId: BookId, cover: ChosenCover) =>
+    withAnalytics(userId, (batch) =>
+      BookCommand.chooseCover(userId, bookId, cover, undefined, batch),
+    )
+
   export const setStatus = (userId: UserId, bookId: BookId, status: ReadingStatus) =>
     withAnalytics(userId, (batch) =>
       BookCommand.setStatus(userId, bookId, status, undefined, batch),
@@ -238,4 +294,5 @@ const rewrittenFrom = async (userId: UserId, book: Book, found: ScanResult, lang
 const withAnalytics = <Outcome>(userId: UserId, write: (batch: WriteBatch) => Promise<Outcome>) =>
   AnalyticsUseCase.afterWrite(userId, write, wrote)
 
-const wrote = (outcome: unknown): boolean => outcome !== 'not-found' && outcome !== 'no-author'
+const wrote = (outcome: unknown): boolean =>
+  outcome !== 'not-found' && outcome !== 'no-author' && outcome !== 'no-photo'

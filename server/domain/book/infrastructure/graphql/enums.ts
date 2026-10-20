@@ -129,3 +129,18 @@ export const BookLanguageEnum = builder.enumType('BookLanguage', {
     KO: { value: 'ko' },
   } as const,
 })
+
+export const CoverSourceEnum = builder.enumType('CoverSource', {
+  description: 'Where a cover offered by `bookCoverChoices` comes from.',
+  values: {
+    KINDLE: { value: 'kindle', description: 'The cover Amazon shows for the Kindle title.' },
+    PHOTO: { value: 'photo', description: 'The photo the reader took when scanning the book.' },
+    AMAZON: { value: 'amazon', description: "Amazon's cover for the book's ISBN." },
+    OPEN_LIBRARY: { value: 'open-library', description: "Open Library's cover for the ISBN." },
+    OTHER_EDITION: {
+      value: 'other-edition',
+      description: 'The cover of another edition of the work, in the same language.',
+    },
+    WEB: { value: 'web', description: 'An image no known source serves: most often one pasted.' },
+  } as const,
+})

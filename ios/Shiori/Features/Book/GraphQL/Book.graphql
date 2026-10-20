@@ -16,8 +16,18 @@ mutation UpdateBook($id: BookId!, $input: BookEditInput!) {
   }
 }
 
-mutation RefreshBook($id: BookId!) {
-  refreshBook(id: $id) {
+# The covers the reader may pick, the one drawn now first. Free: no AI.
+query BookCoverChoices($id: BookId!) {
+  bookCoverChoices(id: $id) {
+    source
+    url
+    current
+  }
+}
+
+# A cover picked: the image at `url`, or the scan photo when there is none.
+mutation ChooseBookCover($id: BookId!, $url: CoverUrl) {
+  chooseBookCover(id: $id, url: $url) {
     ...BookDetail
   }
 }

@@ -6,6 +6,9 @@ import type {
   BookLanguage,
   BookMedium,
   BookView,
+  CoverCandidate,
+  CoverSource,
+  CoverUrl,
   LibrarySection,
   ReadingStatus,
   Recommendation,
@@ -711,13 +714,69 @@ const withoutAbsent = <T extends object>(record: T): Partial<T> =>
   ) as Partial<T>
 
 /** The sources a book's cover is drawn from, folded into the two every drawing
- *  site reads: the Kindle cover first — it is the one the reader sees on their
- *  Kindle — then the reader's own photo, then the publisher's. */
+ *  site reads: the cover the reader picked first, then the Kindle cover — it is
+ *  the one the reader sees on their Kindle — then the reader's own photo, then
+ *  the publisher's. A photo picked that is no longer there picks nothing. */
 export const coverSourcesOf = (
-  book: Pick<Book, 'kindleCoverUrl' | 'coverPath' | 'publishedCoverUrl'>,
+  book: Pick<Book, 'chosenCover' | 'kindleCoverUrl' | 'coverPath' | 'publishedCoverUrl'>,
 ): Pick<Book, 'coverPath' | 'publishedCoverUrl'> => {
+  if (book.chosenCover?.source === 'url') return { publishedCoverUrl: book.chosenCover.url }
+  if (book.chosenCover?.source === 'photo' && book.coverPath) return { coverPath: book.coverPath }
   if (book.kindleCoverUrl) return { publishedCoverUrl: book.kindleCoverUrl }
   return withoutAbsent({ coverPath: book.coverPath, publishedCoverUrl: book.publishedCoverUrl })
+}
+
+const AMAZON_IMAGE_HOSTS = ['m.media-amazon.com', 'images-na.ssl-images-amazon.com']
+
+/** The source an image address belongs to, told by its host: a cover stored
+ *  without saying where it came from — the publisher's, or one the reader
+ *  picked — is named as the picker names the fresh ones. */
+export const coverSourceOfAddress = (
+  url: CoverUrl,
+): Exclude<CoverSource, 'photo' | 'kindle' | 'other-edition'> => {
+  const host = URL.parse(url)?.hostname
+  if (host && AMAZON_IMAGE_HOSTS.includes(host)) return 'amazon'
+  if (host === 'covers.openlibrary.org') return 'open-library'
+  return 'web'
+}
+
+/** What a cover lookup found for a book: the sources asked by its own ISBN, and
+ *  the covers of its other editions in the same language. */
+export type CoversFound = {
+  amazon?: CoverUrl
+  openLibrary?: CoverUrl
+  otherEditions: readonly CoverUrl[]
+}
+
+/** The covers a reader may pick for a book, each image once, the one drawn now
+ *  first: what the record already holds — the Kindle cover, the photo, the
+ *  publisher's, the one picked — and what a fresh lookup found. A Kindle cover
+ *  also served by Amazon is offered as the Kindle one. */
+export const coverCandidatesOf = (
+  book: Pick<Book, 'chosenCover' | 'kindleCoverUrl' | 'coverPath' | 'publishedCoverUrl'>,
+  found: CoversFound,
+): CoverCandidate[] => {
+  const drawn = coverSourcesOf(book)
+  const offered: CoverCandidate[] = []
+  const seen = new Set<string>()
+  const offer = (source: Exclude<CoverSource, 'photo'>, url: CoverUrl | undefined) => {
+    if (!url || seen.has(url)) return
+    seen.add(url)
+    offered.push({ source, url, current: !drawn.coverPath && drawn.publishedCoverUrl === url })
+  }
+  offer('kindle', book.kindleCoverUrl)
+  if (book.coverPath) offered.push({ source: 'photo', current: drawn.coverPath !== undefined })
+  if (book.publishedCoverUrl)
+    offer(coverSourceOfAddress(book.publishedCoverUrl), book.publishedCoverUrl)
+  offer('amazon', found.amazon)
+  offer('open-library', found.openLibrary)
+  for (const url of found.otherEditions) offer('other-edition', url)
+  if (book.chosenCover?.source === 'url')
+    offer(coverSourceOfAddress(book.chosenCover.url), book.chosenCover.url)
+  return [
+    ...offered.filter((choice) => choice.current),
+    ...offered.filter((choice) => !choice.current),
+  ]
 }
 
 /** What a record keeps of its Kindle title once its media are settled: a book

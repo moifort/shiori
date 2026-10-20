@@ -1305,6 +1305,22 @@
         }
       }
     },
+    "Actuelle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Current"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actuelle"
+          }
+        }
+      }
+    },
     "Admin" : {
       "localizations" : {
         "en" : {
@@ -1713,6 +1729,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Alphabétique"
+          }
+        }
+      }
+    },
+    "Amazon" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Amazon"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Amazon"
           }
         }
       }
@@ -2261,6 +2293,22 @@
         }
       }
     },
+    "Aucune couverture trouvée pour ce livre. Collez l'adresse d'une image." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No cover found for this book. Paste the address of an image."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune couverture trouvée pour ce livre. Collez l'adresse d'une image."
+          }
+        }
+      }
+    },
     "Aucune de vos séries n'est dans cet état." : {
       "localizations" : {
         "en" : {
@@ -2513,6 +2561,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Autre"
+          }
+        }
+      }
+    },
+    "Autre édition" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other edition"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autre édition"
           }
         }
       }
@@ -2933,6 +2997,22 @@
         }
       }
     },
+    "Changer la couverture" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change cover"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changer la couverture"
+          }
+        }
+      }
+    },
     "Chargement de la suite" : {
       "localizations" : {
         "en" : {
@@ -3093,6 +3173,22 @@
         }
       }
     },
+    "Choisir cette couverture" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose this cover"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisir cette couverture"
+          }
+        }
+      }
+    },
     "Choisir dans les contacts" : {
       "localizations" : {
         "en" : {
@@ -3221,18 +3317,18 @@
         }
       }
     },
-    "Collez l'URL d'une image pour remplacer la couverture. Videz le champ pour l'effacer." : {
+    "Coller l'adresse d'une image" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paste an image URL to replace the cover. Clear the field to remove it."
+            "value" : "Paste the address of an image"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Collez l'URL d'une image pour remplacer la couverture. Videz le champ pour l'effacer."
+            "value" : "Coller l'adresse d'une image"
           }
         }
       }
@@ -7793,6 +7889,22 @@
         }
       }
     },
+    "Open Library" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Library"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Library"
+          }
+        }
+      }
+    },
     "Options" : {
       "localizations" : {
         "en" : {
@@ -8833,6 +8945,22 @@
         }
       }
     },
+    "Recherche des couvertures…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Looking for covers…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recherche des couvertures…"
+          }
+        }
+      }
+    },
     "Recherche du livre..." : {
       "localizations" : {
         "en" : {
@@ -9837,22 +9965,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Shiori Premium"
-          }
-        }
-      }
-    },
-    "Shiori n'a pas pu retrouver ce livre. La fiche est conservée ; réessayez plus tard." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shiori couldn’t find this book again. The record is kept; try again later."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shiori n'a pas pu retrouver ce livre. La fiche est conservée ; réessayez plus tard."
           }
         }
       }
@@ -11313,22 +11425,6 @@
         }
       }
     },
-    "Url de l'image" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Image URL"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Url de l'image"
-          }
-        }
-      }
-    },
     "Utilisateurs" : {
       "localizations" : {
         "en" : {
@@ -11569,6 +11665,22 @@
         }
       }
     },
+    "Votre photo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your photo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre photo"
+          }
+        }
+      }
+    },
     "Votre prénom sert à personnaliser l'application." : {
       "localizations" : {
         "en" : {
@@ -11613,22 +11725,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vous"
-          }
-        }
-      }
-    },
-    "Vous avez utilisé tous vos scans. La mise à jour d'une fiche en consomme un." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You’ve used all your scans. Updating a record uses one."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vous avez utilisé tous vos scans. La mise à jour d'une fiche en consomme un."
           }
         }
       }
@@ -11821,6 +11917,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vérifier"
+          }
+        }
+      }
+    },
+    "Web" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Web"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Web"
           }
         }
       }
@@ -12029,22 +12141,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "hier"
-          }
-        }
-      }
-    },
-    "https://…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "https://…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "https://…"
           }
         }
       }

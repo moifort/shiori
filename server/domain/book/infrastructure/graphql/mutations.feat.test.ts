@@ -779,6 +779,68 @@ describe('a book that came from a scan', () => {
   })
 })
 
+describe('picking a cover through the API', () => {
+  // No author and no ISBN: nothing is asked of Amazon or Open Library.
+  const scanned = 'https://covers.openlibrary.org/b/isbn/9782352949329-L.jpg?default=false'
+  const picked = 'https://m.media-amazon.com/images/P/2253151378.01._SCLZZZZZZZ_.jpg'
+  const aScannedBook = async () => {
+    const result = await execute(
+      `mutation { addBook(input: { title: "Le Nom du vent", coverUrl: "${scanned}" }) { id } }`,
+    )
+    return (result.data as { addBook: { id: string } }).addBook
+  }
+
+  test('offers the covers held, then draws the book with the one picked', async () => {
+    const book = await aScannedBook()
+
+    const offered = await execute(`{ bookCoverChoices(id: "${book.id}") { source url current } }`)
+    expect(offered.errors).toBeUndefined()
+    expect(offered.data?.bookCoverChoices).toEqual([
+      { source: 'OPEN_LIBRARY', url: scanned, current: true },
+    ])
+
+    const chosen = await execute(
+      `mutation { chooseBookCover(id: "${book.id}", url: "${picked}") { coverUrl } }`,
+    )
+    expect(chosen.errors).toBeUndefined()
+    expect(chosen.data?.chooseBookCover).toEqual({ coverUrl: picked })
+
+    const after = await execute(`{ bookCoverChoices(id: "${book.id}") { source current } }`)
+    expect(after.data?.bookCoverChoices).toEqual([
+      { source: 'AMAZON', current: true },
+      { source: 'OPEN_LIBRARY', current: false },
+    ])
+  })
+
+  test('refuses the photo of a book that has none', async () => {
+    const book = await aScannedBook()
+
+    const result = await execute(`mutation { chooseBookCover(id: "${book.id}") { id } }`)
+
+    expect(result.errors?.[0]?.extensions?.code).toBe('BAD_USER_INPUT')
+  })
+
+  test('says a book that is not there', async () => {
+    const result = await execute('{ bookCoverChoices(id: "gone") { url } }')
+
+    expect(result.errors?.[0]?.extensions?.code).toBe('NOT_FOUND')
+  })
+
+  test('still takes an address typed in an older edit form, as a cover picked', async () => {
+    const book = await aScannedBook()
+
+    const typed = await execute(
+      `mutation { updateBook(id: "${book.id}", input: { coverUrl: "${picked}" }) { coverUrl } }`,
+    )
+    expect(typed.data?.updateBook).toEqual({ coverUrl: picked })
+
+    const cleared = await execute(
+      `mutation { updateBook(id: "${book.id}", input: { coverUrl: null }) { coverUrl } }`,
+    )
+    expect(cleared.data?.updateBook).toEqual({ coverUrl: null })
+  })
+})
+
 describe('keeping a book to oneself', () => {
   test('flips the hidden flag', async () => {
     const book = await addBook('Le Nom du vent')

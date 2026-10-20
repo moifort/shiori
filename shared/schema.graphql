@@ -869,9 +869,9 @@ input BookEditInput {
   authors: [AuthorName!]
 
   """
-  Where to draw the cover from, typed by the reader when the scan found none or found the wrong one. Null clears it, and the app draws its placeholder.
+  Where to draw the cover from, typed by the reader when the scan found none or found the wrong one: picked as `chooseBookCover` picks it. Null drops both the picked and the publisher cover.
   """
-  coverUrl: CoverUrl
+  coverUrl: CoverUrl @deprecated(reason: "Use `chooseBookCover`, which also offers the covers found.")
 
   """The running time of an audiobook, in minutes."""
   durationMinutes: ListeningMinutes
@@ -1024,6 +1024,37 @@ enum CopiedStatus {
 
 """A non-negative whole number of things. Example: 12."""
 scalar Count
+
+"""A cover the reader may pick for a book."""
+type CoverChoice {
+  """The cover the book is drawn with now."""
+  current: Boolean!
+  source: CoverSource!
+
+  """The image, the photo signed like `Book.coverUrl`."""
+  url: CoverUrl!
+}
+
+"""Where a cover offered by `bookCoverChoices` comes from."""
+enum CoverSource {
+  """Amazon's cover for the book's ISBN."""
+  AMAZON
+
+  """The cover Amazon shows for the Kindle title."""
+  KINDLE
+
+  """Open Library's cover for the ISBN."""
+  OPEN_LIBRARY
+
+  """The cover of another edition of the work, in the same language."""
+  OTHER_EDITION
+
+  """The photo the reader took when scanning the book."""
+  PHOTO
+
+  """An image no known source serves: most often one pasted."""
+  WEB
+}
 
 """
 An HTTPS URL to draw a book cover from.
@@ -2427,6 +2458,11 @@ type Mutation {
   awaitScannedEdition(book: ScannedBookInput!, format: ReleaseFormat!): AwaitedEdition!
 
   """
+  Draw a book with the cover the reader picked, before any other source: the image at `url` — one `bookCoverChoices` offered, or an address the reader pasted — or, with no `url`, the photo taken when the book was scanned. A Kindle sync or a description that later brings another cover leaves it in place, and the other covers stay offered. Free. BAD_USER_INPUT when no `url` is given and the book has no photo.
+  """
+  chooseBookCover(id: BookId!, url: CoverUrl): Book!
+
+  """
   Register the device with the authorization code the web view caught, and link the account.
   
   The credentials are sealed before they reach storage and never leave the server. Fails with `AUDIBLE_NO_PENDING_LOGIN` when no sign-in was started, `AUDIBLE_LOGIN_EXPIRED` past the thirty-minute window — start over in both cases — and `AUDIBLE_UNAVAILABLE` when Amazon refuses the registration.
@@ -2668,7 +2704,7 @@ type Mutation {
   
   Spends one scan of the allowance, only once the model answered. Fails with `QUOTA_EXHAUSTED` once nothing is left, or `SCAN_FAILED` (`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors — the record is then untouched.
   """
-  refreshBook(id: BookId!): Book!
+  refreshBook(id: BookId!): Book! @deprecated(reason: "The app no longer offers it: a cover is picked with `bookCoverChoices` and `chooseBookCover`, free, and the rest of a record is corrected with `updateBook`.")
 
   """
   Ask the world about a saga again: one fresh web-grounded model call, whose catalogue replaces the stored one of that edition for every reader of it. For a volume out since the catalogue was built.
@@ -3084,6 +3120,11 @@ type Query {
 
   """One book of the reader library. Null when they do not own it."""
   book(id: BookId!): Book
+
+  """
+  The covers the reader may pick for one of their books, for `chooseBookCover`: the one drawn now first, then what the record holds — the Kindle cover, the scan photo, the publisher cover — and what Amazon and Open Library have for its ISBN and for up to three other editions in its language. Each image once. Free: no model call, no scan spent; a source that does not answer within a few seconds is a cover not offered. NOT_FOUND when the reader has no such book.
+  """
+  bookCoverChoices(id: BookId!): [CoverChoice!]!
 
   """
   The covers of the reader books named, signed for these alone: what a search result draws, the index carrying none. A book not theirs is left out. At most 50 ids; one document read each.

@@ -14,9 +14,10 @@ final class BookViewModel {
     /// Set while a mutation is in flight, so the screen can disable its controls
     /// without blanking the content underneath.
     private(set) var isSaving = false
-    /// Set while the record is looked up again: a web search that takes
-    /// seconds, so the screen says what it is waiting for.
-    private(set) var isRefreshing = false
+    /// The covers the picker offers: nil while they are sought.
+    private(set) var coverChoices: [CoverChoice]?
+    /// Why the covers could not be sought, said in the picker.
+    private(set) var coverChoicesFailed: String?
     /// Set while a book added from a shelf photo is described, on its first
     /// opening: the page stays readable and usable, and says so in its bar.
     private(set) var isDescribing = false
@@ -96,23 +97,30 @@ final class BookViewModel {
         }
     }
 
-    /// Brings the record up to date from the web. A refusal the reader can act
-    /// on is told in their words rather than the server's.
-    func refresh() async {
-        // The description under way is that very lookup, and free; a refresh
-        // under way is already asking.
-        guard !isDescribing, !isRefreshing else { return }
-        isRefreshing = true
-        defer { isRefreshing = false }
+    /// Seeks the covers the reader may pick, afresh each time the picker
+    /// opens: a source may have found one since.
+    func loadCoverChoices() async {
+        coverChoices = nil
+        coverChoicesFailed = nil
         do {
-            let refreshed = try await client.refresh(bookId)
-            withAnimation(.smooth) { book = refreshed }
-        } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {
-            errorMessage = String(localized: "Vous avez utilisé tous vos scans. La mise à jour d'une fiche en consomme un.")
-        } catch let APIError.domain(code, _) where code == "SCAN_FAILED" {
-            errorMessage = String(localized: "Shiori n'a pas pu retrouver ce livre. La fiche est conservée ; réessayez plus tard.")
+            coverChoices = try await client.coverChoices(bookId)
+        } catch {
+            coverChoicesFailed = reportError(error)
+        }
+    }
+
+    /// Draws the book with the cover picked: the image, or the scan photo.
+    /// Returns false when the call failed, so the picker stays open.
+    func chooseCover(_ choice: CoverChoice) async -> Bool {
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            let chosen = try await client.chooseCover(bookId, choice.source == .photo ? nil : choice.url)
+            withAnimation(.smooth) { book = chosen }
+            return true
         } catch {
             errorMessage = reportError(error)
+            return false
         }
     }
 

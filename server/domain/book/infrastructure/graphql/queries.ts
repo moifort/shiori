@@ -2,13 +2,15 @@ import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
 import {
   BookCoverType,
   BookType,
+  CoverChoiceType,
   LibraryPageType,
   LibrarySectionType,
   ShelfVocabularyType,
 } from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
+import { BookUseCase } from '~/domain/book/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
-import { badUserInput } from '~/domain/shared/graphql/errors'
+import { badUserInput, notFound } from '~/domain/shared/graphql/errors'
 import { languageOf } from '~/domain/shared/language'
 
 /** Covers a search result asks for at once: the rows on one screen, with margin. */
@@ -91,6 +93,22 @@ builder.queryFields((t) => ({
       'the search, and a signature outlives no index kept for days. Ask `bookCovers` ' +
       'for the rows drawn. One scan of the library.',
     resolve: (_root, _args, context) => BookQuery.searchIndex(context.userId),
+  }),
+
+  bookCoverChoices: t.field({
+    type: [CoverChoiceType],
+    description:
+      'The covers the reader may pick for one of their books, for `chooseBookCover`: ' +
+      'the one drawn now first, then what the record holds — the Kindle cover, the ' +
+      'scan photo, the publisher cover — and what Amazon and Open Library have for its ' +
+      'ISBN and for up to three other editions in its language. Each image once. ' +
+      'Free: no model call, no scan spent; a source that does not answer within a few ' +
+      'seconds is a cover not offered. NOT_FOUND when the reader has no such book.',
+    args: { id: t.arg({ type: 'BookId', required: true }) },
+    resolve: async (_root, args, context) => {
+      const choices = await BookUseCase.coverChoices(context.userId, args.id)
+      return choices === 'not-found' ? notFound('Book not found') : choices
+    },
   }),
 
   bookCovers: t.field({

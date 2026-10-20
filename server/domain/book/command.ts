@@ -22,6 +22,7 @@ import type {
   BookId,
   BookLanguage,
   BookMedium,
+  ChosenCover,
   CoverUrl,
   Genre,
   Isbn13,
@@ -134,6 +135,7 @@ export type BookEdit = Partial<
     | 'isbn13'
     | 'language'
     | 'publishedCoverUrl'
+    | 'chosenCover'
     | 'awaitingDescription'
     | 'addedAt'
     | 'startedAt'
@@ -552,6 +554,21 @@ export namespace BookCommand {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
     return repository.save({ ...book, hidden, updatedAt: now }, batch)
+  }
+
+  /** Draw the book with the cover the reader picked, before any other source.
+   *  The others stay on the record, so the reader can pick one of them back. */
+  export const chooseCover = async (
+    userId: UserId,
+    bookId: BookId,
+    chosenCover: ChosenCover,
+    now = new Date(),
+    batch?: WriteBatch,
+  ): Promise<Book | 'not-found' | 'no-photo'> => {
+    const book = await repository.findById(userId, bookId)
+    if (!book) return 'not-found'
+    if (chosenCover.source === 'photo' && !book.coverPath) return 'no-photo'
+    return repository.save({ ...book, chosenCover, updatedAt: now }, batch)
   }
 
   export const remove = async (

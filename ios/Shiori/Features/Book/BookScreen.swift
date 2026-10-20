@@ -18,6 +18,7 @@ struct BookScreen: View {
     @State private var showSeriesJoin = false
     @State private var showRecommendation = false
     @State private var showNote = false
+    @State private var showCoverPicker = false
     @State private var showRatingPrompt = false
     @State private var editedField: BookField?
     @State private var openSeries: SeriesDestination?
@@ -77,12 +78,10 @@ struct BookScreen: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
-            // The AI at work — a shelf book described on its first opening, or a
-            // refresh: said in the bar, so the page under it stays readable and
-            // every action stays at hand.
-            .generatingInBar(
-                viewModel.isDescribing || viewModel.isRefreshing ? "L'IA complète la fiche" : nil
-            )
+            // The AI at work — a shelf book described on its first opening:
+            // said in the bar, so the page under it stays readable and every
+            // action stays at hand.
+            .generatingInBar(viewModel.isDescribing ? "L'IA complète la fiche" : nil)
             // Toolbar actions close their menu before the mutation leaves, so the
             // call is made visible by a scrim rather than by the control itself.
             .overlay {
@@ -155,6 +154,22 @@ struct BookScreen: View {
                         defer { viewModel.dismissError() }
                         return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
                     }
+                }
+            }
+            .sheet(isPresented: $showCoverPicker) {
+                if let book = viewModel.book {
+                    CoverPickerSheet(
+                        book: book,
+                        choices: viewModel.coverChoices,
+                        loadFailed: viewModel.coverChoicesFailed
+                    ) { choice in
+                        let chosen = await viewModel.chooseCover(choice)
+                        if let book = viewModel.book { onChanged(book) }
+                        guard !chosen else { return nil }
+                        defer { viewModel.dismissError() }
+                        return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
+                    }
+                    .task { await viewModel.loadCoverChoices() }
                 }
             }
             .sheet(item: $editedField) { field in
@@ -256,7 +271,7 @@ struct BookScreen: View {
         BookActionsMenu(book: book, offer: viewModel.offer) { action in
             switch action {
             case .edit: showEditor = true
-            case .refresh: run { await viewModel.refresh() }
+            case .chooseCover: showCoverPicker = true
             case .joinSeries: showSeriesJoin = true
             case .recommend: showRecommendation = true
             case let .awaitEdition(format): viewModel.awaitEdition(format)

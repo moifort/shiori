@@ -3,8 +3,8 @@ import SwiftUI
 /// Everything the "…" menu of a book can ask for.
 enum BookMenuAction {
     case edit
-    /// The book looked up again on the web.
-    case refresh
+    /// Another cover picked, among those the record holds and the sources find.
+    case chooseCover
     case joinSeries
     case recommend
     case awaitEdition(ReleaseFormat)
@@ -31,13 +31,12 @@ struct BookActionsMenu: View {
             }
             .accessibilityIdentifier("book-edit")
 
-            // As on an author's page: the book looked up again, for a record
-            // scanned thin or before the scan knew better. Typed corrections
-            // stay with "Modifier"; this one rewrites only what the web says.
-            Button("Mettre à jour", systemImage: "arrow.clockwise") {
-                onAction(.refresh)
+            // What a reader most often wanted from looking a record up again:
+            // a better cover. Picked among those found, free, with no AI.
+            Button("Changer la couverture", systemImage: "photo") {
+                onAction(.chooseCover)
             }
-            .accessibilityIdentifier("book-refresh")
+            .accessibilityIdentifier("book-cover")
 
             // A volume the scan did not recognise as one is filed from here,
             // without going through the whole edit form. Only for a book in no

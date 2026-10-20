@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import {
   amazonUrlOf,
   copyOf,
+  coverCandidatesOf,
   coverSourcesOf,
   datesAfterCorrection,
   datesAfterStatusChange,
@@ -31,6 +32,7 @@ import {
 } from '~/domain/book/business-rules'
 import {
   BookId,
+  CoverUrl,
   Isbn13,
   ListeningMinutes,
   PageCount,
@@ -1196,6 +1198,72 @@ describe('the cover a book is drawn under', () => {
       publishedCoverUrl: publisher,
     })
     expect(coverSourcesOf({})).toEqual({})
+  })
+
+  test('is the cover the reader picked before any other', () => {
+    const picked = CoverUrl('https://example.com/dune.jpg')
+    const all = { kindleCoverUrl: kindle, coverPath: photo, publishedCoverUrl: publisher }
+    expect(coverSourcesOf({ ...all, chosenCover: { source: 'url', url: picked } })).toEqual({
+      publishedCoverUrl: picked,
+    })
+    expect(coverSourcesOf({ ...all, chosenCover: { source: 'photo' } })).toEqual({
+      coverPath: photo,
+    })
+  })
+
+  test('falls back to the usual order when the photo picked is gone', () => {
+    expect(
+      coverSourcesOf({ publishedCoverUrl: publisher, chosenCover: { source: 'photo' } }),
+    ).toEqual({ publishedCoverUrl: publisher })
+  })
+})
+
+describe('the covers offered to the reader', () => {
+  const photo = 'covers/r/dune.jpg' as Book['coverPath']
+  const kindle = CoverUrl('https://m.media-amazon.com/images/I/kindle.jpg')
+  const publisher = CoverUrl('https://covers.openlibrary.org/b/isbn/9782266320481-L.jpg')
+  const amazon = CoverUrl('https://m.media-amazon.com/images/P/2266320483.01._SCLZZZZZZZ_.jpg')
+  const other = CoverUrl('https://m.media-amazon.com/images/P/2221252306.01._SCLZZZZZZZ_.jpg')
+  const pasted = CoverUrl('https://example.com/dune.jpg')
+
+  test('puts the one drawn now first, then the record’s, then what was found', () => {
+    expect(
+      coverCandidatesOf(
+        { kindleCoverUrl: kindle, coverPath: photo, publishedCoverUrl: publisher },
+        { amazon, openLibrary: publisher, otherEditions: [other] },
+      ),
+    ).toEqual([
+      { source: 'kindle', url: kindle, current: true },
+      { source: 'photo', current: false },
+      { source: 'open-library', url: publisher, current: false },
+      { source: 'amazon', url: amazon, current: false },
+      { source: 'other-edition', url: other, current: false },
+    ])
+  })
+
+  test('marks the photo current when the book is drawn with it', () => {
+    expect(
+      coverCandidatesOf({ coverPath: photo, publishedCoverUrl: publisher }, { otherEditions: [] }),
+    ).toEqual([
+      { source: 'photo', current: true },
+      { source: 'open-library', url: publisher, current: false },
+    ])
+  })
+
+  test('offers a pasted cover as from the web, and first while it is drawn', () => {
+    expect(
+      coverCandidatesOf(
+        { publishedCoverUrl: amazon, chosenCover: { source: 'url', url: pasted } },
+        { amazon, otherEditions: [] },
+      ),
+    ).toEqual([
+      { source: 'web', url: pasted, current: true },
+      { source: 'amazon', url: amazon, current: false },
+    ])
+  })
+
+  test('offers nothing for a book no source knows', () => {
+    expect(coverCandidatesOf({}, { otherEditions: [] })).toEqual([])
   })
 })
 

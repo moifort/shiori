@@ -28,8 +28,18 @@ const probed: string[] = []
 /** The covers Open Library leads to, by the title asked, and every search made. */
 const shelfCovers: Record<string, string> = {}
 const shelfSearches: { title: string; author: string; volume?: number; language: string }[] = []
+/** What the cover picker finds: both sources by ISBN, and the other editions
+ *  by title, with every title searched. */
+const isbnCovers: Record<string, { amazon?: string; openLibrary?: string }> = {}
+const otherEditionCovers: Record<string, string[]> = {}
+const editionSearches: { title: string; isbn13?: string }[] = []
 mock.module('~/domain/scan/published-cover', () => ({
   publishedCoverOf: async (isbn13: string) => publishedCovers[isbn13],
+  isbnCoversOf: async (isbn13: string) => isbnCovers[isbn13] ?? {},
+  otherEditionCoversOf: async (book: { title: string; isbn13?: string }) => {
+    editionSearches.push({ title: book.title, isbn13: book.isbn13 })
+    return otherEditionCovers[book.title] ?? []
+  },
   shelfCoverOf: async (book: {
     title: string
     author: string
@@ -45,8 +55,15 @@ mock.module('~/domain/scan/published-cover', () => ({
   },
 }))
 
+// The scan photo is signed by the real object store, which needs a bucket.
+mock.module('~/system/object-store', () => ({
+  objectStore: () => ({ downloadUrl: async (path: string) => `https://fake.store/${path}` }),
+}))
+
 const { BookUseCase } = await import('~/domain/book/use-case')
 const { BookCommand } = await import('~/domain/book/command')
+const { BookQuery } = await import('~/domain/book/query')
+const { ObjectPath } = await import('~/system/object-store/primitives')
 const { BookId, CoverUrl, Isbn13, Synopsis } = await import('~/domain/book/primitives')
 const { monthOf } = await import('~/domain/quota/business-rules')
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
@@ -63,6 +80,9 @@ beforeEach(() => {
   probed.length = 0
   for (const title of Object.keys(shelfCovers)) delete shelfCovers[title]
   shelfSearches.length = 0
+  for (const isbn of Object.keys(isbnCovers)) delete isbnCovers[isbn]
+  for (const title of Object.keys(otherEditionCovers)) delete otherEditionCovers[title]
+  editionSearches.length = 0
 })
 
 const spent = () =>
@@ -175,6 +195,71 @@ describe('bringing a record up to date', () => {
   test('answers not-found for a book the reader does not own, without calling the model', async () => {
     expect(await BookUseCase.refresh(reader, BookId('missing'), 'fr')).toBe('not-found')
     expect(spent()).toBe(0)
+  })
+})
+
+describe('picking a cover', () => {
+  const amazon = 'https://m.media-amazon.com/images/P/2352949322.01._SCLZZZZZZZ_.jpg'
+  const openLibrary = 'https://covers.openlibrary.org/b/isbn/9782352949329-L.jpg?default=false'
+  const other = 'https://m.media-amazon.com/images/P/2253151378.01._SCLZZZZZZZ_.jpg'
+
+  test('offers the record’s covers and what the sources found, spending no scan', async () => {
+    const book = await aBook({
+      isbn13: Isbn13('9782352949329'),
+      publishedCoverUrl: CoverUrl(openLibrary),
+    })
+    isbnCovers['9782352949329'] = { amazon, openLibrary }
+    otherEditionCovers['Le Nom du vent'] = [other]
+    const before = fake.docReads
+
+    const choices = await BookUseCase.coverChoices(reader, book.id)
+
+    expect(choices).toEqual([
+      { source: 'open-library', url: CoverUrl(openLibrary), current: true },
+      { source: 'amazon', url: CoverUrl(amazon), current: false },
+      { source: 'other-edition', url: CoverUrl(other), current: false },
+    ])
+    expect(editionSearches).toEqual([{ title: 'Le Nom du vent', isbn13: '9782352949329' }])
+    expect(fake.docReads - before).toBe(1)
+    expect(spent()).toBe(0)
+  })
+
+  test('offers the scan photo, signed', async () => {
+    const book = await BookCommand.add(reader, {
+      title: BookTitle('Le Nom du vent'),
+      authors: [AuthorName('Patrick Rothfuss')],
+      coverPath: ObjectPath('covers/reader-1/nom-du-vent.jpg'),
+    })
+
+    expect(await BookUseCase.coverChoices(reader, book.id)).toEqual([
+      { source: 'photo', url: 'https://fake.store/covers/reader-1/nom-du-vent.jpg', current: true },
+    ])
+  })
+
+  test('draws the book with the cover picked, and keeps the others on offer', async () => {
+    const book = await aBook({ publishedCoverUrl: CoverUrl(openLibrary) })
+
+    const chosen = await BookUseCase.chooseCover(reader, book.id, {
+      source: 'url',
+      url: CoverUrl(other),
+    })
+
+    expect(chosen).toMatchObject({ publishedCoverUrl: openLibrary })
+    expect((await BookQuery.byId(reader, book.id))?.coverUrl).toBe(CoverUrl(other))
+    expect(await BookUseCase.coverChoices(reader, book.id)).toEqual([
+      { source: 'amazon', url: CoverUrl(other), current: true },
+      { source: 'open-library', url: CoverUrl(openLibrary), current: false },
+    ])
+  })
+
+  test('refuses the photo of a book scanned without one', async () => {
+    const book = await aBook()
+
+    expect(await BookUseCase.chooseCover(reader, book.id, { source: 'photo' })).toBe('no-photo')
+  })
+
+  test('says a book that is not there', async () => {
+    expect(await BookUseCase.coverChoices(reader, BookId('gone'))).toBe('not-found')
   })
 })
 

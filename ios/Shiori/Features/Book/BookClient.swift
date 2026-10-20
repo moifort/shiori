@@ -10,7 +10,10 @@ struct BookClient: Sendable {
     var rate: @Sendable (_ id: String, _ stars: Int) async throws -> Book
     /// The corrected facts and, when it moved, the rating, in one request.
     var save: @Sendable (_ id: String, BookCorrection, _ rating: Int??) async throws -> Book?
-    var refresh: @Sendable (_ id: String) async throws -> Book
+    /// The covers the reader may pick, the one drawn now first.
+    var coverChoices: @Sendable (_ id: String) async throws -> [CoverChoice]
+    /// The cover picked: an image, or the scan photo when the URL is nil.
+    var chooseCover: @Sendable (_ id: String, URL?) async throws -> Book
     /// A shelf book's description, asked when its page first opens.
     var describe: @Sendable (_ id: String) async throws -> Book
     var setFavorite: @Sendable (_ id: String, Bool) async throws -> Book
@@ -34,7 +37,8 @@ extension BookClient {
         setStatus: { try await BookAPI.setStatus(id: $0, status: $1) },
         rate: { try await BookAPI.rate(id: $0, stars: $1) },
         save: { try await BookAPI.save(id: $0, correction: $1, rating: $2) },
-        refresh: { try await BookAPI.refresh(id: $0) },
+        coverChoices: { try await BookAPI.coverChoices(id: $0) },
+        chooseCover: { try await BookAPI.chooseCover(id: $0, url: $1) },
         describe: { try await BookAPI.describe(id: $0) },
         setFavorite: { try await BookAPI.setFavorite(id: $0, favorite: $1) },
         setRecommendation: { try await BookAPI.setRecommendation(id: $0, recommendation: $1) },
@@ -63,7 +67,12 @@ extension BookClient {
             return book
         },
         save: { _, _, _ in .preview },
-        refresh: { _ in .preview },
+        coverChoices: { _ in CoverChoice.previews },
+        chooseCover: { _, url in
+            var book = Book.preview
+            book.coverURL = url ?? book.coverURL
+            return book
+        },
         describe: { _ in .preview },
         setFavorite: { _, favorite in
             var book = Book.preview

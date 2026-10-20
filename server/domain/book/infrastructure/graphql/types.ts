@@ -9,12 +9,14 @@ import {
   BookFormatEnum,
   BookLanguageEnum,
   BookMediumEnum,
+  CoverSourceEnum,
   GenreEnum,
   ReadingStatusEnum,
 } from '~/domain/book/infrastructure/graphql/enums'
 import type {
   BookId,
   BookView,
+  CoverChoice,
   LibrarySection,
   Recommendation,
   SeriesMembership,
@@ -436,3 +438,19 @@ export const BookCoverType = builder
       }),
     }),
   })
+
+export const CoverChoiceType = builder.objectRef<CoverChoice>('CoverChoice').implement({
+  description: 'A cover the reader may pick for a book.',
+  fields: (t) => ({
+    source: t.field({ type: CoverSourceEnum, resolve: (choice) => choice.source }),
+    url: t.field({
+      type: 'CoverUrl',
+      description: 'The image, the photo signed like `Book.coverUrl`.',
+      resolve: (choice) => choice.url,
+    }),
+    current: t.boolean({
+      description: 'The cover the book is drawn with now.',
+      resolve: (choice) => choice.current,
+    }),
+  }),
+})

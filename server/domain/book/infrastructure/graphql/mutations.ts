@@ -146,7 +146,13 @@ builder.mutationFields((t) => ({
         ...(input.language !== undefined
           ? { language: input.language ?? languageOf(context.event) }
           : {}),
-        ...clearable('publishedCoverUrl', input.coverUrl),
+        // A typed address is a cover the reader picked; cleared, the book goes
+        // back to the cover it would draw without one, and the publisher's too.
+        ...(input.coverUrl === undefined
+          ? {}
+          : input.coverUrl
+            ? { chosenCover: { source: 'url' as const, url: input.coverUrl } }
+            : { chosenCover: undefined, publishedCoverUrl: undefined }),
         ...(input.series !== undefined
           ? {
               series: input.series
@@ -166,8 +172,37 @@ builder.mutationFields((t) => ({
     },
   }),
 
+  chooseBookCover: t.field({
+    type: BookType,
+    description:
+      'Draw a book with the cover the reader picked, before any other source: the ' +
+      'image at `url` — one `bookCoverChoices` offered, or an address the reader ' +
+      'pasted — or, with no `url`, the photo taken when the book was scanned. A Kindle ' +
+      'sync or a description that later brings another cover leaves it in place, and ' +
+      'the other covers stay offered. Free. BAD_USER_INPUT when no `url` is given and ' +
+      'the book has no photo.',
+    args: {
+      id: t.arg({ type: 'BookId', required: true }),
+      url: t.arg({ type: 'CoverUrl', required: false }),
+    },
+    resolve: async (_root, args, context) =>
+      match(
+        await BookUseCase.chooseCover(
+          context.userId,
+          args.id,
+          args.url ? { source: 'url', url: args.url } : { source: 'photo' },
+        ),
+      )
+        .with('not-found', () => notFound('Book not found'))
+        .with('no-photo', () => badUserInput('This book has no photo to draw its cover from'))
+        .otherwise((book) => readBack(context.userId, book.id)),
+  }),
+
   refreshBook: t.field({
     type: BookType,
+    deprecationReason:
+      'The app no longer offers it: a cover is picked with `bookCoverChoices` and ' +
+      '`chooseBookCover`, free, and the rest of a record is corrected with `updateBook`.',
     description:
       'Bring a record up to date: the book is looked up again on the web from its ' +
       'title, authors, format, publisher and language, and what describes the work ' +

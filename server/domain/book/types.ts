@@ -44,6 +44,20 @@ export type RecommendationComment = Brand<string, 'RecommendationComment'>
  *  anything else. */
 export type CoverUrl = Brand<string, 'CoverUrl'>
 
+/** A cover the reader picked: their own photo from the scan, or an image at an
+ *  address — a source's cover, or one they pasted. */
+export type ChosenCover = { source: 'photo' } | { source: 'url'; url: CoverUrl }
+
+/** Where a cover offered to the reader comes from. `web` is an address no
+ *  known source serves, most often one the reader pasted. */
+export type CoverSource = 'kindle' | 'photo' | 'amazon' | 'open-library' | 'other-edition' | 'web'
+
+/** A cover the reader may pick, and whether it is the one drawn now. The photo
+ *  carries no address: it is signed only when read back. */
+export type CoverCandidate =
+  | { source: 'photo'; current: boolean }
+  | { source: Exclude<CoverSource, 'photo'>; url: CoverUrl; current: boolean }
+
 /** Where a book stands for its reader. `reading` is where a book spends most of
  *  its life, and the only state in which a note actually gets written.
  *  `dropped` is a book the reader stopped and will not finish: not read, so it
@@ -235,6 +249,10 @@ export type Book = {
    *  when there is no photo; absent when no cover was found, and the app then
    *  draws the placeholder. */
   publishedCoverUrl?: CoverUrl
+  /** The cover the reader picked by hand, drawn before any other: a Kindle
+   *  sync, a description or a merge that brings another cover changes nothing
+   *  the reader sees. Absent until a cover is chosen. */
+  chosenCover?: ChosenCover
   /** A book added from a shelf photo, holding only what its spine printed: no
    *  summary, genre or ISBN yet, and maybe another printing's cover. Its first
    *  opening describes it, free — the scan was spent on adding it — and clears
@@ -275,6 +293,13 @@ export type Book = {
  *  re-branded: in local development the object store signs plain-HTTP URLs, which
  *  `CoverUrl` rightly refuses as input but the dev app still has to draw. */
 export type BookView = Book & { coverUrl?: SignedUrl | CoverUrl }
+
+/** A cover offered to the reader, as the picker draws it: the photo signed. */
+export type CoverChoice = {
+  source: CoverSource
+  url: SignedUrl | CoverUrl
+  current: boolean
+}
 
 /** The words the reader has already used, for the edit form to propose as they
  *  type: their subgenres in the language of the app, the most used first, and

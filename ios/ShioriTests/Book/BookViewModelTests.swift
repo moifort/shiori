@@ -140,16 +140,51 @@ struct BookViewModelTests {
         #expect(viewModel.errorMessage != nil)
     }
 
-    @Test func exhaustedQuotaIsSaidInTheReadersWords() async {
+    @Test func coversAreSoughtAfreshEachTimeThePickerOpens() async {
         var client = BookClient.preview
-        client.refresh = { _ in throw APIError.domain(code: "QUOTA_EXHAUSTED", messages: []) }
+        client.coverChoices = { _ in throw Boom() }
+        let viewModel = BookViewModel(bookId: "preview", client: client)
+
+        await viewModel.loadCoverChoices()
+        #expect(viewModel.coverChoices == nil)
+        #expect(viewModel.coverChoicesFailed != nil)
+
+        client.coverChoices = { _ in CoverChoice.previews }
+        let retried = BookViewModel(bookId: "preview", client: client)
+        await retried.loadCoverChoices()
+        #expect(retried.coverChoices == CoverChoice.previews)
+        #expect(retried.coverChoicesFailed == nil)
+    }
+
+    @Test func thePhotoIsChosenWithoutAnAddress() async {
+        let sent = Sent()
+        var client = BookClient.preview
+        client.chooseCover = { _, url in
+            await sent.record(url)
+            return .preview
+        }
+        let viewModel = BookViewModel(bookId: "preview", client: client)
+        await viewModel.load()
+        let photo = CoverChoice(source: .photo, url: URL(string: "https://fake.store/photo.jpg")!, isCurrent: false)
+        let amazon = CoverChoice.previews[2]
+
+        #expect(await viewModel.chooseCover(photo))
+        #expect(await viewModel.chooseCover(amazon))
+
+        #expect(await sent.urls == [nil, amazon.url])
+    }
+
+    @Test func aRefusedCoverKeepsThePickerOpen() async {
+        var client = BookClient.preview
+        client.chooseCover = { _, _ in throw Boom() }
         let viewModel = BookViewModel(bookId: "preview", client: client)
         await viewModel.load()
 
-        await viewModel.refresh()
+        let chosen = await viewModel.chooseCover(CoverChoice.previews[1])
 
-        #expect(viewModel.errorMessage?.contains("scans") == true)
-        #expect(viewModel.isRefreshing == false)
+        #expect(chosen == false)
+        #expect(viewModel.errorMessage != nil)
+        #expect(viewModel.isSaving == false)
     }
 
     @Test func awaitedEditionShowsAtOnceAndCanBeGivenUp() async {
@@ -176,4 +211,10 @@ struct BookViewModelTests {
         #expect(viewModel.offer.awaited.isEmpty)
         #expect(viewModel.awaitFailed != nil)
     }
+}
+
+/// The addresses a cover was chosen with, in order.
+private actor Sent {
+    private(set) var urls: [URL?] = []
+    func record(_ url: URL?) { urls.append(url) }
 }
