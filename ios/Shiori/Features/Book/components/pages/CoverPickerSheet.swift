@@ -73,7 +73,7 @@ struct CoverPickerSheet: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 32)
             } else {
-                LazyVGrid(columns: columns, spacing: 20) {
+                LazyVGrid(columns: columns, spacing: 22) {
                     ForEach(offered) { choice in
                         tile(choice)
                     }
@@ -98,30 +98,52 @@ struct CoverPickerSheet: View {
         }
     }
 
+    /// The cover picked wears the check in its corner, as a photo picked in
+    /// Photos does: the mark follows the reader's finger. The one drawn now
+    /// says so on the cover itself, where the eye already is, and keeps saying
+    /// it once another is picked.
     private func tile(_ choice: CoverChoice) -> some View {
         let isPicked = choice.url == selection
         return Button {
             picked = choice.url
         } label: {
-            VStack(spacing: 6) {
+            VStack(spacing: 8) {
                 BookCover(book: book(drawnWith: choice.url), width: Self.coverWidth, showsFormatBadge: false)
+                    .overlay(alignment: .bottom) {
+                        if choice.isCurrent {
+                            Text("Actuelle")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 9)
+                                .padding(.vertical, 4)
+                                .background(.black.opacity(0.7), in: Capsule())
+                                .padding(.bottom, 8)
+                        }
+                    }
                     .padding(4)
                     .overlay {
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
                             .strokeBorder(isPicked ? Color.accentColor : .clear, lineWidth: 3)
                     }
-                VStack(spacing: 1) {
-                    Text(Self.label(of: choice.source))
-                        .font(.caption)
-                        .foregroundStyle(isPicked ? .primary : .secondary)
-                    if choice.isCurrent {
-                        Label("Actuelle", systemImage: "checkmark")
-                            .font(.caption2)
-                            .labelStyle(.titleAndIcon)
-                            .foregroundStyle(.tint)
+                    .overlay(alignment: .topTrailing) {
+                        if isPicked {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(.white)
+                                .frame(width: 26, height: 26)
+                                .background(Color.accentColor, in: Circle())
+                                // A ring in the sheet's own background lifts the
+                                // disc off the cover's corner, as on `CoverBadge`.
+                                .overlay(Circle().strokeBorder(Color(.systemGroupedBackground), lineWidth: 2.5))
+                                .offset(x: 8, y: -8)
+                                .transition(.scale.combined(with: .opacity))
+                        }
                     }
-                }
-                .lineLimit(1)
+                    .animation(.snappy, value: isPicked)
+                Text(Self.label(of: choice.source))
+                    .font(.caption)
+                    .foregroundStyle(isPicked ? .primary : .secondary)
+                    .lineLimit(1)
             }
         }
         .buttonStyle(.plain)
