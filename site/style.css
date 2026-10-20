@@ -595,6 +595,10 @@ section {
 .rate-row .rate-heart { margin-top: 2px; }
 .drop-tag { display: inline-flex; align-self: flex-start; align-items: center; gap: 5px; margin-top: 6px; padding: 3px 9px; border-radius: 99px; background: rgba(142, 142, 147, 0.16); color: #636366; font-size: 12px; font-weight: 600; }
 
+/* An SF Symbol, rendered from macOS into site/symbols and painted in the
+   text's colour, so an icon is the one the app draws. */
+.sf { flex: none; display: block; background: currentColor; -webkit-mask: var(--sf) center / contain no-repeat; mask: var(--sf) center / contain no-repeat; }
+
 /* A book's comment, as its page shows it: the book, then the speech bubble and the text. */
 .note-demo { width: 100%; max-width: 380px; display: flex; flex-direction: column; padding: 4px 16px; border-radius: 22px; background: #fff; box-shadow: 0 10px 30px rgba(40, 30, 20, 0.08); }
 .note-book { display: flex; align-items: flex-start; gap: 14px; padding: 10px 0; border-bottom: 0.5px solid rgba(60, 60, 67, 0.29); }
@@ -603,7 +607,7 @@ section {
 .note-book .watch-title { font-size: 17px; white-space: normal; }
 .note-book .watch-author { font-size: 14px; }
 .note-text { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; font-size: 15px; line-height: 1.35; color: #000; }
-.note-text svg { flex: none; width: 22px; height: 22px; margin-top: -1px; color: rgba(60, 60, 67, 0.6); }
+.note-text .sf { width: 22px; height: 20px; margin-top: 0; color: rgba(60, 60, 67, 0.6); }
 
 .note-text + .note-text { border-top: 0.5px solid rgba(60, 60, 67, 0.29); }
 .rec-by { align-items: center; }
@@ -621,17 +625,14 @@ section {
 .activity-tile { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: rgba(60, 60, 67, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .activity-tile img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 4px; outline: 0.5px solid rgba(60, 60, 67, 0.29); outline-offset: -0.5px; }
 /* The book's own switch, as its page draws it: on, the book stays off every friend's screen. */
-.activity-row.activity-hide { flex-direction: row; align-items: center; gap: 14px; padding: 10px 16px; }
-.activity-hide img { flex: none; width: 34px; height: 51px; object-fit: cover; border-radius: 3px; outline: 0.5px solid rgba(60, 60, 67, 0.29); outline-offset: -0.5px; }
+.activity-row.activity-hide { flex-direction: row; align-items: center; gap: 14px; padding: 12px 16px; }
 .activity-hide-label { flex: 1; display: flex; align-items: center; gap: 10px; font-size: 17px; color: #000; }
-.activity-hide-label svg { flex: none; width: 20px; height: 20px; color: rgba(60, 60, 67, 0.6); }
+.activity-hide-label .sf { width: 22px; height: 20px; color: rgba(60, 60, 67, 0.6); }
 .activity-switch { flex: none; position: relative; width: 51px; height: 31px; border-radius: 99px; background: #34c759; animation: hide-track 5s ease infinite; }
 .activity-switch::after { content: ""; position: absolute; top: 2px; right: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0, 0, 0, 0.16); animation: hide-knob 5s ease infinite; }
-/* Off, then on: the eye appears with the switch, and goes with it. */
-.activity-hide-label svg { animation: hide-eye 5s ease infinite; }
+/* Off, then on, as a reader flips it. */
 @keyframes hide-track { 0%, 30% { background: rgba(120, 120, 128, 0.16); } 38%, 88% { background: #34c759; } 96%, 100% { background: rgba(120, 120, 128, 0.16); } }
 @keyframes hide-knob { 0%, 30% { transform: translateX(-20px); } 38%, 88% { transform: none; } 96%, 100% { transform: translateX(-20px); } }
-@keyframes hide-eye { 0%, 30% { opacity: 0; transform: scale(0.6); } 38%, 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; transform: scale(0.6); } }
 .rate-heart svg { display: block; width: 26px; height: 26px; fill: rgba(120, 120, 128, 0.2); animation: rate-heart 5s ease infinite; animation-delay: 1.2s; }
 .saga .rate-heart svg { animation-delay: 3.7s; }
 @keyframes rate-heart { 0%, 4% { fill: rgba(120, 120, 128, 0.2); transform: none; } 10% { fill: #ff3b30; transform: scale(1.3); } 16%, 85% { fill: #ff3b30; transform: none; } 100% { fill: rgba(120, 120, 128, 0.2); } }
@@ -865,7 +866,7 @@ section {
   .sync-badge svg, .sync-halo, .one-src, .watch-switch, .watch-switch::after, .search-caret { animation: none; }
   .rate-star svg, .rate-heart svg { animation: none; fill: #ffcc00; }
   .rate-heart svg { fill: #ff3b30; }
-  .activity-switch, .activity-switch::after, .activity-hide-label svg { animation: none; }
+  .activity-switch, .activity-switch::after { animation: none; }
   .search-typed::after { animation: none; content: "Hypér"; }
   .search-results { animation: none; opacity: 1; }
   .share-toast { animation: none; opacity: 1; transform: translate(-50%, 0); }
