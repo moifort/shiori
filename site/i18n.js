@@ -1,7 +1,8 @@
 /* Shiori landing page: English for every browser that is not set to French.
  * The page is written in French; elements carrying data-i18n get their English
  * HTML from here before the first paint (the head script hides the page until
- * then). data-i18n-aria translates an aria-label, data-i18n-alt an image's alt. */
+ * then). data-i18n-aria translates an aria-label, data-i18n-alt an image's alt,
+ * data-i18n-src swaps a mock cover for its English edition. */
 (() => {
   "use strict";
   const root = document.documentElement;
@@ -120,7 +121,7 @@
     "discover.title": "Just for you",
     "watch.title": "The translation or the audio, the day it is out",
     "watch.text": "Not translated yet, not out as audio yet? Wait for the edition in your language or the audiobook: you are told the day it comes out.",
-    "watch.book": "Watch in French",
+    "watch.book": "Watch in English",
     "watch.audio": "Watch for the audio",
     "share.title": "Share it, it joins your library",
     "share.text": "A screenshot, an Amazon page, a copied title: tap \"Share\" from any app. The book is found on its own, ready to be added to your library.",
@@ -207,6 +208,23 @@
     "footer.source": "Source code",
     "footer.issues": "Report a problem",
     "footer.privacy": "Privacy",
+    "shelf.spine.neuromancer": "Neuromancer",
+    "shelf.spine.hailmary": "Project Hail Mary",
+    "shelf.spine.icepeople": "The Ice People",
+    "shelf.spine.hyperion": "Hyperion",
+    "shelf.spine.martian": "The Martian",
+    "shelf.spine.furtifs": "Les Furtifs",
+    "shelf.spine.foundation": "Foundation",
+    "plan.free.price": "$0",
+    "search.r1": "<mark>Hyper</mark>ion",
+    "search.r1.sub": "Hyperion Cantos · 4 volumes",
+    "search.r2": "<mark>Hyper</mark>ion",
+    "search.r3": "The Fall of <mark>Hyper</mark>ion",
+    "rec.book": "Project Hail Mary",
+    "lang.b1": "Le Nom du vent <i class=\"lang-tag\">FR</i>",
+    "lang.b2": "The Name of the Wind",
+    "lang.b3": "Frieren",
+    "watch.demo": "Projet Dernière Chance <i class=\"lang-tag\">FR</i>",
   };
 
   for (const el of document.querySelectorAll("[data-i18n]")) {
@@ -216,6 +234,9 @@
   for (const el of document.querySelectorAll("[data-i18n-alt]")) {
     const text = EN[el.dataset.i18nAlt];
     if (text !== undefined) el.alt = text;
+  }
+  for (const el of document.querySelectorAll("[data-i18n-src]")) {
+    el.src = el.dataset.i18nSrc;
   }
   for (const el of document.querySelectorAll("[data-i18n-aria]")) {
     const text = EN[el.dataset.i18nAria];

@@ -564,6 +564,8 @@ section {
 .search-typed::after { content: ""; animation: search-type 6s steps(1) infinite; }
 .search-caret { width: 2px; height: 20px; margin-left: -6px; background: #007aff; animation: search-caret 1s steps(1) infinite; }
 @keyframes search-type { 0% { content: ""; } 8% { content: "H"; } 14% { content: "Hy"; } 20% { content: "Hyp"; } 26%, 100% { content: "Hypér"; } }
+.i18n-en .search-typed::after { animation-name: search-type-en; }
+@keyframes search-type-en { 0% { content: ""; } 8% { content: "H"; } 14% { content: "Hy"; } 20% { content: "Hyp"; } 26%, 100% { content: "Hyper"; } }
 @keyframes search-caret { 50% { opacity: 0; } }
 .search-results { padding: 4px 0 8px; border-radius: 22px; background: #fff; box-shadow: 0 10px 30px rgba(40, 30, 20, 0.1); opacity: 0; animation: search-results 6s ease infinite; }
 @keyframes search-results { 0%, 18% { opacity: 0; transform: translateY(6px); } 28%, 92% { opacity: 1; transform: none; } 100% { opacity: 0; } }
@@ -879,6 +881,7 @@ section {
   .rate-heart .sf { background-color: #ff3b30; }
   .activity-switch, .activity-switch::after, .drop-thumb { animation: none; }
   .search-typed::after { animation: none; content: "Hypér"; }
+  .i18n-en .search-typed::after { content: "Hyper"; }
   .search-results { animation: none; opacity: 1; }
   .share-toast { animation: none; opacity: 1; transform: translate(-50%, 0); }
   .sync-cover { display: none; }

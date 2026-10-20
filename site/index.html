@@ -34,7 +34,7 @@
       if (!/^fr\b/i.test(lang)) document.documentElement.classList.add("i18n-en", "i18n-pending");
     })();
   </script>
-  <link rel="stylesheet" href="style.css?v=20261020-75">
+  <link rel="stylesheet" href="style.css?v=20261020-76">
 </head>
 <body>
 
@@ -190,14 +190,14 @@
               <i style="--c:#c9412f;--w:18px"><span>1984</span></i>
               <i style="--c:#f2c230;--w:20px;--t:#1d1d1f"><span>Fahrenheit 451</span></i>
               <i style="--c:#1f8a5b;--w:16px"><span>Solaris</span></i>
-              <i style="--c:#141414;--w:24px"><span>Neuromancien</span></i>
-              <i style="--c:#e86f2d;--w:17px"><span>Projet Dernière Chance</span></i>
-              <i style="--c:#6b4ba1;--w:21px"><span>La Nuit des temps</span></i>
-              <i style="--c:#d9d2c2;--w:19px;--t:#1d1d1f"><span>Hypérion</span></i>
+              <i style="--c:#141414;--w:24px"><span data-i18n="shelf.spine.neuromancer">Neuromancien</span></i>
+              <i style="--c:#e86f2d;--w:17px"><span data-i18n="shelf.spine.hailmary">Projet Dernière Chance</span></i>
+              <i style="--c:#6b4ba1;--w:21px"><span data-i18n="shelf.spine.icepeople">La Nuit des temps</span></i>
+              <i style="--c:#d9d2c2;--w:19px;--t:#1d1d1f"><span data-i18n="shelf.spine.hyperion">Hypérion</span></i>
               <i style="--c:#0f6bb5;--w:15px"><span>Silo</span></i>
-              <i style="--c:#8a1c2b;--w:23px"><span>Seul sur Mars</span></i>
-              <i style="--c:#2f7f7a;--w:18px"><span>Les Furtifs</span></i>
-              <i style="--c:#e5a640;--w:16px;--t:#1d1d1f"><span>Fondation</span></i>
+              <i style="--c:#8a1c2b;--w:23px"><span data-i18n="shelf.spine.martian">Seul sur Mars</span></i>
+              <i style="--c:#2f7f7a;--w:18px"><span data-i18n="shelf.spine.furtifs">Les Furtifs</span></i>
+              <i style="--c:#e5a640;--w:16px;--t:#1d1d1f"><span data-i18n="shelf.spine.foundation">Fondation</span></i>
             </div>
             <div class="shelf-board"></div>
             <div class="shelf-count" data-shelf-count><b>0</b> <span data-i18n="shelf.books">livres</span></div>
@@ -339,7 +339,7 @@
       <article class="card">
         <div class="card-visual">
           <div class="watch-demo" aria-hidden="true">
-            <div class="watch-book"><img src="covers/en/projet-derniere-chance.jpg" alt=""><div><span class="watch-title">Project Hail Mary <i class="lang-tag">EN</i></span><span class="watch-author">Andy Weir</span></div></div>
+            <div class="watch-book"><img src="covers/en/projet-derniere-chance.jpg" data-i18n-src="covers/projet-derniere-chance.jpg" alt=""><div><span class="watch-title" data-i18n="watch.demo">Project Hail Mary <i class="lang-tag">EN</i></span><span class="watch-author">Andy Weir</span></div></div>
             <div class="watch-row on"><span class="watch-icon"><i class="sf" style="--sf: url(symbols/character.book.closed.png)"></i></span><em data-i18n="watch.book">Guetter en français</em><i class="watch-switch"></i></div>
             <div class="watch-row cycle"><span class="watch-icon"><i class="sf" style="--sf: url(symbols/headphones.png)"></i></span><em data-i18n="watch.audio">Guetter en audio</em><i class="watch-switch"></i></div>
           </div>
@@ -361,7 +361,7 @@
 
       <article class="card">
         <div class="card-visual">
-          <div class="watch-demo lang-demo" aria-hidden="true"><div class="watch-book"><span class="lang-cover"><img src="covers/nom-du-vent.jpg" alt=""></span><div><span class="watch-title">Le Nom du vent</span><span class="watch-author">Patrick Rothfuss</span></div></div><div class="watch-book"><span class="lang-cover"><img src="covers/en/nom-du-vent.jpg" alt=""><span class="audio-badge"><i class="sf" style="--sf: url(symbols/headphones.png)"></i></span></span><div><span class="watch-title">The Name of the Wind <i class="lang-tag">EN</i></span><span class="watch-author">Patrick Rothfuss</span></div></div><div class="watch-book"><span class="lang-cover"><img src="covers/en/frieren-01.jpg" alt=""></span><div><span class="watch-title">Frieren <i class="lang-tag">EN</i></span><span class="watch-author">Kanehito Yamada</span></div></div></div>
+          <div class="watch-demo lang-demo" aria-hidden="true"><div class="watch-book"><span class="lang-cover"><img src="covers/nom-du-vent.jpg" alt=""></span><div><span class="watch-title" data-i18n="lang.b1">Le Nom du vent</span><span class="watch-author">Patrick Rothfuss</span></div></div><div class="watch-book"><span class="lang-cover"><img src="covers/en/nom-du-vent.jpg" alt=""><span class="audio-badge"><i class="sf" style="--sf: url(symbols/headphones.png)"></i></span></span><div><span class="watch-title" data-i18n="lang.b2">The Name of the Wind <i class="lang-tag">EN</i></span><span class="watch-author">Patrick Rothfuss</span></div></div><div class="watch-book"><span class="lang-cover"><img src="covers/en/frieren-01.jpg" alt=""></span><div><span class="watch-title" data-i18n="lang.b3">Frieren <i class="lang-tag">EN</i></span><span class="watch-author">Kanehito Yamada</span></div></div></div>
         </div>
         <h3 data-i18n="lang.title">Chaque édition garde sa langue</h3>
         <p data-i18n="lang.text">Une VO sur l'étagère, un livre audio en anglais&nbsp;: chaque édition garde sa langue, avec sa couverture, son résumé et sa série dans cette langue.</p>
@@ -383,10 +383,10 @@
             <div class="search-field"><i class="sf" style="--sf: url(symbols/magnifyingglass.png); width: 16px; height: 16px"></i><span class="search-typed"></span><i class="search-caret"></i></div>
             <div class="search-results">
               <span class="search-head" data-i18n="search.series">Séries</span>
-              <div class="search-row"><img src="covers/hyperion-audio-01.jpg" alt=""><div><span class="watch-title"><mark>Hypér</mark>ion</span><span class="watch-author">Les Cantos d'Hypérion · 4 tomes</span></div></div>
+              <div class="search-row"><img src="covers/hyperion-audio-01.jpg" alt=""><div><span class="watch-title" data-i18n="search.r1"><mark>Hypér</mark>ion</span><span class="watch-author" data-i18n="search.r1.sub">Les Cantos d'Hypérion · 4 tomes</span></div></div>
               <span class="search-head" data-i18n="search.books">Livres</span>
-              <div class="search-row"><img src="covers/hyperion.jpg" alt=""><div><span class="watch-title"><mark>Hypér</mark>ion</span><span class="watch-author">Dan Simmons</span></div></div>
-              <div class="search-row"><img src="covers/hyperion-audio-03.jpg" alt=""><div><span class="watch-title">La Chute d'<mark>Hypér</mark>ion</span><span class="watch-author">Dan Simmons</span></div></div>
+              <div class="search-row"><img src="covers/hyperion.jpg" data-i18n-src="covers/en/hyperion.jpg" alt=""><div><span class="watch-title" data-i18n="search.r2"><mark>Hypér</mark>ion</span><span class="watch-author">Dan Simmons</span></div></div>
+              <div class="search-row"><img src="covers/hyperion-audio-03.jpg" alt=""><div><span class="watch-title" data-i18n="search.r3">La Chute d'<mark>Hypér</mark>ion</span><span class="watch-author">Dan Simmons</span></div></div>
             </div>
           </div>
         </div>
@@ -408,7 +408,7 @@
       <article class="card">
         <div class="card-visual">
           <div class="note-demo" aria-hidden="true">
-            <div class="note-book"><img src="covers/projet-derniere-chance.jpg" alt=""><div><span class="watch-title">Projet Dernière Chance</span><span class="watch-author">Andy Weir</span></div></div>
+            <div class="note-book"><img src="covers/projet-derniere-chance.jpg" data-i18n-src="covers/en/projet-derniere-chance.jpg" alt=""><div><span class="watch-title" data-i18n="rec.book">Projet Dernière Chance</span><span class="watch-author">Andy Weir</span></div></div>
             <div class="note-text rec-by"><i class="sf" style="--sf: url(symbols/person.badge.plus.png)"></i><span data-i18n="rec.by">Conseillé par</span><b data-i18n="rec.name">Lamia</b></div>
             <div class="note-text"><i class="sf" style="--sf: url(symbols/text.quote.png)"></i><span data-i18n="rec.sample">Lis-le sans rien savoir, surtout pas la quatrième de couverture.</span></div>
           </div>
@@ -539,7 +539,7 @@
       <thead>
         <tr>
           <td></td>
-          <th scope="col"><span data-i18n="plan.free.name">Gratuit</span><b>0&nbsp;€</b><small data-i18n="plan.free.lead">Tout, sans limite de temps.</small></th>
+          <th scope="col"><span data-i18n="plan.free.name">Gratuit</span><b data-i18n="plan.free.price">0&nbsp;€</b><small data-i18n="plan.free.lead">Tout, sans limite de temps.</small></th>
           <th scope="col" class="premium"><span class="plan-tag" data-i18n="plan.premium.tag">Premier mois offert</span><span>Premium</span><b data-i18n="plan.premium.price">1,99&nbsp;€&nbsp;/&nbsp;mois</b><small data-i18n="plan.premium.lead">ou 17,99&nbsp;€ par an</small></th>
         </tr>
       </thead>
@@ -573,7 +573,7 @@
   <p><a href="https://github.com/moifort/shiori" data-i18n="footer.source">Code source</a> · <a href="https://github.com/moifort/shiori/issues" data-i18n="footer.issues">Signaler un problème</a> · <a href="privacy.html" data-i18n="footer.privacy">Confidentialité</a></p>
 </footer>
 
-<script src="i18n.js?v=20261020-74"></script>
+<script src="i18n.js?v=20261020-76"></script>
 <script src="main.js?v=20261020-63" defer></script>
 </body>
 </html>
