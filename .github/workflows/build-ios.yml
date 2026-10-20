@@ -89,7 +89,7 @@ jobs:
       # moved, and a new cache is saved only when the resolved versions changed.
       - name: Restore the Swift packages
         id: spm-restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ${{ runner.temp }}/SourcePackages
           key: spm-${{ runner.os }}-${{ github.sha }}
@@ -116,7 +116,7 @@ jobs:
 
       - name: Save the Swift packages
         if: env.SPM_CACHE_KEY != '' && steps.spm-restore.outputs.cache-matched-key != env.SPM_CACHE_KEY
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: ${{ runner.temp }}/SourcePackages
           key: ${{ env.SPM_CACHE_KEY }}
