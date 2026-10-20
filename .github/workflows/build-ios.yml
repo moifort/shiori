@@ -1,10 +1,27 @@
 name: Build
 
+# Runs only for what the app is built from: its sources, the committed schema the
+# Apollo code is regenerated from (so a backend change that breaks an iOS operation
+# still lands here), the two checks the job ends with, and this file. A server-only
+# push no longer pays twenty minutes of macOS runner, nor cancels a running build.
+# No branch protection requires this check, so a run that never starts blocks nothing.
 on:
   push:
     branches: [main]
+    paths:
+      - 'ios/**'
+      - 'shared/schema.graphql'
+      - 'scripts/check-strings.ts'
+      - 'scripts/check-ios-components.ts'
+      - '.github/workflows/build-ios.yml'
   pull_request:
     branches: [main]
+    paths:
+      - 'ios/**'
+      - 'shared/schema.graphql'
+      - 'scripts/check-strings.ts'
+      - 'scripts/check-ios-components.ts'
+      - '.github/workflows/build-ios.yml'
   workflow_dispatch:
 
 # A newer push to the same branch, or to the same pull request, makes this run
@@ -40,11 +57,20 @@ jobs:
       # Booted first, so its ten-minute first start runs alongside the Apollo
       # generation and the build rather than after them, where it sat as eleven
       # silent minutes before the tests on 2026-10-16.
+      #
+      # The iPhone 17 precisely: the scheme's test pre-action boots "iPhone 17" to
+      # add the UI tests' photo. On any other device that pre-action cold-booted a
+      # second simulator inside the test step, six to fifteen silent minutes before
+      # the first test on 2026-10-18–20. simctl resolves the name to the device
+      # already booted, so here it finds this one ready and does nothing.
       - name: Boot the simulator the tests run on
         run: |
           set -euo pipefail
-          udid=$(xcrun simctl list devices available | grep -m1 -E '^ +iPhone' \
-            | grep -oE '[0-9A-F]{8}(-[0-9A-F]{4}){3}-[0-9A-F]{12}')
+          devices=$(xcrun simctl list devices available)
+          line=$(grep -m1 -E '^ +iPhone 17 \(' <<< "$devices" \
+            || grep -m1 -E '^ +iPhone' <<< "$devices")
+          udid=$(grep -oE '[0-9A-F]{8}(-[0-9A-F]{4}){3}-[0-9A-F]{12}' <<< "$line")
+          echo "Testing on $line"
           echo "SIMULATOR_UDID=$udid" >> "$GITHUB_ENV"
           xcrun simctl boot "$udid"
 
@@ -57,6 +83,18 @@ jobs:
           mkdir -p ios/ShioriUITests/Support
           cp ios/Shiori/Shared/Secrets.swift.example ios/ShioriUITests/Support/TestSecrets.swift
 
+      # Fetching the packages took four of the Apollo step's minutes on 2026-10-20.
+      # Package.resolved is not committed, so the cache cannot be keyed on it before
+      # resolving: the latest cache is restored, resolution then fetches only what
+      # moved, and a new cache is saved only when the resolved versions changed.
+      - name: Restore the Swift packages
+        id: spm-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/SourcePackages
+          key: spm-${{ runner.os }}-${{ github.sha }}
+          restore-keys: spm-${{ runner.os }}-
+
       - name: Generate Apollo GraphQL code (gitignored, regenerated per build)
         run: |
           set -euo pipefail
@@ -65,11 +103,23 @@ jobs:
             -project ios/Shiori.xcodeproj -scheme Shiori \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/SourcePackages"
+          resolved=ios/Shiori.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+          if [ -f "$resolved" ]; then
+            echo "SPM_CACHE_KEY=spm-${RUNNER_OS}-$(shasum -a 256 "$resolved" | cut -c1-16)" \
+              >> "$GITHUB_ENV"
+          fi
           # Apollo 2.x ships the CLI as a tarball inside the checkout — extract it.
           CLI_DIR="$RUNNER_TEMP/SourcePackages/checkouts/apollo-ios/CLI"
           tar -xzf "$CLI_DIR/apollo-ios-cli.tar.gz" -C "$CLI_DIR"
           chmod +x "$CLI_DIR/apollo-ios-cli"
           (cd ios && "$CLI_DIR/apollo-ios-cli" generate)
+
+      - name: Save the Swift packages
+        if: env.SPM_CACHE_KEY != '' && steps.spm-restore.outputs.cache-matched-key != env.SPM_CACHE_KEY
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/SourcePackages
+          key: ${{ env.SPM_CACHE_KEY }}
 
       - name: Build the app and its tests
         # Compiled once, for the simulator the tests then run on: no signing
