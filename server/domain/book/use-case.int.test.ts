@@ -63,7 +63,7 @@ mock.module('~/system/object-store', () => ({
 const { BookUseCase } = await import('~/domain/book/use-case')
 const { BookCommand } = await import('~/domain/book/command')
 const { BookQuery } = await import('~/domain/book/query')
-const { ObjectPath } = await import('~/system/object-store/primitives')
+const { ObjectPath, SignedUrl } = await import('~/system/object-store/primitives')
 const { BookId, CoverUrl, Isbn13, Synopsis } = await import('~/domain/book/primitives')
 const { monthOf } = await import('~/domain/quota/business-rules')
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
@@ -232,7 +232,11 @@ describe('picking a cover', () => {
     })
 
     expect(await BookUseCase.coverChoices(reader, book.id)).toEqual([
-      { source: 'photo', url: 'https://fake.store/covers/reader-1/nom-du-vent.jpg', current: true },
+      {
+        source: 'photo',
+        url: SignedUrl('https://fake.store/covers/reader-1/nom-du-vent.jpg'),
+        current: true,
+      },
     ])
   })
 
