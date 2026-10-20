@@ -285,7 +285,10 @@ struct ContentView: View {
     /// date shelves it.
     private func showAdded(_ book: Book) {
         libraryMode = LibraryRequest(focus: book.id)
-        selectedTab = .library
+        // The tab comes forward once the list has taken the request, so it
+        // opens on the list by date rather than flashing the mosaic it was
+        // left on.
+        Task { @MainActor in selectedTab = .library }
     }
 
     private func choose(_ source: AddBookSource) {

@@ -78,8 +78,8 @@ enum LibraryFilter: Hashable {
 struct LibraryRequest: Equatable {
     var mode: LibraryMode = .all
     var filter: LibraryFilter?
-    /// A book just added, scrolled to wherever its date shelves it: every
-    /// book, in the layout the reader left.
+    /// A book just added, scrolled to wherever its date shelves it in the
+    /// list by date, every book shown.
     var focus: String?
 }
 
@@ -193,7 +193,7 @@ final class LibraryViewModel {
     func show(_ request: LibraryRequest) {
         filter = request.filter
         mode = request.mode
-        if request.focus == nil { layout = .list }
+        layout = .list
     }
 
     /// The most pages asked for to reach a book shelved deep in the list: a

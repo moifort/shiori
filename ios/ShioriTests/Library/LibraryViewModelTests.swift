@@ -43,7 +43,8 @@ struct LibraryViewModelTests {
 
         #expect(viewModel.books.contains { $0.id == "b4" })
         #expect(viewModel.focusedBookId == "b4")
-        #expect(viewModel.layout == .mosaic)
+        #expect(viewModel.layout == .list)
+        #expect(viewModel.mode == .all)
 
         viewModel.filter = .favorites
         #expect(viewModel.focusedBookId == nil)

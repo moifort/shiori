@@ -27,7 +27,11 @@ struct LibraryScreen: View {
         self.onAdd = onAdd
         _requestedMode = requestedMode
         self.shelf = shelf
-        _viewModel = State(initialValue: LibraryViewModel(client: client))
+        // A request the tab is created with is shown from the first frame:
+        // taken in the task, the default mosaic would flash before it.
+        let viewModel = LibraryViewModel(client: client)
+        if let request = requestedMode.wrappedValue { viewModel.show(request) }
+        _viewModel = State(initialValue: viewModel)
     }
 
     var body: some View {
