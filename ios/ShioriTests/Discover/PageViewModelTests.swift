@@ -70,13 +70,16 @@ struct ReleaseDescriberTests {
     }
 
     @Test func aSlowAnswerSaysTheAIIsAtWorkThenStops() async {
+        // The answer waits for the test, so the grace runs out however slow the machine.
+        let (answered, answer) = AsyncStream<Void>.makeStream()
         let describer = ReleaseDescriber { _ in
-            try await Task.sleep(for: .milliseconds(700))
+            for await _ in answered { break }
             return .preview
         }
         async let done: Void = describer.describe(Suggestion.preview.seed)
-        try? await Task.sleep(for: .milliseconds(550))
+        await eventually { describer.isDescribing }
         let midway = describer.isDescribing
+        answer.yield()
         await done
 
         #expect(midway == true)

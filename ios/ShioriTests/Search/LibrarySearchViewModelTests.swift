@@ -146,7 +146,7 @@ struct LibrarySearchViewModelTests {
         await viewModel.appear()
 
         viewModel.query = "livre"
-        try await Task.sleep(for: .milliseconds(100))
+        await eventually { !viewModel.covers.isEmpty }
 
         let batches = asked.all.map { $0.split(separator: ",").count }
         #expect(batches.allSatisfy { $0 <= LibrarySearchViewModel.coverBatch })
