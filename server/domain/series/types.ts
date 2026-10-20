@@ -32,6 +32,10 @@ export type Volume = {
   titles?: Partial<Record<BookLanguage, BookTitle>>
   /** The publisher's cover of that edition, found by its ISBN. */
   covers?: Partial<Record<BookLanguage, CoverUrl>>
+  /** A volume the reader holds that the catalogue does not list, added for
+   *  them alone by `withShelvedVolumes` and never stored. Held in the edition
+   *  measured, so it is out there whatever that edition's dates say. */
+  shelved?: true
 }
 
 /** The public catalogue of a saga in one edition language. It holds no

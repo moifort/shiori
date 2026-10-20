@@ -497,9 +497,40 @@ describe('withShelvedVolumes', () => {
         title: BookTitle('La Route du diable'),
         publishedIn: Year(2026),
         kind: 'main',
+        shelved: true,
       },
     ])
     expect(stateOf(series, new Set([1, 2, 3]), THIS_YEAR)).toBe('in-progress')
+  })
+
+  // A catalogue built before one per edition reads a volume past the last one
+  // dated in French as not translated yet. The reader holds that volume in
+  // French: it is out, and the saga still waits for it to be read.
+  test('keeps an owned volume on the spine past the last one its edition dated', () => {
+    const dated = (title: string, number: number, release: string) =>
+      volume({
+        title,
+        number: VolumeNumber(number),
+        releases: { fr: ReleaseDate(release) },
+      })
+    const legacy: Series = {
+      ...traskman,
+      language: 'fr',
+      volumes: [
+        dated('Le Manuscrit inachevé', 1, '2018-05-03'),
+        dated('Il était deux fois', 2, '2020-06-04'),
+        dated('Labyrinthes', 3, '2022-05-05'),
+      ],
+      catalogedAt: new Date('2026-09-27'),
+    }
+    const series = withShelvedVolumes(legacy, [shelved('La Route du diable', 4)])
+    const edition = { language: 'fr' as const, today: '2026-10-20' }
+
+    expect(stateOf(series, new Set([1, 2, 3]), THIS_YEAR, edition)).toBe('in-progress')
+    expect(progressOf(series, new Set([1, 2, 3]), THIS_YEAR, edition)).toEqual({
+      readCount: 3,
+      totalCount: 4,
+    })
   })
 
   test('answers the catalogue itself when it lists every owned volume', () => {

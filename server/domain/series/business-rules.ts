@@ -70,8 +70,8 @@ export const releaseOf = (volume: Volume, language?: BookLanguage): ReleaseDate 
  *  The edition's own date decides when the watch found one — a volume out in
  *  English can be months away in French. A volume past the last one dated in
  *  the edition is not translated yet: another edition's date never makes it
- *  out there. Else the first date it comes out in any language; otherwise the
- *  year of first publication does. */
+ *  out there — unless the reader holds it in that edition. Else the first date
+ *  it comes out in any language; otherwise the year of first publication does. */
 export const isForthcoming = (
   volume: Volume,
   currentYear: YearValue,
@@ -80,6 +80,7 @@ export const isForthcoming = (
   const own = releaseOf(volume, edition.language)
   const untranslated =
     !own &&
+    !volume.shelved &&
     edition.datedUpTo !== undefined &&
     volume.number !== undefined &&
     Number(volume.number) > edition.datedUpTo
@@ -283,6 +284,7 @@ export const withShelvedVolumes = (
       title: book.title,
       ...(book.firstPublishedIn !== undefined ? { publishedIn: book.firstPublishedIn } : {}),
       kind: 'main',
+      shelved: true,
     })
   }
   return shelved.length === 0 ? series : { ...series, volumes: [...series.volumes, ...shelved] }
