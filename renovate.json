@@ -33,6 +33,11 @@
       "allowedVersions": "<14"
     },
     {
+      "description": "Pin h3 to 1.x: nitropack 2 is built on h3 ^1 and exposes its H3Event to our plugins, so h3 2 breaks the types (server/plugins/00-sentry.ts). h3 2 is the base of Nitro 3, still in beta; move both together once Nitro 3 is stable.",
+      "matchPackageNames": ["h3"],
+      "allowedVersions": "<2"
+    },
+    {
       "description": "Pin ruby to 3.x: the release-ios submit job runs fastlane, which supports Ruby 3.0+ (3.3+ recommended) and has announced no Ruby 4 support; it also caps bundler at <3.0.0, which Ruby 4's bundled version breaks. infra/ has no Gemfile.lock, so gems resolve on the runner and a bad bump would only surface while submitting a build to the App Store — no CI job runs fastlane. Revisit once fastlane declares Ruby 4 support.",
       "matchPackageNames": ["ruby"],
       "allowedVersions": "<4"
