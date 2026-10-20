@@ -10,6 +10,8 @@ import {
 } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
+// The BnF is a network call: a French edition falls through to the grounded step.
+mock.module('~/domain/scan/bnf', () => ({ bnfEditionsOf: async () => [] }))
 
 /** Stands in for Gemini: nothing here may ask it anything. */
 const asked: string[] = []

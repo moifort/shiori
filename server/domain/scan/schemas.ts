@@ -114,6 +114,51 @@ export const ENRICHMENT_SCHEMA = {
   ],
 } as const
 
+/** Step 2 from a library catalogue: the edition is picked by its index in the
+ *  list shown, never written, so its ISBN is always one the catalogue holds. */
+export const EDITIONS_SCHEMA = {
+  type: 'object',
+  properties: {
+    edition: { type: 'integer', nullable: true, description: "Indice de l'édition retenue" },
+    regularEdition: {
+      type: 'integer',
+      nullable: true,
+      description: "Si l'édition retenue est spéciale, indice de l'édition courante ; null sinon",
+    },
+    firstPublishedIn: {
+      type: 'integer',
+      nullable: true,
+      description: "Année de première publication de l'œuvre, dans sa langue d'origine",
+    },
+    genre: {
+      type: 'string',
+      enum: [...GENRES],
+      nullable: true,
+      description: 'Un seul genre, le plus précis de la liste ; other si aucun ne convient',
+    },
+    subgenres: {
+      type: 'array',
+      items: { type: 'string' },
+      description:
+        'De 0 à 3 sous-genres libres qui précisent le genre, du plus représentatif au moins représentatif',
+    },
+    synopsis: {
+      type: 'string',
+      nullable: true,
+      description: 'Résumé sans le dénouement, tiré des résumés trouvés ; null sans eux',
+    },
+  },
+  required: ['subgenres'],
+  propertyOrdering: [
+    'edition',
+    'regularEdition',
+    'firstPublishedIn',
+    'genre',
+    'subgenres',
+    'synopsis',
+  ],
+} as const
+
 export const CATALOGUE_SCHEMA = {
   type: 'object',
   properties: {

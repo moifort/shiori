@@ -13,11 +13,13 @@ import {
   Synopsis,
 } from '~/domain/book/primitives'
 import type { BookLanguage, Isbn13 as Isbn13Type } from '~/domain/book/types'
+import { bnfEditionsOf } from '~/domain/scan/bnf'
 import {
   boxOf,
   heldFormatOf,
   inReadingOrder,
   MAX_DETECTED_BOOKS,
+  summedUsage,
 } from '~/domain/scan/business-rules'
 import { generate } from '~/domain/scan/gemini'
 import * as repository from '~/domain/scan/infrastructure/repository'
@@ -26,6 +28,7 @@ import {
   audioCataloguePrompt,
   candidatesPrompt,
   cataloguePrompt,
+  editionsPrompt,
   enrichmentPrompt,
   MAX_CANDIDATES,
   shelfPrompt,
@@ -35,6 +38,7 @@ import { publishedCoverOf } from '~/domain/scan/published-cover'
 import {
   CANDIDATES_SCHEMA,
   CATALOGUE_SCHEMA,
+  EDITIONS_SCHEMA,
   ENRICHMENT_SCHEMA,
   SHELF_SCHEMA,
   VISION_SCHEMA,
@@ -43,6 +47,7 @@ import { STUBBED_SCAN, STUBBED_SHELF } from '~/domain/scan/stub'
 import type {
   AiStepUsage,
   EditionHints,
+  LibraryEdition,
   ScanLanguage,
   ScanResult,
   ScanUsage,
@@ -70,6 +75,7 @@ import type {
 import { config } from '~/system/config'
 import { createLogger } from '~/system/logger'
 import { isPresent, optionally as optional } from '~/utils/input'
+import { slugify } from '~/utils/slug'
 
 const logger = createLogger('scan')
 
@@ -111,6 +117,26 @@ type EnrichmentOutput = {
   regularEditionIsbn13?: string | null
   synopsis?: string | null
 }
+
+type EditionsOutput = {
+  edition?: number | null
+  regularEdition?: number | null
+  firstPublishedIn?: number | null
+  genre?: string | null
+  subgenres?: string[]
+  synopsis?: string | null
+}
+
+/** What a described book is, before its cover is looked up. */
+type Enriched = {
+  result: ScanResult
+  regularEdition?: Isbn13Type
+  usage?: AiStepUsage
+}
+
+/** Past this many editions, the prompt grows and the right one is no likelier
+ *  to be among them: the catalogue ranks the closest first. */
+const EDITIONS_SHOWN = 25
 
 type CandidatesOutput = {
   candidates?: {
@@ -199,10 +225,15 @@ export namespace ScanCommand {
 
   /** A book already named — its title, author, format and edition language
    *  known, as a volume the release watch announced is — described as a
-   *  scanned one is: the grounded step fills in its summary, genre, pages and
-   *  ISBN, and its published cover is looked up. Nothing else is built: the
-   *  saga it belongs to is already known, and its author's page is left to its
-   *  first opening, since the reader is only looking. */
+   *  scanned one is: its summary, genre, pages and ISBN filled in, and its
+   *  published cover looked up. Nothing else is built: the saga it belongs to
+   *  is already known, and its author's page is left to its first opening,
+   *  since the reader is only looking.
+   *
+   *  A French edition is described from the BnF's catalogue first, which costs
+   *  half a thousandth of a euro where the grounded step bills six Google
+   *  searches, eight cents. The grounded step runs only when the catalogue
+   *  left the book undescribed — see `describedFromLibrary`. */
   export const lookUpEdition = async (
     seen: ScanResult,
     language: ScanLanguage,
@@ -210,13 +241,102 @@ export namespace ScanCommand {
   ): Promise<{ result: ScanResult; usage: ScanUsage }> => {
     if (import.meta.dev && config().scanStub) return { result: STUBBED_SCAN, usage: {} }
 
-    const {
-      result: enriched,
-      regularEdition,
-      usage: enrichment,
-    } = await enrich(seen, language, 'cover', hints)
+    const library = await describedFromLibrary(seen, language, hints)
+    const described = library.found ?? (await enrich(seen, language, 'cover', hints))
+    const { result: enriched, regularEdition } = described
     const result = { ...enriched, coverUrl: await coverOf(enriched.isbn13, regularEdition) }
+    const enrichment = library.found ? library.usage : summedUsage(library.usage, described.usage)
     return { result, usage: { enrichment } }
+  }
+
+  /** A book described from the editions the BnF lists for it, with no web
+   *  search: the model, ungrounded, picks the edition by its index and writes
+   *  the synopsis from the publishers' blurbs. `found` is absent whenever the
+   *  grounded step should run instead — and `usage` says what asking cost.
+   *
+   *  Only a printed French edition is asked about: the BnF is the French legal
+   *  deposit, and holds no recording. The description stands only with an
+   *  edition picked, and with a synopsis — the catalogue's, or the one the
+   *  record already carries, which a lookup that found none leaves in place.
+   *  A book never described, with no blurb at the BnF, is looked up on the web,
+   *  so it is never left without a summary. */
+  const describedFromLibrary = async (
+    seen: ScanResult,
+    language: ScanLanguage,
+    hints?: EditionHints,
+  ): Promise<{ found?: Enriched; usage?: AiStepUsage }> => {
+    const author = seen.authors[0]
+    const edition = seen.language ?? language
+    if (!seen.title || !author || edition !== 'fr' || seen.format === 'audiobook') return {}
+
+    const { series } = seen
+    const titledAfterSaga = series !== undefined && slugify(series.name) === slugify(seen.title)
+    const editions = volumeEditionsOf(
+      await bnfEditionsOf({
+        title: seen.title,
+        author,
+        volume: titledAfterSaga ? series.volume : undefined,
+      }),
+      seen,
+      hints,
+    )
+    if (editions.length === 0) return {}
+
+    try {
+      const { value, usage } = await generate<EditionsOutput>({
+        step: 'enrichment-library',
+        parts: [{ text: editionsPrompt(seen, editions, language, hints) }],
+        responseSchema: EDITIONS_SCHEMA,
+      })
+      const picked = value.edition != null ? editions[value.edition] : undefined
+      const synopsis = optional(value.synopsis, Synopsis)
+      if (!picked || !(synopsis ?? seen.synopsis)) return { usage }
+      const regular = value.regularEdition != null ? editions[value.regularEdition] : undefined
+      return {
+        usage,
+        found: {
+          result: {
+            recognized: true,
+            title: seen.title,
+            authors: seen.authors,
+            format: seen.format,
+            media: seen.media,
+            publisher: seen.publisher ?? optional(picked.publisher, Publisher),
+            language: seen.language,
+            firstPublishedIn: optional(value.firstPublishedIn, Year),
+            synopsis,
+            genre: optional(value.genre, GenreValue),
+            subgenres: (value.subgenres ?? [])
+              .map((subgenre) => optional(subgenre, Subgenre))
+              .filter(isPresent)
+              .slice(0, MAX_SUBGENRES),
+            pageCount: picked.pageCount,
+            isbn13: picked.isbn13,
+            series,
+          },
+          regularEdition: regular?.isbn13 !== picked.isbn13 ? regular?.isbn13 : undefined,
+          usage,
+        },
+      }
+    } catch (error) {
+      // The grounded step is asked next; a refusal it shares, it reports.
+      logger.warn('library description failed', { error, title: seen.title })
+      return {}
+    }
+  }
+
+  /** The editions shown to the model: never one the reader holds as another
+   *  volume, and only this volume's when the catalogue numbers any of them. */
+  const volumeEditionsOf = (
+    editions: LibraryEdition[],
+    seen: ScanResult,
+    hints: EditionHints | undefined,
+  ) => {
+    const siblings = new Set(hints?.siblings.map((sibling) => sibling.isbn13))
+    const kept = editions.filter((edition) => !siblings.has(edition.isbn13))
+    const volume = seen.series?.volume
+    const numbered = kept.filter((edition) => Number.parseInt(edition.volume ?? '', 10) === volume)
+    return (numbered.length > 0 ? numbered : kept).slice(0, EDITIONS_SHOWN)
   }
 
   /** A book ticked on a shelf photo, described as a scanned cover is once it

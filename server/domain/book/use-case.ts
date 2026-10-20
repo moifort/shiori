@@ -208,6 +208,8 @@ const seenOf = (book: Book): ScanResult => ({
   publisher: book.publisher,
   language: book.language,
   series: book.series,
+  // Said so a lookup that finds no synopsis knows the record keeps its own.
+  synopsis: book.synopsis,
   subgenres: [],
 })
 

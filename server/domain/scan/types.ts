@@ -64,6 +64,20 @@ export type ScanResult = {
   series?: ScannedSeries
 }
 
+/** One edition a library catalogue lists for a book: what the legal deposit
+ *  recorded of the printed object. `volume` is the number as the record prints
+ *  it, `summary` the publisher's blurb when the record carries one. */
+export type LibraryEdition = {
+  isbn13: Isbn13
+  title?: string
+  publisher?: string
+  year?: string
+  pageCount?: PageCount
+  collection?: string
+  volume?: string
+  summary?: string
+}
+
 /** The saga the scanned book belongs to, as the enrichment step resolved it.
  *  Absent for a standalone book, which is most of them.
  *

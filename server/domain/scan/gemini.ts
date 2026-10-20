@@ -1,4 +1,5 @@
 import { setTimeout } from 'node:timers/promises'
+import { summedUsage } from '~/domain/scan/business-rules'
 import { SpendCapReached } from '~/domain/scan/spend-cap'
 import type { AiStepUsage } from '~/domain/scan/types'
 import { config } from '~/system/config'
@@ -180,19 +181,6 @@ const requested = async (options: GenerateOptions): Promise<GeminiResponse> => {
     return await call()
   }
 }
-
-const summedUsage = (
-  first: AiStepUsage | undefined,
-  second: AiStepUsage | undefined,
-): AiStepUsage | undefined =>
-  first && second
-    ? {
-        promptTokens: first.promptTokens + second.promptTokens,
-        outputTokens: first.outputTokens + second.outputTokens,
-        thinkingTokens: first.thinkingTokens + second.thinkingTokens,
-        searches: first.searches + second.searches,
-      }
-    : (first ?? second)
 
 /** What is sent for one step.
  *

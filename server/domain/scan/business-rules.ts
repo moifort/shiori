@@ -1,7 +1,7 @@
 import { BookFormatValue } from '~/domain/book/primitives'
 import type { BookFormat, BookMedium } from '~/domain/book/types'
 import { BOOK_FORMATS } from '~/domain/book/types'
-import type { DetectedBox } from '~/domain/scan/types'
+import type { AiStepUsage, DetectedBox } from '~/domain/scan/types'
 import { optionally } from '~/utils/input'
 
 /** What the model may say an object is. `ebook` is not a format of the
@@ -59,3 +59,17 @@ export const inReadingOrder = <T extends { box: DetectedBox }>(books: readonly T
   }
   return rows.flatMap((row) => row.sort((a, b) => a.box.x - b.box.x))
 }
+
+/** Two calls made for one step, billed as one. */
+export const summedUsage = (
+  first: AiStepUsage | undefined,
+  second: AiStepUsage | undefined,
+): AiStepUsage | undefined =>
+  first && second
+    ? {
+        promptTokens: first.promptTokens + second.promptTokens,
+        outputTokens: first.outputTokens + second.outputTokens,
+        thinkingTokens: first.thinkingTokens + second.thinkingTokens,
+        searches: first.searches + second.searches,
+      }
+    : (first ?? second)

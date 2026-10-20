@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import type { ScanResult } from '~/domain/scan/types'
 import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
@@ -51,6 +52,17 @@ mock.module('~/domain/author/infrastructure/open-library', () => ({
   openLibraryPortraitOf: async () => undefined,
 }))
 
+/** The editions the BnF lists, standing in for its catalogue; none by default,
+ *  so a French edition goes to the grounded step as it always did. */
+let bnfEditions: unknown[] = []
+const bnfLookups: unknown[] = []
+mock.module('~/domain/scan/bnf', () => ({
+  bnfEditionsOf: async (book: unknown) => {
+    bnfLookups.push(book)
+    return bnfEditions
+  },
+}))
+
 mock.module('~/domain/scan/published-cover', () => ({
   shelfCoverOf: async () => undefined,
   publishedCoverOf: async (isbn13: string) => {
@@ -65,7 +77,9 @@ const { AuthorQuery } = await import('~/domain/author/query')
 const { authorKeyOf } = await import('~/domain/author/primitives')
 const { SeriesQuery } = await import('~/domain/series/query')
 const { seriesKeyOf } = await import('~/domain/series/primitives')
-const { BookTitle } = await import('~/domain/shared/primitives')
+const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
+const { Isbn13, Publisher, Synopsis } = await import('~/domain/book/primitives')
+const { SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
 
 const image = Buffer.from('a cover photo')
 
@@ -120,6 +134,8 @@ beforeEach(() => {
   authorAnswer = anAuthor
   covers = {}
   coverLookups.length = 0
+  bnfEditions = []
+  bnfLookups.length = 0
 })
 
 describe('scanning a cover', () => {
@@ -373,6 +389,170 @@ describe('naming the edition', () => {
       '« jeunesse »), écrits en anglais, la langue de cette édition',
     )
     expect(prompts.enrichment).toContain('doivent être en français')
+  })
+})
+
+describe('describing a named book from the BnF', () => {
+  const named = {
+    recognized: true,
+    title: BookTitle('Le Nom du vent'),
+    authors: [AuthorName('Patrick Rothfuss')],
+    format: 'book',
+    publisher: Publisher('Bragelonne'),
+    language: 'fr',
+    subgenres: [],
+  } as ScanResult
+
+  const bragelonne = {
+    isbn13: '9782352942832',
+    publisher: 'Bragelonne',
+    year: '2009',
+    pageCount: 648,
+    summary: 'Un aubergiste raconte la véritable histoire de sa vie.',
+  }
+  const pocket = { isbn13: '9782811201104', publisher: 'Milady', year: '2010', pageCount: 832 }
+
+  const aPick = {
+    edition: 0,
+    regularEdition: null,
+    firstPublishedIn: 2007,
+    genre: 'fantasy',
+    subgenres: ['fantasy initiatique'],
+    synopsis: 'Kvothe, devenu aubergiste, raconte sa propre légende.',
+  }
+
+  test('describes a French edition from the catalogue, with no web search', async () => {
+    bnfEditions = [bragelonne, pocket]
+    covers = { '9782352942832': 'https://example.com/nom-du-vent.jpg' }
+    answers = [aPick]
+
+    const { result, usage } = await ScanCommand.lookUpEdition(named, 'fr')
+
+    expect(calls).toEqual(['enrichment-library'])
+    expect(result).toMatchObject({
+      title: 'Le Nom du vent',
+      isbn13: '9782352942832',
+      pageCount: 648,
+      firstPublishedIn: 2007,
+      genre: 'fantasy',
+      synopsis: 'Kvothe, devenu aubergiste, raconte sa propre légende.',
+      coverUrl: 'https://example.com/nom-du-vent.jpg',
+    })
+    expect(usage.enrichment?.searches).toBe(0)
+    expect(prompts['enrichment-library']).toContain('[1] ISBN 9782811201104, éditeur Milady')
+    expect(prompts['enrichment-library']).toContain(
+      "résumé de l'éditeur, édition [0] : Un aubergiste raconte",
+    )
+  })
+
+  test('looks the book up on the web when no edition is the one held', async () => {
+    bnfEditions = [pocket]
+    answers = [{ ...aPick, edition: null }, anEnrichment]
+
+    const { result, usage } = await ScanCommand.lookUpEdition(named, 'fr')
+
+    expect(calls).toEqual(['enrichment-library', 'enrichment'])
+    expect(result.isbn13).toBe(Isbn13('9782352943556'))
+    // Both calls are billed to the one lookup.
+    expect(usage.enrichment?.promptTokens).toBe(20)
+  })
+
+  test('looks the book up on the web when it would be left without a synopsis', async () => {
+    bnfEditions = [bragelonne]
+    answers = [{ ...aPick, synopsis: null }, anEnrichment]
+
+    const { result } = await ScanCommand.lookUpEdition(named, 'fr')
+
+    expect(calls).toEqual(['enrichment-library', 'enrichment'])
+    expect(result.synopsis).toBe(Synopsis('Kvothe raconte sa propre légende.'))
+  })
+
+  // A refresh keeps the synopsis a lookup did not find: no web search for it.
+  test('keeps to the catalogue when the record already has a synopsis', async () => {
+    bnfEditions = [bragelonne]
+    answers = [{ ...aPick, synopsis: null }]
+
+    const { result } = await ScanCommand.lookUpEdition(
+      { ...named, synopsis: Synopsis('Le résumé déjà sur la fiche.') },
+      'fr',
+    )
+
+    expect(calls).toEqual(['enrichment-library'])
+    expect(result.synopsis).toBeUndefined()
+    expect(result.isbn13).toBe(Isbn13('9782352942832'))
+  })
+
+  test('looks the book up on the web when the catalogue lists nothing', async () => {
+    answers = [anEnrichment]
+
+    await ScanCommand.lookUpEdition(named, 'fr')
+
+    expect(calls).toEqual(['enrichment'])
+  })
+
+  test('looks the book up on the web when the model fails on the catalogue', async () => {
+    bnfEditions = [bragelonne]
+    answers = [new Error('Gemini returned no content'), anEnrichment]
+
+    const { result } = await ScanCommand.lookUpEdition(named, 'fr')
+
+    expect(calls).toEqual(['enrichment-library', 'enrichment'])
+    expect(result.isbn13).toBe(Isbn13('9782352943556'))
+  })
+
+  test('never asks the BnF about an edition in another language', async () => {
+    answers = [anEnrichment]
+
+    await ScanCommand.lookUpEdition({ ...named, language: 'en' } as ScanResult, 'fr')
+
+    expect(bnfLookups).toEqual([])
+    expect(calls).toEqual(['enrichment'])
+  })
+
+  test('never asks the BnF about a recording', async () => {
+    answers = [anEnrichment]
+
+    await ScanCommand.lookUpEdition({ ...named, format: 'audiobook' } as ScanResult, 'fr')
+
+    expect(bnfLookups).toEqual([])
+  })
+
+  // The catalogue numbers a manga's volumes; the reader's other volumes are
+  // never this one, whatever the model would pick.
+  test('shows only this volume, never one the reader holds as another', async () => {
+    const volume = (isbn13: string, number: string) => ({
+      isbn13,
+      publisher: 'Glénat',
+      volume: number,
+    })
+    bnfEditions = [
+      volume('9782723434829', '5'),
+      volume('9782723489928', '5'),
+      volume('9782723428811', '4'),
+    ]
+    answers = [{ ...aPick, synopsis: 'Luffy affronte Kuro.' }]
+    const onePiece = {
+      ...named,
+      title: BookTitle('One Piece'),
+      authors: [AuthorName('Eiichirō Oda')],
+      format: 'manga',
+      series: {
+        id: seriesKeyOf('One Piece', 'Eiichirō Oda', 'manga'),
+        name: SeriesName('One Piece'),
+        volume: VolumeNumber(5),
+        kind: 'main',
+      },
+    } as ScanResult
+
+    await ScanCommand.lookUpEdition(onePiece, 'fr', {
+      siblings: [{ volume: VolumeNumber(5), kind: 'main', isbn13: Isbn13('9782723489928') }],
+    })
+
+    expect(bnfLookups).toEqual([{ title: 'One Piece', author: 'Eiichirō Oda', volume: 5 }])
+    expect(prompts['enrichment-library']).toContain('[0] ISBN 9782723434829')
+    // The sibling is named only as what this volume is not.
+    expect(prompts['enrichment-library']).not.toContain('[1]')
+    expect(prompts['enrichment-library']).not.toContain('9782723428811')
   })
 })
 

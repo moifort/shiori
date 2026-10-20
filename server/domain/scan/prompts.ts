@@ -1,5 +1,5 @@
 import type { BookFormat, BookLanguage } from '~/domain/book/types'
-import type { EditionHints, ScanLanguage, ScanResult } from '~/domain/scan/types'
+import type { EditionHints, LibraryEdition, ScanLanguage, ScanResult } from '~/domain/scan/types'
 import { VOLUME_KINDS, type VolumeKind } from '~/domain/series/types'
 import { AUDIBLE_STORES } from '~/domain/shared/audible-stores'
 
@@ -130,6 +130,56 @@ Renseigne :
 - seriesName, volumeNumber, volumeKind : la série à laquelle ce livre appartient. C'est l'information la plus importante de cette fiche. Cherche-la activement : beaucoup de romans appartiennent à un cycle sans que la couverture le dise. volumeNumber est le numéro du tome dans toute la série, même quand la couverture imprime celui de son cycle : si le premier cycle compte trois tomes, « cycle 2, tome 2 » est le tome 5. volumeKind vaut 'main' pour un tome numéroté de l'histoire principale, 'prequel' pour une préquelle, 'spin-off' pour un récit dérivé, 'novella' pour un texte court rattaché, 'companion' pour un guide ou un artbook. Si le livre est indépendant, mets les trois à null.
 
 Toutes les valeurs textuelles doivent être en ${LANGUAGE_NAMES[language]}.`
+
+/** One edition as the model is shown it, by its index in the list. */
+const editionLineOf = (edition: LibraryEdition, index: number) =>
+  `[${index}] ${[
+    `ISBN ${edition.isbn13}`,
+    edition.title && `titre « ${edition.title} »`,
+    edition.publisher && `éditeur ${edition.publisher}`,
+    edition.year && `paru en ${edition.year}`,
+    edition.pageCount && `${edition.pageCount} p.`,
+    edition.collection && `collection « ${edition.collection} »`,
+    edition.volume && `tome ${edition.volume}`,
+  ]
+    .filter(Boolean)
+    .join(', ')}`
+
+/** Step 2 without a web search: a book already named, described from what a
+ *  library catalogue recorded of its editions. The model only picks and
+ *  writes — the edition by its index, so an ISBN is never typed by the model,
+ *  and the synopsis from the publisher's blurbs, never from memory: a book the
+ *  catalogue has no blurb for goes to the grounded step instead. */
+export const editionsPrompt = (
+  { title, authors, publisher, language: editionLanguage, format, series }: EditionSeen,
+  editions: LibraryEdition[],
+  language: ScanLanguage,
+  hints?: EditionHints,
+) => {
+  const blurbs = editions.flatMap((edition, index) =>
+    edition.summary ? [`- résumé de l'éditeur, édition [${index}] : ${edition.summary}`] : [],
+  )
+  return `Voici un livre, et les éditions que le catalogue de la Bibliothèque nationale de France en recense. Renseigne sa fiche à partir de ces sources.
+
+Livre : « ${title} »${authors.length > 0 ? ` de ${authors.join(', ')}` : ''}
+${sagaLineOf(series)}${formatLineOf(format)}${hintLinesOf(hints)}Édition : ${publisher ? `éditeur « ${publisher} », ` : ''}en ${languageNames.of(editionLanguage ?? language)}.
+
+Éditions recensées :
+${editions.map(editionLineOf).join('\n')}
+
+Résumés trouvés :
+${blurbs.length > 0 ? blurbs.join('\n') : '(aucun)'}
+
+Renseigne :
+- edition : l'indice, entre crochets, de l'édition qui est CELLE-CI — même éditeur, même tome, même format. Une édition d'un autre tome ou d'un autre format est fausse, même si son titre ressemble. Si plusieurs conviennent, prends l'édition courante la plus récente. Mets null si aucune ne convient avec certitude : aucune édition vaut mieux qu'une fausse.
+- regularEdition : seulement si l'édition choisie est une édition spéciale (collector, limitée, de luxe, coffret) : l'indice de l'édition courante du même livre, chez le même éditeur. Sinon null.
+- synopsis : un résumé de 3 à 5 phrases, SANS révéler le dénouement, écrit UNIQUEMENT à partir des résumés trouvés ci-dessus. S'il n'y en a aucun, ou s'ils ne décrivent pas ce livre, mets null : n'écris jamais un résumé de mémoire.
+- firstPublishedIn : l'année où l'ŒUVRE a paru pour la première fois, dans sa langue d'origine. Ce n'est ni l'année de cette édition ni celle d'une traduction : les années des éditions ci-dessus ne la donnent que pour une œuvre écrite en français. Mets null si tu ne la connais pas avec certitude.
+- genre : UN SEUL genre, choisi dans la liste imposée par le schéma : le plus précis qui convienne au contenu. Le format de l'objet (manga, BD) et le public visé (jeunesse, young adult) ne sont pas des genres. Mets other si aucun ne convient.
+- subgenres : de 0 à 3 sous-genres libres qui précisent le genre (« dark fantasy », « space opera », « shōnen », « jeunesse »), écrits en ${languageNames.of(editionLanguage ?? language)}, la langue de cette édition — ce champ fait exception à la règle de langue ci-dessous. Classe-les du plus représentatif au moins représentatif. Ne répète pas le genre, et n'y mets ni le format (manga, bande dessinée, roman) ni la nationalité.
+
+Toutes les valeurs textuelles doivent être en ${LANGUAGE_NAMES[language]}.`
+}
 
 /** A title the reader typed is not a title read off a cover: it can be
  *  approximate, partial, or misspelt, and the model has nothing else to go on.
