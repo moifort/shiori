@@ -13,6 +13,14 @@ struct AuthorNewsItem: Identifiable {
     let isComing: Bool
     /// A recording: its cover carries the headphones.
     let isAudio: Bool
+    /// What it was drawn from, for its cover to open it.
+    let source: Source
+
+    enum Source {
+        case work(DiscoveredWork)
+        case awaited(AwaitedEdition)
+        case volume(DiscoveryVolume)
+    }
 
     /// The same title announced in print and recorded is two items.
     init(work: DiscoveredWork, format: ReleaseFormat) {
@@ -22,6 +30,7 @@ struct AuthorNewsItem: Identifiable {
         date = work.date
         coverURL = work.coverURL
         isComing = work.date.map { ReleaseDateText.isUpcoming($0) } ?? true
+        source = .work(work)
     }
 
     init(awaited: AwaitedEdition) {
@@ -31,6 +40,7 @@ struct AuthorNewsItem: Identifiable {
         date = awaited.date
         coverURL = awaited.coverURL
         isComing = awaited.state != .available
+        source = .awaited(awaited)
     }
 
     init(volume: DiscoveryVolume, isComing: Bool) {
@@ -40,6 +50,7 @@ struct AuthorNewsItem: Identifiable {
         date = volume.volume.date
         coverURL = volume.volume.coverURL
         self.isComing = isComing
+        source = .volume(volume)
     }
 
     /// The works, editions awaited and saga volumes of one section of the

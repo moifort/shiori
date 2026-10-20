@@ -302,8 +302,11 @@ struct DiscoverPage: View {
     /// the section it is in is about rather than the reader's own books — the
     /// works the web found, the editions the reader awaits and the volumes of
     /// their sagas the Books shelf lists alike, read and heard — and the first
-    /// in words. A long press opens one of those volumes. A tap opens the
-    /// author's page, as the Library's Authors shelf does.
+    /// in words. A tap on the heading opens the author's page, as the
+    /// Library's Authors shelf does; a tap on a cover opens it — an edition
+    /// awaited or a saga's volume on its page, a work the web found on Audible
+    /// when it was confirmed there, else on the author's page, which lists it.
+    /// A long press opens one of those volumes or recordings.
     private func authorRow(_ row: AuthorNews, in section: SagaReleasesSummary.Section) -> some View {
         let destination = AuthorDestination(row.author)
         let works = row.works(in: section)
@@ -323,7 +326,18 @@ struct DiscoverPage: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isButton)
                 .accessibilityAction { act(.openAuthor(destination)) }
-            AuthorWorksStrip(items: items, author: row.author.name)
+            AuthorWorksStrip(items: items, author: row.author.name) { item in
+                switch item.source {
+                case let .awaited(edition): act(.openAwaited(edition))
+                case let .volume(volume): act(.openVolume(volume))
+                case let .work(work):
+                    if let audibleURL = work.audibleURL {
+                        openURL(audibleURL)
+                    } else {
+                        act(.openAuthor(destination))
+                    }
+                }
+            }
             AuthorReleasesSummary(items: items, section: section)
         }
         .contextMenu {
