@@ -20,4 +20,4 @@ Shiori is free, with scans included every month. Premium unlocks unlimited scans
 Your subscription renews automatically unless cancelled at least 24 hours before the end of the current period, from your App Store account settings.
 
 Terms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
-Privacy Policy: https://moifort.github.io/shiori/privacy.html
+Privacy Policy: https://shiori.polyforms.co/privacy.html

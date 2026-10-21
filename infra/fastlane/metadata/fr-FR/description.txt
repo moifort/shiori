@@ -22,4 +22,4 @@ Shiori est gratuit, avec des scans offerts chaque mois. Premium débloque les sc
 L’abonnement se renouvelle automatiquement sauf résiliation au moins 24 heures avant la fin de la période en cours, depuis les réglages de votre compte App Store.
 
 Conditions d’utilisation : https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
-Confidentialité : https://moifort.github.io/shiori/privacy.html
+Confidentialité : https://shiori.polyforms.co/privacy.html
