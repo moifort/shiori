@@ -36,38 +36,29 @@ struct HomePage: View {
     var discoveries: MonthlyDiscoveries?
     let onAction: (HomeAction) -> Void
 
-    /// Whether the screen is wide enough for two columns of cards.
-    @State private var isWide = false
+    /// Where an open iPhone Duo folds, in the window's coordinates.
+    @Environment(\.foldLine) private var foldLine
+    /// The page's width and where it starts in the window, which place the
+    /// columns on either side of the fold.
+    @State private var frame: CGRect = .zero
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-
-                // The one thing a reader can do from an empty dashboard, above
-                // the cards it will fill.
-                if dashboard.libraryIsEmpty {
-                    scanPrompt
-                }
-
-                // The library at a glance first, then what it is made of.
-                StatTilesRow(
-                    readCount: dashboard.readCount,
-                    favoriteCount: dashboard.favoriteCount,
-                    toReadCount: dashboard.toReadCount,
-                    onReadTapped: { onAction(.showLibrary(LibraryRequest(filter: .status(.read)))) },
-                    onFavoritesTapped: { onAction(.showLibrary(LibraryRequest(filter: .favorites))) },
-                    onPileTapped: { onAction(.showLibrary(LibraryRequest(filter: .status(.toRead)))) }
-                )
-
-                if isWide {
+                if let columns {
                     // Unfolded, a single column would stretch each card over
                     // the whole screen with three covers in it: the figures on
                     // one side, the shelves on the other.
-                    HStack(alignment: .top, spacing: 16) {
+                    HStack(alignment: .top, spacing: columns.gutter) {
                         VStack(spacing: 16) { figureCards }
+                            .frame(width: columns.leading)
                         VStack(spacing: 16) { shelfCards }
+                            .frame(width: columns.trailing)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
+                    scanPromptIfEmpty
+                    statTiles
                     genresCard
                     chartCard
                     shelfCards
@@ -78,7 +69,7 @@ struct HomePage: View {
             .padding(.horizontal)
             .padding(.bottom, 24)
         }
-        .onGeometryChange(for: Bool.self) { $0.size.width >= Self.wideWidth } action: { isWide = $0 }
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame = $0 }
         .background(Color(.systemGroupedBackground))
     }
 
@@ -86,8 +77,17 @@ struct HomePage: View {
     /// Duo, never a phone held upright, whose widest is 440.
     private static let wideWidth: CGFloat = 640
 
-    /// What the library is made of, the left column once unfolded.
+    /// The two columns' widths and the space between them, nil for one column.
+    private var columns: HomeColumns? {
+        HomeColumns(width: frame.width, fold: foldLine.map { $0 - frame.minX }, minimum: Self.wideWidth)
+    }
+
+    /// The library at a glance and what it is made of, the left column once
+    /// unfolded: the tiles and the scan prompt too, which would otherwise
+    /// straddle the fold.
     @ViewBuilder private var figureCards: some View {
+        scanPromptIfEmpty
+        statTiles
         genresCard
         chartCard
         lastFinishedCard
@@ -100,6 +100,26 @@ struct HomePage: View {
         discoveriesShelf
         releasesShelf
         friendFavoritesShelf
+    }
+
+    /// The one thing a reader can do from an empty dashboard, above the cards
+    /// it will fill.
+    @ViewBuilder private var scanPromptIfEmpty: some View {
+        if dashboard.libraryIsEmpty {
+            scanPrompt
+        }
+    }
+
+    /// The library at a glance first, then what it is made of.
+    private var statTiles: some View {
+        StatTilesRow(
+            readCount: dashboard.readCount,
+            favoriteCount: dashboard.favoriteCount,
+            toReadCount: dashboard.toReadCount,
+            onReadTapped: { onAction(.showLibrary(LibraryRequest(filter: .status(.read)))) },
+            onFavoritesTapped: { onAction(.showLibrary(LibraryRequest(filter: .favorites))) },
+            onPileTapped: { onAction(.showLibrary(LibraryRequest(filter: .status(.toRead)))) }
+        )
     }
 
     /// The genres read, as a bar.
@@ -360,4 +380,5 @@ extension Dashboard {
         HomePage(dashboard: .preview, discoveries: .preview) { _ in }
             .navigationTitle("Accueil")
     }
+    .environment(\.foldLine, 475)
 }
