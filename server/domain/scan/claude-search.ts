@@ -14,8 +14,11 @@ const API_URL = 'https://api.anthropic.com/v1/messages'
  *  and its results are read as input tokens besides. */
 const MAX_SEARCHES = 2
 
-/** A record or a release list is a few hundred tokens of JSON. */
-const MAX_TOKENS = 4000
+/** The answer is a few hundred tokens of JSON, but what Claude writes between
+ *  its searches counts too, and an author's release list runs long: on
+ *  2026-10-21 three author lookups out of sixteen stopped at 4,000 and came
+ *  back without their answer. Output is the cheap side of a Haiku call. */
+const MAX_TOKENS = 16_000
 
 /** A search turn can run long; past this the step fails as Gemini's would. */
 const TIMEOUT_MS = 90_000
@@ -64,13 +67,15 @@ export const searchedWithClaude = async <T>({
   ]
   const usage: AiStepUsage = { promptTokens: 0, outputTokens: 0, thinkingTokens: 0, searches: 0 }
   let content: Block[] = []
+  let stopReason: string | undefined
   for (let turn = 0; turn <= MAX_CONTINUATIONS; turn += 1) {
     const body = await asked(key, model, messages)
     usage.promptTokens += body.usage?.input_tokens ?? 0
     usage.outputTokens += body.usage?.output_tokens ?? 0
     usage.searches += body.usage?.server_tool_use?.web_search_requests ?? 0
     content = [...content, ...(body.content ?? [])]
-    if (body.stop_reason !== 'pause_turn') break
+    stopReason = body.stop_reason
+    if (stopReason !== 'pause_turn') break
     messages.push({ role: 'assistant', content: body.content ?? [] })
   }
   logger.info('claude search usage', {
@@ -79,14 +84,29 @@ export const searchedWithClaude = async <T>({
     inputTokens: usage.promptTokens,
     outputTokens: usage.outputTokens,
     searches: usage.searches,
+    stopReason,
   })
-  const text = answerTextOf(content)
-  if (!text) throw new Error(`${step}: Claude returned no text`)
+  const text = answerFrom(content, stopReason, step)
   try {
     return { value: answerOf(text) as T, usage }
   } catch (error) {
     throw new Error(`${step}: ${(error as Error).message} — ${text.slice(0, 2000)}`)
   }
+}
+
+/** The answer's text, or why there is none: a turn stopped at the output
+ *  ceiling left its JSON unfinished, and the error says so rather than
+ *  reporting the broken JSON, so the ceiling shows as itself in Sentry. */
+export const answerFrom = (
+  content: readonly Block[],
+  stopReason: string | undefined,
+  step: string,
+): string => {
+  const text = answerTextOf(content)
+  if (stopReason === 'max_tokens')
+    throw new Error(`${step}: Claude ran out of output tokens — ${text.slice(0, 200)}`)
+  if (!text) throw new Error(`${step}: Claude returned no text`)
+  return text
 }
 
 /** The text written after the last search: what Claude says before searching
