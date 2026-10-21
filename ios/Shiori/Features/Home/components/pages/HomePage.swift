@@ -36,6 +36,9 @@ struct HomePage: View {
     var discoveries: MonthlyDiscoveries?
     let onAction: (HomeAction) -> Void
 
+    /// Whether the screen is wide enough for two columns of cards.
+    @State private var isWide = false
+
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
@@ -56,100 +59,161 @@ struct HomePage: View {
                     onPileTapped: { onAction(.showLibrary(LibraryRequest(filter: .status(.toRead)))) }
                 )
 
-                GenresWidget(
-                    genres: dashboard.genres,
-                    onTapped: { onAction(.openGenres) }
-                )
-
-                ReadingChartWidget(
-                    currentYear: dashboard.currentYear,
-                    booksPerYear: dashboard.booksPerYear,
-                    pagesPerMonth: dashboard.pagesPerMonth,
-                    hoursPerMonth: dashboard.hoursPerMonth,
-                    hasAudiobooks: dashboard.hasAudiobooks,
-                    hasPrintedBooks: dashboard.hasPrintedBooks
-                )
-
-                BookShelfSection(
-                    title: "En cours",
-                    books: dashboard.reading,
-                    caption: Self.startedCaption,
-                    emptyMessage: "Aucun livre en cours de lecture.",
-                    onHeaderTapped: { onAction(.showLibrary(LibraryRequest(filter: .status(.reading)))) },
-                    onBookTapped: { onAction(.openBook($0)) }
-                )
-                .accessibilityIdentifier("home-reading")
-
-                // As Découvrir draws them: the first two with why, the
-                // others' covers under them.
-                if let discoveries, discoveries.status == .ready, !discoveries.suggestions.isEmpty {
-                    DiscoveriesShelfSection(
-                        discoveries: discoveries,
-                        onHeaderTapped: { onAction(.showDiscover) },
-                        onOpen: { onAction(.openDiscovery($0)) }
-                    )
-                    .accessibilityIdentifier("home-discoveries")
+                if isWide {
+                    // Unfolded, a single column would stretch each card over
+                    // the whole screen with three covers in it: the figures on
+                    // one side, the shelves on the other.
+                    HStack(alignment: .top, spacing: 16) {
+                        VStack(spacing: 16) { figureCards }
+                        VStack(spacing: 16) { shelfCards }
+                    }
+                } else {
+                    genresCard
+                    chartCard
+                    shelfCards
+                    lastFinishedCard
+                    seriesCard
                 }
-
-                // Unlike the reader's own cards, these two are news: with
-                // nothing to announce they are left out rather than sketched.
-                if !releases.isEmpty {
-                    BookShelfSection(
-                        title: "Nouveautés",
-                        books: releases.map(Self.releaseTile),
-                        caption: { tile in
-                            guard let release = release(of: tile) else { return tile.authorLine }
-                            guard let date = release.date, ReleaseDateText.isUpcoming(date) else {
-                                return String(localized: "Disponible")
-                            }
-                            return ReleaseDateText.short(date)
-                        },
-                        // Out already in green, still to come in the book
-                        // page's orange.
-                        captionTint: { tile in
-                            guard let release = release(of: tile) else { return nil }
-                            return release.date.map { ReleaseDateText.isUpcoming($0) } ?? false
-                                ? .orange : .green
-                        },
-                        emptyMessage: "",
-                        onHeaderTapped: { onAction(.showDiscover) },
-                        onBookTapped: { tile in
-                            if let release = release(of: tile) { onAction(.openRelease(release)) }
-                        }
-                    )
-                    .accessibilityIdentifier("home-releases")
-                }
-
-                if !friendFavorites.isEmpty {
-                    BookShelfSection(
-                        title: "Nouveaux favoris de vos amis",
-                        books: friendFavorites.map(\.tile),
-                        caption: { tile in
-                            friendFavorites.first { $0.tile.id == tile.id }?.friendDisplayName ?? ""
-                        },
-                        emptyMessage: "",
-                        onHeaderTapped: { onAction(.showShared) },
-                        onBookTapped: { tile in
-                            if let favorite = friendFavorites.first(where: { $0.tile.id == tile.id }) {
-                                onAction(.openFriendFavorite(favorite))
-                            }
-                        }
-                    )
-                    .accessibilityIdentifier("home-friend-favorites")
-                }
-
-                LastFinishedCard(book: dashboard.lastFinished) { onAction(.openBook($0)) }
-
-                SeriesProgressWidget(
-                    series: dashboard.series,
-                    onHeaderTapped: { onAction(.showSeries(SeriesRequest(state: .inProgress))) },
-                    onSeriesTapped: { onAction(.openSeries($0)) }
-                )
             }
             .padding(.horizontal)
             .padding(.bottom, 24)
         }
+        .onGeometryChange(for: Bool.self) { $0.size.width >= Self.wideWidth } action: { isWide = $0 }
         .background(Color(.systemGroupedBackground))
+    }
+
+    /// The width from which the cards sit in two columns: an unfolded iPhone
+    /// Duo, never a phone held upright, whose widest is 440.
+    private static let wideWidth: CGFloat = 640
+
+    /// What the library is made of, the left column once unfolded.
+    @ViewBuilder private var figureCards: some View {
+        genresCard
+        chartCard
+        lastFinishedCard
+        seriesCard
+    }
+
+    /// The shelves of covers, the right column once unfolded.
+    @ViewBuilder private var shelfCards: some View {
+        readingShelf
+        discoveriesShelf
+        releasesShelf
+        friendFavoritesShelf
+    }
+
+    /// The genres read, as a bar.
+    @ViewBuilder private var genresCard: some View {
+        GenresWidget(
+            genres: dashboard.genres,
+            onTapped: { onAction(.openGenres) }
+        )
+    }
+
+    /// Books, pages or hours, year by year or month by month.
+    @ViewBuilder private var chartCard: some View {
+        ReadingChartWidget(
+            currentYear: dashboard.currentYear,
+            booksPerYear: dashboard.booksPerYear,
+            pagesPerMonth: dashboard.pagesPerMonth,
+            hoursPerMonth: dashboard.hoursPerMonth,
+            hasAudiobooks: dashboard.hasAudiobooks,
+            hasPrintedBooks: dashboard.hasPrintedBooks
+        )
+    }
+
+    /// The books open now.
+    @ViewBuilder private var readingShelf: some View {
+        BookShelfSection(
+            title: "En cours",
+            books: dashboard.reading,
+            caption: Self.startedCaption,
+            emptyMessage: "Aucun livre en cours de lecture.",
+            onHeaderTapped: { onAction(.showLibrary(LibraryRequest(filter: .status(.reading)))) },
+            onBookTapped: { onAction(.openBook($0)) }
+        )
+        .accessibilityIdentifier("home-reading")
+    }
+
+    /// The month's discoveries.
+    @ViewBuilder private var discoveriesShelf: some View {
+        // As Découvrir draws them: the first two with why, the
+        // others' covers under them.
+        if let discoveries, discoveries.status == .ready, !discoveries.suggestions.isEmpty {
+            DiscoveriesShelfSection(
+                discoveries: discoveries,
+                onHeaderTapped: { onAction(.showDiscover) },
+                onOpen: { onAction(.openDiscovery($0)) }
+            )
+            .accessibilityIdentifier("home-discoveries")
+        }
+    }
+
+    /// The volumes just out or announced.
+    @ViewBuilder private var releasesShelf: some View {
+        // Unlike the reader's own cards, these two are news: with
+        // nothing to announce they are left out rather than sketched.
+        if !releases.isEmpty {
+            BookShelfSection(
+                title: "Nouveautés",
+                books: releases.map(Self.releaseTile),
+                caption: { tile in
+                    guard let release = release(of: tile) else { return tile.authorLine }
+                    guard let date = release.date, ReleaseDateText.isUpcoming(date) else {
+                        return String(localized: "Disponible")
+                    }
+                    return ReleaseDateText.short(date)
+                },
+                // Out already in green, still to come in the book
+                // page's orange.
+                captionTint: { tile in
+                    guard let release = release(of: tile) else { return nil }
+                    return release.date.map { ReleaseDateText.isUpcoming($0) } ?? false
+                        ? .orange : .green
+                },
+                emptyMessage: "",
+                onHeaderTapped: { onAction(.showDiscover) },
+                onBookTapped: { tile in
+                    if let release = release(of: tile) { onAction(.openRelease(release)) }
+                }
+            )
+            .accessibilityIdentifier("home-releases")
+        }
+    }
+
+    /// What the reader's friends hearted lately.
+    @ViewBuilder private var friendFavoritesShelf: some View {
+        if !friendFavorites.isEmpty {
+            BookShelfSection(
+                title: "Nouveaux favoris de vos amis",
+                books: friendFavorites.map(\.tile),
+                caption: { tile in
+                    friendFavorites.first { $0.tile.id == tile.id }?.friendDisplayName ?? ""
+                },
+                emptyMessage: "",
+                onHeaderTapped: { onAction(.showShared) },
+                onBookTapped: { tile in
+                    if let favorite = friendFavorites.first(where: { $0.tile.id == tile.id }) {
+                        onAction(.openFriendFavorite(favorite))
+                    }
+                }
+            )
+            .accessibilityIdentifier("home-friend-favorites")
+        }
+    }
+
+    /// The book finished last.
+    @ViewBuilder private var lastFinishedCard: some View {
+        LastFinishedCard(book: dashboard.lastFinished) { onAction(.openBook($0)) }
+    }
+
+    /// The sagas in progress.
+    @ViewBuilder private var seriesCard: some View {
+        SeriesProgressWidget(
+            series: dashboard.series,
+            onHeaderTapped: { onAction(.showSeries(SeriesRequest(state: .inProgress))) },
+            onSeriesTapped: { onAction(.openSeries($0)) }
+        )
     }
 
     private var scanPrompt: some View {
@@ -287,6 +351,13 @@ extension Dashboard {
 #Preview("First book") {
     NavigationStack {
         HomePage(dashboard: .firstBook) { _ in }
+            .navigationTitle("Accueil")
+    }
+}
+
+#Preview("Unfolded", traits: .fixedLayout(width: 951, height: 669)) {
+    NavigationStack {
+        HomePage(dashboard: .preview, discoveries: .preview) { _ in }
             .navigationTitle("Accueil")
     }
 }

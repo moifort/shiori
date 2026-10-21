@@ -251,10 +251,13 @@ final class ScreenshotTest: XCTestCase {
 
     /// Writes straight into the working copy through `#filePath`, which ties
     /// the run to a simulator on the Mac holding the repository: the only
-    /// place it ever runs.
+    /// place it ever runs. `SHIORI_CAPTURE_DIR` sends a run on another device
+    /// elsewhere, so checking a layout never overwrites the App Store captures.
     private func save(_ name: String) {
         let screenshot = XCUIScreen.main.screenshot()
-        let directory = repositoryRoot.appending(path: "screenshots/captures/\(language)")
+        let directory = ProcessInfo.processInfo.environment["SHIORI_CAPTURE_DIR"]
+            .map { URL(fileURLWithPath: $0, isDirectory: true) }
+            ?? repositoryRoot.appending(path: "screenshots/captures/\(language)")
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             try screenshot.pngRepresentation.write(to: directory.appending(path: "\(name).png"))
