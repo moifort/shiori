@@ -88,20 +88,6 @@ struct BookHeaderSection<Extra: View>: View {
         } footer: {
             if let footer { Text(footer) }
         }
-        .toolbar {
-            // The number pad has no return key: this is how a typed fact is
-            // put down.
-            if actions.correct != nil {
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("OK") {
-                        UIApplication.shared.sendAction(
-                            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
-                        )
-                    }
-                }
-            }
-        }
     }
 
     // MARK: - Identity

@@ -120,6 +120,18 @@ struct InlineFactField: View {
         } icon: {
             Image(systemName: fact.icon).foregroundStyle(.secondary)
         }
+        // The number pad has no return key: this is how a typed number is
+        // put down. Only the field being typed in offers it — set on the
+        // section, every row of the list added its own, and the bar followed
+        // the keyboard into the sheets opened over the page.
+        .toolbar {
+            if focused && fact.keyboard == .numberPad {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("OK") { focused = false }
+                }
+            }
+        }
         .onChange(of: focused) { _, isFocused in
             if !isFocused { commit() }
         }
