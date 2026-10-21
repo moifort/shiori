@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
+import * as Sentry from '@sentry/node'
 import { Isbn13 } from '~/domain/book/primitives'
-import { openLibraryCoverByTitle, openLibraryCoverOf } from '~/domain/scan/open-library'
+import {
+  openLibraryCoverByTitle,
+  openLibraryCoverOf,
+  openLibraryIsbnsOf,
+} from '~/domain/scan/open-library'
 
 const isbn = Isbn13('9780756404741')
 
@@ -15,8 +20,13 @@ const openLibraryAnswers = (answer: number | Error) => {
   return requests
 }
 
+const reported = () => spyOn(Sentry, 'captureException')
+
+const timedOut = () => new DOMException('The operation was aborted due to timeout', 'TimeoutError')
+
 afterEach(() => {
   ;(globalThis.fetch as unknown as { mockRestore?: () => void }).mockRestore?.()
+  ;(Sentry.captureException as unknown as { mockRestore?: () => void }).mockRestore?.()
 })
 
 describe('openLibraryCoverOf', () => {
@@ -52,6 +62,45 @@ describe('openLibraryCoverOf', () => {
 
     openLibraryAnswers(new Error('The operation timed out.'))
     expect(await openLibraryCoverOf(isbn)).toBeUndefined()
+  })
+
+  // The lookup gives Open Library three seconds and adds the book without a
+  // cover past that: a timeout is that cutoff doing its job, nothing to fix.
+  test('gives up on a slow Open Library, and reports it to no one', async () => {
+    openLibraryAnswers(timedOut())
+    const reports = reported()
+
+    expect(await openLibraryCoverOf(isbn)).toBeUndefined()
+    expect(reports).not.toHaveBeenCalled()
+  })
+
+  test('reports Open Library failing for any other reason', async () => {
+    openLibraryAnswers(new Error('getaddrinfo ENOTFOUND covers.openlibrary.org'))
+    const reports = reported()
+
+    expect(await openLibraryCoverOf(isbn)).toBeUndefined()
+    expect(reports).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('openLibraryIsbnsOf', () => {
+  const book = { title: 'Exit Strategy', author: 'Martha Wells', language: 'en' }
+
+  // A shelf photo's book is added without a cover once the three seconds run out.
+  test('gives up on a slow Open Library, and reports it to no one', async () => {
+    openLibraryAnswers(timedOut())
+    const reports = reported()
+
+    expect(await openLibraryIsbnsOf(book)).toEqual([])
+    expect(reports).not.toHaveBeenCalled()
+  })
+
+  test('reports Open Library failing for any other reason', async () => {
+    openLibraryAnswers(503)
+    const reports = reported()
+
+    expect(await openLibraryIsbnsOf(book)).toEqual([])
+    expect(reports).toHaveBeenCalledTimes(1)
   })
 })
 

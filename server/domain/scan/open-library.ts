@@ -1,6 +1,7 @@
 import { CoverUrl } from '~/domain/book/primitives'
 import type { CoverUrl as CoverUrlType, Isbn13 } from '~/domain/book/types'
 import { createLogger } from '~/system/logger'
+import { isTimeout } from '~/utils/fetch'
 
 const logger = createLogger('open-library')
 
@@ -40,7 +41,9 @@ export const openLibraryCoverOf = async (isbn13: Isbn13): Promise<CoverUrlType |
     logger.warn('Open Library cover lookup failed', { isbn13, status: response.status })
     return undefined
   } catch (error) {
-    logger.warn('Open Library cover lookup failed', { error, isbn13 })
+    // Running out of time is the cutoff above doing its job, not a failure to look into.
+    if (isTimeout(error)) logger.info('Open Library cover lookup timed out', { isbn13 })
+    else logger.warn('Open Library cover lookup failed', { error, isbn13 })
     return undefined
   }
 }
@@ -107,7 +110,8 @@ export const openLibraryIsbnsOf = async (book: PrintedBook): Promise<string[]> =
     const first = await isbnsFound(narrow, book.language)
     return first.length > 0 ? first : await isbnsFound(broad, book.language)
   } catch (error) {
-    logger.warn('Open Library ISBN search failed', { error, title: book.title })
+    if (isTimeout(error)) logger.info('Open Library ISBN search timed out', { title: book.title })
+    else logger.warn('Open Library ISBN search failed', { error, title: book.title })
     return []
   }
 }
