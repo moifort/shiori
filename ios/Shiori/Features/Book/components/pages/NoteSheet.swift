@@ -19,8 +19,6 @@ struct NoteSheet: View {
     @State private var isSaving = false
     @State private var errorMessage: String?
     @FocusState private var isFocused: Bool
-    /// What the form needs, title bar included: the sheet's only detent.
-    @State private var formHeight: CGFloat = 240
 
     /// The longest `ReadingNote` the server accepts.
     static let maxLength = 10_000
@@ -49,15 +47,6 @@ struct NoteSheet: View {
                     }
                 }
             }
-            // The sheet is as tall as the form and grows with it, line by
-            // line: resting on the keyboard, it goes down with it in one
-            // motion when saved, instead of falling to a half-height first.
-            .onScrollGeometryChange(for: CGFloat.self) { geometry in
-                geometry.contentSize.height + geometry.contentInsets.top
-            } action: { _, height in
-                formHeight = height
-            }
-            .scrollBounceBehavior(.basedOnSize)
             .navigationTitle("Commentaire")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -93,7 +82,10 @@ struct NoteSheet: View {
             }
             .onAppear { isFocused = true }
         }
-        .presentationDetents([.height(formHeight)])
+        // The full height, which iOS fits to the keyboard on its own: a
+        // shorter detent either fell to half height before closing or, sized
+        // by hand, let the keyboard cover the field.
+        .presentationDetents([.large])
     }
 
     /// What the form says now. Nil when only blanks are left: an empty
