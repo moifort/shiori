@@ -255,7 +255,8 @@ struct HomeScreen: View {
                     dashboard: dashboard,
                     releases: viewModel.releases,
                     friendFavorites: viewModel.friendFavorites,
-                    discoveries: viewModel.discoveries
+                    discoveries: viewModel.discoveries,
+                    isSideBySide: isSplit && detail == nil
                 ) { action in
                     switch action {
                     case let .showLibrary(request): onShowLibrary(request)

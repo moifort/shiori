@@ -34,62 +34,67 @@ struct HomePage: View {
     var friendFavorites: [FriendFavorite] = []
     /// The month's discoveries, chosen for the reader.
     var discoveries: MonthlyDiscoveries?
+    /// Whether the cards sit in two columns: the Duo's inner screen with the
+    /// dashboard on its own, not beside a detail, where it is a narrow column.
+    var isSideBySide = false
     let onAction: (HomeAction) -> Void
 
-    /// The page's width and where an open iPhone Duo folds across it, which
-    /// place the columns on either side of the fold.
-    @State private var geometry = PageGeometry()
-    /// Regular on the Duo's inner screen, the only width the cards sit in two
-    /// columns at: a phone held upright, or the Duo folded, is compact.
-    @Environment(\.horizontalSizeClass) private var sizeClass
-
     var body: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                if let columns {
-                    // Unfolded, a single column would stretch each card over
-                    // the whole screen with three covers in it: the figures on
-                    // one side, the shelves on the other.
-                    HStack(alignment: .top, spacing: columns.gutter) {
-                        VStack(spacing: 16) { figureCards }
-                            .frame(width: columns.leading)
-                        VStack(spacing: 16) { shelfCards }
-                            .frame(width: columns.trailing)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                } else {
-                    scanPromptIfEmpty
-                    statTiles
-                    genresCard
-                    chartCard
-                    shelfCards
-                    lastFinishedCard
-                    seriesCard
-                }
-            }
-            .padding(.horizontal)
-            .padding(.bottom, 24)
+        if isSideBySide {
+            sideBySide
+        } else {
+            singleColumn
         }
-        .onGeometryChange(for: PageGeometry.self) {
-            PageGeometry(width: $0.size.width, fold: $0.foldSpan(includeInactive: true))
-        } action: { geometry = $0 }
+    }
+
+    /// The figures on one side, the shelves on the other: a single column
+    /// would stretch each card across the inner screen with three covers in
+    /// it. Apple's split arrangement sets the two columns side by side and
+    /// keeps them clear of the fold as the Duo folds; each scrolls on its own,
+    /// since an arrangement never sits inside a scroll view.
+    @ViewBuilder private var sideBySide: some View {
+        #if canImport(SwiftUICore, _version: 8.0.85)
+        if #available(iOS 27.1, *) {
+            ArrangementView {
+                column { figureCards }
+            } secondary: {
+                column { shelfCards }
+            }
+            .arrangementViewStyle(.split.axes(.horizontal))
+        } else {
+            singleColumn
+        }
+        #else
+        singleColumn
+        #endif
+    }
+
+    /// The cards one under the other: a phone, the Duo folded, or the
+    /// dashboard beside a detail.
+    private var singleColumn: some View {
+        column {
+            scanPromptIfEmpty
+            statTiles
+            genresCard
+            chartCard
+            shelfCards
+            lastFinishedCard
+            seriesCard
+        }
+    }
+
+    /// A scrolling column of cards on the grouped background.
+    private func column(@ViewBuilder _ cards: () -> some View) -> some View {
+        ScrollView {
+            VStack(spacing: 16) { cards() }
+                .padding(.horizontal)
+                .padding(.bottom, 24)
+        }
         .background(Color(.systemGroupedBackground))
     }
 
-    /// What the page knows of its own frame: enough to lay out its columns.
-    private struct PageGeometry: Equatable {
-        var width: CGFloat = 0
-        var fold: ClosedRange<CGFloat>?
-    }
-
-    /// The two columns' widths and the space between them, nil for one column.
-    private var columns: HomeColumns? {
-        HomeColumns(width: geometry.width, fold: geometry.fold, isRegularWidth: sizeClass == .regular)
-    }
-
     /// The library at a glance and what it is made of, the left column once
-    /// unfolded: the tiles and the scan prompt too, which would otherwise
-    /// straddle the fold.
+    /// unfolded: the tiles and the scan prompt too.
     @ViewBuilder private var figureCards: some View {
         scanPromptIfEmpty
         statTiles
@@ -382,8 +387,7 @@ extension Dashboard {
 
 #Preview("Unfolded", traits: .fixedLayout(width: 951, height: 669)) {
     NavigationStack {
-        HomePage(dashboard: .preview, discoveries: .preview) { _ in }
+        HomePage(dashboard: .preview, discoveries: .preview, isSideBySide: true) { _ in }
             .navigationTitle("Accueil")
     }
-    .environment(\.horizontalSizeClass, .regular)
 }
