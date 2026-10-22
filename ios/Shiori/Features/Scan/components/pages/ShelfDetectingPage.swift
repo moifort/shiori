@@ -1,16 +1,16 @@
 import SwiftUI
 
-/// The wait while a shelf photo is read: the AI at work — the orb — with the
+/// The wait while a shelf photo is read: the AI at work — the wave — with the
 /// one thing happening said under it. A single ungrounded call, so there are
 /// no phases to walk through as a cover scan has.
 struct ShelfDetectingPage: View {
-    /// The photo being read. Kept by the caller for the checklist; the orb
+    /// The photo being read. Kept by the caller for the checklist; the wave
     /// does not draw it.
     let photo: UIImage?
 
     var body: some View {
         VStack(spacing: 40) {
-            AIOrb()
+            AIWave()
             VStack(spacing: 6) {
                 GeneratingLabel(text: "L'IA cherche les livres", font: .headline)
                 Text("Aucun scan n'est décompté pendant la lecture.")

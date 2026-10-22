@@ -1,12 +1,12 @@
 import SwiftUI
 
 /// Shown while the model calls run. A cold scan takes the better part of a
-/// minute, so this shows the AI at work — the orb — and says what is
+/// minute, so this shows the AI at work — the wave — and says what is
 /// happening, rather than a bare spinner over an unexplained wait. The
 /// headline wears the glow, as the bar does elsewhere when the AI is writing.
 struct ScanAnalyzingPage: View {
     /// The JPEG that was sent for analysis. Kept so the screen can retry with
-    /// it; the orb does not draw it.
+    /// it; the wave does not draw it.
     var coverData: Data?
 
     @State private var phase = 0
@@ -19,7 +19,7 @@ struct ScanAnalyzingPage: View {
 
     var body: some View {
         VStack(spacing: 40) {
-            AIOrb()
+            AIWave()
             VStack(spacing: 6) {
                 GeneratingLabel(text: "L'IA lit la couverture", font: .headline)
                 Text(Self.phases[min(phase, Self.phases.count - 1)])

@@ -93,6 +93,13 @@ jobs:
         with:
           xcode-version: latest-stable
 
+      # The scan's AI wave is a Metal shader, and since Xcode 26 the Metal
+      # compiler is a separate component a runner image may not carry.
+      - name: Install the Metal toolchain
+        run: |
+          xcodebuild -showComponent MetalToolchain | grep -q 'Status: installed$' \
+            || xcodebuild -downloadComponent MetalToolchain
+
       - name: Materialize gitignored build files
         env:
           IOS_SENTRY_DSN: ${{ secrets.IOS_SENTRY_DSN }}
