@@ -1797,6 +1797,38 @@
         }
       }
     },
+    "Analyse de l'étagère" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading the shelf"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyse de l'étagère"
+          }
+        }
+      }
+    },
+    "Analyse de la couverture" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading the cover"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyse de la couverture"
+          }
+        }
+      }
+    },
     "Anglais" : {
       "localizations" : {
         "en" : {
@@ -2257,22 +2289,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aucun résultat"
-          }
-        }
-      }
-    },
-    "Aucun scan n'est décompté pendant la lecture." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No scan is counted while reading."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucun scan n'est décompté pendant la lecture."
           }
         }
       }
@@ -2993,6 +3009,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Celle sur laquelle vous achetez vos livres audio."
+          }
+        }
+      }
+    },
+    "Cette analyse n'est pas décomptée de vos scans." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This doesn't count towards your scans."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette analyse n'est pas décomptée de vos scans."
           }
         }
       }
@@ -5421,6 +5453,22 @@
         }
       }
     },
+    "Identification du livre…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Identifying the book…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Identification du livre…"
+          }
+        }
+      }
+    },
     "Il rejoindra votre fiche, désormais en %@. Un seul livre, quel que soit le support." : {
       "localizations" : {
         "en" : {
@@ -5893,22 +5941,6 @@
         }
       }
     },
-    "L'IA cherche les livres" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "AI is finding the books"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L'IA cherche les livres"
-          }
-        }
-      }
-    },
     "L'IA cherche les parutions" : {
       "localizations" : {
         "en" : {
@@ -5969,22 +6001,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "L'IA de Shiori est momentanément indisponible. Rien n'a été décompté ; réessayez dans un moment."
-          }
-        }
-      }
-    },
-    "L'IA lit la couverture" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "AI is reading the cover"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L'IA lit la couverture"
           }
         }
       }
@@ -6337,22 +6353,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lecture de %@"
-          }
-        }
-      }
-    },
-    "Lecture de la couverture..." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reading the cover…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lecture de la couverture..."
           }
         }
       }
@@ -8945,7 +8945,7 @@
         }
       }
     },
-    "Recherche de la série..." : {
+    "Recherche de la série…" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8956,7 +8956,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Recherche de la série..."
+            "value" : "Recherche de la série…"
           }
         }
       }
@@ -8993,18 +8993,18 @@
         }
       }
     },
-    "Recherche du livre..." : {
+    "Recherche des informations…" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Looking up the book…"
+            "value" : "Looking up the details…"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Recherche du livre..."
+            "value" : "Recherche des informations…"
           }
         }
       }

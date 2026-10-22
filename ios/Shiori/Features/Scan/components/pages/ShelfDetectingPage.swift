@@ -12,8 +12,9 @@ struct ShelfDetectingPage: View {
         VStack(spacing: 40) {
             AIWave()
             VStack(spacing: 6) {
-                GeneratingLabel(text: "L'IA cherche les livres", font: .headline)
-                Text("Aucun scan n'est décompté pendant la lecture.")
+                Text("Analyse de l'étagère")
+                    .font(.headline)
+                Text("Cette analyse n'est pas décomptée de vos scans.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
