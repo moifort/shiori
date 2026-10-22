@@ -87,7 +87,10 @@ export const PersonName = (value: unknown) => {
 
 export const StarRating = (value: unknown) => {
   const v = z
-    .preprocess((v) => (typeof v === 'string' ? Number(v) : v), z.number().int().min(1).max(5))
+    .preprocess(
+      (v) => (typeof v === 'string' ? Number(v) : v),
+      z.number().min(1).max(5).multipleOf(0.5),
+    )
     .parse(value)
   return make<StarRatingType>()(v)
 }

@@ -4048,9 +4048,9 @@ type ShelfVocabulary {
 }
 
 """
-A reader rating, 1 to 5 whole stars.
+A reader rating, 1 to 5 stars in half steps.
 
-Whole stars only: half stars double the value space without adding discernment. Setting a rating also marks the book as read. Example: 4.
+Setting a rating also marks the book as read. Example: 3.5.
 """
 scalar StarRating
 

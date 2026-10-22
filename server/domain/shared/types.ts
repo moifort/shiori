@@ -22,6 +22,7 @@ export type AuthorName = Brand<string, 'AuthorName'>
  *  recommended them a book. Distinct from AuthorName, which names someone who
  *  wrote a book. */
 export type PersonName = Brand<string, 'PersonName'>
-/** One to five whole stars, given to a book or to a saga. Half stars double the
- *  value space without adding discernment, and shrink the touch target. */
+/** One to five stars in half steps, given to a book or to a saga. Nine levels
+ *  stay within what a reader tells apart, and a personal rating crowds the top
+ *  of the scale: the half star is what separates a 4 from a 5. */
 export type StarRating = Brand<number, 'StarRating'>

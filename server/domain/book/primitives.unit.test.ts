@@ -42,13 +42,16 @@ describe('CoverUrl', () => {
 })
 
 describe('StarRating', () => {
-  test('accepts one to five whole stars', () => {
+  test('accepts one to five stars in half steps', () => {
     expect(Number(StarRating(1))).toBe(1)
+    expect(Number(StarRating(3.5))).toBe(3.5)
+    expect(Number(StarRating('4.5'))).toBe(4.5)
     expect(Number(StarRating(5))).toBe(5)
   })
 
-  test('refuses half stars, zero, and anything past five', () => {
-    expect(() => StarRating(3.5)).toThrow()
+  test('refuses other fractions, half a star, zero, and anything past five', () => {
+    expect(() => StarRating(3.25)).toThrow()
+    expect(() => StarRating(0.5)).toThrow()
     expect(() => StarRating(0)).toThrow()
     expect(() => StarRating(6)).toThrow()
   })

@@ -192,9 +192,8 @@ builder.scalarType('ListeningMinutes', {
 
 builder.scalarType('StarRating', {
   description:
-    'A reader rating, 1 to 5 whole stars.\n\n' +
-    'Whole stars only: half stars double the value space without adding ' +
-    'discernment. Setting a rating also marks the book as read. Example: 4.',
+    'A reader rating, 1 to 5 stars in half steps.\n\n' +
+    'Setting a rating also marks the book as read. Example: 3.5.',
   serialize: (value) => value as number,
   parseValue: validatedParse('StarRating', StarRating),
 })

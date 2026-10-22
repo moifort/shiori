@@ -176,6 +176,26 @@ describe('tasteDigestOf', () => {
     expect(digest).not.toContain('Sans note')
   })
 
+  test('ranks a half star with the whole star below it', () => {
+    const digest = tasteDigestOf(
+      [
+        book('Ravage', 'René Barjavel', { rating: 4.5 }),
+        book('Tau Zero', 'Poul Anderson', { rating: 3.5 }),
+        book('Endymion', 'Dan Simmons', { rating: 2.5 }),
+      ],
+      [],
+      [],
+    )
+    const order = ['★★★★ 4', '« Ravage »', '★★★ 3', '« Tau Zero »', 'Déçu', '« Endymion »']
+    let at = -1
+    for (const marker of order) {
+      const found = digest.indexOf(marker, at + 1)
+      expect(found).toBeGreaterThan(at)
+      at = found
+    }
+    expect(digest).not.toContain('★★★★★')
+  })
+
   test('lists a saga rated as a whole apart, counting the volumes that borrow its rank', () => {
     const digest = tasteDigestOf(
       [

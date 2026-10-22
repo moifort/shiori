@@ -382,6 +382,17 @@ describe('rating through the API', () => {
     expect(rated.finishedAt).not.toBeNull()
   })
 
+  test('takes a half star and reads it back, but no finer step', async () => {
+    const book = await addBook('Le Nom du vent')
+
+    const half = await execute(`mutation { rateBook(id: "${book.id}", rating: 3.5) { rating } }`)
+    const finer = await execute(`mutation { rateBook(id: "${book.id}", rating: 3.25) { rating } }`)
+
+    expect(half.errors).toBeUndefined()
+    expect(half.data?.rateBook).toEqual({ rating: 3.5 })
+    expect(finer.errors).toBeDefined()
+  })
+
   test('takes the rating back without moving the book off the read pile', async () => {
     const book = await addBook('Le Nom du vent')
     await execute(`mutation { rateBook(id: "${book.id}", rating: 5) { id } }`)

@@ -18,6 +18,11 @@ describe('a heart sits on three stars or more', () => {
   test("keeps the reader's own stars when they can hold it", () => {
     expect(ratingUnderHeart(StarRating(3))).toBe(StarRating(3))
     expect(ratingUnderHeart(StarRating(4))).toBe(StarRating(4))
+    expect(ratingUnderHeart(StarRating(3.5))).toBe(StarRating(3.5))
+  })
+
+  test('gives the top of the scale under two and a half stars', () => {
+    expect(ratingUnderHeart(StarRating(2.5))).toBe(StarRating(5))
   })
 
   test('survives three, four and five stars', () => {
@@ -27,6 +32,7 @@ describe('a heart sits on three stars or more', () => {
   })
 
   test('goes with fewer, or with no rating', () => {
+    expect(favoriteAfterRating(true, StarRating(2.5))).toBeUndefined()
     expect(favoriteAfterRating(true, StarRating(2))).toBeUndefined()
     expect(favoriteAfterRating(true, undefined)).toBeUndefined()
   })
@@ -43,6 +49,7 @@ describe('the favourites order', () => {
       lovedRankOf({ favorite: true, rating: StarRating(5) }),
       lovedRankOf({ lentRating: StarRating(5) }),
       lovedRankOf({ rating: StarRating(5) }),
+      lovedRankOf({ rating: StarRating(4.5) }),
       lovedRankOf({ rating: StarRating(4), lentRating: StarRating(5) }),
       lovedRankOf({ lentRating: StarRating(3) }),
       lovedRankOf({ rating: StarRating(1) }),

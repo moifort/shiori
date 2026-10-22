@@ -81,8 +81,8 @@ const TIERS: readonly Tier[] = ['favorite', '5', '4', '3', 'low']
 const TIER_TITLES: Record<Tier, string> = {
   favorite: '♥ Coups de cœur',
   '5': '★★★★★ 5 étoiles',
-  '4': '★★★★ 4 étoiles',
-  '3': '★★★ 3 étoiles',
+  '4': '★★★★ 4 à 4,5 étoiles',
+  '3': '★★★ 3 à 3,5 étoiles',
   low: '★–★★ Déçu',
 }
 
@@ -93,8 +93,8 @@ const tierOf = (
   if (favorite) return 'favorite'
   if (rating === undefined) return undefined
   if (rating >= 5) return '5'
-  if (rating === 4) return '4'
-  if (rating === 3) return '3'
+  if (rating >= 4) return '4'
+  if (rating >= 3) return '3'
   return 'low'
 }
 

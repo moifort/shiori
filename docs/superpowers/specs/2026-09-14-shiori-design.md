@@ -133,8 +133,10 @@ estimates poorly.
 
 ### 4.4 Rating
 
-Whole stars, one to five. Half stars double the value space without adding discernment and
-shrink the touch target.
+One to five stars in half steps. Nine levels stay within what a reader tells apart, and a
+personal rating crowds the top of the scale: the half star is what separates a 4 from a 5. Each
+star stays a full touch target wide — a tap on its leading half gives the half, and a finger slid
+along the row follows it — so the half does not shrink the target to half a thumb.
 
 ### 4.5 The cover is the user's own photo
 
