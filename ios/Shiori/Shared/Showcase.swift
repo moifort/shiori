@@ -22,7 +22,11 @@ import Foundation
 /// Debug-only by construction: the Release archive the App Store gets
 /// compiles none of it.
 enum Showcase {
+    /// On when launched with `-showcase`, or on a simulator whose `showcase`
+    /// default is set, so the app opens on the showcase from its icon too:
+    /// `defaults write <data container>/Library/Preferences/com.polyforms.shiori.app showcase -bool YES`.
     static let isOn = ProcessInfo.processInfo.arguments.contains("-showcase")
+        || UserDefaults.standard.bool(forKey: "showcase")
 
     /// The language the app runs in, which the captures are taken in.
     private static let isEnglish = Bundle.main.preferredLocalizations.first == "en"
