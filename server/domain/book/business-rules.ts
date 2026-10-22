@@ -592,6 +592,44 @@ export const sameAuthor = (left: string | undefined, right: string | undefined):
   return givenA === '' || givenB === '' || lettersApart(givenA, givenB) <= 1
 }
 
+/** How a store, a pasted link or a picked candidate names the author beside a
+ *  title: across a dash set apart by spaces, or in brackets at the end. A
+ *  comma or a colon is no such mark — "Moi, Christiane F." is the title of
+ *  Christiane F.'s book. */
+const AUTHOR_DASH = /\s+[-–—]\s+/gu
+const AUTHOR_IN_BRACKETS = /^(.+?)\s*\(([^()]+)\)$/u
+
+/** The title without one of its own authors named beside it, before or after:
+ *  "La Horde du Contrevent — Alain Damasio", "Damasio - La Horde du
+ *  Contrevent" and "La Horde du Contrevent (Alain Damasio)" by Alain Damasio
+ *  are "La Horde du Contrevent". Unchanged when what stands beside the dash is
+ *  no author of the book (`sameAuthor`): "Dune — Le Messie" keeps its dash.
+ *  What it returns is a part of the title, never empty, so a checked title
+ *  stays one. */
+export const titleWithoutAuthor = <Title extends string>(
+  title: Title,
+  authors: readonly string[],
+): Title => {
+  const byItsAuthor = (name: string) => authors.some((author) => sameAuthor(name, author))
+  const bracketed = title.match(AUTHOR_IN_BRACKETS)
+  if (bracketed && byItsAuthor(bracketed[2])) return bracketed[1].trim() as Title
+  return (dashSplitsOf(title).find(({ named }) => byItsAuthor(named))?.rest ?? title) as Title
+}
+
+/** Every way to read a title as a name across a dash from the rest: the name
+ *  last, cut at the last dash, then the name first, cut at the first. */
+const dashSplitsOf = (title: string): { rest: string; named: string }[] => {
+  const dashes = [...title.matchAll(AUTHOR_DASH)]
+  const [first, last] = [dashes[0], dashes.at(-1)]
+  if (!first || !last) return []
+  const before = (dash: RegExpExecArray) => title.slice(0, dash.index).trim()
+  const after = (dash: RegExpExecArray) => title.slice(dash.index + dash[0].length).trim()
+  return [
+    { rest: before(last), named: after(last) },
+    { rest: after(first), named: before(first) },
+  ].filter(({ rest, named }) => rest !== '' && named !== '')
+}
+
 const namePartsOf = (name: string | undefined) =>
   slugify(name ?? '')
     .split('-')

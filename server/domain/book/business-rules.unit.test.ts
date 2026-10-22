@@ -30,6 +30,7 @@ import {
   statusStampAfterChange,
   storedRecommendation,
   subgenresOf,
+  titleWithoutAuthor,
   vocabularyOf,
 } from '~/domain/book/business-rules'
 import {
@@ -1318,5 +1319,29 @@ describe('keepsStory', () => {
 
   test('another title by the same author is not', () => {
     expect(keepsStory(library, { title: 'Ravage', author: 'Barjavel' })).toBe(false)
+  })
+})
+
+describe('titleWithoutAuthor', () => {
+  const damasio = ['Alain Damasio']
+  const bare = (title: string, authors: string[]) => titleWithoutAuthor(title, authors)
+
+  test('drops one of its authors named after, before or in brackets', () => {
+    expect(bare('La Horde du Contrevent — Alain Damasio', damasio)).toBe('La Horde du Contrevent')
+    expect(bare('Damasio - La Horde du Contrevent', damasio)).toBe('La Horde du Contrevent')
+    expect(bare('La Horde du Contrevent (Alain Damasio)', damasio)).toBe('La Horde du Contrevent')
+  })
+
+  test('keeps a dash, or brackets, holding no author of the book', () => {
+    expect(bare('Dune — Le Messie', ['Frank Herbert'])).toBe('Dune — Le Messie')
+    expect(bare('Les Furtifs (édition poche)', damasio)).toBe('Les Furtifs (édition poche)')
+    expect(bare('Dune — Le Messie — Frank Herbert', ['Brian Herbert'])).toBe(
+      'Dune — Le Messie — Frank Herbert',
+    )
+  })
+
+  test('keeps a comma or a colon, and a title that is nothing but its author', () => {
+    expect(bare('Moi, Christiane F.', ['Christiane F.'])).toBe('Moi, Christiane F.')
+    expect(bare('Alain Damasio', damasio)).toBe('Alain Damasio')
   })
 })

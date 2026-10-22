@@ -10,6 +10,7 @@ import type {
   VolumeNumber as VolumeNumberType,
 } from '~/domain/series/types'
 import { VOLUME_KINDS } from '~/domain/series/types'
+import { singleSpaced } from '~/domain/shared/primitives'
 import { slugify } from '~/utils/slug'
 
 export { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
@@ -20,7 +21,7 @@ export const SeriesId = (value: unknown) => {
 }
 
 export const SeriesName = (value: unknown) => {
-  const v = z.string().trim().min(1).max(200).parse(value)
+  const v = z.string().transform(singleSpaced).pipe(z.string().min(1).max(200)).parse(value)
   return make<SeriesNameType>()(v)
 }
 

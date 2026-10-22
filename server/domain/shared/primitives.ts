@@ -68,20 +68,28 @@ export const Percentage = (value: unknown) => {
   return make<PercentageType>()(v)
 }
 
+/** A name written with single spaces: a spine read, a store listing or a
+ *  pasted title brings double spaces, tabs and line breaks the screens then
+ *  show, and two spellings of one name that only a slug told apart. */
+export const singleSpaced = (value: string): string => value.replace(/\s+/gu, ' ').trim()
+
+/** A bounded name, single-spaced (`singleSpaced`) before it is measured. */
+const nameOf = (max: number) => z.string().transform(singleSpaced).pipe(z.string().min(1).max(max))
+
 // Titles and author names come from an AI reading a cover, so they are bounded
 // rather than trusted: a 500-character "title" is a misread blurb, not a title.
 export const BookTitle = (value: unknown) => {
-  const v = z.string().trim().min(1).max(300).parse(value)
+  const v = nameOf(300).parse(value)
   return make<BookTitleType>()(v)
 }
 
 export const AuthorName = (value: unknown) => {
-  const v = z.string().trim().min(1).max(200).parse(value)
+  const v = nameOf(200).parse(value)
   return make<AuthorNameType>()(v)
 }
 
 export const PersonName = (value: unknown) => {
-  const v = z.string().trim().min(1).max(200).parse(value)
+  const v = nameOf(200).parse(value)
   return make<PersonNameType>()(v)
 }
 

@@ -1,3 +1,4 @@
+import { titleWithoutAuthor } from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
 import {
   BookLanguageValue,
@@ -527,15 +528,19 @@ export namespace ScanCommand {
       grounded: true,
     })
 
-    const authors = parsedAuthors(value.authors)
-    const series = parsedSeries(value, authors.length > 0 ? authors : seen.authors, seen.format)
+    const parsed = parsedAuthors(value.authors)
+    const authors = parsed.length > 0 ? parsed : seen.authors
+    const series = parsedSeries(value, authors, seen.format)
     return {
       result: {
         recognized: true,
-        // The review shows the saga and the volume beside the title, as the
-        // book will.
-        title: bareTitleOf(optional(value.title, BookTitle) ?? seen.title, series?.name),
-        authors: authors.length > 0 ? authors : seen.authors,
+        // The review shows the saga, the volume and the authors beside the
+        // title, as the book will.
+        title: titleWithoutAuthor(
+          bareTitleOf(optional(value.title, BookTitle) ?? seen.title, series?.name),
+          authors,
+        ),
+        authors,
         format: seen.format,
         media: seen.media,
         publisher: seen.publisher,

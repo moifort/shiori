@@ -13,6 +13,7 @@ import {
   statusAfterRating,
   statusStampAfterChange,
   storedRecommendation,
+  titleWithoutAuthor,
 } from '~/domain/book/business-rules'
 import * as repository from '~/domain/book/infrastructure/repository'
 import { BookId as BookIdOf } from '~/domain/book/primitives'
@@ -163,8 +164,9 @@ const recordOf = (userId: UserId, input: NewBook, now: Date): Book => {
   const book: Book = {
     id: BookIdOf(randomUUID()),
     userId,
-    // The saga and the volume number are fields of their own, shown beside it.
-    title: bareTitleOf(input.title, input.series?.name),
+    // The saga, the volume number and the authors are fields of their own,
+    // shown beside it.
+    title: titleWithoutAuthor(bareTitleOf(input.title, input.series?.name), input.authors ?? []),
     authors: input.authors ?? [],
     format: input.format ?? 'book',
     media: mediaFor(input.format ?? 'book', input.media),
