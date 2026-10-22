@@ -8,7 +8,17 @@ struct GenreInsightsScreen: View {
     /// Reads the figures.
     let load: () async throws -> GenreInsights
 
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.dismiss) private var dismissSheet
+    @Environment(\.closeDetailPane) private var closeDetailPane
+    @Environment(\.isPresented) private var isPresented
+
+    /// Closes the sheet, or the detail beside the page on an unfolded iPhone
+    /// Duo. A screen pushed or presented from inside the detail is not its
+    /// root, and closes as it would anywhere else.
+    private func dismiss() {
+        if !isPresented, let closeDetailPane { closeDetailPane() } else { dismissSheet() }
+    }
+
     @State private var insights: GenreInsights?
     @State private var errorMessage: String?
 

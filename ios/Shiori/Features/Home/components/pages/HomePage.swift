@@ -36,11 +36,12 @@ struct HomePage: View {
     var discoveries: MonthlyDiscoveries?
     let onAction: (HomeAction) -> Void
 
-    /// Where an open iPhone Duo folds, in the window's coordinates.
-    @Environment(\.foldLine) private var foldLine
-    /// The page's width and where it starts in the window, which place the
-    /// columns on either side of the fold.
-    @State private var frame: CGRect = .zero
+    /// The page's width and where an open iPhone Duo folds across it, which
+    /// place the columns on either side of the fold.
+    @State private var geometry = PageGeometry()
+    /// Regular on the Duo's inner screen, the only width the cards sit in two
+    /// columns at: a phone held upright, or the Duo folded, is compact.
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
         ScrollView {
@@ -69,17 +70,21 @@ struct HomePage: View {
             .padding(.horizontal)
             .padding(.bottom, 24)
         }
-        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frame = $0 }
+        .onGeometryChange(for: PageGeometry.self) {
+            PageGeometry(width: $0.size.width, fold: $0.foldSpan(includeInactive: true))
+        } action: { geometry = $0 }
         .background(Color(.systemGroupedBackground))
     }
 
-    /// The width from which the cards sit in two columns: an unfolded iPhone
-    /// Duo, never a phone held upright, whose widest is 440.
-    private static let wideWidth: CGFloat = 640
+    /// What the page knows of its own frame: enough to lay out its columns.
+    private struct PageGeometry: Equatable {
+        var width: CGFloat = 0
+        var fold: ClosedRange<CGFloat>?
+    }
 
     /// The two columns' widths and the space between them, nil for one column.
     private var columns: HomeColumns? {
-        HomeColumns(width: frame.width, fold: foldLine.map { $0 - frame.minX }, minimum: Self.wideWidth)
+        HomeColumns(width: geometry.width, fold: geometry.fold, isRegularWidth: sizeClass == .regular)
     }
 
     /// The library at a glance and what it is made of, the left column once
@@ -380,5 +385,5 @@ extension Dashboard {
         HomePage(dashboard: .preview, discoveries: .preview) { _ in }
             .navigationTitle("Accueil")
     }
-    .environment(\.foldLine, 475)
+    .environment(\.horizontalSizeClass, .regular)
 }

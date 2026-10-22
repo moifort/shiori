@@ -10,7 +10,17 @@ struct AnnouncedVolumeScreen: View {
 
     @State private var viewModel: AnnouncedVolumeViewModel
     @State private var showsSaga = false
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.dismiss) private var dismissSheet
+    @Environment(\.closeDetailPane) private var closeDetailPane
+    @Environment(\.isPresented) private var isPresented
+
+    /// Closes the sheet, or the detail beside the page on an unfolded iPhone
+    /// Duo. A screen pushed or presented from inside the detail is not its
+    /// root, and closes as it would anywhere else.
+    private func dismiss() {
+        if !isPresented, let closeDetailPane { closeDetailPane() } else { dismissSheet() }
+    }
+
 
     init(saga: SagaDiscovery, volume: DiscoveredVolume, linksToSaga: Bool = true, client: DiscoverClient = .live) {
         self.linksToSaga = linksToSaga

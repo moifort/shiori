@@ -20,7 +20,13 @@ struct HomeScreen: View {
     var onShowShared: () -> Void = {}
 
     @State private var viewModel: HomeViewModel
-    @State private var selectedBook: Book?
+    /// What the dashboard opened: a sheet on a phone, the detail beside the
+    /// dashboard on an unfolded iPhone Duo, as Mail shows a message beside
+    /// its inbox.
+    @State private var detail: HomeDetail?
+    /// Regular on the Duo's inner screen, where a detail opens beside the
+    /// dashboard rather than over it.
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var showSettings = false
     /// The search over the reader's books, from the loupe in the corner.
     @State private var showSearch = false
@@ -34,18 +40,6 @@ struct HomeScreen: View {
     @State private var kindleSync = KindleBackgroundSync.shared
     /// The wait onboarding hands over to, drawn in place of the dashboard.
     @State private var preparation = LibraryPreparation.shared
-    /// The saga opened from its progress row, as a sheet like a book.
-    @State private var openSeries: OpenedSeries?
-    /// The volume announced opened from the releases, as Découvrir opens it.
-    @State private var openRelease: DiscoveryVolume?
-    /// The recording awaited opened from the releases, as Découvrir opens it.
-    @State private var openAwaited: AwaitedEdition?
-    /// The friend's favourite opened, on its read-only page.
-    @State private var openFavorite: FriendFavorite?
-    /// A discovery of the month opened from its cover, as Découvrir opens it.
-    @State private var openDiscovery: Suggestion?
-    /// The genre page, opened from the genre card as a sheet.
-    @State private var showGenres = false
 
     init(
         onShowSeries: @escaping (SeriesRequest) -> Void,
@@ -64,39 +58,21 @@ struct HomeScreen: View {
     }
 
     var body: some View {
-        NavigationStack {
-            content
-                .navigationTitle("Accueil")
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button { showSearch = true } label: {
-                            Label("Rechercher", systemImage: "magnifyingglass")
-                        }
-                        .labelStyle(.iconOnly)
-                        .accessibilityIdentifier("home-search")
-                    }
-                    if isAdmin {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            ToolbarIconButton(title: "Admin", systemImage: "shield") {
-                                showAdmin = true
-                            }
-                            .accessibilityIdentifier("home-admin")
-                        }
-                    }
-                    ToolbarItem(placement: .topBarTrailing) {
-                        // The settings hold the account, the subscription and the
-                        // connected sources: managing a linked Audible account is
-                        // a setting, not an import, and lives there.
-                        Button { showSettings = true } label: {
-                            Label("Réglages", systemImage: "gearshape")
-                        }
-                        .labelStyle(.iconOnly)
-                        .accessibilityIdentifier("home-settings")
-                    }
+        Group {
+            if isSplit, let detail {
+                // The dashboard stays in use on the left, the detail on the
+                // right: the split view sets both columns, and moves them to
+                // either side of the fold as the Duo folds.
+                NavigationSplitView {
+                    dashboard
+                } detail: {
+                    pane(detail)
                 }
-                // The first time only: after that, writes made anywhere
-                // arrive through the change notice below.
-                .task { await viewModel.loadOnAppear() }
+            } else {
+                NavigationStack {
+                    dashboard
+                }
+            }
         }
         // And every time a write lands anywhere: the figures behind this screen
         // are rebuilt by the server on each one, and the tab may be showing.
@@ -119,56 +95,11 @@ struct HomeScreen: View {
         .sheet(isPresented: $showSearch) {
             LibrarySearchScreen()
         }
-        .sheet(isPresented: $showGenres) {
-            NavigationStack { GenreInsightsScreen(load: viewModel.genreInsights) }
-        }
-        .sheet(item: $selectedBook) { book in
-            // The book's own writes post the change notice this screen
-            // reloads on: reloading here as well asked the server twice.
-            BookScreen(bookId: book.id)
-        }
-        // An import or a sync asked for from the settings posts the change
-        // notice as it lands: nothing is left to reload on dismissal.
-        // A saga opened from the progress card was closed: its first opening
-        // may have built the catalogue its bar is measured on, and reading a
-        // catalogue is no write, so no notice says so.
-        .sheet(item: $openSeries, onDismiss: { Task { await viewModel.load() } }) { opened in
-            NavigationStack {
-                SeriesScreen(seriesId: opened.id, isSheet: true)
-            }
-        }
-        .sheet(item: $openRelease) { opened in
-            NavigationStack {
-                AnnouncedVolumeScreen(saga: opened.saga, volume: opened.volume)
-            }
-        }
-        .sheet(item: $openFavorite) { favorite in
-            if let book = favorite.openedBook {
-                NavigationStack {
-                    FriendBookScreen(
-                        friendId: favorite.friendId,
-                        bookId: book.id,
-                        friendName: favorite.friendDisplayName
-                    )
-                }
-            }
-        }
-        // Closed, the strip is asked again: an addition, a wait or a
-        // dismissal takes the book off, and the next one comes in.
-        .sheet(item: $openDiscovery, onDismiss: { Task { await viewModel.loadDiscoveries() } }) { suggestion in
-            NavigationStack {
-                SuggestionScreen(suggestion: suggestion) { outcome in
-                    guard case let .dismissed(reason) = outcome else { return }
-                    Task { await viewModel.dismiss(suggestion, reason: reason) }
-                }
-            }
-        }
-        .sheet(item: $openAwaited) { edition in
-            NavigationStack {
-                AwaitedEditionScreen(edition: edition) {
-                    Task { await viewModel.stopAwaiting(edition) }
-                }
-            }
+        // On a phone, or a Duo folded, what the dashboard opens is a sheet.
+        // Folding the Duo with a detail open beside the dashboard brings it
+        // up as one; unfolding it puts the sheet back beside the dashboard.
+        .sheet(item: sheetDetail) { detail in
+            detailContent(detail)
         }
         // A recording awaited or given up comes into the releases, or leaves.
         .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
@@ -191,6 +122,127 @@ struct HomeScreen: View {
         }
     }
 
+    /// The dashboard, its toolbar and its first load: the root of the stack
+    /// on a phone, the leading column beside a detail on an unfolded Duo.
+    private var dashboard: some View {
+        content
+            .navigationTitle("Accueil")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { showSearch = true } label: {
+                        Label("Rechercher", systemImage: "magnifyingglass")
+                    }
+                    .labelStyle(.iconOnly)
+                    .accessibilityIdentifier("home-search")
+                }
+                if isAdmin {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        ToolbarIconButton(title: "Admin", systemImage: "shield") {
+                            showAdmin = true
+                        }
+                        .accessibilityIdentifier("home-admin")
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    // The settings hold the account, the subscription and the
+                    // connected sources: managing a linked Audible account is
+                    // a setting, not an import, and lives there.
+                    Button { showSettings = true } label: {
+                        Label("Réglages", systemImage: "gearshape")
+                    }
+                    .labelStyle(.iconOnly)
+                    .accessibilityIdentifier("home-settings")
+                }
+            }
+            // The first time only: after that, writes made anywhere
+            // arrive through the change notice below.
+            .task { await viewModel.loadOnAppear() }
+    }
+
+    /// Whether a detail opens beside the dashboard: the Duo's inner screen.
+    private var isSplit: Bool { sizeClass == .regular }
+
+    /// The detail as a sheet, while the screen is too narrow to set it beside
+    /// the dashboard. The sheet a fold takes away hands its detail back to the
+    /// split view rather than closing it.
+    private var sheetDetail: Binding<HomeDetail?> {
+        Binding(
+            get: { isSplit ? nil : detail },
+            set: { newValue in
+                guard newValue == nil else { return detail = newValue }
+                guard !isSplit, let closed = detail else { return }
+                detail = nil
+                afterClosing(closed)
+            }
+        )
+    }
+
+    /// The detail beside the dashboard, closed by its own button.
+    private func pane(_ detail: HomeDetail) -> some View {
+        detailContent(detail)
+            .id(detail.id)
+            .environment(\.closeDetailPane) {
+                self.detail = nil
+                afterClosing(detail)
+            }
+    }
+
+    @ViewBuilder
+    private func detailContent(_ detail: HomeDetail) -> some View {
+        switch detail {
+        case let .book(book):
+            // The book's own writes post the change notice this screen
+            // reloads on: reloading here as well asked the server twice.
+            BookScreen(bookId: book.id)
+        case let .series(id):
+            NavigationStack {
+                SeriesScreen(seriesId: id, isSheet: true)
+            }
+        case let .release(volume):
+            NavigationStack {
+                AnnouncedVolumeScreen(saga: volume.saga, volume: volume.volume)
+            }
+        case let .awaited(edition):
+            NavigationStack {
+                AwaitedEditionScreen(edition: edition) {
+                    Task { await viewModel.stopAwaiting(edition) }
+                }
+            }
+        case let .favorite(favorite):
+            if let book = favorite.openedBook {
+                NavigationStack {
+                    FriendBookScreen(
+                        friendId: favorite.friendId,
+                        bookId: book.id,
+                        friendName: favorite.friendDisplayName
+                    )
+                }
+            }
+        case let .discovery(suggestion):
+            NavigationStack {
+                SuggestionScreen(suggestion: suggestion) { outcome in
+                    guard case let .dismissed(reason) = outcome else { return }
+                    Task { await viewModel.dismiss(suggestion, reason: reason) }
+                }
+            }
+        case .genres:
+            NavigationStack { GenreInsightsScreen(load: viewModel.genreInsights) }
+        }
+    }
+
+    /// What a closed detail leaves to refresh. A saga's first opening may have
+    /// built the catalogue its bar is measured on, and reading a catalogue is
+    /// no write, so no notice says so. A discovery closed is asked again: an
+    /// addition, a wait or a dismissal takes the book off, and the next one
+    /// comes in.
+    private func afterClosing(_ detail: HomeDetail) {
+        switch detail {
+        case .series: Task { await viewModel.load() }
+        case .discovery: Task { await viewModel.loadDiscoveries() }
+        case .book, .release, .awaited, .favorite, .genres: break
+        }
+    }
+
     @ViewBuilder
     private var content: some View {
         if preparation.isActive {
@@ -208,16 +260,16 @@ struct HomeScreen: View {
                     switch action {
                     case let .showLibrary(request): onShowLibrary(request)
                     case let .showSeries(request): onShowSeries(request)
-                    case let .openSeries(id): openSeries = OpenedSeries(id: id)
-                    case let .openBook(book): selectedBook = book
-                    case .openGenres: showGenres = true
+                    case let .openSeries(id): detail = .series(id)
+                    case let .openBook(book): detail = .book(book)
+                    case .openGenres: detail = .genres
                     case .scan: onScan()
                     case .showDiscover: onShowDiscover()
-                    case let .openRelease(.volume(volume)): openRelease = volume
-                    case let .openRelease(.awaited(edition)): openAwaited = edition
+                    case let .openRelease(.volume(volume)): detail = .release(volume)
+                    case let .openRelease(.awaited(edition)): detail = .awaited(edition)
                     case .showShared: onShowShared()
-                    case let .openFriendFavorite(favorite): openFavorite = favorite
-                    case let .openDiscovery(suggestion): openDiscovery = suggestion
+                    case let .openFriendFavorite(favorite): detail = .favorite(favorite)
+                    case let .openDiscovery(suggestion): detail = .discovery(suggestion)
                     }
                 }
                 .refreshable { await viewModel.load() }
@@ -243,6 +295,25 @@ struct HomeScreen: View {
 }
 
 /// A saga opened from the dashboard, by its catalogue id.
-private struct OpenedSeries: Identifiable {
-    let id: String
+/// What the dashboard opens, as a sheet or beside it.
+private enum HomeDetail: Identifiable {
+    case book(Book)
+    case series(String)
+    case release(DiscoveryVolume)
+    case awaited(AwaitedEdition)
+    case favorite(FriendFavorite)
+    case discovery(Suggestion)
+    case genres
+
+    var id: String {
+        switch self {
+        case let .book(book): "book-\(book.id)"
+        case let .series(id): "series-\(id)"
+        case let .release(volume): "release-\(volume.id)"
+        case let .awaited(edition): "awaited-\(edition.id)"
+        case let .favorite(favorite): "favorite-\(favorite.id)"
+        case let .discovery(suggestion): "discovery-\(suggestion.id)"
+        case .genres: "genres"
+        }
+    }
 }

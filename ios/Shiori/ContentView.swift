@@ -99,7 +99,6 @@ struct ContentView: View {
 
     var body: some View {
         tabs
-            .readsDeviceFold()
             .sheet(isPresented: $showAddSheet, onDismiss: actOnPendingSource) {
                 AddBookSheet(searchTitle: ScanClient.live.searchTitle, onChoose: choose)
             }

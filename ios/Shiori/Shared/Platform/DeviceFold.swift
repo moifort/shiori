@@ -1,62 +1,35 @@
 import SwiftUI
 
-extension EnvironmentValues {
-    /// Where an open iPhone Duo folds, as an x in the window's coordinates:
-    /// the middle of its inner screen. Nil on a phone, on the Duo's outer
-    /// screen and whenever the hinge is closed. A page laying itself out in
-    /// two columns splits them there, so no card is drawn across the crease.
-    @Entry var foldLine: CGFloat?
-}
-
-extension View {
-    /// Hands the views below where the screen folds, from the hinge iOS 27.1
-    /// reports. Applied once, at the root of the window.
-    func readsDeviceFold() -> some View {
-        modifier(DeviceFoldReader())
-    }
-}
-
-private struct DeviceFoldReader: ViewModifier {
-    /// The middle of the window, safe areas included: where the fold is.
-    @State private var middle: CGFloat?
-    /// Whether the hinge is open, fully or partly — a book held half open
-    /// folds in the same place as one laid flat.
-    @State private var isOpen = false
-
-    func body(content: Content) -> some View {
-        content
-            .environment(\.foldLine, isOpen ? middle : nil)
-            // The content stops at the safe areas — the Duo keeps the clock
-            // in a column on its right — so they are added back on each side.
-            .onGeometryChange(for: CGFloat.self) { proxy in
-                let frame = proxy.frame(in: .global)
-                let insets = proxy.safeAreaInsets
-                return (frame.minX - insets.leading + frame.maxX + insets.trailing) / 2
-            } action: { middle = $0 }
-            .modifier(HingeObserver(isOpen: $isOpen))
-    }
-}
-
-/// The hinge, read where the SDK knows it: Xcode 27.1 and later. An older SDK
-/// builds an app that sees no fold, and lays the Duo out as a wide screen.
-private struct HingeObserver: ViewModifier {
-    @Binding var isOpen: Bool
-
-    func body(content: Content) -> some View {
+extension GeometryProxy {
+    /// Where an iPhone Duo folds across this view, as the horizontal span
+    /// content should keep clear of — the crease and the margins the system
+    /// asks around it — in the view's own coordinates. Nil on a phone, on the
+    /// Duo's outer screen, and when the fold does not cross the view.
+    ///
+    /// This is the system's own answer: iOS 27.1 reserves the fold as a
+    /// `division` region. It is active only while the Duo is partly folded;
+    /// laid flat, the region is inactive and zero wide, and `includeInactive`
+    /// still reports it, so a split can sit on the fold in both poses.
+    func foldSpan(includeInactive: Bool = false) -> ClosedRange<CGFloat>? {
         #if canImport(SwiftUICore, _version: 8.0.85)
         if #available(iOS 27.1, *) {
-            content.onHingeChange { _, context in
-                guard let hinge = context.hinge else {
-                    isOpen = false
-                    return
-                }
-                isOpen = hinge.status == .fullyOpen || hinge.status == .partiallyOpen
-            }
-        } else {
-            content
+            let regions = reservedRegions(kind: .division, options: includeInactive ? .includeInactive : [])
+            guard let fold = regions.first else { return nil }
+            // Laid flat, the crease is no obstacle: only its line counts, not
+            // the margins the system asks around it while the Duo is folded.
+            let margins = fold.isActive ? fold.margins : EdgeInsets()
+            let lower = fold.frame.minX - margins.leading
+            let upper = fold.frame.maxX + margins.trailing
+            return lower <= upper ? lower...upper : fold.frame.midX...fold.frame.midX
         }
-        #else
-        content
         #endif
+        return nil
     }
+}
+
+extension EnvironmentValues {
+    /// Closes the detail a screen is shown as, beside the page it was opened
+    /// from on an unfolded iPhone Duo. Nil when the screen is a sheet, which
+    /// closes as a sheet does.
+    @Entry var closeDetailPane: (@MainActor () -> Void)?
 }
