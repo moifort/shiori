@@ -20,6 +20,7 @@ import {
   inReadingOrder,
   MAX_DETECTED_BOOKS,
   summedUsage,
+  typedQueryOf,
 } from '~/domain/scan/business-rules'
 import { generate } from '~/domain/scan/gemini'
 import * as repository from '~/domain/scan/infrastructure/repository'
@@ -212,7 +213,13 @@ export namespace ScanCommand {
   ): Promise<{ result: ScanResult; usage: ScanUsage }> => {
     if (import.meta.dev && config().scanStub) return { result: STUBBED_SCAN, usage: {} }
 
-    const named: ScanResult = { recognized: true, title, authors: [], subgenres: [] }
+    const typed = typedQueryOf(title)
+    const named: ScanResult = {
+      recognized: true,
+      title: BookTitle(typed.title),
+      authors: parsedAuthors(typed.author ? [typed.author] : []),
+      subgenres: [],
+    }
     const {
       result: enriched,
       regularEdition,

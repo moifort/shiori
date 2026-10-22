@@ -19,6 +19,7 @@ import { cataloguesUnderTheAuthorReversed } from '~/system/migration/migrations/
 import { awardInterestsDropped } from '~/system/migration/migrations/022-award-interests-dropped'
 import { discoveriesAlertStartsOn } from '~/system/migration/migrations/023-discoveries-alert-starts-on'
 import { octoberGroundingCounted } from '~/system/migration/migrations/024-october-grounding-counted'
+import { titlesWithoutTheirAuthor } from '~/system/migration/migrations/025-titles-without-their-author'
 import type { Migration } from '~/system/migration/types'
 
 // Forward-only, sequential, no rollback. Adding a new optional field or a new
@@ -50,4 +51,5 @@ export const migrations: Migration[] = [
   awardInterestsDropped,
   discoveriesAlertStartsOn,
   octoberGroundingCounted,
+  titlesWithoutTheirAuthor,
 ]

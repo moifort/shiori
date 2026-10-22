@@ -4,6 +4,7 @@ import {
   freeSearchesSpent,
   heldFormatOf,
   inReadingOrder,
+  typedQueryOf,
 } from '~/domain/scan/business-rules'
 
 describe('boxOf', () => {
@@ -66,5 +67,29 @@ describe("when Gemini's free searches are spent", () => {
   test('from the margin on, and for the rest of the month', () => {
     expect(freeSearchesSpent(715)).toBe(true)
     expect(freeSearchesSpent(2000)).toBe(true)
+  })
+})
+
+describe('typedQueryOf', () => {
+  test('splits the author the app names beside a picked title', () => {
+    expect(typedQueryOf('La Horde du Contrevent — Alain Damasio')).toEqual({
+      title: 'La Horde du Contrevent',
+      author: 'Alain Damasio',
+    })
+  })
+
+  test('cuts at the last dash, so a title holding one keeps it', () => {
+    expect(typedQueryOf('Dune — Le Messie — Frank Herbert')).toEqual({
+      title: 'Dune — Le Messie',
+      author: 'Frank Herbert',
+    })
+  })
+
+  test('leaves a title typed alone, or a dash with nothing on one side, whole', () => {
+    expect(typedQueryOf('Projet dernière chance')).toEqual({ title: 'Projet dernière chance' })
+    expect(typedQueryOf('— Andy Weir')).toEqual({ title: '— Andy Weir' })
+    expect(typedQueryOf('Projet dernière chance — ')).toEqual({
+      title: 'Projet dernière chance — ',
+    })
   })
 })

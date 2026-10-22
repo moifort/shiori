@@ -1,5 +1,5 @@
 import { AdminCommand } from '~/domain/admin/command'
-import { shelfKeyOf } from '~/domain/book/business-rules'
+import { keepsStory } from '~/domain/book/business-rules'
 import { BookQuery } from '~/domain/book/query'
 import { watchKeyOf } from '~/domain/discovery/business-rules'
 import { DiscoveryQuery } from '~/domain/discovery/query'
@@ -229,7 +229,7 @@ export namespace ScanUseCase {
     try {
       const [{ books, usage }, owned] = await Promise.all([
         ScanCommand.detectBooks(image, language),
-        BookQuery.shelfKeys(userId),
+        BookQuery.all(userId),
       ])
       if (usage)
         await AdminCommand.recordShelfUsage(usage).catch((error) =>
@@ -237,7 +237,9 @@ export namespace ScanUseCase {
         )
       return books.map((book) => ({
         ...book,
-        owned: book.title !== undefined && owned.has(shelfKeyOf(book.title, book.authors[0])),
+        owned:
+          book.title !== undefined &&
+          keepsStory(owned, { title: book.title, author: book.authors[0] }),
       }))
     } catch (error) {
       logger.error('shelf detection failed', { error, userId })

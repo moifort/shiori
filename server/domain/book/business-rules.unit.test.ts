@@ -9,6 +9,7 @@ import {
   datesOnArrival,
   groupedBySeries,
   inSagaOrder,
+  keepsStory,
   kindleLinkUnder,
   listeningProgressOf,
   mediaFor,
@@ -19,6 +20,7 @@ import {
   refreshedFacts,
   retaggedAfterEdit,
   sagaNamesOf,
+  sameAuthor,
   seriesInFormat,
   shelfPageOf,
   shelvedOf,
@@ -1279,5 +1281,42 @@ describe('what a record keeps of its Kindle title', () => {
       kindleAsin: undefined,
       kindleCoverUrl: undefined,
     })
+  })
+})
+
+describe('sameAuthor', () => {
+  test('a last name alone, as a spine prints it, is the author', () => {
+    expect(sameAuthor('Barjavel', 'René Barjavel')).toBe(true)
+    expect(sameAuthor('LE GUIN', 'Ursula K. Le Guin')).toBe(true)
+  })
+
+  test('a first name misread by a letter is still the author', () => {
+    expect(sameAuthor('ILLIAM GIBSON', 'William Gibson')).toBe(true)
+  })
+
+  test('another first name, or another last name, is another author', () => {
+    expect(sameAuthor('Brian Herbert', 'Frank Herbert')).toBe(false)
+    expect(sameAuthor('René Barjavel', 'René Goscinny')).toBe(false)
+  })
+
+  test('a missing author only agrees with another missing one', () => {
+    expect(sameAuthor(undefined, '')).toBe(true)
+    expect(sameAuthor(undefined, 'Frank Herbert')).toBe(false)
+  })
+})
+
+describe('keepsStory', () => {
+  const library = [
+    { title: 'La nuit des temps', authors: ['René Barjavel'] },
+    { title: 'Neuromancien', authors: ['William Gibson'] },
+  ]
+
+  test('a spine read differently from the record is a story already kept', () => {
+    expect(keepsStory(library, { title: 'La Nuit des temps', author: 'Barjavel' })).toBe(true)
+    expect(keepsStory(library, { title: 'NEUROMANCIEN', author: 'ILLIAM GIBSON' })).toBe(true)
+  })
+
+  test('another title by the same author is not', () => {
+    expect(keepsStory(library, { title: 'Ravage', author: 'Barjavel' })).toBe(false)
   })
 })

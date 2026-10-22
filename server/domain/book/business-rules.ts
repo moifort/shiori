@@ -563,6 +563,56 @@ export const shelfKeyOf = (title: string, author: string | undefined): string =>
 export const shelfKeysOf = (books: readonly Book[]): Set<string> =>
   new Set(books.map((book) => shelfKeyOf(book.title, book.authors[0])))
 
+/** Whether two names say the same story, looser than the shelf key: the same
+ *  title, by authors who agree (`sameAuthor`). A spine prints "Barjavel" where
+ *  the record says "René Barjavel", and a photo misreads "WILLIAM GIBSON" as
+ *  "ILLIAM GIBSON": keyed on the whole name, a shelf photo offered books the
+ *  reader already kept, ticked, and added them twice. Only compared, never
+ *  stored — the keys kept in Firestore (awaited editions, awards, suggestions)
+ *  stay on `shelfKeyOf`. */
+export const sameStory = (
+  left: { title: string; author?: string },
+  right: { title: string; author?: string },
+): boolean => slugify(left.title) === slugify(right.title) && sameAuthor(left.author, right.author)
+
+/** Whether the reader already keeps this story, under any record. */
+export const keepsStory = (
+  books: readonly { title: string; authors: readonly string[] }[],
+  story: { title: string; author?: string },
+): boolean => books.some((book) => sameStory({ title: book.title, author: book.authors[0] }, story))
+
+/** Whether two spellings name one author: the same last name, and first names
+ *  that agree where both are given — one letter apart at most, a misread
+ *  initial. "Barjavel" is René Barjavel; Brian Herbert is not Frank Herbert. */
+export const sameAuthor = (left: string | undefined, right: string | undefined): boolean => {
+  const [a, b] = [namePartsOf(left), namePartsOf(right)]
+  if (a.length === 0 || b.length === 0) return a.length === b.length
+  if (a.at(-1) !== b.at(-1)) return false
+  const [givenA, givenB] = [a.slice(0, -1).join(''), b.slice(0, -1).join('')]
+  return givenA === '' || givenB === '' || lettersApart(givenA, givenB) <= 1
+}
+
+const namePartsOf = (name: string | undefined) =>
+  slugify(name ?? '')
+    .split('-')
+    .filter(Boolean)
+
+/** How many letters to change, add or drop to turn one word into the other. */
+const lettersApart = (left: string, right: string): number => {
+  let previous = Array.from({ length: right.length + 1 }, (_, index) => index)
+  for (let i = 1; i <= left.length; i++) {
+    const current = [i]
+    for (let j = 1; j <= right.length; j++)
+      current[j] = Math.min(
+        previous[j] + 1,
+        current[j - 1] + 1,
+        previous[j - 1] + (left[i - 1] === right[j - 1] ? 0 : 1),
+      )
+    previous = current
+  }
+  return previous[right.length]
+}
+
 /** One copy the reader keeps of a story: what tells it from another volume or
  *  another language under the same title. */
 export type ShelfCopy = { volume?: number; language?: BookLanguage }
@@ -609,11 +659,11 @@ export const copyOf = <T extends Book>(
   books: readonly T[],
   candidate: { title: string; authors: readonly string[]; isbn13?: string },
 ): T | undefined => {
-  const key = shelfKeyOf(candidate.title, candidate.authors[0])
+  const story = { title: candidate.title, author: candidate.authors[0] }
   return books
     .filter(
       (book) =>
-        shelfKeyOf(book.title, book.authors[0]) === key ||
+        sameStory({ title: book.title, author: book.authors[0] }, story) ||
         (candidate.isbn13 !== undefined && book.isbn13 === candidate.isbn13),
     )
     .toSorted((a, b) => a.addedAt.getTime() - b.addedAt.getTime())[0]
@@ -630,7 +680,7 @@ export const mediaFor = (format: BookFormat, media: readonly BookMedium[] = []):
 }
 
 /** The record a book arriving on another medium joins, rather than doubling:
- *  the same story by its shelf key or the same edition by its ISBN, read
+ *  the same story by `sameStory` or the same edition by its ISBN, read
  *  rather than heard, in the same volume and language wherever both say, and
  *  not yet held on every medium the arrival brings. The paperback scanned after
  *  the Kindle copy is one book, not two; a French paperback and an English
@@ -641,12 +691,12 @@ export const recordJoinedBy = <T extends Book>(
   arriving: Pick<Book, 'title' | 'authors' | 'isbn13' | 'format' | 'media' | 'language' | 'series'>,
 ): T | undefined => {
   if (arriving.format === 'audiobook') return undefined
-  const key = shelfKeyOf(arriving.title, arriving.authors[0])
+  const story = { title: arriving.title, author: arriving.authors[0] }
   return books
     .filter(
       (book) =>
         book.format !== 'audiobook' &&
-        (shelfKeyOf(book.title, book.authors[0]) === key ||
+        (sameStory({ title: book.title, author: book.authors[0] }, story) ||
           (arriving.isbn13 !== undefined && book.isbn13 === arriving.isbn13)) &&
         agrees(book.series?.volume, arriving.series?.volume) &&
         agrees(book.language, arriving.language) &&

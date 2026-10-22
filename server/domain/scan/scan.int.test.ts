@@ -193,6 +193,16 @@ describe('looking a title up', () => {
       }),
     ).not.toBeNull()
   })
+
+  // A picked candidate is asked as "title — author"; echoed back whole, the
+  // author stayed in the title and a shelf photo no longer matched the book.
+  test('asks the model for the title alone, by the author named beside it', async () => {
+    answers = [anEnrichment, aCatalogue]
+
+    await ScanCommand.lookUpTitle(BookTitle('Le Nom du vent — Patrick Rothfuss'), 'fr')
+
+    expect(prompts.enrichment).toContain('Livre : « Le Nom du vent » de Patrick Rothfuss')
+  })
 })
 
 describe('searching a typed title', () => {

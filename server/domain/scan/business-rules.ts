@@ -92,3 +92,18 @@ const FREE_SEARCHES_MARGIN = 500
  *  paid from the Anthropic credit instead. */
 export const freeSearchesSpent = (groundedCalls: number): boolean =>
   groundedCalls * SEARCHES_PER_GROUNDED_CALL >= FREE_GEMINI_SEARCHES - FREE_SEARCHES_MARGIN
+
+/** The separator the app puts between a picked title and its author. */
+const TYPED_AUTHOR_SEPARATOR = ' — '
+
+/** A typed title and the author the app names beside it. Picking a candidate,
+ *  or adding a book from a saga or author page, asks "La Horde du Contrevent —
+ *  Alain Damasio": the author tells the book apart, but is no part of its
+ *  title. Handed over whole, the model kept the string as the title, and the
+ *  record no longer matched the same book scanned on a shelf later. */
+export const typedQueryOf = (query: string): { title: string; author?: string } => {
+  const at = query.lastIndexOf(TYPED_AUTHOR_SEPARATOR)
+  const title = query.slice(0, at).trim()
+  const author = query.slice(at + TYPED_AUTHOR_SEPARATOR.length).trim()
+  return at > 0 && title && author ? { title, author } : { title: query }
+}
