@@ -15,9 +15,6 @@ export namespace AdminCommand {
       cacheHits: scan.cacheHit ? 1 : 0,
       vision: scan.usage.vision,
       enrichment: scan.usage.enrichment,
-      // The author's page is a catalogue like the saga's, and its own opening
-      // already counts there.
-      catalogue: summed(scan.usage.catalogue, scan.usage.author),
     })
   }
 
@@ -69,13 +66,3 @@ export namespace AdminCommand {
   export const recordMetrics = async (projection: AdminMetricsProjection) =>
     repository.saveProjection(projection)
 }
-
-const summed = (a?: AiStepUsage, b?: AiStepUsage): AiStepUsage | undefined =>
-  a && b
-    ? {
-        promptTokens: a.promptTokens + b.promptTokens,
-        outputTokens: a.outputTokens + b.outputTokens,
-        thinkingTokens: a.thinkingTokens + b.thinkingTokens,
-        searches: a.searches + b.searches,
-      }
-    : (a ?? b)

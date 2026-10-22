@@ -1,6 +1,3 @@
-import { AuthorCommand } from '~/domain/author/command'
-import { authorKeyOf } from '~/domain/author/primitives'
-import { AuthorQuery } from '~/domain/author/query'
 import { BookCommand } from '~/domain/book/command'
 import {
   BookLanguageValue,
@@ -59,7 +56,6 @@ import { withoutDuplicateVolumes } from '~/domain/series/business-rules'
 import { SeriesCommand } from '~/domain/series/command'
 import {
   isAudioSeries,
-  keyWithAuthorReversed,
   SeriesDescription,
   SeriesName,
   seriesKeyOf,
@@ -195,21 +191,20 @@ export namespace ScanCommand {
       .save({ imageHash, language, result, cachedAt: new Date() })
       .catch((error) => logger.warn('scan cache write failed', { error }))
 
-    const { catalogue, author } = await catalogueWhatOpensNext(result, language, true)
-    return { result, cacheHit: false, usage: { vision, enrichment, catalogue, author } }
+    // The saga's page and the author's wait for their first opening: the review
+    // shows neither, and a reader who never taps them never pays for them.
+    return { result, cacheHit: false, usage: { vision, enrichment } }
   }
 
   /** A book named rather than photographed: the reader typed a title, and the
    *  grounded step does the rest, exactly as it does after a cover was read.
    *  Never cached — a typed string has no image to hash and is rarely typed
    *  twice — and always metered as a real scan, since it always calls the model.
-   *
-   *  `authorPage: false` leaves the author's page to its first opening, for a
-   *  lookup the reader did not ask for: a Découvrir preview only shows a book. */
+   *  The saga's page and the author's wait for their first opening, as a
+   *  cover's do. */
   export const lookUpTitle = async (
     title: BookTitleValue,
     language: ScanLanguage,
-    { authorPage = true }: { authorPage?: boolean } = {},
   ): Promise<{ result: ScanResult; usage: ScanUsage }> => {
     if (import.meta.dev && config().scanStub) return { result: STUBBED_SCAN, usage: {} }
 
@@ -226,8 +221,7 @@ export namespace ScanCommand {
       usage: enrichment,
     } = await enrich(named, language, 'typed')
     const result = { ...enriched, coverUrl: await coverOf(enriched.isbn13, regularEdition) }
-    const { catalogue, author } = await catalogueWhatOpensNext(result, language, authorPage)
-    return { result, usage: { enrichment, catalogue, author } }
+    return { result, usage: { enrichment } }
   }
 
   /** A book already named — its title, author, format and edition language
@@ -587,74 +581,8 @@ export namespace ScanCommand {
     return isbn13 ? await publishedCoverOf(isbn13) : undefined
   }
 
-  /** What the reader is likely to open next, built while they review the book
-   *  rather than when they tap it: the saga's page and the author's, both
-   *  shared, both paid once for everyone. The two calls run side by side, so
-   *  the author costs the scan no more time than the saga already did.
-   *
-   *  Only a scan of one book asks: an Audible import or a shelf photo names many
-   *  books at once, and their sagas and authors are built when somebody opens
-   *  them. */
-  const catalogueWhatOpensNext = async (
-    result: ScanResult,
-    language: ScanLanguage,
-    authorPage: boolean,
-  ) => {
-    const [catalogue, author] = await Promise.all([
-      catalogueSeriesIfNeeded(result, language),
-      authorPage ? catalogueAuthorIfNeeded(result, language) : undefined,
-    ])
-    return { catalogue, author }
-  }
-
-  /** The first author's page, when nobody has opened it yet. A co-author's
-   *  waits for its first opening: one grounded call per scan is the budget. */
-  const catalogueAuthorIfNeeded = async (result: ScanResult, language: ScanLanguage) => {
-    const name = result.authors[0]
-    if (!name) return undefined
-
-    const key = authorKeyOf(name)
-    if (await AuthorQuery.byKey(key)) return undefined
-    // The model already failed on this author: the reader's refresh asks again.
-    if (await AuthorQuery.lastMiss(key)) return undefined
-
-    const { usage } = await AuthorCommand.catalogueFromWeb(key, name, language, result.language)
-    return usage
-  }
-
-  /** Step 3, and only when it buys something: a standalone book or a saga
-   *  already catalogued in this edition skips it entirely. The catalogue is
-   *  shared, so this is paid once for every reader of that saga in that
-   *  language, ever. */
-  const catalogueSeriesIfNeeded = async (result: ScanResult, language: ScanLanguage) => {
-    const series = result.series
-    if (!series || result.authors.length === 0) return undefined
-
-    // A cover that does not say its language is presumed in the reader's, as
-    // the app presumes it when the book is added: that is the edition whose
-    // catalogue the reader opens next.
-    const edition = result.language ?? language
-    if (await SeriesCommand.isCatalogued({ id: series.id, language: edition })) return undefined
-    // The same saga under its author's names in the other order: the book
-    // joins it when it is added (`filedAfterCatalogues`), so it is not paid for
-    // twice.
-    const reversed = keyWithAuthorReversed(series.id)
-    if (reversed && (await SeriesCommand.isCatalogued({ id: reversed, language: edition })))
-      return undefined
-
-    const { usage } = await catalogueSeries(
-      series.id,
-      series.name,
-      result.authors[0],
-      language,
-      edition,
-    )
-    return usage
-  }
-
   /** The catalogue call on its own, for a saga named but never described — or
-   *  described once and asked again. The scan runs it as its third step; the
-   *  series screen runs it for a saga an Audible import named, since an import
+   *  described once and asked again. The series screen runs it for a saga an Audible import named, since an import
    *  describes nothing, and again when the reader asks for a fresh catalogue.
    *
    *  `editionLanguage` is the edition on the shelf, whose catalogue this is:

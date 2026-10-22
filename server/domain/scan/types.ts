@@ -144,9 +144,6 @@ export type AiStepUsage = {
 export type ScanUsage = {
   vision?: AiStepUsage
   enrichment?: AiStepUsage
-  catalogue?: AiStepUsage
-  /** The author's page, built alongside the saga's when nobody had opened it. */
-  author?: AiStepUsage
 }
 
 /** Where a book sits in the reader's photo, each side a fraction of the photo:

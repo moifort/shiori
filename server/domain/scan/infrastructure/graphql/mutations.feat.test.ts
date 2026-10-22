@@ -17,13 +17,6 @@ let prompts: string[] = []
 mock.module('~/domain/scan/gemini', () => ({
   generate: async ({ step, parts }: { step: string; parts: { text?: string }[] }) => {
     prompts.push(parts.map((part) => part.text ?? '').join(''))
-    // The author's page a described book builds is covered by the scan's own
-    // tests: here it finds nothing, and stays out of the queue.
-    if (step === 'author')
-      return {
-        value: { series: [], books: [] },
-        usage: { promptTokens: 7, outputTokens: 3, thinkingTokens: 0, searches: 1 },
-      }
     const value = answers.shift()
     if (value === undefined) throw new Error(`no queued answer for step "${step}"`)
     if (value instanceof Error) throw value

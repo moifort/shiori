@@ -61,8 +61,8 @@ builder.mutationField('scanTitle', (t) =>
       'The title can be approximate: the model looks for the most likely book and ' +
       'answers with its exact title. Nothing is saved; the reader corrects the ' +
       'proposal and `addBook` persists it.\n\n' +
-      'Two model calls at most — the web-grounded enrichment, and a series ' +
-      'catalogue only when the saga is not already known. Never cached, and always ' +
+      'One model call, the web-grounded enrichment: the saga and the author are ' +
+      'catalogued when their pages are first opened. Never cached, and always ' +
       'spends one scan of the allowance. Fails with `QUOTA_EXHAUSTED` once nothing ' +
       'is left, or `SCAN_FAILED` ' +
       '(`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.',
@@ -119,8 +119,9 @@ builder.mutationField('scanBook', (t) =>
       'Nothing is saved: the answer is a proposal. The app shows it, the reader ' +
       'corrects what the model got wrong, and `addBook` persists the result. That ' +
       'review step is the safety net against a misread cover.\n\n' +
-      'Three model calls at most — the cover, a web-grounded enrichment, and a ' +
-      'series catalogue only when the saga is not already known. Results are ' +
+      'Two model calls — the cover and a web-grounded enrichment. The saga and the ' +
+      'author are catalogued when their pages are first opened, as after an import ' +
+      'or a shelf photo. Results are ' +
       'cached by SHA-256 and language, so scanning the same cover twice calls ' +
       'nothing.\n\n' +
       'Spends one scan of the allowance (see the `quota` query): the month first, ' +

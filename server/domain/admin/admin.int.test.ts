@@ -109,16 +109,14 @@ describe('recording a scan s AI usage', () => {
     })
   })
 
-  test('the saga catalogue is counted on its own, since it rarely runs', async () => {
+  // A saga's page and an author's are built on their first opening, never by a
+  // scan: they count on the catalogue line without counting a scan.
+  test('a catalogue is counted on its own, never as a scan', async () => {
     await scanned({ vision: step(2600, 250, 1500), enrichment: step(5000, 200, 1400) })
-    await scanned({
-      vision: step(2600, 250, 1500),
-      enrichment: step(5000, 200, 1400),
-      catalogue: step(3000, 400, 2000),
-    })
+    await AdminCommand.recordCatalogueUsage(step(3000, 400, 2000))
 
     expect(fake.snapshot('ai-usage').get(month)).toMatchObject({
-      scans: 2,
+      scans: 1,
       catalogue: { promptTokens: 3000, outputTokens: 400, thinkingTokens: 2000 },
     })
   })
@@ -136,7 +134,8 @@ describe('recording a scan s AI usage', () => {
 
   test('the searches of the grounded steps accumulate like the tokens do', async () => {
     await scanned({ vision: step(2600, 250, 1500), enrichment: step(5000, 200, 1400, 2) })
-    await scanned({ enrichment: step(5000, 200, 1400, 1), catalogue: step(3000, 400, 2000, 3) })
+    await scanned({ enrichment: step(5000, 200, 1400, 1) })
+    await AdminCommand.recordCatalogueUsage(step(3000, 400, 2000, 3))
 
     expect(fake.snapshot('ai-usage').get(month)).toMatchObject({
       vision: { searches: 0 },

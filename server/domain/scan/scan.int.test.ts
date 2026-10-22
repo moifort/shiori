@@ -139,8 +139,8 @@ beforeEach(() => {
 })
 
 describe('scanning a cover', () => {
-  test('reads it, enriches it, and catalogues its saga', async () => {
-    answers = [aCover, anEnrichment, aCatalogue]
+  test('reads it and enriches it', async () => {
+    answers = [aCover, anEnrichment]
 
     const { result, cacheHit } = await ScanCommand.scanWithCache(image, 'fr')
 
@@ -148,7 +148,26 @@ describe('scanning a cover', () => {
     expect(String(result.title)).toBe('Le Nom du vent')
     expect(String(result.isbn13)).toBe('9782352943556')
     expect(String(result.series?.name)).toBe('Chronique du tueur de roi')
-    expect(calls).toEqual(['vision', 'enrichment', 'catalogue'])
+    expect(calls).toEqual(['vision', 'enrichment'])
+  })
+
+  // The review shows neither page, and a reader who never opens them never
+  // pays for them: both are built on their first opening, as after an import
+  // or a shelf photo. The 2026-10-22 scan waited 19 s on an author's page.
+  test("leaves the saga's page and the author's to their first opening", async () => {
+    answers = [aCover, anEnrichment]
+
+    const { usage } = await ScanCommand.scanWithCache(image, 'fr')
+
+    expect(authorCalls).toHaveLength(0)
+    expect(Object.keys(usage)).toEqual(['vision', 'enrichment'])
+    expect(
+      await SeriesQuery.byId({
+        id: seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book'),
+        language: 'fr',
+      }),
+    ).toBeNull()
+    expect(await AuthorQuery.byKey(authorKeyOf('Patrick Rothfuss'))).toBeNull()
   })
 
   // A photo of a table is an ordinary thing for a camera to capture. It must come
@@ -168,7 +187,7 @@ describe('scanning a cover', () => {
     answers = [{ recognized: false, title: '', authors: [] }]
     await ScanCommand.scanWithCache(image, 'fr')
 
-    answers = [aCover, anEnrichment, aCatalogue]
+    answers = [aCover, anEnrichment]
     const { cacheHit } = await ScanCommand.scanWithCache(image, 'fr')
 
     expect(cacheHit).toBe(false)
@@ -176,22 +195,17 @@ describe('scanning a cover', () => {
 })
 
 describe('looking a title up', () => {
-  // A typed title skips the cover: one grounded call finds the book, the
-  // catalogue follows when the saga is new, and nothing is cached.
-  test('enriches the title and catalogues its saga without reading a cover', async () => {
-    answers = [anEnrichment, aCatalogue]
+  // A typed title skips the cover: one grounded call finds the book, and its
+  // saga and author wait for their first opening, as a cover's do.
+  test('enriches the title without reading a cover', async () => {
+    answers = [anEnrichment]
 
     const { result } = await ScanCommand.lookUpTitle(BookTitle('le nom du vent'), 'fr')
 
     expect(String(result.title)).toBe('Le Nom du vent')
     expect(String(result.series?.name)).toBe('Chronique du tueur de roi')
-    expect(calls).toEqual(['enrichment', 'catalogue'])
-    expect(
-      await SeriesQuery.byId({
-        id: seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book'),
-        language: 'fr',
-      }),
-    ).not.toBeNull()
+    expect(calls).toEqual(['enrichment'])
+    expect(authorCalls).toHaveLength(0)
   })
 
   // A picked candidate is asked as "title — author"; echoed back whole, the
@@ -709,11 +723,63 @@ describe('surviving what the model invents', () => {
     expect(result.pageCount).toBeUndefined()
     expect(result.firstPublishedIn).toBeUndefined()
   })
+})
+
+describe('cataloguing a saga', () => {
+  const kingkiller = seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book')
+  const catalogued = (language: 'fr' | 'en' = 'fr', id = kingkiller) =>
+    ScanCommand.catalogueSeries(
+      id,
+      SeriesName('Chronique du tueur de roi'),
+      AuthorName('Patrick Rothfuss'),
+      'fr',
+      language,
+    )
+
+  // The defect: a French edition scanned from a French app came back with the
+  // English titles of its sequels. The edition held says which titles the
+  // reader will look for, and the prompt names it.
+  test('asks for the volume titles of the edition held', async () => {
+    answers = [aCatalogue]
+
+    await catalogued('en')
+
+    expect(prompts.catalogue).toContain('Édition : en anglais.')
+    expect(prompts.catalogue).toContain('doivent être en français')
+  })
+
+  // A recording trails its book: the saga heard is catalogued from what Audible
+  // lists, and a volume out in print only stays out of it.
+  test('catalogues the saga heard from its recordings', async () => {
+    answers = [aCatalogue]
+    const id = seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'audiobook')
+
+    await catalogued('fr', id)
+
+    expect(prompts.catalogue).toContain('ENREGISTRÉS EN LIVRE AUDIO en français')
+    expect(prompts.catalogue).toContain('audible.fr')
+    expect(await SeriesQuery.byId({ id, language: 'fr' })).not.toBeNull()
+  })
+
+  // Each edition lists its own volumes: a saga catalogued in French says
+  // nothing of what is out in English.
+  test('keeps each edition its own catalogue', async () => {
+    answers = [aCatalogue, { ...aCatalogue, name: 'The Kingkiller Chronicle' }]
+
+    await catalogued('fr')
+    await catalogued('en')
+
+    expect(await SeriesQuery.byId({ id: kingkiller, language: 'en' })).toMatchObject({
+      name: 'The Kingkiller Chronicle',
+      language: 'en',
+    })
+    expect(await SeriesQuery.byId({ id: kingkiller, language: 'fr' })).toMatchObject({
+      language: 'fr',
+    })
+  })
 
   test('keeps the catalogue when one volume in it is malformed', async () => {
     answers = [
-      aCover,
-      anEnrichment,
       {
         ...aCatalogue,
         volumes: [
@@ -723,202 +789,27 @@ describe('surviving what the model invents', () => {
       },
     ]
 
-    await ScanCommand.scanWithCache(image, 'fr')
+    await catalogued()
 
-    const series = await SeriesQuery.byId({
-      id: seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book'),
-      language: 'fr',
-    })
-    expect(series?.volumes).toHaveLength(3)
-  })
-})
-
-describe('cataloguing a saga', () => {
-  // The defect: a French edition scanned from a French app came back with the
-  // English titles of its sequels. The edition read off the cover says which
-  // titles the reader will look for, and the prompt names it.
-  test('asks for the volume titles of the edition read off the cover', async () => {
-    answers = [{ ...aCover, language: 'en' }, anEnrichment, aCatalogue]
-
-    await ScanCommand.scanWithCache(image, 'fr')
-
-    expect(prompts.catalogue).toContain('Édition : en anglais.')
-    expect(prompts.catalogue).toContain('doivent être en français')
+    expect((await SeriesQuery.byId({ id: kingkiller, language: 'fr' }))?.volumes).toHaveLength(3)
   })
 
-  test('falls back to the reader language when the cover does not settle the edition', async () => {
-    answers = [aCover, anEnrichment, aCatalogue]
+  // A failed catalogue must not fail what asked for it: the saga is
+  // catalogued by the next opening that touches it.
+  test('answers nothing when the model call fails', async () => {
+    answers = [new Error('grounding is down')]
 
-    await ScanCommand.scanWithCache(image, 'fr')
-
-    expect(prompts.catalogue).toContain('Édition : en français.')
-  })
-
-  // A recording trails its book: the saga heard is catalogued from what Audible
-  // lists, and a volume out in print only stays out of it.
-  test('catalogues the saga heard from the recordings of a cover read as an audiobook', async () => {
-    answers = [{ ...aCover, format: 'audiobook' }, anEnrichment, aCatalogue]
-
-    const { result } = await ScanCommand.scanWithCache(image, 'fr')
-
-    expect(String(result.series?.id)).toBe('chronique-du-tueur-de-roi--patrick-rothfuss--audio')
-    expect(prompts.catalogue).toContain('ENREGISTRÉS EN LIVRE AUDIO en français')
-    expect(prompts.catalogue).toContain('audible.fr')
-    expect(
-      await SeriesQuery.byId({
-        id: seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'audiobook'),
-        language: 'fr',
-      }),
-    ).not.toBeNull()
-  })
-
-  test('skips the third call when the saga is already catalogued', async () => {
-    answers = [aCover, anEnrichment, aCatalogue]
-    await ScanCommand.scanWithCache(image, 'fr')
-
-    const other = Buffer.from('another cover')
-    answers = [aCover, { ...anEnrichment, volumeNumber: 2 }]
-    calls.length = 0
-    await ScanCommand.scanWithCache(other, 'fr')
-
-    expect(calls).toEqual(['vision', 'enrichment'])
-  })
-
-  // "Rothfuss Patrick" and "Patrick Rothfuss" are one author: the saga
-  // catalogued under one order is not paid for again under the other.
-  test('skips it when the saga is catalogued under its author’s names in the other order', async () => {
-    resetFakeFirestore().seed('series', 'chronique-du-tueur-de-roi--rothfuss-patrick~fr', {
-      id: 'chronique-du-tueur-de-roi--rothfuss-patrick',
-      language: 'fr',
-      name: 'Chronique du tueur de roi',
-      author: 'Rothfuss Patrick',
-      volumes: [],
-      catalogedAt: new Date(),
-    })
-    answers = [aCover, anEnrichment, aCatalogue]
-
-    await ScanCommand.scanWithCache(image, 'fr')
-
-    expect(calls).toEqual(['vision', 'enrichment'])
-  })
-
-  // Each edition lists its own volumes: a saga catalogued in French says
-  // nothing of what is out in English.
-  test('catalogues the saga again for a cover in another language', async () => {
-    answers = [{ ...aCover, language: 'fr' }, anEnrichment, aCatalogue]
-    await ScanCommand.scanWithCache(image, 'fr')
-
-    answers = [
-      { ...aCover, title: 'The Name of the Wind', language: 'en' },
-      anEnrichment,
-      { ...aCatalogue, name: 'The Kingkiller Chronicle' },
-    ]
-    calls.length = 0
-    await ScanCommand.scanWithCache(Buffer.from('the english cover'), 'fr')
-
-    expect(calls).toEqual(['vision', 'enrichment', 'catalogue'])
-    const id = seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book')
-    expect(await SeriesQuery.byId({ id, language: 'en' })).toMatchObject({
-      name: 'The Kingkiller Chronicle',
-      language: 'en',
-    })
-    expect(await SeriesQuery.byId({ id, language: 'fr' })).toMatchObject({ language: 'fr' })
-  })
-
-  test('skips it entirely for a standalone book', async () => {
-    answers = [aCover, { ...anEnrichment, seriesName: null, volumeNumber: null, volumeKind: null }]
-
-    const { result } = await ScanCommand.scanWithCache(image, 'fr')
-
-    expect(result.series).toBeUndefined()
-    expect(calls).toEqual(['vision', 'enrichment'])
-  })
-
-  // The reader still gets their book. The saga is catalogued by the next scan
-  // that touches it, which is a far better outcome than failing the scan.
-  test('still returns the book when the catalogue call fails', async () => {
-    answers = [aCover, anEnrichment, new Error('grounding is down')]
-
-    const { result } = await ScanCommand.scanWithCache(image, 'fr')
-
-    expect(String(result.title)).toBe('Le Nom du vent')
-    expect(String(result.series?.name)).toBe('Chronique du tueur de roi')
+    expect(await catalogued()).toEqual({})
+    expect(await SeriesQuery.byId({ id: kingkiller, language: 'fr' })).toBeNull()
   })
 
   // Storing an empty catalogue would mark the saga as known and stop any later
-  // scan from trying again with better grounding.
+  // opening from trying again with better grounding.
   test('does not store an empty catalogue', async () => {
-    answers = [aCover, anEnrichment, { ...aCatalogue, volumes: [] }]
+    answers = [{ ...aCatalogue, volumes: [] }]
 
-    await ScanCommand.scanWithCache(image, 'fr')
+    await catalogued()
 
-    const series = await SeriesQuery.byId({
-      id: seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book'),
-      language: 'fr',
-    })
-    expect(series).toBeNull()
-  })
-})
-
-describe("cataloguing the author's page", () => {
-  const rothfuss = authorKeyOf('Patrick Rothfuss')
-
-  // The page the reader is likely to open next is built while they review the
-  // book, so tapping the author does not wait on the model.
-  test('builds it for an author nobody has opened yet, in the edition read off the cover', async () => {
-    answers = [{ ...aCover, language: 'en' }, anEnrichment, aCatalogue]
-
-    const { usage } = await ScanCommand.scanWithCache(image, 'fr')
-
-    expect(authorCalls).toHaveLength(1)
-    expect(prompts.author).toContain('Patrick Rothfuss')
-    expect(prompts.author).toContain('Édition : en anglais.')
-    expect((await AuthorQuery.byKey(rothfuss))?.biography).toBeDefined()
-    expect(usage.author?.searches).toBe(1)
-  })
-
-  test('builds it for a typed title too', async () => {
-    answers = [anEnrichment, aCatalogue]
-
-    await ScanCommand.lookUpTitle(BookTitle('le nom du vent'), 'fr')
-
-    expect(await AuthorQuery.byKey(rothfuss)).not.toBeNull()
-  })
-
-  test('skips the call once the author is catalogued', async () => {
-    answers = [aCover, anEnrichment, aCatalogue]
-    await ScanCommand.scanWithCache(image, 'fr')
-
-    answers = [aCover, { ...anEnrichment, volumeNumber: 2 }]
-    authorCalls.length = 0
-    const { usage } = await ScanCommand.scanWithCache(Buffer.from('another cover'), 'fr')
-
-    expect(authorCalls).toHaveLength(0)
-    expect(usage.author).toBeUndefined()
-  })
-
-  // A standalone book has no saga page, but its author still has one.
-  test('builds it for a book outside any saga', async () => {
-    answers = [aCover, { ...anEnrichment, seriesName: null, volumeNumber: null, volumeKind: null }]
-
-    await ScanCommand.scanWithCache(image, 'fr')
-
-    expect(authorCalls).toHaveLength(1)
-  })
-
-  test('still returns the book, and its saga, when the author call fails', async () => {
-    answers = [aCover, anEnrichment, aCatalogue]
-    authorAnswer = new Error('grounding is down')
-
-    const { result } = await ScanCommand.scanWithCache(image, 'fr')
-
-    expect(String(result.title)).toBe('Le Nom du vent')
-    expect(await AuthorQuery.byKey(rothfuss)).toBeNull()
-    expect(
-      await SeriesQuery.byId({
-        id: seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book'),
-        language: 'fr',
-      }),
-    ).not.toBeNull()
+    expect(await SeriesQuery.byId({ id: kingkiller, language: 'fr' })).toBeNull()
   })
 })
