@@ -16,7 +16,7 @@ import SwiftUI
 struct BookEditSheet: View {
     let book: Book
     /// Answers nil once saved, or the message to show when the save failed.
-    let onSave: (BookCorrection, Int?) async -> String?
+    let onSave: (BookCorrection, Double?) async -> String?
     /// The reader's subgenres and saga names, offered under the fields; nil
     /// when the read failed, since the proposals are a convenience.
     let loadVocabulary: () async -> BookVocabulary?
@@ -55,7 +55,7 @@ struct BookEditSheet: View {
     init(
         book: Book,
         loadVocabulary: @escaping () async -> BookVocabulary?,
-        onSave: @escaping (BookCorrection, Int?) async -> String?
+        onSave: @escaping (BookCorrection, Double?) async -> String?
     ) {
         self.book = book
         self.onSave = onSave
