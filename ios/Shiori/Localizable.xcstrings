@@ -3013,22 +3013,6 @@
         }
       }
     },
-    "Cette analyse n'est pas décomptée de vos scans." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This doesn't count towards your scans."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cette analyse n'est pas décomptée de vos scans."
-          }
-        }
-      }
-    },
     "Cette version de Shiori n'est plus compatible avec le serveur. La dernière version est disponible sur l'App Store." : {
       "localizations" : {
         "en" : {
@@ -5449,22 +5433,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Identifiant"
-          }
-        }
-      }
-    },
-    "Identification du livre…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Identifying the book…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Identification du livre…"
           }
         }
       }
@@ -8945,22 +8913,6 @@
         }
       }
     },
-    "Recherche de la série…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Looking up the series…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recherche de la série…"
-          }
-        }
-      }
-    },
     "Recherche de vos découvertes…" : {
       "localizations" : {
         "en" : {
@@ -8989,22 +8941,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Recherche des couvertures…"
-          }
-        }
-      }
-    },
-    "Recherche des informations…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Looking up the details…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recherche des informations…"
           }
         }
       }
