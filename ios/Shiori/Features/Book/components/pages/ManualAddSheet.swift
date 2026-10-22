@@ -61,7 +61,7 @@ struct ManualAddSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     ToolbarIconButton(title: "Annuler", systemImage: "xmark", role: .cancel) { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .confirmingAction) {
                     ToolbarIconButton(title: "Ajouter", systemImage: "checkmark") { Task { await add() } }
                         .disabled(trimmedTitle.isEmpty || isSaving)
                         .accessibilityIdentifier("manual-save")

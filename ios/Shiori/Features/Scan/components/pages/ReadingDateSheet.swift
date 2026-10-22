@@ -31,7 +31,7 @@ struct ReadingDateSheet: View {
                     ToolbarItem(placement: .cancellationAction) {
                         ToolbarIconButton(title: "Annuler", systemImage: "xmark", role: .cancel) { dismiss() }
                     }
-                    ToolbarItem(placement: .confirmationAction) {
+                    ToolbarItem(placement: .confirmingAction) {
                         ToolbarIconButton(title: "Enregistrer", systemImage: "checkmark") {
                             onPick(date)
                             dismiss()

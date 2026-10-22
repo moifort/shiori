@@ -110,7 +110,7 @@ struct FieldEditSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     ToolbarIconButton(title: "Annuler", systemImage: "xmark", role: .cancel) { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .confirmingAction) {
                     AsyncToolbarButton(title: "Enregistrer", systemImage: "checkmark") { await save() }
                         .disabled(correction.isEmpty || problem != nil)
                         .accessibilityIdentifier("field-edit-save")

@@ -41,7 +41,7 @@ struct CoverPickerSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     ToolbarIconButton(title: "Annuler", systemImage: "xmark", role: .cancel) { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .confirmingAction) {
                     AsyncToolbarButton(title: "Choisir cette couverture", systemImage: "checkmark") {
                         await choose()
                     }

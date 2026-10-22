@@ -37,10 +37,10 @@ struct VolumeCountSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuler") { dismiss() }
+                    ToolbarIconButton(title: "Annuler", systemImage: "xmark", role: .cancel) { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Enregistrer") { Task { await save() } }
+                ToolbarItem(placement: .confirmingAction) {
+                    ToolbarIconButton(title: "Enregistrer", systemImage: "checkmark") { Task { await save() } }
                         .disabled(isSaving || !Self.range.contains(count))
                         .accessibilityIdentifier("volume-count-save")
                 }

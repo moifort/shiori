@@ -60,7 +60,7 @@ struct MergeSeriesSheet: View {
             .searchable(text: $query, prompt: "Rechercher une série")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuler") { dismiss() }
+                    ToolbarIconButton(title: "Annuler", systemImage: "xmark", role: .cancel) { dismiss() }
                 }
             }
             .confirmationDialog(

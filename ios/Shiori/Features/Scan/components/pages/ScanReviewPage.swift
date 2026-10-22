@@ -336,7 +336,7 @@ struct ScanReviewPage: View {
                     action: { Task { await onAction(.retake) } }
                 )
             }
-            ToolbarItem(placement: .confirmationAction) {
+            ToolbarItem(placement: .confirmingAction) {
                 addMenu
             }
         }

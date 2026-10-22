@@ -23,7 +23,7 @@ struct ToolbarIconButton: View {
                 ToolbarItem(placement: .cancellationAction) {
                     ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) {}
                 }
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .confirmingAction) {
                     ToolbarIconButton(title: "Enregistrer", systemImage: "checkmark") {}
                 }
             }

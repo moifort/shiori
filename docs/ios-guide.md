@@ -339,6 +339,9 @@ Previews check how a view looks; unit tests check what the app decides. They do 
   matters in one state is a row inside the section, shown only in that state.
 - **Toolbar actions are icon-only**, through `ToolbarIconButton` and `AsyncToolbarButton`;
   the title is kept for VoiceOver. Cancel `xmark` on the left, confirm `checkmark` on the right.
+  A text-only item never moves into the iPhone Duo's vertical bar. Close or cancel is
+  `.cancellationAction`, confirm is `.confirmingAction` (pinned trailing from iOS 27, so it
+  heads the Duo's vertical bar and never overflows).
 - **A tappable row answers on its whole width**: a `.plain` `Button` whose label carries
   `.contentShape(.rect)`, set in the row view so every caller inherits it. Never
   `onTapGesture` in place of a button.

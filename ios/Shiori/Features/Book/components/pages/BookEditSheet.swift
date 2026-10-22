@@ -234,7 +234,7 @@ struct BookEditSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     ToolbarIconButton(title: "Annuler", systemImage: "xmark", role: .cancel) { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .confirmingAction) {
                     ToolbarIconButton(title: "Enregistrer", systemImage: "checkmark") { Task { await save() } }
                         .disabled(!isValid || isSaving)
                         .accessibilityIdentifier("edit-save")

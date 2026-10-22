@@ -39,7 +39,7 @@ struct FeedbackSheet: View {
                     ) { dismiss() }
                 }
                 if !sent {
-                    ToolbarItem(placement: .confirmationAction) {
+                    ToolbarItem(placement: .confirmingAction) {
                         ToolbarIconButton(title: "Envoyer", systemImage: "paperplane.fill") { send() }
                             .disabled(trimmedMessage.isEmpty)
                             .accessibilityIdentifier("feedback-send")

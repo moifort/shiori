@@ -76,7 +76,7 @@ struct SeriesJoinSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     ToolbarIconButton(title: "Annuler", systemImage: "xmark", role: .cancel) { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .confirmingAction) {
                     AsyncToolbarButton(title: "Enregistrer", systemImage: "checkmark") { await save() }
                         .disabled(trimmed(name).isEmpty || problem != nil || isSaving)
                         .accessibilityIdentifier("series-join-save")

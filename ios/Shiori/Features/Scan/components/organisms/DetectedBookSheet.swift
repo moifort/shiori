@@ -47,10 +47,10 @@ struct DetectedBookSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuler") { dismiss() }
+                    ToolbarIconButton(title: "Annuler", systemImage: "xmark", role: .cancel) { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Valider") {
+                ToolbarItem(placement: .confirmingAction) {
+                    ToolbarIconButton(title: "Valider", systemImage: "checkmark") {
                         let names = authors.split(separator: ",")
                             .map { $0.trimmingCharacters(in: .whitespaces) }
                             .filter { !$0.isEmpty }

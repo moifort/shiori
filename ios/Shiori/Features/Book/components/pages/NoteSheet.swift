@@ -63,7 +63,7 @@ struct NoteSheet: View {
                         .accessibilityIdentifier("note-remove")
                     }
                 }
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .confirmingAction) {
                     AsyncToolbarButton(title: "Enregistrer", systemImage: "checkmark") {
                         await save(edited)
                     }

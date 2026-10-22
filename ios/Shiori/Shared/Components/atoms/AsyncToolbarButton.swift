@@ -32,7 +32,7 @@ struct AsyncToolbarButton: View {
     NavigationStack {
         Text("Contenu")
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .confirmingAction) {
                     AsyncToolbarButton(title: "Enregistrer", systemImage: "checkmark") {}
                 }
             }
@@ -43,7 +43,7 @@ struct AsyncToolbarButton: View {
     NavigationStack {
         Text("Contenu")
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .confirmingAction) {
                     // A long action keeps the spinner on screen in the canvas.
                     AsyncToolbarButton(title: "Enregistrer", systemImage: "checkmark") {
                         try? await Task.sleep(for: .seconds(60))
