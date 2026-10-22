@@ -115,7 +115,7 @@ struct BookViewModelTests {
         let ratings = Calls()
         var client = BookClient.preview
         client.save = { _, _, rating in
-            ratings.record(rating.map { "\($0.map(String.init) ?? "nil")" } ?? "unchanged")
+            ratings.record(rating.map { $0?.starsText ?? "nil" } ?? "unchanged")
             return .preview
         }
         let viewModel = BookViewModel(bookId: "preview", client: client)

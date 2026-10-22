@@ -9,7 +9,7 @@ struct SuggestionReference: Identifiable, Hashable, Sendable, Codable {
     /// The saga's name when a saga was cited, else the book's title.
     let title: String
     let favorite: Bool
-    let rating: Int?
+    let rating: Double?
     let viaSeries: Bool
     var coverURL: URL?
 

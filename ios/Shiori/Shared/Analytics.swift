@@ -29,7 +29,7 @@ enum AnalyticsEvent {
     /// once per install.
     case libraryStocked(books: Int)
     /// A book was rated — the signal the reading suggestions will be built on.
-    case bookRated(stars: Int)
+    case bookRated(stars: Double)
     /// A saga was catalogued for the first time, which is what a scan pays for
     /// on behalf of every later reader of that saga.
     case seriesCatalogued

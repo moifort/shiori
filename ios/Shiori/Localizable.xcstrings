@@ -257,6 +257,22 @@
         }
       }
     },
+    "%@ étoiles" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ stars"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ étoiles"
+          }
+        }
+      }
+    },
     "%@, %@" : {
       "localizations" : {
         "en" : {
@@ -7409,18 +7425,18 @@
         }
       }
     },
-    "Note : %lld sur %lld" : {
+    "Note : %@ sur %lld" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rating: %1$lld out of %2$lld"
+            "value" : "Rating: %1$@ out of %2$lld"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Note : %1$lld sur %2$lld"
+            "value" : "Note : %1$@ sur %2$lld"
           }
         }
       }
@@ -7441,18 +7457,18 @@
         }
       }
     },
-    "Note de la série : %lld sur %lld" : {
+    "Note de la série : %@ sur %lld" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Series rating: %1$lld out of %2$lld"
+            "value" : "Series rating: %1$@ out of %2$lld"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Note de la série : %1$lld sur %2$lld"
+            "value" : "Note de la série : %1$@ sur %2$lld"
           }
         }
       }

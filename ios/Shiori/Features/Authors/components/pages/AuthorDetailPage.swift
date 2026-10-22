@@ -126,7 +126,7 @@ struct AuthorDetailPage: View {
                 Label {
                     LabeledContent("Note moyenne") {
                         HStack(spacing: 6) {
-                            RatingStars(rating: Int(rating.rounded()), font: .subheadline)
+                            RatingStars(rating: (rating * 2).rounded() / 2, font: .subheadline)
                             Text(rating, format: .number.precision(.fractionLength(1)))
                                 .foregroundStyle(.secondary)
                         }

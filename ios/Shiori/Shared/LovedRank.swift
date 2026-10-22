@@ -1,15 +1,15 @@
 import Foundation
 
 /// Where a row sits in a favourites view, as the server ranks it: the hearts
-/// first, then five stars down to one. A saga's full marks lent to a volume
-/// left unrated are drawn as the saga's heart, so they head the list with the
-/// hearts rather than under five stars.
+/// first, then five stars down to one, half a star at a time. A saga's full
+/// marks lent to a volume left unrated are drawn as the saga's heart, so they
+/// head the list with the hearts rather than under five stars.
 enum LovedRank: Hashable {
     case hearts
-    case stars(Int)
+    case stars(Double)
 
     /// Nil for what the reader has not judged, which the favourites leave out.
-    init?(favorite: Bool, rating: Int?, lentRating: Int? = nil) {
+    init?(favorite: Bool, rating: Double?, lentRating: Double? = nil) {
         if favorite || (rating == nil && lentRating == 5) {
             self = .hearts
         } else if let stars = rating ?? lentRating {
@@ -23,7 +23,7 @@ enum LovedRank: Hashable {
     var order: Int {
         switch self {
         case .hearts: 0
-        case .stars(let count): 6 - count
+        case .stars(let count): Int((6 - count) * 2)
         }
     }
 
@@ -31,7 +31,8 @@ enum LovedRank: Hashable {
         switch self {
         case .hearts: String(localized: "Coups de cœur")
         case .stars(1): String(localized: "1 étoile")
-        case .stars(let count): String(localized: "\(count) étoiles")
+        case .stars(let count) where count == count.rounded(): String(localized: "\(Int(count)) étoiles")
+        case .stars(let count): String(localized: "\(count.starsText) étoiles")
         }
     }
 }

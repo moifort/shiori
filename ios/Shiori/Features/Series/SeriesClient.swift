@@ -15,7 +15,7 @@ struct SeriesClient: Sendable {
     var releases: @Sendable (_ seriesId: String, BookLanguage) async throws -> SagaReleases
     /// Looks the saga up on the web in an edition nobody watched yet.
     var lookUpReleases: @Sendable (_ seriesId: String, BookLanguage) async throws -> SagaReleases
-    var rate: @Sendable (_ seriesId: String, _ stars: Int) async throws -> SeriesOpinion
+    var rate: @Sendable (_ seriesId: String, _ stars: Double) async throws -> SeriesOpinion
     var removeRating: @Sendable (_ seriesId: String) async throws -> SeriesOpinion
     var setFollowed: @Sendable (_ seriesId: String, Bool, BookLanguage?) async throws -> SeriesOpinion
     var setFavorite: @Sendable (_ seriesId: String, Bool) async throws -> SeriesOpinion

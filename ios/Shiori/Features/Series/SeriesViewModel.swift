@@ -171,7 +171,7 @@ final class SeriesViewModel {
     // that rather than guessing: a rating taken back may leave a heart behind.
 
     /// Zero stars takes the rating back.
-    func rate(_ stars: Int) async {
+    func rate(_ stars: Double) async {
         await changeOpinion { [client, seriesId] in
             stars == 0 ? try await client.removeRating(seriesId) : try await client.rate(seriesId, stars)
         }

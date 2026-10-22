@@ -104,7 +104,7 @@ struct FriendSaga: Identifiable, Codable, Sendable {
     /// given before the date was kept.
     var favoritedAt: Date?
     /// Their stars for the saga as a whole. Nil on a saga they did not rate.
-    var rating: Int?
+    var rating: Double?
     let genre: BookGenre?
     let subgenre: String?
     /// Its volumes on the shelf, in reading order, for a strip of covers:

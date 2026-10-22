@@ -249,7 +249,7 @@ enum SeriesAPI {
 
     /// Rate the saga itself. Leaves every volume rating alone — the two say
     /// different things about different objects.
-    static func rate(seriesId: String, stars: Int) async throws -> SeriesOpinion {
+    static func rate(seriesId: String, stars: Double) async throws -> SeriesOpinion {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
             concerning: .series(id: seriesId),

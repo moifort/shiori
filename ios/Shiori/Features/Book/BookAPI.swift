@@ -95,7 +95,7 @@ enum BookAPI {
     /// then the stars when they changed — `rating` nil takes them back. Answers
     /// with the book as the last write left it, or nil when there was nothing
     /// to send.
-    static func save(id: String, correction: BookCorrection, rating: Int??) async throws -> Book? {
+    static func save(id: String, correction: BookCorrection, rating: Double??) async throws -> Book? {
         let correct = !correction.isEmpty
         let rate = rating.flatMap { $0 }
         let unrate = rating.map { $0 == nil } ?? false
@@ -120,7 +120,7 @@ enum BookAPI {
         return saved?.asBook
     }
 
-    static func rate(id: String, stars: Int) async throws -> Book {
+    static func rate(id: String, stars: Double) async throws -> Book {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
             concerning: .book(id: id),
@@ -246,7 +246,7 @@ struct BookDraft {
     /// The stars and the heart given on the scan review, to a book read, 0
     /// for no rating. Not part of the new book's input: they are given once
     /// the book exists, as the book page gives them.
-    var rating = 0
+    var rating = 0.0
     var favorite = false
 
     var asInput: ShioriGraphQL.NewBookInput {

@@ -26,7 +26,7 @@ struct BookEditSheet: View {
     @State private var authors: String
     @State private var format: BookFormat
     @State private var media: [BookMedium]
-    @State private var rating: Int
+    @State private var rating: Double
     @State private var synopsis: String
     @State private var publisher: String
     @State private var year: String

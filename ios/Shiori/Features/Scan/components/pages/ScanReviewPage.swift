@@ -120,7 +120,7 @@ struct ScanReviewPage: View {
 
     /// The stars as the server will keep them: fewer than three cannot hold a
     /// heart, so they take it back.
-    private var rating: Binding<Int> {
+    private var rating: Binding<Double> {
         Binding(
             get: { draft.rating },
             set: { stars in

@@ -11,7 +11,7 @@ struct BookRow: View {
     let authorLine: String
     let cover: Book
     let status: ReadingStatus
-    let rating: Int?
+    let rating: Double?
     /// The stars are the saga's, lent to a volume the reader left unrated:
     /// drawn grey, so a judgement given is told from one lent.
     var ratingIsInherited: Bool = false
@@ -173,7 +173,7 @@ struct BookRow: View {
     /// The stars actually drawn. Stars lent by the saga only on a volume the
     /// reader has read: on one still on the pile, under way or dropped, they
     /// would pass for a verdict on a book not yet judged.
-    private var shownRating: Int? {
+    private var shownRating: Double? {
         ratingIsInherited && status != .read ? nil : rating
     }
 

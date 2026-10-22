@@ -73,7 +73,7 @@ final class BookViewModel {
         await mutate { [client, bookId] in try await client.setStatus(bookId, status) }
     }
 
-    func rate(_ stars: Int) async {
+    func rate(_ stars: Double) async {
         await mutate { [client, bookId] in try await client.rate(bookId, stars) }
     }
 
@@ -81,7 +81,7 @@ final class BookViewModel {
     /// moved. Two calls, because rating is its own mutation with its own rule —
     /// it marks the book read — and the record the second one returns carries
     /// both changes. Returns false when a call failed, so the form stays open.
-    func save(_ correction: BookCorrection, rating: Int?) async -> Bool {
+    func save(_ correction: BookCorrection, rating: Double?) async -> Bool {
         guard let book else { return false }
         isSaving = true
         defer { isSaving = false }

@@ -11,7 +11,7 @@ struct ScanClient: Sendable {
     var searchTitle: @Sendable (String) async throws -> [TitleCandidate]
     var add: @Sendable (BookDraft) async throws -> Book
     var update: @Sendable (_ id: String, BookCorrection) async throws -> Book
-    var rate: @Sendable (_ id: String, _ stars: Int) async throws -> Book
+    var rate: @Sendable (_ id: String, _ stars: Double) async throws -> Book
     var setFavorite: @Sendable (_ id: String, Bool) async throws -> Book
     /// The editions in the app's language a book in this language and format
     /// may be awaited in.

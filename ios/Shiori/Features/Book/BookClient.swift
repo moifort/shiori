@@ -7,9 +7,9 @@ struct BookClient: Sendable {
     var book: @Sendable (_ id: String) async throws -> Book?
     var add: @Sendable (BookDraft) async throws -> Book
     var setStatus: @Sendable (_ id: String, ReadingStatus) async throws -> Book
-    var rate: @Sendable (_ id: String, _ stars: Int) async throws -> Book
+    var rate: @Sendable (_ id: String, _ stars: Double) async throws -> Book
     /// The corrected facts and, when it moved, the rating, in one request.
-    var save: @Sendable (_ id: String, BookCorrection, _ rating: Int??) async throws -> Book?
+    var save: @Sendable (_ id: String, BookCorrection, _ rating: Double??) async throws -> Book?
     /// The covers the reader may pick, the one drawn now first.
     var coverChoices: @Sendable (_ id: String) async throws -> [CoverChoice]
     /// The cover picked: an image, or the scan photo when the URL is nil.

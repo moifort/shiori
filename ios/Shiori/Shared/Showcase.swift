@@ -102,7 +102,7 @@ enum Showcase {
         var announced: (number: Int, title: String?, inDays: Int)?
         /// The last volume out, that many days ago, when it is news.
         var outDaysAgo: Int?
-        var rating: Int?
+        var rating: Double?
         var favorite = false
         /// The cover slug of a volume, by number.
         let slug: String
@@ -305,7 +305,7 @@ enum Showcase {
         series: (name: String, volume: Int)? = nil,
         status: ReadingStatus,
         days: Double,
-        rating: Int? = nil,
+        rating: Double? = nil,
         favorite: Bool = false,
         note: String? = nil,
         synopsis: String? = nil,
@@ -964,7 +964,7 @@ enum Showcase {
             return GenreInsights.FormatShare(format: format, count: books.count, topGenre: top)
         }.sorted { $0.count > $1.count }
         // A taste: a genre, or one of its subgenres, and the stars its books got.
-        var groups: [String: (genre: BookGenre, subgenre: String?, ratings: [Int], count: Int)] = [:]
+        var groups: [String: (genre: BookGenre, subgenre: String?, ratings: [Double], count: Int)] = [:]
         for book in read {
             guard let genre = book.genre else { continue }
             for subgenre in [nil] + book.subgenres.prefix(1).map(Optional.some) {
@@ -1219,7 +1219,7 @@ enum Showcase {
     }
 
     private static func reference(
-        _ bookId: String, _ title: String, cover slug: String, rating: Int, favorite: Bool = false,
+        _ bookId: String, _ title: String, cover slug: String, rating: Double, favorite: Bool = false,
         series: String? = nil
     ) -> SuggestionReference {
         SuggestionReference(

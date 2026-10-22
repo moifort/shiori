@@ -84,7 +84,7 @@ struct SeriesViewModelTests {
             return SeriesOpinion(seriesId: id)
         }
         client.rate = { id, stars in
-            calls.record("rate \(stars)")
+            calls.record("rate \(stars.starsText)")
             return SeriesOpinion(seriesId: id, rating: stars)
         }
         let viewModel = model(client)

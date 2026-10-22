@@ -9,25 +9,26 @@ import SwiftUI
 /// Something already rated opens on its stars, and the prompt then corrects the
 /// rating rather than gives one: the warning has nothing left to warn about.
 ///
-/// A tap on a star is the answer: there is nothing else to fill in, so a
-/// separate confirm button would only be a second tap for the same decision.
+/// A tap on a star, or a finger lifted after sliding along the row, is the
+/// answer: there is nothing else to fill in, so a separate confirm button
+/// would only be a second tap for the same decision.
 /// Taking a rating back is its own button, offered only where the caller can
 /// honour it: a saga's rating can be withdrawn, a book's cannot.
 struct RatingPromptSheet: View {
     enum Subject { case book, series }
 
     var subject: Subject = .book
-    let current: Int?
+    let current: Double?
     var onRemove: (() -> Void)? = nil
-    let onRate: (Int) -> Void
+    let onRate: (Double) -> Void
     @Environment(\.dismiss) private var dismiss
-    @State private var rating: Int
+    @State private var rating: Double
 
     init(
         subject: Subject = .book,
-        current: Int? = nil,
+        current: Double? = nil,
         onRemove: (() -> Void)? = nil,
-        onRate: @escaping (Int) -> Void
+        onRate: @escaping (Double) -> Void
     ) {
         self.subject = subject
         self.current = current

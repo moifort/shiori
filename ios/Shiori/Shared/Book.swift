@@ -306,11 +306,11 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
     /// either may fail to load — both cases get the typographic placeholder.
     var coverURL: URL?
     var status: ReadingStatus
-    var rating: Int?
+    var rating: Double?
     /// The rating the reader gave the book's saga, lent to the volumes they left
     /// unrated. Kept apart from `rating` so the edit form still knows whether
     /// the book itself was rated.
-    var seriesRating: Int?
+    var seriesRating: Double?
     /// A book the reader keeps close, independent of the rating: a five-star
     /// novel one never wants to open again and a three-star one kept for what it
     /// meant are both real, and one field cannot say both.
@@ -334,7 +334,7 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
     /// The stars a row draws: the book's own rating, else its saga's. A saga
     /// rated as a whole rates each of its unrated volumes, and a rating given
     /// to the book itself always wins.
-    var shownRating: Int? { rating ?? seriesRating }
+    var shownRating: Double? { rating ?? seriesRating }
 
     /// The stars drawn are the saga's, not the book's own: drawn dimmer, so a
     /// judgement given is told from one lent.
@@ -569,7 +569,7 @@ struct BookSeries: Identifiable, Sendable {
 /// language is about editions on a shelf, and this is about the work.
 struct SeriesOpinion: Sendable, Equatable, Codable {
     let seriesId: String
-    var rating: Int?
+    var rating: Double?
     var favorite: Bool = false
     /// How many volumes the saga has by the reader's own count, for a saga
     /// nobody has catalogued. Nil until they say.

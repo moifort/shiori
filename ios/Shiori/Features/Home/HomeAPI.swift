@@ -31,7 +31,7 @@ enum HomeAPI {
                     isAudio: $0.audio,
                     readCount: $0.readCount,
                     totalCount: $0.totalCount,
-                    rating: $0.rating.map { Int($0.rounded()) },
+                    rating: $0.rating.map { ($0 * 2).rounded() / 2 },
                     favorite: $0.favorite
                 )
             },

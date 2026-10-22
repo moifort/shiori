@@ -41,8 +41,9 @@ struct Dashboard: Codable, Sendable {
         let readCount: Int
         let totalCount: Int
         /// The reader's rating of the saga, else the average of the volumes
-        /// they rated, rounded to the stars drawn. Nil when they rated neither.
-        var rating: Int?
+        /// they rated, rounded to the half star drawn. Nil when they rated
+        /// neither.
+        var rating: Double?
         /// A hearted saga, drawn as the heart, which is five stars.
         var favorite: Bool = false
     }

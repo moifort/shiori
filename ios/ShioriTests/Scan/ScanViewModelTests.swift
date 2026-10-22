@@ -64,7 +64,7 @@ struct ScanViewModelTests {
             return .preview
         }
         client.rate = { _, stars in
-            calls.record("rate \(stars)")
+            calls.record("rate \(stars.starsText)")
             return .preview
         }
         client.setFavorite = { _, _ in

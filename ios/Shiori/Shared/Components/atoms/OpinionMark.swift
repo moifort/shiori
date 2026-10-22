@@ -8,7 +8,7 @@ import SwiftUI
 /// Draws nothing when there is neither, so a list stays quiet about books the
 /// reader has said nothing about.
 struct OpinionMark: View {
-    let rating: Int?
+    let rating: Double?
     let isFavorite: Bool
     var font: Font = .caption2
     /// The stars are the saga's, lent to an unrated volume: drawn grey.

@@ -1,6 +1,6 @@
 // @generated
 // Hand-edited: the scalar is numeric, and codegen defaults every custom
-// scalar to String. A reader rating, 1 to 5 whole stars.
+// scalar to String. A reader rating, 1 to 5 stars in half steps.
 // Apollo does not overwrite this file, which is why it is committed.
 // This file was automatically generated and can be edited to
 // implement advanced custom scalar functionality.
@@ -11,9 +11,9 @@
 @_spi(Internal) @_spi(Execution) import ApolloAPI
 
 extension ShioriGraphQL {
-  /// A reader rating, 1 to 5 whole stars.
+  /// A reader rating, 1 to 5 stars in half steps.
   ///
-  /// Whole stars only: half stars double the value space without adding discernment. Setting a rating also marks the book as read. Example: 4.
-  typealias StarRating = Int
+  /// Setting a rating also marks the book as read. Example: 3.5.
+  typealias StarRating = Double
 
 }
