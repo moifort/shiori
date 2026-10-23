@@ -54,13 +54,6 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      # The scan's AI wave is a Metal shader, and since Xcode 26 the Metal
-      # compiler is a separate component a runner image may not carry.
-      - name: Install the Metal toolchain
-        run: |
-          xcodebuild -showComponent MetalToolchain | grep -q 'Status: installed$' \
-            || xcodebuild -downloadComponent MetalToolchain
-
       # Booted first, so its ten-minute first start runs alongside the Apollo
       # generation and the build rather than after them, where it sat as eleven
       # silent minutes before the tests on 2026-10-16.

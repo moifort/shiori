@@ -1,15 +1,15 @@
 import SwiftUI
 
-/// The wait while a shelf photo is read: the AI at work — the wave — with the
+/// The wait while a shelf photo is read: the AI at work — drops of glass — with the
 /// one thing happening said under it.
 struct ShelfDetectingPage: View {
-    /// The photo being read. Kept by the caller for the checklist; the wave
+    /// The photo being read. Kept by the caller for the checklist; the drops
     /// does not draw it.
     let photo: UIImage?
 
     var body: some View {
         VStack(spacing: 40) {
-            AIWave()
+            AIGlassDrops()
             Text("Analyse de l'étagère")
                 .font(.headline)
         }
