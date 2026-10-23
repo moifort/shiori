@@ -39,17 +39,15 @@ struct FriendLibraryScreen: View {
             }
         }
         .task(id: query) { await model.load(query: query, fetch: fetch) }
-        // A sheet, as a book opens from the reader's own library: its own
-        // stack, so the saga pushes inside it.
-        .sheet(item: $openBook) { book in
-            NavigationStack {
-                FriendBookScreen(
-                    friendId: friendId,
-                    bookId: book.id,
-                    friendName: friendName,
-                    onAdded: { model.markOwned(book.id) }
-                )
-            }
+        // Pushed, as a book opens from the reader's own library; its saga
+        // pushes after it.
+        .pushesDetail(item: $openBook) { book in
+            FriendBookScreen(
+                friendId: friendId,
+                bookId: book.id,
+                friendName: friendName,
+                onAdded: { model.markOwned(book.id) }
+            )
         }
         .alert(
             "Ajout impossible",

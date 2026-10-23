@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// The Library tab's books, connected: owns the view model, the navigation stack and
+/// The Library tab's books, connected: owns the view model, the navigation and
 /// the sheets, and maps between the domain and the pure page below it. A book
-/// opens as a sheet over the list, as a wine does in Vinarium.
+/// is pushed over the list, or set beside it on an unfolded iPhone Duo.
 struct LibraryScreen: View {
     /// Opens the add sheet, which the tab bar's scan button owns: every way a
     /// book gets in sits behind that one entry, on every tab.
@@ -35,7 +35,9 @@ struct LibraryScreen: View {
     }
 
     var body: some View {
-        NavigationStack {
+        // A book is pushed over the list on a phone, and set beside it on an
+        // unfolded iPhone Duo, as Mail sets a message beside its inbox.
+        DetailSplit(item: $selectedBook) {
             LibraryPage(
                 mode: $viewModel.mode,
                 filter: $viewModel.filter,
@@ -64,16 +66,15 @@ struct LibraryScreen: View {
             .sheet(isPresented: $showSearch) {
                 LibrarySearchScreen()
             }
-            .sheet(item: $selectedBook) { book in
-                // An edit to this book patches its own row from what the sheet
-                // already holds, and the list lets the change notice it posts
-                // pass: reloading would cost a request per edit.
-                BookScreen(
-                    bookId: book.id,
-                    onChanged: { viewModel.apply($0) },
-                    onDeleted: { viewModel.remove(id: $0) }
-                )
-            }
+        } detail: { book in
+            // An edit to this book patches its own row from what the page
+            // already holds, and the list lets the change notice it posts
+            // pass: reloading would cost a request per edit.
+            BookScreen(
+                bookId: book.id,
+                onChanged: { viewModel.apply($0) },
+                onDeleted: { viewModel.remove(id: $0) }
+            )
         }
         // Over last session's snapshot when the disk had one: the list shows at
         // once and the spinner at its top says it is being brought up to date.
@@ -91,7 +92,7 @@ struct LibraryScreen: View {
         // volume. Either way the rows on screen are the old ones until the
         // server is asked again — all of them, so the reader stays where they
         // were. The book open in the sheet is the exception: its row is
-        // patched from the sheet's own answer.
+        // patched from the page's own answer.
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { notice in
             if let selectedBook, notice.object as? DataChange == .book(id: selectedBook.id) { return }
             Task { await viewModel.load(keepingDepth: true) }

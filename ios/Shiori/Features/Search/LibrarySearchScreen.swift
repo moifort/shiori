@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The search, connected: owns the view model and the shared index, opens a
-/// book as a sheet over the results, as the Library does, and pushes a saga.
+/// The search, connected: owns the view model and the shared index, and
+/// pushes a book or a saga over the results.
 /// Presented as a sheet from the Home and Library tabs.
 struct LibrarySearchScreen: View {
     @Environment(\.dismiss) private var dismiss
@@ -44,10 +44,13 @@ struct LibrarySearchScreen: View {
             }
             .navigationDestination(for: SeriesHit.self) { hit in
                 SeriesScreen(seriesId: hit.id, language: hit.books.first?.language)
+                    .closesAsPushed()
             }
-        }
-        .sheet(item: $selectedBook, onDismiss: { viewModel.refreshViewed() }) { book in
-            BookScreen(bookId: book.id)
+            // Pushed over the results, as the saga is; closed, the book leads
+            // the recently viewed.
+            .pushesDetail(item: $selectedBook, onClose: { _ in viewModel.refreshViewed() }) { book in
+                BookScreen(bookId: book.id)
+            }
         }
         .task { await viewModel.appear() }
     }

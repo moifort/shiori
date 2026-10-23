@@ -1,12 +1,12 @@
 import SwiftUI
 
-/// One book's coordinator, presented as a sheet over the list that opened it:
-/// owns the view model, the toolbar menu, the edit form, the rating prompt, the
-/// delete confirmation, filing a standalone book into a saga, and the hop to
-/// the series screen.
+/// One book's coordinator, pushed over the list that opened it or set beside
+/// it on an unfolded iPhone Duo: owns the view model, the toolbar menu, the
+/// edit form, the rating prompt, the delete confirmation, filing a standalone
+/// book into a saga, and the hop to the series screen.
 ///
-/// The sheet carries its own NavigationStack, so the series screen pushes inside
-/// it and closing the sheet always lands back on the row the reader tapped.
+/// It lives on the stack of whoever opens it, so the saga and an awaited
+/// edition push after it and Back walks the reader home.
 struct BookScreen: View {
     let bookId: String
     var onChanged: (Book) -> Void = { _ in }
@@ -23,16 +23,12 @@ struct BookScreen: View {
     @State private var editedField: BookField?
     @State private var openSeries: SeriesDestination?
     @State private var openAwaited: AwaitedEdition?
-    @Environment(\.dismiss) private var dismissSheet
-    @Environment(\.closeDetailPane) private var closeDetailPane
-    @Environment(\.isPresented) private var isPresented
+    @Environment(\.dismiss) private var dismissPresentation
+    @Environment(\.detailClosing) private var closing
 
-    /// Closes the sheet, or the detail beside the page on an unfolded iPhone
-    /// Duo. A screen pushed or presented from inside the detail is not its
-    /// root, and closes as it would anywhere else.
-    private func dismiss() {
-        if !isPresented, let closeDetailPane { closeDetailPane() } else { dismissSheet() }
-    }
+    /// Pops the screen, closes its sheet, or empties the detail column it
+    /// fills on an unfolded iPhone Duo.
+    private func dismiss() { closing.close(dismissPresentation) }
 
     private let client: BookClient
 
@@ -50,169 +46,165 @@ struct BookScreen: View {
     }
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if let book = viewModel.book {
-                    BookPage(
-                        book: book,
-                        isSaving: viewModel.isSaving,
-                        onSetStatus: { status in run { await viewModel.setStatus(status) } },
-                        onRate: { showRatingPrompt = true },
-                        onToggleHidden: { run { await viewModel.setHidden(!book.hidden) } },
-                        onOpenSeries: {
-                            openSeries = book.series.map {
-                                SeriesDestination(seriesId: $0.id, language: book.language)
-                            }
-                        },
-                        onEditGenre: { showGenreEditor = true },
-                        onEditRecommendation: { showRecommendation = true },
-                        onEditNote: { showNote = true },
-                        onEditField: { editedField = $0 },
-                        onCorrect: { correction in
-                            run { _ = await viewModel.save(correction, rating: book.rating) }
-                        },
-                        awaited: viewModel.offer.awaited,
-                        onOpenAwaited: { openAwaited = $0 },
-                        onStopAwaiting: { edition in Task { await viewModel.stopAwaiting(edition) } }
-                    )
-                } else if viewModel.isLoading {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    EmptyState(
-                        systemImage: "book.closed",
-                        title: "Livre introuvable",
-                        verbatim: viewModel.errorMessage ?? String(localized: "Ce livre n'est plus dans votre bibliothèque.")
-                    )
-                }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { toolbar }
-            // The AI at work — a shelf book described on its first opening:
-            // said in the bar, so the page under it stays readable and every
-            // action stays at hand.
-            .generatingInBar(viewModel.isDescribing ? "L'IA complète la fiche" : nil)
-            // Toolbar actions close their menu before the mutation leaves, so the
-            // call is made visible by a scrim rather than by the control itself.
-            .overlay {
-                if viewModel.isSaving {
-                    ZStack {
-                        Color.black.opacity(0.1).ignoresSafeArea()
-                        ProgressView()
-                    }
-                }
-            }
-            .sheet(item: $openAwaited) { edition in
-                NavigationStack {
-                    AwaitedEditionScreen(edition: edition) {
-                        Task { await viewModel.stopAwaiting(edition) }
-                    }
-                }
-            }
-            .sheet(isPresented: $showEditor) {
-                if let book = viewModel.book {
-                    BookEditSheet(book: book, loadVocabulary: loadVocabulary) { correction, rating in
-                        let saved = await viewModel.save(correction, rating: rating)
-                        if let book = viewModel.book { onChanged(book) }
-                        guard !saved else { return nil }
-                        // The form shows the failure itself: an alert hung on this
-                        // screen would stay hidden behind the form's sheet.
-                        defer { viewModel.dismissError() }
-                        return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
-                    }
-                }
-            }
-            .sheet(isPresented: $showGenreEditor) {
-                if let book = viewModel.book {
-                    GenreEditSheet(book: book, loadSubgenres: loadSubgenres) { correction in
-                        let saved = await viewModel.save(correction, rating: book.rating)
-                        if let book = viewModel.book { onChanged(book) }
-                        guard !saved else { return nil }
-                        defer { viewModel.dismissError() }
-                        return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
-                    }
-                }
-            }
-            .sheet(isPresented: $showSeriesJoin) {
-                if let book = viewModel.book {
-                    SeriesJoinSheet(book: book, loadVocabulary: loadVocabulary) { correction in
-                        let saved = await viewModel.save(correction, rating: book.rating)
-                        if let book = viewModel.book { onChanged(book) }
-                        guard !saved else { return nil }
-                        defer { viewModel.dismissError() }
-                        return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
-                    }
-                }
-            }
-            .sheet(isPresented: $showRecommendation) {
-                if let book = viewModel.book {
-                    RecommendationSheet(current: book.recommendation) { recommendation in
-                        let saved = await viewModel.setRecommendation(recommendation)
-                        if let book = viewModel.book { onChanged(book) }
-                        guard !saved else { return nil }
-                        defer { viewModel.dismissError() }
-                        return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
-                    }
-                }
-            }
-            .sheet(isPresented: $showNote) {
-                if let book = viewModel.book {
-                    NoteSheet(current: book.note) { note in
-                        let saved = await viewModel.setNote(note)
-                        if let book = viewModel.book { onChanged(book) }
-                        guard !saved else { return nil }
-                        defer { viewModel.dismissError() }
-                        return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
-                    }
-                }
-            }
-            .sheet(isPresented: $showCoverPicker) {
-                if let book = viewModel.book {
-                    CoverPickerSheet(
-                        book: book,
-                        choices: viewModel.coverChoices,
-                        loadFailed: viewModel.coverChoicesFailed
-                    ) { choice in
-                        let chosen = await viewModel.chooseCover(choice)
-                        if let book = viewModel.book { onChanged(book) }
-                        guard !chosen else { return nil }
-                        defer { viewModel.dismissError() }
-                        return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
-                    }
-                    .task { await viewModel.loadCoverChoices() }
-                }
-            }
-            .sheet(item: $editedField) { field in
-                if let book = viewModel.book {
-                    FieldEditSheet(book: book, field: field) { correction in
-                        let saved = await viewModel.save(correction, rating: book.rating)
-                        if let book = viewModel.book { onChanged(book) }
-                        guard !saved else { return nil }
-                        defer { viewModel.dismissError() }
-                        return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
-                    }
-                }
-            }
-            .sheet(isPresented: $showRatingPrompt) {
-                RatingPromptSheet(current: viewModel.book?.rating) { stars in
-                    showRatingPrompt = false
-                    run { await viewModel.rate(stars) }
-                }
-            }
-            .navigationDestination(item: $openSeries) { destination in
-                SeriesScreen(seriesId: destination.seriesId, language: destination.language)
-            }
-            .alert(
-                "Une erreur est survenue",
-                isPresented: .init(
-                    get: { viewModel.errorMessage != nil && viewModel.book != nil },
-                    set: { if !$0 { viewModel.dismissError() } }
+        Group {
+            if let book = viewModel.book {
+                BookPage(
+                    book: book,
+                    isSaving: viewModel.isSaving,
+                    onSetStatus: { status in run { await viewModel.setStatus(status) } },
+                    onRate: { showRatingPrompt = true },
+                    onToggleHidden: { run { await viewModel.setHidden(!book.hidden) } },
+                    onOpenSeries: {
+                        openSeries = book.series.map {
+                            SeriesDestination(seriesId: $0.id, language: book.language)
+                        }
+                    },
+                    onEditGenre: { showGenreEditor = true },
+                    onEditRecommendation: { showRecommendation = true },
+                    onEditNote: { showNote = true },
+                    onEditField: { editedField = $0 },
+                    onCorrect: { correction in
+                        run { _ = await viewModel.save(correction, rating: book.rating) }
+                    },
+                    awaited: viewModel.offer.awaited,
+                    onOpenAwaited: { openAwaited = $0 },
+                    onStopAwaiting: { edition in Task { await viewModel.stopAwaiting(edition) } }
                 )
-            ) {
-                Button("OK", role: .cancel) { viewModel.dismissError() }
-            } message: {
-                Text(viewModel.errorMessage ?? "")
+            } else if viewModel.isLoading {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                EmptyState(
+                    systemImage: "book.closed",
+                    title: "Livre introuvable",
+                    verbatim: viewModel.errorMessage ?? String(localized: "Ce livre n'est plus dans votre bibliothèque.")
+                )
             }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar { toolbar }
+        // The AI at work — a shelf book described on its first opening:
+        // said in the bar, so the page under it stays readable and every
+        // action stays at hand.
+        .generatingInBar(viewModel.isDescribing ? "L'IA complète la fiche" : nil)
+        // Toolbar actions close their menu before the mutation leaves, so the
+        // call is made visible by a scrim rather than by the control itself.
+        .overlay {
+            if viewModel.isSaving {
+                ZStack {
+                    Color.black.opacity(0.1).ignoresSafeArea()
+                    ProgressView()
+                }
+            }
+        }
+        .pushesDetail(item: $openAwaited) { edition in
+            AwaitedEditionScreen(edition: edition) {
+                Task { await viewModel.stopAwaiting(edition) }
+            }
+        }
+        .sheet(isPresented: $showEditor) {
+            if let book = viewModel.book {
+                BookEditSheet(book: book, loadVocabulary: loadVocabulary) { correction, rating in
+                    let saved = await viewModel.save(correction, rating: rating)
+                    if let book = viewModel.book { onChanged(book) }
+                    guard !saved else { return nil }
+                    // The form shows the failure itself: an alert hung on this
+                    // screen would stay hidden behind the form's sheet.
+                    defer { viewModel.dismissError() }
+                    return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
+                }
+            }
+        }
+        .sheet(isPresented: $showGenreEditor) {
+            if let book = viewModel.book {
+                GenreEditSheet(book: book, loadSubgenres: loadSubgenres) { correction in
+                    let saved = await viewModel.save(correction, rating: book.rating)
+                    if let book = viewModel.book { onChanged(book) }
+                    guard !saved else { return nil }
+                    defer { viewModel.dismissError() }
+                    return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
+                }
+            }
+        }
+        .sheet(isPresented: $showSeriesJoin) {
+            if let book = viewModel.book {
+                SeriesJoinSheet(book: book, loadVocabulary: loadVocabulary) { correction in
+                    let saved = await viewModel.save(correction, rating: book.rating)
+                    if let book = viewModel.book { onChanged(book) }
+                    guard !saved else { return nil }
+                    defer { viewModel.dismissError() }
+                    return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
+                }
+            }
+        }
+        .sheet(isPresented: $showRecommendation) {
+            if let book = viewModel.book {
+                RecommendationSheet(current: book.recommendation) { recommendation in
+                    let saved = await viewModel.setRecommendation(recommendation)
+                    if let book = viewModel.book { onChanged(book) }
+                    guard !saved else { return nil }
+                    defer { viewModel.dismissError() }
+                    return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
+                }
+            }
+        }
+        .sheet(isPresented: $showNote) {
+            if let book = viewModel.book {
+                NoteSheet(current: book.note) { note in
+                    let saved = await viewModel.setNote(note)
+                    if let book = viewModel.book { onChanged(book) }
+                    guard !saved else { return nil }
+                    defer { viewModel.dismissError() }
+                    return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
+                }
+            }
+        }
+        .sheet(isPresented: $showCoverPicker) {
+            if let book = viewModel.book {
+                CoverPickerSheet(
+                    book: book,
+                    choices: viewModel.coverChoices,
+                    loadFailed: viewModel.coverChoicesFailed
+                ) { choice in
+                    let chosen = await viewModel.chooseCover(choice)
+                    if let book = viewModel.book { onChanged(book) }
+                    guard !chosen else { return nil }
+                    defer { viewModel.dismissError() }
+                    return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
+                }
+                .task { await viewModel.loadCoverChoices() }
+            }
+        }
+        .sheet(item: $editedField) { field in
+            if let book = viewModel.book {
+                FieldEditSheet(book: book, field: field) { correction in
+                    let saved = await viewModel.save(correction, rating: book.rating)
+                    if let book = viewModel.book { onChanged(book) }
+                    guard !saved else { return nil }
+                    defer { viewModel.dismissError() }
+                    return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
+                }
+            }
+        }
+        .sheet(isPresented: $showRatingPrompt) {
+            RatingPromptSheet(current: viewModel.book?.rating) { stars in
+                showRatingPrompt = false
+                run { await viewModel.rate(stars) }
+            }
+        }
+        .pushesDetail(item: $openSeries) { destination in
+            SeriesScreen(seriesId: destination.seriesId, language: destination.language)
+        }
+        .alert(
+            "Une erreur est survenue",
+            isPresented: .init(
+                get: { viewModel.errorMessage != nil && viewModel.book != nil },
+                set: { if !$0 { viewModel.dismissError() } }
+            )
+        ) {
+            Button("OK", role: .cancel) { viewModel.dismissError() }
+        } message: {
+            Text(viewModel.errorMessage ?? "")
         }
         .task {
             // What the search offers first, before a word is typed.
@@ -254,8 +246,11 @@ struct BookScreen: View {
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .cancellationAction) {
-            ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
+        // Pushed, the system's Back button closes the page.
+        if closing.showsCloseButton {
+            ToolbarItem(placement: .cancellationAction) {
+                ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
+            }
         }
         if let book = viewModel.book {
             // The heart gets the corner to itself rather than a line in the menu:
@@ -309,5 +304,7 @@ struct BookScreen: View {
 }
 
 #Preview {
-    BookScreen(bookId: "preview", client: .preview)
+    NavigationStack {
+        BookScreen(bookId: "preview", client: .preview)
+    }
 }

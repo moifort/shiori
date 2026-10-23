@@ -119,7 +119,7 @@ struct DiscoverScreen: View {
             }
         }
         .task { await viewModel.loadOnAppear() }
-        .sheet(item: $openVolume) { AnnouncedVolumeScreen(volume: $0) }
+        .pushesDetail(item: $openVolume) { AnnouncedVolumeScreen(volume: $0) }
     }
 }
 ```
@@ -138,6 +138,26 @@ struct DiscoverScreen: View {
   async loader — `loadVocabulary: () async -> BookVocabulary?` — rather than the client.
 - **Navigation state** (which sheet, which pushed destination) lives in the screen. The page
   only says what was tapped.
+
+## Details are pushed, tasks are sheets
+
+What a reader opens to look at — a book, a saga, an author, a release, a friend's book, the
+statistics — is a **detail**: it is pushed, never presented as a sheet. A tab's root wraps its
+page in `DetailSplit` (`Shared/Platform/DetailPane.swift`): in a compact width (a phone, a
+folded iPhone Duo) the detail is pushed over the page, in a regular one (an unfolded Duo) it sits
+beside it, as Mail sets a message beside its inbox. One state drives both, so folding with a
+detail open pushes it and unfolding sets it back beside the page. Inside a detail, the next one
+(the saga of a book, a volume of the saga) is pushed with `.pushesDetail(item:)`, so Back walks
+the reader home.
+
+- **A detail screen never owns a `NavigationStack`**: it lives on its opener's. A sheet that
+  shows one wraps it in its own.
+- **Close follows `\.detailClosing`**, set by whatever opened the screen: a sheet's root and
+  the detail column draw a Close button, a pushed screen leaves it to Back. A screen reads it
+  for both the button and its own `dismiss()`; a plain `navigationDestination` or link marks
+  its destination `.closesAsPushed()`.
+- **Sheets are for tasks** — editing, rating, a note, a scan, the search, the settings, an
+  alert's options — and for nothing a reader merely opens.
 
 ## Primitive-first leaves
 

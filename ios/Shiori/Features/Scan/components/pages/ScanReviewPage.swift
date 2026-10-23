@@ -375,6 +375,7 @@ private struct OwnedCopySection: View {
         Section {
             NavigationLink {
                 BookScreen(bookId: copy.id)
+                    .closesAsPushed()
             } label: {
                 Label {
                     VStack(alignment: .leading, spacing: 2) {

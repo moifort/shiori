@@ -18,16 +18,12 @@ struct SuggestionScreen: View {
 
     @State private var viewModel: SuggestionViewModel
     @State private var openReference: SuggestionReference?
-    @Environment(\.dismiss) private var dismissSheet
-    @Environment(\.closeDetailPane) private var closeDetailPane
-    @Environment(\.isPresented) private var isPresented
+    @Environment(\.dismiss) private var dismissPresentation
+    @Environment(\.detailClosing) private var closing
 
-    /// Closes the sheet, or the detail beside the page on an unfolded iPhone
-    /// Duo. A screen pushed or presented from inside the detail is not its
-    /// root, and closes as it would anywhere else.
-    private func dismiss() {
-        if !isPresented, let closeDetailPane { closeDetailPane() } else { dismissSheet() }
-    }
+    /// Pops the screen, closes its sheet, or empties the detail column it
+    /// fills on an unfolded iPhone Duo.
+    private func dismiss() { closing.close(dismissPresentation) }
 
 
     init(suggestion: Suggestion, client: DiscoverClient = .live, onDone: @escaping (SuggestionOutcome) -> Void = { _ in }) {
@@ -39,7 +35,8 @@ struct SuggestionScreen: View {
         SuggestionPage(
             suggestion: viewModel.suggestion,
             shown: viewModel.shown,
-            isDescribing: viewModel.isDescribing
+            isDescribing: viewModel.isDescribing,
+            showsClose: closing.showsCloseButton
         ) { action in
             // Held apart: the page is gone by the time the call returns.
             let model = viewModel
@@ -59,7 +56,7 @@ struct SuggestionScreen: View {
             }
         }
         .task { await viewModel.describe() }
-        .sheet(item: $openReference) { reference in
+        .pushesDetail(item: $openReference) { reference in
             BookScreen(bookId: reference.bookId)
         }
     }

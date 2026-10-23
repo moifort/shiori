@@ -7,16 +7,12 @@ struct AwaitedEditionScreen: View {
     private let onStop: () -> Void
 
     @State private var viewModel: AwaitedEditionViewModel
-    @Environment(\.dismiss) private var dismissSheet
-    @Environment(\.closeDetailPane) private var closeDetailPane
-    @Environment(\.isPresented) private var isPresented
+    @Environment(\.dismiss) private var dismissPresentation
+    @Environment(\.detailClosing) private var closing
 
-    /// Closes the sheet, or the detail beside the page on an unfolded iPhone
-    /// Duo. A screen pushed or presented from inside the detail is not its
-    /// root, and closes as it would anywhere else.
-    private func dismiss() {
-        if !isPresented, let closeDetailPane { closeDetailPane() } else { dismissSheet() }
-    }
+    /// Pops the screen, closes its sheet, or empties the detail column it
+    /// fills on an unfolded iPhone Duo.
+    private func dismiss() { closing.close(dismissPresentation) }
 
 
     init(edition: AwaitedEdition, client: DiscoverClient = .live, onStop: @escaping () -> Void) {
@@ -28,7 +24,8 @@ struct AwaitedEditionScreen: View {
         AwaitedEditionPage(
             edition: viewModel.edition,
             shown: viewModel.shown,
-            isDescribing: viewModel.isDescribing
+            isDescribing: viewModel.isDescribing,
+            showsClose: closing.showsCloseButton
         ) { action in
             switch action {
             case .close:

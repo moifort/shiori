@@ -17,7 +17,9 @@ struct SharedScreen: View {
     }
 
     var body: some View {
-        NavigationStack {
+        // A cover is pushed over the tab on a phone, and set beside it on an
+        // unfolded iPhone Duo.
+        DetailSplit(item: $openedBook) {
             SharedPage(
                 myShelf: viewModel.myShelf,
                 friends: viewModel.friends,
@@ -48,6 +50,14 @@ struct SharedScreen: View {
                     }
                 }
             }
+        } detail: { opened in
+            // A cover opens its book as the friend's page opens it; the
+            // reader's own covers open their own record.
+            if let friend = opened.friend {
+                FriendBookScreen(friendId: friend.userId, bookId: opened.book.id, friendName: friend.displayName)
+            } else {
+                BookScreen(bookId: opened.book.id)
+            }
         }
         .task { await viewModel.loadOnAppear() }
         // A book taken from a friend changes what "Chez vous" says on their
@@ -61,17 +71,6 @@ struct SharedScreen: View {
         // they did not ask for.
         .sheet(item: $viewModel.invitation) { invitation in
             InvitationSheet(invitation: invitation, myShelf: viewModel.myShelf)
-        }
-        // A cover opens its book as the friend's page opens it; the reader's
-        // own covers open their own record.
-        .sheet(item: $openedBook) { opened in
-            if let friend = opened.friend {
-                NavigationStack {
-                    FriendBookScreen(friendId: friend.userId, bookId: opened.book.id, friendName: friend.displayName)
-                }
-            } else {
-                BookScreen(bookId: opened.book.id)
-            }
         }
         .alert("J'ai reçu une invitation", isPresented: $showAccept) {
             TextField("Code ou lien", text: $pastedCode)

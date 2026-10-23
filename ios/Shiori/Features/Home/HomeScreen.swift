@@ -20,9 +20,8 @@ struct HomeScreen: View {
     var onShowShared: () -> Void = {}
 
     @State private var viewModel: HomeViewModel
-    /// What the dashboard opened: a sheet on a phone, the detail beside the
-    /// dashboard on an unfolded iPhone Duo, as Mail shows a message beside
-    /// its inbox.
+    /// What the dashboard opened: pushed over it on a phone, beside it on an
+    /// unfolded iPhone Duo, as Mail shows a message beside its inbox.
     @State private var detail: HomeDetail?
     /// Regular on the Duo's inner screen, where a detail opens beside the
     /// dashboard rather than over it.
@@ -58,21 +57,12 @@ struct HomeScreen: View {
     }
 
     var body: some View {
-        Group {
-            if isSplit, let detail {
-                // The dashboard stays in use on the left, the detail on the
-                // right: the split view sets both columns, and moves them to
-                // either side of the fold as the Duo folds.
-                NavigationSplitView {
-                    dashboard
-                } detail: {
-                    pane(detail)
-                }
-            } else {
-                NavigationStack {
-                    dashboard
-                }
-            }
+        // What the dashboard opens sits beside it on an unfolded Duo, as Mail
+        // sets a message beside its inbox, and is pushed over it on a phone.
+        DetailSplit(item: $detail, onClose: afterClosing) {
+            dashboard
+        } detail: { detail in
+            detailContent(detail)
         }
         // And every time a write lands anywhere: the figures behind this screen
         // are rebuilt by the server on each one, and the tab may be showing.
@@ -94,12 +84,6 @@ struct HomeScreen: View {
         }
         .sheet(isPresented: $showSearch) {
             LibrarySearchScreen()
-        }
-        // On a phone, or a Duo folded, what the dashboard opens is a sheet.
-        // Folding the Duo with a detail open beside the dashboard brings it
-        // up as one; unfolding it puts the sheet back beside the dashboard.
-        .sheet(item: sheetDetail) { detail in
-            detailContent(detail)
         }
         // A recording awaited or given up comes into the releases, or leaves.
         .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
@@ -162,31 +146,6 @@ struct HomeScreen: View {
     /// Whether a detail opens beside the dashboard: the Duo's inner screen.
     private var isSplit: Bool { sizeClass == .regular }
 
-    /// The detail as a sheet, while the screen is too narrow to set it beside
-    /// the dashboard. The sheet a fold takes away hands its detail back to the
-    /// split view rather than closing it.
-    private var sheetDetail: Binding<HomeDetail?> {
-        Binding(
-            get: { isSplit ? nil : detail },
-            set: { newValue in
-                guard newValue == nil else { return detail = newValue }
-                guard !isSplit, let closed = detail else { return }
-                detail = nil
-                afterClosing(closed)
-            }
-        )
-    }
-
-    /// The detail beside the dashboard, closed by its own button.
-    private func pane(_ detail: HomeDetail) -> some View {
-        detailContent(detail)
-            .id(detail.id)
-            .environment(\.closeDetailPane) {
-                self.detail = nil
-                afterClosing(detail)
-            }
-    }
-
     @ViewBuilder
     private func detailContent(_ detail: HomeDetail) -> some View {
         switch detail {
@@ -195,38 +154,28 @@ struct HomeScreen: View {
             // reloads on: reloading here as well asked the server twice.
             BookScreen(bookId: book.id)
         case let .series(id):
-            NavigationStack {
-                SeriesScreen(seriesId: id, isSheet: true)
-            }
+            SeriesScreen(seriesId: id)
         case let .release(volume):
-            NavigationStack {
-                AnnouncedVolumeScreen(saga: volume.saga, volume: volume.volume)
-            }
+            AnnouncedVolumeScreen(saga: volume.saga, volume: volume.volume)
         case let .awaited(edition):
-            NavigationStack {
-                AwaitedEditionScreen(edition: edition) {
-                    Task { await viewModel.stopAwaiting(edition) }
-                }
+            AwaitedEditionScreen(edition: edition) {
+                Task { await viewModel.stopAwaiting(edition) }
             }
         case let .favorite(favorite):
             if let book = favorite.openedBook {
-                NavigationStack {
-                    FriendBookScreen(
-                        friendId: favorite.friendId,
-                        bookId: book.id,
-                        friendName: favorite.friendDisplayName
-                    )
-                }
+                FriendBookScreen(
+                    friendId: favorite.friendId,
+                    bookId: book.id,
+                    friendName: favorite.friendDisplayName
+                )
             }
         case let .discovery(suggestion):
-            NavigationStack {
-                SuggestionScreen(suggestion: suggestion) { outcome in
-                    guard case let .dismissed(reason) = outcome else { return }
-                    Task { await viewModel.dismiss(suggestion, reason: reason) }
-                }
+            SuggestionScreen(suggestion: suggestion) { outcome in
+                guard case let .dismissed(reason) = outcome else { return }
+                Task { await viewModel.dismiss(suggestion, reason: reason) }
             }
         case .genres:
-            NavigationStack { GenreInsightsScreen(load: viewModel.genreInsights) }
+            GenreInsightsScreen(load: viewModel.genreInsights)
         }
     }
 
@@ -295,8 +244,7 @@ struct HomeScreen: View {
     }
 }
 
-/// A saga opened from the dashboard, by its catalogue id.
-/// What the dashboard opens, as a sheet or beside it.
+/// What the dashboard opens, pushed over it or beside it.
 private enum HomeDetail: Identifiable {
     case book(Book)
     case series(String)

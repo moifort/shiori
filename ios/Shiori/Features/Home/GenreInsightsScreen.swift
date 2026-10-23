@@ -8,16 +8,12 @@ struct GenreInsightsScreen: View {
     /// Reads the figures.
     let load: () async throws -> GenreInsights
 
-    @Environment(\.dismiss) private var dismissSheet
-    @Environment(\.closeDetailPane) private var closeDetailPane
-    @Environment(\.isPresented) private var isPresented
+    @Environment(\.dismiss) private var dismissPresentation
+    @Environment(\.detailClosing) private var closing
 
-    /// Closes the sheet, or the detail beside the page on an unfolded iPhone
-    /// Duo. A screen pushed or presented from inside the detail is not its
-    /// root, and closes as it would anywhere else.
-    private func dismiss() {
-        if !isPresented, let closeDetailPane { closeDetailPane() } else { dismissSheet() }
-    }
+    /// Pops the screen, closes its sheet, or empties the detail column it
+    /// fills on an unfolded iPhone Duo.
+    private func dismiss() { closing.close(dismissPresentation) }
 
     @State private var insights: GenreInsights?
     @State private var errorMessage: String?
@@ -37,8 +33,10 @@ struct GenreInsightsScreen: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
+            if closing.showsCloseButton {
+                ToolbarItem(placement: .cancellationAction) {
+                    ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
+                }
             }
         }
         .task { await reload() }

@@ -23,6 +23,8 @@ struct AnnouncedVolumePage: View {
     let added: Bool
     /// Whether the page links to its saga.
     let linksToSaga: Bool
+    /// False when the page is pushed: Back closes it, not a Close button.
+    var showsClose = true
     let onAction: (AnnouncedVolumeAction) async -> Void
 
     var body: some View {
@@ -42,8 +44,10 @@ struct AnnouncedVolumePage: View {
         .navigationTitle(Text(verbatim: opened.saga.series.name))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { act(.close) }
+            if showsClose {
+                ToolbarItem(placement: .cancellationAction) {
+                    ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { act(.close) }
+                }
             }
             ToolbarItem(placement: .primaryAction) {
                 AsyncToolbarButton(title: "Ajouter à ma pile", systemImage: "plus") { await onAction(.add) }

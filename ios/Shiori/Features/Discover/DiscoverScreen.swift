@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// The Découvrir tab, connected: owns the ViewModel, its loads and the change
-/// notices, and every page the tab opens as a sheet. Draws `DiscoverPage`.
+/// notices, and every page the tab opens, pushed or beside it. Draws
+/// `DiscoverPage`.
 ///
 /// The server looks the sagas up on the web once a week. The tab opens on
 /// everything it last showed — the rows, the friends' picks, the books awaited
@@ -18,15 +19,9 @@ struct DiscoverScreen: View {
     private let client: DiscoverClient
 
     @State private var viewModel: DiscoverViewModel
-    @State private var openSeries: SagaDiscovery?
-    /// The volume whose page is open, announced or just out.
-    @State private var openVolume: DiscoveryVolume?
-    @State private var openAuthor: AuthorDestination?
-    @State private var openFriendBook: LovedBook?
-    @State private var openFriendSaga: LovedSaga?
-    @State private var openAwaited: AwaitedEdition?
-    @State private var openWinner: AwardWinner?
-    @State private var openSuggestion: Suggestion?
+    /// What the page opened: pushed over it on a phone, beside it on an
+    /// unfolded iPhone Duo.
+    @State private var detail: DiscoverDetail?
     @State private var showsAlerts = false
 
     init(
@@ -42,7 +37,7 @@ struct DiscoverScreen: View {
     }
 
     var body: some View {
-        NavigationStack {
+        DetailSplit(item: $detail, onClose: afterClosing) {
             DiscoverPage(
                 shelf: $shelf,
                 feed: viewModel.feed,
@@ -56,77 +51,6 @@ struct DiscoverScreen: View {
                 alertsSilenced: viewModel.alertsSilenced,
                 onAction: handle
             )
-            // A sheet, as a book opens from the library.
-            .sheet(item: $openSeries) { row in
-                NavigationStack {
-                    SeriesScreen(
-                        seriesId: row.series.seriesId,
-                        language: row.series.language,
-                        isSheet: true
-                    )
-                }
-            }
-            .sheet(item: $openVolume) { opened in
-                NavigationStack {
-                    AnnouncedVolumeScreen(saga: opened.saga, volume: opened.volume, client: client)
-                }
-            }
-            .sheet(item: $openFriendBook) { loved in
-                NavigationStack {
-                    FriendBookScreen(
-                        friendId: loved.lovers.first?.userId ?? "",
-                        bookId: loved.book.id,
-                        friendName: loved.lovers.first?.displayName ?? ""
-                    )
-                }
-            }
-            // The reader holds no volume of it: the saga is named to the
-            // server, which catalogues it if nobody has yet.
-            .sheet(item: $openFriendSaga) { loved in
-                NavigationStack {
-                    SeriesScreen(
-                        seriesId: loved.saga.seriesId,
-                        language: loved.saga.language,
-                        isSheet: true,
-                        proposal: loved.saga.author.map { SeriesProposal(name: loved.saga.name, author: $0) }
-                    )
-                }
-            }
-            .sheet(item: $openAwaited) { edition in
-                NavigationStack {
-                    AwaitedEditionScreen(edition: edition, client: client) {
-                        Task { await viewModel.stopAwaiting(edition) }
-                    }
-                }
-            }
-            // Closed, the line is asked again: an addition or a wait takes
-            // the suggestion off, and the next one comes in.
-            .sheet(item: $openSuggestion, onDismiss: {
-                Task { await viewModel.loadDiscoveries(viewModel.awardsFormat) }
-            }) { suggestion in
-                NavigationStack {
-                    SuggestionScreen(suggestion: suggestion, client: client) { outcome in
-                        guard case let .dismissed(reason) = outcome else { return }
-                        Task {
-                            await viewModel.dismiss(suggestion, reason: reason, format: viewModel.awardsFormat)
-                        }
-                    }
-                }
-            }
-            // Closed, the strip is asked again: the cover the page found
-            // when it was described is drawn on the tile.
-            .sheet(item: $openWinner, onDismiss: {
-                Task { await viewModel.loadAwards(viewModel.awardsFormat) }
-            }) { winner in
-                NavigationStack { AwardWinnerScreen(winner: winner, client: client) }
-            }
-            // The Library's own author page, in its own stack so a saga
-            // pushes inside it.
-            .sheet(item: $openAuthor) { opened in
-                NavigationStack {
-                    AuthorScreen(key: opened.key, name: opened.name, isSheet: true, isOffered: opened.isOffered)
-                }
-            }
             // The release alerts, where the releases are; the bell is read
             // again when they close.
             .sheet(isPresented: $showsAlerts, onDismiss: { Task { await viewModel.loadAlerts() } }) {
@@ -135,6 +59,8 @@ struct DiscoverScreen: View {
                 }
                 .presentationDetents([.medium, .large])
             }
+        } detail: { detail in
+            detailContent(detail)
         }
         // One task for every section: six side by side asked the same
         // sections again on each visit, and twice when the format moved.
@@ -155,19 +81,95 @@ struct DiscoverScreen: View {
         }
     }
 
+    @ViewBuilder
+    private func detailContent(_ detail: DiscoverDetail) -> some View {
+        switch detail {
+        case let .series(row):
+            SeriesScreen(seriesId: row.series.seriesId, language: row.series.language)
+        case let .volume(opened):
+            AnnouncedVolumeScreen(saga: opened.saga, volume: opened.volume, client: client)
+        case let .friendBook(loved):
+            FriendBookScreen(
+                friendId: loved.lovers.first?.userId ?? "",
+                bookId: loved.book.id,
+                friendName: loved.lovers.first?.displayName ?? ""
+            )
+        case let .friendSaga(loved):
+            // The reader holds no volume of it: the saga is named to the
+            // server, which catalogues it if nobody has yet.
+            SeriesScreen(
+                seriesId: loved.saga.seriesId,
+                language: loved.saga.language,
+                proposal: loved.saga.author.map { SeriesProposal(name: loved.saga.name, author: $0) }
+            )
+        case let .awaited(edition):
+            AwaitedEditionScreen(edition: edition, client: client) {
+                Task { await viewModel.stopAwaiting(edition) }
+            }
+        case let .suggestion(suggestion):
+            SuggestionScreen(suggestion: suggestion, client: client) { outcome in
+                guard case let .dismissed(reason) = outcome else { return }
+                Task {
+                    await viewModel.dismiss(suggestion, reason: reason, format: viewModel.awardsFormat)
+                }
+            }
+        case let .winner(winner):
+            AwardWinnerScreen(winner: winner, client: client)
+        case let .author(opened):
+            // The Library's own author page; a saga pushes after it.
+            AuthorScreen(key: opened.key, name: opened.name, isOffered: opened.isOffered)
+        }
+    }
+
+    /// What a closed page leaves to ask again. A suggestion closed: an
+    /// addition or a wait takes it off, and the next one comes in. A winner
+    /// closed: the cover its page found is drawn on the tile.
+    private func afterClosing(_ detail: DiscoverDetail) {
+        switch detail {
+        case .suggestion: Task { await viewModel.loadDiscoveries(viewModel.awardsFormat) }
+        case .winner: Task { await viewModel.loadAwards(viewModel.awardsFormat) }
+        case .series, .volume, .friendBook, .friendSaga, .awaited, .author: break
+        }
+    }
+
     private func handle(_ action: DiscoverAction) async {
         switch action {
-        case let .openSeries(row): openSeries = row
-        case let .openVolume(volume): openVolume = volume
-        case let .openAuthor(author): openAuthor = author
-        case let .openFriendBook(loved): openFriendBook = loved
-        case let .openFriendSaga(loved): openFriendSaga = loved
-        case let .openAwaited(edition): openAwaited = edition
-        case let .openWinner(winner): openWinner = winner
-        case let .openSuggestion(suggestion): openSuggestion = suggestion
+        case let .openSeries(row): detail = .series(row)
+        case let .openVolume(volume): detail = .volume(volume)
+        case let .openAuthor(author): detail = .author(author)
+        case let .openFriendBook(loved): detail = .friendBook(loved)
+        case let .openFriendSaga(loved): detail = .friendSaga(loved)
+        case let .openAwaited(edition): detail = .awaited(edition)
+        case let .openWinner(winner): detail = .winner(winner)
+        case let .openSuggestion(suggestion): detail = .suggestion(suggestion)
         case .openAlerts: showsAlerts = true
         case .refresh: await viewModel.refresh()
         case .retry: await viewModel.loadAll()
+        }
+    }
+}
+
+/// What Découvrir opens, pushed over it or beside it.
+private enum DiscoverDetail: Identifiable {
+    case series(SagaDiscovery)
+    case volume(DiscoveryVolume)
+    case friendBook(LovedBook)
+    case friendSaga(LovedSaga)
+    case awaited(AwaitedEdition)
+    case suggestion(Suggestion)
+    case winner(AwardWinner)
+    case author(AuthorDestination)
+
+    var id: String {
+        switch self {
+        case let .series(row): "series-\(row.id)"
+        case let .volume(volume): "volume-\(volume.id)"
+        case let .friendBook(loved): "friend-book-\(loved.id)"
+        case let .friendSaga(loved): "friend-saga-\(loved.id)"
+        case let .awaited(edition): "awaited-\(edition.id)"
+        case let .suggestion(suggestion): "suggestion-\(suggestion.id)"
+        case let .winner(winner): "winner-\(winner.id)"
+        case let .author(author): "author-\(author.id)"
         }
     }
 }

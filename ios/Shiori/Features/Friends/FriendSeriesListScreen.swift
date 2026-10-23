@@ -40,18 +40,15 @@ struct FriendSeriesListScreen: View {
             }
         }
         .task(id: query) { await model.load(query: query, fetch: fetch) }
-        // A sheet, as a saga opens from the reader's own Series tab.
-        .sheet(item: $openSaga) { saga in
-            NavigationStack {
-                // Where the saga stands is the friend's; previewed, the
-                // reader's own saga opens as it does from their Series tab.
-                SeriesScreen(
-                    seriesId: saga.seriesId,
-                    language: saga.language,
-                    isSheet: true,
-                    friend: isPreview ? nil : SeriesFriend(id: friendId, name: friendName)
-                )
-            }
+        // Pushed, as a saga opens from the reader's own Series tab.
+        .pushesDetail(item: $openSaga) { saga in
+            // Where the saga stands is the friend's; previewed, the reader's
+            // own saga opens as it does from their Series tab.
+            SeriesScreen(
+                seriesId: saga.seriesId,
+                language: saga.language,
+                friend: isPreview ? nil : SeriesFriend(id: friendId, name: friendName)
+            )
         }
         .alert(
             "Ajout impossible",

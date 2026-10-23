@@ -8,11 +8,8 @@ import SwiftUI
 /// server, portrait included, which takes a few seconds: the reader's books are
 /// drawn first, and the bar says the AI is at work. Every later opening reads it.
 struct AuthorScreen: View {
-    /// Opened as a sheet — from the Authors shelf, as a book opens from the
-    /// library — rather than pushed: a close button in the corner.
-    var isSheet = false
-
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.dismiss) private var dismissPresentation
+    @Environment(\.detailClosing) private var closing
     @State private var viewModel: AuthorViewModel
     @State private var selectedBook: Book?
     @State private var openAwaited: AwaitedEdition?
@@ -20,8 +17,7 @@ struct AuthorScreen: View {
 
     /// - Parameter isOffered: offered by Découvrir as an author a friend loves,
     ///   whom the reader may hold nothing of: the page is then built from `name`.
-    init(key: String, name: String, isSheet: Bool = false, isOffered: Bool = false, client: AuthorsClient = .live) {
-        self.isSheet = isSheet
+    init(key: String, name: String, isOffered: Bool = false, client: AuthorsClient = .live) {
         _viewModel = State(initialValue: AuthorViewModel(key: key, name: name, isOffered: isOffered, client: client))
     }
 
@@ -48,18 +44,16 @@ struct AuthorScreen: View {
             await viewModel.load()
             await viewModel.buildCatalogueIfAwaiting()
         }
-        .sheet(item: $selectedBook) { book in
+        .pushesDetail(item: $selectedBook) { book in
             BookScreen(
                 bookId: book.id,
                 onChanged: { _ in Task { await viewModel.load() } },
                 onDeleted: { _ in Task { await viewModel.load() } }
             )
         }
-        .sheet(item: $openAwaited) { edition in
-            NavigationStack {
-                AwaitedEditionScreen(edition: edition) {
-                    Task { await viewModel.stopAwaiting(edition) }
-                }
+        .pushesDetail(item: $openAwaited) { edition in
+            AwaitedEditionScreen(edition: edition) {
+                Task { await viewModel.stopAwaiting(edition) }
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
@@ -67,6 +61,7 @@ struct AuthorScreen: View {
         }
         .navigationDestination(item: $openSeries) {
             SeriesScreen(seriesId: $0.seriesId, language: $0.language, proposal: $0.proposal)
+                .closesAsPushed()
         }
         // Back from a saga, read again: a volume added there moves the saga
         // among the reader's own, and a rating changes its row.
@@ -74,9 +69,11 @@ struct AuthorScreen: View {
             if destination == nil { Task { await viewModel.load() } }
         }
         .toolbar {
-            if isSheet {
+            if closing.showsCloseButton {
                 ToolbarItem(placement: .cancellationAction) {
-                    ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
+                    ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) {
+                        closing.close(dismissPresentation)
+                    }
                 }
             }
             if viewModel.page != nil {

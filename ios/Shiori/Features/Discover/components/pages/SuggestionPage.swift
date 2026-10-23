@@ -24,6 +24,8 @@ struct SuggestionPage: View {
     /// The suggestion once described, as a book's page draws it.
     let shown: Book
     let isDescribing: Bool
+    /// False when the page is pushed: Back closes it, not a Close button.
+    var showsClose = true
     let onAction: (SuggestionAction) async -> Void
 
     var body: some View {
@@ -65,8 +67,10 @@ struct SuggestionPage: View {
         .navigationTitle(Text("Découverte"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { act(.close) }
+            if showsClose {
+                ToolbarItem(placement: .cancellationAction) {
+                    ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { act(.close) }
+                }
             }
             ToolbarItem(placement: .primaryAction) {
                 notForMeMenu

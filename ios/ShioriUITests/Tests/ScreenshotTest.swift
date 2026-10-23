@@ -72,7 +72,7 @@ final class ScreenshotTest: XCTestCase {
         try tap(app.descendants(matching: .any)["home-genres"].firstMatch, until: app.descendants(matching: .any)["genre-insights"])
         settle()
         save("02-stats")
-        try tap(app.navigationBars.buttons["xmark"].firstMatch, ifPresent: true)
+        closeDetail()
         _ = app.descendants(matching: .any)["genre-insights"].waitForNonExistence(timeout: 5)
 
         // Bibliothèque, its books as a mosaic of covers.
@@ -97,8 +97,7 @@ final class ScreenshotTest: XCTestCase {
         try tap(app.descendants(matching: .any)["series-row"].firstMatch, until: app.descendants(matching: .any)["series-releases"])
         settle()
         save("04-saga")
-        // A sheet when it is one, closed by its own button; pushed, the tab bar stays.
-        try tap(app.navigationBars.buttons["xmark"].firstMatch, ifPresent: true)
+        closeDetail()
 
         try open("Découvrir")
         try wait(app.descendants(matching: .any)["discover-volume-row"].firstMatch)
@@ -112,7 +111,7 @@ final class ScreenshotTest: XCTestCase {
         )
         settle()
         save("07-discovery")
-        try tap(app.navigationBars.buttons["xmark"].firstMatch, ifPresent: true)
+        closeDetail()
         _ = app.descendants(matching: .any)["suggestion-reason"].waitForNonExistence(timeout: 5)
 
         // Further down Découvrir: the friends' favorites and the series' next volumes.
@@ -202,6 +201,15 @@ final class ScreenshotTest: XCTestCase {
         } else {
             try tap(app.buttons[tab].firstMatch)
         }
+    }
+
+    /// Leaves the detail on screen: a page pushed on a phone goes back, one
+    /// set beside the list on an unfolded iPhone Duo closes by its button.
+    private func closeDetail() {
+        let close = app.navigationBars.buttons["xmark"].firstMatch
+        if close.waitForExistence(timeout: 2) { return close.tap() }
+        let back = app.navigationBars.buttons.element(boundBy: 0)
+        if back.exists { back.tap() }
     }
 
     private func element(labelled text: String) -> XCUIElement {

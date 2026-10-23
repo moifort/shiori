@@ -41,7 +41,9 @@ struct SeriesListScreen: View {
     }
 
     var body: some View {
-        NavigationStack {
+        // A saga is pushed over the list on a phone, and set beside it on an
+        // unfolded iPhone Duo; a volume or an author pushes after it.
+        DetailSplit(item: $openSeries) {
             SeriesListPage(
                 followed: viewModel.followed,
                 mode: $viewModel.mode,
@@ -59,13 +61,6 @@ struct SeriesListScreen: View {
                 case .scan: onScan()
                 }
             }
-            // A sheet, as a book opens from the library: its own stack, so a
-            // volume or an author pushes inside it.
-            .sheet(item: $openSeries) { opened in
-                NavigationStack {
-                    SeriesScreen(seriesId: opened.seriesId, language: opened.language, isSheet: true, client: client)
-                }
-            }
             .libraryShelfPicker(shelf)
             // Once, when the list first shows: a saga opens as a sheet over
             // it, and the rows it changed are asked again when the sheet
@@ -77,6 +72,8 @@ struct SeriesListScreen: View {
                 takeRequested()
                 await viewModel.loadOnAppear()
             }
+        } detail: { opened in
+            SeriesScreen(seriesId: opened.seriesId, language: opened.language, client: client)
         }
         .onChange(of: requested) { takeRequested() }
         // A volume finished in the library, a book scanned: the rows here say

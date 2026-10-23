@@ -4,7 +4,12 @@ import SwiftUI
 /// opens, and closes at once on the "+" while the server is told behind it.
 struct AwardWinnerScreen: View {
     @State private var viewModel: AwardWinnerViewModel
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.dismiss) private var dismissPresentation
+    @Environment(\.detailClosing) private var closing
+
+    /// Pops the screen, closes its sheet, or empties the detail column it
+    /// fills on an unfolded iPhone Duo.
+    private func dismiss() { closing.close(dismissPresentation) }
 
     init(winner: AwardWinner, client: DiscoverClient = .live) {
         _viewModel = State(initialValue: AwardWinnerViewModel(winner: winner, client: client))
@@ -14,7 +19,8 @@ struct AwardWinnerScreen: View {
         AwardWinnerPage(
             winner: viewModel.winner,
             shown: viewModel.shown,
-            isDescribing: viewModel.isDescribing
+            isDescribing: viewModel.isDescribing,
+            showsClose: closing.showsCloseButton
         ) { action in
             // Read before the page closes: the server is told behind it.
             let model = viewModel

@@ -6,20 +6,12 @@ import SwiftUI
 /// Removing the saga removes every volume of it the reader holds, which the
 /// confirmation says in so many words.
 struct SeriesScreen: View {
-    /// Opened as a sheet — from Découvrir, as a book opens from the library —
-    /// rather than pushed: a close button in the corner.
-    var isSheet = false
+    @Environment(\.dismiss) private var dismissPresentation
+    @Environment(\.detailClosing) private var closing
 
-    @Environment(\.dismiss) private var dismissSheet
-    @Environment(\.closeDetailPane) private var closeDetailPane
-    @Environment(\.isPresented) private var isPresented
-
-    /// Closes the sheet, or the detail beside the page on an unfolded iPhone
-    /// Duo. A screen pushed or presented from inside the detail is not its
-    /// root, and closes as it would anywhere else.
-    private func dismiss() {
-        if !isPresented, let closeDetailPane { closeDetailPane() } else { dismissSheet() }
-    }
+    /// Pops the screen, closes its sheet, or empties the detail column it
+    /// fills on an unfolded iPhone Duo.
+    private func dismiss() { closing.close(dismissPresentation) }
 
     @State private var viewModel: SeriesViewModel
     @State private var isEditingGenre = false
@@ -45,12 +37,10 @@ struct SeriesScreen: View {
     init(
         seriesId: String,
         language: BookLanguage? = nil,
-        isSheet: Bool = false,
         proposal: SeriesProposal? = nil,
         friend: SeriesFriend? = nil,
         client: SeriesClient = .live
     ) {
-        self.isSheet = isSheet
         _viewModel = State(initialValue: SeriesViewModel(
             seriesId: seriesId,
             language: language,
@@ -89,7 +79,7 @@ struct SeriesScreen: View {
         // In the corner even when the catalogue is missing: what a reader thinks
         // of a saga does not wait on the world having described it.
         .toolbar {
-            if isSheet {
+            if closing.showsCloseButton {
                 ToolbarItem(placement: .cancellationAction) {
                     ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
                 }
@@ -115,12 +105,10 @@ struct SeriesScreen: View {
             }
         }
         .disabled(viewModel.isSaving)
-        .sheet(item: $selectedBook) { book in
+        .pushesDetail(item: $selectedBook) { book in
             if let friend = viewModel.friend {
                 // The friend's volume, as their shelf opens it.
-                NavigationStack {
-                    FriendBookScreen(friendId: friend.id, bookId: book.id, friendName: friend.name)
-                }
+                FriendBookScreen(friendId: friend.id, bookId: book.id, friendName: friend.name)
             } else {
                 BookScreen(
                     bookId: book.id,
@@ -174,11 +162,9 @@ struct SeriesScreen: View {
             }
         }
         // Added from its page, the volume takes its row back as the reader's.
-        .sheet(item: $announced, onDismiss: { Task { await viewModel.load() } }) { volume in
+        .pushesDetail(item: $announced, onClose: { _ in Task { await viewModel.load() } }) { volume in
             if let saga = viewModel.announcedSaga {
-                NavigationStack {
-                    AnnouncedVolumeScreen(saga: saga, volume: volume, linksToSaga: false)
-                }
+                AnnouncedVolumeScreen(saga: saga, volume: volume, linksToSaga: false)
             }
         }
         .task {

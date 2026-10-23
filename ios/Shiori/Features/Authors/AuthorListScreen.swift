@@ -24,7 +24,9 @@ struct AuthorListScreen: View {
     }
 
     var body: some View {
-        NavigationStack {
+        // An author is pushed over the list on a phone, and set beside it on an
+        // unfolded iPhone Duo; a saga pushes after it.
+        DetailSplit(item: $openAuthor) {
             AuthorListPage(
                 authors: viewModel.authors,
                 order: viewModel.order,
@@ -42,17 +44,12 @@ struct AuthorListScreen: View {
                 case .scan: onScan()
                 }
             }
-            // A sheet, as a book opens from the library and a saga from
-            // Découvrir: its own stack, so a saga pushes inside it.
-            .sheet(item: $openAuthor) { opened in
-                NavigationStack {
-                    AuthorScreen(key: opened.key, name: opened.name, isSheet: true, client: client)
-                }
-            }
             .libraryShelfPicker(shelf)
             // Over last session's snapshot when the disk had one: the rows show
             // at once and are brought up to date underneath.
             .task { await viewModel.loadOnAppear() }
+        } detail: { opened in
+            AuthorScreen(key: opened.key, name: opened.name, client: client)
         }
         // A book finished, a heart given, a book scanned: the rows here say so
         // the next time the reader looks — all of them, so the reader stays

@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// One friend's shelf, connected: loads it, opens a book as a sheet and the
-/// whole library pushed by its link, and hands the rest to `FriendProfilePage`.
+/// One friend's shelf, connected: loads it, pushes a book and the whole
+/// library by its link, and hands the rest to `FriendProfilePage`.
 ///
 /// The reader's own shelf opens on this very screen, as a preview: drawn from
 /// the shelf they already hold, every "+" greyed out since every book is
@@ -36,18 +36,17 @@ struct FriendProfileScreen: View {
         .task { await viewModel.load() }
         .navigationDestination(for: FriendProfileDestination.self) { _ in
             FriendShelfScreen(friendId: friend.userId, friendName: friend.displayName, isPreview: viewModel.isPreview)
+                .closesAsPushed()
         }
-        // A sheet, as a book opens from the reader's own library: its own
-        // stack, so the saga pushes inside it.
-        .sheet(item: $openBook) { book in
-            NavigationStack {
-                FriendBookScreen(
-                    friendId: friend.userId,
-                    bookId: book.id,
-                    friendName: friend.displayName,
-                    onAdded: { viewModel.markOwned(book.id) }
-                )
-            }
+        // Pushed, as a book opens from the reader's own library; its saga
+        // pushes after it.
+        .pushesDetail(item: $openBook) { book in
+            FriendBookScreen(
+                friendId: friend.userId,
+                bookId: book.id,
+                friendName: friend.displayName,
+                onAdded: { viewModel.markOwned(book.id) }
+            )
         }
     }
 }
