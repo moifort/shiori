@@ -30,6 +30,7 @@ import { QuotaQuery } from '~/domain/quota/query'
 import {
   isbnCoversOf,
   isCoverGone,
+  isImageAt,
   otherEditionCoversOf,
   publishedCoverOf,
   shelfCoverOf,
@@ -214,10 +215,14 @@ export namespace BookUseCase {
     )
   }
 
-  export const chooseCover = (userId: UserId, bookId: BookId, cover: ChosenCover) =>
-    withAnalytics(userId, (batch) =>
+  /** Draw the book with the cover the reader picked. An address must serve an
+   *  image: a pasted link to a shop's page would leave the placeholder for good. */
+  export const chooseCover = async (userId: UserId, bookId: BookId, cover: ChosenCover) => {
+    if (cover.source === 'url' && !(await isImageAt(cover.url))) return 'not-an-image' as const
+    return withAnalytics(userId, (batch) =>
       BookCommand.chooseCover(userId, bookId, cover, undefined, batch),
     )
+  }
 
   export const setStatus = (userId: UserId, bookId: BookId, status: ReadingStatus) =>
     withAnalytics(userId, (batch) =>

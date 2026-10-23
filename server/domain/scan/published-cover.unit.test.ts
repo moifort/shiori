@@ -3,6 +3,7 @@ import { CoverUrl, Isbn13 } from '~/domain/book/primitives'
 import {
   isbnsInLanguage,
   isCoverGone,
+  isImageAt,
   publishedCoverOf,
   shelfCoverOf,
 } from '~/domain/scan/published-cover'
@@ -11,13 +12,26 @@ const isbn = Isbn13('9782070612758')
 /** A 979 ISBN has no ISBN-10, so Amazon cannot be asked for it at all. */
 const isbn979 = Isbn13('9791030703184')
 
-/** Answers Amazon and Open Library each their own way, recording which was asked. */
-const sourcesAnswer = ({ amazon, openLibrary }: { amazon: string; openLibrary: number }) => {
+/** Answers Amazon, Open Library and ePagine each their own way, recording which
+ *  was asked. ePagine answers its PNG stand-in unless told it has the cover. */
+const sourcesAnswer = ({
+  amazon,
+  openLibrary,
+  epagine = 'image/png',
+}: {
+  amazon: string
+  openLibrary: number
+  epagine?: string
+}) => {
   const asked: string[] = []
   spyOn(globalThis, 'fetch').mockImplementation((async (url: string) => {
     if (url.includes('openlibrary.org')) {
       asked.push('open-library')
       return new Response(null, { status: openLibrary })
+    }
+    if (url.includes('epagine.fr')) {
+      asked.push('epagine')
+      return new Response(null, { status: 200, headers: { 'content-type': epagine } })
     }
     asked.push('amazon')
     return new Response(null, { status: 200, headers: { 'content-type': amazon } })
@@ -57,7 +71,16 @@ describe('publishedCoverOf', () => {
     expect(asked).toEqual(['open-library'])
   })
 
-  test('has no cover when neither source has one', async () => {
+  test('falls back to ePagine for a French edition the other two miss', async () => {
+    const asked = sourcesAnswer({ amazon: 'image/gif', openLibrary: 404, epagine: 'image/jpeg' })
+
+    const cover = await publishedCoverOf(isbn)
+
+    expect(String(cover)).toContain('images.epagine.fr')
+    expect(asked).toEqual(['amazon', 'open-library', 'epagine'])
+  })
+
+  test('has no cover when no source has one', async () => {
     sourcesAnswer({ amazon: 'image/gif', openLibrary: 404 })
     expect(await publishedCoverOf(isbn)).toBeUndefined()
   })
@@ -190,5 +213,39 @@ describe('shelfCoverOf', () => {
   test('has no cover when Open Library cannot be reached', async () => {
     coverAnswers(new Error('The operation was aborted due to timeout'))
     expect(await shelfCoverOf(onePiece)).toBeUndefined()
+  })
+})
+
+describe('isImageAt', () => {
+  const pasted = CoverUrl('https://www.shoparize.com/fr/p/dernier-combat/9791028110116')
+
+  test('takes an address that serves an image', async () => {
+    coverAnswers(
+      new Response(null, { headers: { 'content-type': 'image/jpeg', 'content-length': '250000' } }),
+    )
+    expect(await isImageAt(pasted)).toBe(true)
+  })
+
+  test('refuses a web page', async () => {
+    coverAnswers(new Response(null, { headers: { 'content-type': 'text/html' } }))
+    expect(await isImageAt(pasted)).toBe(false)
+  })
+
+  test('asks again with GET a server that refuses HEAD', async () => {
+    const methods: string[] = []
+    spyOn(globalThis, 'fetch').mockImplementation((async (_url: string, init?: RequestInit) => {
+      methods.push(init?.method ?? 'GET')
+      return init?.method === 'HEAD'
+        ? new Response(null, { status: 405 })
+        : new Response(null, { headers: { 'content-type': 'image/png' } })
+    }) as unknown as typeof fetch)
+
+    expect(await isImageAt(pasted)).toBe(true)
+    expect(methods).toEqual(['HEAD', 'GET'])
+  })
+
+  test('refuses an address that cannot be reached', async () => {
+    coverAnswers(new Error('The operation timed out.'))
+    expect(await isImageAt(pasted)).toBe(false)
   })
 })

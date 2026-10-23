@@ -2461,7 +2461,7 @@ type Mutation {
   awaitScannedEdition(book: ScannedBookInput!, format: ReleaseFormat!): AwaitedEdition!
 
   """
-  Draw a book with the cover the reader picked, before any other source: the image at `url` — one `bookCoverChoices` offered, or an address the reader pasted — or, with no `url`, the photo taken when the book was scanned. A Kindle sync or a description that later brings another cover leaves it in place, and the other covers stay offered. Free. BAD_USER_INPUT when no `url` is given and the book has no photo.
+  Draw a book with the cover the reader picked, before any other source: the image at `url` — one `bookCoverChoices` offered, or an address the reader pasted — or, with no `url`, the photo taken when the book was scanned. A Kindle sync or a description that later brings another cover leaves it in place, and the other covers stay offered. Free. BAD_USER_INPUT when no `url` is given and the book has no photo; COVER_NOT_AN_IMAGE when `url` does not serve an image — the link to a shop’s page rather than to its picture of the cover.
   """
   chooseBookCover(id: BookId!, url: CoverUrl): Book!
 

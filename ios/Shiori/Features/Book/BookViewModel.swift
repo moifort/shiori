@@ -118,6 +118,11 @@ final class BookViewModel {
             let chosen = try await client.chooseCover(bookId, choice.source == .photo ? nil : choice.url)
             withAnimation(.smooth) { book = chosen }
             return true
+        } catch let error as APIError where error.domainCode == "COVER_NOT_AN_IMAGE" {
+            // The link to a shop's page, pasted for its cover: the reader's
+            // slip, nothing for Sentry.
+            errorMessage = String(localized: "Cette adresse mène à une page, pas à une image. Ouvrez l'image de la couverture seule, puis copiez son adresse.")
+            return false
         } catch {
             errorMessage = reportError(error)
             return false

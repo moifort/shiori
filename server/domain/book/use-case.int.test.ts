@@ -53,6 +53,7 @@ mock.module('~/domain/scan/published-cover', () => ({
     probed.push(url)
     return goneCovers.has(url)
   },
+  isImageAt: async (url: string) => !url.includes('shoparize'),
 }))
 
 // The scan photo is signed by the real object store, which needs a bucket.
@@ -254,6 +255,20 @@ describe('picking a cover', () => {
       { source: 'amazon', url: CoverUrl(other), current: true },
       { source: 'open-library', url: CoverUrl(openLibrary), current: false },
     ])
+  })
+
+  test('refuses an address that leads to a shop’s page rather than to an image', async () => {
+    const book = await aBook()
+
+    const chosen = await BookUseCase.chooseCover(reader, book.id, {
+      source: 'url',
+      url: CoverUrl(
+        'https://www.shoparize.com/fr/p/la-premiere-loi-t3-dernier-combat/9791028110116',
+      ),
+    })
+
+    expect(chosen).toBe('not-an-image')
+    expect((await BookQuery.byId(reader, book.id))?.chosenCover).toBeUndefined()
   })
 
   test('refuses the photo of a book scanned without one', async () => {

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, mock, setSystemTime, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, mock, setSystemTime, spyOn, test } from 'bun:test'
 import { graphql } from 'graphql'
 import type { AudibleAsin } from '~/domain/audible/types'
 import type { BookId } from '~/domain/book/types'
@@ -791,6 +791,21 @@ describe('a book that came from a scan', () => {
 })
 
 describe('picking a cover through the API', () => {
+  // A picked address is checked to serve an image: a shop's page does not.
+  beforeEach(() => {
+    spyOn(globalThis, 'fetch').mockImplementation(
+      (async (url: string) =>
+        new Response(null, {
+          headers: url.includes('shoparize')
+            ? { 'content-type': 'text/html' }
+            : { 'content-type': 'image/jpeg', 'content-length': '250000' },
+        })) as unknown as typeof fetch,
+    )
+  })
+  afterEach(() => {
+    ;(globalThis.fetch as unknown as { mockRestore?: () => void }).mockRestore?.()
+  })
+
   // No author and no ISBN: nothing is asked of Amazon or Open Library.
   const scanned = 'https://covers.openlibrary.org/b/isbn/9782352949329-L.jpg?default=false'
   const picked = 'https://m.media-amazon.com/images/P/2253151378.01._SCLZZZZZZZ_.jpg'
@@ -821,6 +836,16 @@ describe('picking a cover through the API', () => {
       { source: 'AMAZON', current: true },
       { source: 'OPEN_LIBRARY', current: false },
     ])
+  })
+
+  test('refuses an address that leads to a shop’s page rather than to an image', async () => {
+    const book = await aScannedBook()
+
+    const result = await execute(
+      `mutation { chooseBookCover(id: "${book.id}", url: "https://www.shoparize.com/fr/p/dernier-combat") { id } }`,
+    )
+
+    expect(result.errors?.[0]?.extensions?.code).toBe('COVER_NOT_AN_IMAGE')
   })
 
   test('refuses the photo of a book that has none', async () => {

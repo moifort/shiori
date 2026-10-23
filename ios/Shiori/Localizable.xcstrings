@@ -3013,6 +3013,22 @@
         }
       }
     },
+    "Cette adresse mène à une page, pas à une image. Ouvrez l'image de la couverture seule, puis copiez son adresse." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This address leads to a page, not an image. Open the cover image on its own, then copy its address."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette adresse mène à une page, pas à une image. Ouvrez l'image de la couverture seule, puis copiez son adresse."
+          }
+        }
+      }
+    },
     "Cette version de Shiori n'est plus compatible avec le serveur. La dernière version est disponible sur l'App Store." : {
       "localizations" : {
         "en" : {

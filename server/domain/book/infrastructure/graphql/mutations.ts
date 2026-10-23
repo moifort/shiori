@@ -180,7 +180,8 @@ builder.mutationFields((t) => ({
       'pasted — or, with no `url`, the photo taken when the book was scanned. A Kindle ' +
       'sync or a description that later brings another cover leaves it in place, and ' +
       'the other covers stay offered. Free. BAD_USER_INPUT when no `url` is given and ' +
-      'the book has no photo.',
+      'the book has no photo; COVER_NOT_AN_IMAGE when `url` does not serve an image — ' +
+      'the link to a shop’s page rather than to its picture of the cover.',
     args: {
       id: t.arg({ type: 'BookId', required: true }),
       url: t.arg({ type: 'CoverUrl', required: false }),
@@ -195,6 +196,9 @@ builder.mutationFields((t) => ({
       )
         .with('not-found', () => notFound('Book not found'))
         .with('no-photo', () => badUserInput('This book has no photo to draw its cover from'))
+        .with('not-an-image', () =>
+          domainError('COVER_NOT_AN_IMAGE', 'This address does not lead to an image'),
+        )
         .otherwise((book) => readBack(context.userId, book.id)),
   }),
 

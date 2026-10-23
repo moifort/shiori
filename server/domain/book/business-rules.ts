@@ -835,6 +835,9 @@ export const coverSourceOfAddress = (
 export type CoversFound = {
   amazon?: CoverUrl
   openLibrary?: CoverUrl
+  /** The French booksellers' image server: offered as a web cover, since the
+   *  picker names no source for it. */
+  epagine?: CoverUrl
   otherEditions: readonly CoverUrl[]
 }
 
@@ -860,6 +863,7 @@ export const coverCandidatesOf = (
     offer(coverSourceOfAddress(book.publishedCoverUrl), book.publishedCoverUrl)
   offer('amazon', found.amazon)
   offer('open-library', found.openLibrary)
+  offer('web', found.epagine)
   for (const url of found.otherEditions) offer('other-edition', url)
   if (book.chosenCover?.source === 'url')
     offer(coverSourceOfAddress(book.chosenCover.url), book.chosenCover.url)

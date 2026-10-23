@@ -1,6 +1,7 @@
 import { Isbn13 as Isbn13Of } from '~/domain/book/primitives'
 import type { BookLanguage, CoverUrl, Isbn13 } from '~/domain/book/types'
 import { amazonCoverOf } from '~/domain/scan/amazon-cover'
+import { epagineCoverOf } from '~/domain/scan/epagine-cover'
 import { openLibraryCoverOf, openLibraryIsbnsOf } from '~/domain/scan/open-library'
 import { createLogger } from '~/system/logger'
 import { isPresent, optionally } from '~/utils/input'
@@ -20,20 +21,24 @@ const BLANK_IMAGE_BYTES = 1000
  *  a Retina book sheet can draw, where Open Library often lacks recent French
  *  editions or files a stale cover under them. Open Library when Amazon has
  *  nothing, and on its own for a 979 ISBN, which Amazon cannot be asked for.
- *  Never throws, like both lookups it chains. */
+ *  ePagine last, for the French editions both miss — Bragelonne's, Milady's.
+ *  Never throws, like the lookups it chains. */
 export const publishedCoverOf = async (isbn13: Isbn13): Promise<CoverUrl | undefined> =>
-  (await amazonCoverOf(isbn13)) ?? (await openLibraryCoverOf(isbn13))
+  (await amazonCoverOf(isbn13)) ??
+  (await openLibraryCoverOf(isbn13)) ??
+  (await epagineCoverOf(isbn13))
 
-/** Both sources' covers for an ISBN, asked at once, for the reader to pick
+/** Every source's cover for an ISBN, asked at once, for the reader to pick
  *  between: each is undefined when its source has none. Never throws. */
 export const isbnCoversOf = async (
   isbn13: Isbn13,
-): Promise<{ amazon?: CoverUrl; openLibrary?: CoverUrl }> => {
-  const [amazon, openLibrary] = await Promise.all([
+): Promise<{ amazon?: CoverUrl; openLibrary?: CoverUrl; epagine?: CoverUrl }> => {
+  const [amazon, openLibrary, epagine] = await Promise.all([
     amazonCoverOf(isbn13),
     openLibraryCoverOf(isbn13),
+    epagineCoverOf(isbn13),
   ])
-  return { amazon, openLibrary }
+  return { amazon, openLibrary, epagine }
 }
 
 /** The ISBN registration groups an edition in each language is published under:
@@ -124,6 +129,31 @@ export const isCoverGone = async (url: CoverUrl): Promise<boolean> => {
     return !type.startsWith('image/') || length < BLANK_IMAGE_BYTES
   } catch (error) {
     logger.warn('cover probe failed', { error, url })
+    return false
+  }
+}
+
+/** Whether an address a reader pasted serves an image: the link to a shop's
+ *  page about the book, copied in place of its cover's, would be drawn as the
+ *  placeholder for good. Asked with HEAD first, then with GET for a server that
+ *  refuses HEAD. Following redirects, as the app's image loader does. A server
+ *  that cannot be reached says no: the reader is told at once, rather than left
+ *  with a cover that never draws. Never throws. */
+export const isImageAt = async (url: CoverUrl): Promise<boolean> => {
+  const answer = (method: 'HEAD' | 'GET') =>
+    fetch(url, { method, signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) })
+  try {
+    let response = await answer('HEAD')
+    if (!response.ok) {
+      await response.body?.cancel()
+      response = await answer('GET')
+    }
+    const type = response.headers.get('content-type') ?? ''
+    const length = Number(response.headers.get('content-length') ?? Number.NaN)
+    await response.body?.cancel()
+    return response.ok && type.startsWith('image/') && !(length < BLANK_IMAGE_BYTES)
+  } catch (error) {
+    logger.info('pasted cover unreachable', { error, url })
     return false
   }
 }

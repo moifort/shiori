@@ -1270,6 +1270,13 @@ describe('the covers offered to the reader', () => {
   test('offers nothing for a book no source knows', () => {
     expect(coverCandidatesOf({}, { otherEditions: [] })).toEqual([])
   })
+
+  test('offers the French booksellers’ cover as a web one', () => {
+    const epagine = CoverUrl('https://images.epagine.fr/273/9782374343273_1_75.jpg')
+    expect(coverCandidatesOf({}, { epagine, otherEditions: [] })).toEqual([
+      { source: 'web', url: epagine, current: false },
+    ])
+  })
 })
 
 describe('what a record keeps of its Kindle title', () => {
