@@ -27,6 +27,7 @@ import { lovedRankOf } from '~/domain/shared/rating'
 import type { AuthorName, UserId } from '~/domain/shared/types'
 import { ObjectPath } from '~/system/object-store/primitives'
 import type { ObjectPath as ObjectPathValue } from '~/system/object-store/types'
+import { isPresent } from '~/utils/input'
 import { slugify } from '~/utils/slug'
 
 /** Arrange a library into the sections the list renders. A book that belongs to a
@@ -880,8 +881,43 @@ export const kindleLinkUnder = (
 
 /** What a fresh lookup of the book found, as the scan answers it. */
 export type LookedUp = Partial<
-  Pick<Book, 'firstPublishedIn' | 'synopsis' | 'genre' | 'pageCount' | 'isbn13'>
-> & { subgenres?: readonly Subgenre[]; coverUrl?: Book['publishedCoverUrl'] }
+  Pick<Book, 'authors' | 'firstPublishedIn' | 'synopsis' | 'genre' | 'pageCount' | 'isbn13'>
+> & {
+  /** Empty when the lookup named no title. */
+  title?: Book['title'] | ''
+  subgenres?: readonly Subgenre[]
+  coverUrl?: Book['publishedCoverUrl']
+}
+
+/** The spelling a lookup found for a name the record holds, when it does no
+ *  more than mend a misread: a spine read puts a space inside a word, before
+ *  the accented letter — "La vall ée de la peur", "Le Myst ère de la chambre
+ *  jaune", "Henri L üvenbruck" — and a lookup made from that name finds it
+ *  whole. Only a name the lookup writes in fewer words, and otherwise the same
+ *  but for one letter, is taken: anything further apart is another name, and
+ *  the record's stays. Undefined when there is nothing to mend. */
+export const mendedSpelling = <Name extends string>(
+  held: Name,
+  found: Name | undefined,
+): Name | undefined => {
+  if (!found || wordsIn(found) >= wordsIn(held)) return undefined
+  return lettersApart(spaceless(held), spaceless(found)) <= 1 ? found : undefined
+}
+
+const wordsIn = (name: string) => name.trim().split(/\s+/u).length
+
+const spaceless = (name: string) => name.normalize('NFC').replace(/\s+/gu, '').toLowerCase()
+
+/** The record's authors, each one a lookup spelled whole put in its place. */
+const mendedAuthors = (
+  held: readonly AuthorName[],
+  found: readonly AuthorName[],
+): AuthorName[] | undefined => {
+  const mended = held.map(
+    (author) => found.map((other) => mendedSpelling(author, other)).find(isPresent) ?? author,
+  )
+  return mended.some((author, index) => author !== held[index]) ? mended : undefined
+}
 
 /** The facts a book takes from a fresh lookup when the reader asks for its
  *  record to be brought up to date.
@@ -889,18 +925,21 @@ export type LookedUp = Partial<
  *  Only what describes the work is rewritten: summary, genre, subgenres, page
  *  count, year, published cover. What names the book — title, authors, format,
  *  language, publisher, saga — is what the lookup was made from, so it stays
- *  the reader's. So does an ISBN already on the record: it names the edition on
+ *  the reader's, but for a title or an author misread with a space inside a
+ *  word, which takes the lookup's spelling (`mendedSpelling`). So does an ISBN already on the record: it names the edition on
  *  the shelf, where the lookup only guesses one, and is filled in only when
  *  missing. A field the lookup did not find keeps what the book had: a refresh
  *  fills and corrects, it never empties. A recording has no page count,
  *  whatever the lookup says of the printed book. */
 export const refreshedFacts = (
-  book: Pick<Book, 'format' | 'language' | 'isbn13'>,
+  book: Pick<Book, 'format' | 'language' | 'isbn13'> & Partial<Pick<Book, 'title' | 'authors'>>,
   found: LookedUp,
   language: BookLanguage,
 ): Partial<
   Pick<
     Book,
+    | 'title'
+    | 'authors'
     | 'firstPublishedIn'
     | 'synopsis'
     | 'genre'
@@ -913,6 +952,8 @@ export const refreshedFacts = (
   const subgenres = found.subgenres ?? []
   return Object.fromEntries(
     Object.entries({
+      title: book.title && mendedSpelling(book.title, found.title || undefined),
+      authors: book.authors && mendedAuthors(book.authors, found.authors ?? []),
       firstPublishedIn: found.firstPublishedIn,
       synopsis: found.synopsis,
       genre: found.genre,

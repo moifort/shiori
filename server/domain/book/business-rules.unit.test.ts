@@ -1046,6 +1046,29 @@ describe('a record brought up to date', () => {
     expect(refreshedFacts(printed, found, 'fr')).toEqual({ isbn13: Isbn13('9782352949329') })
   })
 
+  test('mends a title or an author misread with a space inside a word', () => {
+    const misread = {
+      ...printed,
+      title: BookTitle('La vall ée de la peur'),
+      authors: [AuthorName('Henri L üvenbruck'), AuthorName('Conan Doyle')],
+    }
+    const found = {
+      title: BookTitle('La Vallée de la peur'),
+      authors: [AuthorName('Henri Lœvenbruck'), AuthorName('Arthur Conan Doyle')],
+    }
+    expect(refreshedFacts(misread, found, 'fr')).toEqual({
+      title: BookTitle('La Vallée de la peur'),
+      authors: [AuthorName('Henri Lœvenbruck'), AuthorName('Conan Doyle')],
+    })
+  })
+
+  test('keeps the names the lookup spells otherwise', () => {
+    const held = { ...printed, title: BookTitle('Dune'), authors: [AuthorName('Frank Herbert')] }
+    const found = { title: BookTitle('Dune Messiah'), authors: [AuthorName('Brian Herbert')] }
+    expect(refreshedFacts(held, found, 'fr')).toEqual({})
+    expect(refreshedFacts(held, { title: BookTitle('DUNE') }, 'fr')).toEqual({})
+  })
+
   test('gives a recording no page count', () => {
     expect(
       refreshedFacts({ format: 'audiobook', language: 'fr' }, { pageCount: PageCount(662) }, 'fr'),
