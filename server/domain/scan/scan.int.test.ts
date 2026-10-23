@@ -469,6 +469,18 @@ describe('describing a named book from the BnF', () => {
     )
   })
 
+  test('spells whole the title and the publisher the spine misread', async () => {
+    bnfEditions = [{ ...bragelonne, title: 'Le Nom du vent — Chronique du tueur de roi' }]
+    answers = [aPick]
+
+    const { result } = await ScanCommand.lookUpEdition(
+      { ...named, title: BookTitle('Le N om du vent'), publisher: Publisher('Brag elonne') },
+      'fr',
+    )
+
+    expect(result).toMatchObject({ title: 'Le Nom du vent', publisher: 'Bragelonne' })
+  })
+
   test('looks the book up on the web when no edition is the one held', async () => {
     bnfEditions = [pocket]
     answers = [{ ...aPick, edition: null }, anEnrichment]

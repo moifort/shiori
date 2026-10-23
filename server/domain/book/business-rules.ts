@@ -10,6 +10,7 @@ import type {
   CoverSource,
   CoverUrl,
   LibrarySection,
+  Publisher,
   ReadingStatus,
   Recommendation,
   SeriesMembership,
@@ -881,12 +882,16 @@ export const kindleLinkUnder = (
 
 /** What a fresh lookup of the book found, as the scan answers it. */
 export type LookedUp = Partial<
-  Pick<Book, 'authors' | 'firstPublishedIn' | 'synopsis' | 'genre' | 'pageCount' | 'isbn13'>
-> & {
+  Pick<Book, 'firstPublishedIn' | 'synopsis' | 'genre' | 'pageCount' | 'isbn13'>
+> & { subgenres?: readonly Subgenre[]; coverUrl?: Book['publishedCoverUrl'] }
+
+/** What a fresh lookup named the book: title, authors, publisher, saga. */
+export type NamedByLookup = {
   /** Empty when the lookup named no title. */
   title?: Book['title'] | ''
-  subgenres?: readonly Subgenre[]
-  coverUrl?: Book['publishedCoverUrl']
+  authors?: readonly AuthorName[]
+  publisher?: Publisher
+  series?: { name: SeriesName }
 }
 
 /** The spelling a lookup found for a name the record holds, when it does no
@@ -897,10 +902,10 @@ export type LookedUp = Partial<
  *  but for one letter, is taken: anything further apart is another name, and
  *  the record's stays. Undefined when there is nothing to mend. */
 export const mendedSpelling = <Name extends string>(
-  held: Name,
+  held: Name | undefined,
   found: Name | undefined,
 ): Name | undefined => {
-  if (!found || wordsIn(found) >= wordsIn(held)) return undefined
+  if (!held || !found || wordsIn(found) >= wordsIn(held)) return undefined
   return lettersApart(spaceless(held), spaceless(found)) <= 1 ? found : undefined
 }
 
@@ -919,27 +924,52 @@ const mendedAuthors = (
   return mended.some((author, index) => author !== held[index]) ? mended : undefined
 }
 
+/** The names a book takes from a fresh lookup: none, but those its record
+ *  holds misread with a space inside a word (`mendedSpelling`) — the title,
+ *  each author, the publisher, the saga's name. Everything else that names the
+ *  book is what the lookup was made from, and stays the reader's.
+ *
+ *  A saga is keyed on its name and its first author, so when either is mended
+ *  the book is placed in its saga again, under the name it now has, for the
+ *  edit to key it as a reader's correction would. */
+export const mendedNames = (
+  book: Pick<Book, 'title' | 'authors' | 'publisher' | 'series'>,
+  found: NamedByLookup,
+): Partial<Pick<Book, 'title' | 'authors' | 'publisher'>> & { series?: SeriesPlacement } => {
+  const authors = mendedAuthors(book.authors, found.authors ?? [])
+  const seriesName = mendedSpelling(book.series?.name, found.series?.name)
+  const series =
+    book.series && (seriesName || (authors?.[0] !== undefined && authors[0] !== book.authors[0]))
+      ? { name: seriesName ?? book.series.name, volume: book.series.volume }
+      : undefined
+  return Object.fromEntries(
+    Object.entries({
+      title: mendedSpelling(book.title, found.title || undefined),
+      authors,
+      publisher: mendedSpelling(book.publisher, found.publisher),
+      series,
+    }).filter(([, value]) => value !== undefined),
+  )
+}
+
 /** The facts a book takes from a fresh lookup when the reader asks for its
  *  record to be brought up to date.
  *
  *  Only what describes the work is rewritten: summary, genre, subgenres, page
  *  count, year, published cover. What names the book — title, authors, format,
  *  language, publisher, saga — is what the lookup was made from, so it stays
- *  the reader's, but for a title or an author misread with a space inside a
- *  word, which takes the lookup's spelling (`mendedSpelling`). So does an ISBN already on the record: it names the edition on
+ *  the reader's, misreads aside (`mendedNames`). So does an ISBN already on the record: it names the edition on
  *  the shelf, where the lookup only guesses one, and is filled in only when
  *  missing. A field the lookup did not find keeps what the book had: a refresh
  *  fills and corrects, it never empties. A recording has no page count,
  *  whatever the lookup says of the printed book. */
 export const refreshedFacts = (
-  book: Pick<Book, 'format' | 'language' | 'isbn13'> & Partial<Pick<Book, 'title' | 'authors'>>,
+  book: Pick<Book, 'format' | 'language' | 'isbn13'>,
   found: LookedUp,
   language: BookLanguage,
 ): Partial<
   Pick<
     Book,
-    | 'title'
-    | 'authors'
     | 'firstPublishedIn'
     | 'synopsis'
     | 'genre'
@@ -952,8 +982,6 @@ export const refreshedFacts = (
   const subgenres = found.subgenres ?? []
   return Object.fromEntries(
     Object.entries({
-      title: book.title && mendedSpelling(book.title, found.title || undefined),
-      authors: book.authors && mendedAuthors(book.authors, found.authors ?? []),
       firstPublishedIn: found.firstPublishedIn,
       synopsis: found.synopsis,
       genre: found.genre,

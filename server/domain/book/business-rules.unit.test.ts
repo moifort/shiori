@@ -14,6 +14,7 @@ import {
   listeningProgressOf,
   mediaFor,
   membershipFor,
+  mendedNames,
   mergedCopies,
   readVolumeNumbersOf,
   recordJoinedBy,
@@ -39,6 +40,7 @@ import {
   Isbn13,
   ListeningMinutes,
   PageCount,
+  Publisher,
   RecommendationComment,
   StarRating,
   Subgenre,
@@ -1046,29 +1048,6 @@ describe('a record brought up to date', () => {
     expect(refreshedFacts(printed, found, 'fr')).toEqual({ isbn13: Isbn13('9782352949329') })
   })
 
-  test('mends a title or an author misread with a space inside a word', () => {
-    const misread = {
-      ...printed,
-      title: BookTitle('La vall ée de la peur'),
-      authors: [AuthorName('Henri L üvenbruck'), AuthorName('Conan Doyle')],
-    }
-    const found = {
-      title: BookTitle('La Vallée de la peur'),
-      authors: [AuthorName('Henri Lœvenbruck'), AuthorName('Arthur Conan Doyle')],
-    }
-    expect(refreshedFacts(misread, found, 'fr')).toEqual({
-      title: BookTitle('La Vallée de la peur'),
-      authors: [AuthorName('Henri Lœvenbruck'), AuthorName('Conan Doyle')],
-    })
-  })
-
-  test('keeps the names the lookup spells otherwise', () => {
-    const held = { ...printed, title: BookTitle('Dune'), authors: [AuthorName('Frank Herbert')] }
-    const found = { title: BookTitle('Dune Messiah'), authors: [AuthorName('Brian Herbert')] }
-    expect(refreshedFacts(held, found, 'fr')).toEqual({})
-    expect(refreshedFacts(held, { title: BookTitle('DUNE') }, 'fr')).toEqual({})
-  })
-
   test('gives a recording no page count', () => {
     expect(
       refreshedFacts({ format: 'audiobook', language: 'fr' }, { pageCount: PageCount(662) }, 'fr'),
@@ -1366,5 +1345,58 @@ describe('titleWithoutAuthor', () => {
   test('keeps a comma or a colon, and a title that is nothing but its author', () => {
     expect(bare('Moi, Christiane F.', ['Christiane F.'])).toBe('Moi, Christiane F.')
     expect(bare('Alain Damasio', damasio)).toBe('Alain Damasio')
+  })
+})
+
+describe('mendedNames', () => {
+  const misread = {
+    title: BookTitle('La vall ée de la peur'),
+    authors: [AuthorName('Henri L üvenbruck'), AuthorName('Conan Doyle')],
+    publisher: Publisher('Le Livre de Po che'),
+  }
+
+  test('takes the spelling a lookup found whole for every name misread with a space', () => {
+    expect(
+      mendedNames(misread, {
+        title: BookTitle('La Vallée de la peur'),
+        authors: [AuthorName('Henri Lœvenbruck'), AuthorName('Arthur Conan Doyle')],
+        publisher: Publisher('Le Livre de Poche'),
+      }),
+    ).toEqual({
+      title: BookTitle('La Vallée de la peur'),
+      authors: [AuthorName('Henri Lœvenbruck'), AuthorName('Conan Doyle')],
+      publisher: Publisher('Le Livre de Poche'),
+    })
+  })
+
+  test('places the book in its saga again when its name or its first author is mended', () => {
+    const series = {
+      id: SeriesId('le-myst-ere--gaston-leroux'),
+      name: SeriesName('Rouletabille'),
+      volume: VolumeNumber(1),
+      kind: 'main' as const,
+    }
+    const held = { ...misread, series: { ...series, name: SeriesName('Rouleta bille') } }
+    expect(mendedNames(held, { series: { name: SeriesName('Rouletabille') } })).toEqual({
+      series: { name: SeriesName('Rouletabille'), volume: VolumeNumber(1) },
+    })
+    expect(
+      mendedNames({ ...misread, series }, { authors: [AuthorName('Henri Lœvenbruck')] }),
+    ).toEqual({
+      authors: [AuthorName('Henri Lœvenbruck'), AuthorName('Conan Doyle')],
+      series: { name: SeriesName('Rouletabille'), volume: VolumeNumber(1) },
+    })
+  })
+
+  test('keeps the names the lookup spells otherwise', () => {
+    const held = { title: BookTitle('Dune'), authors: [AuthorName('Frank Herbert')] }
+    expect(
+      mendedNames(held, {
+        title: BookTitle('Dune Messiah'),
+        authors: [AuthorName('Brian Herbert')],
+      }),
+    ).toEqual({})
+    expect(mendedNames(held, { title: BookTitle('DUNE') })).toEqual({})
+    expect(mendedNames(held, { title: '' })).toEqual({})
   })
 })

@@ -1,4 +1,4 @@
-import { titleWithoutAuthor } from '~/domain/book/business-rules'
+import { mendedSpelling, titleWithoutAuthor } from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
 import {
   BookLanguageValue,
@@ -10,7 +10,11 @@ import {
   Subgenre,
   Synopsis,
 } from '~/domain/book/primitives'
-import type { BookLanguage, Isbn13 as Isbn13Type } from '~/domain/book/types'
+import type {
+  BookLanguage,
+  Isbn13 as Isbn13Type,
+  Publisher as PublisherType,
+} from '~/domain/book/types'
 import { bnfEditionsOf } from '~/domain/scan/bnf'
 import {
   boxOf,
@@ -114,6 +118,7 @@ type EnrichmentOutput = {
   isbn13?: string | null
   regularEditionIsbn13?: string | null
   synopsis?: string | null
+  publisher?: string | null
 }
 
 type EditionsOutput = {
@@ -299,11 +304,13 @@ export namespace ScanCommand {
         found: {
           result: {
             recognized: true,
-            title: seen.title,
+            // What the spine misread with a space inside a word, the
+            // catalogue spells whole.
+            title: mendedSpelling(seen.title || undefined, catalogueTitleOf(picked)) ?? seen.title,
             authors: seen.authors,
             format: seen.format,
             media: seen.media,
-            publisher: seen.publisher ?? optional(picked.publisher, Publisher),
+            publisher: mendedOrHeld(seen.publisher, optional(picked.publisher, Publisher)),
             language: seen.language,
             firstPublishedIn: optional(value.firstPublishedIn, Year),
             synopsis,
@@ -543,7 +550,7 @@ export namespace ScanCommand {
         authors,
         format: seen.format,
         media: seen.media,
-        publisher: seen.publisher,
+        publisher: mendedOrHeld(seen.publisher, optional(value.publisher, Publisher)),
         // Kept from step 1 rather than asked again: the language of the edition
         // is a fact about the object photographed, and the grounded step answers
         // about the work — which is a different question with a different answer.
@@ -567,6 +574,16 @@ export namespace ScanCommand {
       usage,
     }
   }
+
+  /** The publisher the scan read, but as a lookup spells it whole when the
+   *  read split a word (`mendedSpelling`); the lookup's when none was read. */
+  const mendedOrHeld = (held: PublisherType | undefined, found: PublisherType | undefined) =>
+    held ? (mendedSpelling(held, found) ?? held) : found
+
+  /** A catalogue edition's title proper, without what its record adds after
+   *  a dash: the volume, its own title, a subtitle. */
+  const catalogueTitleOf = (edition: LibraryEdition) =>
+    optional(edition.title?.split(' — ')[0], BookTitle)
 
   const notAnotherVolume = (isbn13: Isbn13Type | undefined, hints: EditionHints | undefined) =>
     isbn13 && hints?.siblings.some((sibling) => sibling.isbn13 === isbn13) ? undefined : isbn13

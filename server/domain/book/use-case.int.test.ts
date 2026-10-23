@@ -64,10 +64,10 @@ const { BookUseCase } = await import('~/domain/book/use-case')
 const { BookCommand } = await import('~/domain/book/command')
 const { BookQuery } = await import('~/domain/book/query')
 const { ObjectPath, SignedUrl } = await import('~/system/object-store/primitives')
-const { BookId, CoverUrl, Isbn13, Synopsis } = await import('~/domain/book/primitives')
+const { BookId, CoverUrl, Isbn13, Publisher, Synopsis } = await import('~/domain/book/primitives')
 const { monthOf } = await import('~/domain/quota/business-rules')
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
-const { SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
+const { SeriesName, VolumeNumber, seriesKeyOf } = await import('~/domain/series/primitives')
 
 const reader = 'reader-1' as UserId
 let fake = resetFakeFirestore()
@@ -428,6 +428,42 @@ describe('a book added from a shelf photo', () => {
     })
     expect(stored).not.toHaveProperty('awaitingDescription')
     expect(spent()).toBe(5)
+  })
+
+  test('takes the spelling the lookup found for every name its spine misread', async () => {
+    const added = await BookUseCase.addFromShelf(reader, {
+      title: BookTitle('Le Myst ère de la chambre jaune'),
+      authors: [AuthorName('Gaston Ler oux')],
+      publisher: Publisher('Le Livre de Po che'),
+      seriesName: SeriesName('Rouleta bille'),
+      volume: VolumeNumber(1),
+      language: 'fr',
+    })
+    if (added === 'quota-exhausted') throw new Error('the allowance was not used up')
+    answers = [
+      {
+        title: 'Le Mystère de la chambre jaune',
+        authors: ['Gaston Leroux'],
+        publisher: 'Le Livre de Poche',
+        seriesName: 'Rouletabille',
+        volumeNumber: 1,
+        synopsis: 'A locked room.',
+      },
+    ]
+
+    await BookUseCase.describe(reader, added.id, 'fr')
+
+    expect(fake.data('books', added.id)).toMatchObject({
+      title: 'Le Mystère de la chambre jaune',
+      authors: ['Gaston Leroux'],
+      publisher: 'Le Livre de Poche',
+      series: {
+        id: seriesKeyOf(SeriesName('Rouletabille'), 'Gaston Leroux', 'book'),
+        name: 'Rouletabille',
+        volume: 1,
+      },
+      synopsis: 'A locked room.',
+    })
   })
 
   test('stays flagged, untouched, when the lookup fails', async () => {

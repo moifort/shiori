@@ -3,6 +3,7 @@ import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import {
   coverCandidatesOf,
   mediaFor,
+  mendedNames,
   recordJoinedBy,
   refreshedFacts,
 } from '~/domain/book/business-rules'
@@ -283,6 +284,7 @@ const rewrittenFrom = async (userId: UserId, book: Book, found: ScanResult, lang
   const coverGone =
     !coverUrl && book.publishedCoverUrl !== undefined && (await isCoverGone(book.publishedCoverUrl))
   return BookUseCase.edit(userId, book.id, {
+    ...mendedNames(book, found),
     ...facts,
     ...(coverGone ? { publishedCoverUrl: undefined } : {}),
     awaitingDescription: undefined,

@@ -96,6 +96,11 @@ export const ENRICHMENT_SCHEMA = {
         "Si cette édition est spéciale (collector, limitée…), ISBN-13 de l'édition courante ; null sinon",
     },
     synopsis: { type: 'string', nullable: true, description: 'Résumé sans le dénouement' },
+    publisher: {
+      type: 'string',
+      nullable: true,
+      description: "Éditeur de cette édition, tel qu'il s'écrit ; null si incertain",
+    },
   },
   required: ['title', 'authors', 'subgenres'],
   propertyOrdering: [
@@ -111,6 +116,7 @@ export const ENRICHMENT_SCHEMA = {
     'isbn13',
     'regularEditionIsbn13',
     'synopsis',
+    'publisher',
   ],
 } as const
 
