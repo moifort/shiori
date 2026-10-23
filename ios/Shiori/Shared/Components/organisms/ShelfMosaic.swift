@@ -32,7 +32,8 @@ struct MosaicModeButton: View {
 /// edge with a hairline between them, no heading and no caption — the covers
 /// say what they are, and a tap says the rest. As many columns as fit at the
 /// width a tile aims for, never fewer than three — or the columns asked for,
-/// made even and parted on the fold of an iPhone Duo (`MosaicColumns`).
+/// sized on a partly folded iPhone Duo so the crease falls between two
+/// covers (`MosaicColumns`).
 /// The tile is told its width.
 ///
 /// Given the date each row is shelved on, the month is pinned on a cover's
@@ -118,9 +119,10 @@ struct ShelfMosaic<Row: Identifiable, Tile: View, Bottom: View>: View {
             VStack(spacing: 0) {
                 if layout.width > 0 {
                     LazyVGrid(
-                        columns: (0..<count).map { column in
-                            GridItem(.fixed(tileWidth), spacing: layout.spacing(after: column), alignment: .top)
-                        },
+                        columns: Array(
+                            repeating: GridItem(.fixed(tileWidth), spacing: spacing, alignment: .top),
+                            count: count
+                        ),
                         spacing: spacing
                     ) {
                         ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
@@ -176,10 +178,10 @@ struct ShelfMosaic<Row: Identifiable, Tile: View, Bottom: View>: View {
 }
 
 /// How a mosaic's columns sit across its width. While a partly folded iPhone
-/// Duo's fold crosses the grid, the count is made even and half the columns
-/// end on the fold, the other half start after it, as Apple asks of a grid
-/// on the Duo: no cover is ever cut by the crease. Laid flat, there is no
-/// crease to keep clear of and the grid fills the screen edge to edge.
+/// Duo's fold crosses the grid, the mosaic still fills the page, its columns
+/// sized so the crease runs down the middle of a gap between two covers and
+/// never through one. Laid flat, or anywhere else, the columns simply share
+/// the width.
 struct MosaicColumns: Equatable {
     let width: CGFloat
     let count: Int
@@ -188,9 +190,8 @@ struct MosaicColumns: Equatable {
     let spacing: CGFloat
     /// Where the first column starts.
     let leading: CGFloat
-    /// The space after the last column before the fold. Nil when no fold
-    /// crosses the grid.
-    let foldGap: CGFloat?
+    /// The columns left of the crease. Nil when no fold crosses the grid.
+    let columnsBeforeFold: Int?
 
     /// - Parameters:
     ///   - columns: the columns asked for. Nil fits as many as the width
@@ -208,36 +209,44 @@ struct MosaicColumns: Equatable {
         self.spacing = spacing
         let fitting = max(3, Int((width - 2 * margin + spacing) / (idealTileWidth + spacing)))
         let asked = columns ?? fitting
+        let tile = { (space: CGFloat, count: Int) in
+            max(0, (space - CGFloat(count - 1) * spacing) / CGFloat(count))
+        }
+        let span = { (count: Int, tile: CGFloat) in
+            CGFloat(count) * tile + CGFloat(count - 1) * spacing
+        }
         guard let fold, fold.lowerBound > margin, fold.upperBound < width - margin else {
             count = asked
-            tileWidth = max(0, (width - 2 * margin - CGFloat(asked - 1) * spacing) / CGFloat(asked))
+            tileWidth = tile(width - 2 * margin, asked)
             leading = margin
-            foldGap = nil
+            columnsBeforeFold = nil
             return
         }
-        // Rounded up: the mosaic is the tightest grid of the shelf.
-        let even = asked.isMultiple(of: 2) ? asked : asked + 1
-        let half = even / 2
-        let gap = max(spacing, fold.upperBound - fold.lowerBound)
-        let before = fold.lowerBound - margin
-        let after = width - margin - (fold.lowerBound + gap)
-        let tile = max(0, (min(before, after) - CGFloat(half - 1) * spacing) / CGFloat(half))
-        count = even
-        tileWidth = tile
-        // The first half ends on the fold: what the narrower side leaves
-        // over goes to the screen's edge, not to the crease.
-        leading = fold.lowerBound - (CGFloat(half) * tile + CGFloat(half - 1) * spacing)
-        foldGap = gap
-    }
-
-    /// The space after a column: the fold's gap after the first half.
-    func spacing(after column: Int) -> CGFloat {
-        if let foldGap, column == count / 2 - 1 { foldGap } else { spacing }
+        // The crease, down the middle of the gap between two columns: each
+        // side holds whole columns of one width, and what is left over —
+        // never much, the counts are chosen for it — goes to the edges.
+        let crease = (fold.lowerBound + fold.upperBound) / 2
+        let before = crease - spacing / 2 - margin
+        let after = width - margin - (crease + spacing / 2)
+        var best: (left: Int, right: Int, tile: CGFloat, slack: CGFloat)?
+        for total in max(2, asked - 1)...(asked + 1) {
+            for left in 1..<total {
+                let right = total - left
+                let shared = min(tile(before, left), tile(after, right))
+                let slack = before - span(left, shared) + after - span(right, shared)
+                if best == nil || slack < best!.slack { best = (left, right, shared, slack) }
+            }
+        }
+        let chosen = best!
+        count = chosen.left + chosen.right
+        tileWidth = chosen.tile
+        leading = crease - spacing / 2 - span(chosen.left, chosen.tile)
+        columnsBeforeFold = chosen.left
     }
 
     /// The width the columns and the spaces between them take.
     var gridWidth: CGFloat {
-        CGFloat(count) * tileWidth + (0..<max(0, count - 1)).reduce(0) { $0 + spacing(after: $1) }
+        CGFloat(count) * tileWidth + CGFloat(max(0, count - 1)) * spacing
     }
 }
 

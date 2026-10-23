@@ -9,34 +9,33 @@ struct MosaicColumnsTests {
         #expect(layout.count == 7)
         #expect(layout.tileWidth == 98)
         #expect(layout.leading == 0)
-        #expect(layout.foldGap == nil)
+        #expect(layout.columnsBeforeFold == nil)
     }
 
-    @Test func aFoldAsksForAnEvenCount() {
-        let layout = MosaicColumns(width: 800, columns: 7, spacing: 2, fold: 400...400)
-
-        #expect(layout.count == 8)
-    }
-
-    @Test func noColumnStraddlesTheFold() {
+    @Test func theCreaseRunsDownTheMiddleOfAGapBetweenCovers() throws {
         // Partly folded: the crease and its margins, off centre since the
         // vertical bar takes the right edge.
-        let fold: ClosedRange<CGFloat> = 455...495
-        let layout = MosaicColumns(width: 866, columns: 7, spacing: 2, fold: fold)
+        let layout = MosaicColumns(width: 866, columns: 7, spacing: 2, fold: 455...495)
 
-        let half = layout.count / 2
-        let halfWidth = CGFloat(half) * layout.tileWidth + CGFloat(half - 1) * 2
-        // The left half ends on the fold, the right half starts after it.
-        #expect(layout.leading + halfWidth == fold.lowerBound)
-        #expect(layout.foldGap == fold.upperBound - fold.lowerBound)
-        #expect(fold.upperBound + halfWidth <= 866)
+        let before = try #require(layout.columnsBeforeFold)
+        let gapCentre = layout.leading + CGFloat(before) * (layout.tileWidth + 2) - 1
+        #expect(abs(gapCentre - 475) < 0.001)
+    }
+
+    @Test func theMosaicStillFillsThePage() {
+        let layout = MosaicColumns(width: 866, columns: 7, spacing: 2, fold: 455...495)
+
+        #expect((6...8).contains(layout.count))
         #expect(layout.leading >= 0)
+        #expect(layout.leading + layout.gridWidth <= 866)
+        // What is left over at the edges stays well under a cover's width.
+        #expect(866 - layout.gridWidth < layout.tileWidth / 2)
     }
 
     @Test func aFoldOutsideTheGridChangesNothing() {
         let layout = MosaicColumns(width: 420, columns: 7, spacing: 2, fold: 600...640)
 
         #expect(layout.count == 7)
-        #expect(layout.foldGap == nil)
+        #expect(layout.columnsBeforeFold == nil)
     }
 }
