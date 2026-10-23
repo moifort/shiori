@@ -33,17 +33,6 @@ struct MosaicColumnsTests {
         #expect(layout.leading >= 0)
     }
 
-    @Test func aFlatFoldStillSplitsTheColumnsOnItsLine() {
-        // Laid flat, the fold is a line: the gap is the grid's own spacing.
-        let layout = MosaicColumns(width: 866, columns: 7, spacing: 2, fold: 475...475)
-
-        let half = layout.count / 2
-        let halfWidth = CGFloat(half) * layout.tileWidth + CGFloat(half - 1) * 2
-        #expect(layout.count == 8)
-        #expect(layout.leading + halfWidth == 475)
-        #expect(layout.foldGap == 2)
-    }
-
     @Test func aFoldOutsideTheGridChangesNothing() {
         let layout = MosaicColumns(width: 420, columns: 7, spacing: 2, fold: 600...640)
 

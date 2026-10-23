@@ -76,7 +76,9 @@ struct ShelfMosaic<Row: Identifiable, Tile: View, Bottom: View>: View {
                 idealTileWidth: idealTileWidth,
                 columns: columns,
                 spacing: spacing,
-                fold: proxy.foldSpan(includeInactive: true)
+                // Only while the Duo is partly folded: laid flat, the mosaic
+                // takes the whole screen.
+                fold: proxy.foldSpan()
             ))
         }
     }
@@ -173,11 +175,11 @@ struct ShelfMosaic<Row: Identifiable, Tile: View, Bottom: View>: View {
     }
 }
 
-/// How a mosaic's columns sit across its width. On an iPhone Duo's inner
-/// screen, whenever a fold crosses the grid — even laid flat — the count is
-/// made even and half the columns end on the fold, the other half start
-/// after it, as Apple asks of a grid on the Duo: no cover is ever cut by the
-/// crease, and folding only widens the gap.
+/// How a mosaic's columns sit across its width. While a partly folded iPhone
+/// Duo's fold crosses the grid, the count is made even and half the columns
+/// end on the fold, the other half start after it, as Apple asks of a grid
+/// on the Duo: no cover is ever cut by the crease. Laid flat, there is no
+/// crease to keep clear of and the grid fills the screen edge to edge.
 struct MosaicColumns: Equatable {
     let width: CGFloat
     let count: Int
