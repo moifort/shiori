@@ -74,9 +74,10 @@
   // The three iPhones: they stand on the first screen, so the side ones wait
   // behind the library until the page moves, then come out with the scroll,
   // fully fanned after a third of a screen. Reduced motion leaves them fanned,
-  // as the stylesheet draws them.
+  // as the stylesheet draws them. A browser with scroll-driven animations
+  // fans them in CSS, off the main thread, and needs none of this.
   const trio = document.querySelector(".trio");
-  if (trio && !reducedMotion) {
+  if (trio && !reducedMotion && !CSS.supports("animation-timeline: scroll()")) {
     let pending = false;
     const fan = () => {
       pending = false;

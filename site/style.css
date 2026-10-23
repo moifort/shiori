@@ -270,11 +270,33 @@ section {
   margin-top: calc(var(--pw) * 0.24);
   transform: translateX(calc((1 - var(--fan)) * var(--pw) * 0.55)) scale(calc(0.9 + var(--fan) * 0.1));
   transform-origin: 50% 100%;
+  will-change: transform;
 }
 .device-side:first-child { margin-right: calc(var(--pw) * -0.1); }
 .device-side:last-child {
   margin-left: calc(var(--pw) * -0.1);
   transform: translateX(calc((1 - var(--fan)) * var(--pw) * -0.55)) scale(calc(0.9 + var(--fan) * 0.1));
+}
+/* Where the browser can tie an animation to the scroll, the fan runs on the
+   compositor: the transform alone moves, nothing is restyled or repainted per
+   frame, and main.js leaves --fan alone. */
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .device-side {
+      animation: fan-left linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 33vh;
+    }
+    .device-side:last-child { animation-name: fan-right; }
+  }
+}
+@keyframes fan-left {
+  from { transform: translateX(calc(var(--pw) * 0.55)) scale(0.9); }
+  to { transform: none; }
+}
+@keyframes fan-right {
+  from { transform: translateX(calc(var(--pw) * -0.55)) scale(0.9); }
+  to { transform: none; }
 }
 @media (max-width: 560px) {
   .trio { --pw: min(56vw, 100cqh / 2.24); }
