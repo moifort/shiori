@@ -31,7 +31,8 @@ struct MosaicModeButton: View {
 /// A shelf's mosaic, as the Photos app lays out a library: the tiles edge to
 /// edge with a hairline between them, no heading and no caption — the covers
 /// say what they are, and a tap says the rest. As many columns as fit at the
-/// width a tile aims for, never fewer than three — or the columns asked for.
+/// width a tile aims for, never fewer than three — or the columns asked for,
+/// made even and parted on the fold of an iPhone Duo (`MosaicColumns`).
 /// The tile is told its width.
 ///
 /// Given the date each row is shelved on, the month is pinned on a cover's
@@ -69,24 +70,30 @@ struct ShelfMosaic<Row: Identifiable, Tile: View, Bottom: View>: View {
 
     var body: some View {
         GeometryReader { proxy in
-            grid(width: proxy.size.width)
+            grid(layout: MosaicColumns(
+                width: proxy.size.width,
+                margin: margin,
+                idealTileWidth: idealTileWidth,
+                columns: columns,
+                spacing: spacing,
+                fold: proxy.foldSpan(includeInactive: true)
+            ))
         }
     }
 
     /// The month tags are held at the grid's top, the toolbar's foot.
     private let pinLine: CGFloat = 0
 
-    private func grid(width: CGFloat) -> some View {
-        let fitting = max(3, Int((width - 2 * margin + spacing) / (idealTileWidth + spacing)))
-        let count = columns ?? fitting
-        let tileWidth = max(0, (width - 2 * margin - CGFloat(count - 1) * spacing) / CGFloat(count))
+    private func grid(layout: MosaicColumns) -> some View {
+        let count = layout.count
+        let tileWidth = layout.tileWidth
         let tags = monthTags(columns: count)
         let isCompact = tileWidth < 80
         let pitch = tileWidth * tileAspect + spacing
         let taggedIndices = tags.keys.sorted()
         return ScrollViewReader { reader in
             scroll(
-                width: width, count: count, tileWidth: tileWidth, tags: tags,
+                layout: layout, tags: tags,
                 isCompact: isCompact, pitch: pitch, taggedIndices: taggedIndices
             )
             .onChange(of: scrolledTo, initial: true) { _, row in
@@ -97,22 +104,21 @@ struct ShelfMosaic<Row: Identifiable, Tile: View, Bottom: View>: View {
     }
 
     private func scroll(
-        width: CGFloat,
-        count: Int,
-        tileWidth: CGFloat,
+        layout: MosaicColumns,
         tags: [Int: Date],
         isCompact: Bool,
         pitch: CGFloat,
         taggedIndices: [Int]
     ) -> some View {
-        ScrollView {
+        let count = layout.count
+        let tileWidth = layout.tileWidth
+        return ScrollView {
             VStack(spacing: 0) {
-                if width > 0 {
+                if layout.width > 0 {
                     LazyVGrid(
-                        columns: Array(
-                            repeating: GridItem(.fixed(tileWidth), spacing: spacing, alignment: .top),
-                            count: count
-                        ),
+                        columns: (0..<count).map { column in
+                            GridItem(.fixed(tileWidth), spacing: layout.spacing(after: column), alignment: .top)
+                        },
                         spacing: spacing
                     ) {
                         ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
@@ -130,7 +136,9 @@ struct ShelfMosaic<Row: Identifiable, Tile: View, Bottom: View>: View {
                                 .zIndex(tags[index] == nil ? 0 : 1)
                         }
                     }
-                    .padding(.horizontal, margin)
+                    .frame(width: layout.gridWidth)
+                    .padding(.leading, layout.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 bottom()
             }
@@ -157,11 +165,77 @@ struct ShelfMosaic<Row: Identifiable, Tile: View, Bottom: View>: View {
         .overlay(alignment: .topLeading) {
             if let index = pinned.index, let month = tags[index] {
                 MosaicDateTag(month: month, isCompact: isCompact)
-                    .padding(.leading, margin)
+                    .padding(.leading, layout.leading)
                     .offset(y: pinLine + pinned.push)
                     .allowsHitTesting(false)
             }
         }
+    }
+}
+
+/// How a mosaic's columns sit across its width. On an iPhone Duo's inner
+/// screen, whenever a fold crosses the grid — even laid flat — the count is
+/// made even and half the columns end on the fold, the other half start
+/// after it, as Apple asks of a grid on the Duo: no cover is ever cut by the
+/// crease, and folding only widens the gap.
+struct MosaicColumns: Equatable {
+    let width: CGFloat
+    let count: Int
+    let tileWidth: CGFloat
+    /// The space between two columns.
+    let spacing: CGFloat
+    /// Where the first column starts.
+    let leading: CGFloat
+    /// The space after the last column before the fold. Nil when no fold
+    /// crosses the grid.
+    let foldGap: CGFloat?
+
+    /// - Parameters:
+    ///   - columns: the columns asked for. Nil fits as many as the width
+    ///     allows at `idealTileWidth`, never fewer than three.
+    ///   - fold: the span the fold takes across the grid, in its coordinates.
+    init(
+        width: CGFloat,
+        margin: CGFloat = 0,
+        idealTileWidth: CGFloat = 95,
+        columns: Int?,
+        spacing: CGFloat,
+        fold: ClosedRange<CGFloat>?
+    ) {
+        self.width = width
+        self.spacing = spacing
+        let fitting = max(3, Int((width - 2 * margin + spacing) / (idealTileWidth + spacing)))
+        let asked = columns ?? fitting
+        guard let fold, fold.lowerBound > margin, fold.upperBound < width - margin else {
+            count = asked
+            tileWidth = max(0, (width - 2 * margin - CGFloat(asked - 1) * spacing) / CGFloat(asked))
+            leading = margin
+            foldGap = nil
+            return
+        }
+        // Rounded up: the mosaic is the tightest grid of the shelf.
+        let even = asked.isMultiple(of: 2) ? asked : asked + 1
+        let half = even / 2
+        let gap = max(spacing, fold.upperBound - fold.lowerBound)
+        let before = fold.lowerBound - margin
+        let after = width - margin - (fold.lowerBound + gap)
+        let tile = max(0, (min(before, after) - CGFloat(half - 1) * spacing) / CGFloat(half))
+        count = even
+        tileWidth = tile
+        // The first half ends on the fold: what the narrower side leaves
+        // over goes to the screen's edge, not to the crease.
+        leading = fold.lowerBound - (CGFloat(half) * tile + CGFloat(half - 1) * spacing)
+        foldGap = gap
+    }
+
+    /// The space after a column: the fold's gap after the first half.
+    func spacing(after column: Int) -> CGFloat {
+        if let foldGap, column == count / 2 - 1 { foldGap } else { spacing }
+    }
+
+    /// The width the columns and the spaces between them take.
+    var gridWidth: CGFloat {
+        CGFloat(count) * tileWidth + (0..<max(0, count - 1)).reduce(0) { $0 + spacing(after: $1) }
     }
 }
 
