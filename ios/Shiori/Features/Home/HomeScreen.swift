@@ -206,11 +206,14 @@ struct HomeScreen: View {
         }
     }
 
-    /// Whether the page opens on the discoveries' carousel: on a phone or the
-    /// folded Duo, once the month's choice is ready.
+    /// Whether the page opens on the carousel: on a phone or the folded Duo,
+    /// once a release is due this week or the month's choice is ready.
     private var showsCarousel: Bool {
         !isSplit && !preparation.isActive && viewModel.dashboard != nil
-            && !(viewModel.discoveries?.shownOnHome.isEmpty ?? true)
+            && !HomeHeroItem.items(
+                releases: viewModel.releases,
+                discoveries: viewModel.discoveries?.shownOnHome ?? []
+            ).isEmpty
     }
 
     /// Whether a detail opens beside the dashboard: the Duo's inner screen.

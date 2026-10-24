@@ -72,8 +72,9 @@ struct HomePage: View {
         ScrollView {
             VStack(spacing: 0) {
                 if showsCarousel {
-                    HomeDiscoveryCarousel(
-                        discoveries: shownDiscoveries,
+                    HomeHeroCarousel(
+                        items: heroItems,
+                        onOpenRelease: { onAction(.openRelease($0)) },
                         onOpen: { onAction(.openDiscovery($0)) },
                         onAdd: { onAction(.addDiscovery($0, $1)) },
                         onAwait: { onAction(.awaitDiscovery($0, $1)) }
@@ -136,8 +137,13 @@ struct HomePage: View {
         discoveries?.shownOnHome ?? []
     }
 
+    /// What the carousel shows: the week's releases, then the discoveries.
+    private var heroItems: [HomeHeroItem] {
+        HomeHeroItem.items(releases: releases, discoveries: shownDiscoveries, today: today)
+    }
+
     private var showsCarousel: Bool {
-        isCompact && !shownDiscoveries.isEmpty
+        isCompact && !heroItems.isEmpty
     }
 
     /// A phone heads its rows as the TV app does, the chevron after the title.
@@ -343,7 +349,7 @@ struct HomePage: View {
 
     /// A release drawn as a book, as Découvrir draws it: a volume with its saga
     /// as a tag, the headphones on the cover of a recording.
-    private static func releaseTile(_ release: HomeRelease) -> Book {
+    static func releaseTile(_ release: HomeRelease) -> Book {
         switch release {
         case let .volume(volume): volumeTile(volume)
         case let .awaited(edition): edition.cover
