@@ -9,7 +9,7 @@ final class HomeViewModel {
     init(client: HomeClient, caching: Bool = true) {
         self.client = client
         if caching {
-            cache = SnapshotCache("dashboard", version: 4)
+            cache = SnapshotCache("dashboard", version: 5)
             releasesCache = SnapshotCache("dashboard-releases", version: 3)
             favoritesCache = SnapshotCache("dashboard-friend-favorites", version: 1)
             discoveriesCache = SnapshotCache("dashboard-discoveries", version: 2)
@@ -182,6 +182,19 @@ final class HomeViewModel {
     func stopAwaiting(_ edition: AwaitedEdition) async {
         do { try await client.stopAwaiting(edition.id) } catch { _ = reportError(error) }
     }
+
+    /// The reading card's buttons. The figures follow through the change
+    /// notice every write posts; a failure is said in an alert, the page kept.
+    func finish(_ book: Book) async {
+        do { try await client.finish(book.id) } catch { actionError = reportError(error) }
+    }
+
+    func rate(_ book: Book, stars: Double) async {
+        do { try await client.rate(book.id, stars) } catch { actionError = reportError(error) }
+    }
+
+    /// What a button of the page could not do.
+    var actionError: String?
 
     func genreInsights() async throws -> GenreInsights {
         try await client.genreInsights()

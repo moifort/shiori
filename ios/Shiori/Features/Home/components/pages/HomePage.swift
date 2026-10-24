@@ -1,30 +1,42 @@
 import SwiftUI
 
-/// Everything the dashboard can ask for: each card opens the list it counts.
+/// Everything the home screen can ask for: each row opens what it shows.
 enum HomeAction {
-    /// A tile or a shelf: the Library tab on the books it counts.
+    /// A row's header: the Library tab on the books it lists.
     case showLibrary(LibraryRequest)
-    /// The progress card's header: the Series tab on the sagas in progress.
+    /// "Mes séries"'s header: the Series tab on the sagas in progress.
     case showSeries(SeriesRequest)
-    /// A row of the progress card.
+    /// A card of "Mes séries".
     case openSeries(String)
     case openBook(Book)
+    /// The figures under the hero: the statistics, beside or over the page.
+    case showStatistics
+    /// The statistics' genre card.
     case openGenres
+    /// The book read now, finished from its card.
+    case finishBook(Book)
+    /// The book read now, rated from its card.
+    case rateBook(Book)
     /// The prompt that leads an empty library.
     case scan
-    /// The releases header.
+    /// "Nouveautés"'s header, and the hero's way to every discovery.
     case showDiscover
     /// A volume just out or announced, or a recording awaited.
     case openRelease(HomeRelease)
-    /// The friends' favourites header.
-    case showShared
     case openFriendFavorite(FriendFavorite)
     case openDiscovery(Suggestion)
 }
 
-/// The dashboard laid out top to bottom. Stateless: the coordinator hands it the
-/// figures and receives the taps. Every widget is drawn from the first book on;
-/// one with nothing to show yet says what will fill it.
+/// The home screen in the TV app's grammar: a hero with the month's discovery
+/// over its cover's colours, the library's figures in one line, then rows on
+/// the page without cards around them — the books open now, the pile, what is
+/// new, the sagas in progress. A row with nothing to show is not drawn, title
+/// and all. Stateless: the coordinator hands it the figures and receives the
+/// taps.
+///
+/// Laid wide on the Duo's inner screen with nothing open beside it, the rows
+/// stand in two columns under a hero that shows the month's other discoveries
+/// too; on a phone, the Duo folded, or beside a detail, one column.
 struct HomePage: View {
     let dashboard: Dashboard
     /// The volumes just out, the newest first, then the next one announced of
@@ -34,217 +46,214 @@ struct HomePage: View {
     var friendFavorites: [FriendFavorite] = []
     /// The month's discoveries, chosen for the reader.
     var discoveries: MonthlyDiscoveries?
-    /// Whether the cards sit in two columns: the Duo's inner screen with the
-    /// dashboard on its own, not beside a detail, where it is a narrow column.
+    /// Whether the page has the Duo's inner screen to itself.
     var isSideBySide = false
+    var today: Date = .now
     let onAction: (HomeAction) -> Void
 
     var body: some View {
-        if isSideBySide {
-            sideBySide
-        } else {
-            singleColumn
-        }
-    }
-
-    /// The figures on one side, the shelves on the other: a single column
-    /// would stretch each card across the inner screen with three covers in
-    /// it. Apple's split arrangement sets the two columns side by side and
-    /// keeps them clear of the fold as the Duo folds; each scrolls on its own,
-    /// since an arrangement never sits inside a scroll view.
-    @ViewBuilder private var sideBySide: some View {
-        #if canImport(SwiftUICore, _version: 8.0.85)
-        if #available(iOS 27.1, *) {
-            ArrangementView {
-                column { figureCards }
-            } secondary: {
-                column { shelfCards }
-            }
-            .arrangementViewStyle(.split.axes(.horizontal))
-        } else {
-            singleColumn
-        }
-        #else
-        singleColumn
-        #endif
-    }
-
-    /// The cards one under the other: a phone, the Duo folded, or the
-    /// dashboard beside a detail.
-    private var singleColumn: some View {
-        column {
-            scanPromptIfEmpty
-            statTiles
-            genresCard
-            chartCard
-            shelfCards
-            lastFinishedCard
-            seriesCard
-        }
-    }
-
-    /// A scrolling column of cards on the grouped background.
-    private func column(@ViewBuilder _ cards: () -> some View) -> some View {
         ScrollView {
-            VStack(spacing: 16) { cards() }
-                .padding(.horizontal)
-                .padding(.bottom, 24)
+            VStack(spacing: 0) {
+                HomeHero(
+                    discoveries: shownDiscoveries,
+                    date: today,
+                    isWide: isSideBySide,
+                    onOpen: { onAction(.openDiscovery($0)) },
+                    onShowAll: { onAction(.showDiscover) }
+                )
+                VStack(alignment: .leading, spacing: 30) {
+                    if dashboard.libraryIsEmpty {
+                        scanPrompt
+                    } else {
+                        figures
+                    }
+                    if isSideBySide {
+                        HStack(alignment: .top, spacing: 36) {
+                            VStack(alignment: .leading, spacing: 30) {
+                                readingRow
+                                pileRow
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            newsRow
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    } else {
+                        readingRow
+                        pileRow
+                        newsRow
+                    }
+                    seriesRow
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 14)
+                .padding(.bottom, 32)
+            }
         }
         .background(Color(.systemGroupedBackground))
     }
 
-    /// The library at a glance and what it is made of, the left column once
-    /// unfolded: the tiles and the scan prompt too.
-    @ViewBuilder private var figureCards: some View {
-        scanPromptIfEmpty
-        statTiles
-        genresCard
-        chartCard
-        lastFinishedCard
-        seriesCard
+    private var shownDiscoveries: [Suggestion] {
+        guard let discoveries, discoveries.status == .ready else { return [] }
+        return discoveries.suggestions
     }
 
-    /// The shelves of covers, the right column once unfolded.
-    @ViewBuilder private var shelfCards: some View {
-        readingShelf
-        discoveriesShelf
-        releasesShelf
-        friendFavoritesShelf
-    }
+    // MARK: - Figures
 
-    /// The one thing a reader can do from an empty dashboard, above the cards
-    /// it will fill.
-    @ViewBuilder private var scanPromptIfEmpty: some View {
-        if dashboard.libraryIsEmpty {
-            scanPrompt
-        }
-    }
-
-    /// The library at a glance first, then what it is made of.
-    private var statTiles: some View {
-        StatTilesRow(
+    private var figures: some View {
+        HomeFiguresLine(
             readCount: dashboard.readCount,
             favoriteCount: dashboard.favoriteCount,
             toReadCount: dashboard.toReadCount,
-            onReadTapped: { onAction(.showLibrary(LibraryRequest(filter: .status(.read)))) },
-            onFavoritesTapped: { onAction(.showLibrary(LibraryRequest(filter: .favorites))) },
-            onPileTapped: { onAction(.showLibrary(LibraryRequest(filter: .status(.toRead)))) }
-        )
-    }
-
-    /// The genres read, as a bar.
-    @ViewBuilder private var genresCard: some View {
-        GenresWidget(
-            genres: dashboard.genres,
-            onTapped: { onAction(.openGenres) }
-        )
-    }
-
-    /// Books, pages or hours, year by year or month by month.
-    @ViewBuilder private var chartCard: some View {
-        ReadingChartWidget(
-            currentYear: dashboard.currentYear,
-            booksPerYear: dashboard.booksPerYear,
-            pagesPerMonth: dashboard.pagesPerMonth,
-            hoursPerMonth: dashboard.hoursPerMonth,
-            hasAudiobooks: dashboard.hasAudiobooks,
-            hasPrintedBooks: dashboard.hasPrintedBooks
-        )
-    }
-
-    /// The books open now.
-    @ViewBuilder private var readingShelf: some View {
-        BookShelfSection(
-            title: "En cours",
-            books: dashboard.reading,
-            caption: Self.startedCaption,
-            emptyMessage: "Aucun livre en cours de lecture.",
-            onHeaderTapped: { onAction(.showLibrary(LibraryRequest(filter: .status(.reading)))) },
-            onBookTapped: { onAction(.openBook($0)) }
-        )
-        .accessibilityIdentifier("home-reading")
-    }
-
-    /// The month's discoveries.
-    @ViewBuilder private var discoveriesShelf: some View {
-        // As Découvrir draws them: the first two with why, the
-        // others' covers under them.
-        if let discoveries, discoveries.status == .ready, !discoveries.suggestions.isEmpty {
-            DiscoveriesShelfSection(
-                discoveries: discoveries,
-                onHeaderTapped: { onAction(.showDiscover) },
-                onOpen: { onAction(.openDiscovery($0)) }
-            )
-            .accessibilityIdentifier("home-discoveries")
+            pagesRead: dashboard.pagesRead,
+            hoursListened: dashboard.hoursListened
+        ) {
+            onAction(.showStatistics)
         }
     }
 
-    /// The volumes just out or announced.
-    @ViewBuilder private var releasesShelf: some View {
-        // Unlike the reader's own cards, these two are news: with
-        // nothing to announce they are left out rather than sketched.
-        if !releases.isEmpty {
-            BookShelfSection(
-                title: "Nouveautés",
-                books: releases.map(Self.releaseTile),
-                caption: { tile in
-                    guard let release = release(of: tile) else { return tile.authorLine }
-                    guard let date = release.date, ReleaseDateText.isUpcoming(date) else {
-                        return String(localized: "Disponible")
-                    }
-                    return ReleaseDateText.short(date)
-                },
-                // Out already in green, still to come in the book
-                // page's orange.
-                captionTint: { tile in
-                    guard let release = release(of: tile) else { return nil }
-                    return release.date.map { ReleaseDateText.isUpcoming($0) } ?? false
-                        ? .orange : .green
-                },
-                emptyMessage: "",
-                onHeaderTapped: { onAction(.showDiscover) },
-                onBookTapped: { tile in
-                    if let release = release(of: tile) { onAction(.openRelease(release)) }
+    // MARK: - Rows
+
+    /// The books open now: the last one started leads, over its colours.
+    @ViewBuilder private var readingRow: some View {
+        if let lead = dashboard.reading.first {
+            VStack(alignment: .leading, spacing: 12) {
+                RowHeader(title: "En cours", detail: String(localized: "tout voir")) {
+                    onAction(.showLibrary(LibraryRequest(filter: .status(.reading))))
                 }
-            )
+                ReadingLeadCard(
+                    book: lead,
+                    caption: Self.startedCaption(lead),
+                    onOpen: { onAction(.openBook(lead)) },
+                    onFinish: { onAction(.finishBook(lead)) },
+                    onRate: { onAction(.rateBook(lead)) }
+                )
+                if dashboard.reading.count > 1 {
+                    CoverRow(
+                        items: dashboard.reading.dropFirst().map {
+                            .init(book: $0, caption: Self.startedCaption($0), captionTint: $0.listeningProgress == nil ? nil : .blue)
+                        },
+                        coverWidth: 64
+                    ) { onAction(.openBook($0)) }
+                }
+            }
+            .accessibilityIdentifier("home-reading")
+        }
+    }
+
+    /// The pile, the book shelved last first.
+    @ViewBuilder private var pileRow: some View {
+        if !dashboard.toRead.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                RowHeader(title: "Pile à lire", detail: String(localized: "\(dashboard.toReadCount) à lire")) {
+                    onAction(.showLibrary(LibraryRequest(filter: .status(.toRead))))
+                }
+                CoverRow(
+                    items: dashboard.toRead.map {
+                        .init(book: $0, caption: Self.addedCaption($0), captionTint: ReadingStatus.toRead.tint)
+                    }
+                ) { onAction(.openBook($0)) }
+            }
+            .accessibilityIdentifier("home-pile")
+        }
+    }
+
+    /// What is new: the volumes out or to come, then what friends hearted.
+    @ViewBuilder private var newsRow: some View {
+        let tiles = newsTiles
+        if !tiles.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                RowHeader(title: "Nouveautés", detail: String(localized: "Découvrir")) {
+                    onAction(.showDiscover)
+                }
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+                    ForEach(tiles, id: \.id) { tile in
+                        NewsTile(book: tile.book, caption: tile.caption, captionTint: tile.tint, onOpen: tile.open)
+                    }
+                }
+            }
             .accessibilityIdentifier("home-releases")
         }
     }
 
-    /// What the reader's friends hearted lately.
-    @ViewBuilder private var friendFavoritesShelf: some View {
-        if !friendFavorites.isEmpty {
-            BookShelfSection(
-                title: "Nouveaux favoris de vos amis",
-                books: friendFavorites.map(\.tile),
-                caption: { tile in
-                    friendFavorites.first { $0.tile.id == tile.id }?.friendDisplayName ?? ""
-                },
-                emptyMessage: "",
-                onHeaderTapped: { onAction(.showShared) },
-                onBookTapped: { tile in
-                    if let favorite = friendFavorites.first(where: { $0.tile.id == tile.id }) {
-                        onAction(.openFriendFavorite(favorite))
+    /// The sagas in progress, the last one shelved first.
+    @ViewBuilder private var seriesRow: some View {
+        if !dashboard.series.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                RowHeader(title: "Mes séries", detail: String(localized: "tout voir")) {
+                    onAction(.showSeries(SeriesRequest(state: .inProgress)))
+                }
+                let columns = isSideBySide ? 4 : 2
+                // Whole rows only, past the first: the rest is a tap away.
+                let shown = dashboard.series.count > columns
+                    ? Array(dashboard.series.prefix(dashboard.series.count / columns * columns))
+                    : dashboard.series
+                LazyVGrid(
+                    columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: columns),
+                    spacing: 10
+                ) {
+                    ForEach(shown) { series in
+                        SeriesShowCard(series: series, tag: releaseTag(of: series)) {
+                            onAction(.openSeries(series.id))
+                        }
                     }
                 }
-            )
-            .accessibilityIdentifier("home-friend-favorites")
+            }
+            .accessibilityIdentifier("home-series")
         }
     }
 
-    /// The book finished last.
-    @ViewBuilder private var lastFinishedCard: some View {
-        LastFinishedCard(book: dashboard.lastFinished) { onAction(.openBook($0)) }
+    // MARK: - News
+
+    private struct NewsItem {
+        let id: String
+        let book: Book
+        let caption: String
+        let tint: Color?
+        let open: () -> Void
     }
 
-    /// The sagas in progress.
-    @ViewBuilder private var seriesCard: some View {
-        SeriesProgressWidget(
-            series: dashboard.series,
-            onHeaderTapped: { onAction(.showSeries(SeriesRequest(state: .inProgress))) },
-            onSeriesTapped: { onAction(.openSeries($0)) }
-        )
+    /// Six releases at most, then four friends' favourites: the rest are
+    /// Découvrir's.
+    private var newsTiles: [NewsItem] {
+        let releaseItems = releases.prefix(6).map { release in
+            let tile = Self.releaseTile(release)
+            let upcoming = release.date.map { ReleaseDateText.isUpcoming($0) } ?? false
+            return NewsItem(
+                id: release.id,
+                book: tile,
+                caption: upcoming ? release.date.map(ReleaseDateText.short) ?? "" : String(localized: "Disponible"),
+                tint: upcoming ? .orange : .green,
+                open: { onAction(.openRelease(release)) }
+            )
+        }
+        let favoriteItems = friendFavorites.prefix(4).map { favorite in
+            NewsItem(
+                id: "favorite-\(favorite.id)",
+                book: favorite.tile,
+                caption: String(localized: "\(favorite.friendDisplayName) l'a adoré"),
+                tint: nil,
+                open: { onAction(.openFriendFavorite(favorite)) }
+            )
+        }
+        // An even count: the grid's last row never ends on a hole.
+        let items = releaseItems + favoriteItems
+        return items.count > 1 ? Array(items.prefix(items.count / 2 * 2)) : items
     }
+
+    /// The saga's news, said on its card: its next volume out, or to come.
+    private func releaseTag(of series: Dashboard.SeriesProgress) -> (text: String, isOut: Bool)? {
+        for release in releases {
+            guard case let .volume(volume) = release, volume.saga.series.seriesId == series.id else { continue }
+            let number = volume.volume.number
+            guard let date = volume.volume.date, ReleaseDateText.isUpcoming(date) else {
+                return (String(localized: "Tome \(number) disponible"), true)
+            }
+            return (String(localized: "Tome \(number) · \(ReleaseDateText.short(date))"), false)
+        }
+        return nil
+    }
+
+    // MARK: - Empty library
 
     private var scanPrompt: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -253,14 +262,14 @@ struct HomePage: View {
             } icon: {
                 Image(systemName: "books.vertical").foregroundStyle(.tint)
             }
-            Text("Scannez la couverture d'un livre pour commencer. Chaque carte ci-dessous se remplira avec vos lectures.")
+            Text("Scannez la couverture d'un livre pour commencer. Chaque rangée ci-dessous se remplira avec vos lectures.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Button { onAction(.scan) } label: {
                 Label("Scanner un livre", systemImage: "camera")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.glassProminent)
             .controlSize(.large)
             .accessibilityIdentifier("home-scan")
         }
@@ -269,10 +278,7 @@ struct HomePage: View {
         .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 20))
     }
 
-    /// The release a tile draws.
-    private func release(of tile: Book) -> HomeRelease? {
-        releases.first { Self.releaseTile($0).id == tile.id }
-    }
+    // MARK: - Captions
 
     /// A release drawn as a book, as Découvrir draws it: a volume with its saga
     /// as a tag, the headphones on the cover of a recording.
@@ -301,7 +307,7 @@ struct HomePage: View {
 
     /// A recording says how far the player got; a book says how long it has
     /// been open, since nobody tracks its pages.
-    private static func startedCaption(_ book: Book) -> String {
+    static func startedCaption(_ book: Book) -> String {
         if let progress = book.listeningProgressLabel {
             return String(localized: "\(progress) écouté")
         }
@@ -310,6 +316,16 @@ struct HomePage: View {
         return days == 0
             ? String(localized: "commencé aujourd'hui")
             : String(localized: "depuis \(days) j")
+    }
+
+    /// When a book joined the pile.
+    static func addedCaption(_ book: Book) -> String {
+        guard let addedAt = book.addedAt else { return book.authorLine }
+        switch addedAt.daysAgo() {
+        case 0: return String(localized: "ajouté aujourd'hui")
+        case 1: return String(localized: "ajouté hier")
+        case let days: return String(localized: "il y a \(days) j")
+        }
     }
 }
 
@@ -334,12 +350,22 @@ extension Dashboard {
             Book(id: "4", title: "Blacksad", authors: ["Juan Díaz Canales"], status: .reading,
                  startedAt: .now.addingTimeInterval(-5 * 86400)),
         ],
+        toRead: [
+            Book(id: "5", title: "Fourth Wing", authors: ["Rebecca Yarros"], status: .toRead,
+                 addedAt: .now.addingTimeInterval(-86400)),
+            Book(id: "6", title: "Ubik", authors: ["Philip K. Dick"], status: .toRead,
+                 addedAt: .now.addingTimeInterval(-6 * 86400)),
+            Book(id: "7", title: "1984", authors: ["George Orwell"], status: .toRead,
+                 addedAt: .now.addingTimeInterval(-20 * 86400)),
+        ],
         lastFinished: Book(
             id: "9", title: "Le Nom du vent", authors: ["Patrick Rothfuss"], status: .read, rating: 5,
             startedAt: .now.addingTimeInterval(-13 * 86400), finishedAt: .now.addingTimeInterval(-4 * 86400)
         ),
         toReadCount: 27,
         readCount: 142,
+        pagesRead: 41_230,
+        hoursListened: 212,
         genres: [
             .init(genre: .fantasy, count: 7), .init(genre: .scienceFiction, count: 4),
             .init(genre: .adventure, count: 3), .init(genre: .crime, count: 2), .init(genre: nil, count: 2),
@@ -374,20 +400,17 @@ extension Dashboard {
 #Preview("With data") {
     NavigationStack {
         HomePage(dashboard: .preview, discoveries: .preview) { _ in }
-            .navigationTitle("Accueil")
     }
 }
 
 #Preview("First book") {
     NavigationStack {
         HomePage(dashboard: .firstBook) { _ in }
-            .navigationTitle("Accueil")
     }
 }
 
-#Preview("Unfolded", traits: .fixedLayout(width: 951, height: 669)) {
+#Preview("Unfolded", traits: .fixedLayout(width: 859, height: 669)) {
     NavigationStack {
         HomePage(dashboard: .preview, discoveries: .preview, isSideBySide: true) { _ in }
-            .navigationTitle("Accueil")
     }
 }

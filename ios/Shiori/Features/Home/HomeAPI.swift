@@ -20,9 +20,12 @@ enum HomeAPI {
             pagesPerMonth: dashboard.pagesPerMonth.map { .init(month: $0.month, pages: $0.pages) },
             hoursPerMonth: dashboard.hoursPerMonth.map { .init(month: $0.month, hours: $0.hours) },
             reading: dashboard.reading.map { $0.fragments.dashboardBookCard.asBook(status: .reading) },
+            toRead: dashboard.toRead.map { $0.fragments.dashboardBookCard.asBook(status: .toRead) },
             lastFinished: dashboard.lastFinished?.fragments.dashboardBookCard.asBook(status: .read),
             toReadCount: dashboard.toReadCount,
             readCount: dashboard.readCount,
+            pagesRead: dashboard.pagesRead,
+            hoursListened: dashboard.hoursListened,
             genres: dashboard.genres.map { .init(genre: $0.genre?.asDomain, count: $0.count) },
             series: dashboard.series.map {
                 .init(
@@ -32,7 +35,8 @@ enum HomeAPI {
                     readCount: $0.readCount,
                     totalCount: $0.totalCount,
                     rating: $0.rating.map { ($0 * 2).rounded() / 2 },
-                    favorite: $0.favorite
+                    favorite: $0.favorite,
+                    coverURL: $0.coverUrl.flatMap(URL.init(string:))
                 )
             },
             favoriteCount: dashboard.favoriteCount,
@@ -91,6 +95,7 @@ private extension ShioriGraphQL.DashboardBookCard {
             coverURL: coverUrl.flatMap(URL.init(string:)),
             status: status,
             rating: rating,
+            addedAt: addedAt.flatMap(GraphQLHelpers.parseISO8601),
             startedAt: startedAt.flatMap(GraphQLHelpers.parseISO8601),
             finishedAt: finishedAt.flatMap(GraphQLHelpers.parseISO8601)
         )

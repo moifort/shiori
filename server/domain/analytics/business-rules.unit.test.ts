@@ -22,7 +22,14 @@ import {
 } from '~/domain/analytics/business-rules'
 import { LocalDate, TimeZone } from '~/domain/analytics/primitives'
 import type { Finish } from '~/domain/analytics/types'
-import { BookId, ListeningMinutes, PageCount, StarRating, Subgenre } from '~/domain/book/primitives'
+import {
+  BookId,
+  CoverUrl,
+  ListeningMinutes,
+  PageCount,
+  StarRating,
+  Subgenre,
+} from '~/domain/book/primitives'
 import type { Book, Genre } from '~/domain/book/types'
 import { SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import type { Series, SeriesId } from '~/domain/series/types'
@@ -306,6 +313,33 @@ describe('building the view', () => {
     ])
   })
 
+  // The saga is drawn with the cover of the volume shelved last.
+  test('draws a saga with the cover of its volume shelved last', () => {
+    const membership = (number: number) => ({
+      id: kingkiller,
+      name: catalogue.name,
+      volume: VolumeNumber(number),
+      kind: 'main' as const,
+    })
+    const books = [
+      book('vol-1', {
+        status: 'read',
+        finishedAt: new Date('2026-02-10'),
+        series: membership(1),
+        publishedCoverUrl: CoverUrl('https://covers.example/1.jpg'),
+      }),
+      book('vol-2', {
+        addedAt: new Date('2026-03-01'),
+        series: membership(2),
+        publishedCoverUrl: CoverUrl('https://covers.example/2.jpg'),
+      }),
+    ]
+
+    expect(seriesProgressOf(books, [catalogue], 2026)[0]?.publishedCoverUrl).toBe(
+      CoverUrl('https://covers.example/2.jpg'),
+    )
+  })
+
   // The Series tab calls it not started: the saga has not begun, so it is not
   // in progress either.
   test('leaves out a saga none of whose volumes has been opened', () => {
@@ -536,6 +570,64 @@ describe('building the view', () => {
     })
 
     expect(dashboardOf(view, day('2026-09-15')).readCount).toBe(2)
+  })
+
+  // The pages and hours of every finished book, whatever the year: the
+  // figures the home screen's header states beside the books read.
+  test('totals the pages and hours of every book finished', () => {
+    const view = analyticsViewOf({
+      userId: reader,
+      timeZone: paris,
+      now: new Date('2026-09-15T10:00:00.000Z'),
+      catalogues: [],
+      books: [
+        book('long-ago', {
+          status: 'read',
+          pageCount: PageCount(300),
+          finishedAt: new Date('2012-05-01'),
+        }),
+        book('this-year', {
+          status: 'read',
+          pageCount: PageCount(150),
+          finishedAt: new Date('2026-05-01'),
+        }),
+        book('heard', {
+          status: 'read',
+          format: 'audiobook',
+          durationMinutes: ListeningMinutes(95),
+          finishedAt: new Date('2026-06-01'),
+        }),
+        book('open', { status: 'reading', pageCount: PageCount(999) }),
+      ],
+    })
+
+    const dashboard = dashboardOf(view, day('2026-09-15'))
+
+    expect(dashboard.pagesRead).toBe(450)
+    expect(dashboard.hoursListened).toBe(2)
+  })
+
+  // The pile as a row of covers: the book shelved last first, a dozen at most,
+  // each dated by the day it was shelved.
+  test('serves the pile shelved last first, twelve at most', () => {
+    const books = Array.from({ length: 14 }, (_, index) =>
+      book(`pile-${index}`, { addedAt: new Date(Date.UTC(2026, 0, index + 1)) }),
+    )
+    const view = analyticsViewOf({
+      userId: reader,
+      timeZone: paris,
+      now: new Date('2026-09-15T10:00:00.000Z'),
+      catalogues: [],
+      books,
+    })
+
+    const { toRead, toReadCount } = dashboardOf(view, day('2026-09-15'))
+
+    expect(toReadCount).toBe(14)
+    expect(toRead.map((card) => card.id)).toEqual(
+      Array.from({ length: 12 }, (_, index) => BookId(`pile-${13 - index}`)),
+    )
+    expect(toRead[0]?.addedAt).toEqual(new Date(Date.UTC(2026, 0, 14)))
   })
 
   // A library of recordings only has no page to chart.

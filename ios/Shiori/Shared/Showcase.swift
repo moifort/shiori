@@ -933,9 +933,12 @@ enum Showcase {
             },
             reading: books.filter { $0.status == .reading }
                 .sorted { ($0.startedAt ?? .distantPast) > ($1.startedAt ?? .distantPast) },
+            toRead: Array(pile.sorted { ($0.addedAt ?? .distantPast) > ($1.addedAt ?? .distantPast) }.prefix(12)),
             lastFinished: read.max { ($0.finishedAt ?? .distantPast) < ($1.finishedAt ?? .distantPast) },
             toReadCount: pile.count,
             readCount: read.count,
+            pagesRead: read.compactMap(\.pageCount).reduce(0, +),
+            hoursListened: read.compactMap(\.durationMinutes).reduce(0, +) / 60,
             genres: topGenres + (others > 0 ? [.init(genre: nil, count: others)] : []),
             series: sagas.map(followed).filter { $0.state == .inProgress }.map { series in
                 let saga = sagas.first { $0.id == series.seriesId }
@@ -946,7 +949,8 @@ enum Showcase {
                     readCount: series.volumes.filter { $0.status == .read }.count,
                     totalCount: saga?.published ?? series.ownedCount,
                     rating: saga?.rating,
-                    favorite: saga?.favorite ?? false
+                    favorite: saga?.favorite ?? false,
+                    coverURL: series.volumes.last?.coverURL
                 )
             },
             favoriteCount: books.filter(\.favorite).count + sagas.filter(\.favorite).count,

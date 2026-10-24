@@ -10,12 +10,14 @@ enum BookMenuAction {
     case awaitEdition(ReleaseFormat)
     case stopAwaiting(AwaitedEdition)
     case setStatus(ReadingStatus)
+    /// Keeps the book out of every shared library, or lets it back in.
+    case toggleHidden
     case delete
 }
 
-/// The "…" in a book's corner. Status and sharing are switched on the page
-/// itself, and the series opens from its row: the menu only holds what the
-/// page cannot do.
+/// The "…" in a book's corner. The page's hero takes the book to its next
+/// state and the series opens from its row: the menu holds the full choice of
+/// status, sharing, and what the page does not draw.
 struct BookActionsMenu: View {
     let book: Book
     /// What may be awaited of it in the app's language, and what is.
@@ -26,6 +28,21 @@ struct BookActionsMenu: View {
 
     var body: some View {
         Menu {
+            // Every state a book moves through, the one it is in ticked: the
+            // hero's button only ever offers the next one.
+            Picker(selection: Binding(get: { book.status }, set: { onAction(.setStatus($0)) })) {
+                // Names only: the tick marks the one chosen, and the symbol of
+                // "Lu" is a tick of its own.
+                ForEach(ReadingStatus.progression) { status in
+                    Text(status.label).tag(status)
+                }
+            } label: {
+                Label("Statut", systemImage: book.status.symbol)
+                Text(book.status.label)
+            }
+            .pickerStyle(.menu)
+            .accessibilityIdentifier("book-status")
+
             Button("Modifier", systemImage: "pencil") {
                 onAction(.edit)
             }
@@ -73,8 +90,14 @@ struct BookActionsMenu: View {
                 }
             }
 
-            // Not on the segmented picker, which holds the states a book moves
-            // through: dropping one is an ending, chosen once, from here.
+            // Kept out of every library a friend sees, the counts included.
+            Toggle(isOn: Binding(get: { book.hidden }, set: { _ in onAction(.toggleHidden) })) {
+                Label("Ne pas partager", systemImage: "eye.slash")
+            }
+            .accessibilityIdentifier("book-hidden")
+
+            // Not with the states a book moves through: dropping one is an
+            // ending, chosen once, from here.
             if book.status == .dropped {
                 Button("Reprendre", systemImage: "arrow.uturn.backward") {
                     onAction(.setStatus(.reading))

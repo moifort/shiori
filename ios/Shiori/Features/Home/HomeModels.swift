@@ -46,6 +46,8 @@ struct Dashboard: Codable, Sendable {
         var rating: Double?
         /// A hearted saga, drawn as the heart, which is five stars.
         var favorite: Bool = false
+        /// The cover of the volume shelved last, which the saga is drawn with.
+        var coverURL: URL?
     }
 
     let currentYear: Int
@@ -53,10 +55,16 @@ struct Dashboard: Codable, Sendable {
     let pagesPerMonth: [MonthPages]
     let hoursPerMonth: [MonthHours]
     let reading: [Book]
+    /// The pile, the book shelved last first, a dozen at most.
+    var toRead: [Book] = []
     let lastFinished: Book?
     let toReadCount: Int
     /// Every book finished since the first, whatever the year.
     var readCount: Int = 0
+    /// The pages of every book finished, whatever the year.
+    var pagesRead: Int = 0
+    /// The hours of every recording finished, whatever the year.
+    var hoursListened: Int = 0
     let genres: [GenreSlice]
     let series: [SeriesProgress]
     /// Books and sagas the reader hearted, together.

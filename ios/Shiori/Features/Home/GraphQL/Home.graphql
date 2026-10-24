@@ -18,11 +18,16 @@ query Dashboard($timeZone: TimeZone!) {
     reading {
       ...DashboardBookCard
     }
+    toRead {
+      ...DashboardBookCard
+    }
     lastFinished {
       ...DashboardBookCard
     }
     toReadCount
     readCount
+    pagesRead
+    hoursListened
     genres {
       genre
       count
@@ -35,6 +40,7 @@ query Dashboard($timeZone: TimeZone!) {
       totalCount
       rating
       favorite
+      coverUrl
     }
     favoriteCount
     hasAudiobooks
@@ -51,6 +57,7 @@ fragment DashboardBookCard on DashboardBook {
   coverUrl
   rating
   listeningProgress
+  addedAt
   startedAt
   finishedAt
 }

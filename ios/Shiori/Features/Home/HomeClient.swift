@@ -13,6 +13,10 @@ struct HomeClient: Sendable {
     var dismissSuggestion: @Sendable (_ id: String, DismissalReason) async throws -> Void
     var stopAwaiting: @Sendable (_ editionId: String) async throws -> Void
     var genreInsights: @Sendable () async throws -> GenreInsights
+    /// The book read now, finished from its card.
+    var finish: @Sendable (_ bookId: String) async throws -> Void = { _ in }
+    /// The book read now, rated from its card: which marks it read.
+    var rate: @Sendable (_ bookId: String, _ stars: Double) async throws -> Void = { _, _ in }
 }
 
 extension HomeClient {
@@ -24,7 +28,9 @@ extension HomeClient {
         awaited: { try await AwaitedAPI.awaited(format: $0) },
         dismissSuggestion: { try await SuggestionsAPI.dismiss(id: $0, reason: $1) },
         stopAwaiting: { try await AwaitedAPI.stop(id: $0) },
-        genreInsights: { try await HomeAPI.genreInsights() }
+        genreInsights: { try await HomeAPI.genreInsights() },
+        finish: { _ = try await BookAPI.setStatus(id: $0, status: .read) },
+        rate: { _ = try await BookAPI.rate(id: $0, stars: $1) }
     )
 }
 

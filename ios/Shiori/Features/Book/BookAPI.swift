@@ -20,6 +20,24 @@ enum BookAPI {
         return data.book?.fragments.bookDetail.asBook
     }
 
+    /// The volumes of a saga the reader holds, in the order it runs: the row
+    /// under a book's facts. Never the catalogue.
+    static func sagaVolumes(seriesId: String, language: BookLanguage?) async throws -> [Book] {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.seriesScreen(id: seriesId).owned
+        }
+        #endif
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.BookSagaVolumesQuery(
+                seriesId: seriesId,
+                language: SeriesAPI.graphQLLanguage(language)
+            )
+        )
+        return data.mySeriesVolumes.map { $0.fragments.bookSummary.asBook }
+    }
+
     static func add(_ draft: BookDraft) async throws -> Book {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,

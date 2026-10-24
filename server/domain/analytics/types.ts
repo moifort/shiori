@@ -39,6 +39,9 @@ export type BookCard = {
   /** How far into a recording the player last stopped, in whole percent. Only
    *  on an audiobook the Audible player opened. */
   listeningProgress?: number
+  /** The day it was shelved: what the pile's covers are dated by. Absent on a
+   *  view stored before the home screen showed the pile. */
+  addedAt?: Date
   startedAt?: Date
   finishedAt?: Date
 }
@@ -71,6 +74,15 @@ export type SeriesProgress = {
   /** The reader hearted the saga: drawn as the heart, which is five stars. */
   favorite: boolean
   lastActivityAt: Date
+  /** The cover of the volume shelved last, which the home screen draws the
+   *  saga with. Stored as its source, never signed, as a book card's is. */
+  coverPath?: ObjectPath
+  publishedCoverUrl?: CoverUrl
+}
+
+/** A saga in progress as it is served, its cover signed. */
+export type DashboardSeries = Omit<SeriesProgress, 'coverPath' | 'publishedCoverUrl'> & {
+  coverUrl?: SignedUrl | CoverUrl
 }
 
 /** The materialized view behind the home dashboard, one document per reader.
@@ -188,22 +200,28 @@ export type DashboardBook = Omit<BookCard, 'coverPath' | 'publishedCoverUrl'> & 
 
 /** The dashboard as it is served: the view read against today. Built with the
  *  stored cards first, then served with their covers signed. */
-export type Dashboard<Card = DashboardBook> = {
+export type Dashboard<Card = DashboardBook, Saga = DashboardSeries> = {
   currentYear: number
   booksPerYear: YearCount[]
   pagesPerMonth: MonthPages[]
   hoursPerMonth: MonthHours[]
   reading: Card[]
+  /** The pile, the book shelved last first, twelve at most. */
+  toRead: Card[]
   lastFinished?: Card
   booksRead: Trend
   toReadCount: number
   /** Every book finished since the first, whatever the year. */
   readCount: number
+  /** The pages of every book finished, whatever the year. */
+  pagesRead: number
+  /** The hours of every recording finished, whatever the year, rounded. */
+  hoursListened: number
   monthsToClearPile?: number
   averageRating?: number
   ratedCount: number
   genres: GenreCount[]
-  series: SeriesProgress[]
+  series: Saga[]
   /** Books and sagas hearted, together. */
   favoriteCount: number
   /** Whether a single recording is on the shelf. */

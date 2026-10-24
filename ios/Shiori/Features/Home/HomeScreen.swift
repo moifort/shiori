@@ -16,8 +16,6 @@ struct HomeScreen: View {
     let onScan: () -> Void
     /// Opens Découvrir, from the releases header.
     var onShowDiscover: () -> Void = {}
-    /// Opens Partagé, from the friends' favourites header.
-    var onShowShared: () -> Void = {}
 
     @State private var viewModel: HomeViewModel
     /// What the dashboard opened: pushed over it on a phone, beside it on an
@@ -27,6 +25,8 @@ struct HomeScreen: View {
     /// dashboard rather than over it.
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var showSettings = false
+    /// The book read now, rated from its card on the page.
+    @State private var ratedBook: Book?
     /// The search over the reader's books, from the loupe in the corner.
     @State private var showSearch = false
     /// The month's costs and readers, behind a toolbar button only an admin
@@ -45,14 +45,12 @@ struct HomeScreen: View {
         onShowLibrary: @escaping (LibraryRequest) -> Void,
         onScan: @escaping () -> Void,
         onShowDiscover: @escaping () -> Void = {},
-        onShowShared: @escaping () -> Void = {},
         client: HomeClient = .live
     ) {
         self.onShowSeries = onShowSeries
         self.onShowLibrary = onShowLibrary
         self.onScan = onScan
         self.onShowDiscover = onShowDiscover
-        self.onShowShared = onShowShared
         _viewModel = State(initialValue: HomeViewModel(client: client))
     }
 
@@ -92,6 +90,20 @@ struct HomeScreen: View {
         .sheet(isPresented: $showSettings) {
             SettingsHomeScreen()
         }
+        .sheet(item: $ratedBook) { book in
+            RatingPromptSheet(current: book.rating) { stars in
+                ratedBook = nil
+                Task { await viewModel.rate(book, stars: stars) }
+            }
+        }
+        .alert(
+            "Une erreur est survenue",
+            isPresented: Binding(get: { viewModel.actionError != nil }, set: { if !$0 { viewModel.actionError = nil } })
+        ) {
+            Button("OK", role: .cancel) { viewModel.actionError = nil }
+        } message: {
+            Text(viewModel.actionError ?? "")
+        }
         .sheet(isPresented: $showAdmin) {
             NavigationStack {
                 AdminScreen()
@@ -110,8 +122,12 @@ struct HomeScreen: View {
     /// on a phone, the leading column beside a detail on an unfolded Duo.
     private var dashboard: some View {
         content
+            // The hero names the page, with the day: the bar keeps the title
+            // for VoiceOver and the Back button, and draws none of its own.
             .navigationTitle("Accueil")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) { Text(verbatim: "").accessibilityHidden(true) }
                 ToolbarItem(placement: .topBarLeading) {
                     Button { showSearch = true } label: {
                         Label("Rechercher", systemImage: "magnifyingglass")
@@ -176,6 +192,12 @@ struct HomeScreen: View {
             }
         case .genres:
             GenreInsightsScreen(load: viewModel.genreInsights)
+        case .statistics:
+            HomeStatisticsScreen(
+                dashboard: viewModel.dashboard,
+                onShowLibrary: onShowLibrary,
+                genreInsights: viewModel.genreInsights
+            )
         }
     }
 
@@ -188,7 +210,7 @@ struct HomeScreen: View {
         switch detail {
         case .series: Task { await viewModel.load() }
         case .discovery: Task { await viewModel.loadDiscoveries() }
-        case .book, .release, .awaited, .favorite, .genres: break
+        case .book, .release, .awaited, .favorite, .genres, .statistics: break
         }
     }
 
@@ -213,11 +235,13 @@ struct HomeScreen: View {
                     case let .openSeries(id): detail = .series(id)
                     case let .openBook(book): detail = .book(book)
                     case .openGenres: detail = .genres
+                    case .showStatistics: detail = .statistics
+                    case let .finishBook(book): Task { await viewModel.finish(book) }
+                    case let .rateBook(book): ratedBook = book
                     case .scan: onScan()
                     case .showDiscover: onShowDiscover()
                     case let .openRelease(.volume(volume)): detail = .release(volume)
                     case let .openRelease(.awaited(edition)): detail = .awaited(edition)
-                    case .showShared: onShowShared()
                     case let .openFriendFavorite(favorite): detail = .favorite(favorite)
                     case let .openDiscovery(suggestion): detail = .discovery(suggestion)
                     }
@@ -253,6 +277,7 @@ private enum HomeDetail: Identifiable {
     case favorite(FriendFavorite)
     case discovery(Suggestion)
     case genres
+    case statistics
 
     var id: String {
         switch self {
@@ -263,6 +288,58 @@ private enum HomeDetail: Identifiable {
         case let .favorite(favorite): "favorite-\(favorite.id)"
         case let .discovery(suggestion): "discovery-\(suggestion.id)"
         case .genres: "genres"
+        case .statistics: "statistics"
         }
+    }
+}
+
+/// The statistics, from the line of figures under the home screen's hero: the
+/// dashboard's figures in full, the genre card opening the genres read, the
+/// last book finished opening its page, both pushed on the statistics' stack.
+private struct HomeStatisticsScreen: View {
+    let dashboard: Dashboard?
+    let onShowLibrary: (LibraryRequest) -> Void
+    let genreInsights: () async throws -> GenreInsights
+
+    @State private var genres: GenresDestination?
+    @State private var openedBook: Book?
+    @Environment(\.dismiss) private var dismissPresentation
+    @Environment(\.detailClosing) private var closing
+
+    var body: some View {
+        Group {
+            if let dashboard {
+                StatisticsPage(dashboard: dashboard) { action in
+                    switch action {
+                    case let .showLibrary(request): onShowLibrary(request)
+                    case .openGenres: genres = GenresDestination()
+                    case let .openBook(book): openedBook = book
+                    default: break
+                    }
+                }
+            } else {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .toolbar {
+            if closing.showsCloseButton {
+                ToolbarItem(placement: .cancellationAction) {
+                    ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) {
+                        closing.close(dismissPresentation)
+                    }
+                }
+            }
+        }
+        .pushesDetail(item: $genres) { _ in
+            GenreInsightsScreen(load: genreInsights)
+        }
+        .pushesDetail(item: $openedBook) { book in
+            BookScreen(bookId: book.id)
+        }
+    }
+
+    private struct GenresDestination: Identifiable {
+        var id: String { "genres" }
     }
 }

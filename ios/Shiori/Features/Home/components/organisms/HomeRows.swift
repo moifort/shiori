@@ -1,0 +1,340 @@
+import SwiftUI
+
+/// The library's figures as one line under the hero — books read, favourites,
+/// the pile, pages and hours — the way into the statistics. The line keeps what
+/// fits the width, the counts first.
+struct HomeFiguresLine: View {
+    let readCount: Int
+    let favoriteCount: Int
+    let toReadCount: Int
+    let pagesRead: Int
+    let hoursListened: Int
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 4) {
+                ViewThatFits(in: .horizontal) {
+                    figures(count: 5)
+                    figures(count: 4)
+                    figures(count: 3)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Statistiques"))
+        .accessibilityIdentifier("home-figures")
+    }
+
+    private func figures(count: Int) -> some View {
+        HStack(spacing: 14) {
+            ForEach(Array(items.prefix(count).enumerated()), id: \.offset) { _, item in
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    if let symbol = item.symbol {
+                        Image(systemName: symbol)
+                            .font(.caption2)
+                            .foregroundStyle(item.tint)
+                    }
+                    Text(item.value)
+                        .font(.subheadline.weight(.bold))
+                        .monospacedDigit()
+                    Text(item.label)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .fixedSize()
+            }
+        }
+    }
+
+    private var items: [(symbol: String?, tint: Color, value: String, label: String)] {
+        var items: [(String?, Color, String, String)] = [
+            ("checkmark", ReadingStatus.read.tint, readCount.formatted(), String(localized: "lus")),
+            ("heart.fill", .red, favoriteCount.formatted(), String(localized: "favoris")),
+            ("bookmark.fill", ReadingStatus.toRead.tint, toReadCount.formatted(), String(localized: "à lire")),
+        ]
+        if pagesRead > 0 { items.append((nil, .primary, pagesRead.formatted(), String(localized: "pages"))) }
+        if hoursListened > 0 {
+            items.append((nil, .primary, String(localized: "\(hoursListened) h"), String(localized: "écoutées")))
+        }
+        return items
+    }
+}
+
+/// The book read now, at the head of "En cours", as the TV app leads a row with
+/// the episode playing: its cover over its own colours, how long it has been
+/// open or how far the recording got, and the next step on Liquid Glass.
+struct ReadingLeadCard: View {
+    let book: Book
+    let caption: String
+    let onOpen: () -> Void
+    let onFinish: () -> Void
+    let onRate: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 14) {
+            Button(action: onOpen) {
+                BookCover(book: book, width: 76)
+            }
+            .buttonStyle(.plain)
+            .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 8) {
+                Button(action: onOpen) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(book.title)
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                            .lineLimit(2)
+                        Text(subtitle)
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.75))
+                            .lineLimit(1)
+                        if let progress = book.listeningProgress {
+                            ProgressView(value: Double(progress), total: 100)
+                                .tint(.white)
+                                .padding(.top, 4)
+                        }
+                        Text(caption)
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.75))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("home-reading-lead")
+                // Both labelled where they fit, the rating as its star alone
+                // in a narrow column: a label never breaks over lines.
+                ViewThatFits(in: .horizontal) {
+                    actions(ratingLabelled: true)
+                    actions(ratingLabelled: false)
+                }
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .environment(\.colorScheme, .dark)
+        .background {
+            CoverBackdrop(url: book.coverURL, ground: .clear)
+        }
+        .clipShape(.rect(cornerRadius: 18))
+    }
+
+    private func actions(ratingLabelled: Bool) -> some View {
+        GlassEffectContainer(spacing: 8) {
+            HStack(spacing: 8) {
+                Button(action: onFinish) {
+                    Label("Marquer lu", systemImage: "checkmark")
+                        .font(.caption.weight(.semibold))
+                        .lineLimit(1)
+                        .fixedSize()
+                }
+                .buttonStyle(.glassProminent)
+                .tint(.white)
+                .foregroundStyle(.black)
+                Button(action: onRate) {
+                    Group {
+                        if ratingLabelled {
+                            Label("Noter", systemImage: "star")
+                        } else {
+                            Label("Noter", systemImage: "star").labelStyle(.iconOnly)
+                        }
+                    }
+                    .font(.caption.weight(.semibold))
+                    .lineLimit(1)
+                    .fixedSize()
+                }
+                .buttonStyle(.glass)
+            }
+            .controlSize(.small)
+        }
+        .fixedSize()
+    }
+
+    private var subtitle: String {
+        guard let volume = book.series?.volume else { return book.authorLine }
+        return "\(book.authorLine) · \(String(localized: "Tome \(volume)"))"
+    }
+}
+
+/// A row of covers that scrolls sideways, each with its title and a line in
+/// the colour of what it says — how long open, when added, out or to come.
+struct CoverRow: View {
+    struct Item: Identifiable {
+        let book: Book
+        let caption: String
+        var captionTint: Color?
+        var id: String { book.id }
+    }
+
+    let items: [Item]
+    var coverWidth: CGFloat = 76
+    let onOpen: (Book) -> Void
+
+    var body: some View {
+        ScrollView(.horizontal) {
+            LazyHStack(alignment: .top, spacing: 14) {
+                ForEach(items) { item in
+                    Button { onOpen(item.book) } label: {
+                        VStack(alignment: .leading, spacing: 5) {
+                            BookCover(book: item.book, width: coverWidth, formatBadgeSize: 18)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(item.book.title)
+                                    .font(.caption.weight(.medium))
+                                    .lineLimit(1)
+                                Text(item.caption)
+                                    .font(.caption2)
+                                    .foregroundStyle(item.captionTint.map(AnyShapeStyle.init) ?? AnyShapeStyle(.secondary))
+                                    .lineLimit(1)
+                            }
+                            .frame(width: coverWidth, alignment: .leading)
+                        }
+                        .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("book-tile")
+                }
+            }
+            .scrollTargetLayout()
+        }
+        .scrollIndicators(.hidden)
+        .scrollTargetBehavior(.viewAligned)
+        .scrollClipDisabled()
+    }
+}
+
+/// A tile of "Nouveautés": a volume out or to come, or a book a friend hearted,
+/// its cover small over its own colours, the date in green once out and orange
+/// while announced.
+struct NewsTile: View {
+    let book: Book
+    let caption: String
+    var captionTint: Color?
+    let onOpen: () -> Void
+
+    var body: some View {
+        Button(action: onOpen) {
+            HStack(spacing: 10) {
+                BookCover(book: book, width: 34, showsFormatBadge: false, cornerRadius: 4)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(book.series.flatMap { series in series.volume.map { "\(series.name) \($0)" } } ?? book.title)
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.white)
+                    Text(caption)
+                        .font(.caption)
+                        .foregroundStyle(captionTint.map { AnyShapeStyle($0) } ?? AnyShapeStyle(.white.opacity(0.7)))
+                }
+                .lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .padding(6)
+            .padding(.trailing, 4)
+            .environment(\.colorScheme, .dark)
+            .background { CoverBackdrop(url: book.coverURL, ground: .clear) }
+            .clipShape(.rect(cornerRadius: 12))
+            .contentShape(.rect(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// A saga in progress as a card of "Mes séries", as the TV app draws a show
+/// under "Up Next": the cover of the volume shelved last across the card, the
+/// name, how far the reader is, and the news of it in a tag — a volume out, the
+/// next one's date.
+struct SeriesShowCard: View {
+    let series: Dashboard.SeriesProgress
+    /// "Tome 11 disponible", "Tome 6 · 5 nov.": the release of the saga, if any.
+    var tag: (text: String, isOut: Bool)?
+    let onOpen: () -> Void
+
+    var body: some View {
+        Button(action: onOpen) {
+            VStack(alignment: .leading, spacing: 3) {
+                Spacer(minLength: 0)
+                Text(series.name)
+                    .font(.subheadline.weight(.bold))
+                    .lineLimit(1)
+                Text(progressText)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.8))
+                    .lineLimit(1)
+                ProgressView(value: Double(series.readCount), total: Double(max(series.totalCount, 1)))
+                    .tint(.white)
+                    .padding(.top, 3)
+            }
+            .foregroundStyle(.white)
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            // At least a card's height, more with larger text.
+            .frame(minHeight: 118)
+            .background {
+                // The cover across the card, held to the card's size: filled,
+                // it would otherwise grow the card to its own proportions.
+                ZStack {
+                    Color(white: 0.15)
+                    if let url = series.coverURL {
+                        Color.clear.overlay {
+                            CoverImage(url: url) { Color.clear } fallback: { Color.clear }
+                        }
+                        .clipped()
+                    }
+                    LinearGradient(
+                        colors: [.black.opacity(0.05), .black.opacity(0.3), .black.opacity(0.88)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                }
+            }
+            .overlay(alignment: .topLeading) {
+                if let tag {
+                    Text(tag.text)
+                        .font(.caption2.weight(.bold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .foregroundStyle(tag.isOut ? .black : .white)
+                        .glassEffect(tag.isOut ? .regular.tint(.green) : .regular, in: .capsule)
+                        .padding(8)
+                }
+            }
+            .clipShape(.rect(cornerRadius: 18))
+            .contentShape(.rect(cornerRadius: 18))
+            .environment(\.colorScheme, .dark)
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var progressText: String {
+        series.isAudio
+            ? String(localized: "\(series.readCount) sur \(series.totalCount) écoutés")
+            : String(localized: "\(series.readCount) sur \(series.totalCount) lus")
+    }
+}
+
+#Preview("Figures") {
+    HomeFiguresLine(readCount: 83, favoriteCount: 15, toReadCount: 18, pagesRead: 16472, hoursListened: 412) {}
+        .padding()
+}
+
+#Preview("Lead card") {
+    ReadingLeadCard(book: .preview, caption: "depuis 6 j", onOpen: {}, onFinish: {}, onRate: {})
+        .padding()
+}
+
+#Preview("Cover row") {
+    CoverRow(items: Dashboard.preview.reading.map { .init(book: $0, caption: "depuis 3 j") }) { _ in }
+        .padding()
+}
+
+#Preview("Series card") {
+    SeriesShowCard(series: Dashboard.preview.series[0], tag: ("Tome 111 disponible", true)) {}
+        .frame(width: 180)
+        .padding()
+}

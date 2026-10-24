@@ -15,6 +15,7 @@ import type {
   Dashboard,
   DashboardBook,
   GenreInsights,
+  SeriesProgress,
   SharedShelfToday,
   TimeZone as TimeZoneValue,
 } from '~/domain/analytics/types'
@@ -143,20 +144,24 @@ const rebuild = async (
 
 // Signed here rather than stored: a signed URL expires. A dozen covers at most,
 // signed concurrently.
-const withCovers = async (dashboard: Dashboard<BookCard>): Promise<Dashboard> => {
-  const [reading, lastFinished] = await Promise.all([
+const withCovers = async (dashboard: Dashboard<BookCard, SeriesProgress>): Promise<Dashboard> => {
+  const [reading, toRead, lastFinished, series] = await Promise.all([
     Promise.all(dashboard.reading.map(withCover)),
+    Promise.all(dashboard.toRead.map(withCover)),
     dashboard.lastFinished ? withCover(dashboard.lastFinished) : undefined,
+    Promise.all(dashboard.series.map(withCover)),
   ])
-  return { ...dashboard, reading, lastFinished }
+  return { ...dashboard, reading, toRead, lastFinished, series }
 }
 
 // The reader's own photo wins over the publisher's cover, as on the book itself.
-const withCover = async ({
+const withCover = async <Card extends Pick<BookCard, 'coverPath' | 'publishedCoverUrl'>>({
   coverPath,
   publishedCoverUrl,
   ...card
-}: BookCard): Promise<DashboardBook> => {
+}: Card): Promise<
+  Omit<Card, 'coverPath' | 'publishedCoverUrl'> & Pick<DashboardBook, 'coverUrl'>
+> => {
   if (coverPath) return { ...card, coverUrl: await objectStore().downloadUrl(coverPath) }
   return publishedCoverUrl ? { ...card, coverUrl: publishedCoverUrl } : card
 }

@@ -164,3 +164,12 @@ query EditVocabulary {
     sagas
   }
 }
+
+# The volumes of a book's saga the reader holds, for the row under its facts:
+# the reader's own books only, never the catalogue, whose first build is a
+# model call no opening of a book may make.
+query BookSagaVolumes($seriesId: SeriesId!, $language: BookLanguage) {
+  mySeriesVolumes(seriesId: $seriesId, language: $language) {
+    ...BookSummary
+  }
+}

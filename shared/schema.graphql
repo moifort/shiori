@@ -1103,6 +1103,9 @@ type Dashboard {
   """
   hasPrintedBooks: Boolean!
 
+  """The hours of every recording finished, whatever the year, rounded."""
+  hoursListened: Int!
+
   """The twelve months of the current year."""
   hoursPerMonth: [MonthHours!]!
   lastFinished: DashboardBook
@@ -1115,6 +1118,9 @@ type Dashboard {
 
   """The twelve months of the current year."""
   pagesPerMonth: [MonthPages!]!
+
+  """The pages of every book finished, whatever the year."""
+  pagesRead: Int!
   ratedCount: Int! @deprecated(reason: "The home screen no longer shows an average rating.")
 
   """Every book finished since the first, whatever the year."""
@@ -1127,6 +1133,9 @@ type Dashboard {
   Sagas in progress, six at most, in the Series tab's order: the saga whose latest volume was shelved most recently first.
   """
   series: [SeriesProgress!]!
+
+  """The pile, the book shelved last first, twelve at most."""
+  toRead: [DashboardBook!]!
   toReadCount: Int!
 }
 
@@ -1134,6 +1143,8 @@ type Dashboard {
 A book as a dashboard tile draws it: a cover and two lines, nothing more.
 """
 type DashboardBook {
+  """The day it was shelved: what the pile is dated by."""
+  addedAt: DateTime
   authors: [AuthorName!]!
 
   """Null without a photo or a published cover; draw the placeholder."""
@@ -3980,6 +3991,11 @@ How far the reader is through a saga in progress, on the numbered volumes alread
 type SeriesProgress {
   """The saga heard rather than read, measured on its recordings."""
   audio: Boolean!
+
+  """
+  The cover of the volume shelved last, which the home screen draws the saga with. Null without one; draw the placeholder.
+  """
+  coverUrl: CoverUrl
 
   """The reader hearted the saga, which is five stars."""
   favorite: Boolean!

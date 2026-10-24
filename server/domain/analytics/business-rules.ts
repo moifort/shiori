@@ -49,13 +49,15 @@ import type { LocalDate as LocalDateValue } from './types'
  *  readable on a phone, and fewer leaves one wide bar for a reader's first year. */
 const YEARS_SHOWN = 9
 const READING_SHOWN = 10
+/** The pile's covers on the home screen: a row that scrolls, not the whole pile. */
+const TO_READ_SHOWN = 12
 const SERIES_SHOWN = 6
 const TOP_GENRES = 4
 
 /** Bumped whenever the view gains a figure or a rule changes, so a view stored
  *  by an older bundle is rebuilt on its next read instead of answering with a
  *  field it never computed. */
-export const VIEW_VERSION = 15
+export const VIEW_VERSION = 16
 
 // MARK: - Calendar
 
@@ -124,6 +126,7 @@ export const analyticsViewOf = (input: {
     ...coverSourcesOf(book),
     rating: ratingOf(book),
     listeningProgress: listeningProgressOf(book),
+    addedAt: book.addedAt,
     startedAt: book.startedAt,
     finishedAt: book.finishedAt,
   })
@@ -284,6 +287,9 @@ export const seriesProgressOf = (
     if (state !== 'in-progress') continue
     const measured = progressOf(series, read, Year(currentYear), edition)
     if (!measured) continue
+    const latest = saga.books.reduce((shown, book) =>
+      shelfDateOf(book).getTime() > shelfDateOf(shown).getTime() ? book : shown,
+    )
     progress.push({
       id: series.id,
       name: series.name,
@@ -292,6 +298,7 @@ export const seriesProgressOf = (
       rating: sagaRatingOf(series.id, saga.books, seriesRatings),
       favorite: hearted.has(series.id),
       lastActivityAt: saga.shelvedAt,
+      ...coverSourcesOf(latest),
     })
   }
   return progress
@@ -321,7 +328,10 @@ const compareSeriesProgress = (left: SeriesProgress, right: SeriesProgress): num
 
 // MARK: - Reading the view against today
 
-export const dashboardOf = (view: AnalyticsView, today: LocalDateValue): Dashboard<BookCard> => {
+export const dashboardOf = (
+  view: AnalyticsView,
+  today: LocalDateValue,
+): Dashboard<BookCard, SeriesProgress> => {
   const currentYear = yearOf(today)
   const { finishes } = view
 
@@ -331,10 +341,15 @@ export const dashboardOf = (view: AnalyticsView, today: LocalDateValue): Dashboa
     pagesPerMonth: pagesPerMonthOf(finishes, currentYear),
     hoursPerMonth: hoursPerMonthOf(finishes, currentYear),
     reading: view.reading.slice(0, READING_SHOWN),
+    toRead: view.toRead.slice(0, TO_READ_SHOWN),
     lastFinished: view.lastFinished,
     booksRead: booksReadTrendOf(finishes, today),
     toReadCount: view.toRead.length,
     readCount: finishes.length,
+    pagesRead: finishes.reduce((sum, finish) => sum + (finish.pageCount ?? 0), 0),
+    hoursListened: Math.round(
+      finishes.reduce((sum, finish) => sum + (finish.durationMinutes ?? 0), 0) / 60,
+    ),
     monthsToClearPile: monthsToClearPileOf(finishes, view.toRead.length, today),
     averageRating: averageRatingOf(finishes),
     ratedCount: finishes.filter((finish) => finish.rating !== undefined).length,

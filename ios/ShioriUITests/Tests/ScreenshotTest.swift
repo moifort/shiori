@@ -68,12 +68,16 @@ final class ScreenshotTest: XCTestCase {
         settle()
         save("02-home")
 
-        // The detailed statistics, behind the genres card.
+        // The detailed statistics: the figures under the hero open them, and
+        // their genres card the genres read.
+        try tap(app.descendants(matching: .any)["home-figures"].firstMatch, until: app.descendants(matching: .any)["home-genres"])
         try tap(app.descendants(matching: .any)["home-genres"].firstMatch, until: app.descendants(matching: .any)["genre-insights"])
         settle()
         save("02-stats")
         closeDetail()
         _ = app.descendants(matching: .any)["genre-insights"].waitForNonExistence(timeout: 5)
+        closeDetail()
+        _ = app.descendants(matching: .any)["home-genres"].waitForNonExistence(timeout: 5)
 
         // Bibliothèque, its books as a mosaic of covers.
         try open("Bibliothèque")

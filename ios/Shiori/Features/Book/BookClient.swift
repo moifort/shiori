@@ -28,6 +28,9 @@ struct BookClient: Sendable {
     var offer: @Sendable (_ bookId: String) async throws -> EditionOffer?
     var awaitEdition: @Sendable (_ bookId: String, ReleaseFormat) async throws -> AwaitedEdition
     var stopAwaiting: @Sendable (_ editionId: String) async throws -> Void
+    /// The volumes of the book's saga the reader holds, for the row under its
+    /// facts. None by default: a test or a preview that draws no saga leaves it.
+    var sagaVolumes: @Sendable (_ seriesId: String, BookLanguage?) async throws -> [Book] = { _, _ in [] }
 }
 
 extension BookClient {
@@ -49,7 +52,8 @@ extension BookClient {
         subgenres: { try await BookAPI.subgenres() },
         offer: { try await AwaitedAPI.offer(bookId: $0) },
         awaitEdition: { try await AwaitedAPI.awaitEdition(bookId: $0, format: $1) },
-        stopAwaiting: { try await AwaitedAPI.stop(id: $0) }
+        stopAwaiting: { try await AwaitedAPI.stop(id: $0) },
+        sagaVolumes: { try await BookAPI.sagaVolumes(seriesId: $0, language: $1) }
     )
 
     /// Answers with `Book.preview`, the write applied, and accepts every call.

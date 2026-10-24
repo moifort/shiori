@@ -24,6 +24,8 @@ final class BookViewModel {
 
     /// What the page offers to await in the app's language, and what it awaits.
     private(set) var offer = EditionOffer()
+    /// The volumes of its saga the reader holds, for the row on its page.
+    private(set) var sagaVolumes: [Book] = []
     /// An await refused, said in its own alert.
     var awaitFailed: String?
 
@@ -49,6 +51,18 @@ final class BookViewModel {
             errorMessage = reportError(error)
         }
         isLoading = false
+    }
+
+    /// The reader's own volumes of the book's saga, after the book: the page
+    /// draws without them, and a failure leaves the row out rather than the
+    /// page. Never the catalogue, whose first build is a model call.
+    func loadSagaVolumes() async {
+        guard let series = book?.series else {
+            sagaVolumes = []
+            return
+        }
+        guard let volumes = try? await client.sagaVolumes(series.id, book?.language) else { return }
+        withAnimation(.snappy) { sagaVolumes = volumes }
     }
 
     /// Describes a book added from a shelf photo, the first time its page

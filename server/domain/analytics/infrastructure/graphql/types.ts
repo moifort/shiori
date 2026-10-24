@@ -1,6 +1,7 @@
 import type {
   Dashboard,
   DashboardBook,
+  DashboardSeries,
   FormatShare,
   GenreCount,
   GenreInsights,
@@ -8,7 +9,6 @@ import type {
   GenreTaste,
   MonthHours,
   MonthPages,
-  SeriesProgress,
   Trend,
   UnexploredGenre,
   YearCount,
@@ -44,6 +44,12 @@ const DashboardBookType = builder.objectRef<DashboardBook>('DashboardBook').impl
         'percent. Null on anything but an audiobook the player opened.',
       resolve: (book) =>
         book.listeningProgress === undefined ? null : Percentage(book.listeningProgress),
+    }),
+    addedAt: t.field({
+      type: 'DateTime',
+      nullable: true,
+      description: 'The day it was shelved: what the pile is dated by.',
+      resolve: (book) => book.addedAt ?? null,
     }),
     startedAt: t.field({
       type: 'DateTime',
@@ -117,7 +123,7 @@ const GenreCountType = builder.objectRef<GenreCount>('GenreCount').implement({
   }),
 })
 
-const SeriesProgressType = builder.objectRef<SeriesProgress>('SeriesProgress').implement({
+const SeriesProgressType = builder.objectRef<DashboardSeries>('SeriesProgress').implement({
   description:
     'How far the reader is through a saga in progress, on the numbered volumes ' +
     'already published.',
@@ -140,6 +146,14 @@ const SeriesProgressType = builder.objectRef<SeriesProgress>('SeriesProgress').i
     favorite: t.boolean({
       description: 'The reader hearted the saga, which is five stars.',
       resolve: (series) => series.favorite,
+    }),
+    coverUrl: t.field({
+      type: 'CoverUrl',
+      nullable: true,
+      description:
+        'The cover of the volume shelved last, which the home screen draws the saga ' +
+        'with. Null without one; draw the placeholder.',
+      resolve: (series) => series.coverUrl ?? null,
     }),
   }),
 })
@@ -172,6 +186,11 @@ export const DashboardType = builder.objectRef<Dashboard>('Dashboard').implement
       description: 'Most recently started first, ten at most.',
       resolve: (dashboard) => dashboard.reading,
     }),
+    toRead: t.field({
+      type: [DashboardBookType],
+      description: 'The pile, the book shelved last first, twelve at most.',
+      resolve: (dashboard) => dashboard.toRead,
+    }),
     lastFinished: t.field({
       type: DashboardBookType,
       nullable: true,
@@ -186,6 +205,12 @@ export const DashboardType = builder.objectRef<Dashboard>('Dashboard').implement
     toReadCount: t.exposeInt('toReadCount'),
     readCount: t.exposeInt('readCount', {
       description: 'Every book finished since the first, whatever the year.',
+    }),
+    pagesRead: t.exposeInt('pagesRead', {
+      description: 'The pages of every book finished, whatever the year.',
+    }),
+    hoursListened: t.exposeInt('hoursListened', {
+      description: 'The hours of every recording finished, whatever the year, rounded.',
     }),
     monthsToClearPile: t.int({
       nullable: true,

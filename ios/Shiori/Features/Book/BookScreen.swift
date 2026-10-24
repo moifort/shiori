@@ -26,6 +26,8 @@ struct BookScreen: View {
     @State private var editedField: BookField?
     @State private var openSeries: SeriesDestination?
     @State private var openAwaited: AwaitedEdition?
+    /// Another volume of the saga, from the row of volumes.
+    @State private var openVolume: Book?
     @Environment(\.dismiss) private var dismissPresentation
     @Environment(\.detailClosing) private var closing
 
@@ -56,19 +58,20 @@ struct BookScreen: View {
                     isSaving: viewModel.isSaving,
                     onSetStatus: { status in run { await viewModel.setStatus(status) } },
                     onRate: { showRatingPrompt = true },
-                    onToggleHidden: { run { await viewModel.setHidden(!book.hidden) } },
                     onOpenSeries: {
                         openSeries = book.series.map {
                             SeriesDestination(seriesId: $0.id, language: book.language)
                         }
                     },
+                    onEdit: { showEditor = true },
                     onEditGenre: { showGenreEditor = true },
                     onEditRecommendation: { showRecommendation = true },
                     onEditNote: { showNote = true },
                     onEditField: { editedField = $0 },
-                    onCorrect: { correction in
-                        run { _ = await viewModel.save(correction, rating: book.rating) }
-                    },
+                    // This volume as the page has it, its status just changed
+                    // included.
+                    seriesVolumes: viewModel.sagaVolumes.map { $0.id == book.id ? book : $0 },
+                    onOpenVolume: { openVolume = $0 },
                     awaited: viewModel.offer.awaited,
                     onOpenAwaited: { openAwaited = $0 },
                     onStopAwaiting: { edition in Task { await viewModel.stopAwaiting(edition) } },
@@ -195,6 +198,9 @@ struct BookScreen: View {
         .pushesDetail(item: $openSeries) { destination in
             SeriesScreen(seriesId: destination.seriesId, language: destination.language)
         }
+        .pushesDetail(item: $openVolume) { volume in
+            BookScreen(bookId: volume.id, client: client)
+        }
         .alert(
             "Une erreur est survenue",
             isPresented: .init(
@@ -210,6 +216,7 @@ struct BookScreen: View {
             // What the search offers first, before a word is typed.
             RecentlyViewed().remember(bookId)
             await viewModel.load()
+            await viewModel.loadSagaVolumes()
             // The row behind the page follows: a shelf book's cover may change.
             if await viewModel.describeIfAwaiting(), let book = viewModel.book { onChanged(book) }
         }
@@ -282,6 +289,7 @@ struct BookScreen: View {
             case let .awaitEdition(format): viewModel.awaitEdition(format)
             case let .stopAwaiting(edition): Task { await viewModel.stopAwaiting(edition) }
             case let .setStatus(status): run { await viewModel.setStatus(status) }
+            case .toggleHidden: run { await viewModel.setHidden(!book.hidden) }
             case .delete:
                 Task {
                     if await viewModel.delete() {
