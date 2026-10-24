@@ -1,9 +1,14 @@
 import SwiftUI
 
-/// The library's figures as one line under the hero — books read, favourites,
-/// the pile, pages and hours — the way into the statistics. The line keeps what
-/// fits the width, the counts first.
+/// The year's reading as the App Store sets an app's figures under its name:
+/// each a figure over what it counts in small capitals, parted by hairlines,
+/// with nothing else drawn — no mark, no box, no chevron. The books, pages and
+/// hours are this year's, the favourites and the pile the whole shelf's. The
+/// whole line is the way into the statistics. Columns that fit the width are
+/// spread across it; past that, the line scrolls sideways as the App Store's
+/// does.
 struct HomeFiguresLine: View {
+    let year: Int
     let readCount: Int
     let favoriteCount: Int
     let toReadCount: Int
@@ -13,16 +18,13 @@ struct HomeFiguresLine: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 4) {
-                ViewThatFits(in: .horizontal) {
-                    figures(count: 5)
-                    figures(count: 4)
-                    figures(count: 3)
+            ViewThatFits(in: .horizontal) {
+                columns(spread: true)
+                ScrollView(.horizontal) {
+                    columns(spread: false)
                 }
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
+                .scrollIndicators(.hidden)
+                .scrollClipDisabled()
             }
             .contentShape(.rect)
         }
@@ -31,37 +33,57 @@ struct HomeFiguresLine: View {
         .accessibilityIdentifier("home-figures")
     }
 
-    private func figures(count: Int) -> some View {
-        HStack(spacing: 11) {
-            ForEach(Array(items.prefix(count).enumerated()), id: \.offset) { _, item in
-                HStack(alignment: .firstTextBaseline, spacing: 3) {
-                    // One colour for every mark, as tall as the figure beside it.
-                    if let symbol = item.symbol {
-                        Image(systemName: symbol)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                    }
-                    Text(item.value)
-                        .font(.subheadline.weight(.bold))
-                        .monospacedDigit()
-                    Text(item.label)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+    /// The columns and the hairlines between them: spread across the width,
+    /// edge to edge with the hairline in the middle of each gap, or each set
+    /// to its content with a margin when the line scrolls.
+    private func columns(spread: Bool) -> some View {
+        HStack(spacing: 0) {
+            ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+                if index > 0 {
+                    if spread { Spacer(minLength: 10) }
+                    Divider().frame(height: 30)
+                    if spread { Spacer(minLength: 10) }
                 }
-                .fixedSize()
+                column(item).padding(.horizontal, spread ? 0 : 16)
             }
         }
     }
 
-    private var items: [(symbol: String?, value: String, label: String)] {
-        var items: [(String?, String, String)] = [
-            ("checkmark", readCount.formatted(), String(localized: "lus")),
-            ("heart.fill", favoriteCount.formatted(), String(localized: "favoris")),
-            ("bookmark.fill", toReadCount.formatted(), String(localized: "à lire")),
+    private func column(_ item: Item) -> some View {
+        VStack(spacing: 3) {
+            Text(item.value)
+                .font(.title2.weight(.bold))
+                .monospacedDigit()
+            Text(item.label)
+                .font(.caption2.weight(.semibold))
+                .textCase(.uppercase)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
+        .fixedSize()
+    }
+
+    private struct Item {
+        let value: String
+        let label: String
+    }
+
+    private var items: [Item] {
+        // The year as text: a figure would be grouped, "2 026".
+        var items = [
+            Item(value: readCount.formatted(), label: String(localized: "lus en \(String(year))")),
+            Item(value: favoriteCount.formatted(), label: String(localized: "favoris")),
+            Item(value: toReadCount.formatted(), label: String(localized: "à lire")),
         ]
-        if pagesRead > 0 { items.append((nil, pagesRead.formatted(), String(localized: "pages"))) }
+        // Pages in thousands — "26 k" — so the line stays short.
+        if pagesRead > 0 {
+            items.append(Item(
+                value: pagesRead.formatted(.number.notation(.compactName)),
+                label: String(localized: "pages")
+            ))
+        }
         if hoursListened > 0 {
-            items.append((nil, String(localized: "\(hoursListened) h"), String(localized: "écoutées")))
+            items.append(Item(value: String(localized: "\(hoursListened) h"), label: String(localized: "écoutées")))
         }
         return items
     }
@@ -510,8 +532,12 @@ struct SeriesShowCard: View {
 }
 
 #Preview("Figures") {
-    HomeFiguresLine(readCount: 83, favoriteCount: 15, toReadCount: 18, pagesRead: 16472, hoursListened: 412) {}
-        .padding()
+    VStack(spacing: 40) {
+        HomeFiguresLine(year: 2026, readCount: 18, favoriteCount: 15, toReadCount: 18, pagesRead: 6320, hoursListened: 0) {}
+        HomeFiguresLine(year: 2026, readCount: 18, favoriteCount: 15, toReadCount: 18, pagesRead: 6320, hoursListened: 66) {}
+        HomeFiguresLine(year: 2026, readCount: 0, favoriteCount: 0, toReadCount: 1, pagesRead: 0, hoursListened: 0) {}
+    }
+    .padding()
 }
 
 #Preview("Lead card") {

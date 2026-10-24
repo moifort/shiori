@@ -77,6 +77,23 @@ struct Dashboard: Codable, Sendable {
     let libraryIsEmpty: Bool
 }
 
+extension Dashboard {
+    /// The books finished this year: the last bar of the chart.
+    var readThisYear: Int {
+        booksPerYear.first { $0.year == currentYear }?.count ?? 0
+    }
+
+    /// The pages of the books finished this year, the months summed.
+    var pagesThisYear: Int {
+        pagesPerMonth.reduce(0) { $0 + $1.pages }
+    }
+
+    /// The hours of the recordings finished this year, the months summed.
+    var hoursThisYear: Int {
+        hoursPerMonth.reduce(0) { $0 + $1.hours }
+    }
+}
+
 extension Date {
     /// Whole calendar days from this date to `now`, in the device calendar: a book
     /// started last night at 23:00 was started one day ago this morning.

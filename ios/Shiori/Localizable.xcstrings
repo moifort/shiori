@@ -13085,18 +13085,18 @@
         }
       }
     },
-    "lus" : {
+    "lus en %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "read"
+            "value" : "read in %@"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "lus"
+            "value" : "lus en %@"
           }
         }
       }

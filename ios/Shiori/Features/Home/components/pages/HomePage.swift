@@ -9,7 +9,7 @@ enum HomeAction {
     /// A card of "Mes séries".
     case openSeries(String)
     case openBook(Book)
-    /// The figures under the hero: the statistics, beside or over the page.
+    /// The figures over the hero: the statistics, beside or over the page.
     case showStatistics
     /// The statistics' genre card.
     case openGenres
@@ -73,12 +73,22 @@ struct HomePage: View {
         ScrollView {
             VStack(spacing: 0) {
                 if showsCarousel {
+                    // The figures head the page, over the carousel's colours,
+                    // drawn above the backdrop that runs up under them.
+                    if !dashboard.libraryIsEmpty {
+                        figures
+                            .environment(\.colorScheme, .dark)
+                            .padding(.horizontal, 20)
+                            .padding(.top, 4)
+                            .zIndex(1)
+                    }
                     HomeHeroCarousel(
                         items: heroItems,
                         onOpenRelease: { onAction(.openRelease($0)) },
                         onOpen: { onAction(.openDiscovery($0)) },
                         onAdd: { onAction(.addDiscovery($0, $1)) },
-                        onAwait: { onAction(.awaitDiscovery($0, $1)) }
+                        onAwait: { onAction(.awaitDiscovery($0, $1)) },
+                        overlapsBar: dashboard.libraryIsEmpty
                     )
                 } else {
                     HomeHero(
@@ -92,7 +102,7 @@ struct HomePage: View {
                 VStack(alignment: .leading, spacing: 30) {
                     if dashboard.libraryIsEmpty {
                         scanPrompt
-                    } else {
+                    } else if !showsCarousel {
                         figures
                     }
                     if isSideBySide {
@@ -158,11 +168,12 @@ struct HomePage: View {
 
     private var figures: some View {
         HomeFiguresLine(
-            readCount: dashboard.readCount,
+            year: dashboard.currentYear,
+            readCount: dashboard.readThisYear,
             favoriteCount: dashboard.favoriteCount,
             toReadCount: dashboard.toReadCount,
-            pagesRead: dashboard.pagesRead,
-            hoursListened: dashboard.hoursListened
+            pagesRead: dashboard.pagesThisYear,
+            hoursListened: dashboard.hoursThisYear
         ) {
             onAction(.showStatistics)
         }

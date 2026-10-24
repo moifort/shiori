@@ -47,6 +47,9 @@ struct HomeHeroCarousel: View {
     let onOpen: (Suggestion) -> Void
     let onAdd: (Suggestion, ReadingStatus) -> Void
     let onAwait: (Suggestion, ReleaseFormat) -> Void
+    /// Whether the carousel runs up under the empty bar, the cover starting
+    /// just under the status bar. Off when the figures head the page above it.
+    var overlapsBar = true
 
     @State private var current: HomeHeroItem.ID?
     /// The discoveries just added or awaited from their "+", which turns into
@@ -89,7 +92,7 @@ struct HomeHeroCarousel: View {
                     .padding(.bottom, 12)
             }
         }
-        .padding(.top, -Self.barOverlap)
+        .padding(.top, overlapsBar ? -Self.barOverlap : 0)
         .accessibilityIdentifier("home-discovery")
     }
 
