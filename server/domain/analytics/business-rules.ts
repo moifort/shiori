@@ -140,6 +140,7 @@ export const analyticsViewOf = (input: {
     return {
       bookId: book.id,
       // A start recorded after the finish is a clock oddity, not a negative reading.
+      // biome-ignore lint/complexity/useMathMinMax: ISO date strings, Math.min would give NaN
       startedOn: startedOn > finishedOn ? finishedOn : startedOn,
       finishedOn,
       pageCount: book.pageCount,
