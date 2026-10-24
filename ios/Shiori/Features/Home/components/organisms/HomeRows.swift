@@ -32,13 +32,14 @@ struct HomeFiguresLine: View {
     }
 
     private func figures(count: Int) -> some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 11) {
             ForEach(Array(items.prefix(count).enumerated()), id: \.offset) { _, item in
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
+                    // One colour for every mark, as tall as the figure beside it.
                     if let symbol = item.symbol {
                         Image(systemName: symbol)
-                            .font(.caption2)
-                            .foregroundStyle(item.tint)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
                     }
                     Text(item.value)
                         .font(.subheadline.weight(.bold))
@@ -52,15 +53,15 @@ struct HomeFiguresLine: View {
         }
     }
 
-    private var items: [(symbol: String?, tint: Color, value: String, label: String)] {
-        var items: [(String?, Color, String, String)] = [
-            ("checkmark", ReadingStatus.read.tint, readCount.formatted(), String(localized: "lus")),
-            ("heart.fill", .red, favoriteCount.formatted(), String(localized: "favoris")),
-            ("bookmark.fill", ReadingStatus.toRead.tint, toReadCount.formatted(), String(localized: "à lire")),
+    private var items: [(symbol: String?, value: String, label: String)] {
+        var items: [(String?, String, String)] = [
+            ("checkmark", readCount.formatted(), String(localized: "lus")),
+            ("heart.fill", favoriteCount.formatted(), String(localized: "favoris")),
+            ("bookmark.fill", toReadCount.formatted(), String(localized: "à lire")),
         ]
-        if pagesRead > 0 { items.append((nil, .primary, pagesRead.formatted(), String(localized: "pages"))) }
+        if pagesRead > 0 { items.append((nil, pagesRead.formatted(), String(localized: "pages"))) }
         if hoursListened > 0 {
-            items.append((nil, .primary, String(localized: "\(hoursListened) h"), String(localized: "écoutées")))
+            items.append((nil, String(localized: "\(hoursListened) h"), String(localized: "écoutées")))
         }
         return items
     }
@@ -433,9 +434,8 @@ struct SeriesShowCard: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// The cover across the card, sharp at the top and blurred from the middle
-    /// down to the title, more the lower it goes, with a light shade under the
-    /// text.
+    /// The cover across the card, darkened toward its foot and its leading
+    /// edge, where the text sits, along an eased curve.
     private var artwork: some View {
         // Held to the card's size: filled, the cover would otherwise grow the
         // card to its own proportions.
@@ -446,29 +446,19 @@ struct SeriesShowCard: View {
                     CoverImage(url: url) { Color.clear } fallback: { Color.clear }
                 }
                 .clipped()
-                Color.clear
-                    .overlay {
-                        CoverImage(url: url) { Color.clear } fallback: { Color.clear }
-                            .scaleEffect(1.15)
-                            .blur(radius: 12, opaque: true)
-                    }
-                    .clipped()
-                    .mask {
-                        LinearGradient(
-                            stops: (0...10).map { step in
-                                let t = Double(step) / 10
-                                // Full by the title's top: the text sits on the blur.
-                                return .init(color: .black.opacity(t * t * (3 - 2 * t)), location: 0.12 + 0.4 * t)
-                            },
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    }
             }
             LinearGradient(
-                colors: [.black.opacity(0.05), .black.opacity(0.15), .black.opacity(0.5)],
+                stops: (0...10).map { step in
+                    let t = Double(step) / 10
+                    return .init(color: .black.opacity(0.85 * t * t * (3 - 2 * t)), location: 0.1 + 0.9 * t)
+                },
                 startPoint: .top,
                 endPoint: .bottom
+            )
+            LinearGradient(
+                colors: [.black.opacity(0.35), .clear],
+                startPoint: .leading,
+                endPoint: .trailing
             )
         }
     }
