@@ -193,6 +193,22 @@
         }
       }
     },
+    "%@ restantes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ left"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ restantes"
+          }
+        }
+      }
+    },
     "%@ voit votre bibliothèque, et vous voyez la sienne." : {
       "localizations" : {
         "en" : {
@@ -1109,6 +1125,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld%% de vos lectures"
+          }
+        }
+      }
+    },
+    "%lld%% écouté" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%% listened"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%% écouté"
           }
         }
       }

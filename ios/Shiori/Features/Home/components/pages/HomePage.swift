@@ -172,7 +172,7 @@ struct HomePage: View {
                 if isCompact {
                     ReadingFeatureCard(
                         book: lead,
-                        caption: Self.startedCaption(lead),
+                        caption: Self.openedCaption(lead),
                         onOpen: { onAction(.openBook(lead)) },
                         onFinish: { onAction(.finishBook(lead)) },
                         onRate: { onAction(.rateBook(lead)) }
@@ -371,6 +371,16 @@ struct HomePage: View {
         if let progress = book.listeningProgressLabel {
             return String(localized: "\(progress) écouté")
         }
+        guard let startedAt = book.startedAt else { return book.authorLine }
+        let days = startedAt.daysAgo()
+        return days == 0
+            ? String(localized: "commencé aujourd'hui")
+            : String(localized: "depuis \(days) j")
+    }
+
+    /// How long a book has been open, whatever its format: the TV app's card
+    /// says how far a recording got on its own bar.
+    static func openedCaption(_ book: Book) -> String {
         guard let startedAt = book.startedAt else { return book.authorLine }
         let days = startedAt.daysAgo()
         return days == 0
