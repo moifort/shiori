@@ -18,7 +18,8 @@ enum TabSelection: Int, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .home: "house"
-        case .library: "books.vertical"
+        // An open book, as the Books app wears on its icon.
+        case .library: "book"
         case .discover: "sparkles"
         case .shared: "person.2"
         case .scan: "camera.viewfinder"
