@@ -146,7 +146,7 @@ struct ReadingFeatureCard: View {
                 .foregroundStyle(.black)
                 if let onOpenSeries {
                     Button(action: onOpenSeries) {
-                        Label("Voir la série", systemImage: "books.vertical")
+                        Text("Voir la série")
                             .font(.caption.weight(.semibold))
                             .lineLimit(1)
                             .fixedSize()

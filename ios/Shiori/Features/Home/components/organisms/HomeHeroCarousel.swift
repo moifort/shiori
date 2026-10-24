@@ -93,8 +93,13 @@ struct HomeHeroCarousel: View {
         .accessibilityIdentifier("home-discovery")
     }
 
+    /// Turns the "+" into a check once the menu has closed: drawn while the
+    /// menu folds back into the button, the check went unseen.
     private func take(_ suggestion: Suggestion) {
-        withAnimation(.snappy) { _ = taken.insert(suggestion.id) }
+        Task {
+            try? await Task.sleep(for: .milliseconds(450))
+            withAnimation(.snappy) { _ = taken.insert(suggestion.id) }
+        }
     }
 
     private var currentIndex: Int {
