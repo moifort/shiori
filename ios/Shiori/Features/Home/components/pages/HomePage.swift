@@ -240,9 +240,17 @@ struct HomePage: View {
                 RowHeader(title: "Nouveautés", detail: String(localized: "Découvrir"), style: headerStyle) {
                     onAction(.showDiscover)
                 }
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
-                    ForEach(tiles, id: \.id) { tile in
-                        NewsTile(book: tile.book, caption: tile.caption, captionTint: tile.tint, onOpen: tile.open)
+                // A phone shelves them as the pile, the day out or "Disponible"
+                // in each cover; the open Duo keeps its tiles.
+                if isCompact {
+                    PosterRow(
+                        items: tiles.map { .init(book: $0.book, caption: $0.caption, open: $0.open) }
+                    ) { _ in }
+                } else {
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+                        ForEach(tiles, id: \.id) { tile in
+                            NewsTile(book: tile.book, caption: tile.caption, captionTint: tile.tint, onOpen: tile.open)
+                        }
                     }
                 }
             }
@@ -305,13 +313,18 @@ struct HomePage: View {
             NewsItem(
                 id: "favorite-\(favorite.id)",
                 book: favorite.tile,
-                caption: String(localized: "\(favorite.friendDisplayName) l'a adoré"),
+                // A poster has room for the name alone, after a heart.
+                caption: isCompact
+                    ? "♥ \(favorite.friendDisplayName)"
+                    : String(localized: "\(favorite.friendDisplayName) l'a adoré"),
                 tint: nil,
                 open: { onAction(.openFriendFavorite(favorite)) }
             )
         }
-        // An even count: the grid's last row never ends on a hole.
+        // An even count on the open Duo: the grid's last row never ends on a
+        // hole. A phone's row scrolls, and keeps them all.
         let items = releaseItems + favoriteItems
+        if isCompact { return items }
         return items.count > 1 ? Array(items.prefix(items.count / 2 * 2)) : items
     }
 

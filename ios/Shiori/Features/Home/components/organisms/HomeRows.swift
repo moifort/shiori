@@ -190,6 +190,9 @@ struct PosterRow: View {
     struct Item: Identifiable {
         let book: Book
         let caption: String
+        /// What a tap opens, when it is not the book itself: a release, a
+        /// friend's favourite.
+        var open: (() -> Void)?
         var id: String { book.id }
     }
 
@@ -203,7 +206,7 @@ struct PosterRow: View {
         ScrollView(.horizontal) {
             LazyHStack(alignment: .top, spacing: 13) {
                 ForEach(items) { item in
-                    Button { onOpen(item.book) } label: {
+                    Button { item.open?() ?? onOpen(item.book) } label: {
                         BookCover(book: item.book, width: coverWidth, showsFormatBadge: false, cornerRadius: Self.cornerRadius)
                             // Dimmed a little, as the TV app's posters are: a
                             // white cover no longer glares beside a dark one.
