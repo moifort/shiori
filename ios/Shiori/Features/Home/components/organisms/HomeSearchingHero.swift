@@ -2,13 +2,12 @@ import SwiftUI
 
 /// The top of a phone's home screen while the month's selection is being
 /// made — a shelf just imported, or a month just begun — in the carousel's
-/// grammar: where the month's cover would stand, a cover of the same size
-/// that is not there yet, an aurora in Apple Intelligence's colours drifting
-/// through it under a sparkle that breathes, as Image Playground holds the
-/// place of a picture being made; under it the month named, and one line on
-/// what the choice rests on, with a pulse that says it is under way. Over the
-/// colours of the shelf's first cover, as the carousel sets a page over its
-/// own. The carousel takes its place once the selection is ready.
+/// grammar: where the month's cover would stand, in the room it will take,
+/// a spinner of vapour — an arc in Apple Intelligence's colours, blurred
+/// into a wisp of smoke, a thin bright edge over it — and nothing around
+/// it; under it the month named, and one line on what the choice rests on. Over the colours
+/// of the shelf's first cover, as the carousel sets a page over its own. The
+/// carousel takes its place once the selection is ready.
 struct HomeSearchingHero: View {
     /// `YYYY-MM`.
     let month: String
@@ -26,8 +25,12 @@ struct HomeSearchingHero: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            card
+            spinner
+                // The cover's room, so the carousel takes its place without
+                // the page moving.
+                .frame(width: Self.coverSize.width, height: Self.coverSize.height)
                 .padding(.top, 26)
+                .accessibilityLabel(Text("Recherche de vos découvertes…"))
             Text("Découverte du mois")
                 .font(.footnote.weight(.semibold))
                 .padding(.horizontal, 10)
@@ -38,13 +41,10 @@ struct HomeSearchingHero: View {
                 .font(.title.weight(.bold))
                 .multilineTextAlignment(.center)
                 .padding(.top, 10)
-            HStack(spacing: 8) {
-                pulse
-                Text("D’après vos \(bookCount) livres")
-            }
-            .font(.subheadline)
-            .foregroundStyle(.white.opacity(0.85))
-            .padding(.top, 6)
+            Text("D’après vos \(bookCount) livres")
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.85))
+                .padding(.top, 6)
         }
         .foregroundStyle(.white)
         .padding(.horizontal, 28)
@@ -60,49 +60,43 @@ struct HomeSearchingHero: View {
         .accessibilityIdentifier("home-searching")
     }
 
-    /// The cover to come: the aurora shader over a plain fill, inside the
-    /// cover's corners and the thin rim the posters carry, the sparkle over
-    /// it. Still, in its first pose, with Reduce Motion.
-    private var card: some View {
-        let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
-        return TimelineView(.animation(paused: reduceMotion)) { context in
-            let time = reduceMotion ? 3 : context.date.timeIntervalSince(start)
-            Rectangle()
-                .fill(.black)
-                .colorEffect(
-                    ShaderLibrary.aurora(
-                        .float2(Self.coverSize.width, Self.coverSize.height),
-                        .float(Float(time))
-                    )
-                )
+    /// The vapour: an arc of the spectrum turning once a second and a half,
+    /// its wide blurred body under its thin bright edge, as steam curls over
+    /// a cup. Still, with Reduce Motion.
+    private var spinner: some View {
+        TimelineView(.animation(paused: reduceMotion)) { context in
+            let time = reduceMotion ? 0 : context.date.timeIntervalSince(start)
+            let angle = Angle.degrees(time * 240)
+            ZStack {
+                arc(lineWidth: 14, blur: 12, opacity: 0.85)
+                arc(lineWidth: 6, blur: 4, opacity: 0.9)
+                arc(lineWidth: 2.5, blur: 0, opacity: 1)
+            }
+            .rotationEffect(angle)
         }
-        .frame(width: Self.coverSize.width, height: Self.coverSize.height)
-        .clipShape(shape)
-        .overlay { shape.strokeBorder(.white.opacity(0.22), lineWidth: 1) }
-        .overlay { sparkle }
-        .shadow(color: .black.opacity(0.5), radius: 22, y: 14)
-        .accessibilityHidden(true)
+        .frame(width: 64, height: 64)
     }
 
-    /// Apple Intelligence's mark, breathing in the middle of the card.
-    private var sparkle: some View {
-        Image(systemName: "sparkles")
-            .font(.system(size: 34, weight: .medium))
-            .foregroundStyle(.white)
-            .shadow(color: .white.opacity(0.6), radius: 10)
-            .phaseAnimator([0.92, 1.06], trigger: reduceMotion) { mark, scale in
-                mark.scaleEffect(reduceMotion ? 1 : scale)
-            } animation: { _ in .easeInOut(duration: 1.6) }
-    }
-
-    /// A dot that breathes in front of the line: the search is under way.
-    private var pulse: some View {
+    /// One turn of the arc: three quarters of a circle fading in from
+    /// nothing to its full colour, so the wisp has a tail.
+    private func arc(lineWidth: CGFloat, blur: CGFloat, opacity: Double) -> some View {
         Circle()
-            .fill(.white)
-            .frame(width: 6, height: 6)
-            .phaseAnimator([1, 0.25]) { dot, opacity in
-                dot.opacity(opacity)
-            } animation: { _ in .easeInOut(duration: 0.6) }
+            .trim(from: 0.08, to: 0.78)
+            .stroke(
+                AngularGradient(
+                    stops: [
+                        .init(color: .clear, location: 0.08),
+                        .init(color: Color(red: 0.6, green: 0.42, blue: 1.0).opacity(0.5), location: 0.25),
+                        .init(color: Color(red: 0.32, green: 0.68, blue: 1.0), location: 0.45),
+                        .init(color: Color(red: 1.0, green: 0.42, blue: 0.68), location: 0.62),
+                        .init(color: Color(red: 1.0, green: 0.62, blue: 0.30), location: 0.78),
+                    ],
+                    center: .center
+                ),
+                style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
+            )
+            .blur(radius: blur)
+            .opacity(opacity)
     }
 }
 
