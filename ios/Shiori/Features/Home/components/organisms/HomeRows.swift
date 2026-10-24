@@ -184,8 +184,8 @@ struct ReadingLeadCard: View {
 }
 
 /// A row of covers that scrolls sideways as the TV app's shelves do: larger,
-/// with nothing under them, a short line set inside each cover's foot over a
-/// light shade that keeps it readable on any cover.
+/// with nothing under them, a short line set inside each cover's foot, where
+/// the cover melts into a blur that keeps it readable on any cover.
 struct PosterRow: View {
     struct Item: Identifiable {
         let book: Book
@@ -204,29 +204,31 @@ struct PosterRow: View {
             LazyHStack(alignment: .top, spacing: 13) {
                 ForEach(items) { item in
                     Button { onOpen(item.book) } label: {
-                        BookCover(book: item.book, width: coverWidth, formatBadgeSize: 20, cornerRadius: Self.cornerRadius)
+                        BookCover(book: item.book, width: coverWidth, showsFormatBadge: false, cornerRadius: Self.cornerRadius)
                             // Dimmed a little, as the TV app's posters are: a
                             // white cover no longer glares beside a dark one.
                             .overlay {
                                 RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
                                     .fill(.black.opacity(0.12))
                             }
+                            .overlay { footBlur(item.book) }
+                            // A recording says so in a tag inside the corner,
+                            // as the card above it does, not with headphones.
+                            .overlay(alignment: .topTrailing) {
+                                if item.book.format == .audiobook {
+                                    OutlinedTag(text: String(localized: "Audio"))
+                                        .padding(6)
+                                }
+                            }
                             .overlay(alignment: .bottom) {
                                 Text(item.caption)
-                                    .font(.subheadline.weight(.medium))
+                                    .font(.subheadline.weight(.semibold))
                                     .foregroundStyle(.white)
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.8)
-                                    .shadow(color: .black.opacity(0.4), radius: 3)
+                                    .shadow(color: .black.opacity(0.5), radius: 4)
                                     .padding(.horizontal, 6)
-                                    .padding(.top, 26)
                                     .padding(.bottom, 9)
-                                    .frame(maxWidth: .infinity)
-                                    .background { footShade }
-                                    .clipShape(UnevenRoundedRectangle(
-                                        bottomLeadingRadius: Self.cornerRadius,
-                                        bottomTrailingRadius: Self.cornerRadius
-                                    ))
                             }
                             // The thin light rim inside the edge the TV app's
                             // posters carry.
@@ -250,31 +252,33 @@ struct PosterRow: View {
         .scrollClipDisabled()
     }
 
-    /// The cover blurred and darkened under its label, as the TV app's tiles
-    /// do: a band that reaches nearly its full strength from its top edge,
-    /// so the print of a cover never fights the line.
-    private var footShade: some View {
-        ZStack {
-            Rectangle()
-                .fill(.ultraThinMaterial)
-                .environment(\.colorScheme, .dark)
-                .mask {
-                    LinearGradient(
-                        stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.25)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
+    /// The cover blurred into its foot, more the lower it goes, as the TV
+    /// app's tiles melt under their label: the print of a cover never fights
+    /// the line, and nothing darkens it.
+    private func footBlur(_ book: Book) -> some View {
+        // Scaled up before the blur, as CoverBackdrop does, so the edges
+        // blur on the cover itself rather than on the transparent corners.
+        Color.clear
+            .overlay {
+                if let url = book.coverURL {
+                    CoverImage(url: url) { Color.clear } fallback: { Color.clear }
+                        .scaleEffect(1.15)
+                        .blur(radius: 10, opaque: true)
                 }
-            LinearGradient(
-                stops: [
-                    .init(color: .clear, location: 0),
-                    .init(color: .black.opacity(0.3), location: 0.25),
-                    .init(color: .black.opacity(0.45), location: 1),
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        }
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
+                    .fill(.black.opacity(0.12))
+            }
+            .clipShape(.rect(cornerRadius: Self.cornerRadius, style: .continuous))
+            .mask {
+                LinearGradient(
+                    stops: [.init(color: .clear, location: 0.55), .init(color: .black, location: 0.8)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            }
+            .allowsHitTesting(false)
     }
 }
 

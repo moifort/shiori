@@ -385,6 +385,22 @@
         }
       }
     },
+    "%lld ans" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld years"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld ans"
+          }
+        }
+      }
+    },
     "%lld ans offerts" : {
       "localizations" : {
         "en" : {
@@ -745,6 +761,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld min"
+          }
+        }
+      }
+    },
+    "%lld mois" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld months"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld mois"
           }
         }
       }
@@ -1177,6 +1209,22 @@
         }
       }
     },
+    "1 an" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 year"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 an"
+          }
+        }
+      }
+    },
     "1 an offert" : {
       "localizations" : {
         "en" : {
@@ -1221,6 +1269,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "1 livre"
+          }
+        }
+      }
+    },
+    "1 mois" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 month"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 mois"
           }
         }
       }

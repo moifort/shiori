@@ -403,14 +403,19 @@ struct HomePage: View {
             : String(localized: "depuis \(days) j")
     }
 
-    /// How long a book has been on the pile, set in its cover: "Aujourd'hui",
-    /// "Hier", "5 jours".
+    /// How long a book has been on the pile, set in its cover in the largest
+    /// unit that fits: "Aujourd'hui", "Hier", "10 jours", "2 mois", "1 an".
     static func shelvedCaption(_ book: Book) -> String {
         guard let addedAt = book.addedAt else { return book.authorLine }
-        switch addedAt.daysAgo() {
-        case 0: return String(localized: "Aujourd'hui")
+        let days = addedAt.daysAgo()
+        switch days {
+        case ..<1: return String(localized: "Aujourd'hui")
         case 1: return String(localized: "Hier")
-        case let days: return String(localized: "\(days) jours")
+        case ..<30: return String(localized: "\(days) jours")
+        case ..<60: return String(localized: "1 mois")
+        case ..<365: return String(localized: "\(days / 30) mois")
+        case ..<730: return String(localized: "1 an")
+        default: return String(localized: "\(days / 365) ans")
         }
     }
 

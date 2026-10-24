@@ -86,13 +86,7 @@ struct ReadingFeatureCard: View {
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.75))
                 .lineLimit(1)
-            Text(book.format == .audiobook ? String(localized: "Audio") : book.format.label)
-                .font(.caption2.weight(.bold))
-                .padding(.horizontal, 4)
-                .padding(.vertical, 1)
-                .overlay { RoundedRectangle(cornerRadius: 3).strokeBorder(.white.opacity(0.75), lineWidth: 1) }
-                .foregroundStyle(.white.opacity(0.85))
-                .fixedSize()
+            OutlinedTag(text: book.format == .audiobook ? String(localized: "Audio") : book.format.label)
         }
     }
 
