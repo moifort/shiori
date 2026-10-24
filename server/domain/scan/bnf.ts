@@ -1,6 +1,7 @@
 import { Isbn13, PageCount } from '~/domain/book/primitives'
 import type { LibraryEdition } from '~/domain/scan/types'
 import { createLogger } from '~/system/logger'
+import { isTimeout } from '~/utils/fetch'
 import { isPresent, optionally } from '~/utils/input'
 
 const logger = createLogger('bnf')
@@ -51,7 +52,9 @@ export const bnfEditionsOf = async (book: CataloguedBook): Promise<LibraryEditio
     }
     return editionsIn(await response.text())
   } catch (error) {
-    logger.warn('BnF lookup failed', { error, title: book.title })
+    // Running out of time is the cutoff above doing its job, not a failure to look into.
+    if (isTimeout(error)) logger.info('BnF lookup timed out', { title: book.title })
+    else logger.warn('BnF lookup failed', { error, title: book.title })
     return []
   }
 }

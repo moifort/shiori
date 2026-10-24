@@ -1,5 +1,6 @@
-import { describe, expect, test } from 'bun:test'
-import { editionsIn, isbn13Of, pagesIn } from '~/domain/scan/bnf'
+import { afterEach, describe, expect, spyOn, test } from 'bun:test'
+import * as Sentry from '@sentry/node'
+import { bnfEditionsOf, editionsIn, isbn13Of, pagesIn } from '~/domain/scan/bnf'
 
 const field = (tag: string, subfields: Record<string, string>) =>
   `<mxc:datafield tag="${tag}" ind1=" " ind2=" ">${Object.entries(subfields)
@@ -110,5 +111,40 @@ describe('reading an ISBN', () => {
   test('drops a malformed one', () => {
     expect(isbn13Of('978-2-07-282204-0')).toBeUndefined()
     expect(isbn13Of(undefined)).toBeUndefined()
+  })
+})
+
+describe('bnfEditionsOf', () => {
+  const book = { title: 'La Chambre des curiosités', author: 'Douglas Preston' }
+
+  /** Answers every request by throwing the given error. */
+  const bnfThrows = (error: Error) =>
+    spyOn(globalThis, 'fetch').mockImplementation((async () => {
+      throw error
+    }) as unknown as typeof fetch)
+
+  const reported = () => spyOn(Sentry, 'captureException')
+
+  afterEach(() => {
+    ;(globalThis.fetch as unknown as { mockRestore?: () => void }).mockRestore?.()
+    ;(Sentry.captureException as unknown as { mockRestore?: () => void }).mockRestore?.()
+  })
+
+  // The lookup gives the catalogue five seconds, then describes the book another
+  // way: a timeout is that cutoff doing its job, nothing to fix.
+  test('gives up on a slow catalogue, and reports it to no one', async () => {
+    bnfThrows(new DOMException('The operation was aborted due to timeout', 'TimeoutError'))
+    const reports = reported()
+
+    expect(await bnfEditionsOf(book)).toEqual([])
+    expect(reports).not.toHaveBeenCalled()
+  })
+
+  test('reports the catalogue failing for any other reason', async () => {
+    bnfThrows(new Error('getaddrinfo ENOTFOUND catalogue.bnf.fr'))
+    const reports = reported()
+
+    expect(await bnfEditionsOf(book)).toEqual([])
+    expect(reports).toHaveBeenCalledTimes(1)
   })
 })
