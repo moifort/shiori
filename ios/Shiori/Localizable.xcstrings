@@ -4917,6 +4917,22 @@
         }
       }
     },
+    "D’après vos %lld livres" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From your %lld books"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "D’après vos %lld livres"
+          }
+        }
+      }
+    },
     "D’après vos préférences" : {
       "localizations" : {
         "en" : {
@@ -12397,6 +12413,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vos livres audio, avec leur avancement."
+          }
+        }
+      }
+    },
+    "Vos livres de %@ arrivent" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your %@ books are on their way"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos livres de %@ arrivent"
+          }
+        }
+      }
+    },
+    "Vos livres d’%@ arrivent" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your %@ books are on their way"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos livres d’%@ arrivent"
           }
         }
       }

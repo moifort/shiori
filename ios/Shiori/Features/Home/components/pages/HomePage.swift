@@ -59,6 +59,8 @@ struct HomePage: View {
     var friendFavorites: [FriendFavorite] = []
     /// The month's discoveries, chosen for the reader.
     var discoveries: MonthlyDiscoveries?
+    /// The month's selection is being made: a phone's hero waits on it.
+    var isSearchingDiscoveries = false
     /// Whether the page has the Duo's inner screen to itself.
     var isSideBySide = false
     /// A phone or the folded Duo: the discoveries open the page as a carousel.
@@ -115,8 +117,14 @@ struct HomePage: View {
                         onAwait: { onAction(.awaitDiscovery($0, $1)) },
                         pull: pull
                     )
-                } else if opensOnHero {
+                } else if dashboard.libraryIsEmpty, opensOnHero {
                     HomeEmptyHero { onAction(.scan) }
+                } else if opensOnHero {
+                    HomeSearchingHero(
+                        month: discoveries?.month ?? MonthlyDiscoveries.month(of: today),
+                        bookCount: dashboard.readCount + dashboard.reading.count + dashboard.toReadCount,
+                        covers: dashboard.coverURLsForOrbit
+                    )
                 } else {
                     HomeHero(
                         discoveries: shownDiscoveries,
@@ -203,15 +211,35 @@ struct HomePage: View {
     }
 
     /// Whether the page opens on a hero that runs up under the bar: the
-    /// carousel, or the empty shelf's prompt before the first book.
+    /// carousel, the empty shelf's prompt before the first book, or the wait
+    /// on the month's selection.
     private var opensOnHero: Bool {
-        showsCarousel || (isCompact && dashboard.libraryIsEmpty)
+        Self.opensOnHero(
+            dashboard: dashboard,
+            releases: releases,
+            discoveries: discoveries,
+            isSearchingDiscoveries: isSearchingDiscoveries,
+            isCompact: isCompact,
+            today: today
+        )
     }
 
-    /// Whether a phone opens on the empty shelf's prompt: the same as the
-    /// coordinator's test, which sets the bar up for it.
-    static func opensOnEmptyHero(dashboard: Dashboard?, isCompact: Bool) -> Bool {
-        isCompact && dashboard?.libraryIsEmpty == true
+    /// The same test for the coordinator, which sets the bar up for a hero:
+    /// on a phone, the carousel once a release is due this week or the
+    /// month's choice is ready, the empty shelf's prompt before the first
+    /// book, or the wait while the month's selection is made.
+    static func opensOnHero(
+        dashboard: Dashboard?,
+        releases: [HomeRelease],
+        discoveries: MonthlyDiscoveries?,
+        isSearchingDiscoveries: Bool,
+        isCompact: Bool,
+        today: Date = .now
+    ) -> Bool {
+        guard isCompact, let dashboard else { return false }
+        if dashboard.libraryIsEmpty { return true }
+        let items = HomeHeroItem.items(releases: releases, discoveries: discoveries?.shownOnHome ?? [], today: today)
+        return !items.isEmpty || isSearchingDiscoveries
     }
 
     /// A phone heads its rows as the TV app does, the chevron after the title.
@@ -620,6 +648,17 @@ extension Dashboard {
 }
 
 extension Dashboard {
+    /// The covers the wait on the month's selection turns around the model:
+    /// the books open, the pile, the one finished last — a handful.
+    var coverURLsForOrbit: [URL] {
+        var seen: Set<URL> = []
+        return (reading + toRead + [lastFinished].compactMap { $0 })
+            .compactMap(\.coverURL)
+            .filter { seen.insert($0).inserted }
+            .prefix(8)
+            .map { $0 }
+    }
+
     /// No book yet: the phone opens on the empty shelf's prompt and its
     /// start rows.
     static let empty = Dashboard(
@@ -672,6 +711,12 @@ extension Dashboard {
 #Preview("Empty, phone") {
     NavigationStack {
         HomePage(dashboard: .empty, isCompact: true) { _ in }
+    }
+}
+
+#Preview("Searching, phone") {
+    NavigationStack {
+        HomePage(dashboard: .preview, isSearchingDiscoveries: true, isCompact: true) { _ in }
     }
 }
 

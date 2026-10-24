@@ -34,6 +34,21 @@ final class HomeViewModel {
     private(set) var friendFavorites: [FriendFavorite] = []
     /// The month's discoveries, drawn as covers alone.
     private(set) var discoveries: MonthlyDiscoveries?
+    /// The month's selection is being made at the home's request: the first
+    /// look of a month waits for the model, about a minute.
+    private(set) var isLookingUpDiscoveries = false
+
+    /// Whether the month's selection is on its way, asked for here or
+    /// elsewhere: the hero waits on it.
+    var isSearchingDiscoveries: Bool {
+        isLookingUpDiscoveries
+            || (discoveries?.month == MonthlyDiscoveries.month(of: .now) && discoveries?.status == .searching)
+    }
+
+    /// How often a look that found the selection being made asks again, and
+    /// for how long at most: a generation runs about a minute and a half.
+    private static let searchPoll: Duration = .seconds(5)
+    private static let searchPolls = 40
     /// The discoveries the reader just took from the carousel's "+": the
     /// server drops them from the month's line, but they stay on screen, their
     /// check showing, until the reader leaves the page.
@@ -74,6 +89,8 @@ final class HomeViewModel {
             withAnimation(dashboard == nil ? nil : .smooth) { dashboard = fetched }
             loaded = true
             if let cache { Task.detached { cache.write(fetched) } }
+            // The shelf is known: a month without its selection gets one made.
+            Task { await lookUpDiscoveriesIfDue() }
         } catch {
             keep(releases: await releases, favorites: await favorites)
             isLoading = false
@@ -102,10 +119,52 @@ final class HomeViewModel {
     }
 
     /// The discoveries alone: read in the printed format, as Découvrir draws
-    /// its line by default, never made here — only Découvrir asks for a month's
-    /// selection. Kept as they were when they could not be read.
+    /// its line by default. Kept as they were when they could not be read.
+    /// A month found without its selection gets one made, once the shelf is
+    /// known to hold books.
     func loadDiscoveries() async {
         guard let found = try? await client.discoveries() else { return }
+        show(found)
+        await lookUpDiscoveriesIfDue()
+    }
+
+    /// Asks for the month's selection to be made, and again every few seconds
+    /// while it is, when the shelf has books and the month has none: a reader
+    /// who imported a library, or a month that just began. The server makes
+    /// one selection a month per reader, never twice a day, whoever asks, so
+    /// the home's look costs the model nothing Découvrir's would not have.
+    func lookUpDiscoveriesIfDue() async {
+        guard !isLookingUpDiscoveries, let dashboard, !dashboard.libraryIsEmpty,
+            Self.selectionIsDue(discoveries)
+        else { return }
+        isLookingUpDiscoveries = true
+        defer { isLookingUpDiscoveries = false }
+        // A request given up on while the server still makes the selection
+        // — a slow generation outlasting the app's wait — is asked again a
+        // few times before it is left to the next look.
+        var failures = 0
+        for _ in 0..<Self.searchPolls {
+            do {
+                let found = try await client.lookUpDiscoveries()
+                show(found)
+                guard found.status == .searching else { return }
+            } catch {
+                guard !isCancellation(error) else { return }
+                failures += 1
+                guard failures < 3 else { return }
+            }
+            do { try await Task.sleep(for: Self.searchPoll) } catch { return }
+        }
+    }
+
+    /// Whether the month's selection is still to be made or on its way: none
+    /// for this month, or one being made elsewhere, which is waited on too.
+    static func selectionIsDue(_ discoveries: MonthlyDiscoveries?, now: Date = .now) -> Bool {
+        guard let discoveries, discoveries.month == MonthlyDiscoveries.month(of: now) else { return true }
+        return discoveries.status != .ready
+    }
+
+    private func show(_ found: MonthlyDiscoveries) {
         withAnimation(.smooth) { discoveries = keepingTaken(found) }
         if let cache = discoveriesCache { Task.detached { cache.write(found) } }
     }

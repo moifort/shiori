@@ -6,8 +6,12 @@ import Foundation
 struct HomeClient: Sendable {
     var dashboard: @Sendable () async throws -> Dashboard
     var recentFavorites: @Sendable () async throws -> [FriendFavorite]
-    /// The month's discoveries, read, never made: only Découvrir asks for them.
+    /// The month's discoveries, read as they stand.
     var discoveries: @Sendable () async throws -> MonthlyDiscoveries
+    /// The month's discoveries, made when the month has none yet: the home
+    /// asks once the shelf has books and the month's are missing, and asks
+    /// again while they are being made.
+    var lookUpDiscoveries: @Sendable () async throws -> MonthlyDiscoveries
     var discovery: @Sendable (ReleaseFormat) async throws -> DiscoveryPage
     var awaited: @Sendable (ReleaseFormat) async throws -> [AwaitedEdition]
     var dismissSuggestion: @Sendable (_ id: String, DismissalReason) async throws -> Void
@@ -24,6 +28,7 @@ extension HomeClient {
         dashboard: { try await HomeAPI.dashboard() },
         recentFavorites: { try await FriendsAPI.recentFavorites() },
         discoveries: { try await SuggestionsAPI.monthly(format: .book, lookUp: false) },
+        lookUpDiscoveries: { try await SuggestionsAPI.monthly(format: .book, lookUp: true) },
         discovery: { try await DiscoverAPI.discovery(format: $0) },
         awaited: { try await AwaitedAPI.awaited(format: $0) },
         dismissSuggestion: { try await SuggestionsAPI.dismiss(id: $0, reason: $1) },
@@ -41,6 +46,7 @@ extension HomeClient {
         dashboard: { .preview },
         recentFavorites: { [] },
         discoveries: { .preview },
+        lookUpDiscoveries: { .preview },
         discovery: { format in
             DiscoveryPage(rows: format == .book ? [.preview] : [], authors: [], unwatched: 0, followed: 1)
         },

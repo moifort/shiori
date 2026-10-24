@@ -228,12 +228,14 @@ struct HomeScreen: View {
     /// or the month's choice is ready, or the empty shelf's prompt before the
     /// first book.
     private var opensOnHero: Bool {
-        guard !isSplit, !preparation.isActive, let dashboard = viewModel.dashboard else { return false }
-        return HomePage.opensOnEmptyHero(dashboard: dashboard, isCompact: true)
-            || !HomeHeroItem.items(
-                releases: viewModel.releases,
-                discoveries: viewModel.discoveries?.shownOnHome ?? []
-            ).isEmpty
+        guard !isSplit, !preparation.isActive else { return false }
+        return HomePage.opensOnHero(
+            dashboard: viewModel.dashboard,
+            releases: viewModel.releases,
+            discoveries: viewModel.discoveries,
+            isSearchingDiscoveries: viewModel.isSearchingDiscoveries,
+            isCompact: true
+        )
     }
 
     /// Whether a detail opens beside the dashboard: the Duo's inner screen.
@@ -304,6 +306,7 @@ struct HomeScreen: View {
                     releases: viewModel.releases,
                     friendFavorites: viewModel.friendFavorites,
                     discoveries: viewModel.discoveries,
+                    isSearchingDiscoveries: viewModel.isSearchingDiscoveries,
                     isSideBySide: isSplit && detail == nil,
                     isCompact: !isSplit,
                     onBarCalled: { called in

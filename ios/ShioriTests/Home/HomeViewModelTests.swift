@@ -71,6 +71,60 @@ struct HomeViewModelTests {
         #expect(calls.all == ["dismiss \(Suggestion.preview.id) disliked", "discoveries"])
     }
 
+    @Test func monthWithoutItsSelectionGetsOneMadeOnceTheShelfIsKnown() async {
+        let calls = Calls()
+        let month = MonthlyDiscoveries.month(of: .now)
+        var client = HomeClient.preview
+        client.discoveries = {
+            calls.record("read")
+            return MonthlyDiscoveries(month: month, status: .none, suggestions: [])
+        }
+        client.lookUpDiscoveries = {
+            calls.record("lookUp")
+            return MonthlyDiscoveries(month: month, status: .ready, suggestions: [.preview])
+        }
+        let viewModel = HomeViewModel(client: client, caching: false)
+
+        await viewModel.load()
+        await eventually { viewModel.discoveries?.status == .ready }
+
+        #expect(calls.all.contains("lookUp"))
+        #expect(viewModel.isSearchingDiscoveries == false)
+    }
+
+    @Test func selectionIsNotAskedBeforeTheFirstBook() async {
+        let calls = Calls()
+        var client = HomeClient.preview
+        client.dashboard = { .empty }
+        client.discoveries = { MonthlyDiscoveries(month: MonthlyDiscoveries.month(of: .now), status: .none, suggestions: []) }
+        client.lookUpDiscoveries = {
+            calls.record("lookUp")
+            return .preview
+        }
+        let viewModel = HomeViewModel(client: client, caching: false)
+
+        await viewModel.load()
+        await viewModel.loadDiscoveries()
+
+        #expect(calls.all.isEmpty)
+    }
+
+    @Test func selectionAlreadyMadeIsNotAskedAgain() async {
+        let calls = Calls()
+        var client = HomeClient.preview
+        client.discoveries = { MonthlyDiscoveries(month: MonthlyDiscoveries.month(of: .now), suggestions: [.preview]) }
+        client.lookUpDiscoveries = {
+            calls.record("lookUp")
+            return .preview
+        }
+        let viewModel = HomeViewModel(client: client, caching: false)
+
+        await viewModel.load()
+        await viewModel.loadDiscoveries()
+
+        #expect(calls.all.isEmpty)
+    }
+
     @Test func takenDiscoveryStaysUntilThePageIsLeft() async {
         let full = MonthlyDiscoveries.preview
         let taken = full.suggestions[1]
