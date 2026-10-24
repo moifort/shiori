@@ -457,7 +457,8 @@ struct SeriesShowCard: View {
                         LinearGradient(
                             stops: (0...10).map { step in
                                 let t = Double(step) / 10
-                                return .init(color: .black.opacity(t * t * (3 - 2 * t)), location: 0.3 + 0.45 * t)
+                                // Full by the title's top: the text sits on the blur.
+                                return .init(color: .black.opacity(t * t * (3 - 2 * t)), location: 0.12 + 0.4 * t)
                             },
                             startPoint: .top,
                             endPoint: .bottom
@@ -472,13 +473,14 @@ struct SeriesShowCard: View {
         }
     }
 
-    /// How far the reader is through the saga, on a white capsule: the bar,
-    /// then how many volumes are left, "À jour" once none is.
+    /// How far the reader is through the saga, on a white capsule as long as
+    /// what it holds: a short bar, then how many volumes are left, "À jour"
+    /// once none is.
     private var remainingCapsule: some View {
         HStack(spacing: 10) {
             Capsule()
                 .fill(.black.opacity(0.18))
-                .frame(height: 5)
+                .frame(width: 72, height: 5)
                 .overlay(alignment: .leading) {
                     GeometryReader { proxy in
                         Capsule()

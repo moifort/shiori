@@ -272,10 +272,11 @@ struct HomePage: View {
                     // for the next column to be cut by the edge: the row says
                     // it goes on.
                     ScrollView(.horizontal) {
+                        // Spaced as the poster rows above.
                         LazyHGrid(
-                            rows: [GridItem(.fixed(Self.seriesCardHeight), spacing: 10),
-                                   GridItem(.fixed(Self.seriesCardHeight), spacing: 10)],
-                            spacing: 10
+                            rows: [GridItem(.fixed(Self.seriesCardHeight), spacing: 13),
+                                   GridItem(.fixed(Self.seriesCardHeight), spacing: 13)],
+                            spacing: 13
                         ) {
                             ForEach(dashboard.series) { series in
                                 SeriesShowCard(series: series, tag: releaseTag(of: series)) {
