@@ -20,7 +20,14 @@ struct BookEditSheet: View {
     /// The reader's subgenres and saga names, offered under the fields; nil
     /// when the read failed, since the proposals are a convenience.
     let loadVocabulary: () async -> BookVocabulary?
-    @Environment(\.dismiss) private var dismiss
+    /// Set where the form is not a sheet but the second page of an unfolded
+    /// iPhone Duo: Cancel and a save hand the page back to the book's reading.
+    var onClose: (() -> Void)? = nil
+    @Environment(\.dismiss) private var dismissSheet
+
+    private func dismiss() {
+        if let onClose { onClose() } else { dismissSheet() }
+    }
 
     @State private var title: String
     @State private var authors: String
@@ -55,11 +62,13 @@ struct BookEditSheet: View {
     init(
         book: Book,
         loadVocabulary: @escaping () async -> BookVocabulary?,
+        onClose: (() -> Void)? = nil,
         onSave: @escaping (BookCorrection, Double?) async -> String?
     ) {
         self.book = book
         self.onSave = onSave
         self.loadVocabulary = loadVocabulary
+        self.onClose = onClose
         _title = State(initialValue: book.title)
         _authors = State(initialValue: book.authors.joined(separator: ", "))
         _format = State(initialValue: book.format)

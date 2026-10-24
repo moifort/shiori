@@ -34,20 +34,16 @@ struct ShelfChecklistPage: View {
     }
 
     var body: some View {
-        List {
-            if let photo {
-                Section {
-                    ShelfPhoto(photo: photo, books: books, highlighted: highlighted)
-                        .listRowInsets(EdgeInsets())
-                }
-            }
-            Section {
-                ForEach(books) { book in
-                    row(book)
-                }
-            }
+        // On an unfolded iPhone Duo the photo keeps a page to itself, whole,
+        // and the spine of the row touched lights up on it while the list
+        // scrolls on the other page.
+        TwoPages {
+            photoPage
+        } second: {
+            bookList(showsPhoto: false)
+        } single: {
+            bookList(showsPhoto: true)
         }
-        .safeAreaInset(edge: .bottom) { addButton }
         .navigationTitle("\(books.count) livres trouvés")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $correcting) { book in
@@ -60,6 +56,34 @@ struct ShelfChecklistPage: View {
         } message: {
             Text("Il vous reste \(remainingScans ?? 0) scans ce mois-ci. Décochez des livres pour continuer.")
         }
+    }
+
+    private func bookList(showsPhoto: Bool) -> some View {
+        List {
+            if showsPhoto, let photo {
+                Section {
+                    ShelfPhoto(photo: photo, books: books, highlighted: highlighted)
+                        .listRowInsets(EdgeInsets())
+                }
+            }
+            Section {
+                ForEach(books) { book in
+                    row(book)
+                }
+            }
+        }
+        .safeAreaInset(edge: .bottom) { addButton }
+    }
+
+    private var photoPage: some View {
+        Group {
+            if let photo {
+                ShelfPhoto(photo: photo, books: books, highlighted: highlighted)
+                    .padding(24)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemGroupedBackground))
     }
 
     private func row(_ book: DetectedBook) -> some View {
@@ -140,6 +164,19 @@ struct ShelfChecklistPage: View {
 }
 
 #if DEBUG
+#Preview("Unfolded", traits: .fixedLayout(width: 951, height: 669)) {
+    NavigationStack {
+        ShelfChecklistPage(
+            photo: ShelfImportFixtures.photo,
+            books: ShelfImportFixtures.books,
+            ticked: ShelfImportFixtures.ticked,
+            remainingScans: 94,
+            crop: { _ in nil }
+        ) { _ in }
+    }
+    .environment(\.horizontalSizeClass, .regular)
+}
+
 #Preview {
     NavigationStack {
         ShelfChecklistPage(

@@ -159,6 +159,30 @@ the reader home.
 - **Sheets are for tasks** — editing, rating, a note, a scan, the search, the settings, an
   alert's options — and for nothing a reader merely opens.
 
+## The iPhone Duo's postures
+
+A view the fold crosses reads its posture with `proxy.foldPosture(isRegular:)`
+(`Shared/Platform/FoldPosture.swift`), from the fold's `division` region: `flat` laid open,
+`book` partly folded on its side, `laptop` partly folded upright, `single` everywhere else. Never
+branch on the device model, the orientation or the hinge angle.
+
+- **`TwoPages`** lays a screen out as two pages, one each side of the crease — left and right
+  as a book, above and below as a laptop, parted by a hairline laid flat — and as one page
+  elsewhere. It tells its ancestors through `TwoPagesShownKey`. Used by the camera (viewfinder on
+  one page, controls on the other), the shelf checklist (the photo beside the list), a book (what
+  it is beside the reader's reading) and a saga (its volumes beside the volume opened).
+- **A task moves onto the second page** rather than covering a spread with a sheet: the book's
+  edit form takes the reading's page. Elsewhere it stays a sheet, which the system keeps on
+  one page.
+- **`DetailSplit` follows the posture**: laid flat, a page without a detail keeps the whole
+  desk; partly folded like a book, `resting` fills the second page (the book being read, the
+  first saga) rather than leaving it blank; like a laptop, the page stands above the crease and
+  the detail lies below. `spreads: true` gives an opened detail both pages, for one laid out as
+  `TwoPages` itself.
+- **Captures**: the simulator cannot be folded from the command line. Laid open, a Debug build
+  launched with `-posture book` or `-posture laptop` lays the whole inner screen out as that
+  posture.
+
 ## Primitive-first leaves
 
 Atoms and molecules take primitives — `String`, `Int?`, `Date?`, `Bool`, a logic-free enum,

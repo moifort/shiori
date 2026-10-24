@@ -1,12 +1,20 @@
 import SwiftUI
 
 struct ViewfinderOverlay: View {
+    /// Whether the shutter sits over the viewfinder, below the frame. On an
+    /// unfolded iPhone Duo it has a page of its own, and the frame takes the
+    /// height.
+    var leavesRoomForShutter = true
+
     var body: some View {
         GeometryReader { geo in
             // Shaped like a cover (2:3) and as large as the screen allows, while
             // leaving the shutter below it uncovered.
-            let width = geo.size.width * 0.88
-            let height = min(width * 1.5, geo.size.height * 0.64)
+            let height = min(
+                geo.size.width * 0.88 * 1.5,
+                geo.size.height * (leavesRoomForShutter ? 0.64 : 0.84)
+            )
+            let width = height / 1.5
             let x = (geo.size.width - width) / 2
             let y = (geo.size.height - height) / 2
 

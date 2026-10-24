@@ -179,6 +179,12 @@ final class LibraryViewModel {
     /// The rows cut into month headings, newest first, on the date the
     /// server shelved each book on — or, under the favourites, into the hearts
     /// and then each count of stars, as the server ranked them.
+    /// The book an unfolded iPhone Duo shows beside the list before one is
+    /// opened: the one being read, else the first of the list.
+    var restingBook: Book? {
+        books.first { $0.status == .reading } ?? books.first
+    }
+
     var sections: [ListSection<Book>] {
         mode == .favorites
             ? ListSection.byRank(books, rank: \.lovedRank)

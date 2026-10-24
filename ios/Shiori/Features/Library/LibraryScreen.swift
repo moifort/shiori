@@ -37,7 +37,9 @@ struct LibraryScreen: View {
     var body: some View {
         // A book is pushed over the list on a phone, and set beside it on an
         // unfolded iPhone Duo, as Mail sets a message beside its inbox.
-        DetailSplit(item: $selectedBook) {
+        // Partly folded, the second page shows the book being read until
+        // another is opened, rather than nothing.
+        DetailSplit(item: $selectedBook, resting: viewModel.restingBook) {
             LibraryPage(
                 mode: $viewModel.mode,
                 filter: $viewModel.filter,

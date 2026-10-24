@@ -53,9 +53,11 @@ struct BookHeaderSection<Extra: View>: View {
     var footer: LocalizedStringKey?
     @ViewBuilder var extra: Extra
 
-    private static var coverWidth: CGFloat { 64 }
+    /// The cover's width: a thumbnail beside the title, larger where the book
+    /// has a page of its own on an unfolded iPhone Duo.
+    var coverWidth: CGFloat = 64
     /// The cover at its standard proportions, as `BookCover` draws it.
-    private static var coverHeight: CGFloat { coverWidth * 1.5 }
+    private var coverHeight: CGFloat { coverWidth * 1.5 }
 
     @State private var contentEdge: CGFloat = 0
     @State private var cardEdge: CGFloat = 0
@@ -105,7 +107,7 @@ struct BookHeaderSection<Extra: View>: View {
 
     private var identityRow: some View {
         HStack(alignment: .top, spacing: 12) {
-            BookCover(book: book, width: Self.coverWidth)
+            BookCover(book: book, width: coverWidth)
             // Everything beside the cover: the text with, while the book is
             // still to come, its day in the corner.
             VStack(alignment: .leading, spacing: 0) {
@@ -133,7 +135,7 @@ struct BookHeaderSection<Extra: View>: View {
                     .accessibilityIdentifier("book-store-link-\(link.name.lowercased())")
                 }
             }
-            .frame(height: Self.coverHeight, alignment: .bottom)
+            .frame(height: coverHeight, alignment: .bottom)
         }
         .fixedSize(horizontal: false, vertical: true)
         .padding(.vertical, 2)
@@ -356,7 +358,8 @@ extension BookHeaderSection where Extra == EmptyView {
         actions: Actions = Actions(),
         showsEmptyFacts: Bool = false,
         tag: Label<Text, Image>? = nil,
-        footer: LocalizedStringKey? = nil
+        footer: LocalizedStringKey? = nil,
+        coverWidth: CGFloat = 64
     ) {
         self.init(
             book: book,
@@ -367,8 +370,10 @@ extension BookHeaderSection where Extra == EmptyView {
             actions: actions,
             showsEmptyFacts: showsEmptyFacts,
             tag: tag,
-            footer: footer
-        ) { EmptyView() }
+            footer: footer,
+            extra: { EmptyView() },
+            coverWidth: coverWidth
+        )
     }
 }
 

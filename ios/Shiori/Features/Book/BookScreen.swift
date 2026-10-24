@@ -14,6 +14,9 @@ struct BookScreen: View {
 
     @State private var viewModel: BookViewModel
     @State private var showEditor = false
+    /// Whether the page is laid out as two pages, on an unfolded iPhone Duo:
+    /// the edit form then takes the second page rather than a sheet.
+    @State private var isSpread = false
     @State private var showGenreEditor = false
     @State private var showSeriesJoin = false
     @State private var showRecommendation = false
@@ -68,7 +71,10 @@ struct BookScreen: View {
                     },
                     awaited: viewModel.offer.awaited,
                     onOpenAwaited: { openAwaited = $0 },
-                    onStopAwaiting: { edition in Task { await viewModel.stopAwaiting(edition) } }
+                    onStopAwaiting: { edition in Task { await viewModel.stopAwaiting(edition) } },
+                    secondPage: showEditor && isSpread
+                        ? AnyView(editor(book, onClose: { showEditor = false }))
+                        : nil
                 )
             } else if viewModel.isLoading {
                 ProgressView()
@@ -81,6 +87,7 @@ struct BookScreen: View {
                 )
             }
         }
+        .onPreferenceChange(TwoPagesShownKey.self) { isSpread = $0 }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbar }
         // The AI at work — a shelf book described on its first opening:
@@ -102,17 +109,10 @@ struct BookScreen: View {
                 Task { await viewModel.stopAwaiting(edition) }
             }
         }
-        .sheet(isPresented: $showEditor) {
+        // A sheet on one page; on two, the form takes the reading's page.
+        .sheet(isPresented: Binding(get: { showEditor && !isSpread }, set: { showEditor = $0 })) {
             if let book = viewModel.book {
-                BookEditSheet(book: book, loadVocabulary: loadVocabulary) { correction, rating in
-                    let saved = await viewModel.save(correction, rating: rating)
-                    if let book = viewModel.book { onChanged(book) }
-                    guard !saved else { return nil }
-                    // The form shows the failure itself: an alert hung on this
-                    // screen would stay hidden behind the form's sheet.
-                    defer { viewModel.dismissError() }
-                    return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
-                }
+                editor(book, onClose: nil)
             }
         }
         .sheet(isPresented: $showGenreEditor) {
@@ -295,6 +295,20 @@ struct BookScreen: View {
 
     /// Runs a mutation and tells the list what the server answered, so the row
     /// behind this screen matches it without refetching the whole library.
+    /// The form that changes the book's title, authors and facts. `onClose`
+    /// is set where it fills the second page rather than a sheet.
+    private func editor(_ book: Book, onClose: (() -> Void)?) -> some View {
+        BookEditSheet(book: book, loadVocabulary: loadVocabulary, onClose: onClose) { correction, rating in
+            let saved = await viewModel.save(correction, rating: rating)
+            if let book = viewModel.book { onChanged(book) }
+            guard !saved else { return nil }
+            // The form shows the failure itself: an alert hung on this
+            // screen would stay hidden behind the form's sheet.
+            defer { viewModel.dismissError() }
+            return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
+        }
+    }
+
     private func run(_ operation: @escaping () async -> Void) {
         Task {
             await operation()

@@ -26,6 +26,9 @@ struct SeriesScreen: View {
     @State private var isDeclaringVolumeCount = false
     /// The announced volume whose page is open, as Découvrir opens it.
     @State private var announced: DiscoveredVolume?
+    /// Whether the saga is laid out as two pages, on an unfolded iPhone Duo:
+    /// a volume then opens on the second page rather than over the list.
+    @State private var isSpread = false
 
     /// - Parameters:
     ///   - language: the edition the reader came from. A saga held in two
@@ -51,31 +54,18 @@ struct SeriesScreen: View {
     }
 
     var body: some View {
-        SeriesPage(
-            series: viewModel.series,
-            owned: viewModel.owned,
-            opinion: viewModel.opinion,
-            isLoading: viewModel.isLoading,
-            errorMessage: viewModel.errorMessage,
-            language: viewModel.language,
-            friend: viewModel.friend,
-            isFollowed: viewModel.isFollowed,
-            addingTitle: viewModel.addingTitle,
-            releases: viewModel.releases,
-            takenFormat: viewModel.takenFormat,
-            announcedVolume: viewModel.announcedVolume
-        ) { action in
-            switch action {
-            case let .openBook(book): selectedBook = book
-            case .rate: isRating = true
-            case .editGenre: isEditingGenre = true
-            case let .openAnnounced(volume): announced = volume
-            case let .add(volume, author, format, status):
-                await viewModel.add(volume, author: author, as: format, status: status)
-            case .retry: await viewModel.load()
-            case .declareVolumeCount: isDeclaringVolumeCount = true
-            }
+        // On an unfolded iPhone Duo the volumes keep the first page and the
+        // one touched opens on the second, which shows the volume announced
+        // next — or the one being read — until the reader picks another.
+        TwoPages {
+            page
+        } second: {
+            NavigationStack { volumePage }
+                .environment(\.detailClosing, .pushed)
+        } single: {
+            page
         }
+        .onPreferenceChange(TwoPagesShownKey.self) { isSpread = $0 }
         // In the corner even when the catalogue is missing: what a reader thinks
         // of a saga does not wait on the world having described it.
         .toolbar {
@@ -105,17 +95,8 @@ struct SeriesScreen: View {
             }
         }
         .disabled(viewModel.isSaving)
-        .pushesDetail(item: $selectedBook) { book in
-            if let friend = viewModel.friend {
-                // The friend's volume, as their shelf opens it.
-                FriendBookScreen(friendId: friend.id, bookId: book.id, friendName: friend.name)
-            } else {
-                BookScreen(
-                    bookId: book.id,
-                    onChanged: { _ in Task { await viewModel.load() } },
-                    onDeleted: { _ in Task { await viewModel.load() } }
-                )
-            }
+        .pushesDetail(item: pushedUnlessSpread($selectedBook)) { book in
+            volumeScreen(book)
         }
         .sheet(isPresented: $isRating) {
             RatingPromptSheet(
@@ -162,7 +143,7 @@ struct SeriesScreen: View {
             }
         }
         // Added from its page, the volume takes its row back as the reader's.
-        .pushesDetail(item: $announced, onClose: { _ in Task { await viewModel.load() } }) { volume in
+        .pushesDetail(item: pushedUnlessSpread($announced), onClose: { _ in Task { await viewModel.load() } }) { volume in
             if let saga = viewModel.announcedSaga {
                 AnnouncedVolumeScreen(saga: saga, volume: volume, linksToSaga: false)
             }
@@ -172,6 +153,87 @@ struct SeriesScreen: View {
             await viewModel.buildCatalogueIfAwaiting()
         }
         .task { await viewModel.loadReleases() }
+    }
+
+    /// A volume of the saga: the reader's own, or a friend's as their shelf
+    /// opens it.
+    @ViewBuilder
+    private func volumeScreen(_ book: Book) -> some View {
+        if let friend = viewModel.friend {
+            FriendBookScreen(friendId: friend.id, bookId: book.id, friendName: friend.name)
+        } else {
+            BookScreen(
+                bookId: book.id,
+                onChanged: { _ in Task { await viewModel.load() } },
+                onDeleted: { _ in Task { await viewModel.load() } }
+            )
+        }
+    }
+
+    /// The second page of the spread: the volume touched, else the one
+    /// announced next, else the one being read or next on the pile.
+    @ViewBuilder
+    private var volumePage: some View {
+        if let book = selectedBook {
+            volumeScreen(book).id(book.id)
+        } else if let volume = announced ?? viewModel.releases?.next, let saga = viewModel.announcedSaga {
+            AnnouncedVolumeScreen(saga: saga, volume: volume, linksToSaga: false).id(volume.id)
+        } else if let book = restingVolume {
+            volumeScreen(book).id(book.id)
+        } else {
+            ContentUnavailableView(
+                "Aucun tome ouvert",
+                systemImage: "books.vertical",
+                description: Text("Le tome touché s'ouvre sur cette page.")
+            )
+        }
+    }
+
+    /// The volume the second page rests on: the one being read, else the
+    /// first on the pile.
+    private var restingVolume: Book? {
+        viewModel.owned.first { $0.status == .reading } ?? viewModel.owned.first { $0.status == .toRead }
+    }
+
+    /// A detail pushed over the saga on one page; on two it opens on the
+    /// second page instead, and nothing is pushed.
+    private func pushedUnlessSpread<T>(_ binding: Binding<T?>) -> Binding<T?> {
+        Binding(
+            get: { isSpread ? nil : binding.wrappedValue },
+            set: { binding.wrappedValue = $0 }
+        )
+    }
+
+    private var page: some View {
+        SeriesPage(
+            series: viewModel.series,
+            owned: viewModel.owned,
+            opinion: viewModel.opinion,
+            isLoading: viewModel.isLoading,
+            errorMessage: viewModel.errorMessage,
+            language: viewModel.language,
+            friend: viewModel.friend,
+            isFollowed: viewModel.isFollowed,
+            addingTitle: viewModel.addingTitle,
+            releases: viewModel.releases,
+            takenFormat: viewModel.takenFormat,
+            announcedVolume: viewModel.announcedVolume
+        ) { action in
+            switch action {
+            case let .openBook(book):
+                announced = nil
+                selectedBook = book
+            case .rate: isRating = true
+            case .editGenre: isEditingGenre = true
+            case let .openAnnounced(volume):
+                selectedBook = nil
+                announced = volume
+            case let .add(volume, author, format, status):
+                await viewModel.add(volume, author: author, as: format, status: status)
+            case .retry: await viewModel.load()
+            case .declareVolumeCount: isDeclaringVolumeCount = true
+            }
+        }
     }
 
     /// What the reader can do with a saga of their own: the heart, the saga

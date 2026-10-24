@@ -2293,6 +2293,22 @@
         }
       }
     },
+    "Aucun tome ouvert" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun tome ouvert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No volume open"
+          }
+        }
+      }
+    },
     "Aucune" : {
       "localizations" : {
         "en" : {
@@ -2837,6 +2853,22 @@
         }
       }
     },
+    "Cadrez la couverture dans le viseur, bien éclairée." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cadrez la couverture dans le viseur, bien éclairée."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frame the cover in the viewfinder, in good light."
+          }
+        }
+      }
+    },
     "Cadrez la couverture entière, bien éclairée et sans reflet. Ce scan n'a pas été décompté." : {
       "localizations" : {
         "en" : {
@@ -2993,6 +3025,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ce que vous partagez"
+          }
+        }
+      }
+    },
+    "Ce que vous touchez s'ouvre sur cette page." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce que vous touchez s'ouvre sur cette page."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whatever you tap opens on this page."
           }
         }
       }
@@ -6309,6 +6357,22 @@
         }
       }
     },
+    "Le tome touché s'ouvre sur cette page." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le tome touché s'ouvre sur cette page."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The volume you tap opens on this page."
+          }
+        }
+      }
+    },
     "Lecture" : {
       "localizations" : {
         "en" : {
@@ -9309,6 +9373,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Revenus Premium"
+          }
+        }
+      }
+    },
+    "Rien d'ouvert" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rien d'ouvert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing open"
           }
         }
       }

@@ -93,14 +93,57 @@ struct ShelfImportScreen: View {
         }
     }
 
+    /// The viewfinder with the shutter over it; on an unfolded iPhone Duo, the
+    /// viewfinder on one page and the controls on the other.
     private var cameraScreen: some View {
+        TwoPages {
+            viewfinder
+        } second: {
+            CameraControlsPage(
+                title: "Plusieurs livres",
+                hint: "Tranches bien lisibles, ou couvertures posées à plat. Jusqu'à 30 livres.",
+                shutterLabel: "Photographier les livres",
+                shutterIdentifier: "shelf-shutter"
+            ) {
+                shouldCapture = true
+            } accessory: {
+                photoPicker
+            }
+        } single: {
+            singlePageCamera
+        }
+        .background(.black)
+        .navigationTitle("Plusieurs livres")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
+    }
+
+    private var viewfinder: some View {
+        CameraView(
+            maxDimension: ShelfImportViewModel.photoDimension,
+            onCapture: { jpeg in Task { await viewModel.detect(jpeg) } },
+            shouldCapture: $shouldCapture
+        )
+        .ignoresSafeArea()
+        .clipped()
+    }
+
+    /// A shelf already photographed, or a friend's.
+    private var photoPicker: some View {
+        PhotosPicker(selection: $pickedPhoto, matching: .images) {
+            Image(systemName: "photo.on.rectangle")
+                .font(.title2)
+                .foregroundStyle(.white)
+                .frame(width: 52, height: 52)
+                .background(.black.opacity(0.4), in: .circle)
+        }
+        .accessibilityLabel(Text("Choisir une photo"))
+        .accessibilityIdentifier("shelf-library")
+    }
+
+    private var singlePageCamera: some View {
         ZStack {
-            CameraView(
-                maxDimension: ShelfImportViewModel.photoDimension,
-                onCapture: { jpeg in Task { await viewModel.detect(jpeg) } },
-                shouldCapture: $shouldCapture
-            )
-            .ignoresSafeArea()
+            viewfinder
 
             VStack(spacing: 16) {
                 Spacer()
@@ -122,24 +165,12 @@ struct ShelfImportScreen: View {
                 .accessibilityIdentifier("shelf-shutter")
                 .frame(maxWidth: .infinity)
                 .overlay(alignment: .leading) {
-                    // A shelf already photographed, or a friend's.
-                    PhotosPicker(selection: $pickedPhoto, matching: .images) {
-                        Image(systemName: "photo.on.rectangle")
-                            .font(.title2)
-                            .foregroundStyle(.white)
-                            .frame(width: 52, height: 52)
-                            .background(.black.opacity(0.4), in: .circle)
-                    }
-                    .accessibilityLabel(Text("Choisir une photo"))
-                    .accessibilityIdentifier("shelf-library")
-                    .padding(.leading, 32)
+                    photoPicker
+                        .padding(.leading, 32)
                 }
                 .padding(.bottom, 48)
             }
         }
-        .navigationTitle("Plusieurs livres")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
     }
 
     /// A picked photo is downscaled as the camera's own shot is, to the size

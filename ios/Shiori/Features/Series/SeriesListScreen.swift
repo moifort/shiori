@@ -41,9 +41,15 @@ struct SeriesListScreen: View {
     }
 
     var body: some View {
-        // A saga is pushed over the list on a phone, and set beside it on an
-        // unfolded iPhone Duo; a volume or an author pushes after it.
-        DetailSplit(item: $openSeries) {
+        // A saga is pushed over the list on a phone. On an unfolded iPhone
+        // Duo it opens across both pages, its volumes on one and the volume
+        // touched on the other, the list a tap away; partly folded, the first
+        // saga of the list waits beside it before one is opened.
+        DetailSplit(
+            item: $openSeries,
+            resting: viewModel.followed.first.map(destination(of:)),
+            spreads: true
+        ) {
             SeriesListPage(
                 followed: viewModel.followed,
                 mode: $viewModel.mode,

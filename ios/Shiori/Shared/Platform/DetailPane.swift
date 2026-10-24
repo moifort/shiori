@@ -94,36 +94,97 @@ private struct PushedDetail<Item: Identifiable, Destination: View>: ViewModifier
 /// in a compact one, a phone or a folded Duo. One state for both: folding with
 /// a detail open pushes it, unfolding sets it back beside the page.
 ///
-/// Without a detail the page has the whole width. Details opened from inside
-/// the detail are pushed on its own stack, in either width.
+/// The Duo's postures each get their own arrangement:
+/// - Laid flat, without a detail, the page has the whole desk.
+/// - Partly folded like a book, the second page is never blank: it shows
+///   `resting` — the book being read, the volume coming next — until the
+///   reader opens something else.
+/// - Partly folded like a laptop, the page stands above the crease and the
+///   detail lies below it.
+/// - `spreads` gives an opened detail both pages, the list a tap away in the
+///   split view's sidebar, for a detail laid out as two pages of its own.
+///
+/// Details opened from inside the detail are pushed on its own stack, in either
+/// width.
 struct DetailSplit<Item: Identifiable, Page: View, Detail: View>: View {
     @Binding var item: Item?
+    /// What the second page shows while nothing is open, on a Duo partly
+    /// folded. Nil leaves the page the whole screen.
+    var resting: Item? = nil
+    /// Whether an opened detail takes both pages in a regular width.
+    var spreads = false
     /// Told when the reader closes the detail, by Back or by Close.
     var onClose: (Item) -> Void = { _ in }
     @ViewBuilder let page: () -> Page
     @ViewBuilder let detail: (Item) -> Detail
 
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @State private var posture: FoldPosture = .single
+    @State private var columns: NavigationSplitViewVisibility = .doubleColumn
 
     var body: some View {
-        if sizeClass == .regular, let item {
-            NavigationSplitView {
-                page()
-            } detail: {
-                NavigationStack {
-                    detail(item)
+        Group {
+            if case .laptop = posture {
+                stacked
+            } else if sizeClass == .regular, let shown = item ?? (posture.isFolded ? resting : nil) {
+                NavigationSplitView(columnVisibility: $columns) {
+                    page()
+                } detail: {
+                    NavigationStack {
+                        detail(shown)
+                    }
+                    .id(shown.id)
+                    .environment(\.detailClosing, closing)
                 }
-                .id(item.id)
-                .environment(\.detailClosing, .pane {
-                    self.item = nil
-                    onClose(item)
-                })
+            } else {
+                NavigationStack {
+                    page()
+                        .pushesDetail(item: $item, onClose: onClose, destination: detail)
+                }
             }
-        } else {
+        }
+        .background {
+            GeometryReader { proxy in
+                Color.clear.onChange(
+                    of: proxy.foldPosture(isRegular: sizeClass == .regular),
+                    initial: true
+                ) { _, new in posture = new }
+            }
+        }
+        .onChange(of: item?.id, initial: true) {
+            columns = spreads && item != nil ? .detailOnly : .doubleColumn
+        }
+    }
+
+    /// The page above the crease and the detail below it, each on its own
+    /// stack, as a laptop keeps its screen up and its keyboard down.
+    private var stacked: some View {
+        TwoPages {
+            NavigationStack { page() }
+        } second: {
             NavigationStack {
-                page()
-                    .pushesDetail(item: $item, onClose: onClose, destination: detail)
+                if let shown = item ?? resting {
+                    detail(shown)
+                        .id(shown.id)
+                } else {
+                    ContentUnavailableView(
+                        "Rien d'ouvert",
+                        systemImage: "book.pages",
+                        description: Text("Ce que vous touchez s'ouvre sur cette page.")
+                    )
+                }
             }
+            .environment(\.detailClosing, closing)
+        }
+    }
+
+    /// The opened detail closes to the page; the resting one has nothing to
+    /// close to and draws no Close button.
+    private var closing: DetailClosing {
+        guard let item else { return .pushed }
+        return .pane {
+            self.item = nil
+            onClose(item)
         }
     }
 }

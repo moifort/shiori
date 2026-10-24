@@ -125,7 +125,28 @@ struct ScanScreen: View {
         }
     }
 
+    /// The viewfinder with the shutter over it; on an unfolded iPhone Duo, the
+    /// viewfinder on one page and the controls on the other.
     private var cameraScreen: some View {
+        TwoPages {
+            viewfinder(leavesRoomForShutter: false)
+        } second: {
+            CameraControlsPage(
+                title: "Scanner une couverture",
+                hint: "Cadrez la couverture dans le viseur, bien éclairée.",
+                shutterLabel: "Scanner la couverture",
+                shutterIdentifier: "scan-shutter"
+            ) { shouldCapture = true }
+        } single: {
+            singlePageCamera
+        }
+        .background(.black)
+        .navigationTitle("Scanner une couverture")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
+    }
+
+    private func viewfinder(leavesRoomForShutter: Bool) -> some View {
         ZStack {
             CameraView(
                 onCapture: { jpeg in Task { await viewModel.capture(jpeg) } },
@@ -133,7 +154,14 @@ struct ScanScreen: View {
             )
             .ignoresSafeArea()
 
-            ViewfinderOverlay()
+            ViewfinderOverlay(leavesRoomForShutter: leavesRoomForShutter)
+        }
+        .clipped()
+    }
+
+    private var singlePageCamera: some View {
+        ZStack {
+            viewfinder(leavesRoomForShutter: true)
 
             VStack {
                 Spacer()
@@ -148,9 +176,6 @@ struct ScanScreen: View {
                 .padding(.bottom, 48)
             }
         }
-        .navigationTitle("Scanner une couverture")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
     }
 
     /// Downscales before sending. The model tiles the image into tokens, so a

@@ -32,22 +32,67 @@ struct BookPage: View {
     var awaited: [AwaitedEdition] = []
     var onOpenAwaited: (AwaitedEdition) -> Void = { _ in }
     var onStopAwaiting: (AwaitedEdition) -> Void = { _ in }
+    /// A task the screen moved onto the second page of an unfolded iPhone Duo
+    /// — the edit form — drawn there in place of the reading, beside the book
+    /// it changes rather than over it.
+    var secondPage: AnyView? = nil
 
     var body: some View {
-        List {
-            BookStatusSection(status: book.status, onSetStatus: onSetStatus)
-            BookHeaderSection(
-                book: book,
-                // Kept on the pile while only another language has it.
-                state: book.status == .toRead && book.forthcoming ? .forthcoming : nil,
-                isAwaited: !awaited.isEmpty,
-                actions: .init(
-                    openSeries: onOpenSeries,
-                    editGenre: onEditGenre,
-                    correct: onCorrect
-                )
-            )
-            AwaitedEditionsSection(awaited: awaited, onOpen: onOpenAwaited, onStop: onStopAwaiting)
+        // On an unfolded iPhone Duo the book takes a page — its cover large,
+        // what it is, its summary — and the reader's own reading the other.
+        TwoPages {
+            list {
+                header(coverWidth: 120)
+                AwaitedEditionsSection(awaited: awaited, onOpen: onOpenAwaited, onStop: onStopAwaiting)
+                synopsis
+            }
+        } second: {
+            if let secondPage {
+                secondPage
+            } else {
+                list {
+                    BookStatusSection(status: book.status, onSetStatus: onSetStatus)
+                    reading
+                }
+            }
+        } single: {
+            list {
+                BookStatusSection(status: book.status, onSetStatus: onSetStatus)
+                header(coverWidth: 64)
+                AwaitedEditionsSection(awaited: awaited, onOpen: onOpenAwaited, onStop: onStopAwaiting)
+                reading
+                synopsis
+            }
+        }
+    }
+
+    private func list(@ViewBuilder _ sections: () -> some View) -> some View {
+        List { sections() }
+            .listStyle(.insetGrouped)
+            .labelStyle(.row)
+            .disabled(isSaving)
+    }
+
+    private func header(coverWidth: CGFloat) -> some View {
+        BookHeaderSection(
+            book: book,
+            // Kept on the pile while only another language has it.
+            state: book.status == .toRead && book.forthcoming ? .forthcoming : nil,
+            isAwaited: !awaited.isEmpty,
+            actions: .init(
+                openSeries: onOpenSeries,
+                editGenre: onEditGenre,
+                correct: onCorrect
+            ),
+            coverWidth: coverWidth
+        )
+    }
+
+    @ViewBuilder private var synopsis: some View {
+        if let synopsis = book.synopsis { BookSynopsisSection(synopsis: synopsis) }
+    }
+
+    private var reading: some View {
             BookReadingSection(
                 title: "Ma lecture",
                 book: book,
@@ -68,11 +113,6 @@ struct BookPage: View {
                 }
                 .accessibilityIdentifier("book-hidden")
             }
-            if let synopsis = book.synopsis { BookSynopsisSection(synopsis: synopsis) }
-        }
-        .listStyle(.insetGrouped)
-        .labelStyle(.row)
-        .disabled(isSaving)
     }
 
     /// The reader's own comment, whole, under the reading it is about. A tap
