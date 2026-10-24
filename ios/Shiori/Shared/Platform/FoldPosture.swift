@@ -114,14 +114,18 @@ extension FoldPosture {
         guard let index = ProcessInfo.processInfo.arguments.firstIndex(of: "-posture"),
               index + 1 < ProcessInfo.processInfo.arguments.count
         else { return nil }
+        // A view smaller than the screen is a page of it, which the real fold
+        // would not cross: it stays one page, as on the device.
         let crease: CGFloat = 28
         switch ProcessInfo.processInfo.arguments[index + 1] {
-        case "flat" where size.width >= minimumSpread:
-            return .flat(line: size.width / 2)
-        case "book" where size.width >= minimumSpread:
-            return .book(crease: (size.width - crease) / 2...(size.width + crease) / 2)
-        case "laptop" where size.height >= 2 * minimumPage:
-            return .laptop(crease: (size.height - crease) / 2...(size.height + crease) / 2)
+        case "flat":
+            return size.width >= minimumSpread ? .flat(line: size.width / 2) : .single
+        case "book":
+            return size.width >= minimumSpread
+                ? .book(crease: (size.width - crease) / 2...(size.width + crease) / 2) : .single
+        case "laptop":
+            return size.height >= 500
+                ? .laptop(crease: (size.height - crease) / 2...(size.height + crease) / 2) : .single
         default:
             return nil
         }

@@ -120,6 +120,8 @@ struct DetailSplit<Item: Identifiable, Page: View, Detail: View>: View {
 
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var posture: FoldPosture = .single
+    /// Both columns, either side of the fold, unless an opened detail spreads
+    /// over both pages.
     @State private var columns: NavigationSplitViewVisibility = .doubleColumn
 
     var body: some View {
