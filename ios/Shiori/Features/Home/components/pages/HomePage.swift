@@ -123,7 +123,7 @@ struct HomePage: View {
                     HomeSearchingHero(
                         month: discoveries?.month ?? MonthlyDiscoveries.month(of: today),
                         bookCount: dashboard.readCount + dashboard.reading.count + dashboard.toReadCount,
-                        covers: dashboard.coverURLsForOrbit
+                        backdropCover: dashboard.leadCoverURL
                     )
                 } else {
                     HomeHero(
@@ -648,15 +648,10 @@ extension Dashboard {
 }
 
 extension Dashboard {
-    /// The covers the wait on the month's selection turns around the model:
-    /// the books open, the pile, the one finished last — a handful.
-    var coverURLsForOrbit: [URL] {
-        var seen: Set<URL> = []
-        return (reading + toRead + [lastFinished].compactMap { $0 })
-            .compactMap(\.coverURL)
-            .filter { seen.insert($0).inserted }
-            .prefix(8)
-            .map { $0 }
+    /// The cover whose colours the wait on the month's selection takes: the
+    /// book read now, else the pile's first, else the one finished last.
+    var leadCoverURL: URL? {
+        (reading + toRead + [lastFinished].compactMap { $0 }).lazy.compactMap(\.coverURL).first
     }
 
     /// No book yet: the phone opens on the empty shelf's prompt and its

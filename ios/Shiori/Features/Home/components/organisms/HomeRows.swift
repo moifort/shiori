@@ -81,17 +81,25 @@ struct HomeFiguresLine: View {
             Item(value: favoriteCount.formatted(), label: String(localized: "favoris")),
             Item(value: toReadCount.formatted(), label: String(localized: "à lire")),
         ]
-        // Pages in thousands — "26 k" — so the line stays short.
+        // Pages in thousands — "16k" — so the line stays short.
         if pagesRead > 0 || showsPagesAtZero {
-            items.append(Item(
-                value: pagesRead.formatted(.number.notation(.compactName)),
-                label: String(localized: "pages")
-            ))
+            items.append(Item(value: Self.compact(pagesRead), label: String(localized: "pages")))
         }
         if hoursListened > 0 {
-            items.append(Item(value: String(localized: "\(hoursListened) h"), label: String(localized: "écoutées")))
+            items.append(Item(value: "\(hoursListened.formatted())h", label: String(localized: "écoutées")))
         }
         return items
+    }
+
+    /// A figure in thousands past a thousand, its unit against it — "850",
+    /// "1,5k", "16k" — closer than the system's compact notation sets it.
+    static func compact(_ value: Int) -> String {
+        guard value >= 1000 else { return value.formatted() }
+        let thousands = Double(value) / 1000
+        let figure = thousands < 10
+            ? thousands.formatted(.number.precision(.fractionLength(0...1)))
+            : thousands.rounded().formatted(.number.precision(.fractionLength(0)))
+        return figure + "k"
     }
 }
 
