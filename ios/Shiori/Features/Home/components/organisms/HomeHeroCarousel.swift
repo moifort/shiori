@@ -50,6 +50,9 @@ struct HomeHeroCarousel: View {
     /// Whether the carousel runs up under the empty bar, the cover starting
     /// just under the status bar. Off when the figures head the page above it.
     var overlapsBar = true
+    /// How far the page is pulled down past its top: the backdrops grow by as
+    /// much from their foot, so the pull never uncovers what lies above them.
+    var pull: CGFloat = 0
 
     @State private var current: HomeHeroItem.ID?
     /// The discoveries just added or awaited from their "+", which turns into
@@ -60,7 +63,10 @@ struct HomeHeroCarousel: View {
     static let height: CGFloat = 490
     /// How far it runs up under the empty bar: the cover starts just under
     /// the status bar, as the TV app's artwork does.
-    private static let barOverlap: CGFloat = 50
+    static let barOverlap: CGFloat = 50
+    /// How far each backdrop runs up past its page, under the bars and the
+    /// status bar.
+    private static let backdropRise: CGFloat = 400
     /// How tall the fade into the page is: long and eased, so the colours
     /// melt into it rather than stop at a line.
     private static let fadeHeight: CGFloat = 240
@@ -267,7 +273,12 @@ struct HomeHeroCarousel: View {
         .background {
             CoverBackdrop(url: cover.coverURL, fadeHeight: Self.fadeHeight)
                 // Up under the bars and the status bar.
-                .padding(.top, -400)
+                .padding(.top, -Self.backdropRise)
+                // Pulled down, the backdrop grows from its foot as the TV
+                // app's artwork does: its top stays above the screen, where
+                // the blurred cover turns to other colours — a red band
+                // showed through the pull.
+                .scaleEffect(1 + pull / (Self.height + Self.backdropRise), anchor: .bottom)
         }
     }
 

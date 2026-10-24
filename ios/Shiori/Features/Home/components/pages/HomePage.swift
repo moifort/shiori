@@ -60,14 +60,21 @@ struct HomePage: View {
     var isCompact = false
     var today: Date = .now
     /// Whether the bar's title and buttons are called for over the carousel:
-    /// hidden as the page opens and while the reader scrolls down, called back
-    /// as soon as they scroll up, as Safari brings its bar back, and kept once
-    /// they are back at the top.
+    /// hidden at the top, where the figures hold its place, and while the
+    /// reader scrolls down, called back as soon as they scroll up, as Safari
+    /// brings its bar back.
     var onBarCalled: (Bool) -> Void = { _ in }
     /// Whether the page has left the top: the bar's blur comes in then, so the
     /// rows never run under the status bar bare.
     var onLeftTop: (Bool) -> Void = { _ in }
     let onAction: (HomeAction) -> Void
+
+    /// How far the page is pulled down past its top.
+    @State private var pull: CGFloat = 0
+
+    /// How far the page scrolls before the bar may come back: until then the
+    /// figures still show where the bar would sit.
+    private static let figuresClearance: CGFloat = 60
 
     var body: some View {
         ScrollView {
@@ -75,11 +82,13 @@ struct HomePage: View {
                 if showsCarousel {
                     // The figures head the page, over the carousel's colours,
                     // drawn above the backdrop that runs up under them.
+                    // Up under the empty bar, just below the status bar.
                     if !dashboard.libraryIsEmpty {
                         figures
                             .environment(\.colorScheme, .dark)
                             .padding(.horizontal, 20)
-                            .padding(.top, 4)
+                            .padding(.top, 6 - HomeHeroCarousel.barOverlap)
+                            .padding(.bottom, 12)
                             .zIndex(1)
                     }
                     HomeHeroCarousel(
@@ -88,7 +97,8 @@ struct HomePage: View {
                         onOpen: { onAction(.openDiscovery($0)) },
                         onAdd: { onAction(.addDiscovery($0, $1)) },
                         onAwait: { onAction(.awaitDiscovery($0, $1)) },
-                        overlapsBar: dashboard.libraryIsEmpty
+                        overlapsBar: dashboard.libraryIsEmpty,
+                        pull: pull
                     )
                 } else {
                     HomeHero(
@@ -133,15 +143,24 @@ struct HomePage: View {
             // At the top, or bouncing back into it, the bar stays away; past
             // it, a few points either way say which way the reader is going.
             onLeftTop(offset > 80)
-            // Scrolling up calls the bar, all the way back to the top, where
-            // it stays; scrolling down past the top sends it away. The bounce
-            // above the top says nothing about where the reader is going.
+            // At the top the figures hold the bar's place, so the bar stays
+            // away; below it, scrolling up calls the bar and scrolling down
+            // sends it away. The bounce above the top says nothing about
+            // where the reader is going.
             guard offset >= 0, old >= 0 else { return }
-            if offset < old - 4 {
+            if offset <= Self.figuresClearance {
+                onBarCalled(false)
+            } else if offset < old - 4 {
                 onBarCalled(true)
-            } else if offset > old + 4, offset > 80 {
+            } else if offset > old + 4 {
                 onBarCalled(false)
             }
+        }
+        // Only past the top, while the reader pulls: scrolling leaves it at 0.
+        .onScrollGeometryChange(for: CGFloat.self) { geometry in
+            max(-(geometry.contentOffset.y + geometry.contentInsets.top), 0)
+        } action: { _, pulled in
+            pull = pulled
         }
         .background(Color(.systemGroupedBackground))
     }
