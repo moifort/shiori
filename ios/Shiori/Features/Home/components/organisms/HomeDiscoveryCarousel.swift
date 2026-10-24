@@ -14,6 +14,9 @@ struct HomeDiscoveryCarousel: View {
     let onAwait: (Suggestion, ReleaseFormat) -> Void
 
     @State private var current: Suggestion.ID?
+    /// The discoveries just added or awaited from their "+", which turns into
+    /// a check to say so before the line moves on.
+    @State private var taken: Set<Suggestion.ID> = []
 
     /// How tall the carousel stands.
     static let height: CGFloat = 490
@@ -48,6 +51,10 @@ struct HomeDiscoveryCarousel: View {
         }
         .padding(.top, -Self.barOverlap)
         .accessibilityIdentifier("home-discovery")
+    }
+
+    private func take(_ suggestion: Suggestion) {
+        withAnimation(.snappy) { _ = taken.insert(suggestion.id) }
     }
 
     private var currentIndex: Int {
@@ -103,16 +110,27 @@ struct HomeDiscoveryCarousel: View {
                     Menu {
                         SuggestionAddActions(
                             suggestion: suggestion,
-                            onAdd: { onAdd(suggestion, $0) },
-                            onAwait: { onAwait(suggestion, $0) }
+                            onAdd: { status in
+                                take(suggestion)
+                                onAdd(suggestion, status)
+                            },
+                            onAwait: { format in
+                                take(suggestion)
+                                onAwait(suggestion, format)
+                            }
                         )
                     } label: {
-                        Label("Ajouter", systemImage: "plus")
-                            .labelStyle(.iconOnly)
-                            .font(.headline)
+                        Label(
+                            taken.contains(suggestion.id) ? "Ajouté" : "Ajouter",
+                            systemImage: taken.contains(suggestion.id) ? "checkmark" : "plus"
+                        )
+                        .labelStyle(.iconOnly)
+                        .font(.headline)
+                        .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp)))
                     }
                     .buttonStyle(.glass)
                     .buttonBorderShape(.circle)
+                    .sensoryFeedback(.success, trigger: taken.contains(suggestion.id))
                     .accessibilityIdentifier("home-discovery-menu")
                 }
                 .controlSize(.extraLarge)

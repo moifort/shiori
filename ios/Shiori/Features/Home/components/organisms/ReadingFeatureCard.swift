@@ -4,14 +4,15 @@ import SwiftUI
 /// card's whole height on the leading edge, and beside it the text as the TV
 /// app's card heads the episode playing — the saga over the title, how long it
 /// has been open and how long it runs, how much is left on a small bar, then
-/// the next step on Liquid Glass.
+/// the next step on Liquid Glass, and the way to its saga when it has one.
 struct ReadingFeatureCard: View {
     let book: Book
     /// How long it has been open.
     let caption: String
     let onOpen: () -> Void
     let onFinish: () -> Void
-    let onRate: () -> Void
+    /// Opens the book's saga. Nil for a standalone book, which draws no button.
+    var onOpenSeries: (() -> Void)?
 
     /// The text's height, which the cover stretches to.
     @State private var textHeight: CGFloat = 0
@@ -130,7 +131,7 @@ struct ReadingFeatureCard: View {
         return String(localized: "\(label) restantes")
     }
 
-    /// The next step white, the rating on glass.
+    /// The next step white, the saga on glass.
     private var actions: some View {
         GlassEffectContainer(spacing: 8) {
             HStack(spacing: 8) {
@@ -143,13 +144,15 @@ struct ReadingFeatureCard: View {
                 .buttonStyle(.glassProminent)
                 .tint(.white)
                 .foregroundStyle(.black)
-                Button(action: onRate) {
-                    Label("Noter", systemImage: "star")
-                        .font(.caption.weight(.semibold))
-                        .lineLimit(1)
-                        .fixedSize()
+                if let onOpenSeries {
+                    Button(action: onOpenSeries) {
+                        Label("Voir la série", systemImage: "books.vertical")
+                            .font(.caption.weight(.semibold))
+                            .lineLimit(1)
+                            .fixedSize()
+                    }
+                    .buttonStyle(.glass)
                 }
-                .buttonStyle(.glass)
             }
             .controlSize(.small)
         }
@@ -166,7 +169,7 @@ struct ReadingFeatureCard: View {
             coverURL: Book.preview.coverURL, status: .reading
         ),
         caption: "depuis 2 j",
-        onOpen: {}, onFinish: {}, onRate: {}
+        onOpen: {}, onFinish: {}, onOpenSeries: {}
     )
     .padding()
 }

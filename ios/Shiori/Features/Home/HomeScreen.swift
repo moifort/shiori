@@ -27,6 +27,13 @@ struct HomeScreen: View {
     @State private var showSettings = false
     /// The book read now, rated from its card on the page.
     @State private var ratedBook: Book?
+    /// The book read now, marked read from its card: the sheet asks for its
+    /// rating, and the book is finished once it closes, rated or not.
+    @State private var finishedBook: Book?
+    @State private var finishedRating: Double?
+    /// The book the open prompt finishes, kept apart from the sheet's item,
+    /// which is cleared before the sheet's dismissal runs.
+    @State private var pendingFinish: Book?
     /// The search over the reader's books, from the loupe in the corner.
     @State private var showSearch = false
     /// The month's costs and readers, behind a toolbar button only an admin
@@ -95,6 +102,12 @@ struct HomeScreen: View {
         }
         .sheet(isPresented: $showSettings) {
             SettingsHomeScreen()
+        }
+        .sheet(item: $finishedBook, onDismiss: finishAfterPrompt) { book in
+            FinishedBookSheet(book: book) { stars in
+                finishedRating = stars
+                finishedBook = nil
+            }
         }
         .sheet(item: $ratedBook) { book in
             RatingPromptSheet(current: book.rating) { stars in
@@ -286,7 +299,10 @@ struct HomeScreen: View {
                     case let .openBook(book): detail = .book(book)
                     case .openGenres: detail = .genres
                     case .showStatistics: detail = .statistics
-                    case let .finishBook(book): Task { await viewModel.finish(book) }
+                    case let .finishBook(book):
+                        finishedRating = nil
+                        pendingFinish = book
+                        finishedBook = book
                     case let .rateBook(book): ratedBook = book
                     case .scan: onScan()
                     case .showDiscover: onShowDiscover()
@@ -294,14 +310,17 @@ struct HomeScreen: View {
                     case let .openRelease(.awaited(edition)): detail = .awaited(edition)
                     case let .openFriendFavorite(favorite): detail = .favorite(favorite)
                     case let .openDiscovery(suggestion): detail = .discovery(suggestion)
+                    // The carousel's check shows a moment before the line moves on.
                     case let .addDiscovery(suggestion, status):
                         Task {
                             await SuggestionViewModel(suggestion: suggestion, client: .live).add(status: status)
+                            try? await Task.sleep(for: .seconds(1.2))
                             await viewModel.loadDiscoveries()
                         }
                     case let .awaitDiscovery(suggestion, format):
                         Task {
                             await SuggestionViewModel(suggestion: suggestion, client: .live).awaitEdition(format)
+                            try? await Task.sleep(for: .seconds(1.2))
                             await viewModel.loadDiscoveries()
                         }
                     }
@@ -314,6 +333,19 @@ struct HomeScreen: View {
         } else {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    /// Finishes the book the prompt was about, then rates it when the reader
+    /// gave stars. Passing, or pulling the sheet down, leaves it unrated.
+    private func finishAfterPrompt() {
+        guard let book = pendingFinish else { return }
+        let stars = finishedRating
+        pendingFinish = nil
+        finishedRating = nil
+        Task {
+            await viewModel.finish(book)
+            if let stars { await viewModel.rate(book, stars: stars) }
         }
     }
 

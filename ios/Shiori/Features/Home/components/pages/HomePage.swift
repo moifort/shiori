@@ -13,7 +13,8 @@ enum HomeAction {
     case showStatistics
     /// The statistics' genre card.
     case openGenres
-    /// The book read now, finished from its card.
+    /// The book read now, finished from its card: the screen asks for a
+    /// rating, which the reader may pass.
     case finishBook(Book)
     /// The book read now, rated from its card.
     case rateBook(Book)
@@ -175,7 +176,7 @@ struct HomePage: View {
                         caption: Self.openedCaption(lead),
                         onOpen: { onAction(.openBook(lead)) },
                         onFinish: { onAction(.finishBook(lead)) },
-                        onRate: { onAction(.rateBook(lead)) }
+                        onOpenSeries: lead.series.map { series in { onAction(.openSeries(series.id)) } }
                     )
                 } else {
                     ReadingLeadCard(
