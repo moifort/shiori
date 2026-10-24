@@ -229,7 +229,7 @@ struct HomePage: View {
             ImportSourcesRow { onAction(.connectSource($0)) }
         }
         VStack(alignment: .leading, spacing: 12) {
-            RowHeader(title: "Lire avec des amis", style: .inline) { onAction(.showShared) }
+            RowHeader(title: "Partager", style: .inline) { onAction(.showShared) }
             FriendsInviteCard(onInvite: { onAction(.showShared) }, onEnterInvitation: { onAction(.showShared) })
         }
     }
@@ -243,7 +243,10 @@ struct HomePage: View {
             favoriteCount: dashboard.favoriteCount,
             toReadCount: dashboard.toReadCount,
             pagesRead: dashboard.pagesThisYear,
-            hoursListened: dashboard.hoursThisYear
+            hoursListened: dashboard.hoursThisYear,
+            // A fourth column before the first book, so the line keeps the
+            // balance it will have.
+            showsPagesAtZero: dashboard.libraryIsEmpty
         ) {
             onAction(.showStatistics)
         }

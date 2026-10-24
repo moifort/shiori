@@ -14,6 +14,8 @@ struct HomeFiguresLine: View {
     let toReadCount: Int
     let pagesRead: Int
     let hoursListened: Int
+    /// Draws the pages even at zero, which the line otherwise leaves out.
+    var showsPagesAtZero = false
     let onTap: () -> Void
 
     var body: some View {
@@ -80,7 +82,7 @@ struct HomeFiguresLine: View {
             Item(value: toReadCount.formatted(), label: String(localized: "à lire")),
         ]
         // Pages in thousands — "26 k" — so the line stays short.
-        if pagesRead > 0 {
+        if pagesRead > 0 || showsPagesAtZero {
             items.append(Item(
                 value: pagesRead.formatted(.number.notation(.compactName)),
                 label: String(localized: "pages")

@@ -7025,22 +7025,6 @@
         }
       }
     },
-    "Lire avec des amis" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Read with friends"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lire avec des amis"
-          }
-        }
-      }
-    },
     "Lire la suite" : {
       "localizations" : {
         "en" : {
@@ -8669,6 +8653,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Parfait"
+          }
+        }
+      }
+    },
+    "Partager" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partager"
           }
         }
       }

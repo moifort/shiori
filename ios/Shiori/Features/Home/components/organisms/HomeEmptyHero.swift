@@ -25,7 +25,7 @@ struct HomeEmptyHero: View {
                 .foregroundStyle(.white.opacity(0.85))
                 .padding(.top, 4)
             Button(action: onScan) {
-                Label("Scanner un livre", systemImage: "camera")
+                Label("Scanner un livre", systemImage: "camera.fill")
                     .font(.headline)
                     .frame(width: 200)
             }

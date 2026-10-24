@@ -20,7 +20,7 @@ struct ImportSourcesRow: View {
                     tint: Self.tint(source)
                 ) {
                     Button { onConnect(source) } label: {
-                        Label("Connecter", systemImage: "link")
+                        Text("Connecter")
                             .font(.caption.weight(.semibold))
                             .lineLimit(1)
                             .fixedSize()
@@ -51,8 +51,8 @@ struct ImportSourcesRow: View {
     }
 }
 
-/// "Lire avec des amis": what sharing opens, and the two ways in, both on
-/// the Partagé tab.
+/// "Partager": what sharing opens, and the two ways in, both on the
+/// Partagé tab.
 struct FriendsInviteCard: View {
     let onInvite: () -> Void
     let onEnterInvitation: () -> Void
@@ -75,7 +75,7 @@ struct FriendsInviteCard: View {
 
     @ViewBuilder private var inviteButtons: some View {
         Button(action: onInvite) {
-            Label("Inviter un ami", systemImage: "person.badge.plus")
+            Text("Inviter un ami")
                 .font(.caption.weight(.semibold))
                 .lineLimit(1)
                 .fixedSize()
@@ -85,7 +85,7 @@ struct FriendsInviteCard: View {
         .foregroundStyle(.black)
         .accessibilityIdentifier("home-invite")
         Button(action: onEnterInvitation) {
-            Label("J'ai reçu une invitation", systemImage: "arrow.down.circle")
+            Text("J'ai reçu une invitation")
                 .font(.caption.weight(.semibold))
                 .lineLimit(1)
                 .fixedSize()
@@ -96,8 +96,8 @@ struct FriendsInviteCard: View {
 }
 
 /// A card of the start rows: a mark — the service's own app icon, or a symbol
-/// in a glass square — a title, a line, and the buttons — small, captioned,
-/// with their icon, as the card of the book read now draws its own — over a
+/// in a glass square — a title, a line, and the buttons — small and
+/// captioned, as the card of the book read now draws its own — over a
 /// dark ground
 /// tinted at its leading corner with the card's own colour, inside the thin
 /// rim the posters carry.
