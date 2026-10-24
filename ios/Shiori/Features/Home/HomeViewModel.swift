@@ -34,6 +34,10 @@ final class HomeViewModel {
     private(set) var friendFavorites: [FriendFavorite] = []
     /// The month's discoveries, drawn as covers alone.
     private(set) var discoveries: MonthlyDiscoveries?
+    /// The discoveries the reader just took from the carousel's "+": the
+    /// server drops them from the month's line, but they stay on screen, their
+    /// check showing, until the reader leaves the page.
+    private var taken: [Suggestion] = []
     private(set) var isLoading = false
     private(set) var errorMessage: String?
 
@@ -102,8 +106,35 @@ final class HomeViewModel {
     /// selection. Kept as they were when they could not be read.
     func loadDiscoveries() async {
         guard let found = try? await client.discoveries() else { return }
-        withAnimation(.smooth) { discoveries = found }
+        withAnimation(.smooth) { discoveries = keepingTaken(found) }
         if let cache = discoveriesCache { Task.detached { cache.write(found) } }
+    }
+
+    /// A discovery taken from the carousel: kept where it stands through the
+    /// reloads its own write sets off.
+    func hold(_ suggestion: Suggestion) {
+        guard !taken.contains(where: { $0.id == suggestion.id }) else { return }
+        taken.append(suggestion)
+    }
+
+    /// The reader left the page: the discoveries they took leave the line,
+    /// out of sight, before they come back.
+    func releaseTaken() async {
+        guard !taken.isEmpty else { return }
+        taken = []
+        await loadDiscoveries()
+    }
+
+    /// The line the server sent, with the discoveries taken since the page
+    /// opened put back where they stood.
+    private func keepingTaken(_ found: MonthlyDiscoveries) -> MonthlyDiscoveries {
+        guard !taken.isEmpty, let shown = discoveries?.suggestions else { return found }
+        var suggestions = found.suggestions
+        for suggestion in taken where !suggestions.contains(where: { $0.id == suggestion.id }) {
+            let index = shown.firstIndex { $0.id == suggestion.id } ?? suggestions.count
+            suggestions.insert(suggestion, at: min(index, suggestions.count))
+        }
+        return MonthlyDiscoveries(month: found.month, status: found.status, suggestions: suggestions)
     }
 
     /// The releases alone, when an edition was awaited or given up: the

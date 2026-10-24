@@ -70,6 +70,31 @@ struct HomeViewModelTests {
 
         #expect(calls.all == ["dismiss \(Suggestion.preview.id) disliked", "discoveries"])
     }
+
+    @Test func takenDiscoveryStaysUntilThePageIsLeft() async {
+        let full = MonthlyDiscoveries.preview
+        let taken = full.suggestions[1]
+        let gone = Flag()
+        var client = HomeClient.preview
+        // Once added, the server leaves the book out of the month's line.
+        client.discoveries = {
+            gone.isOn
+                ? MonthlyDiscoveries(month: full.month, suggestions: full.suggestions.filter { $0.id != taken.id })
+                : full
+        }
+        let viewModel = HomeViewModel(client: client, caching: false)
+        await viewModel.loadDiscoveries()
+
+        viewModel.hold(taken)
+        gone.isOn = true
+        await viewModel.loadDiscoveries()
+
+        #expect(viewModel.discoveries?.suggestions.map(\.id) == full.suggestions.map(\.id))
+
+        await viewModel.releaseTaken()
+
+        #expect(viewModel.discoveries?.suggestions.contains { $0.id == taken.id } == false)
+    }
 }
 
 @MainActor

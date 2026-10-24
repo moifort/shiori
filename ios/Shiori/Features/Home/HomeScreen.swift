@@ -175,6 +175,9 @@ struct HomeScreen: View {
             // The first time only: after that, writes made anywhere
             // arrive through the change notice below.
             .task { await viewModel.loadOnAppear() }
+            // Left for another tab or a page pushed over it: the discoveries
+            // taken from the carousel leave the line while out of sight.
+            .onDisappear { Task { await viewModel.releaseTaken() } }
     }
 
     private var searchButton: some View {
@@ -314,19 +317,14 @@ struct HomeScreen: View {
                     case let .openRelease(.awaited(edition)): detail = .awaited(edition)
                     case let .openFriendFavorite(favorite): detail = .favorite(favorite)
                     case let .openDiscovery(suggestion): detail = .discovery(suggestion)
-                    // The carousel's check shows a moment before the line moves on.
+                    // The page keeps the discovery, its check showing, until the
+                    // reader leaves it: only then does the line move on.
                     case let .addDiscovery(suggestion, status):
-                        Task {
-                            await SuggestionViewModel(suggestion: suggestion, client: .live).add(status: status)
-                            try? await Task.sleep(for: .seconds(1.2))
-                            await viewModel.loadDiscoveries()
-                        }
+                        viewModel.hold(suggestion)
+                        Task { await SuggestionViewModel(suggestion: suggestion, client: .live).add(status: status) }
                     case let .awaitDiscovery(suggestion, format):
-                        Task {
-                            await SuggestionViewModel(suggestion: suggestion, client: .live).awaitEdition(format)
-                            try? await Task.sleep(for: .seconds(1.2))
-                            await viewModel.loadDiscoveries()
-                        }
+                        viewModel.hold(suggestion)
+                        Task { await SuggestionViewModel(suggestion: suggestion, client: .live).awaitEdition(format) }
                     }
                 }
                 .refreshable { await viewModel.load() }
