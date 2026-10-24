@@ -2,22 +2,27 @@ import SwiftUI
 
 /// The top of the home screen on a phone, as the TV app opens: the month's
 /// discoveries one page each, swiped sideways, every page over its own cover's
-/// colours — the cover, the title, why it was chosen, and the way to it on
-/// Liquid Glass — with the dots that say where the reader stands. It runs under
-/// the bars, which stay empty until the page is scrolled.
+/// colours — the cover, the title, why it was chosen, the way to it and the
+/// "+" that adds or awaits it, on Liquid Glass — with the dots that say where
+/// the reader stands. It runs up under the bars, which stay empty until the
+/// page is scrolled, and stops short enough for the rows to show under it.
 struct HomeDiscoveryCarousel: View {
     /// The month's discoveries, never empty.
     let discoveries: [Suggestion]
     let onOpen: (Suggestion) -> Void
-    let onShowAll: () -> Void
+    let onAdd: (Suggestion, ReadingStatus) -> Void
+    let onAwait: (Suggestion, ReleaseFormat) -> Void
 
     @State private var current: Suggestion.ID?
 
-    /// How tall the carousel stands under the status bar.
-    static let height: CGFloat = 610
+    /// How tall the carousel stands.
+    static let height: CGFloat = 490
+    /// How far it runs up under the empty bar: the cover starts just under
+    /// the status bar, as the TV app's artwork does.
+    private static let barOverlap: CGFloat = 50
     /// How tall the fade into the page is: long and eased, so the colours
     /// melt into it rather than stop at a line.
-    private static let fadeHeight: CGFloat = 260
+    private static let fadeHeight: CGFloat = 240
 
     var body: some View {
         ScrollView(.horizontal) {
@@ -41,6 +46,7 @@ struct HomeDiscoveryCarousel: View {
                     .padding(.bottom, 12)
             }
         }
+        .padding(.top, -Self.barOverlap)
         .accessibilityIdentifier("home-discovery")
     }
 
@@ -53,14 +59,14 @@ struct HomeDiscoveryCarousel: View {
             Spacer(minLength: 0)
             Button { onOpen(suggestion) } label: {
                 VStack(spacing: 0) {
-                    BookCover(book: suggestion.tile, width: 170)
+                    BookCover(book: suggestion.tile, width: 140)
                         .shadow(color: .black.opacity(0.5), radius: 22, y: 14)
                     Text("Découverte du mois")
                         .font(.footnote.weight(.semibold))
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
                         .glassEffect(.clear, in: .capsule)
-                        .padding(.top, 22)
+                        .padding(.top, 18)
                     Text(suggestion.title)
                         .font(.title.weight(.bold))
                         .lineLimit(2)
@@ -74,9 +80,9 @@ struct HomeDiscoveryCarousel: View {
                     Text(suggestion.reason)
                         .font(.footnote)
                         .foregroundStyle(.white.opacity(0.65))
-                        .lineLimit(3)
+                        .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 8)
+                        .padding(.top, 6)
                 }
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.white)
@@ -94,17 +100,24 @@ struct HomeDiscoveryCarousel: View {
                     .buttonStyle(.glassProminent)
                     .tint(.white)
                     .foregroundStyle(.black)
-                    Button(action: onShowAll) {
-                        Label("Tout voir", systemImage: "square.grid.2x2")
+                    Menu {
+                        SuggestionAddActions(
+                            suggestion: suggestion,
+                            onAdd: { onAdd(suggestion, $0) },
+                            onAwait: { onAwait(suggestion, $0) }
+                        )
+                    } label: {
+                        Label("Ajouter", systemImage: "plus")
                             .labelStyle(.iconOnly)
                             .font(.headline)
                     }
                     .buttonStyle(.glass)
                     .buttonBorderShape(.circle)
+                    .accessibilityIdentifier("home-discovery-menu")
                 }
                 .controlSize(.extraLarge)
             }
-            .padding(.top, 20)
+            .padding(.top, 16)
         }
         .padding(.horizontal, 28)
         // Room for the dots under the buttons.
@@ -147,7 +160,12 @@ private struct PageDots: View {
 
 #Preview {
     ScrollView {
-        HomeDiscoveryCarousel(discoveries: MonthlyDiscoveries.preview.suggestions, onOpen: { _ in }, onShowAll: {})
+        HomeDiscoveryCarousel(
+            discoveries: MonthlyDiscoveries.preview.suggestions,
+            onOpen: { _ in },
+            onAdd: { _, _ in },
+            onAwait: { _, _ in }
+        )
         Color.clear.frame(height: 600)
     }
     .background(Color(.systemGroupedBackground))

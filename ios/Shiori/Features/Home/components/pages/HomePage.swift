@@ -25,6 +25,11 @@ enum HomeAction {
     case openRelease(HomeRelease)
     case openFriendFavorite(FriendFavorite)
     case openDiscovery(Suggestion)
+    /// A discovery put on the shelf from the carousel's "+": on the pile, or
+    /// read already.
+    case addDiscovery(Suggestion, ReadingStatus)
+    /// A discovery's edition awaited from the carousel's "+".
+    case awaitDiscovery(Suggestion, ReleaseFormat)
 }
 
 /// The home screen in the TV app's grammar: a hero with the month's discovery
@@ -65,7 +70,8 @@ struct HomePage: View {
                     HomeDiscoveryCarousel(
                         discoveries: shownDiscoveries,
                         onOpen: { onAction(.openDiscovery($0)) },
-                        onShowAll: { onAction(.showDiscover) }
+                        onAdd: { onAction(.addDiscovery($0, $1)) },
+                        onAwait: { onAction(.awaitDiscovery($0, $1)) }
                     )
                 } else {
                     HomeHero(
@@ -100,7 +106,7 @@ struct HomePage: View {
                     seriesRow
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, showsCarousel ? 24 : 14)
+                .padding(.top, showsCarousel ? 16 : 14)
                 .padding(.bottom, 32)
             }
         }
@@ -118,6 +124,11 @@ struct HomePage: View {
 
     private var showsCarousel: Bool {
         isCompact && !shownDiscoveries.isEmpty
+    }
+
+    /// A phone heads its rows as the TV app does, the chevron after the title.
+    private var headerStyle: RowHeader.Style {
+        isCompact ? .inline : .trailing
     }
 
     // MARK: - Figures
@@ -140,7 +151,7 @@ struct HomePage: View {
     @ViewBuilder private var readingRow: some View {
         if let lead = dashboard.reading.first {
             VStack(alignment: .leading, spacing: 12) {
-                RowHeader(title: "En cours", detail: String(localized: "tout voir")) {
+                RowHeader(title: "En cours", detail: String(localized: "tout voir"), style: headerStyle) {
                     onAction(.showLibrary(LibraryRequest(filter: .status(.reading))))
                 }
                 ReadingLeadCard(
@@ -150,7 +161,8 @@ struct HomePage: View {
                     onFinish: { onAction(.finishBook(lead)) },
                     onRate: { onAction(.rateBook(lead)) }
                 )
-                if dashboard.reading.count > 1 {
+                // The others under it on the open Duo; a phone keeps to the lead.
+                if !isCompact, dashboard.reading.count > 1 {
                     CoverRow(
                         items: dashboard.reading.dropFirst().map {
                             .init(book: $0, caption: Self.startedCaption($0), captionTint: $0.listeningProgress == nil ? nil : .blue)
@@ -167,7 +179,7 @@ struct HomePage: View {
     @ViewBuilder private var pileRow: some View {
         if !dashboard.toRead.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
-                RowHeader(title: "Pile à lire", detail: String(localized: "\(dashboard.toReadCount) à lire")) {
+                RowHeader(title: "Pile à lire", detail: String(localized: "\(dashboard.toReadCount) à lire"), style: headerStyle) {
                     onAction(.showLibrary(LibraryRequest(filter: .status(.toRead))))
                 }
                 CoverRow(
@@ -185,7 +197,7 @@ struct HomePage: View {
         let tiles = newsTiles
         if !tiles.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
-                RowHeader(title: "Nouveautés", detail: String(localized: "Découvrir")) {
+                RowHeader(title: "Nouveautés", detail: String(localized: "Découvrir"), style: headerStyle) {
                     onAction(.showDiscover)
                 }
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
@@ -202,7 +214,7 @@ struct HomePage: View {
     @ViewBuilder private var seriesRow: some View {
         if !dashboard.series.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
-                RowHeader(title: "Mes séries", detail: String(localized: "tout voir")) {
+                RowHeader(title: "Mes séries", detail: String(localized: "tout voir"), style: headerStyle) {
                     onAction(.showSeries(SeriesRequest(state: .inProgress)))
                 }
                 let columns = isSideBySide ? 4 : 2

@@ -285,6 +285,16 @@ struct HomeScreen: View {
                     case let .openRelease(.awaited(edition)): detail = .awaited(edition)
                     case let .openFriendFavorite(favorite): detail = .favorite(favorite)
                     case let .openDiscovery(suggestion): detail = .discovery(suggestion)
+                    case let .addDiscovery(suggestion, status):
+                        Task {
+                            await SuggestionViewModel(suggestion: suggestion, client: .live).add(status: status)
+                            await viewModel.loadDiscoveries()
+                        }
+                    case let .awaitDiscovery(suggestion, format):
+                        Task {
+                            await SuggestionViewModel(suggestion: suggestion, client: .live).awaitEdition(format)
+                            await viewModel.loadDiscoveries()
+                        }
                     }
                 }
                 .refreshable { await viewModel.load() }

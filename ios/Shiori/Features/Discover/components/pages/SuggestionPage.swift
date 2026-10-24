@@ -105,19 +105,11 @@ struct SuggestionPage: View {
     /// edition is not out and not awaited yet in, as a book's page offers it.
     private var actionsMenu: some View {
         Menu {
-            Button("Ajouter", systemImage: "books.vertical") { act(.add(.toRead)) }
-                .accessibilityIdentifier("suggestion-add")
-            Button("Déjà lu", systemImage: "checkmark.circle") { act(.add(.read)) }
-                .accessibilityIdentifier("suggestion-already-read")
-            ForEach(suggestion.awaitableFormats) { format in
-                Button(
-                    format.awaitLabel,
-                    systemImage: format == .audiobook ? "headphones" : "character.book.closed"
-                ) {
-                    act(.awaitEdition(format))
-                }
-                .accessibilityIdentifier("suggestion-await-\(format.rawValue)")
-            }
+            SuggestionAddActions(
+                suggestion: suggestion,
+                onAdd: { act(.add($0)) },
+                onAwait: { act(.awaitEdition($0)) }
+            )
         } label: {
             Label("Ajouter", systemImage: "plus")
                 .labelStyle(.iconOnly)
@@ -153,6 +145,31 @@ struct SuggestionPage: View {
             return nil
         }
         return BookState(text: suggestion.stateLine, tint: suggestion.stateTint)
+    }
+}
+
+/// What a suggestion's "+" offers, on its page and on the home screen's
+/// carousel: on the pile, on the shelf as read, or awaited in each format its
+/// edition is not out and not awaited yet in.
+struct SuggestionAddActions: View {
+    let suggestion: Suggestion
+    let onAdd: (ReadingStatus) -> Void
+    let onAwait: (ReleaseFormat) -> Void
+
+    var body: some View {
+        Button("Ajouter", systemImage: "books.vertical") { onAdd(.toRead) }
+            .accessibilityIdentifier("suggestion-add")
+        Button("Déjà lu", systemImage: "checkmark.circle") { onAdd(.read) }
+            .accessibilityIdentifier("suggestion-already-read")
+        ForEach(suggestion.awaitableFormats) { format in
+            Button(
+                format.awaitLabel,
+                systemImage: format == .audiobook ? "headphones" : "character.book.closed"
+            ) {
+                onAwait(format)
+            }
+            .accessibilityIdentifier("suggestion-await-\(format.rawValue)")
+        }
     }
 }
 
