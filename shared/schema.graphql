@@ -1140,7 +1140,7 @@ type Dashboard {
 }
 
 """
-A book as a dashboard tile draws it: a cover and two lines, and for a book being read what the "En cours" card says of it.
+A book as a dashboard tile draws it: a cover and two lines, and for a book being read the saga and length the "En cours" card says.
 """
 type DashboardBook {
   """The day it was shelved: what the pile is dated by."""
@@ -1154,7 +1154,6 @@ type DashboardBook {
   durationMinutes: Int
   finishedAt: DateTime
   format: BookFormat!
-  genre: Genre
   id: BookId!
 
   """
@@ -1167,11 +1166,6 @@ type DashboardBook {
   """Null for a standalone book."""
   series: SeriesMembership
   startedAt: DateTime
-
-  """
-  Only on the books being read: null on the pile and the last book finished.
-  """
-  synopsis: Synopsis
   title: BookTitle!
 }
 

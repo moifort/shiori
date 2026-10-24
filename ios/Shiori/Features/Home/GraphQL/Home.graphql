@@ -66,10 +66,8 @@ fragment DashboardBookCard on DashboardBook {
     volume
     kind
   }
-  genre
   pageCount
   durationMinutes
-  synopsis
 }
 
 # What the reader's genres say about their tastes: the page the genre card opens.

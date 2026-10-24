@@ -29,7 +29,6 @@ import {
   PageCount,
   StarRating,
   Subgenre,
-  Synopsis,
 } from '~/domain/book/primitives'
 import type { Book, Genre } from '~/domain/book/types'
 import { SeriesName, VolumeNumber } from '~/domain/series/primitives'
@@ -501,9 +500,9 @@ describe('building the view', () => {
     expect(view.version).toBe(VIEW_VERSION)
   })
 
-  // The "En cours" card heads the book as the TV app heads an episode; the
-  // pile is covers only, so it never carries the synopsis.
-  test('describes the books being read, and only those, with their synopsis', () => {
+  // The "En cours" card heads the book as the TV app heads an episode: its
+  // saga and volume over the title, then its length.
+  test('carries the saga and the length of a book', () => {
     const membership = {
       id: kingkiller,
       name: catalogue.name,
@@ -520,21 +519,13 @@ describe('building the view', () => {
           status: 'reading',
           startedAt: new Date('2026-09-01'),
           series: membership,
-          genre: 'fantasy',
           pageCount: PageCount(1000),
-          synopsis: Synopsis('Kvothe goes on.'),
         }),
-        book('pile', { synopsis: Synopsis('Not shown.'), durationMinutes: ListeningMinutes(600) }),
+        book('heard', { durationMinutes: ListeningMinutes(600) }),
       ],
     })
 
-    expect(view.reading[0]).toMatchObject({
-      series: membership,
-      genre: 'fantasy',
-      pageCount: 1000,
-      synopsis: 'Kvothe goes on.',
-    })
-    expect(view.toRead[0]?.synopsis).toBeUndefined()
+    expect(view.reading[0]).toMatchObject({ series: membership, pageCount: 1000 })
     expect(view.toRead[0]?.durationMinutes).toBe(ListeningMinutes(600))
   })
 

@@ -91,8 +91,6 @@ private extension ShioriGraphQL.DashboardBookCard {
             title: title,
             authors: authors,
             format: format.asDomain,
-            synopsis: synopsis,
-            genre: genre?.asDomain,
             pageCount: pageCount,
             durationMinutes: durationMinutes,
             listeningProgress: listeningProgress.map { Int($0) },

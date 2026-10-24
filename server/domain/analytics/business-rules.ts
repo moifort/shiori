@@ -130,7 +130,6 @@ export const analyticsViewOf = (input: {
     startedAt: book.startedAt,
     finishedAt: book.finishedAt,
     series: book.series,
-    genre: book.genre,
     pageCount: book.pageCount,
     durationMinutes: book.durationMinutes,
   })
@@ -152,10 +151,7 @@ export const analyticsViewOf = (input: {
 
   // Shelved as the Library tab shelves them, so the first cover of the
   // dashboard is the first row of the library.
-  const reading = shelvedOf(books.filter((book) => book.status === 'reading')).map((book) => ({
-    ...cardOf(book),
-    synopsis: book.synopsis,
-  }))
+  const reading = shelvedOf(books.filter((book) => book.status === 'reading')).map(cardOf)
 
   const toRead = books
     .filter((book) => book.status === 'to-read')

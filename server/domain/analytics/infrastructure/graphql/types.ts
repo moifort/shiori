@@ -22,7 +22,7 @@ import { Percentage } from '~/domain/shared/primitives'
 const DashboardBookType = builder.objectRef<DashboardBook>('DashboardBook').implement({
   description:
     'A book as a dashboard tile draws it: a cover and two lines, and for a book being ' +
-    'read what the "En cours" card says of it.',
+    'read the saga and length the "En cours" card says.',
   fields: (t) => ({
     id: t.field({ type: 'BookId', resolve: (book) => book.id }),
     title: t.field({ type: 'BookTitle', resolve: (book) => book.title }),
@@ -70,11 +70,6 @@ const DashboardBookType = builder.objectRef<DashboardBook>('DashboardBook').impl
       description: 'Null for a standalone book.',
       resolve: (book) => book.series ?? null,
     }),
-    genre: t.field({
-      type: GenreEnum,
-      nullable: true,
-      resolve: (book) => book.genre ?? null,
-    }),
     pageCount: t.field({
       type: 'PageCount',
       nullable: true,
@@ -84,12 +79,6 @@ const DashboardBookType = builder.objectRef<DashboardBook>('DashboardBook').impl
       nullable: true,
       description: "A recording's length in minutes. Null on anything but an audiobook.",
       resolve: (book) => book.durationMinutes ?? null,
-    }),
-    synopsis: t.field({
-      type: 'Synopsis',
-      nullable: true,
-      description: 'Only on the books being read: null on the pile and the last book finished.',
-      resolve: (book) => book.synopsis ?? null,
     }),
   }),
 })

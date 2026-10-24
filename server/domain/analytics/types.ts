@@ -10,7 +10,6 @@ import type {
   SeriesMembership,
   StarRating,
   Subgenre,
-  Synopsis,
 } from '~/domain/book/types'
 import type { SeriesId, SeriesName } from '~/domain/series/types'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
@@ -46,15 +45,11 @@ export type BookCard = {
   startedAt?: Date
   finishedAt?: Date
   /** What the home screen's "En cours" card says of the book, as the TV app
-   *  heads an episode: its saga and volume, its genre and its length. Absent
-   *  on a view stored before the card showed them. */
+   *  heads an episode: its saga and volume, and its length. Absent on a view
+   *  stored before the card showed them. */
   series?: SeriesMembership
-  genre?: Genre
   pageCount?: PageCount
   durationMinutes?: ListeningMinutes
-  /** Only on the books being read, which the card describes: the pile and the
-   *  last book finished are covers and never carry it. */
-  synopsis?: Synopsis
 }
 
 /** One finished book, reduced to what the statistics read. Dates are local days
