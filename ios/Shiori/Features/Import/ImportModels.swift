@@ -208,6 +208,15 @@ enum ImportSource: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// The source's own iOS app icon, as the App Store serves it: what a
+    /// reader recognises the service by.
+    var appIcon: String {
+        switch self {
+        case .audible: "audible-app"
+        case .kindle: "kindle-app"
+        }
+    }
+
     /// What the settings row says under the name, since the two sources work
     /// nothing alike.
     var subtitle: String {

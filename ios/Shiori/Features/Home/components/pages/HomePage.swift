@@ -317,9 +317,12 @@ struct HomePage: View {
     }
 
     /// What is new: the volumes out or to come, then what friends hearted.
+    /// Not before the first book: a new reader follows no saga and has no
+    /// friend yet, and the friends card already says this row is where their
+    /// favourites will land.
     @ViewBuilder private var newsRow: some View {
         let tiles = newsTiles
-        if !tiles.isEmpty {
+        if !tiles.isEmpty, !dashboard.libraryIsEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 RowHeader(title: "Nouveautés", detail: String(localized: "Découvrir"), style: headerStyle) {
                     onAction(.showDiscover)

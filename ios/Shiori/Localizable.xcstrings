@@ -10417,22 +10417,6 @@
         }
       }
     },
-    "Scannez votre premier livre" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scan your first book"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scannez votre premier livre"
-          }
-        }
-      }
-    },
     "Scans" : {
       "localizations" : {
         "en" : {
@@ -12477,6 +12461,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vos tomes prendront leur place dans la série, et ceux qui vous manquent seront listés par leur numéro. Le catalogue complet remplacera ce décompte dès que Shiori pourra le constituer."
+          }
+        }
+      }
+    },
+    "Votre bibliothèque commence ici" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your library starts here"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre bibliothèque commence ici"
           }
         }
       }

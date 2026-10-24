@@ -16,7 +16,7 @@ struct HomeEmptyHero: View {
         VStack(spacing: 0) {
             stack
                 .padding(.top, 26)
-            Text("Scannez votre premier livre")
+            Text("Votre bibliothèque commence ici")
                 .font(.title.weight(.bold))
                 .multilineTextAlignment(.center)
                 .padding(.top, 24)

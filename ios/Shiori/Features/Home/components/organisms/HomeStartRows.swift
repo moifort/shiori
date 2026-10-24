@@ -14,14 +14,16 @@ struct ImportSourcesRow: View {
         HStack(alignment: .top, spacing: 12) {
             ForEach(ImportSource.allCases) { source in
                 StartCard(
-                    symbol: source.symbol,
+                    mark: .appIcon(source.appIcon),
                     title: source.label,
                     text: Self.line(source),
                     tint: Self.tint(source)
                 ) {
                     Button { onConnect(source) } label: {
-                        Text("Connecter")
-                            .font(.subheadline.weight(.semibold))
+                        Label("Connecter", systemImage: "link")
+                            .font(.caption.weight(.semibold))
+                            .lineLimit(1)
+                            .fixedSize()
                     }
                     .buttonStyle(.glassProminent)
                     .tint(.white)
@@ -57,7 +59,7 @@ struct FriendsInviteCard: View {
 
     var body: some View {
         StartCard(
-            symbol: "person.2.fill",
+            mark: .symbol("person.2.fill"),
             title: String(localized: "Invitez un ami"),
             text: String(localized: "Vous verrez sa bibliothèque et il verra la vôtre. Ses coups de cœur arriveront ici, dans « Nouveautés »."),
             tint: Color(red: 0.3, green: 0.6, blue: 0.35)
@@ -73,8 +75,9 @@ struct FriendsInviteCard: View {
 
     @ViewBuilder private var inviteButtons: some View {
         Button(action: onInvite) {
-            Text("Inviter un ami")
-                .font(.subheadline.weight(.semibold))
+            Label("Inviter un ami", systemImage: "person.badge.plus")
+                .font(.caption.weight(.semibold))
+                .lineLimit(1)
                 .fixedSize()
         }
         .buttonStyle(.glassProminent)
@@ -82,8 +85,9 @@ struct FriendsInviteCard: View {
         .foregroundStyle(.black)
         .accessibilityIdentifier("home-invite")
         Button(action: onEnterInvitation) {
-            Text("J'ai reçu une invitation")
-                .font(.subheadline.weight(.semibold))
+            Label("J'ai reçu une invitation", systemImage: "arrow.down.circle")
+                .font(.caption.weight(.semibold))
+                .lineLimit(1)
                 .fixedSize()
         }
         .buttonStyle(.glass)
@@ -91,11 +95,19 @@ struct FriendsInviteCard: View {
     }
 }
 
-/// A card of the start rows: a mark in a glass square, a title, a line, and
-/// the buttons, over a dark ground tinted at its leading corner with the
-/// card's own colour, inside the thin rim the posters carry.
+/// A card of the start rows: a mark — the service's own app icon, or a symbol
+/// in a glass square — a title, a line, and the buttons — small, captioned,
+/// with their icon, as the card of the book read now draws its own — over a
+/// dark ground
+/// tinted at its leading corner with the card's own colour, inside the thin
+/// rim the posters carry.
 private struct StartCard<Buttons: View>: View {
-    let symbol: String
+    enum Mark {
+        case symbol(String)
+        case appIcon(String)
+    }
+
+    let mark: Mark
     let title: String
     let text: String
     let tint: Color
@@ -103,15 +115,9 @@ private struct StartCard<Buttons: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Image(systemName: symbol)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(tint)
+            markView
                 .frame(width: 44, height: 44)
-                .background(.white.opacity(0.1), in: .rect(cornerRadius: 12, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(.white.opacity(0.14), lineWidth: 1)
-                }
+                .accessibilityHidden(true)
             Text(title)
                 .font(.headline)
                 .padding(.top, 12)
@@ -144,6 +150,31 @@ private struct StartCard<Buttons: View>: View {
         }
         .environment(\.colorScheme, .dark)
         .accessibilityElement(children: .contain)
+    }
+
+    @ViewBuilder private var markView: some View {
+        switch mark {
+        case let .appIcon(name):
+            // The home screen's own rounding: about a fifth of the side.
+            Image(name)
+                .resizable()
+                .clipShape(.rect(cornerRadius: 10, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(.white.opacity(0.14), lineWidth: 0.5)
+                }
+                .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
+        case let .symbol(name):
+            Image(systemName: name)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(tint)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(.white.opacity(0.1), in: .rect(cornerRadius: 12, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(.white.opacity(0.14), lineWidth: 1)
+                }
+        }
     }
 }
 
