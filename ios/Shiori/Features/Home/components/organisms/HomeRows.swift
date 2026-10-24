@@ -387,39 +387,21 @@ struct SeriesShowCard: View {
             VStack(alignment: .leading, spacing: 3) {
                 Spacer(minLength: 0)
                 Text(series.name)
-                    .font(.subheadline.weight(.bold))
+                    .font(.headline)
                     .lineLimit(1)
                 Text(progressText)
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.8))
                     .lineLimit(1)
-                ProgressView(value: Double(series.readCount), total: Double(max(series.totalCount, 1)))
-                    .tint(.white)
-                    .padding(.top, 3)
+                remainingCapsule
+                    .padding(.top, 8)
             }
             .foregroundStyle(.white)
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
             // At least a card's height, more with larger text.
-            .frame(minHeight: 118)
-            .background {
-                // The cover across the card, held to the card's size: filled,
-                // it would otherwise grow the card to its own proportions.
-                ZStack {
-                    Color(white: 0.15)
-                    if let url = series.coverURL {
-                        Color.clear.overlay {
-                            CoverImage(url: url) { Color.clear } fallback: { Color.clear }
-                        }
-                        .clipped()
-                    }
-                    LinearGradient(
-                        colors: [.black.opacity(0.05), .black.opacity(0.3), .black.opacity(0.88)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                }
-            }
+            .frame(minHeight: 176)
+            .background { artwork }
             .overlay(alignment: .topLeading) {
                 if let tag {
                     Text(tag.text)
@@ -431,12 +413,101 @@ struct SeriesShowCard: View {
                         .padding(8)
                 }
             }
+            // A saga heard says so in the corner, as the posters above do.
+            .overlay(alignment: .topTrailing) {
+                if series.isAudio {
+                    OutlinedTag(text: String(localized: "Audio"))
+                        .padding(10)
+                }
+            }
             .clipShape(.rect(cornerRadius: 18))
+            // The thin light rim inside the edge, as the posters carry.
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(.white.opacity(0.22), lineWidth: 1)
+            }
             .contentShape(.rect(cornerRadius: 18))
             .environment(\.colorScheme, .dark)
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
+    }
+
+    /// The cover across the card, sharp at the top and blurred from the middle
+    /// down to the title, more the lower it goes, with a light shade under the
+    /// text.
+    private var artwork: some View {
+        // Held to the card's size: filled, the cover would otherwise grow the
+        // card to its own proportions.
+        ZStack {
+            Color(white: 0.15)
+            if let url = series.coverURL {
+                Color.clear.overlay {
+                    CoverImage(url: url) { Color.clear } fallback: { Color.clear }
+                }
+                .clipped()
+                Color.clear
+                    .overlay {
+                        CoverImage(url: url) { Color.clear } fallback: { Color.clear }
+                            .scaleEffect(1.15)
+                            .blur(radius: 12, opaque: true)
+                    }
+                    .clipped()
+                    .mask {
+                        LinearGradient(
+                            stops: (0...10).map { step in
+                                let t = Double(step) / 10
+                                return .init(color: .black.opacity(t * t * (3 - 2 * t)), location: 0.3 + 0.45 * t)
+                            },
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    }
+            }
+            LinearGradient(
+                colors: [.black.opacity(0.05), .black.opacity(0.15), .black.opacity(0.5)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        }
+    }
+
+    /// How far the reader is through the saga, on a white capsule: the bar,
+    /// then how many volumes are left, "À jour" once none is.
+    private var remainingCapsule: some View {
+        HStack(spacing: 10) {
+            Capsule()
+                .fill(.black.opacity(0.18))
+                .frame(height: 5)
+                .overlay(alignment: .leading) {
+                    GeometryReader { proxy in
+                        Capsule()
+                            .fill(.black)
+                            .frame(width: proxy.size.width * fraction)
+                    }
+                }
+            Text(remainingText)
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+                .fixedSize()
+        }
+        .foregroundStyle(.black)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
+        .background(.white, in: .capsule)
+    }
+
+    private var fraction: CGFloat {
+        guard series.totalCount > 0 else { return 0 }
+        return CGFloat(min(series.readCount, series.totalCount)) / CGFloat(series.totalCount)
+    }
+
+    private var remainingText: String {
+        switch max(series.totalCount - series.readCount, 0) {
+        case 0: String(localized: "À jour")
+        case 1: String(localized: "1 tome")
+        case let left: String(localized: "\(left) tomes")
+        }
     }
 
     private var progressText: String {

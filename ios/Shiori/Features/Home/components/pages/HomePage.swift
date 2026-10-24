@@ -258,6 +258,8 @@ struct HomePage: View {
         }
     }
 
+    private static let seriesCardHeight: CGFloat = 176
+
     /// The sagas in progress, the last one shelved first.
     @ViewBuilder private var seriesRow: some View {
         if !dashboard.series.isEmpty {
@@ -265,18 +267,42 @@ struct HomePage: View {
                 RowHeader(title: "Mes séries", detail: String(localized: "tout voir"), style: headerStyle) {
                     onAction(.showSeries(SeriesRequest(state: .inProgress)))
                 }
-                let columns = isSideBySide ? 4 : 2
-                // Whole rows only, past the first: the rest is a tap away.
-                let shown = dashboard.series.count > columns
-                    ? Array(dashboard.series.prefix(dashboard.series.count / columns * columns))
-                    : dashboard.series
-                LazyVGrid(
-                    columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: columns),
-                    spacing: 10
-                ) {
-                    ForEach(shown) { series in
-                        SeriesShowCard(series: series, tag: releaseTag(of: series)) {
-                            onAction(.openSeries(series.id))
+                if isCompact {
+                    // Two rows that scroll sideways, the cards wide enough
+                    // for the next column to be cut by the edge: the row says
+                    // it goes on.
+                    ScrollView(.horizontal) {
+                        LazyHGrid(
+                            rows: [GridItem(.fixed(Self.seriesCardHeight), spacing: 10),
+                                   GridItem(.fixed(Self.seriesCardHeight), spacing: 10)],
+                            spacing: 10
+                        ) {
+                            ForEach(dashboard.series) { series in
+                                SeriesShowCard(series: series, tag: releaseTag(of: series)) {
+                                    onAction(.openSeries(series.id))
+                                }
+                                .frame(width: 250, height: Self.seriesCardHeight)
+                            }
+                        }
+                        .scrollTargetLayout()
+                    }
+                    .scrollIndicators(.hidden)
+                    .scrollTargetBehavior(.viewAligned)
+                    .scrollClipDisabled()
+                } else {
+                    let columns = isSideBySide ? 4 : 2
+                    // Whole rows only, past the first: the rest is a tap away.
+                    let shown = dashboard.series.count > columns
+                        ? Array(dashboard.series.prefix(dashboard.series.count / columns * columns))
+                        : dashboard.series
+                    LazyVGrid(
+                        columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: columns),
+                        spacing: 10
+                    ) {
+                        ForEach(shown) { series in
+                            SeriesShowCard(series: series, tag: releaseTag(of: series)) {
+                                onAction(.openSeries(series.id))
+                            }
                         }
                     }
                 }

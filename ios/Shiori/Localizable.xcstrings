@@ -1321,6 +1321,22 @@
         }
       }
     },
+    "1 tome" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 volume"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 tome"
+          }
+        }
+      }
+    },
     "1 étoile" : {
       "localizations" : {
         "en" : {
@@ -13145,6 +13161,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "À creuser"
+          }
+        }
+      }
+    },
+    "À jour" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Up to date"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "À jour"
           }
         }
       }
