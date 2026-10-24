@@ -1,7 +1,7 @@
 import { Isbn13, PageCount } from '~/domain/book/primitives'
 import type { LibraryEdition } from '~/domain/scan/types'
 import { createLogger } from '~/system/logger'
-import { isTimeout } from '~/utils/fetch'
+import { isTemporaryDnsFailure, isTimeout } from '~/utils/fetch'
 import { isPresent, optionally } from '~/utils/input'
 
 const logger = createLogger('bnf')
@@ -45,7 +45,7 @@ export const bnfEditionsOf = async (book: CataloguedBook): Promise<LibraryEditio
     query,
   })}`
   try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) })
+    const response = await answered(url)
     if (!response.ok) {
       logger.warn('BnF lookup failed', { status: response.status, title: book.title })
       return []
@@ -56,6 +56,21 @@ export const bnfEditionsOf = async (book: CataloguedBook): Promise<LibraryEditio
     if (isTimeout(error)) logger.info('BnF lookup timed out', { title: book.title })
     else logger.warn('BnF lookup failed', { error, title: book.title })
     return []
+  }
+}
+
+/** The catalogue's answer, asked a second time when the first attempt never
+ *  reached it. catalogue.bnf.fr publishes its address with a lifetime of a
+ *  hundred seconds, so nearly every scan resolves the name afresh, and in
+ *  October 2026 the resolver answered "try again" (EAI_AGAIN) to a third of
+ *  them, turning free lookups into paid web searches. Once, not a loop: a
+ *  second failure is the caller's to report. */
+const answered = async (url: string): Promise<Response> => {
+  try {
+    return await fetch(url, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) })
+  } catch (error) {
+    if (!isTemporaryDnsFailure(error)) throw error
+    return fetch(url, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) })
   }
 }
 

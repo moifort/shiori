@@ -147,4 +147,43 @@ describe('bnfEditionsOf', () => {
     expect(await bnfEditionsOf(book)).toEqual([])
     expect(reports).toHaveBeenCalledTimes(1)
   })
+
+  /** A resolver that could not answer for the host in time, as Node's fetch
+   *  throws it: a TypeError whose cause carries the code. */
+  const nameLookupAsksAgain = () =>
+    new TypeError('fetch failed', {
+      cause: Object.assign(new Error('getaddrinfo EAI_AGAIN catalogue.bnf.fr'), {
+        code: 'EAI_AGAIN',
+      }),
+    })
+
+  // The catalogue's address lives a hundred seconds in a resolver's cache, so
+  // nearly every scan resolves it afresh, and a resolver asking to try again
+  // is obeyed once before the book is described the paid way.
+  test('asks again when the name lookup asked to, and reports nothing once answered', async () => {
+    const lookups = spyOn(globalThis, 'fetch')
+      .mockImplementationOnce((async () => {
+        throw nameLookupAsksAgain()
+      }) as unknown as typeof fetch)
+      .mockImplementationOnce(
+        (async () =>
+          new Response(
+            answer(record(field('010', { a: '978-2-07-282204-9' }))),
+          )) as unknown as typeof fetch,
+      )
+    const reports = reported()
+
+    expect(await bnfEditionsOf(book)).toEqual([{ isbn13: '9782072822049' }] as never)
+    expect(lookups).toHaveBeenCalledTimes(2)
+    expect(reports).not.toHaveBeenCalled()
+  })
+
+  test('reports a name lookup that failed twice, and asks no third time', async () => {
+    const lookups = bnfThrows(nameLookupAsksAgain())
+    const reports = reported()
+
+    expect(await bnfEditionsOf(book)).toEqual([])
+    expect(lookups).toHaveBeenCalledTimes(2)
+    expect(reports).toHaveBeenCalledTimes(1)
+  })
 })
