@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// What follows "Marquer lu", as Fitness asks for the effort once a workout is
-/// done: the cover with a check, the book named as finished and the stars,
+/// done: the cover, the book named as finished and the stars,
 /// between a close button that passes and a check that rates. The book is
 /// marked read either way — passing, or pulling the sheet down, only leaves it
 /// unrated.
@@ -42,15 +42,6 @@ struct FinishedBookSheet: View {
         VStack(spacing: 0) {
             BookCover(book: book, width: 116, showsFormatBadge: false)
                 .shadow(color: .black.opacity(0.25), radius: 14, y: 8)
-                .overlay(alignment: .bottomTrailing) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 30))
-                        .symbolRenderingMode(.palette)
-                        .foregroundStyle(.white, ReadingStatus.read.tint)
-                        .background(Circle().fill(.background).padding(2))
-                        .offset(x: 10, y: 10)
-                        .symbolEffect(.bounce, value: appeared)
-                }
                 .padding(.top, 4)
             Text("Lecture terminée")
                 .font(.title2.weight(.bold))
@@ -67,7 +58,8 @@ struct FinishedBookSheet: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .padding(.top, 2)
-            InteractiveStarRating(rating: $rating, allowsUnset: false, scale: 1.25)
+            // White, as the rest of the sheet: the app's yellow stars stood out of it.
+            InteractiveStarRating(rating: $rating, allowsUnset: false, scale: 1.25, tint: .primary)
                 .padding(.top, 16)
                 .accessibilityIdentifier("finished-stars")
         }

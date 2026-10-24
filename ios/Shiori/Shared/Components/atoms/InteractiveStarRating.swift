@@ -17,6 +17,8 @@ struct InteractiveStarRating: View {
     /// Grows the stars past their standard size, where the rating is the
     /// whole of a screen.
     var scale: CGFloat = 1
+    /// The colour of the stars given.
+    var tint: Color = .yellow
 
     /// The rating under the finger, drawn while it is down.
     @State private var pending: Double?
@@ -31,7 +33,7 @@ struct InteractiveStarRating: View {
             ForEach(1...total, id: \.self) { star in
                 let symbol = StarSymbol(star: star, rating: shown)
                 Image(systemName: symbol.name)
-                    .foregroundStyle(symbol == .empty ? .gray.opacity(0.4) : .yellow)
+                    .foregroundStyle(symbol == .empty ? .gray.opacity(0.4) : tint)
                     .font(scale == 1 ? .title : .system(size: 28 * scale))
                     .scaleEffect(Double(star) == shown.rounded(.up) ? 1.15 : 1.0)
                     .animation(.spring(duration: 0.2), value: shown)
