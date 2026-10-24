@@ -47,8 +47,9 @@ struct HomeScreen: View {
     /// The wait onboarding hands over to, drawn in place of the dashboard.
     @State private var preparation = LibraryPreparation.shared
     /// Whether the bar shows its title and buttons over a page that opens on
-    /// the carousel: empty at the top, where the figures hold its place, and
-    /// while scrolling down, called back by scrolling up.
+    /// the carousel: empty as the page opens, scrolled by the bar's height,
+    /// and while scrolling down; called back at the very top and by scrolling
+    /// up below the hero.
     @State private var barCalled = false
     /// Whether that page has left the top, where the bar's blur stays away.
     @State private var leftTop = false

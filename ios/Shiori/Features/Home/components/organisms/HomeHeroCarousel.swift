@@ -37,9 +37,8 @@ enum HomeHeroItem: Identifiable {
 /// this week, then the month's discoveries, one page each, swiped sideways,
 /// every page over its own cover's colours — the cover, what it is, the way to
 /// it on Liquid Glass and, for a discovery, the "+" that adds or awaits it —
-/// with the dots that say where the reader stands. It runs up under the bars,
-/// which stay empty until the page is scrolled, and stops short enough for the
-/// rows to show under it.
+/// with the dots that say where the reader stands. Its colours run up under
+/// the bars, and it stops short enough for the rows to show under it.
 struct HomeHeroCarousel: View {
     /// Never empty.
     let items: [HomeHeroItem]
@@ -47,9 +46,6 @@ struct HomeHeroCarousel: View {
     let onOpen: (Suggestion) -> Void
     let onAdd: (Suggestion, ReadingStatus) -> Void
     let onAwait: (Suggestion, ReleaseFormat) -> Void
-    /// Whether the carousel runs up under the empty bar, the cover starting
-    /// just under the status bar. Off when the figures head the page above it.
-    var overlapsBar = true
     /// How far the page is pulled down past its top: the backdrops grow by as
     /// much from their foot, so the pull never uncovers what lies above them.
     var pull: CGFloat = 0
@@ -61,9 +57,6 @@ struct HomeHeroCarousel: View {
 
     /// How tall the carousel stands.
     static let height: CGFloat = 490
-    /// How far it runs up under the empty bar: the cover starts just under
-    /// the status bar, as the TV app's artwork does.
-    static let barOverlap: CGFloat = 50
     /// How far each backdrop runs up past its page, under the bars and the
     /// status bar.
     private static let backdropRise: CGFloat = 400
@@ -98,7 +91,6 @@ struct HomeHeroCarousel: View {
                     .padding(.bottom, 12)
             }
         }
-        .padding(.top, overlapsBar ? -Self.barOverlap : 0)
         .accessibilityIdentifier("home-discovery")
     }
 

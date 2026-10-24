@@ -60,8 +60,9 @@ struct HomePage: View {
     var isCompact = false
     var today: Date = .now
     /// Whether the bar's title and buttons are called for over the carousel:
-    /// hidden at the top, where the figures hold its place, and while the
-    /// reader scrolls down, called back as soon as they scroll up, as Safari
+    /// hidden as the page opens, scrolled by the bar's height, and while the
+    /// reader scrolls down; called back at the very top, where the bar has
+    /// its room above the page, and by scrolling up below the hero, as Safari
     /// brings its bar back.
     var onBarCalled: (Bool) -> Void = { _ in }
     /// Whether the page has left the top: the bar's blur comes in then, so the
@@ -71,10 +72,18 @@ struct HomePage: View {
 
     /// How far the page is pulled down past its top.
     @State private var pull: CGFloat = 0
+    /// Where the page stands, set once to open it under the bar.
+    @State private var position = ScrollPosition()
+    @State private var openedUnderBar = false
 
-    /// How far the page scrolls before the bar may come back: until then the
-    /// figures still show where the bar would sit.
-    private static let figuresClearance: CGFloat = 60
+    /// How far a page that opens on the carousel is scrolled as it opens: the
+    /// bar's height, so the page starts just under the status bar with the
+    /// bar out of sight, as Mail tucks its search field away. Scrolled back to
+    /// the very top, the page leaves the bar its room.
+    static let openingOffset: CGFloat = 50
+    /// How far past that the page scrolls before scrolling up calls the bar:
+    /// above it, the bar would land over the figures.
+    private static let figuresClearance: CGFloat = 70
 
     var body: some View {
         ScrollView {
@@ -82,12 +91,11 @@ struct HomePage: View {
                 if showsCarousel {
                     // The figures head the page, over the carousel's colours,
                     // drawn above the backdrop that runs up under them.
-                    // Up under the empty bar, just below the status bar.
                     if !dashboard.libraryIsEmpty {
                         figures
                             .environment(\.colorScheme, .dark)
                             .padding(.horizontal, 20)
-                            .padding(.top, 6 - HomeHeroCarousel.barOverlap)
+                            .padding(.top, 6)
                             .padding(.bottom, 12)
                             .zIndex(1)
                     }
@@ -97,7 +105,6 @@ struct HomePage: View {
                         onOpen: { onAction(.openDiscovery($0)) },
                         onAdd: { onAction(.addDiscovery($0, $1)) },
                         onAwait: { onAction(.awaitDiscovery($0, $1)) },
-                        overlapsBar: dashboard.libraryIsEmpty,
                         pull: pull
                     )
                 } else {
@@ -137,23 +144,26 @@ struct HomePage: View {
                 .padding(.bottom, 32)
             }
         }
+        .scrollPosition($position)
+        .onChange(of: showsCarousel, initial: true) { _, shows in
+            guard shows, !openedUnderBar else { return }
+            openedUnderBar = true
+            position.scrollTo(y: Self.openingOffset)
+        }
         .onScrollGeometryChange(for: CGFloat.self) { geometry in
             geometry.contentOffset.y + geometry.contentInsets.top
         } action: { old, offset in
-            // At the top, or bouncing back into it, the bar stays away; past
-            // it, a few points either way say which way the reader is going.
-            onLeftTop(offset > 80)
-            // At the top the figures hold the bar's place, so the bar stays
-            // away; below it, scrolling up calls the bar and scrolling down
-            // sends it away. The bounce above the top says nothing about
-            // where the reader is going.
-            guard offset >= 0, old >= 0 else { return }
-            if offset <= Self.figuresClearance {
-                onBarCalled(false)
-            } else if offset < old - 4 {
+            // Past the hero, the blur keeps the rows off the status bar.
+            onLeftTop(offset > Self.openingOffset + 80)
+            // At the very top, or bouncing above it, the bar has its room
+            // over the page: it shows. Scrolling down sends it away; scrolling
+            // up calls it back once below the figures, where it covers none.
+            if offset <= 6 {
                 onBarCalled(true)
             } else if offset > old + 4 {
                 onBarCalled(false)
+            } else if offset < old - 4, offset > Self.openingOffset + Self.figuresClearance {
+                onBarCalled(true)
             }
         }
         // Only past the top, while the reader pulls: scrolling leaves it at 0.
