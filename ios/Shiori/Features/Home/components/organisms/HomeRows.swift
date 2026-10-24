@@ -67,8 +67,9 @@ struct HomeFiguresLine: View {
 }
 
 /// The book read now, at the head of "En cours", as the TV app leads a row with
-/// the episode playing: its cover over its own colours, how long it has been
-/// open or how far the recording got, and the next step on Liquid Glass.
+/// the episode playing: its cover the card's whole height on the leading edge,
+/// then over its own colours how long it has been open or how far the
+/// recording got, and the next step on Liquid Glass.
 struct ReadingLeadCard: View {
     let book: Book
     let caption: String
@@ -76,10 +77,28 @@ struct ReadingLeadCard: View {
     let onFinish: () -> Void
     let onRate: () -> Void
 
+    /// The text's height, which the cover stretches to.
+    @State private var textHeight: CGFloat = 0
+
+    private static let coverWidth: CGFloat = 100
+
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             Button(action: onOpen) {
-                BookCover(book: book, width: 76)
+                // Edge to edge, the card's corners rounding it.
+                BookCover(
+                    book: book,
+                    width: Self.coverWidth,
+                    showsFormatBadge: false,
+                    minHeight: textHeight,
+                    cornerRadius: 0
+                )
+                .overlay(alignment: .topTrailing) {
+                    // Inside the corner: overhanging, the card clipped it.
+                    if book.format == .audiobook {
+                        AudiobookBadge(size: 26).padding(6)
+                    }
+                }
             }
             .buttonStyle(.plain)
             .accessibilityHidden(true)
@@ -115,8 +134,10 @@ struct ReadingLeadCard: View {
                     actions(ratingLabelled: false)
                 }
             }
+            .padding(.vertical, 14)
+            .padding(.trailing, 12)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { textHeight = $0 }
         }
-        .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .environment(\.colorScheme, .dark)
         .background {
