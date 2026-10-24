@@ -16,6 +16,8 @@ struct HomeScreen: View {
     let onScan: () -> Void
     /// Opens Découvrir, from the releases header.
     var onShowDiscover: () -> Void = {}
+    /// The Partagé tab, from the empty shelf's start rows.
+    var onShowShared: () -> Void = {}
 
     @State private var viewModel: HomeViewModel
     /// What the dashboard opened: pushed over it on a phone, beside it on an
@@ -25,6 +27,8 @@ struct HomeScreen: View {
     /// dashboard rather than over it.
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var showSettings = false
+    /// Audible or Kindle, connected from the empty shelf's start rows.
+    @State private var openSource: ImportSource?
     /// The book read now, rated from its card on the page.
     @State private var ratedBook: Book?
     /// The book read now, marked read from its card: the sheet asks for its
@@ -59,12 +63,14 @@ struct HomeScreen: View {
         onShowLibrary: @escaping (LibraryRequest) -> Void,
         onScan: @escaping () -> Void,
         onShowDiscover: @escaping () -> Void = {},
+        onShowShared: @escaping () -> Void = {},
         client: HomeClient = .live
     ) {
         self.onShowSeries = onShowSeries
         self.onShowLibrary = onShowLibrary
         self.onScan = onScan
         self.onShowDiscover = onShowDiscover
+        self.onShowShared = onShowShared
         _viewModel = State(initialValue: HomeViewModel(client: client))
     }
 
@@ -103,6 +109,13 @@ struct HomeScreen: View {
         }
         .sheet(isPresented: $showSettings) {
             SettingsHomeScreen()
+        }
+        // The import lands through the change notice, as every write does.
+        .sheet(item: $openSource) { source in
+            switch source {
+            case .audible: AudibleImportScreen(onImported: { _ in openSource = nil })
+            case .kindle: KindleImportScreen(onImported: { _ in openSource = nil })
+            }
         }
         .sheet(item: $finishedBook, onDismiss: finishAfterPrompt) { book in
             FinishedBookSheet(book: book) { stars in
@@ -148,8 +161,8 @@ struct HomeScreen: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) { Text(verbatim: "").accessibilityHidden(true) }
-                if showsCarousel {
-                    // Over the carousel the bar is empty; scrolling back up
+                if opensOnHero {
+                    // Over the hero the bar is empty; scrolling back up
                     // calls it, the page's name on the left and the buttons
                     // on the right.
                     if barCalled {
@@ -171,7 +184,7 @@ struct HomeScreen: View {
             }
             // No blur over the carousel; past it, the blur keeps the rows off
             // the status bar, whether the bar's buttons are called or not.
-            .scrollEdgeEffectHidden(showsCarousel && !leftTop, for: .top)
+            .scrollEdgeEffectHidden(opensOnHero && !leftTop, for: .top)
             // The first time only: after that, writes made anywhere
             // arrive through the change notice below.
             .task { await viewModel.loadOnAppear() }
@@ -210,11 +223,14 @@ struct HomeScreen: View {
         }
     }
 
-    /// Whether the page opens on the carousel: on a phone or the folded Duo,
-    /// once a release is due this week or the month's choice is ready.
-    private var showsCarousel: Bool {
-        !isSplit && !preparation.isActive && viewModel.dashboard != nil
-            && !HomeHeroItem.items(
+    /// Whether the page opens on a hero that runs up under the bar: on a
+    /// phone or the folded Duo, the carousel once a release is due this week
+    /// or the month's choice is ready, or the empty shelf's prompt before the
+    /// first book.
+    private var opensOnHero: Bool {
+        guard !isSplit, !preparation.isActive, let dashboard = viewModel.dashboard else { return false }
+        return HomePage.opensOnEmptyHero(dashboard: dashboard, isCompact: true)
+            || !HomeHeroItem.items(
                 releases: viewModel.releases,
                 discoveries: viewModel.discoveries?.shownOnHome ?? []
             ).isEmpty
@@ -312,6 +328,8 @@ struct HomeScreen: View {
                         finishedBook = book
                     case let .rateBook(book): ratedBook = book
                     case .scan: onScan()
+                    case let .connectSource(source): openSource = source
+                    case .showShared: onShowShared()
                     case .showDiscover: onShowDiscover()
                     case let .openRelease(.volume(volume)): detail = .release(volume)
                     case let .openRelease(.awaited(edition)): detail = .awaited(edition)

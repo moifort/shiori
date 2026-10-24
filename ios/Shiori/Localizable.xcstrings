@@ -6021,6 +6021,22 @@
         }
       }
     },
+    "Importer vos livres" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import your books"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importer vos livres"
+          }
+        }
+      }
+    },
     "Importez votre bibliothèque Audible" : {
       "localizations" : {
         "en" : {
@@ -6241,6 +6257,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Inviter un ami"
+          }
+        }
+      }
+    },
+    "Invitez un ami" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invite a friend"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invitez un ami"
           }
         }
       }
@@ -6989,6 +7021,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Les offres ne sont pas disponibles pour le moment."
+          }
+        }
+      }
+    },
+    "Lire avec des amis" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read with friends"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lire avec des amis"
           }
         }
       }
@@ -10369,6 +10417,22 @@
         }
       }
     },
+    "Scannez votre premier livre" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan your first book"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scannez votre premier livre"
+          }
+        }
+      }
+    },
     "Scans" : {
       "localizations" : {
         "en" : {
@@ -12161,6 +12225,22 @@
         }
       }
     },
+    "Une photo de la couverture suffit" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A photo of the cover is enough"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une photo de la couverture suffit"
+          }
+        }
+      }
+    },
     "Utilisateurs" : {
       "localizations" : {
         "en" : {
@@ -12317,6 +12397,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vos livres audio, avec ce que vous avez déjà écouté."
+          }
+        }
+      }
+    },
+    "Vos livres audio, avec leur avancement." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your audiobooks, with how far you got."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos livres audio, avec leur avancement."
+          }
+        }
+      }
+    },
+    "Vos livres lus et en cours, marqués comme tels." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your books read and in progress, marked as such."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos livres lus et en cours, marqués comme tels."
           }
         }
       }
@@ -12637,6 +12749,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vous pouvez l'ajouter une seconde fois, pour une autre édition par exemple."
+          }
+        }
+      }
+    },
+    "Vous verrez sa bibliothèque et il verra la vôtre. Ses coups de cœur arriveront ici, dans « Nouveautés »." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You will see their library and they will see yours. Their favourites will land here, under “New releases”."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous verrez sa bibliothèque et il verra la vôtre. Ses coups de cœur arriveront ici, dans « Nouveautés »."
           }
         }
       }

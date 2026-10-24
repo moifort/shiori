@@ -234,7 +234,8 @@ struct ContentView: View {
                         selectedTab = .library
                     },
                     onScan: { showAddSheet = true },
-                    onShowDiscover: { selectedTab = .discover }
+                    onShowDiscover: { selectedTab = .discover },
+                    onShowShared: { selectedTab = .shared }
                 )
             }
             Tab(

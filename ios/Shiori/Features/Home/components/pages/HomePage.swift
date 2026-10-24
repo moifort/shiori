@@ -20,6 +20,11 @@ enum HomeAction {
     case rateBook(Book)
     /// The prompt that leads an empty library.
     case scan
+    /// An empty library's start rows: Audible or Kindle to connect.
+    case connectSource(ImportSource)
+    /// An empty library's start rows: the Partagé tab, where a friend is
+    /// invited or an invitation entered.
+    case showShared
     /// "Nouveautés"'s header, and the hero's way to every discovery.
     case showDiscover
     /// A volume just out or announced, or a recording awaited.
@@ -59,7 +64,7 @@ struct HomePage: View {
     /// A phone or the folded Duo: the discoveries open the page as a carousel.
     var isCompact = false
     var today: Date = .now
-    /// Whether the bar's title and buttons are called for over the carousel:
+    /// Whether the bar's title and buttons are called for over the hero:
     /// hidden as the page opens, scrolled by the bar's height, and while the
     /// reader scrolls down; called back at the very top, where the bar has
     /// its room above the page, and by scrolling up below the hero, as Safari
@@ -76,7 +81,7 @@ struct HomePage: View {
     @State private var position = ScrollPosition()
     @State private var openedUnderBar = false
 
-    /// How far a page that opens on the carousel is scrolled as it opens: the
+    /// How far a page that opens on a hero is scrolled as it opens: the
     /// bar's height, so the page starts just under the status bar with the
     /// bar out of sight, as Mail tucks its search field away. Scrolled back to
     /// the very top, the page leaves the bar its room.
@@ -88,17 +93,20 @@ struct HomePage: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
+                if opensOnHero {
+                    // The figures head the page, over the hero's colours,
+                    // drawn above the backdrop that runs up under them. At
+                    // zero, before the first book, they are dimmed: the shape
+                    // of the page is announced, not its figures.
+                    figures
+                        .environment(\.colorScheme, .dark)
+                        .opacity(dashboard.libraryIsEmpty ? 0.45 : 1)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 6)
+                        .padding(.bottom, 12)
+                        .zIndex(1)
+                }
                 if showsCarousel {
-                    // The figures head the page, over the carousel's colours,
-                    // drawn above the backdrop that runs up under them.
-                    if !dashboard.libraryIsEmpty {
-                        figures
-                            .environment(\.colorScheme, .dark)
-                            .padding(.horizontal, 24)
-                            .padding(.top, 6)
-                            .padding(.bottom, 12)
-                            .zIndex(1)
-                    }
                     HomeHeroCarousel(
                         items: heroItems,
                         onOpenRelease: { onAction(.openRelease($0)) },
@@ -107,6 +115,8 @@ struct HomePage: View {
                         onAwait: { onAction(.awaitDiscovery($0, $1)) },
                         pull: pull
                     )
+                } else if opensOnHero {
+                    HomeEmptyHero { onAction(.scan) }
                 } else {
                     HomeHero(
                         discoveries: shownDiscoveries,
@@ -118,8 +128,12 @@ struct HomePage: View {
                 }
                 VStack(alignment: .leading, spacing: 30) {
                     if dashboard.libraryIsEmpty {
-                        scanPrompt
-                    } else if !showsCarousel {
+                        if opensOnHero {
+                            startRows
+                        } else {
+                            scanPrompt
+                        }
+                    } else if !opensOnHero {
                         figures
                     }
                     if isSideBySide {
@@ -140,12 +154,12 @@ struct HomePage: View {
                     seriesRow
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, showsCarousel ? 16 : 14)
+                .padding(.top, opensOnHero ? 16 : 14)
                 .padding(.bottom, 32)
             }
         }
         .scrollPosition($position)
-        .onChange(of: showsCarousel, initial: true) { _, shows in
+        .onChange(of: opensOnHero, initial: true) { _, shows in
             guard shows, !openedUnderBar else { return }
             openedUnderBar = true
             position.scrollTo(y: Self.openingOffset)
@@ -188,9 +202,36 @@ struct HomePage: View {
         isCompact && !heroItems.isEmpty
     }
 
+    /// Whether the page opens on a hero that runs up under the bar: the
+    /// carousel, or the empty shelf's prompt before the first book.
+    private var opensOnHero: Bool {
+        showsCarousel || (isCompact && dashboard.libraryIsEmpty)
+    }
+
+    /// Whether a phone opens on the empty shelf's prompt: the same as the
+    /// coordinator's test, which sets the bar up for it.
+    static func opensOnEmptyHero(dashboard: Dashboard?, isCompact: Bool) -> Bool {
+        isCompact && dashboard?.libraryIsEmpty == true
+    }
+
     /// A phone heads its rows as the TV app does, the chevron after the title.
     private var headerStyle: RowHeader.Style {
         isCompact ? .inline : .trailing
+    }
+
+    // MARK: - Start rows
+
+    /// Before the first book, in place of the shelves: the sources to
+    /// connect, and the friends to read with.
+    @ViewBuilder private var startRows: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            RowHeader(title: "Importer vos livres", style: .inline)
+            ImportSourcesRow { onAction(.connectSource($0)) }
+        }
+        VStack(alignment: .leading, spacing: 12) {
+            RowHeader(title: "Lire avec des amis", style: .inline) { onAction(.showShared) }
+            FriendsInviteCard(onInvite: { onAction(.showShared) }, onEnterInvitation: { onAction(.showShared) })
+        }
     }
 
     // MARK: - Figures
@@ -573,6 +614,21 @@ extension Dashboard {
 }
 
 extension Dashboard {
+    /// No book yet: the phone opens on the empty shelf's prompt and its
+    /// start rows.
+    static let empty = Dashboard(
+        currentYear: 2026,
+        booksPerYear: (2018...2026).map { .init(year: $0, count: 0) },
+        pagesPerMonth: (1...12).map { .init(month: $0, pages: 0) },
+        hoursPerMonth: (1...12).map { .init(month: $0, hours: 0) },
+        reading: [],
+        lastFinished: nil,
+        toReadCount: 0,
+        genres: [],
+        series: [],
+        libraryIsEmpty: true
+    )
+
     /// A library with one book just added: every widget drawn, most of them
     /// saying what will fill them.
     static let firstBook = Dashboard(
@@ -604,6 +660,12 @@ extension Dashboard {
 #Preview("First book") {
     NavigationStack {
         HomePage(dashboard: .firstBook) { _ in }
+    }
+}
+
+#Preview("Empty, phone") {
+    NavigationStack {
+        HomePage(dashboard: .empty, isCompact: true) { _ in }
     }
 }
 
