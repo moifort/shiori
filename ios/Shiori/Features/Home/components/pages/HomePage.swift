@@ -214,11 +214,19 @@ struct HomePage: View {
                 RowHeader(title: "Pile à lire", detail: String(localized: "\(dashboard.toReadCount) à lire"), style: headerStyle) {
                     onAction(.showLibrary(LibraryRequest(filter: .status(.toRead))))
                 }
-                CoverRow(
-                    items: dashboard.toRead.map {
-                        .init(book: $0, caption: Self.addedCaption($0), captionTint: ReadingStatus.toRead.tint)
-                    }
-                ) { onAction(.openBook($0)) }
+                // A phone shelves the pile as the TV app does, the days in
+                // each cover; the open Duo keeps the titles under them.
+                if isCompact {
+                    PosterRow(
+                        items: dashboard.toRead.map { .init(book: $0, caption: Self.shelvedCaption($0)) }
+                    ) { onAction(.openBook($0)) }
+                } else {
+                    CoverRow(
+                        items: dashboard.toRead.map {
+                            .init(book: $0, caption: Self.addedCaption($0), captionTint: ReadingStatus.toRead.tint)
+                        }
+                    ) { onAction(.openBook($0)) }
+                }
             }
             .accessibilityIdentifier("home-pile")
         }
@@ -393,6 +401,17 @@ struct HomePage: View {
         return days == 0
             ? String(localized: "commencé aujourd'hui")
             : String(localized: "depuis \(days) j")
+    }
+
+    /// How long a book has been on the pile, set in its cover: "Aujourd'hui",
+    /// "Hier", "5 jours".
+    static func shelvedCaption(_ book: Book) -> String {
+        guard let addedAt = book.addedAt else { return book.authorLine }
+        switch addedAt.daysAgo() {
+        case 0: return String(localized: "Aujourd'hui")
+        case 1: return String(localized: "Hier")
+        case let days: return String(localized: "\(days) jours")
+        }
     }
 
     /// When a book joined the pile.

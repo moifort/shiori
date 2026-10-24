@@ -183,6 +183,101 @@ struct ReadingLeadCard: View {
     }
 }
 
+/// A row of covers that scrolls sideways as the TV app's shelves do: larger,
+/// with nothing under them, a short line set inside each cover's foot over a
+/// light shade that keeps it readable on any cover.
+struct PosterRow: View {
+    struct Item: Identifiable {
+        let book: Book
+        let caption: String
+        var id: String { book.id }
+    }
+
+    let items: [Item]
+    var coverWidth: CGFloat = 102
+    let onOpen: (Book) -> Void
+
+    private static let cornerRadius: CGFloat = 8
+
+    var body: some View {
+        ScrollView(.horizontal) {
+            LazyHStack(alignment: .top, spacing: 13) {
+                ForEach(items) { item in
+                    Button { onOpen(item.book) } label: {
+                        BookCover(book: item.book, width: coverWidth, formatBadgeSize: 20, cornerRadius: Self.cornerRadius)
+                            // Dimmed a little, as the TV app's posters are: a
+                            // white cover no longer glares beside a dark one.
+                            .overlay {
+                                RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
+                                    .fill(.black.opacity(0.12))
+                            }
+                            .overlay(alignment: .bottom) {
+                                Text(item.caption)
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundStyle(.white)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
+                                    .shadow(color: .black.opacity(0.4), radius: 3)
+                                    .padding(.horizontal, 6)
+                                    .padding(.top, 26)
+                                    .padding(.bottom, 9)
+                                    .frame(maxWidth: .infinity)
+                                    .background { footShade }
+                                    .clipShape(UnevenRoundedRectangle(
+                                        bottomLeadingRadius: Self.cornerRadius,
+                                        bottomTrailingRadius: Self.cornerRadius
+                                    ))
+                            }
+                            // The thin light rim inside the edge the TV app's
+                            // posters carry.
+                            .overlay {
+                                RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
+                                    .strokeBorder(.white.opacity(0.22), lineWidth: 1)
+                            }
+                            .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text("\(item.book.title), \(item.caption)"))
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityIdentifier("book-tile")
+                }
+            }
+            .scrollTargetLayout()
+        }
+        .scrollIndicators(.hidden)
+        .scrollTargetBehavior(.viewAligned)
+        .scrollClipDisabled()
+    }
+
+    /// The cover blurred and darkened under its label, as the TV app's tiles
+    /// do: a band that reaches nearly its full strength from its top edge,
+    /// so the print of a cover never fights the line.
+    private var footShade: some View {
+        ZStack {
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .environment(\.colorScheme, .dark)
+                .mask {
+                    LinearGradient(
+                        stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.25)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                }
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: .black.opacity(0.3), location: 0.25),
+                    .init(color: .black.opacity(0.45), location: 1),
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        }
+    }
+}
+
 /// A row of covers that scrolls sideways, each with its title and a line in
 /// the colour of what it says — how long open, when added, out or to come.
 struct CoverRow: View {

@@ -505,6 +505,22 @@
         }
       }
     },
+    "%lld jours" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld days"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld jours"
+          }
+        }
+      }
+    },
     "%lld jours offerts" : {
       "localizations" : {
         "en" : {
@@ -2593,6 +2609,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Audio"
+          }
+        }
+      }
+    },
+    "Aujourd'hui" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aujourd'hui"
           }
         }
       }
@@ -5601,6 +5633,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Heures écoutées"
+          }
+        }
+      }
+    },
+    "Hier" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yesterday"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hier"
           }
         }
       }
