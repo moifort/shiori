@@ -14,12 +14,15 @@ import type {
   YearCount,
 } from '~/domain/analytics/types'
 import { BookFormatEnum, GenreEnum } from '~/domain/book/infrastructure/graphql/enums'
+import { SeriesMembershipType } from '~/domain/book/infrastructure/graphql/types'
 import { isAudioSeries } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
 import { Percentage } from '~/domain/shared/primitives'
 
 const DashboardBookType = builder.objectRef<DashboardBook>('DashboardBook').implement({
-  description: 'A book as a dashboard tile draws it: a cover and two lines, nothing more.',
+  description:
+    'A book as a dashboard tile draws it: a cover and two lines, and for a book being ' +
+    'read what the "En cours" card says of it.',
   fields: (t) => ({
     id: t.field({ type: 'BookId', resolve: (book) => book.id }),
     title: t.field({ type: 'BookTitle', resolve: (book) => book.title }),
@@ -60,6 +63,33 @@ const DashboardBookType = builder.objectRef<DashboardBook>('DashboardBook').impl
       type: 'DateTime',
       nullable: true,
       resolve: (book) => book.finishedAt ?? null,
+    }),
+    series: t.field({
+      type: SeriesMembershipType,
+      nullable: true,
+      description: 'Null for a standalone book.',
+      resolve: (book) => book.series ?? null,
+    }),
+    genre: t.field({
+      type: GenreEnum,
+      nullable: true,
+      resolve: (book) => book.genre ?? null,
+    }),
+    pageCount: t.field({
+      type: 'PageCount',
+      nullable: true,
+      resolve: (book) => book.pageCount ?? null,
+    }),
+    durationMinutes: t.int({
+      nullable: true,
+      description: "A recording's length in minutes. Null on anything but an audiobook.",
+      resolve: (book) => book.durationMinutes ?? null,
+    }),
+    synopsis: t.field({
+      type: 'Synopsis',
+      nullable: true,
+      description: 'Only on the books being read: null on the pile and the last book finished.',
+      resolve: (book) => book.synopsis ?? null,
     }),
   }),
 })

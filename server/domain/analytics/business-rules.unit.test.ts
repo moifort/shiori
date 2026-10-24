@@ -29,6 +29,7 @@ import {
   PageCount,
   StarRating,
   Subgenre,
+  Synopsis,
 } from '~/domain/book/primitives'
 import type { Book, Genre } from '~/domain/book/types'
 import { SeriesName, VolumeNumber } from '~/domain/series/primitives'
@@ -498,6 +499,43 @@ describe('building the view', () => {
     expect(view.finishes).toHaveLength(2)
     expect(view.stale).toBe(false)
     expect(view.version).toBe(VIEW_VERSION)
+  })
+
+  // The "En cours" card heads the book as the TV app heads an episode; the
+  // pile is covers only, so it never carries the synopsis.
+  test('describes the books being read, and only those, with their synopsis', () => {
+    const membership = {
+      id: kingkiller,
+      name: catalogue.name,
+      volume: VolumeNumber(2),
+      kind: 'main' as const,
+    }
+    const view = analyticsViewOf({
+      userId: reader,
+      timeZone: paris,
+      now: new Date('2026-09-15T10:00:00.000Z'),
+      catalogues: [],
+      books: [
+        book('open', {
+          status: 'reading',
+          startedAt: new Date('2026-09-01'),
+          series: membership,
+          genre: 'fantasy',
+          pageCount: PageCount(1000),
+          synopsis: Synopsis('Kvothe goes on.'),
+        }),
+        book('pile', { synopsis: Synopsis('Not shown.'), durationMinutes: ListeningMinutes(600) }),
+      ],
+    })
+
+    expect(view.reading[0]).toMatchObject({
+      series: membership,
+      genre: 'fantasy',
+      pageCount: 1000,
+      synopsis: 'Kvothe goes on.',
+    })
+    expect(view.toRead[0]?.synopsis).toBeUndefined()
+    expect(view.toRead[0]?.durationMinutes).toBe(ListeningMinutes(600))
   })
 
   // The dashboard shelf and the Library tab must agree on where a book sits:

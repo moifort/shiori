@@ -57,7 +57,7 @@ const TOP_GENRES = 4
 /** Bumped whenever the view gains a figure or a rule changes, so a view stored
  *  by an older bundle is rebuilt on its next read instead of answering with a
  *  field it never computed. */
-export const VIEW_VERSION = 16
+export const VIEW_VERSION = 17
 
 // MARK: - Calendar
 
@@ -129,6 +129,10 @@ export const analyticsViewOf = (input: {
     addedAt: book.addedAt,
     startedAt: book.startedAt,
     finishedAt: book.finishedAt,
+    series: book.series,
+    genre: book.genre,
+    pageCount: book.pageCount,
+    durationMinutes: book.durationMinutes,
   })
 
   const finishes = finished.map((book): Finish => {
@@ -148,7 +152,10 @@ export const analyticsViewOf = (input: {
 
   // Shelved as the Library tab shelves them, so the first cover of the
   // dashboard is the first row of the library.
-  const reading = shelvedOf(books.filter((book) => book.status === 'reading')).map(cardOf)
+  const reading = shelvedOf(books.filter((book) => book.status === 'reading')).map((book) => ({
+    ...cardOf(book),
+    synopsis: book.synopsis,
+  }))
 
   const toRead = books
     .filter((book) => book.status === 'to-read')

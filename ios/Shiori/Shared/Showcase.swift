@@ -92,6 +92,9 @@ enum Showcase {
         var narrators: [String] = []
         /// The titles of the volumes that carry one; the others are "Name, tome N".
         var titles: [Int: String] = [:]
+        /// The synopses of the volumes that carry one, by number: the book read
+        /// now, which the home screen's card describes.
+        var synopses: [Int: String] = [:]
         /// Every volume out, owned or not.
         let published: Int
         /// The volumes the reader holds, from the first.
@@ -230,6 +233,10 @@ enum Showcase {
                 [1: "Hypérion", 2: "La Chute d'Hypérion", 3: "Endymion", 4: "L'Éveil d'Endymion"],
                 [1: "Hyperion", 2: "The Fall of Hyperion", 3: "Endymion", 4: "The Rise of Endymion"]
             ),
+            synopses: [3: local(
+                "Trois siècles après le pèlerinage, Raul Endymion est chargé de protéger Énée, une enfant venue des Tombeaux du Temps que l'Église pourchasse de monde en monde.",
+                "Three centuries after the pilgrimage, Raul Endymion is charged with protecting Aenea, a child out of the Time Tombs whom the Church hunts from world to world."
+            )],
             published: 4, owned: 4, read: 2, readBetween: (130, 64), readingSince: 2,
             listeningProgress: 46, rating: 5, slug: "hyperion-audio", firstPublishedIn: 1989
         ),
@@ -278,6 +285,7 @@ enum Showcase {
             media: saga.media,
             publisher: saga.publisher,
             firstPublishedIn: saga.firstPublishedIn.map { $0 + (number - 1) / 3 },
+            synopsis: saga.synopses[number],
             genre: saga.genre,
             subgenres: saga.subgenres,
             pageCount: saga.pages,

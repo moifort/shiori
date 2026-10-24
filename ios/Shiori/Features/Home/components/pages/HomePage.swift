@@ -58,9 +58,13 @@ struct HomePage: View {
     /// A phone or the folded Duo: the discoveries open the page as a carousel.
     var isCompact = false
     var today: Date = .now
-    /// Whether the carousel has been scrolled off the top: the screen shows its
-    /// bar's title and buttons only then.
-    var onCarouselScrolledAway: (Bool) -> Void = { _ in }
+    /// Whether the bar's title and buttons are called for over the carousel:
+    /// hidden at the top and while the reader scrolls down, called back as
+    /// soon as they scroll up, as Safari brings its bar back.
+    var onBarCalled: (Bool) -> Void = { _ in }
+    /// Whether the page has left the top: the bar's blur comes in then, so the
+    /// rows never run under the status bar bare.
+    var onLeftTop: (Bool) -> Void = { _ in }
     let onAction: (HomeAction) -> Void
 
     var body: some View {
@@ -110,10 +114,19 @@ struct HomePage: View {
                 .padding(.bottom, 32)
             }
         }
-        .onScrollGeometryChange(for: Bool.self) { geometry in
-            geometry.contentOffset.y + geometry.contentInsets.top > 80
-        } action: { _, scrolledAway in
-            onCarouselScrolledAway(scrolledAway)
+        .onScrollGeometryChange(for: CGFloat.self) { geometry in
+            geometry.contentOffset.y + geometry.contentInsets.top
+        } action: { old, offset in
+            // At the top, or bouncing back into it, the bar stays away; past
+            // it, a few points either way say which way the reader is going.
+            onLeftTop(offset > 80)
+            if offset <= 80 {
+                onBarCalled(false)
+            } else if offset < old - 4 {
+                onBarCalled(true)
+            } else if offset > old + 4 {
+                onBarCalled(false)
+            }
         }
         .background(Color(.systemGroupedBackground))
     }
@@ -154,13 +167,25 @@ struct HomePage: View {
                 RowHeader(title: "En cours", detail: String(localized: "tout voir"), style: headerStyle) {
                     onAction(.showLibrary(LibraryRequest(filter: .status(.reading))))
                 }
-                ReadingLeadCard(
-                    book: lead,
-                    caption: Self.startedCaption(lead),
-                    onOpen: { onAction(.openBook(lead)) },
-                    onFinish: { onAction(.finishBook(lead)) },
-                    onRate: { onAction(.rateBook(lead)) }
-                )
+                // A phone heads the row with the TV app's card; the open Duo
+                // keeps the compact one, the others lined up under it.
+                if isCompact {
+                    ReadingFeatureCard(
+                        book: lead,
+                        caption: Self.startedCaption(lead),
+                        onOpen: { onAction(.openBook(lead)) },
+                        onFinish: { onAction(.finishBook(lead)) },
+                        onRate: { onAction(.rateBook(lead)) }
+                    )
+                } else {
+                    ReadingLeadCard(
+                        book: lead,
+                        caption: Self.startedCaption(lead),
+                        onOpen: { onAction(.openBook(lead)) },
+                        onFinish: { onAction(.finishBook(lead)) },
+                        onRate: { onAction(.rateBook(lead)) }
+                    )
+                }
                 // The others under it on the open Duo; a phone keeps to the lead.
                 if !isCompact, dashboard.reading.count > 1 {
                     CoverRow(

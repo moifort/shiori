@@ -60,6 +60,16 @@ fragment DashboardBookCard on DashboardBook {
   addedAt
   startedAt
   finishedAt
+  series {
+    id
+    name
+    volume
+    kind
+  }
+  genre
+  pageCount
+  durationMinutes
+  synopsis
 }
 
 # What the reader's genres say about their tastes: the page the genre card opens.

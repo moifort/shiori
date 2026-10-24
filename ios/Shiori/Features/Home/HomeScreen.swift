@@ -39,9 +39,12 @@ struct HomeScreen: View {
     @State private var kindleSync = KindleBackgroundSync.shared
     /// The wait onboarding hands over to, drawn in place of the dashboard.
     @State private var preparation = LibraryPreparation.shared
-    /// Whether the discoveries' carousel has been scrolled off the top: the
-    /// bar stays empty over it until then, as in the TV app.
-    @State private var carouselScrolledAway = false
+    /// Whether the bar shows its title and buttons over a page that opens on
+    /// the discoveries' carousel: empty at the top and while scrolling down,
+    /// called back by scrolling up.
+    @State private var barCalled = false
+    /// Whether that page has left the top, where the bar's blur stays away.
+    @State private var leftTop = false
 
     init(
         onShowSeries: @escaping (SeriesRequest) -> Void,
@@ -132,9 +135,10 @@ struct HomeScreen: View {
             .toolbar {
                 ToolbarItem(placement: .principal) { Text(verbatim: "").accessibilityHidden(true) }
                 if showsCarousel {
-                    // Over the carousel the bar is empty; scrolled, it names
-                    // the page on the left and holds the buttons on the right.
-                    if carouselScrolledAway {
+                    // Over the carousel the bar is empty; scrolling back up
+                    // calls it, the page's name on the left and the buttons
+                    // on the right.
+                    if barCalled {
                         ToolbarItem(placement: .topBarLeading) {
                             Text("Accueil")
                                 .font(.title2.weight(.bold))
@@ -151,8 +155,9 @@ struct HomeScreen: View {
                     trailingButtons
                 }
             }
-            // Nothing for the bar's blur to sit under while it is empty.
-            .scrollEdgeEffectHidden(showsCarousel && !carouselScrolledAway, for: .top)
+            // No blur over the carousel; past it, the blur keeps the rows off
+            // the status bar, whether the bar's buttons are called or not.
+            .scrollEdgeEffectHidden(showsCarousel && !leftTop, for: .top)
             // The first time only: after that, writes made anywhere
             // arrive through the change notice below.
             .task { await viewModel.loadOnAppear() }
@@ -265,9 +270,13 @@ struct HomeScreen: View {
                     discoveries: viewModel.discoveries,
                     isSideBySide: isSplit && detail == nil,
                     isCompact: !isSplit,
-                    onCarouselScrolledAway: { scrolledAway in
-                        guard scrolledAway != carouselScrolledAway else { return }
-                        withAnimation(.smooth(duration: 0.25)) { carouselScrolledAway = scrolledAway }
+                    onBarCalled: { called in
+                        guard called != barCalled else { return }
+                        withAnimation(.smooth(duration: 0.25)) { barCalled = called }
+                    },
+                    onLeftTop: { left in
+                        guard left != leftTop else { return }
+                        leftTop = left
                     }
                 ) { action in
                     switch action {

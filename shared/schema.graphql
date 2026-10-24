@@ -1140,7 +1140,7 @@ type Dashboard {
 }
 
 """
-A book as a dashboard tile draws it: a cover and two lines, nothing more.
+A book as a dashboard tile draws it: a cover and two lines, and for a book being read what the "En cours" card says of it.
 """
 type DashboardBook {
   """The day it was shelved: what the pile is dated by."""
@@ -1149,16 +1149,29 @@ type DashboardBook {
 
   """Null without a photo or a published cover; draw the placeholder."""
   coverUrl: CoverUrl
+
+  """A recording's length in minutes. Null on anything but an audiobook."""
+  durationMinutes: Int
   finishedAt: DateTime
   format: BookFormat!
+  genre: Genre
   id: BookId!
 
   """
   How far into the recording the Audible player last stopped, in whole percent. Null on anything but an audiobook the player opened.
   """
   listeningProgress: Percentage
+  pageCount: PageCount
   rating: StarRating
+
+  """Null for a standalone book."""
+  series: SeriesMembership
   startedAt: DateTime
+
+  """
+  Only on the books being read: null on the pile and the last book finished.
+  """
+  synopsis: Synopsis
   title: BookTitle!
 }
 
