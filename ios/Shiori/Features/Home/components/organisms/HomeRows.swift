@@ -275,8 +275,13 @@ struct PosterRow: View {
             }
             .clipShape(.rect(cornerRadius: Self.cornerRadius, style: .continuous))
             .mask {
+                // Eased from the middle of the cover to its foot: a short
+                // straight ramp showed where the blur began.
                 LinearGradient(
-                    stops: [.init(color: .clear, location: 0.55), .init(color: .black, location: 0.8)],
+                    stops: (0...10).map { step in
+                        let t = Double(step) / 10
+                        return .init(color: .black.opacity(t * t * (3 - 2 * t)), location: 0.4 + 0.52 * t)
+                    },
                     startPoint: .top,
                     endPoint: .bottom
                 )
