@@ -7,11 +7,13 @@ import SwiftUI
 /// dark neutral ground.
 struct CoverBackdrop: View {
     let url: URL?
+    /// How tall the fade into the page is.
+    var fadeHeight: CGFloat = Self.fadeHeight
     /// What the foot fades into: the page the hero opens.
     var ground: Color = Color(.systemGroupedBackground)
 
-    /// How tall the fade into the page is: a hero leaves this much under its
-    /// last line.
+    /// How tall the fade into the page is by default: a hero leaves this much
+    /// under its last line.
     static let fadeHeight: CGFloat = 36
 
     var body: some View {
@@ -38,10 +40,11 @@ struct CoverBackdrop: View {
                     endPoint: .bottom
                 )
             }
-            // Into the page at the very foot only, under the hero's buttons.
+            // Into the page at the foot, eased at both ends so the colours melt
+            // into it rather than stop at a line.
             .overlay(alignment: .bottom) {
-                LinearGradient(colors: [.clear, ground], startPoint: .top, endPoint: .bottom)
-                    .frame(height: Self.fadeHeight)
+                LinearGradient(gradient: easedFade, startPoint: .top, endPoint: .bottom)
+                    .frame(height: fadeHeight)
             }
             .clipped()
             // Scaled up for the blur, the image's hit area runs far past the
@@ -50,6 +53,15 @@ struct CoverBackdrop: View {
             // Small and blurred: no need to decode the cover at full size.
             .environment(\.coverMaxPixelSize, 120)
             .accessibilityHidden(true)
+    }
+
+    /// Clear to the page along a smoothstep curve: a straight ramp shows its
+    /// two ends as lines.
+    private var easedFade: Gradient {
+        Gradient(stops: (0...12).map { step in
+            let t = Double(step) / 12
+            return .init(color: ground.opacity(t * t * (3 - 2 * t)), location: t)
+        })
     }
 }
 

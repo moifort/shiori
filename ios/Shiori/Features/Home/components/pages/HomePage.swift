@@ -34,9 +34,11 @@ enum HomeAction {
 /// and all. Stateless: the coordinator hands it the figures and receives the
 /// taps.
 ///
-/// Laid wide on the Duo's inner screen with nothing open beside it, the rows
-/// stand in two columns under a hero that shows the month's other discoveries
-/// too; on a phone, the Duo folded, or beside a detail, one column.
+/// On a phone or the folded Duo, the month's discoveries open the page as the
+/// TV app's carousel, one page each under empty bars. Laid wide on the Duo's
+/// inner screen with nothing open beside it, the rows stand in two columns
+/// under a hero that shows the month's other discoveries too; beside a detail,
+/// one column under the same hero.
 struct HomePage: View {
     let dashboard: Dashboard
     /// The volumes just out, the newest first, then the next one announced of
@@ -48,19 +50,32 @@ struct HomePage: View {
     var discoveries: MonthlyDiscoveries?
     /// Whether the page has the Duo's inner screen to itself.
     var isSideBySide = false
+    /// A phone or the folded Duo: the discoveries open the page as a carousel.
+    var isCompact = false
     var today: Date = .now
+    /// Whether the carousel has been scrolled off the top: the screen shows its
+    /// bar's title and buttons only then.
+    var onCarouselScrolledAway: (Bool) -> Void = { _ in }
     let onAction: (HomeAction) -> Void
 
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                HomeHero(
-                    discoveries: shownDiscoveries,
-                    date: today,
-                    isWide: isSideBySide,
-                    onOpen: { onAction(.openDiscovery($0)) },
-                    onShowAll: { onAction(.showDiscover) }
-                )
+                if showsCarousel {
+                    HomeDiscoveryCarousel(
+                        discoveries: shownDiscoveries,
+                        onOpen: { onAction(.openDiscovery($0)) },
+                        onShowAll: { onAction(.showDiscover) }
+                    )
+                } else {
+                    HomeHero(
+                        discoveries: shownDiscoveries,
+                        date: today,
+                        isWide: isSideBySide,
+                        onOpen: { onAction(.openDiscovery($0)) },
+                        onShowAll: { onAction(.showDiscover) }
+                    )
+                }
                 VStack(alignment: .leading, spacing: 30) {
                     if dashboard.libraryIsEmpty {
                         scanPrompt
@@ -85,16 +100,24 @@ struct HomePage: View {
                     seriesRow
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 14)
+                .padding(.top, showsCarousel ? 24 : 14)
                 .padding(.bottom, 32)
             }
+        }
+        .onScrollGeometryChange(for: Bool.self) { geometry in
+            geometry.contentOffset.y + geometry.contentInsets.top > 80
+        } action: { _, scrolledAway in
+            onCarouselScrolledAway(scrolledAway)
         }
         .background(Color(.systemGroupedBackground))
     }
 
     private var shownDiscoveries: [Suggestion] {
-        guard let discoveries, discoveries.status == .ready else { return [] }
-        return discoveries.suggestions
+        discoveries?.shownOnHome ?? []
+    }
+
+    private var showsCarousel: Bool {
+        isCompact && !shownDiscoveries.isEmpty
     }
 
     // MARK: - Figures
@@ -329,6 +352,14 @@ struct HomePage: View {
     }
 }
 
+extension MonthlyDiscoveries {
+    /// What the home screen's hero shows: nothing until the month's choice is
+    /// ready.
+    var shownOnHome: [Suggestion] {
+        status == .ready ? suggestions : []
+    }
+}
+
 extension Dashboard {
     static let preview = Dashboard(
         currentYear: 2026,
@@ -400,6 +431,12 @@ extension Dashboard {
 #Preview("With data") {
     NavigationStack {
         HomePage(dashboard: .preview, discoveries: .preview) { _ in }
+    }
+}
+
+#Preview("Phone") {
+    NavigationStack {
+        HomePage(dashboard: .preview, discoveries: .preview, isCompact: true) { _ in }
     }
 }
 

@@ -8321,6 +8321,22 @@
         }
       }
     },
+    "Page %lld sur %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Page %1$lld of %2$lld"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Page %1$lld sur %2$lld"
+          }
+        }
+      }
+    },
     "Pages" : {
       "localizations" : {
         "en" : {

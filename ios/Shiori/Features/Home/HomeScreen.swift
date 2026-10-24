@@ -39,6 +39,9 @@ struct HomeScreen: View {
     @State private var kindleSync = KindleBackgroundSync.shared
     /// The wait onboarding hands over to, drawn in place of the dashboard.
     @State private var preparation = LibraryPreparation.shared
+    /// Whether the discoveries' carousel has been scrolled off the top: the
+    /// bar stays empty over it until then, as in the TV app.
+    @State private var carouselScrolledAway = false
 
     init(
         onShowSeries: @escaping (SeriesRequest) -> Void,
@@ -128,35 +131,68 @@ struct HomeScreen: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) { Text(verbatim: "").accessibilityHidden(true) }
-                ToolbarItem(placement: .topBarLeading) {
-                    Button { showSearch = true } label: {
-                        Label("Rechercher", systemImage: "magnifyingglass")
-                    }
-                    .labelStyle(.iconOnly)
-                    .accessibilityIdentifier("home-search")
-                }
-                if isAdmin {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        ToolbarIconButton(title: "Admin", systemImage: "shield") {
-                            showAdmin = true
+                if showsCarousel {
+                    // Over the carousel the bar is empty; scrolled, it names
+                    // the page on the left and holds the buttons on the right.
+                    if carouselScrolledAway {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Text("Accueil")
+                                .font(.title2.weight(.bold))
+                                .fixedSize()
+                                .accessibilityHidden(true)
                         }
-                        .accessibilityIdentifier("home-admin")
+                        .sharedBackgroundVisibility(.hidden)
+                        ToolbarItem(placement: .topBarTrailing) { searchButton }
+                        ToolbarSpacer(.fixed, placement: .topBarTrailing)
+                        trailingButtons
                     }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    // The settings hold the account, the subscription and the
-                    // connected sources: managing a linked Audible account is
-                    // a setting, not an import, and lives there.
-                    Button { showSettings = true } label: {
-                        Label("Réglages", systemImage: "gearshape")
-                    }
-                    .labelStyle(.iconOnly)
-                    .accessibilityIdentifier("home-settings")
+                } else {
+                    ToolbarItem(placement: .topBarLeading) { searchButton }
+                    trailingButtons
                 }
             }
+            // Nothing for the bar's blur to sit under while it is empty.
+            .scrollEdgeEffectHidden(showsCarousel && !carouselScrolledAway, for: .top)
             // The first time only: after that, writes made anywhere
             // arrive through the change notice below.
             .task { await viewModel.loadOnAppear() }
+    }
+
+    private var searchButton: some View {
+        Button { showSearch = true } label: {
+            Label("Rechercher", systemImage: "magnifyingglass")
+        }
+        .labelStyle(.iconOnly)
+        .accessibilityIdentifier("home-search")
+    }
+
+    @ToolbarContentBuilder
+    private var trailingButtons: some ToolbarContent {
+        if isAdmin {
+            ToolbarItem(placement: .topBarTrailing) {
+                ToolbarIconButton(title: "Admin", systemImage: "shield") {
+                    showAdmin = true
+                }
+                .accessibilityIdentifier("home-admin")
+            }
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+            // The settings hold the account, the subscription and the
+            // connected sources: managing a linked Audible account is
+            // a setting, not an import, and lives there.
+            Button { showSettings = true } label: {
+                Label("Réglages", systemImage: "gearshape")
+            }
+            .labelStyle(.iconOnly)
+            .accessibilityIdentifier("home-settings")
+        }
+    }
+
+    /// Whether the page opens on the discoveries' carousel: on a phone or the
+    /// folded Duo, once the month's choice is ready.
+    private var showsCarousel: Bool {
+        !isSplit && !preparation.isActive && viewModel.dashboard != nil
+            && !(viewModel.discoveries?.shownOnHome.isEmpty ?? true)
     }
 
     /// Whether a detail opens beside the dashboard: the Duo's inner screen.
@@ -227,7 +263,12 @@ struct HomeScreen: View {
                     releases: viewModel.releases,
                     friendFavorites: viewModel.friendFavorites,
                     discoveries: viewModel.discoveries,
-                    isSideBySide: isSplit && detail == nil
+                    isSideBySide: isSplit && detail == nil,
+                    isCompact: !isSplit,
+                    onCarouselScrolledAway: { scrolledAway in
+                        guard scrolledAway != carouselScrolledAway else { return }
+                        withAnimation(.smooth(duration: 0.25)) { carouselScrolledAway = scrolledAway }
+                    }
                 ) { action in
                     switch action {
                     case let .showLibrary(request): onShowLibrary(request)
