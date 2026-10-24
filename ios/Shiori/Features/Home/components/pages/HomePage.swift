@@ -60,8 +60,9 @@ struct HomePage: View {
     var isCompact = false
     var today: Date = .now
     /// Whether the bar's title and buttons are called for over the carousel:
-    /// hidden at the top and while the reader scrolls down, called back as
-    /// soon as they scroll up, as Safari brings its bar back.
+    /// hidden as the page opens and while the reader scrolls down, called back
+    /// as soon as they scroll up, as Safari brings its bar back, and kept once
+    /// they are back at the top.
     var onBarCalled: (Bool) -> Void = { _ in }
     /// Whether the page has left the top: the bar's blur comes in then, so the
     /// rows never run under the status bar bare.
@@ -122,11 +123,13 @@ struct HomePage: View {
             // At the top, or bouncing back into it, the bar stays away; past
             // it, a few points either way say which way the reader is going.
             onLeftTop(offset > 80)
-            if offset <= 80 {
-                onBarCalled(false)
-            } else if offset < old - 4 {
+            // Scrolling up calls the bar, all the way back to the top, where
+            // it stays; scrolling down past the top sends it away. The bounce
+            // above the top says nothing about where the reader is going.
+            guard offset >= 0, old >= 0 else { return }
+            if offset < old - 4 {
                 onBarCalled(true)
-            } else if offset > old + 4 {
+            } else if offset > old + 4, offset > 80 {
                 onBarCalled(false)
             }
         }
