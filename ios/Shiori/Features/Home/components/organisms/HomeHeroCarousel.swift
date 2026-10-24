@@ -55,8 +55,8 @@ struct HomeHeroCarousel: View {
     /// a check to say so before the line moves on.
     @State private var taken: Set<Suggestion.ID> = []
 
-    /// How tall the carousel stands.
-    static let height: CGFloat = 490
+    /// How tall the carousel stands: room for three lines of why.
+    static let height: CGFloat = 508
     /// How far each backdrop runs up past its page, under the bars and the
     /// status bar.
     private static let backdropRise: CGFloat = 400
@@ -244,7 +244,7 @@ struct HomeHeroCarousel: View {
                         Text(reason)
                             .font(.footnote)
                             .foregroundStyle(.white.opacity(0.65))
-                            .lineLimit(2)
+                            .lineLimit(3)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.top, 6)
                     }

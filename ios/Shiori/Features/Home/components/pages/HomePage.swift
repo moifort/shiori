@@ -94,7 +94,7 @@ struct HomePage: View {
                     if !dashboard.libraryIsEmpty {
                         figures
                             .environment(\.colorScheme, .dark)
-                            .padding(.horizontal, 20)
+                            .padding(.horizontal, 24)
                             .padding(.top, 6)
                             .padding(.bottom, 12)
                             .zIndex(1)

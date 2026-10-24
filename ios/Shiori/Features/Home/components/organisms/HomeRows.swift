@@ -33,19 +33,23 @@ struct HomeFiguresLine: View {
         .accessibilityIdentifier("home-figures")
     }
 
-    /// The columns and the hairlines between them: spread across the width,
-    /// edge to edge with the hairline in the middle of each gap, or each set
-    /// to its content with a margin when the line scrolls.
+    /// The columns and the hairlines between them: spread across the width
+    /// with the free room shared out evenly, the outer columns keeping half a
+    /// gap from the edges so the line breathes, the hairline in the middle of
+    /// each gap; or each set to its content with a margin when the line
+    /// scrolls.
     private func columns(spread: Bool) -> some View {
         HStack(spacing: 0) {
+            if spread { Spacer(minLength: 0) }
             ForEach(Array(items.enumerated()), id: \.offset) { index, item in
                 if index > 0 {
-                    if spread { Spacer(minLength: 10) }
+                    if spread { Spacer(minLength: 6) }
                     Divider().frame(height: 30)
-                    if spread { Spacer(minLength: 10) }
+                    if spread { Spacer(minLength: 6) }
                 }
                 column(item).padding(.horizontal, spread ? 0 : 16)
             }
+            if spread { Spacer(minLength: 0) }
         }
     }
 
