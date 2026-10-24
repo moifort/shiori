@@ -14,12 +14,15 @@ struct InteractiveStarRating: View {
     /// already stored: the API merges the fields it receives and has no way to
     /// express "erase this one", so an unset would silently do nothing.
     var allowsUnset: Bool = true
+    /// Grows the stars past their standard size, where the rating is the
+    /// whole of a screen.
+    var scale: CGFloat = 1
 
     /// The rating under the finger, drawn while it is down.
     @State private var pending: Double?
     @Environment(\.layoutDirection) private var layoutDirection
 
-    private static let starWidth: CGFloat = 44
+    private var starWidth: CGFloat { 44 * scale }
 
     private var shown: Double { pending ?? rating }
 
@@ -29,10 +32,10 @@ struct InteractiveStarRating: View {
                 let symbol = StarSymbol(star: star, rating: shown)
                 Image(systemName: symbol.name)
                     .foregroundStyle(symbol == .empty ? .gray.opacity(0.4) : .yellow)
-                    .font(.title)
+                    .font(scale == 1 ? .title : .system(size: 28 * scale))
                     .scaleEffect(Double(star) == shown.rounded(.up) ? 1.15 : 1.0)
                     .animation(.spring(duration: 0.2), value: shown)
-                    .frame(width: Self.starWidth, height: Self.starWidth)
+                    .frame(width: starWidth, height: starWidth)
             }
         }
         .contentShape(Rectangle())
@@ -63,9 +66,9 @@ struct InteractiveStarRating: View {
     /// The rating a point of the row stands for: the half star it falls in,
     /// one star at the least.
     private func stars(at x: CGFloat) -> Double {
-        let width = Self.starWidth * CGFloat(total)
+        let width = starWidth * CGFloat(total)
         let along = layoutDirection == .rightToLeft ? width - x : x
-        let halves = (along / (Self.starWidth / 2)).rounded(.up)
+        let halves = (along / (starWidth / 2)).rounded(.up)
         return min(Double(total), max(1, Double(halves) / 2))
     }
 }
