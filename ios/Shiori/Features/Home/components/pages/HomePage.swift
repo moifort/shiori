@@ -195,6 +195,10 @@ struct HomePage: View {
             pull = pulled
         }
         .background(Color(.systemGroupedBackground))
+        // A refresh is assigned inside an animation: every figure and caption
+        // it changes — a count, the hours listened, how far into the book
+        // being heard — rolls to its new value, so the reader sees what moved.
+        .contentTransition(.numericText())
     }
 
     private var shownDiscoveries: [Suggestion] {

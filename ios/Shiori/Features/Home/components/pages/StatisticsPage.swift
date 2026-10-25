@@ -35,6 +35,8 @@ struct StatisticsPage: View {
             .padding(.bottom, 24)
         }
         .background(Color(.systemGroupedBackground))
+        // The figures roll to their new values when a refresh lands.
+        .contentTransition(.numericText())
         .navigationTitle("Statistiques")
         .navigationBarTitleDisplayMode(.inline)
     }
