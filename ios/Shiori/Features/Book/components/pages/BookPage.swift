@@ -98,42 +98,42 @@ struct BookPage: View {
         BookHero(book: book, state: .reading(of: book), isAwaited: !awaited.isEmpty) {
             // Icons dropped before a label is cut, on a narrow phone.
             ViewThatFits(in: .horizontal) {
-                heroButtons.labelStyle(.titleAndIcon)
-                heroButtons.labelStyle(.titleOnly)
+                heroButtons(showsIcons: true)
+                heroButtons(showsIcons: false)
             }
         }
         .sensoryFeedback(.success, trigger: book.status)
     }
 
-    /// The next step white, the rating and the reader's remarks on glass, as
-    /// small as the home's card sets them. A book read waits for the reader's
+    /// The next step white, the rating and the reader's remarks on glass, set
+    /// as Apple Music sets "Lecture" and "Aléatoire": subheadline semibold,
+    /// the symbol at the text's own size and weight, a tight gap between
+    /// them, every button the same height. A book read waits for the reader's
     /// word on it, not for a next state: reading it again clears the day it
     /// was finished, a choice made in the menu, not here.
-    private var heroButtons: some View {
+    private func heroButtons(showsIcons: Bool) -> some View {
         GlassEffectContainer(spacing: 8) {
             HStack(spacing: 8) {
                 if let step = NextStep(status: book.status) {
-                    primaryButton(step)
-                    ratingButton(prominent: false)
+                    primaryButton(step, showsIcon: showsIcons)
+                    ratingButton(prominent: false, showsIcon: showsIcons)
                 } else {
-                    ratingButton(prominent: book.rating == nil)
+                    ratingButton(prominent: book.rating == nil, showsIcon: showsIcons)
                 }
-                noteButton
+                noteButton(showsIcon: showsIcons)
             }
-            .font(.footnote.weight(.semibold))
-            .lineLimit(1)
+            .font(.subheadline.weight(.semibold))
             .controlSize(.regular)
         }
         .fixedSize()
     }
 
     /// The next step the book is waiting for.
-    private func primaryButton(_ step: NextStep) -> some View {
+    private func primaryButton(_ step: NextStep, showsIcon: Bool) -> some View {
         Button {
             onSetStatus(step.status)
         } label: {
-            Label(step.title, systemImage: step.systemImage)
-                .fixedSize()
+            HeroButtonLabel(title: step.title, systemImage: step.systemImage, showsIcon: showsIcon)
         }
         .buttonStyle(.glassProminent)
         .tint(.white)
@@ -144,14 +144,13 @@ struct BookPage: View {
     /// The stars once given, else the way to give them. The saga's stars lent
     /// to a volume are not drawn here: grey on glass they read as five empty
     /// stars, and the button's work is to rate this book.
-    private func ratingButton(prominent: Bool) -> some View {
+    private func ratingButton(prominent: Bool, showsIcon: Bool) -> some View {
         let label = Group {
             if let rating = book.rating {
-                RatingStars(rating: rating, font: .caption)
-                    .padding(.vertical, 2)
+                RatingStars(rating: rating, font: .footnote)
+                    .frame(height: HeroButtonLabel.height)
             } else {
-                Label("Noter", systemImage: "star")
-                    .fixedSize()
+                HeroButtonLabel(title: "Noter", systemImage: "star", showsIcon: showsIcon)
             }
         }
         return Group {
@@ -170,10 +169,9 @@ struct BookPage: View {
 
     /// The reader's remarks on the book, whatever its status: what they
     /// thought of it so far, or once read.
-    private var noteButton: some View {
+    private func noteButton(showsIcon: Bool) -> some View {
         Button(action: onEditNote) {
-            Label("Remarques", systemImage: "text.bubble")
-                .fixedSize()
+            HeroButtonLabel(title: "Remarques", systemImage: "text.bubble", showsIcon: showsIcon)
         }
         .buttonStyle(.glass)
         .accessibilityIdentifier("book-hero-note")
@@ -425,6 +423,33 @@ struct NextStep: Equatable {
         case .dropped:
             (title, systemImage, self.status) = ("Reprendre", "arrow.uturn.backward", .reading)
         }
+    }
+}
+
+/// A hero button's label: the symbol in the text's own font, so a checkmark,
+/// a star and a bubble stand at one size and weight beside their words, six
+/// points from them — `Label` in a glass button leaves a wider gap than
+/// Apple's own buttons do — and one height whatever the symbol.
+private struct HeroButtonLabel: View {
+    let title: LocalizedStringKey
+    let systemImage: String
+    var showsIcon = true
+
+    /// The label's height, which the stars match.
+    static let height: CGFloat = 20
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if showsIcon {
+                Image(systemName: systemImage)
+                    .imageScale(.medium)
+                    .accessibilityHidden(true)
+            }
+            Text(title)
+        }
+        .lineLimit(1)
+        .fixedSize()
+        .frame(height: Self.height)
     }
 }
 
