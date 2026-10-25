@@ -97,8 +97,8 @@ enum ReleaseDateText {
 /// One square whatever it says, so the badges line up down a list.
 struct ReleaseDateBadge: View {
     let date: String
-    /// On Liquid Glass, in white with the month dimmed over a soft inner
-    /// glow, ringed in white: over a card's own colours.
+    /// Over a card's own colours: in white with the month dimmed, on a
+    /// plain blur ringed in white.
     var onGlass = false
 
     var body: some View {
@@ -120,17 +120,7 @@ struct ReleaseDateBadge: View {
         if onGlass {
             leaf
                 .foregroundStyle(.white)
-                .background {
-                    // A soft glow inside the leaf, behind the date.
-                    RadialGradient(
-                        colors: [.white.opacity(0.28), .clear],
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: 30
-                    )
-                    .clipShape(.rect(cornerRadius: 10))
-                }
-                .glassEffect(.regular, in: .rect(cornerRadius: 10))
+                .background(.ultraThinMaterial, in: .rect(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white, lineWidth: 1))
         } else {
             leaf.overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary))
@@ -142,11 +132,13 @@ struct ReleaseDateBadge: View {
         return (1...12).contains(number) ? symbols[number - 1] : ""
     }
 
-    /// The months cut to three letters without their dot, so they breathe in
+    /// The months in capitals, cut to three letters without their dot, so they breathe in
     /// the glass leaf — four where three would read as another month
     /// ("juin", "juil").
     private static let clippedMonths: [String] = {
-        let bare = Calendar.current.shortMonthSymbols.map { $0.replacingOccurrences(of: ".", with: "") }
+        let bare = Calendar.current.shortMonthSymbols.map {
+            $0.replacingOccurrences(of: ".", with: "").localizedUppercase
+        }
         let three = bare.map { String($0.prefix(3)) }
         return bare.indices.map { index in
             three.filter { $0 == three[index] }.count > 1 ? String(bare[index].prefix(4)) : three[index]
