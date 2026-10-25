@@ -239,7 +239,8 @@ const AUDIBLE_DOMAINS: Partial<Record<BookLanguage, string>> = {
  *  on Audible once its ASIN is confirmed, else a search for its title and
  *  author on that store, out or still announced; a printed edition's page on
  *  Amazon, reached by the ISBN-10 Amazon files it under or else searched by its
- *  ISBN, nothing without one. */
+ *  ISBN, and searched by its title and author among books while no ISBN is
+ *  known — an edition announced often has none yet. */
 export const storeUrlOf = (
   format: ReleaseFormat,
   language: BookLanguage,
@@ -254,7 +255,12 @@ export const storeUrlOf = (
     return `https://www.${domain}/search?keywords=${encodeURIComponent(keywords)}`
   }
   const store = AMAZON_STORES[language]
-  if (!found.isbn13 || !store) return undefined
+  if (!store) return undefined
+  if (!found.isbn13) {
+    const keywords = [found.title, author].filter(Boolean).join(' ')
+    if (!keywords) return undefined
+    return `https://www.${store}/s?${new URLSearchParams({ k: keywords, i: 'stripbooks' })}`
+  }
   const isbn10 = isbn10Of(found.isbn13)
   return isbn10 ? `https://www.${store}/dp/${isbn10}` : `https://www.${store}/s?k=${found.isbn13}`
 }

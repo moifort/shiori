@@ -107,7 +107,7 @@ extension AwaitedEdition {
         authors: ["Matt Dinniman"],
         date: "2026-11-05",
         coverURL: nil,
-        storeURL: nil,
+        storeURL: URL(string: "https://www.audible.fr/search?keywords=Op%C3%A9ration%20Bounce%20House%20Matt%20Dinniman"),
         awaitedAt: .now.addingTimeInterval(-3 * 86400),
         bookId: "book",
         ownerId: "me"

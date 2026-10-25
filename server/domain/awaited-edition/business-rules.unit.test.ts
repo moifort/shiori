@@ -287,4 +287,11 @@ describe('storeUrlOf', () => {
       'https://www.amazon.fr/dp/2226488170',
     )
   })
+
+  test('searches a printed edition with no ISBN yet by its title and author among books', () => {
+    expect(storeUrlOf('book', 'fr', { title: 'Vent et vérité' }, 'Brandon Sanderson')).toBe(
+      'https://www.amazon.fr/s?k=Vent+et+v%C3%A9rit%C3%A9+Brandon+Sanderson&i=stripbooks',
+    )
+    expect(storeUrlOf('book', 'fr', {})).toBeUndefined()
+  })
 })
