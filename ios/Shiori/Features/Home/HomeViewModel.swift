@@ -59,6 +59,11 @@ final class HomeViewModel {
     /// The server has answered at least once, so what is on screen is no
     /// longer the snapshot.
     private var loaded = false
+    /// The server has told the month's discoveries at least once. Until then
+    /// the selection is not known to be missing — a snapshot on disk may be
+    /// last month's — so none is asked for: the dashboard often arrives
+    /// before the discoveries are read.
+    private var discoveriesRead = false
 
     /// The last dashboard on disk. Bump the version whenever `Dashboard`
     /// changes shape.
@@ -151,6 +156,7 @@ final class HomeViewModel {
     /// known to hold books.
     func loadDiscoveries() async {
         guard let found = try? await client.discoveries() else { return }
+        discoveriesRead = true
         show(found)
         await lookUpDiscoveriesIfDue()
     }
@@ -161,7 +167,7 @@ final class HomeViewModel {
     /// one selection a month per reader, never twice a day, whoever asks, so
     /// the home's look costs the model nothing Découvrir's would not have.
     func lookUpDiscoveriesIfDue() async {
-        guard !isLookingUpDiscoveries, let dashboard, !dashboard.libraryIsEmpty,
+        guard !isLookingUpDiscoveries, discoveriesRead, let dashboard, !dashboard.libraryIsEmpty,
             Self.selectionIsDue(discoveries)
         else { return }
         isLookingUpDiscoveries = true
