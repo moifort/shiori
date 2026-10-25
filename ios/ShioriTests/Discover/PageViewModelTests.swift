@@ -114,6 +114,32 @@ struct AwaitedEditionViewModelTests {
 }
 
 @MainActor
+struct AwaitedEditionAdditionTests {
+    @Test func theEditionGoesOnThePileAsShown() async {
+        let calls = Calls()
+        var client = DiscoverClient.preview
+        client.addBook = { draft in calls.record("\(draft.title) \(draft.format) \(draft.status)") }
+        let viewModel = AwaitedEditionViewModel(edition: .preview, client: client)
+
+        await viewModel.add()
+
+        #expect(viewModel.added)
+        #expect(calls.all == ["\(AwaitedEdition.preview.title) \(AwaitedEdition.preview.cover.format) toRead"])
+    }
+
+    @Test func aRefusalSaysWhyAndAddsNothing() async {
+        var client = DiscoverClient.preview
+        client.addBook = { _ in throw APIError.domain(code: "BAD_USER_INPUT", messages: ["Refusé"]) }
+        let viewModel = AwaitedEditionViewModel(edition: .preview, client: client)
+
+        await viewModel.add()
+
+        #expect(viewModel.added == false)
+        #expect(viewModel.addFailed != nil)
+    }
+}
+
+@MainActor
 struct AwaitedEditionSagaTests {
     @Test func theCopysSagaHeadsTheEditionAndFillsTheRow() async {
         var client = DiscoverClient.preview

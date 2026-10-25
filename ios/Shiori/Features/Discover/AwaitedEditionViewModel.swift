@@ -31,6 +31,10 @@ final class AwaitedEditionViewModel {
     }
     var isDescribing: Bool { describer.isDescribing }
 
+    private(set) var added = false
+    /// Why the addition failed, for the alert; nil once read.
+    var addFailed: String?
+
     func describe() async { await describer.describe(edition.seed) }
 
     /// The reader's copy, then its saga's row off the catalogue already
@@ -44,6 +48,18 @@ final class AwaitedEditionViewModel {
         withAnimation(.snappy) {
             self.series = series
             sagaVolumes = volumes
+        }
+    }
+
+    /// Onto the pile, as the page shows it, filed in the saga of the reader's
+    /// copy. Once held, the edition is no longer awaited: the server lets the
+    /// wait go on the next reading of the list.
+    func add() async {
+        do {
+            try await client.addBook(edition.draft(from: shown))
+            added = true
+        } catch {
+            addFailed = reportError(error)
         }
     }
 }

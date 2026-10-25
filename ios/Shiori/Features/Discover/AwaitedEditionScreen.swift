@@ -27,12 +27,15 @@ struct AwaitedEditionScreen: View {
             edition: viewModel.edition,
             shown: viewModel.shown,
             isDescribing: viewModel.isDescribing,
+            added: viewModel.added,
             sagaVolumes: viewModel.sagaVolumes,
             showsClose: closing.showsCloseButton
         ) { action in
             switch action {
             case .close:
                 dismiss()
+            case .add:
+                await viewModel.add()
             case .stopAwaiting:
                 onStop()
                 dismiss()
@@ -51,6 +54,14 @@ struct AwaitedEditionScreen: View {
         .navigationDestination(item: $openedSaga) { destination in
             SeriesScreen(seriesId: destination.seriesId)
                 .closesAsPushed()
+        }
+        .alert(
+            "Ajout impossible",
+            isPresented: .init(get: { viewModel.addFailed != nil }, set: { if !$0 { viewModel.addFailed = nil } })
+        ) {
+            Button("OK", role: .cancel) { viewModel.addFailed = nil }
+        } message: {
+            Text(viewModel.addFailed ?? "")
         }
     }
 }

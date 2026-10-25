@@ -3,6 +3,8 @@ import SwiftUI
 /// Everything an awaited edition's page can ask for.
 enum AwaitedEditionAction {
     case close
+    /// On the pile, filed in the saga of the reader's copy.
+    case add
     /// Given up, once confirmed: the page closes behind it.
     case stopAwaiting
     /// The reader's copy, or another of their volumes, in the saga's row.
@@ -22,6 +24,7 @@ struct AwaitedEditionPage: View {
     /// The edition once described, as a book's page draws it.
     let shown: Book
     let isDescribing: Bool
+    var added = false
     var sagaVolumes: [SeriesStripItem] = []
     /// False when the page is pushed: Back closes it, not a Close button.
     var showsClose = true
@@ -40,12 +43,14 @@ struct AwaitedEditionPage: View {
                 action: "Ne plus suivre"
             ),
             state: state,
+            isAdded: edition.isAddable ? added : nil,
             leadingTiles: originalTitleTile,
             sagaName: shown.series?.name,
             sagaVolumes: sagaVolumes,
             currentVolumeId: edition.bookId,
             showsClose: showsClose,
             onClose: { act(.close) },
+            onAdd: { await onAction(.add) },
             onToggleBell: { act(.stopAwaiting) },
             onOpenSaga: { if let id = shown.series?.id { act(.openSaga(id)) } },
             onOpenVolume: { act(.openVolume($0)) }
@@ -59,6 +64,7 @@ struct AwaitedEditionPage: View {
     /// Said on the detail line only when the calendar leaf does not say it:
     /// once out, or while nothing is announced.
     private var state: BookState? {
+        if added { return .addedToPile }
         if edition.state == .announced, let date = edition.date, ReleaseDateText.isUpcoming(date) { return nil }
         return BookState(text: edition.stateLine, tint: edition.stateTint ?? .gray)
     }

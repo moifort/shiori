@@ -167,6 +167,29 @@ extension AwaitedEdition {
         )
     }
 
+    /// Whether it can be put on the pile: once found, out or announced. An
+    /// edition nobody announced yet is no book to add.
+    var isAddable: Bool { state != .unannounced }
+
+    /// What adding it to the pile sends: the page as shown, described or not,
+    /// filed in the saga of the reader's copy. No language: the edition is
+    /// awaited in the app's, which the server takes when none is said.
+    func draft(from shown: Book) -> BookDraft {
+        var draft = BookDraft(title: shown.title, authors: shown.authors)
+        draft.format = format == .audiobook ? .audiobook : shown.format
+        draft.genre = shown.genre
+        draft.subgenres = shown.subgenres
+        draft.synopsis = shown.synopsis
+        draft.publisher = shown.publisher
+        draft.firstPublishedIn = shown.firstPublishedIn
+        draft.pageCount = shown.pageCount
+        draft.isbn13 = shown.isbn13
+        draft.series = shown.series
+        draft.coverURL = shown.coverURL
+        draft.status = .toRead
+        return draft
+    }
+
     /// The day it comes, while it is still to come: the calendar leaf in the
     /// corner of its page.
     var announcedDate: String? {
