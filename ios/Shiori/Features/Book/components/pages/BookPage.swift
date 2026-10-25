@@ -107,7 +107,14 @@ struct BookPage: View {
     // MARK: - Hero
 
     private var hero: some View {
-        BookHero(book: book, state: .reading(of: book), isAwaited: !awaited.isEmpty, onOpenAuthor: onOpenAuthor) {
+        // A book given up has no state on the detail line: the first button
+        // says "Abandonné".
+        BookHero(
+            book: book,
+            state: book.status == .dropped ? nil : .reading(of: book),
+            isAwaited: !awaited.isEmpty,
+            onOpenAuthor: onOpenAuthor
+        ) {
             // Sideways past the width, from edge to edge, rather than a
             // label cut or an icon dropped.
             ScrollView(.horizontal) {
