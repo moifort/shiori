@@ -20,12 +20,19 @@ enum BookAPI {
         return data.book?.fragments.bookDetail.asBook
     }
 
-    /// The volumes of a saga the reader holds, in the order it runs: the row
-    /// under a book's facts. Never the catalogue.
-    static func sagaVolumes(seriesId: String, language: BookLanguage?) async throws -> [Book] {
+    /// The volumes of a saga in the order it runs, for the row under a book's
+    /// facts: the reader's own, and the ones they lack when the saga's
+    /// catalogue already exists. Never builds one: that is a model call.
+    static func sagaVolumes(seriesId: String, language: BookLanguage?) async throws -> [SeriesStripItem] {
         #if DEBUG
         if Showcase.isOn {
-            return Showcase.seriesScreen(id: seriesId).owned
+            let screen = Showcase.seriesScreen(id: seriesId)
+            return SeriesStripItem.sagaRow(
+                owned: screen.owned,
+                spine: screen.series?.spine ?? [],
+                currentYear: Calendar.current.component(.year, from: .now),
+                language: language
+            )
         }
         #endif
         let data = try await GraphQLHelpers.fetch(
@@ -35,7 +42,16 @@ enum BookAPI {
                 language: SeriesAPI.graphQLLanguage(language)
             )
         )
-        return data.mySeriesVolumes.map { $0.fragments.bookSummary.asBook }
+        // A saga nobody catalogued answers with the reader's own volumes as
+        // its spine: nothing to add to them.
+        let catalogue = data.series.flatMap { $0.awaitingCatalogue ? nil : $0.fragments.catalogueSpine }
+        return SeriesStripItem.sagaRow(
+            owned: data.mySeriesVolumes.map { $0.fragments.bookSummary.asBook },
+            spine: catalogue?.spine.map(\.fragments.volumeEntry.asVolume) ?? [],
+            currentYear: Calendar.current.component(.year, from: .now),
+            language: language,
+            catalogedAt: catalogue.flatMap { GraphQLHelpers.parseISO8601($0.catalogedAt) }
+        )
     }
 
     static func add(_ draft: BookDraft) async throws -> Book {

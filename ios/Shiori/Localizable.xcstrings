@@ -321,6 +321,38 @@
         }
       }
     },
+    "%@, %@, à ajouter" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@, à ajouter"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@, to add"
+          }
+        }
+      }
+    },
+    "%@, %@, à paraître" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@, à paraître"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@, coming soon"
+          }
+        }
+      }
+    },
     "%@, %lld séries" : {
       "localizations" : {
         "en" : {
@@ -3317,22 +3349,6 @@
         }
       }
     },
-    "Changer la couverture" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Change cover"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Changer la couverture"
-          }
-        }
-      }
-    },
     "Chargement de la suite" : {
       "localizations" : {
         "en" : {
@@ -4065,22 +4081,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Conseillé par"
-          }
-        }
-      }
-    },
-    "Conseillé par %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recommended by %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Conseillé par %@"
           }
         }
       }
@@ -7057,22 +7057,6 @@
         }
       }
     },
-    "Livre conseillé" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recommended book"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Livre conseillé"
-          }
-        }
-      }
-    },
     "Livre indisponible" : {
       "localizations" : {
         "en" : {
@@ -7597,22 +7581,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Modifier la note"
-          }
-        }
-      }
-    },
-    "Modifier le commentaire" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Edit comment"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modifier le commentaire"
           }
         }
       }
@@ -13181,6 +13149,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "livres lus"
+          }
+        }
+      }
+    },
+    "lu en %lld jours" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "lu en %lld jours"
           }
         }
       }

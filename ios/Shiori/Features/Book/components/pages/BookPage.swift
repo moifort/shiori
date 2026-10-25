@@ -25,7 +25,7 @@ struct BookPage: View {
     let onEditField: (BookField) -> Void
     /// The volumes of its saga the reader holds, this one among them. Empty
     /// while they are on their way: the row then holds this volume alone.
-    var seriesVolumes: [Book] = []
+    var seriesVolumes: [SeriesStripItem] = []
     var onOpenVolume: (Book) -> Void = { _ in }
     /// The editions of this book the reader awaits in the app's language.
     var awaited: [AwaitedEdition] = []
@@ -343,14 +343,15 @@ struct BookPage: View {
         }
     }
 
-    /// The saga under its own name, as the TV app heads a season, and the
-    /// volumes the reader holds as covers — this one alone until the others
-    /// arrive, or when it is the only one held.
+    /// The saga under its own name, as the TV app heads a season, and its
+    /// volumes as covers, the ones the reader lacks dimmed — this one alone
+    /// until the others arrive. A lacking volume opens the saga's screen,
+    /// where it is added.
     @ViewBuilder private var series: some View {
         if let membership = book.series {
             SeriesVolumesRow(
                 name: membership.name,
-                volumes: seriesVolumes.isEmpty ? [book] : seriesVolumes,
+                volumes: seriesVolumes.isEmpty ? [.owned(book)] : seriesVolumes,
                 currentId: book.id,
                 onOpenSeries: onOpenSeries,
                 onOpenVolume: onOpenVolume
@@ -495,7 +496,7 @@ extension Book {
 }
 
 private extension BookPage {
-    init(previewing book: Book, volumes: [Book] = []) {
+    init(previewing book: Book, volumes: [SeriesStripItem] = []) {
         self.init(
             book: book,
             isSaving: false,

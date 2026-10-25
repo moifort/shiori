@@ -437,6 +437,27 @@ enum SeriesStripItem: Identifiable, Hashable, Codable, Sendable {
         }
         return items
     }
+
+    /// The row under a book's facts: the strip, then the books held off the
+    /// spine — a prequel or a novella the reader owns — whose page also shows
+    /// this row and must find itself in it.
+    static func sagaRow(
+        owned: [Book],
+        spine: [Volume],
+        currentYear: Int,
+        language: BookLanguage? = nil,
+        catalogedAt: Date? = nil
+    ) -> [SeriesStripItem] {
+        let items = strip(
+            owned: owned,
+            spine: spine,
+            currentYear: currentYear,
+            language: language,
+            catalogedAt: catalogedAt
+        )
+        let placed = Set(items.map(\.id))
+        return items + owned.filter { !placed.contains($0.id) }.map { .owned($0) }
+    }
 }
 
 /// One entry of a saga catalogue, owned or not. Most of these are books the

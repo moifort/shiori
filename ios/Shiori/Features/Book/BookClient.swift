@@ -28,9 +28,9 @@ struct BookClient: Sendable {
     var offer: @Sendable (_ bookId: String) async throws -> EditionOffer?
     var awaitEdition: @Sendable (_ bookId: String, ReleaseFormat) async throws -> AwaitedEdition
     var stopAwaiting: @Sendable (_ editionId: String) async throws -> Void
-    /// The volumes of the book's saga the reader holds, for the row under its
+    /// The volumes of the book's saga, held or lacking, for the row under its
     /// facts. None by default: a test or a preview that draws no saga leaves it.
-    var sagaVolumes: @Sendable (_ seriesId: String, BookLanguage?) async throws -> [Book] = { _, _ in [] }
+    var sagaVolumes: @Sendable (_ seriesId: String, BookLanguage?) async throws -> [SeriesStripItem] = { _, _ in [] }
 }
 
 extension BookClient {
