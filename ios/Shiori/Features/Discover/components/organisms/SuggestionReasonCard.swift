@@ -26,8 +26,9 @@ struct SuggestionReasonCard: View {
                 if !covers.isEmpty {
                     coverStack
                 }
+                // The summary's size: the card reads as the page's first text.
                 Text(reason)
-                    .font(.subheadline)
+                    .font(.callout)
                     .foregroundStyle(.white.opacity(0.95))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
@@ -59,17 +60,25 @@ struct SuggestionReasonCard: View {
         Array(references.filter { $0.coverURL != nil }.prefix(2))
     }
 
+    /// A cover alone is as tall as the reason's three or four lines, so no
+    /// hole opens under the text; two stacked keep their room to fan out.
+    private var coverWidth: CGFloat { covers.count > 1 ? 64 : 56 }
+
     private var coverStack: some View {
         ZStack(alignment: .topLeading) {
             ForEach(Array(covers.enumerated().reversed()), id: \.element.id) { index, reference in
-                BookCover(book: reference.cover, width: 64, showsFormatBadge: false)
+                BookCover(book: reference.cover, width: coverWidth, showsFormatBadge: false)
                     .shadow(color: .black.opacity(0.5), radius: 8, y: 6)
                     .rotationEffect(index == 0 ? .zero : .degrees(6))
                     .brightness(index == 0 ? 0 : -0.12)
                     .offset(x: index == 0 ? 0 : 10, y: index == 0 && covers.count > 1 ? 12 : 0)
             }
         }
-        .frame(width: covers.count > 1 ? 74 : 64, height: covers.count > 1 ? 108 : 96, alignment: .topLeading)
+        .frame(
+            width: covers.count > 1 ? coverWidth + 10 : coverWidth,
+            height: covers.count > 1 ? 108 : coverWidth * 1.5,
+            alignment: .topLeading
+        )
         .accessibilityHidden(true)
     }
 
