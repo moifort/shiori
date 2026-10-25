@@ -79,3 +79,19 @@ describe('the library search', () => {
     expect(result.errors?.[0]?.extensions?.code).toBe('BAD_USER_INPUT')
   })
 })
+
+describe("a book's authors", () => {
+  // The hero opens each author's page from the book: the key must be the one
+  // the author pages are stored under, whatever the spelling on the cover.
+  test('come with the key their page is opened with, in the same order', async () => {
+    const id = await addBook('title: "Good Omens", authors: ["Terry Pratchett", "Neil Gaiman"]')
+
+    const result = await execute(`{ book(id: "${id}") { authors authorKeys } }`)
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.book).toEqual({
+      authors: ['Terry Pratchett', 'Neil Gaiman'],
+      authorKeys: ['terry-pratchett', 'neil-gaiman'],
+    })
+  })
+})

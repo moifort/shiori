@@ -744,6 +744,11 @@ type Book {
   """
   audibleUrl: String
 
+  """
+  The key of each author, in the order of `authors`: what opens their page from the book, folded as the author pages are keyed.
+  """
+  authorKeys: [AuthorKey!]!
+
   """Empty when nothing legible was found, never null."""
   authors: [AuthorName!]!
 
@@ -1622,6 +1627,11 @@ type FriendBook {
   The recording's page on its owner's Audible store, as on the owner's own book page. Null on anything but an audiobook imported from Audible.
   """
   audibleUrl: String
+
+  """
+  The key of each author, in the order of `authors`: what opens their page from the book, folded as the author pages are keyed.
+  """
+  authorKeys: [AuthorKey!]!
   authors: [AuthorName!]!
   coverUrl: String
   durationMinutes: Int

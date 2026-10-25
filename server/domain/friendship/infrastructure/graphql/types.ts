@@ -1,5 +1,6 @@
 import type { SharedActivity } from '~/domain/analytics/types'
 import { AudibleQuery } from '~/domain/audible/query'
+import { authorKeyOf } from '~/domain/author/primitives'
 import { amazonUrlOf, listeningProgressOf, shelfDateOf } from '~/domain/book/business-rules'
 import {
   BookFormatEnum,
@@ -43,6 +44,13 @@ export const FriendBookType = builder.objectRef<FriendBook>('FriendBook').implem
     id: t.field({ type: 'BookId', resolve: (book) => book.id }),
     title: t.field({ type: 'BookTitle', resolve: (book) => book.title }),
     authors: t.field({ type: ['AuthorName'], resolve: (book) => book.authors }),
+    authorKeys: t.field({
+      type: ['AuthorKey'],
+      description:
+        'The key of each author, in the order of `authors`: what opens their page ' +
+        'from the book, folded as the author pages are keyed.',
+      resolve: (book) => book.authors.map(authorKeyOf),
+    }),
     format: t.field({ type: BookFormatEnum, resolve: (book) => book.format }),
     language: t.field({
       type: BookLanguageEnum,

@@ -1,4 +1,5 @@
 import { AudibleQuery } from '~/domain/audible/query'
+import { authorKeyOf } from '~/domain/author/primitives'
 import {
   amazonUrlOf,
   listeningProgressOf,
@@ -84,6 +85,13 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
       type: ['AuthorName'],
       description: 'Empty when nothing legible was found, never null.',
       resolve: (book) => book.authors,
+    }),
+    authorKeys: t.field({
+      type: ['AuthorKey'],
+      description:
+        'The key of each author, in the order of `authors`: what opens their page ' +
+        'from the book, folded as the author pages are keyed.',
+      resolve: (book) => book.authors.map(authorKeyOf),
     }),
     format: t.field({ type: BookFormatEnum, resolve: (book) => book.format }),
     media: t.field({
