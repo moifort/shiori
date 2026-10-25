@@ -36,7 +36,6 @@ fragment SuggestionFields on Suggestion {
     rating
     viaSeries
     coverUrl
-    genre
   }
   state
   watched

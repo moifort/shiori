@@ -4216,10 +4216,8 @@ type SuggestionReference {
   coverUrl: String
   favorite: Boolean!
 
-  """
-  The book’s genre — a saga’s, its first volume that has one — drawn as the reference’s symbol.
-  """
-  genre: Genre
+  """The book’s genre — a saga’s, its first volume that has one."""
+  genre: Genre @deprecated(reason: "The Discovery sheet no longer draws the genre beside a reference: its row shows the reader’s heart or stars.")
   rating: StarRating
   seriesId: SeriesId
 

@@ -3,15 +3,13 @@ import SwiftUI
 /// Why a book was suggested, as a card over the colours of the reader's book
 /// it draws on, as the home's "En cours" card sets its text over a cover: the
 /// title in the corner, the reader's covers stacked beside the reason, then
-/// each book it cites as a capsule row — the genre's symbol in a disc at its
-/// leading end, the title, the reader's heart or stars, a chevron — that
-/// opens the book or its saga.
+/// each book it cites as a capsule row — the title, the reader's heart or
+/// stars, a chevron — that opens the book or its saga.
 struct SuggestionReasonCard: View {
     let reason: String
     let references: [SuggestionReference]
     let onOpen: (SuggestionReference) -> Void
 
-    /// One row's height, which the genre's disc fills.
     private static let rowHeight: CGFloat = 44
 
     var body: some View {
@@ -85,7 +83,6 @@ struct SuggestionReasonCard: View {
     private func row(_ reference: SuggestionReference) -> some View {
         Button { onOpen(reference) } label: {
             HStack(spacing: 10) {
-                genreDisc(reference.genre)
                 Text(reference.title)
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
@@ -97,6 +94,7 @@ struct SuggestionReasonCard: View {
                     .accessibilityHidden(true)
             }
             .foregroundStyle(.white)
+            .padding(.leading, 18)
             .padding(.trailing, 14)
             .frame(height: Self.rowHeight)
             .contentShape(.capsule)
@@ -117,23 +115,8 @@ struct SuggestionReasonCard: View {
         .accessibilityIdentifier("suggestion-reference")
     }
 
-    /// The genre's symbol in a disc that fills the row's leading end, flush
-    /// with the capsule so only its edge draws a line.
-    private func genreDisc(_ genre: BookGenre?) -> some View {
-        Circle()
-            .fill(.white.opacity(0.14))
-            .frame(width: Self.rowHeight, height: Self.rowHeight)
-            .overlay {
-                (genre?.image ?? Image(systemName: "book.closed"))
-                    .font(.body)
-                    .foregroundStyle(.white)
-            }
-            .accessibilityLabel(Text(genre?.label ?? ""))
-            .accessibilityHidden(genre == nil)
-    }
-
-    /// The heart for a favourite, else the star and the score — the saga's
-    /// when the book has none of its own.
+    /// The heart for a favourite, else the stars, white as the hero's rating
+    /// button draws them — the saga's when the book has none of its own.
     @ViewBuilder private func mark(_ reference: SuggestionReference) -> some View {
         if reference.favorite {
             Image(systemName: "heart.fill")
@@ -141,15 +124,7 @@ struct SuggestionReasonCard: View {
                 .foregroundStyle(.red)
                 .accessibilityLabel(Text("Favori"))
         } else if let rating = reference.rating {
-            HStack(spacing: 3) {
-                Image(systemName: "star.fill")
-                    .font(.caption)
-                Text(rating.formatted(.number.precision(.fractionLength(0...1))))
-                    .font(.subheadline.weight(.semibold))
-                    .monospacedDigit()
-            }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text("\(rating.formatted(.number.precision(.fractionLength(0...1)))) étoiles"))
+            RatingStars(rating: rating, font: .caption2, monochrome: true)
         }
     }
 }

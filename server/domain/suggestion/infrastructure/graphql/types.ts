@@ -64,9 +64,10 @@ const SuggestionReferenceType = builder
       genre: t.field({
         type: GenreEnum,
         nullable: true,
-        description:
-          'The book’s genre — a saga’s, its first volume that has one — drawn as the ' +
-          'reference’s symbol.',
+        description: 'The book’s genre — a saga’s, its first volume that has one.',
+        deprecationReason:
+          'The Discovery sheet no longer draws the genre beside a reference: its row shows ' +
+          'the reader’s heart or stars.',
         resolve: (reference) => reference.genre ?? null,
       }),
       coverUrl: t.string({
