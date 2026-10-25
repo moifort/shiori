@@ -128,7 +128,9 @@ struct SeriesViewModelTests {
 
         await viewModel.add(volume, author: "Auteur", as: .book)
 
-        #expect(asked.all == ["\(Self.sagaId) fr looked up"])
+        // Filed in the edition the screen loaded, whatever the device speaks.
+        let edition = try! #require(viewModel.language)
+        #expect(asked.all == ["\(Self.sagaId) \(edition.rawValue) looked up"])
         #expect(viewModel.owned.count == before + 1)
         #expect(viewModel.addingTitle == nil)
     }
