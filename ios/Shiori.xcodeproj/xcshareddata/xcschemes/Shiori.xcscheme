@@ -33,7 +33,7 @@
             ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
             <ActionContent
                title = "Add test photo to simulator"
-               scriptText = "xcrun simctl boot &quot;iPhone 17&quot; 2>/dev/null || true&#10;sleep 3&#10;xcrun simctl addmedia booted &quot;$SRCROOT/ShioriUITests/Resources/etiquette.jpg&quot; 2>/dev/null || true">
+               scriptText = "# A simulator already booted (the one xcodebuild tests on) is kept: booting&#10;# &quot;iPhone 17&quot; by name on a machine with several of them (CI has one per iOS&#10;# runtime) cold-booted a second simulator, six silent minutes before the tests.&#10;if ! xcrun simctl list devices booted | grep -q &apos;(Booted)&apos;; then&#10;  xcrun simctl boot &quot;iPhone 17&quot; 2&gt;/dev/null || true&#10;  sleep 3&#10;fi&#10;xcrun simctl addmedia booted &quot;$SRCROOT/ShioriUITests/Resources/etiquette.jpg&quot; 2&gt;/dev/null || true">
                <EnvironmentBuildable>
                   <BuildableReference
                      BuildableIdentifier = "primary"

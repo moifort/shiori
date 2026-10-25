@@ -43,9 +43,10 @@ jobs:
   ios:
     name: 📱 iOS
     runs-on: macos-26
-    # The simulator's first boot on a fresh runner takes ten minutes and more,
-    # on top of a cold build: 30 cut a run short on 2026-10-16.
-    timeout-minutes: 45
+    # A run is eight to ten minutes: restoring the packages, a cold build, one
+    # simulator booted while they go, and tests that take seconds once the app is
+    # up. Thirty leaves room for a slow cache, not for a second simulator boot.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
 
@@ -58,19 +59,25 @@ jobs:
       # generation and the build rather than after them, where it sat as eleven
       # silent minutes before the tests on 2026-10-16.
       #
-      # The iPhone 17 precisely: the scheme's test pre-action boots "iPhone 17" to
-      # add the UI tests' photo. On any other device that pre-action cold-booted a
-      # second simulator inside the test step, six to fifteen silent minutes before
-      # the first test on 2026-10-18–20. simctl resolves the name to the device
-      # already booted, so here it finds this one ready and does nothing.
+      # The image ships one iPhone 17 per iOS runtime (26.2, 26.4 and 26.5 on
+      # 2026-10-25); the newest is taken, as on every project. The scheme's test
+      # pre-action keeps whatever simulator is already booted, so this one is the
+      # only one that ever boots: picking the first match while the pre-action
+      # booted "iPhone 17" by name cold-started a second simulator inside the test
+      # step, six to seven silent minutes before tests that run in three seconds.
       - name: Boot the simulator the tests run on
         run: |
           set -euo pipefail
-          devices=$(xcrun simctl list devices available)
-          line=$(grep -m1 -E '^ +iPhone 17 \(' <<< "$devices" \
-            || grep -m1 -E '^ +iPhone' <<< "$devices")
-          udid=$(grep -oE '[0-9A-F]{8}(-[0-9A-F]{4}){3}-[0-9A-F]{12}' <<< "$line")
-          echo "Testing on $line"
+          picked=$(xcrun simctl list devices available -j | jq -r '
+            .devices | to_entries
+            | map(select(.key | test("SimRuntime\\.iOS-")) | .key as $rt | .value[]
+                  | select(.isAvailable and (.name | startswith("iPhone")))
+                  | {name, udid, exact: (.name == "iPhone 17"),
+                     rt: ($rt | capture("iOS-(?<v>[0-9-]+)$").v | split("-") | map(tonumber))})
+            | sort_by([.exact, .rt]) | last
+            | "\(.udid)\t\(.name) on iOS \(.rt | join("."))"')
+          udid=${picked%%$'\t'*}
+          echo "Testing on ${picked#*$'\t'} ($udid)"
           echo "SIMULATOR_UDID=$udid" >> "$GITHUB_ENV"
           xcrun simctl boot "$udid"
 
@@ -108,6 +115,8 @@ jobs:
             echo "SPM_CACHE_KEY=spm-${RUNNER_OS}-$(shasum -a 256 "$resolved" | cut -c1-16)" \
               >> "$GITHUB_ENV"
           fi
+          # What the cache carries, so a heavier restore can be traced to its part.
+          du -sh "$RUNNER_TEMP/SourcePackages"/* 2>/dev/null || true
           # Apollo 2.x ships the CLI as a tarball inside the checkout — extract it.
           CLI_DIR="$RUNNER_TEMP/SourcePackages/checkouts/apollo-ios/CLI"
           tar -xzf "$CLI_DIR/apollo-ios-cli.tar.gz" -C "$CLI_DIR"
@@ -123,7 +132,8 @@ jobs:
 
       - name: Build the app and its tests
         # Compiled once, for the simulator the tests then run on: no signing
-        # identity needed (release-ios.yml owns those).
+        # identity needed (release-ios.yml owns those). The index store feeds
+        # Xcode's editor, which nobody opens here, so it is not written.
         run: |
           set -euo pipefail
           xcodebuild -project ios/Shiori.xcodeproj -scheme Shiori \
@@ -131,6 +141,7 @@ jobs:
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/SourcePackages" \
             CODE_SIGNING_ALLOWED=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO \
             build-for-testing
 
       - name: Unit tests
