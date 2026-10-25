@@ -356,7 +356,7 @@ struct BookPage: View {
     @ViewBuilder private var reading: some View {
         if book.recommendation != nil || book.note != nil {
             VStack(alignment: .leading, spacing: 12) {
-                RowHeader(title: "Commentaires", detail: readingSpan)
+                RowHeader(title: "Commentaires")
                 VStack(spacing: 10) {
                     // A recommendation that names someone and says nothing
                     // still reads as their word on it.
@@ -377,13 +377,6 @@ struct BookPage: View {
                 }
             }
         }
-    }
-
-    /// How long the book took, once read.
-    private var readingSpan: String? {
-        guard book.status == .read, let started = book.startedAt, let finished = book.finishedAt else { return nil }
-        let days = max(1, started.daysAgo(from: finished))
-        return days == 1 ? String(localized: "lu en un jour") : String(localized: "lu en \(days) jours")
     }
 
     private var dayTiles: [FactTile] {

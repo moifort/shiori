@@ -13185,50 +13185,6 @@
         }
       }
     },
-    "lu en %lld jours" : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "read in %lld day"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "read in %lld days"
-                }
-              }
-            }
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "lu en %lld jours"
-          }
-        }
-      }
-    },
-    "lu en un jour" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "read in a day"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "lu en un jour"
-          }
-        }
-      }
-    },
     "lu le %@" : {
       "localizations" : {
         "en" : {
