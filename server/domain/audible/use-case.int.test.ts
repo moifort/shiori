@@ -641,6 +641,7 @@ describe('the nightly sync', () => {
 
     const [book] = await BookQuery.all(reader)
     expect(book?.listenedMinutes).toBe(ListeningMinutes(598))
+    expect(book?.listenedAt).toEqual(lastHeard)
     expect(book?.status).toBe('read')
     expect(book?.finishedAt).toEqual(lastHeard)
   })

@@ -70,6 +70,8 @@ export type NewBook = {
   durationMinutes?: ListeningMinutes
   /** Where the Audible player last stopped, which only an import knows. */
   listenedMinutes?: ListeningMinutes
+  /** When the player saved that position. */
+  listenedAt?: Date
   /** Who reads the recording. An import knows them; a scan reads a cover, which
    *  does not name its narrator. */
   narrators?: NarratorName[]
@@ -179,6 +181,7 @@ const recordOf = (userId: UserId, input: NewBook, now: Date): Book => {
     pageCount: input.pageCount,
     durationMinutes: input.durationMinutes,
     listenedMinutes: input.listenedMinutes,
+    listenedAt: input.listenedAt,
     narrators: input.narrators ?? [],
     isbn13: input.isbn13,
     language: input.language ?? DEFAULT_BOOK_LANGUAGE,
@@ -391,7 +394,7 @@ export namespace BookCommand {
     return repository.save({ ...book, series: { ...book.series, volume }, updatedAt: now }, batch)
   }
 
-  /** Record where the Audible player last stopped in a recording.
+  /** Record where the Audible player last stopped in a recording, and when.
    *
    *  Its own command rather than a field of `BookEdit`: the reader never types
    *  a position, and the only thing that moves it is the sync reading the
@@ -399,13 +402,13 @@ export namespace BookCommand {
   export const recordListening = async (
     userId: UserId,
     bookId: BookId,
-    listenedMinutes: ListeningMinutes,
+    position: { listenedMinutes: ListeningMinutes; listenedAt: Date },
     now = new Date(),
     batch?: WriteBatch,
   ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
-    return repository.save({ ...book, listenedMinutes, updatedAt: now }, batch)
+    return repository.save({ ...book, ...position, updatedAt: now }, batch)
   }
 
   export const setStatus = async (

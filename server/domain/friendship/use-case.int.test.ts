@@ -86,3 +86,45 @@ describe('the friends’ hearts, asked for together', () => {
     expect(fake.queriedDocs - before.docs).toBe(1 + 2 + 3)
   })
 })
+
+describe('the book in progress on the reader’s shelf', () => {
+  const seedReading = (id: string, title: string, dates: Record<string, Date>) =>
+    fake.seed('books', id, {
+      id,
+      userId: reader,
+      title,
+      authors: ['Donato Carrisi'],
+      format: 'audiobook',
+      media: [],
+      subgenres: [],
+      narrators: [],
+      language: 'fr',
+      status: 'reading',
+      hidden: false,
+      addedAt: yesterday,
+      ...dates,
+    })
+
+  // The recording listened to leads, though the other one's status was put
+  // right later — as on the reader's own dashboard.
+  test('is the one last listened to, not the one last marked started', async () => {
+    seedReading('listened', 'Le Chuchoteur', {
+      startedAt: new Date('2026-10-01T20:00:00Z'),
+      listenedAt: new Date('2026-10-15T12:00:00Z'),
+      updatedAt: new Date('2026-10-15T12:00:00Z'),
+    })
+    seedReading('put-right', 'Interférence Système', {
+      startedAt: new Date('2026-10-15T15:00:00Z'),
+      listenedAt: new Date('2026-10-02T20:00:00Z'),
+      updatedAt: new Date('2026-10-15T15:00:00Z'),
+      statusChangedAt: new Date('2026-10-15T15:00:00Z'),
+    })
+
+    const shelf = await FriendshipUseCase.ownShelf(reader)
+
+    expect(shelf.reading.map((book) => String(book.title))).toEqual([
+      'Le Chuchoteur',
+      'Interférence Système',
+    ])
+  })
+})

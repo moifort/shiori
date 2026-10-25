@@ -67,6 +67,7 @@ type BookSpec = {
   statusChangedAt?: Date
   startedAt?: Date
   finishedAt?: Date
+  listenedAt?: Date
 }
 
 const book = (spec: BookSpec): BookView => ({
@@ -86,6 +87,7 @@ const book = (spec: BookSpec): BookView => ({
   statusChangedAt: spec.statusChangedAt,
   startedAt: spec.startedAt,
   finishedAt: spec.finishedAt,
+  listenedAt: spec.listenedAt,
   series: spec.series
     ? {
         id: SeriesId(spec.series.name.toLowerCase()),
@@ -663,6 +665,30 @@ describe('shelvedOf', () => {
       book({ title: 'V2', series: { name: 'Saga', volume: 2 }, startedAt: LATER }),
     ])
     expect(titles(shelved)).toEqual(['V2', 'Alone', 'V1'])
+  })
+
+  // The recording the reader is listening to leads, though the other one was
+  // marked started later: putting a status right by hand is not a listening.
+  test('shelves a recording under way on the day the player last moved', () => {
+    const shelved = shelvedOf([
+      book({
+        title: 'Marked started today',
+        status: 'reading',
+        startedAt: LATER,
+        listenedAt: EARLIER,
+      }),
+      book({ title: 'Listened to', status: 'reading', startedAt: EARLIER, listenedAt: NOW }),
+    ])
+    expect(titles(shelved)).toEqual(['Listened to', 'Marked started today'])
+  })
+
+  // A position kept from a book since put back on the pile dates nothing.
+  test('dates a book on the pile by its addition, whatever the player kept', () => {
+    const shelved = shelvedOf([
+      book({ title: 'Back on the pile', addedAt: EARLIER, listenedAt: LATER }),
+      book({ title: 'Added', addedAt: NOW }),
+    ])
+    expect(titles(shelved)).toEqual(['Added', 'Back on the pile'])
   })
 
   // A record whose reading dates were never stamped still has a place.

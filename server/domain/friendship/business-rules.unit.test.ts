@@ -92,6 +92,33 @@ describe('recentActivityOf', () => {
     ])
   })
 
+  // The book in progress is the one the dashboard leads with: the recording
+  // last listened to, not the one whose status was put right last.
+  test('names in progress the book last listened to', () => {
+    const books = [
+      {
+        title: 'listened to',
+        status: 'reading' as const,
+        addedAt: day(1),
+        startedAt: day(2),
+        listenedAt: day(8),
+      },
+      {
+        title: 'status put right',
+        status: 'reading' as const,
+        addedAt: day(1),
+        startedAt: day(9),
+        listenedAt: day(3),
+        updatedAt: day(9),
+        statusChangedAt: day(9),
+      },
+    ]
+    const [inProgress] = recentActivityOf(books)
+    expect(inProgress?.kind).toBe('reading')
+    expect(inProgress?.at).toEqual(day(8))
+    expect(inProgress?.book.title).toBe('listened to')
+  })
+
   // A heart given before the date was kept says nothing about when.
   test('leaves out a kind with no book, and a heart with no date', () => {
     const books = [{ status: 'read' as const, addedAt: day(2), favorite: true }]

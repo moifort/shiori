@@ -603,22 +603,23 @@ describe("the reader's own shelf, as friends see it", () => {
     expect(stranger.data?.friendSaga).toBeNull()
   })
 
-  test('puts the book in progress touched most recently first', async () => {
+  // In the order of the reader's own dashboard: the book last read first. A
+  // note written on a book is not a reading — the listening sync is what moves
+  // a recording up, and the rules test that.
+  test('puts the book in progress last read first, as the dashboard does', async () => {
     setSystemTime(new Date('2026-09-01T00:00:00Z'))
     await addBook(alice, 'title: "Ancien", status: READING')
     setSystemTime(new Date('2026-09-02T00:00:00Z'))
-    const touched = await addBook(alice, 'title: "Repris", status: READING')
+    const annotated = await addBook(alice, 'title: "Annoté", status: READING')
     setSystemTime(new Date('2026-09-03T00:00:00Z'))
-    await addBook(alice, 'title: "Moyen", status: READING')
-    // Any write counts as activity, the way a listening sync moving the
-    // position does.
+    await addBook(alice, 'title: "Récent", status: READING')
     setSystemTime(new Date('2026-09-04T00:00:00Z'))
-    await as(alice)(`mutation { setBookNote(id: "${touched}", note: "Relu") { id } }`)
+    await as(alice)(`mutation { setBookNote(id: "${annotated}", note: "Relu") { id } }`)
 
     const result = await as(alice)('{ myShelf { reading { title } } }')
 
     expect(result.data?.myShelf).toEqual({
-      reading: [{ title: 'Repris' }, { title: 'Moyen' }, { title: 'Ancien' }],
+      reading: [{ title: 'Récent' }, { title: 'Annoté' }, { title: 'Ancien' }],
     })
   })
 })

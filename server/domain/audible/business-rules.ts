@@ -97,6 +97,7 @@ export const importableFrom = (
     finishedAt:
       status === 'read' ? (item.listeningStatus?.finishedAt ?? heard?.lastUpdatedAt) : undefined,
     listenedMinutes: listenedMinutesOf(heard),
+    listenedAt: listenedMinutesOf(heard) === undefined ? undefined : heard?.lastUpdatedAt,
     addedAt: purchaseDateOf(item),
     alreadyInLibrary: keepsCopyOf(owned, {
       title,
@@ -145,6 +146,7 @@ export const bookFrom = (importable: ImportableBook): NewBook => ({
   addedAt: importable.addedAt,
   durationMinutes: importable.durationMinutes,
   listenedMinutes: importable.listenedMinutes,
+  listenedAt: importable.listenedAt,
   narrators: importable.narrators,
   audibleAsin: importable.asin,
 })
@@ -443,18 +445,26 @@ const audibleHasNews = (book: Book, heard: LastPosition | undefined, at: Date | 
   return at !== undefined && at > book.statusChangedAt
 }
 
-/** Where the player got to in each linked book, for those it moved since the
- *  last pass. A night the player did not move writes nothing. */
+/** Where the player got to in each linked book, and when, for those it moved
+ *  since the last pass. A night the player did not move writes nothing; a book
+ *  that holds the minutes but not yet their date is given it. */
 export const listenedMinutesFor = (
   books: readonly Book[],
   positions: readonly LastPosition[],
-): { bookId: BookId; listenedMinutes: ListeningMinutesValue }[] => {
+): { bookId: BookId; listenedMinutes: ListeningMinutesValue; listenedAt: Date }[] => {
   const heard = heardByAsin(positions)
   return books.flatMap((book) => {
     if (!book.audibleAsin) return []
-    const listenedMinutes = listenedMinutesOf(heard.get(book.audibleAsin))
-    if (listenedMinutes === undefined || listenedMinutes === book.listenedMinutes) return []
-    return [{ bookId: book.id, listenedMinutes }]
+    const position = heard.get(book.audibleAsin)
+    const listenedMinutes = listenedMinutesOf(position)
+    if (!position || listenedMinutes === undefined) return []
+    const listenedAt = position.lastUpdatedAt
+    if (
+      listenedMinutes === book.listenedMinutes &&
+      listenedAt.getTime() === book.listenedAt?.getTime()
+    )
+      return []
+    return [{ bookId: book.id, listenedMinutes, listenedAt }]
   })
 }
 
@@ -620,4 +630,5 @@ export const volumeBookFrom = (
   finishedAt: undefined,
   addedAt: undefined,
   listenedMinutes: undefined,
+  listenedAt: undefined,
 })

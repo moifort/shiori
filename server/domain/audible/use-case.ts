@@ -170,9 +170,9 @@ export namespace AudibleUseCase {
         BookCommand.setStatus(userId, move.bookId, move.status, move.at ?? now),
       )
       // Where the player got to, which the dashboard and the book read the
-      // listening progress off.
-      await bulkSave(listened, async ({ bookId, listenedMinutes }) =>
-        BookCommand.recordListening(userId, bookId, listenedMinutes, now),
+      // listening progress off, and when, which files a recording under way.
+      await bulkSave(listened, async ({ bookId, ...position }) =>
+        BookCommand.recordListening(userId, bookId, position, now),
       )
       // Books imported before the purchase date was kept all sit on import night;
       // this is what files them under the month they were in fact bought.

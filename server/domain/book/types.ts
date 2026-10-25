@@ -215,6 +215,10 @@ export type Book = {
    *  nightly sync keep it current. Absent on anything else, and on a title the
    *  player never opened. */
   listenedMinutes?: ListeningMinutes
+  /** When the player last moved, as Audible dates the position it saves: the
+   *  day the reader last listened, which is what files a recording under way.
+   *  Kept beside `listenedMinutes` by the import and the nightly sync. */
+  listenedAt?: Date
   isbn13?: Isbn13
   /** The language of the edition on the shelf, not the app's language. Written
    *  on every book, `DEFAULT_BOOK_LANGUAGE` when nothing named it; still optional

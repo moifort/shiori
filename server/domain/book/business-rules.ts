@@ -502,7 +502,10 @@ export const seriesInFormat = (
  *  saga is read whole. */
 export const shelvedOf = <T extends Book>(books: readonly T[]): T[] => [...books].sort(shelfOrder)
 
-type ShelvedBook = { title: string } & Pick<Book, 'addedAt' | 'startedAt' | 'finishedAt'>
+type ShelvedBook = { title: string } & Pick<
+  Book,
+  'addedAt' | 'startedAt' | 'finishedAt' | 'listenedAt'
+>
 
 /** Which of two books the Library tab shelves first: the newest on its shelf
  *  date, then by title in code-point order — Firestore's own, which the tab's
@@ -517,11 +520,20 @@ export const shelfTitleOrder = (left: string, right: string): number =>
   left < right ? -1 : left > right ? 1 : 0
 
 /** The date a book is shelved on, whatever its status: the day it was
- *  finished, else the day it was started, else the day it was added. A record
+ *  finished, else the day it was last read, else the day it was added. A record
  *  whose reading dates were never stamped — an import, a book from before the
- *  dates existed — falls back to the day it was added. */
-export const shelfDateOf = (book: Pick<Book, 'addedAt' | 'startedAt' | 'finishedAt'>): Date =>
-  book.finishedAt ?? book.startedAt ?? book.addedAt
+ *  dates existed — falls back to the day it was added.
+ *
+ *  A started recording is last read the day the player last moved, which
+ *  Audible dates: the one the reader is listening to leads the books under way,
+ *  however late another was marked started. A status put right by hand is not a
+ *  listening. Without a position, the day it was started. */
+export const shelfDateOf = (
+  book: Pick<Book, 'addedAt' | 'startedAt' | 'finishedAt' | 'listenedAt'>,
+): Date =>
+  book.finishedAt ??
+  (book.startedAt ? (book.listenedAt ?? book.startedAt) : undefined) ??
+  book.addedAt
 
 /** One page of the shelved list. The cursor is the last book of the previous
  *  page.

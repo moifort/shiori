@@ -1,6 +1,6 @@
 import { authorKeyOf } from '~/domain/author/primitives'
 import type { AuthorKey } from '~/domain/author/types'
-import { shelfKeyOf } from '~/domain/book/business-rules'
+import { shelfDateOf, shelfKeyOf } from '~/domain/book/business-rules'
 import type { Book, Genre, TaggedSubgenre } from '~/domain/book/types'
 import { seriesIdFor } from '~/domain/series/primitives'
 import type { SeriesId, SeriesState } from '~/domain/series/types'
@@ -57,7 +57,8 @@ export const lastDroppedOf = <
     )
 
 /** What moved last on a shelf, one book per kind, always in this order: the
- *  book in progress touched last, the last one finished, the last one hearted,
+ *  book in progress the dashboard leads with — the one last listened to, else
+ *  last started — the last one finished, the last one hearted,
  *  the last one shelved and the last one dropped — each with its day. A kind
  *  with no book, or a finish or a heart with no date, is left out. */
 export const recentActivityOf = <
@@ -69,6 +70,7 @@ export const recentActivityOf = <
     | 'statusChangedAt'
     | 'startedAt'
     | 'finishedAt'
+    | 'listenedAt'
     | 'favorite'
     | 'favoritedAt'
   >,
@@ -88,7 +90,7 @@ export const recentActivityOf = <
       kind: 'reading' as const,
       ...latest(
         books.filter((book) => book.status === 'reading'),
-        lastActivityOf,
+        shelfDateOf,
       ),
     },
     { kind: 'read' as const, book: finished, at: finished?.finishedAt },

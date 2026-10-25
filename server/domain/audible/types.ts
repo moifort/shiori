@@ -141,6 +141,8 @@ export type ImportableBook = {
   /** Where the player last stopped, in whole minutes. Absent on a title it
    *  never opened, or opened for less than a minute. */
   listenedMinutes?: ListeningMinutes
+  /** When the player saved that position. Absent with the minutes. */
+  listenedAt?: Date
   publisher?: Publisher
   /** The year the recording came out — this edition's, not the work's. */
   editionYear?: Year

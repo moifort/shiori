@@ -312,14 +312,20 @@ describe('where the reader stands in a title', () => {
     expect(importable?.finishedAt).toEqual(heard.lastUpdatedAt)
   })
 
-  test('catalogues how far the player got, in whole minutes', () => {
+  test('catalogues how far the player got, in whole minutes, and when', () => {
     const heard = aPosition({ positionMs: 138 * 60 * 1000 + 59_000 })
     const importable = importableFrom(anItem(), noneOwned, heard)
 
     expect(importable?.listenedMinutes).toBe(ListeningMinutes(138))
-    expect(bookFrom(importable as NonNullable<typeof importable>).listenedMinutes).toBe(
-      ListeningMinutes(138),
-    )
+    const book = bookFrom(importable as NonNullable<typeof importable>)
+    expect(book.listenedMinutes).toBe(ListeningMinutes(138))
+    expect(book.listenedAt).toEqual(heard.lastUpdatedAt)
+  })
+
+  // Opened for less than a minute: no position, so no date of one either.
+  test('dates no listening the player did not keep a minute of', () => {
+    const importable = importableFrom(anItem(), noneOwned, aPosition({ positionMs: 30_000 }))
+    expect(importable?.listenedAt).toBe(undefined)
   })
 
   test('reads a finished listen as read whatever the position', () => {
@@ -726,16 +732,37 @@ describe('following how far the player got', () => {
     const heard = aPosition({ positionMs: 42 * 60 * 1000 })
 
     expect(listenedMinutesFor([linked()], [heard])).toEqual([
-      { bookId: bookId('book-1'), listenedMinutes: ListeningMinutes(42) },
+      {
+        bookId: bookId('book-1'),
+        listenedMinutes: ListeningMinutes(42),
+        listenedAt: heard.lastUpdatedAt,
+      },
     ])
   })
 
   // A night the player did not move writes nothing.
-  test('writes nothing when the minutes already agree', () => {
+  test('writes nothing when the minutes and their date already agree', () => {
     const heard = aPosition({ positionMs: 42 * 60 * 1000 + 30_000 })
+    const synced = linked({
+      listenedMinutes: ListeningMinutes(42),
+      listenedAt: new Date(heard.lastUpdatedAt),
+    })
+    expect(listenedMinutesFor([synced], [heard])).toEqual([])
+  })
+
+  // A position recorded before its date was kept is dated on the next pass,
+  // which is what files the recordings under way by their last listening.
+  test('dates minutes recorded before the date was kept', () => {
+    const heard = aPosition({ positionMs: 42 * 60 * 1000 })
     expect(
       listenedMinutesFor([linked({ listenedMinutes: ListeningMinutes(42) })], [heard]),
-    ).toEqual([])
+    ).toEqual([
+      {
+        bookId: bookId('book-1'),
+        listenedMinutes: ListeningMinutes(42),
+        listenedAt: heard.lastUpdatedAt,
+      },
+    ])
   })
 
   test('ignores a book with no ASIN, and a title the player never opened', () => {

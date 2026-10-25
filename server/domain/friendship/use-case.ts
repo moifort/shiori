@@ -35,7 +35,6 @@ import {
   friendPicksOf,
   friendSagaStateOf,
   inReadingOrder,
-  lastActivityOf,
   lastAddedOf,
   lastDroppedOf,
   lastFinishedOf,
@@ -698,9 +697,11 @@ const sharedShelfOf = async (
     AnalyticsUseCase.sharedShelves([ownerId]),
   ])
   const favoriteSagaIds = new Set(favoriteSagas.keys())
+  // In the order of the reader's own dashboard and Library tab, so the book
+  // their friends see in progress is the one they see first themselves.
   const reading = books
     .filter((book) => book.status === 'reading')
-    .sort((left, right) => lastActivityOf(right).getTime() - lastActivityOf(left).getTime())
+    .sort(shelfOrder)
     .slice(0, shown)
   const pile = books
     .filter((book) => book.status === 'to-read')
