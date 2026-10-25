@@ -4171,6 +4171,11 @@ type SuggestionReference {
   """The reader’s own cover of the book, signed when it is their photo."""
   coverUrl: String
   favorite: Boolean!
+
+  """
+  The book’s genre — a saga’s, its first volume that has one — drawn as the reference’s symbol.
+  """
+  genre: Genre
   rating: StarRating
   seriesId: SeriesId
 

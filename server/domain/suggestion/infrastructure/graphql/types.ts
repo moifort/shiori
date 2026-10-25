@@ -1,7 +1,7 @@
 import { AudibleQuery } from '~/domain/audible/query'
 import { storeUrlOf } from '~/domain/awaited-edition/business-rules'
 import { AwaitedStateEnum } from '~/domain/awaited-edition/infrastructure/graphql/types'
-import { BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
+import { BookLanguageEnum, GenreEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { ReleaseFormatEnum } from '~/domain/discovery/infrastructure/graphql/types'
 import { builder } from '~/domain/shared/graphql/builder'
 import type {
@@ -60,6 +60,14 @@ const SuggestionReferenceType = builder
         type: 'StarRating',
         nullable: true,
         resolve: (reference) => reference.rank.rating ?? null,
+      }),
+      genre: t.field({
+        type: GenreEnum,
+        nullable: true,
+        description:
+          'The book’s genre — a saga’s, its first volume that has one — drawn as the ' +
+          'reference’s symbol.',
+        resolve: (reference) => reference.genre ?? null,
       }),
       coverUrl: t.string({
         nullable: true,

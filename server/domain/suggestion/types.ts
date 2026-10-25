@@ -1,5 +1,5 @@
 import type { AwaitedEditionId, AwaitedState, EditionWatch } from '~/domain/awaited-edition/types'
-import type { BookId, BookLanguage, CoverUrl, StarRating } from '~/domain/book/types'
+import type { BookId, BookLanguage, CoverUrl, Genre, StarRating } from '~/domain/book/types'
 import type { ReleaseFormat } from '~/domain/discovery/types'
 import type { SeriesId } from '~/domain/series/types'
 import type { Language } from '~/domain/shared/language'
@@ -85,6 +85,9 @@ export type SuggestionReference = {
   /** The saga's name when the reference is a saga, else the book's title. */
   title: string
   rank: ReferenceRank
+  /** The book's genre — a saga's, its first volume that has one — which the
+   *  app draws as the reference's symbol. */
+  genre?: Genre
   /** The reader's own cover of the book, signed when it is their photo. */
   coverUrl?: string
 }
