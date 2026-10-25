@@ -3479,16 +3479,16 @@
     },
     "Chez vous" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chez vous"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "In your library"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chez vous"
           }
         }
       }
@@ -4295,16 +4295,16 @@
     },
     "Coup de cœur de %@" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Coup de cœur de %@"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@'s favourite"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coup de cœur de %@"
           }
         }
       }
@@ -6645,22 +6645,6 @@
         }
       }
     },
-    "Le livre sera noté « Conseillé par %@ »." : {
-      "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le livre sera noté « Conseillé par %@ »."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The book will be marked “Recommended by %@”."
-          }
-        }
-      }
-    },
     "Le nombre de pages doit être un nombre positif." : {
       "localizations" : {
         "en" : {
@@ -8115,16 +8099,16 @@
     },
     "Noté %lld sur 5 par %@" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Noté %1$lld sur 5 par %2$@"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rated %1$lld out of 5 by %2$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Noté %1$lld sur 5 par %2$@"
           }
         }
       }

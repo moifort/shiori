@@ -144,12 +144,6 @@ struct FriendBookPage: View {
         VStack(alignment: .leading, spacing: 12) {
             RowHeader(title: "Informations")
             FactGrid(groups: [FactGroup(tiles: factTiles)], links: storeLinks)
-            if !owned {
-                Text("Le livre sera noté « Conseillé par \(friendName) ».")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 4)
-            }
         }
     }
 
