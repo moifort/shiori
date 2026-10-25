@@ -97,8 +97,8 @@ enum ReleaseDateText {
 /// One square whatever it says, so the badges line up down a list.
 struct ReleaseDateBadge: View {
     let date: String
-    /// On Liquid Glass, both lines in orange as everything announced is: over
-    /// a card's own colours, where an outline would vanish.
+    /// On Liquid Glass, in white with the month dimmed over a soft inner
+    /// glow: over a card's own colours, where an outline would vanish.
     var onGlass = false
 
     var body: some View {
@@ -109,7 +109,7 @@ struct ReleaseDateBadge: View {
             if let bottom = bottom(parts) {
                 Text(verbatim: bottom)
                     .font(onGlass ? .caption2.weight(.semibold) : .caption2)
-                    .foregroundStyle(onGlass ? AnyShapeStyle(.orange) : AnyShapeStyle(.secondary))
+                    .foregroundStyle(onGlass ? AnyShapeStyle(.white.opacity(0.75)) : AnyShapeStyle(.secondary))
             }
         }
         .lineLimit(1)
@@ -119,7 +119,17 @@ struct ReleaseDateBadge: View {
         .accessibilityLabel(Text(ReleaseDateText.phrase(date)))
         if onGlass {
             leaf
-                .foregroundStyle(.orange)
+                .foregroundStyle(.white)
+                .background {
+                    // A soft glow inside the leaf, behind the date.
+                    RadialGradient(
+                        colors: [.white.opacity(0.28), .clear],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 30
+                    )
+                    .clipShape(.rect(cornerRadius: 10))
+                }
                 .glassEffect(.regular, in: .rect(cornerRadius: 10))
         } else {
             leaf.overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary))

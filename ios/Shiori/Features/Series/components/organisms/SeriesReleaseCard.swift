@@ -5,8 +5,7 @@ import SwiftUI
 /// colours the title, the author and the volume's place at the top, and at
 /// the foot one white button that orders it from the store — Audible for a recording, Amazon
 /// otherwise. Under the title, how long is left before it comes out; the day itself sits
-/// in the corner as a calendar leaf on glass, in orange as everything
-/// announced is. A tap elsewhere opens the
+/// in the corner as a white calendar leaf on glass. A tap elsewhere opens the
 /// volume's page, as on Découvrir. No "wait for it": the saga's bell already
 /// alerts on the day.
 struct SeriesReleaseCard: View {
