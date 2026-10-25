@@ -13160,6 +13160,12 @@
             "state" : "translated",
             "value" : "lu en %lld jours"
           }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "read in %lld days"
+          }
         }
       }
     },
