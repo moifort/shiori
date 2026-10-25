@@ -8981,22 +8981,6 @@
         }
       }
     },
-    "Passer" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skip"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Passer"
-          }
-        }
-      }
-    },
     "Photo récente" : {
       "localizations" : {
         "en" : {
