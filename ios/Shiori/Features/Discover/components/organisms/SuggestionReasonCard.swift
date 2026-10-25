@@ -3,7 +3,7 @@ import SwiftUI
 /// Why a book was suggested, as a card over the colours of the reader's book
 /// it draws on, as the home's "En cours" card sets its text over a cover: the
 /// title in the corner, the reader's covers stacked beside the reason, then
-/// each book it cites as a row on glass — the genre's symbol in a disc at its
+/// each book it cites as a capsule row — the genre's symbol in a disc at its
 /// leading end, the title, the reader's heart or stars, a chevron — that
 /// opens the book or its saga.
 struct SuggestionReasonCard: View {
@@ -34,11 +34,9 @@ struct SuggestionReasonCard: View {
                     .accessibilityIdentifier("suggestion-reason")
             }
             if !references.isEmpty {
-                GlassEffectContainer(spacing: 8) {
-                    VStack(spacing: 8) {
-                        ForEach(references) { reference in
-                            row(reference)
-                        }
+                VStack(spacing: 8) {
+                    ForEach(references) { reference in
+                        row(reference)
                     }
                 }
             }
@@ -47,7 +45,10 @@ struct SuggestionReasonCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .environment(\.colorScheme, .dark)
         .background {
+            // Darkened past the hero's veil: a pale cover — a white Folio —
+            // blurs to a washed grey the white text and glass rows fade into.
             CoverBackdrop(url: references.lazy.compactMap(\.coverURL).first, ground: .clear)
+                .overlay(Color.black.opacity(0.4))
         }
         .clipShape(.rect(cornerRadius: 18))
     }
@@ -65,7 +66,7 @@ struct SuggestionReasonCard: View {
                     .shadow(color: .black.opacity(0.5), radius: 8, y: 6)
                     .rotationEffect(index == 0 ? .zero : .degrees(6))
                     .brightness(index == 0 ? 0 : -0.12)
-                    .offset(x: index == 0 ? 0 : 10, y: index == 0 ? 12 : 0)
+                    .offset(x: index == 0 ? 0 : 10, y: index == 0 && covers.count > 1 ? 12 : 0)
             }
         }
         .frame(width: covers.count > 1 ? 74 : 64, height: covers.count > 1 ? 108 : 96, alignment: .topLeading)
@@ -92,7 +93,18 @@ struct SuggestionReasonCard: View {
             .contentShape(.capsule)
         }
         .buttonStyle(.plain)
-        .glassEffect(.regular.interactive(), in: .capsule)
+        // Drawn rather than system glass, whose vibrancy greys the row over a
+        // pale backdrop and turns the heart pink.
+        .background {
+            Capsule()
+                .fill(LinearGradient(
+                    colors: [.white.opacity(0.2), .white.opacity(0.1)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                ))
+                .overlay(Capsule().strokeBorder(.white.opacity(0.28), lineWidth: 0.5))
+                .shadow(color: .black.opacity(0.25), radius: 6, y: 4)
+        }
         .accessibilityIdentifier("suggestion-reference")
     }
 

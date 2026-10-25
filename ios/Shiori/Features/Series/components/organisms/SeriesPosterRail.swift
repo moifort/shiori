@@ -45,3 +45,12 @@ struct SeriesPosterRail<Item: Identifiable, Poster: View>: View where Item.ID ==
         }
     }
 }
+
+#Preview {
+    SeriesPosterRail(title: "Tomes", items: (1...6).map { number in
+        Book(id: "volume-\(number)", title: "Tome \(number)", authors: ["Pierce Brown"], status: number < 4 ? .read : .toRead)
+    }, ringedId: "volume-4") { book in
+        PosterCover(book: book, caption: book.title)
+    }
+    .padding(20)
+}
