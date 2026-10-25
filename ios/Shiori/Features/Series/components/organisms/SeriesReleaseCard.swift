@@ -4,8 +4,8 @@ import SwiftUI
 /// card: its cover edge to edge on the leading side, over the cover's own
 /// colours the title, the author and the volume's place at the top, and at
 /// the foot one white button that orders it from the store — Audible for a recording, Amazon
-/// otherwise. The day sits in the corner as a white calendar leaf, how long
-/// is left tagged under it. A tap elsewhere opens the
+/// otherwise. How long is left is tagged under the title; the day itself sits
+/// in the corner as a white calendar leaf on glass. A tap elsewhere opens the
 /// volume's page, as on Découvrir. No "wait for it": the saga's bell already
 /// alerts on the day.
 struct SeriesReleaseCard: View {
@@ -21,8 +21,6 @@ struct SeriesReleaseCard: View {
     private static let coverWidth: CGFloat = 82
     /// The calendar leaf's width and its margin, kept clear by the text.
     private static let leafRoom: CGFloat = 48
-    /// The calendar leaf's own width, which the countdown tag matches.
-    private static let leafWidth: CGFloat = 48
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
@@ -55,6 +53,11 @@ struct SeriesReleaseCard: View {
                     .font(.headline)
                     .lineLimit(2)
                     .padding(.trailing, volume.date == nil ? 0 : Self.leafRoom)
+                // How long is left, under the title in an outlined tag.
+                if let countdown = volume.date.flatMap({ ReleaseDateText.countdown($0) }) {
+                    OutlinedTag(text: countdown.localizedUppercase, isFrosted: false)
+                        .padding(.top, 3)
+                }
                 Spacer(minLength: 8)
                 // The next step at the card's foot.
                 if let store {
@@ -73,18 +76,8 @@ struct SeriesReleaseCard: View {
         .onTapGesture(perform: onOpen)
         .overlay(alignment: .topTrailing) {
             if let date = volume.date {
-                // How long is left, tagged under the leaf at its width.
-                VStack(spacing: 6) {
-                    ReleaseDateBadge(date: date, onGlass: true)
-                    if let countdown = ReleaseDateText.countdown(date, style: .short) {
-                        OutlinedTag(
-                            text: countdown.localizedUppercase,
-                            isFrosted: false,
-                            width: Self.leafWidth
-                        )
-                    }
-                }
-                .padding(10)
+                ReleaseDateBadge(date: date, onGlass: true)
+                    .padding(10)
             }
         }
         .environment(\.colorScheme, .dark)
