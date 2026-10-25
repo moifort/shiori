@@ -323,32 +323,32 @@
     },
     "%@, %@, à ajouter" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@, %2$@, à ajouter"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@, %2$@, to add"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@, à ajouter"
           }
         }
       }
     },
     "%@, %@, à paraître" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@, %2$@, à paraître"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@, %2$@, coming soon"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@, à paraître"
           }
         }
       }
@@ -3477,18 +3477,18 @@
         }
       }
     },
-    "Chez Camille" : {
+    "Chez vous" : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Camille’s"
-          }
-        },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chez Camille"
+            "value" : "Chez vous"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In your library"
           }
         }
       }
@@ -4289,6 +4289,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Coup de cœur"
+          }
+        }
+      }
+    },
+    "Coup de cœur de %@" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coup de cœur de %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s favourite"
           }
         }
       }
@@ -6629,18 +6645,18 @@
         }
       }
     },
-    "Le livre sera noté « Conseillé par %@ ». Sa note de lecture reste privée." : {
+    "Le livre sera noté « Conseillé par %@ »." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The book will be marked “Recommended by %@”. Their reading note stays private."
-          }
-        },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Le livre sera noté « Conseillé par %@ ». Sa note de lecture reste privée."
+            "value" : "Le livre sera noté « Conseillé par %@ »."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The book will be marked “Recommended by %@”."
           }
         }
       }
@@ -6785,22 +6801,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lecture"
-          }
-        }
-      }
-    },
-    "Lecture de %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@’s reading"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lecture de %@"
           }
         }
       }
@@ -8109,6 +8109,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Notifications désactivées"
+          }
+        }
+      }
+    },
+    "Noté %lld sur 5 par %@" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Noté %1$lld sur 5 par %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rated %1$lld out of 5 by %2$@"
           }
         }
       }
@@ -13155,16 +13171,16 @@
     },
     "lu en %lld jours" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "lu en %lld jours"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "read in %lld days"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "lu en %lld jours"
           }
         }
       }

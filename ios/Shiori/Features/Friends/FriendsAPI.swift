@@ -506,6 +506,7 @@ enum FriendsAPI {
         friendBook.book.durationMinutes = row.durationMinutes
         friendBook.book.narrators = row.narrators
         friendBook.book.isbn13 = row.isbn13
+        friendBook.book.note = row.note
         friendBook.book.audibleURL = row.audibleUrl.flatMap(URL.init(string:))
         friendBook.book.amazonURL = URL(string: row.amazonUrl)
         friendBook.book.addedAt = GraphQLHelpers.parseISO8601(row.addedAt)
@@ -673,7 +674,7 @@ private extension FriendBook {
 
 private extension Book {
     /// A friend's book, drawn by the same row as the reader's own. Everything
-    /// the row needs is here; the note is not, and has no field to come from.
+    /// the row needs is here; what they wrote of it comes with its page.
     init(row: ShioriGraphQL.FriendBookRow) {
         self.init(
             id: row.id,

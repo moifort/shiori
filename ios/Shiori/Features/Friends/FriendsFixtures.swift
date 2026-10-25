@@ -105,6 +105,7 @@ extension FriendBook {
             pageCount: 662,
             isbn13: "9782352943556",
             series: SeriesMembership(id: "kkc", name: "Chronique du tueur de roi", volume: 1, kind: .main),
+            coverURL: URL(string: "https://m.media-amazon.com/images/P/2352943558.01._SCLZZZZZZZ_.jpg"),
             status: .read,
             rating: 5,
             favorite: true,

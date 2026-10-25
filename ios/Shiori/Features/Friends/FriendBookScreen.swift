@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// A friend's book, connected: loads it, what Audible sells and what may be
-/// awaited of it, takes it onto the reader's shelf from the "+" in the corner,
-/// pushes its saga, and hands the rest to `FriendBookPage`.
+/// awaited of it, takes it onto the reader's shelf from the hero's first
+/// button, pushes its saga, and hands the rest to `FriendBookPage`.
 ///
 /// Always opened as a sheet, as a book opens from the reader's own library:
 /// a close button in the corner.
@@ -45,12 +45,17 @@ struct FriendBookScreen: View {
                     friendId: viewModel.friendId,
                     friendName: friendName,
                     added: viewModel.added,
-                    awaited: viewModel.offer.awaited
+                    awaited: viewModel.offer.awaited,
+                    formats: entry.book.format.takenAs.filter { $0 != .audiobook || viewModel.audio != .unavailable },
+                    awaitable: viewModel.offer.awaitable
                 ) { action in
                     switch action {
                     case .openSeries: showsSaga = true
                     case let .openAwaited(edition): openAwaited = edition
                     case let .stopAwaiting(edition): await viewModel.stopAwaiting(edition)
+                    case let .add(status, format):
+                        if await viewModel.add(status, as: format) { onAdded() }
+                    case let .awaitEdition(format): viewModel.awaitEdition(format)
                     }
                 }
             } else if let errorMessage = viewModel.errorMessage {
@@ -63,7 +68,6 @@ struct FriendBookScreen: View {
                 )
             }
         }
-        .navigationTitle(Text(verbatim: String(localized: "Chez \(friendName)")))
         .navigationBarTitleDisplayMode(.inline)
         .task { await viewModel.load() }
         .task { await viewModel.loadAudio() }
@@ -89,19 +93,15 @@ struct FriendBookScreen: View {
                     ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
                 }
             }
-            if let entry = viewModel.entry {
-                ToolbarItem(placement: .primaryAction) {
-                    FriendBookAddMenu(
-                        formats: entry.book.format.takenAs.filter { $0 != .audiobook || viewModel.audio != .unavailable },
-                        owned: entry.inLibrary || viewModel.added != nil,
-                        awaitable: viewModel.offer.awaitable,
-                        onAdd: { status, format in
-                            if await viewModel.add(status, as: format) { onAdded() }
-                        },
-                        onAwait: { viewModel.awaitEdition($0) }
-                    )
-                }
+            // Whose shelf it is: their disc in the corner, as the TV app
+            // sets the account's — filling the place, without the toolbar's
+            // glass around it. Their name is on the hero's detail line.
+            ToolbarItem(placement: .primaryAction) {
+                FriendMonogram(name: friendName)
+                    .accessibilityLabel(Text("Chez \(friendName)"))
+                    .accessibilityIdentifier("friend-book-owner")
             }
+            .sharedBackgroundVisibility(.hidden)
         }
         .alert(
             "Ajout impossible",

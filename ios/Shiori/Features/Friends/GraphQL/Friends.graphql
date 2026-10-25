@@ -2,7 +2,7 @@
 #
 # Friendship is symmetric: accepting an invitation opens both libraries at once,
 # and either of the two can end it for both. A friend's books come back as their
-# own type, which carries no reading note at all.
+# own type: what they share of them, their words on them included.
 
 query Friends {
   friends {
@@ -204,6 +204,7 @@ query FriendBook($userId: UserId!, $bookId: BookId!) {
     amazonUrl
     addedAt
     startedAt
+    note
   }
 }
 

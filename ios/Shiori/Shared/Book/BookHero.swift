@@ -17,6 +17,9 @@ struct BookHero<Actions: View>: View {
     var state: BookState?
     /// The reader awaits an edition of it: binoculars beside the title.
     var isAwaited = false
+    /// How long the book runs on the detail line — pages, or a recording's
+    /// hours. Off where the facts under the hero say it and nothing else does.
+    var showsLength = true
     var coverWidth: CGFloat = 108
     @ViewBuilder var actions: Actions
 
@@ -155,10 +158,12 @@ struct BookHero<Actions: View>: View {
     private var details: String {
         var parts: [String] = []
         if let state { parts.append(state.text) }
-        if let duration = book.durationLabel {
-            parts.append(duration)
-        } else if let pages = book.pageCount {
-            parts.append(String(localized: "\(pages) pages"))
+        if showsLength {
+            if let duration = book.durationLabel {
+                parts.append(duration)
+            } else if let pages = book.pageCount {
+                parts.append(String(localized: "\(pages) pages"))
+            }
         }
         if let language = book.language, language.isForeign { parts.append(language.label) }
         return parts.joined(separator: " · ")
