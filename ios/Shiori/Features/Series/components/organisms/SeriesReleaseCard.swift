@@ -4,8 +4,8 @@ import SwiftUI
 /// card: its cover edge to edge on the leading side, over the cover's own
 /// colours the title, the author and the volume's place at the top, and at
 /// the foot one white button that orders it from the store — Audible for a recording, Amazon
-/// otherwise. The day it comes out sits in the corner as a calendar leaf on
-/// glass, in orange as everything announced is. A tap elsewhere opens the
+/// otherwise, beside how long is left before it comes out. The day itself sits
+/// in the corner as the iOS Calendar icon. A tap elsewhere opens the
 /// volume's page, as on Découvrir. No "wait for it": the saga's bell already
 /// alerts on the day.
 struct SeriesReleaseCard: View {
@@ -14,10 +14,10 @@ struct SeriesReleaseCard: View {
     let isAudio: Bool
     let onOpen: () -> Void
 
-    private static let height: CGFloat = 150
-    private static let coverWidth: CGFloat = 100
-    /// The calendar leaf's width and its margin, kept clear by the text.
-    private static let leafRoom: CGFloat = 48
+    private static let height: CGFloat = 124
+    private static let coverWidth: CGFloat = 82
+    /// The calendar icon's width and its margin, kept clear by the text.
+    private static let leafRoom: CGFloat = 56
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
@@ -43,14 +43,23 @@ struct SeriesReleaseCard: View {
                     .lineLimit(2)
                     .padding(.trailing, volume.date == nil ? 0 : Self.leafRoom)
                 Spacer(minLength: 0)
-                // The next step at the card's foot.
-                if let store {
-                    preorderButton(store)
+                // The next step at the card's foot, and the wait beside it.
+                HStack(spacing: 10) {
+                    if let store {
+                        preorderButton(store)
+                    }
+                    if let countdown = volume.date.flatMap({ ReleaseDateText.countdown($0) }) {
+                        Text(countdown)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.orange)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
                 }
             }
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 14)
+            .padding(.vertical, 12)
             .padding(.trailing, 12)
         }
         .frame(height: Self.height)
@@ -59,7 +68,8 @@ struct SeriesReleaseCard: View {
         .onTapGesture(perform: onOpen)
         .overlay(alignment: .topTrailing) {
             if let date = volume.date {
-                ReleaseDateBadge(date: date, onGlass: true)
+                ReleaseCalendarIcon(date: date, size: 46)
+                    .shadow(color: .black.opacity(0.25), radius: 4, y: 1)
                     .padding(10)
             }
         }
@@ -150,7 +160,8 @@ extension DiscoveredVolume {
         volume: DiscoveredVolume(
             number: 7,
             title: "Red God",
-            date: "2027-01-12",
+            date: Calendar.current.date(byAdding: .day, value: 10, to: .now)!
+                .formatted(.iso8601.year().month().day()),
             isbn13: "9782017227311",
             coverURL: nil
         ),

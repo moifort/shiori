@@ -50,6 +50,26 @@ enum ReleaseDateText {
         }
     }
 
+    /// How long until it comes out: "demain", "dans 10 jours", "dans 2 mois",
+    /// "dans 1 an" — in days under a month, months under a year. Nil for a
+    /// date given only as a year, or one not ahead any more.
+    static func countdown(_ date: String, today: Date = .now) -> String? {
+        guard let (day, precision) = parts(date), precision > 1 else { return nil }
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: today)
+        let span = calendar.dateComponents([.day, .month, .year], from: start, to: day)
+        guard let days = calendar.dateComponents([.day], from: start, to: day).day, days > 0
+        else { return nil }
+        let components: DateComponents =
+            if days < 30 { DateComponents(day: days) }
+            else if let years = span.year, years > 0 { DateComponents(year: years) }
+            else { DateComponents(month: max(span.month ?? 1, 1)) }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        formatter.dateTimeStyle = .named
+        return formatter.localizedString(from: components)
+    }
+
     /// For a volume not out yet: "Sort le 8 octobre 2026", "Sort en octobre
     /// 2026", "Sort en 2027".
     static func coming(_ date: String) -> String {
@@ -78,19 +98,16 @@ enum ReleaseDateText {
 /// One square whatever it says, so the badges line up down a list.
 struct ReleaseDateBadge: View {
     let date: String
-    /// On Liquid Glass, both lines in orange as everything announced is: over
-    /// a card's own colours, where an outline would vanish.
-    var onGlass = false
 
     var body: some View {
         let parts = date.split(separator: "-").compactMap { Int($0) }
-        let leaf = VStack(spacing: onGlass ? 1 : 0) {
+        VStack(spacing: 0) {
             Text(verbatim: top(parts))
-                .font(onGlass ? .headline.weight(.bold) : .subheadline.weight(.semibold))
+                .font(.subheadline.weight(.semibold))
             if let bottom = bottom(parts) {
                 Text(verbatim: bottom)
-                    .font(onGlass ? .caption2.weight(.semibold) : .caption2)
-                    .foregroundStyle(onGlass ? AnyShapeStyle(.orange) : AnyShapeStyle(.secondary))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
         }
         .lineLimit(1)
@@ -98,13 +115,7 @@ struct ReleaseDateBadge: View {
         .frame(width: 48, height: 48)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(ReleaseDateText.phrase(date)))
-        if onGlass {
-            leaf
-                .foregroundStyle(.orange)
-                .glassEffect(.regular, in: .rect(cornerRadius: 10))
-        } else {
-            leaf.overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary))
-        }
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary))
     }
 
     private func month(_ number: Int) -> String {
@@ -125,6 +136,61 @@ struct ReleaseDateBadge: View {
         case 3: month(parts[1])
         case 2: String(parts[0])
         default: nil
+        }
+    }
+}
+
+/// A release date drawn as the iOS Calendar icon: the month in white on a red
+/// band over the day in black on white — or the year over the month, or the
+/// year alone, as precisely as it was announced. Its colours are fixed, so it
+/// reads the same over a cover's colours as on the page.
+struct ReleaseCalendarIcon: View {
+    let date: String
+    var size: CGFloat = 52
+
+    var body: some View {
+        let parts = date.split(separator: "-").compactMap { Int($0) }
+        VStack(spacing: 0) {
+            Text(verbatim: header(parts))
+                .font(.system(size: size * 0.2, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: size * 0.3)
+                .background(Color(red: 0.95, green: 0.33, blue: 0.29))
+            Text(verbatim: face(parts))
+                .font(.system(size: size * (parts.count == 3 ? 0.46 : 0.26), weight: .bold))
+                .foregroundStyle(.black)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(.white)
+        }
+        .lineLimit(1)
+        .minimumScaleFactor(0.6)
+        .frame(width: size, height: size)
+        .clipShape(.rect(cornerRadius: size * 0.22, style: .continuous))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(ReleaseDateText.phrase(date)))
+    }
+
+    private func month(_ number: Int) -> String {
+        guard (1...12).contains(number) else { return "" }
+        return Calendar.current.shortMonthSymbols[number - 1]
+            .replacingOccurrences(of: ".", with: "")
+            .uppercased()
+    }
+
+    private func header(_ parts: [Int]) -> String {
+        switch parts.count {
+        case 3: month(parts[1])
+        case 2: String(parts[0])
+        default: ""
+        }
+    }
+
+    private func face(_ parts: [Int]) -> String {
+        switch parts.count {
+        case 3: "\(parts[2])"
+        case 2: month(parts[1])
+        default: parts.first.map(String.init) ?? ""
         }
     }
 }
