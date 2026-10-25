@@ -548,7 +548,7 @@ struct HomePage: View {
         let days = startedAt.daysAgo()
         return days == 0
             ? String(localized: "commencé aujourd'hui")
-            : String(localized: "depuis \(days) j")
+            : String(localized: "depuis \(days)j")
     }
 
     /// How long a book has been open, whatever its format: the TV app's card
@@ -558,7 +558,7 @@ struct HomePage: View {
         let days = startedAt.daysAgo()
         return days == 0
             ? String(localized: "commencé aujourd'hui")
-            : String(localized: "depuis \(days) j")
+            : String(localized: "depuis \(days)j")
     }
 
     /// How long a book has been on the pile, set in its cover in the largest
@@ -583,7 +583,7 @@ struct HomePage: View {
         switch addedAt.daysAgo() {
         case 0: return String(localized: "ajouté aujourd'hui")
         case 1: return String(localized: "ajouté hier")
-        case let days: return String(localized: "il y a \(days) j")
+        case let days: return String(localized: "il y a \(days)j")
         }
     }
 }

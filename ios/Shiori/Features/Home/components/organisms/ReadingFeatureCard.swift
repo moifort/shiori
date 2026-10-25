@@ -120,8 +120,8 @@ struct ReadingFeatureCard: View {
         let hours = left / 60
         let minutes = left % 60
         let label = hours == 0
-            ? String(localized: "\(minutes) min")
-            : minutes == 0 ? String(localized: "\(hours) h") : String(localized: "\(hours) h \(minutes)")
+            ? String(localized: "\(minutes)min")
+            : minutes == 0 ? String(localized: "\(hours)h") : String(localized: "\(hours)h\(String(format: "%02d", minutes))")
         return String(localized: "\(label) restantes")
     }
 
@@ -162,7 +162,7 @@ struct ReadingFeatureCard: View {
             series: SeriesMembership(id: "h", name: "Les Cantos d'Hypérion", volume: 3, kind: .main),
             coverURL: Book.preview.coverURL, status: .reading
         ),
-        caption: "depuis 2 j",
+        caption: "depuis 2j",
         onOpen: {}, onFinish: {}, onOpenSeries: {}
     )
     .padding()

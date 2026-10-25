@@ -115,7 +115,7 @@ struct AudibleSourcePage: View {
         let days = lastImportedAt.daysAgo()
         if days == 0 { return String(localized: "aujourd'hui") }
         if days == 1 { return String(localized: "hier") }
-        return String(localized: "il y a \(days) j")
+        return String(localized: "il y a \(days)j")
     }
 }
 

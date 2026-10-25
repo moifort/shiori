@@ -555,12 +555,12 @@ struct SeriesShowCard: View {
 }
 
 #Preview("Lead card") {
-    ReadingLeadCard(book: .preview, caption: "depuis 6 j", onOpen: {}, onFinish: {}, onRate: {})
+    ReadingLeadCard(book: .preview, caption: "depuis 6j", onOpen: {}, onFinish: {}, onRate: {})
         .padding()
 }
 
 #Preview("Cover row") {
-    CoverRow(items: Dashboard.preview.reading.map { .init(book: $0, caption: "depuis 3 j") }) { _ in }
+    CoverRow(items: Dashboard.preview.reading.map { .init(book: $0, caption: "depuis 3j") }) { _ in }
         .padding()
 }
 

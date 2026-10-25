@@ -159,7 +159,7 @@ struct ImportableBook: Identifiable, Sendable {
         authors.isEmpty ? String(localized: "Auteur inconnu") : authors.joined(separator: ", ")
     }
 
-    /// "Tome 3 · 29 h 30" — what tells two recordings of the same work apart, on
+    /// "Tome 3 · 29h30" — what tells two recordings of the same work apart, on
     /// one line under the authors.
     var detailLine: String {
         var parts: [String] = []
@@ -175,7 +175,7 @@ struct ImportableBook: Identifiable, Sendable {
         guard let durationMinutes, durationMinutes > 0 else { return nil }
         let hours = durationMinutes / 60
         let minutes = durationMinutes % 60
-        return hours > 0 ? "\(hours) h \(String(format: "%02d", minutes))" : "\(minutes) min"
+        return hours > 0 ? "\(hours)h\(String(format: "%02d", minutes))" : "\(minutes)min"
     }
 
     /// A stand-in book, only so the row can draw the shared cover component —

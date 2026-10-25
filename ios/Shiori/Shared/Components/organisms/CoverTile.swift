@@ -40,7 +40,7 @@ struct CoverTile: View {
 #Preview {
     CoverTile(
         book: Book(id: "1", title: "Le Nom du vent", authors: ["Patrick Rothfuss"], status: .reading),
-        caption: "depuis 12 j"
+        caption: "depuis 12j"
     )
     .padding()
 }

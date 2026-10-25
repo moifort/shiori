@@ -347,16 +347,16 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
         narrators.isEmpty ? nil : narrators.joined(separator: ", ")
     }
 
-    /// The running time as a reader says it out loud — "8 h 12", "47 min". Hours
+    /// The running time as a reader says it out loud — "8h12", "47min". Hours
     /// and minutes rather than a bare minute count: nobody hears "492 minutes"
     /// as a length.
     var durationLabel: String? {
         guard let durationMinutes else { return nil }
         let hours = durationMinutes / 60
         let minutes = durationMinutes % 60
-        if hours == 0 { return String(localized: "\(minutes) min") }
-        if minutes == 0 { return String(localized: "\(hours) h") }
-        return String(localized: "\(hours) h \(minutes)")
+        if hours == 0 { return String(localized: "\(minutes)min") }
+        if minutes == 0 { return String(localized: "\(hours)h") }
+        return String(localized: "\(hours)h\(String(format: "%02d", minutes))")
     }
 
     /// The listening progress as a tag says it — "42%" — the figure against

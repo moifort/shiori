@@ -53,7 +53,7 @@ struct LastFinishedCard: View {
         switch days {
         case 0: return String(localized: "Dernier livre terminé · aujourd'hui")
         case 1: return String(localized: "Dernier livre terminé · hier")
-        default: return String(localized: "Dernier livre terminé · il y a \(days) j")
+        default: return String(localized: "Dernier livre terminé · il y a \(days)j")
         }
     }
 

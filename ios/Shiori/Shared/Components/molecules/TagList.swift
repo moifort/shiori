@@ -36,7 +36,7 @@ struct Pill: View {
                 Image(systemName: trailingSystemImage).imageScale(.small)
             }
         }
-        // A pill is one short fact: "7 h 37" split over two lines reads as two.
+        // A pill is one short fact: "7h37" split over two lines reads as two.
         .lineLimit(1)
         .fixedSize()
         .font(.caption)

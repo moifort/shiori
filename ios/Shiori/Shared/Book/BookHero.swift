@@ -129,7 +129,7 @@ extension BookState {
             return BookState(
                 text: days == 0
                     ? String(localized: "En cours · commencé aujourd'hui")
-                    : String(localized: "En cours · depuis \(days) j"),
+                    : String(localized: "En cours · depuis \(days)j"),
                 tint: book.status.tint
             )
         case .read:
