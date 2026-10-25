@@ -1608,7 +1608,7 @@ enum FriendActivityKind {
 }
 
 """
-A book as a friend sees it: what is on the shelf and what its owner makes of it, never their reading note.
+A book as a friend sees it: what is on the shelf and what its owner makes of it, their words on it included.
 """
 type FriendBook {
   addedAt: DateTime!
@@ -1658,6 +1658,11 @@ type FriendBook {
   """
   listeningProgress: Percentage
   narrators: [NarratorName!]!
+
+  """
+  What its owner wrote of it, shown to their friends as a message from them. Null when they wrote nothing.
+  """
+  note: ReadingNote
   pageCount: PageCount
   publisher: Publisher
   rating: StarRating

@@ -171,14 +171,32 @@ describe('reading a friend shelf', () => {
     expect(result.data?.friendProfile).toEqual({ reading: [{ title: 'Dune' }] })
   })
 
-  // A friend sees a shelf, not a diary. There is no field for the note at all,
-  // which is what makes this permanent rather than a rule somebody must follow.
-  test('has no field through which a reading note could be read', async () => {
+  // What the owner wrote of a book reaches their friends, as a message from
+  // them on its page.
+  test('shows what the owner wrote of a book, and nothing when they wrote nothing', async () => {
+    const idOf = (result: Awaited<ReturnType<typeof addBook>>) =>
+      (result.data as { addBook: { id: string } }).addBook.id
+    const noted = idOf(await addBook(alice, 'title: "Dune", status: READING'))
+    const silent = idOf(await addBook(alice, 'title: "Silo", status: READING'))
+    await as(alice)(`mutation { setBookNote(id: "${noted}", note: "Lis-le cet été.") { id } }`)
     await befriend()
 
-    const result = await as(bob)('{ friendProfile(userId: "alice") { reading { note } } }')
+    const withNote = await as(bob)(`{ friendBook(userId: "alice", bookId: "${noted}") { note } }`)
+    const without = await as(bob)(`{ friendBook(userId: "alice", bookId: "${silent}") { note } }`)
 
-    expect(result.errors?.[0]?.message).toContain('note')
+    expect(withNote.data?.friendBook).toEqual({ note: 'Lis-le cet été.' })
+    expect(without.data?.friendBook).toEqual({ note: null })
+  })
+
+  // Who recommended a book to its owner stays theirs: the type has no field for it.
+  test('has no field through which a recommendation could be read', async () => {
+    await befriend()
+
+    const result = await as(bob)(
+      '{ friendProfile(userId: "alice") { reading { recommendation } } }',
+    )
+
+    expect(result.errors?.[0]?.message).toContain('recommendation')
   })
 
   // A stranger must not be able to tell an account that refused them from one

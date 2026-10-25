@@ -222,9 +222,8 @@ export namespace FriendshipUseCase {
    *  is also the answer for an id that names nobody: a stranger must not be able
    *  to tell an account that refused them from one that does not exist.
    *
-   *  A book marked "do not share" is absent from every one of these lists, and
-   *  so is the reading note on every book that is here — a friend sees a shelf,
-   *  not a diary. */
+   *  A book marked "do not share" is absent from every one of these lists; the
+   *  books that are here carry what their owner wrote of them. */
   export const profile = async (
     userId: UserId,
     friendId: UserId,

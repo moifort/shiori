@@ -268,8 +268,8 @@ export type Book = {
    *  before the field existed. */
   favoritedAt?: Date
   note?: ReadingNote
-  /** Who recommended the book, when the reader recorded it. Private like the
-   *  note: a friend browsing the library never sees it. */
+  /** Who recommended the book, when the reader recorded it. Private, unlike
+   *  the note: a friend browsing the library never sees it. */
   recommendation?: Recommendation
   /** Excluded from any shared view. Built now, used when sharing ships, because
    *  adding a boolean to records already in production costs a migration. */

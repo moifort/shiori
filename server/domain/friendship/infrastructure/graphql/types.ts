@@ -31,14 +31,14 @@ import { objectStore } from '~/system/object-store'
 
 /** A book on somebody else's shelf.
  *
- *  Its own type rather than `Book`, and deliberately smaller: a friend sees a
- *  shelf, not a diary. There is no field here for the reading note, so no
- *  resolver can ever be added that leaks one, and none for `hidden`, because a
- *  book carrying it never reaches this type at all. */
+ *  Its own type rather than `Book`, and deliberately smaller: what the owner
+ *  shares of it, their words on it included, and nothing they keep — no field
+ *  for who recommended it to them, and none for `hidden`, because a book
+ *  carrying it never reaches this type at all. */
 export const FriendBookType = builder.objectRef<FriendBook>('FriendBook').implement({
   description:
     'A book as a friend sees it: what is on the shelf and what its owner makes ' +
-    'of it, never their reading note.',
+    'of it, their words on it included.',
   fields: (t) => ({
     id: t.field({ type: 'BookId', resolve: (book) => book.id }),
     title: t.field({ type: 'BookTitle', resolve: (book) => book.title }),
@@ -110,6 +110,14 @@ export const FriendBookType = builder.objectRef<FriendBook>('FriendBook').implem
       type: 'Synopsis',
       nullable: true,
       resolve: (book) => book.synopsis ?? null,
+    }),
+    note: t.field({
+      type: 'ReadingNote',
+      nullable: true,
+      description:
+        'What its owner wrote of it, shown to their friends as a message from them. ' +
+        'Null when they wrote nothing.',
+      resolve: (book) => book.note ?? null,
     }),
     genre: t.field({ type: GenreEnum, nullable: true, resolve: (book) => book.genre ?? null }),
     subgenres: t.field({
