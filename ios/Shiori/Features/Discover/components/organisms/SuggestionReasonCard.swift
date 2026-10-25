@@ -20,13 +20,17 @@ struct SuggestionReasonCard: View {
                 .tracking(0.3)
                 .foregroundStyle(.white.opacity(0.75))
                 .padding(.bottom, -2)
-            HStack(alignment: .top, spacing: covers.count > 1 ? 14 : 20) {
+            HStack(alignment: .top, spacing: 14) {
                 if !covers.isEmpty {
+                    // Set in from the card's edge, off the line of the title
+                    // and the rows.
                     coverStack
+                        .padding(.leading, 10)
                 }
-                // The summary's size: the card reads as the page's first text.
+                // A size above the summary's: the card is the page's first
+                // text, and why the book was chosen is what it opens on.
                 Text(reason)
-                    .font(.callout)
+                    .font(.body)
                     .foregroundStyle(.white.opacity(0.95))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
@@ -58,9 +62,8 @@ struct SuggestionReasonCard: View {
         Array(references.filter { $0.coverURL != nil }.prefix(2))
     }
 
-    /// A cover alone, set apart from the text, narrows the reason to four
-    /// lines as tall as the cover; two stacked keep their room to fan out.
-    private var coverWidth: CGFloat { 64 }
+    /// The covers stand about as tall as the reason's four or five lines.
+    private var coverWidth: CGFloat { 72 }
 
     private var coverStack: some View {
         ZStack(alignment: .topLeading) {
@@ -74,7 +77,7 @@ struct SuggestionReasonCard: View {
         }
         .frame(
             width: covers.count > 1 ? coverWidth + 10 : coverWidth,
-            height: covers.count > 1 ? 108 : coverWidth * 1.5,
+            height: covers.count > 1 ? coverWidth * 1.5 + 12 : coverWidth * 1.5,
             alignment: .topLeading
         )
         .accessibilityHidden(true)
