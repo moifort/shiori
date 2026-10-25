@@ -1,4 +1,8 @@
-import { mendedSpelling, titleWithoutAuthor } from '~/domain/book/business-rules'
+import {
+  formatSettledBySubgenres,
+  mendedSpelling,
+  titleWithoutAuthor,
+} from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
 import {
   BookLanguageValue,
@@ -538,7 +542,13 @@ export namespace ScanCommand {
 
     const parsed = parsedAuthors(value.authors)
     const authors = parsed.length > 0 ? parsed : seen.authors
-    const series = parsedSeries(value, authors, seen.format)
+    // The search files a comic album under "Bande dessinée" where the cover
+    // left it a book: the subgenre settles the format, and leaves the list.
+    const { format, subgenres } = formatSettledBySubgenres(
+      seen.format,
+      (value.subgenres ?? []).map((subgenre) => optional(subgenre, Subgenre)).filter(isPresent),
+    )
+    const series = parsedSeries(value, authors, format)
     return {
       result: {
         recognized: true,
@@ -549,7 +559,7 @@ export namespace ScanCommand {
           authors,
         ),
         authors,
-        format: seen.format,
+        format,
         media: seen.media,
         publisher: mendedOrHeld(seen.publisher, optional(value.publisher, Publisher)),
         // Kept from step 1 rather than asked again: the language of the edition
@@ -559,10 +569,7 @@ export namespace ScanCommand {
         firstPublishedIn: optional(value.firstPublishedIn, Year),
         synopsis: optional(value.synopsis, Synopsis),
         genre: optional(value.genre, GenreValue),
-        subgenres: (value.subgenres ?? [])
-          .map((subgenre) => optional(subgenre, Subgenre))
-          .filter(isPresent)
-          .slice(0, MAX_SUBGENRES),
+        subgenres: subgenres.slice(0, MAX_SUBGENRES),
         pageCount: optional(value.pageCount, PageCount),
         // Another volume's ISBN, though the model was told it is not this one,
         // would draw that volume's cover: no cover beats a wrong one.

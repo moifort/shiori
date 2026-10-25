@@ -7,6 +7,7 @@ import {
   datesAfterCorrection,
   datesAfterStatusChange,
   datesOnArrival,
+  formatSettledBySubgenres,
   groupedBySeries,
   inSagaOrder,
   keepsStory,
@@ -1485,5 +1486,36 @@ describe('mendedNames', () => {
     ).toEqual({})
     expect(mendedNames(held, { title: BookTitle('DUNE') })).toEqual({})
     expect(mendedNames(held, { title: '' })).toEqual({})
+  })
+})
+
+describe('formatSettledBySubgenres', () => {
+  test('a book filed under a format becomes that format, the subgenre dropped', () => {
+    expect(formatSettledBySubgenres('book', ['Space Opera', 'Bande Dessinée'])).toEqual({
+      format: 'bande-dessinee',
+      subgenres: ['Space Opera'],
+    })
+    expect(formatSettledBySubgenres(undefined, ['BD'])).toEqual({
+      format: 'bande-dessinee',
+      subgenres: [],
+    })
+    expect(formatSettledBySubgenres('book', ['Shōnen', 'Manga']).format).toBe('manga')
+    expect(formatSettledBySubgenres('book', ['Comics']).format).toBe('comic')
+  })
+
+  test('a format read on the cover other than a book is kept', () => {
+    expect(formatSettledBySubgenres('manga', ['Bande dessinée'])).toEqual({
+      format: 'manga',
+      subgenres: ['Bande dessinée'],
+    })
+    expect(formatSettledBySubgenres('audiobook', ['Manga']).format).toBe('audiobook')
+  })
+
+  test('subgenres that name no format change nothing', () => {
+    expect(formatSettledBySubgenres('book', ['Dark Fantasy'])).toEqual({
+      format: 'book',
+      subgenres: ['Dark Fantasy'],
+    })
+    expect(formatSettledBySubgenres(undefined, ['Mangaka']).format).toBeUndefined()
   })
 })

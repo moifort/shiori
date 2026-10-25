@@ -1035,3 +1035,42 @@ export const refreshedFacts = (
     }).filter(([, value]) => value !== undefined),
   )
 }
+
+/** The format a subgenre names, if it names one: "Bande dessinée", "BD",
+ *  "Manga", "Comics". */
+const FORMAT_SUBGENRES: Record<string, BookFormat> = {
+  'bande dessinee': 'bande-dessinee',
+  bd: 'bande-dessinee',
+  manga: 'manga',
+  comic: 'comic',
+  comics: 'comic',
+}
+
+const formatNamedBy = (subgenre: string): BookFormat | undefined =>
+  FORMAT_SUBGENRES[
+    subgenre
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .toLowerCase()
+      .replace(/[^a-z]+/g, ' ')
+      .trim()
+  ]
+
+/** A book's format settled by its subgenres: a web search that files a book
+ *  under "Bande dessinée" says what the object is, where a cover read as a
+ *  book, or not settled at all, did not. Only a printed book is corrected —
+ *  a manga, a comic or a recording read on the cover is kept — and the
+ *  subgenre that named the format leaves the list, the format having its own
+ *  tile. */
+export const formatSettledBySubgenres = <S extends string>(
+  format: BookFormat | undefined,
+  subgenres: readonly S[],
+): { format: BookFormat | undefined; subgenres: S[] } => {
+  if (format !== undefined && format !== 'book') return { format, subgenres: [...subgenres] }
+  const named = subgenres.map(formatNamedBy).find(isPresent)
+  if (!named) return { format, subgenres: [...subgenres] }
+  return {
+    format: named,
+    subgenres: subgenres.filter((subgenre) => formatNamedBy(subgenre) === undefined),
+  }
+}

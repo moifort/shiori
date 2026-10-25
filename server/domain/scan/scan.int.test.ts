@@ -315,6 +315,19 @@ describe('reading the format', () => {
     expect(result.format).toBeUndefined()
     expect(String(result.title)).toBe('Le Nom du vent')
   })
+
+  test('takes the format the search filed the book under', async () => {
+    answers = [
+      { ...aCover, format: 'book' },
+      { ...anEnrichment, subgenres: ['Space Opera', 'Bande Dessinée'] },
+      aCatalogue,
+    ]
+
+    const { result } = await ScanCommand.scanWithCache(image, 'fr')
+
+    expect(result.format).toBe('bande-dessinee')
+    expect((result.subgenres ?? []).map(String)).toEqual(['Space Opera'])
+  })
 })
 
 describe('classifying the genre', () => {
