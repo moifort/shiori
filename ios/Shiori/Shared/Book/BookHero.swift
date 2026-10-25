@@ -36,6 +36,12 @@ struct BookHero<Actions: View>: View {
                     .accessibilityHidden(true)
                 identity
             }
+            // In the corner over the text, level with the cover's top: what
+            // the reader decided of the book, apart from what it is.
+            .overlay(alignment: .topTrailing) {
+                HStack(spacing: 10) { marks }
+                    .font(.title3)
+            }
             actions
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -66,7 +72,6 @@ struct BookHero<Actions: View>: View {
                     .font(.title2.weight(.bold))
                     .lineLimit(4)
                     .minimumScaleFactor(0.8)
-                marks
             }
             .foregroundStyle(.white)
             Text(book.authorLine)
@@ -90,9 +95,8 @@ struct BookHero<Actions: View>: View {
         ])
     }
 
-    /// Beside the title, what the reader decided of the book that its page
-    /// does not otherwise say: given up, kept out of the shared libraries,
-    /// an edition awaited.
+    /// What the reader decided of the book that its page does not otherwise
+    /// say: given up, kept out of the shared libraries, an edition awaited.
     @ViewBuilder private var marks: some View {
         if book.status == .dropped {
             Image(systemName: "hand.thumbsdown")
