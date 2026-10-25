@@ -107,3 +107,41 @@ export const typedQueryOf = (query: string): { title: string; author?: string } 
   const author = query.slice(at + TYPED_AUTHOR_SEPARATOR.length).trim()
   return at > 0 && title && author ? { title, author } : { title: query }
 }
+
+/** A title and author as the reader typed them into the search, split at the
+ *  last spaced dash — "Le mensonge suffit - Christopher Bouix" — whichever dash
+ *  their keyboard made. A hyphen inside a word ("Spider-Man") is no separator. */
+export const searchedQueryOf = (query: string): { title: string; author?: string } => {
+  const separators = [...query.matchAll(/\s[-–—]\s/g)]
+  const last = separators.at(-1)
+  if (last?.index === undefined) return { title: query.trim() }
+  const title = query.slice(0, last.index).trim()
+  const author = query.slice(last.index + last[0].length).trim()
+  return title && author ? { title, author } : { title: query.trim() }
+}
+
+const foldedTitle = (text: string) =>
+  text
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .trim()
+
+/** The candidates offered for a typed search, with what the reader typed among
+ *  them unless one already bears that title. The candidates come from a model
+ *  that does not search the web: a book too recent for it is missing, or worse
+ *  "corrected" into one that does not exist — "Le mensonge suffit" came back as
+ *  "Le mensonge". The typed book leads when the reader named its author too,
+ *  since they then know exactly what they want; it trails otherwise, as typing
+ *  from memory is often wrong. Either way it is never cut by the `limit`. */
+export const withTypedCandidate = <Candidate extends { title: string }>(
+  candidates: Candidate[],
+  typed: Candidate,
+  authorNamed: boolean,
+  limit: number,
+): Candidate[] => {
+  if (candidates.some(({ title }) => foldedTitle(title) === foldedTitle(typed.title)))
+    return candidates.slice(0, limit)
+  const kept = candidates.slice(0, limit - 1)
+  return authorNamed ? [typed, ...kept] : [...kept, typed]
+}

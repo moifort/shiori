@@ -4,7 +4,9 @@ import {
   freeSearchesSpent,
   heldFormatOf,
   inReadingOrder,
+  searchedQueryOf,
   typedQueryOf,
+  withTypedCandidate,
 } from '~/domain/scan/business-rules'
 
 describe('boxOf', () => {
@@ -91,5 +93,42 @@ describe('typedQueryOf', () => {
     expect(typedQueryOf('Projet dernière chance — ')).toEqual({
       title: 'Projet dernière chance — ',
     })
+  })
+})
+
+describe('searchedQueryOf', () => {
+  test('splits an author typed after any spaced dash', () => {
+    for (const dash of ['-', '–', '—'])
+      expect(searchedQueryOf(`Le mensonge suffit ${dash} Christopher Bouix`)).toEqual({
+        title: 'Le mensonge suffit',
+        author: 'Christopher Bouix',
+      })
+  })
+
+  test('leaves a hyphenated title, or a title typed alone, whole', () => {
+    expect(searchedQueryOf('Spider-Man')).toEqual({ title: 'Spider-Man' })
+    expect(searchedQueryOf(' Projet dernière chance ')).toEqual({ title: 'Projet dernière chance' })
+    expect(searchedQueryOf('Dune - ')).toEqual({ title: 'Dune -' })
+  })
+})
+
+describe('withTypedCandidate', () => {
+  const found = [{ title: 'Le mensonge' }, { title: 'Mensonges' }]
+
+  test('keeps the candidates alone when one bears the typed title', () => {
+    expect(withTypedCandidate(found, { title: 'MENSONGES' }, false, 5)).toEqual(found)
+  })
+
+  test('puts the typed book first when an author was named, last otherwise', () => {
+    const typed = { title: 'Le mensonge suffit' }
+    expect(withTypedCandidate(found, typed, true, 5)).toEqual([typed, ...found])
+    expect(withTypedCandidate(found, typed, false, 5)).toEqual([...found, typed])
+  })
+
+  test('never lets the limit cut the typed book', () => {
+    expect(withTypedCandidate(found, { title: 'Autre' }, false, 2)).toEqual([
+      { title: 'Le mensonge' },
+      { title: 'Autre' },
+    ])
   })
 })

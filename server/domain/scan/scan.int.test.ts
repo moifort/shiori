@@ -260,7 +260,7 @@ describe('searching a typed title', () => {
       },
     ]
 
-    const { candidates } = await ScanCommand.findCandidates(BookTitle('nom du vent'), 'fr')
+    const { candidates } = await ScanCommand.findCandidates(BookTitle('Le Nom du vent'), 'fr')
 
     expect(candidates).toHaveLength(1)
   })
@@ -278,7 +278,7 @@ describe('searching a typed title', () => {
       },
     ]
 
-    const { candidates } = await ScanCommand.findCandidates(BookTitle('tome'), 'fr')
+    const { candidates } = await ScanCommand.findCandidates(BookTitle('Tome A'), 'fr')
 
     expect(candidates.map((candidate) => String(candidate.title))).toEqual([
       'Tome A',
@@ -289,10 +289,28 @@ describe('searching a typed title', () => {
     ])
   })
 
-  test('answers an empty list when nothing matched', async () => {
+  // The model does not search the web: a recent book is unknown to it, and
+  // what the reader typed is then the only lead to the right one.
+  test('offers the book as typed when the model knows none by that title', async () => {
+    answers = [{ candidates: [{ title: 'Le mensonge', authors: ['Christopher Bouix'] }] }]
+
+    const { candidates } = await ScanCommand.findCandidates(
+      BookTitle('Le mensonge suffit - Christopher Bouix'),
+      'fr',
+    )
+
+    expect(candidates.map(({ title, authors }) => ({ title, authors }))).toEqual([
+      { title: BookTitle('Le mensonge suffit'), authors: [AuthorName('Christopher Bouix')] },
+      { title: BookTitle('Le mensonge'), authors: [AuthorName('Christopher Bouix')] },
+    ])
+  })
+
+  test('offers the book as typed alone when nothing matched', async () => {
     answers = [{ candidates: [] }]
 
-    expect((await ScanCommand.findCandidates(BookTitle('xqzv'), 'fr')).candidates).toEqual([])
+    const { candidates } = await ScanCommand.findCandidates(BookTitle('Le mensonge suffit'), 'fr')
+
+    expect(candidates).toEqual([{ title: BookTitle('Le mensonge suffit'), authors: [] }])
   })
 })
 

@@ -25,8 +25,10 @@ import {
   heldFormatOf,
   inReadingOrder,
   MAX_DETECTED_BOOKS,
+  searchedQueryOf,
   summedUsage,
   typedQueryOf,
+  withTypedCandidate,
 } from '~/domain/scan/business-rules'
 import { generate } from '~/domain/scan/gemini'
 import * as repository from '~/domain/scan/infrastructure/repository'
@@ -451,8 +453,20 @@ export namespace ScanCommand {
       .filter(
         (candidate, index, all) => all.findIndex((other) => sameBook(other, candidate)) === index,
       )
-      .slice(0, MAX_CANDIDATES)
-    return { candidates, usage }
+    const searched = searchedQueryOf(title)
+    const typed: TitleCandidate = {
+      title: BookTitle(searched.title),
+      authors: parsedAuthors(searched.author ? [searched.author] : []),
+    }
+    return {
+      candidates: withTypedCandidate(
+        candidates,
+        typed,
+        searched.author !== undefined,
+        MAX_CANDIDATES,
+      ),
+      usage,
+    }
   }
 
   const parsedCandidate = (
