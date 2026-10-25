@@ -121,7 +121,7 @@ export namespace BookUseCase {
     const series =
       pick.seriesName && author
         ? {
-            id: seriesKeyOf(pick.seriesName, author, format),
+            saga: seriesKeyOf(pick.seriesName, author, format),
             name: pick.seriesName,
             volume: pick.volume,
             kind: 'main' as const,

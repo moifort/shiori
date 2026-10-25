@@ -556,7 +556,11 @@ struct VolumeRelease: Hashable, Sendable {
 /// The shared catalogue of a saga. A public fact with no reader in it, which is
 /// why one fetch serves every reader of that saga.
 struct BookSeries: Identifiable, Sendable {
+    /// The edition: the saga in one language, as the server names it.
     let id: String
+    /// The language of that edition, which the hero tags when it is not the
+    /// reader's own. Nil for a catalogue drawn before the field existed.
+    var language: BookLanguage? = nil
     let name: String
     let author: String
     var description: String?
@@ -619,20 +623,19 @@ struct SeriesOpinion: Sendable, Equatable, Codable {
 /// the catalogue: an Audible import and a book typed by hand both name a saga
 /// without describing it, and reading the catalogue first lost every one of them.
 struct FollowedSeries: Identifiable, Codable, Sendable {
-    /// The saga and the language together. The saga alone is not an identity:
-    /// held in two languages it follows as two rows, and SwiftUI would take them
-    /// for one row redrawn twice.
-    var id: String { Self.id(seriesId: seriesId, language: language) }
-
-    static func id(seriesId: String, language: BookLanguage?) -> String {
-        "\(seriesId)|\(language?.rawValue ?? "")"
-    }
+    /// The edition: a saga held in two languages follows as two rows under two
+    /// series ids, as the server names them.
+    var id: String { seriesId }
 
     let seriesId: String
     let name: String
     /// The saga heard rather than read: a reader holding a saga in both formats
     /// follows two sagas, and the headphones tell the two rows apart.
     var isAudio = false
+    /// The saga every edition of this one shares, as the server names it: what
+    /// tells the rows of one saga in two languages apart from other sagas —
+    /// their opinion is one. Never opened. Nil where the row did not carry it.
+    var saga: String? = nil
     /// Taken from a volume the reader owns, which is what answers for a saga the
     /// catalogue has never described.
     let author: String?

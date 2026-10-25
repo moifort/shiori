@@ -79,7 +79,7 @@ struct SeriesListScreen: View {
                 await viewModel.loadOnAppear()
             }
         } detail: { opened in
-            SeriesScreen(seriesId: opened.seriesId, language: opened.language, client: client)
+            SeriesScreen(seriesId: opened.seriesId, client: client)
         }
         .onChange(of: requested) { takeRequested() }
         // A volume finished in the library, a book scanned: the rows here say
@@ -130,6 +130,6 @@ struct SeriesListScreen: View {
     /// The saga in the edition of this row: a saga held in two languages makes
     /// two rows, and each must open on its own covers.
     private func destination(of entry: FollowedSeries) -> SeriesDestination {
-        SeriesDestination(seriesId: entry.seriesId, language: entry.language)
+        SeriesDestination(seriesId: entry.seriesId)
     }
 }

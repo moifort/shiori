@@ -13,7 +13,7 @@ import type {
 } from '~/domain/book/types'
 import type {
   ReleaseDate,
-  SeriesId,
+  SagaKey,
   SeriesName,
   VolumeKind,
   VolumeNumber,
@@ -81,12 +81,12 @@ export type LibraryEdition = {
 /** The saga the scanned book belongs to, as the enrichment step resolved it.
  *  Absent for a standalone book, which is most of them.
  *
- *  The id is carried here rather than recomputed by the caller: it is derived
+ *  The saga is carried here rather than recomputed by the caller: it is derived
  *  from the saga name AND the author, and only the scan holds both at once. The
- *  app hands it straight back to `addBook`, so a scanned book joins the very
- *  catalogue the scan built. */
+ *  app hands its series id straight back to `addBook`, so a scanned book joins
+ *  the very catalogue the scan built. */
 export type ScannedSeries = {
-  id: SeriesId
+  saga: SagaKey
   name: SeriesName
   volume?: VolumeNumber
   kind: VolumeKind

@@ -10,7 +10,7 @@ import {
   withReleases,
 } from '~/domain/series/business-rules'
 import { isAudioSeries } from '~/domain/series/primitives'
-import type { Series, SeriesId, VolumeNumber } from '~/domain/series/types'
+import type { SagaKey, Series, VolumeNumber } from '~/domain/series/types'
 import type { FollowedSeries } from '~/domain/series/use-case'
 import { type Language, SUPPORTED_LANGUAGES } from '~/domain/shared/language'
 import { Year } from '~/domain/shared/primitives'
@@ -72,7 +72,7 @@ export const watchKeyOf = ({ seriesId, language }: Pick<WatchedSaga, 'seriesId' 
 
 /** The format a saga is made of: its recordings for the saga heard, its
  *  printed books for the saga read. */
-export const formatOf = (seriesId: SeriesId): ReleaseFormat =>
+export const formatOf = (seriesId: SagaKey): ReleaseFormat =>
   isAudioSeries(seriesId) ? 'audiobook' : 'book'
 
 /** Whether Discover looks out for a saga's next volumes: not when the reader
@@ -93,12 +93,12 @@ export const watchedSagasOf = (followed: readonly FollowedSeries[]): WatchedSaga
   for (const saga of followed) {
     if (!isDiscoverable(saga)) continue
     const language = saga.language
-    const asin = isAudioSeries(saga.id)
+    const asin = isAudioSeries(saga.saga)
       ? saga.books.find((book) => book.audibleAsin && book.language === language)?.audibleAsin
       : undefined
     const furthest = furthestHeldOf(saga.books, language)
     const watched: WatchedSaga = {
-      seriesId: saga.id,
+      seriesId: saga.saga,
       language,
       name: saga.name,
       ...(saga.author ? { author: saga.author } : {}),
@@ -594,7 +594,7 @@ export const newAnnouncementsOf = (
   followed
     .flatMap((series): Announcement[] => {
       if (!isDiscoverable(series)) return []
-      const watch = watches.get(watchKeyOf({ seriesId: series.id, language: series.language }))
+      const watch = watches.get(watchKeyOf({ seriesId: series.saga, language: series.language }))
       if (!watch) return []
       const held = heldNumbersOf(series.books)
       return candidatesOf(watch, series.catalogue, today).flatMap(({ volume, upcoming }) => {
@@ -767,7 +767,7 @@ export const announcedEditionOf = (
   publisher: recording?.publisher,
   language: watch.language,
   // Named, so the lookup describes this volume and not another titled the same.
-  series: { id: watch.seriesId, name: watch.name, volume: volume.number, kind: 'main' },
+  series: { saga: watch.seriesId, name: watch.name, volume: volume.number, kind: 'main' },
   subgenres: [],
 })
 
@@ -798,7 +798,7 @@ export const announcedPreviewOf = (
       pageCount: heard ? undefined : described.pageCount,
       isbn13: heard ? undefined : (volume.isbn13 ?? described.isbn13),
       coverUrl: recording?.coverUrl ?? volume.coverUrl ?? described.coverUrl,
-      series: { id: watch.seriesId, name: watch.name, volume: volume.number, kind: 'main' },
+      series: { saga: watch.seriesId, name: watch.name, volume: volume.number, kind: 'main' },
     },
     narrators: recording?.narrators ?? [],
     durationMinutes: recording?.durationMinutes,

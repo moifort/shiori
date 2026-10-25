@@ -23,7 +23,13 @@ import {
   withReleases,
   withShelvedVolumes,
 } from '~/domain/series/business-rules'
-import { ReleaseDate, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
+import {
+  ReleaseDate,
+  SagaKey,
+  SeriesName,
+  seriesIdOf,
+  VolumeNumber,
+} from '~/domain/series/primitives'
 import type { Series, Volume } from '~/domain/series/types'
 import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
 
@@ -38,7 +44,8 @@ const volume = (partial: Omit<Partial<Volume>, 'title'> & { title: string }): Vo
 })
 
 const saga = (volumes: Volume[]): Series => ({
-  id: SeriesId('saga--author'),
+  id: seriesIdOf(SagaKey('saga--author')),
+  saga: SagaKey('saga--author'),
   name: SeriesName('Saga'),
   author: AuthorName('Author'),
   volumes,
@@ -138,7 +145,11 @@ describe('followedSagasOf', () => {
   const volumeOf = (title: string, series?: { id: string; name: string }) => ({
     title,
     authors: [AuthorName('Frank Herbert')],
-    series: series && { id: SeriesId(series.id), name: SeriesName(series.name) },
+    series: series && {
+      id: seriesIdOf(SagaKey(series.id), 'fr'),
+      saga: SagaKey(series.id),
+      name: SeriesName(series.name),
+    },
   })
 
   const DUNE = { id: 'dune--frank-herbert', name: 'Dune' }
@@ -153,7 +164,10 @@ describe('followedSagasOf', () => {
   // hand write a membership without ever calling the model, so a reading that
   // started from the catalogue found nothing and the Series tab stayed empty.
   test('follows a saga the catalogue has never heard of', () => {
-    expect(followedSagasOf([volumeOf('Dune', DUNE)])[0]?.id).toBe(SeriesId(DUNE.id))
+    expect(followedSagasOf([volumeOf('Dune', DUNE)])[0]).toMatchObject({
+      id: `${DUNE.id}~fr`,
+      saga: DUNE.id,
+    })
   })
 
   test('ignores a book that belongs to no saga', () => {
@@ -310,14 +324,16 @@ describe('provisionalCatalogueOf', () => {
     title: BookTitle(title),
     authors: [AuthorName('Patrick Rothfuss')],
     series: {
-      id: SeriesId('kingkiller--rothfuss'),
+      id: seriesIdOf(SagaKey('kingkiller--rothfuss')),
+      saga: SagaKey('kingkiller--rothfuss'),
       name: SeriesName('Kingkiller'),
       volume: VolumeNumber(number),
       kind: 'main' as const,
     },
   })
   const saga = {
-    id: SeriesId('kingkiller--rothfuss'),
+    id: seriesIdOf(SagaKey('kingkiller--rothfuss')),
+    saga: SagaKey('kingkiller--rothfuss'),
     name: SeriesName('Kingkiller'),
     author: AuthorName('Patrick Rothfuss'),
   }
@@ -371,20 +387,29 @@ describe('provisionalCatalogueOf', () => {
 })
 
 describe('cataloguesOf', () => {
-  const kingkiller = SeriesId('kingkiller--rothfuss')
-  const dune = SeriesId('dune--herbert')
-  const volume = (seriesId: Series['id'], name: string, title: string, number: number) => ({
+  const kingkiller = SagaKey('kingkiller--rothfuss')
+  const dune = SagaKey('dune--herbert')
+  const volume = (
+    saga: Series['saga'],
+    name: string,
+    title: string,
+    number: number,
+    language?: 'fr' | 'en',
+  ) => ({
     title: BookTitle(title),
     authors: [AuthorName('Someone')],
+    ...(language ? { language } : {}),
     series: {
-      id: seriesId,
+      id: seriesIdOf(saga, language),
+      saga,
       name: SeriesName(name),
       volume: VolumeNumber(number),
       kind: 'main' as const,
     },
   })
   const known: Series = {
-    id: dune,
+    id: seriesIdOf(dune),
+    saga: dune,
     name: SeriesName('Dune'),
     author: AuthorName('Frank Herbert'),
     volumes: [
@@ -405,7 +430,7 @@ describe('cataloguesOf', () => {
       [
         volume(dune, 'Dune', 'Dune', 1),
         volume(kingkiller, 'Kingkiller', 'The Name of the Wind', 1),
-        volume(SeriesId('other'), 'Other', 'Other', 1),
+        volume(SagaKey('other'), 'Other', 'Other', 1),
       ],
       [known],
       [
@@ -414,41 +439,44 @@ describe('cataloguesOf', () => {
       ],
     )
 
-    expect(catalogues.get(dune)).toBe(known)
-    expect(catalogues.get(kingkiller)).toMatchObject({ provisional: true, author: 'Someone' })
-    expect(catalogues.get(kingkiller)?.volumes).toHaveLength(3)
-    expect(catalogues.has(SeriesId('other'))).toBe(false)
+    expect(catalogues.get(seriesIdOf(dune))).toBe(known)
+    expect(catalogues.get(seriesIdOf(kingkiller))).toMatchObject({
+      provisional: true,
+      author: 'Someone',
+    })
+    expect(catalogues.get(seriesIdOf(kingkiller))?.volumes).toHaveLength(3)
+    expect(catalogues.has(seriesIdOf(SagaKey('other')))).toBe(false)
   })
 
   test('draws one provisional catalogue per edition of a saga held in two languages', () => {
     const catalogues = cataloguesOf(
       [
-        { ...volume(kingkiller, 'Kingkiller', 'Le Nom du vent', 1), language: 'fr' as const },
-        { ...volume(kingkiller, 'Kingkiller', 'The Name of the Wind', 1), language: 'en' as const },
+        volume(kingkiller, 'Kingkiller', 'Le Nom du vent', 1, 'fr'),
+        volume(kingkiller, 'Kingkiller', 'The Name of the Wind', 1, 'en'),
       ],
       [],
       [{ seriesId: kingkiller, volumeCount: VolumeNumber(2) }],
     )
 
-    expect([...catalogues.keys()]).toEqual([`${kingkiller}~en`, `${kingkiller}~fr`])
+    expect([...catalogues.keys()]).toEqual([
+      seriesIdOf(kingkiller, 'en'),
+      seriesIdOf(kingkiller, 'fr'),
+    ])
     // The count is the work's; each spine is titled from its own edition.
     expect(
-      catalogues.get(`${kingkiller}~fr`)?.volumes.map((volume) => String(volume.title)),
+      catalogues.get(seriesIdOf(kingkiller, 'fr'))?.volumes.map((volume) => String(volume.title)),
     ).toEqual(['Le Nom du vent', 'Kingkiller'])
-    expect(catalogues.get(`${kingkiller}~en`)).toMatchObject({ language: 'en' })
+    expect(catalogues.get(seriesIdOf(kingkiller, 'en'))).toMatchObject({ language: 'en' })
   })
 
   test('reads each edition from its own stored catalogue', () => {
     const catalogues = cataloguesOf(
-      [
-        { ...volume(dune, 'Dune', 'Dune', 1), language: 'fr' as const },
-        { ...volume(dune, 'Dune', 'Dune', 1), language: 'en' as const },
-      ],
-      [{ ...known, language: 'en' }],
+      [volume(dune, 'Dune', 'Dune', 1, 'fr'), volume(dune, 'Dune', 'Dune', 1, 'en')],
+      [{ ...known, id: seriesIdOf(dune, 'en'), language: 'en' }],
       [],
     )
 
-    expect([...catalogues.keys()]).toEqual([`${dune}~en`])
+    expect([...catalogues.keys()]).toEqual([seriesIdOf(dune, 'en')])
   })
 
   // A volume out after the saga was catalogued, filed by hand: the stored
@@ -460,13 +488,16 @@ describe('cataloguesOf', () => {
       [],
     )
 
-    expect(catalogues.get(dune)?.volumes.map((volume) => Number(volume.number))).toEqual([1, 2])
+    expect(
+      catalogues.get(seriesIdOf(dune))?.volumes.map((volume) => Number(volume.number)),
+    ).toEqual([1, 2])
   })
 })
 
 describe('withShelvedVolumes', () => {
   const traskman: Series = {
-    id: SeriesId('caleb-traskman--franck-thilliez--audio'),
+    id: seriesIdOf(SagaKey('caleb-traskman--franck-thilliez--audio')),
+    saga: SagaKey('caleb-traskman--franck-thilliez--audio'),
     name: SeriesName('Caleb Traskman'),
     author: AuthorName('Franck Thilliez'),
     volumes: [
@@ -895,7 +926,8 @@ describe('keepingReleases', () => {
 describe('an empty catalogue answer', () => {
   const now = new Date('2026-09-25T12:00:00.000Z')
   const missed = (daysAgo: number) => ({
-    id: SeriesId('dune--frank-herbert--audio'),
+    id: seriesIdOf(SagaKey('dune--frank-herbert--audio'), 'en'),
+    saga: SagaKey('dune--frank-herbert--audio'),
     missedAt: new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000),
   })
 

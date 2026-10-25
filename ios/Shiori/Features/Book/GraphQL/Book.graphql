@@ -170,11 +170,11 @@ query EditVocabulary {
 # books, and the volumes they lack when the saga's catalogue already exists.
 # `waitForCatalogue: false` reads the stored catalogue and never builds one:
 # a first build is a model call no opening of a book may make.
-query BookSagaVolumes($seriesId: SeriesId!, $language: BookLanguage) {
-  mySeriesVolumes(seriesId: $seriesId, language: $language) {
+query BookSagaVolumes($seriesId: SeriesId!) {
+  mySeriesVolumes(seriesId: $seriesId) {
     ...BookSummary
   }
-  series(id: $seriesId, language: $language, waitForCatalogue: false) {
+  series(id: $seriesId, waitForCatalogue: false) {
     awaitingCatalogue
     ...CatalogueSpine
   }

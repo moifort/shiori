@@ -33,22 +33,19 @@ struct SeriesScreen: View {
     @State private var isSpread = false
 
     /// - Parameters:
-    ///   - language: the edition the reader came from. A saga held in two
-    ///     languages shares one `seriesId`; nil where the caller knows no
-    ///     edition, and every edition shows.
+    ///   - seriesId: the edition to open, as the server named it on the book,
+    ///     row or card the reader came from.
     ///   - proposal: the saga as an author's page names it, for a saga the
     ///     reader holds nothing of: the server catalogues it from this.
     ///   - friend: the friend whose shelf the saga was opened from.
     init(
         seriesId: String,
-        language: BookLanguage? = nil,
         proposal: SeriesProposal? = nil,
         friend: SeriesFriend? = nil,
         client: SeriesClient = .live
     ) {
         _viewModel = State(initialValue: SeriesViewModel(
             seriesId: seriesId,
-            language: language,
             proposal: proposal,
             friend: friend,
             client: client
@@ -116,7 +113,7 @@ struct SeriesScreen: View {
             MergeSeriesSheet(
                 seriesId: viewModel.seriesId,
                 seriesName: viewModel.name,
-                isAudio: viewModel.seriesId.hasSuffix("--audio"),
+                isAudio: viewModel.series?.isAudio ?? (viewModel.owned.first?.format == .audiobook),
                 author: viewModel.series?.author ?? viewModel.owned.first?.authors.first,
                 ownedCount: viewModel.owned.count,
                 loadCandidates: viewModel.mergeCandidates
@@ -288,15 +285,13 @@ struct SeriesFriend: Hashable, Sendable {
     let name: String
 }
 
-/// What opens a saga screen: the saga and, when the caller stands in one, the
-/// edition. Two rows of the Series tab share a saga and differ by language, so
-/// the language is part of the identity, as it is on `FollowedSeries`.
+/// What opens a saga screen: the edition, by the series id the server handed
+/// out — two rows of the Series tab in two languages carry two ids.
 struct SeriesDestination: Identifiable, Hashable {
     let seriesId: String
-    let language: BookLanguage?
     var proposal: SeriesProposal? = nil
 
-    var id: String { "\(seriesId)|\(language?.rawValue ?? "")" }
+    var id: String { seriesId }
 }
 
 /// A saga the reader holds nothing of, as whoever offered it names it: what its

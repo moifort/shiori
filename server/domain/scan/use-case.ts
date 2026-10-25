@@ -125,10 +125,10 @@ export namespace ScanUseCase {
         ? other.volume === series.volume
         : slugify(other.title) === slugify(seen.title))
     const edition = seen.language
-    const key = edition ? watchKeyOf({ seriesId: series.id, language: edition }) : undefined
+    const key = edition ? watchKeyOf({ seriesId: series.saga, language: edition }) : undefined
     const [held, catalogue, watches] = await Promise.all([
-      BookQuery.bySeries(userId, series.id),
-      SeriesQuery.byId({ id: series.id, language: edition }),
+      BookQuery.bySeries(userId, series.saga),
+      SeriesQuery.byId({ saga: series.saga, language: edition }),
       key ? DiscoveryQuery.watches([key]) : undefined,
     ])
     const others = held.filter(

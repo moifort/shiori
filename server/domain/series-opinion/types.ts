@@ -1,5 +1,5 @@
 import type { BookLanguage, StarRating } from '~/domain/book/types'
-import type { SeriesId, VolumeNumber } from '~/domain/series/types'
+import type { SagaKey, VolumeNumber } from '~/domain/series/types'
 import type { UserId } from '~/domain/shared/types'
 
 /** What one reader makes of one saga.
@@ -18,7 +18,7 @@ import type { UserId } from '~/domain/shared/types'
  *  reader who owns Dune twice does not think twice about it. */
 export type SeriesOpinion = {
   userId: UserId
-  seriesId: SeriesId
+  seriesId: SagaKey
   rating?: StarRating
   favorite?: boolean
   /** When the heart was given, for a friend to see what is new among the

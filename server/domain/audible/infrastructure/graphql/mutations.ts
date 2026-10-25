@@ -11,6 +11,8 @@ import { AudibleQuery } from '~/domain/audible/query'
 import { AudibleUseCase } from '~/domain/audible/use-case'
 import { BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
+import { DEPRECATED_EDITION_LANGUAGE } from '~/domain/series/infrastructure/graphql/types'
+import { seriesReferenceOf } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
 import { badUserInput, domainError, notFound } from '~/domain/shared/graphql/errors'
 
@@ -118,18 +120,29 @@ builder.mutationFields((t) => ({
       'of it there — add it by its title instead — and with `AUDIBLE_NOT_CONNECTED` ' +
       'and `AUDIBLE_UNAVAILABLE` like `audibleLibrary`.',
     args: {
-      seriesId: t.arg({ type: 'SeriesId', required: true }),
-      volume: t.arg({ type: 'VolumeNumber', required: true }),
-      language: t.arg({
-        type: BookLanguageEnum,
+      seriesId: t.arg({
+        type: 'SeriesId',
         required: true,
         description: 'The edition the saga screen was opened on.',
       }),
+      volume: t.arg({ type: 'VolumeNumber', required: true }),
+      language: t.arg({
+        type: BookLanguageEnum,
+        required: false,
+        description:
+          'Beside a bare saga key: the edition the saga screen was opened on. ' +
+          '`BAD_USER_INPUT` when neither names an edition.',
+        deprecationReason: DEPRECATED_EDITION_LANGUAGE,
+      }),
     },
     resolve: async (_root, args, context) => {
-      const result = await AudibleUseCase.addSeriesVolume(context.userId, args).catch(
-        audibleUnavailable,
-      )
+      const { saga, language } = seriesReferenceOf(args.seriesId, args.language ?? undefined)
+      if (!language) return badUserInput('The series id names no edition')
+      const result = await AudibleUseCase.addSeriesVolume(context.userId, {
+        seriesId: saga,
+        volume: args.volume,
+        language,
+      }).catch(audibleUnavailable)
       const book = match(result)
         .with('not-connected', notConnected)
         .with('not-found', () => notFound('Audible sells no recording of that volume'))

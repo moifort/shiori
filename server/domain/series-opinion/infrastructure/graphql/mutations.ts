@@ -1,7 +1,14 @@
 import { BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
+import { DEPRECATED_EDITION_LANGUAGE } from '~/domain/series/infrastructure/graphql/types'
+import { seriesReferenceOf } from '~/domain/series/primitives'
+import type { SeriesId } from '~/domain/series/types'
 import { SeriesOpinionType } from '~/domain/series-opinion/infrastructure/graphql/types'
 import { SeriesOpinionUseCase } from '~/domain/series-opinion/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
+
+/** The saga an opinion is of: the work, whichever edition the reader rates it
+ *  from. */
+const sagaOf = (id: SeriesId) => seriesReferenceOf(id).saga
 
 builder.mutationFields((t) => ({
   rateSeries: t.field({
@@ -16,7 +23,7 @@ builder.mutationFields((t) => ({
       rating: t.arg({ type: 'StarRating', required: true }),
     },
     resolve: (_root, args, context) =>
-      SeriesOpinionUseCase.rate(context.userId, args.seriesId, args.rating),
+      SeriesOpinionUseCase.rate(context.userId, sagaOf(args.seriesId), args.rating),
   }),
 
   removeSeriesRating: t.field({
@@ -24,7 +31,7 @@ builder.mutationFields((t) => ({
     description: 'Take a saga rating back. Leaves the heart alone.',
     args: { seriesId: t.arg({ type: 'SeriesId', required: true }) },
     resolve: (_root, args, context) =>
-      SeriesOpinionUseCase.rate(context.userId, args.seriesId, undefined),
+      SeriesOpinionUseCase.rate(context.userId, sagaOf(args.seriesId), undefined),
   }),
 
   declareSeriesVolumeCount: t.field({
@@ -47,7 +54,7 @@ builder.mutationFields((t) => ({
       }),
     },
     resolve: (_root, args, context) =>
-      SeriesOpinionUseCase.declareVolumeCount(context.userId, args.seriesId, args.count),
+      SeriesOpinionUseCase.declareVolumeCount(context.userId, sagaOf(args.seriesId), args.count),
   }),
 
   setSeriesFollowed: t.field({
@@ -58,21 +65,23 @@ builder.mutationFields((t) => ({
       'of the finished ones, off the dashboard progress bars, and listed only ' +
       'under its own state filter. Only the saga — its volumes keep their own ' +
       'statuses. Leaves the rating and the heart alone.\n\n' +
-      '`language` names one edition, and only that edition moves: setting the ' +
-      'English Dune aside leaves the French one followed. Without it, the whole ' +
-      'saga moves, every edition at once.',
+      'Only the edition `seriesId` names moves: setting the English Dune aside ' +
+      'leaves the French one followed. A bare saga key, from an older build, moves ' +
+      'the whole saga, every edition at once — or the one `language` names.',
     args: {
       seriesId: t.arg({ type: 'SeriesId', required: true }),
       followed: t.arg.boolean({ required: true }),
-      language: t.arg({ type: BookLanguageEnum, required: false }),
+      language: t.arg({
+        type: BookLanguageEnum,
+        required: false,
+        description: 'Beside a bare saga key: the one edition to move.',
+        deprecationReason: DEPRECATED_EDITION_LANGUAGE,
+      }),
     },
-    resolve: (_root, args, context) =>
-      SeriesOpinionUseCase.setFollowed(
-        context.userId,
-        args.seriesId,
-        args.followed,
-        args.language ?? undefined,
-      ),
+    resolve: (_root, args, context) => {
+      const { saga, language } = seriesReferenceOf(args.seriesId, args.language ?? undefined)
+      return SeriesOpinionUseCase.setFollowed(context.userId, saga, args.followed, language)
+    },
   }),
 
   setSeriesFavorite: t.field({
@@ -83,6 +92,6 @@ builder.mutationFields((t) => ({
       favorite: t.arg.boolean({ required: true }),
     },
     resolve: (_root, args, context) =>
-      SeriesOpinionUseCase.setFavorite(context.userId, args.seriesId, args.favorite),
+      SeriesOpinionUseCase.setFavorite(context.userId, sagaOf(args.seriesId), args.favorite),
   }),
 }))

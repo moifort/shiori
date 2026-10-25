@@ -1,6 +1,6 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
 import type { BookLanguage } from '~/domain/book/types'
-import type { SeriesId, VolumeNumber } from '~/domain/series/types'
+import type { SagaKey, VolumeNumber } from '~/domain/series/types'
 import { followingAfter } from '~/domain/series-opinion/business-rules'
 import * as repository from '~/domain/series-opinion/infrastructure/repository'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
@@ -15,7 +15,7 @@ export namespace SeriesOpinionCommand {
    *  saga the catalogue has never described is still theirs to hold. */
   export const rate = (
     userId: UserId,
-    seriesId: SeriesId,
+    seriesId: SagaKey,
     rating: StarRating | undefined,
     batch?: WriteBatch,
   ) =>
@@ -37,7 +37,7 @@ export namespace SeriesOpinionCommand {
    *  own stars when they can hold it, else on five; taken back, it leaves them. */
   export const setFavorite = (
     userId: UserId,
-    seriesId: SeriesId,
+    seriesId: SagaKey,
     favorite: boolean,
     batch?: WriteBatch,
     now = new Date(),
@@ -64,7 +64,7 @@ export namespace SeriesOpinionCommand {
    *  saga. */
   export const declareVolumeCount = (
     userId: UserId,
-    seriesId: SeriesId,
+    seriesId: SagaKey,
     volumeCount: VolumeNumber,
     batch?: WriteBatch,
   ) => write(userId, seriesId, (opinion) => ({ ...opinion, volumeCount }), batch)
@@ -75,7 +75,7 @@ export namespace SeriesOpinionCommand {
    *  aside. */
   export const setFollowed = (
     userId: UserId,
-    seriesId: SeriesId,
+    seriesId: SagaKey,
     followed: boolean,
     language: BookLanguage | undefined,
     heldLanguages: readonly BookLanguage[],
@@ -92,7 +92,7 @@ export namespace SeriesOpinionCommand {
     )
 
   /** Forget what the reader made of a saga they no longer hold. */
-  export const forget = (userId: UserId, seriesId: SeriesId, batch?: WriteBatch): Promise<void> =>
+  export const forget = (userId: UserId, seriesId: SagaKey, batch?: WriteBatch): Promise<void> =>
     repository.remove(userId, seriesId, batch)
 
   export const deleteAllForUser = (userId: UserId): Promise<void> =>
@@ -105,7 +105,7 @@ export namespace SeriesOpinionCommand {
 // and answers nothing.
 const write = async (
   userId: UserId,
-  seriesId: SeriesId,
+  seriesId: SagaKey,
   change: (opinion: SeriesOpinion) => SeriesOpinion,
   batch?: WriteBatch,
 ): Promise<SeriesOpinion> => {

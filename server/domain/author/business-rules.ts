@@ -8,8 +8,8 @@ import type {
 } from '~/domain/author/types'
 import { shelfDateOf, shelfOrder, shelfTitleOrder } from '~/domain/book/business-rules'
 import type { BookFormat, BookLanguage, ReadingStatus } from '~/domain/book/types'
-import { isAudioSeries, seriesIdFor, seriesKeyOf } from '~/domain/series/primitives'
-import type { SeriesId, SeriesState } from '~/domain/series/types'
+import { isAudioSeries, sagaKeyFor, seriesKeyOf } from '~/domain/series/primitives'
+import type { SagaKey, SeriesState } from '~/domain/series/types'
 import { Count } from '~/domain/shared/primitives'
 import type { AuthorName } from '~/domain/shared/types'
 import { slugify } from '~/utils/slug'
@@ -17,7 +17,7 @@ import { slugify } from '~/utils/slug'
 type AuthoredBook = {
   title: string
   authors: AuthorName[]
-  series?: { id: SeriesId }
+  series?: { saga: SagaKey }
   rating?: number
   favorite?: boolean
   addedAt: Date
@@ -25,7 +25,7 @@ type AuthoredBook = {
   finishedAt?: Date
 }
 
-type SagaOpinion = { seriesId: SeriesId; rating?: number; favorite?: boolean }
+type SagaOpinion = { seriesId: SagaKey; rating?: number; favorite?: boolean }
 
 /** Every author the library holds a book of, with what the reader made of them.
  *
@@ -57,7 +57,7 @@ export const shelvedAuthorsOf = <Book extends AuthoredBook>(
   return [...byKey].map(([key, { books, spellings }]) => {
     const newest = books[0]
     if (!newest) throw new Error('an author is only ever made from a book')
-    const seriesIds = [...new Set(books.flatMap((book) => (book.series ? [book.series.id] : [])))]
+    const seriesIds = [...new Set(books.flatMap((book) => (book.series ? [book.series.saga] : [])))]
     const sagaOpinions = seriesIds.flatMap((id) => opinionOf.get(id) ?? [])
     const ratings = [...books, ...sagaOpinions].flatMap((judged) =>
       judged.rating === undefined ? [] : [judged.rating],
@@ -226,26 +226,26 @@ const mostUsedSpelling = (spellings: ReadonlyMap<AuthorName, number>): AuthorNam
  *  Audible import, keeps another id, and must not come back as one to discover. */
 export const sagasNotHeldOf = (
   catalogue: Pick<Author, 'name' | 'series'>,
-  held: readonly { id: SeriesId; name: string; books?: readonly { title: string }[] }[],
+  held: readonly { saga: SagaKey; name: string; books?: readonly { title: string }[] }[],
   format: BookFormat,
-): (AuthorSeries & { id: SeriesId })[] => {
+): (AuthorSeries & { saga: SagaKey })[] => {
   const heard = format === 'audiobook'
-  const sameFormat = held.filter((saga) => isAudioSeries(saga.id) === heard)
-  const heldIds = new Set(sameFormat.map((saga) => saga.id))
+  const sameFormat = held.filter((row) => isAudioSeries(row.saga) === heard)
+  const heldIds = new Set(sameFormat.map((row) => row.saga))
   const heldNames = sameFormat.map((saga) => slugify(saga.name))
   const heldTitles = new Set(
     sameFormat.flatMap((saga) => (saga.books ?? []).map((book) => slugify(book.title))),
   )
-  const isHeld = (saga: AuthorSeries & { id: SeriesId }) => {
+  const isHeld = (saga: AuthorSeries & { saga: SagaKey }) => {
     const name = slugify(saga.name)
     return (
-      heldIds.has(saga.id) ||
+      heldIds.has(saga.saga) ||
       heldNames.some((heldName) => namesMeet(name, heldName)) ||
       (saga.firstVolumeTitle !== undefined && heldTitles.has(slugify(saga.firstVolumeTitle)))
     )
   }
   return catalogue.series
-    .map((saga) => ({ ...saga, id: seriesKeyOf(saga.name, catalogue.name, format) }))
+    .map((saga) => ({ ...saga, saga: seriesKeyOf(saga.name, catalogue.name, format) }))
     .filter((saga) => !isHeld(saga))
 }
 
@@ -259,8 +259,8 @@ const namesMeet = (left: string, right: string): boolean => {
 
 /** How many sagas an author's books belong to, a saga read and heard counting
  *  once: the two are kept apart for their spines, but they are one work. */
-export const sagaCountOf = (seriesIds: readonly SeriesId[]): number =>
-  new Set(seriesIds.map((id) => seriesIdFor(id, 'book'))).size
+export const sagaCountOf = (seriesIds: readonly SagaKey[]): number =>
+  new Set(seriesIds.map((id) => sagaKeyFor(id, 'book'))).size
 
 /** The books outside any saga of an author's catalogue the reader does not hold,
  *  matched on the folded title against every book of theirs the reader has. */

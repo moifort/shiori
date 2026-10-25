@@ -13,6 +13,7 @@ import type {
   Publisher,
   ReadingStatus,
   Recommendation,
+  SeriesEntry,
   SeriesMembership,
   SeriesPlacement,
   ShelfVocabulary,
@@ -22,8 +23,8 @@ import type {
 } from '~/domain/book/types'
 import { BOOK_MEDIA } from '~/domain/book/types'
 import { compareWithinSeries } from '~/domain/series/business-rules'
-import { isAudioSeries, seriesIdFor, seriesKeyOf } from '~/domain/series/primitives'
-import type { SeriesId, SeriesName } from '~/domain/series/types'
+import { isAudioSeries, sagaKeyFor, seriesIdOf, seriesKeyOf } from '~/domain/series/primitives'
+import type { SagaKey, SeriesName } from '~/domain/series/types'
 import { lovedRankOf } from '~/domain/shared/rating'
 import type { AuthorName, UserId } from '~/domain/shared/types'
 import { ObjectPath } from '~/system/object-store/primitives'
@@ -69,12 +70,18 @@ export const groupedBySeries = (books: readonly BookView[]): LibrarySection[] =>
       standalone.push(book)
       continue
     }
-    const key = `${membership.id}\u0000${book.language ?? ''}`
+    // The edition id holds the language: one section per saga and edition.
+    const key = membership.id
     const bucket = bySeries.get(key)
     if (bucket) bucket.books.push({ book, membership })
     else
       bySeries.set(key, {
-        section: { id: membership.id, name: membership.name, language: book.language },
+        section: {
+          id: membership.id,
+          saga: membership.saga,
+          name: membership.name,
+          language: book.language,
+        },
         books: [{ book, membership }],
       })
   }
@@ -213,28 +220,28 @@ const isbn10Of = (isbn13: string): string | undefined => {
  *  keyed by saga. */
 export const shownRatingOf = (
   book: Pick<Book, 'rating' | 'series'>,
-  seriesRatings: ReadonlyMap<SeriesId, StarRating>,
+  seriesRatings: ReadonlyMap<SagaKey, StarRating>,
 ): StarRating | undefined =>
-  book.rating ?? (book.series ? seriesRatings.get(book.series.id) : undefined)
+  book.rating ?? (book.series ? seriesRatings.get(book.series.saga) : undefined)
 
 /** Where a book sits in the favourites view: its own heart or stars, else
  *  those of its saga — lent only once the book is read, as a row draws them,
  *  since on a book not yet judged they would pass for a verdict. */
 export const lovedRankOfBook = (
   book: Pick<Book, 'favorite' | 'rating' | 'series' | 'status'>,
-  seriesRatings: ReadonlyMap<SeriesId, StarRating>,
+  seriesRatings: ReadonlyMap<SagaKey, StarRating>,
 ): number | undefined =>
   lovedRankOf({
     favorite: book.favorite,
     rating: book.rating,
     lentRating:
-      book.status === 'read' && book.series ? seriesRatings.get(book.series.id) : undefined,
+      book.status === 'read' && book.series ? seriesRatings.get(book.series.saga) : undefined,
   })
 
 /** The reader's saga ratings, keyed by saga, from their opinions. */
 export const seriesRatingsOf = (
-  opinions: readonly { seriesId: SeriesId; rating?: StarRating }[],
-): Map<SeriesId, StarRating> =>
+  opinions: readonly { seriesId: SagaKey; rating?: StarRating }[],
+): Map<SagaKey, StarRating> =>
   new Map(
     opinions.flatMap((opinion) =>
       opinion.rating === undefined ? [] : [[opinion.seriesId, opinion.rating] as const],
@@ -468,6 +475,7 @@ export const membershipFor = (
   placement: SeriesPlacement,
   authors: readonly AuthorName[],
   format: BookFormat,
+  language: BookLanguage | undefined,
   current: SeriesMembership | undefined,
   held: readonly SeriesMembership[],
 ): SeriesMembership | 'no-author' => {
@@ -476,24 +484,41 @@ export const membershipFor = (
   // The saga heard and the saga read share a name and are still two sagas.
   const heard = format === 'audiobook'
   const joined =
-    held.find((series) => series.id === derived) ??
-    held.find((series) => isAudioSeries(series.id) === heard && slugify(series.name) === folded)
-  const id = joined?.id ?? derived
-  if (!id) return 'no-author'
-  return {
-    id,
-    name: joined?.name ?? placement.name,
-    ...(placement.volume ? { volume: placement.volume } : {}),
-    kind: current?.id === id ? current.kind : 'main',
-  }
+    held.find((series) => series.saga === derived) ??
+    held.find((series) => isAudioSeries(series.saga) === heard && slugify(series.name) === folded)
+  const saga = joined?.saga ?? derived
+  if (!saga) return 'no-author'
+  return membershipIn(
+    {
+      saga,
+      name: joined?.name ?? placement.name,
+      ...(placement.volume ? { volume: placement.volume } : {}),
+      kind: current?.saga === saga ? current.kind : 'main',
+    },
+    format,
+    language,
+  )
 }
 
-/** The saga a book belongs to in the format it is taken in: a book turned
- *  audiobook leaves the saga read for the saga heard, and back. */
-export const seriesInFormat = (
-  series: SeriesMembership | undefined,
+/** The membership a book is written with: its saga in the format it is taken
+ *  in — a book turned audiobook leaves the saga read for the saga heard, and
+ *  back — and the series id of that saga in the book's language. Where every
+ *  edition id is built, when the book is written: a reader of the book takes
+ *  the id it finds. */
+export const membershipIn = (
+  series: SeriesEntry,
   format: BookFormat,
-): SeriesMembership | undefined => series && { ...series, id: seriesIdFor(series.id, format) }
+  language: BookLanguage | undefined,
+): SeriesMembership => {
+  const saga = sagaKeyFor(series.saga, format)
+  return { ...series, id: seriesIdOf(saga, language), saga }
+}
+
+/** A book about to be written, its membership filed under the edition its own
+ *  format and language make: what keeps the stored id true when either
+ *  changes. */
+export const inItsEdition = <B extends Pick<Book, 'series' | 'format' | 'language'>>(book: B): B =>
+  book.series ? { ...book, series: membershipIn(book.series, book.format, book.language) } : book
 
 /** The Library tab's order: newest first on the date that last moved each
  *  book, a flat list the app cuts into month sections wherever the month of
@@ -740,7 +765,9 @@ export const mediaFor = (format: BookFormat, media: readonly BookMedium[] = []):
  *  wins, as for `copyOf`. */
 export const recordJoinedBy = <T extends Book>(
   books: readonly T[],
-  arriving: Pick<Book, 'title' | 'authors' | 'isbn13' | 'format' | 'media' | 'language' | 'series'>,
+  arriving: Pick<Book, 'title' | 'authors' | 'isbn13' | 'format' | 'media' | 'language'> & {
+    series?: Pick<SeriesMembership, 'volume'>
+  },
 ): T | undefined => {
   if (arriving.format === 'audiobook') return undefined
   const story = { title: arriving.title, author: arriving.authors[0] }

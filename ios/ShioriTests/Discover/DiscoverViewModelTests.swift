@@ -302,7 +302,7 @@ struct AnnouncedVolumeViewModelTests {
     @Test func aRecordingWithoutAudibleIsAddedFromItsPage() async {
         let calls = Calls()
         var client = DiscoverClient.preview
-        client.addAudibleVolume = { _, _, _ in
+        client.addAudibleVolume = { _, _ in
             throw APIError.domain(code: "AUDIBLE_NOT_CONNECTED", messages: [])
         }
         client.addBook = { draft in
@@ -319,7 +319,7 @@ struct AnnouncedVolumeViewModelTests {
 
     @Test func aFailedAdditionIsSaid() async {
         var client = DiscoverClient.preview
-        client.addAudibleVolume = { _, _, _ in throw APIError.domain(code: "NOT_FOUND", messages: []) }
+        client.addAudibleVolume = { _, _ in throw APIError.domain(code: "NOT_FOUND", messages: []) }
         client.addBook = { _ in throw Boom() }
         let viewModel = AnnouncedVolumeViewModel(opened: .preview, client: client)
 

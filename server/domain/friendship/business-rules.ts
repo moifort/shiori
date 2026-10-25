@@ -2,8 +2,8 @@ import { authorKeyOf } from '~/domain/author/primitives'
 import type { AuthorKey } from '~/domain/author/types'
 import { shelfDateOf, shelfKeyOf } from '~/domain/book/business-rules'
 import type { Book, Genre, TaggedSubgenre } from '~/domain/book/types'
-import { seriesIdFor } from '~/domain/series/primitives'
-import type { SeriesId, SeriesState } from '~/domain/series/types'
+import { sagaKeyFor } from '~/domain/series/primitives'
+import type { SagaKey, SeriesState } from '~/domain/series/types'
 import type { AuthorName, UserId } from '~/domain/shared/types'
 
 /** When the reader last did anything with a book: picked it up, moved its
@@ -139,8 +139,8 @@ export const newestFavoritesFirst = <
  *  somebody else would carry the volume twice. */
 export const favoritesOutsideSagas = <Favorite extends Pick<Book, 'series'>>(
   favorites: readonly Favorite[],
-  favoriteSagaIds: ReadonlySet<SeriesId>,
-): Favorite[] => favorites.filter((book) => !book.series || !favoriteSagaIds.has(book.series.id))
+  favoriteSagaIds: ReadonlySet<SagaKey>,
+): Favorite[] => favorites.filter((book) => !book.series || !favoriteSagaIds.has(book.series.saga))
 
 /** The subgenre a saga is described by: the leading subgenre of the first
  *  volume that carries the saga's genre, so the pair reads as one description
@@ -193,13 +193,13 @@ const newestHeartFirst = (left: { favoritedAt: Date }, right: { favoritedAt: Dat
  *  about being new. A saga held in two languages is hearted once. */
 export const recentHeartsOf = <
   Favorite extends Pick<Book, 'favorite' | 'favoritedAt' | 'series'>,
-  Saga extends { id: SeriesId },
+  Saga extends { saga: SagaKey },
 >(
   shelves: readonly {
     friendId: UserId
     books: readonly Favorite[]
     sagas: readonly Saga[]
-    favoriteSagas: ReadonlyMap<SeriesId, Date | undefined>
+    favoriteSagas: ReadonlyMap<SagaKey, Date | undefined>
   }[],
   since: Date,
   limit: number,
@@ -207,11 +207,11 @@ export const recentHeartsOf = <
   const isRecent = (date: Date | undefined): date is Date =>
     date !== undefined && date.getTime() >= since.getTime()
   const hearts = shelves.flatMap(({ friendId, books, sagas, favoriteSagas }) => {
-    const seen = new Set<SeriesId>()
+    const seen = new Set<SagaKey>()
     const sagaHearts = sagas.flatMap((saga): RecentHeart<Favorite, Saga>[] => {
-      const favoritedAt = favoriteSagas.get(saga.id)
-      if (!isRecent(favoritedAt) || seen.has(saga.id)) return []
-      seen.add(saga.id)
+      const favoritedAt = favoriteSagas.get(saga.saga)
+      if (!isRecent(favoritedAt) || seen.has(saga.saga)) return []
+      seen.add(saga.saga)
       return [{ friendId, favoritedAt, saga }]
     })
     const bookHearts = favoritesOutsideSagas(
@@ -319,13 +319,13 @@ type PickedBook = Pick<
  *  the last activity of what it is on, older than any dated heart. */
 export const friendPicksOf = <
   Favorite extends PickedBook,
-  Saga extends { id: SeriesId; books: readonly Favorite[] },
+  Saga extends { saga: SagaKey; books: readonly Favorite[] },
 >(
   shelves: readonly {
     friendId: UserId
     books: readonly Favorite[]
     sagas: readonly Saga[]
-    favoriteSagas: ReadonlyMap<SeriesId, Date | undefined>
+    favoriteSagas: ReadonlyMap<SagaKey, Date | undefined>
   }[],
   held: readonly Pick<Book, 'title' | 'authors' | 'series'>[],
   limit: number,
@@ -336,7 +336,7 @@ export const friendPicksOf = <
 } => {
   const heldStories = new Set(held.map((book) => shelfKeyOf(book.title, book.authors[0])))
   const heldSagas = new Set(
-    held.flatMap((book) => (book.series ? [seriesIdFor(book.series.id, 'book')] : [])),
+    held.flatMap((book) => (book.series ? [sagaKeyFor(book.series.saga, 'book')] : [])),
   )
   const heldAuthors = new Set<string>(held.flatMap((book) => book.authors.map(authorKeyOf)))
 
@@ -365,11 +365,11 @@ export const friendPicksOf = <
       loveAuthorsOf(friendId, book, lovedAt)
     }
     for (const saga of sagas) {
-      if (!favoriteSagas.has(saga.id) || saga.books.length === 0) continue
+      if (!favoriteSagas.has(saga.saga) || saga.books.length === 0) continue
       const lovedAt =
-        favoriteSagas.get(saga.id) ??
+        favoriteSagas.get(saga.saga) ??
         new Date(Math.max(...saga.books.map((book) => lastActivityOf(book).getTime())))
-      sagaHearts.push({ friendId, key: seriesIdFor(saga.id, 'book'), item: saga, lovedAt })
+      sagaHearts.push({ friendId, key: sagaKeyFor(saga.saga, 'book'), item: saga, lovedAt })
       for (const book of saga.books) loveAuthorsOf(friendId, book, lovedAt)
     }
   }

@@ -2,6 +2,13 @@ import type { Brand } from 'ts-brand'
 import type { BookLanguage, CoverUrl } from '~/domain/book/types'
 import type { AuthorName, BookTitle, Year } from '~/domain/shared/types'
 
+/** A saga, whatever the language: `dune--frank-herbert`, `…--audio` for the
+ *  saga heard. What the reader's opinion of the work and the release watch are
+ *  keyed on. Never shown to a client as a series to open. */
+export type SagaKey = Brand<string, 'SagaKey'>
+/** One edition of a saga — the saga's key, then its language after a `~` no
+ *  slug can produce: `dune--frank-herbert~fr`. The id of its catalogue
+ *  document, stored on every book of that edition, and the id a client opens. */
 export type SeriesId = Brand<string, 'SeriesId'>
 export type SeriesName = Brand<string, 'SeriesName'>
 export type SeriesDescription = Brand<string, 'SeriesDescription'>
@@ -48,8 +55,11 @@ export type Volume = {
  *  otherwise, and comes out on other days under other covers. A catalogue
  *  shared by every language took all of that from whoever scanned first. */
 export type Series = {
-  /** The saga, whatever the language: what books, opinions and watches name. */
+  /** The edition: the document's own id, what its books name. */
   id: SeriesId
+  /** The saga, whatever the language: what opinions and watches name. Stored
+   *  beside the id, so nothing has to split it. */
+  saga: SagaKey
   /** The edition this catalogue lists. Absent for the volumes that record no
    *  language, which have a catalogue of their own as they have a row. */
   language?: BookLanguage
@@ -73,7 +83,7 @@ export type Series = {
 
 /** A saga in one edition language: what a catalogue is looked up by. The
  *  language is absent for the volumes that record none. */
-export type SeriesEdition = { id: SeriesId; language?: BookLanguage }
+export type SeriesEdition = { saga: SagaKey; language?: BookLanguage }
 
 /** A saga the catalogue call answered with no volume at all — a saga heard that
  *  Audible lists no recording of, most often. Remembered so that the next
@@ -81,6 +91,7 @@ export type SeriesEdition = { id: SeriesId; language?: BookLanguage }
  *  so that a recording published since is found. */
 export type SeriesMiss = {
   id: SeriesId
+  saga: SagaKey
   language?: BookLanguage
   missedAt: Date
 }

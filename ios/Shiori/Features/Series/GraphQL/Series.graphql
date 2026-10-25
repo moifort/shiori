@@ -1,19 +1,20 @@
 # Everything the saga screen draws, in one request: the full catalogue — what
 # the reader does not own comes back as a proposal —, what they make of the
-# saga, and the volumes they hold, covers signed for those alone. The language
-# is the edition the reader opened: a catalogue built on this opening titles its
-# volumes as that edition does, and only that edition's volumes answer. A saga
+# saga, and the volumes they hold, covers signed for those alone. The id is the
+# edition the reader opened, as the server handed it out: a catalogue built on
+# this opening titles its volumes as that edition does, and only that edition's
+# volumes answer. A saga
 # the reader holds nothing of — offered on an author's page — is catalogued from
 # the `proposed` name and author. A saga nobody catalogued answers at once with
 # the volumes held, `awaitingCatalogue` set: SeriesCatalogueBuilt follows.
-query SeriesScreen($id: SeriesId!, $language: BookLanguage, $proposed: ProposedSagaInput) {
-  series(id: $id, language: $language, proposed: $proposed, waitForCatalogue: false) {
+query SeriesScreen($id: SeriesId!, $proposed: ProposedSagaInput) {
+  series(id: $id, proposed: $proposed, waitForCatalogue: false) {
     ...SeriesCatalogue
   }
   seriesOpinion(seriesId: $id) {
     ...SeriesOpinionFields
   }
-  mySeriesVolumes(seriesId: $id, language: $language) {
+  mySeriesVolumes(seriesId: $id) {
     ...BookSummary
     # The hero's author line opens the author's page.
     authorKeys
@@ -24,26 +25,23 @@ query SeriesScreen($id: SeriesId!, $language: BookLanguage, $proposed: ProposedS
 # summary, narrators, running time — read through the reader's account.
 # `NOT_FOUND` when Audible sells no recording of it, `AUDIBLE_NOT_CONNECTED`
 # without an account: the app then adds it by its title, as a book.
-mutation AddAudibleSeriesVolume(
-  $seriesId: SeriesId!
-  $volume: VolumeNumber!
-  $language: BookLanguage!
-) {
-  addAudibleSeriesVolume(seriesId: $seriesId, volume: $volume, language: $language) {
+mutation AddAudibleSeriesVolume($seriesId: SeriesId!, $volume: VolumeNumber!) {
+  addAudibleSeriesVolume(seriesId: $seriesId, volume: $volume) {
     ...BookDetail
   }
 }
 
 # The catalogue of a saga nobody had catalogued, built by the AI on this call:
 # one grounded model call, while the screen shows the volumes held.
-query SeriesCatalogueBuilt($id: SeriesId!, $language: BookLanguage, $proposed: ProposedSagaInput) {
-  series(id: $id, language: $language, proposed: $proposed) {
+query SeriesCatalogueBuilt($id: SeriesId!, $proposed: ProposedSagaInput) {
+  series(id: $id, proposed: $proposed) {
     ...SeriesCatalogue
   }
 }
 
 fragment SeriesCatalogue on Series {
   id
+  language
   name
   audio
   author
@@ -85,8 +83,8 @@ query MySeriesPage($limit: Int, $after: String, $loved: Boolean, $state: SeriesS
 # One row of the tab, asked again once the reader has changed that saga: the
 # same selection as a page's rows, so the patched row draws exactly as the
 # others do.
-query MyFollowedSeries($seriesId: SeriesId!, $language: BookLanguage) {
-  myFollowedSeries(seriesId: $seriesId, language: $language) {
+query MyFollowedSeries($seriesId: SeriesId!) {
+  myFollowedSeries(seriesId: $seriesId) {
     ...FollowedSeriesRow
     volumes {
       ...FollowedVolume
@@ -121,10 +119,10 @@ fragment FollowedVolume on Book {
   }
 }
 
-# Removes the saga from the library — or one edition of it, when the reader
-# stands in one: a saga held in two languages is two rows, removed apart.
-mutation DeleteSeries($seriesId: SeriesId!, $language: BookLanguage) {
-  deleteSeries(seriesId: $seriesId, language: $language)
+# Removes one edition of a saga from the library: a saga held in two languages
+# is two rows under two series ids, removed apart.
+mutation DeleteSeries($seriesId: SeriesId!) {
+  deleteSeries(seriesId: $seriesId)
 }
 
 # The sagas a duplicate can be folded into: every saga the reader holds, one
@@ -135,15 +133,16 @@ query MergeCandidates {
   }
 }
 
-# Folds a duplicate saga into the one the reader keeps: its volumes — one
-# edition's, when the reader stands in one — move there at their numbers, and
-# the duplicate leaves the library. Answers how many books moved.
-mutation MergeSeries($seriesId: SeriesId!, $language: BookLanguage, $intoSeriesId: SeriesId!) {
-  mergeSeries(seriesId: $seriesId, language: $language, intoSeriesId: $intoSeriesId)
+# Folds a duplicate saga into the one the reader keeps: the volumes of the
+# edition the reader stands in move there at their numbers, and the duplicate
+# leaves the library. Answers how many books moved.
+mutation MergeSeries($seriesId: SeriesId!, $intoSeriesId: SeriesId!) {
+  mergeSeries(seriesId: $seriesId, intoSeriesId: $intoSeriesId)
 }
 
 fragment FollowedSeriesRow on FollowedSeries {
   id
+  saga
   name
   audio
   author
@@ -184,10 +183,10 @@ mutation RemoveSeriesRating($seriesId: SeriesId!) {
   }
 }
 
-# Set a saga aside, or follow it again. Only the saga: its volumes keep their
-# own statuses.
-mutation SetSeriesFollowed($seriesId: SeriesId!, $followed: Boolean!, $language: BookLanguage) {
-  setSeriesFollowed(seriesId: $seriesId, followed: $followed, language: $language) {
+# Set one edition of a saga aside, or follow it again. Only the saga: its
+# volumes keep their own statuses.
+mutation SetSeriesFollowed($seriesId: SeriesId!, $followed: Boolean!) {
+  setSeriesFollowed(seriesId: $seriesId, followed: $followed) {
     ...SeriesOpinionFields
   }
 }

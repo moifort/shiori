@@ -16,7 +16,7 @@ import {
   worksNotHeldOf,
 } from '~/domain/author/business-rules'
 import { authorKeyOf, PortraitUrl } from '~/domain/author/primitives'
-import { SeriesId, SeriesName, seriesKeyOf } from '~/domain/series/primitives'
+import { SagaKey, SeriesName, seriesIdOf, seriesKeyOf } from '~/domain/series/primitives'
 import { AuthorName, BookTitle, Count } from '~/domain/shared/primitives'
 
 const day = (date: number) => new Date(Date.UTC(2026, 8, date))
@@ -28,7 +28,9 @@ const book = (
 ) => ({
   title,
   authors: authors.map(AuthorName),
-  series: options.series ? { id: SeriesId(options.series) } : undefined,
+  series: options.series
+    ? { id: seriesIdOf(SagaKey(options.series)), saga: SagaKey(options.series) }
+    : undefined,
   rating: options.rating,
   favorite: options.favorite,
   addedAt: day(options.on ?? 1),
@@ -97,12 +99,12 @@ describe('shelvedAuthorsOf', () => {
         book('Dune Messiah', ['Frank Herbert'], { series: 'dune', rating: 3 }),
         book('The Dosadi Experiment', ['Frank Herbert']),
       ],
-      [{ seriesId: SeriesId('dune'), rating: 4, favorite: true }],
+      [{ seriesId: SagaKey('dune'), rating: 4, favorite: true }],
     )
 
     expect(author?.favoriteCount).toBe(Count(2))
     expect(author?.averageRating).toBe(4)
-    expect(author?.seriesIds).toEqual([SeriesId('dune')])
+    expect(author?.seriesIds).toEqual([SagaKey('dune')])
   })
 
   test('leaves the mean out when nothing is rated', () => {
@@ -230,21 +232,21 @@ describe('the author page', () => {
   }
 
   const held = [
-    { id: seriesKeyOf('Les Archives de Roshar', 'Brandon Sanderson', 'book'), name: 'x' },
+    { saga: seriesKeyOf('Les Archives de Roshar', 'Brandon Sanderson', 'book'), name: 'x' },
     // Filed under another spelling of the author: recognised by its name.
-    { id: SeriesId('fils-des-brumes--b-sanderson'), name: 'Fils des brumes' },
+    { saga: SagaKey('fils-des-brumes--b-sanderson'), name: 'Fils des brumes' },
   ]
 
   test('offers the sagas the reader holds nothing of, keyed as their catalogue', () => {
     expect(sagasNotHeldOf(catalogue, held, 'book')).toEqual([
-      { name: SeriesName('Skyward'), id: seriesKeyOf('Skyward', 'Brandon Sanderson', 'book') },
+      { name: SeriesName('Skyward'), saga: seriesKeyOf('Skyward', 'Brandon Sanderson', 'book') },
     ])
   })
 
   test('offers a saga read and never heard among the recordings, keyed as heard', () => {
     const heard = sagasNotHeldOf(catalogue, held, 'audiobook')
 
-    expect(heard.map((saga) => String(saga.id))).toEqual([
+    expect(heard.map((saga) => String(saga.saga))).toEqual([
       'archives-de-roshar--brandon-sanderson--audio',
       'fils-des-brumes--brandon-sanderson--audio',
       'skyward--brandon-sanderson--audio',
@@ -268,7 +270,7 @@ describe('the author page', () => {
     }
     const heldHeard = [
       {
-        id: seriesKeyOf('Le Problème à trois corps', 'Liu Cixin', 'audiobook'),
+        saga: seriesKeyOf('Le Problème à trois corps', 'Liu Cixin', 'audiobook'),
         name: 'Le Problème à trois corps',
         books: [{ title: 'Le Problème à trois corps' }],
       },
@@ -280,7 +282,7 @@ describe('the author page', () => {
 
   test('counts a saga read and heard once', () => {
     expect(
-      sagaCountOf([SeriesId('dune--frank-herbert'), SeriesId('dune--frank-herbert--audio')]),
+      sagaCountOf([SagaKey('dune--frank-herbert'), SagaKey('dune--frank-herbert--audio')]),
     ).toBe(1)
   })
 
@@ -293,7 +295,7 @@ describe('the author page', () => {
   test('lists the books outside any saga, the read ones first', () => {
     const books = standaloneBooksOf([
       { title: 'Pile', status: 'to-read' as const },
-      { title: 'Volume', status: 'read' as const, series: { id: 'saga' } },
+      { title: 'Volume', status: 'read' as const, series: { saga: SagaKey('saga') } },
       { title: 'Read', status: 'read' as const },
     ])
 

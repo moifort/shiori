@@ -29,7 +29,8 @@ import type {
 import type { Shelf } from '~/domain/book/business-rules'
 import { ListeningMinutes } from '~/domain/book/primitives'
 import type { Book, BookId } from '~/domain/book/types'
-import type { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
+import { seriesIdOf } from '~/domain/series/primitives'
+import type { SagaKey, SeriesName, VolumeNumber } from '~/domain/series/types'
 import { Year } from '~/domain/shared/primitives'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 
@@ -390,7 +391,7 @@ describe('the saga a title belongs to', () => {
     )
 
     expect(importable?.series).toMatchObject({
-      id: 'chronique-du-tueur-de-roi--patrick-rothfuss--audio',
+      saga: 'chronique-du-tueur-de-roi--patrick-rothfuss--audio',
       name: 'Chronique du tueur de roi',
       volume: 1,
       kind: 'main',
@@ -847,8 +848,10 @@ describe('dating the edition of an import made before the year was kept', () => 
 })
 
 describe('numbering an import made before split novels were numbered', () => {
+  const key = 'chronique-du-tueur-de-roi--patrick-rothfuss--audio' as SagaKey
   const saga = {
-    id: 'chronique-du-tueur-de-roi--patrick-rothfuss--audio' as SeriesId,
+    id: seriesIdOf(key, 'fr'),
+    saga: key,
     name: 'Chronique du Tueur de Roi' as SeriesName,
     kind: 'main' as const,
   }
@@ -872,7 +875,13 @@ describe('numbering an import made before split novels were numbered', () => {
 
   // The reader filed it in another saga by hand: Audible's numbering is not theirs.
   test('leaves a book filed under another saga alone', () => {
-    const elsewhere = linked({ series: { ...saga, id: 'other--someone' as SeriesId } })
+    const elsewhere = linked({
+      series: {
+        ...saga,
+        id: seriesIdOf('other--someone' as SagaKey),
+        saga: 'other--someone' as SagaKey,
+      },
+    })
     expect(seriesVolumesFor([elsewhere], [part(1.2)])).toEqual([])
   })
 
@@ -966,7 +975,7 @@ describe('a recording’s page on the reader’s Audible store', () => {
 })
 
 describe('the recording of one volume of a saga', () => {
-  const saga = 'chronique-du-tueur-de-roi--patrick-rothfuss--audio' as SeriesId
+  const saga = 'chronique-du-tueur-de-roi--patrick-rothfuss--audio' as SagaKey
   const found = (asin: string, overrides: Partial<AudibleItem>) =>
     importableFrom(
       anItem({

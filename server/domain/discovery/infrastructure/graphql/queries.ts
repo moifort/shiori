@@ -6,7 +6,10 @@ import {
   SagaReleasesType,
 } from '~/domain/discovery/infrastructure/graphql/types'
 import { DiscoveryUseCase } from '~/domain/discovery/use-case'
+import { DEPRECATED_EDITION_LANGUAGE } from '~/domain/series/infrastructure/graphql/types'
+import { seriesReferenceOf } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
+import { badUserInput } from '~/domain/shared/graphql/errors'
 import { languageOf } from '~/domain/shared/language'
 
 builder.queryFields((t) => ({
@@ -32,10 +35,18 @@ builder.queryFields((t) => ({
       '`watched`, for an edition nobody looked up yet: `lookUpSagaReleases` does.',
     args: {
       seriesId: t.arg({ type: 'SeriesId', required: true }),
-      language: t.arg({ type: BookLanguageEnum, required: true }),
+      language: t.arg({
+        type: BookLanguageEnum,
+        required: false,
+        description: 'Beside a bare saga key: the edition opened.',
+        deprecationReason: DEPRECATED_EDITION_LANGUAGE,
+      }),
     },
-    resolve: (_root, { seriesId, language }, context) =>
-      DiscoveryUseCase.sagaReleases(context.userId, seriesId, language),
+    resolve: (_root, args, context) => {
+      const { saga, language } = seriesReferenceOf(args.seriesId, args.language ?? undefined)
+      if (!language) return badUserInput('The series id names no edition')
+      return DiscoveryUseCase.sagaReleases(context.userId, saga, language)
+    },
   }),
   authorReleases: t.field({
     type: AuthorReleasesType,

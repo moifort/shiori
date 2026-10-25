@@ -85,7 +85,7 @@ struct DiscoverScreen: View {
     private func detailContent(_ detail: DiscoverDetail) -> some View {
         switch detail {
         case let .series(row):
-            SeriesScreen(seriesId: row.series.seriesId, language: row.series.language)
+            SeriesScreen(seriesId: row.series.seriesId)
         case let .volume(opened):
             AnnouncedVolumeScreen(saga: opened.saga, volume: opened.volume, client: client)
         case let .friendBook(loved):
@@ -99,7 +99,6 @@ struct DiscoverScreen: View {
             // server, which catalogues it if nobody has yet.
             SeriesScreen(
                 seriesId: loved.saga.seriesId,
-                language: loved.saga.language,
                 proposal: loved.saga.author.map { SeriesProposal(name: loved.saga.name, author: $0) }
             )
         case let .awaited(edition):

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import { graphql } from 'graphql'
+import { seriesIdOf } from '~/domain/series/primitives'
 import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore, startFakeRequest } from '~/test/fake-firestore'
 
@@ -32,7 +33,7 @@ beforeEach(async () => {
     status: 'read',
     language: 'fr',
     series: {
-      id: carl,
+      saga: carl,
       name: SeriesName('Dungeon Crawler Carl'),
       volume: VolumeNumber(1),
       kind: 'main',
@@ -84,7 +85,12 @@ describe('the Découvrir tab', () => {
       unwatched: 0,
       sagas: [
         {
-          series: { id: carl, name: 'Dungeon Crawler Carl', language: 'FR', ownedCount: 1 },
+          series: {
+            id: seriesIdOf(carl, 'fr'),
+            name: 'Dungeon Crawler Carl',
+            language: 'FR',
+            ownedCount: 1,
+          },
           next: { number: 4, date: '2099-02-12' },
           missing: [2],
         },
@@ -166,7 +172,8 @@ describe('the Découvrir tab', () => {
   // comes with it.
   test('carries the catalogue spine the Series tab draws its strip from', async () => {
     fake.seed('series', `${carl}~fr`, {
-      id: carl,
+      id: `${carl}~fr`,
+      saga: carl,
       language: 'fr',
       name: 'Dungeon Crawler Carl',
       author: 'Matt Dinniman',
@@ -202,7 +209,7 @@ describe('an announced recording', () => {
       format: 'audiobook',
       language: 'fr',
       series: {
-        id: audioCarl,
+        saga: audioCarl,
         name: SeriesName('Dungeon Crawler Carl'),
         volume: VolumeNumber(1),
         kind: 'main',

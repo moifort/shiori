@@ -6,7 +6,8 @@ import {
   withReleases,
 } from '~/domain/series/business-rules'
 import * as repository from '~/domain/series/infrastructure/repository'
-import type { Series, SeriesEdition, SeriesId } from '~/domain/series/types'
+import { seriesIdOf } from '~/domain/series/primitives'
+import type { SagaKey, Series, SeriesEdition } from '~/domain/series/types'
 
 export namespace SeriesCommand {
   /** Record a saga's catalogue in one edition, or refresh one already known.
@@ -25,11 +26,11 @@ export namespace SeriesCommand {
    *  catalogue. An edition nobody catalogued is left alone: the watch is no
    *  catalogue, and the series screen builds one on its first opening. */
   export const recordReleases = async (
-    seriesId: SeriesId,
+    saga: SagaKey,
     language: BookLanguage,
     found: readonly FoundVolume[],
   ): Promise<Series | null> => {
-    const current = await repository.findById({ id: seriesId, language })
+    const current = await repository.findById({ saga, language })
     if (!current || current.provisional) return current
     const merged = withReleases(current, language, found)
     return merged === current ? current : repository.save(merged)
@@ -38,7 +39,12 @@ export namespace SeriesCommand {
   /** Remember that the catalogue call found no volume of this saga in that
    *  edition, so the next opening answers at once rather than asking again. */
   export const recordNothingFound = (edition: SeriesEdition, at: Date): Promise<void> =>
-    repository.saveMiss({ ...edition, missedAt: at })
+    repository.saveMiss({
+      id: seriesIdOf(edition.saga, edition.language),
+      saga: edition.saga,
+      ...(edition.language ? { language: edition.language } : {}),
+      missedAt: at,
+    })
 
   /** Whether the catalogue already holds this saga in that edition — what
    *  decides if the third Gemini call runs at all. A hit means the scan costs

@@ -167,7 +167,7 @@ describe('cataloguing through the API', () => {
 
     expect(placed.errors).toBeUndefined()
     expect(placed.data?.updateBook).toEqual({
-      series: { id: 'sharko--franck-thilliez', name: 'Sharko', volume: 2, kind: 'MAIN' },
+      series: { id: 'sharko--franck-thilliez~en', name: 'Sharko', volume: 2, kind: 'MAIN' },
     })
     const library = await execute('{ library { series books { title } } }')
     expect(library.data?.library).toEqual([{ series: 'Sharko', books: [{ title: 'Gataca' }] }])
@@ -995,7 +995,8 @@ describe('a volume not out yet in its edition', () => {
   // out in English only, kept by a reader on their French pile.
   const seedFrenchCatalogue = () =>
     resetFakeFirestore().seed('series', `${saga}~fr`, {
-      id: saga,
+      id: `${saga}~fr`,
+      saga: saga,
       language: 'fr',
       name: 'Dans la toile du temps',
       author: 'Adrian Tchaikovsky',

@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test'
 import {
   isAudioSeries,
   keyWithAuthorReversed,
-  SeriesId,
-  seriesIdFor,
+  SagaKey,
+  sagaKeyFor,
   seriesKeyOf,
   VolumeNumber,
 } from '~/domain/series/primitives'
@@ -61,16 +61,16 @@ describe('the format in the key', () => {
     expect(read).toBe('bobiverse--dennis-e-taylor')
     for (const format of ['bande-dessinee', 'comic', 'manga'] as const)
       expect(String(seriesKeyOf('Bobiverse', 'Dennis E. Taylor', format))).toBe(read)
-    expect(isAudioSeries(SeriesId(read))).toBe(false)
+    expect(isAudioSeries(SagaKey(read))).toBe(false)
   })
 
   test('moves an id to the saga of a format, and back', () => {
-    const read = SeriesId('bobiverse--dennis-e-taylor')
-    const heard = SeriesId('bobiverse--dennis-e-taylor--audio')
-    expect(seriesIdFor(read, 'audiobook')).toBe(heard)
-    expect(seriesIdFor(heard, 'audiobook')).toBe(heard)
-    expect(seriesIdFor(heard, 'book')).toBe(read)
-    expect(seriesIdFor(read, 'manga')).toBe(read)
+    const read = SagaKey('bobiverse--dennis-e-taylor')
+    const heard = SagaKey('bobiverse--dennis-e-taylor--audio')
+    expect(sagaKeyFor(read, 'audiobook')).toBe(heard)
+    expect(sagaKeyFor(heard, 'audiobook')).toBe(heard)
+    expect(sagaKeyFor(heard, 'book')).toBe(read)
+    expect(sagaKeyFor(read, 'manga')).toBe(read)
   })
 })
 

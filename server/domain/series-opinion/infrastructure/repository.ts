@@ -1,5 +1,5 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
-import type { SeriesId } from '~/domain/series/types'
+import type { SagaKey } from '~/domain/series/types'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
@@ -12,7 +12,7 @@ import { deleteInBatches, genericDataConverter, withoutAbsentFields } from '~/ut
 const opinions = () =>
   db().collection('series-opinions').withConverter(genericDataConverter<SeriesOpinion>())
 
-const documentId = (userId: UserId, seriesId: SeriesId) => `${userId}--${seriesId}`
+const documentId = (userId: UserId, seriesId: SagaKey) => `${userId}--${seriesId}`
 
 const allCacheKey = (userId: UserId) => `series-opinions:all:${userId}`
 
@@ -32,7 +32,7 @@ export const findAllByUser = (userId: UserId): Promise<SeriesOpinion[]> =>
 
 // One document, read by its id: the saga screen used to read every opinion of
 // the reader to keep one. Taken from the scan when this request already holds it.
-export const findBy = async (userId: UserId, seriesId: SeriesId): Promise<SeriesOpinion | null> => {
+export const findBy = async (userId: UserId, seriesId: SagaKey): Promise<SeriesOpinion | null> => {
   if (isInRequestCache(allCacheKey(userId)))
     return (await findAllByUser(userId)).find((opinion) => opinion.seriesId === seriesId) ?? null
   return (await opinions().doc(documentId(userId, seriesId)).get()).data() ?? null
@@ -52,7 +52,7 @@ export const save = async (opinion: SeriesOpinion, batch?: WriteBatch): Promise<
 // already says, and keeping it would bill a read for nothing on every tab open.
 export const remove = async (
   userId: UserId,
-  seriesId: SeriesId,
+  seriesId: SagaKey,
   batch?: WriteBatch,
 ): Promise<void> => {
   const ref = opinions().doc(documentId(userId, seriesId))

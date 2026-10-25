@@ -63,11 +63,12 @@ import {
   isAudioSeries,
   SeriesDescription,
   SeriesName,
+  seriesIdOf,
   seriesKeyOf,
   VolumeKindValue,
   VolumeNumber,
 } from '~/domain/series/primitives'
-import type { Series, SeriesId, SeriesName as SeriesNameValue, Volume } from '~/domain/series/types'
+import type { SagaKey, Series, SeriesName as SeriesNameValue, Volume } from '~/domain/series/types'
 import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
 import { bareTitleOf } from '~/domain/shared/saga-title'
 import type {
@@ -621,7 +622,7 @@ export namespace ScanCommand {
    *  opening does not wait on the same call. `usage` says what the call cost whenever it answered, stored or
    *  not. */
   export const catalogueSeries = async (
-    seriesId: SeriesId,
+    saga: SagaKey,
     name: SeriesNameValue,
     author: AuthorNameValue,
     language: ScanLanguage,
@@ -632,7 +633,7 @@ export namespace ScanCommand {
         step: 'catalogue',
         parts: [
           {
-            text: isAudioSeries(seriesId)
+            text: isAudioSeries(saga)
               ? audioCataloguePrompt(name, author, language, editionLanguage)
               : cataloguePrompt(name, author, language, editionLanguage),
           },
@@ -643,15 +644,13 @@ export namespace ScanCommand {
 
       const volumes = withoutDuplicateVolumes(value.volumes.map(parsedVolume).filter(isPresent))
       if (volumes.length === 0) {
-        await SeriesCommand.recordNothingFound(
-          { id: seriesId, language: editionLanguage },
-          new Date(),
-        )
+        await SeriesCommand.recordNothingFound({ saga, language: editionLanguage }, new Date())
         return { usage }
       }
 
       const series = await SeriesCommand.catalogue({
-        id: seriesId,
+        id: seriesIdOf(saga, editionLanguage),
+        saga,
         ...(editionLanguage ? { language: editionLanguage } : {}),
         name: SeriesName(value.name),
         author: AuthorName(value.author),
@@ -673,7 +672,7 @@ export namespace ScanCommand {
    *  failure leaves them named as they were, and the catalogue stands. */
   const nameBooksAfter = async (series: Series) => {
     try {
-      await BookCommand.nameSeries(series, series.name)
+      await BookCommand.nameSeries(series.id, series.name)
     } catch (error) {
       logger.warn('saga name not written into its books', { error, series: series.id })
     }
@@ -709,7 +708,7 @@ export namespace ScanCommand {
     return {
       // A format the cover did not settle is a printed book, as `BookCommand.add`
       // would file it; the reader's pick realigns the saga when the book is saved.
-      id: seriesKeyOf(name, authors[0], format ?? 'book'),
+      saga: seriesKeyOf(name, authors[0], format ?? 'book'),
       name,
       volume: optional(value.volumeNumber, VolumeNumber),
       // A series the model found but could not classify is a main volume: it is

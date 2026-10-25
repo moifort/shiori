@@ -45,7 +45,7 @@ import {
 import { FriendshipQuery } from '~/domain/friendship/query'
 import type { Friend } from '~/domain/friendship/types'
 import { type FollowedSaga, followedSagasOf, genreOf } from '~/domain/series/business-rules'
-import type { SeriesId, SeriesName, SeriesState } from '~/domain/series/types'
+import type { SagaKey, SeriesId, SeriesName, SeriesState } from '~/domain/series/types'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { Language } from '~/domain/shared/language'
 import { Count, PersonName } from '~/domain/shared/primitives'
@@ -67,8 +67,10 @@ const SHELF_SHOWN = 30
  *  Dune", never "four of fourteen". */
 export type FriendSaga = {
   id: string
-  /** The saga alone, for the reader's own shelf to open it on its page. */
+  /** The edition, for the reader's own shelf to open it on its page. */
   seriesId: SeriesId
+  /** The saga, whatever the language. */
+  saga: SagaKey
   name: SeriesName
   author?: AuthorName
   language?: BookLanguage
@@ -324,18 +326,21 @@ export namespace FriendshipUseCase {
     const kept = followedSagasOf(books).filter(
       (saga) =>
         (!view.state || friendSagaStateOf(saga.books) === view.state) &&
-        (!view.favorite || favoriteSagas.has(saga.id)),
+        (!view.favorite || favoriteSagas.has(saga.saga)),
     )
     const sagas = (
       view.loved
         ? lovedFirst(
             kept,
             (saga) =>
-              lovedRankOf({ favorite: favoriteSagas.has(saga.id), rating: ratings.get(saga.id) }),
+              lovedRankOf({
+                favorite: favoriteSagas.has(saga.saga),
+                rating: ratings.get(saga.saga),
+              }),
             newestFirst,
           )
         : kept.sort(newestFirst)
-    ).map((saga) => ({ saga, id: `${saga.id}\u0000${saga.language ?? ''}` }))
+    ).map((saga) => ({ saga, id: saga.id as string }))
     const start = page.after ? sagas.findIndex(({ id }) => id === page.after) + 1 : 0
     const shown = sagas.slice(start, start + page.limit)
     const volumes = await Promise.all(
@@ -364,7 +369,7 @@ export namespace FriendshipUseCase {
   export const saga = async (
     viewerId: UserId,
     ownerId: UserId,
-    seriesId: SeriesId,
+    seriesId: SagaKey,
     edition?: BookLanguage,
   ): Promise<FriendSaga | null> => {
     if (!(await canRead(viewerId, ownerId))) return null
@@ -378,7 +383,7 @@ export namespace FriendshipUseCase {
     )
     if (!saga) return null
     const owned = shelfKeysOf(viewerVolumes)
-    const favorites = new Map<SeriesId, Date | undefined>(
+    const favorites = new Map<SagaKey, Date | undefined>(
       opinion?.favorite ? [[seriesId, opinion.favoritedAt]] : [],
     )
     const ratings = seriesRatingsOf(opinion ? [opinion] : [])
@@ -645,21 +650,22 @@ const sagaShelvedAt = (saga: FollowedSaga<Book>): Date =>
 /** A saga as a friend sees it, with the volumes signed for it, if any. */
 const friendSagaOf = (
   saga: FollowedSaga<Book>,
-  favoriteSagas: ReadonlyMap<SeriesId, Date | undefined>,
-  ratings: ReadonlyMap<SeriesId, StarRating>,
+  favoriteSagas: ReadonlyMap<SagaKey, Date | undefined>,
+  ratings: ReadonlyMap<SagaKey, StarRating>,
   volumes: FriendBook[],
 ): FriendSaga => {
   const genre = genreOf(saga.books)
   return {
-    id: `${saga.id}\u0000${saga.language ?? ''}`,
+    id: saga.id,
     seriesId: saga.id,
+    saga: saga.saga,
     name: saga.name,
     author: saga.author,
     language: saga.language,
     ownedCount: Count(saga.books.length),
-    favorite: favoriteSagas.has(saga.id),
-    favoritedAt: favoriteSagas.get(saga.id),
-    rating: ratings.get(saga.id),
+    favorite: favoriteSagas.has(saga.saga),
+    favoritedAt: favoriteSagas.get(saga.saga),
+    rating: ratings.get(saga.saga),
     genre,
     subgenre: subgenreOf(saga.books, genre),
     volumes,
@@ -669,7 +675,7 @@ const friendSagaOf = (
 }
 
 /** The hearted sagas of a shelf, with the day of each heart. */
-const favoriteSagasOf = async (ownerId: UserId): Promise<Map<SeriesId, Date | undefined>> =>
+const favoriteSagasOf = async (ownerId: UserId): Promise<Map<SagaKey, Date | undefined>> =>
   new Map(
     (await SeriesOpinionQuery.all(ownerId))
       .filter((opinion) => opinion.favorite)
@@ -678,7 +684,7 @@ const favoriteSagasOf = async (ownerId: UserId): Promise<Map<SeriesId, Date | un
 
 /** The stars a shelf's owner gave their sagas. The opinions are scanned once
  *  per request, whichever of this and the hearts asks first. */
-const sagaRatingsOf = async (ownerId: UserId): Promise<Map<SeriesId, StarRating>> =>
+const sagaRatingsOf = async (ownerId: UserId): Promise<Map<SagaKey, StarRating>> =>
   seriesRatingsOf(await SeriesOpinionQuery.all(ownerId))
 
 /** One reader's shelf as it is shared: what they are reading, most recently
@@ -723,10 +729,10 @@ const sharedShelfOf = async (
   const drawnSagaIds = new Set(
     [
       ...favoriteSagaIds,
-      reading[0]?.series?.id,
-      finished?.series?.id,
-      favorites[0]?.series?.id,
-    ].filter((id): id is SeriesId => id !== undefined),
+      reading[0]?.series?.saga,
+      finished?.series?.saga,
+      favorites[0]?.series?.saga,
+    ].filter((id): id is SagaKey => id !== undefined),
   )
 
   const sagas = followedSagasOf(books)
@@ -744,7 +750,7 @@ const sharedShelfOf = async (
     BookQuery.withSignedCovers(favorites),
     Promise.all(
       sagas.map((saga) =>
-        drawnSagaIds.has(saga.id)
+        drawnSagaIds.has(saga.saga)
           ? BookQuery.withSignedCovers(inReadingOrder(saga.books))
           : Promise.resolve([]),
       ),

@@ -51,7 +51,7 @@ const { AuthorUseCase } = await import('~/domain/author/use-case')
 const { authorKeyOf } = await import('~/domain/author/primitives')
 const { BookCommand } = await import('~/domain/book/command')
 const { SeriesOpinionCommand } = await import('~/domain/series-opinion/command')
-const { SeriesId, SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
+const { SagaKey, SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
 
 const reader = 'reader-1' as UserId
@@ -73,7 +73,7 @@ beforeEach(() => {
 /** One author per saga, each saga catalogued with three volumes. */
 const writeSagas = async (count: number) => {
   for (let index = 0; index < count; index++) {
-    const id = SeriesId(`saga-${index}`)
+    const id = SagaKey(`saga-${index}`)
     fake.seed('series', id, {
       id,
       name: `Saga ${index}`,
@@ -84,7 +84,12 @@ const writeSagas = async (count: number) => {
       title: BookTitle(`Saga ${index}, tome 1`),
       authors: [AuthorName(`Author ${index}`)],
       status: 'read',
-      series: { id, name: SeriesName(`Saga ${index}`), volume: VolumeNumber(1), kind: 'main' },
+      series: {
+        saga: id,
+        name: SeriesName(`Saga ${index}`),
+        volume: VolumeNumber(1),
+        kind: 'main',
+      },
     })
   }
 }
@@ -107,7 +112,7 @@ describe('a page of the Authors tab', () => {
 
   test('puts the author the reader loves first', async () => {
     await writeSagas(3)
-    await SeriesOpinionCommand.setFavorite(reader, SeriesId('saga-2'), true)
+    await SeriesOpinionCommand.setFavorite(reader, SagaKey('saga-2'), true)
 
     const { items } = await AuthorUseCase.followedPage(reader, { limit: 10 }, {})
 
@@ -117,7 +122,7 @@ describe('a page of the Authors tab', () => {
 
   test('keeps only the authors with a heart in the favourites', async () => {
     await writeSagas(3)
-    await SeriesOpinionCommand.setFavorite(reader, SeriesId('saga-1'), true)
+    await SeriesOpinionCommand.setFavorite(reader, SagaKey('saga-1'), true)
 
     const { items, hasMore } = await AuthorUseCase.followedPage(
       reader,
@@ -166,12 +171,12 @@ const sanderson = {
 
 describe('an author’s page', () => {
   const holdSanderson = async () => {
-    const id = SeriesId('saga-0--brandon-sanderson')
+    const id = SagaKey('saga-0--brandon-sanderson')
     await BookCommand.add(reader, {
       title: BookTitle('Tome 1'),
       authors: [AuthorName('Brandon Sanderson')],
       status: 'read',
-      series: { id, name: SeriesName('Saga 0'), volume: VolumeNumber(1), kind: 'main' },
+      series: { saga: id, name: SeriesName('Saga 0'), volume: VolumeNumber(1), kind: 'main' },
     })
     await BookCommand.add(reader, {
       title: BookTitle('Elantris'),

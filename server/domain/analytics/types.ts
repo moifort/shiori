@@ -11,7 +11,7 @@ import type {
   StarRating,
   Subgenre,
 } from '~/domain/book/types'
-import type { SeriesId, SeriesName } from '~/domain/series/types'
+import type { SagaKey, SeriesId, SeriesName } from '~/domain/series/types'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 import type { ObjectPath, SignedUrl } from '~/system/object-store/types'
 
@@ -69,7 +69,10 @@ export type Finish = {
 /** How far the reader is through a saga in progress, against the published main
  *  volumes of the shared catalogue at the time the view was built. */
 export type SeriesProgress = {
+  /** The edition measured, as its books name it: what the card opens. */
   id: SeriesId
+  /** The saga, whatever the language. */
+  saga: SagaKey
   name: SeriesName
   readCount: number
   totalCount: number

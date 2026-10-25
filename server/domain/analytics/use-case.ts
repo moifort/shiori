@@ -134,7 +134,7 @@ const rebuild = async (
     SeriesOpinionQuery.all(userId),
   ])
   const editions = books.flatMap((book) =>
-    book.series ? [{ id: book.series.id, language: book.language }] : [],
+    book.series ? [{ saga: book.series.saga, language: book.language }] : [],
   )
   // The world's catalogues, and the reader's own count where the world has
   // none: a saga they counted themselves has a bar on the dashboard too.

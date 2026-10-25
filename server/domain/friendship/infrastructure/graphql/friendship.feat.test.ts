@@ -300,7 +300,7 @@ describe("the reader's own shelf, as friends see it", () => {
         { title: 'Hypérion', favoritedAt: '2026-09-10T10:00:00.000Z' },
         { title: 'Piranesi', favoritedAt: '2026-09-01T10:00:00.000Z' },
       ],
-      sagas: [{ seriesId: 'dune--frank-herbert', favoritedAt: '2026-09-10T10:00:00.000Z' }],
+      sagas: [{ seriesId: 'dune--frank-herbert~en', favoritedAt: '2026-09-10T10:00:00.000Z' }],
     })
   })
 

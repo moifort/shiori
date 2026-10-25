@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { seriesIdOf } from '~/domain/series/primitives'
 import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
 
@@ -6,7 +7,7 @@ mock.module('~/system/firebase', () => ({ db: fakeDb }))
 
 const { SeriesUseCase } = await import('~/domain/series/use-case')
 const { BookCommand } = await import('~/domain/book/command')
-const { SeriesId, SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
+const { SagaKey, SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
 const { BookQuery } = await import('~/domain/book/query')
 const { SeriesOpinionCommand } = await import('~/domain/series-opinion/command')
@@ -25,9 +26,10 @@ beforeEach(() => {
  *  in French, the edition a book that names no language is taken to be in. */
 const followSagas = async (count: number) => {
   for (let index = 0; index < count; index++) {
-    const id = SeriesId(`saga-${index}`)
+    const id = SagaKey(`saga-${index}`)
     fake.seed('series', `${id}~fr`, {
-      id,
+      id: `${id}~fr`,
+      saga: id,
       language: 'fr',
       name: `Saga ${index}`,
       author: 'A',
@@ -37,7 +39,12 @@ const followSagas = async (count: number) => {
       reader,
       {
         title: BookTitle(`Saga ${index}, tome 1`),
-        series: { id, name: SeriesName(`Saga ${index}`), volume: VolumeNumber(1), kind: 'main' },
+        series: {
+          saga: id,
+          name: SeriesName(`Saga ${index}`),
+          volume: VolumeNumber(1),
+          kind: 'main',
+        },
       },
       new Date(NOW.getTime() - index * 60_000),
     )
@@ -53,7 +60,7 @@ describe('a page of the Series tab', () => {
 
     const { items, hasMore } = await SeriesUseCase.followedPage(reader, { limit: 5 }, {})
 
-    expect(items.map((saga) => String(saga.id))).toEqual([
+    expect(items.map((saga) => String(saga.saga))).toEqual([
       'saga-0',
       'saga-1',
       'saga-2',
@@ -76,7 +83,7 @@ describe('a page of the Series tab', () => {
     )
     const all = await SeriesUseCase.followed(reader)
 
-    expect(items).toEqual(all.filter((saga) => ['saga-2', 'saga-3'].includes(String(saga.id))))
+    expect(items).toEqual(all.filter((saga) => ['saga-2', 'saga-3'].includes(String(saga.saga))))
   })
 
   test('reads every catalogue when it filters on a state', async () => {
@@ -98,9 +105,10 @@ describe('the name of a row', () => {
   // The catalogue names the saga as the world does, and the saga screen shows
   // that name: the row must not keep the one a scan or an import wrote.
   test("is the catalogue's once there is one", async () => {
-    const id = SeriesId('saga-0')
+    const id = SagaKey('saga-0')
     fake.seed('series', `${id}~fr`, {
-      id,
+      id: `${id}~fr`,
+      saga: id,
       language: 'fr',
       name: 'The Saga',
       author: 'A',
@@ -110,7 +118,7 @@ describe('the name of a row', () => {
       reader,
       {
         title: BookTitle('Saga, tome 1'),
-        series: { id, name: SeriesName('saga'), volume: VolumeNumber(1), kind: 'main' },
+        series: { saga: id, name: SeriesName('saga'), volume: VolumeNumber(1), kind: 'main' },
       },
       NOW,
     )
@@ -126,7 +134,7 @@ describe('the name of a row', () => {
       {
         title: BookTitle('Saga, tome 1'),
         series: {
-          id: SeriesId('saga-0'),
+          saga: SagaKey('saga-0'),
           name: SeriesName('saga'),
           volume: VolumeNumber(1),
           kind: 'main',
@@ -148,23 +156,23 @@ describe('one row of the Series tab', () => {
     await followSagas(6)
     const before = fake.docReads
 
-    const row = await SeriesUseCase.followedOne(reader, SeriesId('saga-3'), 'fr')
+    const row = await SeriesUseCase.followedOne(reader, SagaKey('saga-3'), 'fr')
     expect(fake.docReads - before).toBe(1)
 
     const all = await SeriesUseCase.followed(reader)
-    expect(row).toEqual(all.find((saga) => String(saga.id) === 'saga-3') ?? null)
+    expect(row).toEqual(all.find((saga) => String(saga.saga) === 'saga-3') ?? null)
   })
 
   test('answers nothing for a saga the reader no longer holds', async () => {
     await followSagas(1)
 
-    expect(await SeriesUseCase.followedOne(reader, SeriesId('saga-9'))).toBeNull()
+    expect(await SeriesUseCase.followedOne(reader, SagaKey('saga-9'))).toBeNull()
   })
 
   // A saga held in two languages is two rows: the one asked for, not the other.
   test('answers the edition asked for', async () => {
     await followSagas(1)
-    const id = SeriesId('saga-0')
+    const id = SagaKey('saga-0')
 
     expect(await SeriesUseCase.followedOne(reader, id, 'en')).toBeNull()
     expect((await SeriesUseCase.followedOne(reader, id, 'fr'))?.language).toBe('fr')
@@ -172,7 +180,7 @@ describe('one row of the Series tab', () => {
 })
 
 describe('the name a saga goes by', () => {
-  const redRising = SeriesId('red-rising-french-edition--pierre-brown--audio')
+  const redRising = SagaKey('red-rising-french-edition--pierre-brown--audio')
   const volumeOf = (name: string, reader: UserId, volume: number) =>
     BookCommand.add(
       reader,
@@ -180,7 +188,7 @@ describe('the name a saga goes by', () => {
         title: BookTitle(`Red Rising ${volume}`),
         format: 'audiobook',
         series: {
-          id: redRising,
+          saga: redRising,
           name: SeriesName(name),
           volume: VolumeNumber(volume),
           kind: 'main',
@@ -191,7 +199,8 @@ describe('the name a saga goes by', () => {
 
   test('is the catalogue’s on a book about to be added', async () => {
     fake.seed('series', `${redRising}~fr`, {
-      id: redRising,
+      id: `${redRising}~fr`,
+      saga: redRising,
       language: 'fr',
       name: 'Red Rising',
       author: 'A',
@@ -201,7 +210,8 @@ describe('the name a saga goes by', () => {
       title: BookTitle('Red Rising 2'),
       format: 'audiobook' as const,
       series: {
-        id: redRising,
+        id: seriesIdOf(redRising, 'fr'),
+        saga: redRising,
         name: SeriesName('Red Rising[French Edition]'),
         volume: VolumeNumber(2),
         kind: 'main' as const,
@@ -218,9 +228,10 @@ describe('the name a saga goes by', () => {
   })
 
   test('takes the catalogue’s number for a volume numbered within its cycle', async () => {
-    const benton = SeriesId('sir-arthur-benton--tarek')
+    const benton = SagaKey('sir-arthur-benton--tarek')
     fake.seed('series', `${benton}~fr`, {
-      id: benton,
+      id: `${benton}~fr`,
+      saga: benton,
       language: 'fr',
       name: 'Sir Arthur Benton',
       author: 'Tarek',
@@ -233,7 +244,8 @@ describe('the name a saga goes by', () => {
       title: BookTitle('Le Coup de Prague'),
       language: 'fr' as const,
       series: {
-        id: benton,
+        id: seriesIdOf(benton, 'fr'),
+        saga: benton,
         name: SeriesName('Sir Arthur Benton'),
         volume: VolumeNumber(2),
         kind: 'main' as const,
@@ -248,9 +260,10 @@ describe('the name a saga goes by', () => {
   })
 
   test('joins the saga catalogued under its author’s names in the other order', async () => {
-    const western = SeriesId('old-boy--garon-tsuchiya')
+    const western = SagaKey('old-boy--garon-tsuchiya')
     fake.seed('series', 'old-boy--tsuchiya-garon~fr', {
-      id: 'old-boy--tsuchiya-garon',
+      id: 'old-boy--tsuchiya-garon~fr',
+      saga: 'old-boy--tsuchiya-garon',
       language: 'fr',
       name: 'Old Boy',
       author: 'Tsuchiya Garon',
@@ -260,7 +273,8 @@ describe('the name a saga goes by', () => {
       title: BookTitle('Old Boy'),
       language: 'fr' as const,
       series: {
-        id: western,
+        id: seriesIdOf(western, 'fr'),
+        saga: western,
         name: SeriesName('Old Boy'),
         volume: VolumeNumber(2),
         kind: 'main' as const,
@@ -270,14 +284,15 @@ describe('the name a saga goes by', () => {
 
     const [filed] = await SeriesUseCase.filedAfterCatalogues([book])
 
-    expect(filed.series?.id).toBe(SeriesId('old-boy--tsuchiya-garon'))
+    expect(filed.series?.saga).toBe(SagaKey('old-boy--tsuchiya-garon'))
     expect(fake.docReads - before).toBe(2)
   })
 
   test('keeps its own key when the saga is catalogued under it', async () => {
     for (const id of ['old-boy--garon-tsuchiya', 'old-boy--tsuchiya-garon'])
       fake.seed('series', `${id}~fr`, {
-        id,
+        id: `${id}~fr`,
+        saga: id,
         language: 'fr',
         name: 'Old Boy',
         author: 'A',
@@ -287,7 +302,8 @@ describe('the name a saga goes by', () => {
       title: BookTitle('Old Boy'),
       language: 'fr' as const,
       series: {
-        id: SeriesId('old-boy--garon-tsuchiya'),
+        id: seriesIdOf(SagaKey('old-boy--garon-tsuchiya'), 'fr'),
+        saga: SagaKey('old-boy--garon-tsuchiya'),
         name: SeriesName('Old Boy'),
         kind: 'main' as const,
       },
@@ -295,7 +311,7 @@ describe('the name a saga goes by', () => {
 
     const [filed] = await SeriesUseCase.filedAfterCatalogues([book])
 
-    expect(filed.series?.id).toBe(SeriesId('old-boy--garon-tsuchiya'))
+    expect(filed.series?.saga).toBe(SagaKey('old-boy--garon-tsuchiya'))
   })
 
   test('is written into every reader’s volumes once the saga is catalogued', async () => {
@@ -303,7 +319,7 @@ describe('the name a saga goes by', () => {
     const other = await volumeOf('Red Rising [French Edition]', 'reader-2' as UserId, 2)
 
     expect(
-      await BookCommand.nameSeries({ id: redRising, language: 'fr' }, SeriesName('Red Rising')),
+      await BookCommand.nameSeries(seriesIdOf(redRising, 'fr'), SeriesName('Red Rising')),
     ).toBe(2)
 
     for (const book of [first, other])
@@ -313,21 +329,22 @@ describe('the name a saga goes by', () => {
 })
 
 describe('a saga held in two languages', () => {
-  const dune = SeriesId('dune--frank-herbert')
+  const dune = SagaKey('dune--frank-herbert')
   const volumeIn = (language: 'fr' | 'en', name: string) =>
     BookCommand.add(
       reader,
       {
         title: BookTitle(`${name} 1`),
         language,
-        series: { id: dune, name: SeriesName(name), volume: VolumeNumber(1), kind: 'main' },
+        series: { saga: dune, name: SeriesName(name), volume: VolumeNumber(1), kind: 'main' },
       },
       NOW,
     )
 
   beforeEach(() => {
     fake.seed('series', `${dune}~fr`, {
-      id: dune,
+      id: `${dune}~fr`,
+      saga: dune,
       language: 'fr',
       name: 'Le Cycle de Dune',
       author: 'Frank Herbert',
@@ -337,7 +354,8 @@ describe('a saga held in two languages', () => {
       ],
     })
     fake.seed('series', `${dune}~en`, {
-      id: dune,
+      id: `${dune}~en`,
+      saga: dune,
       language: 'en',
       name: 'Dune Chronicles',
       author: 'Frank Herbert',
@@ -366,7 +384,8 @@ describe('a saga held in two languages', () => {
       title: BookTitle('Dune 2'),
       language,
       series: {
-        id: dune,
+        id: seriesIdOf(dune, 'fr'),
+        saga: dune,
         name: SeriesName('Dune'),
         volume: VolumeNumber(2),
         kind: 'main' as const,
@@ -384,7 +403,7 @@ describe('a saga held in two languages', () => {
     const english = await volumeIn('en', 'Dune')
 
     expect(
-      await BookCommand.nameSeries({ id: dune, language: 'fr' }, SeriesName('Le Cycle de Dune')),
+      await BookCommand.nameSeries(seriesIdOf(dune, 'fr'), SeriesName('Le Cycle de Dune')),
     ).toBe(1)
 
     expect(fake.data('books', french.id)?.series).toMatchObject({ name: 'Le Cycle de Dune' })
@@ -404,8 +423,8 @@ describe('a saga held in two languages', () => {
 })
 
 describe('merging a duplicate saga', () => {
-  const kept = SeriesId('assassin-royal--robin-hobb')
-  const duplicate = SeriesId('l-assassin-royal-french-edition--robin-hobb')
+  const kept = SagaKey('assassin-royal--robin-hobb')
+  const duplicate = SagaKey('l-assassin-royal-french-edition--robin-hobb')
 
   const shelve = (id: typeof kept, name: string, volume: number, language: 'fr' | 'en' = 'fr') =>
     BookCommand.add(
@@ -413,7 +432,7 @@ describe('merging a duplicate saga', () => {
       {
         title: BookTitle(`${name}, tome ${volume}`),
         language,
-        series: { id, name: SeriesName(name), volume: VolumeNumber(volume), kind: 'main' },
+        series: { saga: id, name: SeriesName(name), volume: VolumeNumber(volume), kind: 'main' },
       },
       NOW,
     )
@@ -467,21 +486,21 @@ describe('merging a duplicate saga', () => {
       'same-series',
     )
     expect(
-      await SeriesUseCase.mergeInto(reader, duplicate, undefined, SeriesId(`${kept}--audio`)),
+      await SeriesUseCase.mergeInto(reader, duplicate, undefined, SagaKey(`${kept}--audio`)),
     ).toBe('other-format')
     expect(await BookQuery.bySeries(reader, duplicate)).toHaveLength(1)
   })
 })
 
 describe('a saga opened without waiting for its catalogue', () => {
-  const sweetTooth = SeriesId('sweet-tooth--jeff-lemire')
+  const sweetTooth = SagaKey('sweet-tooth--jeff-lemire')
   const holdVolume = (volume?: number) =>
     BookCommand.add(reader, {
       title: BookTitle('Sweet Tooth 3'),
       authors: [AuthorName('Jeff Lemire')],
       language: 'fr',
       series: {
-        id: sweetTooth,
+        saga: sweetTooth,
         name: SeriesName('Sweet Tooth'),
         volume: volume === undefined ? undefined : VolumeNumber(volume),
         kind: 'main',
@@ -521,7 +540,8 @@ describe('a saga opened without waiting for its catalogue', () => {
   test('answers the stored catalogue as it is, not awaiting', async () => {
     await holdVolume(3)
     fake.seed('series', `${sweetTooth}~fr`, {
-      id: sweetTooth,
+      id: `${sweetTooth}~fr`,
+      saga: sweetTooth,
       language: 'fr',
       name: 'Sweet Tooth',
       author: 'Jeff Lemire',

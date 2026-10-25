@@ -59,7 +59,14 @@ export const SeriesMembershipType = builder
       'The series name is denormalized here on purpose: grouping a 300-book ' +
       'library into sections must not read one catalogue document per row.',
     fields: (t) => ({
-      id: t.field({ type: 'SeriesId', resolve: (membership) => membership.id }),
+      id: t.field({
+        type: 'SeriesId',
+        description:
+          'The edition the book belongs to — its saga in its own language and ' +
+          'format: what to open, and to pass back wherever a series id is asked. ' +
+          'Two editions of one saga have two ids.',
+        resolve: (membership) => membership.id,
+      }),
       name: t.field({ type: 'SeriesName', resolve: (membership) => membership.name }),
       volume: t.field({
         type: 'VolumeNumber',
@@ -220,7 +227,7 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
         'never by a list.',
       resolve: async (book) => {
         if (!book.series) return false
-        const series = await SeriesQuery.byId({ id: book.series.id, language: book.language })
+        const series = await SeriesQuery.byId({ saga: book.series.saga, language: book.language })
         if (!series) return false
         const today = new Date().toISOString().slice(0, 10)
         const currentYear = Year(Number(today.slice(0, 4)))
@@ -256,7 +263,7 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
         'the number of rows.',
       resolve: async (book, _args, context) =>
         book.series
-          ? ((await SeriesOpinionQuery.of(context.userId, book.series.id))?.rating ?? null)
+          ? ((await SeriesOpinionQuery.of(context.userId, book.series.saga))?.rating ?? null)
           : null,
     }),
     note: t.field({

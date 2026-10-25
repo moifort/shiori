@@ -407,15 +407,13 @@ enum FriendsAPI {
     /// friend stands on it. The saga is nil when they share no volume of it.
     static func sagaScreen(
         friendId: String,
-        seriesId: String,
-        language: BookLanguage?
+        seriesId: String
     ) async throws -> (series: BookSeries?, saga: FriendSaga?) {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.FriendSeriesScreenQuery(
                 userId: friendId,
-                id: seriesId,
-                language: SeriesAPI.graphQLLanguage(language)
+                id: seriesId
             ),
             requestTimeout: SeriesAPI.firstOpeningTimeout
         )

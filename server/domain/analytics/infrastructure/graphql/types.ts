@@ -147,11 +147,15 @@ const SeriesProgressType = builder.objectRef<DashboardSeries>('SeriesProgress').
     'How far the reader is through a saga in progress, on the numbered volumes ' +
     'already published.',
   fields: (t) => ({
-    id: t.field({ type: 'SeriesId', resolve: (series) => series.id }),
+    id: t.field({
+      type: 'SeriesId',
+      description: 'The edition measured, the saga in one language: what the card opens.',
+      resolve: (series) => series.id,
+    }),
     name: t.field({ type: 'SeriesName', resolve: (series) => series.name }),
     audio: t.boolean({
       description: 'The saga heard rather than read, measured on its recordings.',
-      resolve: (series) => isAudioSeries(series.id),
+      resolve: (series) => isAudioSeries(series.saga),
     }),
     readCount: t.exposeInt('readCount'),
     totalCount: t.exposeInt('totalCount'),

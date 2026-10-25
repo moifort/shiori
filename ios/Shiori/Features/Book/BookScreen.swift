@@ -61,7 +61,7 @@ struct BookScreen: View {
                     onRate: { showRatingPrompt = true },
                     onOpenSeries: {
                         openSeries = book.series.map {
-                            SeriesDestination(seriesId: $0.id, language: book.language)
+                            SeriesDestination(seriesId: $0.id)
                         }
                     },
                     onEdit: { showEditor = true },
@@ -200,7 +200,7 @@ struct BookScreen: View {
             }
         }
         .pushesDetail(item: $openSeries) { destination in
-            SeriesScreen(seriesId: destination.seriesId, language: destination.language)
+            SeriesScreen(seriesId: destination.seriesId)
         }
         .pushesDetail(item: $openVolume) { volume in
             BookScreen(bookId: volume.id, client: client)

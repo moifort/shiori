@@ -23,7 +23,7 @@ import type {
   ShelfVocabulary,
   Subgenre,
 } from '~/domain/book/types'
-import type { SeriesId } from '~/domain/series/types'
+import type { SagaKey } from '~/domain/series/types'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import { lovedFirst } from '~/domain/shared/rating'
 import type { UserId } from '~/domain/shared/types'
@@ -60,7 +60,7 @@ export namespace BookQuery {
       (await SeriesOpinionQuery.all(userId)).map((opinion) => [opinion.seriesId, opinion]),
     )
     return sections.map((section) => {
-      const opinion = section.series && opinions.get(section.series.id)
+      const opinion = section.series && opinions.get(section.series.saga)
       return opinion
         ? { ...section, opinion: { rating: opinion.rating, favorite: opinion.favorite ?? false } }
         : section
@@ -137,18 +137,19 @@ export namespace BookQuery {
       coverUrl ? { id, coverUrl } : { id },
     )
 
-  export const bySeries = async (userId: UserId, seriesId: SeriesId): Promise<Book[]> =>
-    repository.findBySeries(userId, seriesId)
+  /** The reader's volumes of a saga, every edition of it. */
+  export const bySeries = async (userId: UserId, saga: SagaKey): Promise<Book[]> =>
+    repository.findBySaga(userId, saga)
 
   /** The volumes of one saga the reader holds, in the order the saga runs, with
    *  their covers — only one edition's when `edition` names it. Covers are
    *  signed for these volumes alone, not for the whole library. */
   export const sagaVolumes = async (
     userId: UserId,
-    seriesId: SeriesId,
+    saga: SagaKey,
     edition?: BookLanguage,
   ): Promise<BookView[]> => {
-    const held = await repository.findBySeries(userId, seriesId)
+    const held = await repository.findBySaga(userId, saga)
     const kept = edition ? held.filter((book) => book.language === edition) : held
     return withCovers(inSagaOrder(kept))
   }
@@ -167,8 +168,8 @@ export namespace BookQuery {
 
   /** The volumes of one saga a reader holds, as somebody else may see them:
    *  the ones marked "do not share" left out. Covers unsigned. */
-  export const sharedInSaga = async (userId: UserId, seriesId: SeriesId): Promise<Book[]> =>
-    (await repository.findBySeries(userId, seriesId)).filter((book) => !book.hidden)
+  export const sharedInSaga = async (userId: UserId, saga: SagaKey): Promise<Book[]> =>
+    (await repository.findBySaga(userId, saga)).filter((book) => !book.hidden)
 
   /** One of a reader's books as somebody else may see it: null when it is not
    *  theirs, does not exist, or is marked "do not share" — three answers a

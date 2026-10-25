@@ -258,7 +258,7 @@ enum DiscoverAPI {
 
     /// What the saga screen shows under its introduction, in the edition
     /// opened.
-    static func sagaReleases(seriesId: String, language: BookLanguage) async throws -> SagaReleases {
+    static func sagaReleases(seriesId: String) async throws -> SagaReleases {
         #if DEBUG
         if Showcase.isOn {
             return Showcase.sagaReleases(seriesId: seriesId)
@@ -266,10 +266,7 @@ enum DiscoverAPI {
         #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.SagaReleasesQuery(
-                seriesId: seriesId,
-                language: LibraryAPI.graphQLLanguage(language)
-            )
+            query: ShioriGraphQL.SagaReleasesQuery(seriesId: seriesId)
         )
         return SagaReleases(fields: data.sagaReleases.fragments.sagaReleasesFields)
     }
@@ -289,14 +286,11 @@ enum DiscoverAPI {
 
     /// The same, the saga looked up on the web first when nobody ever did —
     /// which writes into its catalogue, so its row is asked again.
-    static func lookUpSaga(seriesId: String, language: BookLanguage) async throws -> SagaReleases {
+    static func lookUpSaga(seriesId: String) async throws -> SagaReleases {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
             concerning: .series(id: seriesId),
-            mutation: ShioriGraphQL.LookUpSagaReleasesMutation(
-                seriesId: seriesId,
-                language: LibraryAPI.graphQLLanguage(language)
-            ),
+            mutation: ShioriGraphQL.LookUpSagaReleasesMutation(seriesId: seriesId),
             requestTimeout: lookUpTimeout
         )
         return SagaReleases(fields: data.lookUpSagaReleases.fragments.sagaReleasesFields)
@@ -330,7 +324,7 @@ private extension DiscoveryPage {
                     recent: row.recent.map { DiscoveredWork(fields: $0.fragments.discoveredWorkFields) },
                     awaited: row.awaited.map { AwaitedEdition(fields: $0.fragments.awaitedEditionFields) },
                     sagas: row.sagas.compactMap { saga in
-                        sagas[FollowedSeries.id(seriesId: saga.series.id, language: saga.series.language?.asDomain)]
+                        sagas[saga.series.id]
                     }
                 )
             },

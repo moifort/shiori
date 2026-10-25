@@ -14,12 +14,11 @@ enum SeriesAPI {
     /// The catalogue is nil only when the server could not build it — the
     /// catalogue call failed, or the model found no volumes; the next opening
     /// tries again. The opinion is nil until the reader says something about the
-    /// saga. `language` is the edition the reader opened: a catalogue built on
-    /// this opening titles its volumes as that edition does, and only that
-    /// edition's volumes come back as owned.
+    /// saga. `id` is the edition the reader opened, as the server handed it
+    /// out: a catalogue built on this opening titles its volumes as that
+    /// edition does, and only that edition's volumes come back as owned.
     static func screen(
         id: String,
-        language: BookLanguage? = nil,
         proposal: SeriesProposal? = nil
     ) async throws -> (series: BookSeries?, opinion: SeriesOpinion?, owned: [Book]) {
         #if DEBUG
@@ -31,7 +30,6 @@ enum SeriesAPI {
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.SeriesScreenQuery(
                 id: id,
-                language: graphQLLanguage(language),
                 proposed: proposal.map {
                     .some(ShioriGraphQL.ProposedSagaInput(author: $0.author, name: $0.name))
                 } ?? .none
@@ -53,14 +51,12 @@ enum SeriesAPI {
     /// on this call. Nil when the model found nothing to say.
     static func catalogue(
         id: String,
-        language: BookLanguage? = nil,
         proposal: SeriesProposal? = nil
     ) async throws -> BookSeries? {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.SeriesCatalogueBuiltQuery(
                 id: id,
-                language: graphQLLanguage(language),
                 proposed: proposal.map {
                     .some(ShioriGraphQL.ProposedSagaInput(author: $0.author, name: $0.name))
                 } ?? .none
@@ -72,29 +68,15 @@ enum SeriesAPI {
 
     /// Adds a volume of a saga heard as Audible describes it, through the
     /// reader's account, filed under the saga at its number in the edition
-    /// opened, on the pile. Throws `NOT_FOUND` when Audible sells no recording
-    /// of it and `AUDIBLE_NOT_CONNECTED` without an account.
-    static func addAudibleVolume(
-        seriesId: String,
-        volume: Int,
-        language: BookLanguage
-    ) async throws -> Book {
+    /// `seriesId` names, on the pile. Throws `NOT_FOUND` when Audible sells no
+    /// recording of it and `AUDIBLE_NOT_CONNECTED` without an account.
+    static func addAudibleVolume(seriesId: String, volume: Int) async throws -> Book {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
             concerning: .series(id: seriesId),
-            mutation: ShioriGraphQL.AddAudibleSeriesVolumeMutation(
-                seriesId: seriesId,
-                volume: volume,
-                language: LibraryAPI.graphQLLanguage(language)
-            )
+            mutation: ShioriGraphQL.AddAudibleSeriesVolumeMutation(seriesId: seriesId, volume: volume)
         )
         return data.addAudibleSeriesVolume.fragments.bookDetail.asBook
-    }
-
-    static func graphQLLanguage(
-        _ language: BookLanguage?
-    ) -> GraphQLNullable<GraphQLEnum<ShioriGraphQL.BookLanguage>> {
-        language.map { .some(LibraryAPI.graphQLLanguage($0)) } ?? .none
     }
 
     /// One page of the sagas the reader follows, ordered and narrowed as the
@@ -136,7 +118,7 @@ enum SeriesAPI {
     /// One row of the tab, drawn as a page draws it: what the list asks again
     /// for the saga the reader just changed. Nil when they no longer hold a
     /// volume of that edition.
-    static func followedSeries(seriesId: String, language: BookLanguage?) async throws -> FollowedSeries? {
+    static func followedSeries(seriesId: String) async throws -> FollowedSeries? {
         #if DEBUG
         if Showcase.isOn {
             return Showcase.followedSeries(seriesId: seriesId)
@@ -144,9 +126,7 @@ enum SeriesAPI {
         #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.MyFollowedSeriesQuery(
-                seriesId: seriesId, language: graphQLLanguage(language)
-            )
+            query: ShioriGraphQL.MyFollowedSeriesQuery(seriesId: seriesId)
         )
         return data.myFollowedSeries.map { item in
             followedRow(
@@ -186,19 +166,15 @@ enum SeriesAPI {
         }
     }
 
-    /// Removes the saga from the library: every volume the reader holds, or
-    /// only the volumes of `language` when they stand in one edition of a saga
-    /// held in two. The rating and heart go with the last volume. Answers how
-    /// many books went.
+    /// Removes one edition of a saga from the library: every volume the reader
+    /// holds of the edition `seriesId` names. The rating and heart go with the
+    /// saga's last volume. Answers how many books went.
     @discardableResult
-    static func delete(seriesId: String, language: BookLanguage? = nil) async throws -> Int {
+    static func delete(seriesId: String) async throws -> Int {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
             concerning: .series(id: seriesId),
-            mutation: ShioriGraphQL.DeleteSeriesMutation(
-                seriesId: seriesId,
-                language: graphQLLanguage(language)
-            )
+            mutation: ShioriGraphQL.DeleteSeriesMutation(seriesId: seriesId)
         )
         return data.deleteSeries
     }
@@ -213,23 +189,15 @@ enum SeriesAPI {
         return data.mySeries.map { FollowedSeries(row: $0.fragments.followedSeriesRow) }
     }
 
-    /// Folds a duplicate saga into the one the reader keeps: its volumes —
-    /// only those of `language` when they stand in one edition — move there at
-    /// their numbers, and the duplicate leaves the library with its rating.
-    /// Two sagas change, so every list reloads. Answers how many books moved.
+    /// Folds a duplicate saga into the one the reader keeps: the volumes of
+    /// the edition `seriesId` names move there at their numbers, and the
+    /// duplicate leaves the library with its rating. Two sagas change, so every
+    /// list reloads. Answers how many books moved.
     @discardableResult
-    static func merge(
-        seriesId: String,
-        language: BookLanguage? = nil,
-        into targetId: String
-    ) async throws -> Int {
+    static func merge(seriesId: String, into targetId: String) async throws -> Int {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.MergeSeriesMutation(
-                seriesId: seriesId,
-                language: graphQLLanguage(language),
-                intoSeriesId: targetId
-            )
+            mutation: ShioriGraphQL.MergeSeriesMutation(seriesId: seriesId, intoSeriesId: targetId)
         )
         return data.mergeSeries
     }
@@ -266,23 +234,14 @@ enum SeriesAPI {
         return data.declareSeriesVolumeCount.fragments.seriesOpinionFields.asOpinion
     }
 
-    /// Sets the saga aside, or follows it again. Only the saga: its volumes
-    /// keep their own statuses.
-    /// One edition when `language` names it, else the whole saga: setting the
-    /// English Dune aside leaves the French one followed.
-    static func setFollowed(
-        seriesId: String,
-        followed: Bool,
-        language: BookLanguage? = nil
-    ) async throws -> SeriesOpinion {
+    /// Sets the edition `seriesId` names aside, or follows it again: setting
+    /// the English Dune aside leaves the French one followed. Only the saga:
+    /// its volumes keep their own statuses.
+    static func setFollowed(seriesId: String, followed: Bool) async throws -> SeriesOpinion {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
             concerning: .series(id: seriesId),
-            mutation: ShioriGraphQL.SetSeriesFollowedMutation(
-                seriesId: seriesId,
-                followed: followed,
-                language: graphQLLanguage(language)
-            )
+            mutation: ShioriGraphQL.SetSeriesFollowedMutation(seriesId: seriesId, followed: followed)
         )
         return data.setSeriesFollowed.fragments.seriesOpinionFields.asOpinion
     }
@@ -301,6 +260,7 @@ extension BookSeries {
     init(catalogue: ShioriGraphQL.SeriesCatalogue) {
         self.init(
             id: catalogue.id,
+            language: catalogue.language?.asDomain,
             name: catalogue.name,
             author: catalogue.author,
             description: catalogue.description,
@@ -320,6 +280,7 @@ private extension FollowedSeries {
             seriesId: followed.id,
             name: followed.name,
             isAudio: followed.audio,
+            saga: followed.saga,
             author: followed.author,
             language: followed.language?.asDomain,
             state: followed.state?.asDomain,

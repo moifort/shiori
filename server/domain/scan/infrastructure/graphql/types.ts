@@ -6,6 +6,7 @@ import {
 } from '~/domain/book/infrastructure/graphql/enums'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
+import { DEFAULT_BOOK_LANGUAGE } from '~/domain/book/types'
 import type {
   DetectedBook,
   DetectedBox,
@@ -14,31 +15,36 @@ import type {
   TitleCandidate,
 } from '~/domain/scan/types'
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
+import { seriesIdOf } from '~/domain/series/primitives'
+import type { SeriesId } from '~/domain/series/types'
 import { builder } from '~/domain/shared/graphql/builder'
 
-const ScannedSeriesType = builder.objectRef<ScannedSeries>('ScannedSeries').implement({
-  description:
-    'The saga the scanned book belongs to, as the enrichment step resolved it.\n\n' +
-    'Absent for a standalone book, which is most of them. Found by the web search ' +
-    'rather than read off the cover: a great many novels belong to a cycle the ' +
-    'cover never mentions.',
-  fields: (t) => ({
-    id: t.field({
-      type: 'SeriesId',
-      description:
-        'Hand this back to `addBook` unchanged so the book joins the very ' +
-        'catalogue this scan built.',
-      resolve: (series) => series.id,
+const ScannedSeriesType = builder
+  .objectRef<ScannedSeries & { id: SeriesId }>('ScannedSeries')
+  .implement({
+    description:
+      'The saga the scanned book belongs to, as the enrichment step resolved it.\n\n' +
+      'Absent for a standalone book, which is most of them. Found by the web search ' +
+      'rather than read off the cover: a great many novels belong to a cycle the ' +
+      'cover never mentions.',
+    fields: (t) => ({
+      id: t.field({
+        type: 'SeriesId',
+        description:
+          'The edition the scanned book would join, its saga in its language. ' +
+          'Hand this back to `addBook` unchanged so the book joins the very ' +
+          'catalogue this scan built.',
+        resolve: (series) => series.id,
+      }),
+      name: t.field({ type: 'SeriesName', resolve: (series) => series.name }),
+      volume: t.field({
+        type: 'VolumeNumber',
+        nullable: true,
+        resolve: (series) => series.volume ?? null,
+      }),
+      kind: t.field({ type: VolumeKindEnum, resolve: (series) => series.kind }),
     }),
-    name: t.field({ type: 'SeriesName', resolve: (series) => series.name }),
-    volume: t.field({
-      type: 'VolumeNumber',
-      nullable: true,
-      resolve: (series) => series.volume ?? null,
-    }),
-    kind: t.field({ type: VolumeKindEnum, resolve: (series) => series.kind }),
-  }),
-})
+  })
 
 export const ScanResultType = builder.objectRef<ScanResult>('ScanResult').implement({
   description:
@@ -121,7 +127,14 @@ export const ScanResultType = builder.objectRef<ScanResult>('ScanResult').implem
     series: t.field({
       type: ScannedSeriesType,
       nullable: true,
-      resolve: (result) => result.series ?? null,
+      // The scan names a saga; its edition is the language the scan read.
+      resolve: (result) =>
+        result.series
+          ? {
+              ...result.series,
+              id: seriesIdOf(result.series.saga, result.language ?? DEFAULT_BOOK_LANGUAGE),
+            }
+          : null,
     }),
     ownedCopy: t.field({
       type: BookType,

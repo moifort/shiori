@@ -43,7 +43,7 @@ struct LibrarySearchScreen: View {
                 }
             }
             .navigationDestination(for: SeriesHit.self) { hit in
-                SeriesScreen(seriesId: hit.id, language: hit.books.first?.language)
+                SeriesScreen(seriesId: hit.id)
                     .closesAsPushed()
             }
             // Pushed over the results, as the saga is; closed, the book leads

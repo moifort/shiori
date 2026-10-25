@@ -1,8 +1,9 @@
 import { make } from 'ts-brand'
 import { z } from 'zod'
-import type { BookFormat, BookLanguage } from '~/domain/book/types'
+import { BOOK_LANGUAGES, type BookFormat, type BookLanguage } from '~/domain/book/types'
 import type {
   ReleaseDate as ReleaseDateType,
+  SagaKey as SagaKeyType,
   SeriesDescription as SeriesDescriptionType,
   SeriesId as SeriesIdType,
   SeriesName as SeriesNameType,
@@ -15,6 +16,13 @@ import { slugify } from '~/utils/slug'
 
 export { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
 
+export const SagaKey = (value: unknown) => {
+  const v = z.string().min(1).max(200).parse(value)
+  return make<SagaKeyType>()(v)
+}
+
+/** A series id as a client sends it: an edition's, or — from a build older
+ *  than the edition ids — a bare saga key, which the API still accepts. */
 export const SeriesId = (value: unknown) => {
   const v = z.string().min(1).max(200).parse(value)
   return make<SeriesIdType>()(v)
@@ -71,8 +79,8 @@ export const VolumeKindValue = (value: unknown): VolumeKind => z.enum(VOLUME_KIN
 // sometimes by years, and some are never made: the saga heard on Audible has a
 // spine, a progress and release dates of its own, and is a saga of its own under
 // a key ending in `--audio`. Every other format reads the printed saga.
-export const seriesKeyOf = (name: string, author: string, format: BookFormat): SeriesIdType =>
-  seriesIdFor(SeriesId(`${slugify(name)}--${slugify(author)}`), format)
+export const seriesKeyOf = (name: string, author: string, format: BookFormat): SagaKeyType =>
+  sagaKeyFor(SagaKey(`${slugify(name)}--${slugify(author)}`), format)
 
 /** The same saga keyed with its author's names in the other order: "Garon
  *  Tsuchiya" and "Tsuchiya Garon" are one author, family name first or last
@@ -81,30 +89,50 @@ export const seriesKeyOf = (name: string, author: string, format: BookFormat): S
  *  nothing — a single name. The key itself stays as it was: every stored id
  *  would have to move for a case this rare, so the readers of the key look
  *  this one up beside it. */
-export const keyWithAuthorReversed = (id: SeriesIdType): SeriesIdType | undefined => {
+export const keyWithAuthorReversed = (id: SagaKeyType): SagaKeyType | undefined => {
   const heard = isAudioSeries(id)
   const read = heard ? id.slice(0, -AUDIO_SUFFIX.length) : id
   const [name, author] = read.split('--')
   if (!name || !author) return undefined
   const reversed = author.split('-').reverse().join('-')
   if (reversed === author) return undefined
-  return SeriesId(`${name}--${reversed}${heard ? AUDIO_SUFFIX : ''}`)
+  return SagaKey(`${name}--${reversed}${heard ? AUDIO_SUFFIX : ''}`)
 }
 
-/** Where a saga's catalogue in one edition is stored: the saga's key, then the
- *  language after a `~` no slug can produce. The volumes that record no
- *  language keep the bare key. */
-export const catalogueKeyOf = (id: SeriesIdType, language?: BookLanguage): string =>
-  language ? `${id}~${language}` : id
+/** The id of a saga's edition in one language: the saga's key, then the
+ *  language after a `~` no slug can produce. Built when something is written —
+ *  a book, a catalogue — and stored there; a reader of the data takes the id
+ *  it finds rather than building it again. The volumes that record no
+ *  language, which no longer exist, would keep the bare key. */
+export const seriesIdOf = (saga: SagaKeyType, language?: BookLanguage): SeriesIdType =>
+  make<SeriesIdType>()(language ? `${saga}~${language}` : saga)
+
+/** What a series id sent by a client names: one edition of a saga, or — a bare
+ *  key, from a build older than the edition ids — the saga alone, its edition
+ *  left to the `language` argument that build sends beside it.
+ *
+ *  The one place an id is split, at the API's door: it has to tell the two
+ *  forms apart anyway, and the `~` cannot come out of a slug. Inside, the saga
+ *  is read from the `saga` field stored beside every id. */
+export const seriesReferenceOf = (
+  id: SeriesIdType,
+  language?: BookLanguage,
+): { saga: SagaKeyType; language?: BookLanguage; edition: boolean } => {
+  const at = id.lastIndexOf('~')
+  const named = at < 0 ? undefined : id.slice(at + 1)
+  if (at < 0 || !(BOOK_LANGUAGES as readonly string[]).includes(named ?? ''))
+    return { saga: SagaKey(id), ...(language ? { language } : {}), edition: false }
+  return { saga: SagaKey(id.slice(0, at)), language: named as BookLanguage, edition: true }
+}
 
 const AUDIO_SUFFIX = '--audio'
 
 /** Whether a saga is the one heard rather than read. */
-export const isAudioSeries = (id: SeriesIdType): boolean => id.endsWith(AUDIO_SUFFIX)
+export const isAudioSeries = (id: SagaKeyType): boolean => id.endsWith(AUDIO_SUFFIX)
 
 /** The same saga taken in another format: a book whose format changes moves to
  *  the saga of its new format. */
-export const seriesIdFor = (id: SeriesIdType, format: BookFormat): SeriesIdType => {
+export const sagaKeyFor = (id: SagaKeyType, format: BookFormat): SagaKeyType => {
   const read = isAudioSeries(id) ? id.slice(0, -AUDIO_SUFFIX.length) : id
-  return SeriesId(format === 'audiobook' ? `${read}${AUDIO_SUFFIX}` : read)
+  return SagaKey(format === 'audiobook' ? `${read}${AUDIO_SUFFIX}` : read)
 }

@@ -185,11 +185,12 @@ export const FriendSagaType = builder.objectRef<FriendSaga>('FriendSaga').implem
     'the saga has.',
   fields: (t) => ({
     id: t.exposeString('id', {
-      description: 'The saga and the language together: two shelves of one saga are two rows.',
+      description:
+        'The edition, as `seriesId`: two shelves of one saga in two languages are two rows.',
     }),
     seriesId: t.field({
       type: 'SeriesId',
-      description: 'The saga alone, whatever the language: what its page is opened on.',
+      description: 'The edition — the saga in one language: what its page is opened on.',
       resolve: (saga) => saga.seriesId,
     }),
     name: t.field({ type: 'SeriesName', resolve: (saga) => saga.name }),
@@ -197,7 +198,7 @@ export const FriendSagaType = builder.objectRef<FriendSaga>('FriendSaga').implem
       description:
         'The saga heard rather than read: a friend holding it both ways shelves ' +
         'two sagas under one name, and this tells them apart.',
-      resolve: (saga) => isAudioSeries(saga.seriesId),
+      resolve: (saga) => isAudioSeries(saga.saga),
     }),
     author: t.field({
       type: 'AuthorName',

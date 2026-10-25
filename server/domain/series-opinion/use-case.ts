@@ -2,7 +2,7 @@ import type { WriteBatch } from 'firebase-admin/firestore'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import { BookQuery } from '~/domain/book/query'
 import type { Book, BookLanguage, StarRating } from '~/domain/book/types'
-import type { SeriesId, VolumeNumber } from '~/domain/series/types'
+import type { SagaKey, VolumeNumber } from '~/domain/series/types'
 import { SeriesOpinionCommand } from '~/domain/series-opinion/command'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import type { UserId } from '~/domain/shared/types'
@@ -12,10 +12,10 @@ import type { UserId } from '~/domain/shared/types'
  *  the way a book write does. The GraphQL layer writes opinions through here,
  *  never through `SeriesOpinionCommand` directly. */
 export namespace SeriesOpinionUseCase {
-  export const rate = (userId: UserId, seriesId: SeriesId, rating: StarRating | undefined) =>
+  export const rate = (userId: UserId, seriesId: SagaKey, rating: StarRating | undefined) =>
     withAnalytics(userId, (batch) => SeriesOpinionCommand.rate(userId, seriesId, rating, batch))
 
-  export const setFavorite = (userId: UserId, seriesId: SeriesId, favorite: boolean) =>
+  export const setFavorite = (userId: UserId, seriesId: SagaKey, favorite: boolean) =>
     withAnalytics(userId, (batch) =>
       SeriesOpinionCommand.setFavorite(userId, seriesId, favorite, batch),
     )
@@ -26,7 +26,7 @@ export namespace SeriesOpinionUseCase {
    *  aside of a saga set aside as a whole. */
   export const setFollowed = async (
     userId: UserId,
-    seriesId: SeriesId,
+    seriesId: SagaKey,
     followed: boolean,
     language?: BookLanguage,
   ) => {
@@ -41,7 +41,7 @@ export namespace SeriesOpinionUseCase {
    *  catalogued it, so the count reaches the view as a heart does. */
   export const declareVolumeCount = (
     userId: UserId,
-    seriesId: SeriesId,
+    seriesId: SagaKey,
     volumeCount: VolumeNumber,
   ) =>
     withAnalytics(userId, (batch) =>
@@ -57,10 +57,10 @@ const withAnalytics = (
   write: (batch: WriteBatch) => Promise<SeriesOpinion>,
 ): Promise<SeriesOpinion> => AnalyticsUseCase.afterWrite(userId, write)
 
-const heldLanguagesOf = (books: readonly Book[], seriesId: SeriesId): BookLanguage[] => [
+const heldLanguagesOf = (books: readonly Book[], seriesId: SagaKey): BookLanguage[] => [
   ...new Set(
     books.flatMap((book) =>
-      book.series?.id === seriesId && book.language !== undefined ? [book.language] : [],
+      book.series?.saga === seriesId && book.language !== undefined ? [book.language] : [],
     ),
   ),
 ]

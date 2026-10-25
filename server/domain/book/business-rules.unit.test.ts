@@ -14,6 +14,7 @@ import {
   listeningProgressOf,
   mediaFor,
   membershipFor,
+  membershipIn,
   mendedNames,
   mergedCopies,
   readVolumeNumbersOf,
@@ -22,7 +23,6 @@ import {
   retaggedAfterEdit,
   sagaNamesOf,
   sameAuthor,
-  seriesInFormat,
   shelfPageOf,
   shelvedOf,
   shownRatingOf,
@@ -48,7 +48,7 @@ import {
 } from '~/domain/book/primitives'
 import type { Book, BookLanguage, BookView, Genre } from '~/domain/book/types'
 import { KindleAsin } from '~/domain/kindle/primitives'
-import { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
+import { SagaKey, SeriesName, seriesIdOf, VolumeNumber } from '~/domain/series/primitives'
 import type { VolumeKind } from '~/domain/series/types'
 import { AuthorName, BookTitle, PersonName, UserId } from '~/domain/shared/primitives'
 import { slugify } from '~/utils/slug'
@@ -90,7 +90,8 @@ const book = (spec: BookSpec): BookView => ({
   listenedAt: spec.listenedAt,
   series: spec.series
     ? {
-        id: SeriesId(spec.series.name.toLowerCase()),
+        id: seriesIdOf(SagaKey(spec.series.name.toLowerCase()), spec.language),
+        saga: SagaKey(spec.series.name.toLowerCase()),
         name: SeriesName(spec.series.name),
         volume: spec.series.volume ? VolumeNumber(spec.series.volume) : undefined,
         kind: spec.series.kind ?? 'main',
@@ -577,7 +578,12 @@ describe('subgenresOf', () => {
 
 describe('sagaNamesOf', () => {
   const inSaga = (name: string) => ({
-    series: { id: SeriesId(slugify(name)), name: SeriesName(name), kind: 'main' as VolumeKind },
+    series: {
+      id: seriesIdOf(SagaKey(slugify(name))),
+      saga: SagaKey(slugify(name)),
+      name: SeriesName(name),
+      kind: 'main' as VolumeKind,
+    },
   })
 
   test('names every saga held once, alphabetically, and leaves standalone books out', () => {
@@ -599,7 +605,12 @@ describe('vocabularyOf', () => {
       [
         {
           subgenres: [{ label: Subgenre('Space opera'), language: 'fr' as const }],
-          series: { id: SeriesId('dune'), name: SeriesName('Dune'), kind: 'main' as VolumeKind },
+          series: {
+            id: seriesIdOf(SagaKey('dune')),
+            saga: SagaKey('dune'),
+            name: SeriesName('Dune'),
+            kind: 'main' as VolumeKind,
+          },
         },
       ],
       'fr',
@@ -724,8 +735,13 @@ describe('shelfPageOf', () => {
 })
 
 describe('the stars a book shows', () => {
-  const kingkiller = SeriesId('kingkiller--rothfuss')
-  const inSaga = { id: kingkiller, name: SeriesName('Kingkiller'), kind: 'main' as const }
+  const kingkiller = SagaKey('kingkiller--rothfuss')
+  const inSaga = {
+    id: seriesIdOf(kingkiller, 'fr'),
+    saga: kingkiller,
+    name: SeriesName('Kingkiller'),
+    kind: 'main' as const,
+  }
   const seriesRatings = new Map([[kingkiller, StarRating(4)]])
 
   test('are its own when the reader rated it', () => {
@@ -812,23 +828,24 @@ describe('where a book is bought on Amazon', () => {
 describe('placing a book in a saga by hand', () => {
   const thilliez = [AuthorName('Franck Thilliez')]
   const bob = [AuthorName('Dennis E. Taylor')]
-  const held = (name: string, author: string, kind: VolumeKind = 'main') => ({
-    id: SeriesId(`${slugify(name)}--${slugify(author)}`),
-    name: SeriesName(name),
-    kind,
-  })
+  const held = (name: string, author: string, kind: VolumeKind = 'main') => {
+    const saga = SagaKey(`${slugify(name)}--${slugify(author)}`)
+    return { id: seriesIdOf(saga, 'fr'), saga, name: SeriesName(name), kind }
+  }
 
   test('keys a new saga the way a scan would, from the name and the first author', () => {
     const placed = membershipFor(
       { name: SeriesName('Sharko et Henebelle'), volume: VolumeNumber(3) },
       thilliez,
       'book',
+      'fr',
       undefined,
       [],
     )
 
     expect(placed).toEqual({
-      id: SeriesId('sharko-et-henebelle--franck-thilliez'),
+      id: seriesIdOf(SagaKey('sharko-et-henebelle--franck-thilliez'), 'fr'),
+      saga: SagaKey('sharko-et-henebelle--franck-thilliez'),
       name: SeriesName('Sharko et Henebelle'),
       volume: VolumeNumber(3),
       kind: 'main',
@@ -844,21 +861,31 @@ describe('placing a book in a saga by hand', () => {
       { name: SeriesName('sharko et hénebelle') },
       thilliez,
       'book',
+      'fr',
       undefined,
       [shelf],
     )
 
-    expect(placed).toEqual({ id: shelf.id, name: SeriesName('Sharko et Henebelle'), kind: 'main' })
+    expect(placed).toEqual({
+      id: shelf.id,
+      saga: shelf.saga,
+      name: SeriesName('Sharko et Henebelle'),
+      kind: 'main',
+    })
   })
 
   test('prefers the saga held under its own key over a namesake by another author', () => {
     const namesake = held('Chronicles', 'Someone Else')
     const own = held('Chronicles', 'Franck Thilliez')
 
-    const placed = membershipFor({ name: SeriesName('Chronicles') }, thilliez, 'book', undefined, [
-      namesake,
-      own,
-    ])
+    const placed = membershipFor(
+      { name: SeriesName('Chronicles') },
+      thilliez,
+      'book',
+      'fr',
+      undefined,
+      [namesake, own],
+    )
 
     expect(placed).toMatchObject({ id: own.id })
   })
@@ -870,6 +897,7 @@ describe('placing a book in a saga by hand', () => {
       { name: SeriesName('Dune'), volume: VolumeNumber(1) },
       [AuthorName('Frank Herbert')],
       'book',
+      'fr',
       prequel,
       [prequel],
     )
@@ -882,6 +910,7 @@ describe('placing a book in a saga by hand', () => {
       { name: SeriesName('Autre') },
       thilliez,
       'book',
+      'fr',
       held('Dune', 'Frank Herbert', 'prequel'),
       [],
     )
@@ -893,7 +922,7 @@ describe('placing a book in a saga by hand', () => {
     const shelf = held('Dune', 'Frank Herbert')
 
     expect(
-      membershipFor({ name: SeriesName('Dune') }, [], 'book', undefined, [shelf]),
+      membershipFor({ name: SeriesName('Dune') }, [], 'book', 'fr', undefined, [shelf]),
     ).toMatchObject({
       id: shelf.id,
     })
@@ -902,50 +931,73 @@ describe('placing a book in a saga by hand', () => {
   // A saga heard is not the saga read: the recordings trail the books, and the
   // listener's spine is the recorded one.
   test('keys an audiobook to the saga heard', () => {
-    const placed = membershipFor({ name: SeriesName('Bobiverse') }, bob, 'audiobook', undefined, [])
+    const placed = membershipFor(
+      { name: SeriesName('Bobiverse') },
+      bob,
+      'audiobook',
+      'fr',
+      undefined,
+      [],
+    )
 
-    expect(placed).toMatchObject({ id: SeriesId('bobiverse--dennis-e-taylor--audio') })
+    expect(placed).toMatchObject({ saga: SagaKey('bobiverse--dennis-e-taylor--audio') })
   })
 
   test('never joins a namesake saga of the other format', () => {
     const read = held('Bobiverse', 'Dennis Taylor')
     const heard = {
       ...held('Bobiverse', 'Dennis Taylor'),
-      id: SeriesId('bobiverse--dennis-taylor--audio'),
+      id: seriesIdOf(SagaKey('bobiverse--dennis-taylor--audio'), 'fr'),
+      saga: SagaKey('bobiverse--dennis-taylor--audio'),
     }
 
     expect(
-      membershipFor({ name: SeriesName('Bobiverse') }, bob, 'audiobook', undefined, [read]),
-    ).toMatchObject({ id: SeriesId('bobiverse--dennis-e-taylor--audio') })
+      membershipFor({ name: SeriesName('Bobiverse') }, bob, 'audiobook', 'fr', undefined, [read]),
+    ).toMatchObject({ saga: SagaKey('bobiverse--dennis-e-taylor--audio') })
     expect(
-      membershipFor({ name: SeriesName('Bobiverse') }, bob, 'audiobook', undefined, [read, heard]),
+      membershipFor({ name: SeriesName('Bobiverse') }, bob, 'audiobook', 'fr', undefined, [
+        read,
+        heard,
+      ]),
     ).toMatchObject({ id: heard.id })
     expect(
-      membershipFor({ name: SeriesName('Bobiverse') }, bob, 'book', undefined, [heard]),
-    ).toMatchObject({ id: SeriesId('bobiverse--dennis-e-taylor') })
+      membershipFor({ name: SeriesName('Bobiverse') }, bob, 'book', 'fr', undefined, [heard]),
+    ).toMatchObject({ saga: SagaKey('bobiverse--dennis-e-taylor') })
   })
 
   test('refuses a new saga for a book with no author to key it with', () => {
-    expect(membershipFor({ name: SeriesName('Dune') }, [], 'book', undefined, [])).toBe('no-author')
+    expect(membershipFor({ name: SeriesName('Dune') }, [], 'book', 'fr', undefined, [])).toBe(
+      'no-author',
+    )
   })
 })
 
-describe('a saga in the format of its book', () => {
+describe('a saga in the format and language of its book', () => {
   const series = {
-    id: SeriesId('bobiverse--dennis-e-taylor'),
+    saga: SagaKey('bobiverse--dennis-e-taylor'),
     name: SeriesName('Bobiverse'),
     volume: VolumeNumber(2),
     kind: 'main' as const,
   }
 
-  test('moves a book turned audiobook to the saga heard, and back', () => {
-    const heard = seriesInFormat(series, 'audiobook')
-    expect(heard).toEqual({ ...series, id: SeriesId('bobiverse--dennis-e-taylor--audio') })
-    expect(seriesInFormat(heard, 'book')).toEqual(series)
+  test('files a book under the edition of its language', () => {
+    expect(membershipIn(series, 'book', 'en')).toEqual({
+      ...series,
+      id: seriesIdOf(series.saga, 'en'),
+    })
   })
 
-  test('leaves a standalone book standalone', () => {
-    expect(seriesInFormat(undefined, 'audiobook')).toBeUndefined()
+  test('moves a book turned audiobook to the saga heard, and back', () => {
+    const heard = membershipIn(series, 'audiobook', 'fr')
+    expect(heard).toEqual({
+      ...series,
+      id: seriesIdOf(SagaKey('bobiverse--dennis-e-taylor--audio'), 'fr'),
+      saga: SagaKey('bobiverse--dennis-e-taylor--audio'),
+    })
+    expect(membershipIn(heard, 'book', 'fr')).toEqual({
+      ...series,
+      id: seriesIdOf(series.saga, 'fr'),
+    })
   })
 })
 
@@ -1130,7 +1182,8 @@ describe('the record a book arriving on another medium joins', () => {
       recordJoinedBy([held({ language: 'en' })], { ...arriving, language: 'fr' }),
     ).toBeUndefined()
     const volume = (number: number) => ({
-      id: SeriesId('dune--frank-herbert'),
+      id: seriesIdOf(SagaKey('dune--frank-herbert')),
+      saga: SagaKey('dune--frank-herbert'),
       name: SeriesName('Dune'),
       volume: VolumeNumber(number),
       kind: 'main' as const,
@@ -1404,7 +1457,8 @@ describe('mendedNames', () => {
 
   test('places the book in its saga again when its name or its first author is mended', () => {
     const series = {
-      id: SeriesId('le-myst-ere--gaston-leroux'),
+      id: seriesIdOf(SagaKey('le-myst-ere--gaston-leroux')),
+      saga: SagaKey('le-myst-ere--gaston-leroux'),
       name: SeriesName('Rouletabille'),
       volume: VolumeNumber(1),
       kind: 'main' as const,

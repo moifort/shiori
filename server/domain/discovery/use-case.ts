@@ -87,7 +87,7 @@ import type { ScanResult } from '~/domain/scan/types'
 import { type ScanOutcome, ScanUseCase } from '~/domain/scan/use-case'
 import { SeriesCommand } from '~/domain/series/command'
 import { SeriesQuery } from '~/domain/series/query'
-import type { SeriesId, VolumeNumber } from '~/domain/series/types'
+import type { SagaKey, VolumeNumber } from '~/domain/series/types'
 import { type FollowedSeries, SeriesUseCase } from '~/domain/series/use-case'
 import type { Language } from '~/domain/shared/language'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
@@ -198,14 +198,14 @@ export namespace DiscoveryUseCase {
    *  for an edition nobody looked up yet. */
   export const sagaReleases = async (
     userId: UserId,
-    seriesId: SeriesId,
+    seriesId: SagaKey,
     language: BookLanguage,
     now = new Date(),
   ): Promise<SagaReleases> => {
     const [books, watches, catalogue] = await Promise.all([
       BookQuery.bySeries(userId, seriesId),
       DiscoveryQuery.watches([watchKeyOf({ seriesId, language })]),
-      SeriesQuery.byId({ id: seriesId, language }),
+      SeriesQuery.byId({ saga: seriesId, language }),
     ])
     return releasesOf(
       books.filter((book) => book.language === language),
@@ -221,7 +221,7 @@ export namespace DiscoveryUseCase {
    *  nor a catalogue has no name to search the web with. */
   export const lookUpSaga = async (
     userId: UserId,
-    seriesId: SeriesId,
+    seriesId: SagaKey,
     language: BookLanguage,
     now = new Date(),
   ): Promise<SagaReleases> => {
@@ -229,7 +229,7 @@ export namespace DiscoveryUseCase {
     const [books, watches, catalogue] = await Promise.all([
       BookQuery.bySeries(userId, seriesId),
       DiscoveryQuery.watches([key]),
-      SeriesQuery.byId({ id: seriesId, language }),
+      SeriesQuery.byId({ saga: seriesId, language }),
     ])
     const held = books.filter((book) => book.language === language)
     const lookingUp = !watches.has(key)
@@ -247,7 +247,9 @@ export namespace DiscoveryUseCase {
     }
     // The catalogue as the lookup left it, the dates it found written in.
     const written =
-      lookingUp && watches.has(key) ? await SeriesQuery.byId({ id: seriesId, language }) : catalogue
+      lookingUp && watches.has(key)
+        ? await SeriesQuery.byId({ saga: seriesId, language })
+        : catalogue
     return releasesOf(held, watches.get(key), written, todayOf(now))
   }
 
@@ -306,7 +308,7 @@ export namespace DiscoveryUseCase {
       seriesId,
       language,
       number,
-    }: { seriesId: SeriesId; language: BookLanguage; number: VolumeNumber },
+    }: { seriesId: SagaKey; language: BookLanguage; number: VolumeNumber },
     appLanguage: Language,
   ): Promise<AnnouncedVolumePreview | 'not-found' | Exclude<ScanOutcome, ScanResult>> => {
     const key = watchKeyOf({ seriesId, language })
@@ -568,9 +570,9 @@ const discoveryOf = async (
   let followedCount = 0
   const rows = library.followed.flatMap((series): SagaDiscovery[] => {
     if (!isDiscoverable(series)) return []
-    if (formatOf(series.id) !== format) return []
+    if (formatOf(series.saga) !== format) return []
     followedCount += 1
-    const watch = watches.get(watchKeyOf({ seriesId: series.id, language: series.language }))
+    const watch = watches.get(watchKeyOf({ seriesId: series.saga, language: series.language }))
     const releases = releasesOf(series.books, watch, series.catalogue, today)
     if (!releases.watched) unwatched += 1
     const recent = recentReleasesOf(series.books, watch, series.catalogue, today)

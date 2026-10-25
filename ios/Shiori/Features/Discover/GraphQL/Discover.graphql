@@ -62,15 +62,15 @@ fragment DiscoveryFields on Discovery {
 }
 
 # What the saga screen shows under its introduction, in the edition opened.
-query SagaReleases($seriesId: SeriesId!, $language: BookLanguage!) {
-  sagaReleases(seriesId: $seriesId, language: $language) {
+query SagaReleases($seriesId: SeriesId!) {
+  sagaReleases(seriesId: $seriesId) {
     ...SagaReleasesFields
   }
 }
 
 # The same, the saga looked up on the web first when nobody ever did.
-mutation LookUpSagaReleases($seriesId: SeriesId!, $language: BookLanguage!) {
-  lookUpSagaReleases(seriesId: $seriesId, language: $language) {
+mutation LookUpSagaReleases($seriesId: SeriesId!) {
+  lookUpSagaReleases(seriesId: $seriesId) {
     ...SagaReleasesFields
   }
 }

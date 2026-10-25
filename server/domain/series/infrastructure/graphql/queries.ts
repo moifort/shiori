@@ -2,8 +2,11 @@ import { BookLanguageEnum, GenreEnum } from '~/domain/book/infrastructure/graphq
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
 import { SeriesStateEnum } from '~/domain/series/infrastructure/graphql/enums'
-import { SeriesType } from '~/domain/series/infrastructure/graphql/types'
-import { isAudioSeries } from '~/domain/series/primitives'
+import {
+  DEPRECATED_EDITION_LANGUAGE,
+  SeriesType,
+} from '~/domain/series/infrastructure/graphql/types'
+import { isAudioSeries, seriesReferenceOf } from '~/domain/series/primitives'
 import { type FollowedSeries, type SagaProgress, SeriesUseCase } from '~/domain/series/use-case'
 import { SeriesOpinionType } from '~/domain/series-opinion/infrastructure/graphql/types'
 import { builder } from '~/domain/shared/graphql/builder'
@@ -40,14 +43,28 @@ const FollowedSeriesPageType = builder
 export const FollowedSeriesType = builder.objectRef<FollowedSeries>('FollowedSeries').implement({
   description: 'A saga the reader owns at least one volume of.',
   fields: (t) => ({
-    id: t.field({ type: 'SeriesId', resolve: (followed) => followed.id }),
+    id: t.field({
+      type: 'SeriesId',
+      description:
+        'The edition this row stands for — the saga in one language: what to open ' +
+        'and to pass back wherever a series id is asked. A saga held in two ' +
+        'languages is two rows under two ids.',
+      resolve: (followed) => followed.id,
+    }),
+    saga: t.string({
+      description:
+        'The saga, whatever the language: the key every edition of it shares, and ' +
+        'that its opinion is held under. What to tell the editions of one saga ' +
+        'apart from other sagas by — never an id to open.',
+      resolve: (followed) => followed.saga,
+    }),
     name: t.field({ type: 'SeriesName', resolve: (followed) => followed.name }),
     audio: t.boolean({
       description:
         'The saga heard rather than read: its audiobooks, which follow the ' +
         'recordings and not the printed books. A reader holding both formats ' +
         'follows two sagas under two ids.',
-      resolve: (followed) => isAudioSeries(followed.id),
+      resolve: (followed) => isAudioSeries(followed.saga),
     }),
     author: t.field({
       type: 'AuthorName',
@@ -61,9 +78,8 @@ export const FollowedSeriesType = builder.objectRef<FollowedSeries>('FollowedSer
       type: BookLanguageEnum,
       nullable: true,
       description:
-        'The language the reader holds these volumes in. A saga held in two ' +
-        'languages answers twice, once per language, sharing one `id` — so a ' +
-        'client keying rows on the id alone must key on the pair instead.',
+        'The language the reader holds these volumes in: the edition `id` names, ' +
+        'told apart for a client to show it.',
       resolve: (followed) => followed.language ?? null,
     }),
     genre: t.field({
@@ -87,7 +103,7 @@ export const FollowedSeriesType = builder.objectRef<FollowedSeries>('FollowedSer
       description:
         'What the reader makes of the saga. Null until they say something about ' +
         'it.\n\n' +
-        'Held per saga, so the two rows of a saga held in two languages answer ' +
+        'Held per saga, so the two editions of a saga held in two languages answer ' +
         'with the same opinion: the split is about editions, this is about the work.',
       resolve: (followed) => followed.opinion,
     }),
@@ -163,15 +179,21 @@ builder.queryFields((t) => ({
       'the reader holds no volume of the saga and no `proposed` names it, or when ' +
       'the model found nothing to say.',
     args: {
-      id: t.arg({ type: 'SeriesId', required: true }),
+      id: t.arg({
+        type: 'SeriesId',
+        required: true,
+        description:
+          'The edition to open, as a book, a row or a card named it. A bare saga ' +
+          'key, from an older build, opens the edition `language` names.',
+      }),
       language: t.arg({
         type: BookLanguageEnum,
         required: false,
         description:
-          'The edition the reader opened, for a saga held in more than one ' +
-          'language: each edition has its own catalogue. Absent, the edition of ' +
-          'whichever volume they hold answers, and the reader’s own language for ' +
-          'a saga they hold nothing of.',
+          'Beside a bare saga key: the edition the reader opened. Absent, the ' +
+          'edition of whichever volume they hold answers, and the reader’s own ' +
+          'language for a saga they hold nothing of.',
+        deprecationReason: DEPRECATED_EDITION_LANGUAGE,
       }),
       proposed: t.arg({
         type: ProposedSagaInput,
@@ -190,15 +212,17 @@ builder.queryFields((t) => ({
           'them, then asks again with the default to build the catalogue.',
       }),
     },
-    resolve: (_root, args, { userId, event }) =>
-      SeriesUseCase.describe(
+    resolve: (_root, args, { userId, event }) => {
+      const { saga, language } = seriesReferenceOf(args.id, args.language ?? undefined)
+      return SeriesUseCase.describe(
         userId,
-        args.id,
+        saga,
         languageOf(event),
-        args.language ?? undefined,
+        language,
         args.proposed ?? undefined,
         { waitForCatalogue: args.waitForCatalogue ?? true },
-      ),
+      )
+    },
   }),
 
   mySeriesVolumes: t.field({
@@ -217,12 +241,15 @@ builder.queryFields((t) => ({
         type: BookLanguageEnum,
         required: false,
         description:
-          'The edition the reader opened, for a saga held in more than one language. ' +
-          'Absent, every edition answers.',
+          'Beside a bare saga key: the edition the reader opened. Absent, every ' +
+          'edition answers.',
+        deprecationReason: DEPRECATED_EDITION_LANGUAGE,
       }),
     },
-    resolve: (_root, args, { userId }) =>
-      BookQuery.sagaVolumes(userId, args.seriesId, args.language ?? undefined),
+    resolve: (_root, args, { userId }) => {
+      const { saga, language } = seriesReferenceOf(args.seriesId, args.language ?? undefined)
+      return BookQuery.sagaVolumes(userId, saga, language)
+    },
   }),
 
   mySeriesPage: t.field({
@@ -290,11 +317,14 @@ builder.queryFields((t) => ({
       language: t.arg({
         type: BookLanguageEnum,
         required: false,
-        description: 'The edition of the row; absent for the volumes that record no language.',
+        description: 'Beside a bare saga key: the edition of the row.',
+        deprecationReason: DEPRECATED_EDITION_LANGUAGE,
       }),
     },
-    resolve: (_root, args, { userId }) =>
-      SeriesUseCase.followedOne(userId, args.seriesId, args.language ?? undefined),
+    resolve: (_root, args, { userId }) => {
+      const { saga, language } = seriesReferenceOf(args.seriesId, args.language ?? undefined)
+      return SeriesUseCase.followedOne(userId, saga, language)
+    },
   }),
 
   mySeries: t.field({
@@ -304,8 +334,8 @@ builder.queryFields((t) => ({
       'Taken from the books, then matched against the catalogue in one getAll ' +
       'rather than a lookup per saga. A saga nobody has catalogued still answers ' +
       'here, with a null catalogue and a null state.\n\n' +
-      'One row per saga and language: a reader who holds Dune in French and in ' +
-      'English follows two rows, because those are two sets of books.',
+      'One row per edition: a reader who holds Dune in French and in English ' +
+      'follows two rows under two series ids, because those are two sets of books.',
     resolve: (_root, _args, context) => SeriesUseCase.followed(context.userId),
   }),
 }))

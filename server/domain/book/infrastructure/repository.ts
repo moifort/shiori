@@ -1,7 +1,7 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
-import { mediaFor, shelfDateOf } from '~/domain/book/business-rules'
+import { inItsEdition, mediaFor, shelfDateOf } from '~/domain/book/business-rules'
 import type { Book, BookFormat, BookId, BookMedium, ReadingStatus } from '~/domain/book/types'
-import type { SeriesId } from '~/domain/series/types'
+import type { SagaKey, SeriesId } from '~/domain/series/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import {
@@ -111,9 +111,10 @@ export const findByIds = async (userId: UserId, ids: readonly BookId[]): Promise
   })
 }
 
-// The saga's volumes alone, by a query on the saga: the saga screen used to load
-// the whole library to keep a handful of rows. Taken from the library when this
-// request already holds it, where filtering in memory costs nothing.
+// One edition's volumes alone, by a query on its series id: the saga screen
+// used to load the whole library to keep a handful of rows. Taken from the
+// library when this request already holds it, where filtering in memory costs
+// nothing.
 //
 // Equalities only, which Firestore serves by merging its automatic single-field
 // indexes: no composite index.
@@ -124,8 +125,18 @@ export const findBySeries = async (userId: UserId, seriesId: SeriesId): Promise<
   return snapshot.docs.map((doc) => asBook(doc.data()))
 }
 
-// Every reader's volumes of one saga: what a saga renamed by its catalogue
-// writes its new name into. An equality on the saga alone, served by its
+// Every edition's volumes of one saga, by a query on the saga key stored beside
+// the id: what removing or merging a whole saga, and a build older than the
+// edition ids, ask for.
+export const findBySaga = async (userId: UserId, saga: SagaKey): Promise<Book[]> => {
+  if (isInRequestCache(allCacheKey(userId)))
+    return (await findAllByUser(userId)).filter((book) => book.series?.saga === saga)
+  const snapshot = await ownedBy(userId).where('series.saga', '==', saga).get()
+  return snapshot.docs.map((doc) => asBook(doc.data()))
+}
+
+// Every reader's volumes of one edition: what a saga renamed by its catalogue
+// writes its new name into. An equality on the series id alone, served by its
 // automatic single-field index.
 export const findInSeries = async (seriesId: SeriesId): Promise<Book[]> => {
   const snapshot = await books().where('series.id', '==', seriesId).get()
@@ -140,7 +151,12 @@ export const findInSeries = async (seriesId: SeriesId): Promise<Book[]> => {
 // still answers with the old document, so a scan taken in between would keep
 // the pre-write book for the rest of the request; dropped on every batched
 // write, the next read after the commit sees it.
-export const save = async (book: Book, batch?: WriteBatch): Promise<Book> => {
+//
+// Filed under the edition its own saga, format and language make, whatever the
+// caller built: a book whose language or format was corrected moves to the
+// series id of its new edition here, so no write can leave a stale id behind.
+export const save = async (written: Book, batch?: WriteBatch): Promise<Book> => {
+  const book = inItsEdition(written)
   const ref = books().doc(book.id)
   const document = stored(book)
   if (batch) {

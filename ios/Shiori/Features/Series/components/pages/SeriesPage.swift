@@ -36,7 +36,7 @@ struct SeriesPage: View {
     let opinion: SeriesOpinion?
     let isLoading: Bool
     let errorMessage: String?
-    /// The edition opened; nil when every edition shows.
+    /// The language of the edition opened; nil until it has loaded.
     let language: BookLanguage?
     /// The friend whose shelf it is: read-only.
     let friend: SeriesFriend?
@@ -124,6 +124,7 @@ struct SeriesPage: View {
             name: series.name,
             author: series.author,
             fan: fan(series),
+            language: language,
             onOpenAuthor: author.map { author in { Task { await onAction(.openAuthor(author)) } } }
         ) {
             GlassEffectContainer(spacing: 10) {
