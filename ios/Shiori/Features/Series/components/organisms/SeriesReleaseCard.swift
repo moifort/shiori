@@ -4,7 +4,7 @@ import SwiftUI
 /// card: its cover edge to edge on the leading side, over the cover's own
 /// colours the title, the author and the volume's place at the top, and at
 /// the foot one white button that orders it from the store — Audible for a recording, Amazon
-/// otherwise. Under the title, how long is left before it comes out; the day itself sits
+/// otherwise. How long is left closes the top line in a tag; the day itself sits
 /// in the corner as a white calendar leaf on glass. A tap elsewhere opens the
 /// volume's page, as on Découvrir. No "wait for it": the saga's bell already
 /// alerts on the day.
@@ -32,28 +32,22 @@ struct SeriesReleaseCard: View {
             VStack(alignment: .leading, spacing: 3) {
                 // At the card's top, clear of the calendar leaf in its corner:
                 // the author and the volume's place over the title, as the
-                // book hero names the saga over the book.
-                Text(verbatim: "\(author) · \(String(localized: "Tome \(volume.number)"))")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.75))
-                    .lineLimit(1)
-                    .padding(.trailing, volume.date == nil ? 0 : Self.leafRoom)
+                // book hero names the saga over the book, and how long is
+                // left closing the line in an outlined tag.
+                HStack(spacing: 6) {
+                    Text(verbatim: "\(author) · \(String(localized: "Tome \(volume.number)"))")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.75))
+                        .lineLimit(1)
+                    if let countdown = volume.date.flatMap({ ReleaseDateText.countdown($0) }) {
+                        OutlinedTag(text: countdown, isFrosted: false)
+                    }
+                }
+                .padding(.trailing, volume.date == nil ? 0 : Self.leafRoom)
                 Text(volume.title)
                     .font(.headline)
                     .lineLimit(2)
                     .padding(.trailing, volume.date == nil ? 0 : Self.leafRoom)
-                // How long is left, under the title as its subtitle.
-                if let countdown = volume.date.flatMap({ ReleaseDateText.countdown($0) }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "clock")
-                        Text(countdown)
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.6))
-                    .lineLimit(1)
-                    .padding(.top, 2)
-                        .padding(.trailing, Self.leafRoom)
-                }
                 Spacer(minLength: 0)
                 // The next step at the card's foot.
                 if let store {

@@ -98,7 +98,7 @@ enum ReleaseDateText {
 struct ReleaseDateBadge: View {
     let date: String
     /// On Liquid Glass, in white with the month dimmed over a soft inner
-    /// glow: over a card's own colours, where an outline would vanish.
+    /// glow, ringed in white: over a card's own colours.
     var onGlass = false
 
     var body: some View {
@@ -131,15 +131,27 @@ struct ReleaseDateBadge: View {
                     .clipShape(.rect(cornerRadius: 10))
                 }
                 .glassEffect(.regular, in: .rect(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white, lineWidth: 1))
         } else {
             leaf.overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary))
         }
     }
 
     private func month(_ number: Int) -> String {
-        let symbols = Calendar.current.shortMonthSymbols
+        let symbols = onGlass ? Self.clippedMonths : Calendar.current.shortMonthSymbols
         return (1...12).contains(number) ? symbols[number - 1] : ""
     }
+
+    /// The months cut to three letters without their dot, so they breathe in
+    /// the glass leaf — four where three would read as another month
+    /// ("juin", "juil").
+    private static let clippedMonths: [String] = {
+        let bare = Calendar.current.shortMonthSymbols.map { $0.replacingOccurrences(of: ".", with: "") }
+        let three = bare.map { String($0.prefix(3)) }
+        return bare.indices.map { index in
+            three.filter { $0 == three[index] }.count > 1 ? String(bare[index].prefix(4)) : three[index]
+        }
+    }()
 
     private func top(_ parts: [Int]) -> String {
         switch parts.count {
