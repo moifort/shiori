@@ -194,8 +194,10 @@ struct BookPage: View {
                 .accessibilityIdentifier("book-edit-facts")
             // When the reader added, started and finished it, over what the
             // book is: one table, the reading's days three to a row.
-            FactGrid(groups: [FactGroup(tiles: dayTiles, columns: 3), FactGroup(tiles: factTiles)])
-            storeLinks
+            FactGrid(
+                groups: [FactGroup(tiles: dayTiles, columns: 3), FactGroup(tiles: factTiles)],
+                links: storeLinks
+            )
         }
     }
 
@@ -251,23 +253,12 @@ struct BookPage: View {
         return "\(book.format.label) · \(BookMedium.label(of: book.media).lowercased())"
     }
 
-    /// Ways out of Shiori, under the facts they complete.
-    @ViewBuilder private var storeLinks: some View {
-        let links = [
-            book.audibleURL.map { ("Audible", $0, Color.audible as Color?) },
-            book.amazonURL.map { ("Amazon", $0, nil as Color?) },
+    /// Ways out of Shiori, closing the facts they complete.
+    private var storeLinks: [FactLink] {
+        [
+            book.audibleURL.map { FactLink(id: "audible", title: "Écouter sur Audible", appIcon: "audible-app", url: $0) },
+            book.amazonURL.map { FactLink(id: "amazon", title: "Voir sur Amazon", appIcon: "amazon-app", url: $0) },
         ].compactMap { $0 }
-        if !links.isEmpty {
-            HStack(spacing: 8) {
-                ForEach(links, id: \.0) { name, url, tint in
-                    Link(destination: url) {
-                        Pill(text: name, tint: tint, trailingSystemImage: "arrow.up.right")
-                    }
-                    .accessibilityLabel(Text("Ouvrir dans \(name)"))
-                    .accessibilityIdentifier("book-store-link-\(name.lowercased())")
-                }
-            }
-        }
     }
 
     /// The editions of it the reader awaits, as the saga screen lists them.

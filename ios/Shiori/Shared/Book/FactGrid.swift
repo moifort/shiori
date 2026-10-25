@@ -23,6 +23,17 @@ struct FactTile: Identifiable {
     var action: (() -> Void)?
 }
 
+/// A way out of Shiori at the foot of the grid, across its width: the
+/// service's own app icon, what the tap does, and the arrow that says it
+/// leaves the app.
+struct FactLink: Identifiable {
+    let id: String
+    let title: LocalizedStringKey
+    /// The service's iOS app icon in the asset catalogue.
+    let appIcon: String
+    let url: URL
+}
+
 /// Tiles laid out so many to a row: two for a book's facts, three for the
 /// reading's days.
 struct FactGroup {
@@ -36,9 +47,11 @@ struct FactGroup {
 /// tile across the width, so the grid never ends on a hole.
 struct FactGrid: View {
     let groups: [FactGroup]
+    var links: [FactLink] = []
 
-    init(groups: [FactGroup]) {
+    init(groups: [FactGroup], links: [FactLink] = []) {
         self.groups = groups.filter { !$0.tiles.isEmpty }
+        self.links = links
     }
 
     init(tiles: [FactTile], columns: Int = 2) {
@@ -64,6 +77,11 @@ struct FactGrid: View {
                         cell(tile)
                             .gridCellColumns(index == row.tiles.count - 1 ? span - width * index : width)
                     }
+                }
+            }
+            ForEach(links) { link in
+                GridRow {
+                    linkCell(link).gridCellColumns(span)
                 }
             }
         }
@@ -147,6 +165,36 @@ struct FactGrid: View {
         }
     }
 
+    private func linkCell(_ link: FactLink) -> some View {
+        Link(destination: link.url) {
+            HStack(spacing: 12) {
+                // The home screen's own rounding: about a fifth of the side.
+                Image(link.appIcon)
+                    .resizable()
+                    .frame(width: 30, height: 30)
+                    .clipShape(.rect(cornerRadius: 7, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .strokeBorder(Color(.separator), lineWidth: 0.5)
+                    }
+                Text(link.title)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(.primary)
+                Spacer(minLength: 8)
+                Image(systemName: "arrow.up.right")
+                    .font(.footnote.weight(.bold))
+                    .foregroundStyle(.tertiary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(Color(.secondarySystemGroupedBackground))
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("book-store-link-\(link.id)")
+    }
+
     private func value(_ tile: FactTile) -> some View {
         HStack(alignment: .center, spacing: 4) {
             Text(tile.value ?? tile.placeholder)
@@ -185,6 +233,9 @@ struct FactGrid: View {
                     FactTile(id: "publisher", title: "Éditeur", value: "Bragelonne"),
                     FactTile(id: "first-published", title: "Parution", value: "2007"),
                 ]),
+            ], links: [
+                FactLink(id: "audible", title: "Écouter sur Audible", appIcon: "audible-app", url: URL(string: "https://www.audible.fr")!),
+                FactLink(id: "amazon", title: "Voir sur Amazon", appIcon: "amazon-app", url: URL(string: "https://www.amazon.fr")!),
             ])
             FactGrid(tiles: [
                 FactTile(id: "added", title: "Ajouté", value: "3 sept."),

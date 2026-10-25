@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "amazon-app.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

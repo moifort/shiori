@@ -12257,6 +12257,22 @@
         }
       }
     },
+    "Voir sur Amazon" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View on Amazon"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voir sur Amazon"
+          }
+        }
+      }
+    },
     "Vos bibliothèques" : {
       "localizations" : {
         "en" : {
@@ -13385,6 +13401,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Économie"
+          }
+        }
+      }
+    },
+    "Écouter sur Audible" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listen on Audible"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Écouter sur Audible"
           }
         }
       }
