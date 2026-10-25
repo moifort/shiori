@@ -44,16 +44,16 @@ struct BookPage: View {
     private static let noteAnchor = "book-note-anchor"
 
     var body: some View {
-        // On an unfolded iPhone Duo the book takes a page — the hero, what it
-        // is, its saga — and the reader's own reading the other.
+        // On an unfolded iPhone Duo the book takes a page — the hero, its saga,
+        // what it is — and the reader's own reading the other.
         TwoPages {
             page {
                 hero
                 blocks {
                     synopsis
+                    series
                     facts
                     awaitedBlock
-                    series
                 }
             }
         } second: {
@@ -70,9 +70,9 @@ struct BookPage: View {
                 hero
                 blocks {
                     synopsis
+                    series
                     facts
                     awaitedBlock
-                    series
                     reading
                 }
             }
