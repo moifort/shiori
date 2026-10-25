@@ -6325,6 +6325,22 @@
         }
       }
     },
+    "Je te le conseille." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I recommend it."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Je te le conseille."
+          }
+        }
+      }
+    },
     "Jour" : {
       "localizations" : {
         "en" : {

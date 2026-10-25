@@ -192,13 +192,11 @@ struct BookPage: View {
         VStack(alignment: .leading, spacing: 12) {
             RowHeader(title: "Informations", detail: String(localized: "modifier"), action: onEdit)
                 .accessibilityIdentifier("book-edit-facts")
-            // When the reader added, started and finished it, and who pressed
-            // it on them, over what the book is: one table, the reading's
-            // days three to a row.
+            // When the reader added, started and finished it, over what the
+            // book is: one table, the reading's days three to a row.
             FactGrid(
                 groups: [
                     FactGroup(tiles: dayTiles, columns: 3),
-                    FactGroup(tiles: recommendationTiles),
                     FactGroup(tiles: factTiles),
                 ],
                 links: storeLinks
@@ -317,13 +315,15 @@ struct BookPage: View {
     /// one, as Messages draws a group. Nothing when nobody said anything: the
     /// remarks are written from the hero.
     @ViewBuilder private var reading: some View {
-        if book.recommendation?.comment != nil || book.note != nil {
+        if book.recommendation != nil || book.note != nil {
             VStack(alignment: .leading, spacing: 12) {
                 RowHeader(title: "Commentaires", detail: readingSpan)
                 VStack(spacing: 10) {
-                    if let recommendation = book.recommendation, let comment = recommendation.comment {
+                    // A recommendation that names someone and says nothing
+                    // still reads as their word on it.
+                    if let recommendation = book.recommendation {
                         MessageBubble(
-                            text: comment,
+                            text: recommendation.comment ?? String(localized: "Je te le conseille."),
                             sender: recommendation.recommenderName ?? String(localized: "Conseillé"),
                             action: onEditRecommendation
                         )
@@ -357,14 +357,6 @@ struct BookPage: View {
             FactTile(id: "startedAt", title: "Commencé", value: day(book.startedAt), placeholder: "—", action: edit(.startedAt)),
             FactTile(id: "finishedAt", title: "Terminé", value: day(book.finishedAt), placeholder: "—", action: edit(.finishedAt)),
         ]
-    }
-
-    /// Who pressed the book on the reader, across the facts under the
-    /// reading's days; what they said of it is in the conversation below.
-    /// None when nobody did.
-    private var recommendationTiles: [FactTile] {
-        guard let recommendation = book.recommendation, let name = recommendation.recommenderName else { return [] }
-        return [FactTile(id: "recommendation", title: "Conseillé par", value: name, isWide: true, action: onEditRecommendation)]
     }
 }
 
