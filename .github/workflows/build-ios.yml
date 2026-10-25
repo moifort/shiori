@@ -154,13 +154,19 @@ jobs:
           start=$SECONDS
           xcrun simctl bootstatus "$SIMULATOR_UDID" -b
           echo "Simulator ready after a further $((SECONDS - start)) s"
+          # SHIORI_TEST_PHOTO=NO reaches the scheme's test pre-action as a build
+          # setting: the UI tests' photo is not imported for a run of the unit tests.
+          # The pre-action times itself into a log, printed below, since xcodebuild
+          # shows nothing of it and the minutes before the first test were silent.
           xcodebuild -project ios/Shiori.xcodeproj -scheme Shiori \
             -destination "id=$SIMULATOR_UDID" \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/SourcePackages" \
             -only-testing:ShioriTests \
             CODE_SIGNING_ALLOWED=NO \
+            SHIORI_TEST_PHOTO=NO \
             test-without-building
+          cat /tmp/shiori-test-preaction.log 2>/dev/null || echo "The pre-action left no log"
 
       - uses: oven-sh/setup-bun@v2
 
