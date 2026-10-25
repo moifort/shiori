@@ -4,8 +4,8 @@ import SwiftUI
 /// episodes under the one playing: the saga's name over the row, the way to
 /// its screen, then each volume as the home's pile sets its covers — the
 /// number inside the cover's blurred foot — the volume open on the page
-/// ringed. The volumes the reader lacks sit between theirs, dimmed — with a
-/// clock and an orange date for one announced — and open the saga's screen,
+/// ringed. The volumes the reader lacks sit between theirs, dimmed — an
+/// announced one with its day in place of its number — and open the saga's screen,
 /// where they are added. They come from a catalogue
 /// already built: building one costs a model call this row must never make.
 struct SeriesVolumesRow: View {
@@ -45,11 +45,8 @@ struct SeriesVolumesRow: View {
                     }
                 }
                 .scrollTargetLayout()
-                // Room for the ring around the current cover, for the clocks
-                // overhanging the lacking ones, and for the dates under the
-                // announced ones.
+                // Room for the ring around the current cover.
                 .padding(6)
-                .padding(.bottom, hasDates ? dateLine : 0)
             }
             .scrollIndicators(.hidden)
             .scrollClipDisabled()
@@ -58,15 +55,6 @@ struct SeriesVolumesRow: View {
             .onChange(of: volumes.map(\.id), initial: true) {
                 position.scrollTo(id: currentId, anchor: .center)
             }
-        }
-    }
-
-    private let dateLine: CGFloat = 22
-
-    /// Whether any announced volume has a day to show under its cover.
-    private var hasDates: Bool {
-        volumes.contains {
-            if case let .missing(_, _, _, forthcoming, date, _) = $0 { forthcoming && date != nil } else { false }
         }
     }
 
@@ -94,8 +82,9 @@ struct SeriesVolumesRow: View {
         .accessibilityAddTraits(isCurrent ? [.isButton, .isSelected] : .isButton)
     }
 
-    /// A volume the reader lacks, dimmed, with no badge when it is out: a
-    /// clock and its day in orange when it is only announced.
+    /// A volume the reader lacks, dimmed, with no badge: out, its number in
+    /// the blurred foot; announced, its day in white there instead, as the
+    /// saga's screen shows it.
     private func missingCover(
         id: String,
         number: Int?,
@@ -105,32 +94,17 @@ struct SeriesVolumesRow: View {
         coverURL: URL?
     ) -> some View {
         let caption = number.map { String(localized: "Tome \($0)") } ?? title
+        let day = forthcoming ? date.map(ReleaseDateText.short) : nil
         return Button(action: onOpenSeries) {
             PosterCover(
                     book: Book(id: id, title: title, authors: [], coverURL: coverURL, status: .toRead),
-                    caption: caption,
-                    showsAudioTag: false
+                    caption: day ?? caption,
+                    showsAudioTag: false,
+                    dimming: day == nil ? 0.12 : 0.5
                 )
-                .opacity(forthcoming ? 0.3 : 0.45)
-                .overlay(alignment: .topTrailing) {
-                    if forthcoming {
-                        CoverBadge(systemImage: "clock", tint: .orange)
-                            .offset(x: 5, y: -5)
-                    }
-                }
-                // Hung under the cover rather than stacked with it: a lazy
-                // stack sizes itself on the covers it drew first, and a line
-                // only some items carry was cut off.
-                .overlay(alignment: .bottom) {
-                    if forthcoming, let date {
-                        Text(verbatim: ReleaseDateText.short(date))
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.orange)
-                            .lineLimit(1)
-                            .fixedSize()
-                            .offset(y: dateLine)
-                    }
-                }
+                // A volume out the reader lacks is dimmed whole; an announced
+                // one keeps its day bright.
+                .opacity(day != nil ? 1 : forthcoming ? 0.3 : 0.45)
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
