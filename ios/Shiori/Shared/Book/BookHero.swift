@@ -181,7 +181,8 @@ struct BookHero<Actions: View>: View {
                     OutlinedTag(text: String(localized: "Audio"), isFrosted: false)
                 }
             }
-            if let progress = book.listeningProgress {
+            // Only while the book is under way: a finished one has nothing left.
+            if book.status == .reading, let progress = book.listeningProgress {
                 ListeningProgressLine(progress: progress, durationMinutes: book.durationMinutes)
             }
         }
