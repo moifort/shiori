@@ -39,8 +39,8 @@ struct BookHero<Actions: View>: View {
             // In the corner over the text, level with the cover's top: what
             // the reader decided of the book, apart from what it is.
             .overlay(alignment: .topTrailing) {
-                HStack(spacing: 10) { marks }
-                    .font(.title3)
+                HStack(spacing: 8) { marks }
+                    .font(.body)
             }
             actions
         }
