@@ -46,7 +46,7 @@ struct ReadingFeatureCard: View {
                         detailLine
                             .padding(.top, 6)
                         if let progress = book.listeningProgress {
-                            progressLine(progress)
+                            ListeningProgressLine(progress: progress, durationMinutes: book.durationMinutes)
                                 .padding(.top, 8)
                         }
                     }
@@ -93,36 +93,6 @@ struct ReadingFeatureCard: View {
     private var length: String? {
         if let duration = book.durationLabel { return duration }
         return book.pageCount.map { String(localized: "\($0) pages") }
-    }
-
-    /// How far the recording got, on a small bar, and what is left to hear, as
-    /// the TV app says the minutes left of an episode.
-    private func progressLine(_ progress: Int) -> some View {
-        HStack(spacing: 8) {
-            Capsule()
-                .fill(.white.opacity(0.3))
-                .frame(width: 56, height: 4)
-                .overlay(alignment: .leading) {
-                    Capsule()
-                        .fill(.white)
-                        .frame(width: 56 * CGFloat(min(max(progress, 0), 100)) / 100, height: 4)
-                }
-            Text(remaining(progress) ?? String(localized: "\(progress)% écouté"))
-                .font(.caption.weight(.semibold))
-                .lineLimit(1)
-        }
-    }
-
-    /// The time left in the recording, when its length is known.
-    private func remaining(_ progress: Int) -> String? {
-        guard let total = book.durationMinutes else { return nil }
-        let left = total * (100 - min(max(progress, 0), 100)) / 100
-        let hours = left / 60
-        let minutes = left % 60
-        let label = hours == 0
-            ? String(localized: "\(minutes)min")
-            : minutes == 0 ? String(localized: "\(hours)h") : String(localized: "\(hours)h\(String(format: "%02d", minutes))")
-        return String(localized: "\(label) restantes")
     }
 
     /// The next step white, the saga on glass.

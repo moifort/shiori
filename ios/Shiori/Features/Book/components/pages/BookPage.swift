@@ -96,22 +96,35 @@ struct BookPage: View {
 
     private var hero: some View {
         BookHero(book: book, state: .reading(of: book), isAwaited: !awaited.isEmpty) {
-            GlassEffectContainer(spacing: 10) {
-                HStack(spacing: 10) {
-                    if let step = NextStep(status: book.status) {
-                        primaryButton(step)
-                        ratingButton(prominent: false)
-                    } else {
-                        // A book read waits for the reader's word on it, not
-                        // for a next state: reading it again clears the day it
-                        // was finished, a choice made in the menu, not here.
-                        ratingButton(prominent: book.rating == nil)
-                        noteButton
-                    }
-                }
+            // Icons dropped before a label is cut, on a narrow phone.
+            ViewThatFits(in: .horizontal) {
+                heroButtons.labelStyle(.titleAndIcon)
+                heroButtons.labelStyle(.titleOnly)
             }
         }
         .sensoryFeedback(.success, trigger: book.status)
+    }
+
+    /// The next step white, the rating and the reader's remarks on glass, as
+    /// small as the home's card sets them. A book read waits for the reader's
+    /// word on it, not for a next state: reading it again clears the day it
+    /// was finished, a choice made in the menu, not here.
+    private var heroButtons: some View {
+        GlassEffectContainer(spacing: 8) {
+            HStack(spacing: 8) {
+                if let step = NextStep(status: book.status) {
+                    primaryButton(step)
+                    ratingButton(prominent: false)
+                } else {
+                    ratingButton(prominent: book.rating == nil)
+                }
+                noteButton
+            }
+            .font(.footnote.weight(.semibold))
+            .lineLimit(1)
+            .controlSize(.regular)
+        }
+        .fixedSize()
     }
 
     /// The next step the book is waiting for.
@@ -120,15 +133,11 @@ struct BookPage: View {
             onSetStatus(step.status)
         } label: {
             Label(step.title, systemImage: step.systemImage)
-                .font(.subheadline.weight(.semibold))
-                .lineLimit(1)
                 .fixedSize()
-                .padding(.horizontal, 4)
         }
         .buttonStyle(.glassProminent)
         .tint(.white)
         .foregroundStyle(.black)
-        .controlSize(.large)
         .accessibilityIdentifier("book-next-step")
     }
 
@@ -138,16 +147,13 @@ struct BookPage: View {
     private func ratingButton(prominent: Bool) -> some View {
         let label = Group {
             if let rating = book.rating {
-                RatingStars(rating: rating, font: .footnote)
+                RatingStars(rating: rating, font: .caption)
                     .padding(.vertical, 2)
             } else {
                 Label("Noter", systemImage: "star")
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
                     .fixedSize()
             }
         }
-        .padding(.horizontal, 4)
         return Group {
             if prominent {
                 Button(action: onRate) { label }
@@ -159,21 +165,17 @@ struct BookPage: View {
                     .buttonStyle(.glass)
             }
         }
-        .controlSize(.large)
         .accessibilityIdentifier(book.rating != nil ? "book-rating" : "book-rate")
     }
 
-    /// The reader's comment on a book read, from the hero.
+    /// The reader's remarks on the book, whatever its status: what they
+    /// thought of it so far, or once read.
     private var noteButton: some View {
         Button(action: onEditNote) {
-            Label(book.note == nil ? "Commenter" : "Commentaire", systemImage: "text.bubble")
-                .font(.subheadline.weight(.semibold))
-                .lineLimit(1)
+            Label("Remarques", systemImage: "text.bubble")
                 .fixedSize()
-                .padding(.horizontal, 4)
         }
         .buttonStyle(.glass)
-        .controlSize(.large)
         .accessibilityIdentifier("book-hero-note")
     }
 
@@ -415,7 +417,7 @@ struct NextStep: Equatable {
     init?(status: ReadingStatus) {
         switch status {
         case .toRead:
-            (title, systemImage, self.status) = ("Commencer la lecture", "book.fill", .reading)
+            (title, systemImage, self.status) = ("Commencer", "book.fill", .reading)
         case .reading:
             (title, systemImage, self.status) = ("Marquer lu", "checkmark", .read)
         case .read:

@@ -3733,22 +3733,6 @@
         }
       }
     },
-    "Commencer la lecture" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start reading"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Commencer la lecture"
-          }
-        }
-      }
-    },
     "Commencer « %@ »" : {
       "localizations" : {
         "en" : {
@@ -3841,22 +3825,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Commentaire"
-          }
-        }
-      }
-    },
-    "Commenter" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Comment"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Commenter"
           }
         }
       }
@@ -5009,54 +4977,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "En cours"
-          }
-        }
-      }
-    },
-    "En cours · %@ écouté" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reading · %@ heard"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En cours · %@ écouté"
-          }
-        }
-      }
-    },
-    "En cours · commencé aujourd'hui" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reading · started today"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En cours · commencé aujourd'hui"
-          }
-        }
-      }
-    },
-    "En cours · depuis %lldj" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reading · for %lldd"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En cours · depuis %lldj"
           }
         }
       }
@@ -7325,22 +7245,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lu par Thibault de Montalembert"
-          }
-        }
-      }
-    },
-    "Lu · le %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Read · on %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lu · le %@"
           }
         }
       }
@@ -9853,6 +9757,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Relancer l'analyse"
+          }
+        }
+      }
+    },
+    "Remarques" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remarques"
           }
         }
       }
@@ -13293,6 +13213,22 @@
         }
       }
     },
+    "lu le %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "read %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "lu le %@"
+          }
+        }
+      }
+    },
     "lus en %@" : {
       "localizations" : {
         "en" : {
@@ -13417,22 +13353,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "À lire"
-          }
-        }
-      }
-    },
-    "À lire · ajouté le %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "To read · added %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "À lire · ajouté le %@"
           }
         }
       }
@@ -13609,6 +13529,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "à lire"
+          }
+        }
+      }
+    },
+    "à lire depuis %lldj" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "to read for %lldd"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "à lire depuis %lldj"
           }
         }
       }
