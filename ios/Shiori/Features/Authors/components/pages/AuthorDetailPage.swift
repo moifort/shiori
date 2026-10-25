@@ -186,7 +186,7 @@ struct AuthorDetailPage: View {
                     // button would claim the drag that scrolls the covers.
                     SeriesRow(entry: saga, showsAuthor: false)
                         .contentShape(Rectangle())
-                        .onTapGesture { open(SeriesDestination(seriesId: saga.seriesId, language: saga.language)) }
+                        .onTapGesture { open(SeriesDestination(seriesId: saga.seriesId)) }
                         .accessibilityElement(children: .combine)
                         .accessibilityAddTraits(.isButton)
                         .edgeToEdgeSeparator()
@@ -238,7 +238,7 @@ struct AuthorDetailPage: View {
         .padding(.vertical, 2)
         .contentShape(Rectangle())
         .onTapGesture {
-            open(SeriesDestination(seriesId: saga.id, language: nil, proposal: saga.proposal))
+            open(SeriesDestination(seriesId: saga.id, proposal: saga.proposal))
         }
         .accessibilityAddTraits(.isButton)
         .accessibilityIdentifier("author-saga-not-held")

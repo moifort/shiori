@@ -88,7 +88,6 @@ struct FriendBookScreen: View {
             if let series = viewModel.entry?.book.series {
                 SeriesScreen(
                     seriesId: series.id,
-                    language: viewModel.entry?.book.language,
                     friend: SeriesFriend(id: viewModel.friendId, name: friendName)
                 )
                 .closesAsPushed()

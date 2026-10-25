@@ -179,15 +179,13 @@ final class SeriesListViewModel {
 
     /// Whether a book is one of the volumes the list shows for this edition.
     func holds(bookId: String, in destination: SeriesDestination) -> Bool {
-        let id = FollowedSeries.id(seriesId: destination.seriesId, language: destination.language)
-        return followed.first { $0.id == id }?.volumes.contains { $0.id == bookId } == true
+        followed.first { $0.id == destination.seriesId }?.volumes.contains { $0.id == bookId } == true
     }
 
     /// Whether the row of this edition was drawn without a catalogue: opening
     /// the saga builds one, and the row is then worth asking for again.
     func lacksCatalogue(_ destination: SeriesDestination) -> Bool {
-        let id = FollowedSeries.id(seriesId: destination.seriesId, language: destination.language)
-        return followed.first { $0.id == id }?.isCatalogued == false
+        followed.first { $0.id == destination.seriesId }?.isCatalogued == false
     }
 
     /// Asks the server again for one saga the reader just changed and puts its
@@ -203,20 +201,21 @@ final class SeriesListViewModel {
     /// reloads whole, keeping the reader's place.
     func refreshRows(of destination: SeriesDestination, changedBooks: Set<String>) async {
         let requested = generation
-        var languages = [destination.language]
-        for row in followed where row.seriesId == destination.seriesId && !languages.contains(row.language) {
-            languages.append(row.language)
+        // The other editions of the saga on screen, by the saga the server
+        // says each row is of.
+        let saga = followed.first { $0.seriesId == destination.seriesId }?.saga
+        var editions = [destination.seriesId]
+        for row in followed where row.saga != nil && row.saga == saga && !editions.contains(row.seriesId) {
+            editions.append(row.seriesId)
         }
         var volumes: Set<String> = []
         do {
-            for language in languages {
-                let fresh = try await client.followedRow(destination.seriesId, language)
+            for edition in editions {
+                let fresh = try await client.followedRow(edition)
                 guard requested == generation else { return }
                 // The covers the catalogue brought slide into the strip rather
                 // than the row redrawing at once.
-                withAnimation(.smooth) {
-                    place(fresh, as: FollowedSeries.id(seriesId: destination.seriesId, language: language))
-                }
+                withAnimation(.smooth) { place(fresh, as: edition) }
                 volumes.formUnion(fresh?.volumes.map(\.id) ?? [])
             }
         } catch is CancellationError {

@@ -13,32 +13,32 @@ enum SeriesFixtures {
 extension SeriesClient {
     /// Answers from the showcase library and accepts every write.
     static let preview = SeriesClient(
-        screen: { id, _, _ in Showcase.seriesScreen(id: id) },
-        catalogue: { id, _, _ in Showcase.seriesScreen(id: id).series },
-        friendScreen: { _, id, _ in (Showcase.seriesScreen(id: id).series, nil) },
-        releases: { id, _ in Showcase.sagaReleases(seriesId: id) },
-        lookUpReleases: { id, _ in Showcase.sagaReleases(seriesId: id) },
+        screen: { id, _ in Showcase.seriesScreen(id: id) },
+        catalogue: { id, _ in Showcase.seriesScreen(id: id).series },
+        friendScreen: { _, id in (Showcase.seriesScreen(id: id).series, nil) },
+        releases: { id in Showcase.sagaReleases(seriesId: id) },
+        lookUpReleases: { id in Showcase.sagaReleases(seriesId: id) },
         rate: { id, stars in SeriesOpinion(seriesId: id, rating: stars, favorite: false) },
         removeRating: { id in SeriesOpinion(seriesId: id, rating: nil, favorite: false) },
-        setFollowed: { id, followed, _ in
+        setFollowed: { id, followed in
             var opinion = SeriesOpinion(seriesId: id)
             opinion.followed = followed
             return opinion
         },
         setFavorite: { id, favorite in SeriesOpinion(seriesId: id, rating: nil, favorite: favorite) },
         declareVolumeCount: { id, _ in SeriesOpinion(seriesId: id, rating: nil, favorite: false) },
-        delete: { _, _ in },
+        delete: { _ in },
         mergeCandidates: { SeriesFixtures.followed },
-        merge: { _, _, _ in },
+        merge: { _, _ in },
         updateBook: { _, _ in .preview },
         setStatus: { _, _ in .preview },
-        addAudibleVolume: { _, _, _ in .preview },
+        addAudibleVolume: { _, _ in .preview },
         addBook: { _, _ in .preview },
         subgenres: { [] },
         page: { limit, after, mode, state in
             Showcase.seriesPage(limit: limit, after: after, mode: mode, state: state)
         },
-        followedRow: { id, _ in SeriesFixtures.followed.first { $0.seriesId == id } }
+        followedRow: { id in SeriesFixtures.followed.first { $0.seriesId == id } }
     )
 }
 #endif

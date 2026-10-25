@@ -22,7 +22,8 @@ enum BookAPI {
 
     /// The volumes of a saga in the order it runs, for the row under a book's
     /// facts: the reader's own, and the ones they lack when the saga's
-    /// catalogue already exists. Never builds one: that is a model call.
+    /// catalogue already exists. Never builds one: that is a model call. The id
+    /// names the edition; `language` only dates the volumes on screen.
     static func sagaVolumes(seriesId: String, language: BookLanguage?) async throws -> [SeriesStripItem] {
         #if DEBUG
         if Showcase.isOn {
@@ -37,10 +38,7 @@ enum BookAPI {
         #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.BookSagaVolumesQuery(
-                seriesId: seriesId,
-                language: SeriesAPI.graphQLLanguage(language)
-            )
+            query: ShioriGraphQL.BookSagaVolumesQuery(seriesId: seriesId)
         )
         // A saga nobody catalogued answers with the reader's own volumes as
         // its spine: nothing to add to them.

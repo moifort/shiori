@@ -46,7 +46,6 @@ struct FriendSeriesListScreen: View {
             // own saga opens as it does from their Series tab.
             SeriesScreen(
                 seriesId: saga.seriesId,
-                language: saga.language,
                 friend: isPreview ? nil : SeriesFriend(id: friendId, name: friendName)
             )
         }

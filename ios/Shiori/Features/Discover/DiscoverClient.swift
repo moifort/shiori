@@ -21,7 +21,7 @@ struct DiscoverClient: Sendable {
     /// Onto the pile, through the one "look up, then add" use case.
     var addBook: @Sendable (BookDraft) async throws -> Void
     /// A saga's recording through the reader's Audible account.
-    var addAudibleVolume: @Sendable (_ seriesId: String, _ volume: Int, BookLanguage) async throws -> Void
+    var addAudibleVolume: @Sendable (_ seriesId: String, _ volume: Int) async throws -> Void
     /// Whether nothing can reach the reader: the system said no, or every
     /// alert is off.
     var alertsSilenced: @Sendable () async -> Bool
@@ -42,8 +42,8 @@ extension DiscoverClient {
         dismissSuggestion: { try await SuggestionsAPI.dismiss(id: $0, reason: $1) },
         describe: { try await ReleaseAPI.describe($0) },
         addBook: { _ = try await BookAddition.add($0, source: .discover) },
-        addAudibleVolume: { seriesId, volume, language in
-            _ = try await SeriesAPI.addAudibleVolume(seriesId: seriesId, volume: volume, language: language)
+        addAudibleVolume: { seriesId, volume in
+            _ = try await SeriesAPI.addAudibleVolume(seriesId: seriesId, volume: volume)
             track(.bookAdded(source: .discover))
         },
         alertsSilenced: {
@@ -66,7 +66,7 @@ extension DiscoverClient {
         dismissSuggestion: { _, _ in },
         describe: { _ in .preview },
         addBook: { _ in },
-        addAudibleVolume: { _, _, _ in },
+        addAudibleVolume: { _, _ in },
         alertsSilenced: { false },
         requestAlerts: {}
     )

@@ -7,7 +7,7 @@ struct SeriesViewModelTests {
     private static var sagaId: String { SeriesFixtures.followed[0].seriesId }
 
     private func model(_ client: SeriesClient = .preview, friend: SeriesFriend? = nil) -> SeriesViewModel {
-        SeriesViewModel(seriesId: Self.sagaId, language: .fr, proposal: nil, friend: friend, client: client)
+        SeriesViewModel(seriesId: Self.sagaId, proposal: nil, friend: friend, client: client)
     }
 
     @Test func loadDrawsTheCatalogueAndTheVolumesHeld() async {
@@ -26,8 +26,8 @@ struct SeriesViewModelTests {
         awaiting?.isAwaitingCatalogue = true
         let asked = Calls()
         var client = SeriesClient.preview
-        client.screen = { [awaiting] _, _, _ in (awaiting, full.opinion, full.owned) }
-        client.catalogue = { _, _, _ in
+        client.screen = { [awaiting] _, _ in (awaiting, full.opinion, full.owned) }
+        client.catalogue = { _, _ in
             asked.record("catalogue")
             return full.series
         }
@@ -45,7 +45,7 @@ struct SeriesViewModelTests {
     @Test func storedCatalogueIsNotBuiltAgain() async {
         let asked = Calls()
         var client = SeriesClient.preview
-        client.catalogue = { _, _, _ in
+        client.catalogue = { _, _ in
             asked.record("catalogue")
             return nil
         }
@@ -60,11 +60,11 @@ struct SeriesViewModelTests {
     @Test func friendsShelfAsksTheirSaga() async {
         let asked = Calls()
         var client = SeriesClient.preview
-        client.friendScreen = { friendId, seriesId, _ in
+        client.friendScreen = { friendId, seriesId in
             asked.record(friendId)
             return (Showcase.seriesScreen(id: seriesId).series, nil)
         }
-        client.screen = { _, _, _ in
+        client.screen = { _, _ in
             asked.record("own")
             return (nil, nil, [])
         }
@@ -136,7 +136,7 @@ struct SeriesViewModelTests {
     @Test func recordingAudibleDoesNotSellIsAddedAsABook() async {
         let asked = Calls()
         var client = SeriesClient.preview
-        client.addAudibleVolume = { _, _, _ in throw APIError.domain(code: "NOT_FOUND", messages: []) }
+        client.addAudibleVolume = { _, _ in throw APIError.domain(code: "NOT_FOUND", messages: []) }
         client.addBook = { draft, _ in
             asked.record(draft.format.rawValue)
             return .preview
@@ -153,7 +153,7 @@ struct SeriesViewModelTests {
 
     @Test func refusedRemovalStays() async {
         var client = SeriesClient.preview
-        client.delete = { _, _ in throw Boom() }
+        client.delete = { _ in throw Boom() }
         let viewModel = model(client)
 
         let removed = await viewModel.delete()

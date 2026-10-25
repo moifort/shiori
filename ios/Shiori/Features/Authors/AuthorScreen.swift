@@ -60,7 +60,7 @@ struct AuthorScreen: View {
             Task { await viewModel.load() }
         }
         .navigationDestination(item: $openSeries) {
-            SeriesScreen(seriesId: $0.seriesId, language: $0.language, proposal: $0.proposal)
+            SeriesScreen(seriesId: $0.seriesId, proposal: $0.proposal)
                 .closesAsPushed()
         }
         // Back from a saga, read again: a volume added there moves the saga

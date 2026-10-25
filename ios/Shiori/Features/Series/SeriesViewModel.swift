@@ -6,10 +6,9 @@ import SwiftUI
 @MainActor
 @Observable
 final class SeriesViewModel {
+    /// The edition opened — the saga in one language — as the server handed
+    /// it out. Never built here: the language is read off what it loads.
     let seriesId: String
-    /// The edition the reader came from; nil where the caller knows none, and
-    /// every edition shows.
-    let language: BookLanguage?
     /// The friend whose shelf the saga was opened from: where it stands is
     /// theirs, and nothing changes the reader's library.
     let friend: SeriesFriend?
@@ -40,17 +39,19 @@ final class SeriesViewModel {
 
     init(
         seriesId: String,
-        language: BookLanguage?,
         proposal: SeriesProposal?,
         friend: SeriesFriend?,
         client: SeriesClient
     ) {
         self.seriesId = seriesId
-        self.language = language
         self.proposal = proposal
         self.friend = friend
         self.client = client
     }
+
+    /// The language of the edition opened, as its catalogue or a volume held
+    /// says it; nil until the screen has loaded.
+    var language: BookLanguage? { series?.language ?? owned.first?.language }
 
     var isFavorite: Bool { opinion?.favorite == true }
     var isFollowed: Bool { opinion?.follows(language) ?? true }
@@ -97,7 +98,7 @@ final class SeriesViewModel {
             return
         }
         do {
-            let screen = try await client.screen(seriesId, language, proposal)
+            let screen = try await client.screen(seriesId, proposal)
             series = screen.series
             opinion = screen.opinion
             owned = screen.owned
@@ -115,7 +116,7 @@ final class SeriesViewModel {
         isCataloguing = true
         defer { isCataloguing = false }
         do {
-            let built = try await client.catalogue(seriesId, language, proposal)
+            let built = try await client.catalogue(seriesId, proposal)
             withAnimation(.smooth) { series = built }
         } catch {
             _ = reportError(error)
@@ -126,7 +127,7 @@ final class SeriesViewModel {
     /// the reader's own.
     private func loadFriendShelf(_ friend: SeriesFriend) async {
         do {
-            let screen = try await client.friendScreen(friend.id, seriesId, language)
+            let screen = try await client.friendScreen(friend.id, seriesId)
             series = screen.series
             owned = screen.saga?.volumes ?? []
             opinion = screen.saga.map {
@@ -137,22 +138,22 @@ final class SeriesViewModel {
         }
     }
 
-    /// What Découvrir found of the saga, for an edition the reader opened —
+    /// What Découvrir found of the saga, for the edition the reader opened —
     /// looked up on the spot when nobody ever did. Not drawn on a friend's
-    /// shelf, nor without an edition.
+    /// shelf.
     func loadReleases() async {
-        guard friend == nil, let language else { return }
-        let key = "\(seriesId)|\(language.rawValue)"
+        guard friend == nil else { return }
+        let key = seriesId
         if releases == nil { releases = SagaReleasesCache.entries[key] }
         do {
-            var fetched = try await client.releases(seriesId, language)
+            var fetched = try await client.releases(seriesId)
             withAnimation(releases == nil ? nil : .smooth) { releases = fetched }
             // Nobody ever looked the saga up in this edition: it is looked up
             // now, and the section slides in when the web has answered.
             if !fetched.watched {
                 isLookingUpReleases = true
                 defer { isLookingUpReleases = false }
-                fetched = try await client.lookUpReleases(seriesId, language)
+                fetched = try await client.lookUpReleases(seriesId)
                 withAnimation(.smooth) { releases = fetched }
             }
             SagaReleasesCache.entries[key] = fetched
@@ -174,12 +175,10 @@ final class SeriesViewModel {
         }
     }
 
-    /// Only the edition the reader came from: the French row set aside says
-    /// nothing of the English one.
+    /// Only the edition opened: the French row set aside says nothing of the
+    /// English one.
     func setFollowed(_ followed: Bool) async {
-        await changeOpinion { [client, seriesId, language] in
-            try await client.setFollowed(seriesId, followed, language)
-        }
+        await changeOpinion { [client, seriesId] in try await client.setFollowed(seriesId, followed) }
     }
 
     func setFavorite(_ favorite: Bool) async {
@@ -216,7 +215,7 @@ final class SeriesViewModel {
         isSaving = true
         defer { isSaving = false }
         do {
-            try await client.delete(seriesId, language)
+            try await client.delete(seriesId)
             return true
         } catch {
             errorMessage = reportError(error)
@@ -232,7 +231,7 @@ final class SeriesViewModel {
     /// or nil once merged.
     func merge(into target: FollowedSeries) async -> String? {
         do {
-            try await client.merge(seriesId, language, target.seriesId)
+            try await client.merge(seriesId, target.seriesId)
             return nil
         } catch {
             return reportError(error)
@@ -275,8 +274,8 @@ final class SeriesViewModel {
         addingTitle = volume.title
         defer { addingTitle = nil }
         let format = format ?? takenFormat
-        if format == .audiobook, volume.kind == .main, let number = volume.number, let language,
-           let heard = await addHeard(number: number, language: language, status: status) {
+        if format == .audiobook, volume.kind == .main, let number = volume.number,
+           let heard = await addHeard(number: number, status: status) {
             owned.append(heard)
             return
         }
@@ -289,7 +288,7 @@ final class SeriesViewModel {
             volume: volume.number,
             kind: volume.kind
         )
-        let edition = language ?? owned.first?.language
+        let edition = language
         var draft = BookDraft(title: volume.title, authors: [author], format: format, media: media)
         // Filed here whatever the lookup answers, in the edition of this row:
         // a volume added without one would open a second row on the Series tab.
@@ -318,10 +317,10 @@ final class SeriesViewModel {
     /// Audible's record of a volume, moved to the books read when it was
     /// heard already; nil when Audible could not give it, and the volume is
     /// then added as a book is.
-    private func addHeard(number: Int, language: BookLanguage, status: ReadingStatus) async -> Book? {
+    private func addHeard(number: Int, status: ReadingStatus) async -> Book? {
         var heard: Book
         do {
-            heard = try await client.addAudibleVolume(seriesId, number, language)
+            heard = try await client.addAudibleVolume(seriesId, number)
         } catch {
             let code = (error as? APIError)?.domainCode
             if code != "NOT_FOUND" && code != "AUDIBLE_NOT_CONNECTED" { _ = reportError(error) }

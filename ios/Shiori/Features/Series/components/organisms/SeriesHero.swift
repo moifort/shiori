@@ -3,7 +3,8 @@ import SwiftUI
 /// The top of a saga's page, as the TV app opens a show: three covers fanned
 /// over the colours of the volume to read next, which melt into the page as
 /// the book page's do; under them, centred, the saga's name and its author,
-/// who opens their page. Then the
+/// who opens their page, and the edition's language when it is not the
+/// reader's own, as the book page names it. Then the
 /// page's actions. The ground runs up under the toolbar, whose glass buttons
 /// float over it; the text is drawn in the dark appearance whatever the
 /// device's, since it sits on a darkened image either way.
@@ -13,6 +14,10 @@ struct SeriesHero<Actions: View>: View {
     /// The volume to read next, in the middle, and the ones on either side
     /// of it, in reading order.
     let fan: SeriesFan
+    /// The language of the edition shown: named under the author when it is
+    /// not the reader's own — the English edition of a saga they also hold in
+    /// French is another page.
+    var language: BookLanguage? = nil
     /// Opens the author's page from their name, a chevron after it. Nil draws
     /// the name alone, as where no volume held carries the author's key.
     var onOpenAuthor: (() -> Void)? = nil
@@ -86,6 +91,12 @@ struct SeriesHero<Actions: View>: View {
                 .copyable(name)
             authorLine
                 .padding(.top, 2)
+            if let language, language.isForeign {
+                Text(language.label)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.75))
+                    .accessibilityIdentifier("series-language")
+            }
         }
     }
 
@@ -154,6 +165,7 @@ struct SeriesFan {
             name: screen.series?.name ?? "",
             author: screen.series?.author ?? "",
             fan: SeriesFan(volumes: screen.owned, centredOn: 1),
+            language: .en,
             onOpenAuthor: {}
         ) {
             Text(verbatim: "Actions")

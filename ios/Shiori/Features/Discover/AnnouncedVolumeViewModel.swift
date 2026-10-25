@@ -31,9 +31,9 @@ final class AnnouncedVolumeViewModel {
     /// is added from its page, as a printed volume is.
     func add() async {
         let series = opened.saga.series
-        if series.isAudio, let language = series.language {
+        if series.isAudio {
             do {
-                try await client.addAudibleVolume(series.seriesId, opened.volume.number, language)
+                try await client.addAudibleVolume(series.seriesId, opened.volume.number)
                 added = true
                 return
             } catch {
