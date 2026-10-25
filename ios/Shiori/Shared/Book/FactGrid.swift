@@ -11,8 +11,6 @@ struct FactTile: Identifiable {
     /// Nil draws "Non renseigné", dimmed.
     let value: String?
     var chips: [String] = []
-    /// A line under the value, in full: what a recommender said of the book.
-    var detail: String?
     /// Takes the whole width of the grid rather than a column.
     var isWide = false
     var valueFont: Font = .body.weight(.semibold)
@@ -147,13 +145,6 @@ struct FactGrid: View {
                         Pill(text: chip, font: .caption.weight(.semibold))
                     }
                 }
-            }
-            if let detail = tile.detail {
-                Text(detail)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

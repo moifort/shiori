@@ -3797,6 +3797,22 @@
         }
       }
     },
+    "Commentaires" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comments"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Commentaires"
+          }
+        }
+      }
+    },
     "Compagnon" : {
       "localizations" : {
         "en" : {
@@ -4017,6 +4033,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Connexion, import et synchronisation"
+          }
+        }
+      }
+    },
+    "Conseillé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recommended"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conseillé"
           }
         }
       }

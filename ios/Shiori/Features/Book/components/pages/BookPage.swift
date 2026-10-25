@@ -312,14 +312,29 @@ struct BookPage: View {
 
     // MARK: - Reading
 
-    /// What the reader wrote of the book, when they did: the reading's days
-    /// and who recommended it head the facts, and the remarks are written
-    /// from the hero.
+    /// What was said of the book, as a conversation: the recommender's words
+    /// in a grey bubble under their name, the reader's own answer in a blue
+    /// one, as Messages draws a group. Nothing when nobody said anything: the
+    /// remarks are written from the hero.
     @ViewBuilder private var reading: some View {
-        if book.note != nil {
+        if book.recommendation?.comment != nil || book.note != nil {
             VStack(alignment: .leading, spacing: 12) {
-                RowHeader(title: "Ma lecture", detail: readingSpan)
-                note
+                RowHeader(title: "Commentaires", detail: readingSpan)
+                VStack(spacing: 10) {
+                    if let recommendation = book.recommendation, let comment = recommendation.comment {
+                        MessageBubble(
+                            text: comment,
+                            sender: recommendation.recommenderName ?? String(localized: "Conseillé"),
+                            action: onEditRecommendation
+                        )
+                        .accessibilityIdentifier("book-recommendation-comment")
+                    }
+                    if let note = book.note {
+                        MessageBubble(text: note, isMine: true, action: onEditNote)
+                            .copyable(note)
+                            .accessibilityIdentifier("book-note")
+                    }
+                }
             }
         }
     }
@@ -344,42 +359,12 @@ struct BookPage: View {
         ]
     }
 
-    /// Who pressed the book on the reader, and what they said of it, across
-    /// the facts under the reading's days. None when nobody did.
+    /// Who pressed the book on the reader, across the facts under the
+    /// reading's days; what they said of it is in the conversation below.
+    /// None when nobody did.
     private var recommendationTiles: [FactTile] {
-        guard let recommendation = book.recommendation else { return [] }
-        let tile = if let name = recommendation.recommenderName {
-            FactTile(id: "recommendation", title: "Conseillé par", value: name, detail: recommendation.comment)
-        } else {
-            FactTile(id: "recommendation", title: "Livre conseillé", value: recommendation.comment)
-        }
-        var wide = tile
-        wide.isWide = true
-        wide.action = onEditRecommendation
-        return [wide]
-    }
-
-    /// The reader's own comment, read as a review: the text, then a way to
-    /// correct it. Without one, nothing: "Remarques" in the hero writes it.
-    @ViewBuilder private var note: some View {
-        if let note = book.note {
-            Button(action: onEditNote) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(note)
-                        .font(.body)
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Text("Modifier le commentaire")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.top, 6)
-                .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-            .copyable(note)
-            .accessibilityIdentifier("book-note")
-        }
+        guard let recommendation = book.recommendation, let name = recommendation.recommenderName else { return [] }
+        return [FactTile(id: "recommendation", title: "Conseillé par", value: name, isWide: true, action: onEditRecommendation)]
     }
 }
 
