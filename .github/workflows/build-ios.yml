@@ -89,23 +89,6 @@ jobs:
           echo "SIMULATOR_UDID=$udid" >> "$GITHUB_ENV"
           xcrun simctl boot "$udid"
 
-      # Compiling the twenty assets took 66 to 98 seconds on the runner against
-      # three on a Mac: actool's first start pays for the services behind it. It
-      # runs once here, in the background, while the packages download, so the
-      # build finds them warm; the build step prints how long it took.
-      - name: Warm up the asset catalog compiler
-        run: |
-          set -euo pipefail
-          target=$(grep -m1 -oE 'IPHONEOS_DEPLOYMENT_TARGET = [0-9.]+' \
-            ios/Shiori.xcodeproj/project.pbxproj | grep -oE '[0-9.]+$')
-          mkdir -p "$RUNNER_TEMP/actool-warmup"
-          nohup bash -c "start=\$SECONDS
-            xcrun actool ios/Shiori/Assets.xcassets --compile '$RUNNER_TEMP/actool-warmup' \
-              --platform iphonesimulator --minimum-deployment-target '$target' \
-              --target-device iphone --output-format human-readable-text >/dev/null 2>&1 || true
-            echo \"actool warm-up: \$((SECONDS - start)) s\" > '$RUNNER_TEMP/actool-warmup.log'" \
-            >/dev/null 2>&1 &
-
       - name: Materialize gitignored build files
         run: |
           set -euo pipefail
@@ -217,7 +200,6 @@ jobs:
         # The timing summary says where a slow build spent its minutes.
         run: |
           set -euo pipefail
-          cat "$RUNNER_TEMP/actool-warmup.log" 2>/dev/null || echo "actool warm-up still running"
           xcodebuild -project ios/Shiori.xcodeproj -scheme Shiori \
             -destination "id=$SIMULATOR_UDID" \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
