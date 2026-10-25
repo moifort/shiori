@@ -163,12 +163,14 @@ struct SeriesPage: View {
         .fixedSize()
         .padding(.horizontal, 16)
         .frame(height: ProgressCapsule.height)
-        if friend == nil {
+        // A saga hearted already says what the reader thinks of it: no
+        // prompt to rate it beside the heart, only the stars once given.
+        if friend == nil, opinion?.rating != nil || opinion?.favorite != true {
             Button { Task { await onAction(.rate) } } label: { label.contentShape(.capsule) }
                 .buttonStyle(.plain)
                 .glassEffect(.regular.interactive(), in: .capsule)
                 .accessibilityIdentifier(opinion?.rating != nil ? "series-rating" : "series-rate")
-        } else if opinion?.rating != nil || opinion?.favorite == true {
+        } else if friend != nil, opinion?.rating != nil || opinion?.favorite == true {
             label
                 .glassEffect(.regular, in: .capsule)
                 .accessibilityElement(children: .combine)

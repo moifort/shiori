@@ -78,18 +78,8 @@ struct SeriesHero<Actions: View>: View {
 
     private var identity: some View {
         VStack(spacing: 6) {
-            HStack(spacing: 6) {
-                Circle()
-                    .fill(state.tint)
-                    .frame(width: 6, height: 6)
-                Text(state.label)
-                    .font(.caption2.weight(.bold))
-                    .textCase(.uppercase)
-                    .tracking(1.1)
-                    .foregroundStyle(.white.opacity(0.72))
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityIdentifier("series-state")
+            SeriesStateBadge(state: state)
+                .padding(.bottom, 2)
             Text(name)
                 .font(.largeTitle.weight(.heavy))
                 .foregroundStyle(.white)
@@ -127,6 +117,51 @@ struct SeriesHero<Actions: View>: View {
         } else {
             line.copyable(author)
         }
+    }
+}
+
+/// Where the reader stands, over the saga's name, as the TV app tags a show
+/// airing: a capsule of glass tinted with the state's colour, its symbol, the
+/// word in small capitals. A saga under way beats like a live broadcast, a
+/// halo breathing out of its dot.
+private struct SeriesStateBadge: View {
+    let state: SeriesState
+
+    @State private var beating = false
+
+    var body: some View {
+        HStack(spacing: 7) {
+            if state == .inProgress {
+                Circle()
+                    .fill(state.tint)
+                    .frame(width: 7, height: 7)
+                    .background {
+                        Circle()
+                            .fill(state.tint)
+                            .scaleEffect(beating ? 2.6 : 1)
+                            .opacity(beating ? 0 : 0.7)
+                    }
+                    .onAppear {
+                        withAnimation(.easeOut(duration: 1.6).repeatForever(autoreverses: false)) {
+                            beating = true
+                        }
+                    }
+            } else {
+                Image(systemName: state.symbol)
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(state.tint)
+            }
+            Text(state.label)
+                .font(.caption.weight(.bold))
+                .textCase(.uppercase)
+                .tracking(1.2)
+                .foregroundStyle(.white)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .glassEffect(.regular.tint(state.tint.opacity(0.25)), in: .capsule)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("series-state")
     }
 }
 
