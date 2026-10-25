@@ -163,6 +163,41 @@ struct SeriesViewModelTests {
         #expect(removed == false)
         #expect(viewModel.errorMessage != nil)
     }
+
+    @Test func bellTurnsAtOnceWithoutAScrim() async {
+        let (started, calling) = AsyncStream<Void>.makeStream()
+        let (answer, answering) = AsyncStream<Void>.makeStream()
+        var client = SeriesClient.preview
+        client.setFollowed = { seriesId, followed in
+            calling.yield()
+            for await _ in answer { break }
+            return SeriesOpinion(seriesId: seriesId, followed: followed)
+        }
+        let viewModel = model(client)
+        await viewModel.load()
+        #expect(viewModel.isFollowed)
+
+        let tap = Task { await viewModel.setFollowed(false) }
+        for await _ in started { break }
+
+        #expect(viewModel.isFollowed == false)
+        #expect(viewModel.isSaving == false)
+        answering.yield()
+        await tap.value
+        #expect(viewModel.isFollowed == false)
+    }
+
+    @Test func refusedBellTurnsBack() async {
+        var client = SeriesClient.preview
+        client.setFollowed = { _, _ in throw Boom() }
+        let viewModel = model(client)
+        await viewModel.load()
+
+        await viewModel.setFollowed(false)
+
+        #expect(viewModel.isFollowed)
+        #expect(viewModel.errorMessage != nil)
+    }
 }
 
 @MainActor

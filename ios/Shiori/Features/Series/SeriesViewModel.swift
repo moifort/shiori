@@ -54,7 +54,13 @@ final class SeriesViewModel {
     var language: BookLanguage? { series?.language ?? owned.first?.language }
 
     var isFavorite: Bool { opinion?.favorite == true }
-    var isFollowed: Bool { opinion?.follows(language) ?? true }
+    var isFollowed: Bool { followedAhead ?? opinion?.follows(language) ?? true }
+
+    /// The bell's state as the reader last set it, drawn before the server
+    /// answers so the bell rings without a wait. Cleared once every call made
+    /// from it has come back.
+    private var followedAhead: Bool?
+    private var followCallsInFlight = 0
 
     /// What the saga is read as: the format of the volumes held — a manga
     /// stays a manga — else a recording for a saga heard, a book otherwise.
@@ -177,8 +183,22 @@ final class SeriesViewModel {
 
     /// Only the edition opened: the French row set aside says nothing of the
     /// English one.
+    /// Set in the background, no scrim over the page: the bell swings at
+    /// once and turns back only if the server refuses.
     func setFollowed(_ followed: Bool) async {
-        await changeOpinion { [client, seriesId] in try await client.setFollowed(seriesId, followed) }
+        followedAhead = followed
+        followCallsInFlight += 1
+        defer {
+            followCallsInFlight -= 1
+            if followCallsInFlight == 0 { followedAhead = nil }
+        }
+        do {
+            let saved = try await client.setFollowed(seriesId, followed)
+            // A later tap's answer is the one that counts.
+            if followedAhead == followed { opinion = saved }
+        } catch {
+            errorMessage = reportError(error)
+        }
     }
 
     func setFavorite(_ favorite: Bool) async {
