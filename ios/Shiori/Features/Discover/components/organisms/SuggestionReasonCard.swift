@@ -20,7 +20,7 @@ struct SuggestionReasonCard: View {
                 .tracking(0.3)
                 .foregroundStyle(.white.opacity(0.75))
                 .padding(.bottom, -2)
-            HStack(alignment: .top, spacing: 14) {
+            HStack(alignment: .top, spacing: covers.count > 1 ? 14 : 20) {
                 if !covers.isEmpty {
                     coverStack
                 }
@@ -58,9 +58,9 @@ struct SuggestionReasonCard: View {
         Array(references.filter { $0.coverURL != nil }.prefix(2))
     }
 
-    /// A cover alone is as tall as the reason's three or four lines, so no
-    /// hole opens under the text; two stacked keep their room to fan out.
-    private var coverWidth: CGFloat { covers.count > 1 ? 64 : 56 }
+    /// A cover alone, set apart from the text, narrows the reason to four
+    /// lines as tall as the cover; two stacked keep their room to fan out.
+    private var coverWidth: CGFloat { 64 }
 
     private var coverStack: some View {
         ZStack(alignment: .topLeading) {
