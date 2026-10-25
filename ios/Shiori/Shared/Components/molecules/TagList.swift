@@ -19,6 +19,8 @@ struct TagList: View {
 struct Pill: View {
     let text: String
     var systemImage: String?
+    /// The word's font: a caption, unless the pill stands beside larger text.
+    var font: Font = .caption
     /// A pill that stands for a status takes that status's colour, as the
     /// library row's chips do. Nil draws the neutral grey of a plain fact.
     var tint: Color?
@@ -39,7 +41,7 @@ struct Pill: View {
         // A pill is one short fact: "7h37" split over two lines reads as two.
         .lineLimit(1)
         .fixedSize()
-        .font(.caption)
+        .font(font)
         .padding(.horizontal, 10)
         .padding(.vertical, 4)
         .foregroundStyle(tint.map(AnyShapeStyle.init) ?? AnyShapeStyle(.primary))

@@ -24,8 +24,11 @@ struct BookPage: View {
     let onEditNote: () -> Void
     let onEditField: (BookField) -> Void
     /// The volumes of its saga the reader holds, this one among them. Empty
-    /// draws no row: a book on its own, or volumes not read yet.
+    /// while they are on their way: the row then holds this volume alone.
     var seriesVolumes: [Book] = []
+    /// How many volumes the saga has, for the row's count: nil while nobody
+    /// has catalogued it.
+    var seriesVolumeCount: Int? = nil
     var onOpenVolume: (Book) -> Void = { _ in }
     /// The editions of this book the reader awaits in the app's language.
     var awaited: [AwaitedEdition] = []
@@ -184,7 +187,7 @@ struct BookPage: View {
 
     private var facts: some View {
         VStack(alignment: .leading, spacing: 12) {
-            RowHeader(title: "Informations", detail: String(localized: "Modifier"), action: onEdit)
+            RowHeader(title: "Informations", detail: String(localized: "modifier"), action: onEdit)
                 .accessibilityIdentifier("book-edit-facts")
             FactGrid(tiles: factTiles)
             storeLinks
@@ -291,21 +294,19 @@ struct BookPage: View {
         }
     }
 
+    /// The saga under its own name, as the TV app heads a season: how many of
+    /// its volumes the reader holds, and those volumes as covers — this one
+    /// alone until the others arrive, or when it is the only one held.
     @ViewBuilder private var series: some View {
-        if let membership = book.series, seriesVolumes.count > 1 {
+        if let membership = book.series {
             SeriesVolumesRow(
                 name: membership.name,
-                volumes: seriesVolumes,
+                volumes: seriesVolumes.isEmpty ? [book] : seriesVolumes,
+                volumeCount: seriesVolumeCount,
                 currentId: book.id,
                 onOpenSeries: onOpenSeries,
                 onOpenVolume: onOpenVolume
             )
-        } else if let membership = book.series {
-            // Alone on the shelf, the saga is a link rather than a row of one.
-            VStack(alignment: .leading, spacing: 12) {
-                RowHeader(title: "Série", detail: membership.name, action: onOpenSeries)
-                    .accessibilityIdentifier("book-series")
-            }
         }
     }
 
@@ -465,7 +466,7 @@ extension Book {
 }
 
 private extension BookPage {
-    init(previewing book: Book, volumes: [Book] = []) {
+    init(previewing book: Book, volumes: [Book] = [], volumeCount: Int? = nil) {
         self.init(
             book: book,
             isSaving: false,
@@ -477,14 +478,15 @@ private extension BookPage {
             onEditRecommendation: {},
             onEditNote: {},
             onEditField: { _ in },
-            seriesVolumes: volumes
+            seriesVolumes: volumes,
+            seriesVolumeCount: volumeCount
         )
     }
 }
 
 #Preview("Reading") {
     NavigationStack {
-        BookPage(previewing: .preview)
+        BookPage(previewing: .preview, volumeCount: 3)
     }
 }
 

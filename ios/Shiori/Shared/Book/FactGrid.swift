@@ -1,9 +1,10 @@
 import SwiftUI
 
-/// One fact of a book as a tile, as Photos' info panel sets them: a small
-/// caption over the value, chips under it where the fact has parts — a genre
-/// and its subgenres. A tile the page lets the reader correct answers the tap,
-/// its value in the tint with a chevron; an unknown value says so, dimmed.
+/// One fact of a book as a tile, as the TV app's "Informations" sets them: a
+/// small caption over the value, chips beside it where the fact has parts — a
+/// genre and its subgenres. A tile the page lets the reader correct answers
+/// the tap, a chevron after the value where it opens a choice; an unknown
+/// value says so, dimmed.
 struct FactTile: Identifiable {
     let id: String
     let title: LocalizedStringKey
@@ -12,7 +13,7 @@ struct FactTile: Identifiable {
     var chips: [String] = []
     /// Takes the whole width of the grid rather than a column.
     var isWide = false
-    var valueFont: Font = .subheadline.weight(.semibold)
+    var valueFont: Font = .body.weight(.semibold)
     /// What an unknown value reads as: "Non renseigné" for a fact, a dash
     /// for a day not reached yet.
     var placeholder: String = String(localized: "Non renseigné")
@@ -22,12 +23,14 @@ struct FactTile: Identifiable {
     var action: (() -> Void)?
 }
 
-/// Facts as a grid of tiles parted by hairlines, two to a row — three for the
-/// reading's days — a wide tile alone on its row and a last odd tile across
-/// the width, so the grid never ends on a hole.
+/// Facts as a grid of tiles parted by hairlines and bordered by one, two to a
+/// row — three for the reading's days — a wide tile alone on its row and a
+/// last odd tile across the width, so the grid never ends on a hole.
 struct FactGrid: View {
     let tiles: [FactTile]
     var columns = 2
+
+    private static let cornerRadius: CGFloat = 14
 
     var body: some View {
         Grid(horizontalSpacing: 1, verticalSpacing: 1) {
@@ -41,8 +44,12 @@ struct FactGrid: View {
                 }
             }
         }
-        .background(Color(.separator).opacity(0.6))
-        .clipShape(.rect(cornerRadius: 16))
+        .background(Color(.separator))
+        .clipShape(.rect(cornerRadius: Self.cornerRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: Self.cornerRadius)
+                .strokeBorder(Color(.separator), lineWidth: 1)
+        }
     }
 
     /// The tiles in rows: a wide one alone, the others `columns` at a time.
@@ -64,32 +71,28 @@ struct FactGrid: View {
 
     @ViewBuilder
     private func cell(_ tile: FactTile) -> some View {
-        let content = VStack(alignment: .leading, spacing: 4) {
+        let content = VStack(alignment: .leading, spacing: 5) {
             Text(tile.title)
-                .font(.caption2.weight(.semibold))
+                .font(.footnote)
                 .textCase(.uppercase)
-                .tracking(0.4)
+                .tracking(0.3)
                 .foregroundStyle(.secondary)
-            HStack(alignment: .firstTextBaseline, spacing: 3) {
-                Text(tile.value ?? tile.placeholder)
-                    .font(tile.value == nil ? .subheadline : tile.valueFont)
-                    .foregroundStyle(tile.value == nil ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                if tile.showsChevron {
-                    Image(systemName: "chevron.right")
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(.tertiary)
+            if tile.chips.isEmpty {
+                value(tile)
+            } else {
+                // The parts beside the value, wrapping under it when they
+                // run out of room: "Science-fiction › [Post-apocalyptique]".
+                PillFlow(spacing: 8) {
+                    value(tile)
+                    ForEach(tile.chips, id: \.self) { chip in
+                        Pill(text: chip, font: .caption.weight(.semibold))
+                    }
                 }
-            }
-            if !tile.chips.isEmpty {
-                TagList(tags: tile.chips, systemImage: "tag")
-                    .padding(.top, 2)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(.horizontal, 14)
-        .padding(.vertical, 11)
+        .padding(.vertical, 12)
         .background(Color(.secondarySystemGroupedBackground))
 
         if let action = tile.action {
@@ -102,6 +105,21 @@ struct FactGrid: View {
                 .copyable(tile.value ?? "")
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("book-\(tile.id)")
+        }
+    }
+
+    private func value(_ tile: FactTile) -> some View {
+        HStack(alignment: .center, spacing: 4) {
+            Text(tile.value ?? tile.placeholder)
+                .font(tile.value == nil ? .body : tile.valueFont)
+                .foregroundStyle(tile.value == nil ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+            if tile.showsChevron {
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.tertiary)
+            }
         }
     }
 }

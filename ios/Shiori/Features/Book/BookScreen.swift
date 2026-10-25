@@ -71,6 +71,7 @@ struct BookScreen: View {
                     // This volume as the page has it, its status just changed
                     // included.
                     seriesVolumes: viewModel.sagaVolumes.map { $0.id == book.id ? book : $0 },
+                    seriesVolumeCount: viewModel.sagaVolumeCount,
                     onOpenVolume: { openVolume = $0 },
                     awaited: viewModel.offer.awaited,
                     onOpenAwaited: { openAwaited = $0 },
