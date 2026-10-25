@@ -34,8 +34,10 @@ def stamp_tracked_files(top: str) -> int:
     pending.discard('')
     # Newest commit first; `-m` lists what a merge brought in, so a file only ever
     # changed on a merged branch is found too. The same history gives the same times.
+    # Rename detection would compare blob contents, fetching them one by one from a
+    # blobless clone: ninety seconds on 2026-10-25 for what the trees alone say.
     log = subprocess.Popen(
-        ['git', 'log', '-m', '--format=%x00%ct', '--name-only'],
+        ['git', 'log', '-m', '--no-renames', '--format=%x00%ct', '--name-only'],
         cwd=top, stdout=subprocess.PIPE, text=True,
     )
     stamped = 0
