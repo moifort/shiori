@@ -133,7 +133,7 @@ struct BookPage: View {
                 if let step = NextStep(status: book.status) {
                     primaryButton(step)
                 } else {
-                    readButton
+                    statusButton
                 }
                 ratingButton(prominent: false)
                 noteButton
@@ -161,28 +161,28 @@ struct BookPage: View {
         .accessibilityIdentifier("book-next-step")
     }
 
-    /// Where a book read stands, in the place of the next step: "✓ Lu", which
-    /// opens the full choice of status, as the "…" menu does, for a book read
-    /// again or given up after all.
-    private var readButton: some View {
+    /// Where a book read or given up stands, in the place of the next step:
+    /// "✓ Lu" or "👎 Abandonné", which opens the full choice of status, for a
+    /// book read again or picked up after all.
+    private var statusButton: some View {
         Menu {
             statusPicker
         } label: {
-            HeroButtonLabel(title: "Lu", systemImage: "checkmark")
+            HeroButtonLabel(title: LocalizedStringKey(book.status.label), systemImage: book.status.symbol)
         }
         .menuStyle(.button)
         .buttonStyle(.glassProminent)
         .tint(.white)
         .foregroundStyle(.black)
-        .accessibilityIdentifier("book-read-status")
+        .accessibilityIdentifier(book.status == .dropped ? "book-dropped-status" : "book-read-status")
     }
 
-    /// Every state a book moves through, the one it is in ticked: names only,
-    /// since the tick marks the one chosen and "Lu" has a tick of its own.
+    /// Every state a book can be in, given up included, each with its symbol
+    /// as the library filter draws it, the one it is in ticked.
     private var statusPicker: some View {
         Picker(selection: Binding(get: { book.status }, set: onSetStatus)) {
-            ForEach(ReadingStatus.progression) { status in
-                Text(status.label).tag(status)
+            ForEach(ReadingStatus.progression + [.dropped]) { status in
+                Label(status.label, systemImage: status.symbol).tag(status)
             }
         } label: {
             Text("Statut")
@@ -408,7 +408,8 @@ struct BookPage: View {
 }
 
 /// The step a book waits for, which the hero's first button takes. None for a
-/// book read: moving it back to reading clears the day it was finished.
+/// book read — moving it back to reading clears the day it was finished — nor
+/// for one given up: the button says where it stands instead.
 struct NextStep: Equatable {
     let title: LocalizedStringKey
     let systemImage: String
@@ -420,10 +421,8 @@ struct NextStep: Equatable {
             (title, systemImage, self.status) = ("Commencer", "book.fill", .reading)
         case .reading:
             (title, systemImage, self.status) = ("Marquer lu", "checkmark", .read)
-        case .read:
+        case .read, .dropped:
             return nil
-        case .dropped:
-            (title, systemImage, self.status) = ("Reprendre", "arrow.uturn.backward", .reading)
         }
     }
 }

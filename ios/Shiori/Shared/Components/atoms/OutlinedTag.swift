@@ -5,6 +5,9 @@ import SwiftUI
 /// behind it, so the print under the word never fights it.
 struct OutlinedTag: View {
     let text: String
+    /// Frosted glass behind the word, for a cover whose print would fight it.
+    /// Off on a ground already smooth: the book hero's colours.
+    var isFrosted = true
 
     var body: some View {
         Text(text)
@@ -13,9 +16,11 @@ struct OutlinedTag: View {
             .padding(.horizontal, 4)
             .padding(.vertical, 1)
             .background {
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(.ultraThinMaterial)
-                    .environment(\.colorScheme, .dark)
+                if isFrosted {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(.ultraThinMaterial)
+                        .environment(\.colorScheme, .dark)
+                }
             }
             .overlay { RoundedRectangle(cornerRadius: 3).strokeBorder(.white.opacity(0.75), lineWidth: 1) }
             .fixedSize()

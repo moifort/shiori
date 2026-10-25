@@ -136,15 +136,9 @@ struct BookHero<Actions: View>: View {
     }
 
     /// What the reader decided of the book that its page does not otherwise
-    /// say: given up, kept out of the shared libraries, an edition awaited.
+    /// say: kept out of the shared libraries, an edition awaited. Given up is
+    /// the first button's to say.
     @ViewBuilder private var marks: some View {
-        if book.status == .dropped {
-            Image(systemName: "hand.thumbsdown")
-                .foregroundStyle(.white.opacity(0.7))
-                .fixedSize()
-                .accessibilityLabel(Text("Abandonné"))
-                .accessibilityIdentifier("book-dropped-mark")
-        }
         if book.hidden {
             Image(systemName: "eye.slash")
                 .foregroundStyle(.white.opacity(0.7))
@@ -183,7 +177,8 @@ struct BookHero<Actions: View>: View {
                 // Only a recording is tagged: paper is what a book is taken
                 // to be, and the facts under the hero name its format.
                 if book.format == .audiobook {
-                    OutlinedTag(text: String(localized: "Audio"))
+                    // Clear over the hero's colours: no glass behind the word.
+                    OutlinedTag(text: String(localized: "Audio"), isFrosted: false)
                 }
             }
             if let progress = book.listeningProgress {
