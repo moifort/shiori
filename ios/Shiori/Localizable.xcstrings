@@ -161,6 +161,22 @@
         }
       }
     },
+    "%@ l'a abandonné" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ gave up on it"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ l'a abandonné"
+          }
+        }
+      }
+    },
     "%@ l'a adoré" : {
       "localizations" : {
         "en" : {
@@ -173,6 +189,182 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ l'a adoré"
+          }
+        }
+      }
+    },
+    "%@ l'a commencé aujourd'hui" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ started it today"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ l'a commencé aujourd'hui"
+          }
+        }
+      }
+    },
+    "%@ l'a lu" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ read it"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ l'a lu"
+          }
+        }
+      }
+    },
+    "%@ l'a lu le %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ read it on %2$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ l'a lu le %2$@"
+          }
+        }
+      }
+    },
+    "%@ l'a écouté" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ listened to it"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ l'a écouté"
+          }
+        }
+      }
+    },
+    "%@ l'a écouté le %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ listened to it on %2$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ l'a écouté le %2$@"
+          }
+        }
+      }
+    },
+    "%@ l'écoute depuis %lld jours" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ has been listening for %2$lld days"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ l'écoute depuis %2$lld jours"
+          }
+        }
+      }
+    },
+    "%@ l'écoute depuis hier" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ has been listening since yesterday"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ l'écoute depuis hier"
+          }
+        }
+      }
+    },
+    "%@ l'écoute en ce moment" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is listening to it"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ l'écoute en ce moment"
+          }
+        }
+      }
+    },
+    "%@ le lit depuis %lld jours" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ has been reading it for %2$lld days"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ le lit depuis %2$lld jours"
+          }
+        }
+      }
+    },
+    "%@ le lit depuis hier" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ has been reading it since yesterday"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ le lit depuis hier"
+          }
+        }
+      }
+    },
+    "%@ le lit en ce moment" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is reading it"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ le lit en ce moment"
           }
         }
       }
@@ -4417,6 +4609,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cœurs, puis étoiles"
+          }
+        }
+      }
+    },
+    "Dans la pile de %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On %@'s pile"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dans la pile de %@"
           }
         }
       }

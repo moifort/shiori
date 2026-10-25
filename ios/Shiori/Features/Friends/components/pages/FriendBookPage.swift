@@ -73,11 +73,45 @@ struct FriendBookPage: View {
         }
     }
 
-    /// Where the friend stands, under their name: "Camille · lu le 15 oct.",
-    /// as the home's card says it of the reader's own.
+    /// Where the friend stands, said as a sentence about them: "Camille l'a lu
+    /// le 15 octobre", "Camille le lit depuis 3 jours", "Dans la pile de
+    /// Camille" — heard rather than read for a recording.
     private var friendState: BookState {
-        let reading = BookState.reading(of: book)
-        return BookState(text: "\(friendName) · \(reading.text)", tint: reading.tint)
+        let tint = book.status.tint
+        let heard = book.format == .audiobook
+        let name = friendName
+        let text: String
+        switch book.status {
+        case .read:
+            if let finished = book.finishedAt {
+                let day = finished.formatted(.dateTime.day().month(.wide))
+                text = heard
+                    ? String(localized: "\(name) l'a écouté le \(day)")
+                    : String(localized: "\(name) l'a lu le \(day)")
+            } else {
+                text = heard ? String(localized: "\(name) l'a écouté") : String(localized: "\(name) l'a lu")
+            }
+        case .reading:
+            guard let started = book.startedAt else {
+                text = heard ? String(localized: "\(name) l'écoute en ce moment") : String(localized: "\(name) le lit en ce moment")
+                break
+            }
+            let days = started.daysAgo()
+            if days == 0 {
+                text = String(localized: "\(name) l'a commencé aujourd'hui")
+            } else if days == 1 {
+                text = heard ? String(localized: "\(name) l'écoute depuis hier") : String(localized: "\(name) le lit depuis hier")
+            } else {
+                text = heard
+                    ? String(localized: "\(name) l'écoute depuis \(days) jours")
+                    : String(localized: "\(name) le lit depuis \(days) jours")
+            }
+        case .toRead:
+            text = String(localized: "Dans la pile de \(name)")
+        case .dropped:
+            text = String(localized: "\(name) l'a abandonné")
+        }
+        return BookState(text: text, tint: tint)
     }
 
     /// The way onto the reader's shelf white, then what the friend made of
