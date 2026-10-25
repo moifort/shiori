@@ -4,9 +4,9 @@ import SwiftUI
 /// episodes under the one playing: the saga's name over the row, the way to
 /// its screen, then each volume as the home's pile sets its covers — the
 /// number inside the cover's blurred foot — the volume open on the page
-/// ringed. The volumes the reader lacks sit between theirs, dimmed, with the
-/// series tab's "+" — or its clock and orange date for one announced — and
-/// open the saga's screen, where they are added. They come from a catalogue
+/// ringed. The volumes the reader lacks sit between theirs, dimmed — with a
+/// clock and an orange date for one announced — and open the saga's screen,
+/// where they are added. They come from a catalogue
 /// already built: building one costs a model call this row must never make.
 struct SeriesVolumesRow: View {
     let name: String
@@ -45,7 +45,7 @@ struct SeriesVolumesRow: View {
                     }
                 }
                 .scrollTargetLayout()
-                // Room for the ring around the current cover, for the badges
+                // Room for the ring around the current cover, for the clocks
                 // overhanging the lacking ones, and for the dates under the
                 // announced ones.
                 .padding(6)
@@ -94,8 +94,8 @@ struct SeriesVolumesRow: View {
         .accessibilityAddTraits(isCurrent ? [.isButton, .isSelected] : .isButton)
     }
 
-    /// A volume the reader lacks, dimmed as the series tab dims it: "+" when
-    /// it is out, a clock and its day in orange when it is only announced.
+    /// A volume the reader lacks, dimmed, with no badge when it is out: a
+    /// clock and its day in orange when it is only announced.
     private func missingCover(
         id: String,
         number: Int?,
@@ -113,11 +113,10 @@ struct SeriesVolumesRow: View {
                 )
                 .opacity(forthcoming ? 0.3 : 0.45)
                 .overlay(alignment: .topTrailing) {
-                    CoverBadge(
-                        systemImage: forthcoming ? "clock" : "plus",
-                        tint: forthcoming ? .orange : .accentColor
-                    )
-                    .offset(x: 5, y: -5)
+                    if forthcoming {
+                        CoverBadge(systemImage: "clock", tint: .orange)
+                            .offset(x: 5, y: -5)
+                    }
                 }
                 // Hung under the cover rather than stacked with it: a lazy
                 // stack sizes itself on the covers it drew first, and a line
