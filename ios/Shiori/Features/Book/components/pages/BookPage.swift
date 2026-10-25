@@ -36,6 +36,11 @@ struct BookPage: View {
     /// it changes rather than over it.
     var secondPage: AnyView? = nil
 
+    /// Bumped by "Remarques" when the reader already wrote some: the page
+    /// holding them scrolls to them rather than opening the form again.
+    @State private var noteRequest = 0
+    private static let noteAnchor = "book-note-anchor"
+
     var body: some View {
         // On an unfolded iPhone Duo the book takes a page — the hero, what it
         // is, its saga — and the reader's own reading the other.
@@ -75,8 +80,16 @@ struct BookPage: View {
     // MARK: - Layout
 
     private func page(@ViewBuilder _ content: () -> some View) -> some View {
-        ScrollView {
-            VStack(spacing: 0) { content() }
+        let content = content()
+        return ScrollViewReader { proxy in
+            ScrollView {
+                VStack(spacing: 0) { content }
+            }
+            // Only the page that holds the remarks has their anchor: on an
+            // unfolded Duo the other one ignores the request.
+            .onChange(of: noteRequest) {
+                withAnimation(.smooth) { proxy.scrollTo(Self.noteAnchor, anchor: .center) }
+            }
         }
         .background(Color(.systemGroupedBackground))
         .disabled(isSaving)
@@ -117,10 +130,10 @@ struct BookPage: View {
             HStack(spacing: 8) {
                 if let step = NextStep(status: book.status) {
                     primaryButton(step)
-                    ratingButton(prominent: false)
                 } else {
-                    ratingButton(prominent: book.rating == nil)
+                    readButton
                 }
+                ratingButton(prominent: false)
                 noteButton
             }
             .font(.subheadline.weight(.semibold))
@@ -140,6 +153,29 @@ struct BookPage: View {
         .tint(.white)
         .foregroundStyle(.black)
         .accessibilityIdentifier("book-next-step")
+    }
+
+    /// Where a book read stands, in the place of the next step: "✓ Lu", which
+    /// opens the full choice of status, as the "…" menu does, for a book read
+    /// again or given up after all.
+    private var readButton: some View {
+        Menu {
+            Picker(selection: Binding(get: { book.status }, set: onSetStatus)) {
+                ForEach(ReadingStatus.progression) { status in
+                    Text(status.label).tag(status)
+                }
+            } label: {
+                Text("Statut")
+            }
+            .pickerStyle(.inline)
+        } label: {
+            HeroButtonLabel(title: "Lu", systemImage: "checkmark")
+        }
+        .menuStyle(.button)
+        .buttonStyle(.glassProminent)
+        .tint(.white)
+        .foregroundStyle(.black)
+        .accessibilityIdentifier("book-read-status")
     }
 
     /// The stars once given, else the way to give them. The saga's stars lent
@@ -171,9 +207,12 @@ struct BookPage: View {
     }
 
     /// The reader's remarks on the book, whatever its status: what they
-    /// thought of it so far, or once read.
+    /// thought of it so far, or once read. Once written, the button takes the
+    /// reader to them; their bubble opens the form.
     private var noteButton: some View {
-        Button(action: onEditNote) {
+        Button {
+            if book.note == nil { onEditNote() } else { noteRequest += 1 }
+        } label: {
             HeroButtonLabel(title: "Remarques", systemImage: "text.bubble")
         }
         .buttonStyle(.glass)
@@ -332,6 +371,7 @@ struct BookPage: View {
                     if let note = book.note {
                         MessageBubble(text: note, isMine: true, action: onEditNote)
                             .copyable(note)
+                            .id(Self.noteAnchor)
                             .accessibilityIdentifier("book-note")
                     }
                 }
