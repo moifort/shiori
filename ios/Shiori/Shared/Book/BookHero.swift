@@ -66,10 +66,7 @@ struct BookHero<Actions: View>: View {
                     .font(.title2.weight(.bold))
                     .lineLimit(4)
                     .minimumScaleFactor(0.8)
-                if isAwaited {
-                    AwaitedMark()
-                        .accessibilityIdentifier("book-awaited-mark")
-                }
+                marks
             }
             .foregroundStyle(.white)
             Text(book.authorLine)
@@ -91,6 +88,30 @@ struct BookHero<Actions: View>: View {
             CopyableValue(title: "Copier l'auteur", value: book.authors.joined(separator: ", ")),
             CopyableValue(title: "Copier le lecteur", value: book.narratorLine ?? ""),
         ])
+    }
+
+    /// Beside the title, what the reader decided of the book that its page
+    /// does not otherwise say: given up, kept out of the shared libraries,
+    /// an edition awaited.
+    @ViewBuilder private var marks: some View {
+        if book.status == .dropped {
+            Image(systemName: "hand.thumbsdown")
+                .foregroundStyle(.white.opacity(0.7))
+                .fixedSize()
+                .accessibilityLabel(Text("Abandonné"))
+                .accessibilityIdentifier("book-dropped-mark")
+        }
+        if book.hidden {
+            Image(systemName: "eye.slash")
+                .foregroundStyle(.white.opacity(0.7))
+                .fixedSize()
+                .accessibilityLabel(Text("Non partagé"))
+                .accessibilityIdentifier("book-hidden-mark")
+        }
+        if isAwaited {
+            AwaitedMark()
+                .accessibilityIdentifier("book-awaited-mark")
+        }
     }
 
     /// Over the title: the saga and the volume's place in it, as the TV app

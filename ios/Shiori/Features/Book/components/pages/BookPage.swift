@@ -142,13 +142,17 @@ struct BookPage: View {
         .fixedSize()
     }
 
-    /// The next step the book is waiting for.
+    /// The next step the book is waiting for on a tap, and every state it
+    /// moves through on a long press, the one it is in ticked.
     private func primaryButton(_ step: NextStep) -> some View {
-        Button {
-            onSetStatus(step.status)
+        Menu {
+            statusPicker
         } label: {
             HeroButtonLabel(title: step.title, systemImage: step.systemImage)
+        } primaryAction: {
+            onSetStatus(step.status)
         }
+        .menuStyle(.button)
         .buttonStyle(.glassProminent)
         .tint(.white)
         .foregroundStyle(.black)
@@ -160,14 +164,7 @@ struct BookPage: View {
     /// again or given up after all.
     private var readButton: some View {
         Menu {
-            Picker(selection: Binding(get: { book.status }, set: onSetStatus)) {
-                ForEach(ReadingStatus.progression) { status in
-                    Text(status.label).tag(status)
-                }
-            } label: {
-                Text("Statut")
-            }
-            .pickerStyle(.inline)
+            statusPicker
         } label: {
             HeroButtonLabel(title: "Lu", systemImage: "checkmark")
         }
@@ -176,6 +173,20 @@ struct BookPage: View {
         .tint(.white)
         .foregroundStyle(.black)
         .accessibilityIdentifier("book-read-status")
+    }
+
+    /// Every state a book moves through, the one it is in ticked: names only,
+    /// since the tick marks the one chosen and "Lu" has a tick of its own.
+    private var statusPicker: some View {
+        Picker(selection: Binding(get: { book.status }, set: onSetStatus)) {
+            ForEach(ReadingStatus.progression) { status in
+                Text(status.label).tag(status)
+            }
+        } label: {
+            Text("Statut")
+        }
+        .pickerStyle(.inline)
+        .accessibilityIdentifier("book-status")
     }
 
     /// The stars once given, else the way to give them. The saga's stars lent

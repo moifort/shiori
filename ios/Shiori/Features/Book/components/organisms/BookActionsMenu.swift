@@ -15,9 +15,9 @@ enum BookMenuAction {
     case delete
 }
 
-/// The "…" in a book's corner. The page's hero takes the book to its next
-/// state and the series opens from its row: the menu holds the full choice of
-/// status, sharing, and what the page does not draw.
+/// The "…" in a book's corner. The page's hero holds the book's status — its
+/// next step on a tap, the full choice on a long press — and the series opens
+/// from its row: the menu holds sharing and what the page does not draw.
 struct BookActionsMenu: View {
     let book: Book
     /// What may be awaited of it in the app's language, and what is.
@@ -28,21 +28,6 @@ struct BookActionsMenu: View {
 
     var body: some View {
         Menu {
-            // Every state a book moves through, the one it is in ticked: the
-            // hero's button only ever offers the next one.
-            Picker(selection: Binding(get: { book.status }, set: { onAction(.setStatus($0)) })) {
-                // Names only: the tick marks the one chosen, and the symbol of
-                // "Lu" is a tick of its own.
-                ForEach(ReadingStatus.progression) { status in
-                    Text(status.label).tag(status)
-                }
-            } label: {
-                Label("Statut", systemImage: book.status.symbol)
-                Text(book.status.label)
-            }
-            .pickerStyle(.menu)
-            .accessibilityIdentifier("book-status")
-
             Button("Modifier", systemImage: "pencil") {
                 onAction(.edit)
             }
@@ -50,7 +35,7 @@ struct BookActionsMenu: View {
 
             // What a reader most often wanted from looking a record up again:
             // a better cover. Picked among those found, free, with no AI.
-            Button("Changer la couverture", systemImage: "photo") {
+            Button("Couverture", systemImage: "photo") {
                 onAction(.chooseCover)
             }
             .accessibilityIdentifier("book-cover")
