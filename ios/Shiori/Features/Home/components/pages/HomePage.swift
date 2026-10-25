@@ -303,6 +303,10 @@ struct HomePage: View {
                         onFinish: { onAction(.finishBook(lead)) },
                         onOpenSeries: lead.series.map { series in { onAction(.openSeries(series.id)) } }
                     )
+                    // Another book started takes the lead in place of this one,
+                    // rather than the card rewriting its title.
+                    .id(lead.id)
+                    .transition(.homeCard)
                 } else {
                     ReadingLeadCard(
                         book: lead,
@@ -311,6 +315,8 @@ struct HomePage: View {
                         onFinish: { onAction(.finishBook(lead)) },
                         onRate: { onAction(.rateBook(lead)) }
                     )
+                    .id(lead.id)
+                    .transition(.homeCard)
                 }
                 // The others under it on the open Duo; a phone keeps to the lead.
                 if !isCompact, dashboard.reading.count > 1 {
@@ -372,6 +378,7 @@ struct HomePage: View {
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
                         ForEach(tiles, id: \.id) { tile in
                             NewsTile(book: tile.book, caption: tile.caption, captionTint: tile.tint, onOpen: tile.open)
+                                .transition(.homeCard)
                         }
                     }
                 }
@@ -405,6 +412,7 @@ struct HomePage: View {
                                     onAction(.openSeries(series.id))
                                 }
                                 .frame(width: 250, height: Self.seriesCardHeight)
+                                .transition(.homeCard)
                             }
                         }
                         .scrollTargetLayout()
@@ -426,6 +434,7 @@ struct HomePage: View {
                             SeriesShowCard(series: series, tag: releaseTag(of: series)) {
                                 onAction(.openSeries(series.id))
                             }
+                            .transition(.homeCard)
                         }
                     }
                 }

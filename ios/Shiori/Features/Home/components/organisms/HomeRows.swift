@@ -1,5 +1,14 @@
 import SwiftUI
 
+extension AnyTransition {
+    /// A card arriving in one of the home's rows, or leaving it, when a
+    /// refresh lands: it grows into its place as the others make room, so the
+    /// reader sees what came in.
+    static var homeCard: AnyTransition {
+        .scale(scale: 0.8).combined(with: .opacity)
+    }
+}
+
 /// The year's reading as the App Store sets an app's figures under its name:
 /// each a figure over what it counts in small capitals, parted by hairlines,
 /// with nothing else drawn — no mark, no box, no chevron. The books, pages and
@@ -283,6 +292,7 @@ struct PosterRow: View {
                     .accessibilityLabel(Text("\(item.book.title), \(item.caption)"))
                     .accessibilityAddTraits(.isButton)
                     .accessibilityIdentifier("book-tile")
+                    .transition(.homeCard)
                 }
             }
             .scrollTargetLayout()
@@ -364,6 +374,7 @@ struct CoverRow: View {
                     .buttonStyle(.plain)
                     .accessibilityElement(children: .combine)
                     .accessibilityIdentifier("book-tile")
+                    .transition(.homeCard)
                 }
             }
             .scrollTargetLayout()
