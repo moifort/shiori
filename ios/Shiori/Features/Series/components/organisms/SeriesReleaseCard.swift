@@ -14,21 +14,32 @@ struct SeriesReleaseCard: View {
     let isAudio: Bool
     let onOpen: () -> Void
 
+    /// The card's height with a one-line title; a second line adds to it.
     private static let height: CGFloat = 124
+    /// Tall enough to fill the card with a two-line title.
+    private static let coverHeight: CGFloat = 150
     private static let coverWidth: CGFloat = 82
     /// The calendar leaf's width and its margin, kept clear by the text.
     private static let leafRoom: CGFloat = 48
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
-            BookCover(
-                book: book,
-                width: Self.coverWidth,
-                showsFormatBadge: false,
-                minHeight: Self.height,
-                cornerRadius: 0
-            )
-            .accessibilityHidden(true)
+            // The cover runs the card's full height, however tall a long
+            // title makes it, cropped at its foot rather than letterboxed.
+            Color.clear
+                .frame(width: Self.coverWidth)
+                .frame(maxHeight: .infinity)
+                .overlay(alignment: .top) {
+                    BookCover(
+                        book: book,
+                        width: Self.coverWidth,
+                        showsFormatBadge: false,
+                        minHeight: Self.coverHeight,
+                        cornerRadius: 0
+                    )
+                }
+                .clipped()
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
                 // At the card's top, clear of the calendar leaf in its corner:
                 // the author and the volume's place over the title, as the
@@ -47,7 +58,7 @@ struct SeriesReleaseCard: View {
                     OutlinedTag(text: countdown.localizedUppercase, isFrosted: false)
                         .padding(.top, 3)
                 }
-                Spacer(minLength: 0)
+                Spacer(minLength: 8)
                 // The next step at the card's foot.
                 if let store {
                     preorderButton(store)
@@ -58,7 +69,8 @@ struct SeriesReleaseCard: View {
             .padding(.vertical, 12)
             .padding(.trailing, 12)
         }
-        .frame(height: Self.height)
+        .frame(minHeight: Self.height)
+        .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(.rect)
         .onTapGesture(perform: onOpen)

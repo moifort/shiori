@@ -98,7 +98,7 @@ enum ReleaseDateText {
 struct ReleaseDateBadge: View {
     let date: String
     /// Over a card's own colours: in white with the month dimmed, on a
-    /// plain blur ringed in white.
+    /// light blur ringed in white.
     var onGlass = false
 
     var body: some View {
@@ -120,7 +120,13 @@ struct ReleaseDateBadge: View {
         if onGlass {
             leaf
                 .foregroundStyle(.white)
-                .background(.ultraThinMaterial, in: .rect(cornerRadius: 10))
+                .background {
+                    // A blur that lets the card's colours through, rather
+                    // than the material's full tint.
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(.ultraThinMaterial)
+                        .opacity(0.5)
+                }
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(.white, lineWidth: 1))
         } else {
             leaf.overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary))
