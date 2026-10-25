@@ -2,7 +2,8 @@ import SwiftUI
 
 /// How far a recording got, on a small bar, and what is left to hear, as the
 /// TV app says the minutes left of an episode: "11h18 restantes", the units
-/// set against their figures. Without a running time, the share heard. Drawn
+/// set against their figures, then the share heard: "11h18 restantes · 46%",
+/// the sign against its figure. Without a running time, the share alone. Drawn
 /// in white: it sits on a cover's colours, on the home's card and a book's
 /// hero alike.
 struct ListeningProgressLine: View {
@@ -22,7 +23,7 @@ struct ListeningProgressLine: View {
                         .fill(.white)
                         .frame(width: Self.width * CGFloat(clamped) / 100, height: 4)
                 }
-            Text(remaining ?? String(localized: "\(progress)% écouté"))
+            Text(remaining.map { "\($0) · \(clamped)%" } ?? String(localized: "\(progress)% écouté"))
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.white)
                 .lineLimit(1)
