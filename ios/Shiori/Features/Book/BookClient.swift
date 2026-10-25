@@ -28,18 +28,9 @@ struct BookClient: Sendable {
     var offer: @Sendable (_ bookId: String) async throws -> EditionOffer?
     var awaitEdition: @Sendable (_ bookId: String, ReleaseFormat) async throws -> AwaitedEdition
     var stopAwaiting: @Sendable (_ editionId: String) async throws -> Void
-    /// The volumes of the book's saga the reader holds and how many it has,
-    /// for the row under its facts. None by default: a test or a preview that
-    /// draws no saga leaves it.
-    var sagaVolumes: @Sendable (_ seriesId: String, BookLanguage?) async throws -> SagaShelf = { _, _ in SagaShelf() }
-}
-
-/// A saga as a book's page draws it: the volumes the reader holds, in the
-/// order the saga runs, and how many it has by its catalogue — nil until
-/// somebody builds it, which a book's page never does.
-struct SagaShelf: Sendable {
-    var volumes: [Book] = []
-    var volumeCount: Int?
+    /// The volumes of the book's saga the reader holds, for the row under its
+    /// facts. None by default: a test or a preview that draws no saga leaves it.
+    var sagaVolumes: @Sendable (_ seriesId: String, BookLanguage?) async throws -> [Book] = { _, _ in [] }
 }
 
 extension BookClient {

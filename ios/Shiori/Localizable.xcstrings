@@ -937,22 +937,6 @@
         }
       }
     },
-    "%lld sur %lld tomes" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld of %2$lld volumes"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld sur %2$lld tomes"
-          }
-        }
-      }
-    },
     "%lld sur %lld écoutés" : {
       "localizations" : {
         "en" : {
@@ -11437,22 +11421,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Séries indisponibles"
-          }
-        }
-      }
-    },
-    "T%lld" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "V%lld"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "T%lld"
           }
         }
       }

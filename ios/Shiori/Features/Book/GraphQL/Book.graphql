@@ -165,19 +165,11 @@ query EditVocabulary {
   }
 }
 
-# The volumes of a book's saga the reader holds, for the row under its facts,
-# and how many the saga has, for its count: the stored catalogue's spine when
-# somebody built it, else the reader's own count. `waitForCatalogue: false`
-# never calls the model: a saga nobody catalogued answers with the volumes
-# held and `awaitingCatalogue` set, which the row reads as a count unknown.
+# The volumes of a book's saga the reader holds, for the row under its facts:
+# the reader's own books only, never the catalogue, whose first build is a
+# model call no opening of a book may make.
 query BookSagaVolumes($seriesId: SeriesId!, $language: BookLanguage) {
   mySeriesVolumes(seriesId: $seriesId, language: $language) {
     ...BookSummary
-  }
-  series(id: $seriesId, language: $language, waitForCatalogue: false) {
-    awaitingCatalogue
-    spine {
-      number
-    }
   }
 }

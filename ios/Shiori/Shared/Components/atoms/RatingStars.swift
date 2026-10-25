@@ -2,21 +2,31 @@ import SwiftUI
 
 /// Stars as a row draws them, half stars included. Inherited ones — a saga's
 /// rating lent to a volume the reader left unrated — are grey rather than
-/// yellow, so a judgement given is told from one lent at a glance.
+/// yellow, so a judgement given is told from one lent at a glance. Monochrome
+/// ones take the text's colour, for a button that keeps to one colour.
 struct RatingStars: View {
     let rating: Double
     var total: Int = 5
     var font: Font = .caption2
     var inherited: Bool = false
+    /// In the text's colour rather than yellow: the book hero's button.
+    var monochrome: Bool = false
 
-    private var filled: Color { inherited ? .secondary : .yellow }
+    private var filled: AnyShapeStyle {
+        if monochrome { return AnyShapeStyle(.primary) }
+        return inherited ? AnyShapeStyle(.secondary) : AnyShapeStyle(.yellow)
+    }
+
+    private var empty: AnyShapeStyle {
+        monochrome ? AnyShapeStyle(.primary.opacity(0.35)) : AnyShapeStyle(.gray.opacity(0.3))
+    }
 
     var body: some View {
         HStack(spacing: 1) {
             ForEach(1...total, id: \.self) { star in
                 let symbol = StarSymbol(star: star, rating: rating)
                 Image(systemName: symbol.name)
-                    .foregroundStyle(symbol == .empty ? .gray.opacity(0.3) : filled)
+                    .foregroundStyle(symbol == .empty ? empty : filled)
                     .font(font)
             }
         }
@@ -73,6 +83,10 @@ extension Double {
 
 #Preview("3.5 of 5") {
     RatingStars(rating: 3.5)
+}
+
+#Preview("Monochrome") {
+    RatingStars(rating: 3.5, font: .footnote, monochrome: true)
 }
 
 #Preview("5 of 5") {

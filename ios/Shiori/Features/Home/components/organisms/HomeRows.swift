@@ -246,45 +246,12 @@ struct PosterRow: View {
     var coverWidth: CGFloat = 102
     let onOpen: (Book) -> Void
 
-    private static let cornerRadius: CGFloat = 8
-
     var body: some View {
         ScrollView(.horizontal) {
             LazyHStack(alignment: .top, spacing: 13) {
                 ForEach(items) { item in
                     Button { item.open?() ?? onOpen(item.book) } label: {
-                        BookCover(book: item.book, width: coverWidth, showsFormatBadge: false, cornerRadius: Self.cornerRadius)
-                            // Dimmed a little, as the TV app's posters are: a
-                            // white cover no longer glares beside a dark one.
-                            .overlay {
-                                RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
-                                    .fill(.black.opacity(0.12))
-                            }
-                            .overlay { footBlur(item.book) }
-                            // A recording says so in a tag inside the corner,
-                            // as the card above it does, not with headphones.
-                            .overlay(alignment: .topTrailing) {
-                                if item.book.format == .audiobook {
-                                    OutlinedTag(text: String(localized: "Audio"))
-                                        .padding(6)
-                                }
-                            }
-                            .overlay(alignment: .bottom) {
-                                Text(item.caption)
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.white)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.8)
-                                    .shadow(color: .black.opacity(0.5), radius: 4)
-                                    .padding(.horizontal, 6)
-                                    .padding(.bottom, 9)
-                            }
-                            // The thin light rim inside the edge the TV app's
-                            // posters carry.
-                            .overlay {
-                                RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
-                                    .strokeBorder(.white.opacity(0.22), lineWidth: 1)
-                            }
+                        PosterCover(book: item.book, caption: item.caption, width: coverWidth)
                             .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
@@ -300,40 +267,6 @@ struct PosterRow: View {
         .scrollIndicators(.hidden)
         .scrollTargetBehavior(.viewAligned)
         .scrollClipDisabled()
-    }
-
-    /// The cover blurred into its foot, more the lower it goes, as the TV
-    /// app's tiles melt under their label: the print of a cover never fights
-    /// the line, and nothing darkens it.
-    private func footBlur(_ book: Book) -> some View {
-        // Scaled up before the blur, as CoverBackdrop does, so the edges
-        // blur on the cover itself rather than on the transparent corners.
-        Color.clear
-            .overlay {
-                if let url = book.coverURL {
-                    CoverImage(url: url) { Color.clear } fallback: { Color.clear }
-                        .scaleEffect(1.15)
-                        .blur(radius: 10, opaque: true)
-                }
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
-                    .fill(.black.opacity(0.12))
-            }
-            .clipShape(.rect(cornerRadius: Self.cornerRadius, style: .continuous))
-            .mask {
-                // Eased from the middle of the cover to its foot: a short
-                // straight ramp showed where the blur began.
-                LinearGradient(
-                    stops: (0...10).map { step in
-                        let t = Double(step) / 10
-                        return .init(color: .black.opacity(t * t * (3 - 2 * t)), location: 0.4 + 0.52 * t)
-                    },
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            }
-            .allowsHitTesting(false)
     }
 }
 

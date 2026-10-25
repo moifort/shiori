@@ -24,10 +24,8 @@ final class BookViewModel {
 
     /// What the page offers to await in the app's language, and what it awaits.
     private(set) var offer = EditionOffer()
-    /// The volumes of its saga the reader holds, for the row on its page, and
-    /// how many the saga has: nil until somebody catalogues it.
+    /// The volumes of its saga the reader holds, for the row on its page.
     private(set) var sagaVolumes: [Book] = []
-    private(set) var sagaVolumeCount: Int?
     /// An await refused, said in its own alert.
     var awaitFailed: String?
 
@@ -61,14 +59,10 @@ final class BookViewModel {
     func loadSagaVolumes() async {
         guard let series = book?.series else {
             sagaVolumes = []
-            sagaVolumeCount = nil
             return
         }
-        guard let shelf = try? await client.sagaVolumes(series.id, book?.language) else { return }
-        withAnimation(.snappy) {
-            sagaVolumes = shelf.volumes
-            sagaVolumeCount = shelf.volumeCount
-        }
+        guard let volumes = try? await client.sagaVolumes(series.id, book?.language) else { return }
+        withAnimation(.snappy) { sagaVolumes = volumes }
     }
 
     /// Describes a book added from a shelf photo, the first time its page

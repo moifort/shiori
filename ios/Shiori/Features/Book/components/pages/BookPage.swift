@@ -26,9 +26,6 @@ struct BookPage: View {
     /// The volumes of its saga the reader holds, this one among them. Empty
     /// while they are on their way: the row then holds this volume alone.
     var seriesVolumes: [Book] = []
-    /// How many volumes the saga has, for the row's count: nil while nobody
-    /// has catalogued it.
-    var seriesVolumeCount: Int? = nil
     var onOpenVolume: (Book) -> Void = { _ in }
     /// The editions of this book the reader awaits in the app's language.
     var awaited: [AwaitedEdition] = []
@@ -147,7 +144,9 @@ struct BookPage: View {
     private func ratingButton(prominent: Bool, showsIcon: Bool) -> some View {
         let label = Group {
             if let rating = book.rating {
-                RatingStars(rating: rating, font: .footnote)
+                // In the button's own colour, as the heart beside the
+                // title bar is: the hero keeps to white on glass.
+                RatingStars(rating: rating, font: .footnote, monochrome: true)
                     .frame(height: HeroButtonLabel.height)
             } else {
                 HeroButtonLabel(title: "Noter", systemImage: "star", showsIcon: showsIcon)
@@ -294,15 +293,14 @@ struct BookPage: View {
         }
     }
 
-    /// The saga under its own name, as the TV app heads a season: how many of
-    /// its volumes the reader holds, and those volumes as covers — this one
-    /// alone until the others arrive, or when it is the only one held.
+    /// The saga under its own name, as the TV app heads a season, and the
+    /// volumes the reader holds as covers — this one alone until the others
+    /// arrive, or when it is the only one held.
     @ViewBuilder private var series: some View {
         if let membership = book.series {
             SeriesVolumesRow(
                 name: membership.name,
                 volumes: seriesVolumes.isEmpty ? [book] : seriesVolumes,
-                volumeCount: seriesVolumeCount,
                 currentId: book.id,
                 onOpenSeries: onOpenSeries,
                 onOpenVolume: onOpenVolume
@@ -497,7 +495,7 @@ extension Book {
 }
 
 private extension BookPage {
-    init(previewing book: Book, volumes: [Book] = [], volumeCount: Int? = nil) {
+    init(previewing book: Book, volumes: [Book] = []) {
         self.init(
             book: book,
             isSaving: false,
@@ -509,15 +507,14 @@ private extension BookPage {
             onEditRecommendation: {},
             onEditNote: {},
             onEditField: { _ in },
-            seriesVolumes: volumes,
-            seriesVolumeCount: volumeCount
+            seriesVolumes: volumes
         )
     }
 }
 
 #Preview("Reading") {
     NavigationStack {
-        BookPage(previewing: .preview, volumeCount: 3)
+        BookPage(previewing: .preview)
     }
 }
 

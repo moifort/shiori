@@ -20,14 +20,12 @@ enum BookAPI {
         return data.book?.fragments.bookDetail.asBook
     }
 
-    /// The volumes of a saga the reader holds, in the order it runs, and how
-    /// many the saga has: the row under a book's facts and its count. Never a
-    /// model call: a saga nobody catalogued answers with its count unknown.
-    static func sagaVolumes(seriesId: String, language: BookLanguage?) async throws -> SagaShelf {
+    /// The volumes of a saga the reader holds, in the order it runs: the row
+    /// under a book's facts. Never the catalogue.
+    static func sagaVolumes(seriesId: String, language: BookLanguage?) async throws -> [Book] {
         #if DEBUG
         if Showcase.isOn {
-            let screen = Showcase.seriesScreen(id: seriesId)
-            return SagaShelf(volumes: screen.owned, volumeCount: screen.series?.spine.count)
+            return Showcase.seriesScreen(id: seriesId).owned
         }
         #endif
         let data = try await GraphQLHelpers.fetch(
@@ -37,10 +35,7 @@ enum BookAPI {
                 language: SeriesAPI.graphQLLanguage(language)
             )
         )
-        return SagaShelf(
-            volumes: data.mySeriesVolumes.map { $0.fragments.bookSummary.asBook },
-            volumeCount: data.series.flatMap { $0.awaitingCatalogue ? nil : $0.spine.count }
-        )
+        return data.mySeriesVolumes.map { $0.fragments.bookSummary.asBook }
     }
 
     static func add(_ draft: BookDraft) async throws -> Book {

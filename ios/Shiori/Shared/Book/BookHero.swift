@@ -115,7 +115,11 @@ struct BookHero<Actions: View>: View {
                         .lineLimit(2)
                         .accessibilityIdentifier("book-state")
                 }
-                OutlinedTag(text: formatTag)
+                // Only a recording is tagged: paper is what a book is taken
+                // to be, and the facts under the hero name its format.
+                if book.format == .audiobook {
+                    OutlinedTag(text: String(localized: "Audio"))
+                }
             }
             if let progress = book.listeningProgress {
                 ListeningProgressLine(progress: progress, durationMinutes: book.durationMinutes)
@@ -135,10 +139,6 @@ struct BookHero<Actions: View>: View {
         return parts.joined(separator: " · ")
     }
 
-    /// "Audio" for a recording, as the home's card tags it, else the format.
-    private var formatTag: String {
-        book.format == .audiobook ? String(localized: "Audio") : book.format.label
-    }
 }
 
 extension BookHero where Actions == EmptyView {
