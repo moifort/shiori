@@ -13,6 +13,7 @@ on:
       - 'shared/schema.graphql'
       - 'scripts/check-strings.ts'
       - 'scripts/check-ios-components.ts'
+      - 'scripts/stable-mtimes.py'
       - '.github/workflows/build-ios.yml'
   pull_request:
     branches: [main]
@@ -21,6 +22,7 @@ on:
       - 'shared/schema.graphql'
       - 'scripts/check-strings.ts'
       - 'scripts/check-ios-components.ts'
+      - 'scripts/stable-mtimes.py'
       - '.github/workflows/build-ios.yml'
   workflow_dispatch:
 
@@ -49,6 +51,12 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The whole history, commits and trees only, for the step that stamps each
+          # source with the time of its last change; the blobs come down for the
+          # checkout alone, as they would with a shallow clone.
+          fetch-depth: 0
+          filter: blob:none
 
       - name: Select the latest final Xcode
         uses: maxim-lobanov/setup-xcode@v1
@@ -130,19 +138,67 @@ jobs:
           path: ${{ runner.temp }}/SourcePackages
           key: ${{ env.SPM_CACHE_KEY }}
 
+      # Xcode recompiles what is newer than its last build, and a checkout stamps
+      # every file with the moment it was written: on a fresh runner the restored
+      # DerivedData would be worth nothing. Each tracked file takes the time of the
+      # commit that last touched it, each generated or materialized file a time
+      # derived from its content, so two runs on the same sources agree on every
+      # time and the build below recompiles only what changed since the cached one.
+      - name: Stamp the sources with times that survive a checkout
+        run: |
+          set -euo pipefail
+          python3 scripts/stable-mtimes.py \
+            ios/Shiori/Generated/GraphQL \
+            ios/Shiori/GoogleService-Info.plist \
+            ios/Shiori/Shared/Secrets.swift \
+            ios/ShioriUITests/Support/TestSecrets.swift
+          xcode=$(basename "$MD_APPLE_SDK_ROOT" .app)
+          echo "DD_RESTORE_KEY=dd-${xcode}-${SPM_CACHE_KEY}-" >> "$GITHUB_ENV"
+          echo "DD_CACHE_KEY=dd-${xcode}-${SPM_CACHE_KEY}-${GITHUB_SHA}" >> "$GITHUB_ENV"
+
+      # The latest build on this Xcode and these package versions; a dependency
+      # bump or an Xcode update starts cold. Logs stay out: the test results go
+      # there, and nothing reads them back.
+      - name: Restore the compiled DerivedData
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            ${{ runner.temp }}/DerivedData
+            !${{ runner.temp }}/DerivedData/Logs
+          key: ${{ env.DD_CACHE_KEY }}
+          restore-keys: ${{ env.DD_RESTORE_KEY }}
+
       - name: Build the app and its tests
         # Compiled once, for the simulator the tests then run on: no signing
         # identity needed (release-ios.yml owns those). The index store feeds
-        # Xcode's editor, which nobody opens here, so it is not written.
+        # Xcode's editor, which nobody opens here, so it is not written. The
+        # packages were resolved two steps up, so this step does not do it again,
+        # and only what the unit tests need is built: the UI test runner is not.
+        # The timing summary says where a slow build spent its minutes.
         run: |
           set -euo pipefail
           xcodebuild -project ios/Shiori.xcodeproj -scheme Shiori \
             -destination "id=$SIMULATOR_UDID" \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/SourcePackages" \
+            -disableAutomaticPackageResolution \
+            -only-testing:ShioriTests \
+            -showBuildTimingSummary \
             CODE_SIGNING_ALLOWED=NO \
             COMPILER_INDEX_STORE_ENABLE=NO \
             build-for-testing
+          du -sh "$RUNNER_TEMP/DerivedData"/* 2>/dev/null || true
+
+      # Saved from every push to main, before the tests so a failing test keeps
+      # the build warm; a pull request restores main's and saves nothing.
+      - name: Save the compiled DerivedData
+        if: github.event_name == 'push'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            ${{ runner.temp }}/DerivedData
+            !${{ runner.temp }}/DerivedData/Logs
+          key: ${{ env.DD_CACHE_KEY }}
 
       - name: Unit tests
         # The ViewModels driven over inline clients (ShioriTests): no network, no
@@ -162,6 +218,7 @@ jobs:
             -destination "id=$SIMULATOR_UDID" \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/SourcePackages" \
+            -disableAutomaticPackageResolution \
             -only-testing:ShioriTests \
             CODE_SIGNING_ALLOWED=NO \
             SHIORI_TEST_PHOTO=NO \
