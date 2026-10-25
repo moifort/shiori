@@ -59,7 +59,7 @@ struct FinishedBookSheet: View {
                 .foregroundStyle(.secondary)
                 .padding(.top, 2)
             // White, as the rest of the sheet: the app's yellow stars stood out of it.
-            InteractiveStarRating(rating: $rating, allowsUnset: false, scale: 1.25, tint: .primary)
+            InteractiveStarRating(rating: $rating, allowsUnset: false, scale: 1.25)
                 .padding(.top, 16)
                 .accessibilityIdentifier("finished-stars")
         }
