@@ -1669,22 +1669,6 @@
         }
       }
     },
-    "Ajouter un commentaire" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add a comment"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ajouter un commentaire"
-          }
-        }
-      }
-    },
     "Ajouter un livre" : {
       "localizations" : {
         "en" : {

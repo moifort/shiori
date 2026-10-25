@@ -3,8 +3,8 @@ import SwiftUI
 /// A book's saga as a row of its volumes, as the TV app lists a season's
 /// episodes under the one playing: the saga's name over the row, the way to
 /// its screen, then each volume as the home's pile sets its covers — the
-/// number inside the cover's blurred foot, "Audio" in the corner — the volume
-/// open on the page ringed. Only the volumes the reader holds: the whole
+/// number inside the cover's blurred foot — the volume open on the page
+/// ringed. Only the volumes the reader holds: the whole
 /// catalogue is the saga screen's, one tap away on the header, and building
 /// it costs a model call this row must never make.
 struct SeriesVolumesRow: View {
@@ -42,7 +42,8 @@ struct SeriesVolumesRow: View {
         Button {
             if !isCurrent { onOpenVolume(volume) }
         } label: {
-            PosterCover(book: volume, caption: caption)
+            // No "Audio" tag: on a recording's page, its saga is heard too.
+            PosterCover(book: volume, caption: caption, showsAudioTag: false)
                 .overlay {
                     if isCurrent {
                         RoundedRectangle(cornerRadius: PosterCover.cornerRadius + 3, style: .continuous)

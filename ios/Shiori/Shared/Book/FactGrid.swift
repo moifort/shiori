@@ -23,23 +23,46 @@ struct FactTile: Identifiable {
     var action: (() -> Void)?
 }
 
-/// Facts as a grid of tiles parted by hairlines and bordered by one, two to a
-/// row — three for the reading's days — a wide tile alone on its row and a
-/// last odd tile across the width, so the grid never ends on a hole.
-struct FactGrid: View {
+/// Tiles laid out so many to a row: two for a book's facts, three for the
+/// reading's days.
+struct FactGroup {
     let tiles: [FactTile]
     var columns = 2
+}
+
+/// Facts as one grid of tiles parted by hairlines and bordered by one: groups
+/// laid one under the other, each so many to a row — the reading's three days
+/// over the facts two by two — a wide tile alone on its row and a last odd
+/// tile across the width, so the grid never ends on a hole.
+struct FactGrid: View {
+    let groups: [FactGroup]
+
+    init(groups: [FactGroup]) {
+        self.groups = groups.filter { !$0.tiles.isEmpty }
+    }
+
+    init(tiles: [FactTile], columns: Int = 2) {
+        self.init(groups: [FactGroup(tiles: tiles, columns: columns)])
+    }
 
     private static let cornerRadius: CGFloat = 14
 
+    /// The grid's own columns, which every group's divides: six for rows of
+    /// two and of three.
+    private var span: Int {
+        groups.map(\.columns).reduce(1) { lcm($0, $1) }
+    }
+
     var body: some View {
+        let span = span
         Grid(horizontalSpacing: 1, verticalSpacing: 1) {
             ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                 GridRow {
-                    ForEach(Array(row.enumerated()), id: \.element.id) { index, tile in
+                    ForEach(Array(row.tiles.enumerated()), id: \.element.id) { index, tile in
+                        let width = span / row.columns
                         // The last tile of a short row takes what is left of it.
                         cell(tile)
-                            .gridCellColumns(index == row.count - 1 ? columns - row.count + 1 : 1)
+                            .gridCellColumns(index == row.tiles.count - 1 ? span - width * index : width)
                     }
                 }
             }
@@ -52,21 +75,37 @@ struct FactGrid: View {
         }
     }
 
-    /// The tiles in rows: a wide one alone, the others `columns` at a time.
-    private var rows: [[FactTile]] {
-        var rows: [[FactTile]] = []
-        var current: [FactTile] = []
-        for tile in tiles {
-            if tile.isWide {
-                if !current.isEmpty { rows.append(current); current = [] }
-                rows.append([tile])
-            } else {
-                current.append(tile)
-                if current.count == columns { rows.append(current); current = [] }
+    private struct Row {
+        let tiles: [FactTile]
+        let columns: Int
+    }
+
+    /// Each group's tiles in rows: a wide one alone, the others `columns` at
+    /// a time.
+    private var rows: [Row] {
+        var rows: [Row] = []
+        for group in groups {
+            var current: [FactTile] = []
+            for tile in group.tiles {
+                if tile.isWide {
+                    if !current.isEmpty { rows.append(Row(tiles: current, columns: group.columns)); current = [] }
+                    rows.append(Row(tiles: [tile], columns: 1))
+                } else {
+                    current.append(tile)
+                    if current.count == group.columns {
+                        rows.append(Row(tiles: current, columns: group.columns))
+                        current = []
+                    }
+                }
             }
+            if !current.isEmpty { rows.append(Row(tiles: current, columns: group.columns)) }
         }
-        if !current.isEmpty { rows.append(current) }
         return rows
+    }
+
+    private func lcm(_ a: Int, _ b: Int) -> Int {
+        func gcd(_ a: Int, _ b: Int) -> Int { b == 0 ? a : gcd(b, a % b) }
+        return a / gcd(a, b) * b
     }
 
     @ViewBuilder
@@ -134,6 +173,18 @@ struct FactGrid: View {
                 FactTile(id: "first-published", title: "Parution", value: "2007", action: {}),
                 FactTile(id: "pages", title: "Pages", value: "662", action: {}),
                 FactTile(id: "isbn", title: "ISBN", value: nil, action: {}),
+            ])
+            FactGrid(groups: [
+                FactGroup(tiles: [
+                    FactTile(id: "added", title: "Ajouté", value: "3 sept."),
+                    FactTile(id: "started", title: "Commencé", value: "28 sept."),
+                    FactTile(id: "finished", title: "Terminé", value: nil),
+                ], columns: 3),
+                FactGroup(tiles: [
+                    FactTile(id: "format", title: "Format", value: "Livre · papier"),
+                    FactTile(id: "publisher", title: "Éditeur", value: "Bragelonne"),
+                    FactTile(id: "first-published", title: "Parution", value: "2007"),
+                ]),
             ])
             FactGrid(tiles: [
                 FactTile(id: "added", title: "Ajouté", value: "3 sept."),

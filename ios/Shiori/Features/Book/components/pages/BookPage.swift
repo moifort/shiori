@@ -93,11 +93,15 @@ struct BookPage: View {
 
     private var hero: some View {
         BookHero(book: book, state: .reading(of: book), isAwaited: !awaited.isEmpty) {
-            // Icons dropped before a label is cut, on a narrow phone.
-            ViewThatFits(in: .horizontal) {
-                heroButtons(showsIcons: true)
-                heroButtons(showsIcons: false)
+            // Sideways past the width, from edge to edge, rather than a
+            // label cut or an icon dropped.
+            ScrollView(.horizontal) {
+                heroButtons
+                    .padding(.horizontal, 20)
             }
+            .scrollIndicators(.hidden)
+            .scrollClipDisabled()
+            .padding(.horizontal, -20)
         }
         .sensoryFeedback(.success, trigger: book.status)
     }
@@ -108,16 +112,16 @@ struct BookPage: View {
     /// them, every button the same height. A book read waits for the reader's
     /// word on it, not for a next state: reading it again clears the day it
     /// was finished, a choice made in the menu, not here.
-    private func heroButtons(showsIcons: Bool) -> some View {
+    private var heroButtons: some View {
         GlassEffectContainer(spacing: 8) {
             HStack(spacing: 8) {
                 if let step = NextStep(status: book.status) {
-                    primaryButton(step, showsIcon: showsIcons)
-                    ratingButton(prominent: false, showsIcon: showsIcons)
+                    primaryButton(step)
+                    ratingButton(prominent: false)
                 } else {
-                    ratingButton(prominent: book.rating == nil, showsIcon: showsIcons)
+                    ratingButton(prominent: book.rating == nil)
                 }
-                noteButton(showsIcon: showsIcons)
+                noteButton
             }
             .font(.subheadline.weight(.semibold))
             .controlSize(.regular)
@@ -126,11 +130,11 @@ struct BookPage: View {
     }
 
     /// The next step the book is waiting for.
-    private func primaryButton(_ step: NextStep, showsIcon: Bool) -> some View {
+    private func primaryButton(_ step: NextStep) -> some View {
         Button {
             onSetStatus(step.status)
         } label: {
-            HeroButtonLabel(title: step.title, systemImage: step.systemImage, showsIcon: showsIcon)
+            HeroButtonLabel(title: step.title, systemImage: step.systemImage)
         }
         .buttonStyle(.glassProminent)
         .tint(.white)
@@ -141,7 +145,7 @@ struct BookPage: View {
     /// The stars once given, else the way to give them. The saga's stars lent
     /// to a volume are not drawn here: grey on glass they read as five empty
     /// stars, and the button's work is to rate this book.
-    private func ratingButton(prominent: Bool, showsIcon: Bool) -> some View {
+    private func ratingButton(prominent: Bool) -> some View {
         let label = Group {
             if let rating = book.rating {
                 // In the button's own colour, as the heart beside the
@@ -149,7 +153,7 @@ struct BookPage: View {
                 RatingStars(rating: rating, font: .footnote, monochrome: true)
                     .frame(height: HeroButtonLabel.height)
             } else {
-                HeroButtonLabel(title: "Noter", systemImage: "star", showsIcon: showsIcon)
+                HeroButtonLabel(title: "Noter", systemImage: "star")
             }
         }
         return Group {
@@ -168,9 +172,9 @@ struct BookPage: View {
 
     /// The reader's remarks on the book, whatever its status: what they
     /// thought of it so far, or once read.
-    private func noteButton(showsIcon: Bool) -> some View {
+    private var noteButton: some View {
         Button(action: onEditNote) {
-            HeroButtonLabel(title: "Remarques", systemImage: "text.bubble", showsIcon: showsIcon)
+            HeroButtonLabel(title: "Remarques", systemImage: "text.bubble")
         }
         .buttonStyle(.glass)
         .accessibilityIdentifier("book-hero-note")
@@ -188,7 +192,9 @@ struct BookPage: View {
         VStack(alignment: .leading, spacing: 12) {
             RowHeader(title: "Informations", detail: String(localized: "modifier"), action: onEdit)
                 .accessibilityIdentifier("book-edit-facts")
-            FactGrid(tiles: factTiles)
+            // When the reader added, started and finished it, over what the
+            // book is: one table, the reading's days three to a row.
+            FactGrid(groups: [FactGroup(tiles: dayTiles, columns: 3), FactGroup(tiles: factTiles)])
             storeLinks
         }
     }
@@ -310,14 +316,18 @@ struct BookPage: View {
 
     // MARK: - Reading
 
-    private var reading: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            RowHeader(title: "Ma lecture", detail: readingSpan)
-            FactGrid(tiles: dayTiles, columns: 3)
-            if let recommendation = book.recommendation {
-                recommendationRow(recommendation)
+    /// Who recommended the book and what the reader wrote of it, when either
+    /// is there: the reading's days head the facts, and the reader's remarks
+    /// are written from the hero.
+    @ViewBuilder private var reading: some View {
+        if book.recommendation != nil || book.note != nil {
+            VStack(alignment: .leading, spacing: 12) {
+                RowHeader(title: "Ma lecture", detail: readingSpan)
+                if let recommendation = book.recommendation {
+                    recommendationRow(recommendation)
+                }
+                note
             }
-            note
         }
     }
 
@@ -368,8 +378,8 @@ struct BookPage: View {
         .accessibilityIdentifier("book-recommendation")
     }
 
-    /// The reader's own comment, read as a review: the text, then when and a
-    /// way to correct it. Without one, the button that writes it.
+    /// The reader's own comment, read as a review: the text, then a way to
+    /// correct it. Without one, nothing: "Remarques" in the hero writes it.
     @ViewBuilder private var note: some View {
         if let note = book.note {
             Button(action: onEditNote) {
@@ -387,17 +397,6 @@ struct BookPage: View {
             }
             .buttonStyle(.plain)
             .copyable(note)
-            .accessibilityIdentifier("book-note")
-        } else {
-            Button(action: onEditNote) {
-                Label("Ajouter un commentaire", systemImage: "text.bubble")
-                    .font(.subheadline.weight(.semibold))
-            }
-            .buttonStyle(.bordered)
-            .buttonBorderShape(.capsule)
-            .controlSize(.large)
-            .tint(.primary)
-            .padding(.top, 4)
             .accessibilityIdentifier("book-note")
         }
     }
@@ -431,22 +430,21 @@ struct NextStep: Equatable {
 private struct HeroButtonLabel: View {
     let title: LocalizedStringKey
     let systemImage: String
-    var showsIcon = true
 
-    /// The label's height, which the stars match.
-    static let height: CGFloat = 20
+    /// The label's height, which the stars match: a little taller than the
+    /// regular glass button's own.
+    static let height: CGFloat = 24
 
     var body: some View {
         HStack(spacing: 6) {
-            if showsIcon {
-                Image(systemName: systemImage)
-                    .imageScale(.medium)
-                    .accessibilityHidden(true)
-            }
+            Image(systemName: systemImage)
+                .imageScale(.medium)
+                .accessibilityHidden(true)
             Text(title)
         }
         .lineLimit(1)
         .fixedSize()
+        .padding(.horizontal, 2)
         .frame(height: Self.height)
     }
 }

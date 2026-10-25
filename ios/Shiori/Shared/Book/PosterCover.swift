@@ -10,6 +10,9 @@ struct PosterCover: View {
     /// The line inside the foot: how long on the pile, "Tome 3".
     let caption: String
     var width: CGFloat = 102
+    /// "Audio" in the corner of a recording. Off where the context already
+    /// says it: a saga's volumes under a recording's own page.
+    var showsAudioTag = true
 
     static let cornerRadius: CGFloat = 8
 
@@ -23,7 +26,7 @@ struct PosterCover: View {
             }
             .overlay { footBlur }
             .overlay(alignment: .topTrailing) {
-                if book.format == .audiobook {
+                if showsAudioTag, book.format == .audiobook {
                     OutlinedTag(text: String(localized: "Audio"))
                         .padding(6)
                 }
