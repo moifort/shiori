@@ -20,6 +20,9 @@ struct BookHero<Actions: View>: View {
     /// How long the book runs on the detail line — pages, or a recording's
     /// hours. Off where the facts under the hero say it and nothing else does.
     var showsLength = true
+    /// Opens an author's page from the author line, a chevron after it. Nil
+    /// draws the line alone, as where the book came without its authors' keys.
+    var onOpenAuthor: ((AuthorDestination) -> Void)? = nil
     var coverWidth: CGFloat = 108
     @ViewBuilder var actions: Actions
 
@@ -77,10 +80,7 @@ struct BookHero<Actions: View>: View {
                     .minimumScaleFactor(0.8)
             }
             .foregroundStyle(.white)
-            Text(book.authorLine)
-                .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.85))
-                .lineLimit(2)
+            authorLine
             if let narratorLine = book.narratorLine {
                 Text("Lu par \(narratorLine)")
                     .font(.caption)
@@ -96,6 +96,43 @@ struct BookHero<Actions: View>: View {
             CopyableValue(title: "Copier l'auteur", value: book.authors.joined(separator: ", ")),
             CopyableValue(title: "Copier le lecteur", value: book.narratorLine ?? ""),
         ])
+    }
+
+    /// The authors, and the way to their page: a chevron after the line, as
+    /// the saga's row heads its name. One author opens at once; several
+    /// offer the choice, each by name.
+    @ViewBuilder private var authorLine: some View {
+        let line = Text(book.authorLine)
+            .font(.subheadline)
+            .foregroundStyle(.white.opacity(0.85))
+            .lineLimit(2)
+        let authors = book.authorDestinations
+        if let onOpenAuthor, let first = authors.first {
+            let label = HStack(alignment: .firstTextBaseline, spacing: 4) {
+                line
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .accessibilityHidden(true)
+            }
+            .contentShape(.rect)
+            if authors.count == 1 {
+                Button { onOpenAuthor(first) } label: { label }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(Text("Ouvre la fiche de l'auteur"))
+                    .accessibilityIdentifier("book-author-link")
+            } else {
+                Menu {
+                    ForEach(authors) { author in
+                        Button(author.name, systemImage: "person") { onOpenAuthor(author) }
+                    }
+                } label: { label }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("book-author-link")
+            }
+        } else {
+            line
+        }
     }
 
     /// What the reader decided of the book that its page does not otherwise
@@ -169,6 +206,15 @@ struct BookHero<Actions: View>: View {
         return parts.joined(separator: " · ")
     }
 
+}
+
+extension Book {
+    /// Each author with the key of their page, for the hero to open it. Empty
+    /// when the keys did not come with the book, or do not match its authors.
+    var authorDestinations: [AuthorDestination] {
+        guard let authorKeys, authorKeys.count == authors.count else { return [] }
+        return zip(authorKeys, authors).map { AuthorDestination(key: $0, name: $1) }
+    }
 }
 
 extension BookHero where Actions == EmptyView {

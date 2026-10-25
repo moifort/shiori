@@ -109,6 +109,7 @@ fragment BookDetail on Book {
   id
   title
   authors
+  authorKeys
   format
   media
   publisher

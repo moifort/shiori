@@ -8641,6 +8641,22 @@
         }
       }
     },
+    "Ouvre la fiche de l'auteur" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens the author's page"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvre la fiche de l'auteur"
+          }
+        }
+      }
+    },
     "Ouvrir dans %@" : {
       "localizations" : {
         "en" : {

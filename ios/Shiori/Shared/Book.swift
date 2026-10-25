@@ -261,6 +261,9 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
     let id: String
     let title: String
     let authors: [String]
+    /// The key of each author's page, in the order of `authors`, as the server
+    /// folds them. Nil where the book came without them: a row, a cache.
+    var authorKeys: [String]?
     var format: BookFormat = .book
     /// Where the reader holds it, paper first. Empty on an audiobook.
     var media: [BookMedium] = [.print]

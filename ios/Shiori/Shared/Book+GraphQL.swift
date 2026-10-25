@@ -206,6 +206,7 @@ extension ShioriGraphQL.BookDetail {
             id: id,
             title: title,
             authors: authors,
+            authorKeys: authorKeys,
             format: format.asDomain,
             media: media.asDomain,
             publisher: publisher,

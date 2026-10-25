@@ -27,6 +27,8 @@ struct BookPage: View {
     /// while they are on their way: the row then holds this volume alone.
     var seriesVolumes: [SeriesStripItem] = []
     var onOpenVolume: (Book) -> Void = { _ in }
+    /// An author's page, from the hero's author line.
+    var onOpenAuthor: ((AuthorDestination) -> Void)? = nil
     /// The editions of this book the reader awaits in the app's language.
     var awaited: [AwaitedEdition] = []
     var onOpenAwaited: (AwaitedEdition) -> Void = { _ in }
@@ -105,7 +107,7 @@ struct BookPage: View {
     // MARK: - Hero
 
     private var hero: some View {
-        BookHero(book: book, state: .reading(of: book), isAwaited: !awaited.isEmpty) {
+        BookHero(book: book, state: .reading(of: book), isAwaited: !awaited.isEmpty, onOpenAuthor: onOpenAuthor) {
             // Sideways past the width, from edge to edge, rather than a
             // label cut or an icon dropped.
             ScrollView(.horizontal) {

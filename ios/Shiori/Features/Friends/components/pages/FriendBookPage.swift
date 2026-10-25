@@ -4,6 +4,8 @@ import SwiftUI
 enum FriendBookAction {
     /// The saga the book belongs to, pushed inside the sheet.
     case openSeries
+    /// An author's page, from the hero's author line.
+    case openAuthor(AuthorDestination)
     /// An edition awaited, opened as Découvrir opens it.
     case openAwaited(AwaitedEdition)
     case stopAwaiting(AwaitedEdition)
@@ -62,7 +64,13 @@ struct FriendBookPage: View {
     // MARK: - Hero
 
     private var hero: some View {
-        BookHero(book: book, state: friendState, isAwaited: !awaited.isEmpty, showsLength: false) {
+        BookHero(
+            book: book,
+            state: friendState,
+            isAwaited: !awaited.isEmpty,
+            showsLength: false,
+            onOpenAuthor: { author in Task { await onAction(.openAuthor(author)) } }
+        ) {
             ScrollView(.horizontal) {
                 heroButtons
                     .padding(.horizontal, 20)
