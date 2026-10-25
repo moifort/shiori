@@ -32,6 +32,7 @@ fragment SuggestionFields on Suggestion {
     bookId
     seriesId
     title
+    citesSaga
     favorite
     rating
     viaSeries

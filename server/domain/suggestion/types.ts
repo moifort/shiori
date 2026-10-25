@@ -86,6 +86,9 @@ export type SuggestionReference = {
   seriesId?: SeriesId
   /** The saga's name when the reference is a saga, else the book's title. */
   title: string
+  /** The reason cites the saga by name rather than one of its books: the
+   *  reference opens the saga's page, not its first volume's. */
+  citesSaga: boolean
   rank: ReferenceRank
   /** The book's genre — a saga's, its first volume that has one — which the
    *  app draws as the reference's symbol. */

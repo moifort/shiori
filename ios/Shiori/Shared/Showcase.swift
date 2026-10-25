@@ -1238,7 +1238,8 @@ enum Showcase {
     ) -> SuggestionReference {
         SuggestionReference(
             bookId: bookId, seriesId: series, title: title, favorite: favorite, rating: rating,
-            viaSeries: series != nil, coverURL: cover(slug)
+            viaSeries: series != nil, coverURL: cover(slug),
+            citesSaga: series != nil
         )
     }
 

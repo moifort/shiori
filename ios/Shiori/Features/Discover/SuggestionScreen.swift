@@ -56,8 +56,13 @@ struct SuggestionScreen: View {
             }
         }
         .task { await viewModel.describe() }
+        // A saga cited by name opens the saga's page; a book, its own.
         .pushesDetail(item: $openReference) { reference in
-            BookScreen(bookId: reference.bookId)
+            if reference.citesSaga, let seriesId = reference.seriesId {
+                SeriesScreen(seriesId: seriesId)
+            } else {
+                BookScreen(bookId: reference.bookId)
+            }
         }
     }
 

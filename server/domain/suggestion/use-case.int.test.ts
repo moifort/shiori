@@ -129,6 +129,7 @@ describe('the month’s discoveries', () => {
       {
         bookId: 'shibumi',
         title: 'Shibumi',
+        citesSaga: false,
         genre: 'science-fiction',
         rank: { favorite: true, rating: 5, viaSeries: false },
         coverUrl: 'https://covers.example/shibumi.jpg',

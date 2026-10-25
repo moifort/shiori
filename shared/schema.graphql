@@ -4212,6 +4212,11 @@ type SuggestionReference {
   """The reader’s book — a saga’s first volume when the saga was cited."""
   bookId: BookId!
 
+  """
+  Whether the reason cites the saga by name rather than one of its books: the reference then opens the saga — `seriesId` — rather than `bookId`.
+  """
+  citesSaga: Boolean!
+
   """The reader’s own cover of the book, signed when it is their photo."""
   coverUrl: String
   favorite: Boolean!

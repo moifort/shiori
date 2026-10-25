@@ -75,6 +75,12 @@ const SuggestionReferenceType = builder
         description: 'The reader’s own cover of the book, signed when it is their photo.',
         resolve: (reference) => reference.coverUrl ?? null,
       }),
+      citesSaga: t.boolean({
+        description:
+          'Whether the reason cites the saga by name rather than one of its books: the ' +
+          'reference then opens the saga — `seriesId` — rather than `bookId`.',
+        resolve: (reference) => reference.citesSaga,
+      }),
       viaSeries: t.boolean({
         description: 'Whether the heart or the stars are the saga’s, the book having none.',
         resolve: (reference) => reference.rank.viaSeries,

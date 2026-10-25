@@ -334,6 +334,7 @@ describe('referencesOf', () => {
       {
         bookId: shibumi.id,
         title: 'Shibumi',
+        citesSaga: false,
         rank: { favorite: true, rating: 5 as StarRating, viaSeries: false },
       },
     ])
@@ -351,6 +352,7 @@ describe('referencesOf', () => {
       bookId: first.id,
       seriesId: seriesIdOf('saga-Assassin Royal' as SagaKey),
       title: 'Assassin Royal',
+      citesSaga: true,
       rank: { favorite: true, rating: 5 as StarRating, viaSeries: true },
     })
   })

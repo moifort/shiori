@@ -12,6 +12,9 @@ struct SuggestionReference: Identifiable, Hashable, Sendable, Codable {
     let rating: Double?
     let viaSeries: Bool
     var coverURL: URL?
+    /// The reason cites the saga by name: the reference opens the saga's
+    /// page rather than its first volume's.
+    var citesSaga = false
 
     var id: String { bookId }
 
@@ -262,7 +265,8 @@ extension Suggestion {
                     favorite: reference.favorite,
                     rating: reference.rating,
                     viaSeries: reference.viaSeries,
-                    coverURL: reference.coverUrl.flatMap(URL.init(string:))
+                    coverURL: reference.coverUrl.flatMap(URL.init(string:)),
+                    citesSaga: reference.citesSaga
                 )
             },
             state: state,
@@ -294,7 +298,7 @@ extension MonthlyDiscoveries {
                 reason: "Un héros rusé et une narration brillante, avec le souffle de la Chronique du Tueur de Roi et la verve de Gagner la guerre.",
                 references: [
                     SuggestionReference(bookId: "gagner", seriesId: nil, title: "Gagner la guerre", favorite: true, rating: 5, viaSeries: false),
-                    SuggestionReference(bookId: "nom-du-vent", seriesId: "kingkiller", title: "Chronique du Tueur de Roi", favorite: false, rating: 4, viaSeries: true),
+                    SuggestionReference(bookId: "nom-du-vent", seriesId: "kingkiller", title: "Chronique du Tueur de Roi", favorite: false, rating: 4, viaSeries: true, citesSaga: true),
                 ]
             ),
             .sample(

@@ -276,6 +276,7 @@ const referenceOfBook = (
     bookId: book.id,
     ...(book.series ? { seriesId: book.series.id } : {}),
     title: book.title,
+    citesSaga: false,
     ...(book.genre ? { genre: book.genre } : {}),
     rank:
       own || !opinion
@@ -304,6 +305,7 @@ const referenceOfSaga = (
     bookId: first.id,
     seriesId: first.series.id,
     title: first.series.name,
+    citesSaga: true,
     ...(genre ? { genre } : {}),
     rank,
   }
