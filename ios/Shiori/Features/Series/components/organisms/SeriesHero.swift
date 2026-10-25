@@ -2,15 +2,14 @@ import SwiftUI
 
 /// The top of a saga's page, as the TV app opens a show: three covers fanned
 /// over the colours of the volume to read next, which melt into the page as
-/// the book page's do; under them, centred, where the reader stands in small
-/// capitals, the saga's name, and its author, who opens their page. Then the
+/// the book page's do; under them, centred, the saga's name and its author,
+/// who opens their page. Then the
 /// page's actions. The ground runs up under the toolbar, whose glass buttons
 /// float over it; the text is drawn in the dark appearance whatever the
 /// device's, since it sits on a darkened image either way.
 struct SeriesHero<Actions: View>: View {
     let name: String
     let author: String
-    let state: SeriesState
     /// The volume to read next, in the middle, and the ones on either side
     /// of it, in reading order.
     let fan: SeriesFan
@@ -78,8 +77,6 @@ struct SeriesHero<Actions: View>: View {
 
     private var identity: some View {
         VStack(spacing: 6) {
-            SeriesStateBadge(state: state)
-                .padding(.bottom, 2)
             Text(name)
                 .font(.largeTitle.weight(.heavy))
                 .foregroundStyle(.white)
@@ -120,51 +117,6 @@ struct SeriesHero<Actions: View>: View {
     }
 }
 
-/// Where the reader stands, over the saga's name, as the TV app tags a show
-/// airing: a capsule of glass tinted with the state's colour, its symbol, the
-/// word in small capitals. A saga under way beats like a live broadcast, a
-/// halo breathing out of its dot.
-private struct SeriesStateBadge: View {
-    let state: SeriesState
-
-    @State private var beating = false
-
-    var body: some View {
-        HStack(spacing: 7) {
-            if state == .inProgress {
-                Circle()
-                    .fill(state.tint)
-                    .frame(width: 7, height: 7)
-                    .background {
-                        Circle()
-                            .fill(state.tint)
-                            .scaleEffect(beating ? 2.6 : 1)
-                            .opacity(beating ? 0 : 0.7)
-                    }
-                    .onAppear {
-                        withAnimation(.easeOut(duration: 1.6).repeatForever(autoreverses: false)) {
-                            beating = true
-                        }
-                    }
-            } else {
-                Image(systemName: state.symbol)
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(state.tint)
-            }
-            Text(state.label)
-                .font(.caption.weight(.bold))
-                .textCase(.uppercase)
-                .tracking(1.2)
-                .foregroundStyle(.white)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .glassEffect(.regular.tint(state.tint.opacity(0.25)), in: .capsule)
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("series-state")
-    }
-}
-
 /// The three covers of a saga's hero: the volume to read next in the middle,
 /// the one before it and the one after on either side.
 struct SeriesFan {
@@ -201,7 +153,6 @@ struct SeriesFan {
         SeriesHero(
             name: screen.series?.name ?? "",
             author: screen.series?.author ?? "",
-            state: .inProgress,
             fan: SeriesFan(volumes: screen.owned, centredOn: 1),
             onOpenAuthor: {}
         ) {

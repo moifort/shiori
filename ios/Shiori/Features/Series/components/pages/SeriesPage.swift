@@ -123,7 +123,6 @@ struct SeriesPage: View {
         return SeriesHero(
             name: series.name,
             author: series.author,
-            state: state(standing),
             fan: fan(series),
             onOpenAuthor: author.map { author in { Task { await onAction(.openAuthor(author)) } } }
         ) {
@@ -478,13 +477,6 @@ struct SeriesPage: View {
             owned.contains { volume.matches($0) && $0.status == .read }
         }
         return (read.count, published.count)
-    }
-
-    /// Where the reader stands, over the saga's name.
-    private func state(_ standing: (read: Int, published: Int)) -> SeriesState {
-        if standing.published > 0, standing.read >= standing.published { return .complete }
-        if standing.read == 0, !owned.contains(where: { $0.status == .reading }) { return .notStarted }
-        return .inProgress
     }
 
     /// The volume to read next: the one open, else the first on the pile.
