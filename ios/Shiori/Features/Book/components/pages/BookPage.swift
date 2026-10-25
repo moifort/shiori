@@ -332,10 +332,14 @@ struct BookPage: View {
 
     private var dayTiles: [FactTile] {
         let day: (Date?) -> String? = { $0?.formatted(.dateTime.day().month(.abbreviated)) }
+        // A day not reached yet reads as a dash and opens nothing.
+        let edit: (BookField) -> (() -> Void)? = { field in
+            field.isEditable(on: book) ? { onEditField(field) } : nil
+        }
         return [
-            FactTile(id: "addedAt", title: "Ajouté", value: day(book.addedAt), placeholder: "—", action: { onEditField(.addedAt) }),
-            FactTile(id: "startedAt", title: "Commencé", value: day(book.startedAt), placeholder: "—", action: { onEditField(.startedAt) }),
-            FactTile(id: "finishedAt", title: "Terminé", value: day(book.finishedAt), placeholder: "—", action: { onEditField(.finishedAt) }),
+            FactTile(id: "addedAt", title: "Ajouté", value: day(book.addedAt), placeholder: "—", action: edit(.addedAt)),
+            FactTile(id: "startedAt", title: "Commencé", value: day(book.startedAt), placeholder: "—", action: edit(.startedAt)),
+            FactTile(id: "finishedAt", title: "Terminé", value: day(book.finishedAt), placeholder: "—", action: edit(.finishedAt)),
         ]
     }
 

@@ -26,6 +26,19 @@ enum BookField: String, Identifiable {
     var isDate: Bool {
         [.addedAt, .startedAt, .finishedAt].contains(self)
     }
+
+    /// Whether a tap on the row may correct it. A fact is typed in whether
+    /// known or not; a day only once the book holds it — the server refuses a
+    /// start on a book still on the pile and a finish on one not read, and it
+    /// is moving the book along the pile that stamps them.
+    func isEditable(on book: Book) -> Bool {
+        switch self {
+        case .firstPublishedIn, .pageCount, .isbn13: true
+        case .addedAt: book.addedAt != nil
+        case .startedAt: book.startedAt != nil
+        case .finishedAt: book.finishedAt != nil
+        }
+    }
 }
 
 /// The small prompt behind a tapped row of the book sheet, as the rating has
