@@ -43,6 +43,7 @@ struct AwaitedEditionPage: View {
                 action: "Ne plus suivre"
             ),
             state: state,
+            isOut: edition.state == .available,
             isAdded: edition.isAddable ? added : nil,
             leadingTiles: originalTitleTile,
             sagaName: shown.series?.name,

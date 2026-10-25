@@ -31,7 +31,7 @@ struct BellConfirmation {
 /// alone: the day as a calendar leaf on glass in its corner, how long is left
 /// tagged after the format, and the saga page's row of actions — the white
 /// button that orders it from its store, the "+" that puts it on the pile
-/// when the reader can, and the bell that alerts on the day, which swings
+/// once it is out, and the bell that alerts on the day, which swings
 /// when tapped. A recording differs only by what the hero already says of
 /// one: its "Audio" tag and who reads it. Pure and previewable.
 struct UpcomingBookPage: View {
@@ -47,7 +47,10 @@ struct UpcomingBookPage: View {
     var bellConfirmation: BellConfirmation? = nil
     /// Said on the detail line: once added, once out.
     var state: BookState? = nil
-    /// Nil where the reader has the book already: no "+".
+    /// Whether it is out, when its store said so; nil reads it off the date.
+    var isOut: Bool? = nil
+    /// Nil where the reader has the book already: no "+". None either while
+    /// the book is to come: only a book out goes on the pile.
     var isAdded: Bool? = nil
     /// Tiles heading the facts: the title in its own language.
     var leadingTiles: [FactTile] = []
@@ -99,7 +102,7 @@ struct UpcomingBookPage: View {
                 }
             }
             // The hero's "+" again, within reach once it has scrolled away.
-            if let isAdded {
+            if let isAdded = offeredAddition {
                 ToolbarItem(placement: .primaryAction) {
                     AsyncToolbarButton(title: "Ajouter à ma pile", systemImage: "plus", action: onAdd)
                         .disabled(isAdded)
@@ -122,7 +125,7 @@ struct UpcomingBookPage: View {
             GlassEffectContainer(spacing: 10) {
                 HStack(spacing: 10) {
                     if let store { storeButton(store) }
-                    if let isAdded { addButton(isAdded) }
+                    if let isAdded = offeredAddition { addButton(isAdded) }
                     bell
                 }
             }
@@ -130,12 +133,12 @@ struct UpcomingBookPage: View {
     }
 
     /// The white button of the saga page's hero, at its content's width:
-    /// "Précommander" while the book is to come, "Acheter" once out, with
+    /// "Précommander" while the book is to come, "Commander" once out, with
     /// its store's logo.
     private func storeButton(_ store: UpcomingStore) -> some View {
         Link(destination: store.url) {
             HStack(spacing: 8) {
-                Text(isUpcoming ? "Précommander" : "Acheter")
+                Text(isUpcoming ? "Précommander" : "Commander")
                 Image(store.logo)
                     .resizable()
                     .scaledToFit()
@@ -212,8 +215,14 @@ struct UpcomingBookPage: View {
         onToggleBell()
     }
 
+    /// The "+", once the book is out: whether it is on the pile already.
+    private var offeredAddition: Bool? { isUpcoming ? nil : isAdded }
+
+    /// To come, unless its store says it is out: an edition out may carry no
+    /// date, or only its year.
     private var isUpcoming: Bool {
-        releaseDate.map { ReleaseDateText.isUpcoming($0) } ?? true
+        if let isOut { return !isOut }
+        return releaseDate.map { ReleaseDateText.isUpcoming($0) } ?? true
     }
 
     // MARK: - Blocks

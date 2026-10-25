@@ -1693,22 +1693,6 @@
         }
       }
     },
-    "Acheter" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Buy"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Acheter"
-          }
-        }
-      }
-    },
     "Actualisation" : {
       "localizations" : {
         "en" : {
@@ -3973,6 +3957,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Comment vous appelez-vous ?"
+          }
+        }
+      }
+    },
+    "Commander" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Order"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Commander"
           }
         }
       }
