@@ -55,17 +55,17 @@ struct PosterCover: View {
 
     /// The cover blurred into its foot, more the lower it goes, as the TV
     /// app's tiles melt under their label: the print of a cover never fights
-    /// the line, and nothing darkens it.
+    /// the line, and nothing darkens it. The cover as drawn, photo or the
+    /// typeset stand-in alike: blurring only a photo left the stand-in's
+    /// author line sharp under "Tome 2".
     private var footBlur: some View {
         // Scaled up before the blur, as CoverBackdrop does, so the edges
         // blur on the cover itself rather than on the transparent corners.
         Color.clear
             .overlay {
-                if let url = book.coverURL {
-                    CoverImage(url: url) { Color.clear } fallback: { Color.clear }
-                        .scaleEffect(1.15)
-                        .blur(radius: 10, opaque: true)
-                }
+                BookCover(book: book, width: width, showsFormatBadge: false, cornerRadius: Self.cornerRadius)
+                    .scaleEffect(1.15)
+                    .blur(radius: 10, opaque: true)
             }
             .overlay {
                 RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
@@ -92,6 +92,7 @@ struct PosterCover: View {
     HStack(spacing: 13) {
         PosterCover(book: .preview, caption: "Tome 1")
         PosterCover(book: .previewFromShelf, caption: "10 jours")
+        PosterCover(book: Book(id: "3", title: "L'écorchée", authors: ["Donato Carrisi"], status: .toRead), caption: "Tome 2")
     }
     .padding()
 }
