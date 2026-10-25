@@ -30,15 +30,17 @@ struct SeriesReleaseCard: View {
             )
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
-                // At the card's top, clear of the calendar leaf in its corner.
-                Text(volume.title)
-                    .font(.headline)
-                    .lineLimit(2)
-                    .padding(.trailing, volume.date == nil ? 0 : Self.leafRoom)
+                // At the card's top, clear of the calendar leaf in its corner:
+                // the author and the volume's place over the title, as the
+                // book hero names the saga over the book.
                 Text(verbatim: "\(author) · \(String(localized: "Tome \(volume.number)"))")
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.75))
                     .lineLimit(1)
+                    .padding(.trailing, volume.date == nil ? 0 : Self.leafRoom)
+                Text(volume.title)
+                    .font(.headline)
+                    .lineLimit(2)
                     .padding(.trailing, volume.date == nil ? 0 : Self.leafRoom)
                 Spacer(minLength: 0)
                 // The next step at the card's foot.
