@@ -71,8 +71,8 @@ struct BookHeaderSection<Extra: View>: View {
     private var shownStoreLinks: [StoreLink] {
         if let storeLink { return [storeLink] }
         return [
-            book.audibleURL.map { StoreLink(name: "Audible", url: $0, tint: .audible) },
-            book.amazonURL.map { StoreLink(name: "Amazon", url: $0) },
+            book.shownAudibleURL.map { StoreLink(name: "Audible", url: $0, tint: .audible) },
+            book.shownAmazonURL.map { StoreLink(name: "Amazon", url: $0) },
         ].compactMap { $0 }
     }
 

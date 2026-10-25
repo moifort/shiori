@@ -37,11 +37,17 @@ extension Book {
         return "\(format.label) · \(BookMedium.label(of: media).lowercased())"
     }
 
+    /// The Audible page, shown only on a recording.
+    var shownAudibleURL: URL? { format == .audiobook ? audibleURL : nil }
+    /// The Amazon page, shown only on a book read on paper or a screen: a
+    /// recording leads to Audible alone.
+    var shownAmazonURL: URL? { format == .audiobook ? nil : amazonURL }
+
     /// Ways out of Shiori, closing the facts they complete.
     var storeFactLinks: [FactLink] {
         [
-            audibleURL.map { FactLink(id: "audible", title: "Écouter sur Audible", logo: "audible-logo", url: $0) },
-            amazonURL.map { FactLink(id: "amazon", title: "Voir sur Amazon", logo: "amazon-logo", url: $0) },
+            shownAudibleURL.map { FactLink(id: "audible", title: "Écouter sur Audible", logo: "audible-logo", url: $0) },
+            shownAmazonURL.map { FactLink(id: "amazon", title: "Voir sur Amazon", logo: "amazon-logo", url: $0) },
         ].compactMap { $0 }
     }
 }

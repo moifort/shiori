@@ -258,7 +258,7 @@ struct BookPage: View {
                     FactGroup(tiles: dayTiles, columns: 3),
                     FactGroup(tiles: factTiles),
                 ],
-                links: storeLinks
+                links: book.storeFactLinks
             )
         }
     }
@@ -313,14 +313,6 @@ struct BookPage: View {
     private var formatValue: String {
         guard book.format != .audiobook, !book.media.isEmpty else { return book.format.label }
         return "\(book.format.label) · \(BookMedium.label(of: book.media).lowercased())"
-    }
-
-    /// Ways out of Shiori, closing the facts they complete.
-    private var storeLinks: [FactLink] {
-        [
-            book.audibleURL.map { FactLink(id: "audible", title: "Écouter sur Audible", logo: "audible-logo", url: $0) },
-            book.amazonURL.map { FactLink(id: "amazon", title: "Voir sur Amazon", logo: "amazon-logo", url: $0) },
-        ].compactMap { $0 }
     }
 
     /// The editions of it the reader awaits, as the saga screen lists them.
