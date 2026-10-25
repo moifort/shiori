@@ -1081,13 +1081,18 @@ describe('a saga opened by the series id of one edition', () => {
     await holdBothEditions()
 
     const result = await execute(
-      '{ mySeriesVolumes(seriesId: "dune--frank-herbert~en") { title } myFollowedSeries(seriesId: "dune--frank-herbert~fr") { id language ownedCount } }',
+      '{ mySeriesVolumes(seriesId: "dune--frank-herbert~en") { title } myFollowedSeries(seriesId: "dune--frank-herbert~fr") { id saga language ownedCount } }',
     )
 
     expect(result.errors).toBeUndefined()
     expect(result.data).toEqual({
       mySeriesVolumes: [{ title: 'Dune (EN)' }],
-      myFollowedSeries: { id: 'dune--frank-herbert~fr', language: 'FR', ownedCount: 2 },
+      myFollowedSeries: {
+        id: 'dune--frank-herbert~fr',
+        saga: 'dune--frank-herbert',
+        language: 'FR',
+        ownedCount: 2,
+      },
     })
   })
 

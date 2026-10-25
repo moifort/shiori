@@ -51,6 +51,13 @@ export const FollowedSeriesType = builder.objectRef<FollowedSeries>('FollowedSer
         'languages is two rows under two ids.',
       resolve: (followed) => followed.id,
     }),
+    saga: t.string({
+      description:
+        'The saga, whatever the language: the key every edition of it shares, and ' +
+        'that its opinion is held under. What to tell the editions of one saga ' +
+        'apart from other sagas by — never an id to open.',
+      resolve: (followed) => followed.saga,
+    }),
     name: t.field({ type: 'SeriesName', resolve: (followed) => followed.name }),
     audio: t.boolean({
       description:

@@ -1502,6 +1502,11 @@ type FollowedSeries {
   progress: SagaProgress
 
   """
+  The saga, whatever the language: the key every edition of it shares, and that its opinion is held under. What to tell the editions of one saga apart from other sagas by — never an id to open.
+  """
+  saga: String!
+
+  """
   The latest date any owned volume is shelved on — finished, else started, else added — which the Series tab is ordered and cut into month sections by.
   """
   shelvedAt: DateTime!
