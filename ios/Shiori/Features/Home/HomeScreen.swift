@@ -35,8 +35,9 @@ struct HomeScreen: View {
     /// rating, and the book is finished once it closes, rated or not.
     @State private var finishedBook: Book?
     @State private var finishedRating: Double?
-    /// The book the open prompt finishes, kept apart from the sheet's item,
-    /// which is cleared before the sheet's dismissal runs.
+    /// The book the prompt was confirmed for, kept apart from the sheet's
+    /// item, which is cleared before the sheet's dismissal runs. Nil when the
+    /// prompt was cancelled or pulled down: nothing is finished then.
     @State private var pendingFinish: Book?
     /// The search over the reader's books, from the loupe in the corner.
     @State private var showSearch = false
@@ -119,7 +120,10 @@ struct HomeScreen: View {
         }
         .sheet(item: $finishedBook, onDismiss: finishAfterPrompt) { book in
             FinishedBookSheet(book: book) { stars in
+                pendingFinish = book
                 finishedRating = stars
+                finishedBook = nil
+            } onCancel: {
                 finishedBook = nil
             }
         }
@@ -327,7 +331,7 @@ struct HomeScreen: View {
                     case .showStatistics: detail = .statistics
                     case let .finishBook(book):
                         finishedRating = nil
-                        pendingFinish = book
+                        pendingFinish = nil
                         finishedBook = book
                     case let .rateBook(book): ratedBook = book
                     case .scan: onScan()
@@ -359,8 +363,8 @@ struct HomeScreen: View {
         }
     }
 
-    /// Finishes the book the prompt was about, then rates it when the reader
-    /// gave stars. Passing, or pulling the sheet down, leaves it unrated.
+    /// Finishes the book the prompt was confirmed for, then rates it when the
+    /// reader gave stars. A prompt cancelled or pulled down finishes nothing.
     private func finishAfterPrompt() {
         guard let book = pendingFinish else { return }
         let stars = finishedRating

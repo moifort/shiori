@@ -1,14 +1,17 @@
 import SwiftUI
 
 /// What follows "Marquer lu", as Fitness asks for the effort once a workout is
-/// done: the cover, the book named as finished and the stars,
-/// between a close button that passes and a check that rates. The book is
-/// marked read either way — passing, or pulling the sheet down, only leaves it
-/// unrated.
+/// done: the cover, the book named as finished and the stars, between a close
+/// button that cancels and a check that marks the book read. Only the check
+/// finishes it, rated when stars were given: the cross, or pulling the sheet
+/// down, leaves the book as it was — a button tapped by mistake must not end a
+/// reading.
 struct FinishedBookSheet: View {
     let book: Book
-    /// The stars given, or nil when the reader passes.
+    /// The book is finished: the stars given, or nil when none were.
     let onDone: (Double?) -> Void
+    /// The reader changed their mind: the book stays where it was.
+    let onCancel: () -> Void
 
     @State private var rating: Double = 0
     @State private var appeared = false
@@ -18,17 +21,16 @@ struct FinishedBookSheet: View {
             content
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        ToolbarIconButton(title: "Passer", systemImage: "xmark", role: .cancel) {
-                            onDone(nil)
+                        ToolbarIconButton(title: "Annuler", systemImage: "xmark", role: .cancel) {
+                            onCancel()
                         }
-                        .accessibilityIdentifier("finished-skip")
+                        .accessibilityIdentifier("finished-cancel")
                     }
                     ToolbarItem(placement: .confirmationAction) {
-                        ToolbarIconButton(title: "Noter", systemImage: "checkmark") {
-                            onDone(rating)
+                        ToolbarIconButton(title: "Marquer lu", systemImage: "checkmark") {
+                            onDone(rating == 0 ? nil : rating)
                         }
-                        .disabled(rating == 0)
-                        .accessibilityIdentifier("finished-rate")
+                        .accessibilityIdentifier("finished-done")
                     }
                 }
         }
@@ -69,6 +71,6 @@ struct FinishedBookSheet: View {
 
 #Preview {
     Color.clear.sheet(isPresented: .constant(true)) {
-        FinishedBookSheet(book: Book.preview) { _ in }
+        FinishedBookSheet(book: Book.preview, onDone: { _ in }, onCancel: {})
     }
 }
