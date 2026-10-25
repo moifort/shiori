@@ -70,9 +70,38 @@ final class HomeViewModel {
     /// How many releases the dashboard lines up; the rest are Découvrir's.
     private static let releasesShown = 10
 
+    /// The load on its way, which a second ask waits on.
+    private var loading: Task<Void, Never>?
+    /// Something asked for the page again while a load was on its way: a pull,
+    /// or a write that load may have left before. It runs once more before
+    /// anyone waiting is answered.
+    private var reloadAsked = false
+
+    /// Asked again while a load is on its way — back from the background,
+    /// where a fresh token, a new connection and figures rebuilt after the
+    /// nightly sync take a few seconds — a pull holds its spinner until the
+    /// page is up to date, rather than returning at once over the figures
+    /// still on screen.
     func load() async {
-        guard !isLoading else { return }
+        if let loading {
+            reloadAsked = true
+            await loading.value
+            return
+        }
         isLoading = true
+        let task = Task {
+            repeat {
+                reloadAsked = false
+                await refresh()
+            } while reloadAsked
+        }
+        loading = task
+        await task.value
+        loading = nil
+        isLoading = false
+    }
+
+    private func refresh() async {
         errorMessage = nil
         // Apart from the rest: the first look of a month waits for the model,
         // and the figures must not wait with it.
@@ -93,7 +122,6 @@ final class HomeViewModel {
             Task { await lookUpDiscoveriesIfDue() }
         } catch {
             keep(releases: await releases, favorites: await favorites)
-            isLoading = false
             guard !isCancellation(error) else { return }
             // The last dashboard stays on screen and says nothing: blanking good
             // figures because a refresh failed reads as data loss, and a pull
@@ -102,7 +130,6 @@ final class HomeViewModel {
             return
         }
         keep(releases: await releases, favorites: await favorites)
-        isLoading = false
     }
 
     /// A section that came back replaces the one on screen, and is kept for

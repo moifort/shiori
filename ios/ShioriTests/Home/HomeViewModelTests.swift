@@ -42,6 +42,32 @@ struct HomeViewModelTests {
         #expect(viewModel.dashboard != nil)
     }
 
+    /// Back from the background, the reload takes a few seconds: a pull in
+    /// the meantime, or a write's notice, waits for it and asks once more,
+    /// rather than returning at once over the figures still on screen.
+    @Test func reloadAskedDuringALoadWaitsForItAndAsksAgain() async {
+        let calls = Calls()
+        let answered = Flag()
+        var client = HomeClient.preview
+        client.dashboard = {
+            calls.record("dashboard")
+            while !answered.isOn { try await Task.sleep(for: .milliseconds(10)) }
+            return .preview
+        }
+        let viewModel = HomeViewModel(client: client, caching: false)
+        let onReturn = Task { await viewModel.load() }
+        await eventually { calls.all.count == 1 }
+
+        let pull = Task { await viewModel.load() }
+        try? await Task.sleep(for: .milliseconds(50))
+        answered.isOn = true
+        await pull.value
+
+        #expect(calls.all == ["dashboard", "dashboard"])
+        #expect(viewModel.isLoading == false)
+        await onReturn.value
+    }
+
     @Test func releasesLeftOutWhenAFormatCannotBeRead() async {
         var client = HomeClient.preview
         client.discovery = { format in
