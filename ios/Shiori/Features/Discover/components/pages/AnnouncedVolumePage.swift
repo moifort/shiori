@@ -6,55 +6,52 @@ enum AnnouncedVolumeAction {
     /// On the pile, filed in its saga at its number.
     case add
     case openSaga
+    /// The saga's alerts on or off, from the bell.
+    case toggleFollowed
+    /// One of the reader's own volumes in the saga's row.
+    case openVolume(Book)
 }
 
-/// A volume announced, opened as a book opens, drawn as every book page is,
-/// when it comes pinned on its cover — orange while announced, green once
-/// out — with Audible's tag in its corner for a recording, and the way to its
-/// saga where the book page has it. It opens at once on what the look on the
-/// web found, then fills in as a book's page — summary, genre, pages,
+/// A volume announced, opened from "Nouveautés", Découvrir or its saga, drawn
+/// as a book to come is (`UpcomingBookPage`): the reader's own book page,
+/// its day pinned in the hero's corner. It opens at once on what the look on
+/// the web found, then fills in as a book's page — summary, genre, pages,
 /// publisher, narrators — once the model described it, for every reader at
-/// once, so it spends no scan.
+/// once, so it spends no scan. The bell is the saga's: it alerts on every
+/// volume's day.
 struct AnnouncedVolumePage: View {
     let opened: DiscoveryVolume
     /// The book once described, or as the look on the web knows it until then.
     let shown: Book
     let isDescribing: Bool
     let added: Bool
-    /// Whether the page links to its saga.
+    /// Whether the saga's row leads to its page. Not when it was opened from
+    /// the saga's page, which is right under it: the row leads back.
     let linksToSaga: Bool
+    var isFollowed = true
+    var sagaVolumes: [SeriesStripItem] = []
     /// False when the page is pushed: Back closes it, not a Close button.
     var showsClose = true
     let onAction: (AnnouncedVolumeAction) async -> Void
 
     var body: some View {
-        List {
-            BookHeaderSection(
-                book: shown,
-                state: state,
-                releaseDate: opened.volume.date,
-                storeLink: opened.volume.audibleURL.map { .init(name: "Audible", url: $0, tint: .audible) },
-                actions: .init(openSeries: linksToSaga ? { act(.openSaga) } : nil)
-            )
-            ReleaseDescriptionSections(isDescribing: isDescribing, synopsis: shown.synopsis)
-        }
-        .listStyle(.insetGrouped)
-        .generatingInBar(isDescribing ? "L'IA complète la fiche" : nil)
-        .labelStyle(.row)
-        .navigationTitle(Text(verbatim: opened.saga.series.name))
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            if showsClose {
-                ToolbarItem(placement: .cancellationAction) {
-                    ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { act(.close) }
-                }
-            }
-            ToolbarItem(placement: .primaryAction) {
-                AsyncToolbarButton(title: "Ajouter à ma pile", systemImage: "plus") { await onAction(.add) }
-                    .disabled(added)
-                    .accessibilityIdentifier("announced-volume-add")
-            }
-        }
+        UpcomingBookPage(
+            book: shown,
+            releaseDate: opened.volume.date,
+            isDescribing: isDescribing,
+            store: store,
+            isAlerted: isFollowed,
+            state: state,
+            isAdded: added,
+            sagaName: opened.saga.series.name,
+            sagaVolumes: sagaVolumes,
+            showsClose: showsClose,
+            onClose: { act(.close) },
+            onAdd: { await onAction(.add) },
+            onToggleBell: { act(.toggleFollowed) },
+            onOpenSaga: { act(linksToSaga ? .openSaga : .close) },
+            onOpenVolume: { act(.openVolume($0)) }
+        )
     }
 
     /// Closing and opening the saga: nothing to wait for.
@@ -62,7 +59,17 @@ struct AnnouncedVolumePage: View {
         Task { await onAction(action) }
     }
 
-    /// Said under the author only when the calendar leaf in the corner does
+    /// Where it is ordered: its recording on Audible for a saga heard, once
+    /// Audible confirmed it; Amazon for anything else.
+    private var store: UpcomingStore? {
+        let series = opened.saga.series
+        if series.isAudio {
+            return opened.volume.audibleURL.map { UpcomingStore(url: $0, isAudible: true) }
+        }
+        return opened.volume.amazonURL(author: series.author ?? "").map { UpcomingStore(url: $0, isAudible: false) }
+    }
+
+    /// Said on the detail line only when the calendar leaf in the corner does
     /// not say it already: once added, once out, or with no date yet.
     private var state: BookState? {
         if added { return .addedToPile }
@@ -90,7 +97,11 @@ struct AnnouncedVolumePage: View {
             shown: DiscoveryVolume.preview.book.described(by: .preview),
             isDescribing: false,
             added: true,
-            linksToSaga: true
+            linksToSaga: true,
+            sagaVolumes: [
+                .missing(key: "dcc-7", number: 7, title: "La Parade de Mondes", forthcoming: false),
+                .missing(key: "dcc-8", number: 8, title: "Le Livre du Carnage", forthcoming: true, date: "2026-11-05"),
+            ]
         ) { _ in }
     }
 }

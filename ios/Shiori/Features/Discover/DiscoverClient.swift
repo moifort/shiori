@@ -27,6 +27,13 @@ struct DiscoverClient: Sendable {
     var alertsSilenced: @Sendable () async -> Bool
     /// The system's one question about notifications.
     var requestAlerts: @Sendable () async -> Void
+    /// The volumes of a saga, held or lacking, for the row on a book to
+    /// come's page. None by default: a preview that draws no saga leaves it.
+    var sagaVolumes: @Sendable (_ seriesId: String, BookLanguage?) async throws -> [SeriesStripItem] = { _, _ in [] }
+    /// A saga's alerts on or off: the bell on its volume announced.
+    var setSagaFollowed: @Sendable (_ seriesId: String, Bool) async throws -> Void = { _, _ in }
+    /// The reader's own copy an edition is awaited of, for its saga.
+    var book: @Sendable (_ bookId: String) async throws -> Book? = { _ in nil }
 }
 
 extension DiscoverClient {
@@ -51,7 +58,10 @@ extension DiscoverClient {
             let settings = try? await NotificationsAPI.settings()
             return denied || (settings?.enabled.isEmpty ?? false)
         },
-        requestAlerts: { _ = await PushRegistrar.shared.requestPermission() }
+        requestAlerts: { _ = await PushRegistrar.shared.requestPermission() },
+        sagaVolumes: { try await BookAPI.sagaVolumes(seriesId: $0, language: $1) },
+        setSagaFollowed: { _ = try await SeriesAPI.setFollowed(seriesId: $0, followed: $1) },
+        book: { try await BookAPI.book(id: $0) }
     )
 
     static let preview = DiscoverClient(

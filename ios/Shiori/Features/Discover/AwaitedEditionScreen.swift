@@ -7,6 +7,8 @@ struct AwaitedEditionScreen: View {
     private let onStop: () -> Void
 
     @State private var viewModel: AwaitedEditionViewModel
+    @State private var openedVolume: Book?
+    @State private var openedSaga: SeriesDestination?
     @Environment(\.dismiss) private var dismissPresentation
     @Environment(\.detailClosing) private var closing
 
@@ -25,6 +27,7 @@ struct AwaitedEditionScreen: View {
             edition: viewModel.edition,
             shown: viewModel.shown,
             isDescribing: viewModel.isDescribing,
+            sagaVolumes: viewModel.sagaVolumes,
             showsClose: closing.showsCloseButton
         ) { action in
             switch action {
@@ -33,9 +36,22 @@ struct AwaitedEditionScreen: View {
             case .stopAwaiting:
                 onStop()
                 dismiss()
+            case let .openVolume(book):
+                openedVolume = book
+            case let .openSaga(seriesId):
+                openedSaga = SeriesDestination(seriesId: seriesId)
             }
         }
         .task { await viewModel.describe() }
+        .task { await viewModel.loadSaga() }
+        .navigationDestination(item: $openedVolume) { book in
+            BookScreen(bookId: book.id)
+                .closesAsPushed()
+        }
+        .navigationDestination(item: $openedSaga) { destination in
+            SeriesScreen(seriesId: destination.seriesId)
+                .closesAsPushed()
+        }
     }
 }
 

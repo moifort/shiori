@@ -24,7 +24,21 @@ struct BookHero<Actions: View>: View {
     /// draws the line alone, as where the book came without its authors' keys.
     var onOpenAuthor: ((AuthorDestination) -> Void)? = nil
     var coverWidth: CGFloat = 108
+    /// The day a book to come is out, as a calendar leaf on glass in the
+    /// corner level with the cover's top, as the saga's release card pins it.
+    var releaseDate: String? = nil
+    /// How long is left until then — "2 mois", "20 jours" — tagged on the
+    /// detail line after the format, as the format is.
+    var countdown: String? = nil
     @ViewBuilder var actions: Actions
+
+    /// The text's height and the cover's, to tell whether the text climbs
+    /// past the calendar leaf.
+    @State private var identityHeight: CGFloat = 0
+    @State private var coverHeight: CGFloat = 0
+
+    /// The calendar leaf's side and the gap the text keeps from it.
+    private static var leafRoom: CGFloat { 48 + 10 }
 
     /// How tall the fade into the page is: long and eased, so the colours
     /// melt into the page rather than stop at a line under the buttons.
@@ -40,13 +54,21 @@ struct BookHero<Actions: View>: View {
                 BookCover(book: book, width: coverWidth, showsFormatBadge: false)
                     .shadow(color: .black.opacity(0.45), radius: 16, y: 10)
                     .accessibilityHidden(true)
+                    .onGeometryChange(for: CGFloat.self, of: \.size.height) { coverHeight = $0 }
                 identity
+                    .onGeometryChange(for: CGFloat.self, of: \.size.height) { identityHeight = $0 }
             }
             // In the corner over the text, level with the cover's top: what
-            // the reader decided of the book, apart from what it is.
+            // the reader decided of the book, apart from what it is, and the
+            // day a book to come is out.
             .overlay(alignment: .topTrailing) {
-                HStack(spacing: 8) { marks }
-                    .font(.body)
+                HStack(alignment: .top, spacing: 8) {
+                    marks
+                    if let releaseDate {
+                        ReleaseDateBadge(date: releaseDate, onGlass: true)
+                    }
+                }
+                .font(.body)
             }
             actions
         }
@@ -66,12 +88,21 @@ struct BookHero<Actions: View>: View {
 
     private var identity: some View {
         VStack(alignment: .leading, spacing: 3) {
-            if let overline {
-                Text(overline)
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.8))
-                    .lineLimit(1)
-                    .accessibilityIdentifier("book-saga-line")
+            if let series = book.series {
+                // The saga's name gives way before the volume's number does.
+                HStack(spacing: 4) {
+                    Text(series.name)
+                        .layoutPriority(-1)
+                    if let volume = series.volume {
+                        Text(verbatim: "· \(String(localized: "Tome \(volume)"))")
+                    }
+                }
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.8))
+                .lineLimit(1)
+                .padding(.trailing, besideLeaf)
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("book-saga-line")
             }
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(book.title)
@@ -80,6 +111,7 @@ struct BookHero<Actions: View>: View {
                     .minimumScaleFactor(0.8)
             }
             .foregroundStyle(.white)
+            .padding(.trailing, besideLeaf)
             authorLine
             if let narratorLine = book.narratorLine {
                 Text("Lu par \(narratorLine)")
@@ -96,6 +128,14 @@ struct BookHero<Actions: View>: View {
             CopyableValue(title: "Copier l'auteur", value: book.authors.joined(separator: ", ")),
             CopyableValue(title: "Copier le lecteur", value: book.narratorLine ?? ""),
         ])
+    }
+
+    /// Room kept for the calendar leaf beside the saga line and the title,
+    /// once the text runs taller than the cover leaves under the leaf: it
+    /// climbs beside it rather than under it.
+    private var besideLeaf: CGFloat {
+        guard releaseDate != nil, identityHeight > coverHeight - Self.leafRoom else { return 0 }
+        return Self.leafRoom
     }
 
     /// The authors, and the way to their page: a chevron after the line, as
@@ -152,14 +192,6 @@ struct BookHero<Actions: View>: View {
         }
     }
 
-    /// Over the title: the saga and the volume's place in it, as the TV app
-    /// names the show over the episode. Nothing for a book on its own.
-    private var overline: String? {
-        guard let series = book.series else { return nil }
-        guard let volume = series.volume else { return series.name }
-        return "\(series.name) · \(String(localized: "Tome \(volume)"))"
-    }
-
     /// Where the reader stands and how long the book runs, as the home's card
     /// says it — "depuis 3j · 16h09" — with the format in an outlined tag, as
     /// the TV app tags a film "4K", then a recording's time left on its bar.
@@ -179,6 +211,11 @@ struct BookHero<Actions: View>: View {
                 if book.format == .audiobook {
                     // Clear over the hero's colours: no glass behind the word.
                     OutlinedTag(text: String(localized: "Audio"), isFrosted: false)
+                }
+                if let countdown {
+                    OutlinedTag(text: countdown.localizedUppercase, isFrosted: false)
+                        .accessibilityLabel(Text("Dans \(countdown)"))
+                        .accessibilityIdentifier("book-countdown")
                 }
             }
             // Only while the book is under way: a finished one has nothing left.

@@ -1693,6 +1693,22 @@
         }
       }
     },
+    "Acheter" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buy"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acheter"
+          }
+        }
+      }
+    },
     "Actualisation" : {
       "localizations" : {
         "en" : {
@@ -4585,6 +4601,22 @@
         }
       }
     },
+    "Dans %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dans %@"
+          }
+        }
+      }
+    },
     "Dans la pile de %@" : {
       "localizations" : {
         "en" : {
@@ -4597,6 +4629,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dans la pile de %@"
+          }
+        }
+      }
+    },
+    "Dans votre pile" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On your pile"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dans votre pile"
           }
         }
       }
@@ -7925,6 +7973,22 @@
         }
       }
     },
+    "Ne plus être prévenu" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop alerts"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ne plus être prévenu"
+          }
+        }
+      }
+    },
     "Nom" : {
       "localizations" : {
         "en" : {
@@ -11029,22 +11093,6 @@
         }
       }
     },
-    "Suivi depuis le" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Following since"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Suivi depuis le"
-          }
-        }
-      }
-    },
     "Suivre" : {
       "localizations" : {
         "en" : {
@@ -13649,6 +13697,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "État"
+          }
+        }
+      }
+    },
+    "Être prévenu de la sortie" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alert me on release"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Être prévenu de la sortie"
           }
         }
       }

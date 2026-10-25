@@ -40,6 +40,16 @@ enum ReleaseDateText {
         }
     }
 
+    /// In a fact tile: "12 janv. 2027", "mars 2027", "2027".
+    static func full(_ date: String) -> String {
+        guard let (day, precision) = parts(date) else { return date }
+        switch precision {
+        case 3: return day.formatted(.dateTime.day().month(.abbreviated).year())
+        case 2: return day.formatted(.dateTime.month(.wide).year())
+        default: return String(date.prefix(4))
+        }
+    }
+
     /// In a sentence: "le 19 févr. 2027", "en mars 2027", "en 2027".
     static func phrase(_ date: String) -> String {
         guard let (day, precision) = parts(date) else { return date }

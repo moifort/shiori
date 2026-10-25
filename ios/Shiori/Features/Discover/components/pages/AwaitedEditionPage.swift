@@ -5,83 +5,69 @@ enum AwaitedEditionAction {
     case close
     /// Given up, once confirmed: the page closes behind it.
     case stopAwaiting
+    /// The reader's copy, or another of their volumes, in the saga's row.
+    case openVolume(Book)
+    case openSaga(String)
 }
 
-/// One awaited edition, opened from Découvrir, drawn as a volume announced
-/// is: where it stands pinned on its cover — orange while announced, green
-/// once out — with the store's tag in its corner once it sells it, what it is a translation or a recording of, and
-/// since when it is watched for. Only what is known is drawn. "Ne plus suivre"
-/// sits in the corner, asked for twice as a saga's deletion is. The Audible
-/// sync brings a recording bought into the library by itself, which ends the
-/// wait.
+/// One awaited edition — a translation or a recording of a book the reader
+/// holds — opened from "Nouveautés", Découvrir or the book's page, drawn as a
+/// book to come is (`UpcomingBookPage`): the reader's own book page, its day
+/// pinned in the hero's corner, the saga of their copy under it, their copy
+/// ringed. Only what is known is drawn. The bell gives the wait up, asked for
+/// twice as a saga's deletion is; the Audible sync brings a recording bought
+/// into the library by itself, which ends the wait.
 struct AwaitedEditionPage: View {
     let edition: AwaitedEdition
     /// The edition once described, as a book's page draws it.
     let shown: Book
     let isDescribing: Bool
+    var sagaVolumes: [SeriesStripItem] = []
     /// False when the page is pushed: Back closes it, not a Close button.
     var showsClose = true
     let onAction: (AwaitedEditionAction) async -> Void
 
-    @State private var confirmStop = false
-
     var body: some View {
-        List {
-            BookHeaderSection(
-                book: shown,
-                state: edition.pageState,
-                releaseDate: edition.announcedDate,
-                storeLink: edition.storeURL.map { .init(name: edition.format.storeName, url: $0, tint: edition.format.storeTint) }
-            ) {
-                if edition.title != edition.originalTitle {
-                    LabeledInfoRow(title: "Titre original", value: edition.originalTitle, icon: "character.book.closed")
-                }
-                if let awaitedAt = edition.awaitedAt {
-                    LabeledInfoRow(
-                        title: "Suivi depuis le",
-                        value: awaitedAt.formatted(date: .abbreviated, time: .omitted),
-                        icon: "binoculars"
-                    )
-                }
-            }
-            ReleaseDescriptionSections(isDescribing: isDescribing, synopsis: shown.synopsis)
-        }
-        .listStyle(.insetGrouped)
-        .generatingInBar(isDescribing ? "L'IA complète la fiche" : nil)
-        .labelStyle(.row)
-        .navigationTitle(edition.format.awaitedTitle)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            if showsClose {
-                ToolbarItem(placement: .cancellationAction) {
-                    ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { act(.close) }
-                }
-            }
-            ToolbarItem(placement: .primaryAction) {
-                ToolbarIconButton(title: "Ne plus suivre", systemImage: "bell.slash") {
-                    confirmStop = true
-                }
-                .tint(.red)
-                .accessibilityIdentifier("awaited-stop")
-                // Attached to the button, as a saga's deletion is: the dialog
-                // rises from the control that asked.
-                .confirmationDialog(
-                    "Ne plus suivre ce livre ?",
-                    isPresented: $confirmStop,
-                    titleVisibility: .visible
-                ) {
-                    Button("Ne plus suivre", role: .destructive) { act(.stopAwaiting) }
-                        .accessibilityIdentifier("choice-stop-awaiting")
-                    Button("Annuler", role: .cancel) {}
-                } message: {
-                    Text("Vous ne serez plus prévenu de sa sortie.")
-                }
-            }
-        }
+        UpcomingBookPage(
+            book: shown,
+            releaseDate: edition.date,
+            isDescribing: isDescribing,
+            store: edition.storeURL.map { UpcomingStore(url: $0, isAudible: edition.format == .audiobook) },
+            isAlerted: true,
+            bellConfirmation: BellConfirmation(
+                title: "Ne plus suivre ce livre ?",
+                message: "Vous ne serez plus prévenu de sa sortie.",
+                action: "Ne plus suivre"
+            ),
+            state: state,
+            leadingTiles: originalTitleTile,
+            sagaName: shown.series?.name,
+            sagaVolumes: sagaVolumes,
+            currentVolumeId: edition.bookId,
+            showsClose: showsClose,
+            onClose: { act(.close) },
+            onToggleBell: { act(.stopAwaiting) },
+            onOpenSaga: { if let id = shown.series?.id { act(.openSaga(id)) } },
+            onOpenVolume: { act(.openVolume($0)) }
+        )
     }
 
     private func act(_ action: AwaitedEditionAction) {
         Task { await onAction(action) }
+    }
+
+    /// Said on the detail line only when the calendar leaf does not say it:
+    /// once out, or while nothing is announced.
+    private var state: BookState? {
+        if edition.state == .announced, let date = edition.date, ReleaseDateText.isUpcoming(date) { return nil }
+        return BookState(text: edition.stateLine, tint: edition.stateTint ?? .gray)
+    }
+
+    /// Its title in its own language, heading the facts when the edition
+    /// translates it.
+    private var originalTitleTile: [FactTile] {
+        guard edition.title != edition.originalTitle else { return [] }
+        return [FactTile(id: "originalTitle", title: "Titre original", value: edition.originalTitle, isWide: true)]
     }
 }
 

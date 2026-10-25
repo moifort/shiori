@@ -2,7 +2,8 @@ import SwiftUI
 
 /// A volume announced, connected: opened from the Books shelf of Découvrir,
 /// from the home page, or from its row on the saga screen. Describes it as it
-/// opens, adds it, and pushes its saga.
+/// opens, lays out its saga's row, adds it, turns the saga's alerts on or off,
+/// and pushes its saga or one of the reader's volumes.
 struct AnnouncedVolumeScreen: View {
     /// Whether the page links to its saga. Not when it was opened from the saga
     /// screen, which is right under it.
@@ -10,6 +11,7 @@ struct AnnouncedVolumeScreen: View {
 
     @State private var viewModel: AnnouncedVolumeViewModel
     @State private var showsSaga = false
+    @State private var openedVolume: Book?
     @Environment(\.dismiss) private var dismissPresentation
     @Environment(\.detailClosing) private var closing
 
@@ -33,15 +35,24 @@ struct AnnouncedVolumeScreen: View {
             isDescribing: viewModel.isDescribing,
             added: viewModel.added,
             linksToSaga: linksToSaga,
+            isFollowed: viewModel.isFollowed,
+            sagaVolumes: viewModel.sagaVolumes,
             showsClose: closing.showsCloseButton
         ) { action in
             switch action {
             case .close: dismiss()
             case .add: await viewModel.add()
             case .openSaga: showsSaga = true
+            case .toggleFollowed: await viewModel.toggleFollowed()
+            case let .openVolume(book): openedVolume = book
             }
         }
         .task { await viewModel.describe() }
+        .task { await viewModel.loadSaga() }
+        .navigationDestination(item: $openedVolume) { book in
+            BookScreen(bookId: book.id)
+                .closesAsPushed()
+        }
         .navigationDestination(isPresented: $showsSaga) {
             SeriesScreen(seriesId: viewModel.opened.saga.series.seriesId)
                 .closesAsPushed()

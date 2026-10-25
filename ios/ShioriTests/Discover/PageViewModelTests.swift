@@ -112,3 +112,78 @@ struct AwaitedEditionViewModelTests {
         #expect(viewModel.isDescribing == false)
     }
 }
+
+@MainActor
+struct AwaitedEditionSagaTests {
+    @Test func theCopysSagaHeadsTheEditionAndFillsTheRow() async {
+        var client = DiscoverClient.preview
+        client.book = { id in
+            Book(
+                id: id,
+                title: "Les Mensonges de Locke Lamora",
+                authors: ["Scott Lynch"],
+                language: .fr,
+                series: SeriesMembership(id: "sg", name: "Les Salauds Gentilshommes", volume: 1, kind: .main),
+                status: .read
+            )
+        }
+        client.sagaVolumes = { seriesId, language in
+            [.missing(key: "\(seriesId)-2-\(language?.rawValue ?? "none")", number: 2, title: "Des horizons rouges", forthcoming: false)]
+        }
+        let viewModel = AwaitedEditionViewModel(edition: .preview, client: client)
+
+        await viewModel.loadSaga()
+
+        #expect(viewModel.shown.series?.name == "Les Salauds Gentilshommes")
+        #expect(viewModel.shown.series?.volume == 1)
+        #expect(viewModel.sagaVolumes.map(\.id) == ["missing-sg-2-fr"])
+    }
+
+    @Test func aBookOnItsOwnHasNoRow() async {
+        var client = DiscoverClient.preview
+        client.book = { id in Book(id: id, title: "Seul", authors: [], status: .read) }
+        let viewModel = AwaitedEditionViewModel(edition: .preview, client: client)
+
+        await viewModel.loadSaga()
+
+        #expect(viewModel.sagaName == nil)
+        #expect(viewModel.sagaVolumes.isEmpty)
+    }
+}
+
+@MainActor
+struct AnnouncedVolumeBellTests {
+    @Test func theBellTurnsAtOnceAndTellsTheServer() async {
+        let calls = Calls()
+        var client = DiscoverClient.preview
+        client.setSagaFollowed = { seriesId, followed in calls.record("\(seriesId) \(followed)") }
+        let viewModel = AnnouncedVolumeViewModel(opened: .preview, client: client)
+
+        await viewModel.toggleFollowed()
+
+        #expect(viewModel.isFollowed == false)
+        #expect(calls.all == ["dcc false"])
+    }
+
+    @Test func aRefusalTurnsTheBellBack() async {
+        var client = DiscoverClient.preview
+        client.setSagaFollowed = { _, _ in throw APIError.domain(code: "NOT_FOUND", messages: []) }
+        let viewModel = AnnouncedVolumeViewModel(opened: .preview, client: client)
+
+        await viewModel.toggleFollowed()
+
+        #expect(viewModel.isFollowed == true)
+    }
+
+    @Test func theRowIsTheSagasInItsLanguage() async {
+        var client = DiscoverClient.preview
+        client.sagaVolumes = { seriesId, language in
+            [.missing(key: "\(seriesId)-8-\(language?.rawValue ?? "none")", number: 8, title: "Le Livre du Carnage", forthcoming: true)]
+        }
+        let viewModel = AnnouncedVolumeViewModel(opened: .preview, client: client)
+
+        await viewModel.loadSaga()
+
+        #expect(viewModel.sagaVolumes.map(\.id) == ["missing-dcc-8-fr"])
+    }
+}
