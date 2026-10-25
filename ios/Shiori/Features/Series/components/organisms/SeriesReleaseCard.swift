@@ -2,8 +2,8 @@ import SwiftUI
 
 /// The next volume of a saga announced, drawn as the home's "En cours" lead
 /// card: its cover edge to edge on the leading side, over the cover's own
-/// colours the title, the author and the volume's place, then one white
-/// button that orders it from the store — Audible for a recording, Amazon
+/// colours the title, the author and the volume's place at the top, and at
+/// the foot one white button that orders it from the store — Audible for a recording, Amazon
 /// otherwise. The day it comes out sits in the corner as a calendar leaf on
 /// glass, in orange as everything announced is. A tap elsewhere opens the
 /// volume's page, as on Découvrir. No "wait for it": the saga's bell already
@@ -16,6 +16,8 @@ struct SeriesReleaseCard: View {
 
     private static let height: CGFloat = 150
     private static let coverWidth: CGFloat = 100
+    /// The calendar leaf's width and its margin, kept clear by the text.
+    private static let leafRoom: CGFloat = 48
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
@@ -28,17 +30,20 @@ struct SeriesReleaseCard: View {
             )
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
-                Spacer(minLength: 0)
+                // At the card's top, clear of the calendar leaf in its corner.
                 Text(volume.title)
                     .font(.headline)
                     .lineLimit(2)
+                    .padding(.trailing, volume.date == nil ? 0 : Self.leafRoom)
                 Text(verbatim: "\(author) · \(String(localized: "Tome \(volume.number)"))")
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.75))
                     .lineLimit(1)
+                    .padding(.trailing, volume.date == nil ? 0 : Self.leafRoom)
+                Spacer(minLength: 0)
+                // The next step at the card's foot.
                 if let store {
                     preorderButton(store)
-                        .padding(.top, 9)
                 }
             }
             .foregroundStyle(.white)

@@ -840,7 +840,13 @@ enum Showcase {
                 isAudio: saga.isAudio
             ),
             opinion: SeriesOpinion(seriesId: saga.id, rating: saga.rating, favorite: saga.favorite),
-            owned: books.filter { $0.series?.id == saga.id }
+            // With their authors' keys, as the screen's query brings them:
+            // the hero's author line opens the author's page.
+            owned: books.filter { $0.series?.id == saga.id }.map { book in
+                var book = book
+                book.authorKeys = book.authors.map { $0.lowercased().replacingOccurrences(of: " ", with: "-") }
+                return book
+            }
         )
     }
 

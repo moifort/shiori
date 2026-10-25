@@ -15,6 +15,9 @@ struct PosterCover: View {
     var showsAudioTag = true
     /// The line's colour: orange for the day a volume comes out.
     var captionColor: Color = .white
+    /// How dark the cover is drawn under its line: a little, as the TV app
+    /// dims its posters; more for a volume not out yet.
+    var dimming: Double = 0.12
 
     static let cornerRadius: CGFloat = 8
 
@@ -24,7 +27,7 @@ struct PosterCover: View {
             // longer glares beside a dark one.
             .overlay {
                 RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
-                    .fill(.black.opacity(0.12))
+                    .fill(.black.opacity(dimming))
             }
             .overlay { footBlur }
             .overlay(alignment: .topTrailing) {
@@ -66,7 +69,7 @@ struct PosterCover: View {
             }
             .overlay {
                 RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
-                    .fill(.black.opacity(0.12))
+                    .fill(.black.opacity(dimming))
             }
             .clipShape(.rect(cornerRadius: Self.cornerRadius, style: .continuous))
             .mask {

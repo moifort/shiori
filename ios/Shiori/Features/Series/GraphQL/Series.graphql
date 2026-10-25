@@ -15,6 +15,8 @@ query SeriesScreen($id: SeriesId!, $language: BookLanguage, $proposed: ProposedS
   }
   mySeriesVolumes(seriesId: $id, language: $language) {
     ...BookSummary
+    # The hero's author line opens the author's page.
+    authorKeys
   }
 }
 

@@ -296,10 +296,15 @@ struct SeriesPage: View {
         let title = release?.title ?? volume.title
         let forthcoming = volume.isForthcoming(asOf: currentYear, in: language, datedUpTo: datedUpTo)
         let day = forthcoming ? release.map { ReleaseDateText.short($0.date) } : nil
+        // An announced volume shows the edition's cover once the watch found
+        // one, dimmed, its day in orange over the blurred foot.
+        let coverURL = release?.coverURL
+            ?? (forthcoming ? announcedVolume(volume)?.coverURL : nil)
+            ?? releases?.next.flatMap { $0.number == volume.number && volume.kind == .main ? $0.coverURL : nil }
         let cover = Group {
-            if let day {
-                // Blank while announced, as a poster still to be printed:
-                // the day reads over it in orange where the number would.
+            if let day, coverURL == nil {
+                // No cover found yet: a blank, rather than a placeholder
+                // printing the title under the day.
                 BlankPoster(caption: day)
             } else {
                 PosterCover(
@@ -308,13 +313,17 @@ struct SeriesPage: View {
                         title: title,
                         authors: [author],
                         format: series?.isAudio == true ? .audiobook : .book,
-                        coverURL: release?.coverURL,
+                        coverURL: coverURL,
                         status: .toRead
                     ),
-                    caption: caption(volume),
-                    showsAudioTag: false
+                    caption: day ?? caption(volume),
+                    showsAudioTag: false,
+                    captionColor: day == nil ? .white : .orange,
+                    dimming: day == nil ? 0.12 : 0.5
                 )
-                .opacity(0.45)
+                // A volume out the reader lacks is dimmed whole; an announced
+                // one keeps its day bright.
+                .opacity(day == nil ? 0.45 : 1)
             }
         }
         .overlay {
@@ -539,6 +548,15 @@ private struct BlankPoster: View {
                 endPoint: .bottomTrailing
             ))
             .frame(width: 102, height: 153)
+            // The foot darker, where a cover would melt into its blur.
+            .overlay {
+                LinearGradient(
+                    stops: [.init(color: .clear, location: 0.45), .init(color: .black.opacity(0.35), location: 0.95)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .clipShape(.rect(cornerRadius: PosterCover.cornerRadius, style: .continuous))
+            }
             .overlay(alignment: .bottom) {
                 Text(verbatim: caption)
                     .font(.subheadline.weight(.semibold))

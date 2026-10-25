@@ -41,7 +41,11 @@ enum SeriesAPI {
         return (
             series: data.series.map { BookSeries(catalogue: $0.fragments.seriesCatalogue) },
             opinion: data.seriesOpinion?.fragments.seriesOpinionFields.asOpinion,
-            owned: data.mySeriesVolumes.map { $0.fragments.bookSummary.asBook }
+            owned: data.mySeriesVolumes.map { row in
+                var book = row.fragments.bookSummary.asBook
+                book.authorKeys = row.authorKeys
+                return book
+            }
         )
     }
 
