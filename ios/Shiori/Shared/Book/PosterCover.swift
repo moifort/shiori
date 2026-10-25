@@ -22,7 +22,7 @@ struct PosterCover: View {
     static let cornerRadius: CGFloat = 8
 
     var body: some View {
-        BookCover(book: book, width: width, showsFormatBadge: false, cornerRadius: Self.cornerRadius)
+        cover
             // Dimmed a little, as the TV app's posters are: a white cover no
             // longer glares beside a dark one.
             .overlay {
@@ -53,17 +53,29 @@ struct PosterCover: View {
             }
     }
 
+    /// The cover as drawn here: without a photo, the typeset stand-in keeps
+    /// its title and drops its author line, whose place the caption takes.
+    private var cover: some View {
+        BookCover(
+            book: book,
+            width: width,
+            showsFormatBadge: false,
+            cornerRadius: Self.cornerRadius,
+            showsPlaceholderAuthor: false
+        )
+    }
+
     /// The cover blurred into its foot, more the lower it goes, as the TV
     /// app's tiles melt under their label: the print of a cover never fights
     /// the line, and nothing darkens it. The cover as drawn, photo or the
     /// typeset stand-in alike: blurring only a photo left the stand-in's
-    /// author line sharp under "Tome 2".
+    /// print sharp under "Tome 2".
     private var footBlur: some View {
         // Scaled up before the blur, as CoverBackdrop does, so the edges
         // blur on the cover itself rather than on the transparent corners.
         Color.clear
             .overlay {
-                BookCover(book: book, width: width, showsFormatBadge: false, cornerRadius: Self.cornerRadius)
+                cover
                     .scaleEffect(1.15)
                     .blur(radius: 10, opaque: true)
             }

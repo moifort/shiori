@@ -27,6 +27,9 @@ struct BookCover: View {
     /// Square corners where covers sit edge to edge, as in a mosaic. Nil
     /// rounds them in proportion to the width.
     var cornerRadius: CGFloat?
+    /// Whether the stand-in prints the author at its foot. Off where a line
+    /// of the context's own sits there instead, as a poster's "Tome 2".
+    var showsPlaceholderAuthor = true
 
     /// Standard trade paperback proportions, so photographed covers are cropped
     /// consistently and placeholders sit at the same size as real ones.
@@ -82,7 +85,7 @@ struct BookCover: View {
                     .lineLimit(8)
                     .layoutPriority(1)
                 Spacer(minLength: 0)
-                if !authorLine.isEmpty {
+                if showsPlaceholderAuthor, !authorLine.isEmpty {
                     Text(authorLine)
                         .font(.system(size: authorSize, weight: .bold, design: .serif))
                         .lineLimit(2)
