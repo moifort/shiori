@@ -1,5 +1,5 @@
 import type { Brand } from 'ts-brand'
-import type { BookLanguage, CoverUrl, ReadingStatus, SeriesMembership } from '~/domain/book/types'
+import type { BookLanguage, CoverUrl, ReadingStatus, SeriesEntry } from '~/domain/book/types'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 
 /** Amazon's product identifier for a Kindle edition. Ten alphanumeric
@@ -89,7 +89,7 @@ export type ImportableKindleBook = {
   coverUrl?: CoverUrl
   /** Read off the title, which is where Amazon puts the saga, by the model or,
    *  failing it, by pattern. Absent when neither finds one. */
-  series?: SeriesMembership
+  series?: SeriesEntry
   /** The language of the edition, which Amazon names in the title or its sort
    *  key. Absent when neither does. */
   language?: BookLanguage

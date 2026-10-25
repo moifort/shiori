@@ -106,8 +106,8 @@ only.
 
 ### Analytics — `analytics/{userId}`
 
-The stored dashboard view holds `seriesInProgress[].id`. The migration marks every view stale, so
-the next home opening rebuilds it with series ids — reads only.
+The stored dashboard view holds the sagas in progress by id. `VIEW_VERSION` is bumped, so every
+view stored before is rebuilt on its next read with series ids — reads only, no migration step.
 
 ## The migration — `027-books-name-their-edition`
 
@@ -119,8 +119,6 @@ Forward-only, raw documents (no domain types), batches of 400, idempotent:
 2. `series` and `series-misses`: for each document whose id holds a `~`, set `id` to the document
    id and `saga` to the part before the `~`. The bare documents left by migration 013 (no book
    points at them since 015/016) get `saga = id` and are otherwise untouched.
-3. `analytics`: `stale: true` on every view.
-
 The Deploy workflow runs migrations after Terraform has put the new revision live, so for the
 length of that step (well under a minute) the new code reads books not yet migrated: a saga page
 or the Series tab can show the wrong edition grouping until the step ends. Accepted rather than
@@ -128,7 +126,7 @@ carried by a read-time fallback that would outlive it; no write during the windo
 book written then is written in the new form and the migration skips it.
 
 Its test covers a book per case (French, English, audiobook, no language, already migrated), a
-catalogue, a miss, and a view, and runs twice to prove idempotence.
+catalogue, a miss, and runs twice to prove idempotence.
 
 ## The API
 

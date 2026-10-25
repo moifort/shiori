@@ -31,10 +31,10 @@ import type {
   BookLanguage,
   ListeningMinutes as ListeningMinutesValue,
   ReadingStatus,
-  SeriesMembership,
+  SeriesEntry,
 } from '~/domain/book/types'
 import { SeriesName, seriesKeyOf, VolumeNumber } from '~/domain/series/primitives'
-import type { SeriesId, VolumeNumber as VolumeNumberValue } from '~/domain/series/types'
+import type { SagaKey, VolumeNumber as VolumeNumberValue } from '~/domain/series/types'
 import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
 import { titleWithoutSaga } from '~/domain/shared/saga-title'
 import type {
@@ -252,7 +252,7 @@ const seriesMembershipOf = (
   const name = optionally(item.series?.name?.replace(EDITION_MENTION, '').trim(), SeriesName)
   if (!name || authors.length === 0) return undefined
   return {
-    id: seriesKeyOf(name, authors[0], 'audiobook'),
+    saga: seriesKeyOf(name, authors[0], 'audiobook'),
     name,
     volume: volumeOf(item.series?.position),
     kind: 'main',
@@ -286,7 +286,7 @@ export const seriesVolumesFor = (
     if (!book.audibleAsin || !book.series || book.series.volume !== undefined) return []
     const item = byAsin.get(book.audibleAsin)
     const membership = item && seriesMembershipOf(item, authorsOf(item))
-    if (!membership?.volume || membership.id !== book.series.id) return []
+    if (!membership?.volume || membership.saga !== book.series.saga) return []
     return [{ bookId: book.id, volume: membership.volume }]
   })
 }
@@ -593,7 +593,7 @@ export const recordingOfVolume = (
     title,
     author,
   }: {
-    seriesId: SeriesId
+    seriesId: SagaKey
     volume: VolumeNumberValue
     language: BookLanguage
     title: string
@@ -604,7 +604,7 @@ export const recordingOfVolume = (
   const candidates = inLanguage.filter((importable) => importable.series?.volume === volume)
   const wanted = shelfKeyOf(title, author)
   return (
-    candidates.find((importable) => importable.series?.id === seriesId) ??
+    candidates.find((importable) => importable.series?.saga === seriesId) ??
     candidates[0] ??
     inLanguage.find(
       (importable) =>
@@ -620,7 +620,7 @@ export const recordingOfVolume = (
  *  once they do. */
 export const volumeBookFrom = (
   recording: ImportableBook,
-  membership: SeriesMembership,
+  membership: SeriesEntry,
   language: BookLanguage,
 ): NewBook => ({
   ...bookFrom(recording),

@@ -34,7 +34,7 @@ import { BookUseCase } from '~/domain/book/use-case'
 import { watchKeyOf } from '~/domain/discovery/business-rules'
 import { DiscoveryQuery } from '~/domain/discovery/query'
 import { SeriesQuery } from '~/domain/series/query'
-import type { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
+import type { SagaKey, SeriesName, VolumeNumber } from '~/domain/series/types'
 import { SeriesUseCase } from '~/domain/series/use-case'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
@@ -222,12 +222,12 @@ export namespace AudibleUseCase {
       seriesId,
       volume,
       language,
-    }: { seriesId: SeriesId; volume: VolumeNumber; language: BookLanguage },
+    }: { seriesId: SagaKey; volume: VolumeNumber; language: BookLanguage },
   ): Promise<Book | 'not-connected' | 'not-found'> => {
     const connected = await connectedCredentials(userId)
     if (connected === 'not-connected') return connected
     const [catalogue, watches] = await Promise.all([
-      SeriesQuery.byId({ id: seriesId, language }),
+      SeriesQuery.byId({ saga: seriesId, language }),
       DiscoveryQuery.watches([watchKeyOf({ seriesId, language })]),
     ])
     const entry = catalogue?.volumes.find(
@@ -250,7 +250,7 @@ export namespace AudibleUseCase {
     await AudibleCommand.rememberRotatedCredentials(userId, credentials)
     if (!recording) return 'not-found'
 
-    const membership = { id: seriesId, name: catalogue.name, volume, kind: 'main' as const }
+    const membership = { saga: seriesId, name: catalogue.name, volume, kind: 'main' as const }
     return BookUseCase.add(userId, volumeBookFrom(recording, membership, language))
   }
 
@@ -378,7 +378,7 @@ const importablesOf = (items: readonly AudibleItem[]) =>
 const recordingOf = async (
   credentials: Credentials,
   wanted: {
-    seriesId: SeriesId
+    seriesId: SagaKey
     volume: VolumeNumber
     language: BookLanguage
     asin?: AudibleAsin

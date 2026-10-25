@@ -163,7 +163,7 @@ describe('scanning a cover', () => {
     expect(Object.keys(usage)).toEqual(['vision', 'enrichment'])
     expect(
       await SeriesQuery.byId({
-        id: seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book'),
+        saga: seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book'),
         language: 'fr',
       }),
     ).toBeNull()
@@ -573,7 +573,7 @@ describe('describing a named book from the BnF', () => {
       authors: [AuthorName('Eiichirō Oda')],
       format: 'manga',
       series: {
-        id: seriesKeyOf('One Piece', 'Eiichirō Oda', 'manga'),
+        saga: seriesKeyOf('One Piece', 'Eiichirō Oda', 'manga'),
         name: SeriesName('One Piece'),
         volume: VolumeNumber(5),
         kind: 'main',
@@ -770,7 +770,7 @@ describe('cataloguing a saga', () => {
 
     expect(prompts.catalogue).toContain('ENREGISTRÉS EN LIVRE AUDIO en français')
     expect(prompts.catalogue).toContain('audible.fr')
-    expect(await SeriesQuery.byId({ id, language: 'fr' })).not.toBeNull()
+    expect(await SeriesQuery.byId({ saga: id, language: 'fr' })).not.toBeNull()
   })
 
   // Each edition lists its own volumes: a saga catalogued in French says
@@ -781,11 +781,11 @@ describe('cataloguing a saga', () => {
     await catalogued('fr')
     await catalogued('en')
 
-    expect(await SeriesQuery.byId({ id: kingkiller, language: 'en' })).toMatchObject({
+    expect(await SeriesQuery.byId({ saga: kingkiller, language: 'en' })).toMatchObject({
       name: 'The Kingkiller Chronicle',
       language: 'en',
     })
-    expect(await SeriesQuery.byId({ id: kingkiller, language: 'fr' })).toMatchObject({
+    expect(await SeriesQuery.byId({ saga: kingkiller, language: 'fr' })).toMatchObject({
       language: 'fr',
     })
   })
@@ -803,7 +803,7 @@ describe('cataloguing a saga', () => {
 
     await catalogued()
 
-    expect((await SeriesQuery.byId({ id: kingkiller, language: 'fr' }))?.volumes).toHaveLength(3)
+    expect((await SeriesQuery.byId({ saga: kingkiller, language: 'fr' }))?.volumes).toHaveLength(3)
   })
 
   // A failed catalogue must not fail what asked for it: the saga is
@@ -812,7 +812,7 @@ describe('cataloguing a saga', () => {
     answers = [new Error('grounding is down')]
 
     expect(await catalogued()).toEqual({})
-    expect(await SeriesQuery.byId({ id: kingkiller, language: 'fr' })).toBeNull()
+    expect(await SeriesQuery.byId({ saga: kingkiller, language: 'fr' })).toBeNull()
   })
 
   // Storing an empty catalogue would mark the saga as known and stop any later
@@ -822,6 +822,6 @@ describe('cataloguing a saga', () => {
 
     await catalogued()
 
-    expect(await SeriesQuery.byId({ id: kingkiller, language: 'fr' })).toBeNull()
+    expect(await SeriesQuery.byId({ saga: kingkiller, language: 'fr' })).toBeNull()
   })
 })

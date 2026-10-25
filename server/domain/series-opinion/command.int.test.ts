@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import { StarRating } from '~/domain/book/primitives'
-import { SeriesId, VolumeNumber } from '~/domain/series/primitives'
+import { SagaKey, VolumeNumber } from '~/domain/series/primitives'
 import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore, startFakeRequest } from '~/test/fake-firestore'
 
@@ -10,7 +10,7 @@ const { SeriesOpinionCommand } = await import('~/domain/series-opinion/command')
 const { SeriesOpinionQuery } = await import('~/domain/series-opinion/query')
 
 const reader = 'reader-1' as UserId
-const dune = SeriesId('dune--frank-herbert')
+const dune = SagaKey('dune--frank-herbert')
 
 let fake = resetFakeFirestore()
 
@@ -166,7 +166,7 @@ describe('what a reader makes of a saga', () => {
 describe('deleting an account', () => {
   test('forgets more opinions than one batch can carry', async () => {
     for (let index = 0; index < 520; index++)
-      await SeriesOpinionCommand.rate(reader, SeriesId(`saga-${index}`), StarRating(3))
+      await SeriesOpinionCommand.rate(reader, SagaKey(`saga-${index}`), StarRating(3))
 
     await SeriesOpinionCommand.deleteAllForUser(reader)
 

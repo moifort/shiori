@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { Book, BookId, StarRating } from '~/domain/book/types'
-import type { SeriesId, SeriesName } from '~/domain/series/types'
+import { seriesIdOf } from '~/domain/series/primitives'
+import type { SagaKey, SeriesName } from '~/domain/series/types'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 import {
@@ -43,7 +44,8 @@ const book = (title: string, author: string, extra: Loose<Book> = {}): Book => {
 const volume = (title: string, saga: string, number: number, extra: Loose<Book> = {}) =>
   book(title, 'Robin Hobb', {
     series: {
-      id: `saga-${saga}` as SeriesId,
+      id: seriesIdOf(`saga-${saga}` as SagaKey),
+      saga: `saga-${saga}` as SagaKey,
       name: saga as SeriesName,
       volume: number as never,
       kind: 'main',
@@ -54,7 +56,7 @@ const volume = (title: string, saga: string, number: number, extra: Loose<Book> 
 const opinion = (saga: string, extra: Loose<SeriesOpinion>): SeriesOpinion =>
   ({
     userId: reader,
-    seriesId: `saga-${saga}` as SeriesId,
+    seriesId: `saga-${saga}` as SagaKey,
     ...extra,
   }) as SeriesOpinion
 
@@ -347,7 +349,7 @@ describe('referencesOf', () => {
     )
     expect(reference).toEqual({
       bookId: first.id,
-      seriesId: 'saga-Assassin Royal' as SeriesId,
+      seriesId: seriesIdOf('saga-Assassin Royal' as SagaKey),
       title: 'Assassin Royal',
       rank: { favorite: true, rating: 5 as StarRating, viaSeries: true },
     })

@@ -12,6 +12,7 @@ import { imageWithinSizeLimit } from '~/domain/scan/limits'
 import type { ScanOutcome, ShelfOutcome } from '~/domain/scan/use-case'
 import { ScanUseCase } from '~/domain/scan/use-case'
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
+import { seriesReferenceOf } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
 import { aiUnavailable, domainError, notFound } from '~/domain/shared/graphql/errors'
 import { languageFrom, languageOf } from '~/domain/shared/language'
@@ -315,8 +316,9 @@ builder.mutationField('scanSeriesVolume', (t) =>
       '(`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.',
     args: { volume: t.arg({ type: SeriesVolumeInput, required: true }) },
     resolve: async (_root, { volume }, { userId, event }) => {
+      const reference = seriesReferenceOf(volume.seriesId, volume.language ?? undefined)
       const series = {
-        id: volume.seriesId,
+        saga: reference.saga,
         name: volume.seriesName,
         volume: volume.volume ?? undefined,
         kind: volume.kind,
@@ -327,7 +329,7 @@ builder.mutationField('scanSeriesVolume', (t) =>
           recognized: true,
           title: volume.title,
           authors: volume.authors,
-          language: volume.language ?? undefined,
+          language: reference.language,
           ...heldAs(volume.format, volume.media),
           series,
           subgenres: [],

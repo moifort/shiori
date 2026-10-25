@@ -13,6 +13,8 @@ import {
 } from '~/domain/friendship/infrastructure/graphql/types'
 import { FriendshipUseCase } from '~/domain/friendship/use-case'
 import { SeriesStateEnum } from '~/domain/series/infrastructure/graphql/enums'
+import { DEPRECATED_EDITION_LANGUAGE } from '~/domain/series/infrastructure/graphql/types'
+import { seriesReferenceOf } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
 import { languageOf } from '~/domain/shared/language'
 
@@ -237,16 +239,14 @@ builder.queryFields((t) => ({
         type: BookLanguageEnum,
         required: false,
         description:
-          'The edition opened, for a saga they hold in more than one language. Absent, ' +
-          'the first edition by name answers.',
+          'Beside a bare saga key: the edition opened. Absent, the first edition by ' +
+          'name answers.',
+        deprecationReason: DEPRECATED_EDITION_LANGUAGE,
       }),
     },
-    resolve: (_root, args, context) =>
-      FriendshipUseCase.saga(
-        context.userId,
-        args.userId,
-        args.seriesId,
-        args.language ?? undefined,
-      ),
+    resolve: (_root, args, context) => {
+      const { saga, language } = seriesReferenceOf(args.seriesId, args.language ?? undefined)
+      return FriendshipUseCase.saga(context.userId, args.userId, saga, language)
+    },
   }),
 }))

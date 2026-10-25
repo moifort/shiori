@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import { randomBytes } from 'node:crypto'
 import type { AudibleItem, LastPosition } from 'audible-api-ts'
 import type { AudibleAsin } from '~/domain/audible/types'
+import { seriesIdOf } from '~/domain/series/primitives'
 import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore, startFakeRequest } from '~/test/fake-firestore'
 
@@ -111,7 +112,7 @@ const { BookQuery } = await import('~/domain/book/query')
 const { BookCommand } = await import('~/domain/book/command')
 const { BookTitle, AuthorName, Year } = await import('~/domain/shared/primitives')
 const { ListeningMinutes } = await import('~/domain/book/primitives')
-const { SeriesId, SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
+const { SagaKey, SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
 
 const reader = 'reader-1' as UserId
 const NOW = new Date('2026-09-19T10:00:00.000Z')
@@ -251,7 +252,12 @@ describe('importing the ticked titles', () => {
       publisher: 'Audiolib',
       status: 'read',
       finishedAt: new Date('2022-04-01T00:00:00.000Z'),
-      series: { id: 'chronique-du-tueur-de-roi--patrick-rothfuss--audio', volume: 1, kind: 'main' },
+      series: {
+        id: 'chronique-du-tueur-de-roi--patrick-rothfuss--audio~fr',
+        saga: 'chronique-du-tueur-de-roi--patrick-rothfuss--audio',
+        volume: 1,
+        kind: 'main',
+      },
     })
   })
 
@@ -551,7 +557,7 @@ describe('the nightly sync', () => {
         format: 'audiobook',
         audibleAsin: asin('B002V1OF70'),
         series: {
-          id: SeriesId('chronique-du-tueur-de-roi--patrick-rothfuss--audio'),
+          saga: SagaKey('chronique-du-tueur-de-roi--patrick-rothfuss--audio'),
           name: SeriesName('Chronique du Tueur de Roi'),
           kind: 'main',
         },
@@ -741,7 +747,7 @@ describe('running the nightly job over every reader', () => {
 })
 
 describe('adding a volume of a saga heard from its screen', () => {
-  const saga = SeriesId('chronique-du-tueur-de-roi--patrick-rothfuss--audio')
+  const saga = SagaKey('chronique-du-tueur-de-roi--patrick-rothfuss--audio')
   const recording = (overrides: Partial<AudibleItem>) =>
     anItem({
       language: 'french',
@@ -753,7 +759,8 @@ describe('adding a volume of a saga heard from its screen', () => {
     })
   const catalogued = () =>
     fake.seed('series', `${saga}~fr`, {
-      id: saga,
+      id: `${saga}~fr`,
+      saga: saga,
       language: 'fr',
       name: 'Chronique du tueur de roi',
       author: 'Patrick Rothfuss',
@@ -805,7 +812,13 @@ describe('adding a volume of a saga heard from its screen', () => {
       publisher: 'Audiolib',
       narrators: ['Bernard Gabay'],
       audibleAsin: 'B0CONFIRM1',
-      series: { id: saga, name: 'Chronique du tueur de roi', volume: 2, kind: 'main' },
+      series: {
+        id: seriesIdOf(saga, 'fr'),
+        saga: saga,
+        name: 'Chronique du tueur de roi',
+        volume: 2,
+        kind: 'main',
+      },
     })
     expect((await BookQuery.all(reader)).map((book) => book.audibleAsin)).toEqual([
       asin('B0CONFIRM1'),

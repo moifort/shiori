@@ -13,7 +13,7 @@ import type {
   Synopsis,
 } from '~/domain/book/types'
 import type { ScannedSeries, ScanResult } from '~/domain/scan/types'
-import type { ReleaseDate, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
+import type { ReleaseDate, SagaKey, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { FollowedSeries } from '~/domain/series/use-case'
 import type { Language } from '~/domain/shared/language'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
@@ -28,7 +28,7 @@ export type ReleaseFormat = (typeof RELEASE_FORMATS)[number]
 /** A saga in the language one reader follows it in: what the web is searched
  *  for, and the key the shared watch is stored under. */
 export type WatchedSaga = {
-  seriesId: SeriesId
+  seriesId: SagaKey
   language: BookLanguage
   /** The saga's name and author as the reader's books give them: what the web
    *  is searched with. */
@@ -64,7 +64,7 @@ export type FoundVolume = {
 export type SagaWatch = {
   /** `{seriesId}--{language}`. */
   key: string
-  seriesId: SeriesId
+  seriesId: SagaKey
   name: SeriesName
   author?: AuthorName
   language: BookLanguage

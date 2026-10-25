@@ -37,8 +37,7 @@ import {
   inTabOrder,
   progressOf,
 } from '~/domain/series/business-rules'
-import { catalogueKeyOf } from '~/domain/series/primitives'
-import type { Series, SeriesId } from '~/domain/series/types'
+import type { SagaKey, Series } from '~/domain/series/types'
 import { editionUnfollowed } from '~/domain/series-opinion/business-rules'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import { Year } from '~/domain/shared/primitives'
@@ -57,7 +56,7 @@ const TOP_GENRES = 4
 /** Bumped whenever the view gains a figure or a rule changes, so a view stored
  *  by an older bundle is rebuilt on its next read instead of answering with a
  *  field it never computed. */
-export const VIEW_VERSION = 18
+export const VIEW_VERSION = 19
 
 // MARK: - Calendar
 
@@ -115,7 +114,8 @@ export const analyticsViewOf = (input: {
   const opinionOf = new Map(opinions.map((opinion) => [opinion.seriesId, opinion]))
   const followedBooks = books.filter(
     (book) =>
-      book.series === undefined || !editionUnfollowed(opinionOf.get(book.series.id), book.language),
+      book.series === undefined ||
+      !editionUnfollowed(opinionOf.get(book.series.saga), book.language),
   )
   const ratingOf = (book: Book) => shownRatingOf(book, seriesRatings)
   const cardOf = (book: Book): BookCard => ({
@@ -258,26 +258,24 @@ export const sharedShelfTodayOf = (shelf: SharedShelf, today: LocalDateValue): S
  *  edition's books — so the card reads as the top of the tab filtered on
  *  "in progress". A saga with no catalogue, or no numbered volume, has nothing
  *  to measure against and is left out. A saga held in progress in two editions
- *  shows once, as its most recently shelved edition: the card opens the saga,
- *  not an edition. */
+ *  shows once, as its most recently shelved edition, and the card opens that
+ *  edition — by the series id its books carry. */
 export const seriesProgressOf = (
   books: readonly Book[],
   catalogues: readonly Series[],
   currentYear: number,
-  seriesRatings: ReadonlyMap<SeriesId, StarRating> = new Map(),
-  hearted: ReadonlySet<SeriesId> = new Set(),
+  seriesRatings: ReadonlyMap<SagaKey, StarRating> = new Map(),
+  hearted: ReadonlySet<SagaKey> = new Set(),
 ): SeriesProgress[] => {
-  const catalogueOf = new Map(
-    catalogues.map((series) => [catalogueKeyOf(series.id, series.language), series]),
-  )
+  const catalogueOf = new Map(catalogues.map((series) => [series.id, series]))
   const sagas = followedSagasOf(books).map((saga) => ({
     ...saga,
     shelvedAt: new Date(Math.max(...saga.books.map((book) => shelfDateOf(book).getTime()))),
   }))
   const progress: SeriesProgress[] = []
   for (const saga of inTabOrder(sagas)) {
-    const series = catalogueOf.get(catalogueKeyOf(saga.id, saga.language))
-    if (!series || progress.some((shown) => shown.id === saga.id)) continue
+    const series = catalogueOf.get(saga.id)
+    if (!series || progress.some((shown) => shown.saga === saga.saga)) continue
     const read = readVolumeNumbersOf(saga.books)
     const edition = { language: saga.language }
     const state = followedStateOf(
@@ -295,12 +293,13 @@ export const seriesProgressOf = (
       shelfDateOf(book).getTime() > shelfDateOf(shown).getTime() ? book : shown,
     )
     progress.push({
-      id: series.id,
+      id: saga.id,
+      saga: saga.saga,
       name: series.name,
       readCount: measured.readCount,
       totalCount: measured.totalCount,
-      rating: sagaRatingOf(series.id, saga.books, seriesRatings),
-      favorite: hearted.has(series.id),
+      rating: sagaRatingOf(saga.saga, saga.books, seriesRatings),
+      favorite: hearted.has(saga.saga),
       lastActivityAt: saga.shelvedAt,
       ...coverSourcesOf(latest),
     })
@@ -312,9 +311,9 @@ export const seriesProgressOf = (
  *  own rating of it, else the average of the volumes they rated themselves.
  *  Undefined when they have said nothing of it. */
 const sagaRatingOf = (
-  seriesId: SeriesId,
+  seriesId: SagaKey,
   owned: readonly Book[],
-  seriesRatings: ReadonlyMap<SeriesId, StarRating>,
+  seriesRatings: ReadonlyMap<SagaKey, StarRating>,
 ): number | undefined => {
   const own = seriesRatings.get(seriesId)
   if (own !== undefined) return own

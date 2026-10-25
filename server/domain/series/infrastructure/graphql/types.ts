@@ -6,6 +6,12 @@ import { isAudioSeries } from '~/domain/series/primitives'
 import type { Series, Volume } from '~/domain/series/types'
 import { builder } from '~/domain/shared/graphql/builder'
 
+/** Why a `language` argument beside a series id is deprecated: the id names
+ *  the edition now. Kept for the builds that send a bare saga key with it. */
+export const DEPRECATED_EDITION_LANGUAGE =
+  'The series id names the edition. Read only beside a bare saga key, which builds older ' +
+  'than the edition ids send.'
+
 type VolumeRelease = { language: BookLanguage; volume: Volume }
 
 const VolumeReleaseType = builder.objectRef<VolumeRelease>('VolumeRelease').implement({
@@ -87,7 +93,9 @@ export const SeriesType = builder.objectRef<Series>('Series').implement({
   fields: (t) => ({
     id: t.field({
       type: 'SeriesId',
-      description: 'The saga, the same in every language: what its books name.',
+      description:
+        'The edition this catalogue lists — the saga in one language: what its ' +
+        'books name, and what to pass back wherever a series id is asked.',
       resolve: (series) => series.id,
     }),
     language: t.field({
@@ -104,7 +112,7 @@ export const SeriesType = builder.objectRef<Series>('Series').implement({
         'The saga heard rather than read: its volumes are the ones recorded as ' +
         'audiobooks, dated by their recordings. The same saga in print is another ' +
         'catalogue, under another id.',
-      resolve: (series) => isAudioSeries(series.id),
+      resolve: (series) => isAudioSeries(series.saga),
     }),
     author: t.field({ type: 'AuthorName', resolve: (series) => series.author }),
     description: t.field({

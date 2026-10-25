@@ -8,7 +8,7 @@ import type {
   NarratorName,
   Publisher,
   ReadingStatus,
-  SeriesMembership,
+  SeriesEntry,
   Synopsis,
   TaggedSubgenre,
 } from '~/domain/book/types'
@@ -159,7 +159,7 @@ export type ImportableBook = {
   /** What the title's shelves say that no genre can hold — an audience
    *  ("Jeunesse") or a theme ("LGBTQ+"). Empty far more often than not. */
   subgenres: TaggedSubgenre[]
-  series?: SeriesMembership
+  series?: SeriesEntry
   status: ReadingStatus
   /** When Audible says the listening ended. Carried onto the book so importing a
    *  decade of listening does not land every title on today's date and rewrite

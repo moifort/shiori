@@ -4,18 +4,28 @@ import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
 
 const { SeriesQuery } = await import('~/domain/series/query')
-const { SeriesId } = await import('~/domain/series/primitives')
+const { SagaKey } = await import('~/domain/series/primitives')
 
-const dune = { id: SeriesId('dune--frank-herbert'), language: 'fr' as const }
-const earthsea = { id: SeriesId('earthsea--ursula-k-le-guin'), language: 'en' as const }
-const missing = { id: SeriesId('nobody--nobody'), language: 'fr' as const }
+const dune = { saga: SagaKey('dune--frank-herbert'), language: 'fr' as const }
+const earthsea = { saga: SagaKey('earthsea--ursula-k-le-guin'), language: 'en' as const }
+const missing = { saga: SagaKey('nobody--nobody'), language: 'fr' as const }
 
 let fake = resetFakeFirestore()
 
 beforeEach(() => {
   fake = resetFakeFirestore()
-  fake.seed('series', `${dune.id}~fr`, { ...dune, name: 'Dune', volumes: [] })
-  fake.seed('series', `${earthsea.id}~en`, { ...earthsea, name: 'Earthsea', volumes: [] })
+  fake.seed('series', `${dune.saga}~fr`, {
+    ...dune,
+    id: `${dune.saga}~fr`,
+    name: 'Dune',
+    volumes: [],
+  })
+  fake.seed('series', `${earthsea.saga}~en`, {
+    ...earthsea,
+    id: `${earthsea.saga}~en`,
+    name: 'Earthsea',
+    volumes: [],
+  })
 })
 
 describe('reading catalogues in one request', () => {
@@ -34,7 +44,10 @@ describe('reading catalogues in one request', () => {
 
     const found = await SeriesQuery.byIds([dune, earthsea, dune])
 
-    expect(found.map((entry) => entry.id)).toEqual([dune.id, earthsea.id])
+    expect(found.map((entry) => String(entry.id))).toEqual([
+      `${dune.saga}~fr`,
+      `${earthsea.saga}~en`,
+    ])
     expect(fake.docReads - before).toBe(1)
   })
 })

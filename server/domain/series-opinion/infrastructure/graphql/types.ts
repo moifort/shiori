@@ -1,4 +1,5 @@
 import { BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
+import { SeriesId } from '~/domain/series/primitives'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import { builder } from '~/domain/shared/graphql/builder'
 
@@ -10,7 +11,14 @@ export const SeriesOpinionType = builder.objectRef<SeriesOpinion>('SeriesOpinion
     'language is about editions on a shelf, and an opinion is about the work. ' +
     'Only following is told edition by edition, in `unfollowedLanguages`.',
   fields: (t) => ({
-    seriesId: t.field({ type: 'SeriesId', resolve: (opinion) => opinion.seriesId }),
+    seriesId: t.field({
+      type: 'SeriesId',
+      description:
+        'The saga the opinion is of, whatever the language: its bare key, which ' +
+        'no edition answers to. Match an opinion to a row by the row, which ' +
+        'carries it, rather than by this.',
+      resolve: (opinion) => SeriesId(opinion.seriesId),
+    }),
     rating: t.field({
       type: 'StarRating',
       nullable: true,

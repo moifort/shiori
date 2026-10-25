@@ -8,7 +8,7 @@ import type {
   BookLanguage,
   CoverUrl as CoverUrlValue,
   ReadingStatus,
-  SeriesMembership,
+  SeriesEntry,
 } from '~/domain/book/types'
 import type { TitleRead } from '~/domain/kindle/infrastructure/title-reader'
 import { KindleAsin } from '~/domain/kindle/primitives'
@@ -213,13 +213,13 @@ export const splitOf = (item: KindleTitle, reads: ReadonlyMap<string, ReadKindle
 const membershipOf = (
   saga: Split['series'],
   author: string | undefined,
-): SeriesMembership | undefined => {
+): SeriesEntry | undefined => {
   const name = optionally(saga?.name, SeriesName)
   const volume = optionally(saga?.volume, VolumeNumber)
   // Without an author there is no stable key, so the membership is dropped
   // rather than given an id nothing else shares — the rule the scan applies.
   if (!name || !author) return undefined
-  return { id: seriesKeyOf(name, author, 'book'), name, volume, kind: 'main' }
+  return { saga: seriesKeyOf(name, author, 'book'), name, volume, kind: 'main' }
 }
 
 /** One title of the account as the book it would be catalogued as, or nothing

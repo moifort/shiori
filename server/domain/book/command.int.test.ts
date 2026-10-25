@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { seriesIdOf } from '~/domain/series/primitives'
 import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore, startFakeRequest } from '~/test/fake-firestore'
 
@@ -7,7 +8,7 @@ mock.module('~/system/firebase', () => ({ db: fakeDb }))
 const { BookCommand } = await import('~/domain/book/command')
 const { BookQuery } = await import('~/domain/book/query')
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
-const { SeriesId, SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
+const { SagaKey, SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
 const { CoverUrl, StarRating, ReadingNote, Publisher, PageCount, RecommendationComment } =
   await import('~/domain/book/primitives')
 const { PersonName } = await import('~/domain/shared/primitives')
@@ -40,7 +41,7 @@ describe('cataloguing a book', () => {
       {
         title: BookTitle('Crescent City, Tome 1 : Maison de la Terre et du Sang'),
         series: {
-          id: SeriesId('crescent-city--sarah-j-maas'),
+          saga: SagaKey('crescent-city--sarah-j-maas'),
           name: SeriesName('Crescent City'),
           volume: VolumeNumber(1),
           kind: 'main',
@@ -237,7 +238,7 @@ describe('placing a book in a saga by hand', () => {
         title: BookTitle(title),
         authors: [AuthorName('Franck Tillier')],
         series: {
-          id: SeriesId('sharko-et-henebelle--franck-tillier'),
+          saga: SagaKey('sharko-et-henebelle--franck-tillier'),
           name: SeriesName('Sharko et Henebelle'),
           volume: VolumeNumber(volume),
           kind: 'main',
@@ -263,7 +264,8 @@ describe('placing a book in a saga by hand', () => {
 
     if (typeof placed === 'string') throw new Error('unreachable')
     expect(placed.series).toEqual({
-      id: SeriesId('sharko-et-henebelle--franck-tillier'),
+      id: seriesIdOf(SagaKey('sharko-et-henebelle--franck-tillier'), 'fr'),
+      saga: SagaKey('sharko-et-henebelle--franck-tillier'),
       name: SeriesName('Sharko et Henebelle'),
       volume: VolumeNumber(2),
       kind: 'main',
@@ -293,7 +295,7 @@ describe('placing a book in a saga by hand', () => {
 
     const volumes = await BookQuery.sagaVolumes(
       reader,
-      SeriesId('sharko-et-henebelle--franck-tillier'),
+      SagaKey('sharko-et-henebelle--franck-tillier'),
     )
 
     expect(volumes.map((book) => book.id)).toEqual([first.id, second.id])
@@ -323,7 +325,9 @@ describe('placing a book in a saga by hand', () => {
       series: { name: SeriesName('Sharko') },
     })
 
-    expect(placed).toMatchObject({ series: { id: 'sharko--franck-thilliez' } })
+    expect(placed).toMatchObject({
+      series: { id: 'sharko--franck-thilliez~fr', saga: 'sharko--franck-thilliez' },
+    })
   })
 
   test('refuses a new saga for a book with no author, and writes nothing', async () => {
@@ -341,7 +345,8 @@ describe('placing a book in a saga by hand', () => {
 
 describe('a saga heard and a saga read', () => {
   const bobiverse = (volume: number) => ({
-    id: SeriesId('bobiverse--dennis-e-taylor'),
+    id: seriesIdOf(SagaKey('bobiverse--dennis-e-taylor'), 'fr'),
+    saga: SagaKey('bobiverse--dennis-e-taylor'),
     name: SeriesName('Bobiverse'),
     volume: VolumeNumber(volume),
     kind: 'main' as const,
@@ -355,7 +360,7 @@ describe('a saga heard and a saga read', () => {
       NOW,
     )
 
-    expect(book.series?.id).toBe(SeriesId('bobiverse--dennis-e-taylor--audio'))
+    expect(book.series?.saga).toBe(SagaKey('bobiverse--dennis-e-taylor--audio'))
     expect(fake.data('books', book.id)?.series).toEqual(book.series)
   })
 
@@ -769,7 +774,7 @@ describe('paging the Library tab', () => {
 })
 
 describe('the favourites view of the Library tab', () => {
-  const dune = SeriesId('dune--frank-herbert')
+  const dune = SagaKey('dune--frank-herbert')
   const at = (minutes: number) => new Date(NOW.getTime() - minutes * 60_000)
   const shelveIn = (title: string, minutes: number, status?: 'to-read' | 'read') =>
     BookCommand.add(
@@ -777,7 +782,7 @@ describe('the favourites view of the Library tab', () => {
       {
         title: BookTitle(title),
         status,
-        series: { id: dune, name: SeriesName('Dune'), volume: VolumeNumber(1), kind: 'main' },
+        series: { saga: dune, name: SeriesName('Dune'), volume: VolumeNumber(1), kind: 'main' },
       },
       at(minutes),
     )

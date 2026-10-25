@@ -1,4 +1,4 @@
-import { catalogueKeyOf } from '~/domain/series/primitives'
+import { seriesIdOf } from '~/domain/series/primitives'
 import type { SeriesEdition as Edition, Series, SeriesMiss } from '~/domain/series/types'
 import { db } from '~/system/firebase'
 import { evictFromRequestCache, isInRequestCache, memoizedPerRequest } from '~/system/request-cache'
@@ -9,15 +9,16 @@ import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 // everyone and the AI call that produced it is paid once rather than once per
 // reader. It is never exposed through library sharing.
 //
-// One document per saga and edition language, under `catalogueKeyOf`: a
+// One document per saga and edition language, under its series id: a
 // translation is its own list of volumes.
 const series = () => db().collection('series').withConverter(genericDataConverter<Series>())
 
-const cacheKey = ({ id, language }: Edition) => `series:${catalogueKeyOf(id, language)}`
+const documentIdOf = ({ saga, language }: Edition) => seriesIdOf(saga, language)
+const cacheKey = (edition: Edition) => `series:${documentIdOf(edition)}`
 
 export const findById = (edition: Edition): Promise<Series | null> =>
   memoizedPerRequest(cacheKey(edition), async () => {
-    const doc = await series().doc(catalogueKeyOf(edition.id, edition.language)).get()
+    const doc = await series().doc(documentIdOf(edition)).get()
     return doc.data() ?? null
   })
 
@@ -27,16 +28,12 @@ export const findById = (edition: Edition): Promise<Series | null> =>
 // this request is not fetched again, and one fetched here answers a later
 // lookup — so the tab and a saga screen in the same request read each once.
 export const findManyByIds = async (editions: readonly Edition[]): Promise<Series[]> => {
-  const wanted = [
-    ...new Map(
-      editions.map((edition) => [catalogueKeyOf(edition.id, edition.language), edition]),
-    ).values(),
-  ]
+  const wanted = [...new Map(editions.map((edition) => [documentIdOf(edition), edition])).values()]
   const missing = wanted.filter((edition) => !isInRequestCache(cacheKey(edition)))
   const fetched = new Map<string, Series | null>()
   if (missing.length > 0) {
     const snapshots = await db().getAll(
-      ...missing.map((edition) => series().doc(catalogueKeyOf(edition.id, edition.language))),
+      ...missing.map((edition) => series().doc(documentIdOf(edition))),
     )
     for (const [index, snapshot] of snapshots.entries()) {
       const edition = missing[index]
@@ -58,7 +55,7 @@ export const findManyByIds = async (editions: readonly Edition[]): Promise<Serie
 // in the same request — without this it would read the `null` from before the
 // write and show a freshly catalogued saga as uncatalogued.
 export const save = async (entry: Series): Promise<Series> => {
-  await series().doc(catalogueKeyOf(entry.id, entry.language)).set(withoutAbsentFields(entry))
+  await series().doc(entry.id).set(withoutAbsentFields(entry))
   evictFromRequestCache(cacheKey(entry))
   return entry
 }
@@ -69,9 +66,9 @@ export const save = async (entry: Series): Promise<Series> => {
 const misses = () =>
   db().collection('series-misses').withConverter(genericDataConverter<SeriesMiss>())
 
-export const findMiss = async ({ id, language }: Edition): Promise<SeriesMiss | null> =>
-  (await misses().doc(catalogueKeyOf(id, language)).get()).data() ?? null
+export const findMiss = async (edition: Edition): Promise<SeriesMiss | null> =>
+  (await misses().doc(documentIdOf(edition)).get()).data() ?? null
 
 export const saveMiss = async (miss: SeriesMiss): Promise<void> => {
-  await misses().doc(catalogueKeyOf(miss.id, miss.language)).set(withoutAbsentFields(miss))
+  await misses().doc(miss.id).set(withoutAbsentFields(miss))
 }

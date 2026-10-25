@@ -81,6 +81,8 @@ export type ReferenceRank = { favorite: boolean; rating?: StarRating; viaSeries:
 /** One of the reader's books a suggestion was drawn from. */
 export type SuggestionReference = {
   bookId: BookId
+  /** The edition of the saga cited. A reference stored before the edition ids
+   *  holds the bare saga key, which the saga page still opens. */
   seriesId?: SeriesId
   /** The saga's name when the reference is a saga, else the book's title. */
   title: string

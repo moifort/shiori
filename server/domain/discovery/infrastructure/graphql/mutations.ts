@@ -12,9 +12,10 @@ import {
   SagaReleasesType,
 } from '~/domain/discovery/infrastructure/graphql/types'
 import { DiscoveryUseCase } from '~/domain/discovery/use-case'
-import { ReleaseDate } from '~/domain/series/primitives'
+import { DEPRECATED_EDITION_LANGUAGE } from '~/domain/series/infrastructure/graphql/types'
+import { ReleaseDate, seriesReferenceOf } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
-import { aiUnavailable, domainError, notFound } from '~/domain/shared/graphql/errors'
+import { aiUnavailable, badUserInput, domainError, notFound } from '~/domain/shared/graphql/errors'
 import { languageOf } from '~/domain/shared/language'
 
 /** A book Découvrir shows, as the app names it. */
@@ -88,7 +89,7 @@ builder.mutationFields((t) => ({
             ...(book.seriesId && book.seriesName
               ? {
                   series: {
-                    id: book.seriesId,
+                    saga: seriesReferenceOf(book.seriesId).saga,
                     name: book.seriesName,
                     kind: 'main' as const,
                     ...(book.volume != null ? { volume: book.volume } : {}),
@@ -127,10 +128,18 @@ builder.mutationFields((t) => ({
       'edition already looked up is answered as it stands.',
     args: {
       seriesId: t.arg({ type: 'SeriesId', required: true }),
-      language: t.arg({ type: BookLanguageEnum, required: true }),
+      language: t.arg({
+        type: BookLanguageEnum,
+        required: false,
+        description: 'Beside a bare saga key: the edition opened.',
+        deprecationReason: DEPRECATED_EDITION_LANGUAGE,
+      }),
     },
-    resolve: (_root, { seriesId, language }, context) =>
-      DiscoveryUseCase.lookUpSaga(context.userId, seriesId, language),
+    resolve: (_root, args, context) => {
+      const { saga, language } = seriesReferenceOf(args.seriesId, args.language ?? undefined)
+      if (!language) return badUserInput('The series id names no edition')
+      return DiscoveryUseCase.lookUpSaga(context.userId, saga, language)
+    },
   }),
   previewAnnouncedVolume: t.field({
     type: AnnouncedVolumePreviewType,
@@ -147,14 +156,21 @@ builder.mutationFields((t) => ({
       'The volume page draws what `discovery` already carries, with no model call.',
     args: {
       seriesId: t.arg({ type: 'SeriesId', required: true }),
-      language: t.arg({ type: BookLanguageEnum, required: true }),
+      language: t.arg({
+        type: BookLanguageEnum,
+        required: false,
+        description: 'Beside a bare saga key: the edition opened.',
+        deprecationReason: DEPRECATED_EDITION_LANGUAGE,
+      }),
       number: t.arg({ type: 'VolumeNumber', required: true }),
     },
-    resolve: async (_root, { seriesId, language, number }, context) =>
-      match(
+    resolve: async (_root, args, context) => {
+      const { saga, language } = seriesReferenceOf(args.seriesId, args.language ?? undefined)
+      if (!language) return badUserInput('The series id names no edition')
+      return match(
         await DiscoveryUseCase.previewAnnouncedVolume(
           context.userId,
-          { seriesId, language, number },
+          { seriesId: saga, language, number: args.number },
           languageOf(context.event),
         ),
       )
@@ -163,6 +179,7 @@ builder.mutationFields((t) => ({
         .with('ai-unavailable', aiUnavailable)
         .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
         .with({ book: P.any }, (preview) => preview)
-        .exhaustive(),
+        .exhaustive()
+    },
   }),
 }))

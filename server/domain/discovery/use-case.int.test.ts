@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import * as Sentry from '@sentry/node'
 import { SpendCapReached } from '~/domain/scan/spend-cap'
+import { seriesIdOf } from '~/domain/series/primitives'
 import type { UserId } from '~/domain/shared/types'
 import {
   type FakeFirestore,
@@ -154,7 +155,7 @@ const stock = async (
     language: 'fr',
     format,
     series: {
-      id: format === 'book' ? carl : carlHeard,
+      saga: format === 'book' ? carl : carlHeard,
       name: SeriesName('Dungeon Crawler Carl'),
       volume: VolumeNumber(1),
       kind: 'main',
@@ -357,7 +358,7 @@ describe('the hourly pass', () => {
       format: 'book',
       addedAt: new Date('2026-09-26T12:00:00Z'),
       series: {
-        id: carl,
+        saga: carl,
         name: SeriesName('Dungeon Crawler Carl'),
         volume: VolumeNumber(5),
         kind: 'main',
@@ -412,7 +413,8 @@ describe('the hourly pass', () => {
     await stock(reader)
     await SeriesCommand.catalogue({
       language: 'fr',
-      id: carl,
+      id: seriesIdOf(carl, 'fr'),
+      saga: carl,
       name: SeriesName('Dungeon Crawler Carl'),
       author: AuthorName('Matt Dinniman'),
       catalogedAt: now,
@@ -427,7 +429,7 @@ describe('the hourly pass', () => {
     await DiscoveryUseCase.watchDueSagas(now)
     startFakeRequest()
 
-    const catalogue = await SeriesQuery.byId({ id: carl, language: 'fr' })
+    const catalogue = await SeriesQuery.byId({ saga: carl, language: 'fr' })
     expect(catalogue?.volumes.map((volume): unknown[] => [volume.number, volume.releases])).toEqual(
       [
         [1, { fr: '2024-05-02' }],
@@ -570,7 +572,7 @@ describe('the Découvrir tab', () => {
     // The saga heard, and its author heard.
     expect(heardTab.followed).toBe(2)
     const [heard] = heardTab.sagas
-    expect(heard.series.id).toBe(carlHeard)
+    expect(heard.series.saga).toBe(carlHeard)
     expect(heard.next?.number).toBe(VolumeNumber(3))
   })
 
@@ -586,7 +588,7 @@ describe('the Découvrir tab', () => {
     expect(calls).toEqual(['Dungeon Crawler Carl'])
     expect(authorCalls).toEqual(['Matt Dinniman (livre)'])
     expect(tab.unwatched).toBe(0)
-    expect(tab.sagas.map((row) => row.series.id)).toEqual([carl])
+    expect(tab.sagas.map((row) => row.series.saga)).toEqual([carl])
     expect((await DiscoveryUseCase.discover(reader, 'fr', 'audiobook', now)).unwatched).toBe(2)
   })
 
@@ -640,7 +642,7 @@ describe('the Authors shelf', () => {
     expect(row.next?.title).toBe(BookTitle('Kaiju Battlefield Surgeon'))
     expect(row.recent.map((work) => work.title)).toEqual([BookTitle('La Tour 1')])
     // The followed saga's volumes, on the Books shelf, are the author's news too.
-    expect(row.sagas.map((saga) => saga.series.id)).toEqual([carl])
+    expect(row.sagas.map((saga) => saga.series.saga)).toEqual([carl])
   })
 
   test('adds the editions awaited announced or out to the author’s row and page, not the ones not found', async () => {

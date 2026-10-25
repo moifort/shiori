@@ -1,6 +1,6 @@
 import type { Brand } from 'ts-brand'
 import type { CoverUrl } from '~/domain/book/types'
-import type { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
+import type { SagaKey, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { AuthorName, BookTitle, Count, Year } from '~/domain/shared/types'
 
 /** An author as the reader's library knows them, folded the way series keys are
@@ -23,7 +23,7 @@ export type ShelvedAuthor<Book> = {
    *  two authors is on both. */
   books: Book[]
   /** The sagas those books belong to, each once. */
-  seriesIds: SeriesId[]
+  seriesIds: SagaKey[]
   /** The date their newest book is shelved on — finished, else started, else
    *  added — which the list by activity is ordered on. */
   shelvedAt: Date

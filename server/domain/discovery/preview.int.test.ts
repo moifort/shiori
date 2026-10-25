@@ -105,7 +105,7 @@ describe('an announced volume’s page', () => {
         genre: 'fantasy',
         pageCount: 612,
         isbn13: '9782226488190',
-        series: { id: printed, volume: 4, kind: 'main' },
+        series: { saga: printed, volume: 4, kind: 'main' },
       },
       releaseDate: '2027-02-12',
       narrators: [],

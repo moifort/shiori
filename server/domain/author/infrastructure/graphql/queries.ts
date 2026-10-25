@@ -4,6 +4,7 @@ import { type AuthorPage, AuthorUseCase, type FollowedAuthor } from '~/domain/au
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
 import { FollowedSeriesType } from '~/domain/series/infrastructure/graphql/queries'
+import { seriesIdOf } from '~/domain/series/primitives'
 import type { SeriesId } from '~/domain/series/types'
 import { builder } from '~/domain/shared/graphql/builder'
 import { languageOf } from '~/domain/shared/language'
@@ -89,8 +90,9 @@ const AuthorSeriesType = builder
       id: t.field({
         type: 'SeriesId',
         description:
-          'The id its catalogue is keyed on: a volume added with this saga membership ' +
-          'joins the saga the Series tab and the saga screen know.',
+          'The edition in the reader’s own language, as its catalogue is keyed: what ' +
+          'to open with `series` and `proposed`, and a volume added with this saga ' +
+          'membership joins the saga the Series tab and the saga screen know.',
         resolve: (saga) => saga.id,
       }),
       name: t.field({ type: 'SeriesName', resolve: (saga) => saga.name }),
@@ -205,10 +207,12 @@ const AuthorPageType = builder.objectRef<AuthorPage>('AuthorPage').implement({
         'and never heard is one to discover among the recordings. Each with the id ' +
         'its catalogue is keyed on in that format.',
       args: { audio: t.arg.boolean({ required: true }) },
-      resolve: ({ catalogue, sagas }, args) =>
+      resolve: ({ catalogue, sagas }, args, { event }) =>
         catalogue
           ? sagasNotHeldOf(catalogue, sagas, args.audio ? 'audiobook' : 'book').map((saga) => ({
               ...saga,
+              // Offered in the reader's language, the edition its catalogue is asked in.
+              id: seriesIdOf(saga.saga, languageOf(event)),
               // The spelling the saga's key was folded from.
               author: catalogue.name,
             }))

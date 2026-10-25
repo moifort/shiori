@@ -7,9 +7,9 @@ import {
   kindleLinkUnder,
   mediaFor,
   membershipFor,
+  membershipIn,
   mergedCopies,
   retaggedAfterEdit,
-  seriesInFormat,
   statusAfterRating,
   statusStampAfterChange,
   storedRecommendation,
@@ -34,6 +34,7 @@ import type {
   ReadingNote,
   ReadingStatus,
   Recommendation,
+  SeriesEntry,
   SeriesMembership,
   SeriesPlacement,
   StarRating,
@@ -42,7 +43,7 @@ import type {
 } from '~/domain/book/types'
 import { DEFAULT_BOOK_LANGUAGE } from '~/domain/book/types'
 import type { KindleAsin } from '~/domain/kindle/types'
-import type { SeriesEdition, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
+import type { SagaKey, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
 import { favoriteAfterRating, ratingUnderHeart } from '~/domain/shared/rating'
 import { bareTitleOf } from '~/domain/shared/saga-title'
 import type { AuthorName, BookTitle, UserId, Year } from '~/domain/shared/types'
@@ -86,7 +87,8 @@ export type NewBook = {
   kindleAsin?: KindleAsin
   /** The cover Amazon shows for that Kindle title, drawn before any other. */
   kindleCoverUrl?: CoverUrl
-  series?: SeriesMembership
+  /** The saga the book goes into; the edition is its own language's. */
+  series?: SeriesEntry
   coverPath?: ObjectPath
   publishedCoverUrl?: CoverUrl
   /** Only a book added from a shelf photo, saved before anything looked it up. */
@@ -190,7 +192,9 @@ const recordOf = (userId: UserId, input: NewBook, now: Date): Book => {
     kindleCoverUrl: input.kindleCoverUrl,
     // The scan keyed the saga from the format it read off the cover; the
     // reader may have saved another.
-    series: seriesInFormat(input.series, input.format ?? 'book'),
+    series:
+      input.series &&
+      membershipIn(input.series, input.format ?? 'book', input.language ?? DEFAULT_BOOK_LANGUAGE),
     coverPath: input.coverPath,
     publishedCoverUrl: input.publishedCoverUrl,
     awaitingDescription: input.awaitingDescription,
@@ -282,6 +286,7 @@ export namespace BookCommand {
             placement,
             facts.authors ?? book.authors,
             facts.format ?? book.format,
+            ('language' in facts ? facts.language : book.language) ?? DEFAULT_BOOK_LANGUAGE,
             book.series,
             (await repository.findAllByUser(userId)).flatMap((other) =>
               other.series ? [other.series] : [],
@@ -291,7 +296,9 @@ export namespace BookCommand {
       if (placed === 'no-author') return 'no-author'
       membership = { series: placed }
     } else if (facts.format && facts.format !== book.format) {
-      membership = { series: seriesInFormat(book.series, facts.format) }
+      membership = {
+        series: book.series && membershipIn(book.series, facts.format, book.language),
+      }
     }
     // A genre is a fact about the saga, not about one of its volumes: the
     // reader who corrects it on one book expects the whole shelf to follow,
@@ -300,7 +307,7 @@ export namespace BookCommand {
     const series = 'series' in edit ? membership.series : book.series
     const siblings =
       series && ('genre' in edit || 'subgenres' in edit)
-        ? (await repository.findBySeries(userId, series.id)).filter((other) => other.id !== book.id)
+        ? (await repository.findBySaga(userId, series.saga)).filter((other) => other.id !== book.id)
         : []
     // A recording is heard, so it is held on no medium; a book taken off the
     // screen is no Kindle title's any more, and the sync lets go of it.
@@ -593,11 +600,11 @@ export namespace BookCommand {
    *  how many books went, and how many volumes of the saga remain. */
   export const removeSeries = async (
     userId: UserId,
-    seriesId: SeriesId,
+    saga: SagaKey,
     edition: BookLanguage | undefined,
     batch?: WriteBatch,
   ): Promise<{ removed: number; remaining: number }> => {
-    const volumes = await repository.findBySeries(userId, seriesId)
+    const volumes = await repository.findBySaga(userId, saga)
     const going = edition ? volumes.filter((volume) => volume.language === edition) : volumes
     for (const volume of going) await repository.remove(userId, volume.id, batch)
     return { removed: going.length, remaining: volumes.length - going.length }
@@ -609,12 +616,13 @@ export namespace BookCommand {
    *  books moved, and how many volumes of the first saga remain. */
   export const moveSeries = async (
     userId: UserId,
-    from: SeriesId,
+    from: SagaKey,
     edition: BookLanguage | undefined,
-    to: Pick<SeriesMembership, 'id' | 'name'>,
+    to: Pick<SeriesMembership, 'saga' | 'name'>,
     batch?: WriteBatch,
   ): Promise<{ moved: number; remaining: number }> => {
-    const volumes = await repository.findBySeries(userId, from)
+    // The series id follows the saga as the book is written.
+    const volumes = await repository.findBySaga(userId, from)
     const going = edition ? volumes.filter((volume) => volume.language === edition) : volumes
     for (const volume of going)
       if (volume.series)
@@ -628,12 +636,9 @@ export namespace BookCommand {
    *  catalogue's "Red Rising". Volumes in another language keep theirs, as
    *  their own catalogue names the saga. Only the name moves; the book is
    *  otherwise untouched, `updatedAt` too. Answers how many books were renamed. */
-  export const nameSeries = async (
-    { id, language }: SeriesEdition,
-    name: SeriesName,
-  ): Promise<number> => {
-    const renamed = (await repository.findInSeries(id)).filter(
-      (book) => book.language === language && book.series && book.series.name !== name,
+  export const nameSeries = async (seriesId: SeriesId, name: SeriesName): Promise<number> => {
+    const renamed = (await repository.findInSeries(seriesId)).filter(
+      (book) => book.series && book.series.name !== name,
     )
     for (const book of renamed)
       if (book.series) await repository.save({ ...book, series: { ...book.series, name } })

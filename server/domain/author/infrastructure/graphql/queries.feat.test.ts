@@ -257,13 +257,16 @@ describe('an author’s page', () => {
         sagas: [{ name: 'Dune' }],
         sagasNotHeld: [
           {
-            id: 'consentiency--frank-herbert',
+            id: 'consentiency--frank-herbert~en',
             name: 'ConSentiency',
             volumeCount: null,
             firstVolumeTitle: null,
           },
         ],
-        heard: [{ id: 'dune--frank-herbert--audio' }, { id: 'consentiency--frank-herbert--audio' }],
+        heard: [
+          { id: 'dune--frank-herbert--audio~en' },
+          { id: 'consentiency--frank-herbert--audio~en' },
+        ],
         books: [{ title: 'Destination vide' }],
         booksNotHeld: [{ title: 'Les Yeux d’Heisenberg', publishedIn: null }],
       },

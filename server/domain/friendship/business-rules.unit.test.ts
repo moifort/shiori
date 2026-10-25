@@ -16,7 +16,7 @@ import {
   recentHeartsOf,
   subgenreOf,
 } from '~/domain/friendship/business-rules'
-import { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
+import { SagaKey, SeriesName, seriesIdOf, VolumeNumber } from '~/domain/series/primitives'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import type { UserId } from '~/domain/shared/types'
 
@@ -180,16 +180,22 @@ describe('newestFavoritesFirst', () => {
 })
 
 describe('favoritesOutsideSagas', () => {
-  const dune = SeriesId('dune--frank-herbert')
+  const dune = SagaKey('dune--frank-herbert')
   const inSaga = (title: string, id: typeof dune) => ({
     title,
-    series: { id, name: SeriesName('Saga'), volume: VolumeNumber(1), kind: 'main' as const },
+    series: {
+      id: seriesIdOf(id),
+      saga: id,
+      name: SeriesName('Saga'),
+      volume: VolumeNumber(1),
+      kind: 'main' as const,
+    },
   })
 
   test('drops a volume already standing for through its hearted saga', () => {
     const favorites = [
       inSaga('Dune', dune),
-      inSaga('Hypérion', SeriesId('hyperion--dan-simmons')),
+      inSaga('Hypérion', SagaKey('hyperion--dan-simmons')),
       { title: 'Piranesi', series: undefined },
     ]
 
@@ -221,7 +227,8 @@ describe('inReadingOrder', () => {
   const volume = (title: string, number: number | undefined, kind: 'main' | 'novella') => ({
     title,
     series: {
-      id: SeriesId('dune--frank-herbert'),
+      id: seriesIdOf(SagaKey('dune--frank-herbert')),
+      saga: SagaKey('dune--frank-herbert'),
       name: SeriesName('Dune'),
       volume: number === undefined ? undefined : VolumeNumber(number),
       kind,
@@ -248,14 +255,20 @@ describe('inReadingOrder', () => {
 describe('recentHeartsOf', () => {
   const alice = 'alice' as UserId
   const bob = 'bob' as UserId
-  const dune = SeriesId('dune')
-  const saga = (id: typeof dune) => ({ id })
+  const dune = SagaKey('dune')
+  const saga = (id: typeof dune) => ({ saga: id })
   const book = (title: string, favoritedAt?: Date, seriesId?: typeof dune) => ({
     title,
     favorite: true,
     favoritedAt,
     series: seriesId
-      ? { id: seriesId, name: SeriesName('Dune'), volume: VolumeNumber(1), kind: 'main' as const }
+      ? {
+          id: seriesIdOf(seriesId),
+          saga: seriesId,
+          name: SeriesName('Dune'),
+          volume: VolumeNumber(1),
+          kind: 'main' as const,
+        }
       : undefined,
   })
 
@@ -279,7 +292,10 @@ describe('recentHeartsOf', () => {
       2,
     )
 
-    expect(hearts.map((heart) => heart.book?.title ?? heart.saga?.id)).toEqual(['Vagabond', 'dune'])
+    expect(hearts.map((heart) => heart.book?.title ?? heart.saga?.saga)).toEqual([
+      'Vagabond',
+      'dune',
+    ])
     expect(hearts[1]?.friendId).toBe(bob)
   })
 
@@ -298,7 +314,7 @@ describe('recentHeartsOf', () => {
       10,
     )
 
-    expect(hearts.map((heart) => heart.book?.title ?? heart.saga?.id)).toEqual(['Vagabond'])
+    expect(hearts.map((heart) => heart.book?.title ?? heart.saga?.saga)).toEqual(['Vagabond'])
   })
 
   // A heart given before the window, or before its date was kept, is not news.
@@ -357,8 +373,8 @@ describe('friendPicksOf', () => {
   const alice = 'alice' as UserId
   const bob = 'bob' as UserId
   const carol = 'carol' as UserId
-  const dune = SeriesId('dune--frank-herbert')
-  const duneHeard = SeriesId('dune--frank-herbert--audio')
+  const dune = SagaKey('dune--frank-herbert')
+  const duneHeard = SagaKey('dune--frank-herbert--audio')
   const book = (
     title: string,
     author: string,
@@ -371,7 +387,8 @@ describe('friendPicksOf', () => {
     addedAt: day(1),
     series: options.seriesId
       ? {
-          id: options.seriesId,
+          id: seriesIdOf(options.seriesId),
+          saga: options.seriesId,
           name: SeriesName('Dune'),
           volume: VolumeNumber(1),
           kind: 'main' as const,
@@ -386,8 +403,8 @@ describe('friendPicksOf', () => {
     friendId,
     books,
     sagas: favoriteSagas.map(([id]) => ({
-      id,
-      books: books.filter((entry) => entry.series?.id === id),
+      saga: id,
+      books: books.filter((entry) => entry.series?.saga === id),
     })),
     favoriteSagas: new Map(favoriteSagas),
   })
@@ -430,7 +447,8 @@ describe('friendPicksOf', () => {
           title: BookTitle('Le Messie de Dune'),
           authors: [AuthorName('Frank Herbert')],
           series: {
-            id: duneHeard,
+            id: seriesIdOf(duneHeard),
+            saga: duneHeard,
             name: SeriesName('Dune'),
             volume: VolumeNumber(2),
             kind: 'main',
@@ -490,7 +508,7 @@ describe('friendPicksOf', () => {
       10,
     )
 
-    expect(picks.sagas.map((pick) => [pick.item.id, pick.friendIds])).toEqual([
+    expect(picks.sagas.map((pick) => [pick.item.saga, pick.friendIds])).toEqual([
       [duneHeard, [bob, alice]],
     ])
     expect(picks.sagas[0]?.lovedByMany).toBe(false)

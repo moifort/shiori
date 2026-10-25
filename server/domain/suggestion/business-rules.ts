@@ -117,7 +117,7 @@ export const tasteDigestOf = (
   const lines: DigestLine[] = []
   const sagas = Map.groupBy(
     books.filter((book) => book.series),
-    (book) => book.series?.id ?? '',
+    (book) => book.series?.saga ?? '',
   )
   for (const book of books.filter((book) => !book.series)) {
     const line = `« ${book.title} » — ${authorsOf(book)}`
@@ -271,7 +271,7 @@ const referenceOfBook = (
   opinionOf: ReadonlyMap<string, SeriesOpinion>,
 ): SuggestionReference => {
   const own = tierOf(book.favorite, book.rating)
-  const opinion = book.series ? opinionOf.get(book.series.id) : undefined
+  const opinion = book.series ? opinionOf.get(book.series.saga) : undefined
   return {
     bookId: book.id,
     ...(book.series ? { seriesId: book.series.id } : {}),
@@ -292,7 +292,7 @@ const referenceOfSaga = (
     (left, right) => (left.series?.volume ?? 0) - (right.series?.volume ?? 0),
   )[0]
   if (!first?.series) return undefined
-  const opinion = opinionOf.get(first.series.id)
+  const opinion = opinionOf.get(first.series.saga)
   const best = [...volumes].sort((left, right) => scoreOf(right) - scoreOf(left))[0] ?? first
   const rank = opinion
     ? rankOf(opinion.favorite, opinion.rating, true)

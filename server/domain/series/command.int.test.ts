@@ -5,17 +5,18 @@ mock.module('~/system/firebase', () => ({ db: fakeDb }))
 
 const { SeriesCommand } = await import('~/domain/series/command')
 const { SeriesQuery } = await import('~/domain/series/query')
-const { ReleaseDate, SeriesId, SeriesName, VolumeNumber } = await import(
+const { ReleaseDate, SagaKey, SeriesName, seriesIdOf, VolumeNumber } = await import(
   '~/domain/series/primitives'
 )
 const { AuthorName, BookTitle, Year } = await import('~/domain/shared/primitives')
 const { withRequestCacheScope } = await import('~/system/request-cache')
 
-const id = SeriesId('system-universe--dakota-krout')
+const id = SagaKey('system-universe--dakota-krout')
 
-const catalogue = () => ({
-  id,
-  language: 'fr' as const,
+const catalogue = (language: 'fr' | 'en' = 'fr') => ({
+  id: seriesIdOf(id, language),
+  saga: id,
+  language,
   name: SeriesName('System Universe'),
   author: AuthorName('Dakota Krout'),
   catalogedAt: new Date('2026-01-01'),
@@ -41,7 +42,7 @@ describe('release dates written into the catalogue', () => {
         { volume: VolumeNumber(5), title: BookTitle('Cinq'), date: ReleaseDate('2026-10-08') },
       ]),
     )
-    const stored = await withRequestCacheScope(() => SeriesQuery.byId({ id, language: 'fr' }))
+    const stored = await withRequestCacheScope(() => SeriesQuery.byId({ saga: id, language: 'fr' }))
     expect(stored?.volumes.map((volume) => volume.releases?.fr as string | undefined)).toEqual([
       undefined,
       '2026-10-08',
@@ -50,11 +51,11 @@ describe('release dates written into the catalogue', () => {
 
   test('a saga nobody catalogued is left alone', async () => {
     expect(
-      await SeriesCommand.recordReleases(SeriesId('nobody--nobody'), 'fr', [
+      await SeriesCommand.recordReleases(SagaKey('nobody--nobody'), 'fr', [
         { volume: VolumeNumber(1), title: BookTitle('Un') },
       ]),
     ).toBeNull()
-    expect(await SeriesQuery.byId({ id: SeriesId('nobody--nobody'), language: 'fr' })).toBeNull()
+    expect(await SeriesQuery.byId({ saga: SagaKey('nobody--nobody'), language: 'fr' })).toBeNull()
   })
 
   test('building the catalogue again keeps the dates', async () => {
@@ -65,7 +66,7 @@ describe('release dates written into the catalogue', () => {
       ]),
     )
     await withRequestCacheScope(() => SeriesCommand.catalogue(catalogue()))
-    const stored = await withRequestCacheScope(() => SeriesQuery.byId({ id, language: 'fr' }))
+    const stored = await withRequestCacheScope(() => SeriesQuery.byId({ saga: id, language: 'fr' }))
     expect(stored?.volumes[0]).toMatchObject({
       releases: { fr: '2025-02-01' },
       titles: { fr: 'Quatre' },
@@ -74,7 +75,7 @@ describe('release dates written into the catalogue', () => {
 
   test("an edition's dates go into that edition's catalogue only", async () => {
     await SeriesCommand.catalogue(catalogue())
-    await SeriesCommand.catalogue({ ...catalogue(), language: 'en' })
+    await SeriesCommand.catalogue(catalogue('en'))
     await withRequestCacheScope(() =>
       SeriesCommand.recordReleases(id, 'en', [
         { volume: VolumeNumber(4), title: BookTitle('Four'), date: ReleaseDate('2024-03-01') },
@@ -82,8 +83,8 @@ describe('release dates written into the catalogue', () => {
     )
     const [french, english] = await withRequestCacheScope(() =>
       Promise.all([
-        SeriesQuery.byId({ id, language: 'fr' }),
-        SeriesQuery.byId({ id, language: 'en' }),
+        SeriesQuery.byId({ saga: id, language: 'fr' }),
+        SeriesQuery.byId({ saga: id, language: 'en' }),
       ]),
     )
     expect(french?.volumes[0]?.releases).toBeUndefined()
@@ -99,7 +100,7 @@ describe('release dates written into the catalogue', () => {
         ]),
       ),
     ).toBeNull()
-    const french = await withRequestCacheScope(() => SeriesQuery.byId({ id, language: 'fr' }))
+    const french = await withRequestCacheScope(() => SeriesQuery.byId({ saga: id, language: 'fr' }))
     expect(french?.volumes).toHaveLength(1)
   })
 })

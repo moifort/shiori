@@ -21,6 +21,7 @@ import { discoveriesAlertStartsOn } from '~/system/migration/migrations/023-disc
 import { octoberGroundingCounted } from '~/system/migration/migrations/024-october-grounding-counted'
 import { titlesWithoutTheirAuthor } from '~/system/migration/migrations/025-titles-without-their-author'
 import { titlesSingleSpaced } from '~/system/migration/migrations/026-titles-single-spaced'
+import { booksNameTheirEdition } from '~/system/migration/migrations/027-books-name-their-edition'
 import type { Migration } from '~/system/migration/types'
 
 // Forward-only, sequential, no rollback. Adding a new optional field or a new
@@ -54,4 +55,5 @@ export const migrations: Migration[] = [
   octoberGroundingCounted,
   titlesWithoutTheirAuthor,
   titlesSingleSpaced,
+  booksNameTheirEdition,
 ]

@@ -473,7 +473,7 @@ describe('a book added from a shelf photo', () => {
       authors: ['Gaston Leroux'],
       publisher: 'Le Livre de Poche',
       series: {
-        id: seriesKeyOf(SeriesName('Rouletabille'), 'Gaston Leroux', 'book'),
+        saga: seriesKeyOf(SeriesName('Rouletabille'), 'Gaston Leroux', 'book'),
         name: 'Rouletabille',
         volume: 1,
       },

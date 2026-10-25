@@ -105,7 +105,7 @@ describe('the sagas a reader follows', () => {
 
     expect(await mySeries()).toEqual([
       {
-        id: 'dune--frank-herbert',
+        id: 'dune--frank-herbert~en',
         name: 'Dune',
         author: 'Frank Herbert',
         state: 'NOT_STARTED',
@@ -183,8 +183,8 @@ describe('a saga heard and a saga read', () => {
     expect(result.errors).toBeUndefined()
     const rows = (result.data as { mySeries: Omit<FollowedRow, 'name'>[] }).mySeries
     expect(rows.toSorted((a, b) => a.id.localeCompare(b.id))).toEqual([
-      { id: 'dune--frank-herbert', audio: false, ownedCount: 1 },
-      { id: 'dune--frank-herbert--audio', audio: true, ownedCount: 1 },
+      { id: 'dune--frank-herbert--audio~en', audio: true, ownedCount: 1 },
+      { id: 'dune--frank-herbert~en', audio: false, ownedCount: 1 },
     ])
   })
 
@@ -222,13 +222,13 @@ describe('a saga held in more than one language', () => {
 
   // Two translations of one saga are two sets of books — other covers, other
   // titles, read at other times — and one row over both hid that.
-  test('follows it once per language, sharing one saga id', async () => {
+  test('follows it once per language, under one series id per edition', async () => {
     await addVolume('Dune', 1, { language: 'FR' })
     await addVolume('Dune', 1, { language: 'EN' })
 
     expect(await followedLanguages()).toEqual([
-      { id: 'dune--frank-herbert', name: 'Dune', language: 'EN', ownedCount: 1 },
-      { id: 'dune--frank-herbert', name: 'Dune', language: 'FR', ownedCount: 1 },
+      { id: 'dune--frank-herbert~en', name: 'Dune', language: 'EN', ownedCount: 1 },
+      { id: 'dune--frank-herbert~fr', name: 'Dune', language: 'FR', ownedCount: 1 },
     ])
   })
 
@@ -249,8 +249,8 @@ describe('a saga held in more than one language', () => {
     const result = await execute('{ library { seriesId language books { title } } }')
     expect(result.errors).toBeUndefined()
     expect(result.data?.library).toEqual([
-      { seriesId: 'dune--frank-herbert', language: 'EN', books: [{ title: 'Dune' }] },
-      { seriesId: 'dune--frank-herbert', language: 'FR', books: [{ title: 'Dune' }] },
+      { seriesId: 'dune--frank-herbert~en', language: 'EN', books: [{ title: 'Dune' }] },
+      { seriesId: 'dune--frank-herbert~fr', language: 'FR', books: [{ title: 'Dune' }] },
     ])
   })
 })
@@ -785,7 +785,7 @@ describe('merging a duplicate saga', () => {
       '{ mySeries { id name ownedCount } seriesOpinion(seriesId: "dune-fr--frank-herbert") { rating } }',
     )
     expect(left.data).toEqual({
-      mySeries: [{ id: 'dune--frank-herbert', name: 'Dune', ownedCount: 2 }],
+      mySeries: [{ id: 'dune--frank-herbert~en', name: 'Dune', ownedCount: 2 }],
       seriesOpinion: null,
     })
   })
@@ -1048,5 +1048,122 @@ describe('a saga opened without waiting for its catalogue', () => {
       },
     })
     expect(calls).toEqual([])
+  })
+})
+
+// Each edition is a series of its own: its id is written on its books and
+// handed out by the server, and a client passes it back alone — no language
+// beside it, nothing built.
+describe('a saga opened by the series id of one edition', () => {
+  const holdBothEditions = async () => {
+    await addVolume('Dune', 1, { language: 'FR' })
+    await addVolume('Le Messie de Dune', 2, { language: 'FR' })
+    await addVolume('Dune (EN)', 1, { language: 'EN' })
+  }
+
+  test('hands out the id of the edition on every book', async () => {
+    await holdBothEditions()
+
+    const result = await execute('{ library { books { title series { id } } } }')
+
+    expect(result.errors).toBeUndefined()
+    const books = (
+      result.data as { library: { books: { title: string; series: { id: string } }[] }[] }
+    ).library.flatMap((section) => section.books)
+    expect(Object.fromEntries(books.map((book) => [book.title, book.series.id]))).toEqual({
+      Dune: 'dune--frank-herbert~fr',
+      'Le Messie de Dune': 'dune--frank-herbert~fr',
+      'Dune (EN)': 'dune--frank-herbert~en',
+    })
+  })
+
+  test('answers that edition’s volumes alone, with no language passed', async () => {
+    await holdBothEditions()
+
+    const result = await execute(
+      '{ mySeriesVolumes(seriesId: "dune--frank-herbert~en") { title } myFollowedSeries(seriesId: "dune--frank-herbert~fr") { id language ownedCount } }',
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data).toEqual({
+      mySeriesVolumes: [{ title: 'Dune (EN)' }],
+      myFollowedSeries: { id: 'dune--frank-herbert~fr', language: 'FR', ownedCount: 2 },
+    })
+  })
+
+  test('opens the catalogue of that edition', async () => {
+    await holdBothEditions()
+    answers = [
+      {
+        name: 'Dune Chronicles',
+        author: 'Frank Herbert',
+        volumes: [{ kind: 'main', number: 1, title: 'Dune', publishedIn: 1965 }],
+      },
+    ]
+
+    const result = await execute('{ series(id: "dune--frank-herbert~en") { id language name } }')
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.series).toEqual({
+      id: 'dune--frank-herbert~en',
+      language: 'EN',
+      name: 'Dune Chronicles',
+    })
+    expect(fake.data('series', 'dune--frank-herbert~en')).toMatchObject({
+      id: 'dune--frank-herbert~en',
+      saga: 'dune--frank-herbert',
+      language: 'en',
+    })
+  })
+
+  test('removes that edition and leaves the other', async () => {
+    await holdBothEditions()
+
+    const removed = await execute('mutation { deleteSeries(seriesId: "dune--frank-herbert~fr") }')
+
+    expect(removed.data?.deleteSeries).toBe(2)
+    expect(await mySeries()).toMatchObject([{ id: 'dune--frank-herbert~en', ownedCount: 1 }])
+  })
+
+  // The opinion is of the work: rated from one edition, it shows on both.
+  test('rates the saga, whichever edition it is rated from', async () => {
+    await holdBothEditions()
+
+    await execute(
+      'mutation { rateSeries(seriesId: "dune--frank-herbert~en", rating: 4) { rating } }',
+    )
+    const result = await execute('{ mySeries { id opinion { seriesId rating } } }')
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.mySeries).toEqual([
+      { id: 'dune--frank-herbert~en', opinion: { seriesId: 'dune--frank-herbert', rating: 4 } },
+      { id: 'dune--frank-herbert~fr', opinion: { seriesId: 'dune--frank-herbert', rating: 4 } },
+    ])
+  })
+
+  test('sets one edition aside and leaves the other followed', async () => {
+    await holdBothEditions()
+
+    await execute(
+      'mutation { setSeriesFollowed(seriesId: "dune--frank-herbert~en", followed: false) { followed } }',
+    )
+    const result = await execute('{ mySeries { id state } }')
+
+    expect(result.data?.mySeries).toEqual([
+      { id: 'dune--frank-herbert~en', state: 'UNFOLLOWED' },
+      { id: 'dune--frank-herbert~fr', state: 'NOT_STARTED' },
+    ])
+  })
+
+  // An installed build sends the bare saga key with the language beside it,
+  // as it always has: it lands on the same edition.
+  test('still answers a build that sends the saga key and a language', async () => {
+    await holdBothEditions()
+
+    const result = await execute(
+      '{ mySeriesVolumes(seriesId: "dune--frank-herbert", language: EN) { title } }',
+    )
+
+    expect(result.data?.mySeriesVolumes).toEqual([{ title: 'Dune (EN)' }])
   })
 })

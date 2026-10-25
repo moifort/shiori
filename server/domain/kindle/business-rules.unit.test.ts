@@ -22,7 +22,7 @@ import {
 } from '~/domain/kindle/business-rules'
 import { KindleAsin } from '~/domain/kindle/primitives'
 import type { KindleConnection } from '~/domain/kindle/types'
-import { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
+import { SagaKey, SeriesName, seriesIdOf, VolumeNumber } from '~/domain/series/primitives'
 import { AuthorName, BookTitle, UserId } from '~/domain/shared/primitives'
 
 const aTitle = (overrides: Partial<KindleTitle> = {}): KindleTitle => ({
@@ -245,7 +245,12 @@ describe('importableFrom', () => {
       title: 'Fearless',
       authors: ['Patrick Rothfuss'],
       coverUrl: 'https://m.media-amazon.com/images/I/91cover.jpg',
-      series: { id: 'powerless--patrick-rothfuss', name: 'Powerless', volume: 3, kind: 'main' },
+      series: {
+        saga: 'powerless--patrick-rothfuss',
+        name: 'Powerless',
+        volume: 3,
+        kind: 'main',
+      },
       status: 'to-read',
       alreadyInLibrary: false,
     })
@@ -337,7 +342,8 @@ describe('kindleLinksFor', () => {
       aBook({
         title: BookTitle('Fearless'),
         series: {
-          id: SeriesId('powerless--lauren-roberts'),
+          id: seriesIdOf(SagaKey('powerless--lauren-roberts')),
+          saga: SagaKey('powerless--lauren-roberts'),
           name: SeriesName('Powerless'),
           volume: VolumeNumber(volume),
           kind: 'main',

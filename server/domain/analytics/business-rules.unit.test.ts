@@ -31,8 +31,8 @@ import {
   Subgenre,
 } from '~/domain/book/primitives'
 import type { Book, Genre } from '~/domain/book/types'
-import { SeriesName, VolumeNumber } from '~/domain/series/primitives'
-import type { Series, SeriesId } from '~/domain/series/types'
+import { SeriesName, seriesIdOf, VolumeNumber } from '~/domain/series/primitives'
+import type { SagaKey, Series } from '~/domain/series/types'
 import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
 import type { UserId } from '~/domain/shared/types'
 
@@ -254,9 +254,10 @@ describe('the genres read', () => {
 
 describe('building the view', () => {
   const reader = 'reader-1' as UserId
-  const kingkiller = 'kingkiller' as SeriesId
+  const kingkiller = 'kingkiller' as SagaKey
   const catalogue: Series = {
-    id: kingkiller,
+    id: seriesIdOf(kingkiller),
+    saga: kingkiller,
     name: SeriesName('Chronique du tueur de roi'),
     author: AuthorName('Patrick Rothfuss'),
     volumes: [
@@ -304,19 +305,26 @@ describe('building the view', () => {
         status: 'read',
         startedAt: new Date('2026-02-01'),
         finishedAt: new Date('2026-02-10'),
-        series: { id: kingkiller, name: catalogue.name, volume: VolumeNumber(1), kind: 'main' },
+        series: {
+          id: seriesIdOf(kingkiller),
+          saga: kingkiller,
+          name: catalogue.name,
+          volume: VolumeNumber(1),
+          kind: 'main',
+        },
       }),
     ]
 
     expect(seriesProgressOf(books, [catalogue], 2026)).toMatchObject([
-      { id: kingkiller, readCount: 1, totalCount: 2 },
+      { id: seriesIdOf(kingkiller), saga: kingkiller, readCount: 1, totalCount: 2 },
     ])
   })
 
   // The saga is drawn with the cover of the volume shelved last.
   test('draws a saga with the cover of its volume shelved last', () => {
     const membership = (number: number) => ({
-      id: kingkiller,
+      id: seriesIdOf(kingkiller),
+      saga: kingkiller,
       name: catalogue.name,
       volume: VolumeNumber(number),
       kind: 'main' as const,
@@ -345,10 +353,22 @@ describe('building the view', () => {
   test('leaves out a saga none of whose volumes has been opened', () => {
     const books = [
       book('vol-1', {
-        series: { id: kingkiller, name: catalogue.name, volume: VolumeNumber(1), kind: 'main' },
+        series: {
+          id: seriesIdOf(kingkiller),
+          saga: kingkiller,
+          name: catalogue.name,
+          volume: VolumeNumber(1),
+          kind: 'main',
+        },
       }),
       book('vol-2', {
-        series: { id: kingkiller, name: catalogue.name, volume: VolumeNumber(2), kind: 'main' },
+        series: {
+          id: seriesIdOf(kingkiller),
+          saga: kingkiller,
+          name: catalogue.name,
+          volume: VolumeNumber(2),
+          kind: 'main',
+        },
       }),
     ]
 
@@ -360,7 +380,13 @@ describe('building the view', () => {
       book('vol-1', {
         status: 'reading',
         startedAt: new Date('2026-02-01'),
-        series: { id: kingkiller, name: catalogue.name, volume: VolumeNumber(1), kind: 'main' },
+        series: {
+          id: seriesIdOf(kingkiller),
+          saga: kingkiller,
+          name: catalogue.name,
+          volume: VolumeNumber(1),
+          kind: 'main',
+        },
       }),
     ]
 
@@ -376,7 +402,8 @@ describe('building the view', () => {
         startedAt: new Date('2026-02-01'),
         finishedAt: new Date('2026-02-10'),
         series: {
-          id: kingkiller,
+          id: seriesIdOf(kingkiller),
+          saga: kingkiller,
           name: catalogue.name,
           volume: VolumeNumber(number),
           kind: 'main',
@@ -395,7 +422,13 @@ describe('building the view', () => {
         language,
         startedAt: finishedAt ? new Date(finishedAt) : undefined,
         finishedAt: finishedAt ? new Date(finishedAt) : undefined,
-        series: { id: kingkiller, name: catalogue.name, volume: VolumeNumber(1), kind: 'main' },
+        series: {
+          id: seriesIdOf(kingkiller, language),
+          saga: kingkiller,
+          name: catalogue.name,
+          volume: VolumeNumber(1),
+          kind: 'main',
+        },
       })
     const books = [
       volume('en', 'read', '2026-09-01'),
@@ -404,24 +437,36 @@ describe('building the view', () => {
         language: 'en',
         startedAt: new Date('2026-09-05'),
         finishedAt: new Date('2026-09-10'),
-        series: { id: kingkiller, name: catalogue.name, volume: VolumeNumber(2), kind: 'main' },
+        series: {
+          id: seriesIdOf(kingkiller, 'en'),
+          saga: kingkiller,
+          name: catalogue.name,
+          volume: VolumeNumber(2),
+          kind: 'main',
+        },
       }),
       volume('fr', 'read', '2026-03-01'),
     ]
     // Each edition is measured on its own catalogue.
     const editions = [
-      { ...catalogue, language: 'fr' as const },
-      { ...catalogue, language: 'en' as const },
+      { ...catalogue, id: seriesIdOf(kingkiller, 'fr'), language: 'fr' as const },
+      { ...catalogue, id: seriesIdOf(kingkiller, 'en'), language: 'en' as const },
     ]
 
     expect(seriesProgressOf(books, editions, 2026)).toEqual([
-      expect.objectContaining({ id: kingkiller, readCount: 1, totalCount: 2 }),
+      expect.objectContaining({ id: seriesIdOf(kingkiller, 'fr'), readCount: 1, totalCount: 2 }),
     ])
     expect(seriesProgressOf(books, editions, 2026)[0]?.lastActivityAt).toEqual(
       new Date('2026-03-01'),
     )
     // Without the French catalogue, the French row has nothing to measure.
-    expect(seriesProgressOf(books, [{ ...catalogue, language: 'en' as const }], 2026)).toEqual([])
+    expect(
+      seriesProgressOf(
+        books,
+        [{ ...catalogue, id: seriesIdOf(kingkiller, 'en'), language: 'en' as const }],
+        2026,
+      ),
+    ).toEqual([])
   })
 
   // The card reads as the top of the Series tab: the saga whose latest volume
@@ -429,7 +474,8 @@ describe('building the view', () => {
   test('puts the sagas in progress in the Series tab order, and shows six', () => {
     const sagaOf = (name: string): Series => ({
       ...catalogue,
-      id: name as SeriesId,
+      id: seriesIdOf(name as SagaKey),
+      saga: name as SagaKey,
       name: SeriesName(name),
     })
     const sagas = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map(sagaOf)
@@ -439,7 +485,13 @@ describe('building the view', () => {
         startedAt: new Date(finishedAt),
         finishedAt: new Date(finishedAt),
         rating: rating === undefined ? undefined : StarRating(rating),
-        series: { id: saga.id, name: saga.name, volume: VolumeNumber(1), kind: 'main' },
+        series: {
+          id: saga.id,
+          saga: saga.saga,
+          name: saga.name,
+          volume: VolumeNumber(1),
+          kind: 'main',
+        },
       })
     const view = analyticsViewOf({
       userId: reader,
@@ -448,7 +500,7 @@ describe('building the view', () => {
       catalogues: sagas,
       // A hearted saga shelved long ago does not lift itself above the others.
       opinions: [
-        { userId: reader, seriesId: 'b' as SeriesId, rating: StarRating(5), favorite: true },
+        { userId: reader, seriesId: 'b' as SagaKey, rating: StarRating(5), favorite: true },
       ],
       books: [
         firstVolume(sagas[0], '2026-09-01'),
@@ -464,9 +516,9 @@ describe('building the view', () => {
 
     const series = dashboardOf(view, day('2026-09-15')).series
 
-    expect(series.map((entry) => entry.id)).toEqual(['a', 'h', 'g', 'f', 'e', 'd'] as SeriesId[])
+    expect(series.map((entry) => String(entry.saga))).toEqual(['a', 'h', 'g', 'f', 'e', 'd'])
     // What the card draws beside each saga: the heart, else the stars.
-    expect(series[4]).toMatchObject({ id: 'e', rating: 4, favorite: false })
+    expect(series[4]).toMatchObject({ saga: 'e', rating: 4, favorite: false })
   })
 
   test('sorts the shelves and keeps the last finished book', () => {
@@ -504,7 +556,8 @@ describe('building the view', () => {
   // saga and volume over the title, then its length.
   test('carries the saga and the length of a book', () => {
     const membership = {
-      id: kingkiller,
+      id: seriesIdOf(kingkiller),
+      saga: kingkiller,
       name: catalogue.name,
       volume: VolumeNumber(2),
       kind: 'main' as const,
@@ -561,7 +614,7 @@ describe('building the view', () => {
       catalogues: [],
       opinions: [
         { userId: reader, seriesId: kingkiller, favorite: true },
-        { userId: reader, seriesId: 'dune' as SeriesId, rating: StarRating(4) },
+        { userId: reader, seriesId: 'dune' as SagaKey, rating: StarRating(4) },
       ],
       books: [
         book('loved', { favorite: true }),
@@ -701,7 +754,12 @@ describe('building the view', () => {
   // A saga rated as a whole rates each of its volumes the reader left unrated:
   // the stars drawn on the book are the ones the statistics count.
   test('rates a finished volume left unrated with the rating of its saga', () => {
-    const inSaga = { id: kingkiller, name: catalogue.name, kind: 'main' as const }
+    const inSaga = {
+      id: seriesIdOf(kingkiller),
+      saga: kingkiller,
+      name: catalogue.name,
+      kind: 'main' as const,
+    }
     const view = analyticsViewOf({
       userId: reader,
       timeZone: paris,
@@ -749,7 +807,13 @@ describe('building the view', () => {
         book('vol-1', {
           status: 'read',
           finishedAt: new Date('2026-02-10'),
-          series: { id: kingkiller, name: catalogue.name, volume: VolumeNumber(1), kind: 'main' },
+          series: {
+            id: seriesIdOf(kingkiller),
+            saga: kingkiller,
+            name: catalogue.name,
+            volume: VolumeNumber(1),
+            kind: 'main',
+          },
         }),
       ],
     })
@@ -768,7 +832,13 @@ describe('building the view', () => {
         book('open', {
           status: 'reading',
           startedAt: new Date('2026-09-01'),
-          series: { id: kingkiller, name: catalogue.name, volume: VolumeNumber(1), kind: 'main' },
+          series: {
+            id: seriesIdOf(kingkiller),
+            saga: kingkiller,
+            name: catalogue.name,
+            volume: VolumeNumber(1),
+            kind: 'main',
+          },
         }),
       ],
     })

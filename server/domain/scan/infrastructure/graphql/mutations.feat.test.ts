@@ -344,7 +344,7 @@ describe('scanSeriesVolume', () => {
       scanSeriesVolume: {
         recognized: true,
         title: 'Sweet Tooth',
-        series: { id: 'sweet-tooth--jeff-lemire', name: 'Sweet Tooth', volume: 2, kind: 'MAIN' },
+        series: { id: 'sweet-tooth--jeff-lemire~fr', name: 'Sweet Tooth', volume: 2, kind: 'MAIN' },
       },
     })
     const month = fake.data('ai-quotas', `${userId}_${monthOf(new Date())}`) as { scans: number }
@@ -363,7 +363,13 @@ describe('scanSeriesVolume, with the volumes the reader holds', () => {
     language: 'fr',
     publisher: 'Urban Comics',
     isbn13: '9782365777148',
-    series: { id: 'sweet-tooth--jeff-lemire', name: 'Sweet Tooth', volume: 1, kind: 'main' },
+    series: {
+      id: 'sweet-tooth--jeff-lemire~fr',
+      saga: 'sweet-tooth--jeff-lemire',
+      name: 'Sweet Tooth',
+      volume: 1,
+      kind: 'main',
+    },
     subgenres: [],
     narrators: [],
     status: 'read',
@@ -396,7 +402,8 @@ describe('scanSeriesVolume, with the volumes the reader holds', () => {
   test('names the other volumes, their ISBNs and their publisher', async () => {
     fake.seed('books', volumeOne.id, volumeOne)
     fake.seed('series', 'sweet-tooth--jeff-lemire~fr', {
-      id: 'sweet-tooth--jeff-lemire',
+      id: 'sweet-tooth--jeff-lemire~fr',
+      saga: 'sweet-tooth--jeff-lemire',
       name: 'Sweet Tooth',
       author: 'Jeff Lemire',
       language: 'fr',

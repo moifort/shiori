@@ -10,8 +10,8 @@ import type {
   NarratorName,
   Synopsis,
 } from '~/domain/book/types'
-import { seriesKeyOf } from '~/domain/series/primitives'
-import type { ReleaseDate, Series, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
+import { seriesIdOf, seriesKeyOf } from '~/domain/series/primitives'
+import type { ReleaseDate, SagaKey, Series, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { FollowedSeries } from '~/domain/series/use-case'
 import type { AuthorName, BookTitle, StarRating, UserId } from '~/domain/shared/types'
 import {
@@ -50,8 +50,8 @@ import type {
   SagaWatch,
 } from './types'
 
-const carl = 'dungeon-crawler-carl--matt-dinniman' as SeriesId
-const carlHeard = 'dungeon-crawler-carl--matt-dinniman--audio' as SeriesId
+const carl = 'dungeon-crawler-carl--matt-dinniman' as SagaKey
+const carlHeard = 'dungeon-crawler-carl--matt-dinniman--audio' as SagaKey
 
 const volume = (number: number, date?: string, extra: Partial<FoundVolume> = {}): FoundVolume => ({
   number: number as VolumeNumber,
@@ -61,7 +61,7 @@ const volume = (number: number, date?: string, extra: Partial<FoundVolume> = {})
 })
 
 const watchOf = (
-  seriesId: SeriesId,
+  seriesId: SagaKey,
   volumes: FoundVolume[],
   language: BookLanguage = 'fr',
 ): SagaWatch => ({
@@ -77,12 +77,15 @@ const watchOf = (
 const held = (...numbers: number[]) =>
   numbers.map(
     (number) =>
-      ({ series: { id: carl, volume: number, kind: 'main' } }) as unknown as Pick<Book, 'series'>,
+      ({
+        series: { id: seriesIdOf(carl), saga: carl, volume: number, kind: 'main' },
+      }) as unknown as Pick<Book, 'series'>,
   )
 
 const saga = (overrides: Partial<FollowedSeries>): FollowedSeries =>
   ({
-    id: carl,
+    id: seriesIdOf(overrides.saga ?? carl, 'fr'),
+    saga: carl,
     name: 'Dungeon Crawler Carl',
     author: 'Matt Dinniman',
     language: 'fr',
@@ -98,15 +101,15 @@ describe('the sagas watched for a reader', () => {
   test('are every saga they follow in the language they hold it in, but the ones set aside', () => {
     const sagas = watchedSagasOf([
       saga({}),
-      saga({ id: 'set-aside' as SeriesId, state: 'unfollowed' }),
+      saga({ saga: 'set-aside' as SagaKey, state: 'unfollowed' }),
       saga({
-        id: 'given-up' as SeriesId,
+        saga: 'given-up' as SagaKey,
         books: [{ status: 'read' }, { status: 'dropped' }] as FollowedSeries['books'],
       }),
-      saga({ id: 'no-language' as SeriesId, language: undefined }),
-      saga({ id: 'not-started' as SeriesId, state: 'not-started' }),
+      saga({ saga: 'no-language' as SagaKey, language: undefined }),
+      saga({ saga: 'not-started' as SagaKey, state: 'not-started' }),
     ])
-    expect(sagas.map((entry) => entry.seriesId)).toEqual([carl, 'not-started' as SeriesId])
+    expect(sagas.map((entry) => entry.seriesId)).toEqual([carl, 'not-started' as SagaKey])
     expect(sagas[0]).toEqual({
       seriesId: carl,
       language: 'fr',
@@ -124,32 +127,32 @@ describe('the sagas watched for a reader', () => {
       notified: [],
     })
     const fresh = {
-      seriesId: 'fresh' as SeriesId,
+      seriesId: 'fresh' as SagaKey,
       language: 'fr' as const,
       name: 'F' as SeriesName,
     }
-    const old = { seriesId: 'old' as SeriesId, language: 'fr' as const, name: 'O' as SeriesName }
+    const old = { seriesId: 'old' as SagaKey, language: 'fr' as const, name: 'O' as SeriesName }
     const never = {
-      seriesId: 'never' as SeriesId,
+      seriesId: 'never' as SagaKey,
       language: 'fr' as const,
       name: 'N' as SeriesName,
     }
     const now = new Date('2026-09-26')
     const watches = new Map([
-      ['fresh--fr', { ...watchOf('fresh' as SeriesId, []), checkedAt: new Date('2026-09-25') }],
-      ['old--fr', { ...watchOf('old' as SeriesId, []), checkedAt: new Date('2026-07-01') }],
+      ['fresh--fr', { ...watchOf('fresh' as SagaKey, []), checkedAt: new Date('2026-09-25') }],
+      ['old--fr', { ...watchOf('old' as SagaKey, []), checkedAt: new Date('2026-07-01') }],
     ])
     expect(
       dueWatches([reader([fresh, old]), reader([never, old])], watches, now).map(
         (entry) => entry.seriesId,
       ),
-    ).toEqual(['never' as SeriesId, 'old' as SeriesId])
+    ).toEqual(['never' as SagaKey, 'old' as SagaKey])
   })
 
   test('carry the furthest volume the reader holds in that language, and when it was added', () => {
     const book = (volume: number, language: BookLanguage, addedAt: string, kind = 'main') =>
       ({
-        series: { id: carl, volume, kind },
+        series: { id: seriesIdOf(carl), saga: carl, volume, kind },
         language,
         addedAt: new Date(addedAt),
         status: 'read',
@@ -179,14 +182,14 @@ describe('the sagas watched for a reader', () => {
       notified: [],
     })
     const holding = (seriesId: string, number: number, addedAt: string) => ({
-      seriesId: seriesId as SeriesId,
+      seriesId: seriesId as SagaKey,
       language: 'fr' as const,
       name: 'S' as SeriesName,
       furthest: { number: number as VolumeNumber, addedAt: new Date(addedAt) },
     })
     const checked = (seriesId: string, numbers: number[]) => ({
       ...watchOf(
-        seriesId as SeriesId,
+        seriesId as SagaKey,
         numbers.map((number) => volume(number)),
       ),
       checkedAt: new Date('2026-09-28'),
@@ -205,12 +208,12 @@ describe('the sagas watched for a reader', () => {
       watches,
       now,
     )
-    expect(due.map((entry) => entry.seriesId)).toEqual(['behind' as SeriesId])
+    expect(due.map((entry) => entry.seriesId)).toEqual(['behind' as SagaKey])
   })
 
   test('write to the reader in the app language they read most sagas in', () => {
     const in_ = (language: 'fr' | 'en' | 'de') => ({
-      seriesId: 'x' as SeriesId,
+      seriesId: 'x' as SagaKey,
       language,
       name: 'X' as SeriesName,
     })
@@ -587,7 +590,7 @@ describe('an announced volume’s page', () => {
   const printed = seriesKeyOf('Dungeon Crawler Carl', 'Matt Dinniman', 'book')
   const watchOf = (seriesId: string) => ({
     key: `${seriesId}--fr`,
-    seriesId: seriesId as SeriesId,
+    seriesId: seriesId as SagaKey,
     name: 'Dungeon Crawler Carl' as SeriesName,
     author: 'Matt Dinniman' as AuthorName,
     language: 'fr' as BookLanguage,
@@ -604,7 +607,12 @@ describe('an announced volume’s page', () => {
     pageCount: 612,
     isbn13: '9782226000000',
     coverUrl: 'https://covers.example/model.jpg' as CoverUrl,
-    series: { id: 'other' as SeriesId, name: 'Autre' as SeriesName, kind: 'main' as const },
+    series: {
+      id: seriesIdOf('other' as SagaKey),
+      saga: 'other' as SagaKey,
+      name: 'Autre' as SeriesName,
+      kind: 'main' as const,
+    },
   } as never
 
   test('keeps a printed volume where the watch found it, the model describing it', () => {
@@ -630,7 +638,7 @@ describe('an announced volume’s page', () => {
       isbn13: '9782226488190',
       coverUrl: 'https://covers.example/model.jpg',
       series: {
-        id: printed,
+        saga: printed,
         name: 'Dungeon Crawler Carl',
         volume: 4,
         kind: 'main',
@@ -857,7 +865,7 @@ describe('what an author has for the reader', () => {
 describe('the sagas of an author', () => {
   const written = (...authors: string[]) => ({ authors }) as unknown as Book
   const row = (seriesId: string, books: Book[], author?: string) => ({
-    series: saga({ id: seriesId as SeriesId, books, author: author as AuthorName | undefined }),
+    series: saga({ saga: seriesId as SagaKey, books, author: author as AuthorName | undefined }),
   })
 
   test('are read off the reader’s own volumes, a saga of two authors on both', () => {
@@ -902,7 +910,7 @@ describe('how often a watch is looked up again', () => {
     ...(date ? { date: date as ReleaseDate } : {}),
   })
   const saga = (checkedAt: Date, volumes: FoundVolume[]) => ({
-    ...watchOf('carl' as SeriesId, volumes),
+    ...watchOf('carl' as SagaKey, volumes),
     checkedAt,
   })
 
@@ -948,7 +956,7 @@ describe('how often a watch is looked up again', () => {
     expect(lastVolumeOutOf([volume(1, '2024'), volume(2), volume(3, '2027-02')], today)).toBe(2)
     expect(lastVolumeOutOf([volume(4, '2027-02')], today)).toBeUndefined()
     const prompt = releasesPrompt(
-      { seriesId: 'carl' as SeriesId, name: 'Carl' as SeriesName, language: 'fr' },
+      { seriesId: 'carl' as SagaKey, name: 'Carl' as SeriesName, language: 'fr' },
       today,
       2,
     )

@@ -1,7 +1,7 @@
 import type { BookLanguage, CoverUrl, Genre, ReadingStatus } from '~/domain/book/types'
-import { catalogueKeyOf } from '~/domain/series/primitives'
 import type {
   ReleaseDate,
+  SagaKey,
   Series,
   SeriesId,
   SeriesMiss,
@@ -221,7 +221,7 @@ export const progressOf = (
  *  below it would make that volume vanish from its own saga. Unnumbered owned
  *  volumes are left off, as an unnumbered entry has no place on a spine. */
 export const provisionalCatalogueOf = (
-  saga: { id: SeriesId; name: SeriesName; author: AuthorName },
+  saga: { id: SeriesId; saga: SagaKey; name: SeriesName; author: AuthorName },
   owned: readonly { title: BookTitle; series?: { volume?: VolumeNumber; kind: VolumeKind } }[],
   volumeCount: VolumeNumber,
   now = new Date(),
@@ -235,6 +235,7 @@ export const provisionalCatalogueOf = (
   const length = Math.max(Number(volumeCount), ...titles.keys())
   return {
     id: saga.id,
+    saga: saga.saga,
     name: saga.name,
     author: saga.author,
     volumes: Array.from({ length }, (_, index) => {
@@ -319,8 +320,8 @@ export const numberInCatalogue = (
   return Number(only.number) === Number(book.series.volume) ? undefined : only.number
 }
 
-/** The catalogue each of the reader's sagas is drawn from, keyed by saga and
- *  edition language as `catalogueKeyOf` writes it: the world's when somebody
+/** The catalogue each of the reader's sagas is drawn from, keyed by the
+ *  series id of the edition: the world's when somebody
  *  has described that edition, else the one the reader's own count makes, else
  *  none. A saga held in two languages is two catalogues, since each edition
  *  lists its own volumes; a count is about the work, and lays out a spine for
@@ -335,34 +336,43 @@ export const cataloguesOf = (
     authors: AuthorName[]
     language?: BookLanguage
     firstPublishedIn?: YearValue
-    series?: { id: SeriesId; name: SeriesName; volume?: VolumeNumber; kind: VolumeKind }
+    series?: {
+      id: SeriesId
+      saga: SagaKey
+      name: SeriesName
+      volume?: VolumeNumber
+      kind: VolumeKind
+    }
   }[],
   known: readonly Series[],
-  opinions: readonly { seriesId: SeriesId; volumeCount?: VolumeNumber }[],
-): Map<string, Series> => {
-  const stored = new Map(
-    known.map((series) => [catalogueKeyOf(series.id, series.language), series]),
-  )
+  opinions: readonly { seriesId: SagaKey; volumeCount?: VolumeNumber }[],
+): Map<SeriesId, Series> => {
+  const stored = new Map(known.map((series) => [series.id, series]))
   const counts = new Map(
     opinions.flatMap((opinion) =>
       opinion.volumeCount === undefined ? [] : [[opinion.seriesId, opinion.volumeCount] as const],
     ),
   )
-  const catalogues = new Map<string, Series>()
+  const catalogues = new Map<SeriesId, Series>()
   for (const saga of followedSagasOf(books)) {
-    const key = catalogueKeyOf(saga.id, saga.language)
+    const key = saga.id
     const series = stored.get(key)
     if (series) {
       catalogues.set(key, withShelvedVolumes(series, saga.books))
       continue
     }
-    const count = counts.get(saga.id)
+    const count = counts.get(saga.saga)
     if (count === undefined) continue
     catalogues.set(key, {
       ...provisionalCatalogueOf(
         // A saga no owned volume names an author for is catalogued under none:
         // the count still deserves its spine.
-        { id: saga.id, name: saga.name, author: saga.author ?? ('' as AuthorName) },
+        {
+          id: saga.id,
+          saga: saga.saga,
+          name: saga.name,
+          author: saga.author ?? ('' as AuthorName),
+        },
         saga.books,
         count,
       ),
@@ -520,7 +530,10 @@ export const splitBySpine = (series: Series): { spine: Volume[]; relatedWorks: V
  *  a saga is read off the very records that named it, and re-fetching them to
  *  count would be a second pass over a list already in hand. */
 export type FollowedSaga<Book> = {
+  /** The edition, as its books name it. */
   id: SeriesId
+  /** The saga, whatever the language: what the reader's opinion is read by. */
+  saga: SagaKey
   name: SeriesName
   /** The first author of a volume the reader owns. The catalogue carries an
    *  author of its own; this one is what answers for a saga that has none. */
@@ -542,14 +555,12 @@ export type FollowedSaga<Book> = {
  *  reading. What is missing then is the list of volumes that exist, not the
  *  saga.
  *
- *  Keyed by language as well as by saga, the same way the library shelves are:
- *  a reader who holds Dune in French and in English follows two rows, because
- *  those are two sets of books. A book is written French when nothing names
- *  its edition; a record that still carries no language is its own group and
- *  sorts last. */
+ *  One row per edition, the series id its books carry, the same way the
+ *  library shelves are: a reader who holds Dune in French and in English
+ *  follows two rows, because those are two sets of books. */
 export const followedSagasOf = <
   Book extends {
-    series?: { id: SeriesId; name: SeriesName }
+    series?: { id: SeriesId; saga: SagaKey; name: SeriesName }
     authors: AuthorName[]
     language?: BookLanguage
   },
@@ -560,7 +571,8 @@ export const followedSagasOf = <
   for (const book of books) {
     const membership = book.series
     if (!membership) continue
-    const key = `${membership.id}\u0000${book.language ?? ''}`
+    // The edition id holds the language: one group per saga and edition.
+    const key = membership.id
     const known = sagas.get(key)
     if (known) {
       known.books.push(book)
@@ -568,6 +580,7 @@ export const followedSagasOf = <
     } else
       sagas.set(key, {
         id: membership.id,
+        saga: membership.saga,
         name: membership.name,
         author: book.authors[0],
         language: book.language,

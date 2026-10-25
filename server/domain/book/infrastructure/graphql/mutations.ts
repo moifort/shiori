@@ -12,6 +12,7 @@ import { MAX_NARRATORS, MAX_SUBGENRES } from '~/domain/book/primitives'
 import { BookQuery } from '~/domain/book/query'
 import type { BookId } from '~/domain/book/types'
 import { BookUseCase } from '~/domain/book/use-case'
+import { seriesReferenceOf } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
 import { aiUnavailable, badUserInput, domainError, notFound } from '~/domain/shared/graphql/errors'
 import { languageOf } from '~/domain/shared/language'
@@ -81,7 +82,8 @@ builder.mutationFields((t) => ({
         isbn13: args.input.isbn13 ?? undefined,
         series: args.input.series
           ? {
-              id: args.input.series.id,
+              // The id names the saga; the edition is the book's own language.
+              saga: seriesReferenceOf(args.input.series.id).saga,
               name: args.input.series.name,
               volume: args.input.series.volume ?? undefined,
               kind: args.input.series.kind,

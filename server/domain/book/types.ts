@@ -1,7 +1,7 @@
 import type { Brand } from 'ts-brand'
 import type { AudibleAsin } from '~/domain/audible/types'
 import type { KindleAsin } from '~/domain/kindle/types'
-import type { SeriesId, SeriesName, VolumeKind, VolumeNumber } from '~/domain/series/types'
+import type { SagaKey, SeriesId, SeriesName, VolumeKind, VolumeNumber } from '~/domain/series/types'
 import type {
   AuthorName,
   BookTitle,
@@ -151,11 +151,20 @@ export type BookMedium = (typeof BOOK_MEDIA)[number]
  *  here on purpose: grouping a 300-book library into sections must not read one
  *  catalogue document per row. */
 export type SeriesMembership = {
+  /** The edition the book belongs to — its saga in its own language and
+   *  format: what the saga page opens, and its catalogue's document id.
+   *  Rewritten with `saga` whenever the book's language or format changes. */
   id: SeriesId
+  /** The saga, whatever the language: what the reader's opinion is read by. */
+  saga: SagaKey
   name: SeriesName
   volume?: VolumeNumber
   kind: VolumeKind
 }
+
+/** A saga as a book is filed under it before it is written: the saga and the
+ *  place in it, the edition left to the book it lands on (`membershipIn`). */
+export type SeriesEntry = Omit<SeriesMembership, 'id'>
 
 /** A saga as the reader names it by hand, when the scan missed it: a name and
  *  maybe a volume number. The key it lands under is worked out from it, never
@@ -320,7 +329,7 @@ export type ShelfVocabulary = {
  *  different objects — different translations, different covers, read at
  *  different times — and stacking them under one heading hid that. */
 export type LibrarySection = {
-  series?: { id: SeriesId; name: SeriesName; language?: BookLanguage }
+  series?: { id: SeriesId; saga: SagaKey; name: SeriesName; language?: BookLanguage }
   /** What the reader makes of the saga, when they have said anything: drawn on
    *  the section heading. Absent on the standalone shelf. */
   opinion?: { rating?: StarRating; favorite: boolean }

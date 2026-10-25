@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
-import type { SeriesId } from '~/domain/series/types'
+import type { SagaKey } from '~/domain/series/types'
 import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore, startFakeRequest } from '~/test/fake-firestore'
 
@@ -110,7 +110,7 @@ describe('keeping the view in step with the library', () => {
   test('follows a saga hearted, in the very batch that writes the opinion', async () => {
     await addBook('Dune')
 
-    await SeriesOpinionUseCase.setFavorite(reader, 'dune--frank-herbert' as SeriesId, true)
+    await SeriesOpinionUseCase.setFavorite(reader, 'dune--frank-herbert' as SagaKey, true)
 
     const batch = fake.batches.at(-1)
     expect(batch?.ops.map((op) => [op.type, op.ref.collectionPath])).toEqual([
