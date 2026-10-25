@@ -4,7 +4,7 @@ import SwiftUI
 /// card: its cover edge to edge on the leading side, over the cover's own
 /// colours the title, the author and the volume's place at the top, and at
 /// the foot one white button that orders it from the store — Audible for a recording, Amazon
-/// otherwise, beside how long is left before it comes out. The day itself sits
+/// otherwise. Under the title, how long is left before it comes out; the day itself sits
 /// in the corner as the iOS Calendar icon. A tap elsewhere opens the
 /// volume's page, as on Découvrir. No "wait for it": the saga's bell already
 /// alerts on the day.
@@ -42,19 +42,22 @@ struct SeriesReleaseCard: View {
                     .font(.headline)
                     .lineLimit(2)
                     .padding(.trailing, volume.date == nil ? 0 : Self.leafRoom)
-                Spacer(minLength: 0)
-                // The next step at the card's foot, and the wait beside it.
-                HStack(spacing: 10) {
-                    if let store {
-                        preorderButton(store)
-                    }
-                    if let countdown = volume.date.flatMap({ ReleaseDateText.countdown($0) }) {
+                // How long is left, under the title as its subtitle.
+                if let countdown = volume.date.flatMap({ ReleaseDateText.countdown($0) }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock")
                         Text(countdown)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.orange)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
                     }
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.orange)
+                    .lineLimit(1)
+                    .padding(.top, 2)
+                        .padding(.trailing, Self.leafRoom)
+                }
+                Spacer(minLength: 0)
+                // The next step at the card's foot.
+                if let store {
+                    preorderButton(store)
                 }
             }
             .foregroundStyle(.white)
