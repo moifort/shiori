@@ -50,9 +50,14 @@ enum ReleaseDateText {
         }
     }
 
-    /// How long until it comes out: "1 jour", "10 jours", "2 mois", "1 an" — in days under a month, months under a year. Nil for a
+    /// How long until it comes out: "1 jour", "10 jours", "2 mois", "1 an",
+    /// or "10 j" in the short style — in days under a month, months under a year. Nil for a
     /// date given only as a year, or one not ahead any more.
-    static func countdown(_ date: String, today: Date = .now) -> String? {
+    static func countdown(
+        _ date: String,
+        style: DateComponentsFormatter.UnitsStyle = .full,
+        today: Date = .now
+    ) -> String? {
         guard let (day, precision) = parts(date), precision > 1 else { return nil }
         let calendar = Calendar.current
         let start = calendar.startOfDay(for: today)
@@ -64,7 +69,7 @@ enum ReleaseDateText {
             else if let years = span.year, years > 0 { DateComponents(year: years) }
             else { DateComponents(month: max(span.month ?? 1, 1)) }
         let formatter = DateComponentsFormatter()
-        formatter.unitsStyle = .full
+        formatter.unitsStyle = style
         formatter.maximumUnitCount = 1
         return formatter.string(from: components)
     }
