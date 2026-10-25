@@ -19,6 +19,8 @@ builder.mutationFields((t) => ({
       'when the saga is held in more than one. Takes a few seconds. Null when the ' +
       'reader holds no volume of the saga, and when the model failed or found no ' +
       'volumes — the previous catalogue is then kept as it was.',
+    deprecationReason:
+      'The saga page no longer offers it: a catalogue is completed by the release watch.',
     args: {
       seriesId: t.arg({ type: 'SeriesId', required: true }),
       language: t.arg({ type: BookLanguageEnum, required: false }),

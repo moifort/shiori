@@ -2,20 +2,16 @@ import SwiftUI
 
 /// Everything the "…" menu of a saga can ask for.
 enum SeriesMenuAction {
-    case refresh
     case declareVolumeCount
-    case setFollowed(Bool)
     case merge
     case delete
 }
 
-/// The "…" in a saga's corner, for a saga the reader holds volumes of.
+/// The "…" in a saga's corner, for a saga the reader holds volumes of. Only
+/// what the page does not draw: following is the bell's, beside the stars.
 struct SeriesActionsMenu: View {
-    /// A catalogue is on screen: only then can it be looked up again.
-    let hasCatalogue: Bool
     /// The catalogue is drawn from the reader's own count.
     let isProvisional: Bool
-    let isFollowed: Bool
     /// How many of its books the removal takes with it.
     let ownedCount: Int
     let onAction: (SeriesMenuAction) -> Void
@@ -24,14 +20,6 @@ struct SeriesActionsMenu: View {
 
     var body: some View {
         Menu {
-            // Only over a catalogue: with none, the screen's own retry button
-            // already asks the world about the saga.
-            if hasCatalogue {
-                Button("Mettre à jour", systemImage: "arrow.clockwise") {
-                    onAction(.refresh)
-                }
-                .accessibilityIdentifier("series-refresh")
-            }
             // The count is the reader's own: they can correct it for as long
             // as it is what the screen is drawn from.
             if isProvisional {
@@ -40,24 +28,13 @@ struct SeriesActionsMenu: View {
                 }
                 .accessibilityIdentifier("series-volume-count")
             }
-            // Only the saga is set aside: its volumes keep their own statuses.
-            if isFollowed {
-                Button("Ne plus suivre", systemImage: "bell.slash") {
-                    onAction(.setFollowed(false))
-                }
-                .accessibilityIdentifier("series-unfollow")
-            } else {
-                Button("Suivre", systemImage: "bell") {
-                    onAction(.setFollowed(true))
-                }
-                .accessibilityIdentifier("series-follow")
-            }
             // A scan and an import often name one saga twice: the reader keeps
             // one, and this one's volumes move there.
             Button("Fusionner avec…", systemImage: "arrow.triangle.merge") {
                 onAction(.merge)
             }
             .accessibilityIdentifier("series-merge")
+            Divider()
             Button("Supprimer", systemImage: "trash", role: .destructive) {
                 confirmDelete = true
             }
@@ -89,7 +66,7 @@ struct SeriesActionsMenu: View {
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     SeriesActionsMenu(
-                        hasCatalogue: true, isProvisional: false, isFollowed: true, ownedCount: 6
+                        isProvisional: false, ownedCount: 6
                     ) { _ in }
                 }
             }

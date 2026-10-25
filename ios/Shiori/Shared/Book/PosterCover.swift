@@ -13,6 +13,8 @@ struct PosterCover: View {
     /// "Audio" in the corner of a recording. Off where the context already
     /// says it: a saga's volumes under a recording's own page.
     var showsAudioTag = true
+    /// The line's colour: orange for the day a volume comes out.
+    var captionColor: Color = .white
 
     static let cornerRadius: CGFloat = 8
 
@@ -34,7 +36,7 @@ struct PosterCover: View {
             .overlay(alignment: .bottom) {
                 Text(caption)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(captionColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                     .shadow(color: .black.opacity(0.5), radius: 4)

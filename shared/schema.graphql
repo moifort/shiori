@@ -2747,7 +2747,7 @@ type Mutation {
   
   Built as `series` builds a first catalogue: from a volume the reader holds, listing the volumes out in its language, `language` naming that edition when the saga is held in more than one. Takes a few seconds. Null when the reader holds no volume of the saga, and when the model failed or found no volumes — the previous catalogue is then kept as it was.
   """
-  refreshSeries(language: BookLanguage, seriesId: SeriesId!): Series
+  refreshSeries(language: BookLanguage, seriesId: SeriesId!): Series @deprecated(reason: "The saga page no longer offers it: a catalogue is completed by the release watch.")
 
   """
   Remember a device to push alerts to. The app calls it on every launch with notifications allowed, so a token APNs rotated is picked up; registering the same token again only refreshes it.

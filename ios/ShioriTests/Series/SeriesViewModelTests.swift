@@ -96,19 +96,6 @@ struct SeriesViewModelTests {
         #expect(viewModel.opinion?.rating == nil)
     }
 
-    @Test func emptyRefreshKeepsTheOldCatalogueAndSaysSo() async {
-        var client = SeriesClient.preview
-        client.refresh = { _, _ in nil }
-        let viewModel = model(client)
-        await viewModel.load()
-
-        await viewModel.refreshCatalogue()
-
-        #expect(viewModel.series != nil)
-        #expect(viewModel.refreshFailed)
-        #expect(viewModel.isSaving == false)
-    }
-
     @Test func genreCorrectionReachesEveryVolume() async {
         var client = SeriesClient.preview
         client.updateBook = { _, _ in

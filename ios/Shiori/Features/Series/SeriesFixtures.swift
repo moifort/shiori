@@ -27,7 +27,6 @@ extension SeriesClient {
         },
         setFavorite: { id, favorite in SeriesOpinion(seriesId: id, rating: nil, favorite: favorite) },
         declareVolumeCount: { id, _ in SeriesOpinion(seriesId: id, rating: nil, favorite: false) },
-        refresh: { id, _ in Showcase.seriesScreen(id: id).series },
         delete: { _, _ in },
         mergeCandidates: { SeriesFixtures.followed },
         merge: { _, _, _ in },

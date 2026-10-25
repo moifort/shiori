@@ -66,23 +66,6 @@ enum SeriesAPI {
         return data.series.map { BookSeries(catalogue: $0.fragments.seriesCatalogue) }
     }
 
-    /// Asks the world about the saga again: a fresh catalogue replaces the
-    /// stored one, for everyone. Nil when it could not be rebuilt — the model
-    /// failed or found nothing — in which case the previous catalogue stands.
-    /// One grounded model call, so it waits as long as a first opening does.
-    static func refresh(seriesId: String, language: BookLanguage? = nil) async throws -> BookSeries? {
-        let data = try await GraphQLHelpers.perform(
-            GraphQLClient.shared.apollo,
-            concerning: .series(id: seriesId),
-            mutation: ShioriGraphQL.RefreshSeriesMutation(
-                seriesId: seriesId,
-                language: graphQLLanguage(language)
-            ),
-            requestTimeout: firstOpeningTimeout
-        )
-        return data.refreshSeries.map { BookSeries(catalogue: $0.fragments.seriesCatalogue) }
-    }
-
     /// Adds a volume of a saga heard as Audible describes it, through the
     /// reader's account, filed under the saga at its number in the edition
     /// opened, on the pile. Throws `NOT_FOUND` when Audible sells no recording

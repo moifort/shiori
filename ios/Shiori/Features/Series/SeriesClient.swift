@@ -20,8 +20,6 @@ struct SeriesClient: Sendable {
     var setFollowed: @Sendable (_ seriesId: String, Bool, BookLanguage?) async throws -> SeriesOpinion
     var setFavorite: @Sendable (_ seriesId: String, Bool) async throws -> SeriesOpinion
     var declareVolumeCount: @Sendable (_ seriesId: String, Int) async throws -> SeriesOpinion
-    /// A fresh catalogue; nil when it could not be rebuilt.
-    var refresh: @Sendable (_ seriesId: String, BookLanguage?) async throws -> BookSeries?
     var delete: @Sendable (_ seriesId: String, BookLanguage?) async throws -> Void
     var mergeCandidates: @Sendable () async throws -> [FollowedSeries]
     var merge: @Sendable (_ seriesId: String, BookLanguage?, _ into: String) async throws -> Void
@@ -52,7 +50,6 @@ extension SeriesClient {
         setFollowed: { try await SeriesAPI.setFollowed(seriesId: $0, followed: $1, language: $2) },
         setFavorite: { try await SeriesAPI.setFavorite(seriesId: $0, favorite: $1) },
         declareVolumeCount: { try await SeriesAPI.declareVolumeCount(seriesId: $0, count: $1) },
-        refresh: { try await SeriesAPI.refresh(seriesId: $0, language: $1) },
         delete: { _ = try await SeriesAPI.delete(seriesId: $0, language: $1) },
         mergeCandidates: { try await SeriesAPI.mergeCandidates() },
         merge: { _ = try await SeriesAPI.merge(seriesId: $0, language: $1, into: $2) },

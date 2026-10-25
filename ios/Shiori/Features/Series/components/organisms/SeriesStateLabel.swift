@@ -6,14 +6,7 @@ import SwiftUI
 struct SeriesStateLabel: View {
     let state: SeriesState
 
-    private var tint: Color {
-        switch state {
-        case .notStarted: ReadingStatus.toRead.tint
-        case .inProgress: ReadingStatus.reading.tint
-        case .complete: ReadingStatus.read.tint
-        case .unfollowed: .secondary
-        }
-    }
+    private var tint: Color { state.tint }
 
     var body: some View {
         // A saga set aside says so by the crossed-out bell alone: the word
@@ -42,6 +35,19 @@ struct SeriesStateLabel: View {
         .padding(.vertical, 2)
         .background(tint.opacity(0.15), in: Capsule())
         .fixedSize()
+    }
+}
+
+extension SeriesState {
+    /// The colour of the reading status the state mirrors: blue for reading,
+    /// green for read, orange for the pile.
+    var tint: Color {
+        switch self {
+        case .notStarted: ReadingStatus.toRead.tint
+        case .inProgress: ReadingStatus.reading.tint
+        case .complete: ReadingStatus.read.tint
+        case .unfollowed: .secondary
+        }
     }
 }
 

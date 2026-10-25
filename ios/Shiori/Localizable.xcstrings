@@ -1177,34 +1177,6 @@
         }
       }
     },
-    "%lld tome(s)" : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld volume"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld volumes"
-                }
-              }
-            }
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld tome(s)"
-          }
-        }
-      }
-    },
     "%lld tomes" : {
       "localizations" : {
         "en" : {
@@ -1245,18 +1217,18 @@
         }
       }
     },
-    "%lld tomes lus sur %lld parus" : {
+    "%lld tomes lus sur %lld" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$lld volumes read out of %2$lld published"
+            "value" : "%lld of %lld volumes read"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "%1$lld tomes lus sur %2$lld parus"
+            "value" : "%1$lld tomes lus sur %2$lld"
           }
         }
       }
@@ -2101,18 +2073,18 @@
         }
       }
     },
-    "Ajoutée le" : {
+    "Ajoutée" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Added on"
+            "value" : "Added"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ajoutée le"
+            "value" : "Ajoutée"
           }
         }
       }
@@ -2241,6 +2213,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Anglais"
+          }
+        }
+      }
+    },
+    "Annexes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Companions"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annexes"
           }
         }
       }
@@ -3365,34 +3353,18 @@
         }
       }
     },
-    "Catalogue non mis à jour" : {
+    "Catalogue provisoire, dessiné d'après le nombre de tomes que vous avez indiqué." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Catalogue not updated"
+            "value" : "Provisional catalogue, drawn from the number of volumes you entered."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Catalogue non mis à jour"
-          }
-        }
-      }
-    },
-    "Catalogue provisoire, dessiné d'après le nombre de tomes que vous avez indiqué. « Mettre à jour » demande le vrai." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Provisional catalogue, drawn from the number of volumes you entered. “Update” asks for the real one."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Catalogue provisoire, dessiné d'après le nombre de tomes que vous avez indiqué. « Mettre à jour » demande le vrai."
+            "value" : "Catalogue provisoire, dessiné d'après le nombre de tomes que vous avez indiqué."
           }
         }
       }
@@ -3957,18 +3929,18 @@
         }
       }
     },
-    "Commencée le" : {
+    "Commencée" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Started on"
+            "value" : "Started"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Commencée le"
+            "value" : "Commencée"
           }
         }
       }
@@ -4657,6 +4629,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Date"
+          }
+        }
+      }
+    },
+    "Depuis %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Since %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depuis %@"
           }
         }
       }
@@ -6837,22 +6825,6 @@
         }
       }
     },
-    "Le genre et les sous-genres s'appliquent à tous les tomes de la série dans votre bibliothèque." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The genre and subgenres apply to every volume of the series in your library."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le genre et les sous-genres s'appliquent à tous les tomes de la série dans votre bibliothèque."
-          }
-        }
-      }
-    },
     "Le nombre de pages doit être un nombre positif." : {
       "localizations" : {
         "en" : {
@@ -8125,22 +8097,6 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Note : %1$@ sur %2$lld"
-          }
-        }
-      }
-    },
-    "Note de %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@’s rating"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Note de %@"
           }
         }
       }
@@ -9617,6 +9573,22 @@
         }
       }
     },
+    "Précommander" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pre-order"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Précommander"
+          }
+        }
+      }
+    },
     "Prénom" : {
       "localizations" : {
         "en" : {
@@ -9677,22 +9649,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Préquelle"
-          }
-        }
-      }
-    },
-    "Préquelles, nouvelles et hors-séries, en dehors de la numérotation." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prequels, novellas and spin-offs, outside the numbering."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Préquelles, nouvelles et hors-séries, en dehors de la numérotation."
           }
         }
       }
@@ -10257,22 +10213,6 @@
         }
       }
     },
-    "Récits annexes" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Side stories"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Récits annexes"
-          }
-        }
-      }
-    },
     "Réduire" : {
       "localizations" : {
         "en" : {
@@ -10829,22 +10769,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Shiori n'a pas réussi à constituer le catalogue de cette série. Réessayez plus tard, ou scannez la couverture d'un de ses tomes."
-          }
-        }
-      }
-    },
-    "Shiori n'a pas réussi à reconstituer le catalogue de cette série. L'ancien est conservé ; réessayez plus tard." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shiori couldn’t rebuild the catalogue of this series. The old one is kept; try again later."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shiori n'a pas réussi à reconstituer le catalogue de cette série. L'ancien est conservé ; réessayez plus tard."
           }
         }
       }
@@ -11741,22 +11665,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Terminée"
-          }
-        }
-      }
-    },
-    "Terminée le" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Finished on"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Terminée le"
           }
         }
       }
@@ -13153,6 +13061,38 @@
         }
       }
     },
+    "annoncé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "announced"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "annoncé"
+          }
+        }
+      }
+    },
+    "annoncés" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "announced"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "annoncés"
+          }
+        }
+      }
+    },
     "aujourd'hui" : {
       "localizations" : {
         "en" : {
@@ -13185,18 +13125,18 @@
         }
       }
     },
-    "d'après votre décompte" : {
+    "d'écoute" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "based on your count"
+            "value" : "listened"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "d'après votre décompte"
+            "value" : "d'écoute"
           }
         }
       }
@@ -13409,6 +13349,22 @@
         }
       }
     },
+    "lus" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "read"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "lus"
+          }
+        }
+      }
+    },
     "lus en %@" : {
       "localizations" : {
         "en" : {
@@ -13469,6 +13425,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "pages en %@"
+          }
+        }
+      }
+    },
+    "tomes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "volumes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tomes"
           }
         }
       }
@@ -13745,22 +13717,6 @@
         }
       }
     },
-    "à paraître en %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "coming in %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "à paraître en %@"
-          }
-        }
-      }
-    },
     "écoutées" : {
       "localizations" : {
         "en" : {
@@ -13773,6 +13729,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "écoutées"
+          }
+        }
+      }
+    },
+    "écoutés" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "listened"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "écoutés"
           }
         }
       }

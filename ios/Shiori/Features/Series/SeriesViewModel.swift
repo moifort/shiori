@@ -23,17 +23,14 @@ final class SeriesViewModel {
     var errorMessage: String?
     /// The volume being added, its "+" turning.
     private(set) var addingTitle: String?
-    /// A rating, a heart, a refresh or the removal is on its way.
+    /// A rating, a heart or the removal is on its way.
     private(set) var isSaving = false
-    private(set) var isRefreshing = false
     /// The AI is building the catalogue of a saga nobody had catalogued: the
     /// volumes held are on screen meanwhile, and every action stays at hand.
     private(set) var isCataloguing = false
     /// The AI is looking for the saga's next volume in an edition nobody
     /// watched yet.
     private(set) var isLookingUpReleases = false
-    /// The refresh came back with nothing: the catalogue on screen is the old one.
-    var refreshFailed = false
     /// The next volume announced in the edition opened. Last opening's at
     /// once, brought up to date underneath.
     private(set) var releases: SagaReleases?
@@ -80,7 +77,7 @@ final class SeriesViewModel {
     /// What the AI is writing for this screen, said in its bar; nil when
     /// nothing is being written.
     var generating: LocalizedStringKey? {
-        if isCataloguing || isRefreshing { return "L'IA complète le catalogue" }
+        if isCataloguing { return "L'IA complète le catalogue" }
         if isLookingUpReleases { return "L'IA cherche les parutions" }
         return nil
     }
@@ -213,24 +210,6 @@ final class SeriesViewModel {
     }
 
     // MARK: - The saga itself
-
-    /// Asks the world about the saga again. When it could not be rebuilt the
-    /// old catalogue stays, and the reader is told.
-    func refreshCatalogue() async {
-        // The page stays usable meanwhile: the bar says the AI is at work.
-        guard !isRefreshing, !isCataloguing else { return }
-        isRefreshing = true
-        defer { isRefreshing = false }
-        do {
-            if let refreshed = try await client.refresh(seriesId, language) {
-                withAnimation(.smooth) { series = refreshed }
-            } else {
-                refreshFailed = true
-            }
-        } catch {
-            errorMessage = reportError(error)
-        }
-    }
 
     /// The edition this screen shows, and no other. True once removed.
     func delete() async -> Bool {

@@ -40,14 +40,6 @@ query SeriesCatalogueBuilt($id: SeriesId!, $language: BookLanguage, $proposed: P
   }
 }
 
-# Ask the world about the saga again. The fresh catalogue replaces the stored
-# one for everyone; null means it could not be rebuilt and the old one stands.
-mutation RefreshSeries($seriesId: SeriesId!, $language: BookLanguage) {
-  refreshSeries(seriesId: $seriesId, language: $language) {
-    ...SeriesCatalogue
-  }
-}
-
 fragment SeriesCatalogue on Series {
   id
   name

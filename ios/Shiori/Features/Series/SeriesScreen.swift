@@ -26,6 +26,8 @@ struct SeriesScreen: View {
     @State private var isDeclaringVolumeCount = false
     /// The announced volume whose page is open, as Découvrir opens it.
     @State private var announced: DiscoveredVolume?
+    /// The author whose page the hero's author line opened.
+    @State private var openAuthor: AuthorDestination?
     /// Whether the saga is laid out as two pages, on an unfolded iPhone Duo:
     /// a volume then opens on the second page rather than over the list.
     @State private var isSpread = false
@@ -79,11 +81,6 @@ struct SeriesScreen: View {
         // What the AI is writing, said in the bar: the page under it stays
         // readable and every action at hand.
         .generatingInBar(viewModel.generating)
-        .alert("Catalogue non mis à jour", isPresented: $viewModel.refreshFailed) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Shiori n'a pas réussi à reconstituer le catalogue de cette série. L'ancien est conservé ; réessayez plus tard.")
-        }
         // The stars commit on the tap and the control cannot show the call
         // itself, so the wait is made visible by a scrim.
         .overlay {
@@ -97,6 +94,9 @@ struct SeriesScreen: View {
         .disabled(viewModel.isSaving)
         .pushesDetail(item: pushedUnlessSpread($selectedBook)) { book in
             volumeScreen(book)
+        }
+        .pushesDetail(item: $openAuthor) { author in
+            AuthorScreen(key: author.key, name: author.name)
         }
         .sheet(isPresented: $isRating) {
             RatingPromptSheet(
@@ -225,6 +225,8 @@ struct SeriesScreen: View {
                 selectedBook = book
             case .rate: isRating = true
             case .editGenre: isEditingGenre = true
+            case let .setFollowed(followed): await viewModel.setFollowed(followed)
+            case let .openAuthor(author): openAuthor = author
             case let .openAnnounced(volume):
                 selectedBook = nil
                 announced = volume
@@ -265,15 +267,11 @@ struct SeriesScreen: View {
         if !viewModel.owned.isEmpty {
             ToolbarItem(placement: .primaryAction) {
                 SeriesActionsMenu(
-                    hasCatalogue: viewModel.series != nil,
                     isProvisional: viewModel.series?.isProvisional == true,
-                    isFollowed: viewModel.isFollowed,
                     ownedCount: viewModel.owned.count
                 ) { action in
                     switch action {
-                    case .refresh: Task { await viewModel.refreshCatalogue() }
                     case .declareVolumeCount: isDeclaringVolumeCount = true
-                    case let .setFollowed(followed): Task { await viewModel.setFollowed(followed) }
                     case .merge: isMerging = true
                     case .delete:
                         Task { if await viewModel.delete() { dismiss() } }

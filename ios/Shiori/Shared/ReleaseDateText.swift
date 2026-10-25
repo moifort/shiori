@@ -78,21 +78,33 @@ enum ReleaseDateText {
 /// One square whatever it says, so the badges line up down a list.
 struct ReleaseDateBadge: View {
     let date: String
+    /// On Liquid Glass, both lines in orange as everything announced is: over
+    /// a card's own colours, where an outline would vanish.
+    var onGlass = false
 
     var body: some View {
         let parts = date.split(separator: "-").compactMap { Int($0) }
-        VStack(spacing: 0) {
-            Text(verbatim: top(parts)).font(.subheadline.weight(.semibold))
+        let leaf = VStack(spacing: onGlass ? 1 : 0) {
+            Text(verbatim: top(parts))
+                .font(onGlass ? .headline.weight(.bold) : .subheadline.weight(.semibold))
             if let bottom = bottom(parts) {
-                Text(verbatim: bottom).font(.caption2).foregroundStyle(.secondary)
+                Text(verbatim: bottom)
+                    .font(onGlass ? .caption2.weight(.semibold) : .caption2)
+                    .foregroundStyle(onGlass ? AnyShapeStyle(.orange) : AnyShapeStyle(.secondary))
             }
         }
         .lineLimit(1)
         .minimumScaleFactor(0.8)
         .frame(width: 48, height: 48)
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(ReleaseDateText.phrase(date)))
+        if onGlass {
+            leaf
+                .foregroundStyle(.orange)
+                .glassEffect(.regular, in: .rect(cornerRadius: 10))
+        } else {
+            leaf.overlay(RoundedRectangle(cornerRadius: 8).stroke(.quaternary))
+        }
     }
 
     private func month(_ number: Int) -> String {

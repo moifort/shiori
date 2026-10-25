@@ -29,86 +29,29 @@ struct HomeFiguresLine: View {
 
     var body: some View {
         Button(action: onTap) {
-            ViewThatFits(in: .horizontal) {
-                columns(spread: true)
-                ScrollView(.horizontal) {
-                    columns(spread: false)
-                }
-                .scrollIndicators(.hidden)
-                .scrollClipDisabled()
-            }
-            .contentShape(.rect)
+            FiguresLine(items: items)
+                .contentShape(.rect)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text("Statistiques"))
         .accessibilityIdentifier("home-figures")
     }
 
-    /// The columns and the hairlines between them: spread across the width
-    /// with the free room shared out evenly, the outer columns keeping half a
-    /// gap from the edges so the line breathes, the hairline in the middle of
-    /// each gap; or each set to its content with a margin when the line
-    /// scrolls.
-    private func columns(spread: Bool) -> some View {
-        HStack(spacing: 0) {
-            if spread { Spacer(minLength: 0) }
-            ForEach(Array(items.enumerated()), id: \.offset) { index, item in
-                if index > 0 {
-                    if spread { Spacer(minLength: 6) }
-                    Divider().frame(height: 30)
-                    if spread { Spacer(minLength: 6) }
-                }
-                column(item).padding(.horizontal, spread ? 0 : 16)
-            }
-            if spread { Spacer(minLength: 0) }
-        }
-    }
-
-    private func column(_ item: Item) -> some View {
-        VStack(spacing: 3) {
-            Text(item.value)
-                .font(.title2.weight(.bold))
-                .monospacedDigit()
-            Text(item.label)
-                .font(.caption2.weight(.semibold))
-                .textCase(.uppercase)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-        }
-        .fixedSize()
-    }
-
-    private struct Item {
-        let value: String
-        let label: String
-    }
-
-    private var items: [Item] {
+    private var items: [FiguresLine.Item] {
         // The year as text: a figure would be grouped, "2 026".
         var items = [
-            Item(value: readCount.formatted(), label: String(localized: "lus en \(String(year))")),
-            Item(value: favoriteCount.formatted(), label: String(localized: "favoris")),
-            Item(value: toReadCount.formatted(), label: String(localized: "à lire")),
+            FiguresLine.Item(value: readCount.formatted(), label: String(localized: "lus en \(String(year))")),
+            FiguresLine.Item(value: favoriteCount.formatted(), label: String(localized: "favoris")),
+            FiguresLine.Item(value: toReadCount.formatted(), label: String(localized: "à lire")),
         ]
         // Pages in thousands — "16k" — so the line stays short.
         if pagesRead > 0 || showsPagesAtZero {
-            items.append(Item(value: Self.compact(pagesRead), label: String(localized: "pages")))
+            items.append(FiguresLine.Item(value: FiguresLine.compact(pagesRead), label: String(localized: "pages")))
         }
         if hoursListened > 0 {
-            items.append(Item(value: "\(hoursListened.formatted())h", label: String(localized: "écoutées")))
+            items.append(FiguresLine.Item(value: "\(hoursListened.formatted())h", label: String(localized: "écoutées")))
         }
         return items
-    }
-
-    /// A figure in thousands past a thousand, its unit against it — "850",
-    /// "1,5k", "16k" — closer than the system's compact notation sets it.
-    static func compact(_ value: Int) -> String {
-        guard value >= 1000 else { return value.formatted() }
-        let thousands = Double(value) / 1000
-        let figure = thousands < 10
-            ? thousands.formatted(.number.precision(.fractionLength(0...1)))
-            : thousands.rounded().formatted(.number.precision(.fractionLength(0)))
-        return figure + "k"
     }
 }
 
