@@ -42,6 +42,12 @@ enum SeriesAPI {
             owned: data.mySeriesVolumes.map { row in
                 var book = row.fragments.bookSummary.asBook
                 book.authorKeys = row.authorKeys
+                book.publisher = row.publisher
+                book.pageCount = row.pageCount
+                book.durationMinutes = row.durationMinutes
+                book.addedAt = GraphQLHelpers.parseISO8601(row.addedAt)
+                book.startedAt = row.startedAt.flatMap(GraphQLHelpers.parseISO8601)
+                book.finishedAt = row.finishedAt.flatMap(GraphQLHelpers.parseISO8601)
                 return book
             }
         )

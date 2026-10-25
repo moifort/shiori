@@ -18,6 +18,14 @@ query SeriesScreen($id: SeriesId!, $proposed: ProposedSagaInput) {
     ...BookSummary
     # The hero's author line opens the author's page.
     authorKeys
+    # The facts table: the reader's days with the saga, its publisher and
+    # its length.
+    publisher
+    pageCount
+    durationMinutes
+    addedAt
+    startedAt
+    finishedAt
   }
 }
 
