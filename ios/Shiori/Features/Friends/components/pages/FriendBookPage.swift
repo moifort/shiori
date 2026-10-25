@@ -185,48 +185,8 @@ struct FriendBookPage: View {
     private var facts: some View {
         VStack(alignment: .leading, spacing: 12) {
             RowHeader(title: "Informations")
-            FactGrid(groups: [FactGroup(tiles: factTiles)], links: storeLinks)
+            FactGrid(groups: [FactGroup(tiles: book.readOnlyFactTiles)], links: book.storeFactLinks)
         }
-    }
-
-    /// The reader's own page's tiles, without the taps that correct them.
-    private var factTiles: [FactTile] {
-        var tiles = [
-            FactTile(id: "genre", title: "Genre", value: book.genre?.label, chips: book.subgenres, isWide: true),
-            FactTile(id: "format", title: "Format", value: formatValue),
-            FactTile(id: "publisher", title: "Éditeur", value: book.publisher),
-            FactTile(id: "firstPublishedIn", title: "Parution", value: book.firstPublishedIn.map(String.init)),
-        ]
-        if let duration = book.durationLabel {
-            tiles.append(FactTile(id: "duration", title: "Durée", value: duration))
-        } else {
-            tiles.append(FactTile(id: "pageCount", title: "Pages", value: book.pageCount.map(String.init)))
-        }
-        if BookFact.editionYear.applies(to: book), let year = book.editionYear {
-            tiles.append(FactTile(id: "editionYear", title: "Année d'édition", value: String(year)))
-        }
-        if book.format != .audiobook {
-            tiles.append(FactTile(
-                id: "isbn13",
-                title: "ISBN",
-                value: book.isbn13,
-                valueFont: .subheadline.weight(.semibold).monospacedDigit()
-            ))
-        }
-        return tiles
-    }
-
-    /// "Livre · papier", "Manga · papier et numérique", "Livre audio".
-    private var formatValue: String {
-        guard book.format != .audiobook, !book.media.isEmpty else { return book.format.label }
-        return "\(book.format.label) · \(BookMedium.label(of: book.media).lowercased())"
-    }
-
-    private var storeLinks: [FactLink] {
-        [
-            book.audibleURL.map { FactLink(id: "audible", title: "Écouter sur Audible", logo: "audible-logo", url: $0) },
-            book.amazonURL.map { FactLink(id: "amazon", title: "Voir sur Amazon", logo: "amazon-logo", url: $0) },
-        ].compactMap { $0 }
     }
 
     /// The editions of it the reader awaits, as their own page lists them.

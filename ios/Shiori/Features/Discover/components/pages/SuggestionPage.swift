@@ -14,11 +14,14 @@ enum SuggestionAction {
     case openReference(SuggestionReference)
 }
 
-/// A suggestion's page: the standard book page — its header, its description
-/// once written — with why it was chosen, the reader's books it was drawn
-/// from under it. The "+" adds it — on the pile or read already — or awaits
-/// it; the thumb turns it down. Each closes the page and lets the next
-/// suggestion in.
+/// A suggestion's page, in the reader's own book page's grammar: the hero over
+/// the cover's colours — where its edition stands on the detail line, the
+/// "+" white where a book has its next step, the thumb that turns it down on
+/// glass beside it — then why it was chosen, as a card over the colours of the
+/// reader's books it draws on, the summary once written, and the facts as
+/// tiles. The "+", in the hero and in the bar, adds it — on the pile or read
+/// already — or awaits it; the thumb turns it down. Each closes the page and
+/// lets the next suggestion in.
 struct SuggestionPage: View {
     let suggestion: Suggestion
     /// The suggestion once described, as a book's page draws it.
@@ -29,42 +32,25 @@ struct SuggestionPage: View {
     let onAction: (SuggestionAction) async -> Void
 
     var body: some View {
-        List {
-            BookHeaderSection(
-                book: shown,
-                state: state,
-                releaseDate: suggestion.state == .announced ? suggestion.date : nil,
-                isAwaited: suggestion.awaitedEditionId != nil,
-                storeLink: suggestion.storeURL.map {
-                    .init(name: suggestion.format.storeName, url: $0, tint: suggestion.format.storeTint)
-                }
-            )
-            // Why, then the reader's own books it draws on, each opening its
-            // page.
-            Section("Pourquoi ce livre") {
-                Text(suggestion.reason)
-                    .accessibilityIdentifier("suggestion-reason")
-                ForEach(suggestion.references) { reference in
-                    Button { act(.openReference(reference)) } label: {
-                        referenceRow(reference)
+        ScrollView {
+            VStack(spacing: 0) {
+                hero
+                VStack(alignment: .leading, spacing: 28) {
+                    SuggestionReasonCard(reason: suggestion.reason, references: suggestion.references) {
+                        act(.openReference($0))
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("suggestion-reference")
+                    synopsis
+                    facts
                 }
-            }
-            ReleaseDescriptionSections(isDescribing: isDescribing, synopsis: shown.synopsis)
-            if suggestion.title != suggestion.originalTitle {
-                Section {
-                    LabeledContent("Titre original") {
-                        Text(suggestion.originalTitle)
-                    }
-                }
+                .padding(.horizontal, 20)
+                .padding(.top, 4)
+                .padding(.bottom, 32)
             }
         }
-        .listStyle(.insetGrouped)
+        // The bar's buttons float over the page as it scrolls, as on a book's.
+        .scrollEdgeEffectHidden(true, for: .top)
+        .background(Color(.systemGroupedBackground))
         .generatingInBar(isDescribing ? "L'IA complète la fiche" : nil)
-        .labelStyle(.row)
-        .navigationTitle(Text("Découverte"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if showsClose {
@@ -72,11 +58,15 @@ struct SuggestionPage: View {
                     ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { act(.close) }
                 }
             }
+            // The hero's "+" again, within reach once it has scrolled away.
             ToolbarItem(placement: .primaryAction) {
-                notForMeMenu
-            }
-            ToolbarItem(placement: .primaryAction) {
-                actionsMenu
+                Menu {
+                    addActions
+                } label: {
+                    Label("Ajouter", systemImage: "plus")
+                        .labelStyle(.iconOnly)
+                }
+                .accessibilityIdentifier("suggestion-toolbar-add")
             }
         }
     }
@@ -85,41 +75,64 @@ struct SuggestionPage: View {
         Task { await onAction(action) }
     }
 
-    /// A reference: the reader's own cover of it, its name, then its mark —
-    /// the heart or the stars, the saga's when the book has none.
-    private func referenceRow(_ reference: SuggestionReference) -> some View {
-        HStack(spacing: 12) {
-            BookCover(book: reference.cover, width: 32, showsFormatBadge: false)
-            Text(reference.title)
-                .lineLimit(2)
-            Spacer(minLength: 8)
-            OpinionMark(rating: reference.rating, isFavorite: reference.favorite, font: .caption)
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.tertiary)
+    // MARK: - Hero
+
+    private var hero: some View {
+        BookHero(
+            book: shown,
+            state: state,
+            isAwaited: suggestion.awaitedEditionId != nil,
+            showsLength: false
+        ) {
+            ScrollView(.horizontal) {
+                heroButtons
+                    .padding(.horizontal, 20)
+            }
+            .scrollIndicators(.hidden)
+            .scrollClipDisabled()
+            .padding(.horizontal, -20)
         }
-        .contentShape(.rect)
     }
 
-    /// "+": on the pile, on the shelf as read, or awaited in each format its
-    /// edition is not out and not awaited yet in, as a book's page offers it.
-    private var actionsMenu: some View {
-        Menu {
-            SuggestionAddActions(
-                suggestion: suggestion,
-                onAdd: { act(.add($0)) },
-                onAwait: { act(.awaitEdition($0)) }
-            )
-        } label: {
-            Label("Ajouter", systemImage: "plus")
-                .labelStyle(.iconOnly)
+    /// The "+" white, as a book's next step, and the thumb on glass beside it.
+    private var heroButtons: some View {
+        GlassEffectContainer(spacing: 8) {
+            HStack(spacing: 8) {
+                addMenu
+                notForMeMenu
+            }
+            .font(.subheadline.weight(.semibold))
+            .controlSize(.regular)
         }
+        .fixedSize()
+    }
+
+    /// On the pile, on the shelf as read, or awaited in each format its
+    /// edition is not out and not awaited yet in, as a book's page offers it.
+    private var addMenu: some View {
+        Menu {
+            addActions
+        } label: {
+            heroLabel("Ajouter", systemImage: "plus")
+        }
+        .menuStyle(.button)
+        .buttonStyle(.glassProminent)
+        .tint(.white)
+        .foregroundStyle(.black)
         .accessibilityIdentifier("suggestion-menu")
     }
 
-    /// Beside the "+": the two ways of saying no, each told to the model —
-    /// not their kind of book, which steers it clear of its like, or merely
-    /// not for now.
+    /// What the "+" offers, in the hero and in the bar alike.
+    private var addActions: some View {
+        SuggestionAddActions(
+            suggestion: suggestion,
+            onAdd: { act(.add($0)) },
+            onAwait: { act(.awaitEdition($0)) }
+        )
+    }
+
+    /// The two ways of saying no, each told to the model — not their kind of
+    /// book, which steers it clear of its like, or merely not for now.
     private var notForMeMenu: some View {
         Menu {
             Button("Je n'aime pas", systemImage: "hand.thumbsdown", role: .destructive) {
@@ -131,20 +144,69 @@ struct SuggestionPage: View {
             }
             .accessibilityIdentifier("suggestion-dismiss")
         } label: {
-            Label("Pas pour moi", systemImage: "hand.thumbsdown")
-                .labelStyle(.iconOnly)
+            heroLabel("Pas pour moi", systemImage: "hand.thumbsdown")
         }
+        .menuStyle(.button)
+        .buttonStyle(.glass)
         .accessibilityIdentifier("suggestion-not-for-me")
     }
 
-    /// Said under the author: where the edition stands, once a reader awaited
-    /// it and it was looked up.
-    private var state: BookState? {
-        if !suggestion.watched { return nil }
-        if suggestion.state == .announced, let date = suggestion.date, ReleaseDateText.isUpcoming(date) {
-            return nil
+    /// Set as the reader's own hero sets its buttons: the symbol in the
+    /// text's font, six points from it, one height.
+    private func heroLabel(_ title: LocalizedStringKey, systemImage: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: systemImage)
+                .imageScale(.medium)
+                .accessibilityHidden(true)
+            Text(title)
         }
+        .lineLimit(1)
+        .fixedSize()
+        .padding(.horizontal, 2)
+        .frame(height: 24)
+    }
+
+    /// Said on the detail line: when an edition announced comes out, or where
+    /// it stands once a reader awaited it and it was looked up.
+    private var state: BookState? {
+        if suggestion.state == .announced, let date = suggestion.date, ReleaseDateText.isUpcoming(date) {
+            return .release(date)
+        }
+        if !suggestion.watched { return nil }
         return BookState(text: suggestion.stateLine, tint: suggestion.stateTint)
+    }
+
+    // MARK: - Blocks
+
+    /// The summary once the model wrote it; nothing while it writes, the bar
+    /// saying so.
+    @ViewBuilder private var synopsis: some View {
+        if !isDescribing, let synopsis = shown.synopsis, !synopsis.isEmpty {
+            BookSynopsisBlock(synopsis: synopsis)
+        }
+    }
+
+    /// What the book is, as a book's page tiles it, its title in its own
+    /// language heading them when the edition translates it, and the store
+    /// that sells it closing them.
+    private var facts: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            RowHeader(title: "Informations")
+            FactGrid(groups: [FactGroup(tiles: originalTitleTile + shown.readOnlyFactTiles)], links: storeLinks)
+        }
+    }
+
+    private var originalTitleTile: [FactTile] {
+        guard suggestion.title != suggestion.originalTitle else { return [] }
+        return [FactTile(id: "originalTitle", title: "Titre original", value: suggestion.originalTitle, isWide: true)]
+    }
+
+    private var storeLinks: [FactLink] {
+        guard let url = suggestion.storeURL else { return [] }
+        return switch suggestion.format {
+        case .audiobook: [FactLink(id: "audible", title: "Écouter sur Audible", logo: "audible-logo", url: url)]
+        case .book: [FactLink(id: "amazon", title: "Voir sur Amazon", logo: "amazon-logo", url: url)]
+        }
     }
 }
 

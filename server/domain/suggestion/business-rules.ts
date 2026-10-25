@@ -276,6 +276,7 @@ const referenceOfBook = (
     bookId: book.id,
     ...(book.series ? { seriesId: book.series.id } : {}),
     title: book.title,
+    ...(book.genre ? { genre: book.genre } : {}),
     rank:
       own || !opinion
         ? rankOf(book.favorite, book.rating, false)
@@ -288,16 +289,24 @@ const referenceOfSaga = (
   volumes: readonly Book[],
   opinionOf: ReadonlyMap<string, SeriesOpinion>,
 ): SuggestionReference | undefined => {
-  const first = [...volumes].sort(
+  const ordered = [...volumes].sort(
     (left, right) => (left.series?.volume ?? 0) - (right.series?.volume ?? 0),
-  )[0]
+  )
+  const first = ordered[0]
   if (!first?.series) return undefined
   const opinion = opinionOf.get(first.series.saga)
   const best = [...volumes].sort((left, right) => scoreOf(right) - scoreOf(left))[0] ?? first
   const rank = opinion
     ? rankOf(opinion.favorite, opinion.rating, true)
     : rankOf(best.favorite, best.rating, false)
-  return { bookId: first.id, seriesId: first.series.id, title: first.series.name, rank }
+  const genre = ordered.find((volume) => volume.genre)?.genre
+  return {
+    bookId: first.id,
+    seriesId: first.series.id,
+    title: first.series.name,
+    ...(genre ? { genre } : {}),
+    rank,
+  }
 }
 
 const scoreOf = (book: Pick<Book, 'favorite' | 'rating'>) =>

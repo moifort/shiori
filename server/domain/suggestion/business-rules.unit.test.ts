@@ -378,6 +378,19 @@ describe('referencesOf', () => {
     )
   })
 
+  test('carries the book’s genre, and a saga’s from its first volume that has one', () => {
+    const shibumi = book('Shibumi', 'Trevanian', { rating: 5, genre: 'thriller' })
+    const untagged = volume('Apprentissage', 'Assassin Royal', 1)
+    const tagged = volume('Poison', 'Assassin Royal', 2, { genre: 'fantasy' })
+    expect(referencesOf({ references: ['Shibumi'] }, [shibumi], [])[0]?.genre).toBe('thriller')
+    expect(referencesOf({ references: ['Assassin Royal'] }, [tagged, untagged], [])[0]?.genre).toBe(
+      'fantasy',
+    )
+    expect(referencesOf({ references: ['Apprentissage'] }, [untagged], [])[0]).not.toHaveProperty(
+      'genre',
+    )
+  })
+
   test('leaves out a title matching nothing, and a book cited twice', () => {
     const shibumi = book('Shibumi', 'Trevanian', { rating: 5 })
     expect(
