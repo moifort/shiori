@@ -192,10 +192,15 @@ struct BookPage: View {
         VStack(alignment: .leading, spacing: 12) {
             RowHeader(title: "Informations", detail: String(localized: "modifier"), action: onEdit)
                 .accessibilityIdentifier("book-edit-facts")
-            // When the reader added, started and finished it, over what the
-            // book is: one table, the reading's days three to a row.
+            // When the reader added, started and finished it, and who pressed
+            // it on them, over what the book is: one table, the reading's
+            // days three to a row.
             FactGrid(
-                groups: [FactGroup(tiles: dayTiles, columns: 3), FactGroup(tiles: factTiles)],
+                groups: [
+                    FactGroup(tiles: dayTiles, columns: 3),
+                    FactGroup(tiles: recommendationTiles),
+                    FactGroup(tiles: factTiles),
+                ],
                 links: storeLinks
             )
         }
@@ -256,8 +261,8 @@ struct BookPage: View {
     /// Ways out of Shiori, closing the facts they complete.
     private var storeLinks: [FactLink] {
         [
-            book.audibleURL.map { FactLink(id: "audible", title: "Écouter sur Audible", appIcon: "audible-app", url: $0) },
-            book.amazonURL.map { FactLink(id: "amazon", title: "Voir sur Amazon", appIcon: "amazon-app", url: $0) },
+            book.audibleURL.map { FactLink(id: "audible", title: "Écouter sur Audible", logo: "audible-logo", url: $0) },
+            book.amazonURL.map { FactLink(id: "amazon", title: "Voir sur Amazon", logo: "amazon-logo", url: $0) },
         ].compactMap { $0 }
     }
 
@@ -307,16 +312,13 @@ struct BookPage: View {
 
     // MARK: - Reading
 
-    /// Who recommended the book and what the reader wrote of it, when either
-    /// is there: the reading's days head the facts, and the reader's remarks
-    /// are written from the hero.
+    /// What the reader wrote of the book, when they did: the reading's days
+    /// and who recommended it head the facts, and the remarks are written
+    /// from the hero.
     @ViewBuilder private var reading: some View {
-        if book.recommendation != nil || book.note != nil {
+        if book.note != nil {
             VStack(alignment: .leading, spacing: 12) {
                 RowHeader(title: "Ma lecture", detail: readingSpan)
-                if let recommendation = book.recommendation {
-                    recommendationRow(recommendation)
-                }
                 note
             }
         }
@@ -342,31 +344,19 @@ struct BookPage: View {
         ]
     }
 
-    /// Who pressed the book on the reader, and what they said of it.
-    private func recommendationRow(_ recommendation: BookRecommendation) -> some View {
-        Button(action: onEditRecommendation) {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "person.crop.circle.badge.checkmark")
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
-                VStack(alignment: .leading, spacing: 2) {
-                    if let name = recommendation.recommenderName {
-                        Text("Conseillé par \(name)").font(.subheadline.weight(.semibold))
-                    } else {
-                        Text("Livre conseillé").font(.subheadline.weight(.semibold))
-                    }
-                    if let comment = recommendation.comment {
-                        Text(comment).font(.callout).foregroundStyle(.secondary)
-                    }
-                }
-                Spacer(minLength: 0)
-            }
-            .padding(14)
-            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 16))
-            .contentShape(.rect)
+    /// Who pressed the book on the reader, and what they said of it, across
+    /// the facts under the reading's days. None when nobody did.
+    private var recommendationTiles: [FactTile] {
+        guard let recommendation = book.recommendation else { return [] }
+        let tile = if let name = recommendation.recommenderName {
+            FactTile(id: "recommendation", title: "Conseillé par", value: name, detail: recommendation.comment)
+        } else {
+            FactTile(id: "recommendation", title: "Livre conseillé", value: recommendation.comment)
         }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("book-recommendation")
+        var wide = tile
+        wide.isWide = true
+        wide.action = onEditRecommendation
+        return [wide]
     }
 
     /// The reader's own comment, read as a review: the text, then a way to

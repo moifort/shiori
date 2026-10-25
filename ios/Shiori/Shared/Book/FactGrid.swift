@@ -11,6 +11,8 @@ struct FactTile: Identifiable {
     /// Nil draws "Non renseigné", dimmed.
     let value: String?
     var chips: [String] = []
+    /// A line under the value, in full: what a recommender said of the book.
+    var detail: String?
     /// Takes the whole width of the grid rather than a column.
     var isWide = false
     var valueFont: Font = .body.weight(.semibold)
@@ -24,13 +26,13 @@ struct FactTile: Identifiable {
 }
 
 /// A way out of Shiori at the foot of the grid, across its width: the
-/// service's own app icon, what the tap does, and the arrow that says it
-/// leaves the app.
+/// service's logo in the text's colour, what the tap does, and the arrow that
+/// says it leaves the app.
 struct FactLink: Identifiable {
     let id: String
     let title: LocalizedStringKey
-    /// The service's iOS app icon in the asset catalogue.
-    let appIcon: String
+    /// The service's logo in the asset catalogue, as a template image.
+    let logo: String
     let url: URL
 }
 
@@ -146,6 +148,13 @@ struct FactGrid: View {
                     }
                 }
             }
+            if let detail = tile.detail {
+                Text(detail)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(.horizontal, 14)
@@ -168,15 +177,13 @@ struct FactGrid: View {
     private func linkCell(_ link: FactLink) -> some View {
         Link(destination: link.url) {
             HStack(spacing: 12) {
-                // The home screen's own rounding: about a fifth of the side.
-                Image(link.appIcon)
+                // One box for both marks, wide enough for Amazon's smile
+                // and tall enough for Audible's book.
+                Image(link.logo)
                     .resizable()
-                    .frame(width: 30, height: 30)
-                    .clipShape(.rect(cornerRadius: 7, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .strokeBorder(Color(.separator), lineWidth: 0.5)
-                    }
+                    .scaledToFit()
+                    .foregroundStyle(.primary)
+                    .frame(width: 30, height: 22)
                 Text(link.title)
                     .font(.body.weight(.semibold))
                     .foregroundStyle(.primary)
@@ -234,8 +241,8 @@ struct FactGrid: View {
                     FactTile(id: "first-published", title: "Parution", value: "2007"),
                 ]),
             ], links: [
-                FactLink(id: "audible", title: "Écouter sur Audible", appIcon: "audible-app", url: URL(string: "https://www.audible.fr")!),
-                FactLink(id: "amazon", title: "Voir sur Amazon", appIcon: "amazon-app", url: URL(string: "https://www.amazon.fr")!),
+                FactLink(id: "audible", title: "Écouter sur Audible", logo: "audible-logo", url: URL(string: "https://www.audible.fr")!),
+                FactLink(id: "amazon", title: "Voir sur Amazon", logo: "amazon-logo", url: URL(string: "https://www.amazon.fr")!),
             ])
             FactGrid(tiles: [
                 FactTile(id: "added", title: "Ajouté", value: "3 sept."),
