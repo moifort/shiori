@@ -119,13 +119,14 @@ jobs:
       # Package.resolved is not committed, so the cache cannot be keyed on it before
       # resolving: the latest cache is restored, resolution then fetches only what
       # moved, and a new cache is saved only when the resolved versions changed.
+      # "sim" names a cache cut down to the simulator slices, two steps below.
       - name: Restore the Swift packages
         id: spm-restore
         uses: actions/cache/restore@v6
         with:
           path: ${{ runner.temp }}/SourcePackages
-          key: spm-${{ runner.os }}-${{ github.sha }}
-          restore-keys: spm-${{ runner.os }}-
+          key: spm-sim-${{ runner.os }}-${{ github.sha }}
+          restore-keys: spm-sim-${{ runner.os }}-
 
       - name: Generate Apollo GraphQL code (gitignored, regenerated per build)
         run: |
@@ -137,7 +138,7 @@ jobs:
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/SourcePackages"
           resolved=ios/Shiori.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
           if [ -f "$resolved" ]; then
-            echo "SPM_CACHE_KEY=spm-${RUNNER_OS}-$(shasum -a 256 "$resolved" | cut -c1-16)" \
+            echo "SPM_CACHE_KEY=spm-sim-${RUNNER_OS}-$(shasum -a 256 "$resolved" | cut -c1-16)" \
               >> "$GITHUB_ENV"
           fi
           # What the cache carries, so a heavier restore can be traced to its part.
@@ -147,6 +148,28 @@ jobs:
           tar -xzf "$CLI_DIR/apollo-ios-cli.tar.gz" -C "$CLI_DIR"
           chmod +x "$CLI_DIR/apollo-ios-cli"
           (cd ios && "$CLI_DIR/apollo-ios-cli" generate)
+
+      # The binary packages come as xcframeworks with a slice per platform, and SPM
+      # fetches every xcframework a package declares: the seven of Sentry alone are
+      # 2.8 GB, of which this job links one slice of one. Everything but the iOS
+      # simulator slice goes, and the signature with it (it covered the whole bundle;
+      # the download itself was checksummed). 4 GB of artifacts become 0.5 GB, and
+      # the cache below downloads in a fraction of the one to four minutes it took.
+      - name: Keep the simulator slice of each binary package
+        run: |
+          set -euo pipefail
+          before=$(du -sh "$RUNNER_TEMP/SourcePackages/artifacts" | cut -f1)
+          find "$RUNNER_TEMP/SourcePackages/artifacts" -type d -name '*.xcframework' -prune \
+            | while read -r framework; do
+              for entry in "$framework"/*/ "$framework"/_CodeSignature; do
+                [ -e "$entry" ] || continue
+                case "$(basename "$entry")" in
+                  ios-*simulator*) ;;
+                  *) rm -rf "$entry" ;;
+                esac
+              done
+            done
+          echo "Binary packages: $before before, $(du -sh "$RUNNER_TEMP/SourcePackages/artifacts" | cut -f1) after"
 
       - name: Save the Swift packages
         if: env.SPM_CACHE_KEY != '' && steps.spm-restore.outputs.cache-matched-key != env.SPM_CACHE_KEY
