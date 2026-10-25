@@ -4873,22 +4873,6 @@
         }
       }
     },
-    "Découverte" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Discovery"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Découverte"
-          }
-        }
-      }
-    },
     "Découverte du mois" : {
       "localizations" : {
         "en" : {
