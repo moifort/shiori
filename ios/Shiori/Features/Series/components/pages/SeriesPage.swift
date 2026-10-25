@@ -289,7 +289,8 @@ struct SeriesPage: View {
 
     /// A volume the reader does not hold, dimmed and without a badge. Out, a
     /// tap offers to add it; announced, its day replaces its number, in
-    /// orange, and a tap opens its page once the release watch found one.
+    /// white like the others, and a tap opens its page once the release watch
+    /// found one.
     @ViewBuilder
     private func missingPoster(_ volume: Volume, author: String) -> some View {
         // The edition opened names it and dates it when the release watch
@@ -299,7 +300,7 @@ struct SeriesPage: View {
         let forthcoming = volume.isForthcoming(asOf: currentYear, in: language, datedUpTo: datedUpTo)
         let day = forthcoming ? release.map { ReleaseDateText.short($0.date) } : nil
         // An announced volume shows the edition's cover once the watch found
-        // one, dimmed, its day in orange over the blurred foot.
+        // one, dimmed, its day in white over the blurred foot.
         let coverURL = release?.coverURL
             ?? (forthcoming ? announcedVolume(volume)?.coverURL : nil)
             ?? releases?.next.flatMap { $0.number == volume.number && volume.kind == .main ? $0.coverURL : nil }
@@ -320,7 +321,6 @@ struct SeriesPage: View {
                     ),
                     caption: day ?? caption(volume),
                     showsAudioTag: false,
-                    captionColor: day == nil ? .white : .orange,
                     dimming: day == nil ? 0.12 : 0.5
                 )
                 // A volume out the reader lacks is dimmed whole; an announced
@@ -531,7 +531,7 @@ struct SeriesPage: View {
 }
 
 /// A volume announced, as a poster not printed yet: a dimmed blank the size
-/// of the others, its light rim, and its day in orange in the foot.
+/// of the others, its light rim, and its day in white in the foot.
 private struct BlankPoster: View {
     let caption: String
 
@@ -555,7 +555,7 @@ private struct BlankPoster: View {
             .overlay(alignment: .bottom) {
                 Text(verbatim: caption)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(.white)
                     .lineLimit(1)
                     .padding(.bottom, 9)
             }
