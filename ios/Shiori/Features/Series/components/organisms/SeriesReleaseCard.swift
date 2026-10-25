@@ -5,7 +5,8 @@ import SwiftUI
 /// colours the title, the author and the volume's place at the top, and at
 /// the foot one white button that orders it from the store — Audible for a recording, Amazon
 /// otherwise. Under the title, how long is left before it comes out; the day itself sits
-/// in the corner as the iOS Calendar icon. A tap elsewhere opens the
+/// in the corner as a calendar leaf on glass, in orange as everything
+/// announced is. A tap elsewhere opens the
 /// volume's page, as on Découvrir. No "wait for it": the saga's bell already
 /// alerts on the day.
 struct SeriesReleaseCard: View {
@@ -16,8 +17,8 @@ struct SeriesReleaseCard: View {
 
     private static let height: CGFloat = 124
     private static let coverWidth: CGFloat = 82
-    /// The calendar icon's width and its margin, kept clear by the text.
-    private static let leafRoom: CGFloat = 56
+    /// The calendar leaf's width and its margin, kept clear by the text.
+    private static let leafRoom: CGFloat = 48
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
@@ -48,8 +49,8 @@ struct SeriesReleaseCard: View {
                         Image(systemName: "clock")
                         Text(countdown)
                     }
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.orange)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.6))
                     .lineLimit(1)
                     .padding(.top, 2)
                         .padding(.trailing, Self.leafRoom)
@@ -71,8 +72,7 @@ struct SeriesReleaseCard: View {
         .onTapGesture(perform: onOpen)
         .overlay(alignment: .topTrailing) {
             if let date = volume.date {
-                ReleaseCalendarIcon(date: date, size: 46)
-                    .shadow(color: .black.opacity(0.25), radius: 4, y: 1)
+                ReleaseDateBadge(date: date, onGlass: true)
                     .padding(10)
             }
         }
