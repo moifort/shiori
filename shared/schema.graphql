@@ -3535,7 +3535,7 @@ type Query {
     """
     The favourites view: every book the reader judged — its own heart or stars, else its saga's once it is read — hearts first, then five stars down to one, each rank newest on `shelvedAt` first. The app cuts it into one section per rank rather than per month.
     """
-    loved: Boolean
+    loved: Boolean @deprecated(reason: "The Library tab has no favourites view any more: \"Coups de cœur\" is `favorite`.")
 
     """Keep only books in this status. Omit for the whole library."""
     status: ReadingStatus
@@ -3640,11 +3640,11 @@ type Query {
     """
     The favourites view: the sagas the reader hearted or rated, hearts first, then five stars down to one, each rank newest on `shelvedAt` first. The app cuts it into one section per rank rather than per month.
     """
-    loved: Boolean
+    loved: Boolean @deprecated(reason: "The series screen reads every saga and narrows them on the phone; ask without it.")
 
     """Rows to skip"""
     offset: Int = 0 @deprecated(reason: "Use `after`, which a saga added or removed between two pages does not shift.")
-    state: SeriesState
+    state: SeriesState @deprecated(reason: "The series screen reads every saga and narrows them on the phone; ask without it.")
   ): FollowedSeriesPage!
 
   """

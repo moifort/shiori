@@ -156,7 +156,7 @@ struct SeriesShelfTests {
 @MainActor
 struct BookShelfViewModelTests {
     private func serving(_ books: [Book], asked: Calls? = nil) -> LibraryClient {
-        var client = LibraryClient(page: { _, _, _, _ in LibraryPageResult(books: [], hasMore: false) }, awaited: { _ in [] })
+        var client = LibraryClient()
         client.shelf = { query, limit, after in
             asked?.record(query.serverStatus?.rawValue ?? "all")
             let kept = books.filter { query.serverStatus == nil || $0.status == query.serverStatus }

@@ -707,17 +707,6 @@ enum Showcase {
 
     // MARK: - Library
 
-    static func libraryPage(mode: LibraryMode, filter: LibraryFilter?, limit: Int, after: String?)
-        -> LibraryPageResult
-    {
-        let matching = shelved.filter { book in
-            (mode != .favorites || book.favorite) && (filter?.keeps(book) ?? true)
-        }
-        let start = after.flatMap { id in matching.firstIndex { $0.id == id }.map { $0 + 1 } } ?? 0
-        let page = Array(matching.dropFirst(start).prefix(limit))
-        return LibraryPageResult(books: page, hasMore: start + page.count < matching.count)
-    }
-
     /// The Library tab's entry screen, drawn from the shelf as the server
     /// draws it.
     static func libraryShelves(view: ShelvesView) -> LibraryShelves {

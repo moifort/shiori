@@ -2473,38 +2473,6 @@
         }
       }
     },
-    "Aucun auteur" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No authors"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucun auteur"
-          }
-        }
-      }
-    },
-    "Aucun favori" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No favorites"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucun favori"
-          }
-        }
-      }
-    },
     "Aucun jour facturé" : {
       "localizations" : {
         "en" : {
@@ -2517,22 +2485,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aucun jour facturé"
-          }
-        }
-      }
-    },
-    "Aucun livre" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No books"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucun livre"
           }
         }
       }
@@ -2613,22 +2565,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aucun livre de cet auteur dans votre bibliothèque."
-          }
-        }
-      }
-    },
-    "Aucun livre de votre bibliothèque n'a ce statut." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No book in your library has this status."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucun livre de votre bibliothèque n'a ce statut."
           }
         }
       }
@@ -2809,22 +2745,6 @@
         }
       }
     },
-    "Aucune de vos séries n'est dans cet état." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "None of your series is in this state."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucune de vos séries n'est dans cet état."
-          }
-        }
-      }
-    },
     "Aucune session" : {
       "localizations" : {
         "en" : {
@@ -2841,22 +2761,6 @@
         }
       }
     },
-    "Aucune série" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No series"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucune série"
-          }
-        }
-      }
-    },
     "Aucune série en cours." : {
       "localizations" : {
         "en" : {
@@ -2869,22 +2773,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aucune série en cours."
-          }
-        }
-      }
-    },
-    "Aucune série favorite" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No favorite series"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucune série favorite"
           }
         }
       }
@@ -3653,54 +3541,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chargement de plus de vins"
-          }
-        }
-      }
-    },
-    "Chargement de vos auteurs..." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Loading your authors…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chargement de vos auteurs..."
-          }
-        }
-      }
-    },
-    "Chargement de vos séries..." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Loading your series…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chargement de vos séries..."
-          }
-        }
-      }
-    },
-    "Chargement de votre bibliothèque..." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Loading your library…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chargement de votre bibliothèque..."
           }
         }
       }
@@ -11189,38 +11029,6 @@
         }
       }
     },
-    "Scannez un livre et son auteur apparaîtra ici, avec tous ses livres." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scan a book and its author will show up here, with all their books."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scannez un livre et son auteur apparaîtra ici, avec tous ses livres."
-          }
-        }
-      }
-    },
-    "Scannez un tome d'une saga et elle apparaîtra ici, avec tous ses volumes." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scan a volume of a series and it will show up here, with all its volumes."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scannez un tome d'une saga et elle apparaîtra ici, avec tous ses volumes."
-          }
-        }
-      }
-    },
     "Scans" : {
       "localizations" : {
         "en" : {
@@ -12657,38 +12465,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Touchez l'étoile sélectionnée pour retirer la note."
-          }
-        }
-      }
-    },
-    "Touchez le cœur d'un livre pour le retrouver ici." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tap a book’s heart to find it here."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Touchez le cœur d'un livre pour le retrouver ici."
-          }
-        }
-      }
-    },
-    "Touchez le cœur d'une série pour la retrouver ici." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tap a series’ heart to find it here."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Touchez le cœur d'une série pour la retrouver ici."
           }
         }
       }

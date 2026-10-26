@@ -35,8 +35,8 @@ extension SeriesClient {
         addAudibleVolume: { _, _ in .preview },
         addBook: { _, _ in .preview },
         subgenres: { [] },
-        page: { limit, after, mode, state in
-            Showcase.seriesPage(limit: limit, after: after, mode: mode, state: state)
+        page: { limit, after in
+            Showcase.seriesPage(limit: limit, after: after, mode: .all, state: nil)
         },
         followedRow: { id in SeriesFixtures.followed.first { $0.seriesId == id } }
     )

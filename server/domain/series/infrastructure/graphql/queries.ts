@@ -285,8 +285,15 @@ builder.queryFields((t) => ({
           'The favourites view: the sagas the reader hearted or rated, hearts first, ' +
           'then five stars down to one, each rank newest on `shelvedAt` first. The app ' +
           'cuts it into one section per rank rather than per month.',
+        deprecationReason:
+          'The series screen reads every saga and narrows them on the phone; ask without it.',
       }),
-      state: t.arg({ type: SeriesStateEnum, required: false }),
+      state: t.arg({
+        type: SeriesStateEnum,
+        required: false,
+        deprecationReason:
+          'The series screen reads every saga and narrows them on the phone; ask without it.',
+      }),
     },
     resolve: (_root, args, context) =>
       SeriesUseCase.followedPage(

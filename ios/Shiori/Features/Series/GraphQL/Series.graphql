@@ -72,8 +72,8 @@ fragment SeriesCatalogue on Series {
 # asks for the volumes: each one costs a signed cover URL. The catalogue's spine
 # comes along so the strip can draw the volumes the reader does not own; the server
 # reads every catalogue of the page in one getAll.
-query MySeriesPage($limit: Int, $after: String, $loved: Boolean, $state: SeriesState) {
-  mySeriesPage(limit: $limit, after: $after, loved: $loved, state: $state) {
+query MySeriesPage($limit: Int, $after: String) {
+  mySeriesPage(limit: $limit, after: $after) {
     hasMore
     endCursor
     items {

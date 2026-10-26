@@ -1,15 +1,12 @@
-# One page of the Library tab, for the list that draws as it scrolls: a flat
-# list the server has already ordered, newest first, which the app cuts into
-# month sections wherever the month of `shelvedAt` changes. The last book of a
-# page is the cursor for the next.
-# `loved` is the favourites view: the books judged, hearts first then stars,
-# which the app cuts into sections by rank rather than by month. `favorite` is
-# the "Favoris" filter: the hearted books alone, by date.
+# One page of a shelf of the Library tab, for the grid that draws as it
+# scrolls: a flat list the server has already ordered, newest first on
+# `shelvedAt`, which the app cuts into its headings. The last book of a page is
+# the cursor for the next. `favorite` is "Coups de cœur": the hearted books
+# alone, by date.
 # `format`, `genre` and `subgenre` are the pills over a shelf and the genre
 # page it was opened from.
 query LibraryPage(
   $favorite: Boolean
-  $loved: Boolean
   $status: ReadingStatus
   $format: BookFormat
   $genre: Genre
@@ -19,7 +16,6 @@ query LibraryPage(
 ) {
   libraryPage(
     favorite: $favorite
-    loved: $loved
     status: $status
     format: $format
     genre: $genre

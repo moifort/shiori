@@ -63,7 +63,7 @@ final class SeriesShelfViewModel {
             var fetched: [FollowedSeries] = []
             var cursor: String?
             for _ in 0..<Self.maxPages {
-                let page = try await client.page(Self.pageSize, cursor, .all, nil)
+                let page = try await client.page(Self.pageSize, cursor)
                 fetched += page.items
                 cursor = page.endCursor
                 guard page.hasMore, cursor != nil else { break }

@@ -121,11 +121,7 @@ describe('a page of the Authors tab', () => {
     const { items } = await AuthorUseCase.followedPage(reader, { limit: 10 }, {})
     const favorites = await AuthorUseCase.followedPage(reader, { limit: 10 }, { favorite: true })
 
-    expect(items.map((author) => String(author.name))).toEqual([
-      'Author 0',
-      'Author 2',
-      'Author 1',
-    ])
+    expect(items.map((author) => String(author.name))).toEqual(['Author 0', 'Author 2', 'Author 1'])
     expect(items[0]?.favorite).toBe(true)
     expect(items[1]?.favorite).toBe(false)
     expect(favorites.items).toHaveLength(2)

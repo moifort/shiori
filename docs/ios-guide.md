@@ -260,7 +260,7 @@ of the caches directory.
 - **Read synchronously in the ViewModel's `init`**, before any request, so the screen is
   readable on its first frame.
 - **Written after each successful load**, off the main actor (`Task.detached { cache.write(…) }`).
-- **One file per view and filter** (`library-<mode>-<status>`): switching view shows that
+- **One file per view and filter** (`library-shelves-<format>-<genre>-<subgenre>`): switching view shows that
   view's last rows at once, refreshed silently.
 - **Never more than the first page** in a file, whatever depth the list was scrolled to.
 - **Versioned.** Bump `version` whenever the cached type changes shape; an older file is
@@ -273,7 +273,7 @@ of the caches directory.
 - **Not for data worthless when stale**: a quota, a subscription state, an invitation code.
 
 Screens on snapshots today: Home (dashboard, releases, friends' favourites, discoveries),
-Library, Series list, Authors list, Discover (feed, awards, discoveries), Shared, a friend's
+the Library's entry screen and its series screen, the Authors list, Discover (feed, awards, discoveries), Shared, a friend's
 profile.
 
 ## Covers

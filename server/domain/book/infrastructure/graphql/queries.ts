@@ -64,6 +64,8 @@ builder.queryFields((t) => ({
           "stars, else its saga's once it is read — hearts first, then five stars " +
           'down to one, each rank newest on `shelvedAt` first. The app cuts it into ' +
           'one section per rank rather than per month.',
+        deprecationReason:
+          'The Library tab has no favourites view any more: "Coups de cœur" is `favorite`.',
       }),
       status: t.arg({
         type: ReadingStatusEnum,

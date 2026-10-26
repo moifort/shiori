@@ -85,27 +85,19 @@ enum SeriesAPI {
         return data.addAudibleSeriesVolume.fragments.bookDetail.asBook
     }
 
-    /// One page of the sagas the reader follows, ordered and narrowed as the
-    /// Library tab is: newest first, the hearted sagas only, or the sagas in
-    /// one state.
-    static func mySeriesPage(
-        limit: Int,
-        after: String?,
-        mode: LibraryMode = .all,
-        state: SeriesState? = nil
-    ) async throws -> CursorPage<FollowedSeries> {
+    /// One page of the sagas the reader follows, newest first: the series
+    /// screen reads them all and narrows them on the phone.
+    static func mySeriesPage(limit: Int, after: String?) async throws -> CursorPage<FollowedSeries> {
         #if DEBUG
         if Showcase.isOn {
-            return Showcase.seriesPage(limit: limit, after: after, mode: mode, state: state)
+            return Showcase.seriesPage(limit: limit, after: after, mode: .all, state: nil)
         }
         #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.MySeriesPageQuery(
                 limit: .some(Int32(limit)),
-                after: after.map { .some($0) } ?? .none,
-                loved: mode == .favorites ? .some(true) : .none,
-                state: state.map { .some(.case(graphQLState($0))) } ?? .none
+                after: after.map { .some($0) } ?? .none
             )
         )
         return CursorPage(
