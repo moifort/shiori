@@ -27,6 +27,7 @@ struct AuthorDetailPage: View {
     @State private var showsWholeBiography = false
 
     private static let portraitSize: CGFloat = 160
+    private static var more: Text { Text("PLUS").font(.callout.weight(.bold)) }
     /// Fewer and a second row would stand half empty.
     private static let twoRowsFrom = 6
 
@@ -99,19 +100,27 @@ struct AuthorDetailPage: View {
                         .lineLimit(showsWholeBiography ? nil : 3)
                         .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        // The last line fades out where PLUS sits rather than
+                        // under a patch of the page's colour: the cover's
+                        // colours run under the biography.
+                        .mask {
+                            Color.black
+                                .overlay(alignment: .bottomTrailing) {
+                                    if !showsWholeBiography {
+                                        HStack(spacing: 0) {
+                                            LinearGradient(colors: [.clear, .black], startPoint: .leading, endPoint: .trailing)
+                                                .frame(width: 24)
+                                            Self.more.opacity(0).padding(.leading, 6).background(.black)
+                                        }
+                                        .fixedSize()
+                                        .blendMode(.destinationOut)
+                                    }
+                                }
+                                .compositingGroup()
+                        }
                         .overlay(alignment: .bottomTrailing) {
                             if !showsWholeBiography {
-                                Text("PLUS")
-                                    .font(.callout.weight(.bold))
-                                    .foregroundStyle(.secondary)
-                                    .padding(.leading, 24)
-                                    .background(
-                                        LinearGradient(
-                                            colors: [.clear, Color(.systemGroupedBackground)],
-                                            startPoint: .leading,
-                                            endPoint: .init(x: 0.3, y: 0.5)
-                                        )
-                                    )
+                                Self.more.foregroundStyle(.secondary)
                             }
                         }
                         .contentShape(.rect)
@@ -125,8 +134,10 @@ struct AuthorDetailPage: View {
         }
         .frame(maxWidth: .infinity)
         .background(alignment: .top) {
-            CoverBackdrop(url: page.backdropURL, fadeHeight: 140, ground: Color(.systemGroupedBackground))
-                .frame(height: 380)
+            // The colours run on under the name and its origin, and melt into
+            // the page across the biography.
+            CoverBackdrop(url: page.backdropURL, fadeHeight: 240, ground: Color(.systemGroupedBackground))
+                .frame(height: 600)
         }
     }
 
