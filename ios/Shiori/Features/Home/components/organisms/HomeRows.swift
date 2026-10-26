@@ -313,12 +313,7 @@ struct SeriesShowCard: View {
                 Text(series.name)
                     .font(.headline)
                     .lineLimit(1)
-                Text(progressText)
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.8))
-                    .lineLimit(1)
-                remainingCapsule
-                    .padding(.top, 8)
+                progressLine
             }
             .foregroundStyle(.white)
             .padding(12)
@@ -386,43 +381,28 @@ struct SeriesShowCard: View {
         }
     }
 
-    /// How far the reader is through the saga, on a white capsule as long as
-    /// what it holds: a short bar, then how many volumes are left, "À jour"
-    /// once none is.
-    private var remainingCapsule: some View {
-        HStack(spacing: 10) {
+    /// How far the reader is through the saga, as the TV app sets an
+    /// episode's: a short white bar, then "3 sur 10 lus" beside it.
+    private var progressLine: some View {
+        HStack(spacing: 8) {
             Capsule()
-                .fill(.black.opacity(0.18))
-                .frame(width: 72, height: 5)
+                .fill(.white.opacity(0.3))
+                .frame(width: 40, height: 4)
                 .overlay(alignment: .leading) {
-                    GeometryReader { proxy in
-                        Capsule()
-                            .fill(.black)
-                            .frame(width: proxy.size.width * fraction)
-                    }
+                    Capsule()
+                        .fill(.white)
+                        .frame(width: 40 * fraction, height: 4)
                 }
-            Text(remainingText)
-                .font(.subheadline.weight(.semibold))
+            Text(progressText)
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.8))
                 .lineLimit(1)
-                .fixedSize()
         }
-        .foregroundStyle(.black)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 9)
-        .background(.white, in: .capsule)
     }
 
     private var fraction: CGFloat {
         guard series.totalCount > 0 else { return 0 }
         return CGFloat(min(series.readCount, series.totalCount)) / CGFloat(series.totalCount)
-    }
-
-    private var remainingText: String {
-        switch max(series.totalCount - series.readCount, 0) {
-        case 0: String(localized: "À jour")
-        case 1: String(localized: "1 tome")
-        case let left: String(localized: "\(left) tomes")
-        }
     }
 
     private var progressText: String {
