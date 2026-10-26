@@ -36,6 +36,7 @@ builder.queryFields((t) => ({
       'first, twelve at most: the news the dashboard shows from the people the reader ' +
       'shares with.\n\n' +
       'Only a dated heart counts. A book marked "do not share" is never among them.',
+    deprecationReason: "The dashboard no longer shows friends' hearts.",
     resolve: (_root, _args, context) => FriendshipUseCase.recentFavorites(context.userId),
   }),
 

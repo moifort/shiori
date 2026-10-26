@@ -177,22 +177,6 @@
         }
       }
     },
-    "%@ l'a adoré" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ loved it"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ l'a adoré"
-          }
-        }
-      }
-    },
     "%@ l'a commencé aujourd'hui" : {
       "localizations" : {
         "en" : {
@@ -10981,6 +10965,22 @@
         }
       }
     },
+    "Sorties" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Releases"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sorties"
+          }
+        }
+      }
+    },
     "Sources" : {
       "localizations" : {
         "en" : {
@@ -12901,18 +12901,18 @@
         }
       }
     },
-    "Vous verrez sa bibliothèque et il verra la vôtre. Ses coups de cœur arriveront ici, dans « Nouveautés »." : {
+    "Vous verrez sa bibliothèque et il verra la vôtre." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You will see their library and they will see yours. Their favourites will land here, under “New releases”."
+            "value" : "You will see their library and they will see yours."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous verrez sa bibliothèque et il verra la vôtre. Ses coups de cœur arriveront ici, dans « Nouveautés »."
+            "value" : "Vous verrez sa bibliothèque et il verra la vôtre."
           }
         }
       }

@@ -52,9 +52,10 @@ export const MAX_LOOKS_PER_DAY = 30
 /** How often the hourly pass reads a reader's library again to learn which
  *  sagas they follow. Opening the tab does it at once. */
 export const SYNC_EVERY_MS = 86_400_000
-/** How long a volume out stays among the new releases: two weeks, as often
- *  as a saga is looked up again, so one only learned of once out still shows. */
-const RECENT_DAYS = 14
+/** How long a volume out stays among the new releases: a month, longer than
+ *  a saga waits to be looked up again, so one only learned of once out still
+ *  shows. */
+const RECENT_DAYS = 30
 /** How late an alert may still go out for a volume the morning pass missed. */
 const ALERT_GRACE_DAYS = 14
 
@@ -422,7 +423,7 @@ const isAvailable = (
   format: ReleaseFormat,
 ): boolean => (format === 'audiobook' ? volume.asin !== undefined : volume.isbn13 !== undefined)
 
-/** The volumes the saga brought out in the last two weeks that the reader does not
+/** The volumes the saga brought out in the last month that the reader does not
  *  hold and can have now, the newest first: out on a known day — a month
  *  alone does not say it was this fortnight — as the same shared watch the next
  *  volume is read off dates it. A volume announced moves here on its day,

@@ -610,7 +610,7 @@ describe('the Découvrir tab', () => {
     expect(row.recent.map((volume) => volume.number)).toEqual([VolumeNumber(3)])
   })
 
-  test('moves a volume announced among the new releases on its day, for two weeks', async () => {
+  test('moves a volume announced among the new releases on its day, for a month', async () => {
     await stock(reader)
     await DiscoveryUseCase.watchDueSagas(now)
     const tabOn = async (day: string) =>
@@ -622,11 +622,11 @@ describe('the Découvrir tab', () => {
     expect((await tabOn('2026-10-01T08:00:00Z')).recent.map(({ number }) => number)).toEqual([
       VolumeNumber(3),
     ])
-    // Out on September 25th as Amazon dates it: shown through October 8th.
-    expect((await tabOn('2026-10-08T08:00:00Z')).recent.map(({ number }) => number)).toEqual([
+    // Out on September 25th as Amazon dates it: shown through October 24th.
+    expect((await tabOn('2026-10-24T08:00:00Z')).recent.map(({ number }) => number)).toEqual([
       VolumeNumber(3),
     ])
-    expect((await tabOn('2026-10-09T08:00:00Z')).recent).toEqual([])
+    expect((await tabOn('2026-10-25T08:00:00Z')).recent).toEqual([])
     expect(calls).toEqual(['Dungeon Crawler Carl'])
   })
 

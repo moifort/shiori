@@ -11,14 +11,12 @@ final class HomeViewModel {
         if caching {
             cache = SnapshotCache("dashboard", version: 5)
             releasesCache = SnapshotCache("dashboard-releases", version: 3)
-            favoritesCache = SnapshotCache("dashboard-friend-favorites", version: 1)
             discoveriesCache = SnapshotCache("dashboard-discoveries", version: 2)
         } else {
-            (cache, releasesCache, favoritesCache, discoveriesCache) = (nil, nil, nil, nil)
+            (cache, releasesCache, discoveriesCache) = (nil, nil, nil)
         }
         dashboard = cache?.read()
         releases = releasesCache?.read() ?? []
-        friendFavorites = favoritesCache?.read() ?? []
         discoveries = discoveriesCache?.read()
     }
 
@@ -30,8 +28,6 @@ final class HomeViewModel {
     /// volume of each saga, both formats together, and the recordings the
     /// reader awaits once they have a date.
     private(set) var releases: [HomeRelease] = []
-    /// What the reader's friends hearted lately, the newest first.
-    private(set) var friendFavorites: [FriendFavorite] = []
     /// The month's discoveries, drawn as covers alone.
     private(set) var discoveries: MonthlyDiscoveries?
     /// The month's selection is being made at the home's request: the first
@@ -69,7 +65,6 @@ final class HomeViewModel {
     /// changes shape.
     private let cache: SnapshotCache<Dashboard>?
     private let releasesCache: SnapshotCache<[HomeRelease]>?
-    private let favoritesCache: SnapshotCache<[FriendFavorite]>?
     private let discoveriesCache: SnapshotCache<MonthlyDiscoveries>?
 
     /// How many releases the dashboard lines up; the rest are Découvrir's.
@@ -115,7 +110,6 @@ final class HomeViewModel {
         // that could not be brought up to date keeps what it last showed.
         let client = client
         async let releases = Self.fetchReleases(client)
-        async let favorites = try? client.recentFavorites()
         do {
             let fetched = try await client.dashboard()
             // Over figures already on screen, the cards change in place rather
@@ -126,7 +120,7 @@ final class HomeViewModel {
             // The shelf is known: a month without its selection gets one made.
             Task { await lookUpDiscoveriesIfDue() }
         } catch {
-            keep(releases: await releases, favorites: await favorites)
+            keep(releases: await releases)
             guard !isCancellation(error) else { return }
             // The last dashboard stays on screen and says nothing: blanking good
             // figures because a refresh failed reads as data loss, and a pull
@@ -134,20 +128,15 @@ final class HomeViewModel {
             errorMessage = reportError(error)
             return
         }
-        keep(releases: await releases, favorites: await favorites)
+        keep(releases: await releases)
     }
 
-    /// A section that came back replaces the one on screen, and is kept for
-    /// the next launch.
-    private func keep(releases: [HomeRelease]?, favorites: [FriendFavorite]?) {
-        if let releases {
-            withAnimation(.smooth) { self.releases = releases }
-            if let cache = releasesCache { Task.detached { cache.write(releases) } }
-        }
-        if let favorites {
-            withAnimation(.smooth) { friendFavorites = favorites }
-            if let cache = favoritesCache { Task.detached { cache.write(favorites) } }
-        }
+    /// The releases, when they came back, replace the ones on screen and are
+    /// kept for the next launch.
+    private func keep(releases: [HomeRelease]?) {
+        guard let releases else { return }
+        withAnimation(.smooth) { self.releases = releases }
+        if let cache = releasesCache { Task.detached { cache.write(releases) } }
     }
 
     /// The discoveries alone: read in the printed format, as Découvrir draws
@@ -232,11 +221,11 @@ final class HomeViewModel {
     /// The releases alone, when an edition was awaited or given up: the
     /// figures around them have not moved.
     func reloadReleases() async {
-        keep(releases: await Self.fetchReleases(client), favorites: nil)
+        keep(releases: await Self.fetchReleases(client))
     }
 
     /// Découvrir's rows in both formats and the editions the reader awaits: the
-    /// volumes and the editions awaited out in the last two weeks, the newest
+    /// volumes and the editions awaited out in the last month, the newest
     /// first, then the volumes and the editions awaited still to come, the
     /// soonest first. An edition awaited moves from one to the other the day
     /// it comes out, rather than leaving the card. Nil when either format of
@@ -284,7 +273,7 @@ final class HomeViewModel {
 
     /// How long a volume or an edition awaited counts as just out, in days:
     /// Découvrir's own window for its "Nouvelles parutions".
-    private static let recentDays = 14
+    private static let recentDays = 30
 
     /// The tab appeared: a dashboard still showing last session's snapshot
     /// is brought up to date silently, one never loaded loads. A dashboard the

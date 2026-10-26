@@ -3298,7 +3298,7 @@ type Query {
   
   Only a dated heart counts. A book marked "do not share" is never among them.
   """
-  friendFavorites: [FriendFavorite!]!
+  friendFavorites: [FriendFavorite!]! @deprecated(reason: "The dashboard no longer shows friends' hearts.")
 
   """
   One page of a friend's library — or of the reader's own, previewing what their friends are shown — drawn as the Library tab draws the reader's: newest first on `shelvedAt`, the dropped books left out unless asked for. A book marked "do not share" never appears. Null for a stranger.

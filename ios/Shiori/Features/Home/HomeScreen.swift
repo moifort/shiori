@@ -260,14 +260,6 @@ struct HomeScreen: View {
             AwaitedEditionScreen(edition: edition) {
                 Task { await viewModel.stopAwaiting(edition) }
             }
-        case let .favorite(favorite):
-            if let book = favorite.openedBook {
-                FriendBookScreen(
-                    friendId: favorite.friendId,
-                    bookId: book.id,
-                    friendName: favorite.friendDisplayName
-                )
-            }
         case let .discovery(suggestion):
             SuggestionScreen(suggestion: suggestion) { outcome in
                 guard case let .dismissed(reason) = outcome else { return }
@@ -293,7 +285,7 @@ struct HomeScreen: View {
         switch detail {
         case .series: Task { await viewModel.load() }
         case .discovery: Task { await viewModel.loadDiscoveries() }
-        case .book, .release, .awaited, .favorite, .genres, .statistics: break
+        case .book, .release, .awaited, .genres, .statistics: break
         }
     }
 
@@ -308,7 +300,6 @@ struct HomeScreen: View {
             HomePage(
                     dashboard: dashboard,
                     releases: viewModel.releases,
-                    friendFavorites: viewModel.friendFavorites,
                     discoveries: viewModel.discoveries,
                     isSearchingDiscoveries: viewModel.isSearchingDiscoveries,
                     isSideBySide: isSplit && detail == nil,
@@ -340,7 +331,6 @@ struct HomeScreen: View {
                     case .showDiscover: onShowDiscover()
                     case let .openRelease(.volume(volume)): detail = .release(volume)
                     case let .openRelease(.awaited(edition)): detail = .awaited(edition)
-                    case let .openFriendFavorite(favorite): detail = .favorite(favorite)
                     case let .openDiscovery(suggestion): detail = .discovery(suggestion)
                     // The page keeps the discovery, its check showing, until the
                     // reader leaves it: only then does the line move on.
@@ -397,7 +387,6 @@ private enum HomeDetail: Identifiable {
     case series(String)
     case release(DiscoveryVolume)
     case awaited(AwaitedEdition)
-    case favorite(FriendFavorite)
     case discovery(Suggestion)
     case genres
     case statistics
@@ -408,7 +397,6 @@ private enum HomeDetail: Identifiable {
         case let .series(id): "series-\(id)"
         case let .release(volume): "release-\(volume.id)"
         case let .awaited(edition): "awaited-\(edition.id)"
-        case let .favorite(favorite): "favorite-\(favorite.id)"
         case let .discovery(suggestion): "discovery-\(suggestion.id)"
         case .genres: "genres"
         case .statistics: "statistics"

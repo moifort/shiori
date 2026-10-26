@@ -25,11 +25,10 @@ enum HomeAction {
     /// An empty library's start rows: the Partagé tab, where a friend is
     /// invited or an invitation entered.
     case showShared
-    /// "Nouveautés"'s header, and the hero's way to every discovery.
+    /// "Sorties"'s header, and the hero's way to every discovery.
     case showDiscover
     /// A volume just out or announced, or a recording awaited.
     case openRelease(HomeRelease)
-    case openFriendFavorite(FriendFavorite)
     case openDiscovery(Suggestion)
     /// A discovery put on the shelf from the carousel's "+": on the pile, or
     /// read already.
@@ -59,8 +58,6 @@ struct HomePage: View {
     /// The volumes just out, the newest first, then the next one announced of
     /// each saga followed and the recordings awaited, the soonest first.
     var releases: [HomeRelease] = []
-    /// What the reader's friends hearted lately, the newest first.
-    var friendFavorites: [FriendFavorite] = []
     /// The month's discoveries, chosen for the reader.
     var discoveries: MonthlyDiscoveries?
     /// The month's selection is being made: a phone's hero waits on it.
@@ -375,15 +372,13 @@ struct HomePage: View {
         }
     }
 
-    /// What is new: the volumes out or to come, then what friends hearted.
-    /// Not before the first book: a new reader follows no saga and has no
-    /// friend yet, and the friends card already says this row is where their
-    /// favourites will land.
+    /// The releases: the volumes out in the last month, then those to come.
+    /// Not before the first book: a new reader follows no saga yet.
     @ViewBuilder private var newsRow: some View {
         let tiles = newsTiles
         if !tiles.isEmpty, !dashboard.libraryIsEmpty {
             VStack(alignment: .leading, spacing: 12) {
-                RowHeader(title: "Nouveautés", detail: String(localized: "Découvrir"), style: headerStyle) {
+                RowHeader(title: "Sorties", detail: String(localized: "Découvrir"), style: headerStyle) {
                     onAction(.showDiscover)
                 }
                 // A phone shelves them as the pile, the day out or "Disponible"
@@ -473,10 +468,9 @@ struct HomePage: View {
         let open: () -> Void
     }
 
-    /// Six releases at most, then four friends' favourites: the rest are
-    /// Découvrir's.
+    /// The releases, the rest being Découvrir's.
     private var newsTiles: [NewsItem] {
-        let releaseItems = releases.prefix(6).map { release in
+        let releaseItems = releases.map { release in
             let tile = Self.releaseTile(release)
             let upcoming = release.date.map { ReleaseDateText.isUpcoming($0) } ?? false
             return NewsItem(
@@ -487,34 +481,22 @@ struct HomePage: View {
                 open: { onAction(.openRelease(release)) }
             )
         }
-        let favoriteItems = friendFavorites.prefix(4).map { favorite in
-            NewsItem(
-                id: "favorite-\(favorite.id)",
-                book: favorite.tile,
-                // A poster has room for the name alone, after a heart.
-                caption: isCompact
-                    ? "♥ \(favorite.friendDisplayName)"
-                    : String(localized: "\(favorite.friendDisplayName) l'a adoré"),
-                tint: nil,
-                open: { onAction(.openFriendFavorite(favorite)) }
-            )
-        }
         // An even count on the open Duo: the grid's last row never ends on a
         // hole. A phone's row scrolls, and keeps them all.
-        let items = releaseItems + favoriteItems
+        let items = releaseItems
         if isCompact { return items }
         return items.count > 1 ? Array(items.prefix(items.count / 2 * 2)) : items
     }
 
     /// The saga's news, said on its card: its next volume out, or to come.
-    private func releaseTag(of series: Dashboard.SeriesProgress) -> (text: String, isOut: Bool)? {
+    private func releaseTag(of series: Dashboard.SeriesProgress) -> String? {
         for release in releases {
             guard case let .volume(volume) = release, volume.saga.series.seriesId == series.id else { continue }
             let number = volume.volume.number
             guard let date = volume.volume.date, ReleaseDateText.isUpcoming(date) else {
-                return (String(localized: "Tome \(number) disponible"), true)
+                return String(localized: "Tome \(number) disponible")
             }
-            return (String(localized: "Tome \(number) · \(ReleaseDateText.short(date))"), false)
+            return String(localized: "Tome \(number) · \(ReleaseDateText.short(date))")
         }
         return nil
     }

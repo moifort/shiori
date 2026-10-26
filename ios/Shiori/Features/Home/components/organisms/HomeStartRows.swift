@@ -61,7 +61,7 @@ struct FriendsInviteCard: View {
         StartCard(
             mark: .symbol("person.2.fill"),
             title: String(localized: "Invitez un ami"),
-            text: String(localized: "Vous verrez sa bibliothèque et il verra la vôtre. Ses coups de cœur arriveront ici, dans « Nouveautés »."),
+            text: String(localized: "Vous verrez sa bibliothèque et il verra la vôtre."),
             tint: Color(red: 0.3, green: 0.6, blue: 0.35)
         ) {
             // Both labelled where they fit, stacked in a narrow column: a

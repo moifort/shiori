@@ -262,7 +262,7 @@ struct CoverRow: View {
     }
 }
 
-/// A tile of "Nouveautés": a volume out or to come, or a book a friend hearted,
+/// A tile of "Sorties": a volume out or to come,
 /// its cover small over its own colours, the date in green once out and orange
 /// while announced.
 struct NewsTile: View {
@@ -303,8 +303,9 @@ struct NewsTile: View {
 /// next one's date.
 struct SeriesShowCard: View {
     let series: Dashboard.SeriesProgress
-    /// "Tome 11 disponible", "Tome 6 · 5 nov.": the release of the saga, if any.
-    var tag: (text: String, isOut: Bool)?
+    /// "Tome 11 disponible", "Tome 6 · 5 nov.": the release of the saga, if
+    /// any, in the same glass either way.
+    var tag: String?
     let onOpen: () -> Void
 
     var body: some View {
@@ -324,12 +325,12 @@ struct SeriesShowCard: View {
             .background { artwork }
             .overlay(alignment: .topLeading) {
                 if let tag {
-                    Text(tag.text)
+                    Text(tag)
                         .font(.caption2.weight(.bold))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .foregroundStyle(tag.isOut ? .black : .white)
-                        .glassEffect(tag.isOut ? .regular.tint(.green) : .regular, in: .capsule)
+                        .foregroundStyle(.white)
+                        .glassEffect(.regular, in: .capsule)
                         .padding(8)
                 }
             }
@@ -433,7 +434,7 @@ struct SeriesShowCard: View {
 }
 
 #Preview("Series card") {
-    SeriesShowCard(series: Dashboard.preview.series[0], tag: ("Tome 111 disponible", true)) {}
+    SeriesShowCard(series: Dashboard.preview.series[0], tag: "Tome 111 disponible") {}
         .frame(width: 180)
         .padding()
 }

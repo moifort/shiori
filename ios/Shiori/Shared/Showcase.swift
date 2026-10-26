@@ -146,7 +146,7 @@ enum Showcase {
             id: "frieren", name: local("Frieren", "Frieren: Beyond Journey’s End"),
             authors: ["Kanehito Yamada", "Tsukasa Abe"],
             format: .manga, publisher: local("Ki-oon", "Viz Media"), genre: .fantasy, subgenres: ["Shōnen"], pages: 192,
-            published: 15, owned: 14, read: 14, readBetween: (420, 45),
+            published: 15, owned: 14, read: 14, readBetween: (420, 45), outDaysAgo: 9,
             rating: 5, favorite: true, slug: "frieren",
             firstPublishedIn: 2020
         ),
@@ -1102,19 +1102,6 @@ enum Showcase {
             ]
         ),
     ]
-
-    static var recentFavorites: [FriendFavorite] {
-        [
-            FriendFavorite(friendId: "lea", friendName: lea, favoritedAt: daysAgo(1),
-                           book: friendBook(sorceleur, favoritedAt: daysAgo(1), activity: 1)),
-            FriendFavorite(friendId: "hugo", friendName: hugo, favoritedAt: daysAgo(2),
-                           book: friendBook(spyFamily, favoritedAt: daysAgo(2), activity: 2)),
-            FriendFavorite(friendId: "lea", friendName: lea, favoritedAt: daysAgo(4),
-                           book: friendBook(shared("horde-du-contrevent"), favoritedAt: daysAgo(4), activity: 4)),
-            FriendFavorite(friendId: "camille", friendName: camille, favoritedAt: daysAgo(6),
-                           book: friendBook(shared("veiller-sur-elle"), favoritedAt: daysAgo(6), activity: 6)),
-        ]
-    }
 
     static var picks: FriendPicks {
         let leaLover = FriendLovers.Lover(userId: "lea", firstName: lea)

@@ -5,7 +5,6 @@ import Foundation
 /// the one it needs inline.
 struct HomeClient: Sendable {
     var dashboard: @Sendable () async throws -> Dashboard
-    var recentFavorites: @Sendable () async throws -> [FriendFavorite]
     /// The month's discoveries, read as they stand.
     var discoveries: @Sendable () async throws -> MonthlyDiscoveries
     /// The month's discoveries, made when the month has none yet: the home
@@ -28,7 +27,6 @@ struct HomeClient: Sendable {
 extension HomeClient {
     static let live = HomeClient(
         dashboard: { try await HomeAPI.dashboard() },
-        recentFavorites: { try await FriendsAPI.recentFavorites() },
         discoveries: { try await SuggestionsAPI.monthly(format: .book, lookUp: false) },
         lookUpDiscoveries: { try await SuggestionsAPI.monthly(format: .book, lookUp: true) },
         discovery: { try await DiscoverAPI.discovery(format: $0) },
@@ -44,10 +42,9 @@ extension HomeClient {
 
 extension HomeClient {
     /// Answers from the fixtures: the dashboard, one saga with a volume
-    /// announced, no friend favourite, and the month's discoveries.
+    /// announced, and the month's discoveries.
     static let preview = HomeClient(
         dashboard: { .preview },
-        recentFavorites: { [] },
         discoveries: { .preview },
         lookUpDiscoveries: { .preview },
         discovery: { format in

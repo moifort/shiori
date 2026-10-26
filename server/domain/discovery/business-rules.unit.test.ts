@@ -360,7 +360,7 @@ describe('the volumes a saga has just brought out', () => {
   const isbn13 = '9782253000000' as never
   const asin = 'B0TESTASIN' as AudibleAsin
 
-  test('are the volumes out on a day of the last two weeks, the newest first', () => {
+  test('are the volumes out on a day of the last month, the newest first', () => {
     const watch = watchOf(carl, [
       volume(3, '2026-09-19', { isbn13 }),
       volume(4, '2026-09-20', { isbn13 }),
