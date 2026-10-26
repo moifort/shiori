@@ -21,6 +21,7 @@ import type {
 } from '~/domain/analytics/types'
 import {
   coverSourcesOf,
+  inSagaOrder,
   listeningProgressOf,
   readVolumeNumbersOf,
   seriesRatingsOf,
@@ -289,9 +290,10 @@ export const seriesProgressOf = (
     if (state !== 'in-progress') continue
     const measured = progressOf(series, read, Year(currentYear), edition)
     if (!measured) continue
-    const latest = saga.books.reduce((shown, book) =>
-      shelfDateOf(book).getTime() > shelfDateOf(shown).getTime() ? book : shown,
-    )
+    // The first volume's cover, else the next that has one: a volume shelved
+    // later never changes the card the reader knows the saga by.
+    const ordered = inSagaOrder(saga.books)
+    const front = ordered.find((book) => Object.keys(coverSourcesOf(book)).length > 0) ?? ordered[0]
     progress.push({
       id: saga.id,
       saga: saga.saga,
@@ -301,7 +303,7 @@ export const seriesProgressOf = (
       rating: sagaRatingOf(saga.saga, saga.books, seriesRatings),
       favorite: hearted.has(saga.saga),
       lastActivityAt: saga.shelvedAt,
-      ...coverSourcesOf(latest),
+      ...(front && coverSourcesOf(front)),
     })
   }
   return progress

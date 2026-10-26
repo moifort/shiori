@@ -61,9 +61,10 @@ extension FollowedSeries {
         return nil
     }
 
-    /// The cover the card is drawn with: the last volume held that has one.
+    /// The cover the card is drawn with: the first volume held that has one,
+    /// so a volume shelved later never changes the card the reader knows.
     var cardCoverURL: URL? {
-        volumes.last(where: { $0.coverURL != nil })?.coverURL
+        volumes.first(where: { $0.coverURL != nil })?.coverURL
     }
 
     /// The saga as the home's cards draw it.

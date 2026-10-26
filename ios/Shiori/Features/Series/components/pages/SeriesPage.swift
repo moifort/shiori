@@ -18,7 +18,7 @@ enum SeriesAction {
 }
 
 /// One saga in the TV app's grammar, as the book page is drawn: a hero of
-/// three covers fanned over the colours of the volume to read next, the
+/// three covers fanned over the colours of the first volume, the
 /// saga's name and its author; where the reader stands in the white capsule
 /// of the home's saga card, the saga's own stars and the bell that follows it
 /// on Liquid Glass. Then, without cards around them: the next volume announced
@@ -499,9 +499,11 @@ struct SeriesPage: View {
         }?.id
     }
 
-    /// The hero's covers: the volume to read next between its neighbours, a
-    /// volume the reader lacks drawn as the edition's cover when the watch
-    /// found one. Centred on the first volume not read when none is next.
+    /// The hero's covers: the first volume, in front and behind the hero as
+    /// its colours, beside the two after it — the saga keeps one face however
+    /// far the reader is or however many volumes join it. A volume the reader
+    /// lacks is drawn as the edition's cover when the watch found one; the
+    /// first with a cover leads when the first has none.
     private func fan(_ series: BookSeries) -> SeriesFan {
         let volumes = series.spine.map { volume in
             owned.first(where: volume.matches) ?? Book(
@@ -513,10 +515,7 @@ struct SeriesPage: View {
                 status: .toRead
             )
         }
-        let centre = nextToRead.flatMap { next in series.spine.firstIndex { $0.matches(next) } }
-            ?? volumes.firstIndex { $0.status != .read }
-            ?? volumes.count - 1
-        return SeriesFan(volumes: volumes, centredOn: centre)
+        return SeriesFan(volumes: volumes, centredOn: volumes.firstIndex { $0.coverURL != nil } ?? 0)
     }
 
     /// The saga's author with the key of their page, from a volume held that

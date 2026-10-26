@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The top of a saga's page, as the TV app opens a show: three covers fanned
-/// over the colours of the volume to read next, which melt into the page as
+/// over the colours of the first volume, which melt into the page as
 /// the book page's do; under them, centred, the saga's name and its author,
 /// who opens their page, and the edition's language when it is not the
 /// reader's own, as the book page names it. Then the
@@ -11,8 +11,7 @@ import SwiftUI
 struct SeriesHero<Actions: View>: View {
     let name: String
     let author: String
-    /// The volume to read next, in the middle, and the ones on either side
-    /// of it, in reading order.
+    /// The first volume in the middle, and the ones after it on either side.
     let fan: SeriesFan
     /// The language of the edition shown: named under the author when it is
     /// not the reader's own — the English edition of a saga they also hold in
@@ -49,7 +48,7 @@ struct SeriesHero<Actions: View>: View {
         }
     }
 
-    /// The volume to read next upright, the ones around it tilted behind it
+    /// The first volume upright, the ones after it tilted behind it
     /// and darker, as a hand holds three books.
     private var covers: some View {
         ZStack {
@@ -128,7 +127,7 @@ struct SeriesHero<Actions: View>: View {
     }
 }
 
-/// The three covers of a saga's hero: the volume to read next in the middle,
+/// The three covers of a saga's hero: the one it is centred on in the middle,
 /// the one before it and the one after on either side.
 struct SeriesFan {
     var leading: Book?

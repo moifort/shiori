@@ -83,8 +83,8 @@ export type SeriesProgress = {
   /** The reader hearted the saga: drawn as the heart, which is five stars. */
   favorite: boolean
   lastActivityAt: Date
-  /** The cover of the volume shelved last, which the home screen draws the
-   *  saga with. Stored as its source, never signed, as a book card's is. */
+  /** The cover of the first volume, which the home screen draws the saga
+   *  with. Stored as its source, never signed, as a book card's is. */
   coverPath?: ObjectPath
   publishedCoverUrl?: CoverUrl
 }

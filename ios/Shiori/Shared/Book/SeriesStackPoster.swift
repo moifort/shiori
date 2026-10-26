@@ -28,17 +28,18 @@ struct SeriesStackPoster: View {
         .frame(width: width, height: width * 1.5, alignment: .top)
     }
 
-    /// The volume shelved last that has a cover, else the last held.
+    /// The first volume that has a cover, else the first held: the saga keeps
+    /// one face however many volumes join it.
     private var front: Book? {
-        saga.volumes.last(where: { $0.coverURL != nil }) ?? saga.volumes.last
+        saga.volumes.first(where: { $0.coverURL != nil }) ?? saga.volumes.first
     }
 
-    /// Up to two volumes before the front one, the furthest back first.
+    /// Up to two volumes after the front one, the furthest back first.
     private var behind: [Book] {
         guard let front else { return [] }
         let others = saga.volumes.filter { $0.id != front.id }
         let covered = others.filter { $0.coverURL != nil }
-        return Array((covered.isEmpty ? others : covered).suffix(2))
+        return Array((covered.isEmpty ? others : covered).prefix(2).reversed())
     }
 }
 

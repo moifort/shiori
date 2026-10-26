@@ -320,8 +320,9 @@ describe('building the view', () => {
     ])
   })
 
-  // The saga is drawn with the cover of the volume shelved last.
-  test('draws a saga with the cover of its volume shelved last', () => {
+  // The saga keeps the cover of its first volume, so a new one shelved never
+  // changes the card the reader knows it by.
+  test('draws a saga with the cover of its first volume, whatever was shelved last', () => {
     const membership = (number: number) => ({
       id: seriesIdOf(kingkiller),
       saga: kingkiller,
@@ -344,6 +345,13 @@ describe('building the view', () => {
     ]
 
     expect(seriesProgressOf(books, [catalogue], 2026)[0]?.publishedCoverUrl).toBe(
+      CoverUrl('https://covers.example/1.jpg'),
+    )
+    // Without a cover on the first, the next volume that has one.
+    const faceless = books.map((book, index) =>
+      index === 0 ? { ...book, publishedCoverUrl: undefined } : book,
+    )
+    expect(seriesProgressOf(faceless, [catalogue], 2026)[0]?.publishedCoverUrl).toBe(
       CoverUrl('https://covers.example/2.jpg'),
     )
   })

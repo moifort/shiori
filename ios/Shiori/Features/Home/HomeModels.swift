@@ -49,7 +49,7 @@ struct Dashboard: Codable, Sendable {
         var rating: Double?
         /// A hearted saga, drawn as the heart, which is five stars.
         var favorite: Bool = false
-        /// The cover of the volume shelved last, which the saga is drawn with.
+        /// The cover of the first volume, which the saga is always drawn with.
         var coverURL: URL?
     }
 

@@ -186,8 +186,9 @@ const SeriesProgressType = builder.objectRef<DashboardSeries>('SeriesProgress').
       type: 'CoverUrl',
       nullable: true,
       description:
-        'The cover of the volume shelved last, which the home screen draws the saga ' +
-        'with. Null without one; draw the placeholder.',
+        'The cover of the first volume, else the next that has one, which the home screen ' +
+        'draws the saga with: a volume shelved later never changes it. Null without one; ' +
+        'draw the placeholder.',
       resolve: (series) => series.coverUrl ?? null,
     }),
   }),

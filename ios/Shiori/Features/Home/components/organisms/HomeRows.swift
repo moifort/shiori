@@ -192,7 +192,7 @@ struct PosterRow: View {
         /// A saga as a stack of its volumes, opening what `open` says; nil
         /// when the reader holds none of them.
         init?(saga: FollowedSeries, open: @escaping () -> Void) {
-            guard let front = saga.volumes.last(where: { $0.coverURL != nil }) ?? saga.volumes.last else { return nil }
+            guard let front = saga.volumes.first(where: { $0.coverURL != nil }) ?? saga.volumes.first else { return nil }
             book = front
             label = PosterLabel(caption: saga.volumeCountText)
             self.saga = saga
@@ -347,7 +347,7 @@ struct NewsTile: View {
 }
 
 /// A saga in progress as a card of "Séries en cours", as the TV app draws a show
-/// under "Up Next": the cover of the volume shelved last across the card, the
+/// under "Up Next": the cover of the first volume across the card, the
 /// name, how far the reader is, and the news of it in a tag — a volume out, the
 /// next one's date.
 struct SeriesShowCard: View {
