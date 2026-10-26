@@ -766,17 +766,17 @@ enum Showcase {
     }
 
     /// Whether a book sits among "Coups de cœur", as the server judges it:
-    /// hearted, four stars or more, or unrated in a saga hearted or rated
-    /// four stars or more.
+    /// hearted, four and a half stars or more, or unrated in a saga hearted
+    /// or rated four and a half stars or more.
     static func isLoved(_ book: Book) -> Bool {
         if book.favorite { return true }
-        if let rating = book.rating { return rating >= 4 }
+        if let rating = book.rating { return rating >= 4.5 }
         return lovedSagaVolumeIds.contains(book.id)
     }
 
     private static let lovedSagaVolumeIds = Set(
         sagas.map(followed)
-            .filter { $0.opinion?.favorite == true || ($0.opinion?.rating ?? 0) >= 4 }
+            .filter { $0.opinion?.favorite == true || ($0.opinion?.rating ?? 0) >= 4.5 }
             .flatMap { $0.volumes.map(\.id) }
     )
 

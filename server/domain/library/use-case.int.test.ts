@@ -230,16 +230,16 @@ describe('"Coups de cœur" with the hearted series', () => {
   })
 })
 
-// "Coups de cœur" is what the reader loved: a heart, four stars or more, or —
-// on a volume they left unrated — the heart or the four stars of its saga.
+// "Coups de cœur" is what the reader loved: a heart, four and a half stars or
+// more, or — on a volume they left unrated — the heart or the stars of its saga.
 describe('"Coups de cœur" holds every book the reader loved', () => {
   const lovedLibrary = async () => {
     const hearted = await shelve({ title: 'Dune', days: 0, status: 'read' })
     await BookCommand.setFavorite(reader, hearted.id, true)
-    const fourStars = await shelve({ title: 'Silo', days: 1, status: 'read' })
+    const highStars = await shelve({ title: 'Silo', days: 1, status: 'read' })
+    await BookCommand.rate(reader, highStars.id, StarRating(4.5))
+    const fourStars = await shelve({ title: 'Ubik', days: 2, status: 'read' })
     await BookCommand.rate(reader, fourStars.id, StarRating(4))
-    const threeStars = await shelve({ title: 'Ubik', days: 2, status: 'read' })
-    await BookCommand.rate(reader, threeStars.id, StarRating(3))
     const inherited = await shelve({ title: 'Red Rising', days: 3, saga: 'Rising' })
     if (inherited.series)
       await SeriesOpinionCommand.setFavorite(reader, inherited.series.saga, true)
@@ -247,10 +247,10 @@ describe('"Coups de cœur" holds every book the reader loved', () => {
     await BookCommand.rate(reader, ratedLow.id, StarRating(2))
     const fromStars = await shelve({ title: 'Hypérion', days: 5, saga: 'Cantos' })
     if (fromStars.series)
-      await SeriesOpinionCommand.rate(reader, fromStars.series.saga, StarRating(4))
+      await SeriesOpinionCommand.rate(reader, fromStars.series.saga, StarRating(4.5))
     const fromFewStars = await shelve({ title: 'Fondation', days: 6, saga: 'Fondation' })
     if (fromFewStars.series)
-      await SeriesOpinionCommand.rate(reader, fromFewStars.series.saga, StarRating(3))
+      await SeriesOpinionCommand.rate(reader, fromFewStars.series.saga, StarRating(4))
     await shelve({ title: 'Le Nom du vent', days: 7 })
     startFakeRequest()
   }

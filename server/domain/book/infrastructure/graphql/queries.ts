@@ -55,7 +55,7 @@ builder.queryFields((t) => ({
         required: false,
         description:
           '"Coups de cœur", newest first as everywhere else: the books hearted or rated four ' +
-          'stars or more, and the unrated volumes of a saga hearted or rated four stars or ' +
+          'and a half stars or more, and the unrated volumes of a saga hearted or rated four and a half stars or ' +
           'more. Ordered in memory from the library scan and the saga opinions.',
       }),
       excludeLovedSeries: t.arg.boolean({

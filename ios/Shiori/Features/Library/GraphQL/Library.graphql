@@ -2,8 +2,8 @@
 # scrolls: a flat list the server has already ordered, newest first on
 # `shelvedAt`, which the app cuts into its headings. The last book of a page is
 # the cursor for the next. `favorite` is "Coups de cœur", by date: the books
-# hearted or rated four stars or more, and the unrated volumes of a saga
-# hearted or rated four stars or more.
+# hearted or rated four and a half stars or more, and the unrated volumes of a
+# saga hearted or rated that high.
 # `format`, `genre` and `subgenre` are the pills over a shelf and the genre
 # page it was opened from.
 query LibraryPage(

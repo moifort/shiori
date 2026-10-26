@@ -2360,7 +2360,7 @@ type LibraryShelves {
   authors: [FollowedAuthor!]!
 
   """
-  "Coups de cœur": the books hearted or rated four stars or more, and the unrated volumes of a saga hearted or rated four stars or more, newest on `shelvedAt` first. Twenty books at most, covers signed for those alone.
+  "Coups de cœur": the books hearted or rated four and a half stars or more, and the unrated volumes of a saga hearted or rated four and a half stars or more, newest on `shelvedAt` first. Twenty books at most, covers signed for those alone.
   """
   favorites(
     """
@@ -3597,7 +3597,7 @@ type Query {
     excludeLovedSeries: Boolean @deprecated(reason: "\"Coups de cœur\" draws every volume it holds again.")
 
     """
-    "Coups de cœur", newest first as everywhere else: the books hearted or rated four stars or more, and the unrated volumes of a saga hearted or rated four stars or more. Ordered in memory from the library scan and the saga opinions.
+    "Coups de cœur", newest first as everywhere else: the books hearted or rated four and a half stars or more, and the unrated volumes of a saga hearted or rated four and a half stars or more. Ordered in memory from the library scan and the saga opinions.
     """
     favorite: Boolean
 
