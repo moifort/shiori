@@ -78,8 +78,9 @@ struct HomeHeroCarousel: View {
     /// page. Pressed again, the thumb takes the dismissal back.
     @State private var dismissed: Set<Suggestion.ID> = []
 
-    /// How tall the carousel stands: room for three lines of why.
-    static let height: CGFloat = 508
+    /// How tall the carousel stands: room for the cover drawn large, as Apple
+    /// Books stands one forward, and three lines of why.
+    static let height: CGFloat = 556
     /// How far each backdrop runs up past its page, under the bars and the
     /// status bar.
     private static let backdropRise: CGFloat = 400
@@ -317,11 +318,12 @@ struct HomeHeroCarousel: View {
         onOpen: @escaping () -> Void,
         @ViewBuilder buttons: () -> some View
     ) -> some View {
+        // Held at the top, the cover high on the page whatever the text
+        // under it runs to: a one-line title left the room above the cover.
         VStack(spacing: 0) {
-            Spacer(minLength: 0)
             Button(action: onOpen) {
                 VStack(spacing: 0) {
-                    BookCover(book: cover, width: 140, showsFormatBadge: false)
+                    BookCover(book: cover, width: 168, showsFormatBadge: false, isBound: true)
                         // A recording says so in the tag the posters carry,
                         // on a blur of the cover, rather than with headphones.
                         .overlay(alignment: .topTrailing) {
@@ -337,8 +339,9 @@ struct HomeHeroCarousel: View {
                         .padding(.vertical, 4)
                         .glassEffect(.clear, in: .capsule)
                         .padding(.top, 18)
+                    // Set in serif, as Apple Books titles the book it opens.
                     Text(title)
-                        .font(.title.weight(.bold))
+                        .font(.system(.title, design: .serif, weight: .bold))
                         .lineLimit(2)
                         .minimumScaleFactor(0.8)
                         .padding(.top, 10)
@@ -363,8 +366,10 @@ struct HomeHeroCarousel: View {
             .buttonStyle(.plain)
             buttons()
                 .padding(.top, 16)
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, 28)
+        .padding(.top, 4)
         // Room for the dots under the buttons.
         .padding(.bottom, 40)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -30,11 +30,15 @@ struct BookCover: View {
     /// Whether the stand-in prints the author at its foot. Off where a line
     /// of the context's own sits there instead, as a poster's "Tome 2".
     var showsPlaceholderAuthor = true
+    /// Draws the cover as a bound book, as Apple Books stands one forward:
+    /// near-square corners and the crease of a hardback's spine down its left
+    /// edge, a shadow, a sheen and a groove that give it relief.
+    var isBound = false
 
     /// Standard trade paperback proportions, so photographed covers are cropped
     /// consistently and placeholders sit at the same size as real ones.
     private var height: CGFloat { max(width * 1.5, minHeight ?? 0) }
-    private var radius: CGFloat { cornerRadius ?? width * 0.07 }
+    private var radius: CGFloat { cornerRadius ?? width * (isBound ? 0.02 : 0.07) }
 
     var body: some View {
         Group {
@@ -54,6 +58,9 @@ struct BookCover: View {
             }
         }
         .frame(width: width, height: height)
+        .overlay {
+            if isBound { BindingRelief() }
+        }
         .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: radius, style: .continuous)
@@ -143,6 +150,31 @@ struct BookCover: View {
     }
 }
 
+/// A hardback's spine down a cover's left edge: the binding's shadow, the
+/// light caught by the board's rounded edge, the hinge's groove, then the board
+/// flat and lit, its far edge a touch darker.
+private struct BindingRelief: View {
+    var body: some View {
+        LinearGradient(
+            stops: [
+                .init(color: .black.opacity(0.42), location: 0),
+                .init(color: .black.opacity(0.12), location: 0.012),
+                .init(color: .white.opacity(0.28), location: 0.022),
+                .init(color: .white.opacity(0.06), location: 0.036),
+                .init(color: .black.opacity(0.26), location: 0.05),
+                .init(color: .black.opacity(0.06), location: 0.075),
+                .init(color: .white.opacity(0.08), location: 0.11),
+                .init(color: .clear, location: 0.3),
+                .init(color: .clear, location: 0.94),
+                .init(color: .black.opacity(0.12), location: 1),
+            ],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+        .allowsHitTesting(false)
+    }
+}
+
 #Preview {
     HStack(spacing: 16) {
         BookCover(
@@ -151,6 +183,11 @@ struct BookCover: View {
         BookCover(
             book: Book(id: "2", title: "La Peur du sage", authors: ["Patrick Rothfuss"], status: .toRead),
             width: 90
+        )
+        BookCover(
+            book: Book(id: "3", title: "Starside", authors: ["Alex Aster"], status: .toRead),
+            width: 140,
+            isBound: true
         )
     }
     .padding()
