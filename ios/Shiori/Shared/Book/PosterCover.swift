@@ -22,6 +22,8 @@ struct PosterCover: View {
     var marksReading = false
     /// How far a recording got, in percent: a short bar before the line.
     var progress: Int?
+    /// Stars drawn in place of the line, a half one cut down the middle.
+    var rating: Double?
 
     static let cornerRadius: CGFloat = 8
 
@@ -51,11 +53,17 @@ struct PosterCover: View {
                     if let progress {
                         ProgressBar(fraction: Double(progress) / 100, width: width < 110 ? 30 : 40)
                     }
-                    Text(caption)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(captionColor)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
+                    if let rating {
+                        PosterStars(rating: rating)
+                            .foregroundStyle(captionColor)
+                            .accessibilityLabel(caption)
+                    } else {
+                        Text(caption)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(captionColor)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                    }
                 }
                 .shadow(color: .black.opacity(0.5), radius: 4)
                 .padding(.horizontal, 6)
@@ -77,6 +85,7 @@ struct PosterCover: View {
         dimming = label.dimming
         marksReading = label.marksReading
         progress = label.progress
+        rating = label.rating
     }
 
     init(
@@ -142,8 +151,43 @@ struct PosterCover: View {
     }
 }
 
+/// A read book's stars in a poster's foot: whole ones filled, and a half one
+/// as the left half of a star alone, never the outline of the missing half.
+private struct PosterStars: View {
+    let rating: Double
+
+    var body: some View {
+        HStack(spacing: 1) {
+            ForEach(0..<min(Int(rating.rounded(.down)), 5), id: \.self) { _ in
+                Image(systemName: "star.fill")
+            }
+            if rating - rating.rounded(.down) >= 0.5 {
+                LeadingHalf {
+                    Image(systemName: "star.fill")
+                }
+                .clipped()
+            }
+        }
+        .font(.footnote.weight(.semibold))
+    }
+}
+
+/// Lays its content out at its own size but takes only its left half.
+private struct LeadingHalf: Layout {
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard let size = subviews.first?.sizeThatFits(.unspecified) else { return .zero }
+        return CGSize(width: size.width / 2, height: size.height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(at: bounds.origin, anchor: .topLeading, proposal: .unspecified)
+    }
+}
+
 #Preview("Labels") {
     HStack(spacing: 13) {
+        PosterCover(book: .preview, label: PosterLabel(caption: "★★★½", rating: 3.5))
+        PosterCover(book: .preview, label: PosterLabel(caption: "★★★★★", rating: 5))
         PosterCover(book: .preview, label: PosterLabel(caption: "depuis 6j", marksReading: true))
         PosterCover(book: .previewFromShelf, label: PosterLabel(caption: "68%", marksReading: true, progress: 68))
         PosterCover(book: .preview, label: PosterLabel(caption: "Abandonné", dimming: PosterLabel.setAsideDimming))

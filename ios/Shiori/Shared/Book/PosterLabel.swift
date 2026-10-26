@@ -5,13 +5,17 @@ import Foundation
 /// bookmark ribbon and says since when, never a page or a percentage the app
 /// does not track; a recording adds a short bar and how far it got. A book read
 /// shows its stars — five for a favourite, never a heart — or the day it was
-/// finished. Units stick to their figure: "6j", "68%", "3sem.".
+/// finished. A one-letter unit sticks to its figure, "6j", "68%"; a longer
+/// one stands apart, "3 sem.".
 struct PosterLabel: Hashable, Sendable {
     var caption: String
     /// The white bookmark hanging from the top edge: the book is open.
     var marksReading = false
     /// How far a recording got, in percent, drawn as a short bar before the line.
     var progress: Int?
+    /// The stars drawn in place of the line, half a star included: the
+    /// caption then only names them for VoiceOver.
+    var rating: Double?
     /// How dark the cover is drawn: a book given up on is dimmed further.
     var dimming: Double = 0.12
 
@@ -85,8 +89,8 @@ struct PosterLabel: Hashable, Sendable {
     }
 
     private static func readLabel(_ book: Book, now: Date, calendar: Calendar) -> PosterLabel {
-        if book.favorite { return PosterLabel(caption: stars(5)) }
-        if let rating = book.shownRating { return PosterLabel(caption: stars(rating)) }
+        if book.favorite { return PosterLabel(caption: stars(5), rating: 5) }
+        if let rating = book.shownRating { return PosterLabel(caption: stars(rating), rating: rating) }
         guard let date = book.shelvedAt else { return PosterLabel(caption: String(localized: "Lu")) }
         if calendar.isDate(date, inSameDayAs: now) { return PosterLabel(caption: String(localized: "Lu aujourd'hui")) }
         if calendar.isDateInYesterday(date, relativeTo: now) { return PosterLabel(caption: String(localized: "Lu hier")) }
@@ -102,40 +106,40 @@ struct PosterLabel: Hashable, Sendable {
 
     // MARK: - Spans
 
-    /// How long a book has waited: "Aujourd'hui", "Hier", "10 jours", "3sem.",
+    /// How long a book has waited: "Aujourd'hui", "Hier", "10 jours", "3 sem.",
     /// "2 mois", "1 an".
     static func waited(_ date: Date, now: Date, calendar: Calendar = .current) -> String {
         switch Span(from: date, to: now, calendar: calendar) {
         case .today: String(localized: "Aujourd'hui")
         case .yesterday: String(localized: "Hier")
         case let .days(days): String(localized: "\(days) jours")
-        case let .weeks(weeks): String(localized: "\(weeks)sem.")
+        case let .weeks(weeks): String(localized: "\(weeks) sem.")
         case let .months(months): String(localized: "\(months) mois")
         case let .years(years): years == 1 ? String(localized: "1 an") : String(localized: "\(years) ans")
         }
     }
 
     /// When a book was added: "Ajouté", "Ajouté hier", "Il y a 3j",
-    /// "Il y a 2sem.", "Il y a 4 mois", "Il y a 1 an".
+    /// "Il y a 2 sem.", "Il y a 4 mois", "Il y a 1 an".
     static func added(_ date: Date, now: Date, calendar: Calendar = .current) -> String {
         switch Span(from: date, to: now, calendar: calendar) {
         case .today: String(localized: "Ajouté")
         case .yesterday: String(localized: "Ajouté hier")
         case let .days(days): String(localized: "Il y a \(days)j")
-        case let .weeks(weeks): String(localized: "Il y a \(weeks)sem.")
+        case let .weeks(weeks): String(localized: "Il y a \(weeks) sem.")
         case let .months(months): String(localized: "Il y a \(months) mois")
         case let .years(years): years == 1 ? String(localized: "Il y a 1 an") : String(localized: "Il y a \(years) ans")
         }
     }
 
     /// Since when a book is open: "Commencé", "depuis hier", "depuis 6j",
-    /// "depuis 3sem.", "depuis 2 mois", "depuis 1 an".
+    /// "depuis 3 sem.", "depuis 2 mois", "depuis 1 an".
     static func open(_ date: Date, now: Date, calendar: Calendar = .current) -> String {
         switch Span(from: date, to: now, calendar: calendar) {
         case .today: String(localized: "Commencé")
         case .yesterday: String(localized: "depuis hier")
         case let .days(days): String(localized: "depuis \(days)j")
-        case let .weeks(weeks): String(localized: "depuis \(weeks)sem.")
+        case let .weeks(weeks): String(localized: "depuis \(weeks) sem.")
         case let .months(months): String(localized: "depuis \(months) mois")
         case let .years(years): years == 1 ? String(localized: "depuis 1 an") : String(localized: "depuis \(years) ans")
         }
