@@ -1389,18 +1389,18 @@
         }
       }
     },
-    "%lldsem." : {
+    "%lld sem." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lldwk"
+            "value" : "%lld wk"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lldsem."
+            "value" : "%lld sem."
           }
         }
       }
@@ -6157,18 +6157,18 @@
         }
       }
     },
-    "Il y a %lldsem." : {
+    "Il y a %lld sem." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lldwk ago"
+            "value" : "%lld wk ago"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Il y a %lldsem."
+            "value" : "Il y a %lld sem."
           }
         }
       }
@@ -13765,18 +13765,18 @@
         }
       }
     },
-    "depuis %lldsem." : {
+    "depuis %lld sem." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "for %lldwk"
+            "value" : "for %lld wk"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "depuis %lldsem."
+            "value" : "depuis %lld sem."
           }
         }
       }

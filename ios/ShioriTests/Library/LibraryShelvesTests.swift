@@ -24,7 +24,7 @@ struct PosterLabelTests {
         #expect(PosterLabel.waited(daysAgo(0), now: now, calendar: calendar) == "Aujourd'hui")
         #expect(PosterLabel.waited(daysAgo(1), now: now, calendar: calendar) == "Hier")
         #expect(PosterLabel.waited(daysAgo(10), now: now, calendar: calendar) == "10 jours")
-        #expect(PosterLabel.waited(daysAgo(21), now: now, calendar: calendar) == "3sem.")
+        #expect(PosterLabel.waited(daysAgo(21), now: now, calendar: calendar) == "3 sem.")
         #expect(PosterLabel.waited(daysAgo(65), now: now, calendar: calendar) == "2 mois")
         #expect(PosterLabel.waited(daysAgo(400), now: now, calendar: calendar) == "1 an")
     }
