@@ -153,7 +153,6 @@ struct SeriesPage: View {
             }
             if friend != nil, opinion?.favorite == true {
                 Image(systemName: "heart.fill")
-                    .foregroundStyle(.red)
                     .accessibilityLabel(Text("Coup de cœur"))
             }
         }

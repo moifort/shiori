@@ -247,7 +247,6 @@ struct SeriesScreen: View {
             ) {
                 await viewModel.setFavorite(!viewModel.isFavorite)
             }
-            .tint(viewModel.isFavorite ? .red : nil)
             .accessibilityIdentifier("series-favorite")
         }
         // A saga the reader holds nothing of — offered on an author's page or
