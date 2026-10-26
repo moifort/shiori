@@ -1,46 +1,21 @@
 name: Build
 
-# Runs only for what the app is built from: its sources, the committed schema the
-# Apollo code is regenerated from (so a backend change that breaks an iOS operation
-# still lands here), the two checks the job ends with, and this file. A server-only
-# push no longer pays twenty minutes of macOS runner, nor cancels a running build.
-# No branch protection requires this check, so a run that never starts blocks nothing.
+# Runs at release only: the iOS release workflow calls it before anything is
+# archived, and a failure there stops the release — no upload, no submission. A
+# push to main builds no app, so the backend ships without waiting on a macOS
+# runner. A manual run checks the app at any time.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'ios/**'
-      - 'shared/schema.graphql'
-      - 'scripts/check-strings.ts'
-      - 'scripts/check-ios-components.ts'
-      - 'scripts/stable-mtimes.py'
-      - '.github/workflows/build-ios.yml'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'ios/**'
-      - 'shared/schema.graphql'
-      - 'scripts/check-strings.ts'
-      - 'scripts/check-ios-components.ts'
-      - 'scripts/stable-mtimes.py'
-      - '.github/workflows/build-ios.yml'
+  workflow_call:
   workflow_dispatch:
-
-# A newer push to the same branch, or to the same pull request, makes this run
-# pointless: it is cancelled rather than left to use a runner for nothing. Keyed on
-# the workflow file and the ref, since the three test workflows share one name.
-concurrency:
-  group: ${{ github.workflow_ref }}
-  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  # Guards the one thing the other three workflows cannot see: whether the app
-  # still compiles. The generated Apollo code is regenerated here from the
-  # committed schema, so a backend change that the iOS operations no longer match
-  # fails here rather than at release time. Builds without signing or uploading.
+  # Guards the one thing the other workflows cannot see: whether the app still
+  # compiles. The generated Apollo code is regenerated here from the committed
+  # schema, so a backend change that the iOS operations no longer match fails
+  # here, before the archive. Builds without signing or uploading.
   # macos-26 is a standard runner, so this costs nothing on a public repository.
   ios:
     name: 📱 iOS
@@ -212,8 +187,8 @@ jobs:
             build-for-testing
           du -sh "$RUNNER_TEMP/DerivedData"/* 2>/dev/null || true
 
-      # Saved from every push to main, before the tests so a failing test keeps
-      # the build warm; a pull request restores main's and saves nothing.
+      # Saved from each release, before the tests so a failing test keeps the
+      # build warm for the run that follows its fix.
       - name: Save the compiled DerivedData
         if: github.event_name == 'push'
         uses: actions/cache/save@v6

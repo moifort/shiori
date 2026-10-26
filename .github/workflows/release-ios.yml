@@ -68,11 +68,18 @@ jobs:
             echo "::notice::Shiori $MARKETING is already with Apple — recording the tag, nothing uploaded or submitted"
           fi
 
+  # The app builds, its unit tests pass, every string is translated and every
+  # component previewed — or nothing is uploaded nor submitted. The only place
+  # these checks run on their own: a push to main no longer builds the app.
+  ios-checks:
+    uses: ./.github/workflows/build-ios.yml
+    secrets: inherit
+
   # Archive, sign and upload, shared with the nightly TestFlight build. When the tagged
   # commit already went up as a nightly build of the same version, that binary is the one
   # submitted: nothing is rebuilt.
   release:
-    needs: version
+    needs: [version, ios-checks]
     if: needs.version.outputs.submitted != 'true'
     uses: ./.github/workflows/ios-upload.yml
     with:
@@ -91,10 +98,10 @@ jobs:
   # job checks they are there before submitting rather than learn it from App Review.
   submit:
     name: 🍎 iOS submit
-    needs: [version, release]
+    needs: [version, ios-checks, release]
     # Runs after a skipped upload too (the version is already with Apple), never after a
-    # failed one.
-    if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/ios-v') && needs.release.result != 'failure' }}
+    # failed one, nor when the iOS checks failed.
+    if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/ios-v') && needs.ios-checks.result == 'success' && needs.release.result != 'failure' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:

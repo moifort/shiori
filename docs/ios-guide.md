@@ -366,7 +366,7 @@ Previews check how a view looks; unit tests check what the app decides. They do 
   data comes from the fixtures. A cached ViewModel takes `caching: false` (Discover's
   `snapshots: .none`), so a test neither reads nor leaves a snapshot on disk.
 - The doubles every test shares — `Boom`, `Flag`, `Calls` — are in `ShioriTests/Support/`.
-- The Build workflow runs `ShioriTests` on every push.
+- The Build workflow runs `ShioriTests` at release: the iOS release workflow calls it first, and a failure blocks the upload and the submission. A push to main does not build the app; run the workflow by hand to check it sooner.
 - `ShioriUITests` keeps the end-to-end screenshots; it is not where logic is tested.
 
 ## Design conventions
