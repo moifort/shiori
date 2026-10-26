@@ -306,6 +306,11 @@ export namespace ScanCommand {
       const synopsis = optional(value.synopsis, Synopsis)
       if (!picked || !(synopsis ?? seen.synopsis)) return { usage }
       const regular = value.regularEdition != null ? editions[value.regularEdition] : undefined
+      // The catalogue files an album under "Bande dessinée" as the web does.
+      const { format, subgenres } = formatSettledBySubgenres(
+        seen.format,
+        (value.subgenres ?? []).map((subgenre) => optional(subgenre, Subgenre)).filter(isPresent),
+      )
       return {
         usage,
         found: {
@@ -315,17 +320,14 @@ export namespace ScanCommand {
             // catalogue spells whole.
             title: mendedSpelling(seen.title || undefined, catalogueTitleOf(picked)) ?? seen.title,
             authors: seen.authors,
-            format: seen.format,
+            format,
             media: seen.media,
             publisher: mendedOrHeld(seen.publisher, optional(picked.publisher, Publisher)),
             language: seen.language,
             firstPublishedIn: optional(value.firstPublishedIn, Year),
             synopsis,
             genre: optional(value.genre, GenreValue),
-            subgenres: (value.subgenres ?? [])
-              .map((subgenre) => optional(subgenre, Subgenre))
-              .filter(isPresent)
-              .slice(0, MAX_SUBGENRES),
+            subgenres: subgenres.slice(0, MAX_SUBGENRES),
             pageCount: picked.pageCount,
             isbn13: picked.isbn13,
             series,

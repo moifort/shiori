@@ -500,6 +500,16 @@ describe('describing a named book from the BnF', () => {
     )
   })
 
+  test('files an album the catalogue calls a bande dessinée under that format', async () => {
+    bnfEditions = [bragelonne]
+    answers = [{ ...aPick, subgenres: ['space opera', 'bande dessinée'] }]
+
+    const { result } = await ScanCommand.lookUpEdition(named, 'fr')
+
+    expect(result.format).toBe('bande-dessinee')
+    expect(result.subgenres).toEqual(['Space Opera'] as never)
+  })
+
   test('spells whole the title and the publisher the spine misread', async () => {
     bnfEditions = [{ ...bragelonne, title: 'Le Nom du vent — Chronique du tueur de roi' }]
     answers = [aPick]
