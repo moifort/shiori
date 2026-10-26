@@ -72,7 +72,7 @@ private struct BookContextMenuItems: View {
             Button(role: .destructive) {
                 onAction(.remove)
             } label: {
-                Label("Retirer de la bibliothèque", systemImage: "trash")
+                Label("Supprimer", systemImage: "trash")
                     .foregroundStyle(.red)
             }
         }

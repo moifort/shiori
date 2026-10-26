@@ -125,12 +125,12 @@ private struct BookQuickActions: ViewModifier {
                 .presentationDetents([.medium])
             }
             .confirmationDialog(
-                "Retirer de la bibliothèque ?",
+                "Supprimer ce livre ?",
                 isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
                 titleVisibility: .visible,
                 presenting: removing
             ) { book in
-                Button("Retirer « \(book.title) »", role: .destructive) {
+                Button("Supprimer", role: .destructive) {
                     write { try await client.delete(book.id) }
                 }
             } message: { _ in

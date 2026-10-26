@@ -10421,38 +10421,6 @@
         }
       }
     },
-    "Retirer de la bibliothèque" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Remove from Library"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Retirer de la bibliothèque"
-          }
-        }
-      }
-    },
-    "Retirer de la bibliothèque ?" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Remove from your library?"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Retirer de la bibliothèque ?"
-          }
-        }
-      }
-    },
     "Retirer des coups de cœur" : {
       "localizations" : {
         "en" : {
@@ -10545,22 +10513,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Retirer le filtre"
-          }
-        }
-      }
-    },
-    "Retirer « %@ »" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Remove “%@”"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Retirer « %@ »"
           }
         }
       }
