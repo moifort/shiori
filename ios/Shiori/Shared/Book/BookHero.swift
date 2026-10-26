@@ -213,7 +213,7 @@ struct BookHero<Actions: View>: View {
                     OutlinedTag(text: String(localized: "Audio"), isFrosted: false)
                 }
                 if let countdown {
-                    OutlinedTag(text: countdown.localizedUppercase, isFrosted: false)
+                    OutlinedTag(text: countdown, isFrosted: false)
                         .accessibilityLabel(Text("Dans \(countdown)"))
                         .accessibilityIdentifier("book-countdown")
                 }

@@ -2,7 +2,8 @@ import SwiftUI
 
 /// A short word in a thin white outline, as the TV app tags a film "4K" or
 /// "CC": a recording's "Audio" on a card or a cover. The cover is blurred
-/// behind it, so the print under the word never fights it.
+/// behind it, so the print under the word never fights it. Always in capitals,
+/// as the TV app sets them.
 struct OutlinedTag: View {
     let text: String
     /// Frosted glass behind the word, for a cover whose print would fight it.
@@ -10,7 +11,7 @@ struct OutlinedTag: View {
     var isFrosted = true
 
     var body: some View {
-        Text(text)
+        Text(text.localizedUppercase)
             .font(.caption2.weight(.bold))
             .foregroundStyle(.white.opacity(0.9))
             .padding(.horizontal, 4)

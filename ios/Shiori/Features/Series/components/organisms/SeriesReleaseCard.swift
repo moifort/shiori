@@ -55,7 +55,7 @@ struct SeriesReleaseCard: View {
                     .padding(.trailing, volume.date == nil ? 0 : Self.leafRoom)
                 // How long is left, under the title in an outlined tag.
                 if let countdown = volume.date.flatMap({ ReleaseDateText.countdown($0) }) {
-                    OutlinedTag(text: countdown.localizedUppercase, isFrosted: false)
+                    OutlinedTag(text: countdown, isFrosted: false)
                         .padding(.top, 3)
                 }
                 Spacer(minLength: 8)

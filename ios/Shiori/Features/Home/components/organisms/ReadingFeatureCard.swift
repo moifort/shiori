@@ -100,7 +100,7 @@ struct ReadingFeatureCard: View {
                 .foregroundStyle(.white.opacity(0.75))
                 .lineLimit(1)
             if book.format == .audiobook {
-                OutlinedTag(text: String(localized: "Audio").uppercased())
+                OutlinedTag(text: String(localized: "Audio"))
             }
         }
     }
