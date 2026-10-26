@@ -57,6 +57,13 @@ builder.queryFields((t) => ({
           'Keep only the books the reader hearted, newest first as everywhere else: the ' +
           '"Favoris" filter, where `loved` is the favourites view.',
       }),
+      excludeLovedSeries: t.arg.boolean({
+        required: false,
+        description:
+          'Beside `favorite`: leave out the volumes of the sagas the reader hearted, ' +
+          'which "Coups de cœur" draws as their saga above the books ' +
+          '(`libraryShelves.lovedSeries`). Ordered in memory from the library scan.',
+      }),
       loved: t.arg.boolean({
         required: false,
         description:
@@ -102,6 +109,7 @@ builder.queryFields((t) => ({
         { limit: Math.max(1, Math.min(args.limit ?? 60, 200)), after: args.after ?? undefined },
         {
           favorite: args.favorite ?? undefined,
+          excludeLovedSeries: args.excludeLovedSeries ?? undefined,
           loved: args.loved ?? undefined,
           status: args.status ?? undefined,
           format: heldAs(args.format).format,

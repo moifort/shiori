@@ -9,6 +9,8 @@ struct LibraryClient: Sendable {
     var shelf: @Sendable (ShelfQuery, _ limit: Int, _ after: String?) async throws -> LibraryPageResult = { _, _, _ in
         LibraryPageResult(books: [], hasMore: false)
     }
+    /// The hearted sagas of "Coups de cœur" in a view.
+    var lovedSeries: @Sendable (ShelvesView) async throws -> [FollowedSeries] = { _ in [] }
     /// The long press on a cover.
     var setStatus: @Sendable (_ id: String, ReadingStatus) async throws -> Book = { _, _ in .preview }
     var setFavorite: @Sendable (_ id: String, Bool) async throws -> Book = { _, _ in .preview }
@@ -20,6 +22,7 @@ extension LibraryClient {
     static let live = LibraryClient(
         shelves: { try await LibraryAPI.shelves($0) },
         shelf: { try await LibraryAPI.shelfPage($0, limit: $1, after: $2) },
+        lovedSeries: { try await LibraryAPI.lovedSeries($0) },
         setStatus: { try await BookAPI.setStatus(id: $0, status: $1) },
         setFavorite: { try await BookAPI.setFavorite(id: $0, favorite: $1) },
         rate: { try await BookAPI.rate(id: $0, stars: $1) },
@@ -32,7 +35,8 @@ extension LibraryClient {
     /// Answers from the App Store showcase and accepts every write.
     static let preview = LibraryClient(
         shelves: { Showcase.libraryShelves(view: $0) },
-        shelf: { Showcase.shelfPage($0, limit: $1, after: $2) }
+        shelf: { Showcase.shelfPage($0, limit: $1, after: $2) },
+        lovedSeries: { Showcase.libraryShelves(view: $0).lovedSeries }
     )
 }
 #endif

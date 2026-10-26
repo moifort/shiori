@@ -2,9 +2,11 @@ import {
   copyOf as copyOfBook,
   coverSourcesOf,
   groupedBySeries,
+  heartedSagasOf,
   inLibraryView,
   inSagaOrder,
   lovedRankOfBook,
+  outsideHeartedSagas,
   seriesRatingsOf,
   shelfKeysOf,
   shelfOrder,
@@ -87,6 +89,25 @@ export namespace BookQuery {
     view: LibraryView,
   ): Promise<{ books: BookView[]; hasMore: boolean }> => {
     const statuses = shownStatusesOf(view)
+    // The favourites beside the hearted sagas: no index knows which saga is
+    // hearted, and a page filtered after the cursor could come back empty with
+    // more to come. The favourites are a small part of the library.
+    if (view.favorite && view.excludeLovedSeries) {
+      const [books, opinions] = await Promise.all([
+        repository.findAllByUser(userId),
+        SeriesOpinionQuery.all(userId),
+      ])
+      const hearted = heartedSagasOf(opinions)
+      const kept = books.filter(
+        (book) =>
+          book.favorite === true &&
+          inLibraryView(book, view) &&
+          outsideHeartedSagas(book, hearted) &&
+          (!statuses || statuses.includes(book.status)),
+      )
+      const { books: shown, hasMore } = shelfPageOf(shelvedOf(kept), page.limit, page.after)
+      return { books: await withCovers(shown), hasMore }
+    }
     // A genre or a subgenre has no index: one shelf of a genre is a small part
     // of a library the request scans once, kept in memory for its next page.
     if ((view.genre || view.subgenre) && !view.loved) {

@@ -249,6 +249,20 @@ export const seriesRatingsOf = (
     ),
   )
 
+/** The sagas the reader hearted, from their opinions: among the favourites the
+ *  saga stands for its volumes, which are then not drawn one by one. */
+export const heartedSagasOf = (
+  opinions: readonly { seriesId: SagaKey; favorite?: boolean }[],
+): Set<SagaKey> =>
+  new Set(opinions.flatMap((opinion) => (opinion.favorite === true ? [opinion.seriesId] : [])))
+
+/** Whether a book is drawn on its own among the favourites: not a volume of a
+ *  saga the reader hearted, which the saga's card already stands for. */
+export const outsideHeartedSagas = (
+  book: Pick<Book, 'series'>,
+  heartedSagas: ReadonlySet<SagaKey>,
+): boolean => !book.series || !heartedSagas.has(book.series.saga)
+
 /** Which main volumes of a saga the reader has finished — what decides whether
  *  the saga reads as complete. Only `read` counts: a volume in progress is not
  *  done. Only the main spine counts: a related work carries its own numbering,

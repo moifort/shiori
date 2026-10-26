@@ -7,6 +7,7 @@ mock.module('~/system/firebase', () => ({ db: fakeDb }))
 const { BookCommand } = await import('~/domain/book/command')
 const { BookQuery } = await import('~/domain/book/query')
 const { LibraryUseCase } = await import('~/domain/library/use-case')
+const { SeriesOpinionCommand } = await import('~/domain/series-opinion/command')
 const { Subgenre } = await import('~/domain/book/primitives')
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
 const { SagaKey, SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
@@ -168,6 +169,63 @@ describe('a shelf of the Library tab narrowed by its pills', () => {
     expect(titlesOf(first.books)).toEqual(['Dune'])
     expect(first.hasMore).toBe(true)
     expect(next.books.map((book) => book.id)).toEqual([silo.id])
+    expect(next.hasMore).toBe(false)
+  })
+})
+
+describe('"Coups de cœur" with the hearted series', () => {
+  const heartSagaOf = async (book: Awaited<ReturnType<typeof shelve>>) => {
+    if (!book.series) throw new Error('no saga')
+    await SeriesOpinionCommand.setFavorite(reader, book.series.saga, true)
+  }
+
+  test('draws a hearted saga whole and leaves its volumes out of the books', async () => {
+    const rising = await shelve({ title: 'Red Rising', days: 0, status: 'read', saga: 'Rising' })
+    const dune = await shelve({ title: 'Dune', days: 1, status: 'read' })
+    const hyperion = await shelve({ title: 'Hypérion', days: 2, status: 'read', saga: 'Cantos' })
+    for (const book of [rising, dune, hyperion])
+      await BookCommand.setFavorite(reader, book.id, true)
+    await heartSagaOf(rising)
+    startFakeRequest()
+
+    const [books, series, everyFavorite] = await Promise.all([
+      LibraryUseCase.favoritesBesideSeries(reader, {}),
+      LibraryUseCase.lovedSeries(reader, {}),
+      LibraryUseCase.rail(reader, {}, 'favorites'),
+    ])
+
+    expect(titlesOf(books)).toEqual(['Dune', 'Hypérion'])
+    expect(series.map((row) => String(row.name))).toEqual(['Rising'])
+    // An installed build that does not ask for the series keeps every book.
+    expect(titlesOf(everyFavorite)).toEqual(['Red Rising', 'Dune', 'Hypérion'])
+  })
+
+  test('narrows the hearted sagas to the format pill', async () => {
+    const frieren = await shelve({ title: 'Frieren', days: 0, format: 'manga', saga: 'Frieren' })
+    const rising = await shelve({ title: 'Red Rising', days: 1, saga: 'Rising' })
+    await heartSagaOf(frieren)
+    await heartSagaOf(rising)
+
+    const series = await LibraryUseCase.lovedSeries(reader, { format: 'manga' })
+
+    expect(series.map((row) => String(row.name))).toEqual(['Frieren'])
+  })
+
+  test('pages through the hearted books beside the hearted sagas', async () => {
+    const rising = await shelve({ title: 'Red Rising', days: 0, status: 'read', saga: 'Rising' })
+    const dune = await shelve({ title: 'Dune', days: 1, status: 'read' })
+    const silo = await shelve({ title: 'Silo', days: 2, status: 'read' })
+    for (const book of [rising, dune, silo]) await BookCommand.setFavorite(reader, book.id, true)
+    await heartSagaOf(rising)
+    startFakeRequest()
+
+    const view = { favorite: true, excludeLovedSeries: true }
+    const first = await BookQuery.libraryPage(reader, { limit: 1 }, view)
+    const next = await BookQuery.libraryPage(reader, { limit: 1, after: first.books[0]?.id }, view)
+
+    expect(titlesOf(first.books)).toEqual(['Dune'])
+    expect(first.hasMore).toBe(true)
+    expect(titlesOf(next.books)).toEqual(['Silo'])
     expect(next.hasMore).toBe(false)
   })
 })

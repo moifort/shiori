@@ -24,7 +24,10 @@ struct LibraryShelves: Codable, Sendable {
     var recent: [Book] = []
     var toRead: [Book] = []
     var readRecently: [Book] = []
+    /// The hearted books, less the volumes of a hearted saga.
     var favorites: [Book] = []
+    /// The hearted sagas, which stand for their volumes in "Coups de cœur".
+    var lovedSeries: [FollowedSeries] = []
     /// A book of the view was given up on: the "Abandonnés" row.
     var hasDropped = false
     var genres: [GenreShelf] = []
@@ -97,4 +100,6 @@ struct ShelfQuery: Hashable, Sendable {
 
     var serverStatus: ReadingStatus? { status ?? shelf.status }
     var favorite: Bool { shelf == .loved }
+    /// "Coups de cœur" draws a hearted saga as one card above its books.
+    var excludeLovedSeries: Bool { shelf == .loved }
 }

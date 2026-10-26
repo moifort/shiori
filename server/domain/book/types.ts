@@ -340,6 +340,9 @@ export type LibrarySection = {
  *  one format, genre or subgenre — the pills over the rails and the grids. */
 export type LibraryView = {
   favorite?: boolean
+  /** Beside `favorite`: the volumes of a saga the reader hearted left out, as
+   *  the saga's card above the books stands for them. */
+  excludeLovedSeries?: boolean
   loved?: boolean
   status?: ReadingStatus
   format?: BookFormat

@@ -2,11 +2,13 @@
 # scrolls: a flat list the server has already ordered, newest first on
 # `shelvedAt`, which the app cuts into its headings. The last book of a page is
 # the cursor for the next. `favorite` is "Coups de cœur": the hearted books
-# alone, by date.
+# alone, by date, the volumes of a hearted saga left to the saga's card above
+# them (`excludeLovedSeries`).
 # `format`, `genre` and `subgenre` are the pills over a shelf and the genre
 # page it was opened from.
 query LibraryPage(
   $favorite: Boolean
+  $excludeLovedSeries: Boolean
   $status: ReadingStatus
   $format: BookFormat
   $genre: Genre
@@ -16,6 +18,7 @@ query LibraryPage(
 ) {
   libraryPage(
     favorite: $favorite
+    excludeLovedSeries: $excludeLovedSeries
     status: $status
     format: $format
     genre: $genre
@@ -75,8 +78,18 @@ query LibraryShelves($format: BookFormat, $genre: Genre, $subgenre: Subgenre) {
     readRecently {
       ...BookSummary
     }
-    favorites {
+    # The hearted sagas stand for their volumes: one stack each in the rail.
+    favorites(excludeLovedSeries: true) {
       ...BookSummary
+    }
+    lovedSeries {
+      ...FollowedSeriesRow
+      volumes {
+        ...FollowedVolume
+      }
+      catalogue {
+        ...CatalogueSpine
+      }
     }
     hasDropped
     genres {
@@ -108,6 +121,22 @@ query LibraryShelves($format: BookFormat, $genre: Genre, $subgenre: Subgenre) {
       favoriteCount
       averageRating
       shelvedAt
+    }
+  }
+}
+
+# The sagas of "Coups de cœur", drawn as cards above its books: those the
+# reader hearted holding a book of the view, the one shelved last first.
+query LovedSeries($format: BookFormat, $genre: Genre, $subgenre: Subgenre) {
+  libraryShelves(format: $format, genre: $genre, subgenre: $subgenre) {
+    lovedSeries {
+      ...FollowedSeriesRow
+      volumes {
+        ...FollowedVolume
+      }
+      catalogue {
+        ...CatalogueSpine
+      }
     }
   }
 }

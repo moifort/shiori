@@ -34,6 +34,7 @@ struct BookShelfScreen: View {
                 BookShelfPage(
                     shelf: shelf,
                     sections: viewModel.sections,
+                    lovedSeries: viewModel.lovedSeries,
                     statuses: viewModel.statusPills,
                     selectedStatus: viewModel.query.status,
                     formats: viewModel.shownFormats,
@@ -58,6 +59,7 @@ struct BookShelfScreen: View {
     private func handle(_ action: BookShelfAction) {
         switch action {
         case let .openBook(book): destination = .book(book)
+        case let .openSeries(saga): destination = .series(saga.seriesId)
         case let .selectStatus(status): viewModel.select(status: status)
         case let .selectFormat(format): viewModel.select(format: format)
         case let .menu(book, action): quick = BookQuickRequest(book: book, action: action)

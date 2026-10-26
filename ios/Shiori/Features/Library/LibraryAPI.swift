@@ -23,6 +23,13 @@ enum LibraryAPI {
             toRead: shelves.toRead.map(\.fragments.bookSummary.asBook),
             readRecently: shelves.readRecently.map(\.fragments.bookSummary.asBook),
             favorites: shelves.favorites.map(\.fragments.bookSummary.asBook),
+            lovedSeries: shelves.lovedSeries.map { row in
+                SeriesAPI.followedRow(
+                    row.fragments.followedSeriesRow,
+                    volumes: row.volumes.map(\.fragments.followedVolume),
+                    catalogue: row.catalogue?.fragments.catalogueSpine
+                )
+            },
             hasDropped: shelves.hasDropped,
             genres: shelves.genres.map {
                 GenreShelf(
@@ -57,6 +64,28 @@ enum LibraryAPI {
         )
     }
 
+    /// The hearted sagas of "Coups de cœur" in a view, the one shelved last first.
+    static func lovedSeries(_ view: ShelvesView) async throws -> [FollowedSeries] {
+        #if DEBUG
+        if Showcase.isOn { return Showcase.libraryShelves(view: view).lovedSeries }
+        #endif
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.LovedSeriesQuery(
+                format: GraphQLHelpers.graphQLNullable(view.format.map(graphQLFormat)),
+                genre: GraphQLHelpers.graphQLNullable(view.genre.map(graphQLGenre)),
+                subgenre: GraphQLHelpers.graphQLNullable(view.subgenre)
+            )
+        )
+        return data.libraryShelves.lovedSeries.map { row in
+            SeriesAPI.followedRow(
+                row.fragments.followedSeriesRow,
+                volumes: row.volumes.map(\.fragments.followedVolume),
+                catalogue: row.catalogue?.fragments.catalogueSpine
+            )
+        }
+    }
+
     /// One page of a shelf of the Library tab, in the server's order.
     static func shelfPage(_ query: ShelfQuery, limit: Int, after: String?) async throws -> LibraryPageResult {
         #if DEBUG
@@ -67,6 +96,7 @@ enum LibraryAPI {
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.LibraryPageQuery(
                 favorite: query.favorite ? .some(true) : .none,
+                excludeLovedSeries: query.excludeLovedSeries ? .some(true) : .none,
                 status: GraphQLHelpers.graphQLNullable(query.serverStatus.map(graphQLStatus)),
                 format: GraphQLHelpers.graphQLNullable(view.format.map(graphQLFormat)),
                 genre: GraphQLHelpers.graphQLNullable(view.genre.map(graphQLGenre)),

@@ -26,6 +26,9 @@ final class BookShelfViewModel {
 
     private(set) var query: ShelfQuery
     private(set) var books: [Book] = []
+    /// On "Coups de cœur", the hearted sagas, drawn as cards above the books
+    /// in place of their volumes.
+    private(set) var lovedSeries: [FollowedSeries] = []
     private(set) var isLoading = false
     private(set) var errorMessage: String?
     private(set) var hasMore = false
@@ -90,6 +93,7 @@ final class BookShelfViewModel {
         reloadTask?.cancel()
         generation += 1
         books = []
+        lovedSeries = []
         hasMore = false
         loaded = false
         reloadTask = Task { await load() }
@@ -110,6 +114,8 @@ final class BookShelfViewModel {
         errorMessage = nil
         loadMoreFailed = false
         do {
+            let client = client, view = query.view, wantsSeries = shelf == .loved
+            async let sagas: [FollowedSeries] = wantsSeries ? client.lovedSeries(view) : []
             var fetched: [Book] = []
             var more = true
             while more, fetched.count < wanted {
@@ -119,12 +125,18 @@ final class BookShelfViewModel {
                 more = page.hasMore && !page.books.isEmpty
             }
             let kept = withinShelf(fetched)
+            let loved = try await sagas
+            guard requested == generation else { return }
             withAnimation(books.isEmpty ? nil : .smooth) {
                 books = kept
+                lovedSeries = loved
                 hasMore = more && kept.count == fetched.count
             }
             if formats.isEmpty, query.view.format == nil {
-                formats = BookFormat.allCases.filter { format in fetched.contains { $0.format == format } }
+                // The hearted sagas count too: their volumes are drawn as the
+                // saga's card, not among the books.
+                let held = fetched + loved.flatMap(\.volumes)
+                formats = BookFormat.allCases.filter { format in held.contains { $0.format == format } }
             }
             loaded = true
             CoverImages.prefetch(kept.compactMap(\.coverURL))

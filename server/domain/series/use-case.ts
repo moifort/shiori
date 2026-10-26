@@ -206,6 +206,19 @@ export namespace SeriesUseCase {
     return described(shelf, inTabOrder(kept).slice(0, limit))
   }
 
+  /** The sagas the reader hearted that hold a book `keep` keeps, the one
+   *  shelved last first: the series of "Coups de cœur", narrowed to its format
+   *  or genre. A saga set aside stays, as the heart was given to the work.
+   *  Only those sagas' catalogues are read, in one getAll. */
+  export const loved = async (
+    userId: UserId,
+    keep: (book: Book) => boolean,
+  ): Promise<FollowedSeries[]> => {
+    const shelf = await shelfOf(userId)
+    const kept = shelf.sagas.filter((saga) => saga.favorite && saga.books.some(keep))
+    return described(shelf, inTabOrder(kept))
+  }
+
   /** One page of the Series tab, newest first on `shelvedAt`, narrowed to the
    *  hearted sagas or to one state — or, `loved`, the sagas the reader judged,
    *  hearts first and then five stars down to one.

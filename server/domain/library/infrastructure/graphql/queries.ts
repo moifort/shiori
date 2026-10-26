@@ -68,7 +68,26 @@ LibraryShelvesType.implement({
       type: [BookType],
       description:
         '"Coups de cœur": the hearted books, newest on `shelvedAt` first. Twenty books at most, covers signed for those alone.',
-      resolve: (shelves) => LibraryUseCase.rail(shelves.userId, shelves.view, 'favorites'),
+      args: {
+        excludeLovedSeries: t.arg.boolean({
+          required: false,
+          description:
+            'Leave out the volumes of the sagas the reader hearted, which `lovedSeries` ' +
+            'draws whole.',
+        }),
+      },
+      resolve: (shelves, args) =>
+        args.excludeLovedSeries
+          ? LibraryUseCase.favoritesBesideSeries(shelves.userId, shelves.view)
+          : LibraryUseCase.rail(shelves.userId, shelves.view, 'favorites'),
+    }),
+    lovedSeries: t.field({
+      type: [FollowedSeriesType],
+      description:
+        'The sagas of "Coups de cœur": those the reader hearted holding a book of the ' +
+        'view, the one shelved last first, set aside or not. Reads those catalogues ' +
+        'in one getAll.',
+      resolve: (shelves) => LibraryUseCase.lovedSeries(shelves.userId, shelves.view),
     }),
     hasDropped: t.boolean({
       description: 'Whether the view holds a book given up on: the "Abandonnés" row.',

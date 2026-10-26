@@ -3,6 +3,7 @@ import SwiftUI
 /// Everything a shelf's page can ask for.
 enum BookShelfAction {
     case openBook(Book)
+    case openSeries(FollowedSeries)
     case selectStatus(ReadingStatus?)
     case selectFormat(BookFormat?)
     case menu(Book, BookQuickAction)
@@ -14,10 +15,12 @@ enum BookShelfAction {
 /// One shelf of the Library tab, opened from its rail: its posters three by
 /// row, under the shelf's headings — the journal's periods for "Récemment"
 /// and the books read, the years for the favourites, none for the pile and
-/// the books given up on, which a sentence explains.
+/// the books given up on, which a sentence explains. "Coups de cœur" draws
+/// the hearted sagas first, as cards two by row, in place of their volumes.
 struct BookShelfPage: View {
     let shelf: BookShelf
     let sections: [ListSection<Book>]
+    var lovedSeries: [FollowedSeries] = []
     /// The pills: the statuses over "Récemment", else the formats held.
     var statuses: [ReadingStatus] = []
     var selectedStatus: ReadingStatus?
@@ -43,7 +46,8 @@ struct BookShelfPage: View {
                         .padding(.top, 4)
                         .padding(.bottom, 8)
                 }
-                if sections.isEmpty {
+                seriesSection
+                if sections.isEmpty, lovedSeries.isEmpty {
                     empty
                 }
                 ForEach(sections) { section in
@@ -77,6 +81,29 @@ struct BookShelfPage: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle(shelf.title)
         .refreshable { onAction(.refresh) }
+    }
+
+    private let seriesColumns = Array(repeating: GridItem(.flexible(), spacing: 13), count: 2)
+
+    @ViewBuilder private var seriesSection: some View {
+        if !lovedSeries.isEmpty {
+            Text("Séries")
+                .font(.title2.weight(.bold))
+                .padding(.horizontal, 20)
+                .padding(.top, 22)
+                .padding(.bottom, 12)
+                .accessibilityAddTraits(.isHeader)
+            LazyVGrid(columns: seriesColumns, spacing: 13) {
+                ForEach(lovedSeries) { saga in
+                    SeriesShowCard(series: saga.progress, tag: saga.releaseTag, isCompact: true) {
+                        onAction(.openSeries(saga))
+                    }
+                    .frame(height: 128)
+                }
+            }
+            .padding(.horizontal, 20)
+            .accessibilityIdentifier("loved-series")
+        }
     }
 
     @ViewBuilder private var pills: some View {
@@ -150,6 +177,21 @@ extension ReadingStatus {
             shelf: .recent,
             sections: ListSection.byPeriod(Showcase.shelved, on: \.shelvedAt),
             statuses: [.toRead, .reading, .read],
+            isLoading: false,
+            errorMessage: nil,
+            hasMore: false,
+            loadMoreFailed: false
+        ) { _ in }
+    }
+}
+
+#Preview("Loved") {
+    NavigationStack {
+        BookShelfPage(
+            shelf: .loved,
+            sections: ListSection.byYear(Showcase.shelved.filter(\.favorite), on: \.shelvedAt),
+            lovedSeries: Showcase.libraryShelves(view: ShelvesView()).lovedSeries,
+            formats: [.book, .manga, .audiobook],
             isLoading: false,
             errorMessage: nil,
             hasMore: false,

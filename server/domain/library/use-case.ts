@@ -1,10 +1,16 @@
 import { AuthorUseCase, type FollowedAuthor } from '~/domain/author/use-case'
-import { inLibraryView, subgenresOf } from '~/domain/book/business-rules'
+import {
+  heartedSagasOf,
+  inLibraryView,
+  outsideHeartedSagas,
+  subgenresOf,
+} from '~/domain/book/business-rules'
 import { BookQuery } from '~/domain/book/query'
 import type { BookFormat, BookLanguage, BookView, Subgenre } from '~/domain/book/types'
 import { formatsOf, genreShelvesOf, railsOf, shelvedInView } from '~/domain/library/business-rules'
 import type { GenreShelf, ShelvesView } from '~/domain/library/types'
 import { type FollowedSeries, SeriesUseCase } from '~/domain/series/use-case'
+import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { UserId } from '~/domain/shared/types'
 
 /** The most series cards and author portraits the entry screen's rails draw. */
@@ -35,6 +41,26 @@ export namespace LibraryUseCase {
     rail: ShelfRail,
   ): Promise<BookView[]> =>
     BookQuery.withSignedCovers(railsOf(shelvedInView(await BookQuery.all(userId), view))[rail])
+
+  /** "Coups de cœur" beside the hearted sagas: the hearted books, less the
+   *  volumes of a saga the reader hearted, which `lovedSeries` draws whole. */
+  export const favoritesBesideSeries = async (
+    userId: UserId,
+    view: ShelvesView,
+  ): Promise<BookView[]> => {
+    const [books, opinions] = await Promise.all([
+      BookQuery.all(userId),
+      SeriesOpinionQuery.all(userId),
+    ])
+    const hearted = heartedSagasOf(opinions)
+    const kept = shelvedInView(books, view).filter((book) => outsideHeartedSagas(book, hearted))
+    return BookQuery.withSignedCovers(railsOf(kept).favorites)
+  }
+
+  /** The sagas of "Coups de cœur": those the reader hearted holding a book of
+   *  the view, the one shelved last first. */
+  export const lovedSeries = (userId: UserId, view: ShelvesView): Promise<FollowedSeries[]> =>
+    SeriesUseCase.loved(userId, (book) => inLibraryView(book, view))
 
   /** Whether the view holds a book given up on: the "Abandonnés" row shows
    *  only then. */
