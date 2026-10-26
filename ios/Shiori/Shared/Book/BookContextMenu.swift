@@ -45,7 +45,7 @@ private struct BookContextMenuItems: View {
                 }
             case .reading:
                 Button("J'ai fini ce livre", systemImage: "checkmark") { onAction(.setStatus(.read)) }
-                Button("Abandonner", systemImage: "nosign") { onAction(.setStatus(.dropped)) }
+                Button("Abandonner", systemImage: "hand.thumbsdown") { onAction(.setStatus(.dropped)) }
             case .read:
                 Button("Relire", systemImage: "arrow.counterclockwise") { onAction(.setStatus(.reading)) }
             case .dropped:

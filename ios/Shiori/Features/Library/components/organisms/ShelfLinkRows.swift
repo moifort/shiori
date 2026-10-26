@@ -11,7 +11,7 @@ struct ShelfLinkRows: View {
             row(.all, symbol: "square.grid.3x3")
             if showsDropped {
                 Divider().padding(.leading, 54)
-                row(.dropped, symbol: "nosign")
+                row(.dropped, symbol: "hand.thumbsdown")
             }
         }
         .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 18))
