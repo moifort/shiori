@@ -83,6 +83,8 @@ struct HomeHeroCarousel: View {
     /// How tall the fade into the page is: long and eased, so the colours
     /// melt into it rather than stop at a line.
     private static let fadeHeight: CGFloat = 240
+    /// The thumb's button once a discovery is turned down.
+    private static let turnedDownRed = Color(red: 0.78, green: 0.2, blue: 0.2)
 
     var body: some View {
         ScrollView(.horizontal) {
@@ -178,7 +180,6 @@ struct HomeHeroCarousel: View {
             title: suggestion.title,
             meta: meta(suggestion),
             reason: suggestion.reason,
-            isTurnedDown: isDismissed,
             onOpen: { onOpen(suggestion) }
         ) {
             GlassEffectContainer(spacing: 12) {
@@ -217,26 +218,28 @@ struct HomeHeroCarousel: View {
                     .disabled(dismissed.contains(suggestion.id))
                     .sensoryFeedback(.success, trigger: taken.contains(suggestion.id))
                     .accessibilityIdentifier("home-discovery-menu")
-                    // Turned down, the thumb turns into a check as the "+"
-                    // does, and the page fades under its stamp. Never
-                    // disabled once done: dimmed, the check went unseen.
+                    // Turned down, the thumb fills and presses down as the
+                    // button turns red. Never disabled once done: dimmed,
+                    // the red went unseen.
                     Button {
                         guard !isDismissed else { return }
-                        withAnimation(.bouncy) { _ = dismissed.insert(suggestion.id) }
+                        withAnimation(.snappy) { _ = dismissed.insert(suggestion.id) }
                         onDismiss(suggestion)
                     } label: {
                         Label(
                             isDismissed ? "Écarté" : "Pas intéressé",
-                            systemImage: isDismissed ? "checkmark" : "hand.thumbsdown"
+                            systemImage: isDismissed ? "hand.thumbsdown.fill" : "hand.thumbsdown"
                         )
                         .labelStyle(.iconOnly)
                         .font(.headline)
-                        .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp)))
+                        .foregroundStyle(.white)
+                        .contentTransition(.symbolEffect(.replace))
+                        .symbolEffect(.bounce.down.byLayer, value: isDismissed)
                     }
-                    .buttonStyle(.glass)
+                    .buttonStyle(.glass(isDismissed ? .regular.tint(Self.turnedDownRed) : .regular))
                     .buttonBorderShape(.circle)
                     .disabled(taken.contains(suggestion.id))
-                    .sensoryFeedback(.success, trigger: isDismissed)
+                    .sensoryFeedback(.impact(weight: .medium), trigger: isDismissed)
                     .accessibilityIdentifier("home-discovery-dismiss")
                 }
                 .controlSize(.extraLarge)
@@ -300,7 +303,6 @@ struct HomeHeroCarousel: View {
         title: String,
         meta: String,
         reason: String?,
-        isTurnedDown: Bool = false,
         onOpen: @escaping () -> Void,
         @ViewBuilder buttons: () -> some View
     ) -> some View {
@@ -318,17 +320,6 @@ struct HomeHeroCarousel: View {
                             }
                         }
                         .shadow(color: .black.opacity(0.5), radius: 22, y: 14)
-                        // Turned down: the cover greys and sinks back under
-                        // the stamp that says so.
-                        .saturation(isTurnedDown ? 0 : 1)
-                        .opacity(isTurnedDown ? 0.45 : 1)
-                        .scaleEffect(isTurnedDown ? 0.94 : 1)
-                        .overlay {
-                            if isTurnedDown {
-                                TurnedDownStamp()
-                                    .transition(.scale(scale: 1.6).combined(with: .opacity))
-                            }
-                        }
                     Text(badge)
                         .font(.footnote.weight(.semibold))
                         .padding(.horizontal, 10)
@@ -383,24 +374,6 @@ struct HomeHeroCarousel: View {
     private func meta(_ suggestion: Suggestion) -> String {
         ([suggestion.authors.joined(separator: ", "), suggestion.short].filter { !$0.isEmpty })
             .joined(separator: " · ")
-    }
-}
-
-/// "Pas intéressé" pressed over a turned-down discovery's cover, as a rubber
-/// stamp lands: slightly askew, ringed in white.
-private struct TurnedDownStamp: View {
-    var body: some View {
-        Label("Pas intéressé", systemImage: "hand.thumbsdown.fill")
-            .font(.subheadline.weight(.bold))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            // Solid rather than glass: glass scaled in by the transition
-            // swelled into a blob over the cover.
-            .background(.black.opacity(0.6), in: .capsule)
-            .overlay { Capsule().strokeBorder(.white.opacity(0.85), lineWidth: 1.5) }
-            .rotationEffect(.degrees(-8))
-            .fixedSize()
     }
 }
 
