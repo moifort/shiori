@@ -79,8 +79,8 @@ struct HomeHeroCarousel: View {
     @State private var dismissed: Set<Suggestion.ID> = []
 
     /// How tall the carousel stands: room for the cover drawn large, as Apple
-    /// Books stands one forward, and three lines of why.
-    static let height: CGFloat = 556
+    /// Books stands one forward, a title on one line and three lines of why.
+    static let height: CGFloat = 526
     /// How far each backdrop runs up past its page, under the bars and the
     /// status bar.
     private static let backdropRise: CGFloat = 400
@@ -323,7 +323,7 @@ struct HomeHeroCarousel: View {
         VStack(spacing: 0) {
             Button(action: onOpen) {
                 VStack(spacing: 0) {
-                    BookCover(book: cover, width: 168, showsFormatBadge: false, isBound: true)
+                    BookCover(book: cover, width: 160, showsFormatBadge: false, isBound: true)
                         // A recording says so in the tag the posters carry,
                         // on a blur of the cover, rather than with headphones.
                         .overlay(alignment: .topTrailing) {
@@ -339,25 +339,7 @@ struct HomeHeroCarousel: View {
                         .padding(.vertical, 4)
                         .glassEffect(.clear, in: .capsule)
                         .padding(.top, 18)
-                    // Set in serif, as Apple Books titles the book it opens.
-                    Text(title)
-                        .font(.system(.title, design: .serif, weight: .bold))
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.8)
-                        .padding(.top, 10)
-                    Text(meta)
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.85))
-                        .lineLimit(1)
-                        .padding(.top, 4)
-                    if let reason {
-                        Text(reason)
-                            .font(.footnote)
-                            .foregroundStyle(.white.opacity(0.65))
-                            .lineLimit(3)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.top, 6)
-                    }
+                    PageText(title: title, meta: meta, reason: reason)
                 }
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.white)
@@ -366,13 +348,16 @@ struct HomeHeroCarousel: View {
             .buttonStyle(.plain)
             buttons()
                 .padding(.top, 16)
-            Spacer(minLength: 0)
         }
         .padding(.horizontal, 28)
-        .padding(.top, 4)
-        // Room for the dots under the buttons.
-        .padding(.bottom, 40)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Clear of the figures over it, the cover standing apart from them.
+        .padding(.top, 20)
+        // Room for the dots close under the buttons, whose glass already
+        // stands taller than it draws.
+        .padding(.bottom, 12)
+        // Not a spacer under the buttons: it took the room before the text
+        // did, and cut the why short over an empty band.
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .environment(\.colorScheme, .dark)
         .background {
             CoverBackdrop(url: cover.coverURL, fadeHeight: Self.fadeHeight)
@@ -390,6 +375,86 @@ struct HomeHeroCarousel: View {
     private func meta(_ suggestion: Suggestion) -> String {
         ([suggestion.authors.joined(separator: ", "), suggestion.short].filter { !$0.isEmpty })
             .joined(separator: " · ")
+    }
+}
+
+/// A page's title, what it is and why. A title too long for one line is set
+/// a size smaller, and the why gives up a line only if it still takes two,
+/// so the buttons keep their place over the dots: the carousel's height is a
+/// page's for a title on one line and three lines of why.
+private struct PageText: View {
+    let title: String
+    let meta: String
+    let reason: String?
+
+    /// Whether the title takes two lines at each size: measured on hidden
+    /// copies, so setting it smaller never makes it fit again and flicker.
+    @State private var wraps: [Bool] = [false, false]
+
+    /// Set in serif, as Apple Books titles the book it opens.
+    private static let fonts: [Font] = [
+        .system(.title, design: .serif, weight: .bold),
+        .system(.title2, design: .serif, weight: .bold),
+    ]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text(title)
+                .font(Self.fonts[wraps[0] ? 1 : 0])
+                .lineLimit(2)
+                .frame(maxWidth: .infinity)
+                .background {
+                    ZStack {
+                        ForEach(Self.fonts.indices, id: \.self) { index in
+                            WrapProbe(text: title, font: Self.fonts[index]) { wraps[index] = $0 }
+                        }
+                    }
+                    .hidden()
+                }
+                .padding(.top, 10)
+            Text(meta)
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.85))
+                .lineLimit(1)
+                .padding(.top, 4)
+            if let reason {
+                Text(reason)
+                    .font(.footnote)
+                    .foregroundStyle(.white.opacity(0.65))
+                    .lineLimit(wraps[0] && wraps[1] ? 2 : 3)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 6)
+            }
+        }
+    }
+}
+
+/// Tells whether a text runs past one line in a font, at the width it is
+/// given: its own height against a line's.
+private struct WrapProbe: View {
+    let text: String
+    let font: Font
+    let onChange: (Bool) -> Void
+
+    @State private var height: CGFloat = 0
+    @State private var lineHeight: CGFloat = 0
+
+    var body: some View {
+        Text(text)
+            .font(font)
+            .lineLimit(2)
+            // Its own height, not the one the title shown leaves it.
+            .fixedSize(horizontal: false, vertical: true)
+            .onGeometryChange(for: CGFloat.self, of: \.size.height) { height = $0 }
+            .background {
+                Text(verbatim: "A")
+                    .font(font)
+                    .fixedSize()
+                    .onGeometryChange(for: CGFloat.self, of: \.size.height) { lineHeight = $0 }
+            }
+            .onChange(of: lineHeight > 0 && height > lineHeight * 1.5, initial: true) { _, wraps in
+                onChange(wraps)
+            }
     }
 }
 
