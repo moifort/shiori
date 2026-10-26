@@ -36,6 +36,7 @@ query Dashboard($timeZone: TimeZone!) {
       id
       name
       audio
+      language
       readCount
       totalCount
       rating

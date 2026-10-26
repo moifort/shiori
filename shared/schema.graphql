@@ -2828,7 +2828,7 @@ type Mutation {
   
   Takes a few seconds. Null when the reader holds no book of the author, and when the model failed or found nothing — the previous catalogue is then kept.
   """
-  refreshAuthor(key: AuthorKey!): Author
+  refreshAuthor(key: AuthorKey!): Author @deprecated(reason: "The author page no longer offers it.")
 
   """
   Bring a record up to date: the book is looked up again on the web from its title, authors, format, publisher and language, and what describes the work is rewritten from what was found — summary, genre, subgenres, page count, year of first publication, published cover, and the ISBN when the record has none. What names the book, the saga, and everything the reader recorded stay as they were; a field the lookup did not find keeps its value. The published cover is also sought by the ISBN already on the record, and one that no longer loads is dropped when no other is found.
@@ -4173,6 +4173,11 @@ type SeriesProgress {
 
   """The edition measured, the saga in one language: what the card opens."""
   id: SeriesId!
+
+  """
+  The language the reader holds these volumes in: the edition `id` names, told apart for a client to show it. Null on volumes that record no language.
+  """
+  language: BookLanguage
   name: SeriesName!
 
   """

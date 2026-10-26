@@ -38,6 +38,9 @@ struct Dashboard: Codable, Sendable {
         let name: String
         /// The saga heard rather than read, measured on its recordings.
         var isAudio: Bool = false
+        /// The language the reader holds these volumes in, tagged on the card
+        /// when it is not the phone's.
+        var language: BookLanguage?
         let readCount: Int
         let totalCount: Int
         /// The reader's rating of the saga, else the average of the volumes

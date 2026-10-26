@@ -369,12 +369,18 @@ struct SeriesShowCard: View {
                         .padding(8)
                 }
             }
-            // A saga heard says so in the corner, as the posters above do.
+            // A saga heard says so in the corner, as the posters above do,
+            // and an edition in another language than the phone's beside it.
             .overlay(alignment: .topTrailing) {
-                if series.isAudio {
-                    OutlinedTag(text: String(localized: "Audio"))
-                        .padding(10)
+                HStack(spacing: 4) {
+                    if let language = series.language, language.isForeign {
+                        OutlinedTag(text: language.code)
+                    }
+                    if series.isAudio {
+                        OutlinedTag(text: String(localized: "Audio"))
+                    }
                 }
+                .padding(10)
             }
             .clipShape(.rect(cornerRadius: 18))
             // The thin light rim inside the edge, as the posters carry.

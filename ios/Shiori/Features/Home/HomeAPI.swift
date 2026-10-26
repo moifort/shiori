@@ -32,6 +32,7 @@ enum HomeAPI {
                     id: $0.id,
                     name: $0.name,
                     isAudio: $0.audio,
+                    language: $0.language?.asDomain,
                     readCount: $0.readCount,
                     totalCount: $0.totalCount,
                     rating: $0.rating.map { ($0 * 2).rounded() / 2 },

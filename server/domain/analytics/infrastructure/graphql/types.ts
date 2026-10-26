@@ -13,9 +13,9 @@ import type {
   UnexploredGenre,
   YearCount,
 } from '~/domain/analytics/types'
-import { BookFormatEnum, GenreEnum } from '~/domain/book/infrastructure/graphql/enums'
+import { BookFormatEnum, BookLanguageEnum, GenreEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { SeriesMembershipType } from '~/domain/book/infrastructure/graphql/types'
-import { isAudioSeries } from '~/domain/series/primitives'
+import { isAudioSeries, seriesReferenceOf } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
 import { Percentage } from '~/domain/shared/primitives'
 
@@ -156,6 +156,14 @@ const SeriesProgressType = builder.objectRef<DashboardSeries>('SeriesProgress').
     audio: t.boolean({
       description: 'The saga heard rather than read, measured on its recordings.',
       resolve: (series) => isAudioSeries(series.saga),
+    }),
+    language: t.field({
+      type: BookLanguageEnum,
+      nullable: true,
+      description:
+        'The language the reader holds these volumes in: the edition `id` names, told apart ' +
+        'for a client to show it. Null on volumes that record no language.',
+      resolve: (series) => seriesReferenceOf(series.id).language ?? null,
     }),
     readCount: t.exposeInt('readCount'),
     totalCount: t.exposeInt('totalCount'),

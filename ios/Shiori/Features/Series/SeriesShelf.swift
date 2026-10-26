@@ -72,6 +72,7 @@ extension FollowedSeries {
             id: seriesId,
             name: name,
             isAudio: isAudio,
+            language: language,
             readCount: readCount,
             totalCount: totalCount,
             rating: opinion?.rating,
